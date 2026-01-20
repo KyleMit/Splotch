@@ -194,7 +194,6 @@ function startTrashDrag(e) {
   // Store initial button position and drag offset
   const rect = trashButton.getBoundingClientRect();
   initialButtonY = rect.top;
-  buttonStartY = rect.top;
 
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   dragOffsetY = clientY - rect.top;
@@ -202,7 +201,9 @@ function startTrashDrag(e) {
   // Show clear line and threshold indicator
   clearLine.style.display = 'block';
   thresholdLine.style.display = 'block';
-  thresholdLine.style.top = `${window.innerHeight * 0.85}px`;
+  const thresholdY = window.innerHeight * 0.85;
+  thresholdLine.style.top = `${thresholdY}px`;
+  console.log('Threshold line at:', thresholdY);
 
   e.preventDefault();
   e.stopPropagation();
@@ -246,6 +247,7 @@ function dragTrash(e) {
 
     // Position the clear line at the edge of cleared area (in screen coordinates)
     clearLine.style.top = `${clearScreenY}px`;
+    clearLine.style.visibility = 'visible';
   }
 
   e.preventDefault();
