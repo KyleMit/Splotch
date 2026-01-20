@@ -139,3 +139,4 @@ Built for toddlers who love to create! 🎨✨
 * [ ] Add gradient picker option
 * [ ] Nudge trash can left
 * [ ] Make sure installable
+* [ ] Add background "color booking" style picker
