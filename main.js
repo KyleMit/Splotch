@@ -34,6 +34,8 @@ let isDrawing = false;
 let currentColor = ''; // Will be set from first color button
 let lastX = 0;
 let lastY = 0;
+let lastColorChangeTime = 0; // Track when color was last changed
+let activePointerIds = new Set(); // Track all active pointer IDs
 
 // Sound setup
 let soundEnabled = true;
@@ -68,19 +70,30 @@ const colorPicker = document.querySelector('.color-picker');
 // Set initial color from first button
 currentColor = colorButtons[0].dataset.color;
 
+// Helper function to force release all pointer captures
+function releaseAllPointers() {
+  isDrawing = false;
+  ctx.beginPath();
+
+  // Try to release all tracked pointer IDs
+  activePointerIds.forEach(pointerId => {
+    try {
+      if (canvas.hasPointerCapture && canvas.hasPointerCapture(pointerId)) {
+        canvas.releasePointerCapture(pointerId);
+      }
+    } catch (err) {
+      // Ignore errors
+    }
+  });
+
+  activePointerIds.clear();
+}
+
 // Prevent color picker area from interfering with drawing
 colorPicker.addEventListener('pointerdown', (e) => {
-  isDrawing = false;
-
-  // Release any captured pointers on canvas (for Apple Pencil compatibility)
-  try {
-    if (canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) {
-      canvas.releasePointerCapture(e.pointerId);
-    }
-  } catch (err) {
-    // Ignore errors
-  }
-
+  releaseAllPointers();
+  lastColorChangeTime = Date.now();
+  e.preventDefault();
   e.stopPropagation();
 });
 
@@ -96,18 +109,9 @@ colorButtons.forEach(btn => {
     btn.classList.add('active');
     currentColor = btn.dataset.color;
 
-    // Force stop any drawing state and reset path
-    isDrawing = false;
-    ctx.beginPath();
-
-    // Release any captured pointers (for Apple Pencil)
-    try {
-      if (canvas.hasPointerCapture && e.pointerId !== undefined && canvas.hasPointerCapture(e.pointerId)) {
-        canvas.releasePointerCapture(e.pointerId);
-      }
-    } catch (err) {
-      // Ignore errors
-    }
+    // Release all pointers and reset state
+    releaseAllPointers();
+    lastColorChangeTime = Date.now();
 
     e.preventDefault();
     e.stopPropagation();
@@ -115,18 +119,9 @@ colorButtons.forEach(btn => {
 
   // Prevent pointer events from being captured by the canvas
   btn.addEventListener('pointerdown', (e) => {
-    // Force stop any drawing state and reset path
-    isDrawing = false;
-    ctx.beginPath();
-
-    // Release any captured pointers (for Apple Pencil)
-    try {
-      if (canvas.hasPointerCapture && e.pointerId !== undefined && canvas.hasPointerCapture(e.pointerId)) {
-        canvas.releasePointerCapture(e.pointerId);
-      }
-    } catch (err) {
-      // Ignore errors
-    }
+    // Release all pointers and reset state
+    releaseAllPointers();
+    lastColorChangeTime = Date.now();
 
     e.preventDefault();
     e.stopPropagation();
@@ -134,8 +129,7 @@ colorButtons.forEach(btn => {
 
   // Handle pointer cancel
   btn.addEventListener('pointercancel', (e) => {
-    isDrawing = false;
-    ctx.beginPath();
+    releaseAllPointers();
     e.stopPropagation();
   });
 });
@@ -206,6 +200,12 @@ setTimeout(updateVisibleButtons, 100);
 
 // Drawing functions
 function startDrawing(e) {
+  // Prevent drawing immediately after color change (helps with Apple Pencil)
+  const timeSinceColorChange = Date.now() - lastColorChangeTime;
+  if (timeSinceColorChange < 100) {
+    return;
+  }
+
   isDrawing = true;
   const rect = canvas.getBoundingClientRect();
   lastX = e.clientX - rect.left;
@@ -217,14 +217,20 @@ function startDrawing(e) {
 
   playDrawSound();
 
-  // Capture pointer to ensure smooth drawing
-  try {
-    if (e.pointerId !== undefined) {
-      canvas.setPointerCapture(e.pointerId);
+  // Track this pointer ID
+  if (e.pointerId !== undefined) {
+    activePointerIds.add(e.pointerId);
+  }
+
+  // Don't use pointer capture with Apple Pencil - it causes issues
+  if (e.pointerType !== 'pen') {
+    try {
+      if (e.pointerId !== undefined) {
+        canvas.setPointerCapture(e.pointerId);
+      }
+    } catch (err) {
+      // Ignore pointer capture errors
     }
-  } catch (err) {
-    // Ignore pointer capture errors
-    console.log('Pointer capture not available:', err);
   }
 }
 
@@ -252,8 +258,9 @@ function stopDrawing(e) {
   isDrawing = false;
   ctx.beginPath();
 
-  // Release pointer capture
+  // Release pointer capture and remove from tracking
   if (e && e.pointerId !== undefined) {
+    activePointerIds.delete(e.pointerId);
     try {
       canvas.releasePointerCapture(e.pointerId);
     } catch (err) {

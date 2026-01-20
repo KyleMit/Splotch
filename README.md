@@ -163,3 +163,5 @@ Built for toddlers who love to create! 🎨✨
 * [ ] Nudge trash can left
 * [ ] Make sure [installable](https://www.pwabuilder.com/reportcard?site=https://splotchy.netlify.app/)
 * [ ] Add background "color booking" style picker
+* [ ] Add PWA help guide for parents
+  * [ ] Boring grey parent logo in the bottom
