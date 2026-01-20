@@ -138,30 +138,6 @@ body {
   white-space: nowrap;
 }
 
-/* Sound Toggle */
-.sound-toggle {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
-  border: none;
-  border-radius: 50%;
-  background: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  cursor: pointer;
-  font-size: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s ease;
-  z-index: 20;
-}
-
-.sound-toggle:active {
-  transform: scale(0.9);
-}
-
 /* Responsive adjustments for portrait mode */
 @media (orientation: portrait) {
   .color-picker {

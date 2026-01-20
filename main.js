@@ -169,23 +169,6 @@ trashSlider.addEventListener('pointermove', drag);
 trashSlider.addEventListener('pointerup', stopDrag);
 trashSlider.addEventListener('pointercancel', stopDrag);
 
-// Sound toggle
-const soundToggle = document.getElementById('soundToggle');
-const soundOn = soundToggle.querySelector('.sound-on');
-const soundOff = soundToggle.querySelector('.sound-off');
-
-soundToggle.addEventListener('click', () => {
-  soundEnabled = !soundEnabled;
-
-  if (soundEnabled) {
-    soundOn.style.display = 'inline';
-    soundOff.style.display = 'none';
-  } else {
-    soundOn.style.display = 'none';
-    soundOff.style.display = 'inline';
-  }
-});
-
 // Prevent context menu on long press
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
