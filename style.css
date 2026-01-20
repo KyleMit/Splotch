@@ -33,7 +33,9 @@ body {
   padding: 20px;
   background: white;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-  z-index: 10;
+  z-index: 1001;
+  flex-shrink: 0;
+  position: relative;
 }
 
 .color-btn {
@@ -73,12 +75,16 @@ body {
   align-items: center;
   background: white;
   position: relative;
+  width: 100%;
+  overflow: hidden;
 }
 
 #drawingCanvas {
   display: block;
   cursor: crosshair;
   touch-action: none;
+  width: 100%;
+  height: 100%;
 }
 
 /* Floating Trash Button */
@@ -117,13 +123,33 @@ body {
   margin-right: 10px;
 }
 
+/* Clear line indicator - page turn effect */
+.clear-line {
+  position: fixed;
+  left: 0;
+  width: 100%;
+  height: 20px;
+  background: linear-gradient(to bottom,
+    rgba(0, 0, 0, 0.08) 0%,
+    rgba(0, 0, 0, 0.15) 30%,
+    rgba(0, 0, 0, 0.12) 50%,
+    rgba(0, 0, 0, 0.05) 80%,
+    rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
+  display: none;
+  z-index: 999;
+  transform: translateY(-10px);
+}
+
 /* Responsive adjustments for portrait mode */
 @media (orientation: portrait) {
   .color-picker {
     flex-direction: row;
     width: 100%;
     height: auto;
-    padding: 15px;
+    padding: 10px;
+    gap: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   }
 
   .color-btn {
@@ -133,9 +159,17 @@ body {
 
   .app-container {
     flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .canvas-container {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
   }
 
   .trash-button {
-    top: 100px;
+    top: 90px;
   }
 }

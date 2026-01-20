@@ -123,6 +123,11 @@ let initialButtonY = 0;
 let buttonStartY = 0;
 let dragOffsetY = 0;
 
+// Create clear line indicator
+const clearLine = document.createElement('div');
+clearLine.className = 'clear-line';
+document.body.appendChild(clearLine);
+
 function startTrashDrag(e) {
   isDragging = true;
   trashButton.classList.add('dragging');
@@ -137,6 +142,9 @@ function startTrashDrag(e) {
 
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   dragOffsetY = clientY - rect.top;
+
+  // Show clear line
+  clearLine.style.display = 'block';
 
   e.preventDefault();
   e.stopPropagation();
@@ -153,10 +161,21 @@ function dragTrash(e) {
     trashButton.style.top = `${newY}px`;
     trashButton.style.transition = 'none';
 
-    // Preview the clear: clear from top-left to button position
-    const clearHeight = Math.max(0, newY + 45); // 45 is half the button height
+    // Get canvas position on screen
+    const canvasRect = canvas.getBoundingClientRect();
+    const canvasTop = canvasRect.top;
+
+    // Calculate clear height relative to canvas
+    const clearScreenY = newY + 45; // 45 is half the button height
+    const clearCanvasY = clearScreenY - canvasTop;
+    const clearHeight = Math.max(0, clearCanvasY);
+
+    // Preview the clear: clear from top of canvas to button position
     ctx.putImageData(savedCanvas, 0, 0);
     ctx.clearRect(0, 0, canvas.width, clearHeight);
+
+    // Position the clear line at the edge of cleared area (in screen coordinates)
+    clearLine.style.top = `${clearScreenY}px`;
   }
 
   e.preventDefault();
@@ -168,6 +187,9 @@ function stopTrashDrag(e) {
 
   isDragging = false;
   trashButton.classList.remove('dragging');
+
+  // Hide clear line
+  clearLine.style.display = 'none';
 
   const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
   const screenHeight = window.innerHeight;
@@ -192,7 +214,7 @@ function stopTrashDrag(e) {
 
   // Animate button back to original position
   trashButton.style.transition = 'top 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
-  trashButton.style.top = '20px';
+  trashButton.style.top = '100px'; // sync with .trash-button state
 
   e.preventDefault();
   e.stopPropagation();
