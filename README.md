@@ -132,3 +132,10 @@ MIT
 ## Credits
 
 Built for toddlers who love to create! 🎨✨
+
+## TODO
+
+* [ ] Add pencil sound
+* [ ] Add gradient picker option
+* [ ] Nudge trash can left
+* [ ] Make sure installable
