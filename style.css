@@ -81,49 +81,40 @@ body {
   touch-action: none;
 }
 
-/* Trash Can Slider */
-.trash-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 120px;
-  background: white;
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  position: relative;
-  z-index: 10;
-}
-
-.trash-slider {
-  width: 100px;
-  height: 400px;
-  background: linear-gradient(to bottom, #ff6b6b, #ee5a6f);
-  border-radius: 50px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+/* Floating Trash Button */
+.trash-button {
+  position: fixed;
+  top: 20px;
+  right: 0;
+  width: 90px;
+  height: 90px;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  border: none;
+  border-radius: 50% 0 0 50%;
+  box-shadow: -4px 4px 20px rgba(0, 0, 0, 0.3);
   cursor: grab;
   touch-action: none;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow 0.2s ease;
 }
 
-.trash-slider:active {
+.trash-button:active {
   cursor: grabbing;
 }
 
-.trash-icon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 64px;
-  height: 64px;
-  pointer-events: none;
-  transition: transform 0.3s ease;
+.trash-button.dragging {
+  box-shadow: -6px 6px 30px rgba(0, 0, 0, 0.4);
+  transition: none;
 }
 
-.trash-slider.dragging .trash-icon {
-  transform: translate(-50%, -50%) scale(1.2);
+.trash-icon {
+  width: 50px;
+  height: 50px;
+  pointer-events: none;
+  margin-right: 10px;
 }
 
 /* Responsive adjustments for portrait mode */
@@ -144,15 +135,7 @@ body {
     flex-direction: column;
   }
 
-  .trash-container {
-    width: 100%;
-    height: 100px;
-    flex-direction: row;
-    padding: 15px;
-  }
-
-  .trash-slider {
-    width: 300px;
-    height: 70px;
+  .trash-button {
+    top: 100px;
   }
 }

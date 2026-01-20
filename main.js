@@ -115,59 +115,93 @@ canvas.addEventListener('pointerup', stopDrawing);
 canvas.addEventListener('pointerout', stopDrawing);
 canvas.addEventListener('pointercancel', stopDrawing);
 
-// Trash slider
-const trashSlider = document.getElementById('trashSlider');
+// Trash button drag functionality
+const trashButton = document.getElementById('trashButton');
 let isDragging = false;
-let startY = 0;
-let currentY = 0;
-const clearThreshold = 150; // pixels to drag before clearing
+let savedCanvas = null;
+let initialButtonY = 0;
+let buttonStartY = 0;
+let dragOffsetY = 0;
 
-function startDrag(e) {
+function startTrashDrag(e) {
   isDragging = true;
-  startY = e.clientY || e.touches[0].clientY;
-  currentY = startY;
-  trashSlider.classList.add('dragging');
+  trashButton.classList.add('dragging');
+
+  // Save current canvas state
+  savedCanvas = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  // Store initial button position and drag offset
+  const rect = trashButton.getBoundingClientRect();
+  initialButtonY = rect.top;
+  buttonStartY = rect.top;
+
+  const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+  dragOffsetY = clientY - rect.top;
+
   e.preventDefault();
+  e.stopPropagation();
 }
 
-function drag(e) {
+function dragTrash(e) {
   if (!isDragging) return;
 
-  const clientY = e.clientY || e.touches[0].clientY;
-  currentY = clientY;
-  const distance = Math.abs(currentY - startY);
+  const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+  const newY = clientY - dragOffsetY;
 
-  // Visual feedback
-  const progress = Math.min(distance / clearThreshold, 1);
-  trashSlider.style.opacity = 1 - (progress * 0.3);
+  // Only allow dragging downward
+  if (newY > initialButtonY) {
+    trashButton.style.top = `${newY}px`;
+    trashButton.style.transition = 'none';
 
-  if (distance > clearThreshold) {
-    clearCanvas();
-    stopDrag();
+    // Preview the clear: clear from top-left to button position
+    const clearHeight = Math.max(0, newY + 45); // 45 is half the button height
+    ctx.putImageData(savedCanvas, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, clearHeight);
   }
 
   e.preventDefault();
+  e.stopPropagation();
 }
 
-function stopDrag() {
+function stopTrashDrag(e) {
+  if (!isDragging) return;
+
   isDragging = false;
-  trashSlider.classList.remove('dragging');
-  trashSlider.style.opacity = 1;
-}
+  trashButton.classList.remove('dragging');
 
-function clearCanvas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
+  const screenHeight = window.innerHeight;
+  const bottomThreshold = screenHeight * 0.85; // Bottom 15%
 
-  // Play a satisfying clear sound (if you add one)
-  if (soundEnabled && pencilSounds.playing()) {
-    pencilSounds.stop();
+  if (clientY >= bottomThreshold) {
+    // Clear confirmed - clear the entire canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    savedCanvas = null;
+
+    // Stop any playing sounds
+    if (soundEnabled && pencilSounds.playing()) {
+      pencilSounds.stop();
+    }
+  } else {
+    // Restore canvas
+    if (savedCanvas) {
+      ctx.putImageData(savedCanvas, 0, 0);
+      savedCanvas = null;
+    }
   }
+
+  // Animate button back to original position
+  trashButton.style.transition = 'top 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+  trashButton.style.top = '20px';
+
+  e.preventDefault();
+  e.stopPropagation();
 }
 
-trashSlider.addEventListener('pointerdown', startDrag);
-trashSlider.addEventListener('pointermove', drag);
-trashSlider.addEventListener('pointerup', stopDrag);
-trashSlider.addEventListener('pointercancel', stopDrag);
+trashButton.addEventListener('pointerdown', startTrashDrag);
+document.addEventListener('pointermove', dragTrash);
+document.addEventListener('pointerup', stopTrashDrag);
+document.addEventListener('pointercancel', stopTrashDrag);
 
 // Prevent context menu on long press
 document.addEventListener('contextmenu', (e) => e.preventDefault());
