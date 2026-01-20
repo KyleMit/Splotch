@@ -5,30 +5,10 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'sounds/*.mp3'],
-      manifest: {
-        name: 'Splotch - Drawing for Kids',
-        short_name: 'Splotch',
-        description: 'A simple drawing app for toddlers',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
-        display: 'fullscreen',
-        orientation: 'landscape',
-        icons: [
-          {
-            src: 'icon-192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'icon-512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
-      },
+      includeAssets: ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png', 'sounds/*.mp3'],
+      manifest: false, // Use site.webmanifest instead
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,webmanifest}'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

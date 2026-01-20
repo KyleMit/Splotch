@@ -5,10 +5,9 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 ## Features
 
 - **Simple Drawing Interface** - Just touch and draw with your finger or Apple Pencil
-- **Kid-Friendly Color Picker** - Large, colorful buttons on the left side
-- **Easy Clear Function** - Slide the trash can to start fresh
+- **Kid-Friendly Color Picker** - 7 vibrant colors (purple, blue, green, yellow, orange, red, black)
+- **Interactive Clear Function** - Drag the trash button down to clear with visual preview
 - **Drawing Sounds** - Subtle pencil scratching sounds as you draw
-- **Sound Toggle** - Parents can mute sounds with the speaker button
 - **PWA Support** - Install to home screen for a full-screen app experience
 - **Offline First** - Works without an internet connection
 - **Wake Lock** - Screen stays on while drawing
@@ -57,17 +56,6 @@ You need to add a pencil drawing sound file:
 
 See `public/sounds/README.md` for detailed instructions on creating/finding audio files.
 
-### 2. App Icons
-
-You need to create icons for the PWA to be installable:
-
-- `public/icon-192.png` (192x192)
-- `public/icon-512.png` (512x512)
-- `public/apple-touch-icon.png` (180x180)
-- `public/favicon.ico` (32x32)
-
-See `public/ICONS-README.md` for icon creation guidance.
-
 ## Deployment
 
 ### Netlify
@@ -88,14 +76,6 @@ npm install -g netlify-cli
 # Deploy
 netlify deploy --prod
 ```
-
-### Other Platforms
-
-The app will work on any static hosting platform:
-
-- **Vercel**: Auto-detects Vite
-- **GitHub Pages**: Build and push `dist/` folder
-- **Cloudflare Pages**: Connect repo and deploy
 
 ## Browser Support
 
