@@ -222,6 +222,11 @@ const thresholdLine = document.createElement('div');
 thresholdLine.className = 'threshold-line';
 document.body.appendChild(thresholdLine);
 
+// Create page turn overlay
+const pageTurnOverlay = document.createElement('div');
+pageTurnOverlay.className = 'page-turn-overlay';
+document.body.appendChild(pageTurnOverlay);
+
 function startTrashDrag(e) {
   isDragging = true;
   trashButton.classList.add('dragging');
@@ -313,18 +318,26 @@ function stopTrashDrag(e) {
   const initialTop = isPortrait ? '100px' : '20px';
 
   if (clientY >= bottomThreshold) {
-    // Clear confirmed - clear the entire canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    savedCanvas = null;
+    // Clear confirmed - trigger page turn animation
+    pageTurnOverlay.classList.add('animating');
 
     // Stop any playing sounds
     if (soundEnabled && pencilSounds.playing()) {
       pencilSounds.stop();
     }
 
-    // Instantly reset button position (no animation)
-    trashButton.style.transition = 'none';
-    trashButton.style.top = initialTop;
+    // Clear canvas halfway through animation
+    setTimeout(() => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      savedCanvas = null;
+    }, 300);
+
+    // Remove animation and reset button after animation completes
+    setTimeout(() => {
+      pageTurnOverlay.classList.remove('animating');
+      trashButton.style.transition = 'none';
+      trashButton.style.top = initialTop;
+    }, 600);
   } else {
     // Restore canvas
     if (savedCanvas) {

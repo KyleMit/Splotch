@@ -152,6 +152,36 @@ body {
   z-index: 998;
 }
 
+/* Page turn animation overlay */
+.page-turn-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(245, 245, 245, 0.98) 50%,
+    rgba(255, 255, 255, 1) 100%);
+  transform: translate(-100%, -100%);
+  pointer-events: none;
+  z-index: 500;
+  box-shadow: -20px -20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.page-turn-overlay.animating {
+  animation: pageTurn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes pageTurn {
+  0% {
+    transform: translate(-100%, -100%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
 /* Responsive adjustments for portrait mode */
 @media (orientation: portrait) {
   .color-picker {
