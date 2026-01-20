@@ -240,8 +240,9 @@ function startTrashDrag(e) {
   clearLine.style.display = 'block';
   thresholdLine.style.display = 'block';
   const thresholdY = window.innerHeight * 0.85;
-  thresholdLine.style.top = `${thresholdY}px`;
-  console.log('Threshold line at:', thresholdY);
+  const thresholdHeight = window.innerHeight - thresholdY;
+  thresholdLine.style.height = `${thresholdHeight}px`;
+  console.log('Threshold zone height:', thresholdHeight);
 
   e.preventDefault();
   e.stopPropagation();
