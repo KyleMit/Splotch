@@ -31,7 +31,7 @@ window.addEventListener('resize', resizeCanvas);
 
 // Drawing state
 let isDrawing = false;
-let currentColor = '#AA96DA'; // Purple - first in priority list
+let currentColor = ''; // Will be set from first color button
 let lastX = 0;
 let lastY = 0;
 
@@ -64,6 +64,9 @@ function playDrawSound() {
 // Color picker
 const colorButtons = document.querySelectorAll('.color-btn');
 const colorPicker = document.querySelector('.color-picker');
+
+// Set initial color from first button
+currentColor = colorButtons[0].dataset.color;
 
 colorButtons.forEach(btn => {
   btn.addEventListener('click', () => {
