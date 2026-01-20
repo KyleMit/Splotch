@@ -68,17 +68,43 @@ const colorPicker = document.querySelector('.color-picker');
 // Set initial color from first button
 currentColor = colorButtons[0].dataset.color;
 
+// Prevent color picker area from interfering with drawing
+colorPicker.addEventListener('pointerdown', (e) => {
+  isDrawing = false;
+  e.stopPropagation();
+});
+
+colorPicker.addEventListener('pointerup', (e) => {
+  isDrawing = false;
+  e.stopPropagation();
+});
+
 colorButtons.forEach(btn => {
   // Use pointerup instead of click for better stylus/touch support
   btn.addEventListener('pointerup', (e) => {
     colorButtons.forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     currentColor = btn.dataset.color;
+
+    // Force stop any drawing state
+    isDrawing = false;
+
+    e.preventDefault();
     e.stopPropagation();
   });
 
   // Prevent pointer events from being captured by the canvas
   btn.addEventListener('pointerdown', (e) => {
+    // Force stop any drawing state
+    isDrawing = false;
+
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  // Handle pointer cancel
+  btn.addEventListener('pointercancel', (e) => {
+    isDrawing = false;
     e.stopPropagation();
   });
 });
@@ -161,7 +187,14 @@ function startDrawing(e) {
   playDrawSound();
 
   // Capture pointer to ensure smooth drawing
-  canvas.setPointerCapture(e.pointerId);
+  try {
+    if (e.pointerId !== undefined) {
+      canvas.setPointerCapture(e.pointerId);
+    }
+  } catch (err) {
+    // Ignore pointer capture errors
+    console.log('Pointer capture not available:', err);
+  }
 }
 
 function draw(e) {
@@ -229,6 +262,7 @@ document.body.appendChild(pageTurnOverlay);
 
 function startTrashDrag(e) {
   isDragging = true;
+  isDrawing = false; // Stop any drawing
   trashButton.classList.add('dragging');
 
   // Save current canvas state
