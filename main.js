@@ -31,7 +31,7 @@ window.addEventListener('resize', resizeCanvas);
 
 // Drawing state
 let isDrawing = false;
-let currentColor = '#FF6B6B';
+let currentColor = '#AA96DA'; // Purple - first in priority list
 let lastX = 0;
 let lastY = 0;
 
@@ -63,6 +63,8 @@ function playDrawSound() {
 
 // Color picker
 const colorButtons = document.querySelectorAll('.color-btn');
+const colorPicker = document.querySelector('.color-picker');
+
 colorButtons.forEach(btn => {
   btn.addEventListener('click', () => {
     colorButtons.forEach(b => b.classList.remove('active'));
@@ -70,6 +72,56 @@ colorButtons.forEach(btn => {
     currentColor = btn.dataset.color;
   });
 });
+
+// Hide buttons that don't fully fit in the available space
+function updateVisibleButtons() {
+  const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+  const pickerRect = colorPicker.getBoundingClientRect();
+
+  if (isPortrait) {
+    // Portrait: horizontal layout
+    const padding = 10;
+    const gap = 10;
+    const buttonSize = 60;
+    const availableWidth = pickerRect.width - (padding * 2);
+
+    let currentWidth = 0;
+    colorButtons.forEach((btn, index) => {
+      const btnWidth = buttonSize + (index > 0 ? gap : 0);
+
+      if (currentWidth + btnWidth <= availableWidth) {
+        btn.style.display = 'block';
+        currentWidth += btnWidth;
+      } else {
+        btn.style.display = 'none';
+      }
+    });
+  } else {
+    // Landscape: vertical layout
+    const padding = 20;
+    const gap = 20;
+    const buttonSize = 80;
+    const availableHeight = pickerRect.height - (padding * 2);
+
+    let currentHeight = 0;
+    colorButtons.forEach((btn, index) => {
+      const btnHeight = buttonSize + (index > 0 ? gap : 0);
+
+      if (currentHeight + btnHeight <= availableHeight) {
+        btn.style.display = 'block';
+        currentHeight += btnHeight;
+      } else {
+        btn.style.display = 'none';
+      }
+    });
+  }
+}
+
+// Update on load and resize
+window.addEventListener('resize', updateVisibleButtons);
+window.addEventListener('orientationchange', updateVisibleButtons);
+// Run after initial layout
+setTimeout(updateVisibleButtons, 100);
 
 // Drawing functions
 function startDrawing(e) {
@@ -120,7 +172,6 @@ const trashButton = document.getElementById('trashButton');
 let isDragging = false;
 let savedCanvas = null;
 let initialButtonY = 0;
-let buttonStartY = 0;
 let dragOffsetY = 0;
 
 // Create clear line indicator

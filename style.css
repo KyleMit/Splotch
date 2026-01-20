@@ -36,6 +36,8 @@ body {
   z-index: 1001;
   flex-shrink: 0;
   position: relative;
+  overflow: hidden;
+  flex-wrap: nowrap;
 }
 
 .color-btn {
@@ -168,16 +170,21 @@ body {
 @media (orientation: portrait) {
   .color-picker {
     flex-direction: row;
+    justify-content: center;
     width: 100%;
     height: auto;
     padding: 10px;
     gap: 10px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow-x: hidden;
+    overflow-y: visible;
+    flex-wrap: nowrap;
   }
 
   .color-btn {
     width: 60px;
     height: 60px;
+    flex-shrink: 0;
   }
 
   .app-container {
