@@ -107,23 +107,37 @@ function updateVisibleButtons() {
       }
     });
   } else {
-    // Landscape: vertical layout
-    const padding = 20;
-    const gap = 20;
-    const buttonSize = 80;
+    // Landscape: 1 or 2-column grid layout depending on available height
+    const padding = 12;
+    const gap = 12;
+    const buttonSize = 60;
     const availableHeight = pickerRect.height - (padding * 2);
 
-    let currentHeight = 0;
-    colorButtons.forEach((btn, index) => {
-      const btnHeight = buttonSize + (index > 0 ? gap : 0);
+    // Calculate how many buttons can fit vertically
+    const totalButtons = colorButtons.length;
+    const heightNeededFor1Column = (buttonSize * totalButtons) + (gap * (totalButtons - 1));
 
-      if (currentHeight + btnHeight <= availableHeight) {
+    // Use 1 column if all buttons fit, otherwise use 2 columns
+    if (heightNeededFor1Column <= availableHeight) {
+      // 1 column - all buttons fit
+      colorPicker.style.gridTemplateColumns = '1fr';
+      colorButtons.forEach(btn => {
         btn.style.display = 'block';
-        currentHeight += btnHeight;
-      } else {
-        btn.style.display = 'none';
-      }
-    });
+      });
+    } else {
+      // 2 columns - calculate how many rows fit
+      colorPicker.style.gridTemplateColumns = 'repeat(2, 1fr)';
+      const numRows = Math.floor((availableHeight + gap) / (buttonSize + gap));
+      const maxButtons = numRows * 2;
+
+      colorButtons.forEach((btn, index) => {
+        if (index < maxButtons) {
+          btn.style.display = 'block';
+        } else {
+          btn.style.display = 'none';
+        }
+      });
+    }
   }
 }
 
