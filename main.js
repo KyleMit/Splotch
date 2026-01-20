@@ -69,10 +69,17 @@ const colorPicker = document.querySelector('.color-picker');
 currentColor = colorButtons[0].dataset.color;
 
 colorButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
+  // Use pointerup instead of click for better stylus/touch support
+  btn.addEventListener('pointerup', (e) => {
     colorButtons.forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     currentColor = btn.dataset.color;
+    e.stopPropagation();
+  });
+
+  // Prevent pointer events from being captured by the canvas
+  btn.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
   });
 });
 
@@ -138,6 +145,9 @@ function startDrawing(e) {
   ctx.moveTo(lastX, lastY);
 
   playDrawSound();
+
+  // Capture pointer to ensure smooth drawing
+  canvas.setPointerCapture(e.pointerId);
 }
 
 function draw(e) {
@@ -158,9 +168,20 @@ function draw(e) {
   playDrawSound();
 }
 
-function stopDrawing() {
+function stopDrawing(e) {
+  if (!isDrawing) return;
+
   isDrawing = false;
   ctx.beginPath();
+
+  // Release pointer capture
+  if (e && e.pointerId !== undefined) {
+    try {
+      canvas.releasePointerCapture(e.pointerId);
+    } catch (err) {
+      // Ignore errors if pointer capture wasn't set
+    }
+  }
 }
 
 // Pointer events for drawing
