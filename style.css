@@ -116,6 +116,12 @@ body {
   transition: none;
 }
 
+.trash-button.delete-ready {
+  background: linear-gradient(135deg, #ff3838, #d63031);
+  transform: scale(1.1);
+  box-shadow: -6px 6px 40px rgba(255, 56, 56, 0.6);
+}
+
 .trash-icon {
   width: 50px;
   height: 50px;
@@ -139,6 +145,23 @@ body {
   display: none;
   z-index: 999;
   transform: translateY(-10px);
+}
+
+/* Threshold line - shows delete zone */
+.threshold-line {
+  position: fixed;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(to right,
+    transparent 0%,
+    rgba(255, 56, 56, 0.4) 20%,
+    rgba(255, 56, 56, 0.6) 50%,
+    rgba(255, 56, 56, 0.4) 80%,
+    transparent 100%);
+  pointer-events: none;
+  display: none;
+  z-index: 998;
 }
 
 /* Responsive adjustments for portrait mode */

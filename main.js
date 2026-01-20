@@ -128,6 +128,11 @@ const clearLine = document.createElement('div');
 clearLine.className = 'clear-line';
 document.body.appendChild(clearLine);
 
+// Create delete threshold indicator
+const thresholdLine = document.createElement('div');
+thresholdLine.className = 'threshold-line';
+document.body.appendChild(thresholdLine);
+
 function startTrashDrag(e) {
   isDragging = true;
   trashButton.classList.add('dragging');
@@ -143,8 +148,10 @@ function startTrashDrag(e) {
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   dragOffsetY = clientY - rect.top;
 
-  // Show clear line
+  // Show clear line and threshold indicator
   clearLine.style.display = 'block';
+  thresholdLine.style.display = 'block';
+  thresholdLine.style.top = `${window.innerHeight * 0.85}px`;
 
   e.preventDefault();
   e.stopPropagation();
@@ -155,6 +162,18 @@ function dragTrash(e) {
 
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   const newY = clientY - dragOffsetY;
+
+  // Check if past delete threshold
+  const screenHeight = window.innerHeight;
+  const bottomThreshold = screenHeight * 0.85;
+  const isPastThreshold = clientY >= bottomThreshold;
+
+  // Visual feedback when past threshold
+  if (isPastThreshold) {
+    trashButton.classList.add('delete-ready');
+  } else {
+    trashButton.classList.remove('delete-ready');
+  }
 
   // Only allow dragging downward
   if (newY > initialButtonY) {
@@ -187,13 +206,19 @@ function stopTrashDrag(e) {
 
   isDragging = false;
   trashButton.classList.remove('dragging');
+  trashButton.classList.remove('delete-ready');
 
-  // Hide clear line
+  // Hide clear line and threshold indicator
   clearLine.style.display = 'none';
+  thresholdLine.style.display = 'none';
 
   const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
   const screenHeight = window.innerHeight;
   const bottomThreshold = screenHeight * 0.85; // Bottom 15%
+
+  // Get the correct initial position (check if portrait or landscape)
+  const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+  const initialTop = isPortrait ? '100px' : '20px';
 
   if (clientY >= bottomThreshold) {
     // Clear confirmed - clear the entire canvas
@@ -204,17 +229,21 @@ function stopTrashDrag(e) {
     if (soundEnabled && pencilSounds.playing()) {
       pencilSounds.stop();
     }
+
+    // Instantly reset button position (no animation)
+    trashButton.style.transition = 'none';
+    trashButton.style.top = initialTop;
   } else {
     // Restore canvas
     if (savedCanvas) {
       ctx.putImageData(savedCanvas, 0, 0);
       savedCanvas = null;
     }
-  }
 
-  // Animate button back to original position
-  trashButton.style.transition = 'top 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
-  trashButton.style.top = '100px'; // sync with .trash-button state
+    // Bounce back with animation
+    trashButton.style.transition = 'top 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    trashButton.style.top = initialTop;
+  }
 
   e.preventDefault();
   e.stopPropagation();
