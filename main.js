@@ -71,6 +71,16 @@ currentColor = colorButtons[0].dataset.color;
 // Prevent color picker area from interfering with drawing
 colorPicker.addEventListener('pointerdown', (e) => {
   isDrawing = false;
+
+  // Release any captured pointers on canvas (for Apple Pencil compatibility)
+  try {
+    if (canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) {
+      canvas.releasePointerCapture(e.pointerId);
+    }
+  } catch (err) {
+    // Ignore errors
+  }
+
   e.stopPropagation();
 });
 
@@ -86,8 +96,18 @@ colorButtons.forEach(btn => {
     btn.classList.add('active');
     currentColor = btn.dataset.color;
 
-    // Force stop any drawing state
+    // Force stop any drawing state and reset path
     isDrawing = false;
+    ctx.beginPath();
+
+    // Release any captured pointers (for Apple Pencil)
+    try {
+      if (canvas.hasPointerCapture && e.pointerId !== undefined && canvas.hasPointerCapture(e.pointerId)) {
+        canvas.releasePointerCapture(e.pointerId);
+      }
+    } catch (err) {
+      // Ignore errors
+    }
 
     e.preventDefault();
     e.stopPropagation();
@@ -95,8 +115,18 @@ colorButtons.forEach(btn => {
 
   // Prevent pointer events from being captured by the canvas
   btn.addEventListener('pointerdown', (e) => {
-    // Force stop any drawing state
+    // Force stop any drawing state and reset path
     isDrawing = false;
+    ctx.beginPath();
+
+    // Release any captured pointers (for Apple Pencil)
+    try {
+      if (canvas.hasPointerCapture && e.pointerId !== undefined && canvas.hasPointerCapture(e.pointerId)) {
+        canvas.releasePointerCapture(e.pointerId);
+      }
+    } catch (err) {
+      // Ignore errors
+    }
 
     e.preventDefault();
     e.stopPropagation();
@@ -105,6 +135,7 @@ colorButtons.forEach(btn => {
   // Handle pointer cancel
   btn.addEventListener('pointercancel', (e) => {
     isDrawing = false;
+    ctx.beginPath();
     e.stopPropagation();
   });
 });
