@@ -56,6 +56,29 @@ You need to add a pencil drawing sound file:
 
 See `public/sounds/README.md` for detailed instructions on creating/finding audio files.
 
+## Installing as a PWA
+
+### iOS (iPhone/iPad)
+
+1. Open the app in Safari
+2. Tap the Share button (square with arrow pointing up)
+3. Scroll down and tap "Add to Home Screen"
+4. Tap "Add" in the top right corner
+5. The app will appear on your home screen with the Splotch icon
+6. Tap the icon to launch in fullscreen mode
+
+### Android
+
+1. Open the app in Chrome
+2. Tap the menu (three dots)
+3. Tap "Install app" or "Add to Home screen"
+4. Follow the prompts to install
+
+### Desktop (Chrome/Edge)
+
+1. Look for the install icon in the address bar
+2. Click it and follow the prompts
+
 ## Deployment
 
 ### Netlify
@@ -138,5 +161,5 @@ Built for toddlers who love to create! 🎨✨
 * [ ] Add pencil sound
 * [ ] Add gradient picker option
 * [ ] Nudge trash can left
-* [ ] Make sure installable
+* [ ] Make sure [installable](https://www.pwabuilder.com/reportcard?site=https://splotchy.netlify.app/)
 * [ ] Add background "color booking" style picker
