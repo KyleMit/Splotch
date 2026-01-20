@@ -30,12 +30,10 @@ resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
 // Drawing state
-let isDrawing = false;
 let currentColor = ''; // Will be set from first color button
-let lastX = 0;
-let lastY = 0;
 let lastColorChangeTime = 0; // Track when color was last changed
 let activePointerIds = new Set(); // Track all active pointer IDs
+let activePointers = new Map(); // Track each pointer's state: { x, y, isDrawing }
 
 // Sound setup
 let soundEnabled = true;
@@ -72,8 +70,10 @@ currentColor = colorButtons[0].dataset.color;
 
 // Helper function to force release all pointer captures
 function releaseAllPointers() {
-  isDrawing = false;
   ctx.beginPath();
+
+  // Clear all active pointers
+  activePointers.clear();
 
   // Try to release all tracked pointer IDs
   activePointerIds.forEach(pointerId => {
@@ -206,21 +206,26 @@ function startDrawing(e) {
     return;
   }
 
-  isDrawing = true;
   const rect = canvas.getBoundingClientRect();
-  lastX = e.clientX - rect.left;
-  lastY = e.clientY - rect.top;
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  // Track this pointer's state
+  if (e.pointerId !== undefined) {
+    activePointers.set(e.pointerId, {
+      x: x,
+      y: y,
+      isDrawing: true,
+      color: currentColor
+    });
+    activePointerIds.add(e.pointerId);
+  }
 
   ctx.strokeStyle = currentColor;
   ctx.beginPath();
-  ctx.moveTo(lastX, lastY);
+  ctx.moveTo(x, y);
 
   playDrawSound();
-
-  // Track this pointer ID
-  if (e.pointerId !== undefined) {
-    activePointerIds.add(e.pointerId);
-  }
 
   // Don't use pointer capture with Apple Pencil - it causes issues
   if (e.pointerType !== 'pen') {
@@ -235,7 +240,9 @@ function startDrawing(e) {
 }
 
 function draw(e) {
-  if (!isDrawing) return;
+  // Check if this pointer is actively drawing
+  const pointerState = activePointers.get(e.pointerId);
+  if (!pointerState || !pointerState.isDrawing) return;
 
   e.preventDefault();
 
@@ -243,29 +250,34 @@ function draw(e) {
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
 
+  // Use the color from when this pointer started drawing
+  ctx.strokeStyle = pointerState.color;
+  ctx.beginPath();
+  ctx.moveTo(pointerState.x, pointerState.y);
   ctx.lineTo(x, y);
   ctx.stroke();
 
-  lastX = x;
-  lastY = y;
+  // Update this pointer's last position
+  pointerState.x = x;
+  pointerState.y = y;
 
   playDrawSound();
 }
 
 function stopDrawing(e) {
-  if (!isDrawing) return;
+  if (!e || e.pointerId === undefined) return;
 
-  isDrawing = false;
+  // Remove this pointer from active tracking
+  activePointers.delete(e.pointerId);
+  activePointerIds.delete(e.pointerId);
+
   ctx.beginPath();
 
-  // Release pointer capture and remove from tracking
-  if (e && e.pointerId !== undefined) {
-    activePointerIds.delete(e.pointerId);
-    try {
-      canvas.releasePointerCapture(e.pointerId);
-    } catch (err) {
-      // Ignore errors if pointer capture wasn't set
-    }
+  // Release pointer capture
+  try {
+    canvas.releasePointerCapture(e.pointerId);
+  } catch (err) {
+    // Ignore errors if pointer capture wasn't set
   }
 }
 
@@ -300,7 +312,7 @@ document.body.appendChild(pageTurnOverlay);
 
 function startTrashDrag(e) {
   isDragging = true;
-  isDrawing = false; // Stop any drawing
+  releaseAllPointers(); // Stop any drawing
   trashButton.classList.add('dragging');
 
   // Save current canvas state
