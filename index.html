@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Splotch - Drawing for Kids</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Color Picker -->
+    <div class="color-picker">
+      <button class="color-btn active" data-color="#FF6B6B" style="background-color: #FF6B6B;" aria-label="Red"></button>
+      <button class="color-btn" data-color="#4ECDC4" style="background-color: #4ECDC4;" aria-label="Cyan"></button>
+      <button class="color-btn" data-color="#FFE66D" style="background-color: #FFE66D;" aria-label="Yellow"></button>
+      <button class="color-btn" data-color="#95E1D3" style="background-color: #95E1D3;" aria-label="Mint"></button>
+      <button class="color-btn" data-color="#F38181" style="background-color: #F38181;" aria-label="Pink"></button>
+      <button class="color-btn" data-color="#AA96DA" style="background-color: #AA96DA;" aria-label="Purple"></button>
+      <button class="color-btn" data-color="#2D3561" style="background-color: #2D3561;" aria-label="Navy"></button>
+    </div>
+
+    <!-- Drawing Canvas -->
+    <div class="canvas-container">
+      <canvas id="drawingCanvas"></canvas>
+    </div>
+
+    <!-- Trash Can Slider -->
+    <div class="trash-container">
+      <div class="trash-slider" id="trashSlider">
+        <div class="trash-icon">🗑️</div>
+        <div class="trash-text">Slide to Clear</div>
+      </div>
+    </div>
+
+    <!-- Sound Toggle (for parents) -->
+    <button class="sound-toggle" id="soundToggle" aria-label="Toggle sound">
+      <span class="sound-on">🔊</span>
+      <span class="sound-off" style="display: none;">🔇</span>
+    </button>
+  </div>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>

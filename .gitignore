@@ -137,3 +137,10 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# PWA
+dev-dist/
+sw.js
+sw.js.map
+workbox-*.js
+workbox-*.js.map
