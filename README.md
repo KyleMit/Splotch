@@ -13,6 +13,18 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 * **Wake Lock** - Screen stays on while drawing
 * **Responsive** - Works in both landscape and portrait orientations
 
+## UI Elements
+
+* **Color Palette** - Container bar holding all color swatches
+* **Color Swatch** - Individual circular color selection button
+* **Selection Ring** - Colored ring indicator around the active color swatch
+* **Drawing Canvas** - Main touch-responsive drawing surface
+* **Clear Button** - Floating trash button for clearing the canvas
+* **Clear Preview Line** - Visual indicator showing where canvas will be cleared during drag
+* **Clear Accept Zone** - Bottom 15% of screen that turns red; drop Clear Button here to confirm
+* **Page Turn Overlay** - White overlay animation that sweeps across when clearing
+* **Version Badge** - Timestamp display in bottom right (toggle with 5 taps)
+
 ## Tech Stack
 
 * **Vite** - Fast build tool and dev server

@@ -1,5 +1,5 @@
 import { Howl } from 'howler';
-import { initVersionNumber } from './version.js';
+import { initVersionBadge } from './version.js';
 
 // Canvas setup
 const canvas = document.getElementById('drawingCanvas');
@@ -62,14 +62,14 @@ function playDrawSound() {
   pencilSounds.play(randomSound);
 }
 
-// Color picker
-const colorButtons = document.querySelectorAll('.color-btn');
-const colorPicker = document.querySelector('.color-picker');
+// Color Palette
+const colorSwatches = document.querySelectorAll('.color-swatch');
+const colorPalette = document.querySelector('.color-palette');
 
-// Set initial color from first button
-currentColor = colorButtons[0].dataset.color;
-// Set initial active button ring color
-colorButtons[0].style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${currentColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
+// Set initial color from first swatch
+currentColor = colorSwatches[0].dataset.color;
+// Set initial Selection Ring color
+colorSwatches[0].style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${currentColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
 
 // Helper function to force release all pointer captures
 function releaseAllPointers() {
@@ -92,30 +92,29 @@ function releaseAllPointers() {
   activePointerIds.clear();
 }
 
-// Prevent color picker area from interfering with drawing
-colorPicker.addEventListener('pointerdown', (e) => {
+// Prevent Color Palette from interfering with drawing
+colorPalette.addEventListener('pointerdown', (e) => {
   releaseAllPointers();
   lastColorChangeTime = Date.now();
   e.preventDefault();
   e.stopPropagation();
 });
 
-colorPicker.addEventListener('pointerup', (e) => {
-  isDrawing = false;
+colorPalette.addEventListener('pointerup', (e) => {
   e.stopPropagation();
 });
 
-colorButtons.forEach(btn => {
+colorSwatches.forEach(btn => {
   // Use pointerup instead of click for better stylus/touch support
   btn.addEventListener('pointerup', (e) => {
-    colorButtons.forEach(b => {
+    colorSwatches.forEach(b => {
       b.classList.remove('active');
-      b.style.boxShadow = ''; // Clear custom box shadow
+      b.style.boxShadow = ''; // Clear Selection Ring
     });
     btn.classList.add('active');
     currentColor = btn.dataset.color;
 
-    // Set box shadow to match button color
+    // Set Selection Ring to match swatch color
     btn.style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${currentColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
 
     // Release all pointers and reset state
@@ -146,7 +145,7 @@ colorButtons.forEach(btn => {
 // Hide buttons that don't fully fit in the available space
 function updateVisibleButtons() {
   const isPortrait = window.matchMedia('(orientation: portrait)').matches;
-  const pickerRect = colorPicker.getBoundingClientRect();
+  const pickerRect = colorPalette.getBoundingClientRect();
 
   if (isPortrait) {
     // Portrait: horizontal layout
@@ -156,7 +155,7 @@ function updateVisibleButtons() {
     const availableWidth = pickerRect.width - (padding * 2);
 
     let currentWidth = 0;
-    colorButtons.forEach((btn, index) => {
+    colorSwatches.forEach((btn, index) => {
       const btnWidth = buttonSize + (index > 0 ? gap : 0);
 
       if (currentWidth + btnWidth <= availableWidth) {
@@ -174,23 +173,23 @@ function updateVisibleButtons() {
     const availableHeight = pickerRect.height - (padding * 2);
 
     // Calculate how many buttons can fit vertically
-    const totalButtons = colorButtons.length;
+    const totalButtons = colorSwatches.length;
     const heightNeededFor1Column = (buttonSize * totalButtons) + (gap * (totalButtons - 1));
 
     // Use 1 column if all buttons fit, otherwise use 2 columns
     if (heightNeededFor1Column <= availableHeight) {
       // 1 column - all buttons fit
-      colorPicker.style.gridTemplateColumns = '1fr';
-      colorButtons.forEach(btn => {
+      colorPalette.style.gridTemplateColumns = '1fr';
+      colorSwatches.forEach(btn => {
         btn.style.display = 'block';
       });
     } else {
       // 2 columns - calculate how many rows fit
-      colorPicker.style.gridTemplateColumns = 'repeat(2, 1fr)';
+      colorPalette.style.gridTemplateColumns = 'repeat(2, 1fr)';
       const numRows = Math.floor((availableHeight + gap) / (buttonSize + gap));
       const maxButtons = numRows * 2;
 
-      colorButtons.forEach((btn, index) => {
+      colorSwatches.forEach((btn, index) => {
         if (index < maxButtons) {
           btn.style.display = 'block';
         } else {
@@ -297,77 +296,77 @@ canvas.addEventListener('pointerup', stopDrawing);
 canvas.addEventListener('pointerout', stopDrawing);
 canvas.addEventListener('pointercancel', stopDrawing);
 
-// Trash button drag functionality
-const trashButton = document.getElementById('trashButton');
+// Clear Button drag functionality
+const clearButton = document.getElementById('clearButton');
 let isDragging = false;
 let savedCanvas = null;
 let initialButtonY = 0;
 let dragOffsetY = 0;
 
-// Create clear line indicator
+// Create Clear Preview Line indicator
 const clearLine = document.createElement('div');
 clearLine.className = 'clear-line';
 document.body.appendChild(clearLine);
 
-// Create delete threshold indicator
-const thresholdLine = document.createElement('div');
-thresholdLine.className = 'threshold-line';
-document.body.appendChild(thresholdLine);
+// Create Clear Accept Zone indicator
+const acceptZone = document.createElement('div');
+acceptZone.className = 'clear-accept-zone';
+document.body.appendChild(acceptZone);
 
-// Create page turn overlay
+// Create Page Turn Overlay
 const pageTurnOverlay = document.createElement('div');
 pageTurnOverlay.className = 'page-turn-overlay';
 document.body.appendChild(pageTurnOverlay);
 
-function startTrashDrag(e) {
+function startClearDrag(e) {
   isDragging = true;
   releaseAllPointers(); // Stop any drawing
-  trashButton.classList.add('dragging');
+  clearButton.classList.add('dragging');
 
   // Save current canvas state
   savedCanvas = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
   // Store initial button position and drag offset
-  const rect = trashButton.getBoundingClientRect();
+  const rect = clearButton.getBoundingClientRect();
   initialButtonY = rect.top;
 
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   dragOffsetY = clientY - rect.top;
 
-  // Show clear line and threshold indicator
+  // Show Clear Preview Line and Accept Zone
   clearLine.style.display = 'block';
-  thresholdLine.style.display = 'block';
-  const thresholdY = window.innerHeight * 0.85;
-  const thresholdHeight = window.innerHeight - thresholdY;
-  thresholdLine.style.height = `${thresholdHeight}px`;
-  console.log('Threshold zone height:', thresholdHeight);
+  acceptZone.style.display = 'block';
+  const acceptY = window.innerHeight * 0.85;
+  const acceptHeight = window.innerHeight - acceptY;
+  acceptZone.style.height = `${acceptHeight}px`;
+  console.log('Accept zone height:', acceptHeight);
 
   e.preventDefault();
   e.stopPropagation();
 }
 
-function dragTrash(e) {
+function dragClear(e) {
   if (!isDragging) return;
 
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   const newY = clientY - dragOffsetY;
 
-  // Check if past delete threshold
+  // Check if entered Accept Zone
   const screenHeight = window.innerHeight;
-  const bottomThreshold = screenHeight * 0.85;
-  const isPastThreshold = clientY >= bottomThreshold;
+  const acceptThreshold = screenHeight * 0.85;
+  const isPastThreshold = clientY >= acceptThreshold;
 
-  // Visual feedback when past threshold
+  // Visual feedback when in Accept Zone
   if (isPastThreshold) {
-    trashButton.classList.add('delete-ready');
+    clearButton.classList.add('delete-ready');
   } else {
-    trashButton.classList.remove('delete-ready');
+    clearButton.classList.remove('delete-ready');
   }
 
   // Only allow dragging downward
   if (newY > initialButtonY) {
-    trashButton.style.top = `${newY}px`;
-    trashButton.style.transition = 'none';
+    clearButton.style.top = `${newY}px`;
+    clearButton.style.transition = 'none';
 
     // Get canvas position on screen
     const canvasRect = canvas.getBoundingClientRect();
@@ -391,27 +390,27 @@ function dragTrash(e) {
   e.stopPropagation();
 }
 
-function stopTrashDrag(e) {
+function stopClearDrag(e) {
   if (!isDragging) return;
 
   isDragging = false;
-  trashButton.classList.remove('dragging');
-  trashButton.classList.remove('delete-ready');
+  clearButton.classList.remove('dragging');
+  clearButton.classList.remove('delete-ready');
 
-  // Hide clear line and threshold indicator
+  // Hide Clear Preview Line and Accept Zone
   clearLine.style.display = 'none';
-  thresholdLine.style.display = 'none';
+  acceptZone.style.display = 'none';
 
   const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
   const screenHeight = window.innerHeight;
-  const bottomThreshold = screenHeight * 0.85; // Bottom 15%
+  const acceptThreshold = screenHeight * 0.85; // Bottom 15%
 
   // Get the correct initial position (check if portrait or landscape)
   const isPortrait = window.matchMedia('(orientation: portrait)').matches;
   const initialTop = isPortrait ? '100px' : '20px';
 
-  if (clientY >= bottomThreshold) {
-    // Clear confirmed - trigger page turn animation
+  if (clientY >= acceptThreshold) {
+    // Clear confirmed - trigger Page Turn Overlay animation
     pageTurnOverlay.classList.add('animating');
 
     // Stop any playing sounds
@@ -428,8 +427,8 @@ function stopTrashDrag(e) {
     // Remove animation and reset button after animation completes
     setTimeout(() => {
       pageTurnOverlay.classList.remove('animating');
-      trashButton.style.transition = 'none';
-      trashButton.style.top = initialTop;
+      clearButton.style.transition = 'none';
+      clearButton.style.top = initialTop;
     }, 600);
   } else {
     // Restore canvas
@@ -439,18 +438,18 @@ function stopTrashDrag(e) {
     }
 
     // Bounce back with animation
-    trashButton.style.transition = 'top 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    trashButton.style.top = initialTop;
+    clearButton.style.transition = 'top 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    clearButton.style.top = initialTop;
   }
 
   e.preventDefault();
   e.stopPropagation();
 }
 
-trashButton.addEventListener('pointerdown', startTrashDrag);
-document.addEventListener('pointermove', dragTrash);
-document.addEventListener('pointerup', stopTrashDrag);
-document.addEventListener('pointercancel', stopTrashDrag);
+clearButton.addEventListener('pointerdown', startClearDrag);
+document.addEventListener('pointermove', dragClear);
+document.addEventListener('pointerup', stopClearDrag);
+document.addEventListener('pointercancel', stopClearDrag);
 
 // Prevent context menu on long press
 document.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -478,5 +477,5 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Initialize version number display
-initVersionNumber(releaseAllPointers);
+// Initialize Version Badge display
+initVersionBadge(releaseAllPointers);

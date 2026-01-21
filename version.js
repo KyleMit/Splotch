@@ -1,10 +1,10 @@
-// Version number display and toggle functionality
+// Version Badge display and toggle functionality
 
-export function initVersionNumber(releaseAllPointers) {
-  const versionElement = document.getElementById('versionNumber');
+export function initVersionBadge(releaseAllPointers) {
+  const versionElement = document.getElementById('versionBadge');
   const VERSION_VISIBLE_KEY = 'splotch_version_visible';
 
-  // Initialize version display
+  // Initialize Version Badge display
   function initializeVersion() {
     // Set version text (injected by Vite at build time)
     versionElement.textContent = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';

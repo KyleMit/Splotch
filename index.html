@@ -21,14 +21,14 @@
 <body>
   <div class="app-container">
     <!-- Color Picker (Prioritized Order) -->
-    <div class="color-picker">
-      <button class="color-btn active" data-color="#AB71E1" style="background-color: #AB71E1;" aria-label="Purple"></button>
-      <button class="color-btn" data-color="#62A2E9" style="background-color: #62A2E9;" aria-label="Blue"></button>
-      <button class="color-btn" data-color="#8CC864" style="background-color: #8CC864;" aria-label="Green"></button>
-      <button class="color-btn" data-color="#F9D24F" style="background-color: #F9D24F;" aria-label="Yellow"></button>
-      <button class="color-btn" data-color="#F89C45" style="background-color: #F89C45;" aria-label="Orange"></button>
-      <button class="color-btn" data-color="#EC534E" style="background-color: #EC534E;" aria-label="Red"></button>
-      <button class="color-btn" data-color="#0a0b10" style="background-color: #0a0b10;" aria-label="Black"></button>
+    <div class="color-palette">
+      <button class="color-swatch active" data-color="#AB71E1" style="background-color: #AB71E1;" aria-label="Purple"></button>
+      <button class="color-swatch" data-color="#62A2E9" style="background-color: #62A2E9;" aria-label="Blue"></button>
+      <button class="color-swatch" data-color="#8CC864" style="background-color: #8CC864;" aria-label="Green"></button>
+      <button class="color-swatch" data-color="#F9D24F" style="background-color: #F9D24F;" aria-label="Yellow"></button>
+      <button class="color-swatch" data-color="#F89C45" style="background-color: #F89C45;" aria-label="Orange"></button>
+      <button class="color-swatch" data-color="#EC534E" style="background-color: #EC534E;" aria-label="Red"></button>
+      <button class="color-swatch" data-color="#0a0b10" style="background-color: #0a0b10;" aria-label="Black"></button>
     </div>
 
     <!-- Drawing Canvas -->
@@ -38,12 +38,12 @@
   </div>
 
   <!-- Floating Trash Button -->
-  <button class="trash-button" id="trashButton" aria-label="Clear drawing">
-    <img src="/trash-icon.svg" alt="Clear" class="trash-icon" />
+  <button class="clear-button" id="clearButton" aria-label="Clear drawing">
+    <img src="/trash-icon.svg" alt="Clear" class="clear-icon" />
   </button>
 
   <!-- Version Number (togglable) -->
-  <div id="versionNumber" class="version-number"></div>
+  <div id="versionBadge" class="version-badge"></div>
 
   <script type="module" src="/main.js"></script>
 </body>

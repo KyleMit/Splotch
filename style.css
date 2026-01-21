@@ -24,8 +24,8 @@ body {
   gap: 0;
 }
 
-/* Color Picker */
-.color-picker {
+/* Color Palette */
+.color-palette {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   justify-items: center;
@@ -41,7 +41,7 @@ body {
   touch-action: manipulation; /* Prevent iOS gesture delays */
 }
 
-.color-btn {
+.color-swatch {
   width: 60px;
   height: 60px;
   border: 4px solid transparent;
@@ -52,13 +52,13 @@ body {
   touch-action: manipulation; /* Prevent iOS gesture delays */
 }
 
-.color-btn:active {
+.color-swatch:active {
   transform: scale(0.9);
 }
 
-.color-btn.active {
+.color-swatch.active {
   border-color: white;
-  /* Box shadow is set dynamically via JavaScript to match button color */
+  /* Selection Ring is set dynamically via JavaScript to match swatch color */
 }
 
 /* Canvas Container */
@@ -99,8 +99,8 @@ body {
   height: 100%;
 }
 
-/* Floating Trash Button */
-.trash-button {
+/* Clear Button */
+.clear-button {
   position: fixed;
   top: 20px;
   right: -10px;
@@ -119,29 +119,29 @@ body {
   transition: box-shadow 0.2s ease;
 }
 
-.trash-button:active {
+.clear-button:active {
   cursor: grabbing;
 }
 
-.trash-button.dragging {
+.clear-button.dragging {
   box-shadow: -6px 6px 30px rgba(0, 0, 0, 0.4);
   transition: none;
 }
 
-.trash-button.delete-ready {
+.clear-button.delete-ready {
   background: linear-gradient(135deg, #ff3838, #d63031);
   transform: scale(1.1);
   box-shadow: -6px 6px 40px rgba(255, 56, 56, 0.6);
 }
 
-.trash-icon {
-  width: 38px;
-  height: 38px;
+.clear-icon {
+  width: 32px;
+  height: 32px;
   pointer-events: none;
   margin-right: 2px;
 }
 
-/* Clear line indicator - page turn effect */
+/* Clear Preview Line */
 .clear-line {
   position: fixed;
   left: 0;
@@ -160,8 +160,8 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* Threshold zone - shows delete zone */
-.threshold-line {
+/* Clear Accept Zone */
+.clear-accept-zone {
   position: fixed;
   left: 0;
   width: 100%;
@@ -173,7 +173,7 @@ body {
   z-index: 998;
 }
 
-/* Page turn animation overlay */
+/* Page Turn Overlay */
 .page-turn-overlay {
   position: fixed;
   top: 0;
@@ -203,8 +203,8 @@ body {
   }
 }
 
-/* Version Number */
-.version-number {
+/* Version Badge */
+.version-badge {
   position: fixed;
   bottom: 8px;
   right: 8px;
@@ -224,13 +224,13 @@ body {
   touch-action: manipulation;
 }
 
-.version-number.hidden {
+.version-badge.hidden {
   color: rgba(0, 0, 0, 0);
 }
 
 /* Responsive adjustments for portrait mode */
 @media (orientation: portrait) {
-  .color-picker {
+  .color-palette {
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -244,7 +244,7 @@ body {
     flex-wrap: nowrap;
   }
 
-  .color-btn {
+  .color-swatch {
     width: 60px;
     height: 60px;
     flex-shrink: 0;
@@ -262,13 +262,13 @@ body {
     width: 100%;
   }
 
-  .trash-button {
+  .clear-button {
     top: 90px;
     width: 60px;
     height: 60px;
   }
 
-  .trash-icon {
+  .clear-icon {
     width: 32px;
     height: 32px;
     margin-right: 2px;
