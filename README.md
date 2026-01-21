@@ -5,7 +5,8 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 ## Features
 
 * **Simple Drawing Interface** - Just touch and draw with your finger or Apple Pencil
-* **Kid-Friendly Color Picker** - 7 vibrant colors (purple, blue, green, yellow, orange, red, black)
+* **Kid-Friendly Color Picker** - 7 vibrant colors (purple, blue, green, yellow, orange, red, black) plus custom color picker
+* **Custom Color Picker** - Tap the rainbow gradient button to explore 88+ curated colors in a honeycomb grid
 * **Interactive Clear Function** - Drag the trash button down to clear with visual preview
 * **Drawing Sounds** - Subtle pencil scratching sounds as you draw
 * **PWA Support** - Install to home screen for a full-screen app experience
@@ -16,13 +17,17 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 ## UI Elements
 
 * **Color Palette** - Container bar holding all color swatches
-* **Color Swatch** - Individual circular color selection button
-* **Selection Ring** - Colored ring indicator around the active color swatch
+  * **Color Swatch** - Individual circular color selection button
+    * **Selection Ring** - Colored ring indicator around the active color swatch
+* **Gradient Swatch** - Last color button with rainbow gradient and + symbol; opens custom color picker
+  * **Color Picker Overlay** - Full-screen modal with blurred backdrop for selecting custom colors
+  * **Hexagon Grid** - Honeycomb pattern of color tiles in the color picker
+  * **Color Hexagon** - Individual hexagon-shaped color tile; drag across to explore, lift to select
 * **Drawing Canvas** - Main touch-responsive drawing surface
 * **Clear Button** - Floating trash button for clearing the canvas
-* **Clear Preview Line** - Visual indicator showing where canvas will be cleared during drag
-* **Clear Accept Zone** - Bottom 15% of screen that turns red; drop Clear Button here to confirm
-* **Page Turn Overlay** - White overlay animation that sweeps across when clearing
+  * **Clear Preview Line** - Visual indicator showing where canvas will be cleared during drag
+  * **Clear Accept Zone** - Bottom 15% of screen that turns red; drop Clear Button here to confirm
+  * **Page Turn Overlay** - White overlay animation that sweeps across when clearing
 * **Version Badge** - Timestamp display in bottom right (toggle with 5 taps)
 
 ## Tech Stack
@@ -177,10 +182,13 @@ Built for toddlers who love to create! 🎨✨
 ## TODO
 
 * [ ] Add pencil sound
-* [ ] Add gradient picker option
-* [ ] Nudge trash can left
+* [x] Add gradient picker option
+  * [x] interlace hexagons
+  * [ ] get rid of white ring
+  * [x] make sure it's always visible
+* [ ] Add "color book" style picker with background overlay
 * [ ] Make sure [installable](https://www.pwabuilder.com/reportcard?site=https://splotchy.netlify.app/)
-* [ ] Add background "color booking" style picker
 * [ ] Add PWA help guide for parents
   * [ ] Boring grey parent logo in the bottom
-* [x] Add debug version number
+* [ ] Make clear line a crinkle
+* [ ] Make sure we can refresh PWA

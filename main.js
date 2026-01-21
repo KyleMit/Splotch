@@ -1,6 +1,39 @@
 import { Howl } from 'howler';
 import { initVersionBadge } from './version.js';
 
+// Curated color palette for hexagon grid (88 colors)
+const CURATED_COLORS = [
+  // Reds
+  '#FF6B6B', '#EE5A6F', '#E63946', '#D62828', '#C1121F', '#9D0208', '#6A040F',
+  '#FF8FA3', '#FFB3C1', '#FF758F', '#E85D75',
+  // Oranges
+  '#FF9E00', '#FF8C42', '#FB8500', '#F77F00', '#D36135', '#C34A36',
+  '#FFAC81', '#FFA07A', '#FF9770', '#FF8552',
+  // Yellows
+  '#FFD60A', '#FFC300', '#FFB703', '#FFAA00', '#F9C74F', '#F9844A',
+  '#FFDD4A', '#FFEA00', '#FFE66D', '#FFD23F',
+  // Greens
+  '#06D6A0', '#10B981', '#00C896', '#00B894', '#2ECC71', '#27AE60',
+  '#8FD694', '#73E2A7', '#52B788', '#40916C', '#2D6A4F',
+  '#AED581', '#9CCC65', '#7CB342',
+  // Blues
+  '#00B4D8', '#0096C7', '#0077B6', '#023E8A', '#03045E',
+  '#4CC9F0', '#4EA8DE', '#5390D9', '#5E60CE', '#6A4C93',
+  '#90CAF9', '#64B5F6', '#42A5F5', '#2196F3', '#1E88E5',
+  // Purples
+  '#B565D8', '#9D4EDD', '#9B59B6', '#8E44AD', '#7209B7', '#5A189A',
+  '#C77DFF', '#D8A7FF', '#E0AAFF', '#BA8AFF',
+  // Pinks
+  '#FF006E', '#E91E63', '#D81B60', '#C2185B',
+  '#FF4081', '#F06292', '#EC407A', '#E91E63',
+  // Browns & Neutrals
+  '#8D6E63', '#795548', '#6D4C41', '#5D4037',
+  '#A1887F', '#BCAAA4',
+  // Grays & Blacks
+  '#546E7A', '#607D8B', '#455A64', '#37474F', '#263238',
+  '#78909C', '#90A4AE', '#B0BEC5'
+];
+
 // Canvas setup
 const canvas = document.getElementById('drawingCanvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: false });
@@ -71,6 +104,48 @@ currentColor = colorSwatches[0].dataset.color;
 // Set initial Selection Ring color
 colorSwatches[0].style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${currentColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
 
+// Custom color picker state (defined early for use in event handlers)
+let customColor = '#AB71E1'; // Default purple
+let customColorSelected = false; // Track if user chose a custom color
+let currentHoveredHex = null; // Track currently hovered hexagon
+let colorPickerOverlay, colorPickerContainer, hexagonGrid; // Will be initialized later
+
+// Color picker functions (defined early for use in event handlers)
+function openColorPicker() {
+  if (colorPickerOverlay) {
+    colorPickerOverlay.classList.add('visible');
+    releaseAllPointers(); // Stop any drawing
+    lastColorChangeTime = Date.now();
+  }
+}
+
+function closeColorPicker(selectedColor = null) {
+  if (colorPickerOverlay) {
+    colorPickerOverlay.classList.remove('visible');
+
+    // Clear any hover state
+    if (currentHoveredHex) {
+      currentHoveredHex.classList.remove('hover');
+      currentHoveredHex = null;
+    }
+
+    // Update custom color if one was selected
+    if (selectedColor) {
+      customColor = selectedColor;
+      customColorSelected = true;
+      currentColor = selectedColor;
+      updateGradientSwatchRing();
+    }
+  }
+}
+
+function updateGradientSwatchRing() {
+  const gradientSwatch = document.querySelector('.gradient-swatch');
+  if (gradientSwatch && gradientSwatch.classList.contains('active')) {
+    gradientSwatch.style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${customColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
+  }
+}
+
 // Helper function to force release all pointer captures
 function releaseAllPointers() {
   ctx.beginPath();
@@ -107,15 +182,33 @@ colorPalette.addEventListener('pointerup', (e) => {
 colorSwatches.forEach(btn => {
   // Use pointerup instead of click for better stylus/touch support
   btn.addEventListener('pointerup', (e) => {
-    colorSwatches.forEach(b => {
-      b.classList.remove('active');
-      b.style.boxShadow = ''; // Clear Selection Ring
-    });
-    btn.classList.add('active');
-    currentColor = btn.dataset.color;
+    // Check if this is the gradient swatch
+    if (btn.classList.contains('gradient-swatch')) {
+      // Always make active and open picker
+      colorSwatches.forEach(b => {
+        b.classList.remove('active');
+        b.style.boxShadow = ''; // Clear Selection Ring
+      });
+      btn.classList.add('active');
 
-    // Set Selection Ring to match swatch color
-    btn.style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${currentColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
+      if (customColorSelected) {
+        currentColor = customColor;
+        updateGradientSwatchRing();
+      }
+
+      openColorPicker();
+    } else {
+      // Regular color swatch
+      colorSwatches.forEach(b => {
+        b.classList.remove('active');
+        b.style.boxShadow = ''; // Clear Selection Ring
+      });
+      btn.classList.add('active');
+      currentColor = btn.dataset.color;
+
+      // Set Selection Ring to match swatch color
+      btn.style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${currentColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
+    }
 
     // Release all pointers and reset state
     releaseAllPointers();
@@ -146,25 +239,43 @@ colorSwatches.forEach(btn => {
 function updateVisibleButtons() {
   const isPortrait = window.matchMedia('(orientation: portrait)').matches;
   const pickerRect = colorPalette.getBoundingClientRect();
+  const gradientSwatch = document.querySelector('.gradient-swatch');
 
   if (isPortrait) {
     // Portrait: horizontal layout
     const padding = 10;
-    const gap = 10;
-    const buttonSize = 60;
+    const gap = 8;
+    const buttonSize = 55;
     const availableWidth = pickerRect.width - (padding * 2);
 
+    // Always reserve space for gradient swatch at the end
+    const gradientSwatchWidth = buttonSize + gap;
+    const availableWidthWithoutGradient = availableWidth - gradientSwatchWidth;
+
     let currentWidth = 0;
+    let visibleCount = 0;
+
     colorSwatches.forEach((btn, index) => {
+      // Skip gradient swatch in initial pass
+      if (btn.classList.contains('gradient-swatch')) {
+        return;
+      }
+
       const btnWidth = buttonSize + (index > 0 ? gap : 0);
 
-      if (currentWidth + btnWidth <= availableWidth) {
+      if (currentWidth + btnWidth <= availableWidthWithoutGradient) {
         btn.style.display = 'block';
         currentWidth += btnWidth;
+        visibleCount++;
       } else {
         btn.style.display = 'none';
       }
     });
+
+    // Always show gradient swatch last
+    if (gradientSwatch) {
+      gradientSwatch.style.display = 'block';
+    }
   } else {
     // Landscape: 1 or 2-column grid layout depending on available height
     const padding = 12;
@@ -189,13 +300,17 @@ function updateVisibleButtons() {
       const numRows = Math.floor((availableHeight + gap) / (buttonSize + gap));
       const maxButtons = numRows * 2;
 
-      colorSwatches.forEach((btn, index) => {
-        if (index < maxButtons) {
+      // Always ensure gradient swatch is visible by counting from end
+      let visibleCount = 0;
+      for (let i = colorSwatches.length - 1; i >= 0; i--) {
+        const btn = colorSwatches[i];
+        if (visibleCount < maxButtons) {
           btn.style.display = 'block';
+          visibleCount++;
         } else {
           btn.style.display = 'none';
         }
-      });
+      }
     }
   }
 }
@@ -205,6 +320,79 @@ window.addEventListener('resize', updateVisibleButtons);
 window.addEventListener('orientationchange', updateVisibleButtons);
 // Run after initial layout
 setTimeout(updateVisibleButtons, 100);
+
+// Hexagon generation functions
+function generateHexagonPath(centerX, centerY, size) {
+  const points = [];
+  // Start at 30 degrees (Math.PI/6) for flat-top hexagons
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 3) * i + (Math.PI / 6); // 60 degrees apart, offset by 30
+    const x = centerX + size * Math.cos(angle);
+    const y = centerY + size * Math.sin(angle);
+    points.push(`${x},${y}`);
+  }
+  return `M ${points.join(' L ')} Z`;
+}
+
+function createHexagonGrid(colors, containerWidth, maxHeight) {
+  const hexSize = 26; // Radius of hexagon (distance from center to corner) - slightly smaller
+
+  // For flat-top hexagons
+  const hexWidth = hexSize * Math.sqrt(3); // Flat edge to flat edge
+  const hexHeight = hexSize * 2; // Point to point
+
+  // Tight honeycomb tessellation - hexagons just touching
+  const horizontalSpacing = hexWidth; // Distance between centers in same row (tight)
+  const verticalSpacing = hexHeight * 0.75; // Distance between row centers (3/4 height)
+  const rowOffset = hexWidth / 2; // Odd rows shift by half width for nesting
+
+  // Calculate columns to fit width
+  const columns = Math.max(Math.floor((containerWidth - hexWidth) / horizontalSpacing) + 1, 8);
+
+  // Calculate maximum rows that can fit in the available height
+  const padding = 10;
+  const maxRows = Math.floor((maxHeight - hexHeight - padding * 2) / verticalSpacing) + 1;
+
+  // Limit rows to what can fit
+  const rows = Math.min(maxRows, Math.ceil(colors.length / columns));
+
+  // Limit colors to what we can render
+  const maxColors = rows * columns;
+  const colorsToRender = colors.slice(0, maxColors);
+
+  // Create SVG container with minimal padding
+  const svgWidth = (columns - 1) * horizontalSpacing + hexWidth + rowOffset + 10;
+  const svgHeight = (rows - 1) * verticalSpacing + hexHeight + 10;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', svgWidth);
+  svg.setAttribute('height', svgHeight);
+  svg.style.display = 'block';
+  svg.style.margin = '0 auto';
+
+  let colorIndex = 0;
+  for (let row = 0; row < rows && colorIndex < colorsToRender.length; row++) {
+    for (let col = 0; col < columns && colorIndex < colorsToRender.length; col++) {
+      // Offset odd rows by half the horizontal spacing for interlocking
+      const offsetX = row % 2 === 1 ? rowOffset : 0;
+      const centerX = col * horizontalSpacing + hexWidth / 2 + 5 + offsetX;
+      const centerY = row * verticalSpacing + hexSize + 5;
+
+      const hexPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      hexPath.setAttribute('d', generateHexagonPath(centerX, centerY, hexSize));
+      hexPath.setAttribute('fill', colorsToRender[colorIndex]);
+      hexPath.setAttribute('stroke', 'white');
+      hexPath.setAttribute('stroke-width', '1.5');
+      hexPath.classList.add('hexagon');
+      hexPath.dataset.color = colorsToRender[colorIndex];
+
+      svg.appendChild(hexPath);
+      colorIndex++;
+    }
+  }
+
+  return svg;
+}
 
 // Drawing functions
 function startDrawing(e) {
@@ -317,6 +505,118 @@ document.body.appendChild(acceptZone);
 const pageTurnOverlay = document.createElement('div');
 pageTurnOverlay.className = 'page-turn-overlay';
 document.body.appendChild(pageTurnOverlay);
+
+// Create Color Picker Modal (assign to existing variables)
+colorPickerOverlay = document.createElement('div');
+colorPickerOverlay.className = 'color-picker-overlay';
+
+colorPickerContainer = document.createElement('div');
+colorPickerContainer.className = 'color-picker-container';
+
+hexagonGrid = document.createElement('div');
+hexagonGrid.className = 'hexagon-grid';
+
+// Generate hexagon grid with curated colors
+// Calculate available space based on viewport
+const isPortraitMode = window.matchMedia('(orientation: portrait)').matches;
+const modalMaxHeight = isPortraitMode ? window.innerHeight * 0.75 : window.innerHeight * 0.8;
+const modalMaxWidth = isPortraitMode ? window.innerWidth * 0.95 : window.innerWidth * 0.9;
+
+// Account for container padding (20px) and grid padding (10px) on both sides
+const gridMaxHeight = modalMaxHeight - 60;
+const gridMaxWidth = modalMaxWidth - 60;
+
+const hexagonSVG = createHexagonGrid(CURATED_COLORS, gridMaxWidth, gridMaxHeight);
+hexagonGrid.appendChild(hexagonSVG);
+
+colorPickerContainer.appendChild(hexagonGrid);
+colorPickerOverlay.appendChild(colorPickerContainer);
+document.body.appendChild(colorPickerOverlay);
+
+// Hexagon grid interaction handlers
+let isTrackingHexDrag = false;
+
+hexagonGrid.addEventListener('pointerdown', (e) => {
+  const target = e.target;
+  if (target.classList.contains('hexagon')) {
+    isTrackingHexDrag = true;
+
+    // Clear previous hover
+    if (currentHoveredHex) {
+      currentHoveredHex.classList.remove('hover');
+    }
+
+    // Add hover to current
+    currentHoveredHex = target;
+    target.classList.add('hover');
+
+    e.preventDefault();
+    e.stopPropagation();
+  }
+});
+
+hexagonGrid.addEventListener('pointermove', (e) => {
+  if (!isTrackingHexDrag) return;
+
+  // Find element under pointer
+  const element = document.elementFromPoint(e.clientX, e.clientY);
+
+  if (element && element.classList.contains('hexagon') && element !== currentHoveredHex) {
+    // Clear previous hover
+    if (currentHoveredHex) {
+      currentHoveredHex.classList.remove('hover');
+    }
+
+    // Add hover to new element
+    currentHoveredHex = element;
+    element.classList.add('hover');
+  }
+
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+hexagonGrid.addEventListener('pointerup', (e) => {
+  if (!isTrackingHexDrag) return;
+
+  isTrackingHexDrag = false;
+
+  // Find element under pointer
+  const element = document.elementFromPoint(e.clientX, e.clientY);
+
+  if (element && element.classList.contains('hexagon')) {
+    const selectedColor = element.dataset.color;
+    closeColorPicker(selectedColor);
+  }
+
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+hexagonGrid.addEventListener('pointercancel', (e) => {
+  isTrackingHexDrag = false;
+
+  if (currentHoveredHex) {
+    currentHoveredHex.classList.remove('hover');
+    currentHoveredHex = null;
+  }
+
+  e.stopPropagation();
+});
+
+// Close picker when clicking outside the container
+colorPickerOverlay.addEventListener('pointerdown', (e) => {
+  if (e.target === colorPickerOverlay) {
+    closeColorPicker(); // Close without selecting
+    e.preventDefault();
+    e.stopPropagation();
+  }
+});
+
+// Prevent container clicks from closing
+colorPickerContainer.addEventListener('pointerdown', (e) => {
+  e.stopPropagation();
+});
 
 function startClearDrag(e) {
   isDragging = true;
