@@ -153,17 +153,22 @@ body {
   margin-right: 2px;
 }
 
-/* Clear Preview Line - SVG with rough/torn edge */
+/* Clear Preview Line - Torn edge effect */
 .clear-line {
   position: fixed;
-  left: 0;
-  width: 100%;
-  height: 20px;
+  left: -10%;
+  width: 120%;
+  height: 30px;
+  background: linear-gradient(180deg,
+    rgba(0, 0, 0, 0.08) 0%,
+    rgba(0, 0, 0, 0.04) 40%,
+    rgba(0, 0, 0, 0.01) 70%,
+    transparent 100%);
+  filter: url(#torn-edge);
   pointer-events: none;
   display: none;
   z-index: 999;
-  transform: translateY(-10px);
-  overflow: visible;
+  transform: translateY(-15px);
 }
 
 /* Clear Accept Zone */
