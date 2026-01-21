@@ -68,6 +68,8 @@ const colorPicker = document.querySelector('.color-picker');
 
 // Set initial color from first button
 currentColor = colorButtons[0].dataset.color;
+// Set initial active button ring color
+colorButtons[0].style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${currentColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
 
 // Helper function to force release all pointer captures
 function releaseAllPointers() {
@@ -106,9 +108,15 @@ colorPicker.addEventListener('pointerup', (e) => {
 colorButtons.forEach(btn => {
   // Use pointerup instead of click for better stylus/touch support
   btn.addEventListener('pointerup', (e) => {
-    colorButtons.forEach(b => b.classList.remove('active'));
+    colorButtons.forEach(b => {
+      b.classList.remove('active');
+      b.style.boxShadow = ''; // Clear custom box shadow
+    });
     btn.classList.add('active');
     currentColor = btn.dataset.color;
+
+    // Set box shadow to match button color
+    btn.style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${currentColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
 
     // Release all pointers and reset state
     releaseAllPointers();
