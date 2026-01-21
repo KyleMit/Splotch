@@ -17,6 +17,7 @@ import {
 } from './drawingCanvas.js';
 import { initColorPalette } from './colorPalette.js';
 import { initPWAUpdates } from './pwaUpdate.js';
+import { initOptimizedTextures } from './optimizeTextures.js';
 
 // Canvas setup
 const canvas = document.getElementById('drawingCanvas');
@@ -117,6 +118,9 @@ document.addEventListener('visibilitychange', () => {
 
 // Initialize Version Badge display
 initVersionBadge(releaseAllPointers);
+
+// Initialize Optimized Textures (Pre-render paper grain and torn edge)
+initOptimizedTextures();
 
 // Initialize PWA auto-update system
 initPWAUpdates();

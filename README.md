@@ -219,3 +219,5 @@ Built for toddlers who love to create! 🎨✨
 * [ ] Add PWA help guide for parents
   * [ ] Boring grey parent logo in the bottom
 * [ ] Make sure we can refresh PWA
+* [ ] Fix iOS perf issues when clearing
+* [ ] Fix whatever's going on with DNS / SSL
