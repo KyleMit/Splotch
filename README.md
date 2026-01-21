@@ -5,6 +5,7 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 ## Features
 
 * **Simple Drawing Interface** - Just touch and draw with your finger or Apple Pencil
+* **Paper Texture Canvas** - Subtle grain effect makes it feel like drawing on real paper
 * **Kid-Friendly Color Picker** - 7 vibrant colors (purple, blue, green, yellow, orange, red, black) plus custom color picker
 * **Custom Color Picker** - Tap the rainbow gradient button to explore 88+ curated colors in a honeycomb grid
 * **Interactive Clear Function** - Drag the trash button down to clear with visual preview
@@ -25,7 +26,7 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
   * **Color Hexagon** - Individual hexagon-shaped color tile; drag across to explore, lift to select
 * **Drawing Canvas** - Main touch-responsive drawing surface
 * **Clear Button** - Floating trash button for clearing the canvas
-  * **Clear Preview Line** - Visual indicator showing where canvas will be cleared during drag
+  * **Clear Preview Line** - Torn paper edge visual indicator showing where canvas will be cleared during drag
   * **Clear Accept Zone** - Bottom 15% of screen that turns red; drop Clear Button here to confirm
   * **Page Turn Overlay** - White overlay animation that sweeps across when clearing
 * **Version Badge** - Timestamp display in bottom right (toggle with 5 taps)
@@ -217,7 +218,7 @@ Built for toddlers who love to create! 🎨✨
 * [ ] Make sure [installable](https://www.pwabuilder.com/reportcard?site=https://splotchy.netlify.app/)
 * [ ] Add PWA help guide for parents
   * [ ] Boring grey parent logo in the bottom
-* [ ] Make clear line a crinkle
+* [x] Make clear line a crinkle
 * [ ] Increase clear zone
   * [ ] When cleared, the trash icon should disappear, and then re-appear back on top
   * [ ] When rejected, the trash icon should bounce back

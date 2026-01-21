@@ -96,25 +96,6 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background:
-    radial-gradient(circle at 15% 25%, rgba(0, 0, 0, 0.025) 0%, transparent 3%),
-    radial-gradient(circle at 45% 15%, rgba(0, 0, 0, 0.02) 0%, transparent 2%),
-    radial-gradient(circle at 75% 35%, rgba(0, 0, 0, 0.022) 0%, transparent 3%),
-    radial-gradient(circle at 25% 55%, rgba(0, 0, 0, 0.018) 0%, transparent 2%),
-    radial-gradient(circle at 85% 65%, rgba(0, 0, 0, 0.024) 0%, transparent 3%),
-    radial-gradient(circle at 55% 75%, rgba(0, 0, 0, 0.019) 0%, transparent 2%),
-    radial-gradient(circle at 10% 85%, rgba(0, 0, 0, 0.021) 0%, transparent 3%),
-    radial-gradient(circle at 65% 45%, rgba(0, 0, 0, 0.017) 0%, transparent 2%),
-    radial-gradient(circle at 35% 90%, rgba(0, 0, 0, 0.023) 0%, transparent 3%),
-    radial-gradient(circle at 90% 20%, rgba(0, 0, 0, 0.02) 0%, transparent 2%),
-    radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.016) 0%, transparent 3%),
-    radial-gradient(circle at 20% 70%, rgba(0, 0, 0, 0.019) 0%, transparent 2%),
-    linear-gradient(135deg,
-      #ffffff 0%,
-      #fefefe 25%,
-      #fcfcfc 50%,
-      #fefefe 75%,
-      #ffffff 100%);
   position: relative;
   width: 100%;
   overflow: hidden;
@@ -126,6 +107,8 @@ body {
   touch-action: none;
   width: 100%;
   height: 100%;
+  background: #fcfbf8;
+  filter: url(#paper-grain);
 }
 
 /* Clear Button */
@@ -170,23 +153,17 @@ body {
   margin-right: 2px;
 }
 
-/* Clear Preview Line */
+/* Clear Preview Line - SVG with rough/torn edge */
 .clear-line {
   position: fixed;
   left: 0;
   width: 100%;
   height: 20px;
-  background: linear-gradient(to bottom,
-    rgba(0, 0, 0, 0.2) 0%,
-    rgba(0, 0, 0, 0.4) 30%,
-    rgba(0, 0, 0, 0.3) 50%,
-    rgba(0, 0, 0, 0.15) 80%,
-    rgba(0, 0, 0, 0) 100%);
   pointer-events: none;
   display: none;
   z-index: 999;
   transform: translateY(-10px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  overflow: visible;
 }
 
 /* Clear Accept Zone */

@@ -46,6 +46,16 @@
   <!-- Version Number (togglable) -->
   <div id="versionBadge" class="version-badge"></div>
 
+  <!-- SVG Filter for Paper Texture -->
+  <svg style="position: absolute; width: 0; height: 0;">
+    <defs>
+      <filter id="paper-grain">
+        <feTurbulence type="fractalNoise" baseFrequency="1.5" numOctaves="4" result="noise"/>
+        <feComposite in="SourceGraphic" in2="noise" operator="arithmetic" k1="0.02" k2="0.98" k3="0.02" k4="0"/>
+      </filter>
+    </defs>
+  </svg>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
