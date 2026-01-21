@@ -1,7 +1,15 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Get build timestamp
+function getVersion() {
+  return new Date().toISOString().slice(0, 16).replace('T', ' ');
+}
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(getVersion())
+  },
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',

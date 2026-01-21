@@ -203,6 +203,31 @@ body {
   }
 }
 
+/* Version Number */
+.version-number {
+  position: fixed;
+  bottom: 8px;
+  right: 8px;
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  color: rgba(0, 0, 0, 0.85);
+  pointer-events: auto;
+  z-index: 1002;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  transition: color 0.3s ease;
+  border-radius: 3px;
+  min-width: 20px;
+  min-height: 16px;
+  touch-action: manipulation;
+}
+
+.version-number.hidden {
+  color: rgba(0, 0, 0, 0);
+}
+
 /* Responsive adjustments for portrait mode */
 @media (orientation: portrait) {
   .color-picker {

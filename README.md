@@ -171,4 +171,4 @@ Built for toddlers who love to create! 🎨✨
 * [ ] Add background "color booking" style picker
 * [ ] Add PWA help guide for parents
   * [ ] Boring grey parent logo in the bottom
-* [ ] Add debug version number
+* [x] Add debug version number

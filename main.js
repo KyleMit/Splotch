@@ -1,4 +1,5 @@
 import { Howl } from 'howler';
+import { initVersionNumber } from './version.js';
 
 // Canvas setup
 const canvas = document.getElementById('drawingCanvas');
@@ -468,3 +469,6 @@ document.addEventListener('visibilitychange', () => {
     requestWakeLock();
   }
 });
+
+// Initialize version number display
+initVersionNumber(releaseAllPointers);
