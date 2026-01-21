@@ -49,6 +49,7 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 ├── src/                     # Source code
 │   ├── main.js              # App initialization and orchestration
 │   ├── drawingCanvas.js     # Canvas drawing logic
+│   ├── colorPalette.js      # Color swatch UI and responsive layout
 │   ├── colorPicker.js       # Custom color picker modal
 │   ├── clearCanvas.js       # Clear button drag interaction
 │   ├── version.js           # Version badge display
@@ -205,6 +206,7 @@ Built for toddlers who love to create! 🎨✨
   * [x] interlace hexagons
   * [ ] get rid of white ring
   * [x] make sure it's always visible
+  * [ ] hexagon selection should not retain active state style for first one touched, just the one currently under the finger
 * [ ] Add "color book" style picker with background overlay
 * [ ] Make sure [installable](https://www.pwabuilder.com/reportcard?site=https://splotchy.netlify.app/)
 * [ ] Add PWA help guide for parents
