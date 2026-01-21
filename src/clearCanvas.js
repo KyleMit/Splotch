@@ -9,11 +9,6 @@ let canvas, ctx;
 let onClearStartCallback = null;
 let onClearCompleteCallback = null;
 
-// Performance optimization: throttle canvas updates with requestAnimationFrame
-let pendingCanvasUpdate = false;
-let lastDragY = 0;
-let lastClearHeight = 0;
-
 function startClearDrag(e) {
   isDragging = true;
 
@@ -36,10 +31,6 @@ function startClearDrag(e) {
 
   // Show Clear Preview Line and Accept Zone
   clearLine.style.display = 'block';
-  // Temporarily disable expensive SVG filter during drag for performance
-  clearLine.style.filter = 'none';
-  clearLine.classList.add('dragging-simplified');
-
   acceptZone.style.display = 'block';
   const acceptY = window.innerHeight * 0.85;
   const acceptHeight = window.innerHeight - acceptY;
@@ -47,16 +38,6 @@ function startClearDrag(e) {
 
   e.preventDefault();
   e.stopPropagation();
-}
-
-function updateCanvasPreview() {
-  if (!isDragging || !savedCanvas) return;
-
-  // Perform the expensive canvas operations
-  ctx.putImageData(savedCanvas, 0, 0);
-  ctx.clearRect(0, 0, canvas.width, lastClearHeight);
-
-  pendingCanvasUpdate = false;
 }
 
 function dragClear(e) {
@@ -70,7 +51,7 @@ function dragClear(e) {
   const acceptThreshold = screenHeight * 0.85;
   const isPastThreshold = clientY >= acceptThreshold;
 
-  // Visual feedback when in Accept Zone (cheap DOM operation)
+  // Visual feedback when in Accept Zone
   if (isPastThreshold) {
     clearButton.classList.add('delete-ready');
   } else {
@@ -79,7 +60,6 @@ function dragClear(e) {
 
   // Only allow dragging downward
   if (newY > initialButtonY) {
-    // Update button position immediately (cheap DOM operation)
     clearButton.style.top = `${newY}px`;
     clearButton.style.transition = 'none';
 
@@ -92,19 +72,13 @@ function dragClear(e) {
     const clearCanvasY = clearScreenY - canvasTop;
     const clearHeight = Math.max(0, clearCanvasY);
 
-    // Update clear line position immediately (cheap DOM operation)
+    // Preview the clear: clear from top of canvas to button position
+    ctx.putImageData(savedCanvas, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, clearHeight);
+
+    // Position the clear line at the edge of cleared area (in screen coordinates)
     clearLine.style.top = `${clearScreenY}px`;
     clearLine.style.visibility = 'visible';
-
-    // Store values for canvas update
-    lastDragY = newY;
-    lastClearHeight = clearHeight;
-
-    // Throttle expensive canvas operations with requestAnimationFrame
-    if (!pendingCanvasUpdate) {
-      pendingCanvasUpdate = true;
-      requestAnimationFrame(updateCanvasPreview);
-    }
   }
 
   e.preventDefault();
@@ -120,10 +94,6 @@ function stopClearDrag(e) {
 
   // Hide Clear Preview Line and Accept Zone
   clearLine.style.display = 'none';
-  // Re-enable SVG filter
-  clearLine.style.filter = 'url(#torn-edge)';
-  clearLine.classList.remove('dragging-simplified');
-
   acceptZone.style.display = 'none';
 
   const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);

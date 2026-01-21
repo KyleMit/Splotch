@@ -138,8 +138,6 @@ body {
 .clear-button.dragging {
   box-shadow: -6px 6px 30px rgba(0, 0, 0, 0.4);
   transition: none;
-  will-change: top, opacity, transform;
-  transform: translate3d(0, 0, 0); /* Force hardware acceleration */
 }
 
 .clear-button.delete-ready {
@@ -171,13 +169,6 @@ body {
   display: none;
   z-index: 999;
   transform: translateY(-15px);
-}
-
-/* Simplified appearance during drag for performance */
-.clear-line.dragging-simplified {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-  will-change: top;
-  transform: translate3d(0, 0, 0); /* Force hardware acceleration */
 }
 
 /* Clear Accept Zone */
