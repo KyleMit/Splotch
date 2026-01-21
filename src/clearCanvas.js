@@ -105,7 +105,11 @@ function stopClearDrag(e) {
   const initialTop = isPortrait ? '100px' : '20px';
 
   if (clientY >= acceptThreshold) {
-    // Clear confirmed - trigger Page Turn Overlay animation
+    // Clear confirmed - make button disappear and trigger Page Turn Overlay animation
+    clearButton.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+    clearButton.style.opacity = '0';
+    clearButton.style.transform = 'scale(0.8)';
+
     pageTurnOverlay.classList.add('animating');
 
     // Clear canvas halfway through animation
@@ -119,11 +123,21 @@ function stopClearDrag(e) {
       }
     }, 300);
 
-    // Remove animation and reset button after animation completes
+    // Remove animation and make button reappear at top
     setTimeout(() => {
       pageTurnOverlay.classList.remove('animating');
+
+      // Reset position instantly while invisible
       clearButton.style.transition = 'none';
       clearButton.style.top = initialTop;
+      clearButton.style.transform = 'scale(0.8)';
+
+      // Fade and scale back in after a brief moment
+      setTimeout(() => {
+        clearButton.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        clearButton.style.opacity = '1';
+        clearButton.style.transform = 'scale(1)';
+      }, 50);
     }, 600);
   } else {
     // Restore canvas

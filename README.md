@@ -218,8 +218,4 @@ Built for toddlers who love to create! 🎨✨
 * [ ] Make sure [installable](https://www.pwabuilder.com/reportcard?site=https://splotchy.netlify.app/)
 * [ ] Add PWA help guide for parents
   * [ ] Boring grey parent logo in the bottom
-* [x] Make clear line a crinkle
-* [ ] Increase clear zone
-  * [ ] When cleared, the trash icon should disappear, and then re-appear back on top
-  * [ ] When rejected, the trash icon should bounce back
 * [ ] Make sure we can refresh PWA
