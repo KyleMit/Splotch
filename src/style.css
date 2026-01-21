@@ -260,6 +260,8 @@ body {
   padding: 20px;
   max-width: 90%;
   max-height: 80%;
+  width: fit-content;
+  height: fit-content;
   display: flex;
   flex-direction: column;
   animation: bounceIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -282,11 +284,14 @@ body {
 
 .hexagon-grid {
   overflow: hidden;
-  padding: 10px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   touch-action: none;
+  width: fit-content;
+  height: fit-content;
 }
 
 .hexagon {
@@ -376,5 +381,7 @@ body {
   .color-picker-container {
     max-width: 95%;
     max-height: 75%;
+    width: fit-content;
+    height: fit-content;
   }
 }
