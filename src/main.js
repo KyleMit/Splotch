@@ -8,41 +8,16 @@ import {
   hasCustomColorSelected
 } from './colorPicker.js';
 import { initClearButton } from './clearCanvas.js';
+import {
+  initDrawingCanvas,
+  setColor,
+  getCurrentColor,
+  updateColorChangeTime,
+  releaseAllPointers
+} from './drawingCanvas.js';
 
 // Canvas setup
 const canvas = document.getElementById('drawingCanvas');
-const ctx = canvas.getContext('2d', { willReadFrequently: false });
-
-// Set canvas size to fill container
-function resizeCanvas() {
-  const container = canvas.parentElement;
-  const rect = container.getBoundingClientRect();
-
-  // Store current drawing if canvas has content
-  const imageData = canvas.width > 0 ? ctx.getImageData(0, 0, canvas.width, canvas.height) : null;
-
-  canvas.width = rect.width;
-  canvas.height = rect.height;
-
-  // Restore drawing if it existed
-  if (imageData) {
-    ctx.putImageData(imageData, 0, 0);
-  }
-
-  // Set drawing properties
-  ctx.lineWidth = 8;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-}
-
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
-
-// Drawing state
-let currentColor = ''; // Will be set from first color button
-let lastColorChangeTime = 0; // Track when color was last changed
-let activePointerIds = new Set(); // Track all active pointer IDs
-let activePointers = new Map(); // Track each pointer's state: { x, y, isDrawing }
 
 // Sound setup
 let soundEnabled = true;
@@ -75,35 +50,14 @@ const colorSwatches = document.querySelectorAll('.color-swatch');
 const colorPalette = document.querySelector('.color-palette');
 
 // Set initial color from first swatch
-currentColor = colorSwatches[0].dataset.color;
+const initialColor = colorSwatches[0].dataset.color;
 // Set initial Selection Ring color
-colorSwatches[0].style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${currentColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
-
-// Helper function to force release all pointer captures
-function releaseAllPointers() {
-  ctx.beginPath();
-
-  // Clear all active pointers
-  activePointers.clear();
-
-  // Try to release all tracked pointer IDs
-  activePointerIds.forEach(pointerId => {
-    try {
-      if (canvas.hasPointerCapture && canvas.hasPointerCapture(pointerId)) {
-        canvas.releasePointerCapture(pointerId);
-      }
-    } catch (err) {
-      // Ignore errors
-    }
-  });
-
-  activePointerIds.clear();
-}
+colorSwatches[0].style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${initialColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
 
 // Prevent Color Palette from interfering with drawing
 colorPalette.addEventListener('pointerdown', (e) => {
   releaseAllPointers();
-  lastColorChangeTime = Date.now();
+  updateColorChangeTime();
   e.preventDefault();
   e.stopPropagation();
 });
@@ -125,7 +79,7 @@ colorSwatches.forEach(btn => {
       btn.classList.add('active');
 
       if (hasCustomColorSelected()) {
-        currentColor = getCustomColor();
+        setColor(getCustomColor());
         updateGradientSwatchRing();
       }
 
@@ -137,15 +91,15 @@ colorSwatches.forEach(btn => {
         b.style.boxShadow = ''; // Clear Selection Ring
       });
       btn.classList.add('active');
-      currentColor = btn.dataset.color;
+      setColor(btn.dataset.color);
 
       // Set Selection Ring to match swatch color
-      btn.style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${currentColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
+      btn.style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${btn.dataset.color}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
     }
 
     // Release all pointers and reset state
     releaseAllPointers();
-    lastColorChangeTime = Date.now();
+    updateColorChangeTime();
 
     e.preventDefault();
     e.stopPropagation();
@@ -155,7 +109,7 @@ colorSwatches.forEach(btn => {
   btn.addEventListener('pointerdown', (e) => {
     // Release all pointers and reset state
     releaseAllPointers();
-    lastColorChangeTime = Date.now();
+    updateColorChangeTime();
 
     e.preventDefault();
     e.stopPropagation();
@@ -254,103 +208,19 @@ window.addEventListener('orientationchange', updateVisibleButtons);
 // Run after initial layout
 setTimeout(updateVisibleButtons, 100);
 
-// Drawing functions
-function startDrawing(e) {
-  // Prevent drawing immediately after color change (helps with Apple Pencil)
-  const timeSinceColorChange = Date.now() - lastColorChangeTime;
-  if (timeSinceColorChange < 100) {
-    return;
-  }
-
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-
-  // Track this pointer's state
-  if (e.pointerId !== undefined) {
-    activePointers.set(e.pointerId, {
-      x: x,
-      y: y,
-      isDrawing: true,
-      color: currentColor
-    });
-    activePointerIds.add(e.pointerId);
-  }
-
-  ctx.strokeStyle = currentColor;
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-
-  playDrawSound();
-
-  // Don't use pointer capture with Apple Pencil - it causes issues
-  if (e.pointerType !== 'pen') {
-    try {
-      if (e.pointerId !== undefined) {
-        canvas.setPointerCapture(e.pointerId);
-      }
-    } catch (err) {
-      // Ignore pointer capture errors
-    }
-  }
-}
-
-function draw(e) {
-  // Check if this pointer is actively drawing
-  const pointerState = activePointers.get(e.pointerId);
-  if (!pointerState || !pointerState.isDrawing) return;
-
-  e.preventDefault();
-
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-
-  // Use the color from when this pointer started drawing
-  ctx.strokeStyle = pointerState.color;
-  ctx.beginPath();
-  ctx.moveTo(pointerState.x, pointerState.y);
-  ctx.lineTo(x, y);
-  ctx.stroke();
-
-  // Update this pointer's last position
-  pointerState.x = x;
-  pointerState.y = y;
-
-  playDrawSound();
-}
-
-function stopDrawing(e) {
-  if (!e || e.pointerId === undefined) return;
-
-  // Remove this pointer from active tracking
-  activePointers.delete(e.pointerId);
-  activePointerIds.delete(e.pointerId);
-
-  ctx.beginPath();
-
-  // Release pointer capture
-  try {
-    canvas.releasePointerCapture(e.pointerId);
-  } catch (err) {
-    // Ignore errors if pointer capture wasn't set
-  }
-}
-
-// Pointer events for drawing
-canvas.addEventListener('pointerdown', startDrawing);
-canvas.addEventListener('pointermove', draw);
-canvas.addEventListener('pointerup', stopDrawing);
-canvas.addEventListener('pointerout', stopDrawing);
-canvas.addEventListener('pointercancel', stopDrawing);
+// Initialize Drawing Canvas
+const { ctx } = initDrawingCanvas(canvas, {
+  initialColor: initialColor,
+  onDrawSound: playDrawSound
+});
 
 // Initialize Color Picker
 initColorPicker((selectedColor) => {
   // Callback when a color is selected
-  currentColor = selectedColor;
+  setColor(selectedColor);
   updateGradientSwatchRing();
   releaseAllPointers();
-  lastColorChangeTime = Date.now();
+  updateColorChangeTime();
 });
 
 // Initialize Clear Button

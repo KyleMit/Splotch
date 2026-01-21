@@ -39,6 +39,24 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 * **Howler.js** - Audio playback with sprite support
 * **vite-plugin-pwa** - PWA manifest and service worker generation
 
+## Project Structure
+
+```none
+/
+├── public/                  # Static assets
+│   ├── sounds/              # Audio files
+│   └── ...                  # Icons, manifest, etc.
+├── src/                     # Source code
+│   ├── main.js              # App initialization and orchestration
+│   ├── drawingCanvas.js     # Canvas drawing logic
+│   ├── colorPicker.js       # Custom color picker modal
+│   ├── clearCanvas.js       # Clear button drag interaction
+│   ├── version.js           # Version badge display
+│   └── style.css            # All styles
+├── index.html               # Entry point
+└── vite.config.js           # Build configuration
+```
+
 ## Getting Started
 
 ### Prerequisites
@@ -133,6 +151,7 @@ Uses HTML5 Canvas with Pointer Events for smooth, responsive drawing across all 
 ### Audio System
 
 Howler.js provides:
+
 * Audio sprites for efficient loading
 * Overlapping sound playback
 * Automatic mobile audio unlock
@@ -157,7 +176,7 @@ Edit the color palette in `index.html`:
 
 ### Brush Size
 
-Adjust in `main.js`:
+Adjust in `src/drawingCanvas.js`:
 
 ```javascript
 ctx.lineWidth = 8; // Change this value
@@ -165,7 +184,7 @@ ctx.lineWidth = 8; // Change this value
 
 ### Sound Volume
 
-Adjust in `main.js`:
+Adjust in `src/main.js`:
 
 ```javascript
 volume: 0.3 // 0.0 to 1.0
@@ -191,4 +210,7 @@ Built for toddlers who love to create! 🎨✨
 * [ ] Add PWA help guide for parents
   * [ ] Boring grey parent logo in the bottom
 * [ ] Make clear line a crinkle
+* [ ] Increase clear zone
+  * [ ] When cleared, the trash icon should disappear, and then re-appear back on top
+  * [ ] When rejected, the trash icon should bounce back
 * [ ] Make sure we can refresh PWA
