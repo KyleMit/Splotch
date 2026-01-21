@@ -20,15 +20,15 @@ export function initVersionBadge(releaseAllPointers) {
   let tapCount = 0;
   let tapTimer = null;
 
-  versionElement.addEventListener('pointerdown', (e) => {
+  function handleTapStart(e) {
     e.preventDefault();
     e.stopPropagation();
 
     // Release any drawing pointers
     releaseAllPointers();
-  });
+  }
 
-  versionElement.addEventListener('pointerup', (e) => {
+  function handleTapEnd(e) {
     e.preventDefault();
     e.stopPropagation();
 
@@ -61,6 +61,18 @@ export function initVersionBadge(releaseAllPointers) {
         tapTimer = null;
       }
     }
+  }
+
+  // Add both pointer and touch events for better iOS compatibility
+  versionElement.addEventListener('pointerdown', handleTapStart);
+  versionElement.addEventListener('pointerup', handleTapEnd);
+  versionElement.addEventListener('touchstart', handleTapStart, { passive: false });
+  versionElement.addEventListener('touchend', handleTapEnd, { passive: false });
+
+  // Prevent click events that might cause zoom
+  versionElement.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
   });
 
   initializeVersion();

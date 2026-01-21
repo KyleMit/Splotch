@@ -323,11 +323,22 @@ body {
   border-radius: 3px;
   min-width: 20px;
   min-height: 16px;
-  touch-action: manipulation;
+  touch-action: none;
 }
 
 .version-badge.hidden {
   color: rgba(0, 0, 0, 0);
+}
+
+/* Larger tap target for version badge to prevent accidental zoom */
+.version-badge::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  bottom: -20px;
+  left: -20px;
+  touch-action: none;
 }
 
 /* Responsive adjustments for portrait mode */
