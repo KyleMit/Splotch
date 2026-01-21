@@ -4,29 +4,29 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 
 ## Features
 
-- **Simple Drawing Interface** - Just touch and draw with your finger or Apple Pencil
-- **Kid-Friendly Color Picker** - 7 vibrant colors (purple, blue, green, yellow, orange, red, black)
-- **Interactive Clear Function** - Drag the trash button down to clear with visual preview
-- **Drawing Sounds** - Subtle pencil scratching sounds as you draw
-- **PWA Support** - Install to home screen for a full-screen app experience
-- **Offline First** - Works without an internet connection
-- **Wake Lock** - Screen stays on while drawing
-- **Responsive** - Works in both landscape and portrait orientations
+* **Simple Drawing Interface** - Just touch and draw with your finger or Apple Pencil
+* **Kid-Friendly Color Picker** - 7 vibrant colors (purple, blue, green, yellow, orange, red, black)
+* **Interactive Clear Function** - Drag the trash button down to clear with visual preview
+* **Drawing Sounds** - Subtle pencil scratching sounds as you draw
+* **PWA Support** - Install to home screen for a full-screen app experience
+* **Offline First** - Works without an internet connection
+* **Wake Lock** - Screen stays on while drawing
+* **Responsive** - Works in both landscape and portrait orientations
 
 ## Tech Stack
 
-- **Vite** - Fast build tool and dev server
-- **Vanilla JavaScript** - No framework overhead
-- **HTML5 Canvas** - Native, performant drawing
-- **Pointer Events API** - Unified touch/stylus/mouse handling
-- **Howler.js** - Audio playback with sprite support
-- **vite-plugin-pwa** - PWA manifest and service worker generation
+* **Vite** - Fast build tool and dev server
+* **Vanilla JavaScript** - No framework overhead
+* **HTML5 Canvas** - Native, performant drawing
+* **Pointer Events API** - Unified touch/stylus/mouse handling
+* **Howler.js** - Audio playback with sprite support
+* **vite-plugin-pwa** - PWA manifest and service worker generation
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ and npm
+* Node.js 18+ and npm
 
 ### Installation
 
@@ -102,32 +102,36 @@ netlify deploy --prod
 
 ## Browser Support
 
-- Chrome/Edge 88+
-- Safari 15.4+
-- Firefox 98+
-- iOS Safari 15.4+
+* Chrome/Edge 88+
+* Safari 15.4+
+* Firefox 98+
+* iOS Safari 15.4+
 
 ## Features Explained
 
 ### Drawing Engine
+
 Uses HTML5 Canvas with Pointer Events for smooth, responsive drawing across all input types (touch, stylus, mouse).
 
 ### Audio System
+
 Howler.js provides:
-- Audio sprites for efficient loading
-- Overlapping sound playback
-- Automatic mobile audio unlock
-- Throttled playback to prevent audio chaos
+* Audio sprites for efficient loading
+* Overlapping sound playback
+* Automatic mobile audio unlock
+* Throttled playback to prevent audio chaos
 
 ### PWA Capabilities
-- Installable to home screen
-- Offline functionality
-- Full-screen mode on mobile
-- Screen wake lock prevents sleep
+
+* Installable to home screen
+* Offline functionality
+* Full-screen mode on mobile
+* Screen wake lock prevents sleep
 
 ## Customization
 
 ### Colors
+
 Edit the color palette in `index.html`:
 
 ```html
@@ -135,6 +139,7 @@ Edit the color palette in `index.html`:
 ```
 
 ### Brush Size
+
 Adjust in `main.js`:
 
 ```javascript
@@ -142,6 +147,7 @@ ctx.lineWidth = 8; // Change this value
 ```
 
 ### Sound Volume
+
 Adjust in `main.js`:
 
 ```javascript
@@ -165,3 +171,4 @@ Built for toddlers who love to create! 🎨✨
 * [ ] Add background "color booking" style picker
 * [ ] Add PWA help guide for parents
   * [ ] Boring grey parent logo in the bottom
+* [ ] Add debug version number
