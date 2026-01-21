@@ -1,10 +1,9 @@
 // Clear button drag-to-clear functionality
 
 let isDragging = false;
-let savedCanvas = null;
 let initialButtonY = 0;
 let dragOffsetY = 0;
-let clearButton, clearLine, acceptZone, pageTurnOverlay;
+let clearButton, clearLine, acceptZone, pageTurnOverlay, clearOverlay;
 let canvas, ctx;
 let onClearStartCallback = null;
 let onClearCompleteCallback = null;
@@ -19,9 +18,6 @@ function startClearDrag(e) {
 
   clearButton.classList.add('dragging');
 
-  // Save current canvas state
-  savedCanvas = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
   // Store initial button position and drag offset
   const rect = clearButton.getBoundingClientRect();
   initialButtonY = rect.top;
@@ -29,9 +25,12 @@ function startClearDrag(e) {
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   dragOffsetY = clientY - rect.top;
 
-  // Show Clear Preview Line and Accept Zone
+  // Show Clear Preview elements
   clearLine.style.display = 'block';
   acceptZone.style.display = 'block';
+  clearOverlay.style.display = 'block';
+  clearOverlay.style.height = '0px';
+
   const acceptY = window.innerHeight * 0.85;
   const acceptHeight = window.innerHeight - acceptY;
   acceptZone.style.height = `${acceptHeight}px`;
@@ -60,25 +59,22 @@ function dragClear(e) {
 
   // Only allow dragging downward
   if (newY > initialButtonY) {
+    // Use transform instead of top for performance (GPU acceleration)
     clearButton.style.top = `${newY}px`;
     clearButton.style.transition = 'none';
 
-    // Get canvas position on screen
-    const canvasRect = canvas.getBoundingClientRect();
-    const canvasTop = canvasRect.top;
-
-    // Calculate clear height relative to canvas
-    const clearScreenY = newY + 45; // 45 is half the button height
-    const clearCanvasY = clearScreenY - canvasTop;
-    const clearHeight = Math.max(0, clearCanvasY);
-
-    // Preview the clear: clear from top of canvas to button position
-    ctx.putImageData(savedCanvas, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, clearHeight);
-
-    // Position the clear line at the edge of cleared area (in screen coordinates)
+    // Calculate clear position
+    // 45 is roughly center of button
+    const clearScreenY = newY + 45; 
+    
+    // Move the visual elements
+    // 1. The Clear Line (torn edge)
     clearLine.style.top = `${clearScreenY}px`;
     clearLine.style.visibility = 'visible';
+    
+    // 2. The Overlay Curtain (covers the canvas efficiently)
+    // Instead of manipulating canvas pixels, we just slide this div down
+    clearOverlay.style.height = `${Math.max(0, clearScreenY)}px`;
   }
 
   e.preventDefault();
@@ -92,7 +88,7 @@ function stopClearDrag(e) {
   clearButton.classList.remove('dragging');
   clearButton.classList.remove('delete-ready');
 
-  // Hide Clear Preview Line and Accept Zone
+  // Hide UI helpers immediately
   clearLine.style.display = 'none';
   acceptZone.style.display = 'none';
 
@@ -105,48 +101,58 @@ function stopClearDrag(e) {
   const initialTop = isPortrait ? '100px' : '20px';
 
   if (clientY >= acceptThreshold) {
-    // Clear confirmed - make button disappear and trigger Page Turn Overlay animation
+    // Clear confirmed
+    
+    // 1. Actually clear the real canvas now (only once!)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 2. Keep the overlay visible for a moment so it doesn't flicker
+    // then fade it out or hide it since the canvas underneath is now white
+    clearOverlay.style.display = 'none'; 
+
+    // Animate button away
     clearButton.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
     clearButton.style.opacity = '0';
     clearButton.style.transform = 'scale(0.8)';
 
     pageTurnOverlay.classList.add('animating');
 
-    // Clear canvas halfway through animation
+    // Reset logic
     setTimeout(() => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      savedCanvas = null;
-
-      // Notify callback
       if (onClearCompleteCallback) {
         onClearCompleteCallback();
       }
     }, 300);
 
-    // Remove animation and make button reappear at top
+    // Reset button position
     setTimeout(() => {
       pageTurnOverlay.classList.remove('animating');
-
-      // Reset position instantly while invisible
+      
       clearButton.style.transition = 'none';
       clearButton.style.top = initialTop;
       clearButton.style.transform = 'scale(0.8)';
 
-      // Fade and scale back in after a brief moment
       setTimeout(() => {
         clearButton.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
         clearButton.style.opacity = '1';
         clearButton.style.transform = 'scale(1)';
       }, 50);
     }, 600);
+
   } else {
-    // Restore canvas
-    if (savedCanvas) {
-      ctx.putImageData(savedCanvas, 0, 0);
-      savedCanvas = null;
+    // Cancelled - Animate the curtain back up
+    if (clearOverlay) {
+        clearOverlay.style.transition = 'height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        clearOverlay.style.height = '0px';
+        
+        // Hide after animation
+        setTimeout(() => {
+            clearOverlay.style.transition = 'none';
+            clearOverlay.style.display = 'none';
+        }, 300);
     }
 
-    // Bounce back with animation
+    // Bounce button back
     clearButton.style.transition = 'top 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
     clearButton.style.top = initialTop;
   }
@@ -169,6 +175,11 @@ export function initClearButton(canvasElement, contextElement, onClearStart, onC
   clearLine = document.createElement('div');
   clearLine.className = 'clear-line';
   document.body.appendChild(clearLine);
+  
+  // Create Performance Overlay (The Curtain)
+  clearOverlay = document.createElement('div');
+  clearOverlay.className = 'clear-overlay';
+  document.body.appendChild(clearOverlay);
 
   // Create Clear Accept Zone indicator
   acceptZone = document.createElement('div');

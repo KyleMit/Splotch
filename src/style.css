@@ -184,6 +184,21 @@ body {
   z-index: 998;
 }
 
+/* New Overlay for performant clearing */
+.clear-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  background: #fcfbf8;
+  filter: url(#paper-grain);
+  z-index: 990; /* Below clear line, above canvas */
+  pointer-events: none;
+  display: none;
+  will-change: height;
+}
+
 /* Page Turn Overlay */
 .page-turn-overlay {
   position: fixed;
