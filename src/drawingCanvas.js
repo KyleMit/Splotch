@@ -52,9 +52,11 @@ function releaseAllPointers() {
 
 // Drawing functions
 function startDrawing(e) {
-  // Prevent drawing immediately after color change (helps with Apple Pencil)
+  // Prevent drawing immediately after color change
+  // Use shorter delay for Apple Pencil (20ms) vs other inputs (100ms)
   const timeSinceColorChange = Date.now() - lastColorChangeTime;
-  if (timeSinceColorChange < 100) {
+  const requiredDelay = e.pointerType === 'pen' ? 20 : 100;
+  if (timeSinceColorChange < requiredDelay) {
     return;
   }
 
