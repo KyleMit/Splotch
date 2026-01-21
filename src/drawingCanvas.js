@@ -12,15 +12,23 @@ function resizeCanvas() {
   const container = canvas.parentElement;
   const rect = container.getBoundingClientRect();
 
-  // Store current drawing if canvas has content
-  const imageData = canvas.width > 0 ? ctx.getImageData(0, 0, canvas.width, canvas.height) : null;
+  // Store current drawing if canvas has content using a temporary canvas
+  // This preserves the ENTIRE drawing, not just what fits in the new dimensions
+  let tempCanvas = null;
+  if (canvas.width > 0 && canvas.height > 0) {
+    tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(canvas, 0, 0);
+  }
 
   canvas.width = rect.width;
   canvas.height = rect.height;
 
   // Restore drawing if it existed
-  if (imageData) {
-    ctx.putImageData(imageData, 0, 0);
+  if (tempCanvas) {
+    ctx.drawImage(tempCanvas, 0, 0);
   }
 
   // Set drawing properties
