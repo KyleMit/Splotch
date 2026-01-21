@@ -299,7 +299,6 @@ body {
   transition: filter 0.1s ease, stroke 0.1s ease, stroke-width 0.1s ease;
 }
 
-.hexagon:hover,
 .hexagon.hover {
   filter: brightness(1.15);
   stroke: #333;

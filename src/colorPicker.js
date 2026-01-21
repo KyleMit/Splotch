@@ -327,6 +327,12 @@ export function initColorPicker(onColorSelected) {
       // Add hover to new element
       currentHoveredHex = element;
       element.classList.add('hover');
+    } else if (!element || !element.classList.contains('hexagon')) {
+      // Pointer moved outside hexagons - clear hover state
+      if (currentHoveredHex) {
+        currentHoveredHex.classList.remove('hover');
+        currentHoveredHex = null;
+      }
     }
 
     e.preventDefault();
@@ -359,6 +365,14 @@ export function initColorPicker(onColorSelected) {
     }
 
     e.stopPropagation();
+  });
+
+  hexagonGrid.addEventListener('pointerleave', (e) => {
+    // Clear hover state when pointer leaves the grid
+    if (currentHoveredHex) {
+      currentHoveredHex.classList.remove('hover');
+      currentHoveredHex = null;
+    }
   });
 
   // Close picker when clicking outside the container
