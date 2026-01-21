@@ -2,8 +2,17 @@
 // Generate optimized static assets to replace expensive real-time SVG filters
 
 export function initOptimizedTextures() {
-  applyPaperTexture();
-  applyTornEdgeTexture();
+  const urlParams = new URLSearchParams(window.location.search);
+
+  // Check for query parameters to disable effects for performance testing
+  // Examples: ?noPaper=true or ?noEdge=true
+  if (!urlParams.has('noPaper')) {
+    applyPaperTexture();
+  }
+
+  if (!urlParams.has('noEdge')) {
+    applyTornEdgeTexture();
+  }
 }
 
 function applyPaperTexture() {
