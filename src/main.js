@@ -16,6 +16,7 @@ import {
   releaseAllPointers
 } from './drawingCanvas.js';
 import { initColorPalette } from './colorPalette.js';
+import { initPWAUpdates } from './pwaUpdate.js';
 
 // Canvas setup
 const canvas = document.getElementById('drawingCanvas');
@@ -116,3 +117,6 @@ document.addEventListener('visibilitychange', () => {
 
 // Initialize Version Badge display
 initVersionBadge(releaseAllPointers);
+
+// Initialize PWA auto-update system
+initPWAUpdates();

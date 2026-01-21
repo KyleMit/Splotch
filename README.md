@@ -53,6 +53,7 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 │   ├── colorPicker.js       # Custom color picker modal
 │   ├── clearCanvas.js       # Clear button drag interaction
 │   ├── version.js           # Version badge display
+│   ├── pwaUpdate.js         # PWA automatic update management
 │   └── style.css            # All styles
 ├── index.html               # Entry point
 └── vite.config.js           # Build configuration
@@ -164,6 +165,11 @@ Howler.js provides:
 * Offline functionality
 * Full-screen mode on mobile
 * Screen wake lock prevents sleep
+* Automatic updates with periodic checking:
+  - Checks for updates every hour while app is running
+  - Checks when app becomes visible again
+  - Auto-updates and reloads when new version found
+  - Works offline (update checks fail silently)
 
 ## Customization
 

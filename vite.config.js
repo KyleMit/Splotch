@@ -17,6 +17,9 @@ export default defineConfig({
       manifest: false, // Use site.webmanifest instead
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,webmanifest}'],
+        // Add skipWaiting and clientsClaim for immediate updates
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
