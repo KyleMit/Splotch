@@ -14,8 +14,9 @@ let virtualCtx = null;
 let maxWidth = 0;
 let maxHeight = 0;
 
-// Undo history - store single snapshot before last action
-let undoSnapshot = null;
+// Undo history - store stack of snapshots (max 10)
+let undoStack = [];
+const MAX_UNDO_STACK_SIZE = 10;
 let canUndo = false;
 let onUndoStateChange = null;
 
@@ -228,19 +229,22 @@ function stopDrawing(e) {
 function saveUndoSnapshot() {
   if (!canvas || !ctx) return;
 
-  // Create snapshot canvas if it doesn't exist
-  if (!undoSnapshot) {
-    undoSnapshot = document.createElement('canvas');
-  }
-
-  // Match current canvas size
-  undoSnapshot.width = canvas.width;
-  undoSnapshot.height = canvas.height;
+  // Create new snapshot canvas
+  const snapshot = document.createElement('canvas');
+  snapshot.width = canvas.width;
+  snapshot.height = canvas.height;
 
   // Copy current canvas state
-  const snapshotCtx = undoSnapshot.getContext('2d');
-  snapshotCtx.clearRect(0, 0, undoSnapshot.width, undoSnapshot.height);
+  const snapshotCtx = snapshot.getContext('2d');
   snapshotCtx.drawImage(canvas, 0, 0);
+
+  // Add to undo stack
+  undoStack.push(snapshot);
+
+  // Limit stack size to MAX_UNDO_STACK_SIZE
+  if (undoStack.length > MAX_UNDO_STACK_SIZE) {
+    undoStack.shift(); // Remove oldest snapshot
+  }
 
   // Update undo availability
   canUndo = true;
@@ -251,21 +255,23 @@ function saveUndoSnapshot() {
 
 // Undo last action
 export function undo() {
-  if (!canUndo || !undoSnapshot || !canvas || !ctx) return;
+  if (!canUndo || undoStack.length === 0 || !canvas || !ctx) return;
+
+  // Pop the most recent snapshot from the stack
+  const snapshot = undoStack.pop();
 
   // Restore snapshot to canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(undoSnapshot, 0, 0);
+  ctx.drawImage(snapshot, 0, 0);
 
   // Also restore to virtual canvas
   if (virtualCtx && virtualCanvas) {
     virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
-    virtualCtx.drawImage(undoSnapshot, 0, 0);
+    virtualCtx.drawImage(snapshot, 0, 0);
   }
 
-  // Clear undo state
-  canUndo = false;
-  undoSnapshot = null;
+  // Update undo availability based on remaining stack size
+  canUndo = undoStack.length > 0;
   if (onUndoStateChange) {
     onUndoStateChange(canUndo);
   }
@@ -273,7 +279,7 @@ export function undo() {
 
 // Check if undo is available
 export function getCanUndo() {
-  return canUndo;
+  return undoStack.length > 0;
 }
 
 // Initialize drawing canvas
@@ -325,8 +331,8 @@ export function clearCanvas() {
   }
 
   // Clear undo history
+  undoStack = [];
   canUndo = false;
-  undoSnapshot = null;
   if (onUndoStateChange) {
     onUndoStateChange(canUndo);
   }
