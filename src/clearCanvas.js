@@ -7,6 +7,16 @@ let clearButton, clearLine, acceptZone, pageTurnOverlay, clearOverlay;
 let canvas, ctx;
 let onClearStartCallback = null;
 let onClearCompleteCallback = null;
+let lastOrientation = null;
+
+// Helper functions
+function isPortrait() {
+  return window.matchMedia('(orientation: portrait)').matches;
+}
+
+function getDefaultTop() {
+  return isPortrait() ? '90px' : '20px';
+}
 
 function startClearDrag(e) {
   isDragging = true;
@@ -97,8 +107,7 @@ function stopClearDrag(e) {
   const acceptThreshold = screenHeight * 0.85; // Bottom 15%
 
   // Get the correct initial position (check if portrait or landscape)
-  const isPortrait = window.matchMedia('(orientation: portrait)').matches;
-  const initialTop = isPortrait ? '100px' : '20px';
+  const initialTop = getDefaultTop();
 
   if (clientY >= acceptThreshold) {
     // Clear confirmed
@@ -161,6 +170,20 @@ function stopClearDrag(e) {
   e.stopPropagation();
 }
 
+// Reset button to default position based on current orientation
+function resetButtonPosition() {
+  if (!clearButton || isDragging) return;
+
+  // Reset to default position
+  clearButton.style.transition = 'top 0.3s ease';
+  clearButton.style.top = getDefaultTop();
+
+  // Remove transition after animation completes
+  setTimeout(() => {
+    clearButton.style.transition = '';
+  }, 300);
+}
+
 // Initialize clear button functionality
 export function initClearButton(canvasElement, contextElement, onClearStart, onClearComplete) {
   canvas = canvasElement;
@@ -175,7 +198,7 @@ export function initClearButton(canvasElement, contextElement, onClearStart, onC
   clearLine = document.createElement('div');
   clearLine.className = 'clear-line';
   document.body.appendChild(clearLine);
-  
+
   // Create Performance Overlay (The Curtain)
   clearOverlay = document.createElement('div');
   clearOverlay.className = 'clear-overlay';
@@ -196,4 +219,19 @@ export function initClearButton(canvasElement, contextElement, onClearStart, onC
   document.addEventListener('pointermove', dragClear);
   document.addEventListener('pointerup', stopClearDrag);
   document.addEventListener('pointercancel', stopClearDrag);
+
+  // Initialize orientation tracking
+  lastOrientation = isPortrait();
+
+  // Listen for orientation changes and reset button position
+  window.addEventListener('orientationchange', resetButtonPosition);
+  window.addEventListener('resize', () => {
+    // Also handle resize events (some browsers fire resize instead of orientationchange)
+    const currentOrientation = isPortrait();
+    // Only reset if orientation actually changed
+    if (currentOrientation !== lastOrientation) {
+      lastOrientation = currentOrientation;
+      resetButtonPosition();
+    }
+  });
 }
