@@ -15,6 +15,7 @@ import {
 } from './drawingCanvas.js';
 import { initColorPalette } from './colorPalette.js';
 import { initPWAUpdates } from './pwaUpdate.js';
+import { initOptimizedTextures } from './optimizeTextures.js';
 import { playDrawSound, stopDrawSound } from './drawingSound.js';
 import { initParentHelp } from './parentHelp.js';
 
@@ -87,6 +88,9 @@ document.addEventListener('visibilitychange', () => {
     requestWakeLock();
   }
 });
+
+// Initialize Optimized Textures (Pre-render paper grain and torn edge as blob URLs)
+initOptimizedTextures();
 
 // Initialize PWA auto-update system
 initPWAUpdates();
