@@ -16,8 +16,7 @@ const SOUND_VOLUME = 0.2;
 const pencilSounds = [
   new Howl({ src: ['/sounds/pencil-1.mp3'] }),
   new Howl({ src: ['/sounds/pencil-2.mp3'] }),
-  new Howl({ src: ['/sounds/pencil-3.mp3'] }),
-  new Howl({ src: ['/sounds/pencil-4.mp3'] })
+  new Howl({ src: ['/sounds/pencil-3.mp3'] })
 ];
 
 export function playDrawSound(movementData = {}) {
