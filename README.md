@@ -62,6 +62,9 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 ```none
 /
 ├── public/                  # Static assets
+│   ├── filters/             # SVG filters for progressive enhancement
+│   │   ├── torn-edge.svg    # Torn paper edge filter (non-iOS)
+│   │   └── paper-grain.svg  # Paper texture filter (non-iOS)
 │   ├── sounds/              # Audio files
 │   └── ...                  # Icons, manifest, etc.
 ├── src/                     # Source code
@@ -70,6 +73,7 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 │   ├── colorPalette.js      # Color swatch UI and responsive layout
 │   ├── colorPicker.js       # Custom color picker modal
 │   ├── clearCanvas.js       # Clear button drag interaction
+│   ├── deviceEnhancements.js # Progressive SVG enhancement (Android/Desktop)
 │   ├── version.js           # Version badge display
 │   ├── pwaUpdate.js         # PWA automatic update management
 │   └── style.css            # All styles
@@ -162,6 +166,45 @@ netlify deploy --prod
 * Firefox 98+
 * iOS Safari 15.4+
 
+## Platform Differences: Android vs iOS
+
+### SVG Filter Rendering
+
+The app uses a **progressive enhancement approach** for visual effects to balance quality and compatibility:
+
+### iOS Safari Limitations
+
+* iOS Safari cannot render external SVG filter references (`url('/filters/torn-edge.svg#filter')`)
+* This affects the torn paper edge effect on the clear overlay and paper grain texture
+* Inline SVG filters work but cause significant performance issues due to constant recalculation
+
+### Solution: CSS-First with Progressive Enhancement
+
+1. **Default (iOS & All Browsers)**: Uses pure CSS approach
+   * `clip-path` polygon for torn edge shape
+   * `drop-shadow` filters for shadow effects
+   * Static background for paper texture
+   * Works universally with good performance
+
+2. **Enhanced (Android, Desktop)**: Automatically upgrades to SVG filters
+   * Device detection identifies non-iOS browsers
+   * External SVG filters provide higher quality torn edge effects
+   * Better visual fidelity with realistic paper texture
+
+### Debug Parameter
+
+Add `?debugIOS` to the URL to force CSS-only mode on any device:
+
+This is useful for:
+
+* Testing iOS appearance on desktop browsers
+* Comparing CSS vs SVG rendering quality
+* Debugging visual issues across platforms
+
+### Implementation Details
+
+See `src/deviceEnhancements.js` for the progressive enhancement logic and `public/filters/` for SVG filter definitions.
+
 ## Features Explained
 
 ### Drawing Engine
@@ -184,10 +227,10 @@ Howler.js provides:
 * Full-screen mode on mobile
 * Screen wake lock prevents sleep
 * Automatic updates with periodic checking:
-  - Checks for updates every hour while app is running
-  - Checks when app becomes visible again
-  - Auto-updates and reloads when new version found
-  - Works offline (update checks fail silently)
+  * Checks for updates every hour while app is running
+  * Checks when app becomes visible again
+  * Auto-updates and reloads when new version found
+  * Works offline (update checks fail silently)
 
 
 ## License
@@ -202,9 +245,9 @@ Built for toddlers who love to create! 🎨✨
 
 * [ ] Add "color book" style picker with background overlay
 * [ ] Make sure we can refresh PWA
-* [ ] Fix iOS perf issues when clearing
+* [x] Fix iOS perf issues when clearing
 * [ ] Fix rotation clearing the canvas
-* [ ] Fix iOS canvas background not coming in
+* [x] Fix iOS canvas background not coming in
 * [ ] Fix iOS pencil issues when selecting color and then trying to draw
 * [ ] Controls?
   * [ ] Undo
