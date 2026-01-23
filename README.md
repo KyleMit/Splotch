@@ -39,6 +39,8 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 * **Pointer Events API** - Unified touch/stylus/mouse handling
 * **Howler.js** - Audio playback with sprite support
 * **vite-plugin-pwa** - PWA manifest and service worker generation
+* **Icons** - [Google Icons](https://fonts.google.com/icons)
+* **Sounds** - [ElevenLabs.io](https://elevenlabs.io/app/home)
 
 ## Project Structure
 
