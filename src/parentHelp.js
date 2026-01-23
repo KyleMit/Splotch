@@ -14,6 +14,25 @@ function detectOS() {
   }
 }
 
+function isPWAInstalled() {
+  // Check if running in standalone mode (PWA installed)
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  // iOS Safari specific check
+  const isIOSStandalone = window.navigator.standalone === true;
+
+  return isStandalone || isIOSStandalone;
+}
+
+function updateInstallStatus() {
+  if (isPWAInstalled()) {
+    // Show checkmarks on both iOS and Android install sections
+    const checkmarks = helpModal.querySelectorAll('.install-check');
+    checkmarks.forEach(check => {
+      check.hidden = false;
+    });
+  }
+}
+
 function switchTab(tabName) {
   // Update tab buttons
   const tabButtons = helpModal.querySelectorAll('.tab-button');
@@ -40,6 +59,9 @@ function openHelpModal() {
   // Detect OS and select appropriate tab
   const os = detectOS();
   switchTab(os);
+
+  // Update install status
+  updateInstallStatus();
 
   // Show modal using native dialog method
   helpModal.showModal();

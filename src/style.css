@@ -533,6 +533,13 @@ body {
   margin-right: 8px;
 }
 
+.install-check {
+  color: #4CAF50;
+  font-weight: bold;
+  margin-left: 8px;
+  font-size: 20px;
+}
+
 .help-section ol {
   padding: 16px 24px 16px 40px;
   margin: 0;
