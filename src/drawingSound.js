@@ -2,7 +2,11 @@
 
 import { Howl } from 'howler';
 
-let soundEnabled = true;
+const SOUND_ENABLED_KEY = 'splotch-sound-enabled';
+
+// Load sound preference from localStorage (default to true)
+let soundEnabled = localStorage.getItem(SOUND_ENABLED_KEY) !== 'false';
+
 let currentStrokeSoundIndex = null; // Track which sound to use for current stroke
 let currentSound = null; // Reference to the currently playing sound
 let isSoundPaused = false; // Track pause state to avoid redundant calls
@@ -88,4 +92,18 @@ export function stopDrawSound() {
   currentStrokeSoundIndex = null;
   currentSound = null;
   isSoundPaused = false;
+}
+
+export function isSoundEnabled() {
+  return soundEnabled;
+}
+
+export function setSoundEnabled(enabled) {
+  soundEnabled = enabled;
+  localStorage.setItem(SOUND_ENABLED_KEY, enabled.toString());
+
+  // Stop any playing sounds when disabling
+  if (!enabled) {
+    stopDrawSound();
+  }
 }
