@@ -43,9 +43,6 @@
     <img src="/icons/trash.svg" alt="Clear" class="clear-icon" />
   </button>
 
-  <!-- Version Number (togglable) -->
-  <div id="versionBadge" class="version-badge"></div>
-
   <!-- Parent Help Button -->
   <button class="parent-help-button" id="parentHelpButton" aria-label="Parent Guide">
     <img src="/icons/parent.svg" alt="Parent Guide" class="parent-help-icon" />
@@ -63,8 +60,10 @@
       </div>
 
       <div class="tab-content" data-tab="ios">
-        <details class="help-section" open>
-          <summary><span class="section-number">1.</span> Install as App</summary>
+        <details class="help-section">
+          <summary>
+            <span class="summary-text"><span class="section-number">1.</span> Install as App</span>
+          </summary>
           <ol>
             <li>Tap the <strong>Share</strong> button (square with arrow)</li>
             <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
@@ -74,7 +73,9 @@
         </details>
 
         <details class="help-section">
-          <summary><span class="section-number">2.</span> Enable Guided Access</summary>
+          <summary>
+            <span class="summary-text"><span class="section-number">2.</span> Enable Guided Access</span>
+          </summary>
           <ol>
             <li>Go to <strong>Settings → Accessibility → Guided Access</strong></li>
             <li>Turn on <strong>Guided Access</strong></li>
@@ -87,8 +88,10 @@
       </div>
 
       <div class="tab-content" data-tab="android">
-        <details class="help-section" open>
-          <summary><span class="section-number">1.</span> Install as App</summary>
+        <details class="help-section">
+          <summary>
+            <span class="summary-text"><span class="section-number">1.</span> Install as App</span>
+          </summary>
           <ol>
             <li>Tap the <strong>menu</strong> (three dots)</li>
             <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
@@ -98,7 +101,9 @@
         </details>
 
         <details class="help-section">
-          <summary><span class="section-number">2.</span> Enable App Pinning</summary>
+          <summary>
+            <span class="summary-text"><span class="section-number">2.</span> Enable App Pinning</span>
+          </summary>
           <ol>
             <li>Go to <strong>Settings → Security → App Pinning</strong></li>
             <li>Turn on <strong>App Pinning</strong></li>
@@ -111,7 +116,8 @@
       </div>
 
       <footer class="parent-help-footer">
-        Having issues? <a href="https://github.com/KyleMit/Splotch/issues/new" target="_blank" rel="noopener noreferrer">Report a problem</a>
+        <p>Having issues? <a href="https://github.com/KyleMit/Splotch/issues/new" target="_blank" rel="noopener noreferrer">Report a problem</a></p>
+        <p class="version-text" id="versionText"></p>
       </footer>
     </div>
   </dialog>

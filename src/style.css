@@ -298,42 +298,6 @@ body {
   stroke-width: 3;
 }
 
-/* Version Badge */
-.version-badge {
-  position: fixed;
-  bottom: 8px;
-  right: 8px;
-  font-size: 10px;
-  font-family: 'Courier New', monospace;
-  color: rgba(0, 0, 0, 0.85);
-  pointer-events: auto;
-  z-index: 1002;
-  user-select: none;
-  -webkit-user-select: none;
-  cursor: pointer;
-  padding: 4px 6px;
-  transition: color 0.3s ease;
-  border-radius: 3px;
-  min-width: 20px;
-  min-height: 16px;
-  touch-action: none;
-}
-
-.version-badge.hidden {
-  color: rgba(0, 0, 0, 0);
-}
-
-/* Larger tap target for version badge to prevent accidental zoom */
-.version-badge::before {
-  content: '';
-  position: absolute;
-  top: -20px;
-  right: -20px;
-  bottom: -20px;
-  left: -20px;
-  touch-action: none;
-}
-
 /* Responsive adjustments for portrait mode */
 @media (orientation: portrait) {
   .color-palette {
@@ -392,8 +356,8 @@ body {
 /* Parent Help Button */
 .parent-help-button {
   position: fixed;
-  bottom: 0;
-  left: 0;
+  bottom: 8px;
+  right: 8px;
   width: 48px;
   height: 48px;
   background: transparent;
@@ -533,6 +497,10 @@ body {
   list-style: none;
   background: #f8f8f8;
   transition: background 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
 }
 
 .help-section summary:hover {
@@ -543,17 +511,21 @@ body {
   display: none;
 }
 
-.help-section summary::before {
-  content: '▶';
-  display: inline-block;
-  width: 20px;
-  font-size: 12px;
+.help-section summary::after {
+  content: '›';
+  font-size: 24px;
   color: #999;
   transition: transform 0.2s ease;
+  flex-shrink: 0;
 }
 
-.help-section[open] summary::before {
+.help-section[open] summary::after {
   transform: rotate(90deg);
+}
+
+.summary-text {
+  flex: 1;
+  text-align: left;
 }
 
 .section-number {
@@ -612,6 +584,10 @@ body {
   font-size: 14px;
 }
 
+.parent-help-footer p {
+  margin: 0 0 8px 0;
+}
+
 .parent-help-footer a {
   color: #AB71E1;
   text-decoration: none;
@@ -622,4 +598,8 @@ body {
   text-decoration: underline;
 }
 
-/* Landscape mode adjustments handled by JavaScript based on palette width */
+.version-text {
+  font-size: 12px;
+  color: #bbb;
+  font-family: 'Courier New', monospace;
+}

@@ -49,23 +49,6 @@ function closeHelpModal() {
   helpModal.close();
 }
 
-function updateButtonPosition() {
-  const isPortrait = window.matchMedia('(orientation: portrait)').matches;
-
-  if (isPortrait) {
-    // Portrait: color palette is at top, button stays in corner
-    helpButton.style.left = '0';
-  } else {
-    // Landscape: color palette is on left, position button based on palette width
-    const colorPalette = document.querySelector('.color-palette');
-    if (colorPalette) {
-      const paletteWidth = colorPalette.offsetWidth;
-      // Add 8px margin from palette edge
-      helpButton.style.left = `${paletteWidth + 8}px`;
-    }
-  }
-}
-
 export function initParentHelp() {
   // Get references to existing elements
   helpButton = document.getElementById('parentHelpButton');
@@ -97,9 +80,4 @@ export function initParentHelp() {
       closeHelpModal();
     }
   });
-
-  // Update button position on load and resize
-  updateButtonPosition();
-  window.addEventListener('resize', updateButtonPosition);
-  window.addEventListener('orientationchange', updateButtonPosition);
 }

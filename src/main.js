@@ -1,4 +1,4 @@
-import { initVersionBadge } from './version.js';
+import { initVersion } from './version.js';
 import {
   initColorPicker,
   openColorPicker,
@@ -90,8 +90,8 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Initialize Version Badge display
-initVersionBadge(releaseAllPointers);
+// Initialize Version display
+initVersion();
 
 // Initialize Optimized Textures (Pre-render paper grain and torn edge)
 initOptimizedTextures();
