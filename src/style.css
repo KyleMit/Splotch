@@ -177,8 +177,7 @@ body {
 /* Torn edge aligns with button center (35px) */
 .clear-overlay {
   position: absolute;
-  left: -280%;
-  transform: translateX(-50%);
+  left: -100vw;
   width: 120vw;
   height: 110vh;
   bottom: calc(35px + 110vh); /* Hidden above by default */
