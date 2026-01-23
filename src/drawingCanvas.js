@@ -6,6 +6,7 @@ let lastColorChangeTime = 0;
 let activePointerIds = new Set();
 let activePointers = new Map();
 let onDrawSoundCallback = null;
+let onDrawStopCallback = null;
 
 // Set canvas size to fill container
 function resizeCanvas() {
@@ -78,7 +79,10 @@ function startDrawing(e) {
       x: x,
       y: y,
       isDrawing: true,
-      color: currentColor
+      color: currentColor,
+      lastTime: Date.now(),
+      distanceWindow: [], // Track recent movements for better speed calculation
+      windowStartTime: Date.now()
     });
     activePointerIds.add(e.pointerId);
   }
@@ -87,9 +91,9 @@ function startDrawing(e) {
   ctx.beginPath();
   ctx.moveTo(x, y);
 
-  // Notify callback to play draw sound
+  // Notify callback to play draw sound (starting with speed 0)
   if (onDrawSoundCallback) {
-    onDrawSoundCallback();
+    onDrawSoundCallback({ speed: 0 });
   }
 
   // Don't use pointer capture with Apple Pencil - it causes issues
@@ -115,6 +119,28 @@ function draw(e) {
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
 
+  // Calculate movement distance
+  const deltaX = x - pointerState.x;
+  const deltaY = y - pointerState.y;
+  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+  const now = Date.now();
+
+  // Add distance to rolling window
+  pointerState.distanceWindow.push(distance);
+
+  // Keep window at ~100ms of data (remove old entries)
+  const windowDuration = 100; // ms
+  if (now - pointerState.windowStartTime > windowDuration) {
+    pointerState.distanceWindow.shift();
+    pointerState.windowStartTime = now;
+  }
+
+  // Calculate speed as total distance in window / window time
+  const totalDistance = pointerState.distanceWindow.reduce((sum, d) => sum + d, 0);
+  const windowTime = Math.max(now - pointerState.windowStartTime, 1);
+  const speed = totalDistance / windowTime; // pixels per millisecond
+
   // Use the color from when this pointer started drawing
   ctx.strokeStyle = pointerState.color;
   ctx.beginPath();
@@ -122,13 +148,14 @@ function draw(e) {
   ctx.lineTo(x, y);
   ctx.stroke();
 
-  // Update this pointer's last position
+  // Update this pointer's state
   pointerState.x = x;
   pointerState.y = y;
+  pointerState.lastTime = now;
 
-  // Notify callback to play draw sound
+  // Notify callback with speed data
   if (onDrawSoundCallback) {
-    onDrawSoundCallback();
+    onDrawSoundCallback({ speed });
   }
 }
 
@@ -140,6 +167,11 @@ function stopDrawing(e) {
   activePointerIds.delete(e.pointerId);
 
   ctx.beginPath();
+
+  // Notify callback to stop draw sound
+  if (onDrawStopCallback) {
+    onDrawStopCallback();
+  }
 
   // Release pointer capture
   try {
@@ -155,6 +187,7 @@ export function initDrawingCanvas(canvasElement, options = {}) {
   ctx = canvas.getContext('2d', { willReadFrequently: false });
 
   onDrawSoundCallback = options.onDrawSound || null;
+  onDrawStopCallback = options.onDrawStop || null;
   currentColor = options.initialColor || '#AB71E1';
 
   // Setup canvas and resize handler

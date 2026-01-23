@@ -172,31 +172,6 @@ Howler.js provides:
   - Auto-updates and reloads when new version found
   - Works offline (update checks fail silently)
 
-## Customization
-
-### Colors
-
-Edit the color palette in `index.html`:
-
-```html
-<button class="color-btn" data-color="#YOUR_COLOR" style="background-color: #YOUR_COLOR;"></button>
-```
-
-### Brush Size
-
-Adjust in `src/drawingCanvas.js`:
-
-```javascript
-ctx.lineWidth = 8; // Change this value
-```
-
-### Sound Volume
-
-Adjust in `src/main.js`:
-
-```javascript
-volume: 0.3 // 0.0 to 1.0
-```
 
 ## License
 
@@ -208,12 +183,6 @@ Built for toddlers who love to create! 🎨✨
 
 ## TODO
 
-* [ ] Add pencil sound
-* [x] Add gradient picker option
-  * [x] interlace hexagons
-  * [ ] get rid of white ring
-  * [x] make sure it's always visible
-  * [ ] hexagon selection should not retain active state style for first one touched, just the one currently under the finger
 * [ ] Add "color book" style picker with background overlay
 * [ ] Make sure [installable](https://www.pwabuilder.com/reportcard?site=https://splotchy.netlify.app/)
 * [ ] Add PWA help guide for parents

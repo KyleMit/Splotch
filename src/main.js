@@ -1,4 +1,3 @@
-import { Howl } from 'howler';
 import { initVersionBadge } from './version.js';
 import {
   initColorPicker,
@@ -18,35 +17,10 @@ import {
 import { initColorPalette } from './colorPalette.js';
 import { initPWAUpdates } from './pwaUpdate.js';
 import { initOptimizedTextures } from './optimizeTextures.js';
+import { playDrawSound, stopDrawSound } from './drawingSound.js';
 
 // Canvas setup
 const canvas = document.getElementById('drawingCanvas');
-
-// Sound setup
-let soundEnabled = true;
-const pencilSounds = new Howl({
-  src: ['/sounds/pencil.mp3'],
-  sprite: {
-    draw1: [0, 100],
-    draw2: [100, 100],
-    draw3: [200, 100]
-  },
-  volume: 0.3
-});
-
-let lastSoundTime = 0;
-const soundThrottle = 50; // Play sound at most every 50ms
-
-function playDrawSound() {
-  if (!soundEnabled) return;
-
-  const now = Date.now();
-  if (now - lastSoundTime < soundThrottle) return;
-
-  lastSoundTime = now;
-  const randomSound = `draw${Math.floor(Math.random() * 3) + 1}`;
-  pencilSounds.play(randomSound);
-}
 
 // Initialize Color Palette
 const { initialColor } = initColorPalette({
@@ -62,7 +36,8 @@ const { initialColor } = initColorPalette({
 // Initialize Drawing Canvas
 const { ctx } = initDrawingCanvas(canvas, {
   initialColor: initialColor,
-  onDrawSound: playDrawSound
+  onDrawSound: playDrawSound,
+  onDrawStop: stopDrawSound
 });
 
 // Initialize Color Picker
@@ -84,9 +59,7 @@ initClearButton(
   },
   () => {
     // onClearComplete callback - stop any playing sounds
-    if (soundEnabled && pencilSounds.playing()) {
-      pencilSounds.stop();
-    }
+    stopDrawSound();
   }
 );
 
