@@ -6,11 +6,20 @@ function getVersion() {
   return new Date().toISOString().slice(0, 16).replace('T', ' ');
 }
 
+// Plugin to inject version into HTML
+function htmlVersionPlugin() {
+  const version = getVersion();
+  return {
+    name: 'html-version-inject',
+    transformIndexHtml(html) {
+      return html.replace('%VERSION%', version);
+    }
+  };
+}
+
 export default defineConfig({
-  define: {
-    __APP_VERSION__: JSON.stringify(getVersion())
-  },
   plugins: [
+    htmlVersionPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png', 'sounds/*.mp3'],

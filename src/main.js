@@ -1,4 +1,3 @@
-import { initVersion } from './version.js';
 import {
   initColorPicker,
   openColorPicker,
@@ -89,9 +88,6 @@ document.addEventListener('visibilitychange', () => {
     requestWakeLock();
   }
 });
-
-// Initialize Version display
-initVersion();
 
 // Initialize Optimized Textures (Pre-render paper grain and torn edge)
 initOptimizedTextures();
