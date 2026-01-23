@@ -248,9 +248,11 @@ Built for toddlers who love to create! 🎨✨
 * [ ] Add "color book" style picker with background overlay
 * [ ] Make sure we can refresh PWA
 * [x] Fix iOS perf issues when clearing
-* [ ] Fix rotation clearing the canvas
+* [x] Fix rotation clearing the canvas
 * [x] Fix iOS canvas background not coming in
 * [ ] Fix iOS pencil issues when selecting color and then trying to draw
+* [ ] It takes about 10s on ios for the pencil sounds to come in
+* [ ] Add control in parent center to disable sound
 * [ ] Controls?
   * [ ] Undo
   * [ ] Stoke width

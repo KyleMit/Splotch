@@ -8,29 +8,41 @@ let activePointers = new Map();
 let onDrawSoundCallback = null;
 let onDrawStopCallback = null;
 
+// Virtual canvas to preserve content across orientation changes
+let virtualCanvas = null;
+let virtualCtx = null;
+let maxWidth = 0;
+let maxHeight = 0;
+
 // Set canvas size to fill container
 function resizeCanvas() {
   const container = canvas.parentElement;
   const rect = container.getBoundingClientRect();
 
-  // Store current drawing if canvas has content using a temporary canvas
-  // This preserves the ENTIRE drawing, not just what fits in the new dimensions
-  let tempCanvas = null;
-  if (canvas.width > 0 && canvas.height > 0) {
-    tempCanvas = document.createElement('canvas');
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCtx.drawImage(canvas, 0, 0);
+  // Initialize virtual canvas on first run
+  if (!virtualCanvas) {
+    virtualCanvas = document.createElement('canvas');
+    virtualCanvas.width = Math.max(rect.width, rect.height) * 2; // Large enough for any orientation
+    virtualCanvas.height = Math.max(rect.width, rect.height) * 2;
+    virtualCtx = virtualCanvas.getContext('2d');
+    virtualCtx.lineWidth = 8;
+    virtualCtx.lineCap = 'round';
+    virtualCtx.lineJoin = 'round';
   }
 
+  // Save current canvas content to virtual canvas before resizing
+  if (canvas.width > 0 && canvas.height > 0) {
+    virtualCtx.drawImage(canvas, 0, 0);
+    maxWidth = Math.max(maxWidth, canvas.width);
+    maxHeight = Math.max(maxHeight, canvas.height);
+  }
+
+  // Resize main canvas
   canvas.width = rect.width;
   canvas.height = rect.height;
 
-  // Restore drawing if it existed
-  if (tempCanvas) {
-    ctx.drawImage(tempCanvas, 0, 0);
-  }
+  // Restore from virtual canvas
+  ctx.drawImage(virtualCanvas, 0, 0);
 
   // Set drawing properties
   ctx.lineWidth = 8;
@@ -41,6 +53,9 @@ function resizeCanvas() {
 // Helper function to force release all pointer captures
 function releaseAllPointers() {
   ctx.beginPath();
+  if (virtualCtx) {
+    virtualCtx.beginPath();
+  }
 
   // Clear all active pointers
   activePointers.clear();
@@ -90,6 +105,13 @@ function startDrawing(e) {
   ctx.strokeStyle = currentColor;
   ctx.beginPath();
   ctx.moveTo(x, y);
+
+  // Also start drawing on virtual canvas
+  if (virtualCtx) {
+    virtualCtx.strokeStyle = currentColor;
+    virtualCtx.beginPath();
+    virtualCtx.moveTo(x, y);
+  }
 
   // Notify callback to play draw sound (starting with speed 0)
   if (onDrawSoundCallback) {
@@ -148,6 +170,15 @@ function draw(e) {
   ctx.lineTo(x, y);
   ctx.stroke();
 
+  // Also draw to virtual canvas
+  if (virtualCtx) {
+    virtualCtx.strokeStyle = pointerState.color;
+    virtualCtx.beginPath();
+    virtualCtx.moveTo(pointerState.x, pointerState.y);
+    virtualCtx.lineTo(x, y);
+    virtualCtx.stroke();
+  }
+
   // Update this pointer's state
   pointerState.x = x;
   pointerState.y = y;
@@ -167,6 +198,9 @@ function stopDrawing(e) {
   activePointerIds.delete(e.pointerId);
 
   ctx.beginPath();
+  if (virtualCtx) {
+    virtualCtx.beginPath();
+  }
 
   // Notify callback to stop draw sound
   if (onDrawStopCallback) {
@@ -219,6 +253,14 @@ export function getCurrentColor() {
 
 export function updateColorChangeTime() {
   lastColorChangeTime = Date.now();
+}
+
+export function clearCanvas() {
+  // Clear both the main canvas and virtual canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (virtualCtx && virtualCanvas) {
+    virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
+  }
 }
 
 export { releaseAllPointers };

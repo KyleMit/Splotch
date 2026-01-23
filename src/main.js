@@ -34,7 +34,7 @@ const { initialColor } = initColorPalette({
 });
 
 // Initialize Drawing Canvas
-const { ctx } = initDrawingCanvas(canvas, {
+initDrawingCanvas(canvas, {
   initialColor: initialColor,
   onDrawSound: playDrawSound,
   onDrawStop: stopDrawSound
@@ -51,8 +51,6 @@ initColorPicker((selectedColor) => {
 
 // Initialize Clear Button
 initClearButton(
-  canvas,
-  ctx,
   () => {
     // onClearStart callback - stop any drawing
     releaseAllPointers();

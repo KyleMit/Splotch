@@ -1,10 +1,10 @@
 // Clear button drag-to-clear functionality
+import { clearCanvas as clearDrawingCanvas } from './drawingCanvas.js';
 
 let isDragging = false;
 let initialContainerY = 0;
 let dragOffsetY = 0;
 let clearContainer, clearButton, clearOverlay, acceptZone, pageTurnOverlay;
-let canvas, ctx;
 let onClearStartCallback = null;
 let onClearCompleteCallback = null;
 let lastOrientation = null;
@@ -103,8 +103,8 @@ function stopClearDrag(e) {
   if (clientY >= acceptThreshold) {
     // Clear confirmed
 
-    // 1. Actually clear the real canvas now (only once!)
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 1. Actually clear the canvas (both main and virtual) now (only once!)
+    clearDrawingCanvas();
 
     // Animate overlay down off screen
     clearOverlay.classList.remove('active');
@@ -179,9 +179,7 @@ function resetButtonPosition() {
 }
 
 // Initialize clear button functionality
-export function initClearButton(canvasElement, contextElement, onClearStart, onClearComplete) {
-  canvas = canvasElement;
-  ctx = contextElement;
+export function initClearButton(onClearStart, onClearComplete) {
   onClearStartCallback = onClearStart;
   onClearCompleteCallback = onClearComplete;
 
