@@ -9,6 +9,15 @@ export function initPWAUpdates() {
 
   // Import the service worker registration
   if ('serviceWorker' in navigator) {
+    // Set up update listener on the registration
+    navigator.serviceWorker.ready.then(registration => {
+      // Listen for updates found
+      registration.addEventListener('updatefound', () => {
+        console.log('Update found, installing...');
+        // The checkForUpdates function will handle this via statechange listener
+      });
+    });
+
     // Check for updates immediately on load
     checkForUpdates();
 
@@ -20,12 +29,14 @@ export function initPWAUpdates() {
     // Check for updates when app becomes visible again
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
+        console.log('App visible, checking for updates...');
         checkForUpdates();
       }
     });
 
     // Check for updates when app regains focus
     window.addEventListener('focus', () => {
+      console.log('App focused, checking for updates...');
       checkForUpdates();
     });
   }
@@ -43,12 +54,12 @@ async function checkForUpdates() {
     // Check for updates
     await registration.update();
 
-    // If there's a waiting service worker, activate it
-    if (registration.waiting) {
+    // Helper function to activate waiting service worker
+    const activateWaitingSW = (sw) => {
       console.log('New version available, updating...');
 
       // Tell the waiting service worker to activate immediately
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      sw.postMessage({ type: 'SKIP_WAITING' });
 
       // Listen for the controller change (new SW activated)
       navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -56,9 +67,31 @@ async function checkForUpdates() {
         console.log('Reloading for new version...');
         window.location.reload();
       }, { once: true });
-    } else {
-      console.log('App is up to date');
+    };
+
+    // If there's already a waiting service worker, activate it
+    if (registration.waiting) {
+      activateWaitingSW(registration.waiting);
+      return;
     }
+
+    // If there's an installing service worker, wait for it to become waiting
+    if (registration.installing) {
+      console.log('New version installing...');
+      registration.installing.addEventListener('statechange', function() {
+        if (this.state === 'installed' && registration.waiting) {
+          // Give it a moment to settle
+          setTimeout(() => {
+            if (registration.waiting) {
+              activateWaitingSW(registration.waiting);
+            }
+          }, 100);
+        }
+      });
+      return;
+    }
+
+    console.log('App is up to date');
   } catch (error) {
     // Silently fail if offline or network error
     // This is expected and normal when offline
