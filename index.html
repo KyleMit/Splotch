@@ -52,8 +52,7 @@
   </button>
 
   <!-- Parent Help Modal -->
-  <div class="parent-help-overlay" id="parentHelpOverlay"></div>
-  <div class="parent-help-modal" id="parentHelpModal">
+  <dialog class="parent-help-modal" id="parentHelpModal">
     <div class="parent-help-content">
       <button class="parent-help-close" aria-label="Close">&times;</button>
       <h2>Parent Guide</h2>
@@ -64,18 +63,18 @@
       </div>
 
       <div class="tab-content" data-tab="ios">
-        <section class="help-section">
-          <h3>Install as App</h3>
+        <details class="help-section" open>
+          <summary><span class="section-number">1.</span> Install as App</summary>
           <ol>
             <li>Tap the <strong>Share</strong> button (square with arrow)</li>
             <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
             <li>Tap <strong>"Add"</strong> in the top right</li>
             <li>Launch from your home screen for fullscreen mode</li>
           </ol>
-        </section>
+        </details>
 
-        <section class="help-section">
-          <h3>Enable Guided Access</h3>
+        <details class="help-section">
+          <summary><span class="section-number">2.</span> Enable Guided Access</summary>
           <ol>
             <li>Go to <strong>Settings → Accessibility → Guided Access</strong></li>
             <li>Turn on <strong>Guided Access</strong></li>
@@ -84,22 +83,22 @@
             <li>Tap <strong>Start</strong> to lock the app</li>
             <li>Triple-click and enter passcode to exit</li>
           </ol>
-        </section>
+        </details>
       </div>
 
       <div class="tab-content" data-tab="android">
-        <section class="help-section">
-          <h3>Install as App</h3>
+        <details class="help-section" open>
+          <summary><span class="section-number">1.</span> Install as App</summary>
           <ol>
             <li>Tap the <strong>menu</strong> (three dots)</li>
             <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
             <li>Follow the prompts</li>
             <li>Launch from your home screen for fullscreen mode</li>
           </ol>
-        </section>
+        </details>
 
-        <section class="help-section">
-          <h3>Enable App Pinning</h3>
+        <details class="help-section">
+          <summary><span class="section-number">2.</span> Enable App Pinning</summary>
           <ol>
             <li>Go to <strong>Settings → Security → App Pinning</strong></li>
             <li>Turn on <strong>App Pinning</strong></li>
@@ -108,14 +107,14 @@
             <li>Tap <strong>Start</strong> to lock the app</li>
             <li>Long-press Back + Recent Apps to exit</li>
           </ol>
-        </section>
+        </details>
       </div>
 
       <footer class="parent-help-footer">
         Having issues? <a href="https://github.com/KyleMit/Splotch/issues/new" target="_blank" rel="noopener noreferrer">Report a problem</a>
       </footer>
     </div>
-  </div>
+  </dialog>
 
   <!-- SVG Filters -->
   <svg style="position: absolute; width: 0; height: 0;">

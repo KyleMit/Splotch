@@ -1,6 +1,6 @@
 // Parent help modal with PWA installation and lock mode instructions
 
-let helpButton, helpModal, helpOverlay;
+let helpButton, helpModal;
 
 function detectOS() {
   const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -37,17 +37,16 @@ function switchTab(tabName) {
 }
 
 function openHelpModal() {
-  helpOverlay.style.display = 'block';
-  helpModal.style.display = 'block';
-
   // Detect OS and select appropriate tab
   const os = detectOS();
   switchTab(os);
+
+  // Show modal using native dialog method
+  helpModal.showModal();
 }
 
 function closeHelpModal() {
-  helpOverlay.style.display = 'none';
-  helpModal.style.display = 'none';
+  helpModal.close();
 }
 
 function updateButtonPosition() {
@@ -70,7 +69,6 @@ function updateButtonPosition() {
 export function initParentHelp() {
   // Get references to existing elements
   helpButton = document.getElementById('parentHelpButton');
-  helpOverlay = document.getElementById('parentHelpOverlay');
   helpModal = document.getElementById('parentHelpModal');
 
   // Add click handlers
@@ -82,10 +80,23 @@ export function initParentHelp() {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
 
-  // Add close handlers
+  // Add close handler for close button
   const closeButton = helpModal.querySelector('.parent-help-close');
   closeButton.addEventListener('click', closeHelpModal);
-  helpOverlay.addEventListener('click', closeHelpModal);
+
+  // Close dialog when clicking on backdrop
+  helpModal.addEventListener('click', (e) => {
+    const rect = helpModal.getBoundingClientRect();
+    const isInDialog = (
+      e.clientX >= rect.left &&
+      e.clientX <= rect.right &&
+      e.clientY >= rect.top &&
+      e.clientY <= rect.bottom
+    );
+    if (!isInDialog) {
+      closeHelpModal();
+    }
+  });
 
   // Update button position on load and resize
   updateButtonPosition();
