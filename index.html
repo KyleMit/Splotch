@@ -46,6 +46,77 @@
   <!-- Version Number (togglable) -->
   <div id="versionBadge" class="version-badge"></div>
 
+  <!-- Parent Help Button -->
+  <button class="parent-help-button" id="parentHelpButton" aria-label="Parent Guide">
+    <img src="/icons/parent.svg" alt="Parent Guide" class="parent-help-icon" />
+  </button>
+
+  <!-- Parent Help Modal -->
+  <div class="parent-help-overlay" id="parentHelpOverlay"></div>
+  <div class="parent-help-modal" id="parentHelpModal">
+    <div class="parent-help-content">
+      <button class="parent-help-close" aria-label="Close">&times;</button>
+      <h2>Parent Guide</h2>
+
+      <div class="tab-buttons">
+        <button class="tab-button" data-tab="ios">iOS</button>
+        <button class="tab-button" data-tab="android">Android</button>
+      </div>
+
+      <div class="tab-content" data-tab="ios">
+        <section class="help-section">
+          <h3>Install as App</h3>
+          <ol>
+            <li>Tap the <strong>Share</strong> button (square with arrow)</li>
+            <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
+            <li>Tap <strong>"Add"</strong> in the top right</li>
+            <li>Launch from your home screen for fullscreen mode</li>
+          </ol>
+        </section>
+
+        <section class="help-section">
+          <h3>Enable Guided Access</h3>
+          <ol>
+            <li>Go to <strong>Settings → Accessibility → Guided Access</strong></li>
+            <li>Turn on <strong>Guided Access</strong></li>
+            <li>Set a passcode</li>
+            <li>Open Splotch and triple-click the side button</li>
+            <li>Tap <strong>Start</strong> to lock the app</li>
+            <li>Triple-click and enter passcode to exit</li>
+          </ol>
+        </section>
+      </div>
+
+      <div class="tab-content" data-tab="android">
+        <section class="help-section">
+          <h3>Install as App</h3>
+          <ol>
+            <li>Tap the <strong>menu</strong> (three dots)</li>
+            <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
+            <li>Follow the prompts</li>
+            <li>Launch from your home screen for fullscreen mode</li>
+          </ol>
+        </section>
+
+        <section class="help-section">
+          <h3>Enable App Pinning</h3>
+          <ol>
+            <li>Go to <strong>Settings → Security → App Pinning</strong></li>
+            <li>Turn on <strong>App Pinning</strong></li>
+            <li>Open Splotch and tap the <strong>Recent Apps</strong> button</li>
+            <li>Swipe up on Splotch and tap the <strong>Pin</strong> icon</li>
+            <li>Tap <strong>Start</strong> to lock the app</li>
+            <li>Long-press Back + Recent Apps to exit</li>
+          </ol>
+        </section>
+      </div>
+
+      <footer class="parent-help-footer">
+        Having issues? <a href="https://github.com/KyleMit/Splotch/issues/new" target="_blank" rel="noopener noreferrer">Report a problem</a>
+      </footer>
+    </div>
+  </div>
+
   <!-- SVG Filters -->
   <svg style="position: absolute; width: 0; height: 0;">
     <defs>

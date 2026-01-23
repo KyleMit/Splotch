@@ -183,10 +183,14 @@ Built for toddlers who love to create! 🎨✨
 
 ## TODO
 
+* [x] Add help guide for parents w/ boring grey parent logo in the bottom
 * [ ] Add "color book" style picker with background overlay
 * [ ] Make sure [installable](https://www.pwabuilder.com/reportcard?site=https://splotchy.netlify.app/)
-* [ ] Add PWA help guide for parents
-  * [ ] Boring grey parent logo in the bottom
 * [ ] Make sure we can refresh PWA
 * [ ] Fix iOS perf issues when clearing
-* [ ] Fix whatever's going on with DNS / SSL
+* [ ] Fix iOS pencil issues when selecting color and then trying to draw
+* [x] Fix whatever's going on with DNS / SSL
+* [ ] Controls?
+  * [ ] Undo
+  * [ ] Stoke width
+  * [ ] Brush type

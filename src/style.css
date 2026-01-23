@@ -388,3 +388,196 @@ body {
     height: fit-content;
   }
 }
+
+/* Parent Help Button */
+.parent-help-button {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 48px;
+  height: 48px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+  z-index: 900;
+  padding: 8px;
+  touch-action: manipulation;
+}
+
+.parent-help-button:hover {
+  opacity: 0.7;
+}
+
+.parent-help-button:active {
+  opacity: 1;
+}
+
+.parent-help-icon {
+  width: 100%;
+  height: 100%;
+  filter: invert(60%) grayscale(100%);
+}
+
+.parent-help-button:hover .parent-help-icon {
+  filter: invert(40%) grayscale(100%);
+}
+
+.parent-help-button:active .parent-help-icon {
+  filter: invert(0%) grayscale(100%);
+}
+
+/* Parent Help Modal */
+.parent-help-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: none; /* Hidden by default */
+}
+
+.parent-help-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 2001;
+  display: none; /* Hidden by default */
+}
+
+.parent-help-content {
+  padding: 32px;
+  position: relative;
+}
+
+.parent-help-content h2 {
+  margin: 0 0 20px 0;
+  font-size: 24px;
+  color: #333;
+  font-weight: 600;
+}
+
+.parent-help-content h3 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  color: #555;
+  font-weight: 600;
+}
+
+/* Tab Buttons */
+.tab-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #999;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: -2px;
+}
+
+.tab-button:hover {
+  color: #666;
+  background: #f5f5f5;
+}
+
+.tab-button.active {
+  color: #AB71E1;
+  border-bottom-color: #AB71E1;
+}
+
+/* Tab Content */
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.help-section {
+  margin-bottom: 28px;
+}
+
+.help-section:last-of-type {
+  margin-bottom: 0;
+}
+
+.parent-help-content ol {
+  margin: 0;
+  padding-left: 24px;
+  color: #666;
+  line-height: 1.8;
+}
+
+.parent-help-content li {
+  margin-bottom: 8px;
+}
+
+.parent-help-content li:last-child {
+  margin-bottom: 0;
+}
+
+.parent-help-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  font-size: 32px;
+  line-height: 32px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.parent-help-close:hover {
+  color: #666;
+}
+
+.parent-help-footer {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+}
+
+.parent-help-footer a {
+  color: #AB71E1;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.parent-help-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Landscape mode adjustments handled by JavaScript based on palette width */

@@ -18,6 +18,7 @@ import { initColorPalette } from './colorPalette.js';
 import { initPWAUpdates } from './pwaUpdate.js';
 import { initOptimizedTextures } from './optimizeTextures.js';
 import { playDrawSound, stopDrawSound } from './drawingSound.js';
+import { initParentHelp } from './parentHelp.js';
 
 // Canvas setup
 const canvas = document.getElementById('drawingCanvas');
@@ -97,3 +98,6 @@ initOptimizedTextures();
 
 // Initialize PWA auto-update system
 initPWAUpdates();
+
+// Initialize Parent Help modal
+initParentHelp();
