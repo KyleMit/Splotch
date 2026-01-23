@@ -32,7 +32,7 @@ What actually happens?
 - Any screenshots or screen recordings?
 - Any other details that might help?
 
-## Parent Guide Checklist
+## Parent Center Checklist
 Have you tried:
 - [ ] Clearing the canvas
 - [ ] Closing and reopening the app
