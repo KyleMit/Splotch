@@ -149,24 +149,6 @@
         <feTurbulence type="fractalNoise" baseFrequency="1.5" numOctaves="4" result="noise"/>
         <feComposite in="SourceGraphic" in2="noise" operator="arithmetic" k1="0.02" k2="0.98" k3="0.02" k4="0"/>
       </filter>
-
-      <!-- Torn Edge Filter for Clear Line -->
-      <filter id="torn-edge" x="-25%" y="-50%" width="150%" height="280%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.008" numOctaves="3" seed="3" result="noise"/>
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="35" xChannelSelector="R" yChannelSelector="G" result="torn"/>
-
-        <!-- Create shadow from the torn edge alpha channel -->
-        <feGaussianBlur in="torn" stdDeviation="2" result="blurredEdge"/>
-        <feOffset in="blurredEdge" dx="0" dy="2" result="offsetShadow"/>
-        <feFlood flood-color="rgba(0,0,0,0.15)" result="shadowColor"/>
-        <feComposite in="shadowColor" in2="offsetShadow" operator="in" result="edgeShadow"/>
-
-        <!-- Merge shadow only where the edge is torn, then add the sharp torn edge on top -->
-        <feMerge>
-          <feMergeNode in="edgeShadow"/>
-          <feMergeNode in="torn"/>
-        </feMerge>
-      </filter>
     </defs>
   </svg>
 

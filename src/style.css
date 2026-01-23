@@ -186,7 +186,7 @@ body {
   pointer-events: none;
   z-index: -1; /* Behind button */
   overflow: visible;
-  filter: url(#torn-edge);
+  filter: url('/filters/torn-edge.svg#torn-edge');
   transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
