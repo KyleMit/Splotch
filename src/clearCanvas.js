@@ -3,7 +3,7 @@
 let isDragging = false;
 let initialButtonY = 0;
 let dragOffsetY = 0;
-let clearButton, clearLine, acceptZone, pageTurnOverlay, clearOverlay;
+let clearButton, acceptZone, pageTurnOverlay, clearOverlay;
 let canvas, ctx;
 let onClearStartCallback = null;
 let onClearCompleteCallback = null;
@@ -35,11 +35,8 @@ function startClearDrag(e) {
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   dragOffsetY = clientY - rect.top;
 
-  // Show Clear Preview elements
-  clearLine.style.display = 'block';
+  // Show accept zone
   acceptZone.style.display = 'block';
-  clearOverlay.style.display = 'block';
-  clearOverlay.style.height = '0px';
 
   const acceptY = window.innerHeight * 0.85;
   const acceptHeight = window.innerHeight - acceptY;
@@ -69,22 +66,22 @@ function dragClear(e) {
 
   // Only allow dragging downward
   if (newY > initialButtonY) {
-    // Use transform instead of top for performance (GPU acceleration)
+    // Move button
     clearButton.style.top = `${newY}px`;
     clearButton.style.transition = 'none';
 
-    // Calculate clear position
-    // 45 is roughly center of button
-    const clearScreenY = newY + 45; 
-    
-    // Move the visual elements
-    // 1. The Clear Line (torn edge)
-    clearLine.style.top = `${clearScreenY}px`;
-    clearLine.style.visibility = 'visible';
-    
-    // 2. The Overlay Curtain (covers the canvas efficiently)
-    // Instead of manipulating canvas pixels, we just slide this div down
-    clearOverlay.style.height = `${Math.max(0, clearScreenY)}px`;
+    // Calculate clear position (center of button)
+    const clearScreenY = newY + 35; // Approximate center of 70px button
+
+    // Get color palette bottom position to ensure overlay doesn't start above it
+    const palette = document.querySelector('.color-palette');
+    const paletteRect = palette?.getBoundingClientRect();
+    const paletteBottom = paletteRect ? paletteRect.bottom : 0;
+
+    // Set overlay height (white extends from top down to clear position)
+    // The overlay should not extend below the palette bottom
+    const overlayHeight = Math.max(0, clearScreenY - paletteBottom);
+    clearOverlay.style.height = `${overlayHeight}px`;
   }
 
   e.preventDefault();
@@ -98,8 +95,7 @@ function stopClearDrag(e) {
   clearButton.classList.remove('dragging');
   clearButton.classList.remove('delete-ready');
 
-  // Hide UI helpers immediately
-  clearLine.style.display = 'none';
+  // Hide accept zone
   acceptZone.style.display = 'none';
 
   const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
@@ -111,13 +107,9 @@ function stopClearDrag(e) {
 
   if (clientY >= acceptThreshold) {
     // Clear confirmed
-    
+
     // 1. Actually clear the real canvas now (only once!)
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // 2. Keep the overlay visible for a moment so it doesn't flicker
-    // then fade it out or hide it since the canvas underneath is now white
-    clearOverlay.style.display = 'none'; 
 
     // Animate button away
     clearButton.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
@@ -133,13 +125,16 @@ function stopClearDrag(e) {
       }
     }, 300);
 
-    // Reset button position
+    // Reset button position and overlay
     setTimeout(() => {
       pageTurnOverlay.classList.remove('animating');
-      
+
       clearButton.style.transition = 'none';
       clearButton.style.top = initialTop;
       clearButton.style.transform = 'scale(0.8)';
+
+      // Reset overlay to debug height
+      clearOverlay.style.height = '200px';
 
       setTimeout(() => {
         clearButton.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -149,17 +144,13 @@ function stopClearDrag(e) {
     }, 600);
 
   } else {
-    // Cancelled - Animate the curtain back up
-    if (clearOverlay) {
-        clearOverlay.style.transition = 'height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
-        clearOverlay.style.height = '0px';
-        
-        // Hide after animation
-        setTimeout(() => {
-            clearOverlay.style.transition = 'none';
-            clearOverlay.style.display = 'none';
-        }, 300);
-    }
+    // Cancelled - Animate the overlay back to debug height
+    clearOverlay.style.transition = 'height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    clearOverlay.style.height = '200px';
+
+    setTimeout(() => {
+      clearOverlay.style.transition = 'none';
+    }, 300);
 
     // Bounce button back
     clearButton.style.transition = 'top 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
@@ -191,25 +182,12 @@ export function initClearButton(canvasElement, contextElement, onClearStart, onC
   onClearStartCallback = onClearStart;
   onClearCompleteCallback = onClearComplete;
 
-  // Get clear button reference
+  // Get references to existing elements
   clearButton = document.getElementById('clearButton');
+  clearOverlay = document.getElementById('clearOverlay');
+  acceptZone = document.getElementById('clearAcceptZone');
 
-  // Create Clear Preview Line indicator with torn edge effect
-  clearLine = document.createElement('div');
-  clearLine.className = 'clear-line';
-  document.body.appendChild(clearLine);
-
-  // Create Performance Overlay (The Curtain)
-  clearOverlay = document.createElement('div');
-  clearOverlay.className = 'clear-overlay';
-  document.body.appendChild(clearOverlay);
-
-  // Create Clear Accept Zone indicator
-  acceptZone = document.createElement('div');
-  acceptZone.className = 'clear-accept-zone';
-  document.body.appendChild(acceptZone);
-
-  // Create Page Turn Overlay
+  // Create Page Turn Overlay (dynamic element)
   pageTurnOverlay = document.createElement('div');
   pageTurnOverlay.className = 'page-turn-overlay';
   document.body.appendChild(pageTurnOverlay);

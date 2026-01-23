@@ -154,19 +154,6 @@ body {
   margin-right: 2px;
 }
 
-/* Clear Preview Line - Torn edge effect */
-.clear-line {
-  position: fixed;
-  left: -10%;
-  width: 120%;
-  height: 60px; /* Increased height to accommodate torn edge wave */
-  pointer-events: none;
-  display: none;
-  z-index: 999;
-  transform: translateY(-30px); /* Adjusted for new height */
-  /* Gradient and Filter removed for performance - injected via optimizeTextures.js */
-}
-
 /* Clear Accept Zone */
 .clear-accept-zone {
   position: fixed;
@@ -180,19 +167,19 @@ body {
   z-index: 998;
 }
 
-/* New Overlay for performant clearing */
+/* White overlay with torn edge at bottom - visible for debugging */
+/* Bottom edge aligned to middle of clear button (20px + 35px = 55px) */
 .clear-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 0;
-  background: #fcfbf8;
-  filter: url(#paper-grain);
-  z-index: 990; /* Below clear line, above canvas */
+  left: -10%;
+  width: 120%;
+  top: -69px;
+  height: 120vh;
+  background: white;
   pointer-events: none;
-  display: none;
-  will-change: height;
+  z-index: 500; /* Above canvas-container (no z-index), below color-palette (1001) */
+  overflow: visible;
+  filter: url(#torn-edge);
 }
 
 /* Page Turn Overlay */
