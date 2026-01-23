@@ -112,11 +112,18 @@ body {
   /* filter: url(#paper-grain); */
 }
 
-/* Clear Button */
-.clear-button {
+/* Clear Container - wraps both overlay and button */
+.clear-container {
   position: fixed;
   top: 20px;
   right: -10px;
+  z-index: 1000;
+  pointer-events: none; /* Allow clicks through container to children */
+}
+
+/* Clear Button */
+.clear-button {
+  position: relative;
   width: 70px;
   height: 70px;
   background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
@@ -125,11 +132,11 @@ body {
   box-shadow: -4px 4px 20px rgba(0, 0, 0, 0.3);
   cursor: grab;
   touch-action: none;
-  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: box-shadow 0.2s ease;
+  pointer-events: auto; /* Button is clickable */
 }
 
 .clear-button:active {
@@ -167,17 +174,18 @@ body {
   z-index: 998;
 }
 
-/* White overlay with torn edge at bottom - visible for debugging */
-/* Bottom edge aligned to middle of clear button (20px + 35px = 55px) */
+/* White overlay with torn edge at bottom - positioned within container */
+/* Torn edge aligns with button center (35px) */
 .clear-overlay {
-  position: fixed;
-  left: -10%;
-  width: 120%;
-  top: -69px;
-  height: 120vh;
+  position: absolute;
+  left: -280%;
+  transform: translateX(-50%);
+  width: 120vw;
+  height: 110vh;
+  bottom: 35px; /* Bottom edge at button center (70px / 2) */
   background: white;
   pointer-events: none;
-  z-index: 500; /* Above canvas-container (no z-index), below color-palette (1001) */
+  z-index: -1; /* Behind button */
   overflow: visible;
   filter: url(#torn-edge);
 }
@@ -319,8 +327,11 @@ body {
     width: 100%;
   }
 
-  .clear-button {
+  .clear-container {
     top: 90px;
+  }
+
+  .clear-button {
     width: 60px;
     height: 60px;
   }

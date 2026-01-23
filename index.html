@@ -39,16 +39,19 @@
     <!-- Drawing Canvas -->
     <div class="canvas-container">
       <canvas id="drawingCanvas"></canvas>
-
-      <!-- Clear Overlay with Torn Edge at Bottom (for debugging - visible by default) -->
-      <div class="clear-overlay" id="clearOverlay"></div>
     </div>
   </div>
 
-  <!-- Floating Clear Button -->
-  <button class="clear-button" id="clearButton" aria-label="Clear drawing">
-    <img src="/icons/trash.svg" alt="Clear" class="clear-icon" />
-  </button>
+  <!-- Clear Button Container (overlay + button move together) -->
+  <div class="clear-container" id="clearContainer">
+    <!-- White overlay with torn edge at bottom -->
+    <div class="clear-overlay" id="clearOverlay"></div>
+
+    <!-- Floating Clear Button -->
+    <button class="clear-button" id="clearButton" aria-label="Clear drawing">
+      <img src="/icons/trash.svg" alt="Clear" class="clear-icon" />
+    </button>
+  </div>
 
   <!-- Clear Accept Zone -->
   <div class="clear-accept-zone" id="clearAcceptZone"></div>

@@ -1,9 +1,9 @@
 // Clear button drag-to-clear functionality
 
 let isDragging = false;
-let initialButtonY = 0;
+let initialContainerY = 0;
 let dragOffsetY = 0;
-let clearButton, acceptZone, pageTurnOverlay, clearOverlay;
+let clearContainer, clearButton, acceptZone, pageTurnOverlay;
 let canvas, ctx;
 let onClearStartCallback = null;
 let onClearCompleteCallback = null;
@@ -28,9 +28,9 @@ function startClearDrag(e) {
 
   clearButton.classList.add('dragging');
 
-  // Store initial button position and drag offset
-  const rect = clearButton.getBoundingClientRect();
-  initialButtonY = rect.top;
+  // Store initial container position and drag offset
+  const rect = clearContainer.getBoundingClientRect();
+  initialContainerY = rect.top;
 
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   dragOffsetY = clientY - rect.top;
@@ -65,23 +65,9 @@ function dragClear(e) {
   }
 
   // Only allow dragging downward
-  if (newY > initialButtonY) {
-    // Move button
-    clearButton.style.top = `${newY}px`;
-    clearButton.style.transition = 'none';
-
-    // Calculate clear position (center of button)
-    const clearScreenY = newY + 35; // Approximate center of 70px button
-
-    // Get color palette bottom position to ensure overlay doesn't start above it
-    const palette = document.querySelector('.color-palette');
-    const paletteRect = palette?.getBoundingClientRect();
-    const paletteBottom = paletteRect ? paletteRect.bottom : 0;
-
-    // Set overlay height (white extends from top down to clear position)
-    // The overlay should not extend below the palette bottom
-    const overlayHeight = Math.max(0, clearScreenY - paletteBottom);
-    clearOverlay.style.height = `${overlayHeight}px`;
+  if (newY > initialContainerY) {
+    // Move container (overlay moves automatically)
+    clearContainer.style.top = `${newY}px`;
   }
 
   e.preventDefault();
@@ -125,16 +111,13 @@ function stopClearDrag(e) {
       }
     }, 300);
 
-    // Reset button position and overlay
+    // Reset container position
     setTimeout(() => {
       pageTurnOverlay.classList.remove('animating');
 
       clearButton.style.transition = 'none';
-      clearButton.style.top = initialTop;
+      clearContainer.style.top = initialTop;
       clearButton.style.transform = 'scale(0.8)';
-
-      // Reset overlay to debug height
-      clearOverlay.style.height = '200px';
 
       setTimeout(() => {
         clearButton.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -144,34 +127,30 @@ function stopClearDrag(e) {
     }, 600);
 
   } else {
-    // Cancelled - Animate the overlay back to debug height
-    clearOverlay.style.transition = 'height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    clearOverlay.style.height = '200px';
+    // Cancelled - Bounce container back (overlay moves automatically)
+    clearContainer.style.transition = 'top 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    clearContainer.style.top = initialTop;
 
     setTimeout(() => {
-      clearOverlay.style.transition = 'none';
+      clearContainer.style.transition = '';
     }, 300);
-
-    // Bounce button back
-    clearButton.style.transition = 'top 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    clearButton.style.top = initialTop;
   }
 
   e.preventDefault();
   e.stopPropagation();
 }
 
-// Reset button to default position based on current orientation
+// Reset container to default position based on current orientation
 function resetButtonPosition() {
-  if (!clearButton || isDragging) return;
+  if (!clearContainer || isDragging) return;
 
   // Reset to default position
-  clearButton.style.transition = 'top 0.3s ease';
-  clearButton.style.top = getDefaultTop();
+  clearContainer.style.transition = 'top 0.3s ease';
+  clearContainer.style.top = getDefaultTop();
 
   // Remove transition after animation completes
   setTimeout(() => {
-    clearButton.style.transition = '';
+    clearContainer.style.transition = '';
   }, 300);
 }
 
@@ -183,8 +162,8 @@ export function initClearButton(canvasElement, contextElement, onClearStart, onC
   onClearCompleteCallback = onClearComplete;
 
   // Get references to existing elements
+  clearContainer = document.getElementById('clearContainer');
   clearButton = document.getElementById('clearButton');
-  clearOverlay = document.getElementById('clearOverlay');
   acceptZone = document.getElementById('clearAcceptZone');
 
   // Create Page Turn Overlay (dynamic element)
