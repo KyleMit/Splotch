@@ -15,12 +15,28 @@ function detectOS() {
 }
 
 function isPWAInstalled() {
-  // Check if running in standalone mode (PWA installed)
+  // Check various display modes (PWA installed)
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
+  const isMinimalUI = window.matchMedia('(display-mode: minimal-ui)').matches;
+
   // iOS Safari specific check
   const isIOSStandalone = window.navigator.standalone === true;
 
-  return isStandalone || isIOSStandalone;
+  // Check if not running in a regular browser window
+  const isDisplayMode = isStandalone || isFullscreen || isMinimalUI || isIOSStandalone;
+
+  // Debug logging
+  if (isDisplayMode) {
+    console.log('PWA Detected:', {
+      standalone: isStandalone,
+      fullscreen: isFullscreen,
+      minimalUI: isMinimalUI,
+      iosStandalone: isIOSStandalone
+    });
+  }
+
+  return isDisplayMode;
 }
 
 function updateInstallStatus() {
