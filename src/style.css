@@ -168,10 +168,9 @@ body {
   width: 100%;
   bottom: 0;
   background: rgba(255, 56, 56, 0.25);
-  border-top: 3px solid rgba(255, 56, 56, 0.6);
   pointer-events: none;
   display: none;
-  z-index: 998;
+  z-index: 1001; /* Above clear-container (1000) */
 }
 
 /* White overlay with torn edge at bottom - positioned within container */

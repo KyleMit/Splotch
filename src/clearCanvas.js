@@ -132,13 +132,18 @@ function stopClearDrag(e) {
       clearContainer.style.top = initialTop;
       clearButton.style.transform = 'scale(0.8)';
 
-      // Reset overlay classes
+      // Reset overlay - disable transition and snap to hidden position
+      clearOverlay.classList.add('dragging'); // Disable transition
       clearOverlay.classList.remove('accepted');
+      clearOverlay.classList.remove('active');
 
       setTimeout(() => {
         clearButton.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
         clearButton.style.opacity = '1';
         clearButton.style.transform = 'scale(1)';
+
+        // Re-enable transitions for next time
+        clearOverlay.classList.remove('dragging');
       }, 50);
     }, 600);
 
