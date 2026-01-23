@@ -10,8 +10,9 @@ export function initDeviceEnhancements() {
 
   // Detect iOS devices
   // Check for iPad/iPhone/iPod in user agent, or iPad masquerading as desktop Safari
+  // Use word boundary or "Macintosh" to avoid false positives (e.g., don't match "Mac" in other words)
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1);
+                (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 
   // Only apply SVG enhancements on non-iOS devices (unless debugging)
   if (!isIOS && !debugIOS) {
