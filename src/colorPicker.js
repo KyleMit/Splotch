@@ -62,7 +62,7 @@ const COLOR_FAMILIES = [
     name: 'grays',
     priority: 9, // Drop first if space limited
     colors: [
-      '#B0BEC5', '#90A4AE', '#78909C', '#607D8B', '#546E7A', '#455A64', '#37474F', '#263238', '#1A1F24'
+      '#ffffff', '#90A4AE', '#78909C', '#607D8B', '#546E7A', '#455A64', '#37474F', '#263238', '#1A1F24'
     ]
   }
 ];
@@ -143,9 +143,10 @@ function createHexagonGrid(containerWidth, maxHeight) {
   const hexWidth = hexSize * Math.sqrt(3); // Flat edge to flat edge
   const hexHeight = hexSize * 2; // Point to point
 
-  // Tight honeycomb tessellation - hexagons just touching
-  const horizontalSpacing = hexWidth; // Distance between centers in same row (tight)
-  const verticalSpacing = hexHeight * 0.75; // Distance between row centers (3/4 height)
+  // Add small gap between hexagons for stroke visibility
+  const gap = 3; // Small gap to prevent stroke overlap
+  const horizontalSpacing = hexWidth + gap; // Distance between centers in same row
+  const verticalSpacing = hexHeight * 0.75 + gap; // Distance between row centers
   const rowOffset = hexWidth / 2; // Odd rows shift by half width for nesting
 
   const padding = 10;
@@ -190,8 +191,10 @@ function createHexagonGrid(containerWidth, maxHeight) {
       const hexPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       hexPath.setAttribute('d', generateHexagonPath(centerX, centerY, hexSize));
       hexPath.setAttribute('fill', colorsToRender[colorIndex]);
-      hexPath.setAttribute('stroke', 'white');
+      hexPath.setAttribute('stroke', '#ccc');
       hexPath.setAttribute('stroke-width', '1.5');
+      hexPath.setAttribute('stroke-linejoin', 'round');
+      hexPath.setAttribute('vector-effect', 'non-scaling-stroke');
       hexPath.classList.add('hexagon');
       hexPath.dataset.color = colorsToRender[colorIndex];
 
@@ -207,6 +210,7 @@ function createHexagonGrid(containerWidth, maxHeight) {
 let customColor = '#AB71E1'; // Default purple
 let customColorSelected = false; // Track if user chose a custom color
 let currentHoveredHex = null; // Track currently hovered hexagon
+let currentSelectedHex = null; // Track currently selected hexagon
 let colorPickerOverlay, colorPickerContainer, hexagonGrid;
 let onColorSelectedCallback = null;
 
@@ -214,6 +218,18 @@ let onColorSelectedCallback = null;
 function openColorPicker() {
   if (colorPickerOverlay) {
     colorPickerOverlay.classList.add('visible');
+
+    // Find and highlight the currently selected color
+    if (customColor && hexagonGrid) {
+      const hexagons = hexagonGrid.querySelectorAll('.hexagon');
+      hexagons.forEach(hex => {
+        // Normalize colors for comparison (lowercase)
+        if (hex.dataset.color.toLowerCase() === customColor.toLowerCase()) {
+          currentSelectedHex = hex;
+          hex.classList.add('selected');
+        }
+      });
+    }
   }
 }
 
@@ -225,6 +241,12 @@ function closeColorPicker(selectedColor = null) {
     if (currentHoveredHex) {
       currentHoveredHex.classList.remove('hover');
       currentHoveredHex = null;
+    }
+
+    // Clear any selected state
+    if (currentSelectedHex) {
+      currentSelectedHex.classList.remove('selected');
+      currentSelectedHex = null;
     }
 
     // Update custom color if one was selected

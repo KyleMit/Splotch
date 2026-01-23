@@ -61,6 +61,7 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 * Generators
   * https://realfavicongenerator.net/
   * https://www.pwabuilder.com/reportcard?site=https://splotch.art/
+  * https://metatags.io/?url=https%3A%2F%2Fsplotch.art
 
 ## Project Structure
 
@@ -246,4 +247,4 @@ Built for toddlers who love to create! 🎨✨
   * [x] Undo
   * [ ] Eraser or at least white color in color palette
   * [ ] Stoke width
-  * [ ] Brush type
+  * [ ] Brush type (blend mode with previous drawing)

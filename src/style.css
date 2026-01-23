@@ -315,12 +315,29 @@ body {
 .hexagon {
   cursor: pointer;
   transition: filter 0.1s ease, stroke 0.1s ease, stroke-width 0.1s ease;
+  pointer-events: all;
+}
+
+.hexagon.selected {
+  stroke: #AB71E1 !important;
+  stroke-width: 4 !important;
+  filter: drop-shadow(0 0 4px rgba(171, 113, 225, 0.6));
+  paint-order: stroke fill;
 }
 
 .hexagon.hover {
-  filter: brightness(1.15);
-  stroke: #333;
-  stroke-width: 3;
+  filter: brightness(1.1);
+  stroke: #333 !important;
+  stroke-width: 4 !important;
+  paint-order: stroke fill;
+}
+
+/* Hover state for selected hexagon */
+.hexagon.selected.hover {
+  filter: brightness(1.1) drop-shadow(0 0 4px rgba(171, 113, 225, 0.6));
+  stroke: #8E44AD !important;
+  stroke-width: 4 !important;
+  paint-order: stroke fill;
 }
 
 /* Responsive adjustments for portrait mode */
