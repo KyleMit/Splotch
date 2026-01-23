@@ -58,6 +58,10 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
   * [**Service Workers**](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) - Offline functionality and auto-updates
   * [**Display Mode Detection**](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/display-mode) - PWA installation status detection
 
+* Generators
+  * https://realfavicongenerator.net/
+  * https://www.pwabuilder.com/reportcard?site=https://splotch.art/
+
 ## Project Structure
 
 ```none
@@ -104,18 +108,6 @@ npm run build
 # Preview production build
 npm run preview
 ```
-
-## Setup Requirements
-
-### 1. Audio Files
-
-You need to add a pencil drawing sound file:
-
-1. Create or download a pencil scratching sound
-2. Place it at `public/sounds/pencil.mp3`
-3. The file should be ~300ms with 3 short sound variations
-
-See `public/sounds/README.md` for detailed instructions on creating/finding audio files.
 
 ## Installing as a PWA
 
@@ -249,8 +241,9 @@ Built for toddlers who love to create! 🎨✨
 * [ ] Make sure we can refresh PWA
 * [ ] It takes about 10s on ios for the pencil sounds to come in
 * [ ] Paper edge filter could be smoother and not applying correctly on android
+* [ ] Refactor to use drag and drop API (doesn't work on mobile)
 * [ ] Controls?
   * [x] Undo
-  * [ ] Eraser or at least white color in color pallete
+  * [ ] Eraser or at least white color in color palette
   * [ ] Stoke width
   * [ ] Brush type
