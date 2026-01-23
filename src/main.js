@@ -15,7 +15,7 @@ import {
 } from './drawingCanvas.js';
 import { initColorPalette } from './colorPalette.js';
 import { initPWAUpdates } from './pwaUpdate.js';
-import { initOptimizedTextures } from './optimizeTextures.js';
+import { initDeviceEnhancements } from './deviceEnhancements.js';
 import { playDrawSound, stopDrawSound } from './drawingSound.js';
 import { initParentHelp } from './parentHelp.js';
 
@@ -89,8 +89,8 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Initialize Optimized Textures (Pre-render paper grain and torn edge as blob URLs)
-initOptimizedTextures();
+// Initialize device-specific enhancements (SVG filters on capable devices)
+initDeviceEnhancements();
 
 // Initialize PWA auto-update system
 initPWAUpdates();

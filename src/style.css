@@ -180,12 +180,26 @@ body {
   width: 120vw;
   height: 110vh;
   bottom: calc(35px + 110vh); /* Hidden above by default */
-  background: white;
   pointer-events: none;
   z-index: -1; /* Behind button */
   overflow: visible;
-  /* Torn edge filter applied via JavaScript (optimizeTextures.js) */
   transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Default CSS approach for cross-browser compatibility */
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)) drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+}
+
+/* Inner div with clip-path for torn edge */
+.clear-overlay-inner {
+  width: 100%;
+  height: 100%;
+  background: white;
+  clip-path: polygon(
+    0 0, 100% 0, 100% 96%,
+    95% 98%, 90% 97%, 85% 98.5%, 80% 97.5%, 75% 98%, 70% 97%,
+    65% 98%, 60% 97.5%, 55% 98%, 50% 97%, 45% 98%, 40% 97.5%,
+    35% 98%, 30% 97%, 25% 98%, 20% 97.5%, 15% 98%, 10% 97%,
+    5% 98%, 0 97%
+  );
 }
 
 /* Active state - overlay visible at button center */
