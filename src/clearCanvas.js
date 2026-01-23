@@ -3,7 +3,7 @@
 let isDragging = false;
 let initialContainerY = 0;
 let dragOffsetY = 0;
-let clearContainer, clearButton, acceptZone, pageTurnOverlay;
+let clearContainer, clearButton, clearOverlay, acceptZone, pageTurnOverlay;
 let canvas, ctx;
 let onClearStartCallback = null;
 let onClearCompleteCallback = null;
@@ -27,6 +27,14 @@ function startClearDrag(e) {
   }
 
   clearButton.classList.add('dragging');
+
+  // Animate overlay in
+  clearOverlay.classList.add('active');
+
+  // After animation, add dragging class to disable transitions
+  setTimeout(() => {
+    clearOverlay.classList.add('dragging');
+  }, 300);
 
   // Store initial container position and drag offset
   const rect = clearContainer.getBoundingClientRect();
@@ -80,6 +88,7 @@ function stopClearDrag(e) {
   isDragging = false;
   clearButton.classList.remove('dragging');
   clearButton.classList.remove('delete-ready');
+  clearOverlay.classList.remove('dragging');
 
   // Hide accept zone
   acceptZone.style.display = 'none';
@@ -97,6 +106,10 @@ function stopClearDrag(e) {
     // 1. Actually clear the real canvas now (only once!)
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Animate overlay down off screen
+    clearOverlay.classList.remove('active');
+    clearOverlay.classList.add('accepted');
+
     // Animate button away
     clearButton.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
     clearButton.style.opacity = '0';
@@ -111,13 +124,16 @@ function stopClearDrag(e) {
       }
     }, 300);
 
-    // Reset container position
+    // Reset container position and overlay
     setTimeout(() => {
       pageTurnOverlay.classList.remove('animating');
 
       clearButton.style.transition = 'none';
       clearContainer.style.top = initialTop;
       clearButton.style.transform = 'scale(0.8)';
+
+      // Reset overlay classes
+      clearOverlay.classList.remove('accepted');
 
       setTimeout(() => {
         clearButton.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -127,9 +143,12 @@ function stopClearDrag(e) {
     }, 600);
 
   } else {
-    // Cancelled - Bounce container back (overlay moves automatically)
+    // Cancelled - Bounce container back, animate overlay up off screen
     clearContainer.style.transition = 'top 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
     clearContainer.style.top = initialTop;
+
+    // Animate overlay back up off screen
+    clearOverlay.classList.remove('active');
 
     setTimeout(() => {
       clearContainer.style.transition = '';
@@ -164,6 +183,7 @@ export function initClearButton(canvasElement, contextElement, onClearStart, onC
   // Get references to existing elements
   clearContainer = document.getElementById('clearContainer');
   clearButton = document.getElementById('clearButton');
+  clearOverlay = document.getElementById('clearOverlay');
   acceptZone = document.getElementById('clearAcceptZone');
 
   // Create Page Turn Overlay (dynamic element)
