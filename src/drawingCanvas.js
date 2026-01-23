@@ -77,9 +77,10 @@ function releaseAllPointers() {
 // Drawing functions
 function startDrawing(e) {
   // Prevent drawing immediately after color change
-  // Use shorter delay for Apple Pencil (20ms) vs other inputs (100ms)
+  // Use minimal delay for Apple Pencil (0ms) vs other inputs (100ms)
+  // Apple Pencil has better precision and doesn't need delay
   const timeSinceColorChange = Date.now() - lastColorChangeTime;
-  const requiredDelay = e.pointerType === 'pen' ? 20 : 100;
+  const requiredDelay = e.pointerType === 'pen' ? 0 : 100;
   if (timeSinceColorChange < requiredDelay) {
     return;
   }
@@ -260,6 +261,13 @@ export function clearCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (virtualCtx && virtualCanvas) {
     virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
+  }
+}
+
+export function focusCanvas() {
+  // Focus the canvas to ensure it can receive pointer events immediately
+  if (canvas) {
+    canvas.focus();
   }
 }
 

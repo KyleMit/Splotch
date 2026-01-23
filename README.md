@@ -250,7 +250,7 @@ Built for toddlers who love to create! 🎨✨
 * [x] Fix iOS perf issues when clearing
 * [x] Fix rotation clearing the canvas
 * [x] Fix iOS canvas background not coming in
-* [ ] Fix iOS pencil issues when selecting color and then trying to draw
+* [x] Fix iOS pencil issues when selecting color and then trying to draw
 * [ ] It takes about 10s on ios for the pencil sounds to come in
 * [x] Add control in parent center to disable sound
 * [ ] Controls?

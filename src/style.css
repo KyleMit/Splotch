@@ -110,6 +110,7 @@ body {
   background-color: #fcfbf8;
   background-image: url('/icons/handmade-paper.png');
   background-repeat: repeat;
+  outline: none; /* Remove focus outline */
 }
 
 /* Clear Container - wraps both overlay and button */

@@ -11,7 +11,8 @@ import {
   setColor,
   getCurrentColor,
   updateColorChangeTime,
-  releaseAllPointers
+  releaseAllPointers,
+  focusCanvas
 } from './drawingCanvas.js';
 import { initColorPalette } from './colorPalette.js';
 import { initPWAUpdates } from './pwaUpdate.js';
@@ -30,7 +31,8 @@ const { initialColor } = initColorPalette({
   updateGradientSwatchRing,
   setColor,
   releaseAllPointers,
-  updateColorChangeTime
+  updateColorChangeTime,
+  focusCanvas
 });
 
 // Initialize Drawing Canvas
@@ -47,6 +49,9 @@ initColorPicker((selectedColor) => {
   updateGradientSwatchRing();
   releaseAllPointers();
   updateColorChangeTime();
+
+  // Focus canvas to ensure it can receive events immediately (iOS fix)
+  focusCanvas();
 });
 
 // Initialize Clear Button

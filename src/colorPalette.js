@@ -14,7 +14,8 @@ export function initColorPalette(options = {}) {
     updateGradientSwatchRing = () => {},
     setColor = () => {},
     releaseAllPointers = () => {},
-    updateColorChangeTime = () => {}
+    updateColorChangeTime = () => {},
+    focusCanvas = () => {}
   } = options;
 
   colorSwatches = document.querySelectorAll('.color-swatch');
@@ -28,7 +29,6 @@ export function initColorPalette(options = {}) {
   // Prevent Color Palette from interfering with drawing
   colorPalette.addEventListener('pointerdown', (e) => {
     releaseAllPointers();
-    updateColorChangeTime();
     e.preventDefault();
     e.stopPropagation();
   });
@@ -77,6 +77,9 @@ export function initColorPalette(options = {}) {
       releaseAllPointers();
       updateColorChangeTime();
 
+      // Focus canvas to ensure it can receive events immediately (iOS fix)
+      focusCanvas();
+
       e.preventDefault();
       e.stopPropagation();
     });
@@ -85,7 +88,6 @@ export function initColorPalette(options = {}) {
     btn.addEventListener('pointerdown', (e) => {
       // Release all pointers and reset state
       releaseAllPointers();
-      updateColorChangeTime();
       onColorChangeStart();
 
       e.preventDefault();
