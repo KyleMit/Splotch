@@ -33,14 +33,29 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 
 ## Tech Stack
 
-* **Vite** - Fast build tool and dev server
-* **Vanilla JavaScript** - No framework overhead
-* **HTML5 Canvas** - Native, performant drawing
-* **Pointer Events API** - Unified touch/stylus/mouse handling
-* **Howler.js** - Audio playback with sprite support
-* **vite-plugin-pwa** - PWA manifest and service worker generation
-* **Icons** - [Google Icons](https://fonts.google.com/icons)
-* **Sounds** - [ElevenLabs.io](https://elevenlabs.io/app/home)
+* **Core Technologies**
+  * [**Vanilla JavaScript**](https://developer.mozilla.org/en-US/docs/Web/JavaScript) - No framework overhead, modular ES6 architecture
+  * [**HTML5 Canvas**](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) - Native, performant drawing with optimized rendering
+  * [**HTML Dialog Element**](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) - Native modal dialogs with backdrop support
+  * [**HTML Details/Summary**](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details) - Collapsible instruction sections
+
+* **Build & PWA**
+  * [**Vite**](https://vite.dev/) - Fast build tool with hot module replacement
+  * [**vite-plugin-pwa**](https://vite-pwa-org.netlify.app/) - PWA manifest and service worker generation with auto-updates
+
+* **Audio & Media**
+  * [**Howler.js**](https://howlerjs.com/) - Audio playback with speed-based pause/resume
+  * [**ElevenLabs Sound Effects**](https://elevenlabs.io/app/sound-effects) - AI-generated pencil drawing sounds
+
+* **Design Assets**
+  * [**Material Design Icons**](https://fonts.google.com/icons) - SVG icons for UI elements (parent, trash, new page)
+  * [**Google Fonts (Quicksand)**](https://fonts.google.com/specimen/Quicksand) - Playful, legible rounded font
+
+* **Browser APIs**
+  * [**Pointer Events API**](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events) - Unified touch/stylus/mouse handling with multi-touch support
+  * [**Wake Lock API**](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Wake_Lock_API) - Keeps screen on during drawing
+  * [**Service Workers**](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) - Offline functionality and auto-updates
+  * [**Display Mode Detection**](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/display-mode) - PWA installation status detection
 
 ## Project Structure
 
