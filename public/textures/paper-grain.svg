@@ -1,9 +1,0 @@
-<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'>
-  <defs>
-    <filter id='paper-grain'>
-      <feTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/>
-    </filter>
-  </defs>
-  <rect width='100' height='100' fill='transparent'/>
-  <rect width='100' height='100' filter='url(#paper-grain)' opacity='0.05'/>
-</svg>
