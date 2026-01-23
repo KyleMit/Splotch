@@ -14,6 +14,11 @@ let virtualCtx = null;
 let maxWidth = 0;
 let maxHeight = 0;
 
+// Undo history - store single snapshot before last action
+let undoSnapshot = null;
+let canUndo = false;
+let onUndoStateChange = null;
+
 // Set canvas size to fill container
 function resizeCanvas() {
   const container = canvas.parentElement;
@@ -84,6 +89,9 @@ function startDrawing(e) {
   if (timeSinceColorChange < requiredDelay) {
     return;
   }
+
+  // Save canvas state before starting new stroke (for undo)
+  saveUndoSnapshot();
 
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
@@ -216,6 +224,58 @@ function stopDrawing(e) {
   }
 }
 
+// Save canvas snapshot for undo
+function saveUndoSnapshot() {
+  if (!canvas || !ctx) return;
+
+  // Create snapshot canvas if it doesn't exist
+  if (!undoSnapshot) {
+    undoSnapshot = document.createElement('canvas');
+  }
+
+  // Match current canvas size
+  undoSnapshot.width = canvas.width;
+  undoSnapshot.height = canvas.height;
+
+  // Copy current canvas state
+  const snapshotCtx = undoSnapshot.getContext('2d');
+  snapshotCtx.clearRect(0, 0, undoSnapshot.width, undoSnapshot.height);
+  snapshotCtx.drawImage(canvas, 0, 0);
+
+  // Update undo availability
+  canUndo = true;
+  if (onUndoStateChange) {
+    onUndoStateChange(canUndo);
+  }
+}
+
+// Undo last action
+export function undo() {
+  if (!canUndo || !undoSnapshot || !canvas || !ctx) return;
+
+  // Restore snapshot to canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(undoSnapshot, 0, 0);
+
+  // Also restore to virtual canvas
+  if (virtualCtx && virtualCanvas) {
+    virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
+    virtualCtx.drawImage(undoSnapshot, 0, 0);
+  }
+
+  // Clear undo state
+  canUndo = false;
+  undoSnapshot = null;
+  if (onUndoStateChange) {
+    onUndoStateChange(canUndo);
+  }
+}
+
+// Check if undo is available
+export function getCanUndo() {
+  return canUndo;
+}
+
 // Initialize drawing canvas
 export function initDrawingCanvas(canvasElement, options = {}) {
   canvas = canvasElement;
@@ -223,6 +283,7 @@ export function initDrawingCanvas(canvasElement, options = {}) {
 
   onDrawSoundCallback = options.onDrawSound || null;
   onDrawStopCallback = options.onDrawStop || null;
+  onUndoStateChange = options.onUndoStateChange || null;
   currentColor = options.initialColor || '#AB71E1';
 
   // Setup canvas and resize handler
@@ -261,6 +322,13 @@ export function clearCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (virtualCtx && virtualCanvas) {
     virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
+  }
+
+  // Clear undo history
+  canUndo = false;
+  undoSnapshot = null;
+  if (onUndoStateChange) {
+    onUndoStateChange(canUndo);
   }
 }
 

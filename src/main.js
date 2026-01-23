@@ -12,9 +12,12 @@ import {
   getCurrentColor,
   updateColorChangeTime,
   releaseAllPointers,
-  focusCanvas
+  focusCanvas,
+  undo,
+  getCanUndo
 } from './drawingCanvas.js';
 import { initColorPalette } from './colorPalette.js';
+import { initActionsPanel, updateUndoButton } from './actionsPanel.js';
 import { initPWAUpdates } from './pwaUpdate.js';
 import { initDeviceEnhancements } from './deviceEnhancements.js';
 import { playDrawSound, stopDrawSound } from './drawingSound.js';
@@ -39,7 +42,18 @@ const { initialColor } = initColorPalette({
 initDrawingCanvas(canvas, {
   initialColor: initialColor,
   onDrawSound: playDrawSound,
-  onDrawStop: stopDrawSound
+  onDrawStop: stopDrawSound,
+  onUndoStateChange: (canUndo) => {
+    updateUndoButton(canUndo);
+  }
+});
+
+// Initialize Actions Panel
+initActionsPanel({
+  onUndo: () => {
+    undo();
+  },
+  initialCanUndo: getCanUndo()
 });
 
 // Initialize Color Picker

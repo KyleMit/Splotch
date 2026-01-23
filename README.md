@@ -250,6 +250,7 @@ Built for toddlers who love to create! 🎨✨
 * [ ] It takes about 10s on ios for the pencil sounds to come in
 * [ ] Paper edge filter could be smoother and not applying correctly on android
 * [ ] Controls?
-  * [ ] Undo
+  * [x] Undo
+  * [ ] Eraser or at least white color in color pallete
   * [ ] Stoke width
   * [ ] Brush type
