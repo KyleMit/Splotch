@@ -16,7 +16,6 @@ export function initDeviceEnhancements() {
   // Only apply SVG enhancements on non-iOS devices (unless debugging)
   if (!isIOS && !debugIOS) {
     applyTornEdgeSVG();
-    applyPaperGrainSVG();
   }
 }
 
@@ -26,12 +25,4 @@ function applyTornEdgeSVG() {
 
   // Override default CSS with SVG filter for better quality
   overlay.style.filter = "url('/filters/torn-edge.svg#torn-edge')";
-}
-
-function applyPaperGrainSVG() {
-  const canvas = document.getElementById('drawingCanvas');
-  if (!canvas) return;
-
-  // Apply paper grain texture as background
-  canvas.style.backgroundImage = "url('/filters/paper-grain.svg')";
 }

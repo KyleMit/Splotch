@@ -108,7 +108,8 @@ body {
   width: 100%;
   height: 100%;
   background-color: #fcfbf8;
-  /* Paper grain texture applied via JavaScript (optimizeTextures.js) */
+  background-image: url('/icons/handmade-paper.png');
+  background-repeat: repeat;
 }
 
 /* Clear Container - wraps both overlay and button */

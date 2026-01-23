@@ -50,6 +50,7 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 * **Design Assets**
   * [**Material Design Icons**](https://fonts.google.com/icons) - SVG icons for UI elements (parent, trash, new page)
   * [**Google Fonts (Quicksand)**](https://fonts.google.com/specimen/Quicksand) - Playful, legible rounded font
+  * [**Transparent Textures**](https://www.transparenttextures.com/) - Background paper texture
 
 * **Browser APIs**
   * [**Pointer Events API**](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events) - Unified touch/stylus/mouse handling with multi-touch support
@@ -63,10 +64,11 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 /
 ├── public/                  # Static assets
 │   ├── filters/             # SVG filters for progressive enhancement
-│   │   ├── torn-edge.svg    # Torn paper edge filter (non-iOS)
-│   │   └── paper-grain.svg  # Paper texture filter (non-iOS)
+│   │   └── torn-edge.svg    # Torn paper edge filter (non-iOS)
 │   ├── sounds/              # Audio files
-│   └── ...                  # Icons, manifest, etc.
+│   ├── icons/               # Icons and images
+│   │   └── handmade-paper.png # Paper texture background
+│   └── ...                  # Manifest, etc.
 ├── src/                     # Source code
 │   ├── main.js              # App initialization and orchestration
 │   ├── drawingCanvas.js     # Canvas drawing logic
@@ -175,21 +177,21 @@ The app uses a **progressive enhancement approach** for visual effects to balanc
 ### iOS Safari Limitations
 
 * iOS Safari cannot render external SVG filter references (`url('/filters/torn-edge.svg#filter')`)
-* This affects the torn paper edge effect on the clear overlay and paper grain texture
+* This affects the torn paper edge effect on the clear overlay
 * Inline SVG filters work but cause significant performance issues due to constant recalculation
 
 ### Solution: CSS-First with Progressive Enhancement
 
 1. **Default (iOS & All Browsers)**: Uses pure CSS approach
-   * `clip-path` polygon for torn edge shape
+   * `clip-path` polygon for torn edge shape on clear overlay
    * `drop-shadow` filters for shadow effects
-   * Static background for paper texture
+   * PNG image for paper texture (works universally)
    * Works universally with good performance
 
 2. **Enhanced (Android, Desktop)**: Automatically upgrades to SVG filters
    * Device detection identifies non-iOS browsers
-   * External SVG filters provide higher quality torn edge effects
-   * Better visual fidelity with realistic paper texture
+   * External SVG filters provide higher quality torn edge effects on clear overlay
+   * Better visual fidelity for the paper tearing animation
 
 ### Debug Parameter
 

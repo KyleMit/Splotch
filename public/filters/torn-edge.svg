@@ -1,16 +1,23 @@
-<svg xmlns='http://www.w3.org/2000/svg'>
+<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='100' viewBox='0 0 1200 100' preserveAspectRatio="none">
   <defs>
-    <filter id='torn-edge' x='-50%' y='-50%' width='200%' height='280%'>
-      <feTurbulence type='fractalNoise' baseFrequency='0.01' numOctaves='4' seed='3' result='noise'/>
-      <feDisplacementMap in='SourceGraphic' in2='noise' scale='70' xChannelSelector='R' yChannelSelector='G' result='torn'/>
-      <feGaussianBlur in='torn' stdDeviation='3' result='blurredEdge'/>
-      <feOffset in='blurredEdge' dx='0' dy='4' result='offsetShadow'/>
-      <feFlood flood-color='rgba(0,0,0,0.25)' result='shadowColor'/>
-      <feComposite in='shadowColor' in2='offsetShadow' operator='in' result='edgeShadow'/>
+    <filter id="torn-edge" x="-50%" y="-50%" width="200%" height="200%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.004" numOctaves="2" seed="3" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="18" xChannelSelector="R" yChannelSelector="G" result="torn"/>
+      <feGaussianBlur in="torn" stdDeviation="5" result="blur"/>
+      <feOffset in="blur" dx="0" dy="4" result="shadow"/>
+      <feFlood flood-color="rgba(0,0,0,0.2)" result="color"/>
+      <feComposite in="color" in2="shadow" operator="in" result="coloredShadow"/>
       <feMerge>
-        <feMergeNode in='edgeShadow'/>
-        <feMergeNode in='torn'/>
+        <feMergeNode in="coloredShadow"/>
+        <feMergeNode in="torn"/>
       </feMerge>
     </filter>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:rgba(0,0,0,0.08)" />
+      <stop offset="40%" style="stop-color:rgba(0,0,0,0.04)" />
+      <stop offset="70%" style="stop-color:rgba(0,0,0,0.01)" />
+      <stop offset="100%" style="stop-color:rgba(0,0,0,0)" />
+    </linearGradient>
   </defs>
+  <rect x="-20" y="0" width="1240" height="30" fill="url(#grad)" filter="url(#torn-edge)" transform="translate(0, 15)"/>
 </svg>
