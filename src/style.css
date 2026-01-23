@@ -764,6 +764,35 @@ body {
   text-decoration: underline;
 }
 
+.github-link {
+  margin: 12px 0 !important;
+}
+
+.github-link a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #666;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+
+.github-link a:hover {
+  color: #333;
+  text-decoration: none;
+}
+
+.github-icon {
+  width: 20px;
+  height: 20px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.github-link a:hover .github-icon {
+  opacity: 1;
+}
+
 .version-text {
   font-size: 12px;
   color: #bbb;
