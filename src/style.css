@@ -108,8 +108,7 @@ body {
   width: 100%;
   height: 100%;
   background-color: #fcfbf8;
-  /* Filter removed for performance - injected via optimizeTextures.js */
-  /* filter: url(#paper-grain); */
+  background-image: url('/textures/paper-grain.svg');
 }
 
 /* Clear Container - wraps both overlay and button */
