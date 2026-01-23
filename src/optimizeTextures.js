@@ -10,7 +10,7 @@ export function initOptimizedTextures() {
     applyPaperTexture();
   }
 
-  // Torn edge is now applied via CSS clip-path and drop-shadow
+  // Torn edge is now applied directly via CSS filter
 }
 
 function applyPaperTexture() {
