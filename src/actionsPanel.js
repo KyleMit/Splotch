@@ -2,24 +2,29 @@
 
 let actionsPanel;
 let undoButton;
+let eraserButton;
 let onUndoClick = null;
+let onEraserToggle = null;
 
 // Initialize actions panel
 export function initActionsPanel(options = {}) {
   const {
     onUndo = () => {},
+    onEraser = () => {},
     initialCanUndo = false
   } = options;
 
   actionsPanel = document.querySelector('.actions-panel');
   undoButton = document.getElementById('undoButton');
+  eraserButton = document.getElementById('eraserButton');
 
-  if (!actionsPanel || !undoButton) {
-    console.error('Actions panel or undo button not found');
+  if (!actionsPanel || !undoButton || !eraserButton) {
+    console.error('Actions panel or buttons not found');
     return;
   }
 
   onUndoClick = onUndo;
+  onEraserToggle = onEraser;
 
   // Set initial button state
   updateUndoButton(initialCanUndo);
@@ -36,6 +41,23 @@ export function initActionsPanel(options = {}) {
 
   // Prevent button from interfering with drawing
   undoButton.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  // Handle eraser button toggle
+  eraserButton.addEventListener('pointerup', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const isActive = eraserButton.classList.contains('active');
+    if (onEraserToggle) {
+      onEraserToggle(!isActive);
+    }
+  });
+
+  // Prevent eraser button from interfering with drawing
+  eraserButton.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     e.stopPropagation();
   });
@@ -57,6 +79,17 @@ export function updateUndoButton(canUndo) {
   } else {
     undoButton.disabled = true;
     undoButton.classList.add('disabled');
+  }
+}
+
+// Update eraser button active state
+export function updateEraserButton(isActive) {
+  if (!eraserButton) return;
+
+  if (isActive) {
+    eraserButton.classList.add('active');
+  } else {
+    eraserButton.classList.remove('active');
   }
 }
 

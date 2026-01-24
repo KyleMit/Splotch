@@ -2,6 +2,7 @@
 
 let canvas, ctx;
 let currentColor = '';
+let isEraserMode = false;
 let lastColorChangeTime = 0;
 let activePointerIds = new Set();
 let activePointers = new Map();
@@ -34,6 +35,7 @@ function resizeCanvas() {
     virtualCtx.lineWidth = 8;
     virtualCtx.lineCap = 'round';
     virtualCtx.lineJoin = 'round';
+    virtualCtx.globalCompositeOperation = 'source-over';
   }
 
   // Save current canvas content to virtual canvas before resizing
@@ -47,13 +49,14 @@ function resizeCanvas() {
   canvas.width = rect.width;
   canvas.height = rect.height;
 
-  // Restore from virtual canvas
-  ctx.drawImage(virtualCanvas, 0, 0);
-
-  // Set drawing properties
+  // Set drawing properties (canvas resize resets them)
   ctx.lineWidth = 8;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+  ctx.globalCompositeOperation = 'source-over';
+
+  // Restore from virtual canvas
+  ctx.drawImage(virtualCanvas, 0, 0);
 }
 
 // Helper function to force release all pointer captures
@@ -105,6 +108,7 @@ function startDrawing(e) {
       y: y,
       isDrawing: true,
       color: currentColor,
+      isEraser: isEraserMode,
       lastTime: Date.now(),
       distanceWindow: [], // Track recent movements for better speed calculation
       windowStartTime: Date.now()
@@ -112,13 +116,26 @@ function startDrawing(e) {
     activePointerIds.add(e.pointerId);
   }
 
-  ctx.strokeStyle = currentColor;
+  // Set drawing style based on eraser mode
+  if (isEraserMode) {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.strokeStyle = 'rgba(0,0,0,1)'; // Doesn't matter for destination-out
+  } else {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = currentColor;
+  }
   ctx.beginPath();
   ctx.moveTo(x, y);
 
   // Also start drawing on virtual canvas
   if (virtualCtx) {
-    virtualCtx.strokeStyle = currentColor;
+    if (isEraserMode) {
+      virtualCtx.globalCompositeOperation = 'destination-out';
+      virtualCtx.strokeStyle = 'rgba(0,0,0,1)';
+    } else {
+      virtualCtx.globalCompositeOperation = 'source-over';
+      virtualCtx.strokeStyle = currentColor;
+    }
     virtualCtx.beginPath();
     virtualCtx.moveTo(x, y);
   }
@@ -173,8 +190,14 @@ function draw(e) {
   const windowTime = Math.max(now - pointerState.windowStartTime, 1);
   const speed = totalDistance / windowTime; // pixels per millisecond
 
-  // Use the color from when this pointer started drawing
-  ctx.strokeStyle = pointerState.color;
+  // Use the color and mode from when this pointer started drawing
+  if (pointerState.isEraser) {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.strokeStyle = 'rgba(0,0,0,1)';
+  } else {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = pointerState.color;
+  }
   ctx.beginPath();
   ctx.moveTo(pointerState.x, pointerState.y);
   ctx.lineTo(x, y);
@@ -182,7 +205,13 @@ function draw(e) {
 
   // Also draw to virtual canvas
   if (virtualCtx) {
-    virtualCtx.strokeStyle = pointerState.color;
+    if (pointerState.isEraser) {
+      virtualCtx.globalCompositeOperation = 'destination-out';
+      virtualCtx.strokeStyle = 'rgba(0,0,0,1)';
+    } else {
+      virtualCtx.globalCompositeOperation = 'source-over';
+      virtualCtx.strokeStyle = pointerState.color;
+    }
     virtualCtx.beginPath();
     virtualCtx.moveTo(pointerState.x, pointerState.y);
     virtualCtx.lineTo(x, y);
@@ -206,6 +235,12 @@ function stopDrawing(e) {
   // Remove this pointer from active tracking
   activePointers.delete(e.pointerId);
   activePointerIds.delete(e.pointerId);
+
+  // Reset composite operation to default after stroke ends
+  ctx.globalCompositeOperation = 'source-over';
+  if (virtualCtx) {
+    virtualCtx.globalCompositeOperation = 'source-over';
+  }
 
   ctx.beginPath();
   if (virtualCtx) {
@@ -236,6 +271,7 @@ function saveUndoSnapshot() {
 
   // Copy current canvas state
   const snapshotCtx = snapshot.getContext('2d');
+  snapshotCtx.globalCompositeOperation = 'source-over'; // Ensure normal drawing mode
   snapshotCtx.drawImage(canvas, 0, 0);
 
   // Add to undo stack
@@ -260,12 +296,16 @@ export function undo() {
   // Pop the most recent snapshot from the stack
   const snapshot = undoStack.pop();
 
+  // Ensure composite operation is set correctly for restoring
+  ctx.globalCompositeOperation = 'source-over';
+
   // Restore snapshot to canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(snapshot, 0, 0);
 
   // Also restore to virtual canvas
   if (virtualCtx && virtualCanvas) {
+    virtualCtx.globalCompositeOperation = 'source-over';
     virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
     virtualCtx.drawImage(snapshot, 0, 0);
   }
@@ -323,7 +363,21 @@ export function updateColorChangeTime() {
   lastColorChangeTime = Date.now();
 }
 
+export function setEraserMode(enabled) {
+  isEraserMode = enabled;
+}
+
+export function getEraserMode() {
+  return isEraserMode;
+}
+
 export function clearCanvas() {
+  // Reset composite operation to default
+  ctx.globalCompositeOperation = 'source-over';
+  if (virtualCtx) {
+    virtualCtx.globalCompositeOperation = 'source-over';
+  }
+
   // Clear both the main canvas and virtual canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (virtualCtx && virtualCanvas) {

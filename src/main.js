@@ -9,15 +9,16 @@ import { initClearButton } from './clearCanvas.js';
 import {
   initDrawingCanvas,
   setColor,
-  getCurrentColor,
   updateColorChangeTime,
   releaseAllPointers,
   focusCanvas,
   undo,
-  getCanUndo
+  getCanUndo,
+  setEraserMode,
+  getEraserMode
 } from './drawingCanvas.js';
 import { initColorPalette } from './colorPalette.js';
-import { initActionsPanel, updateUndoButton } from './actionsPanel.js';
+import { initActionsPanel, updateUndoButton, updateEraserButton } from './actionsPanel.js';
 import { initPWAUpdates } from './pwaUpdate.js';
 import { initDeviceEnhancements } from './deviceEnhancements.js';
 import { playDrawSound, stopDrawSound } from './drawingSound.js';
@@ -35,7 +36,14 @@ const { initialColor } = initColorPalette({
   setColor,
   releaseAllPointers,
   updateColorChangeTime,
-  focusCanvas
+  focusCanvas,
+  onColorChange: () => {
+    // Deactivate eraser when selecting a color from palette
+    if (getEraserMode()) {
+      setEraserMode(false);
+      updateEraserButton(false);
+    }
+  }
 });
 
 // Initialize Drawing Canvas
@@ -53,6 +61,10 @@ initActionsPanel({
   onUndo: () => {
     undo();
   },
+  onEraser: (isActive) => {
+    setEraserMode(isActive);
+    updateEraserButton(isActive);
+  },
   initialCanUndo: getCanUndo()
 });
 
@@ -63,6 +75,12 @@ initColorPicker((selectedColor) => {
   updateGradientSwatchRing();
   releaseAllPointers();
   updateColorChangeTime();
+
+  // Deactivate eraser when selecting a color
+  if (getEraserMode()) {
+    setEraserMode(false);
+    updateEraserButton(false);
+  }
 
   // Focus canvas to ensure it can receive events immediately (iOS fix)
   focusCanvas();
