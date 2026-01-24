@@ -243,8 +243,15 @@ Built for toddlers who love to create! 🎨✨
 * [ ] It takes about 10s on ios for the pencil sounds to come in
 * [ ] Paper edge filter could be smoother and not applying correctly on android
 * [ ] Refactor to use drag and drop API (doesn't work on mobile)
+* [ ] Bugs
+  * [ ] Sometimes it doesn't register clicks on color changes
+  * [ ] Sometimes the cursor seems misaligned with the actual drawing point. looks like it's drawing a little bit to the right of my cursor
+  * [ ] Fix hex grid cutoff on some screen orientations
+* [ ] Increase size of clear accept zone
+* [ ] Screenshots?  Screenshot on wipe?
+* [ ] Alt background textures?
 * [ ] Controls?
   * [x] Undo
-  * [ ] Eraser or at least white color in color palette
+  * [ ] Eraser
   * [ ] Stoke width
   * [ ] Brush type (blend mode with previous drawing)

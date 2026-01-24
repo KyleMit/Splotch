@@ -4,10 +4,22 @@ import { clearCanvas as clearDrawingCanvas } from './drawingCanvas.js';
 let isDragging = false;
 let initialContainerY = 0;
 let dragOffsetY = 0;
-let clearContainer, clearButton, clearOverlay, acceptZone, pageTurnOverlay;
+let clearContainer, clearButton, clearOverlay, acceptZone, pageTurnOverlay, clearTutorial;
 let onClearStartCallback = null;
 let onClearCompleteCallback = null;
 let lastOrientation = null;
+
+// Tutorial tracking
+let holdTimer = null;
+let holdStartX = 0;
+let holdStartY = 0;
+let clickCount = 0;
+let lastClickTime = 0;
+const HOLD_DURATION = 500; // 0.5 seconds
+const MOVEMENT_THRESHOLD = 50; // pixels
+const MULTI_CLICK_WINDOW = 1000; // 1 second for multiple clicks
+const MULTI_CLICK_THRESHOLD = 3; // number of clicks to trigger tutorial
+let tutorialDismissTimer = null;
 
 // Helper functions
 function isPortrait() {
@@ -18,7 +30,63 @@ function getDefaultTop() {
   return isPortrait() ? '90px' : '20px';
 }
 
+// Show tutorial
+function showTutorial() {
+  if (!clearTutorial) return;
+
+  // Don't interrupt if tutorial is already visible
+  if (clearTutorial.classList.contains('visible')) return;
+
+  // Show tutorial by adding visible class
+  clearTutorial.classList.remove('fade-out');
+  clearTutorial.classList.add('visible');
+
+  // Auto-dismiss after animations complete (2 cycles × 1s each + 1s delay)
+  tutorialDismissTimer = setTimeout(dismissTutorial, 3000);
+}
+
+// Dismiss tutorial
+function dismissTutorial() {
+  if (!clearTutorial) return;
+
+  // Clear auto-dismiss timer if it's still pending
+  if (tutorialDismissTimer) {
+    clearTimeout(tutorialDismissTimer);
+    tutorialDismissTimer = null;
+  }
+
+  // Hide tutorial by removing visible class and adding fade-out
+  clearTutorial.classList.remove('visible');
+  clearTutorial.classList.add('fade-out');
+}
+
 function startClearDrag(e) {
+  // Track for multiple clicks
+  const now = Date.now();
+  if (now - lastClickTime < MULTI_CLICK_WINDOW) {
+    clickCount++;
+    if (clickCount >= MULTI_CLICK_THRESHOLD) {
+      showTutorial();
+      clickCount = 0;
+      return;
+    }
+  } else {
+    clickCount = 1;
+  }
+  lastClickTime = now;
+
+  // Track initial position for movement detection
+  const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+  const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+  holdStartX = clientX;
+  holdStartY = clientY;
+
+  // Start hold timer
+  holdTimer = setTimeout(() => {
+    // Show tutorial without interrupting the drag
+    showTutorial();
+  }, HOLD_DURATION);
+
   isDragging = true;
 
   // Notify callback to stop any drawing
@@ -40,7 +108,6 @@ function startClearDrag(e) {
   const rect = clearContainer.getBoundingClientRect();
   initialContainerY = rect.top;
 
-  const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   dragOffsetY = clientY - rect.top;
 
   // Show accept zone
@@ -57,7 +124,19 @@ function startClearDrag(e) {
 function dragClear(e) {
   if (!isDragging) return;
 
+  const clientX = e.clientX || (e.touches && e.touches[0].clientX);
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+  // Cancel hold timer if user moves significantly
+  if (holdTimer) {
+    const deltaX = Math.abs(clientX - holdStartX);
+    const deltaY = Math.abs(clientY - holdStartY);
+    if (deltaX > MOVEMENT_THRESHOLD || deltaY > MOVEMENT_THRESHOLD) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+  }
+
   const newY = clientY - dragOffsetY;
 
   // Check if entered Accept Zone
@@ -85,6 +164,12 @@ function dragClear(e) {
 function stopClearDrag(e) {
   if (!isDragging) return;
 
+  // Cancel hold timer if still running
+  if (holdTimer) {
+    clearTimeout(holdTimer);
+    holdTimer = null;
+  }
+
   isDragging = false;
   clearButton.classList.remove('dragging');
   clearButton.classList.remove('delete-ready');
@@ -102,6 +187,11 @@ function stopClearDrag(e) {
 
   if (clientY >= acceptThreshold) {
     // Clear confirmed
+
+    // Dismiss tutorial if active (user successfully learned the gesture)
+    if (clearTutorial && clearTutorial.classList.contains('visible')) {
+      dismissTutorial();
+    }
 
     // 1. Actually clear the canvas (both main and virtual) now (only once!)
     clearDrawingCanvas();
@@ -188,6 +278,7 @@ export function initClearButton(onClearStart, onClearComplete) {
   clearButton = document.getElementById('clearButton');
   clearOverlay = document.getElementById('clearOverlay');
   acceptZone = document.getElementById('clearAcceptZone');
+  clearTutorial = document.getElementById('clearTutorial');
 
   // Create Page Turn Overlay (dynamic element)
   pageTurnOverlay = document.createElement('div');
@@ -196,6 +287,15 @@ export function initClearButton(onClearStart, onClearComplete) {
 
   // Add event listeners
   clearButton.addEventListener('pointerdown', startClearDrag);
+
+  // Tutorial click to dismiss
+  if (clearTutorial) {
+    clearTutorial.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dismissTutorial();
+    });
+  }
   document.addEventListener('pointermove', dragClear);
   document.addEventListener('pointerup', stopClearDrag);
   document.addEventListener('pointercancel', stopClearDrag);

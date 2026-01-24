@@ -250,6 +250,67 @@ body {
   }
 }
 
+/* Clear Tutorial - Compact element next to clear button */
+.clear-tutorial {
+  position: absolute;
+  right: 90px; /* Position to the left of the 70px clear button */
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: auto; /* Make tutorial clickable */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+}
+
+.clear-tutorial.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.clear-tutorial.fade-out {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.clear-tutorial-arrow {
+  width: 48px;
+  height: 48px;
+  filter: brightness(0) saturate(100%) invert(27%) sepia(98%) saturate(3347%) hue-rotate(343deg) brightness(99%) contrast(95%);
+  animation: arrowBounce 1s ease-in-out infinite;
+}
+
+.clear-tutorial-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ff3838;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+@keyframes arrowBounce {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(12px);
+    opacity: 0.6;
+  }
+}
+
 /* Color Picker Modal */
 .color-picker-overlay {
   position: fixed;
