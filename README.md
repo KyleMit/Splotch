@@ -227,14 +227,10 @@ Howler.js provides:
   * Auto-updates and reloads when new version found
   * Works offline (update checks fail silently)
 
-
 ## License
 
 MIT
 
-## Credits
-
-Built for toddlers who love to create! 🎨✨
 
 ## TODO
 
@@ -249,7 +245,10 @@ Built for toddlers who love to create! 🎨✨
   * [ ] Fix hex grid cutoff on some screen orientations
 * [ ] Increase size of clear accept zone
 * [ ] Screenshots?  Screenshot on wipe?
+* [ ] Try to replace howler and see how it goes
 * [ ] Alt background textures?
+* [ ] Toddler Usability
+  * [ ] Multi-tapping on color picker should not immediately dissmiss modal
 * [ ] Controls?
   * [x] Undo
   * [ ] Eraser
