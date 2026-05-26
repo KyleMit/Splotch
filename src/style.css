@@ -311,94 +311,142 @@ body {
   }
 }
 
-/* Color Picker Modal */
-.color-picker-overlay {
+/* Color Picker Dialog */
+.color-picker {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  background: white;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  width: fit-content;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  padding: 0;
+  touch-action: none;
+}
+
+.color-picker::backdrop {
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 1003;
-  touch-action: none;
 }
 
-.color-picker-overlay.visible {
-  display: flex;
-}
-
-.color-picker-container {
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  padding: 20px;
-  max-width: 90%;
-  max-height: 80%;
-  width: fit-content;
-  height: fit-content;
-  display: flex;
-  flex-direction: column;
+.color-picker[open] {
   animation: bounceIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  touch-action: none;
 }
 
 @keyframes bounceIn {
   0% {
-    transform: scale(0.3);
+    transform: translate(-50%, -50%) scale(0.3);
     opacity: 0;
   }
   50% {
-    transform: scale(1.05);
+    transform: translate(-50%, -50%) scale(1.05);
   }
   100% {
-    transform: scale(1);
+    transform: translate(-50%, -50%) scale(1);
     opacity: 1;
   }
 }
 
-.hexagon-grid {
-  overflow: hidden;
-  padding: 0;
-  display: flex;
+.picker {
+  display: inline-flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  touch-action: none;
-  width: fit-content;
-  height: fit-content;
+  padding: 16px;
+  margin-top: 15px;
+}
+
+.row {
+  display: flex;
+  margin-top: -15px;
+}
+
+/* row pitch: 69px hex - 15px overlap = 54px; padding = 32px
+   9 rows = 533px | 8 = 479px | 7 = 425px | 6 = 371px | 5 = 317px
+   threshold = ceil(picker_height / 0.9) + ~7px buffer */
+@media (max-height: 600px) { .greys   { display: none; } }
+@media (max-height: 540px) { .browns  { display: none; } }
+@media (max-height: 480px) { .reds    { display: none; } }
+@media (max-height: 420px) { .oranges { display: none; } }
+@media (max-height: 360px) { .pinks   { display: none; } }
+@media (max-height: 300px) { .yellows { display: none; } }
+
+/* col pitch: 66px per hex; picker width = 66N + 59px (offset + padding)
+   9=653 8=587 7=521 6=455 5=389 4=323 3=257 2=191
+   threshold = ceil(picker_width / 0.9) + ~7px buffer
+   removal order: 2nd, 4th, 6th, 8th, 3rd, 5th, 7th */
+@media (max-width: 730px) { .row .hexagon:nth-child(2) { display: none; } }
+@media (max-width: 660px) { .row .hexagon:nth-child(4) { display: none; } }
+@media (max-width: 590px) { .row .hexagon:nth-child(6) { display: none; } }
+@media (max-width: 520px) { .row .hexagon:nth-child(8) { display: none; } }
+@media (max-width: 440px) { .row .hexagon:nth-child(3) { display: none; } }
+@media (max-width: 370px) { .row .hexagon:nth-child(5) { display: none; } }
+@media (max-width: 290px) { .row .hexagon:nth-child(7) { display: none; } }
+
+.row:nth-child(even) {
+  margin-left: 31px;
+}
+
+.row:not(:first-child) {
+  margin-top: -18px;
 }
 
 .hexagon {
+  position: relative;
+  width: 60px;
+  height: 69px; /* For a regular hexagon, height = width * 1.15 */
+  flex-shrink: 0;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
   cursor: pointer;
-  transition: filter 0.1s ease, stroke 0.1s ease, stroke-width 0.1s ease;
-  pointer-events: all;
+  touch-action: none;
+}
+
+.hexagon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--color, #007BFF);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  transition: inset 0.1s ease, filter 0.1s ease;
+}
+
+.hexagon:hover,
+.hexagon.hover {
+  z-index: 1;
+  background-color: black;
+}
+
+.hexagon:hover::after,
+.hexagon.hover::after {
+  inset: 2px;
+  filter: brightness(1.2);
+}
+
+.hexagon.border {
+  background-color: black;
+}
+
+.hexagon.border::after {
+  inset: 2px;
 }
 
 .hexagon.selected {
-  stroke: #AB71E1 !important;
-  stroke-width: 4 !important;
-  filter: drop-shadow(0 0 4px rgba(171, 113, 225, 0.6));
-  paint-order: stroke fill;
+  z-index: 1;
+  background-color: #AB71E1;
 }
 
-.hexagon.hover {
-  filter: brightness(1.1);
-  stroke: #333 !important;
-  stroke-width: 4 !important;
-  paint-order: stroke fill;
-}
-
-/* Hover state for selected hexagon */
-.hexagon.selected.hover {
-  filter: brightness(1.1) drop-shadow(0 0 4px rgba(171, 113, 225, 0.6));
-  stroke: #8E44AD !important;
-  stroke-width: 4 !important;
-  paint-order: stroke fill;
+.hexagon.selected::after {
+  inset: 3px;
 }
 
 /* Responsive adjustments for portrait mode */
@@ -448,14 +496,6 @@ body {
     width: 32px;
     height: 32px;
     margin-right: 2px;
-  }
-
-  /* Responsive Color Picker adjustments */
-  .color-picker-container {
-    max-width: 95%;
-    max-height: 75%;
-    width: fit-content;
-    height: fit-content;
   }
 
   /* Actions Panel positioning in portrait */
