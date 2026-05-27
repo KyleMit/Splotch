@@ -11,9 +11,10 @@ let onClearStartCallback = null;
 let onClearCompleteCallback = null;
 let lastOrientation = null;
 
-// Radial clear: confirm when finger moves at least 1/3 of the smaller
-// viewport dimension from the button's start position, in any direction.
-const ACCEPT_RADIUS_FACTOR = 1 / 3;
+// Radial clear: confirm when finger moves at least this fraction of the
+// smaller viewport dimension from the button's start position, in any
+// direction.
+const ACCEPT_RADIUS_FACTOR = 0.4;
 
 // Tutorial tracking
 let holdTimer = null;
