@@ -1188,17 +1188,25 @@ body.has-coloring-overlay #drawingCanvas {
   height: 32px;
   background: transparent;
   border: none;
-  font-size: 32px;
-  line-height: 32px;
-  color: #999;
   cursor: pointer;
-  padding: 0;
-  transition: color 0.2s ease;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
   z-index: 1;
 }
 
-.coloring-book-close:hover {
-  color: #666;
+.coloring-book-close img {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  filter: invert(60%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(85%);
+  transition: filter 0.2s ease;
+}
+
+.coloring-book-close:hover img {
+  filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
 }
 
 .coloring-book-header {
@@ -1218,20 +1226,28 @@ body.has-coloring-overlay #drawingCanvas {
   background: #f5f5f5;
   border: none;
   border-radius: 50%;
-  color: #555;
-  font-size: 28px;
-  line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 4px 4px 0;
+  padding: 8px;
   transition: background 0.2s ease;
+}
+
+.coloring-back-button img {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  filter: invert(35%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(85%);
+  transition: filter 0.2s ease;
 }
 
 .coloring-back-button:hover {
   background: #ede7f6;
-  color: #AB71E1;
+}
+
+.coloring-back-button:hover img {
+  filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
 }
 
 .coloring-grid {
