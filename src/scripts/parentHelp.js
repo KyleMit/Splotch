@@ -84,11 +84,8 @@ function switchTab(tabName) {
 
 function updateSoundToggle() {
   const enabled = isSoundEnabled();
-  if (enabled) {
-    soundToggle.classList.remove('sound-disabled');
-  } else {
-    soundToggle.classList.add('sound-disabled');
-  }
+  soundToggle.classList.toggle('active', enabled);
+  soundToggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
 }
 
 function toggleSound() {

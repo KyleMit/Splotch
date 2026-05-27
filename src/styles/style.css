@@ -993,56 +993,23 @@ body {
   align-items: center;
 }
 
+.setting-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.setting-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 .setting-label {
   font-size: 14px;
   font-weight: 500;
   color: #555;
-}
-
-.sound-toggle-button {
-  width: 36px;
-  height: 36px;
-  background: white;
-  border: 2px solid #ddd;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px;
-  position: relative;
-}
-
-.sound-toggle-button:hover {
-  border-color: #AB71E1;
-  background: #f5f0ff;
-}
-
-.sound-toggle-button:active {
-  transform: scale(0.95);
-}
-
-.sound-icon {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  transition: opacity 0.2s ease;
-}
-
-.sound-toggle-button .sound-off {
-  opacity: 0;
-}
-
-.sound-toggle-button.sound-disabled .sound-on {
-  opacity: 0;
-}
-
-.sound-toggle-button.sound-disabled .sound-off {
-  opacity: 1;
 }
 
 /* iOS-style toggle switch (boolean settings) */

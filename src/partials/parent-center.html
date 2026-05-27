@@ -80,18 +80,11 @@
     <div class="tab-content" data-tab="settings">
       <div class="setting">
         <div class="setting-toggle">
-          <span class="setting-label">Drawing Sounds</span>
-          <button class="sound-toggle-button" id="soundToggle" aria-label="Toggle sound">
-            <img src="/icons/volume-on.svg" alt="Sound On" class="sound-icon sound-on" />
-            <img src="/icons/volume-off.svg" alt="Sound Off" class="sound-icon sound-off" />
-          </button>
-        </div>
-      </div>
-
-      <div class="setting">
-        <div class="setting-toggle">
-          <span class="setting-label">Save on Delete</span>
-          <button class="toggle-switch" id="saveOnDeleteToggle" role="switch" aria-checked="false" aria-label="Toggle save on delete">
+          <label class="setting-info" for="soundToggle">
+            <img src="/icons/volume-on.svg" alt="" class="setting-icon" />
+            <span class="setting-label">Drawing Sounds</span>
+          </label>
+          <button class="toggle-switch" id="soundToggle" role="switch" aria-checked="false">
             <span class="toggle-switch-thumb"></span>
           </button>
         </div>
@@ -99,8 +92,11 @@
 
       <div class="setting">
         <div class="setting-toggle">
-          <span class="setting-label">Screenshot Button</span>
-          <button class="toggle-switch" id="screenshotToggle" role="switch" aria-checked="false" aria-label="Toggle screenshot button">
+          <label class="setting-info" for="saveOnDeleteToggle">
+            <img src="/icons/camera-party.svg" alt="" class="setting-icon" />
+            <span class="setting-label">Save on Delete</span>
+          </label>
+          <button class="toggle-switch" id="saveOnDeleteToggle" role="switch" aria-checked="false">
             <span class="toggle-switch-thumb"></span>
           </button>
         </div>
@@ -108,8 +104,23 @@
 
       <div class="setting">
         <div class="setting-toggle">
-          <span class="setting-label">Stroke Width Control</span>
-          <button class="toggle-switch" id="strokeWidthToggle" role="switch" aria-checked="false" aria-label="Toggle stroke width control">
+          <label class="setting-info" for="screenshotToggle">
+            <img src="/icons/camera.svg" alt="" class="setting-icon" />
+            <span class="setting-label">Screenshot Button</span>
+          </label>
+          <button class="toggle-switch" id="screenshotToggle" role="switch" aria-checked="false">
+            <span class="toggle-switch-thumb"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="setting">
+        <div class="setting-toggle">
+          <label class="setting-info" for="strokeWidthToggle">
+            <img src="/icons/line-weight.svg" alt="" class="setting-icon" />
+            <span class="setting-label">Stroke Width Control</span>
+          </label>
+          <button class="toggle-switch" id="strokeWidthToggle" role="switch" aria-checked="false">
             <span class="toggle-switch-thumb"></span>
           </button>
         </div>
