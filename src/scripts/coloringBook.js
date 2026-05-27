@@ -33,6 +33,19 @@ const BOOKS = [
       '/coloring/animals/pig.png'
     ]
   },
+  {
+    id: 'bluey',
+    name: 'Bluey',
+    cover: '/coloring/bluey/bluey-cover.png',
+    pages: [
+      '/coloring/bluey/bandit.png',
+      '/coloring/bluey/bingo.png',
+      '/coloring/bluey/bluey.png',
+      '/coloring/bluey/chili.png',
+      '/coloring/bluey/muffin.png',
+      '/coloring/bluey/socks.png'
+    ]
+  },
 ];
 
 let controlEnabled = localStorage.getItem(CONTROL_ENABLED_KEY) === 'true';
