@@ -370,13 +370,15 @@ body {
   line-height: 1.3;
 }
 
+/* Arrow asset points down; the 45° clockwise rotation aims it down-and-left
+   toward the canvas, and the bounce nudges along that same diagonal. */
 @keyframes arrowBounce {
   0%, 100% {
-    transform: translateY(0);
+    transform: rotate(45deg) translateY(0);
     opacity: 1;
   }
   50% {
-    transform: translateY(12px);
+    transform: rotate(45deg) translateY(12px);
     opacity: 0.6;
   }
 }
