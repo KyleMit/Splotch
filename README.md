@@ -236,7 +236,7 @@ MIT
 
 * [x] Toddler Usability
   * [x] Multi-tapping on color picker should not immediately dismiss modal
-* [ ] Screenshots?  Screenshot on wipe?
+* [x] Screenshots?  Screenshot on wipe?
 * [ ] Undo after delete
 * [ ] Animation when selecting ring
 * [ ] Add "color book" style picker with background overlay

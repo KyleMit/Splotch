@@ -1,7 +1,8 @@
 // Parent help modal with PWA installation and lock mode instructions
 import { isSoundEnabled, setSoundEnabled } from './drawingSound.js';
+import { isSaveOnDeleteEnabled, setSaveOnDeleteEnabled } from './saveOnDelete.js';
 
-let helpButton, helpModal, soundToggle;
+let helpButton, helpModal, soundToggle, saveOnDeleteToggle;
 
 function detectOS() {
   const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -87,6 +88,17 @@ function toggleSound() {
   updateSoundToggle();
 }
 
+function updateSaveOnDeleteToggle() {
+  const enabled = isSaveOnDeleteEnabled();
+  saveOnDeleteToggle.classList.toggle('active', enabled);
+  saveOnDeleteToggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
+}
+
+function toggleSaveOnDelete() {
+  setSaveOnDeleteEnabled(!isSaveOnDeleteEnabled());
+  updateSaveOnDeleteToggle();
+}
+
 function openHelpModal() {
   // Detect OS and select appropriate tab
   const os = detectOS();
@@ -97,6 +109,7 @@ function openHelpModal() {
 
   // Update sound toggle state
   updateSoundToggle();
+  updateSaveOnDeleteToggle();
 
   // Show modal using native dialog method
   helpModal.showModal();
@@ -111,6 +124,7 @@ export function initParentHelp() {
   helpButton = document.getElementById('parentHelpButton');
   helpModal = document.getElementById('parentHelpModal');
   soundToggle = document.getElementById('soundToggle');
+  saveOnDeleteToggle = document.getElementById('saveOnDeleteToggle');
 
   // Add click handlers
   helpButton.addEventListener('click', openHelpModal);
@@ -127,9 +141,11 @@ export function initParentHelp() {
 
   // Add sound toggle handler
   soundToggle.addEventListener('click', toggleSound);
+  saveOnDeleteToggle.addEventListener('click', toggleSaveOnDelete);
 
-  // Initialize sound toggle state
+  // Initialize toggle states
   updateSoundToggle();
+  updateSaveOnDeleteToggle();
 
   // Close dialog when clicking on backdrop
   helpModal.addEventListener('click', (e) => {

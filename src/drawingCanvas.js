@@ -338,6 +338,22 @@ export function clearCanvas() {
   }
 }
 
+// Export canvas as a PNG blob with the paper-color background composited in
+// (the live canvas is transparent — the paper texture is a CSS background).
+export function exportCanvasBlob() {
+  if (!canvas || canvas.width === 0 || canvas.height === 0) return Promise.resolve(null);
+
+  const out = document.createElement('canvas');
+  out.width = canvas.width;
+  out.height = canvas.height;
+  const outCtx = out.getContext('2d');
+  outCtx.fillStyle = '#fcfbf8';
+  outCtx.fillRect(0, 0, out.width, out.height);
+  outCtx.drawImage(canvas, 0, 0);
+
+  return new Promise(resolve => out.toBlob(resolve, 'image/png'));
+}
+
 export function focusCanvas() {
   // Focus the canvas to ensure it can receive pointer events immediately
   if (canvas) {

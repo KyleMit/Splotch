@@ -1,5 +1,6 @@
 // Clear button drag-to-clear functionality
 import { clearCanvas as clearDrawingCanvas } from './drawingCanvas.js';
+import { saveDrawingIfEnabled } from './saveOnDelete.js';
 
 let isDragging = false;
 let initialContainerY = 0;
@@ -193,7 +194,10 @@ function stopClearDrag(e) {
       dismissTutorial();
     }
 
-    // 1. Actually clear the canvas (both main and virtual) now (only once!)
+    // 1. Save a snapshot first (no-op if the setting is off), then clear
+    //    both main and virtual canvas. Fire-and-forget so the clear animation
+    //    isn't blocked by the download.
+    saveDrawingIfEnabled();
     clearDrawingCanvas();
 
     // Animate overlay down off screen
