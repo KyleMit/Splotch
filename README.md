@@ -72,32 +72,36 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 
 ```none
 /
-├── public/                  # Static assets
-│   ├── filters/             # SVG filters for progressive enhancement
-│   │   └── torn-edge.svg    # Torn paper edge filter (non-iOS)
-│   ├── sounds/              # Audio files
-│   ├── icons/               # Icons and images
-│   │   └── handmade-paper.png # Paper texture background
-│   └── ...                  # Manifest, etc.
-├── src/                     # Source code
-│   ├── main.js              # App initialization and orchestration
-│   ├── drawingCanvas.js     # Canvas drawing logic
-│   ├── colorPalette.js      # Color swatch UI and responsive layout
-│   ├── colorPicker.js       # Custom color picker modal
-│   ├── clearCanvas.js       # Clear button drag interaction
-│   ├── parentHelp.js        # Parent Center modal + tab switching
-│   ├── drawingSound.js      # Drawing sound playback + setting
-│   ├── saveOnDelete.js      # "Save on Delete" setting + PNG export trigger
-│   ├── deviceEnhancements.js # Progressive SVG enhancement (Android/Desktop)
-│   ├── version.js           # Version badge display
-│   ├── pwaUpdate.js         # PWA automatic update management
-│   └── style.css            # All styles
-├── partials/                # Build-time HTML partials (vite-plugin-handlebars)
-│   ├── head-meta.html       # <head> meta tags, OG/Twitter, favicons, fonts
-│   ├── color-picker-overlay.html # Color Picker Overlay dialog (hexagon grid)
-│   └── parent-center.html   # Parent Help Button + Parent Center modal
-├── index.html               # Entry point (composes partials via {{> name}})
-└── vite.config.js           # Build configuration
+├── src/                     # Vite root — everything served/built lives here
+│   ├── index.html           # Entry point (composes partials via {{> name}})
+│   ├── scripts/             # JavaScript modules
+│   │   ├── main.js          # App initialization and orchestration
+│   │   ├── drawingCanvas.js # Canvas drawing logic
+│   │   ├── colorPalette.js  # Color swatch UI and responsive layout
+│   │   ├── colorPicker.js   # Custom color picker modal
+│   │   ├── clearCanvas.js   # Clear button drag interaction
+│   │   ├── parentHelp.js    # Parent Center modal + tab switching
+│   │   ├── drawingSound.js  # Drawing sound playback + setting
+│   │   ├── saveOnDelete.js  # "Save on Delete" setting + PNG export trigger
+│   │   ├── deviceEnhancements.js # Progressive SVG enhancement (Android/Desktop)
+│   │   ├── pwaUpdate.js     # PWA automatic update management
+│   │   └── actionsPanel.js  # Undo button wiring
+│   ├── styles/              # Stylesheets
+│   │   └── style.css        # All styles
+│   ├── partials/            # Build-time HTML partials (vite-plugin-handlebars)
+│   │   ├── head-meta.html   # <head> meta tags, OG/Twitter, favicons, fonts
+│   │   ├── color-picker-overlay.html # Color Picker Overlay dialog (hexagon grid)
+│   │   └── parent-center.html # Parent Help Button + Parent Center modal
+│   └── public/              # Static assets served at site root
+│       ├── filters/         # SVG filters for progressive enhancement
+│       │   └── torn-edge.svg # Torn paper edge filter (non-iOS)
+│       ├── sounds/          # Audio files
+│       ├── icons/           # Icons and images
+│       │   └── handmade-paper.png # Paper texture background
+│       └── ...              # Favicons, manifest, etc.
+├── dist/                    # Build output (gitignored)
+├── netlify.toml             # Netlify deploy config
+└── vite.config.js           # Build configuration (root: src, outDir: ../dist)
 ```
 
 ## Getting Started
@@ -210,7 +214,7 @@ This is useful for:
 
 ### Implementation Details
 
-See `src/deviceEnhancements.js` for the progressive enhancement logic and `public/filters/` for SVG filter definitions.
+See `src/scripts/deviceEnhancements.js` for the progressive enhancement logic and `src/public/filters/` for SVG filter definitions.
 
 ## Features Explained
 

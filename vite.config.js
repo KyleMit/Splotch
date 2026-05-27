@@ -23,9 +23,15 @@ function htmlVersionPlugin() {
 }
 
 export default defineConfig({
+  root: resolve(__dirname, 'src'),
+  publicDir: 'public',
+  build: {
+    outDir: resolve(__dirname, 'dist'),
+    emptyOutDir: true
+  },
   plugins: [
     handlebars({
-      partialDirectory: resolve(__dirname, 'partials')
+      partialDirectory: resolve(__dirname, 'src/partials')
     }),
     htmlVersionPlugin(),
     VitePWA({
