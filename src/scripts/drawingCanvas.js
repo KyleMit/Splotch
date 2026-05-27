@@ -44,8 +44,10 @@ function scanCanvasIsEmpty() {
 
 // Set canvas size to fill container
 function resizeCanvas() {
-  const container = canvas.parentElement;
-  const rect = container.getBoundingClientRect();
+  // Use the canvas's own rect, not the container's — they can differ by
+  // subpixels (flex/center/borders), and any mismatch shows up as the
+  // bitmap being stretched, which drags drawn lines off the touch point.
+  const rect = canvas.getBoundingClientRect();
 
   // Initialize virtual canvas on first run
   if (!virtualCanvas) {
@@ -64,9 +66,10 @@ function resizeCanvas() {
     maxHeight = Math.max(maxHeight, canvas.height);
   }
 
-  // Resize main canvas
-  canvas.width = rect.width;
-  canvas.height = rect.height;
+  // Round to integers — canvas.width/height are unsigned longs and truncate
+  // fractional values silently. Rounding here is explicit and predictable.
+  canvas.width = Math.round(rect.width);
+  canvas.height = Math.round(rect.height);
 
   // Restore from virtual canvas
   ctx.drawImage(virtualCanvas, 0, 0);
@@ -74,6 +77,19 @@ function resizeCanvas() {
   // Set drawing properties (lineWidth is set per stroke from pointer state)
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+}
+
+// Convert a pointer event's client coordinates into canvas bitmap pixels.
+// Scaling by (bitmap dim / display dim) keeps the touch point pixel-accurate
+// even if the bitmap and CSS display sizes don't match exactly.
+function pointerToCanvas(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY
+  };
 }
 
 // Helper function to force release all pointer captures
@@ -117,9 +133,7 @@ function startDrawing(e) {
   // First stroke flips us out of the empty state — no pixel scan needed.
   setCanvasEmptyState(false);
 
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const { x, y } = pointerToCanvas(e);
 
   // Track this pointer's state
   if (e.pointerId !== undefined) {
@@ -171,9 +185,7 @@ function draw(e) {
 
   e.preventDefault();
 
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const { x, y } = pointerToCanvas(e);
 
   // Calculate movement distance
   const deltaX = x - pointerState.x;

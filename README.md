@@ -262,6 +262,7 @@ MIT
 * [x] Enable screenshot button
   * [x] Add screenshot animation
 * [x] Remove paper edge filter
+* [x] Try to replace howler and see how it goes
 * [ ] AI-ify button
 * [ ] Add "color book" style picker with background overlay
   * [ ] favorite star button next to scrollable region
@@ -272,10 +273,10 @@ MIT
   * [ ] Sometimes it doesn't register clicks on color changes
   * [ ] Sometimes the cursor seems misaligned with the actual drawing point. looks like it's drawing a little bit to the right of my cursor
   * [ ] Color picker selected color on active hex ring
-* [x] Try to replace howler and see how it goes
+* [ ] The parent components use the names sound-* for all settings (i.e. "sound-settings" "sound-toggle" and "sound-label) but only the first setting actually controls the sound.  rename the components to be more generic (i.e. "setting-toggle" or "setting-label")
 * [ ] Controls?
   * [x] Undo
     * [x] Undo after clear
+  * [x] Stoke width
   * [ ] Eraser (/eraser branch)
-  * [ ] Stoke width
   * [ ] Brush type (blend mode with previous drawing)
