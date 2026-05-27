@@ -253,7 +253,6 @@ MIT
 * [x] Toddler Usability
   * [x] Multi-tapping on color picker should not immediately dismiss modal
 * [x] Screenshots?  Screenshot on wipe?
-* [ ] Undo after delete
 * [ ] Animation when selecting ring
 * [ ] Add "color book" style picker with background overlay
 * [ ] Make sure we can refresh PWA
@@ -271,7 +270,7 @@ MIT
 * [ ] Try to replace howler and see how it goes
 * [ ] Controls?
   * [x] Undo
-    * [ ] Undo after clear
+    * [x] Undo after clear
   * [ ] Eraser (/eraser branch)
   * [ ] Stoke width
   * [ ] Brush type (blend mode with previous drawing)

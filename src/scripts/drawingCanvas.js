@@ -324,17 +324,13 @@ export function updateColorChangeTime() {
 }
 
 export function clearCanvas() {
+  // Snapshot the pre-delete state so undo can restore the image
+  saveUndoSnapshot();
+
   // Clear both the main canvas and virtual canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (virtualCtx && virtualCanvas) {
     virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
-  }
-
-  // Clear undo history
-  undoStack = [];
-  canUndo = false;
-  if (onUndoStateChange) {
-    onUndoStateChange(canUndo);
   }
 }
 
