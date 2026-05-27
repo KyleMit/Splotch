@@ -1121,15 +1121,21 @@ body {
   object-fit: contain;
   pointer-events: none;
   z-index: 0;
+  mix-blend-mode: multiply;
 }
 
 .coloring-overlay[hidden] {
   display: none;
 }
 
-body.has-coloring-overlay #drawingCanvas {
+body.has-coloring-overlay .canvas-container {
   background-color: #fcfbf8;
-  background-image: none;
+  background-image: url('/icons/handmade-paper.png');
+  background-repeat: repeat;
+}
+
+body.has-coloring-overlay #drawingCanvas {
+  background: transparent;
   position: relative;
   z-index: 1;
 }
@@ -1281,6 +1287,7 @@ body.has-coloring-overlay #drawingCanvas {
   object-fit: contain;
   padding: 8px;
   pointer-events: none;
+  mix-blend-mode: multiply;
 }
 
 .coloring-folder-tile img {

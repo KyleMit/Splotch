@@ -270,6 +270,7 @@ MIT
 * [x] Add control for Stoke width
 * [ ] AI-ify button
 * [ ] Add "color book" style picker with background overlay
+  * [ ] For the breadcrumb menu navigation, use the chevron-back.svg
   * [ ] Make sure white backgrounds become transparent
   * [ ] Make sure background works with screenshot feature
   * [ ] Make sure background works horizontally and vertically
