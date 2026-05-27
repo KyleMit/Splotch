@@ -3,12 +3,17 @@ import { clearCanvas as clearDrawingCanvas } from './drawingCanvas.js';
 import { saveDrawingIfEnabled } from './saveOnDelete.js';
 
 let isDragging = false;
-let initialContainerY = 0;
-let dragOffsetY = 0;
+let startPointerX = 0;
+let startPointerY = 0;
+let homeButtonCenter = { x: 0, y: 0 };
 let clearContainer, clearButton, clearOverlay, acceptZone, pageTurnOverlay, clearTutorial;
 let onClearStartCallback = null;
 let onClearCompleteCallback = null;
 let lastOrientation = null;
+
+// Radial clear: confirm when finger moves at least 1/3 of the smaller
+// viewport dimension from the button's start position, in any direction.
+const ACCEPT_RADIUS_FACTOR = 1 / 3;
 
 // Tutorial tracking
 let holdTimer = null;
@@ -27,8 +32,8 @@ function isPortrait() {
   return window.matchMedia('(orientation: portrait)').matches;
 }
 
-function getDefaultTop() {
-  return isPortrait() ? '90px' : '20px';
+function getAcceptRadius() {
+  return Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
 }
 
 // Show tutorial
@@ -76,47 +81,46 @@ function startClearDrag(e) {
   }
   lastClickTime = now;
 
-  // Track initial position for movement detection
   const clientX = e.clientX || (e.touches && e.touches[0].clientX);
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   holdStartX = clientX;
   holdStartY = clientY;
 
-  // Start hold timer
   holdTimer = setTimeout(() => {
-    // Show tutorial without interrupting the drag
     showTutorial();
   }, HOLD_DURATION);
 
   isDragging = true;
+  startPointerX = clientX;
+  startPointerY = clientY;
 
   // Notify callback to stop any drawing
   if (onClearStartCallback) {
     onClearStartCallback();
   }
 
+  // Capture button's home center for placing the radial accept zone.
+  // No transform is applied yet, so getBoundingClientRect gives the home rect.
+  const rect = clearButton.getBoundingClientRect();
+  homeButtonCenter = {
+    x: (rect.left + rect.right) / 2,
+    y: (rect.top + rect.bottom) / 2
+  };
+
+  // Drop the back-to-home transition while the finger is in control.
+  clearContainer.classList.add('dragging-active');
+  // Morph button from half-circle to full circle.
   clearButton.classList.add('dragging');
 
-  // Animate overlay in
-  clearOverlay.classList.add('active');
-
-  // After animation, add dragging class to disable transitions
-  setTimeout(() => {
-    clearOverlay.classList.add('dragging');
-  }, 300);
-
-  // Store initial container position and drag offset
-  const rect = clearContainer.getBoundingClientRect();
-  initialContainerY = rect.top;
-
-  dragOffsetY = clientY - rect.top;
-
-  // Show accept zone
+  // Lay out the radial accept zone as a circle centered on the button.
+  const radius = getAcceptRadius();
+  acceptZone.style.left = `${homeButtonCenter.x - radius}px`;
+  acceptZone.style.top = `${homeButtonCenter.y - radius}px`;
+  acceptZone.style.width = `${radius * 2}px`;
+  acceptZone.style.height = `${radius * 2}px`;
   acceptZone.style.display = 'block';
-
-  const acceptY = window.innerHeight * 0.85;
-  const acceptHeight = window.innerHeight - acceptY;
-  acceptZone.style.height = `${acceptHeight}px`;
+  // Next frame so the transition runs from the hidden state.
+  requestAnimationFrame(() => acceptZone.classList.add('visible'));
 
   e.preventDefault();
   e.stopPropagation();
@@ -128,7 +132,6 @@ function dragClear(e) {
   const clientX = e.clientX || (e.touches && e.touches[0].clientX);
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
 
-  // Cancel hold timer if user moves significantly
   if (holdTimer) {
     const deltaX = Math.abs(clientX - holdStartX);
     const deltaY = Math.abs(clientY - holdStartY);
@@ -138,24 +141,19 @@ function dragClear(e) {
     }
   }
 
-  const newY = clientY - dragOffsetY;
+  const dx = clientX - startPointerX;
+  const dy = clientY - startPointerY;
 
-  // Check if entered Accept Zone
-  const screenHeight = window.innerHeight;
-  const acceptThreshold = screenHeight * 0.85;
-  const isPastThreshold = clientY >= acceptThreshold;
+  clearContainer.style.transform = `translate(${dx}px, ${dy}px)`;
 
-  // Visual feedback when in Accept Zone
-  if (isPastThreshold) {
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const threshold = getAcceptRadius();
+  if (distance >= threshold) {
     clearButton.classList.add('delete-ready');
+    acceptZone.classList.add('threshold-reached');
   } else {
     clearButton.classList.remove('delete-ready');
-  }
-
-  // Only allow dragging downward
-  if (newY > initialContainerY) {
-    // Move container (overlay moves automatically)
-    clearContainer.style.top = `${newY}px`;
+    acceptZone.classList.remove('threshold-reached');
   }
 
   e.preventDefault();
@@ -165,111 +163,86 @@ function dragClear(e) {
 function stopClearDrag(e) {
   if (!isDragging) return;
 
-  // Cancel hold timer if still running
   if (holdTimer) {
     clearTimeout(holdTimer);
     holdTimer = null;
   }
 
   isDragging = false;
-  clearButton.classList.remove('dragging');
-  clearButton.classList.remove('delete-ready');
-  clearOverlay.classList.remove('dragging');
 
-  // Hide accept zone
-  acceptZone.style.display = 'none';
-
+  const clientX = e.clientX || (e.changedTouches && e.changedTouches[0].clientX);
   const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
-  const screenHeight = window.innerHeight;
-  const acceptThreshold = screenHeight * 0.85; // Bottom 15%
+  const dx = clientX - startPointerX;
+  const dy = clientY - startPointerY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const threshold = getAcceptRadius();
 
-  // Get the correct initial position (check if portrait or landscape)
-  const initialTop = getDefaultTop();
+  // Hide the accept ring (transition out, then unmount).
+  acceptZone.classList.remove('visible');
+  acceptZone.classList.remove('threshold-reached');
+  setTimeout(() => {
+    if (!isDragging) acceptZone.style.display = 'none';
+  }, 250);
 
-  if (clientY >= acceptThreshold) {
+  clearButton.classList.remove('delete-ready');
+
+  if (distance >= threshold) {
     // Clear confirmed
-
-    // Dismiss tutorial if active (user successfully learned the gesture)
     if (clearTutorial && clearTutorial.classList.contains('visible')) {
       dismissTutorial();
     }
 
-    // 1. Save a snapshot first (no-op if the setting is off), then clear
-    //    both main and virtual canvas. Fire-and-forget so the clear animation
-    //    isn't blocked by the download.
     saveDrawingIfEnabled();
     clearDrawingCanvas();
 
-    // Animate overlay down off screen
-    clearOverlay.classList.remove('active');
-    clearOverlay.classList.add('accepted');
-
-    // Animate button away
+    // Fade the button out as the page-turn sweeps in.
     clearButton.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
     clearButton.style.opacity = '0';
     clearButton.style.transform = 'scale(0.8)';
 
     pageTurnOverlay.classList.add('animating');
 
-    // Reset logic
     setTimeout(() => {
       if (onClearCompleteCallback) {
         onClearCompleteCallback();
       }
     }, 300);
 
-    // Reset container position and overlay
+    // Once the page-turn covers the screen, snap the button back to its
+    // pinned home, restore the half-circle, then fade it in.
     setTimeout(() => {
       pageTurnOverlay.classList.remove('animating');
 
+      clearContainer.style.transform = '';
+      clearButton.classList.remove('dragging');
       clearButton.style.transition = 'none';
-      clearContainer.style.top = initialTop;
       clearButton.style.transform = 'scale(0.8)';
 
-      // Reset overlay - disable transition and snap to hidden position
-      clearOverlay.classList.add('dragging'); // Disable transition
-      clearOverlay.classList.remove('accepted');
-      clearOverlay.classList.remove('active');
-
       setTimeout(() => {
+        clearContainer.classList.remove('dragging-active');
         clearButton.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
         clearButton.style.opacity = '1';
-        clearButton.style.transform = 'scale(1)';
-
-        // Re-enable transitions for next time
-        clearOverlay.classList.remove('dragging');
+        clearButton.style.transform = '';
       }, 50);
     }, 600);
 
   } else {
-    // Cancelled - Bounce container back, animate overlay up off screen
-    clearContainer.style.transition = 'top 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    clearContainer.style.top = initialTop;
-
-    // Animate overlay back up off screen
-    clearOverlay.classList.remove('active');
-
-    setTimeout(() => {
-      clearContainer.style.transition = '';
-    }, 300);
+    // Cancelled — restore the smooth transition so the button glides back
+    // to its pinned home and morphs back to the half-circle.
+    clearContainer.classList.remove('dragging-active');
+    clearContainer.style.transform = '';
+    clearButton.classList.remove('dragging');
   }
 
   e.preventDefault();
   e.stopPropagation();
 }
 
-// Reset container to default position based on current orientation
+// Snap the container back to its CSS-anchored home on orientation change
+// (the top offset is now driven by the media-query rule).
 function resetButtonPosition() {
   if (!clearContainer || isDragging) return;
-
-  // Reset to default position
-  clearContainer.style.transition = 'top 0.3s ease';
-  clearContainer.style.top = getDefaultTop();
-
-  // Remove transition after animation completes
-  setTimeout(() => {
-    clearContainer.style.transition = '';
-  }, 300);
+  clearContainer.style.transform = '';
 }
 
 // Initialize clear button functionality

@@ -154,6 +154,12 @@ body {
   right: -10px;
   z-index: 1000;
   pointer-events: none; /* Allow clicks through container to children */
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* While the finger is in control, snap to position with no easing */
+.clear-container.dragging-active {
+  transition: none;
 }
 
 /* Clear Button */
@@ -170,7 +176,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease, border-radius 0.3s ease,
+              transform 0.2s ease, background 0.2s ease;
   pointer-events: auto; /* Button is clickable */
 }
 
@@ -178,15 +185,20 @@ body {
   cursor: grabbing;
 }
 
+/* Dragging: morph from half-circle pinned shape to a full circle */
 .clear-button.dragging {
+  border-radius: 50%;
   box-shadow: -6px 6px 30px rgba(0, 0, 0, 0.4);
-  transition: none;
+}
+
+.clear-button.dragging .clear-icon {
+  margin-right: 0;
 }
 
 .clear-button.delete-ready {
   background: linear-gradient(135deg, #ff3838, #d63031);
   transform: scale(1.1);
-  box-shadow: -6px 6px 40px rgba(255, 56, 56, 0.6);
+  box-shadow: 0 6px 40px rgba(255, 56, 56, 0.6);
 }
 
 .clear-icon {
@@ -194,18 +206,42 @@ body {
   height: 32px;
   pointer-events: none;
   margin-right: 2px;
+  transition: margin 0.3s ease;
 }
 
-/* Clear Accept Zone */
+/* Clear Accept Zone — radial ring around the button's home position
+   that highlights where to drag to confirm a clear. */
 .clear-accept-zone {
   position: fixed;
-  left: 0;
-  width: 100%;
-  bottom: 0;
-  background: rgba(255, 56, 56, 0.25);
   pointer-events: none;
   display: none;
-  z-index: 1001; /* Above clear-container (1000) */
+  z-index: 999; /* Below clear-container (1000) so the button sits on top */
+  border-radius: 50%;
+  border: 4px dashed rgba(255, 56, 56, 0.45);
+  background: radial-gradient(circle,
+    rgba(255, 56, 56, 0) 55%,
+    rgba(255, 56, 56, 0.06) 100%);
+  box-sizing: border-box;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.2s ease,
+              transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              border-color 0.15s ease,
+              border-style 0.15s ease,
+              background 0.15s ease;
+}
+
+.clear-accept-zone.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.clear-accept-zone.threshold-reached {
+  border-color: rgba(255, 56, 56, 0.9);
+  border-style: solid;
+  background: radial-gradient(circle,
+    rgba(255, 56, 56, 0) 50%,
+    rgba(255, 56, 56, 0.22) 100%);
 }
 
 /* White overlay with torn edge at bottom - positioned within container */

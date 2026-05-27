@@ -254,19 +254,19 @@ MIT
   * [x] Multi-tapping on color picker should not immediately dismiss modal
 * [x] Screenshots?  Screenshot on wipe?
 * [x] Animation when selecting ring
+* [ ] Increase size of clear accept zone
+  * [ ] Radial clear menu?
 * [ ] Add "color book" style picker with background overlay
-* [ ] Make sure we can refresh PWA
-* [ ] It takes about 10s on ios for the pencil sounds to come in
 * [ ] Paper edge filter could be smoother and not applying correctly on android
 * [ ] Refactor to use drag and drop API (doesn't work on mobile)
 * [ ] Bugs
+  * [ ] Make sure we can refresh PWA
+  * [ ] It takes about 10s on ios for the pencil sounds to come in
   * [ ] Sometimes it doesn't register clicks on color changes
   * [ ] Sometimes the cursor seems misaligned with the actual drawing point. looks like it's drawing a little bit to the right of my cursor
   * [ ] Fix hex grid cutoff on some screen orientations
     * [ ] Pure CSS (Container queries)?
   * [ ] Color picker selected color on active hex ring
-* [ ] Increase size of clear accept zone
-  * [ ] Radial clear menu?
 * [ ] Try to replace howler and see how it goes
 * [ ] Controls?
   * [x] Undo
