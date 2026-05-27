@@ -543,10 +543,16 @@ body {
   bottom: 8px;
   left: 8px;
   display: flex;
-  flex-direction: column;
+  flex-direction: reverse;
   gap: 8px;
   z-index: 900;
   transition: left 0.3s ease;
+}
+
+@media (orientation: portrait) {
+  .actions-panel {
+    flex-direction: column-reverse;
+  }
 }
 
 .action-button {
@@ -612,8 +618,8 @@ body {
 
 .stroke-width-menu {
   position: absolute;
-  left: calc(100% + 8px);
-  bottom: 0;
+  left: 0;
+  bottom: calc(100% + 8px);
   display: flex;
   flex-direction: row;
   gap: 6px;
@@ -623,6 +629,13 @@ body {
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
   z-index: 901;
+}
+
+@media (orientation: portrait) {
+  .stroke-width-menu {
+    left: calc(100% + 8px);
+    bottom: 0;
+  }
 }
 
 .stroke-width-menu[hidden] {
