@@ -649,6 +649,89 @@ body {
   filter: invert(80%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
 }
 
+/* Polaroid screenshot animation */
+.polaroid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.polaroid-flash {
+  position: absolute;
+  inset: 0;
+  background: white;
+  opacity: 0;
+  animation: polaroid-flash 0.35s ease-out forwards;
+}
+
+@keyframes polaroid-flash {
+  0% { opacity: 0; }
+  15% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+.polaroid-frame {
+  /* --from-x/y: offset from viewport center to the camera button.
+     --to-x/y:   offset from viewport center to a point just inside the
+                 top-right corner (where the photo shrinks away to). */
+  --from-x: 0px;
+  --from-y: 0px;
+  --to-x: calc(50vw - 40px);
+  --to-y: calc(-50vh + 40px);
+
+  background: #fdfcf7;
+  padding: 16px 16px 64px 16px;
+  border-radius: 3px;
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, 0.35),
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  transform: translate(var(--from-x), var(--from-y)) scale(0.1) rotate(-18deg);
+  opacity: 0;
+  animation: polaroid-show 1.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform-origin: center center;
+}
+
+.polaroid-image {
+  display: block;
+  width: clamp(260px, 54vw, 480px);
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #fcfbf8;
+  border-radius: 1px;
+}
+
+@keyframes polaroid-show {
+  0% {
+    transform: translate(var(--from-x), var(--from-y)) scale(0.1) rotate(-18deg);
+    opacity: 0;
+  }
+  6% {
+    transform: translate(var(--from-x), var(--from-y)) scale(0.15) rotate(-15deg);
+    opacity: 0.6;
+  }
+  30% {
+    transform: translate(0, 0) scale(1.06) rotate(-6deg);
+    opacity: 1;
+  }
+  38% {
+    transform: translate(0, 0) scale(1) rotate(-4deg);
+    opacity: 1;
+  }
+  68% {
+    transform: translate(0, 0) scale(1) rotate(-4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--to-x), var(--to-y)) scale(0.08) rotate(12deg);
+    opacity: 0;
+  }
+}
+
 /* Parent Help Button */
 .parent-help-button {
   position: fixed;

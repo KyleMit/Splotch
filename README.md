@@ -261,6 +261,7 @@ MIT
   * [ ] Add screenshot animation
 * [ ] AI-ify button
 * [ ] Add "color book" style picker with background overlay
+  * [ ] favorite star button next to scrollable region
 * [ ] Remove paper edge filter
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * [ ] Bugs
