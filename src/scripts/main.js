@@ -14,14 +14,16 @@ import {
   releaseAllPointers,
   focusCanvas,
   undo,
-  getCanUndo
+  getCanUndo,
+  isCanvasEmpty
 } from './drawingCanvas.js';
 import { initColorPalette } from './colorPalette.js';
-import { initActionsPanel, updateUndoButton } from './actionsPanel.js';
+import { initActionsPanel, updateUndoButton, updateScreenshotButton } from './actionsPanel.js';
 import { initPWAUpdates } from './pwaUpdate.js';
 import { initDeviceEnhancements } from './deviceEnhancements.js';
 import { playDrawSound, stopDrawSound } from './drawingSound.js';
 import { initParentHelp } from './parentHelp.js';
+import { isScreenshotEnabled, saveScreenshot } from './screenshot.js';
 
 // Canvas setup
 const canvas = document.getElementById('drawingCanvas');
@@ -45,6 +47,9 @@ initDrawingCanvas(canvas, {
   onDrawStop: stopDrawSound,
   onUndoStateChange: (canUndo) => {
     updateUndoButton(canUndo);
+  },
+  onCanvasEmptyChange: (empty) => {
+    updateScreenshotButton(!empty);
   }
 });
 
@@ -53,7 +58,12 @@ initActionsPanel({
   onUndo: () => {
     undo();
   },
-  initialCanUndo: getCanUndo()
+  onScreenshot: () => {
+    saveScreenshot();
+  },
+  initialCanUndo: getCanUndo(),
+  initialCanScreenshot: !isCanvasEmpty(),
+  initialScreenshotVisible: isScreenshotEnabled()
 });
 
 // Initialize Color Picker

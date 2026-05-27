@@ -254,21 +254,20 @@ MIT
   * [x] Multi-tapping on color picker should not immediately dismiss modal
 * [x] Screenshots?  Screenshot on wipe?
 * [x] Animation when selecting ring
-* [ ] Increase size of clear accept zone
-  * [ ] Radial clear menu?
-* [ ] Setting
-  * [ ] Enable screenshot button
-    * [ ] Add a setting to the parent center to enable a screenshot button.  the icon for the button should be added to the actions-panel next to the undo button. it should only be enabled if `isCanvasEmpty` is false. try to minimize the number of checks for an empty canvas.  if the canvas was just deleted, the button will be disabled.  if someone just drew, `isCanvasEmpty` should be true and you don't need to re-check on each new drawing.  also re-check after an undo action.
+* [x] Add Radial clear menu
+* [x] Fix hex grid cutoff on some screen orientations
+  * [x] Pure CSS (Container queries)?
+* [x] Enable screenshot button
+  * [ ] Add screenshot animation
+* [ ] AI-ify button
 * [ ] Add "color book" style picker with background overlay
-* [ ] Paper edge filter could be smoother and not applying correctly on android
-* [ ] Refactor to use drag and drop API (doesn't work on mobile)
+* [ ] Remove paper edge filter
+* [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * [ ] Bugs
   * [ ] Make sure we can refresh PWA
   * [ ] It takes about 10s on ios for the pencil sounds to come in
   * [ ] Sometimes it doesn't register clicks on color changes
   * [ ] Sometimes the cursor seems misaligned with the actual drawing point. looks like it's drawing a little bit to the right of my cursor
-  * [ ] Fix hex grid cutoff on some screen orientations
-    * [ ] Pure CSS (Container queries)?
   * [ ] Color picker selected color on active hex ring
 * [ ] Try to replace howler and see how it goes
 * [ ] Controls?

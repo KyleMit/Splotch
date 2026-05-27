@@ -2,27 +2,36 @@
 
 let actionsPanel;
 let undoButton;
+let screenshotButton;
 let onUndoClick = null;
+let onScreenshotClick = null;
 
 // Initialize actions panel
 export function initActionsPanel(options = {}) {
   const {
     onUndo = () => {},
-    initialCanUndo = false
+    onScreenshot = () => {},
+    initialCanUndo = false,
+    initialCanScreenshot = false,
+    initialScreenshotVisible = false
   } = options;
 
   actionsPanel = document.querySelector('.actions-panel');
   undoButton = document.getElementById('undoButton');
+  screenshotButton = document.getElementById('screenshotButton');
 
-  if (!actionsPanel || !undoButton) {
-    console.error('Actions panel or undo button not found');
+  if (!actionsPanel || !undoButton || !screenshotButton) {
+    console.error('Actions panel buttons not found');
     return;
   }
 
   onUndoClick = onUndo;
+  onScreenshotClick = onScreenshot;
 
-  // Set initial button state
+  // Set initial button states
   updateUndoButton(initialCanUndo);
+  updateScreenshotButton(initialCanScreenshot);
+  setScreenshotButtonVisible(initialScreenshotVisible);
 
   // Handle undo button click
   undoButton.addEventListener('pointerup', (e) => {
@@ -36,6 +45,21 @@ export function initActionsPanel(options = {}) {
 
   // Prevent button from interfering with drawing
   undoButton.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  // Handle screenshot button click
+  screenshotButton.addEventListener('pointerup', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!screenshotButton.disabled && onScreenshotClick) {
+      onScreenshotClick();
+    }
+  });
+
+  screenshotButton.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     e.stopPropagation();
   });
@@ -58,6 +82,25 @@ export function updateUndoButton(canUndo) {
     undoButton.disabled = true;
     undoButton.classList.add('disabled');
   }
+}
+
+// Update screenshot button enabled/disabled state
+export function updateScreenshotButton(canScreenshot) {
+  if (!screenshotButton) return;
+
+  if (canScreenshot) {
+    screenshotButton.disabled = false;
+    screenshotButton.classList.remove('disabled');
+  } else {
+    screenshotButton.disabled = true;
+    screenshotButton.classList.add('disabled');
+  }
+}
+
+// Show or hide the screenshot button based on the parent-center setting
+export function setScreenshotButtonVisible(visible) {
+  if (!screenshotButton) return;
+  screenshotButton.hidden = !visible;
 }
 
 // Update panel position based on orientation and color palette layout

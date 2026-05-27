@@ -1,8 +1,10 @@
 // Parent help modal with PWA installation and lock mode instructions
 import { isSoundEnabled, setSoundEnabled } from './drawingSound.js';
 import { isSaveOnDeleteEnabled, setSaveOnDeleteEnabled } from './saveOnDelete.js';
+import { isScreenshotEnabled, setScreenshotEnabled } from './screenshot.js';
+import { setScreenshotButtonVisible } from './actionsPanel.js';
 
-let helpButton, helpModal, soundToggle, saveOnDeleteToggle;
+let helpButton, helpModal, soundToggle, saveOnDeleteToggle, screenshotToggle;
 
 function detectOS() {
   const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -99,6 +101,19 @@ function toggleSaveOnDelete() {
   updateSaveOnDeleteToggle();
 }
 
+function updateScreenshotToggle() {
+  const enabled = isScreenshotEnabled();
+  screenshotToggle.classList.toggle('active', enabled);
+  screenshotToggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
+}
+
+function toggleScreenshot() {
+  const enabled = !isScreenshotEnabled();
+  setScreenshotEnabled(enabled);
+  updateScreenshotToggle();
+  setScreenshotButtonVisible(enabled);
+}
+
 function openHelpModal() {
   // Detect OS and select appropriate tab
   const os = detectOS();
@@ -110,6 +125,7 @@ function openHelpModal() {
   // Update sound toggle state
   updateSoundToggle();
   updateSaveOnDeleteToggle();
+  updateScreenshotToggle();
 
   // Anchor the open animation to the help button so the modal
   // appears to fly out from the button that triggered it.
@@ -135,6 +151,7 @@ export function initParentHelp() {
   helpModal = document.getElementById('parentHelpModal');
   soundToggle = document.getElementById('soundToggle');
   saveOnDeleteToggle = document.getElementById('saveOnDeleteToggle');
+  screenshotToggle = document.getElementById('screenshotToggle');
 
   // Add click handlers
   helpButton.addEventListener('click', openHelpModal);
@@ -152,10 +169,12 @@ export function initParentHelp() {
   // Add sound toggle handler
   soundToggle.addEventListener('click', toggleSound);
   saveOnDeleteToggle.addEventListener('click', toggleSaveOnDelete);
+  screenshotToggle.addEventListener('click', toggleScreenshot);
 
   // Initialize toggle states
   updateSoundToggle();
   updateSaveOnDeleteToggle();
+  updateScreenshotToggle();
 
   // Close dialog when clicking on backdrop
   helpModal.addEventListener('click', (e) => {

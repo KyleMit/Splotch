@@ -20,6 +20,27 @@ const MAX_UNDO_STACK_SIZE = 10;
 let canUndo = false;
 let onUndoStateChange = null;
 
+// Cached "is the canvas blank?" state. Cheap to read — flipped on the
+// first stroke and on clear/undo — so callers don't have to rescan pixels.
+let canvasEmpty = true;
+let onCanvasEmptyChange = null;
+
+function setCanvasEmptyState(empty) {
+  if (canvasEmpty === empty) return;
+  canvasEmpty = empty;
+  if (onCanvasEmptyChange) onCanvasEmptyChange(empty);
+}
+
+// Pixel scan — only used after undo, when the cached state may be wrong.
+function scanCanvasIsEmpty() {
+  if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) return true;
+  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] !== 0) return false;
+  }
+  return true;
+}
+
 // Set canvas size to fill container
 function resizeCanvas() {
   const container = canvas.parentElement;
@@ -93,6 +114,9 @@ function startDrawing(e) {
 
   // Save canvas state before starting new stroke (for undo)
   saveUndoSnapshot();
+
+  // First stroke flips us out of the empty state — no pixel scan needed.
+  setCanvasEmptyState(false);
 
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
@@ -270,6 +294,9 @@ export function undo() {
     virtualCtx.drawImage(snapshot, 0, 0);
   }
 
+  // Undo can leave the canvas in either state — rescan once here.
+  setCanvasEmptyState(scanCanvasIsEmpty());
+
   // Update undo availability based on remaining stack size
   canUndo = undoStack.length > 0;
   if (onUndoStateChange) {
@@ -290,6 +317,7 @@ export function initDrawingCanvas(canvasElement, options = {}) {
   onDrawSoundCallback = options.onDrawSound || null;
   onDrawStopCallback = options.onDrawStop || null;
   onUndoStateChange = options.onUndoStateChange || null;
+  onCanvasEmptyChange = options.onCanvasEmptyChange || null;
   currentColor = options.initialColor || '#AB71E1';
 
   // Setup canvas and resize handler
@@ -332,18 +360,13 @@ export function clearCanvas() {
   if (virtualCtx && virtualCanvas) {
     virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
   }
+
+  setCanvasEmptyState(true);
 }
 
-// True when the canvas has no drawn pixels (every pixel is fully transparent).
-// The live canvas is transparent until the user draws on it, so a single
-// non-zero alpha value means there's at least one stroke.
+// Cached blank-canvas check. Updated on draw/clear/undo, so reads are O(1).
 export function isCanvasEmpty() {
-  if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) return true;
-  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  for (let i = 3; i < data.length; i += 4) {
-    if (data[i] !== 0) return false;
-  }
-  return true;
+  return canvasEmpty;
 }
 
 // Export canvas as a PNG blob with the paper-color background composited in
