@@ -474,7 +474,7 @@ body {
 
 .hexagon.selected {
   z-index: 1;
-  background-color: #AB71E1;
+  background-color: color-mix(in srgb, var(--color, #007BFF), black 20%);
 }
 
 .hexagon.selected::after {

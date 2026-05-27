@@ -263,19 +263,20 @@ MIT
   * [x] Add screenshot animation
 * [x] Remove paper edge filter
 * [x] Try to replace howler and see how it goes
+* [x] Fix when the cursor seems misaligned with the actual drawing point. looks like it's drawing a little bit to the right of my cursor
+* [x] Fix Color picker selected color on active hex ring
+* [x] Add control for Undo
+  * [x] Undo after clear
+* [x] Add control for Stoke width
 * [ ] AI-ify button
 * [ ] Add "color book" style picker with background overlay
   * [ ] favorite star button next to scrollable region
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
+* [ ] Efficiently pick colors on small devices
 * [ ] Bugs
   * [ ] Make sure we can refresh PWA
   * [ ] It takes about 10s on ios for the pencil sounds to come in
   * [ ] Sometimes it doesn't register clicks on color changes
-  * [ ] Sometimes the cursor seems misaligned with the actual drawing point. looks like it's drawing a little bit to the right of my cursor
-  * [ ] Color picker selected color on active hex ring
-* [ ] Controls?
-  * [x] Undo
-    * [x] Undo after clear
-  * [x] Stoke width
+* [ ] Controls
   * [ ] Eraser (/eraser branch)
   * [ ] Brush type (blend mode with previous drawing)
