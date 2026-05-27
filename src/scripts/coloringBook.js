@@ -125,6 +125,11 @@ export function clearOverlay() {
   document.body.classList.remove('has-coloring-overlay');
 }
 
+export function getActiveOverlayImage() {
+  if (!overlayImg || overlayImg.hidden || !overlayImg.naturalWidth) return null;
+  return overlayImg;
+}
+
 export function openColoringBook() {
   if (!dialog || dialog.open) return;
 

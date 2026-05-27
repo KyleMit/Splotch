@@ -1,6 +1,7 @@
 // Persisted "show a screenshot button in the actions panel" preference,
 // and the action that saves the current drawing as a PNG.
 import { exportCanvasBlob } from './drawingCanvas.js';
+import { getActiveOverlayImage } from './coloringBook.js';
 
 const SCREENSHOT_KEY = 'splotch-screenshot-enabled';
 
@@ -22,7 +23,7 @@ function timestamp() {
 }
 
 export async function saveScreenshot() {
-  const blob = await exportCanvasBlob();
+  const blob = await exportCanvasBlob(getActiveOverlayImage());
   if (!blob) return;
 
   const url = URL.createObjectURL(blob);

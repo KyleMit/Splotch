@@ -271,8 +271,8 @@ MIT
 * [ ] AI-ify button
 * [ ] Add "color book" style picker with background overlay
   * [ ] For the breadcrumb menu navigation, use the chevron-back.svg
-  * [ ] Make sure white backgrounds become transparent
-  * [ ] Make sure background works with screenshot feature
+  * [x] Make sure white backgrounds become transparent
+  * [x] Make sure background works with screenshot feature
   * [ ] Make sure background works horizontally and vertically
   * [ ] Make sure book selection screen is scrollable.
   * [ ] Come up with other book selections

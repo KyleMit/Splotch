@@ -1,5 +1,6 @@
 // Persisted "save the drawing as PNG when the canvas is cleared" preference.
 import { exportCanvasBlob, isCanvasEmpty } from './drawingCanvas.js';
+import { getActiveOverlayImage } from './coloringBook.js';
 
 const SAVE_ON_DELETE_KEY = 'splotch-save-on-delete';
 
@@ -24,7 +25,7 @@ export async function saveDrawingIfEnabled() {
   if (!saveOnDeleteEnabled) return;
   if (isCanvasEmpty()) return;
 
-  const blob = await exportCanvasBlob();
+  const blob = await exportCanvasBlob(getActiveOverlayImage());
   if (!blob) return;
 
   const url = URL.createObjectURL(blob);

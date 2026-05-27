@@ -389,7 +389,9 @@ export function isCanvasEmpty() {
 
 // Export canvas as a PNG blob with the paper-color background composited in
 // (the live canvas is transparent — the paper texture is a CSS background).
-export function exportCanvasBlob() {
+// If an overlay image is passed, it is composited under the strokes using
+// multiply blend to mirror the on-screen CSS `mix-blend-mode: multiply`.
+export function exportCanvasBlob(overlayImage = null) {
   if (!canvas || canvas.width === 0 || canvas.height === 0) return Promise.resolve(null);
 
   const out = document.createElement('canvas');
@@ -398,6 +400,22 @@ export function exportCanvasBlob() {
   const outCtx = out.getContext('2d');
   outCtx.fillStyle = '#fcfbf8';
   outCtx.fillRect(0, 0, out.width, out.height);
+
+  if (overlayImage && overlayImage.naturalWidth > 0 && overlayImage.naturalHeight > 0) {
+    // Match CSS `object-fit: contain`: scale uniformly to fit, then center.
+    const scale = Math.min(
+      out.width / overlayImage.naturalWidth,
+      out.height / overlayImage.naturalHeight
+    );
+    const drawnW = overlayImage.naturalWidth * scale;
+    const drawnH = overlayImage.naturalHeight * scale;
+    const offsetX = (out.width - drawnW) / 2;
+    const offsetY = (out.height - drawnH) / 2;
+    outCtx.globalCompositeOperation = 'multiply';
+    outCtx.drawImage(overlayImage, offsetX, offsetY, drawnW, drawnH);
+    outCtx.globalCompositeOperation = 'source-over';
+  }
+
   outCtx.drawImage(canvas, 0, 0);
 
   return new Promise(resolve => out.toBlob(resolve, 'image/png'));
