@@ -230,7 +230,7 @@ Built on the native `HTMLAudioElement` API — no audio library dependency:
 * Looped playback for the duration of a stroke (`loop = true`)
 * Speed-aware gating: pauses when pointer movement drops below a threshold, resumes on motion
 * Short debounce timer pauses audio shortly after movement stops to avoid mid-stroke cutoffs
-* User preference persisted in `localStorage` and toggleable from the Parent Center settings
+* User preference persisted in `localStorage` and can be toggled from the Parent Center settings
 * First playback is gesture-initiated (pointer event), satisfying mobile autoplay requirements
 
 ### PWA Capabilities

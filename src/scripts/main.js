@@ -15,7 +15,8 @@ import {
   focusCanvas,
   undo,
   getCanUndo,
-  isCanvasEmpty
+  isCanvasEmpty,
+  setStrokeWidth
 } from './drawingCanvas.js';
 import { initColorPalette } from './colorPalette.js';
 import { initActionsPanel, updateUndoButton, updateScreenshotButton } from './actionsPanel.js';
@@ -23,6 +24,12 @@ import { initPWAUpdates } from './pwaUpdate.js';
 import { playDrawSound, stopDrawSound } from './drawingSound.js';
 import { initParentHelp } from './parentHelp.js';
 import { isScreenshotEnabled, saveScreenshot } from './screenshot.js';
+import {
+  isStrokeWidthControlEnabled,
+  getStrokeSize,
+  setStrokeSize,
+  getStrokeWidthPx
+} from './strokeWidth.js';
 
 // Canvas setup
 const canvas = document.getElementById('drawingCanvas');
@@ -52,6 +59,9 @@ initDrawingCanvas(canvas, {
   }
 });
 
+// Apply the persisted stroke width before any drawing happens
+setStrokeWidth(getStrokeWidthPx());
+
 // Initialize Actions Panel
 initActionsPanel({
   onUndo: () => {
@@ -60,9 +70,15 @@ initActionsPanel({
   onScreenshot: () => {
     saveScreenshot();
   },
+  onStrokeSize: (size) => {
+    setStrokeSize(size);
+    setStrokeWidth(getStrokeWidthPx(size));
+  },
   initialCanUndo: getCanUndo(),
   initialCanScreenshot: !isCanvasEmpty(),
-  initialScreenshotVisible: isScreenshotEnabled()
+  initialScreenshotVisible: isScreenshotEnabled(),
+  initialStrokeWidthVisible: isStrokeWidthControlEnabled(),
+  initialStrokeSize: getStrokeSize()
 });
 
 // Initialize Color Picker

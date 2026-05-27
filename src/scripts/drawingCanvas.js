@@ -2,6 +2,7 @@
 
 let canvas, ctx;
 let currentColor = '';
+let currentLineWidth = 8;
 let lastColorChangeTime = 0;
 let activePointerIds = new Set();
 let activePointers = new Map();
@@ -52,7 +53,6 @@ function resizeCanvas() {
     virtualCanvas.width = Math.max(rect.width, rect.height) * 2; // Large enough for any orientation
     virtualCanvas.height = Math.max(rect.width, rect.height) * 2;
     virtualCtx = virtualCanvas.getContext('2d');
-    virtualCtx.lineWidth = 8;
     virtualCtx.lineCap = 'round';
     virtualCtx.lineJoin = 'round';
   }
@@ -71,8 +71,7 @@ function resizeCanvas() {
   // Restore from virtual canvas
   ctx.drawImage(virtualCanvas, 0, 0);
 
-  // Set drawing properties
-  ctx.lineWidth = 8;
+  // Set drawing properties (lineWidth is set per stroke from pointer state)
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 }
@@ -129,6 +128,7 @@ function startDrawing(e) {
       y: y,
       isDrawing: true,
       color: currentColor,
+      lineWidth: currentLineWidth,
       lastTime: Date.now(),
       distanceWindow: [], // Track recent movements for better speed calculation
       windowStartTime: Date.now()
@@ -197,8 +197,9 @@ function draw(e) {
   const windowTime = Math.max(now - pointerState.windowStartTime, 1);
   const speed = totalDistance / windowTime; // pixels per millisecond
 
-  // Use the color from when this pointer started drawing
+  // Use the color and width from when this pointer started drawing
   ctx.strokeStyle = pointerState.color;
+  ctx.lineWidth = pointerState.lineWidth;
   ctx.beginPath();
   ctx.moveTo(pointerState.x, pointerState.y);
   ctx.lineTo(x, y);
@@ -207,6 +208,7 @@ function draw(e) {
   // Also draw to virtual canvas
   if (virtualCtx) {
     virtualCtx.strokeStyle = pointerState.color;
+    virtualCtx.lineWidth = pointerState.lineWidth;
     virtualCtx.beginPath();
     virtualCtx.moveTo(pointerState.x, pointerState.y);
     virtualCtx.lineTo(x, y);
@@ -349,6 +351,10 @@ export function getCurrentColor() {
 
 export function updateColorChangeTime() {
   lastColorChangeTime = Date.now();
+}
+
+export function setStrokeWidth(widthPx) {
+  currentLineWidth = widthPx;
 }
 
 export function clearCanvas() {

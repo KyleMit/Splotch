@@ -42,6 +42,28 @@
 
   <!-- Actions Panel -->
   <div class="actions-panel">
+    <div class="stroke-width-wrapper" id="strokeWidthWrapper" hidden>
+      <button class="action-button" id="strokeWidthButton" aria-label="Stroke width" aria-expanded="false">
+        <img src="/icons/line-weight.svg" alt="Stroke width" class="action-icon" />
+      </button>
+      <div class="stroke-width-menu" id="strokeWidthMenu" hidden>
+        <button class="stroke-size-button" data-size="1" aria-label="Size 1">
+          <img src="/icons/size-1.svg" alt="" class="action-icon" />
+        </button>
+        <button class="stroke-size-button" data-size="2" aria-label="Size 2">
+          <img src="/icons/size-2.svg" alt="" class="action-icon" />
+        </button>
+        <button class="stroke-size-button" data-size="3" aria-label="Size 3">
+          <img src="/icons/size-3.svg" alt="" class="action-icon" />
+        </button>
+        <button class="stroke-size-button" data-size="4" aria-label="Size 4">
+          <img src="/icons/size-4.svg" alt="" class="action-icon" />
+        </button>
+        <button class="stroke-size-button" data-size="5" aria-label="Size 5">
+          <img src="/icons/size-5.svg" alt="" class="action-icon" />
+        </button>
+      </div>
+    </div>
     <button class="action-button disabled" id="screenshotButton" aria-label="Save screenshot" disabled hidden>
       <img src="/icons/camera.svg" alt="Save screenshot" class="action-icon" />
     </button>
