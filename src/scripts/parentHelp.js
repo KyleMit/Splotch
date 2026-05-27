@@ -111,6 +111,16 @@ function openHelpModal() {
   updateSoundToggle();
   updateSaveOnDeleteToggle();
 
+  // Anchor the open animation to the help button so the modal
+  // appears to fly out from the button that triggered it.
+  if (helpButton) {
+    const rect = helpButton.getBoundingClientRect();
+    const cx = (rect.left + rect.right) / 2;
+    const cy = (rect.top + rect.bottom) / 2;
+    helpModal.style.setProperty('--origin-x', `${cx - window.innerWidth / 2}px`);
+    helpModal.style.setProperty('--origin-y', `${cy - window.innerHeight / 2}px`);
+  }
+
   // Show modal using native dialog method
   helpModal.showModal();
 }

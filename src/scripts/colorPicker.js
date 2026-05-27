@@ -28,6 +28,18 @@ function clearSelected() {
 
 function openColorPicker() {
   if (!dialog || dialog.open) return;
+
+  // Anchor the open animation to the gradient swatch so the dialog
+  // appears to fly out from the button that triggered it.
+  const trigger = document.querySelector('.gradient-swatch');
+  if (trigger) {
+    const rect = trigger.getBoundingClientRect();
+    const cx = (rect.left + rect.right) / 2;
+    const cy = (rect.top + rect.bottom) / 2;
+    dialog.style.setProperty('--origin-x', `${cx - window.innerWidth / 2}px`);
+    dialog.style.setProperty('--origin-y', `${cy - window.innerHeight / 2}px`);
+  }
+
   dialog.showModal();
 
   // Highlight the currently selected color, if it matches a hexagon
