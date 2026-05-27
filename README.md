@@ -253,7 +253,7 @@ MIT
 * [x] Toddler Usability
   * [x] Multi-tapping on color picker should not immediately dismiss modal
 * [x] Screenshots?  Screenshot on wipe?
-* [ ] Animation when selecting ring
+* [x] Animation when selecting ring
 * [ ] Add "color book" style picker with background overlay
 * [ ] Make sure we can refresh PWA
 * [ ] It takes about 10s on ios for the pencil sounds to come in

@@ -3,6 +3,37 @@
 let colorSwatches;
 let colorPalette;
 
+// Compute a ring color ~10% darker than the swatch — or lighter for very dark
+// swatches like black — so the selection ring contrasts with the swatch fill.
+function getRingColor(color) {
+  let hex = color.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  const shift = luminance < 0.2
+    ? (v) => Math.min(255, Math.round(v + 38))   // lighten dark colors
+    : (v) => Math.max(0, Math.round(v * 0.9));   // darken everything else
+
+  const toHex = (v) => v.toString(16).padStart(2, '0');
+  return `#${toHex(shift(r))}${toHex(shift(g))}${toHex(shift(b))}`;
+}
+
+function applySelectionRing(btn, color) {
+  const ringColor = getRingColor(color);
+  btn.style.setProperty('--ring-color', ringColor);
+  btn.style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${ringColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
+}
+
+function playRingAnimation(btn) {
+  btn.classList.remove('ring-animate');
+  // Force reflow so re-adding the class restarts the animation
+  void btn.offsetWidth;
+  btn.classList.add('ring-animate');
+}
+
 // Initialize color palette with event handlers
 export function initColorPalette(options = {}) {
   const {
@@ -23,8 +54,8 @@ export function initColorPalette(options = {}) {
 
   // Set initial color from first swatch
   const initialColor = colorSwatches[0].dataset.color;
-  // Set initial Selection Ring color
-  colorSwatches[0].style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${initialColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
+  // Set initial Selection Ring color (no animation on first paint)
+  applySelectionRing(colorSwatches[0], initialColor);
 
   // Prevent Color Palette from interfering with drawing
   colorPalette.addEventListener('pointerdown', (e) => {
@@ -61,14 +92,18 @@ export function initColorPalette(options = {}) {
         // Regular color swatch
         colorSwatches.forEach(b => {
           b.classList.remove('active');
+          b.classList.remove('ring-animate');
           b.style.boxShadow = ''; // Clear Selection Ring
         });
         btn.classList.add('active');
         const color = btn.dataset.color;
         setColor(color);
 
-        // Set Selection Ring to match swatch color
-        btn.style.boxShadow = `0 0 0 0.5px white, 0 0 0 4.5px ${color}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
+        // Set Selection Ring (10% darker/lighter than swatch for contrast)
+        applySelectionRing(btn, color);
+
+        // Confirmation flourish — radial expansion from center
+        playRingAnimation(btn);
 
         onColorChange(color);
       }
