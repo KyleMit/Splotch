@@ -196,7 +196,7 @@ function stopClearDrag(e) {
     saveDrawingIfEnabled();
     clearDrawingCanvas();
 
-    // Fade the button out as the page-turn sweeps in.
+    // Fade the button out as the ripple expands.
     clearButton.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
     clearButton.style.opacity = '0';
     clearButton.style.transform = 'scale(0.8)';

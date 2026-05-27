@@ -334,6 +334,18 @@ export function clearCanvas() {
   }
 }
 
+// True when the canvas has no drawn pixels (every pixel is fully transparent).
+// The live canvas is transparent until the user draws on it, so a single
+// non-zero alpha value means there's at least one stroke.
+export function isCanvasEmpty() {
+  if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) return true;
+  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] !== 0) return false;
+  }
+  return true;
+}
+
 // Export canvas as a PNG blob with the paper-color background composited in
 // (the live canvas is transparent — the paper texture is a CSS background).
 export function exportCanvasBlob() {

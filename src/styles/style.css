@@ -291,32 +291,36 @@ body {
 }
 
 /* Page Turn Overlay */
+/* Clear-confirmation ripple: a single white circle anchored at the
+   top-right corner. It expands outward — the wave sweeps across the
+   viewport toward the bottom-left — and fades, giving one cohesive
+   ripple instead of the two-flash sliding page-turn. */
 .page-turn-overlay {
   position: fixed;
+  left: 100%;
   top: 0;
-  left: 0;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(245, 245, 245, 0.98) 50%,
-    rgba(255, 255, 255, 1) 100%);
-  transform: translate(-100%, -100%);
+  width: 1px;
+  height: 1px;
+  border-radius: 50%;
+  background: white;
   pointer-events: none;
   z-index: 500;
-  box-shadow: -20px -20px 60px rgba(0, 0, 0, 0.15);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
 }
 
 .page-turn-overlay.animating {
-  animation: pageTurn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: ripple 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-@keyframes pageTurn {
+@keyframes ripple {
   0% {
-    transform: translate(-100%, -100%);
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.85;
   }
   100% {
-    transform: translate(0, 0);
+    transform: translate(-50%, -50%) scale(4000);
+    opacity: 0;
   }
 }
 

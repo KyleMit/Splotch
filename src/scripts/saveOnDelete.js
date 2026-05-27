@@ -1,5 +1,5 @@
 // Persisted "save the drawing as PNG when the canvas is cleared" preference.
-import { exportCanvasBlob } from './drawingCanvas.js';
+import { exportCanvasBlob, isCanvasEmpty } from './drawingCanvas.js';
 
 const SAVE_ON_DELETE_KEY = 'splotch-save-on-delete';
 
@@ -22,6 +22,7 @@ function timestamp() {
 
 export async function saveDrawingIfEnabled() {
   if (!saveOnDeleteEnabled) return;
+  if (isCanvasEmpty()) return;
 
   const blob = await exportCanvasBlob();
   if (!blob) return;
