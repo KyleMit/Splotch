@@ -1,7 +1,5 @@
 // Drawing sound management
 
-import { Howl } from 'howler';
-
 const SOUND_ENABLED_KEY = 'splotch-sound-enabled';
 
 // Load sound preference from localStorage (default to true)
@@ -16,11 +14,18 @@ const SPEED_THRESHOLD = 0.15; // Minimum speed to keep sound playing (pixels/ms)
 const PAUSE_DELAY = 50; // ms to wait before pausing when movement stops
 const SOUND_VOLUME = 0.2;
 
+function createSound(src) {
+  const audio = new Audio(src);
+  audio.preload = 'auto';
+  audio.loop = true;
+  return audio;
+}
+
 // Initialize sound files
 const pencilSounds = [
-  new Howl({ src: ['/sounds/pencil-1.mp3'] }),
-  new Howl({ src: ['/sounds/pencil-2.mp3'] }),
-  new Howl({ src: ['/sounds/pencil-3.mp3'] })
+  createSound('/sounds/pencil-1.mp3'),
+  createSound('/sounds/pencil-2.mp3'),
+  createSound('/sounds/pencil-3.mp3')
 ];
 
 export function playDrawSound(movementData = {}) {
@@ -34,8 +39,9 @@ export function playDrawSound(movementData = {}) {
     currentSound = pencilSounds[currentStrokeSoundIndex];
 
     // Start playing the sound on loop at normal speed
-    currentSound.volume(SOUND_VOLUME);
-    currentSound.loop(true);
+    currentSound.volume = SOUND_VOLUME;
+    currentSound.loop = true;
+    currentSound.currentTime = 0;
     currentSound.play();
     isSoundPaused = false;
   }
@@ -83,8 +89,9 @@ export function stopDrawSound() {
 
   // Stop all currently playing sounds
   pencilSounds.forEach(sound => {
-    if (sound.playing()) {
-      sound.stop();
+    if (!sound.paused) {
+      sound.pause();
+      sound.currentTime = 0;
     }
   });
 

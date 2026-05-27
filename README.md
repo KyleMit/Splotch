@@ -49,7 +49,7 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
   * [**vite-plugin-handlebars**](https://github.com/alexlafroscia/vite-plugin-handlebars) - Build-time HTML partials; `index.html` composes from files in `partials/`
 
 * **Audio & Media**
-  * [**Howler.js**](https://howlerjs.com/) - Audio playback with speed-based pause/resume
+  * [**HTMLAudioElement**](https://developer.mozilla.org/en-US/docs/Web/API/HTMLAudioElement) - Native browser audio playback (no library dependency)
   * [**ElevenLabs Sound Effects**](https://elevenlabs.io/app/sound-effects) - AI-generated pencil drawing sounds
 
 * **Design Assets**
@@ -224,12 +224,14 @@ Uses HTML5 Canvas with Pointer Events for smooth, responsive drawing across all 
 
 ### Audio System
 
-Howler.js provides:
+Built on the native `HTMLAudioElement` API — no audio library dependency:
 
-* Audio sprites for efficient loading
-* Overlapping sound playback
-* Automatic mobile audio unlock
-* Throttled playback to prevent audio chaos
+* Three pencil-scratch samples preloaded as `Audio` instances; one is picked at random per stroke
+* Looped playback for the duration of a stroke (`loop = true`)
+* Speed-aware gating: pauses when pointer movement drops below a threshold, resumes on motion
+* Short debounce timer pauses audio shortly after movement stops to avoid mid-stroke cutoffs
+* User preference persisted in `localStorage` and toggleable from the Parent Center settings
+* First playback is gesture-initiated (pointer event), satisfying mobile autoplay requirements
 
 ### PWA Capabilities
 
@@ -270,7 +272,7 @@ MIT
   * [ ] Sometimes it doesn't register clicks on color changes
   * [ ] Sometimes the cursor seems misaligned with the actual drawing point. looks like it's drawing a little bit to the right of my cursor
   * [ ] Color picker selected color on active hex ring
-* [ ] Try to replace howler and see how it goes
+* [x] Try to replace howler and see how it goes
 * [ ] Controls?
   * [x] Undo
     * [x] Undo after clear
