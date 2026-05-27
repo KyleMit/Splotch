@@ -1,0 +1,112 @@
+<!-- Parent Help Button (launches Parent Center) -->
+<button class="parent-help-button" id="parentHelpButton" aria-label="Parent Center">
+  <img src="/icons/parent.svg" alt="Parent Center" class="parent-help-icon" />
+</button>
+
+<!-- Parent Center -->
+<dialog class="parent-help-modal" id="parentHelpModal">
+  <div class="parent-help-content">
+    <button class="parent-help-close" aria-label="Close">&times;</button>
+    <h2>Parent Center</h2>
+
+    <div class="tab-buttons">
+      <button class="tab-button" data-tab="ios">iOS</button>
+      <button class="tab-button" data-tab="android">Android</button>
+      <button class="tab-button" data-tab="settings">Settings</button>
+    </div>
+
+    <div class="tab-content" data-tab="ios">
+      <details class="help-section">
+        <summary>
+          <span class="summary-text">
+            <span class="section-number">1.</span> Install as App
+            <span class="install-check" hidden>✓</span>
+          </span>
+        </summary>
+        <ol>
+          <li>Tap the <strong>Share</strong> button (square with arrow)</li>
+          <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
+          <li>Tap <strong>"Add"</strong> in the top right</li>
+          <li>Launch from your home screen for fullscreen mode</li>
+        </ol>
+      </details>
+
+      <details class="help-section">
+        <summary>
+          <span class="summary-text"><span class="section-number">2.</span> Enable Guided Access</span>
+        </summary>
+        <ol>
+          <li>Go to <strong>Settings → Accessibility → Guided Access</strong></li>
+          <li>Turn on <strong>Guided Access</strong></li>
+          <li>Set a passcode</li>
+          <li>Open Splotch and triple-click the side button</li>
+          <li>Tap <strong>Start</strong> to lock the app</li>
+          <li>Triple-click and enter passcode to exit</li>
+        </ol>
+      </details>
+    </div>
+
+    <div class="tab-content" data-tab="android">
+      <details class="help-section">
+        <summary>
+          <span class="summary-text">
+            <span class="section-number">1.</span> Install as App
+            <span class="install-check" hidden>✓</span>
+          </span>
+        </summary>
+        <ol>
+          <li>Tap the <strong>menu</strong> (three dots)</li>
+          <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
+          <li>Follow the prompts</li>
+          <li>Launch from your home screen for fullscreen mode</li>
+        </ol>
+      </details>
+
+      <details class="help-section">
+        <summary>
+          <span class="summary-text"><span class="section-number">2.</span> Enable App Pinning</span>
+        </summary>
+        <ol>
+          <li>Go to <strong>Settings → Security → App Pinning</strong></li>
+          <li>Turn on <strong>App Pinning</strong></li>
+          <li>Open Splotch and tap the <strong>Recent Apps</strong> button</li>
+          <li>Swipe up on Splotch and tap the <strong>Pin</strong> icon</li>
+          <li>Tap <strong>Start</strong> to lock the app</li>
+          <li>Long-press Back + Recent Apps to exit</li>
+        </ol>
+      </details>
+    </div>
+
+    <div class="tab-content" data-tab="settings">
+      <div class="sound-settings">
+        <div class="sound-toggle">
+          <span class="sound-label">Drawing Sounds</span>
+          <button class="sound-toggle-button" id="soundToggle" aria-label="Toggle sound">
+            <img src="/icons/volume-on.svg" alt="Sound On" class="sound-icon sound-on" />
+            <img src="/icons/volume-off.svg" alt="Sound Off" class="sound-icon sound-off" />
+          </button>
+        </div>
+      </div>
+
+      <div class="sound-settings">
+        <div class="sound-toggle">
+          <span class="sound-label">Save on Delete</span>
+          <button class="toggle-switch" id="saveOnDeleteToggle" role="switch" aria-checked="false" aria-label="Toggle save on delete">
+            <span class="toggle-switch-thumb"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="parent-help-footer">
+      <p>Having issues? <a href="https://github.com/KyleMit/Splotch/issues/new/choose" target="_blank" rel="noopener noreferrer">Report a problem</a></p>
+      <p class="github-link">
+        <a href="https://github.com/KyleMit/Splotch" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub">
+          <img src="/icons/github.svg" alt="GitHub" class="github-icon" />
+          View on GitHub
+        </a>
+      </p>
+      <p class="version-text">Version %VERSION%</p>
+    </footer>
+  </div>
+</dialog>

@@ -1,5 +1,10 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import handlebars from 'vite-plugin-handlebars';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 // Get build timestamp
 function getVersion() {
@@ -19,6 +24,9 @@ function htmlVersionPlugin() {
 
 export default defineConfig({
   plugins: [
+    handlebars({
+      partialDirectory: resolve(__dirname, 'partials')
+    }),
     htmlVersionPlugin(),
     VitePWA({
       registerType: 'autoUpdate',

@@ -29,7 +29,11 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
   * **Clear Preview Line** - Torn paper edge visual indicator showing where canvas will be cleared during drag
   * **Clear Accept Zone** - Bottom 15% of screen that turns red; drop Clear Button here to confirm
   * **Page Turn Overlay** - White overlay animation that sweeps across when clearing
-* **Version Badge** - Timestamp display in bottom right (toggle with 5 taps)
+* **Actions Panel** - Bottom-corner panel hosting auxiliary controls (Undo button)
+* **Parent Help Button** - Floating button that opens the Parent Center
+  * **Parent Center** - Modal with platform install guides and app settings
+    * **Install Guide** - iOS / Android tabs with step-by-step PWA setup
+    * **Settings** - Tab for app preferences (Drawing Sounds, Save on Delete)
 
 ## Tech Stack
 
@@ -42,6 +46,7 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 * **Build & PWA**
   * [**Vite**](https://vite.dev/) - Fast build tool with hot module replacement
   * [**vite-plugin-pwa**](https://vite-pwa-org.netlify.app/) - PWA manifest and service worker generation with auto-updates
+  * [**vite-plugin-handlebars**](https://github.com/alexlafroscia/vite-plugin-handlebars) - Build-time HTML partials; `index.html` composes from files in `partials/`
 
 * **Audio & Media**
   * [**Howler.js**](https://howlerjs.com/) - Audio playback with speed-based pause/resume
@@ -80,11 +85,18 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 │   ├── colorPalette.js      # Color swatch UI and responsive layout
 │   ├── colorPicker.js       # Custom color picker modal
 │   ├── clearCanvas.js       # Clear button drag interaction
+│   ├── parentHelp.js        # Parent Center modal + tab switching
+│   ├── drawingSound.js      # Drawing sound playback + setting
+│   ├── saveOnDelete.js      # "Save on Delete" setting + PNG export trigger
 │   ├── deviceEnhancements.js # Progressive SVG enhancement (Android/Desktop)
 │   ├── version.js           # Version badge display
 │   ├── pwaUpdate.js         # PWA automatic update management
 │   └── style.css            # All styles
-├── index.html               # Entry point
+├── partials/                # Build-time HTML partials (vite-plugin-handlebars)
+│   ├── head-meta.html       # <head> meta tags, OG/Twitter, favicons, fonts
+│   ├── color-picker-overlay.html # Color Picker Overlay dialog (hexagon grid)
+│   └── parent-center.html   # Parent Help Button + Parent Center modal
+├── index.html               # Entry point (composes partials via {{> name}})
 └── vite.config.js           # Build configuration
 ```
 

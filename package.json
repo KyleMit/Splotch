@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "vite": "^5.0.0",
+    "vite-plugin-handlebars": "^2.0.3",
     "vite-plugin-pwa": "^0.17.0"
   },
   "dependencies": {
