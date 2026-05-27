@@ -1,17 +1,17 @@
-// Coloring book picker: parental-control toggle, folder/image catalog,
-// modal dialog with two views (folders → images in folder), and the
-// canvas overlay that renders the selected image behind drawn strokes.
+// Coloring book picker: parental-control toggle, book/page catalog,
+// modal dialog with two views (books → pages in book), and the
+// canvas overlay that renders the selected page behind drawn strokes.
 
 const CONTROL_ENABLED_KEY = 'splotch-coloring-book-enabled';
 
-// Static catalog. Each entry is one folder; images[] must always be 6
+// Static catalog. Each entry is one book; pages[] must always be 6
 // so the grid lays out cleanly as 2×3 / 3×2.
-const FOLDERS = [
+const BOOKS = [
   {
     id: 'frozen',
     name: 'Frozen',
     cover: '/coloring/frozen/frozen.png',
-    images: [
+    pages: [
       '/coloring/frozen/anna.png',
       '/coloring/frozen/elsa.png',
       '/coloring/frozen/kristoph.png',
@@ -24,7 +24,7 @@ const FOLDERS = [
     id: 'animals',
     name: 'Animals',
     cover: '/coloring/animals/animals.png',
-    images: [
+    pages: [
       '/coloring/animals/cat.png',
       '/coloring/animals/cow.png',
       '/coloring/animals/dog.png',
@@ -38,11 +38,11 @@ const FOLDERS = [
 let controlEnabled = localStorage.getItem(CONTROL_ENABLED_KEY) === 'true';
 
 let dialog;
-let folderView;
-let imagesView;
-let folderGrid;
-let imagesGrid;
-let imagesTitle;
+let booksView;
+let pagesView;
+let booksGrid;
+let pagesGrid;
+let pagesTitle;
 let backButton;
 let clearOverlayButton;
 let overlayImg;
@@ -57,23 +57,23 @@ export function setColoringBookEnabled(enabled) {
   localStorage.setItem(CONTROL_ENABLED_KEY, enabled.toString());
 }
 
-function showFolderView() {
-  folderView.hidden = false;
-  imagesView.hidden = true;
+function showBooksView() {
+  booksView.hidden = false;
+  pagesView.hidden = true;
   clearOverlayButton.hidden = !overlayImg || overlayImg.hidden;
 }
 
-function showImagesView(folder) {
-  folderView.hidden = true;
-  imagesView.hidden = false;
-  imagesTitle.textContent = folder.name;
+function showPagesView(book) {
+  booksView.hidden = true;
+  pagesView.hidden = false;
+  pagesTitle.textContent = book.name;
 
-  imagesGrid.innerHTML = '';
-  folder.images.forEach(src => {
+  pagesGrid.innerHTML = '';
+  book.pages.forEach(src => {
     const btn = document.createElement('button');
     btn.className = 'coloring-tile';
     btn.type = 'button';
-    btn.setAttribute('aria-label', folder.name);
+    btn.setAttribute('aria-label', `${book.name} coloring page`);
 
     const img = document.createElement('img');
     img.src = src;
@@ -84,30 +84,30 @@ function showImagesView(folder) {
       setOverlay(src);
       closeColoringBook();
     });
-    imagesGrid.appendChild(btn);
+    pagesGrid.appendChild(btn);
   });
 }
 
-function renderFolderGrid() {
-  folderGrid.innerHTML = '';
-  FOLDERS.forEach(folder => {
+function renderBooksGrid() {
+  booksGrid.innerHTML = '';
+  BOOKS.forEach(book => {
     const btn = document.createElement('button');
-    btn.className = 'coloring-tile coloring-folder-tile';
+    btn.className = 'coloring-tile coloring-book-tile';
     btn.type = 'button';
-    btn.setAttribute('aria-label', folder.name);
+    btn.setAttribute('aria-label', `${book.name} coloring book`);
 
     const img = document.createElement('img');
-    img.src = folder.cover;
+    img.src = book.cover;
     img.alt = '';
     btn.appendChild(img);
 
     const label = document.createElement('span');
-    label.className = 'coloring-folder-label';
-    label.textContent = folder.name;
+    label.className = 'coloring-book-label';
+    label.textContent = book.name;
     btn.appendChild(label);
 
-    btn.addEventListener('click', () => showImagesView(folder));
-    folderGrid.appendChild(btn);
+    btn.addEventListener('click', () => showPagesView(book));
+    booksGrid.appendChild(btn);
   });
 }
 
@@ -143,8 +143,8 @@ export function openColoringBook() {
     dialog.style.setProperty('--origin-y', `${cy - window.innerHeight / 2}px`);
   }
 
-  renderFolderGrid();
-  showFolderView();
+  renderBooksGrid();
+  showBooksView();
   dialog.showModal();
 }
 
@@ -160,11 +160,11 @@ function isPointInsideDialog(d, x, y) {
 
 export function initColoringBook() {
   dialog = document.getElementById('coloring-book-dialog');
-  folderView = document.getElementById('coloringFolderView');
-  imagesView = document.getElementById('coloringImagesView');
-  folderGrid = document.getElementById('coloringFolderGrid');
-  imagesGrid = document.getElementById('coloringImagesGrid');
-  imagesTitle = document.getElementById('coloringImagesTitle');
+  booksView = document.getElementById('coloringBooksView');
+  pagesView = document.getElementById('coloringPagesView');
+  booksGrid = document.getElementById('coloringBooksGrid');
+  pagesGrid = document.getElementById('coloringPagesGrid');
+  pagesTitle = document.getElementById('coloringPagesTitle');
   backButton = document.getElementById('coloringBackButton');
   clearOverlayButton = document.getElementById('coloringClearOverlay');
   overlayImg = document.getElementById('coloringOverlay');
@@ -175,7 +175,7 @@ export function initColoringBook() {
   const closeBtn = dialog.querySelector('.coloring-book-close');
   closeBtn?.addEventListener('click', () => closeColoringBook());
 
-  backButton?.addEventListener('click', () => showFolderView());
+  backButton?.addEventListener('click', () => showBooksView());
 
   clearOverlayButton?.addEventListener('click', () => {
     clearOverlay();

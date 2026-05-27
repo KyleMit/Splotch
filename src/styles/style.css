@@ -1239,16 +1239,16 @@ body.has-coloring-overlay #drawingCanvas {
   gap: 12px;
 }
 
-.coloring-folder-grid {
+.coloring-books-grid {
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
 }
 
-.coloring-images-grid {
+.coloring-pages-grid {
   grid-template-columns: repeat(3, 1fr);
 }
 
 @media (orientation: portrait) {
-  .coloring-images-grid {
+  .coloring-pages-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -1290,11 +1290,11 @@ body.has-coloring-overlay #drawingCanvas {
   mix-blend-mode: multiply;
 }
 
-.coloring-folder-tile img {
+.coloring-book-tile img {
   padding: 8px 8px 28px 8px;
 }
 
-.coloring-folder-label {
+.coloring-book-label {
   position: absolute;
   left: 0;
   right: 0;

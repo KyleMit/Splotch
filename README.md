@@ -29,11 +29,21 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
   * **Clear Preview Line** - Torn paper edge visual indicator showing where canvas will be cleared during drag
   * **Clear Accept Zone** - Bottom 15% of screen that turns red; drop Clear Button here to confirm
   * **Page Turn Overlay** - White overlay animation that sweeps across when clearing
-* **Actions Panel** - Bottom-corner panel hosting auxiliary controls (Undo button)
+* **Actions Panel** - Bottom-corner panel hosting auxiliary controls
+  * **Undo Button** - Reverts the last drawing stroke
+  * **Screenshot Button** - Saves the current drawing as a PNG (toggle in Parent Center)
+  * **Stroke Width Button** - Opens a flyout for selecting line thickness (toggle in Parent Center)
+  * **Coloring Book Button** - Opens the Coloring Book Picker (toggle in Parent Center)
+* **Coloring Book Picker** - Modal dialog for choosing a coloring page to use as a canvas overlay
+  * **Coloring Book Grid** - First menu showing each coloring book by its cover image
+  * **Coloring Book Tile** - Individual book cover button; tap to open that book's pages
+  * **Coloring Page Grid** - Second menu showing the 6 selectable coloring pages in a book
+  * **Coloring Page Tile** - Individual coloring page; tap to apply it as the canvas overlay
+  * **Coloring Page Overlay** - Selected page rendered behind the drawing canvas with multiply blend, so white areas blend into the paper background and the line art stays visible
 * **Parent Help Button** - Floating button that opens the Parent Center
   * **Parent Center** - Modal with platform install guides and app settings
     * **Install Guide** - iOS / Android tabs with step-by-step PWA setup
-    * **Settings** - Tab for app preferences (Drawing Sounds, Save on Delete)
+    * **Settings** - Tab for app preferences (Drawing Sounds, Save on Delete, Screenshot Button, Stroke Width Control, Coloring Books)
 
 ## Tech Stack
 
