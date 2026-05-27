@@ -297,3 +297,16 @@ MIT
 * [ ] Controls
   * [ ] Eraser (/eraser branch)
   * [ ] Brush type (blend mode with previous drawing)
+
+
+## Coloring Book Sections
+
+### Outer space
+
+* Rocket ship
+* Astronaut
+* The moon and stars
+* Space Station
+* Meteor shower
+* Rover on mars
+

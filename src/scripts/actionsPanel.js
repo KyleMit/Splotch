@@ -18,6 +18,7 @@ export function initActionsPanel(options = {}) {
     onStrokeSize = () => {},
     initialCanUndo = false,
     initialCanScreenshot = false,
+    initialUndoVisible = true,
     initialScreenshotVisible = false,
     initialStrokeWidthVisible = false,
     initialStrokeSize = 3
@@ -42,6 +43,7 @@ export function initActionsPanel(options = {}) {
   // Set initial button states
   updateUndoButton(initialCanUndo);
   updateScreenshotButton(initialCanScreenshot);
+  setUndoButtonVisible(initialUndoVisible);
   setScreenshotButtonVisible(initialScreenshotVisible);
   setStrokeWidthButtonVisible(initialStrokeWidthVisible);
   updateActiveStrokeSize(initialStrokeSize);
@@ -144,6 +146,12 @@ export function updateScreenshotButton(canScreenshot) {
     screenshotButton.disabled = true;
     screenshotButton.classList.add('disabled');
   }
+}
+
+// Show or hide the undo button based on the parent-center setting
+export function setUndoButtonVisible(visible) {
+  if (!undoButton) return;
+  undoButton.hidden = !visible;
 }
 
 // Show or hide the screenshot button based on the parent-center setting

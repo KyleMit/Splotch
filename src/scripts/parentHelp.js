@@ -2,6 +2,7 @@
 import { isSoundEnabled, setSoundEnabled } from './drawingSound.js';
 import { isSaveOnDeleteEnabled, setSaveOnDeleteEnabled } from './saveOnDelete.js';
 import { isScreenshotEnabled, setScreenshotEnabled } from './screenshot.js';
+import { isUndoButtonEnabled, setUndoButtonEnabled } from './undoButton.js';
 import {
   isStrokeWidthControlEnabled,
   setStrokeWidthControlEnabled
@@ -13,11 +14,12 @@ import {
   clearOverlay as clearColoringOverlay
 } from './coloringBook.js';
 import {
+  setUndoButtonVisible,
   setScreenshotButtonVisible,
   setStrokeWidthButtonVisible
 } from './actionsPanel.js';
 
-let helpButton, helpModal, soundToggle, saveOnDeleteToggle, screenshotToggle, strokeWidthToggle, coloringBookToggle;
+let helpButton, helpModal, soundToggle, saveOnDeleteToggle, undoToggle, screenshotToggle, strokeWidthToggle, coloringBookToggle;
 
 function detectOS() {
   const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -111,6 +113,19 @@ function toggleSaveOnDelete() {
   updateSaveOnDeleteToggle();
 }
 
+function updateUndoToggle() {
+  const enabled = isUndoButtonEnabled();
+  undoToggle.classList.toggle('active', enabled);
+  undoToggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
+}
+
+function toggleUndo() {
+  const enabled = !isUndoButtonEnabled();
+  setUndoButtonEnabled(enabled);
+  updateUndoToggle();
+  setUndoButtonVisible(enabled);
+}
+
 function updateScreenshotToggle() {
   const enabled = isScreenshotEnabled();
   screenshotToggle.classList.toggle('active', enabled);
@@ -162,6 +177,7 @@ function openHelpModal() {
   // Update sound toggle state
   updateSoundToggle();
   updateSaveOnDeleteToggle();
+  updateUndoToggle();
   updateScreenshotToggle();
   updateStrokeWidthToggle();
   updateColoringBookToggle();
@@ -190,6 +206,7 @@ export function initParentHelp() {
   helpModal = document.getElementById('parentHelpModal');
   soundToggle = document.getElementById('soundToggle');
   saveOnDeleteToggle = document.getElementById('saveOnDeleteToggle');
+  undoToggle = document.getElementById('undoToggle');
   screenshotToggle = document.getElementById('screenshotToggle');
   strokeWidthToggle = document.getElementById('strokeWidthToggle');
   coloringBookToggle = document.getElementById('coloringBookToggle');
@@ -210,6 +227,7 @@ export function initParentHelp() {
   // Add sound toggle handler
   soundToggle.addEventListener('click', toggleSound);
   saveOnDeleteToggle.addEventListener('click', toggleSaveOnDelete);
+  undoToggle.addEventListener('click', toggleUndo);
   screenshotToggle.addEventListener('click', toggleScreenshot);
   strokeWidthToggle.addEventListener('click', toggleStrokeWidthControl);
   coloringBookToggle.addEventListener('click', toggleColoringBook);
@@ -217,6 +235,7 @@ export function initParentHelp() {
   // Initialize toggle states
   updateSoundToggle();
   updateSaveOnDeleteToggle();
+  updateUndoToggle();
   updateScreenshotToggle();
   updateStrokeWidthToggle();
   updateColoringBookToggle();

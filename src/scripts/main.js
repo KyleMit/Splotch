@@ -24,6 +24,7 @@ import { initPWAUpdates } from './pwaUpdate.js';
 import { playDrawSound, stopDrawSound } from './drawingSound.js';
 import { initParentHelp } from './parentHelp.js';
 import { isScreenshotEnabled, saveScreenshot } from './screenshot.js';
+import { isUndoButtonEnabled } from './undoButton.js';
 import {
   isStrokeWidthControlEnabled,
   getStrokeSize,
@@ -81,6 +82,7 @@ initActionsPanel({
   },
   initialCanUndo: getCanUndo(),
   initialCanScreenshot: !isCanvasEmpty(),
+  initialUndoVisible: isUndoButtonEnabled(),
   initialScreenshotVisible: isScreenshotEnabled(),
   initialStrokeWidthVisible: isStrokeWidthControlEnabled(),
   initialStrokeSize: getStrokeSize()

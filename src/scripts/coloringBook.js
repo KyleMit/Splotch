@@ -10,7 +10,7 @@ const BOOKS = [
   {
     id: 'frozen',
     name: 'Frozen',
-    cover: '/coloring/frozen/frozen.png',
+    cover: '/coloring/frozen/frozen-cover.png',
     pages: [
       '/coloring/frozen/anna.png',
       '/coloring/frozen/elsa.png',
@@ -23,7 +23,7 @@ const BOOKS = [
   {
     id: 'animals',
     name: 'Animals',
-    cover: '/coloring/animals/animals.png',
+    cover: '/coloring/animals/animals-cover.png',
     pages: [
       '/coloring/animals/cat.png',
       '/coloring/animals/cow.png',
@@ -32,7 +32,7 @@ const BOOKS = [
       '/coloring/animals/horse.png',
       '/coloring/animals/pig.png'
     ]
-  }
+  },
 ];
 
 let controlEnabled = localStorage.getItem(CONTROL_ENABLED_KEY) === 'true';
