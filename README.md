@@ -273,7 +273,6 @@ MIT
   * [ ] Sometimes it doesn't register clicks on color changes
   * [ ] Sometimes the cursor seems misaligned with the actual drawing point. looks like it's drawing a little bit to the right of my cursor
   * [ ] Color picker selected color on active hex ring
-* [ ] The parent components use the names sound-* for all settings (i.e. "sound-settings" "sound-toggle" and "sound-label) but only the first setting actually controls the sound.  rename the components to be more generic (i.e. "setting-toggle" or "setting-label")
 * [ ] Controls?
   * [x] Undo
     * [x] Undo after clear
