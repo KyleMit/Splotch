@@ -81,6 +81,31 @@ function isPointInsideDialog(dialog, x, y) {
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 }
 
+// Block-out zone around the gradient swatch so toddler mis-taps don't dismiss
+// the modal. The zone extends from the swatch to the nearest two screen edges
+// (the quadrant the swatch lives in: bottom-left in landscape, top-right in portrait).
+function isPointInGradientBlockZone(x, y) {
+  const gradientSwatch = document.querySelector('.gradient-swatch');
+  if (!gradientSwatch) return false;
+
+  const rect = gradientSwatch.getBoundingClientRect();
+  if (rect.width === 0 && rect.height === 0) return false;
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const padding = 20;
+
+  const swatchCenterX = (rect.left + rect.right) / 2;
+  const swatchCenterY = (rect.top + rect.bottom) / 2;
+
+  const left   = swatchCenterX < vw / 2 ? 0  : rect.left - padding;
+  const right  = swatchCenterX < vw / 2 ? rect.right + padding : vw;
+  const top    = swatchCenterY < vh / 2 ? 0  : rect.top - padding;
+  const bottom = swatchCenterY < vh / 2 ? rect.bottom + padding : vh;
+
+  return x >= left && x <= right && y >= top && y <= bottom;
+}
+
 export function initColorPicker(onColorSelected) {
   onColorSelectedCallback = onColorSelected;
 
@@ -144,9 +169,16 @@ export function initColorPicker(onColorSelected) {
     if (!isTrackingHexDrag) clearHover();
   });
 
-  // Click on backdrop (outside the dialog's visible box) closes without selecting
+  // Click on backdrop (outside the dialog's visible box) closes without selecting,
+  // except in the gradient swatch's quadrant — keeps repeat toddler taps from
+  // dismissing the modal they just opened.
   dialog.addEventListener('pointerdown', (e) => {
     if (!isPointInsideDialog(dialog, e.clientX, e.clientY)) {
+      if (isPointInGradientBlockZone(e.clientX, e.clientY)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       closeColorPicker();
       e.preventDefault();
       e.stopPropagation();

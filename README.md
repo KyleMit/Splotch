@@ -234,6 +234,11 @@ MIT
 
 ## TODO
 
+* [x] Toddler Usability
+  * [x] Multi-tapping on color picker should not immediately dismiss modal
+* [ ] Screenshots?  Screenshot on wipe?
+* [ ] Undo after delete
+* [ ] Animation when selecting ring
 * [ ] Add "color book" style picker with background overlay
 * [ ] Make sure we can refresh PWA
 * [ ] It takes about 10s on ios for the pencil sounds to come in
@@ -244,13 +249,10 @@ MIT
   * [ ] Sometimes the cursor seems misaligned with the actual drawing point. looks like it's drawing a little bit to the right of my cursor
   * [ ] Fix hex grid cutoff on some screen orientations
     * [ ] Pure CSS (Container queries)?
+  * [ ] Color picker selected color on active hex ring
 * [ ] Increase size of clear accept zone
   * [ ] Radial clear menu?
-* [ ] Screenshots?  Screenshot on wipe?
 * [ ] Try to replace howler and see how it goes
-* [ ] Alt background textures?
-* [ ] Toddler Usability
-  * [ ] Multi-tapping on color picker should not immediately dismiss modal
 * [ ] Controls?
   * [x] Undo
     * [ ] Undo after clear
