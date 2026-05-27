@@ -48,7 +48,7 @@ const BOOKS = [
   },
 ];
 
-let controlEnabled = localStorage.getItem(CONTROL_ENABLED_KEY) === 'true';
+let controlEnabled = localStorage.getItem(CONTROL_ENABLED_KEY) !== 'false';
 
 let dialog;
 let booksView;

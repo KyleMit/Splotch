@@ -16,7 +16,7 @@ const SIZE_TO_PX = {
   5: 22
 };
 
-let controlEnabled = localStorage.getItem(CONTROL_ENABLED_KEY) === 'true';
+let controlEnabled = localStorage.getItem(CONTROL_ENABLED_KEY) !== 'false';
 
 const storedSize = parseInt(localStorage.getItem(SIZE_KEY), 10);
 let currentSize = STROKE_SIZES.includes(storedSize) ? storedSize : DEFAULT_SIZE;

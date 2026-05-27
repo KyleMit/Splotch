@@ -5,7 +5,7 @@ import { getActiveOverlayImage } from './coloringBook.js';
 
 const SCREENSHOT_KEY = 'splotch-screenshot-enabled';
 
-let screenshotEnabled = localStorage.getItem(SCREENSHOT_KEY) === 'true';
+let screenshotEnabled = localStorage.getItem(SCREENSHOT_KEY) !== 'false';
 
 export function isScreenshotEnabled() {
   return screenshotEnabled;
