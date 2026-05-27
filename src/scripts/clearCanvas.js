@@ -6,7 +6,7 @@ let isDragging = false;
 let startPointerX = 0;
 let startPointerY = 0;
 let homeButtonCenter = { x: 0, y: 0 };
-let clearContainer, clearButton, clearOverlay, acceptZone, pageTurnOverlay, clearTutorial;
+let clearContainer, clearButton, acceptZone, pageTurnOverlay, clearTutorial;
 let onClearStartCallback = null;
 let onClearCompleteCallback = null;
 let lastOrientation = null;
@@ -254,7 +254,6 @@ export function initClearButton(onClearStart, onClearComplete) {
   // Get references to existing elements
   clearContainer = document.getElementById('clearContainer');
   clearButton = document.getElementById('clearButton');
-  clearOverlay = document.getElementById('clearOverlay');
   acceptZone = document.getElementById('clearAcceptZone');
   clearTutorial = document.getElementById('clearTutorial');
 

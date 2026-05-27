@@ -20,7 +20,6 @@ import {
 import { initColorPalette } from './colorPalette.js';
 import { initActionsPanel, updateUndoButton, updateScreenshotButton } from './actionsPanel.js';
 import { initPWAUpdates } from './pwaUpdate.js';
-import { initDeviceEnhancements } from './deviceEnhancements.js';
 import { playDrawSound, stopDrawSound } from './drawingSound.js';
 import { initParentHelp } from './parentHelp.js';
 import { isScreenshotEnabled, saveScreenshot } from './screenshot.js';
@@ -115,9 +114,6 @@ document.addEventListener('visibilitychange', () => {
     requestWakeLock();
   }
 });
-
-// Initialize device-specific enhancements (SVG filters on capable devices)
-initDeviceEnhancements();
 
 // Initialize PWA auto-update system
 initPWAUpdates();

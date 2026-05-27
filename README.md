@@ -258,11 +258,11 @@ MIT
 * [x] Fix hex grid cutoff on some screen orientations
   * [x] Pure CSS (Container queries)?
 * [x] Enable screenshot button
-  * [ ] Add screenshot animation
+  * [x] Add screenshot animation
+* [x] Remove paper edge filter
 * [ ] AI-ify button
 * [ ] Add "color book" style picker with background overlay
   * [ ] favorite star button next to scrollable region
-* [ ] Remove paper edge filter
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * [ ] Bugs
   * [ ] Make sure we can refresh PWA
