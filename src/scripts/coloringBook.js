@@ -14,7 +14,7 @@ const BOOKS = [
     pages: [
       '/coloring/frozen/anna.png',
       '/coloring/frozen/elsa.png',
-      '/coloring/frozen/kristoph.png',
+      '/coloring/frozen/kristoff.png',
       '/coloring/frozen/olaf.png',
       '/coloring/frozen/pabbie.png',
       '/coloring/frozen/sven.png'
