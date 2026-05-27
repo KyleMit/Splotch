@@ -30,6 +30,11 @@ import {
   setStrokeSize,
   getStrokeWidthPx
 } from './strokeWidth.js';
+import {
+  initColoringBook,
+  isColoringBookEnabled,
+  setColoringBookButtonVisible
+} from './coloringBook.js';
 
 // Canvas setup
 const canvas = document.getElementById('drawingCanvas');
@@ -136,3 +141,7 @@ initPWAUpdates();
 
 // Initialize Parent Help modal
 initParentHelp();
+
+// Initialize Coloring Book picker
+initColoringBook();
+setColoringBookButtonVisible(isColoringBookEnabled());

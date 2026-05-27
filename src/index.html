@@ -19,6 +19,7 @@
 
     <!-- Drawing Canvas -->
     <div class="canvas-container">
+      <img class="coloring-overlay" id="coloringOverlay" alt="" hidden />
       <canvas id="drawingCanvas" tabindex="0"></canvas>
     </div>
   </div>
@@ -64,6 +65,9 @@
         </button>
       </div>
     </div>
+    <button class="action-button" id="coloringBookButton" aria-label="Coloring pages" hidden>
+      <img src="/icons/shapes.svg" alt="Coloring pages" class="action-icon" />
+    </button>
     <button class="action-button disabled" id="screenshotButton" aria-label="Save screenshot" disabled hidden>
       <img src="/icons/camera.svg" alt="Save screenshot" class="action-icon" />
     </button>
@@ -73,6 +77,8 @@
   </div>
 
   {{> color-picker-overlay}}
+
+  {{> coloring-book}}
 
   {{> parent-center}}
 

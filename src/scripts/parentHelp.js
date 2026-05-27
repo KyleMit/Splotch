@@ -7,11 +7,17 @@ import {
   setStrokeWidthControlEnabled
 } from './strokeWidth.js';
 import {
+  isColoringBookEnabled,
+  setColoringBookEnabled,
+  setColoringBookButtonVisible,
+  clearOverlay as clearColoringOverlay
+} from './coloringBook.js';
+import {
   setScreenshotButtonVisible,
   setStrokeWidthButtonVisible
 } from './actionsPanel.js';
 
-let helpButton, helpModal, soundToggle, saveOnDeleteToggle, screenshotToggle, strokeWidthToggle;
+let helpButton, helpModal, soundToggle, saveOnDeleteToggle, screenshotToggle, strokeWidthToggle, coloringBookToggle;
 
 function detectOS() {
   const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -131,6 +137,20 @@ function toggleStrokeWidthControl() {
   setStrokeWidthButtonVisible(enabled);
 }
 
+function updateColoringBookToggle() {
+  const enabled = isColoringBookEnabled();
+  coloringBookToggle.classList.toggle('active', enabled);
+  coloringBookToggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
+}
+
+function toggleColoringBook() {
+  const enabled = !isColoringBookEnabled();
+  setColoringBookEnabled(enabled);
+  updateColoringBookToggle();
+  setColoringBookButtonVisible(enabled);
+  if (!enabled) clearColoringOverlay();
+}
+
 function openHelpModal() {
   // Detect OS and select appropriate tab
   const os = detectOS();
@@ -144,6 +164,7 @@ function openHelpModal() {
   updateSaveOnDeleteToggle();
   updateScreenshotToggle();
   updateStrokeWidthToggle();
+  updateColoringBookToggle();
 
   // Anchor the open animation to the help button so the modal
   // appears to fly out from the button that triggered it.
@@ -171,6 +192,7 @@ export function initParentHelp() {
   saveOnDeleteToggle = document.getElementById('saveOnDeleteToggle');
   screenshotToggle = document.getElementById('screenshotToggle');
   strokeWidthToggle = document.getElementById('strokeWidthToggle');
+  coloringBookToggle = document.getElementById('coloringBookToggle');
 
   // Add click handlers
   helpButton.addEventListener('click', openHelpModal);
@@ -190,12 +212,14 @@ export function initParentHelp() {
   saveOnDeleteToggle.addEventListener('click', toggleSaveOnDelete);
   screenshotToggle.addEventListener('click', toggleScreenshot);
   strokeWidthToggle.addEventListener('click', toggleStrokeWidthControl);
+  coloringBookToggle.addEventListener('click', toggleColoringBook);
 
   // Initialize toggle states
   updateSoundToggle();
   updateSaveOnDeleteToggle();
   updateScreenshotToggle();
   updateStrokeWidthToggle();
+  updateColoringBookToggle();
 
   // Close dialog when clicking on backdrop
   helpModal.addEventListener('click', (e) => {

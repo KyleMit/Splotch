@@ -1,0 +1,24 @@
+<!-- Coloring Book Picker -->
+<dialog class="coloring-book-modal" id="coloring-book-dialog">
+  <div class="coloring-book-content">
+    <button class="coloring-book-close" aria-label="Close">&times;</button>
+
+    <div class="coloring-book-view" id="coloringFolderView">
+      <h2>Coloring Pages</h2>
+      <div class="coloring-grid coloring-folder-grid" id="coloringFolderGrid"></div>
+      <button class="coloring-clear-overlay" id="coloringClearOverlay" hidden>
+        Remove current page
+      </button>
+    </div>
+
+    <div class="coloring-book-view" id="coloringImagesView" hidden>
+      <div class="coloring-book-header">
+        <button class="coloring-back-button" id="coloringBackButton" aria-label="Back">
+          <span aria-hidden="true">‹</span>
+        </button>
+        <h2 id="coloringImagesTitle">Coloring Pages</h2>
+      </div>
+      <div class="coloring-grid coloring-images-grid" id="coloringImagesGrid"></div>
+    </div>
+  </div>
+</dialog>

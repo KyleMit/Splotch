@@ -270,7 +270,13 @@ MIT
 * [x] Add control for Stoke width
 * [ ] AI-ify button
 * [ ] Add "color book" style picker with background overlay
-  * [ ] favorite star button next to scrollable region
+  * [ ] Make sure white backgrounds become transparent
+  * [ ] Make sure background works with screenshot feature
+  * [ ] Make sure background works horizontally and vertically
+  * [ ] Make sure book selection screen is scrollable.
+  * [ ] Come up with other book selections
+  * [ ] Pages should be able to be favorited. First book should be favorites
+  * [ ] Delete should wipe the page (or first book should be to clear the background)
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * [ ] Efficiently pick colors on small devices
 * [ ] Bugs
