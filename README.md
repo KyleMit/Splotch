@@ -181,6 +181,9 @@ MIT
 * [x] Make sure SVGs are handled efficiently.  Inline if possible.
 * [x] Log usages of `ai_access_token`
 * [x] Add note about `ai_access_token` to readme
+* [x] Improve lighthouse score
+* [ ] Add record access token to parent settings in AI area with toggles disabled unless access token granted.
+      Maybe add route to confirm access token as well?
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
   * [x] Make sure white backgrounds become transparent
@@ -190,11 +193,12 @@ MIT
   * [ ] Come up with other book selections
   * [ ] Pages should be able to be favorited. First book should be favorites
   * [ ] Delete should wipe the page (or first book should be to clear the background)
+* [ ] Add sparkles to AI Customization screen
+* [ ] Only allow for pre-selected options in customization or have a separate setting to allow for custom prompt
 * [ ] Increase size of line thickness pop-up
 * [ ] Polaroid screenshot should be shape of canvas, maybe also add polaroid frame
 * [ ] Parent center control to increase button size
 * [ ] Investigate line smoothing while drawing
-* [ ] Improve lighthouse score
 * [ ] Efficiently layout broad range of colors on small devices
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * [ ] Bugs

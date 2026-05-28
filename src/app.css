@@ -69,7 +69,7 @@ body {
    class is toggled imperatively from DrawingCanvas. */
 body.has-coloring-overlay .canvas-container {
   background-color: #fcfbf8;
-  background-image: url('/icons/handmade-paper.png');
+  background-image: url('/icons/handmade-paper.webp');
   background-repeat: repeat;
 }
 

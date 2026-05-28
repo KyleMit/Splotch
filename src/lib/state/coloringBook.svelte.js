@@ -2,40 +2,40 @@ export const BOOKS = [
   {
     id: 'frozen',
     name: 'Frozen',
-    cover: '/coloring/frozen/frozen-cover.png',
+    cover: '/coloring/frozen/frozen-cover.webp',
     pages: [
-      '/coloring/frozen/anna.png',
-      '/coloring/frozen/elsa.png',
-      '/coloring/frozen/kristoff.png',
-      '/coloring/frozen/olaf.png',
-      '/coloring/frozen/pabbie.png',
-      '/coloring/frozen/sven.png'
+      '/coloring/frozen/anna.webp',
+      '/coloring/frozen/elsa.webp',
+      '/coloring/frozen/kristoff.webp',
+      '/coloring/frozen/olaf.webp',
+      '/coloring/frozen/pabbie.webp',
+      '/coloring/frozen/sven.webp'
     ]
   },
   {
     id: 'animals',
     name: 'Animals',
-    cover: '/coloring/animals/animals-cover.png',
+    cover: '/coloring/animals/animals-cover.webp',
     pages: [
-      '/coloring/animals/cat.png',
-      '/coloring/animals/cow.png',
-      '/coloring/animals/dog.png',
-      '/coloring/animals/duck.png',
-      '/coloring/animals/horse.png',
-      '/coloring/animals/pig.png'
+      '/coloring/animals/cat.webp',
+      '/coloring/animals/cow.webp',
+      '/coloring/animals/dog.webp',
+      '/coloring/animals/duck.webp',
+      '/coloring/animals/horse.webp',
+      '/coloring/animals/pig.webp'
     ]
   },
   {
     id: 'bluey',
     name: 'Bluey',
-    cover: '/coloring/bluey/bluey-cover.png',
+    cover: '/coloring/bluey/bluey-cover.webp',
     pages: [
-      '/coloring/bluey/bandit.png',
-      '/coloring/bluey/bingo.png',
-      '/coloring/bluey/bluey.png',
-      '/coloring/bluey/chili.png',
-      '/coloring/bluey/muffin.png',
-      '/coloring/bluey/socks.png'
+      '/coloring/bluey/bandit.webp',
+      '/coloring/bluey/bingo.webp',
+      '/coloring/bluey/bluey.webp',
+      '/coloring/bluey/chili.webp',
+      '/coloring/bluey/muffin.webp',
+      '/coloring/bluey/socks.webp'
     ]
   }
 ];

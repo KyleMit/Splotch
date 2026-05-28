@@ -293,7 +293,7 @@ function loadPaperTexture() {
       resolve(img);
     };
     img.onerror = () => resolve(null);
-    img.src = '/icons/handmade-paper.png';
+    img.src = '/icons/handmade-paper.webp';
   });
   return paperTexturePromise;
 }

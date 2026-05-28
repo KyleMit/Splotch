@@ -77,7 +77,7 @@
     width: 100%;
     height: 100%;
     background-color: #fcfbf8;
-    background-image: url('/icons/handmade-paper.png');
+    background-image: url('/icons/handmade-paper.webp');
     background-repeat: repeat;
     outline: none; /* Remove focus outline */
   }
