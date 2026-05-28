@@ -281,8 +281,25 @@ export function isCanvasEmpty() {
   return canvasEmpty;
 }
 
-export function exportCanvasBlob(overlayImage = null) {
-  if (!canvas || canvas.width === 0 || canvas.height === 0) return Promise.resolve(null);
+let paperTextureImage = null;
+let paperTexturePromise = null;
+function loadPaperTexture() {
+  if (paperTextureImage) return Promise.resolve(paperTextureImage);
+  if (paperTexturePromise) return paperTexturePromise;
+  paperTexturePromise = new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      paperTextureImage = img;
+      resolve(img);
+    };
+    img.onerror = () => resolve(null);
+    img.src = '/icons/handmade-paper.png';
+  });
+  return paperTexturePromise;
+}
+
+export async function exportCanvasBlob(overlayImage = null) {
+  if (!canvas || canvas.width === 0 || canvas.height === 0) return null;
 
   const out = document.createElement('canvas');
   out.width = canvas.width;
@@ -290,6 +307,15 @@ export function exportCanvasBlob(overlayImage = null) {
   const outCtx = out.getContext('2d');
   outCtx.fillStyle = '#fcfbf8';
   outCtx.fillRect(0, 0, out.width, out.height);
+
+  const paper = await loadPaperTexture();
+  if (paper) {
+    const pattern = outCtx.createPattern(paper, 'repeat');
+    if (pattern) {
+      outCtx.fillStyle = pattern;
+      outCtx.fillRect(0, 0, out.width, out.height);
+    }
+  }
 
   outCtx.drawImage(canvas, 0, 0);
 
@@ -307,7 +333,7 @@ export function exportCanvasBlob(overlayImage = null) {
     outCtx.globalCompositeOperation = 'source-over';
   }
 
-  return new Promise((resolve) => out.toBlob(resolve, 'image/png'));
+  return await new Promise((resolve) => out.toBlob(resolve, 'image/png'));
 }
 
 export function focusCanvas() {
