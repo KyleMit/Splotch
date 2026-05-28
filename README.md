@@ -74,9 +74,9 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
   * [**Display Mode Detection**](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/display-mode) - PWA installation status detection
 
 * Generators
-  * https://realfavicongenerator.net/
-  * https://www.pwabuilder.com/reportcard?site=https://splotch.art/
-  * https://metatags.io/?url=https%3A%2F%2Fsplotch.art
+  * <https://realfavicongenerator.net/>
+  * <https://www.pwabuilder.com/reportcard?site=https://splotch.art/>
+  * <https://metatags.io/?url=https%3A%2F%2Fsplotch.art>
 
 ## Project Structure
 
@@ -282,6 +282,7 @@ MIT
 * [x] Smoothing algorithm for lines (get rid of rasterization)
 * [x] screenshot expands back into camera instead of into delete button
 * [x] AI-ify button
+* [x] Separate out parent center buttons into settings / controls
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
   * [x] Make sure white backgrounds become transparent
@@ -293,7 +294,6 @@ MIT
   * [ ] Delete should wipe the page (or first book should be to clear the background)
 * [ ] Increase size of line thickness pop-up
 * [ ] Make sure SVGs are handled efficiently.  Inline if possible.
-* [ ] Separate out parent center buttons into settings / controls
 * [ ] Polaroid screenshot should be shape of canvas, maybe also add polaroid frame
 * [ ] Parent center control to increase button size
 * [ ] Make control-z on desktop also perform an undo action

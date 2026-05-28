@@ -864,6 +864,22 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   margin-bottom: -2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tab-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.tab-button.active .tab-icon {
+  opacity: 1;
 }
 
 .tab-button:hover {
@@ -930,6 +946,19 @@ body {
 
 .help-section[open] summary::after {
   transform: rotate(90deg);
+}
+
+.os-section + .os-section {
+  margin-top: 20px;
+}
+
+.os-heading {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
 }
 
 .summary-text {

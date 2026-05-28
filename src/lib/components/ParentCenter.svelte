@@ -17,7 +17,8 @@
 
   let dialogEl;
   let buttonEl;
-  let activeTab = $state('ios');
+  let activeTab = $state('settings');
+  let installOs = $state('ios');
   let pwaInstalled = $state(false);
 
   const APP_VERSION =
@@ -50,7 +51,8 @@
           dialogEl.style.setProperty('--origin-x', `${x - window.innerWidth / 2}px`);
           dialogEl.style.setProperty('--origin-y', `${y - window.innerHeight / 2}px`);
         }
-        activeTab = detectOS();
+        activeTab = 'settings';
+        installOs = detectOS();
         pwaInstalled = isPWAInstalled();
         dialogEl.showModal();
       }
@@ -112,67 +114,80 @@
     <h2>Parent Center</h2>
 
     <div class="tab-buttons">
-      <button class="tab-button" class:active={activeTab === 'ios'} onclick={() => (activeTab = 'ios')}>iOS</button>
-      <button class="tab-button" class:active={activeTab === 'android'} onclick={() => (activeTab = 'android')}>Android</button>
-      <button class="tab-button" class:active={activeTab === 'settings'} onclick={() => (activeTab = 'settings')}>Settings</button>
+      <button class="tab-button" class:active={activeTab === 'settings'} onclick={() => (activeTab = 'settings')}>
+        <img src="/icons/settings.svg" alt="" class="tab-icon" />
+        <span>Settings</span>
+      </button>
+      <button class="tab-button" class:active={activeTab === 'install'} onclick={() => (activeTab = 'install')}>
+        <img src="/icons/install-app.svg" alt="" class="tab-icon" />
+        <span>Install</span>
+      </button>
     </div>
 
-    <div class="tab-content" class:active={activeTab === 'ios'}>
-      <details class="help-section">
-        <summary>
-          <span class="summary-text">
-            <span class="section-number">1.</span> Install as App
-            {#if pwaInstalled}<span class="install-check">✓</span>{/if}
-          </span>
-        </summary>
-        <ol>
-          <li>Tap the <strong>Share</strong> button (square with arrow)</li>
-          <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
-          <li>Tap <strong>"Add"</strong> in the top right</li>
-          <li>Launch from your home screen for fullscreen mode</li>
-        </ol>
-      </details>
+    <div class="tab-content" class:active={activeTab === 'install'}>
+      {#each installOs === 'android' ? ['android', 'ios'] : ['ios', 'android'] as os (os)}
+        {#if os === 'ios'}
+          <section class="os-section">
+            <h3 class="os-heading">iOS</h3>
+            <details class="help-section">
+              <summary>
+                <span class="summary-text">
+                  <span class="section-number">1.</span> Install as App
+                  {#if pwaInstalled}<span class="install-check">✓</span>{/if}
+                </span>
+              </summary>
+              <ol>
+                <li>Tap the <strong>Share</strong> button (square with arrow)</li>
+                <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
+                <li>Tap <strong>"Add"</strong> in the top right</li>
+                <li>Launch from your home screen for fullscreen mode</li>
+              </ol>
+            </details>
 
-      <details class="help-section">
-        <summary><span class="summary-text"><span class="section-number">2.</span> Enable Guided Access</span></summary>
-        <ol>
-          <li>Go to <strong>Settings → Accessibility → Guided Access</strong></li>
-          <li>Turn on <strong>Guided Access</strong></li>
-          <li>Set a passcode</li>
-          <li>Open Splotch and triple-click the side button</li>
-          <li>Tap <strong>Start</strong> to lock the app</li>
-          <li>Triple-click and enter passcode to exit</li>
-        </ol>
-      </details>
-    </div>
+            <details class="help-section">
+              <summary><span class="summary-text"><span class="section-number">2.</span> Enable Guided Access</span></summary>
+              <ol>
+                <li>Go to <strong>Settings → Accessibility → Guided Access</strong></li>
+                <li>Turn on <strong>Guided Access</strong></li>
+                <li>Set a passcode</li>
+                <li>Open Splotch and triple-click the side button</li>
+                <li>Tap <strong>Start</strong> to lock the app</li>
+                <li>Triple-click and enter passcode to exit</li>
+              </ol>
+            </details>
+          </section>
+        {:else}
+          <section class="os-section">
+            <h3 class="os-heading">Android</h3>
+            <details class="help-section">
+              <summary>
+                <span class="summary-text">
+                  <span class="section-number">1.</span> Install as App
+                  {#if pwaInstalled}<span class="install-check">✓</span>{/if}
+                </span>
+              </summary>
+              <ol>
+                <li>Tap the <strong>menu</strong> (three dots)</li>
+                <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
+                <li>Follow the prompts</li>
+                <li>Launch from your home screen for fullscreen mode</li>
+              </ol>
+            </details>
 
-    <div class="tab-content" class:active={activeTab === 'android'}>
-      <details class="help-section">
-        <summary>
-          <span class="summary-text">
-            <span class="section-number">1.</span> Install as App
-            {#if pwaInstalled}<span class="install-check">✓</span>{/if}
-          </span>
-        </summary>
-        <ol>
-          <li>Tap the <strong>menu</strong> (three dots)</li>
-          <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
-          <li>Follow the prompts</li>
-          <li>Launch from your home screen for fullscreen mode</li>
-        </ol>
-      </details>
-
-      <details class="help-section">
-        <summary><span class="summary-text"><span class="section-number">2.</span> Enable App Pinning</span></summary>
-        <ol>
-          <li>Go to <strong>Settings → Security → App Pinning</strong></li>
-          <li>Turn on <strong>App Pinning</strong></li>
-          <li>Open Splotch and tap the <strong>Recent Apps</strong> button</li>
-          <li>Swipe up on Splotch and tap the <strong>Pin</strong> icon</li>
-          <li>Tap <strong>Start</strong> to lock the app</li>
-          <li>Long-press Back + Recent Apps to exit</li>
-        </ol>
-      </details>
+            <details class="help-section">
+              <summary><span class="summary-text"><span class="section-number">2.</span> Enable App Pinning</span></summary>
+              <ol>
+                <li>Go to <strong>Settings → Security → App Pinning</strong></li>
+                <li>Turn on <strong>App Pinning</strong></li>
+                <li>Open Splotch and tap the <strong>Recent Apps</strong> button</li>
+                <li>Swipe up on Splotch and tap the <strong>Pin</strong> icon</li>
+                <li>Tap <strong>Start</strong> to lock the app</li>
+                <li>Long-press Back + Recent Apps to exit</li>
+              </ol>
+            </details>
+          </section>
+        {/if}
+      {/each}
     </div>
 
     <div class="tab-content" class:active={activeTab === 'settings'}>

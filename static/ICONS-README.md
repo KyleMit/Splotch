@@ -19,8 +19,9 @@ The Splotch icon features a colorful rainbow gradient "S" in a friendly, thick b
 ## PWA Configuration
 
 The app is fully configured as a Progressive Web App and can be installed on:
-- iOS devices (via Safari "Add to Home Screen")
-- Android devices (via Chrome "Install App")
-- Desktop browsers that support PWA installation
+
+* iOS devices (via Safari "Add to Home Screen")
+* Android devices (via Chrome "Install App")
+* Desktop browsers that support PWA installation
 
 The app displays in fullscreen mode when installed, providing an immersive drawing experience.
