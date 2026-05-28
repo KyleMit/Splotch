@@ -3,6 +3,7 @@ export const ui = $state({
   coloringBookOpen: false,
   parentCenterOpen: false,
   clearTutorialVisible: false,
+  aiPromptOpen: false,
   aiGenerating: false,
   aiResultOpen: false,
   aiResultUrl: null
@@ -33,6 +34,15 @@ export function openParentCenter(origin) {
 
 export function closeParentCenter() {
   ui.parentCenterOpen = false;
+}
+
+export function openAiPrompt(origin) {
+  ui.aiPromptOrigin = origin;
+  ui.aiPromptOpen = true;
+}
+
+export function closeAiPrompt() {
+  ui.aiPromptOpen = false;
 }
 
 export function openAiResult(url) {

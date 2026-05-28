@@ -7,6 +7,7 @@
   import ClearButton from '$lib/components/ClearButton.svelte';
   import ColoringBook from '$lib/components/ColoringBook.svelte';
   import ParentCenter from '$lib/components/ParentCenter.svelte';
+  import AiImagePrompt from '$lib/components/AiImagePrompt.svelte';
   import AiImageResult from '$lib/components/AiImageResult.svelte';
   import { initPWAUpdates } from '$lib/pwa/updates.js';
   import { captureAiAccessTokenFromUrl } from '$lib/state/settings.svelte.js';
@@ -57,4 +58,5 @@
 <ColorPicker />
 <ColoringBook />
 <ParentCenter />
+<AiImagePrompt />
 <AiImageResult />

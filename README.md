@@ -281,7 +281,7 @@ MIT
 * [x] Apply paper texture on screenshot
 * [x] Smoothing algorithm for lines (get rid of rasterization)
 * [x] screenshot expands back into camera instead of into delete button
-* [ ] AI-ify button
+* [x] AI-ify button
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
   * [x] Make sure white backgrounds become transparent
@@ -292,8 +292,11 @@ MIT
   * [ ] Pages should be able to be favorited. First book should be favorites
   * [ ] Delete should wipe the page (or first book should be to clear the background)
 * [ ] Increase size of line thickness pop-up
+* [ ] Make sure SVGs are handled efficiently.  Inline if possible.
+* [ ] Separate out parent center buttons into settings / controls
 * [ ] Polaroid screenshot should be shape of canvas, maybe also add polaroid frame
 * [ ] Parent center control to increase button size
+* [ ] Make control-z on desktop also perform an undo action
 * [ ] Svelte migration
   * [ ] review events / handlers
   * [ ] move CSS into components

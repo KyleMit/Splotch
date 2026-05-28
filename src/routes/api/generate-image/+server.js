@@ -3,13 +3,16 @@ import { env } from '$env/dynamic/private';
 import { GoogleGenAI } from '@google/genai';
 
 const ALLOWED_TOKENS = new Set(['kyle', 'parker', 'ryan']);
+const ALLOWED_STYLES = new Set(['Watercolor', 'Felted', 'Crayons']);
 const MODEL = 'gemini-2.5-flash-image';
-const PROMPT = "Create a cute scene or character based on this child's drawing";
+const DEFAULT_PROMPT = "Create a cute scene or character based on this child's drawing";
 
 export async function POST({ request }) {
   const form = await request.formData();
   const token = form.get('token');
   const imageFile = form.get('image');
+  const customPrompt = form.get('prompt');
+  const style = form.get('style');
 
   if (typeof token !== 'string' || !ALLOWED_TOKENS.has(token)) {
     throw error(403, 'Invalid access token');
@@ -20,6 +23,16 @@ export async function POST({ request }) {
   if (!env.GEMINI_API_KEY) {
     throw error(500, 'Server is missing GEMINI_API_KEY');
   }
+
+  const basePrompt =
+    typeof customPrompt === 'string' && customPrompt.trim()
+      ? customPrompt.trim()
+      : DEFAULT_PROMPT;
+  const styleSuffix =
+    typeof style === 'string' && ALLOWED_STYLES.has(style)
+      ? ` Render it in a ${style} style.`
+      : '';
+  const finalPrompt = basePrompt + styleSuffix;
 
   const inputBytes = new Uint8Array(await imageFile.arrayBuffer());
   const inputBase64 = Buffer.from(inputBytes).toString('base64');
@@ -34,7 +47,7 @@ export async function POST({ request }) {
           role: 'user',
           parts: [
             { inlineData: { mimeType: imageFile.type || 'image/png', data: inputBase64 } },
-            { text: PROMPT }
+            { text: finalPrompt }
           ]
         }
       ]

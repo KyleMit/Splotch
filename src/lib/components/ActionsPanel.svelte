@@ -3,14 +3,14 @@
   import { canvasState } from '$lib/state/canvas.svelte.js';
   import { settings } from '$lib/state/settings.svelte.js';
   import { strokeState, STROKE_SIZES, setStrokeSize } from '$lib/state/strokeWidth.svelte.js';
-  import { ui, openColoringBook, openAiResult } from '$lib/state/ui.svelte.js';
-  import { undo, exportCanvasBlob } from '$lib/drawing/engine.js';
-  import { getActiveOverlayImage } from '$lib/drawing/overlay.js';
+  import { ui, openColoringBook, openAiPrompt } from '$lib/state/ui.svelte.js';
+  import { undo } from '$lib/drawing/engine.js';
   import { saveScreenshot } from '$lib/drawing/screenshot.js';
 
   let panelEl;
   let strokeWrapperEl;
   let coloringBtnEl;
+  let aiBtnEl;
   let leftOffset = $state(8);
 
   // Reposition the panel relative to the color palette in landscape;
@@ -76,30 +76,13 @@
     });
   }
 
-  async function handleAiImageClick() {
-    if (ui.aiGenerating || canvasState.canvasEmpty) return;
-    const blob = await exportCanvasBlob(getActiveOverlayImage(), { includePaperTexture: false });
-    if (!blob) return;
-
-    ui.aiGenerating = true;
-    try {
-      const form = new FormData();
-      form.append('token', settings.aiAccessToken);
-      form.append('image', blob, 'drawing.png');
-
-      const res = await fetch('/api/generate-image', { method: 'POST', body: form });
-      if (!res.ok) {
-        const msg = await res.text().catch(() => '');
-        throw new Error(`AI image request failed (${res.status}): ${msg}`);
-      }
-      const outBlob = await res.blob();
-      openAiResult(URL.createObjectURL(outBlob));
-    } catch (err) {
-      console.error(err);
-      alert('Sorry, AI image generation failed. Please try again.');
-    } finally {
-      ui.aiGenerating = false;
-    }
+  function handleAiImageClick() {
+    if (ui.aiGenerating || canvasState.canvasEmpty || !aiBtnEl) return;
+    const rect = aiBtnEl.getBoundingClientRect();
+    openAiPrompt({
+      x: (rect.left + rect.right) / 2,
+      y: (rect.top + rect.bottom) / 2
+    });
   }
 </script>
 
@@ -162,6 +145,7 @@
     disabled={canvasState.canvasEmpty || ui.aiGenerating}
     hidden={!settings.aiAccessToken || !settings.aiImageEnabled}
     onclick={handleAiImageClick}
+    bind:this={aiBtnEl}
   >
     <img
       src={ui.aiGenerating ? '/icons/loading.svg' : '/icons/wand-stars.svg'}
