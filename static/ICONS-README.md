@@ -4,7 +4,6 @@ All required icons have been successfully implemented!
 
 ## Included Files
 
-✅ `favicon.svg` - Scalable vector favicon
 ✅ `favicon-96x96.png` - 96x96 PNG favicon
 ✅ `favicon.ico` - 32x32 ICO favicon
 ✅ `apple-touch-icon.png` - 180x180 PNG icon for iOS

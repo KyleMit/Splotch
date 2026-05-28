@@ -17,6 +17,7 @@
     "vite-plugin-pwa": "^0.20.0"
   },
   "dependencies": {
+    "@fontsource-variable/quicksand": "^5.2.10",
     "@google/genai": "^2.6.0",
     "@netlify/blobs": "^10.7.8"
   }

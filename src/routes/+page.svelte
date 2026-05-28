@@ -48,10 +48,10 @@
   });
 </script>
 
-<div class="app-container">
+<main class="app-container">
   <ColorPalette />
   <DrawingCanvas />
-</div>
+</main>
 
 <ClearButton />
 <ActionsPanel />

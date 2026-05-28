@@ -182,6 +182,7 @@ MIT
 * [x] Log usages of `ai_access_token`
 * [x] Add note about `ai_access_token` to readme
 * [x] Improve lighthouse score
+* [ ] Tap not working in drawing canvas, only dragging.
 * [ ] Add record access token to parent settings in AI area with toggles disabled unless access token granted.
       Maybe add route to confirm access token as well?
 * [ ] Add "color book" style picker with background overlay
