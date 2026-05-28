@@ -1319,6 +1319,10 @@ body.has-coloring-overlay #drawingCanvas {
   mix-blend-mode: multiply;
 }
 
+.coloring-tile.coloring-remove-tile img {
+  height: 75%;
+}
+
 .coloring-book-tile img {
   padding: 8px 8px 28px 8px;
 }
@@ -1336,23 +1340,3 @@ body.has-coloring-overlay #drawingCanvas {
   text-align: center;
 }
 
-.coloring-clear-overlay {
-  display: block;
-  margin: 20px auto 0;
-  padding: 10px 20px;
-  background: #f8f8f8;
-  border: 2px solid #e0e0e0;
-  border-radius: 999px;
-  color: #666;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.coloring-clear-overlay:hover {
-  border-color: #AB71E1;
-  color: #AB71E1;
-  background: #f5f0ff;
-}

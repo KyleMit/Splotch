@@ -310,3 +310,12 @@ MIT
 * Meteor shower
 * Rover on mars
 
+## Mythical & Magical Creatures
+
+* Unicorn
+* Friendly Dragon
+* Mermaid
+* Pegasus
+* Forest Fairy
+* Wizard's Owl
+

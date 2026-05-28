@@ -57,7 +57,6 @@ let booksGrid;
 let pagesGrid;
 let pagesTitle;
 let backButton;
-let clearOverlayButton;
 let overlayImg;
 let triggerButton;
 
@@ -73,7 +72,6 @@ export function setColoringBookEnabled(enabled) {
 function showBooksView() {
   booksView.hidden = false;
   pagesView.hidden = true;
-  clearOverlayButton.hidden = !overlayImg || overlayImg.hidden;
 }
 
 function showPagesView(book) {
@@ -103,6 +101,32 @@ function showPagesView(book) {
 
 function renderBooksGrid() {
   booksGrid.innerHTML = '';
+
+  // When a page is currently applied, the first tile lets the user clear it.
+  const overlayActive = overlayImg && !overlayImg.hidden;
+  if (overlayActive) {
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'coloring-tile coloring-book-tile coloring-remove-tile';
+    removeBtn.type = 'button';
+    removeBtn.setAttribute('aria-label', 'Clear Page');
+
+    const removeImg = document.createElement('img');
+    removeImg.src = '/icons/remove-page.svg';
+    removeImg.alt = '';
+    removeBtn.appendChild(removeImg);
+
+    const removeLabel = document.createElement('span');
+    removeLabel.className = 'coloring-book-label';
+    removeLabel.textContent = 'Clear Page';
+    removeBtn.appendChild(removeLabel);
+
+    removeBtn.addEventListener('click', () => {
+      clearOverlay();
+      closeColoringBook();
+    });
+    booksGrid.appendChild(removeBtn);
+  }
+
   BOOKS.forEach(book => {
     const btn = document.createElement('button');
     btn.className = 'coloring-tile coloring-book-tile';
@@ -179,7 +203,6 @@ export function initColoringBook() {
   pagesGrid = document.getElementById('coloringPagesGrid');
   pagesTitle = document.getElementById('coloringPagesTitle');
   backButton = document.getElementById('coloringBackButton');
-  clearOverlayButton = document.getElementById('coloringClearOverlay');
   overlayImg = document.getElementById('coloringOverlay');
   triggerButton = document.getElementById('coloringBookButton');
 
@@ -189,11 +212,6 @@ export function initColoringBook() {
   closeBtn?.addEventListener('click', () => closeColoringBook());
 
   backButton?.addEventListener('click', () => showBooksView());
-
-  clearOverlayButton?.addEventListener('click', () => {
-    clearOverlay();
-    closeColoringBook();
-  });
 
   // Trigger button opens the dialog.
   triggerButton.addEventListener('click', () => openColoringBook());
