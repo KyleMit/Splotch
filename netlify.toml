@@ -1,7 +1,8 @@
 [build]
   command = "npm run build"
-  # adapter-netlify manages the publish dir + functions internally; leave it
-  # off so the adapter's own configuration takes effect.
+  # adapter-netlify writes static assets to build/ and functions to
+  # .netlify/functions-internal/; the publish dir must point at build/.
+  publish = "build"
 
 [[headers]]
   for = "/*"

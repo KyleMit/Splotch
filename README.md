@@ -2,6 +2,8 @@
 
 A simple, delightful drawing app designed for toddlers (2+ years old). Features large touch targets, cheerful colors, and subtle drawing sounds to create an engaging creative experience.
 
+<https://splotch.art/>
+
 ## Features
 
 * **Simple Drawing Interface** - Just touch and draw with your finger or Apple Pencil
@@ -99,26 +101,11 @@ netlify deploy --prod
 
 The "AI-ify" feature re-imagines a child's drawing as a polished illustration via the Gemini API. Because this calls a paid model, access is gated behind a token.
 
-### Granting access
-
-* The server reads a comma-separated allowlist from the `ALLOWED_TOKENS_LIST` environment variable (set alongside `GEMINI_API_KEY`).
 * To grant a user access, append one of those tokens to the app URL as the `ai_access_token` query param:
 
   ```none
   https://splotch.art/?ai_access_token=YOUR_TOKEN
   ```
-
-* On load, the app captures the token, saves it to local storage, and strips the param from the URL (via `history.replaceState`) so it isn't left visible or shared accidentally.
-* Each AI image request sends the stored token, which the server validates against `ALLOWED_TOKENS_LIST` before calling Gemini. Requests with a missing or unknown token are rejected with a `403`.
-
-### Monitoring usage
-
-Every generation is attributed to the token that triggered it, so you can spot a token going rogue and pull it from `ALLOWED_TOKENS_LIST`:
-
-* **Netlify function logs** (real-time) — each request logs an `[ai-usage] token=… style=… prompt=… at=…` line, viewable under **Netlify dashboard → Functions → Logs**.
-* **Netlify Blobs** (durable, auditable) — a running per-token tally (`count`, `firstUsed`, `lastUsed`, `lastStyle`, `lastPrompt`) is kept in the `ai-usage` blob store, viewable under **Netlify dashboard → Blobs**.
-
-Note: all AI requests share a single `GEMINI_API_KEY`, so Google's own usage dashboard shows total spend only — it can't break usage down by `ai_access_token`. That attribution happens app-side via the logging above.
 
 
 ## License
@@ -199,12 +186,10 @@ MIT
 * [ ] Increase size of line thickness pop-up
 * [ ] Polaroid screenshot should be shape of canvas, maybe also add polaroid frame
 * [ ] Parent center control to increase button size
-* [ ] Svelte migration
-  * [ ] review events / handlers
-* [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * [ ] Investigate line smoothing while drawing
 * [ ] Improve lighthouse score
 * [ ] Efficiently layout broad range of colors on small devices
+* [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * [ ] Bugs
   * [ ] Make sure we can refresh PWA
   * [ ] It takes about 10s on ios for the pencil sounds to come in
