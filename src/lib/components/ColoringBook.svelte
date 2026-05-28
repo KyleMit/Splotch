@@ -92,7 +92,7 @@
               aria-label="{book.name} coloring book"
               onclick={() => (activeBook = book)}
             >
-              <img src={book.cover} alt="" />
+              <img src={book.cover} alt="" loading="lazy" />
               <span class="coloring-book-label">{book.name}</span>
             </button>
           {/each}
@@ -114,7 +114,7 @@
               aria-label="{activeBook.name} coloring page"
               onclick={() => pickPage(src)}
             >
-              <img {src} alt="" />
+              <img {src} alt="" loading="lazy" />
             </button>
           {/each}
         </div>
