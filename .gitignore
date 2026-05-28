@@ -147,3 +147,5 @@ workbox-*.js.map
 
 ## Mac
 .DS_Store
+build/
+.netlify/

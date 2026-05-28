@@ -1,0 +1,153 @@
+<script>
+  import { onMount } from 'svelte';
+  import { canvasState } from '$lib/state/canvas.svelte.js';
+  import { settings } from '$lib/state/settings.svelte.js';
+  import { strokeState, STROKE_SIZES, setStrokeSize } from '$lib/state/strokeWidth.svelte.js';
+  import { openColoringBook } from '$lib/state/ui.svelte.js';
+  import { undo } from '$lib/drawing/engine.js';
+  import { saveScreenshot } from '$lib/drawing/screenshot.js';
+
+  let panelEl;
+  let strokeWrapperEl;
+  let coloringBtnEl;
+  let leftOffset = $state(8);
+
+  // Reposition the panel relative to the color palette in landscape;
+  // in portrait it pins to bottom-left.
+  function updatePanelPosition() {
+    if (!panelEl) return;
+    const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+    const colorPalette = document.querySelector('.color-palette');
+    if (!colorPalette) return;
+
+    if (isPortrait) {
+      leftOffset = 8;
+    } else {
+      const paletteRect = colorPalette.getBoundingClientRect();
+      leftOffset = paletteRect.width + 8;
+    }
+  }
+
+  onMount(() => {
+    updatePanelPosition();
+    setTimeout(updatePanelPosition, 100);
+    window.addEventListener('resize', updatePanelPosition);
+    window.addEventListener('orientationchange', updatePanelPosition);
+
+    // Click outside closes stroke menu
+    const onDocPointerDown = (e) => {
+      if (strokeState.menuOpen && strokeWrapperEl && !strokeWrapperEl.contains(e.target)) {
+        strokeState.menuOpen = false;
+      }
+    };
+    document.addEventListener('pointerdown', onDocPointerDown);
+
+    return () => {
+      window.removeEventListener('resize', updatePanelPosition);
+      window.removeEventListener('orientationchange', updatePanelPosition);
+      document.removeEventListener('pointerdown', onDocPointerDown);
+    };
+  });
+
+  function handleUndoUp(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (canvasState.canUndo) undo();
+  }
+
+  function handleScreenshotUp(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!canvasState.canvasEmpty) saveScreenshot();
+  }
+
+  function handleStrokeBtnUp(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    strokeState.menuOpen = !strokeState.menuOpen;
+  }
+
+  function handleStrokeSizeUp(e, size) {
+    e.preventDefault();
+    e.stopPropagation();
+    setStrokeSize(size);
+    strokeState.menuOpen = false;
+  }
+
+  function handleColoringBookClick() {
+    if (!coloringBtnEl) return;
+    const rect = coloringBtnEl.getBoundingClientRect();
+    openColoringBook({
+      x: (rect.left + rect.right) / 2,
+      y: (rect.top + rect.bottom) / 2
+    });
+  }
+
+  const stopPointerDown = (e) => { e.preventDefault(); e.stopPropagation(); };
+</script>
+
+<div class="actions-panel" bind:this={panelEl} style:left="{leftOffset}px">
+  <div class="stroke-width-wrapper" bind:this={strokeWrapperEl} hidden={!settings.strokeWidthControlEnabled}>
+    <button
+      class="action-button"
+      id="strokeWidthButton"
+      aria-label="Stroke width"
+      aria-expanded={strokeState.menuOpen}
+      onpointerdown={stopPointerDown}
+      onpointerup={handleStrokeBtnUp}
+    >
+      <img src="/icons/line-weight.svg" alt="Stroke width" class="action-icon" />
+    </button>
+    <div class="stroke-width-menu" hidden={!strokeState.menuOpen}>
+      {#each STROKE_SIZES as size}
+        <button
+          class="stroke-size-button"
+          class:active={strokeState.size === size}
+          aria-label="Size {size}"
+          aria-pressed={strokeState.size === size}
+          onpointerdown={stopPointerDown}
+          onpointerup={(e) => handleStrokeSizeUp(e, size)}
+        >
+          <img src="/icons/size-{size}.svg" alt="" class="action-icon" />
+        </button>
+      {/each}
+    </div>
+  </div>
+
+  <button
+    class="action-button"
+    id="coloringBookButton"
+    aria-label="Coloring books"
+    hidden={!settings.coloringBookEnabled}
+    onclick={handleColoringBookClick}
+    bind:this={coloringBtnEl}
+  >
+    <img src="/icons/shapes.svg" alt="Coloring books" class="action-icon" />
+  </button>
+
+  <button
+    class="action-button"
+    class:disabled={canvasState.canvasEmpty}
+    id="screenshotButton"
+    aria-label="Save screenshot"
+    disabled={canvasState.canvasEmpty}
+    hidden={!settings.screenshotEnabled}
+    onpointerdown={stopPointerDown}
+    onpointerup={handleScreenshotUp}
+  >
+    <img src="/icons/camera.svg" alt="Save screenshot" class="action-icon" />
+  </button>
+
+  <button
+    class="action-button"
+    class:disabled={!canvasState.canUndo}
+    id="undoButton"
+    aria-label="Undo"
+    disabled={!canvasState.canUndo}
+    hidden={!settings.undoButtonEnabled}
+    onpointerdown={stopPointerDown}
+    onpointerup={handleUndoUp}
+  >
+    <img src="/icons/undo.svg" alt="Undo" class="action-icon" />
+  </button>
+</div>
