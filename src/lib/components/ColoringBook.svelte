@@ -1,4 +1,5 @@
 <script>
+  import Icon from './Icon.svelte';
   import { ui, closeColoringBook } from '$lib/state/ui.svelte.js';
   import {
     BOOKS,
@@ -66,7 +67,7 @@
 >
   <div class="coloring-book-content">
     <button class="coloring-book-close" aria-label="Close" onclick={closeColoringBook}>
-      <img src="/icons/close.svg" alt="" />
+      <Icon name="close" class="coloring-book-close-icon" />
     </button>
 
     {#if !activeBook}
@@ -80,7 +81,7 @@
               aria-label="Clear Page"
               onclick={clearAndClose}
             >
-              <img src="/icons/remove-page.svg" alt="" />
+              <Icon name="remove-page" class="coloring-remove-icon" />
               <span class="coloring-book-label">Clear Page</span>
             </button>
           {/if}
@@ -101,7 +102,7 @@
       <div class="coloring-book-view">
         <div class="coloring-book-header">
           <button class="coloring-back-button" aria-label="Back" onclick={() => (activeBook = null)}>
-            <img src="/icons/chevron-back.svg" alt="" />
+            <Icon name="chevron-back" class="coloring-back-icon" />
           </button>
           <h2>{activeBook.name}</h2>
         </div>
@@ -180,7 +181,7 @@
     z-index: 1;
   }
 
-  .coloring-book-close img {
+  :global(.coloring-book-close-icon) {
     width: 100%;
     height: 100%;
     pointer-events: none;
@@ -188,7 +189,7 @@
     transition: filter 0.2s ease;
   }
 
-  .coloring-book-close:hover img {
+  .coloring-book-close:hover :global(.coloring-book-close-icon) {
     filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
   }
 
@@ -217,7 +218,7 @@
     transition: background 0.2s ease;
   }
 
-  .coloring-back-button img {
+  :global(.coloring-back-icon) {
     width: 100%;
     height: 100%;
     pointer-events: none;
@@ -229,7 +230,7 @@
     background: #ede7f6;
   }
 
-  .coloring-back-button:hover img {
+  .coloring-back-button:hover :global(.coloring-back-icon) {
     filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
   }
 
@@ -289,8 +290,12 @@
     mix-blend-mode: multiply;
   }
 
-  .coloring-tile.coloring-remove-tile img {
+  :global(.coloring-remove-icon) {
+    width: 100%;
     height: 75%;
+    padding: 8px;
+    pointer-events: none;
+    mix-blend-mode: multiply;
   }
 
   .coloring-book-tile img {

@@ -15,36 +15,6 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 * **Wake Lock** - Screen stays on while drawing
 * **Responsive** - Works in both landscape and portrait orientations
 
-## UI Elements
-
-* **Color Palette** - Container bar holding all color swatches
-  * **Color Swatch** - Individual circular color selection button
-    * **Selection Ring** - Colored ring indicator around the active color swatch
-* **Gradient Swatch** - Last color button with rainbow gradient and + symbol; opens custom color picker
-  * **Color Picker Overlay** - Full-screen modal with blurred backdrop for selecting custom colors
-  * **Hexagon Grid** - Honeycomb pattern of color tiles in the color picker
-  * **Color Hexagon** - Individual hexagon-shaped color tile; drag across to explore, lift to select
-* **Drawing Canvas** - Main touch-responsive drawing surface
-* **Clear Button** - Floating trash button for clearing the canvas
-  * **Clear Preview Line** - Torn paper edge visual indicator showing where canvas will be cleared during drag
-  * **Clear Accept Zone** - Bottom 15% of screen that turns red; drop Clear Button here to confirm
-  * **Page Turn Overlay** - White overlay animation that sweeps across when clearing
-* **Actions Panel** - Bottom-corner panel hosting auxiliary controls
-  * **Undo Button** - Reverts the last drawing stroke
-  * **Screenshot Button** - Saves the current drawing as a PNG (toggle in Parent Center)
-  * **Stroke Width Button** - Opens a flyout for selecting line thickness (toggle in Parent Center)
-  * **Coloring Book Button** - Opens the Coloring Book Picker (toggle in Parent Center)
-* **Coloring Book Picker** - Modal dialog for choosing a coloring page to use as a canvas overlay
-  * **Coloring Book Grid** - First menu showing each coloring book by its cover image
-  * **Coloring Book Tile** - Individual book cover button; tap to open that book's pages
-  * **Coloring Page Grid** - Second menu showing the 6 selectable coloring pages in a book
-  * **Coloring Page Tile** - Individual coloring page; tap to apply it as the canvas overlay
-  * **Coloring Page Overlay** - Selected page rendered behind the drawing canvas with multiply blend, so white areas blend into the paper background and the line art stays visible
-* **Parent Help Button** - Floating button that opens the Parent Center
-  * **Parent Center** - Modal with platform install guides and app settings
-    * **Install Guide** - iOS / Android tabs with step-by-step PWA setup
-    * **Settings** - Tab for app preferences (Drawing Sounds, Save on Delete, Screenshot Button, Stroke Width Control, Coloring Books)
-
 ## Tech Stack
 
 * **Core Technologies**
@@ -78,41 +48,7 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
   * <https://www.pwabuilder.com/reportcard?site=https://splotch.art/>
   * <https://metatags.io/?url=https%3A%2F%2Fsplotch.art>
 
-## Project Structure
 
-```none
-/
-├── src/                     # Vite root — everything served/built lives here
-│   ├── index.html           # Entry point (composes partials via {{> name}})
-│   ├── scripts/             # JavaScript modules
-│   │   ├── main.js          # App initialization and orchestration
-│   │   ├── drawingCanvas.js # Canvas drawing logic
-│   │   ├── colorPalette.js  # Color swatch UI and responsive layout
-│   │   ├── colorPicker.js   # Custom color picker modal
-│   │   ├── clearCanvas.js   # Clear button drag interaction
-│   │   ├── parentHelp.js    # Parent Center modal + tab switching
-│   │   ├── drawingSound.js  # Drawing sound playback + setting
-│   │   ├── saveOnDelete.js  # "Save on Delete" setting + PNG export trigger
-│   │   ├── deviceEnhancements.js # Progressive SVG enhancement (Android/Desktop)
-│   │   ├── pwaUpdate.js     # PWA automatic update management
-│   │   └── actionsPanel.js  # Undo button wiring
-│   ├── styles/              # Stylesheets
-│   │   └── style.css        # All styles
-│   ├── partials/            # Build-time HTML partials (vite-plugin-handlebars)
-│   │   ├── head-meta.html   # <head> meta tags, OG/Twitter, favicons, fonts
-│   │   ├── color-picker-overlay.html # Color Picker Overlay dialog (hexagon grid)
-│   │   └── parent-center.html # Parent Help Button + Parent Center modal
-│   └── public/              # Static assets served at site root
-│       ├── filters/         # SVG filters for progressive enhancement
-│       │   └── torn-edge.svg # Torn paper edge filter (non-iOS)
-│       ├── sounds/          # Audio files
-│       ├── icons/           # Icons and images
-│       │   └── handmade-paper.png # Paper texture background
-│       └── ...              # Favicons, manifest, etc.
-├── dist/                    # Build output (gitignored)
-├── netlify.toml             # Netlify deploy config
-└── vite.config.js           # Build configuration (root: src, outDir: ../dist)
-```
 
 ## Getting Started
 
@@ -136,28 +72,6 @@ npm run build
 npm run preview
 ```
 
-## Installing as a PWA
-
-### iOS (iPhone/iPad)
-
-1. Open the app in Safari
-2. Tap the Share button (square with arrow pointing up)
-3. Scroll down and tap "Add to Home Screen"
-4. Tap "Add" in the top right corner
-5. The app will appear on your home screen with the Splotch icon
-6. Tap the icon to launch in fullscreen mode
-
-### Android
-
-1. Open the app in Chrome
-2. Tap the menu (three dots)
-3. Tap "Install app" or "Add to Home screen"
-4. Follow the prompts to install
-
-### Desktop (Chrome/Edge)
-
-1. Look for the install icon in the address bar
-2. Click it and follow the prompts
 
 ## Deployment
 
@@ -180,84 +94,42 @@ npm install -g netlify-cli
 netlify deploy --prod
 ```
 
-## Browser Support
-
-* Chrome/Edge 88+
-* Safari 15.4+
-* Firefox 98+
-* iOS Safari 15.4+
-
-## Platform Differences: Android vs iOS
-
-### SVG Filter Rendering
-
-The app uses a **progressive enhancement approach** for visual effects to balance quality and compatibility:
-
-### iOS Safari Limitations
-
-* iOS Safari cannot render external SVG filter references (`url('/filters/torn-edge.svg#filter')`)
-* This affects the torn paper edge effect on the clear overlay
-* Inline SVG filters work but cause significant performance issues due to constant recalculation
-
-### Solution: CSS-First with Progressive Enhancement
-
-1. **Default (iOS & All Browsers)**: Uses pure CSS approach
-   * `clip-path` polygon for torn edge shape on clear overlay
-   * `drop-shadow` filters for shadow effects
-   * PNG image for paper texture (works universally)
-   * Works universally with good performance
-
-2. **Enhanced (Android, Desktop)**: Automatically upgrades to SVG filters
-   * Device detection identifies non-iOS browsers
-   * External SVG filters provide higher quality torn edge effects on clear overlay
-   * Better visual fidelity for the paper tearing animation
-
-### Debug Parameter
-
-Add `?debugIOS` to the URL to force CSS-only mode on any device:
-
-This is useful for:
-
-* Testing iOS appearance on desktop browsers
-* Comparing CSS vs SVG rendering quality
-* Debugging visual issues across platforms
-
-### Implementation Details
-
-See `src/scripts/deviceEnhancements.js` for the progressive enhancement logic and `src/public/filters/` for SVG filter definitions.
-
-## Features Explained
-
-### Drawing Engine
-
-Uses HTML5 Canvas with Pointer Events for smooth, responsive drawing across all input types (touch, stylus, mouse).
-
-### Audio System
-
-Built on the native `HTMLAudioElement` API — no audio library dependency:
-
-* Three pencil-scratch samples preloaded as `Audio` instances; one is picked at random per stroke
-* Looped playback for the duration of a stroke (`loop = true`)
-* Speed-aware gating: pauses when pointer movement drops below a threshold, resumes on motion
-* Short debounce timer pauses audio shortly after movement stops to avoid mid-stroke cutoffs
-* User preference persisted in `localStorage` and can be toggled from the Parent Center settings
-* First playback is gesture-initiated (pointer event), satisfying mobile autoplay requirements
-
-### PWA Capabilities
-
-* Installable to home screen
-* Offline functionality
-* Full-screen mode on mobile
-* Screen wake lock prevents sleep
-* Automatic updates with periodic checking:
-  * Checks for updates every hour while app is running
-  * Checks when app becomes visible again
-  * Auto-updates and reloads when new version found
-  * Works offline (update checks fail silently)
 
 ## License
 
 MIT
+
+
+## UI Elements
+
+* **Color Palette** - Container bar holding all color swatches
+  * **Color Swatch** - Individual circular color selection button
+    * **Selection Ring** - Colored ring indicator around the active color swatch
+* **Gradient Swatch** - Last color button with rainbow gradient and + symbol; opens custom color picker
+  * **Color Picker Overlay** - Full-screen modal with blurred backdrop for selecting custom colors
+  * **Hexagon Grid** - Honeycomb pattern of color tiles in the color picker
+  * **Color Hexagon** - Individual hexagon-shaped color tile; drag across to explore, lift to select
+* **Drawing Canvas** - Main touch-responsive drawing surface
+* **Clear Button** - Floating trash button for clearing the canvas
+  * **Clear Preview Line** - Torn paper edge visual indicator showing where canvas will be cleared during drag
+  * **Clear Accept Zone** - Bottom 15% of screen that turns red; drop Clear Button here to confirm
+  * **Page Turn Overlay** - White overlay animation that sweeps across when clearing
+* **Actions Panel** - Bottom-corner panel hosting auxiliary controls
+  * **Undo Button** - Reverts the last drawing stroke
+  * **Screenshot Button** - Saves the current drawing as a PNG (toggle in Parent Center)
+  * **Stroke Width Button** - Opens a flyout for selecting line thickness (toggle in Parent Center)
+  * **Coloring Book Button** - Opens the Coloring Book Picker (toggle in Parent Center)
+* **Coloring Book Picker** - Modal dialog for choosing a coloring page to use as a canvas overlay
+  * **Coloring Book Grid** - First menu showing each coloring book by its cover image
+  * **Coloring Book Tile** - Individual book cover button; tap to open that book's pages
+  * **Coloring Page Grid** - Second menu showing the 6 selectable coloring pages in a book
+  * **Coloring Page Tile** - Individual coloring page; tap to apply it as the canvas overlay
+  * **Coloring Page Overlay** - Selected page rendered behind the drawing canvas with multiply blend, so white areas blend into the paper background and the line art stays visible
+* **Parent Help Button** - Floating button that opens the Parent Center
+  * **Parent Center** - Modal with platform install guides and app settings
+    * **Install Guide** - iOS / Android tabs with step-by-step PWA setup
+    * **Settings** - Tab for app preferences (Drawing Sounds, Save on Delete, Screenshot Button, Stroke Width Control, Coloring Books)
+
 
 
 ## TODO
@@ -286,6 +158,9 @@ MIT
 * [x] Make control-z on desktop also perform an undo action
 * [x] Make the secrets part of the env variable too (right now, they're public in git)
 * [x] move CSS into component scoped styles
+* [x] Make sure SVGs are handled efficiently.  Inline if possible.
+* [ ] Log usages of `ai_access_token`
+* [ ] Add note about `ai_access_token` to readme
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
   * [x] Make sure white backgrounds become transparent
@@ -296,12 +171,13 @@ MIT
   * [ ] Pages should be able to be favorited. First book should be favorites
   * [ ] Delete should wipe the page (or first book should be to clear the background)
 * [ ] Increase size of line thickness pop-up
-* [ ] Make sure SVGs are handled efficiently.  Inline if possible.
 * [ ] Polaroid screenshot should be shape of canvas, maybe also add polaroid frame
 * [ ] Parent center control to increase button size
 * [ ] Svelte migration
   * [ ] review events / handlers
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
+* [ ] Investigate line smoothing while drawing
+* [ ] Improve lighthouse score
 * [ ] Efficiently layout broad range of colors on small devices
 * [ ] Bugs
   * [ ] Make sure we can refresh PWA

@@ -1,4 +1,5 @@
 <script>
+  import Icon from './Icon.svelte';
   import { ui, closeAiResult } from '$lib/state/ui.svelte.js';
 
   let dialogEl;
@@ -53,13 +54,13 @@
 >
   <div class="ai-result-content">
     <button class="ai-result-close" aria-label="Close" onclick={closeAiResult}>
-      <img src="/icons/close.svg" alt="" />
+      <Icon name="close" class="ai-result-close-icon" />
     </button>
 
     {#if ui.aiResultUrl}
       <img class="ai-result-image" src={ui.aiResultUrl} alt="" />
       <button class="ai-result-download" aria-label="Download" onclick={handleDownload}>
-        <img src="/icons/download.svg" alt="" />
+        <Icon name="download" class="ai-result-download-icon" />
       </button>
     {/if}
   </div>
@@ -114,7 +115,7 @@
     z-index: 1;
   }
 
-  .ai-result-close img {
+  :global(.ai-result-close-icon) {
     width: 100%;
     height: 100%;
     pointer-events: none;
@@ -122,7 +123,7 @@
     transition: filter 0.2s ease;
   }
 
-  .ai-result-close:hover img {
+  .ai-result-close:hover :global(.ai-result-close-icon) {
     filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
   }
 
@@ -151,7 +152,7 @@
   .ai-result-download:hover { background: #9559cd; }
   .ai-result-download:active { transform: scale(0.95); }
 
-  .ai-result-download img {
+  :global(.ai-result-download-icon) {
     width: 100%;
     height: 100%;
     pointer-events: none;

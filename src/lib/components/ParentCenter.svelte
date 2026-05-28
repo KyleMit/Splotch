@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { slide } from 'svelte/transition';
+  import Icon from './Icon.svelte';
   import { ui, openParentCenter, closeParentCenter } from '$lib/state/ui.svelte.js';
   import {
     settings,
@@ -99,7 +100,7 @@
   bind:this={buttonEl}
   onclick={openModal}
 >
-  <img src="/icons/parent.svg" alt="Parent Center" class="parent-help-icon" />
+  <Icon name="parent" class="parent-help-icon" aria-label="Parent Center" role="img" />
 </button>
 
 <dialog
@@ -115,11 +116,11 @@
 
     <div class="tab-buttons">
       <button class="tab-button" class:active={activeTab === 'settings'} onclick={() => (activeTab = 'settings')}>
-        <img src="/icons/settings.svg" alt="" class="tab-icon" />
+        <Icon name="settings" class="tab-icon" />
         <span>Settings</span>
       </button>
       <button class="tab-button" class:active={activeTab === 'install'} onclick={() => (activeTab = 'install')}>
-        <img src="/icons/install-app.svg" alt="" class="tab-icon" />
+        <Icon name="install-app" class="tab-icon" />
         <span>Install</span>
       </button>
     </div>
@@ -197,7 +198,7 @@
         <div class="setting">
           <div class="setting-toggle">
             <label class="setting-info" for="soundToggle">
-              <img src="/icons/volume-on.svg" alt="" class="setting-icon" />
+              <Icon name="volume-on" class="setting-icon" />
               <span class="setting-label">Drawing Sounds</span>
             </label>
             <button
@@ -217,7 +218,7 @@
         <div class="setting">
           <div class="setting-toggle">
             <label class="setting-info" for="saveOnDeleteToggle">
-              <img src="/icons/camera-party.svg" alt="" class="setting-icon" />
+              <Icon name="camera-party" class="setting-icon" />
               <span class="setting-label">Auto-Save on Delete</span>
             </label>
             <button
@@ -242,7 +243,7 @@
         <div class="setting">
           <div class="setting-toggle">
             <label class="setting-info" for="strokeWidthToggle">
-              <img src="/icons/line-weight.svg" alt="" class="setting-icon" />
+              <Icon name="line-weight" class="setting-icon" />
               <span class="setting-label">Stroke Width Button</span>
             </label>
             <button
@@ -262,7 +263,7 @@
         <div class="setting">
           <div class="setting-toggle">
             <label class="setting-info" for="coloringBookToggle">
-              <img src="/icons/shapes.svg" alt="" class="setting-icon" />
+              <Icon name="shapes" class="setting-icon" />
               <span class="setting-label">Coloring Book Button</span>
             </label>
             <button
@@ -282,7 +283,7 @@
         <div class="setting">
           <div class="setting-toggle">
             <label class="setting-info" for="screenshotToggle">
-              <img src="/icons/camera.svg" alt="" class="setting-icon" />
+              <Icon name="camera" class="setting-icon" />
               <span class="setting-label">Screenshot Button</span>
             </label>
             <button
@@ -302,7 +303,7 @@
         <div class="setting">
           <div class="setting-toggle">
             <label class="setting-info" for="undoToggle">
-              <img src="/icons/undo.svg" alt="" class="setting-icon" />
+              <Icon name="undo" class="setting-icon" />
               <span class="setting-label">Undo Button</span>
             </label>
             <button
@@ -327,7 +328,7 @@
           <div class="setting">
             <div class="setting-toggle">
               <label class="setting-info" for="aiImageToggle">
-                <img src="/icons/wand-stars.svg" alt="" class="setting-icon" />
+                <Icon name="wand-stars" class="setting-icon" />
                 <span class="setting-label">AI Image Button</span>
               </label>
               <button
@@ -348,7 +349,7 @@
             <div class="setting" transition:slide={{ duration: 220 }}>
               <div class="setting-toggle">
                 <label class="setting-info" for="aiCustomizationToggle">
-                  <img src="/icons/customize.svg" alt="" class="setting-icon" />
+                  <Icon name="customize" class="setting-icon" />
                   <span class="setting-label">AI Customization</span>
                 </label>
                 <button
@@ -373,7 +374,7 @@
       <p>Having issues? <a href="https://github.com/KyleMit/Splotch/issues/new/choose" target="_blank" rel="noopener noreferrer">Report a problem</a></p>
       <p class="github-link">
         <a href="https://github.com/KyleMit/Splotch" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub">
-          <img src="/icons/github.svg" alt="GitHub" class="github-icon" />
+          <Icon name="github" class="github-icon" aria-label="GitHub" role="img" />
           View on GitHub
         </a>
       </p>
@@ -409,17 +410,17 @@
     opacity: 1;
   }
 
-  .parent-help-icon {
+  :global(.parent-help-icon) {
     width: 100%;
     height: 100%;
     filter: invert(60%) grayscale(100%);
   }
 
-  .parent-help-button:hover .parent-help-icon {
+  .parent-help-button:hover :global(.parent-help-icon) {
     filter: invert(40%) grayscale(100%);
   }
 
-  .parent-help-button:active .parent-help-icon {
+  .parent-help-button:active :global(.parent-help-icon) {
     filter: invert(0%) grayscale(100%);
   }
 
@@ -496,7 +497,7 @@
     gap: 8px;
   }
 
-  .tab-icon {
+  :global(.tab-icon) {
     width: 20px;
     height: 20px;
     flex-shrink: 0;
@@ -504,7 +505,7 @@
     transition: opacity 0.2s ease;
   }
 
-  .tab-button.active .tab-icon {
+  .tab-button.active :global(.tab-icon) {
     opacity: 1;
   }
 
@@ -687,7 +688,7 @@
     cursor: pointer;
   }
 
-  .setting-icon {
+  :global(.setting-icon) {
     width: 20px;
     height: 20px;
     flex-shrink: 0;
@@ -782,14 +783,14 @@
     text-decoration: none;
   }
 
-  .github-icon {
+  :global(.github-icon) {
     width: 20px;
     height: 20px;
     opacity: 0.8;
     transition: opacity 0.2s ease;
   }
 
-  .github-link a:hover .github-icon {
+  .github-link a:hover :global(.github-icon) {
     opacity: 1;
   }
 

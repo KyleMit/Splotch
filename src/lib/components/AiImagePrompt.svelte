@@ -1,4 +1,5 @@
 <script>
+  import Icon from './Icon.svelte';
   import { ui, closeAiPrompt } from '$lib/state/ui.svelte.js';
   import { exportCanvasBlob } from '$lib/drawing/engine.js';
   import { getActiveOverlayImage } from '$lib/drawing/overlay.js';
@@ -92,7 +93,7 @@
 >
   <div class="ai-prompt-content">
     <button class="ai-prompt-close" aria-label="Close" onclick={closeAiPrompt} disabled={generating}>
-      <img src="/icons/close.svg" alt="" />
+      <Icon name="close" class="ai-prompt-close-icon" />
     </button>
 
     <div class="ai-prompt-preview-wrap">
@@ -130,11 +131,9 @@
       onclick={handleGenerate}
       disabled={generating || !previewUrl}
     >
-      <img
-        src={generating ? '/icons/loading.svg' : '/icons/wand-stars.svg'}
-        alt=""
-        class="ai-prompt-generate-icon"
-        class:spin={generating}
+      <Icon
+        name={generating ? 'loading' : 'wand-stars'}
+        class="ai-prompt-generate-icon {generating ? 'spin' : ''}"
       />
       <span>{generating ? 'Generating…' : 'Generate'}</span>
     </button>
@@ -196,7 +195,7 @@
 
   .ai-prompt-close:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  .ai-prompt-close img {
+  :global(.ai-prompt-close-icon) {
     width: 100%;
     height: 100%;
     pointer-events: none;
@@ -204,7 +203,7 @@
     transition: filter 0.2s ease;
   }
 
-  .ai-prompt-close:hover:not(:disabled) img {
+  .ai-prompt-close:hover:not(:disabled) :global(.ai-prompt-close-icon) {
     filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
   }
 
@@ -332,14 +331,14 @@
   .ai-prompt-generate:active:not(:disabled) { transform: scale(0.98); }
   .ai-prompt-generate:disabled { opacity: 0.6; cursor: not-allowed; }
 
-  .ai-prompt-generate-icon {
+  :global(.ai-prompt-generate-icon) {
     width: 22px;
     height: 22px;
     filter: invert(100%);
   }
 
   /* aiSpin keyframe lives in app.css (shared with ActionsPanel). */
-  .ai-prompt-generate-icon.spin {
+  :global(.ai-prompt-generate-icon.spin) {
     animation: aiSpin 1s linear infinite;
   }
 </style>

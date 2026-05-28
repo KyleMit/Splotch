@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import Icon from './Icon.svelte';
   import { canvasState } from '$lib/state/canvas.svelte.js';
   import { settings } from '$lib/state/settings.svelte.js';
   import { strokeState, STROKE_SIZES, setStrokeSize } from '$lib/state/strokeWidth.svelte.js';
@@ -116,7 +117,7 @@
       aria-expanded={strokeState.menuOpen}
       onclick={handleStrokeBtnClick}
     >
-      <img src="/icons/line-weight.svg" alt="Stroke width" class="action-icon" />
+      <Icon name="line-weight" class="action-icon" />
     </button>
     <div class="stroke-width-menu" hidden={!strokeState.menuOpen}>
       {#each STROKE_SIZES as size}
@@ -127,7 +128,7 @@
           aria-pressed={strokeState.size === size}
           onclick={() => handleStrokeSizeClick(size)}
         >
-          <img src="/icons/size-{size}.svg" alt="" class="action-icon" />
+          <Icon name="size-{size}" class="action-icon" />
         </button>
       {/each}
     </div>
@@ -141,7 +142,7 @@
     onclick={handleColoringBookClick}
     bind:this={coloringBtnEl}
   >
-    <img src="/icons/shapes.svg" alt="Coloring books" class="action-icon" />
+    <Icon name="shapes" class="action-icon" />
   </button>
 
   <button
@@ -153,7 +154,7 @@
     hidden={!settings.screenshotEnabled}
     onclick={handleScreenshotClick}
   >
-    <img src="/icons/camera.svg" alt="Save screenshot" class="action-icon" />
+    <Icon name="camera" class="action-icon" />
   </button>
 
   <button
@@ -168,11 +169,7 @@
     onclick={handleAiImageClick}
     bind:this={aiBtnEl}
   >
-    <img
-      src={ui.aiGenerating ? '/icons/loading.svg' : '/icons/wand-stars.svg'}
-      alt=""
-      class="action-icon"
-    />
+    <Icon name={ui.aiGenerating ? 'loading' : 'wand-stars'} class="action-icon" />
   </button>
 
   <button
@@ -184,7 +181,7 @@
     hidden={!settings.undoButtonEnabled}
     onclick={handleUndoClick}
   >
-    <img src="/icons/undo.svg" alt="Undo" class="action-icon" />
+    <Icon name="undo" class="action-icon" />
   </button>
 </div>
 
@@ -248,21 +245,21 @@
     border-color: #e0e0e0;
   }
 
-  .action-icon {
+  :global(.action-icon) {
     width: 100%;
     height: 100%;
     pointer-events: none;
     filter: invert(12%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
   }
 
-  .action-button:disabled .action-icon,
-  .action-button.disabled .action-icon {
+  .action-button:disabled :global(.action-icon),
+  .action-button.disabled :global(.action-icon) {
     filter: invert(80%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
   }
 
   /* Spin the loading icon while AI generation is running.
      aiSpin keyframe lives in app.css since it's shared with AiImagePrompt. */
-  .action-button.loading .action-icon {
+  .action-button.loading :global(.action-icon) {
     animation: aiSpin 1s linear infinite;
   }
 
@@ -331,7 +328,7 @@
     box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
   }
 
-  .stroke-size-button.active .action-icon {
+  .stroke-size-button.active :global(.action-icon) {
     filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
   }
 </style>

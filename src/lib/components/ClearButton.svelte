@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import Icon from './Icon.svelte';
   import { clearCanvas } from '$lib/drawing/engine.js';
   import { releaseAllPointers } from '$lib/drawing/engine.js';
   import { saveDrawingIfEnabled } from '$lib/drawing/saveOnDelete.js';
@@ -241,7 +242,7 @@
     id="clearTutorial"
     onpointerdown={(e) => { e.preventDefault(); e.stopPropagation(); dismissTutorial(); }}
   >
-    <img src="/icons/arrow-down.svg" alt="Drag away" class="clear-tutorial-arrow" />
+    <Icon name="arrow-down" class="clear-tutorial-arrow" aria-label="Drag away" role="img" />
     <div class="clear-tutorial-text">drag away to clear</div>
   </div>
 
@@ -252,7 +253,7 @@
     bind:this={buttonEl}
     onpointerdown={startClearDrag}
   >
-    <img src="/icons/trash.svg" alt="Clear" class="clear-icon" />
+    <Icon name="trash" class="clear-icon" aria-hidden="true" />
   </button>
 </div>
 
@@ -304,7 +305,7 @@
     box-shadow: -6px 6px 30px rgba(0, 0, 0, 0.4);
   }
 
-  .clear-button:global(.dragging) .clear-icon {
+  .clear-button:global(.dragging) :global(.clear-icon) {
     margin-right: 0;
   }
 
@@ -314,7 +315,7 @@
     box-shadow: 0 6px 40px rgba(255, 56, 56, 0.6);
   }
 
-  .clear-icon {
+  :global(.clear-icon) {
     width: 32px;
     height: 32px;
     pointer-events: none;
@@ -425,7 +426,7 @@
     transform: translateX(20px);
   }
 
-  .clear-tutorial-arrow {
+  :global(.clear-tutorial-arrow) {
     width: 48px;
     height: 48px;
     filter: brightness(0) saturate(100%) invert(27%) sepia(98%) saturate(3347%) hue-rotate(343deg) brightness(99%) contrast(95%);
@@ -464,7 +465,7 @@
       height: 60px;
     }
 
-    .clear-icon {
+    :global(.clear-icon) {
       width: 32px;
       height: 32px;
       margin-right: 2px;
