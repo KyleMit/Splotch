@@ -2,7 +2,10 @@ import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { GoogleGenAI } from '@google/genai';
 
-const ALLOWED_TOKENS = new Set(['kyle', 'parker', 'ryan']);
+const rawTokens = env.ALLOWED_TOKENS_LIST || '';
+const tokenArray = rawTokens.split(',').map(t => t.trim());
+const ALLOWED_TOKENS = new Set(tokenArray);
+
 const MODEL = 'gemini-2.5-flash-image';
 const DEFAULT_PROMPT =
   "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel.";
