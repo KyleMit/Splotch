@@ -74,6 +74,10 @@
       y: (rect.top + rect.bottom) / 2
     });
   }
+
+  function handleAiImageClick() {
+    // TODO: generate an AI image from the current drawing
+  }
 </script>
 
 <div class="actions-panel" bind:this={panelEl} style:left="{leftOffset}px">
@@ -123,6 +127,18 @@
     onclick={handleScreenshotClick}
   >
     <img src="/icons/camera.svg" alt="Save screenshot" class="action-icon" />
+  </button>
+
+  <button
+    class="action-button"
+    class:disabled={canvasState.canvasEmpty}
+    id="aiImageButton"
+    aria-label="Create AI image"
+    disabled={canvasState.canvasEmpty}
+    hidden={!settings.aiAccessToken || !settings.aiImageEnabled}
+    onclick={handleAiImageClick}
+  >
+    <img src="/icons/wand-stars.svg" alt="Create AI image" class="action-icon" />
   </button>
 
   <button

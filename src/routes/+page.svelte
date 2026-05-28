@@ -8,8 +8,11 @@
   import ColoringBook from '$lib/components/ColoringBook.svelte';
   import ParentCenter from '$lib/components/ParentCenter.svelte';
   import { initPWAUpdates } from '$lib/pwa/updates.js';
+  import { captureAiAccessTokenFromUrl } from '$lib/state/settings.svelte.js';
 
   onMount(() => {
+    captureAiAccessTokenFromUrl();
+
     // Prevent context menu on long press
     const blockContextMenu = (e) => e.preventDefault();
     document.addEventListener('contextmenu', blockContextMenu);

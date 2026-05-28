@@ -292,6 +292,7 @@ MIT
   * [ ] Pages should be able to be favorited. First book should be favorites
   * [ ] Delete should wipe the page (or first book should be to clear the background)
 * [ ] Increase size of line thickness pop-up
+* [ ] Polaroid screenshot should be shape of canvas, maybe also add polaroid frame
 * [ ] Parent center control to increase button size
 * [ ] Svelte migration
   * [ ] review events / handlers

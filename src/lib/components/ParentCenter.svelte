@@ -8,7 +8,8 @@
     setScreenshot,
     setUndoButton,
     setStrokeWidthControl,
-    setColoringBook
+    setColoringBook,
+    setAiImage
   } from '$lib/state/settings.svelte.js';
   import { clearOverlay } from '$lib/state/coloringBook.svelte.js';
 
@@ -292,6 +293,28 @@
           </button>
         </div>
       </div>
+
+      {#if settings.aiAccessToken}
+        <div class="setting">
+          <div class="setting-toggle">
+            <label class="setting-info" for="aiImageToggle">
+              <img src="/icons/wand-stars.svg" alt="" class="setting-icon" />
+              <span class="setting-label">AI Image Button</span>
+            </label>
+            <button
+              class="toggle-switch"
+              class:active={settings.aiImageEnabled}
+              id="aiImageToggle"
+              role="switch"
+              aria-label="AI Image Button"
+              aria-checked={settings.aiImageEnabled}
+              onclick={() => setAiImage(!settings.aiImageEnabled)}
+            >
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </div>
+        </div>
+      {/if}
     </div>
 
     <footer class="parent-help-footer">
