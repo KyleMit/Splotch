@@ -298,7 +298,8 @@ function loadPaperTexture() {
   return paperTexturePromise;
 }
 
-export async function exportCanvasBlob(overlayImage = null) {
+export async function exportCanvasBlob(overlayImage = null, options = {}) {
+  const { includePaperTexture = true } = options;
   if (!canvas || canvas.width === 0 || canvas.height === 0) return null;
 
   const dpr = Math.max(window.devicePixelRatio || 1, 2);
@@ -316,12 +317,14 @@ export async function exportCanvasBlob(overlayImage = null) {
   outCtx.fillStyle = '#fcfbf8';
   outCtx.fillRect(0, 0, w, h);
 
-  const paper = await loadPaperTexture();
-  if (paper) {
-    const pattern = outCtx.createPattern(paper, 'repeat');
-    if (pattern) {
-      outCtx.fillStyle = pattern;
-      outCtx.fillRect(0, 0, w, h);
+  if (includePaperTexture) {
+    const paper = await loadPaperTexture();
+    if (paper) {
+      const pattern = outCtx.createPattern(paper, 'repeat');
+      if (pattern) {
+        outCtx.fillStyle = pattern;
+        outCtx.fillRect(0, 0, w, h);
+      }
     }
   }
 

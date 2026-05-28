@@ -2,7 +2,10 @@ export const ui = $state({
   colorPickerOpen: false,
   coloringBookOpen: false,
   parentCenterOpen: false,
-  clearTutorialVisible: false
+  clearTutorialVisible: false,
+  aiGenerating: false,
+  aiResultOpen: false,
+  aiResultUrl: null
 });
 
 export function openColorPicker(origin) {
@@ -30,4 +33,18 @@ export function openParentCenter(origin) {
 
 export function closeParentCenter() {
   ui.parentCenterOpen = false;
+}
+
+export function openAiResult(url) {
+  if (ui.aiResultUrl && ui.aiResultUrl !== url) URL.revokeObjectURL(ui.aiResultUrl);
+  ui.aiResultUrl = url;
+  ui.aiResultOpen = true;
+}
+
+export function closeAiResult() {
+  ui.aiResultOpen = false;
+  if (ui.aiResultUrl) {
+    URL.revokeObjectURL(ui.aiResultUrl);
+    ui.aiResultUrl = null;
+  }
 }
