@@ -381,3 +381,421 @@
     </footer>
   </div>
 </dialog>
+
+<style>
+  /* Trigger button (floats in the bottom-right corner) */
+  .parent-help-button {
+    position: fixed;
+    bottom: 8px;
+    right: 8px;
+    width: 48px;
+    height: 48px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #999;
+    opacity: 0.4;
+    transition: opacity 0.2s ease;
+    z-index: 900;
+    padding: 8px;
+    touch-action: manipulation;
+  }
+
+  .parent-help-button:hover {
+    opacity: 0.7;
+  }
+
+  .parent-help-button:active {
+    opacity: 1;
+  }
+
+  .parent-help-icon {
+    width: 100%;
+    height: 100%;
+    filter: invert(60%) grayscale(100%);
+  }
+
+  .parent-help-button:hover .parent-help-icon {
+    filter: invert(40%) grayscale(100%);
+  }
+
+  .parent-help-button:active .parent-help-icon {
+    filter: invert(0%) grayscale(100%);
+  }
+
+  /* Modal dialog */
+  .parent-help-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    background: white;
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .parent-help-modal::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+  }
+
+  .parent-help-modal[open] {
+    animation: dialogFlyFromOrigin 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+    transform-origin: center;
+  }
+
+  .parent-help-content {
+    padding: 32px;
+    position: relative;
+  }
+
+  .parent-help-content h2 {
+    margin: 0 0 20px 0;
+    font-size: 24px;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .parent-help-content h3 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    color: #555;
+    font-weight: 600;
+  }
+
+  /* Tab Buttons */
+  .tab-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #e0e0e0;
+  }
+
+  .tab-button {
+    flex: 1;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #999;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: -2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .tab-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+  }
+
+  .tab-button.active .tab-icon {
+    opacity: 1;
+  }
+
+  .tab-button:hover {
+    color: #666;
+    background: #f5f5f5;
+  }
+
+  .tab-button.active {
+    color: #AB71E1;
+    border-bottom-color: #AB71E1;
+  }
+
+  /* Tab Content */
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  .help-section {
+    margin-bottom: 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .help-section:last-of-type {
+    margin-bottom: 0;
+  }
+
+  .help-section summary {
+    padding: 16px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #555;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    background: #f8f8f8;
+    transition: background 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+  }
+
+  .help-section summary:hover {
+    background: #f0f0f0;
+  }
+
+  .help-section summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .help-section summary::after {
+    content: '›';
+    font-size: 24px;
+    color: #999;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .help-section[open] summary::after {
+    transform: rotate(90deg);
+  }
+
+  .os-section + .os-section {
+    margin-top: 20px;
+  }
+
+  .os-heading {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+
+  .summary-text {
+    flex: 1;
+    text-align: left;
+  }
+
+  .section-number {
+    color: #AB71E1;
+    margin-right: 8px;
+  }
+
+  .install-check {
+    color: #4CAF50;
+    font-weight: bold;
+    margin-left: 8px;
+    font-size: 20px;
+  }
+
+  .help-section ol {
+    padding: 16px 24px 16px 40px;
+    margin: 0;
+    color: #666;
+    line-height: 1.8;
+  }
+
+  .parent-help-content li {
+    margin-bottom: 8px;
+  }
+
+  .parent-help-content li:last-child {
+    margin-bottom: 0;
+  }
+
+  .parent-help-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    font-size: 32px;
+    line-height: 32px;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s ease;
+  }
+
+  .parent-help-close:hover {
+    color: #666;
+  }
+
+  /* Settings */
+  .setting-group {
+    margin-bottom: 24px;
+  }
+
+  .setting-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .setting-group .setting + .setting {
+    margin-top: 6px;
+  }
+
+  h3.setting-group-heading {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+
+  .setting {
+    padding: 12px 16px;
+    background: #f8f8f8;
+    border-radius: 8px;
+  }
+
+  .setting-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .setting-help {
+    margin: 6px 0 0 30px;
+    font-size: 13px;
+    color: #777;
+    line-height: 1.4;
+  }
+
+  .setting-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .setting-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .setting-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+  }
+
+  /* iOS-style toggle switch (boolean settings) */
+  .toggle-switch {
+    width: 52px;
+    height: 32px;
+    background: #ddd;
+    border: none;
+    border-radius: 999px;
+    padding: 0;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .toggle-switch:hover {
+    background: #ccc;
+  }
+
+  .toggle-switch.active {
+    background: #AB71E1;
+  }
+
+  .toggle-switch.active:hover {
+    background: #9961d1;
+  }
+
+  .toggle-switch-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 26px;
+    height: 26px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+  }
+
+  .toggle-switch.active .toggle-switch-thumb {
+    transform: translateX(20px);
+  }
+
+  .parent-help-footer {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+  }
+
+  .parent-help-footer p {
+    margin: 0 0 8px 0;
+  }
+
+  .parent-help-footer a {
+    color: #AB71E1;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .parent-help-footer a:hover {
+    text-decoration: underline;
+  }
+
+  .github-link {
+    margin: 12px 0 !important;
+  }
+
+  .github-link a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #666;
+    font-size: 14px;
+    transition: color 0.2s ease;
+  }
+
+  .github-link a:hover {
+    color: #333;
+    text-decoration: none;
+  }
+
+  .github-icon {
+    width: 20px;
+    height: 20px;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+  }
+
+  .github-link a:hover .github-icon {
+    opacity: 1;
+  }
+
+  .version-text {
+    font-size: 12px;
+    color: #bbb;
+    font-family: 'Courier New', monospace;
+  }
+</style>

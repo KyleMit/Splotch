@@ -185,3 +185,125 @@
     bind:this={swatchEls[CUSTOM_SWATCH]}
   ></button>
 </div>
+
+<style>
+  .color-palette {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    justify-items: center;
+    align-content: center;
+    gap: 12px;
+    padding: 12px;
+    background: white;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 1002; /* Above clear-accept-zone (1001) */
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    touch-action: manipulation; /* Prevent iOS gesture delays */
+  }
+
+  .color-swatch {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border: 4px solid transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    touch-action: manipulation; /* Prevent iOS gesture delays */
+  }
+
+  .color-swatch:active {
+    transform: scale(0.9);
+  }
+
+  .color-swatch.active {
+    border-color: white;
+    /* Selection Ring is set dynamically via JavaScript to match swatch color */
+  }
+
+  /* Selection-confirmation flourish: a ring that expands from the center
+     out to the resting selection-ring position. Skipped on the gradient
+     swatch (which has its own ::after content). */
+  .color-swatch:not(.gradient-swatch)::before {
+    content: '';
+    position: absolute;
+    inset: -4.5px;
+    border-radius: 50%;
+    border: 4.5px solid var(--ring-color, transparent);
+    box-sizing: border-box;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0);
+  }
+
+  .color-swatch.ring-animate:not(.gradient-swatch)::before {
+    animation: swatch-ring-expand 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes swatch-ring-expand {
+    0% {
+      transform: scale(0);
+      opacity: 0;
+    }
+    40% {
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 0;
+    }
+  }
+
+  .gradient-swatch {
+    background: conic-gradient(
+      from 0deg at 50% 50%,
+      #EC534E 0deg,
+      #F89C45 60deg,
+      #F9D24F 120deg,
+      #8CC864 180deg,
+      #62A2E9 240deg,
+      #AB71E1 300deg,
+      #EC534E 360deg
+    ) !important;
+    position: relative;
+    border-color: white !important;
+  }
+
+  .gradient-swatch::after {
+    content: '+';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+  }
+
+  @media (orientation: portrait) {
+    .color-palette {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      width: 100%;
+      height: auto;
+      padding: 10px;
+      gap: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      overflow-x: hidden;
+      overflow-y: visible;
+      flex-wrap: nowrap;
+    }
+
+    .color-swatch {
+      width: 55px;
+      height: 55px;
+      flex-shrink: 0;
+    }
+  }
+</style>

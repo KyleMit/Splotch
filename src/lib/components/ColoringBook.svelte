@@ -121,3 +121,192 @@
     {/if}
   </div>
 </dialog>
+
+<style>
+  .coloring-book-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    background: white;
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    max-width: 640px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .coloring-book-modal::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .coloring-book-modal[open] {
+    animation: dialogFlyFromOrigin 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+    transform-origin: center;
+  }
+
+  .coloring-book-content {
+    padding: 32px;
+    position: relative;
+  }
+
+  .coloring-book-content h2 {
+    margin: 0 0 20px 0;
+    font-size: 24px;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .coloring-book-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s ease;
+    z-index: 1;
+  }
+
+  .coloring-book-close img {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    filter: invert(60%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(85%);
+    transition: filter 0.2s ease;
+  }
+
+  .coloring-book-close:hover img {
+    filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
+  }
+
+  .coloring-book-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .coloring-book-header h2 {
+    margin: 0;
+  }
+
+  .coloring-back-button {
+    width: 36px;
+    height: 36px;
+    background: #f5f5f5;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    transition: background 0.2s ease;
+  }
+
+  .coloring-back-button img {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    filter: invert(35%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(85%);
+    transition: filter 0.2s ease;
+  }
+
+  .coloring-back-button:hover {
+    background: #ede7f6;
+  }
+
+  .coloring-back-button:hover img {
+    filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
+  }
+
+  .coloring-grid {
+    display: grid;
+    gap: 12px;
+  }
+
+  .coloring-books-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  .coloring-pages-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (orientation: portrait) {
+    .coloring-pages-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .coloring-tile {
+    position: relative;
+    background: #f8f8f8;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    cursor: pointer;
+    overflow: hidden;
+    padding: 0;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    touch-action: manipulation;
+  }
+
+  .coloring-tile:hover {
+    border-color: #AB71E1;
+    background: #f5f0ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(171, 113, 225, 0.25);
+  }
+
+  .coloring-tile:active {
+    transform: scale(0.96);
+  }
+
+  .coloring-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 8px;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+  }
+
+  .coloring-tile.coloring-remove-tile img {
+    height: 75%;
+  }
+
+  .coloring-book-tile img {
+    padding: 8px 8px 28px 8px;
+  }
+
+  .coloring-book-label {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.92);
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    text-align: center;
+  }
+</style>

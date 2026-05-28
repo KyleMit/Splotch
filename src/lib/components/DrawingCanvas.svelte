@@ -58,3 +58,50 @@
   />
   <canvas bind:this={canvasEl} id="drawingCanvas" tabindex="0"></canvas>
 </div>
+
+<style>
+  .canvas-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  #drawingCanvas {
+    display: block;
+    cursor: crosshair;
+    touch-action: none;
+    width: 100%;
+    height: 100%;
+    background-color: #fcfbf8;
+    background-image: url('/icons/handmade-paper.png');
+    background-repeat: repeat;
+    outline: none; /* Remove focus outline */
+  }
+
+  .coloring-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    z-index: 2;
+    mix-blend-mode: multiply;
+  }
+
+  .coloring-overlay[hidden] {
+    display: none;
+  }
+
+  @media (orientation: portrait) {
+    .canvas-container {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+    }
+  }
+</style>
