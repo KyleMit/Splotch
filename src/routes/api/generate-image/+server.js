@@ -3,9 +3,17 @@ import { env } from '$env/dynamic/private';
 import { GoogleGenAI } from '@google/genai';
 
 const ALLOWED_TOKENS = new Set(['kyle', 'parker', 'ryan']);
-const ALLOWED_STYLES = new Set(['Watercolor', 'Felted', 'Crayons']);
 const MODEL = 'gemini-2.5-flash-image';
-const DEFAULT_PROMPT = "Create a cute scene or character based on this child's drawing";
+const DEFAULT_PROMPT =
+  "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel.";
+
+const STYLE_SUFFIXES = {
+  Watercolor: 'Render the final image as a soft watercolor painting with gentle washes and bleeding edges.',
+  Crayon: 'Render the final image as a vibrant crayon drawing on lightly textured paper.',
+  'Felt Craft': 'Render the final image as a handmade felt craft scene, with fuzzy 3D fabric textures.',
+  Claymation: 'Render the final image as a claymation scene with sculpted clay characters on a tabletop set.',
+  Storybook: "Render the final image in the style of a classic children's storybook illustration."
+};
 
 export async function POST({ request }) {
   const form = await request.formData();
@@ -24,13 +32,14 @@ export async function POST({ request }) {
     throw error(500, 'Server is missing GEMINI_API_KEY');
   }
 
-  const basePrompt =
+  const rawBase =
     typeof customPrompt === 'string' && customPrompt.trim()
       ? customPrompt.trim()
       : DEFAULT_PROMPT;
+  const basePrompt = /[.!?]$/.test(rawBase) ? rawBase : rawBase + '.';
   const styleSuffix =
-    typeof style === 'string' && ALLOWED_STYLES.has(style)
-      ? ` Render it in a ${style} style.`
+    typeof style === 'string' && Object.hasOwn(STYLE_SUFFIXES, style)
+      ? ' ' + STYLE_SUFFIXES[style]
       : '';
   const finalPrompt = basePrompt + styleSuffix;
 

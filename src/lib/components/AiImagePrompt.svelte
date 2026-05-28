@@ -4,8 +4,9 @@
   import { getActiveOverlayImage } from '$lib/drawing/overlay.js';
   import { generateAiImage } from '$lib/drawing/aiImage.js';
 
-  const DEFAULT_PROMPT = "Create a cute scene or character based on this child's drawing";
-  const STYLES = ['Watercolor', 'Felted', 'Crayons'];
+  const DEFAULT_PROMPT =
+    "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel.";
+  const STYLES = ['Watercolor', 'Crayon', 'Felt Craft', 'Claymation', 'Storybook'];
 
   let dialogEl;
   let previewUrl = $state(null);
