@@ -114,12 +114,22 @@ function startDrawing(e) {
     activePointerIds.add(e.pointerId);
   }
 
+  const dotRadius = currentLineWidth / 2;
+
   ctx.strokeStyle = currentColor;
+  ctx.fillStyle = currentColor;
+  ctx.beginPath();
+  ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+  ctx.fill();
   ctx.beginPath();
   ctx.moveTo(x, y);
 
   if (virtualCtx) {
     virtualCtx.strokeStyle = currentColor;
+    virtualCtx.fillStyle = currentColor;
+    virtualCtx.beginPath();
+    virtualCtx.arc(x, y, dotRadius, 0, Math.PI * 2);
+    virtualCtx.fill();
     virtualCtx.beginPath();
     virtualCtx.moveTo(x, y);
   }
