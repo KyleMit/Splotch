@@ -74,6 +74,13 @@ npm run build
 npm run preview
 ```
 
+## Image Optimization
+
+Convert unoptimized file formats before committing
+
+```bash
+node scripts/png-to-webp.mjs
+```
 
 ## Deployment
 
