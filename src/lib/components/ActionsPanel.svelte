@@ -49,27 +49,19 @@
     };
   });
 
-  function handleUndoUp(e) {
-    e.preventDefault();
-    e.stopPropagation();
+  function handleUndoClick() {
     if (canvasState.canUndo) undo();
   }
 
-  function handleScreenshotUp(e) {
-    e.preventDefault();
-    e.stopPropagation();
+  function handleScreenshotClick() {
     if (!canvasState.canvasEmpty) saveScreenshot();
   }
 
-  function handleStrokeBtnUp(e) {
-    e.preventDefault();
-    e.stopPropagation();
+  function handleStrokeBtnClick() {
     strokeState.menuOpen = !strokeState.menuOpen;
   }
 
-  function handleStrokeSizeUp(e, size) {
-    e.preventDefault();
-    e.stopPropagation();
+  function handleStrokeSizeClick(size) {
     setStrokeSize(size);
     strokeState.menuOpen = false;
   }
@@ -82,8 +74,6 @@
       y: (rect.top + rect.bottom) / 2
     });
   }
-
-  const stopPointerDown = (e) => { e.preventDefault(); e.stopPropagation(); };
 </script>
 
 <div class="actions-panel" bind:this={panelEl} style:left="{leftOffset}px">
@@ -93,8 +83,7 @@
       id="strokeWidthButton"
       aria-label="Stroke width"
       aria-expanded={strokeState.menuOpen}
-      onpointerdown={stopPointerDown}
-      onpointerup={handleStrokeBtnUp}
+      onclick={handleStrokeBtnClick}
     >
       <img src="/icons/line-weight.svg" alt="Stroke width" class="action-icon" />
     </button>
@@ -105,8 +94,7 @@
           class:active={strokeState.size === size}
           aria-label="Size {size}"
           aria-pressed={strokeState.size === size}
-          onpointerdown={stopPointerDown}
-          onpointerup={(e) => handleStrokeSizeUp(e, size)}
+          onclick={() => handleStrokeSizeClick(size)}
         >
           <img src="/icons/size-{size}.svg" alt="" class="action-icon" />
         </button>
@@ -132,8 +120,7 @@
     aria-label="Save screenshot"
     disabled={canvasState.canvasEmpty}
     hidden={!settings.screenshotEnabled}
-    onpointerdown={stopPointerDown}
-    onpointerup={handleScreenshotUp}
+    onclick={handleScreenshotClick}
   >
     <img src="/icons/camera.svg" alt="Save screenshot" class="action-icon" />
   </button>
@@ -145,8 +132,7 @@
     aria-label="Undo"
     disabled={!canvasState.canUndo}
     hidden={!settings.undoButtonEnabled}
-    onpointerdown={stopPointerDown}
-    onpointerup={handleUndoUp}
+    onclick={handleUndoClick}
   >
     <img src="/icons/undo.svg" alt="Undo" class="action-icon" />
   </button>

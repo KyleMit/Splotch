@@ -290,6 +290,11 @@ MIT
   * [ ] Delete should wipe the page (or first book should be to clear the background)
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * [ ] Efficiently pick colors on small devices
+* [ ] Smoothing algorithm for lines (get rid of rasterization)
+* [ ] Apply paper texture on screenshot
+* [ ] Increase size of line thickness pop-up
+* [ ] Parent center control to increase button size
+* [ ] screenshot expands back into camera instead of into delete button
 * [ ] Bugs
   * [ ] Make sure we can refresh PWA
   * [ ] It takes about 10s on ios for the pencil sounds to come in
