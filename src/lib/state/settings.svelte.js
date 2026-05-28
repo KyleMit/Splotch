@@ -7,6 +7,7 @@ const UNDO_KEY = 'splotch-undo-button-enabled';
 const STROKE_CTRL_KEY = 'splotch-stroke-width-control';
 const COLORING_BOOK_KEY = 'splotch-coloring-book-enabled';
 const AI_IMAGE_KEY = 'splotch-ai-image-enabled';
+const AI_CUSTOMIZATION_KEY = 'splotch-ai-customization-enabled';
 const AI_ACCESS_TOKEN_KEY = 'splotch-ai-access-token';
 const AI_ACCESS_TOKEN_PARAM = 'ai_access_token';
 
@@ -18,6 +19,7 @@ export const settings = $state({
   strokeWidthControlEnabled: readBool(STROKE_CTRL_KEY, true),
   coloringBookEnabled: readBool(COLORING_BOOK_KEY, true),
   aiImageEnabled: readBool(AI_IMAGE_KEY, true),
+  aiCustomizationEnabled: readBool(AI_CUSTOMIZATION_KEY, true),
   aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, '')
 });
 
@@ -28,6 +30,7 @@ export function setUndoButton(v) { settings.undoButtonEnabled = v; writeBool(UND
 export function setStrokeWidthControl(v) { settings.strokeWidthControlEnabled = v; writeBool(STROKE_CTRL_KEY, v); }
 export function setColoringBook(v) { settings.coloringBookEnabled = v; writeBool(COLORING_BOOK_KEY, v); }
 export function setAiImage(v) { settings.aiImageEnabled = v; writeBool(AI_IMAGE_KEY, v); }
+export function setAiCustomization(v) { settings.aiCustomizationEnabled = v; writeBool(AI_CUSTOMIZATION_KEY, v); }
 export function setAiAccessToken(v) { settings.aiAccessToken = v; writeString(AI_ACCESS_TOKEN_KEY, v); }
 
 export function captureAiAccessTokenFromUrl() {

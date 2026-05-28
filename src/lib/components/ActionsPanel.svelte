@@ -6,6 +6,7 @@
   import { ui, openColoringBook, openAiPrompt } from '$lib/state/ui.svelte.js';
   import { undo } from '$lib/drawing/engine.js';
   import { saveScreenshot } from '$lib/drawing/screenshot.js';
+  import { generateAiImage } from '$lib/drawing/aiImage.js';
 
   let panelEl;
   let strokeWrapperEl;
@@ -76,13 +77,24 @@
     });
   }
 
-  function handleAiImageClick() {
+  async function handleAiImageClick() {
     if (ui.aiGenerating || canvasState.canvasEmpty || !aiBtnEl) return;
-    const rect = aiBtnEl.getBoundingClientRect();
-    openAiPrompt({
-      x: (rect.left + rect.right) / 2,
-      y: (rect.top + rect.bottom) / 2
-    });
+
+    if (settings.aiCustomizationEnabled) {
+      const rect = aiBtnEl.getBoundingClientRect();
+      openAiPrompt({
+        x: (rect.left + rect.right) / 2,
+        y: (rect.top + rect.bottom) / 2
+      });
+      return;
+    }
+
+    try {
+      await generateAiImage();
+    } catch (err) {
+      console.error(err);
+      alert("Sorry, that didn't work. Please try again.");
+    }
   }
 </script>
 

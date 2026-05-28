@@ -1,8 +1,8 @@
 <script>
-  import { ui, closeAiPrompt, openAiResult } from '$lib/state/ui.svelte.js';
-  import { settings } from '$lib/state/settings.svelte.js';
+  import { ui, closeAiPrompt } from '$lib/state/ui.svelte.js';
   import { exportCanvasBlob } from '$lib/drawing/engine.js';
   import { getActiveOverlayImage } from '$lib/drawing/overlay.js';
+  import { generateAiImage } from '$lib/drawing/aiImage.js';
 
   const DEFAULT_PROMPT = "Create a cute scene or character based on this child's drawing";
   const STYLES = ['Watercolor', 'Felted', 'Crayons'];
@@ -54,28 +54,14 @@
     if (generating || !drawingBlob) return;
     generating = true;
     errorMsg = null;
-    ui.aiGenerating = true;
     try {
-      const form = new FormData();
-      form.append('token', settings.aiAccessToken);
-      form.append('image', drawingBlob, 'drawing.png');
-      if (prompt.trim()) form.append('prompt', prompt.trim());
-      if (style) form.append('style', style);
-
-      const res = await fetch('/api/generate-image', { method: 'POST', body: form });
-      if (!res.ok) {
-        const msg = await res.text().catch(() => '');
-        throw new Error(`AI image request failed (${res.status}): ${msg}`);
-      }
-      const outBlob = await res.blob();
-      openAiResult(URL.createObjectURL(outBlob));
+      await generateAiImage({ blob: drawingBlob, prompt: prompt.trim(), style });
       closeAiPrompt();
     } catch (err) {
       console.error(err);
       errorMsg = "Sorry, that didn't work. Please try again.";
     } finally {
       generating = false;
-      ui.aiGenerating = false;
     }
   }
 

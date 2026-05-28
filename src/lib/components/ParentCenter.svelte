@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { slide } from 'svelte/transition';
   import { ui, openParentCenter, closeParentCenter } from '$lib/state/ui.svelte.js';
   import {
     settings,
@@ -9,7 +10,8 @@
     setUndoButton,
     setStrokeWidthControl,
     setColoringBook,
-    setAiImage
+    setAiImage,
+    setAiCustomization
   } from '$lib/state/settings.svelte.js';
   import { clearOverlay } from '$lib/state/coloringBook.svelte.js';
 
@@ -314,6 +316,28 @@
             </button>
           </div>
         </div>
+
+        {#if settings.aiImageEnabled}
+          <div class="setting" transition:slide={{ duration: 220 }}>
+            <div class="setting-toggle">
+              <label class="setting-info" for="aiCustomizationToggle">
+                <img src="/icons/customize.svg" alt="" class="setting-icon" />
+                <span class="setting-label">AI Customization</span>
+              </label>
+              <button
+                class="toggle-switch"
+                class:active={settings.aiCustomizationEnabled}
+                id="aiCustomizationToggle"
+                role="switch"
+                aria-label="AI Customization"
+                aria-checked={settings.aiCustomizationEnabled}
+                onclick={() => setAiCustomization(!settings.aiCustomizationEnabled)}
+              >
+                <span class="toggle-switch-thumb"></span>
+              </button>
+            </div>
+          </div>
+        {/if}
       {/if}
     </div>
 

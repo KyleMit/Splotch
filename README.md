@@ -297,6 +297,7 @@ MIT
 * [ ] Polaroid screenshot should be shape of canvas, maybe also add polaroid frame
 * [ ] Parent center control to increase button size
 * [ ] Make control-z on desktop also perform an undo action
+* [ ] Make the secrets part of the env variable too (right now, they're public in git)
 * [ ] Svelte migration
   * [ ] review events / handlers
   * [ ] move CSS into components
