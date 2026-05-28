@@ -1,10 +1,38 @@
 import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { GoogleGenAI } from '@google/genai';
+import { getStore } from '@netlify/blobs';
 
 const rawTokens = env.ALLOWED_TOKENS_LIST || '';
 const tokenArray = rawTokens.split(',').map(t => t.trim());
 const ALLOWED_TOKENS = new Set(tokenArray);
+
+/**
+ * Record that a token generated an image, so we can spot a token going rogue.
+ * Logs to the Netlify function log (real-time) and keeps a durable per-token
+ * tally in Netlify Blobs (dashboard → Blobs → "ai-usage") that we can audit
+ * later and use to decide which token to pull from ALLOWED_TOKENS_LIST.
+ */
+async function recordUsage(token, { style, prompt }) {
+  const now = new Date().toISOString();
+  console.log(`[ai-usage] token=${token} style=${style || 'none'} prompt=${JSON.stringify(prompt)} at=${now}`);
+
+  try {
+    const store = getStore('ai-usage');
+    const prev = (await store.get(token, { type: 'json' })) || {};
+    await store.setJSON(token, {
+      count: (prev.count || 0) + 1,
+      firstUsed: prev.firstUsed || now,
+      lastUsed: now,
+      lastStyle: style || null,
+      lastPrompt: prompt
+    });
+  } catch (err) {
+    // Blobs is only wired up in the Netlify runtime; don't fail the request
+    // (e.g. during local `vite dev`) just because usage couldn't be persisted.
+    console.warn('[ai-usage] failed to persist usage to Netlify Blobs:', err?.message ?? err);
+  }
+}
 
 const MODEL = 'gemini-2.5-flash-image';
 const DEFAULT_PROMPT =
@@ -45,6 +73,8 @@ export async function POST({ request }) {
       ? ' ' + STYLE_SUFFIXES[style]
       : '';
   const finalPrompt = basePrompt + styleSuffix;
+
+  await recordUsage(token, { style, prompt: finalPrompt });
 
   const inputBytes = new Uint8Array(await imageFile.arrayBuffer());
   const inputBase64 = Buffer.from(inputBytes).toString('base64');

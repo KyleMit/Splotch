@@ -95,6 +95,32 @@ netlify deploy --prod
 ```
 
 
+## AI Image Generation
+
+The "AI-ify" feature re-imagines a child's drawing as a polished illustration via the Gemini API. Because this calls a paid model, access is gated behind a token.
+
+### Granting access
+
+* The server reads a comma-separated allowlist from the `ALLOWED_TOKENS_LIST` environment variable (set alongside `GEMINI_API_KEY`).
+* To grant a user access, append one of those tokens to the app URL as the `ai_access_token` query param:
+
+  ```none
+  https://splotch.art/?ai_access_token=YOUR_TOKEN
+  ```
+
+* On load, the app captures the token, saves it to local storage, and strips the param from the URL (via `history.replaceState`) so it isn't left visible or shared accidentally.
+* Each AI image request sends the stored token, which the server validates against `ALLOWED_TOKENS_LIST` before calling Gemini. Requests with a missing or unknown token are rejected with a `403`.
+
+### Monitoring usage
+
+Every generation is attributed to the token that triggered it, so you can spot a token going rogue and pull it from `ALLOWED_TOKENS_LIST`:
+
+* **Netlify function logs** (real-time) — each request logs an `[ai-usage] token=… style=… prompt=… at=…` line, viewable under **Netlify dashboard → Functions → Logs**.
+* **Netlify Blobs** (durable, auditable) — a running per-token tally (`count`, `firstUsed`, `lastUsed`, `lastStyle`, `lastPrompt`) is kept in the `ai-usage` blob store, viewable under **Netlify dashboard → Blobs**.
+
+Note: all AI requests share a single `GEMINI_API_KEY`, so Google's own usage dashboard shows total spend only — it can't break usage down by `ai_access_token`. That attribution happens app-side via the logging above.
+
+
 ## License
 
 MIT
@@ -159,8 +185,8 @@ MIT
 * [x] Make the secrets part of the env variable too (right now, they're public in git)
 * [x] move CSS into component scoped styles
 * [x] Make sure SVGs are handled efficiently.  Inline if possible.
-* [ ] Log usages of `ai_access_token`
-* [ ] Add note about `ai_access_token` to readme
+* [x] Log usages of `ai_access_token`
+* [x] Add note about `ai_access_token` to readme
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
   * [x] Make sure white backgrounds become transparent

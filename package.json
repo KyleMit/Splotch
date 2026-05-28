@@ -16,6 +16,7 @@
     "vite-plugin-pwa": "^0.20.0"
   },
   "dependencies": {
-    "@google/genai": "^2.6.0"
+    "@google/genai": "^2.6.0",
+    "@netlify/blobs": "^10.7.8"
   }
 }
