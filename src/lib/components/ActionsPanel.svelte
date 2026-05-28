@@ -44,10 +44,19 @@
     };
     document.addEventListener('pointerdown', onDocPointerDown);
 
+    const onKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        handleUndoClick();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+
     return () => {
       window.removeEventListener('resize', updatePanelPosition);
       window.removeEventListener('orientationchange', updatePanelPosition);
       document.removeEventListener('pointerdown', onDocPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
     };
   });
 

@@ -283,6 +283,9 @@ MIT
 * [x] screenshot expands back into camera instead of into delete button
 * [x] AI-ify button
 * [x] Separate out parent center buttons into settings / controls
+* [x] Make control-z on desktop also perform an undo action
+* [x] Make the secrets part of the env variable too (right now, they're public in git)
+* [x] move CSS into component scoped styles
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
   * [x] Make sure white backgrounds become transparent
@@ -296,13 +299,10 @@ MIT
 * [ ] Make sure SVGs are handled efficiently.  Inline if possible.
 * [ ] Polaroid screenshot should be shape of canvas, maybe also add polaroid frame
 * [ ] Parent center control to increase button size
-* [ ] Make control-z on desktop also perform an undo action
-* [ ] Make the secrets part of the env variable too (right now, they're public in git)
 * [ ] Svelte migration
   * [ ] review events / handlers
-  * [ ] move CSS into components
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
-* [ ] Efficiently pick colors on small devices
+* [ ] Efficiently layout broad range of colors on small devices
 * [ ] Bugs
   * [ ] Make sure we can refresh PWA
   * [ ] It takes about 10s on ios for the pencil sounds to come in
