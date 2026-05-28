@@ -295,6 +295,9 @@ MIT
 * [ ] Increase size of line thickness pop-up
 * [ ] Parent center control to increase button size
 * [ ] screenshot expands back into camera instead of into delete button
+* [ ] Svelte migration
+  * [ ] review events / handlers
+  * [ ] move CSS into components
 * [ ] Bugs
   * [ ] Make sure we can refresh PWA
   * [ ] It takes about 10s on ios for the pencil sounds to come in

@@ -291,6 +291,8 @@ export function exportCanvasBlob(overlayImage = null) {
   outCtx.fillStyle = '#fcfbf8';
   outCtx.fillRect(0, 0, out.width, out.height);
 
+  outCtx.drawImage(canvas, 0, 0);
+
   if (overlayImage && overlayImage.naturalWidth > 0 && overlayImage.naturalHeight > 0) {
     const scale = Math.min(
       out.width / overlayImage.naturalWidth,
@@ -304,8 +306,6 @@ export function exportCanvasBlob(overlayImage = null) {
     outCtx.drawImage(overlayImage, offsetX, offsetY, drawnW, drawnH);
     outCtx.globalCompositeOperation = 'source-over';
   }
-
-  outCtx.drawImage(canvas, 0, 0);
 
   return new Promise((resolve) => out.toBlob(resolve, 'image/png'));
 }
