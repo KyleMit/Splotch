@@ -280,6 +280,7 @@ MIT
 * [x] Add control for Stoke width
 * [x] Apply paper texture on screenshot
 * [x] Smoothing algorithm for lines (get rid of rasterization)
+* [x] screenshot expands back into camera instead of into delete button
 * [ ] AI-ify button
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
@@ -292,7 +293,6 @@ MIT
   * [ ] Delete should wipe the page (or first book should be to clear the background)
 * [ ] Increase size of line thickness pop-up
 * [ ] Parent center control to increase button size
-* [ ] screenshot expands back into camera instead of into delete button
 * [ ] Svelte migration
   * [ ] review events / handlers
   * [ ] move CSS into components

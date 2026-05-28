@@ -703,12 +703,10 @@ body {
 
 .polaroid-frame {
   /* --from-x/y: offset from viewport center to the camera button.
-     --to-x/y:   offset from viewport center to a point just inside the
-                 top-right corner (where the photo shrinks away to). */
+     The photo flies in from there, settles in the middle, and shrinks
+     back into the same point. */
   --from-x: 0px;
   --from-y: 0px;
-  --to-x: calc(50vw - 40px);
-  --to-y: calc(-50vh + 40px);
 
   background: #fdfcf7;
   padding: 16px 16px 64px 16px;
@@ -754,7 +752,7 @@ body {
     opacity: 1;
   }
   100% {
-    transform: translate(var(--to-x), var(--to-y)) scale(0.08) rotate(12deg);
+    transform: translate(var(--from-x), var(--from-y)) scale(0.1) rotate(-18deg);
     opacity: 0;
   }
 }
