@@ -232,6 +232,7 @@
               <span class="toggle-switch-thumb"></span>
             </button>
           </div>
+          <p class="setting-help">Saves the current drawing each time the page is cleared</p>
         </div>
       </section>
 

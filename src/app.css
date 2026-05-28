@@ -1054,6 +1054,13 @@ h3.setting-group-heading {
   align-items: center;
 }
 
+.setting-help {
+  margin: 6px 0 0 30px;
+  font-size: 13px;
+  color: #777;
+  line-height: 1.4;
+}
+
 .setting-info {
   display: flex;
   align-items: center;
