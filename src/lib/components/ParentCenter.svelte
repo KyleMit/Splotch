@@ -176,168 +176,180 @@
     </div>
 
     <div class="tab-content" class:active={activeTab === 'settings'}>
-      <div class="setting">
-        <div class="setting-toggle">
-          <label class="setting-info" for="soundToggle">
-            <img src="/icons/volume-on.svg" alt="" class="setting-icon" />
-            <span class="setting-label">Drawing Sounds</span>
-          </label>
-          <button
-            class="toggle-switch"
-            class:active={settings.soundEnabled}
-            id="soundToggle"
-            role="switch"
-            aria-label="Drawing Sounds"
-            aria-checked={settings.soundEnabled}
-            onclick={() => setSound(!settings.soundEnabled)}
-          >
-            <span class="toggle-switch-thumb"></span>
-          </button>
-        </div>
-      </div>
+      <section class="setting-group">
+        <h3 class="setting-group-heading">Settings</h3>
 
-      <div class="setting">
-        <div class="setting-toggle">
-          <label class="setting-info" for="strokeWidthToggle">
-            <img src="/icons/line-weight.svg" alt="" class="setting-icon" />
-            <span class="setting-label">Stroke Width Button</span>
-          </label>
-          <button
-            class="toggle-switch"
-            class:active={settings.strokeWidthControlEnabled}
-            id="strokeWidthToggle"
-            role="switch"
-            aria-label="Stroke Width Button"
-            aria-checked={settings.strokeWidthControlEnabled}
-            onclick={() => setStrokeWidthControl(!settings.strokeWidthControlEnabled)}
-          >
-            <span class="toggle-switch-thumb"></span>
-          </button>
-        </div>
-      </div>
-
-      <div class="setting">
-        <div class="setting-toggle">
-          <label class="setting-info" for="coloringBookToggle">
-            <img src="/icons/shapes.svg" alt="" class="setting-icon" />
-            <span class="setting-label">Coloring Book Button</span>
-          </label>
-          <button
-            class="toggle-switch"
-            class:active={settings.coloringBookEnabled}
-            id="coloringBookToggle"
-            role="switch"
-            aria-label="Coloring Book Button"
-            aria-checked={settings.coloringBookEnabled}
-            onclick={toggleColoringBook}
-          >
-            <span class="toggle-switch-thumb"></span>
-          </button>
-        </div>
-      </div>
-
-      <div class="setting">
-        <div class="setting-toggle">
-          <label class="setting-info" for="saveOnDeleteToggle">
-            <img src="/icons/camera-party.svg" alt="" class="setting-icon" />
-            <span class="setting-label">Auto-Save on Delete</span>
-          </label>
-          <button
-            class="toggle-switch"
-            class:active={settings.saveOnDeleteEnabled}
-            id="saveOnDeleteToggle"
-            role="switch"
-            aria-label="Auto-Save on Delete"
-            aria-checked={settings.saveOnDeleteEnabled}
-            onclick={() => setSaveOnDelete(!settings.saveOnDeleteEnabled)}
-          >
-            <span class="toggle-switch-thumb"></span>
-          </button>
-        </div>
-      </div>
-
-      <div class="setting">
-        <div class="setting-toggle">
-          <label class="setting-info" for="screenshotToggle">
-            <img src="/icons/camera.svg" alt="" class="setting-icon" />
-            <span class="setting-label">Screenshot Button</span>
-          </label>
-          <button
-            class="toggle-switch"
-            class:active={settings.screenshotEnabled}
-            id="screenshotToggle"
-            role="switch"
-            aria-label="Screenshot Button"
-            aria-checked={settings.screenshotEnabled}
-            onclick={() => setScreenshot(!settings.screenshotEnabled)}
-          >
-            <span class="toggle-switch-thumb"></span>
-          </button>
-        </div>
-      </div>
-
-      <div class="setting">
-        <div class="setting-toggle">
-          <label class="setting-info" for="undoToggle">
-            <img src="/icons/undo.svg" alt="" class="setting-icon" />
-            <span class="setting-label">Undo Button</span>
-          </label>
-          <button
-            class="toggle-switch"
-            class:active={settings.undoButtonEnabled}
-            id="undoToggle"
-            role="switch"
-            aria-label="Undo Button"
-            aria-checked={settings.undoButtonEnabled}
-            onclick={() => setUndoButton(!settings.undoButtonEnabled)}
-          >
-            <span class="toggle-switch-thumb"></span>
-          </button>
-        </div>
-      </div>
-
-      {#if settings.aiAccessToken}
         <div class="setting">
           <div class="setting-toggle">
-            <label class="setting-info" for="aiImageToggle">
-              <img src="/icons/wand-stars.svg" alt="" class="setting-icon" />
-              <span class="setting-label">AI Image Button</span>
+            <label class="setting-info" for="soundToggle">
+              <img src="/icons/volume-on.svg" alt="" class="setting-icon" />
+              <span class="setting-label">Drawing Sounds</span>
             </label>
             <button
               class="toggle-switch"
-              class:active={settings.aiImageEnabled}
-              id="aiImageToggle"
+              class:active={settings.soundEnabled}
+              id="soundToggle"
               role="switch"
-              aria-label="AI Image Button"
-              aria-checked={settings.aiImageEnabled}
-              onclick={() => setAiImage(!settings.aiImageEnabled)}
+              aria-label="Drawing Sounds"
+              aria-checked={settings.soundEnabled}
+              onclick={() => setSound(!settings.soundEnabled)}
             >
               <span class="toggle-switch-thumb"></span>
             </button>
           </div>
         </div>
 
-        {#if settings.aiImageEnabled}
-          <div class="setting" transition:slide={{ duration: 220 }}>
+        <div class="setting">
+          <div class="setting-toggle">
+            <label class="setting-info" for="saveOnDeleteToggle">
+              <img src="/icons/camera-party.svg" alt="" class="setting-icon" />
+              <span class="setting-label">Auto-Save on Delete</span>
+            </label>
+            <button
+              class="toggle-switch"
+              class:active={settings.saveOnDeleteEnabled}
+              id="saveOnDeleteToggle"
+              role="switch"
+              aria-label="Auto-Save on Delete"
+              aria-checked={settings.saveOnDeleteEnabled}
+              onclick={() => setSaveOnDelete(!settings.saveOnDeleteEnabled)}
+            >
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="setting-group">
+        <h3 class="setting-group-heading">Controls</h3>
+
+        <div class="setting">
+          <div class="setting-toggle">
+            <label class="setting-info" for="strokeWidthToggle">
+              <img src="/icons/line-weight.svg" alt="" class="setting-icon" />
+              <span class="setting-label">Stroke Width Button</span>
+            </label>
+            <button
+              class="toggle-switch"
+              class:active={settings.strokeWidthControlEnabled}
+              id="strokeWidthToggle"
+              role="switch"
+              aria-label="Stroke Width Button"
+              aria-checked={settings.strokeWidthControlEnabled}
+              onclick={() => setStrokeWidthControl(!settings.strokeWidthControlEnabled)}
+            >
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="setting">
+          <div class="setting-toggle">
+            <label class="setting-info" for="coloringBookToggle">
+              <img src="/icons/shapes.svg" alt="" class="setting-icon" />
+              <span class="setting-label">Coloring Book Button</span>
+            </label>
+            <button
+              class="toggle-switch"
+              class:active={settings.coloringBookEnabled}
+              id="coloringBookToggle"
+              role="switch"
+              aria-label="Coloring Book Button"
+              aria-checked={settings.coloringBookEnabled}
+              onclick={toggleColoringBook}
+            >
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="setting">
+          <div class="setting-toggle">
+            <label class="setting-info" for="screenshotToggle">
+              <img src="/icons/camera.svg" alt="" class="setting-icon" />
+              <span class="setting-label">Screenshot Button</span>
+            </label>
+            <button
+              class="toggle-switch"
+              class:active={settings.screenshotEnabled}
+              id="screenshotToggle"
+              role="switch"
+              aria-label="Screenshot Button"
+              aria-checked={settings.screenshotEnabled}
+              onclick={() => setScreenshot(!settings.screenshotEnabled)}
+            >
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="setting">
+          <div class="setting-toggle">
+            <label class="setting-info" for="undoToggle">
+              <img src="/icons/undo.svg" alt="" class="setting-icon" />
+              <span class="setting-label">Undo Button</span>
+            </label>
+            <button
+              class="toggle-switch"
+              class:active={settings.undoButtonEnabled}
+              id="undoToggle"
+              role="switch"
+              aria-label="Undo Button"
+              aria-checked={settings.undoButtonEnabled}
+              onclick={() => setUndoButton(!settings.undoButtonEnabled)}
+            >
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {#if settings.aiAccessToken}
+        <section class="setting-group">
+          <h3 class="setting-group-heading">AI</h3>
+
+          <div class="setting">
             <div class="setting-toggle">
-              <label class="setting-info" for="aiCustomizationToggle">
-                <img src="/icons/customize.svg" alt="" class="setting-icon" />
-                <span class="setting-label">AI Customization</span>
+              <label class="setting-info" for="aiImageToggle">
+                <img src="/icons/wand-stars.svg" alt="" class="setting-icon" />
+                <span class="setting-label">AI Image Button</span>
               </label>
               <button
                 class="toggle-switch"
-                class:active={settings.aiCustomizationEnabled}
-                id="aiCustomizationToggle"
+                class:active={settings.aiImageEnabled}
+                id="aiImageToggle"
                 role="switch"
-                aria-label="AI Customization"
-                aria-checked={settings.aiCustomizationEnabled}
-                onclick={() => setAiCustomization(!settings.aiCustomizationEnabled)}
+                aria-label="AI Image Button"
+                aria-checked={settings.aiImageEnabled}
+                onclick={() => setAiImage(!settings.aiImageEnabled)}
               >
                 <span class="toggle-switch-thumb"></span>
               </button>
             </div>
           </div>
-        {/if}
+
+          {#if settings.aiImageEnabled}
+            <div class="setting" transition:slide={{ duration: 220 }}>
+              <div class="setting-toggle">
+                <label class="setting-info" for="aiCustomizationToggle">
+                  <img src="/icons/customize.svg" alt="" class="setting-icon" />
+                  <span class="setting-label">AI Customization</span>
+                </label>
+                <button
+                  class="toggle-switch"
+                  class:active={settings.aiCustomizationEnabled}
+                  id="aiCustomizationToggle"
+                  role="switch"
+                  aria-label="AI Customization"
+                  aria-checked={settings.aiCustomizationEnabled}
+                  onclick={() => setAiCustomization(!settings.aiCustomizationEnabled)}
+                >
+                  <span class="toggle-switch-thumb"></span>
+                </button>
+              </div>
+            </div>
+          {/if}
+        </section>
       {/if}
     </div>
 
