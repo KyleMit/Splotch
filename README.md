@@ -278,6 +278,8 @@ MIT
 * [x] Add control for Undo
   * [x] Undo after clear
 * [x] Add control for Stoke width
+* [x] Apply paper texture on screenshot
+* [x] Smoothing algorithm for lines (get rid of rasterization)
 * [ ] AI-ify button
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
@@ -288,9 +290,6 @@ MIT
   * [ ] Come up with other book selections
   * [ ] Pages should be able to be favorited. First book should be favorites
   * [ ] Delete should wipe the page (or first book should be to clear the background)
-* [ ] Smoothing algorithm for lines (get rid of rasterization)
-  The lines on the generated generated screenshots 
-* [x] Apply paper texture on screenshot
 * [ ] Increase size of line thickness pop-up
 * [ ] Parent center control to increase button size
 * [ ] screenshot expands back into camera instead of into delete button

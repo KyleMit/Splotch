@@ -301,33 +301,41 @@ function loadPaperTexture() {
 export async function exportCanvasBlob(overlayImage = null) {
   if (!canvas || canvas.width === 0 || canvas.height === 0) return null;
 
+  const dpr = Math.max(window.devicePixelRatio || 1, 2);
+  const w = canvas.width;
+  const h = canvas.height;
+
   const out = document.createElement('canvas');
-  out.width = canvas.width;
-  out.height = canvas.height;
+  out.width = Math.round(w * dpr);
+  out.height = Math.round(h * dpr);
   const outCtx = out.getContext('2d');
+  outCtx.imageSmoothingEnabled = true;
+  outCtx.imageSmoothingQuality = 'high';
+  outCtx.scale(dpr, dpr);
+
   outCtx.fillStyle = '#fcfbf8';
-  outCtx.fillRect(0, 0, out.width, out.height);
+  outCtx.fillRect(0, 0, w, h);
 
   const paper = await loadPaperTexture();
   if (paper) {
     const pattern = outCtx.createPattern(paper, 'repeat');
     if (pattern) {
       outCtx.fillStyle = pattern;
-      outCtx.fillRect(0, 0, out.width, out.height);
+      outCtx.fillRect(0, 0, w, h);
     }
   }
 
-  outCtx.drawImage(canvas, 0, 0);
+  outCtx.drawImage(canvas, 0, 0, w, h);
 
   if (overlayImage && overlayImage.naturalWidth > 0 && overlayImage.naturalHeight > 0) {
     const scale = Math.min(
-      out.width / overlayImage.naturalWidth,
-      out.height / overlayImage.naturalHeight
+      w / overlayImage.naturalWidth,
+      h / overlayImage.naturalHeight
     );
     const drawnW = overlayImage.naturalWidth * scale;
     const drawnH = overlayImage.naturalHeight * scale;
-    const offsetX = (out.width - drawnW) / 2;
-    const offsetY = (out.height - drawnH) / 2;
+    const offsetX = (w - drawnW) / 2;
+    const offsetY = (h - drawnH) / 2;
     outCtx.globalCompositeOperation = 'multiply';
     outCtx.drawImage(overlayImage, offsetX, offsetY, drawnW, drawnH);
     outCtx.globalCompositeOperation = 'source-over';
