@@ -1,4 +1,7 @@
-// Drawing canvas functionality with multi-touch support
+// Imperative drawing engine. Owns the <canvas>, the virtual canvas, the
+// undo stack, and the pointer tracking. Svelte components mount this on
+// onMount and adapt reactive state (active color, stroke width) by calling
+// setColor() / setStrokeWidth() from $effect.
 
 let canvas, ctx;
 let currentColor = '';
@@ -9,20 +12,14 @@ let activePointers = new Map();
 let onDrawSoundCallback = null;
 let onDrawStopCallback = null;
 
-// Virtual canvas to preserve content across orientation changes
 let virtualCanvas = null;
 let virtualCtx = null;
-let maxWidth = 0;
-let maxHeight = 0;
 
-// Undo history - store stack of snapshots (max 10)
 let undoStack = [];
 const MAX_UNDO_STACK_SIZE = 10;
 let canUndo = false;
 let onUndoStateChange = null;
 
-// Cached "is the canvas blank?" state. Cheap to read — flipped on the
-// first stroke and on clear/undo — so callers don't have to rescan pixels.
 let canvasEmpty = true;
 let onCanvasEmptyChange = null;
 
@@ -32,7 +29,6 @@ function setCanvasEmptyState(empty) {
   if (onCanvasEmptyChange) onCanvasEmptyChange(empty);
 }
 
-// Pixel scan — only used after undo, when the cached state may be wrong.
 function scanCanvasIsEmpty() {
   if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) return true;
   const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -42,46 +38,30 @@ function scanCanvasIsEmpty() {
   return true;
 }
 
-// Set canvas size to fill container
 function resizeCanvas() {
-  // Use the canvas's own rect, not the container's — they can differ by
-  // subpixels (flex/center/borders), and any mismatch shows up as the
-  // bitmap being stretched, which drags drawn lines off the touch point.
   const rect = canvas.getBoundingClientRect();
 
-  // Initialize virtual canvas on first run
   if (!virtualCanvas) {
     virtualCanvas = document.createElement('canvas');
-    virtualCanvas.width = Math.max(rect.width, rect.height) * 2; // Large enough for any orientation
+    virtualCanvas.width = Math.max(rect.width, rect.height) * 2;
     virtualCanvas.height = Math.max(rect.width, rect.height) * 2;
     virtualCtx = virtualCanvas.getContext('2d');
     virtualCtx.lineCap = 'round';
     virtualCtx.lineJoin = 'round';
   }
 
-  // Save current canvas content to virtual canvas before resizing
   if (canvas.width > 0 && canvas.height > 0) {
     virtualCtx.drawImage(canvas, 0, 0);
-    maxWidth = Math.max(maxWidth, canvas.width);
-    maxHeight = Math.max(maxHeight, canvas.height);
   }
 
-  // Round to integers — canvas.width/height are unsigned longs and truncate
-  // fractional values silently. Rounding here is explicit and predictable.
   canvas.width = Math.round(rect.width);
   canvas.height = Math.round(rect.height);
 
-  // Restore from virtual canvas
   ctx.drawImage(virtualCanvas, 0, 0);
-
-  // Set drawing properties (lineWidth is set per stroke from pointer state)
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 }
 
-// Convert a pointer event's client coordinates into canvas bitmap pixels.
-// Scaling by (bitmap dim / display dim) keeps the touch point pixel-accurate
-// even if the bitmap and CSS display sizes don't match exactly.
 function pointerToCanvas(e) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
@@ -92,59 +72,43 @@ function pointerToCanvas(e) {
   };
 }
 
-// Helper function to force release all pointer captures
-function releaseAllPointers() {
+export function releaseAllPointers() {
+  if (!ctx) return;
   ctx.beginPath();
-  if (virtualCtx) {
-    virtualCtx.beginPath();
-  }
+  if (virtualCtx) virtualCtx.beginPath();
 
-  // Clear all active pointers
   activePointers.clear();
 
-  // Try to release all tracked pointer IDs
-  activePointerIds.forEach(pointerId => {
+  activePointerIds.forEach((pointerId) => {
     try {
       if (canvas.hasPointerCapture && canvas.hasPointerCapture(pointerId)) {
         canvas.releasePointerCapture(pointerId);
       }
-    } catch (err) {
-      // Ignore errors
-    }
+    } catch {}
   });
 
   activePointerIds.clear();
 }
 
-// Drawing functions
 function startDrawing(e) {
-  // Prevent drawing immediately after color change
-  // Use minimal delay for Apple Pencil (0ms) vs other inputs (100ms)
-  // Apple Pencil has better precision and doesn't need delay
   const timeSinceColorChange = Date.now() - lastColorChangeTime;
   const requiredDelay = e.pointerType === 'pen' ? 0 : 100;
-  if (timeSinceColorChange < requiredDelay) {
-    return;
-  }
+  if (timeSinceColorChange < requiredDelay) return;
 
-  // Save canvas state before starting new stroke (for undo)
   saveUndoSnapshot();
-
-  // First stroke flips us out of the empty state — no pixel scan needed.
   setCanvasEmptyState(false);
 
   const { x, y } = pointerToCanvas(e);
 
-  // Track this pointer's state
   if (e.pointerId !== undefined) {
     activePointers.set(e.pointerId, {
-      x: x,
-      y: y,
+      x,
+      y,
       isDrawing: true,
       color: currentColor,
       lineWidth: currentLineWidth,
       lastTime: Date.now(),
-      distanceWindow: [], // Track recent movements for better speed calculation
+      distanceWindow: [],
       windowStartTime: Date.now()
     });
     activePointerIds.add(e.pointerId);
@@ -154,62 +118,43 @@ function startDrawing(e) {
   ctx.beginPath();
   ctx.moveTo(x, y);
 
-  // Also start drawing on virtual canvas
   if (virtualCtx) {
     virtualCtx.strokeStyle = currentColor;
     virtualCtx.beginPath();
     virtualCtx.moveTo(x, y);
   }
 
-  // Notify callback to play draw sound (starting with speed 0)
-  if (onDrawSoundCallback) {
-    onDrawSoundCallback({ speed: 0 });
-  }
+  if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0 });
 
-  // Don't use pointer capture with Apple Pencil - it causes issues
   if (e.pointerType !== 'pen') {
     try {
-      if (e.pointerId !== undefined) {
-        canvas.setPointerCapture(e.pointerId);
-      }
-    } catch (err) {
-      // Ignore pointer capture errors
-    }
+      if (e.pointerId !== undefined) canvas.setPointerCapture(e.pointerId);
+    } catch {}
   }
 }
 
 function draw(e) {
-  // Check if this pointer is actively drawing
   const pointerState = activePointers.get(e.pointerId);
   if (!pointerState || !pointerState.isDrawing) return;
 
   e.preventDefault();
 
   const { x, y } = pointerToCanvas(e);
-
-  // Calculate movement distance
   const deltaX = x - pointerState.x;
   const deltaY = y - pointerState.y;
   const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
   const now = Date.now();
-
-  // Add distance to rolling window
   pointerState.distanceWindow.push(distance);
-
-  // Keep window at ~100ms of data (remove old entries)
-  const windowDuration = 100; // ms
+  const windowDuration = 100;
   if (now - pointerState.windowStartTime > windowDuration) {
     pointerState.distanceWindow.shift();
     pointerState.windowStartTime = now;
   }
-
-  // Calculate speed as total distance in window / window time
   const totalDistance = pointerState.distanceWindow.reduce((sum, d) => sum + d, 0);
   const windowTime = Math.max(now - pointerState.windowStartTime, 1);
-  const speed = totalDistance / windowTime; // pixels per millisecond
+  const speed = totalDistance / windowTime;
 
-  // Use the color and width from when this pointer started drawing
   ctx.strokeStyle = pointerState.color;
   ctx.lineWidth = pointerState.lineWidth;
   ctx.beginPath();
@@ -217,7 +162,6 @@ function draw(e) {
   ctx.lineTo(x, y);
   ctx.stroke();
 
-  // Also draw to virtual canvas
   if (virtualCtx) {
     virtualCtx.strokeStyle = pointerState.color;
     virtualCtx.lineWidth = pointerState.lineWidth;
@@ -227,103 +171,63 @@ function draw(e) {
     virtualCtx.stroke();
   }
 
-  // Update this pointer's state
   pointerState.x = x;
   pointerState.y = y;
   pointerState.lastTime = now;
 
-  // Notify callback with speed data
-  if (onDrawSoundCallback) {
-    onDrawSoundCallback({ speed });
-  }
+  if (onDrawSoundCallback) onDrawSoundCallback({ speed });
 }
 
 function stopDrawing(e) {
   if (!e || e.pointerId === undefined) return;
 
-  // Remove this pointer from active tracking
   activePointers.delete(e.pointerId);
   activePointerIds.delete(e.pointerId);
 
   ctx.beginPath();
-  if (virtualCtx) {
-    virtualCtx.beginPath();
-  }
+  if (virtualCtx) virtualCtx.beginPath();
 
-  // Notify callback to stop draw sound
-  if (onDrawStopCallback) {
-    onDrawStopCallback();
-  }
+  if (onDrawStopCallback) onDrawStopCallback();
 
-  // Release pointer capture
   try {
     canvas.releasePointerCapture(e.pointerId);
-  } catch (err) {
-    // Ignore errors if pointer capture wasn't set
-  }
+  } catch {}
 }
 
-// Save canvas snapshot for undo
 function saveUndoSnapshot() {
   if (!canvas || !ctx) return;
 
-  // Create new snapshot canvas
   const snapshot = document.createElement('canvas');
   snapshot.width = canvas.width;
   snapshot.height = canvas.height;
-
-  // Copy current canvas state
   const snapshotCtx = snapshot.getContext('2d');
   snapshotCtx.drawImage(canvas, 0, 0);
 
-  // Add to undo stack
   undoStack.push(snapshot);
+  if (undoStack.length > MAX_UNDO_STACK_SIZE) undoStack.shift();
 
-  // Limit stack size to MAX_UNDO_STACK_SIZE
-  if (undoStack.length > MAX_UNDO_STACK_SIZE) {
-    undoStack.shift(); // Remove oldest snapshot
-  }
-
-  // Update undo availability
   canUndo = true;
-  if (onUndoStateChange) {
-    onUndoStateChange(canUndo);
-  }
+  if (onUndoStateChange) onUndoStateChange(canUndo);
 }
 
-// Undo last action
 export function undo() {
   if (!canUndo || undoStack.length === 0 || !canvas || !ctx) return;
 
-  // Pop the most recent snapshot from the stack
   const snapshot = undoStack.pop();
-
-  // Restore snapshot to canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(snapshot, 0, 0);
 
-  // Also restore to virtual canvas
   if (virtualCtx && virtualCanvas) {
     virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
     virtualCtx.drawImage(snapshot, 0, 0);
   }
 
-  // Undo can leave the canvas in either state — rescan once here.
   setCanvasEmptyState(scanCanvasIsEmpty());
 
-  // Update undo availability based on remaining stack size
   canUndo = undoStack.length > 0;
-  if (onUndoStateChange) {
-    onUndoStateChange(canUndo);
-  }
+  if (onUndoStateChange) onUndoStateChange(canUndo);
 }
 
-// Check if undo is available
-export function getCanUndo() {
-  return undoStack.length > 0;
-}
-
-// Initialize drawing canvas
 export function initDrawingCanvas(canvasElement, options = {}) {
   canvas = canvasElement;
   ctx = canvas.getContext('2d', { willReadFrequently: false });
@@ -334,11 +238,9 @@ export function initDrawingCanvas(canvasElement, options = {}) {
   onCanvasEmptyChange = options.onCanvasEmptyChange || null;
   currentColor = options.initialColor || '#AB71E1';
 
-  // Setup canvas and resize handler
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
 
-  // Add pointer event listeners for drawing
   canvas.addEventListener('pointerdown', startDrawing);
   canvas.addEventListener('pointermove', draw);
   canvas.addEventListener('pointerup', stopDrawing);
@@ -346,22 +248,19 @@ export function initDrawingCanvas(canvasElement, options = {}) {
   canvas.addEventListener('pointercancel', stopDrawing);
 
   return {
-    canvas,
-    ctx
+    teardown() {
+      window.removeEventListener('resize', resizeCanvas);
+      canvas.removeEventListener('pointerdown', startDrawing);
+      canvas.removeEventListener('pointermove', draw);
+      canvas.removeEventListener('pointerup', stopDrawing);
+      canvas.removeEventListener('pointerout', stopDrawing);
+      canvas.removeEventListener('pointercancel', stopDrawing);
+    }
   };
 }
 
-// Public API
 export function setColor(color) {
   currentColor = color;
-  lastColorChangeTime = Date.now();
-}
-
-export function getCurrentColor() {
-  return currentColor;
-}
-
-export function updateColorChangeTime() {
   lastColorChangeTime = Date.now();
 }
 
@@ -370,27 +269,18 @@ export function setStrokeWidth(widthPx) {
 }
 
 export function clearCanvas() {
-  // Snapshot the pre-delete state so undo can restore the image
   saveUndoSnapshot();
-
-  // Clear both the main canvas and virtual canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (virtualCtx && virtualCanvas) {
     virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
   }
-
   setCanvasEmptyState(true);
 }
 
-// Cached blank-canvas check. Updated on draw/clear/undo, so reads are O(1).
 export function isCanvasEmpty() {
   return canvasEmpty;
 }
 
-// Export canvas as a PNG blob with the paper-color background composited in
-// (the live canvas is transparent — the paper texture is a CSS background).
-// If an overlay image is passed, it is composited under the strokes using
-// multiply blend to mirror the on-screen CSS `mix-blend-mode: multiply`.
 export function exportCanvasBlob(overlayImage = null) {
   if (!canvas || canvas.width === 0 || canvas.height === 0) return Promise.resolve(null);
 
@@ -402,7 +292,6 @@ export function exportCanvasBlob(overlayImage = null) {
   outCtx.fillRect(0, 0, out.width, out.height);
 
   if (overlayImage && overlayImage.naturalWidth > 0 && overlayImage.naturalHeight > 0) {
-    // Match CSS `object-fit: contain`: scale uniformly to fit, then center.
     const scale = Math.min(
       out.width / overlayImage.naturalWidth,
       out.height / overlayImage.naturalHeight
@@ -418,14 +307,13 @@ export function exportCanvasBlob(overlayImage = null) {
 
   outCtx.drawImage(canvas, 0, 0);
 
-  return new Promise(resolve => out.toBlob(resolve, 'image/png'));
+  return new Promise((resolve) => out.toBlob(resolve, 'image/png'));
 }
 
 export function focusCanvas() {
-  // Focus the canvas to ensure it can receive pointer events immediately
-  if (canvas) {
-    canvas.focus();
-  }
+  if (canvas) canvas.focus();
 }
 
-export { releaseAllPointers };
+export function getActiveCanvas() {
+  return canvas;
+}

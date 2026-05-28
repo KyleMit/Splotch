@@ -1,6 +1,7 @@
 [build]
   command = "npm run build"
-  publish = "dist"
+  # adapter-netlify manages the publish dir + functions internally; leave it
+  # off so the adapter's own configuration takes effect.
 
 [[headers]]
   for = "/*"
@@ -28,8 +29,3 @@
   for = "/sw.js"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200

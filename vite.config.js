@@ -1,46 +1,20 @@
-import { defineConfig } from 'vite';
+import { sveltekit } from '@sveltejs/kit/vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import handlebars from 'vite-plugin-handlebars';
-import { resolve } from 'path';
-import { fileURLToPath } from 'url';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const BUILD_VERSION = new Date().toISOString().slice(0, 16).replace('T', ' ');
 
-// Get build timestamp
-function getVersion() {
-  return new Date().toISOString().slice(0, 16).replace('T', ' ');
-}
-
-// Plugin to inject version into HTML
-function htmlVersionPlugin() {
-  const version = getVersion();
-  return {
-    name: 'html-version-inject',
-    transformIndexHtml(html) {
-      return html.replace('%VERSION%', version);
-    }
-  };
-}
-
-export default defineConfig({
-  root: resolve(__dirname, 'src'),
-  publicDir: 'public',
-  build: {
-    outDir: resolve(__dirname, 'dist'),
-    emptyOutDir: true
+export default {
+  define: {
+    __APP_VERSION__: JSON.stringify(BUILD_VERSION)
   },
   plugins: [
-    handlebars({
-      partialDirectory: resolve(__dirname, 'src/partials')
-    }),
-    htmlVersionPlugin(),
+    sveltekit(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'favicon.svg', 'favicon-96x96.png', 'apple-touch-icon.png', 'sounds/*.mp3'],
-      manifest: false, // Use site.webmanifest instead
+      manifest: false,
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,webmanifest}'],
-        // Add skipWaiting and clientsClaim for immediate updates
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [
@@ -51,7 +25,7 @@ export default defineConfig({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 365
               }
             }
           }
@@ -59,4 +33,4 @@ export default defineConfig({
       }
     })
   ]
-});
+};

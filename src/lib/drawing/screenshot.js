@@ -1,24 +1,9 @@
-// Persisted "show a screenshot button in the actions panel" preference,
-// and the action that saves the current drawing as a PNG.
-import { exportCanvasBlob } from './drawingCanvas.js';
-import { getActiveOverlayImage } from './coloringBook.js';
-
-const SCREENSHOT_KEY = 'splotch-screenshot-enabled';
-
-let screenshotEnabled = localStorage.getItem(SCREENSHOT_KEY) !== 'false';
-
-export function isScreenshotEnabled() {
-  return screenshotEnabled;
-}
-
-export function setScreenshotEnabled(enabled) {
-  screenshotEnabled = enabled;
-  localStorage.setItem(SCREENSHOT_KEY, enabled.toString());
-}
+import { exportCanvasBlob } from './engine.js';
+import { getActiveOverlayImage } from './overlay.js';
 
 function timestamp() {
   const d = new Date();
-  const pad = n => String(n).padStart(2, '0');
+  const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
 }
 
@@ -27,7 +12,6 @@ export async function saveScreenshot() {
   if (!blob) return;
 
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement('a');
   a.href = url;
   a.download = `splotch-${timestamp()}.png`;
@@ -38,8 +22,6 @@ export async function saveScreenshot() {
   playPolaroidAnimation(url);
 }
 
-// Camera-flash + polaroid fly-in animation. The keyframe duration in CSS
-// matches the cleanup timeout below.
 const POLAROID_DURATION_MS = 1900;
 
 function playPolaroidAnimation(imageUrl) {
@@ -57,8 +39,6 @@ function playPolaroidAnimation(imageUrl) {
   img.src = imageUrl;
   img.alt = '';
 
-  // Anchor the entrance to the camera button so the polaroid appears to
-  // pop out of the button that took the shot.
   const button = document.getElementById('screenshotButton');
   if (button) {
     const rect = button.getBoundingClientRect();
