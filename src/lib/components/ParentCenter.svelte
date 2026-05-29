@@ -12,7 +12,8 @@
     setStrokeWidthControl,
     setColoringBook,
     setAiImage,
-    setAiCustomization
+    setAiCustomization,
+    setAiAccessToken
   } from '$lib/state/settings.svelte.js';
   import { clearOverlay } from '$lib/state/coloringBook.svelte.js';
 
@@ -21,6 +22,14 @@
   let activeTab = $state('settings');
   let installOs = $state('ios');
   let pwaInstalled = $state(false);
+  let accessCodeInput = $state('');
+
+  function submitAccessCode() {
+    const code = accessCodeInput.trim();
+    if (!code) return;
+    setAiAccessToken(code);
+    accessCodeInput = '';
+  }
 
   const APP_VERSION =
     typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
@@ -321,53 +330,75 @@
         </div>
       </section>
 
-      {#if settings.aiAccessToken}
-        <section class="setting-group">
-          <h3 class="setting-group-heading">AI</h3>
+      <section class="setting-group">
+        <h3 class="setting-group-heading">AI</h3>
 
-          <div class="setting">
+        {#if !settings.aiAccessToken}
+          <div class="setting access-code">
+            <label class="access-code-label" for="aiAccessCode">Access Code</label>
+            <div class="access-code-row">
+              <input
+                id="aiAccessCode"
+                class="access-code-input"
+                type="text"
+                placeholder="Enter access code"
+                bind:value={accessCodeInput}
+                onkeydown={(e) => e.key === 'Enter' && submitAccessCode()}
+              />
+              <button
+                class="access-code-submit"
+                onclick={submitAccessCode}
+                disabled={!accessCodeInput.trim()}
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        {/if}
+
+        <div class="setting">
+          <div class="setting-toggle">
+            <label class="setting-info" for="aiImageToggle">
+              <Icon name="wand-stars" class="setting-icon" />
+              <span class="setting-label">AI Image Button</span>
+            </label>
+            <button
+              class="toggle-switch"
+              class:active={settings.aiAccessToken && settings.aiImageEnabled}
+              id="aiImageToggle"
+              role="switch"
+              aria-label="AI Image Button"
+              aria-checked={settings.aiAccessToken && settings.aiImageEnabled}
+              disabled={!settings.aiAccessToken}
+              onclick={() => setAiImage(!settings.aiImageEnabled)}
+            >
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </div>
+        </div>
+
+        {#if settings.aiAccessToken && settings.aiImageEnabled}
+          <div class="setting" transition:slide={{ duration: 220 }}>
             <div class="setting-toggle">
-              <label class="setting-info" for="aiImageToggle">
-                <Icon name="wand-stars" class="setting-icon" />
-                <span class="setting-label">AI Image Button</span>
+              <label class="setting-info" for="aiCustomizationToggle">
+                <Icon name="customize" class="setting-icon" />
+                <span class="setting-label">AI Customization</span>
               </label>
               <button
                 class="toggle-switch"
-                class:active={settings.aiImageEnabled}
-                id="aiImageToggle"
+                class:active={settings.aiCustomizationEnabled}
+                id="aiCustomizationToggle"
                 role="switch"
-                aria-label="AI Image Button"
-                aria-checked={settings.aiImageEnabled}
-                onclick={() => setAiImage(!settings.aiImageEnabled)}
+                aria-label="AI Customization"
+                aria-checked={settings.aiCustomizationEnabled}
+                onclick={() => setAiCustomization(!settings.aiCustomizationEnabled)}
               >
                 <span class="toggle-switch-thumb"></span>
               </button>
             </div>
           </div>
-
-          {#if settings.aiImageEnabled}
-            <div class="setting" transition:slide={{ duration: 220 }}>
-              <div class="setting-toggle">
-                <label class="setting-info" for="aiCustomizationToggle">
-                  <Icon name="customize" class="setting-icon" />
-                  <span class="setting-label">AI Customization</span>
-                </label>
-                <button
-                  class="toggle-switch"
-                  class:active={settings.aiCustomizationEnabled}
-                  id="aiCustomizationToggle"
-                  role="switch"
-                  aria-label="AI Customization"
-                  aria-checked={settings.aiCustomizationEnabled}
-                  onclick={() => setAiCustomization(!settings.aiCustomizationEnabled)}
-                >
-                  <span class="toggle-switch-thumb"></span>
-                </button>
-              </div>
-            </div>
-          {/if}
-        </section>
-      {/if}
+        {/if}
+      </section>
     </div>
 
     <footer class="parent-help-footer">
@@ -740,6 +771,67 @@
 
   .toggle-switch.active .toggle-switch-thumb {
     transform: translateX(20px);
+  }
+
+  .toggle-switch:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .toggle-switch:disabled:hover {
+    background: #ddd;
+  }
+
+  /* AI access code entry */
+  .access-code-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 8px;
+  }
+
+  .access-code-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .access-code-input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    color: #333;
+  }
+
+  .access-code-input:focus {
+    outline: none;
+    border-color: #AB71E1;
+  }
+
+  .access-code-submit {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    background: #AB71E1;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .access-code-submit:hover {
+    background: #9961d1;
+  }
+
+  .access-code-submit:disabled {
+    background: #ccc;
+    cursor: not-allowed;
   }
 
   .parent-help-footer {

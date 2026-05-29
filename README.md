@@ -183,8 +183,9 @@ MIT
 * [x] Add note about `ai_access_token` to readme
 * [x] Improve lighthouse score
 * [x] Tap not working in drawing canvas, only dragging
-* [ ] Add record access token to parent settings in AI area with toggles disabled unless access token granted.
-      Maybe add route to confirm access token as well?
+* [x] Add record access token to parent settings in AI area with toggles disabled unless access token granted.
+* [ ] Maybe add route to confirm access token as well?
+* [ ] BYO Key?
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
   * [x] Make sure white backgrounds become transparent
