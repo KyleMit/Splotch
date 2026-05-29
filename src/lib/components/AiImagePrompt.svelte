@@ -79,23 +79,18 @@
       <Icon name="close" class="ai-prompt-close-icon" />
     </button>
 
-    <div class="ai-prompt-preview-wrap">
-      {#if previewUrl}
-        <img class="ai-prompt-preview" src={previewUrl} alt="" />
-      {/if}
-    </div>
-
     <fieldset class="ai-prompt-styles">
       <legend>Pick a style</legend>
       <div class="ai-style-options">
         {#each STYLE_NAMES as s}
           <button
             type="button"
-            class="ai-style-pill"
+            class="ai-style-option"
             onclick={() => handleSelectStyle(s)}
             disabled={!previewUrl}
           >
-            {s}
+            <img class="ai-style-thumb" src="/styles/{s.toLowerCase()}.webp" alt="" />
+            <span class="ai-style-label">{s}</span>
           </button>
         {/each}
       </div>
@@ -170,24 +165,6 @@
     filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
   }
 
-  .ai-prompt-preview-wrap {
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    background: #fcfbf8;
-    border: 1px solid #eee;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  .ai-prompt-preview {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-
   .ai-prompt-styles {
     border: none;
     padding: 0;
@@ -199,41 +176,65 @@
     font-weight: 600;
     color: #555;
     padding: 0;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
   }
 
   .ai-style-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
   }
 
-  .ai-style-pill {
-    padding: 8px 14px;
-    border: 2px solid #ddd;
-    border-radius: 999px;
+  .ai-style-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: none;
+    background: none;
     font: inherit;
-    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .ai-style-thumb {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 3px solid transparent;
+    background: #fcfbf8;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+
+  .ai-style-label {
+    font-size: 13px;
     font-weight: 600;
     color: #555;
-    background: white;
-    cursor: pointer;
-    transition: all 0.15s ease;
     user-select: none;
   }
 
-  .ai-style-pill:hover:not(:disabled) {
+  .ai-style-option:hover:not(:disabled) .ai-style-thumb {
     border-color: #AB71E1;
-    color: white;
-    background: #AB71E1;
+    transform: translateY(-2px);
   }
 
-  .ai-style-pill:active:not(:disabled) { transform: scale(0.97); }
+  .ai-style-option:hover:not(:disabled) .ai-style-label { color: #AB71E1; }
 
-  .ai-style-pill:focus-visible {
+  .ai-style-option:active:not(:disabled) .ai-style-thumb { transform: scale(0.97); }
+
+  .ai-style-option:focus-visible {
     outline: none;
+  }
+
+  .ai-style-option:focus-visible .ai-style-thumb {
+    border-color: #AB71E1;
     box-shadow: 0 0 0 3px rgba(171, 113, 225, 0.35);
   }
 
-  .ai-style-pill:disabled { opacity: 0.6; cursor: not-allowed; }
+  .ai-style-option:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  @media (max-width: 420px) {
+    .ai-style-options { grid-template-columns: repeat(2, 1fr); }
+  }
 </style>
