@@ -189,7 +189,8 @@ MIT
 * [x] Polaroid screenshot should be shape of canvas, maybe also add polaroid frame
 * [x] Add download image animation and prevent multiple downloads
 * [x] Add Eraser control
-* [ ] See what aspect ratios we can use when rendering an image - try to preserve current canvas
+* [x] Increase size of line thickness pop-up
+* [x] See what aspect ratios we can use when rendering an image - try to preserve current canvas
 * [ ] Add playwright, especially so Claude can UI test
 * [ ] Maybe add route to confirm access token as well?
 * [ ] BYO Key?
@@ -203,7 +204,6 @@ MIT
   * [ ] Pages should be able to be favorited. First book should be favorites
   * [ ] Delete should wipe the page (or first book should be to clear the background)
 * [ ] Add sparkles to AI Customization screen
-* [ ] Increase size of line thickness pop-up
 * [ ] Parent center control to increase button size
 * [ ] Investigate line smoothing while drawing
 * [ ] Efficiently layout broad range of colors on small devices

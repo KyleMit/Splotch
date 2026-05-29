@@ -323,7 +323,7 @@
      edge, so stack the sizes vertically. It stays anchored to the right of the
      button (bottom-aligned) so it runs up alongside the other action buttons
      instead of over the top of them. */
-  @media (orientation: portrait) and (max-width: 319px) {
+  @media (orientation: portrait) and (max-width: 376px) {
     .stroke-width-menu {
       flex-direction: column;
     }
@@ -334,16 +334,16 @@
   }
 
   .stroke-size-button {
-    width: 44px;
-    height: 44px;
+    width: 53px;
+    height: 53px;
     background: white;
     border: 2px solid #ddd;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px;
+    padding: 7px;
     transition: all 0.15s ease;
     touch-action: manipulation;
   }
