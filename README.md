@@ -151,6 +151,11 @@ MIT
     * **Settings** - Tab for app preferences (Drawing Sounds, Save on Delete, Screenshot Button, Stroke Width Control, Coloring Books)
 
 
+## Timer Debug View
+
+Open it locally: npm run dev <http://localhost:5173/dev/ai-timer>
+
+Watch the tests run headed with `npm run test:headed -- ai-timer
 
 ## TODO
 
@@ -192,8 +197,8 @@ MIT
 * [x] Increase size of line thickness pop-up
 * [x] See what aspect ratios we can use when rendering an image - try to preserve current canvas
 * [x] Make delete tutorial friendlier
+* [x] Add playwright, especially so Claude can UI test
 * [ ] Make timer animation more fun
-* [ ] Add playwright, especially so Claude can UI test
 * [ ] Maybe add route to confirm access token as well?
 * [ ] BYO Key?
 * [ ] Add "color book" style picker with background overlay
