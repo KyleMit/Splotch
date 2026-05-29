@@ -198,7 +198,11 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] See what aspect ratios we can use when rendering an image - try to preserve current canvas
 * [x] Make delete tutorial friendlier
 * [x] Add playwright, especially so Claude can UI test
-* [ ] Make timer animation more fun
+* [x] Make timer animation more fun
+* [ ] Put all controls in a side "drawer" that stays open / closed
+* [ ] AI Style icons should use custom image and then generate corresponding output for each.
+  * [ ] Currently not a big difference between default and cartoon
+* [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
 * [ ] Maybe add route to confirm access token as well?
 * [ ] BYO Key?
 * [ ] Add "color book" style picker with background overlay
