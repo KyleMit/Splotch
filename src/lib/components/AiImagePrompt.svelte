@@ -4,16 +4,11 @@
   import { exportCanvasBlob } from '$lib/drawing/engine.js';
   import { getActiveOverlayImage } from '$lib/drawing/overlay.js';
   import { generateAiImage } from '$lib/drawing/aiImage.js';
-
-  const DEFAULT_PROMPT =
-    "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel.";
-  const STYLES = ['Watercolor', 'Crayon', 'Felt Craft', 'Claymation', 'Storybook'];
+  import { STYLE_NAMES } from '$lib/ai/styles.js';
 
   let dialogEl;
   let previewUrl = $state(null);
   let drawingBlob = null;
-  let prompt = $state('');
-  let style = $state('');
 
   $effect(() => {
     if (!dialogEl) return;
@@ -24,8 +19,6 @@
           dialogEl.style.setProperty('--origin-x', `${x - window.innerWidth / 2}px`);
           dialogEl.style.setProperty('--origin-y', `${y - window.innerHeight / 2}px`);
         }
-        prompt = '';
-        style = '';
         loadPreview();
         dialogEl.showModal();
       }
@@ -49,15 +42,13 @@
     drawingBlob = null;
   }
 
-  function handleGenerate() {
+  function handleSelectStyle(style) {
     if (!drawingBlob) return;
-    // Hand off immediately to the result modal, which shows the progress dial
-    // (and any error) over the blurred drawing.
+    // Picking a style immediately hands off to the result modal, which shows
+    // the progress dial (and any error) over the blurred drawing.
     const blob = drawingBlob;
-    const trimmed = prompt.trim();
-    const chosenStyle = style;
     closeAiPrompt();
-    generateAiImage({ blob, prompt: trimmed, style: chosenStyle });
+    generateAiImage({ blob, style });
   }
 
   function handleDialogPointerDown(e) {
@@ -94,33 +85,21 @@
       {/if}
     </div>
 
-    <textarea
-      class="ai-prompt-textarea"
-      placeholder={DEFAULT_PROMPT}
-      bind:value={prompt}
-      rows="3"
-    ></textarea>
-
     <fieldset class="ai-prompt-styles">
-      <legend>Style</legend>
+      <legend>Pick a style</legend>
       <div class="ai-style-options">
-        {#each STYLES as s}
-          <label class="ai-style-option">
-            <input type="radio" name="ai-style" value={s} bind:group={style} />
-            <span class="ai-style-pill">{s}</span>
-          </label>
+        {#each STYLE_NAMES as s}
+          <button
+            type="button"
+            class="ai-style-pill"
+            onclick={() => handleSelectStyle(s)}
+            disabled={!previewUrl}
+          >
+            {s}
+          </button>
         {/each}
       </div>
     </fieldset>
-
-    <button
-      class="ai-prompt-generate"
-      onclick={handleGenerate}
-      disabled={!previewUrl}
-    >
-      <Icon name="wand-stars" class="ai-prompt-generate-icon" />
-      <span>Generate</span>
-    </button>
   </div>
 </dialog>
 
@@ -209,27 +188,6 @@
     object-fit: contain;
   }
 
-  .ai-prompt-textarea {
-    width: 100%;
-    font: inherit;
-    font-size: 15px;
-    padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    resize: vertical;
-    background: #fafafa;
-    color: #333;
-    box-sizing: border-box;
-  }
-
-  .ai-prompt-textarea:focus {
-    outline: none;
-    border-color: #AB71E1;
-    background: white;
-  }
-
-  .ai-prompt-textarea:disabled { opacity: 0.6; cursor: not-allowed; }
-
   .ai-prompt-styles {
     border: none;
     padding: 0;
@@ -250,66 +208,32 @@
     gap: 8px;
   }
 
-  .ai-style-option { cursor: pointer; }
-
-  .ai-style-option input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-
   .ai-style-pill {
-    display: inline-block;
     padding: 8px 14px;
     border: 2px solid #ddd;
     border-radius: 999px;
+    font: inherit;
     font-size: 14px;
     font-weight: 600;
     color: #555;
     background: white;
+    cursor: pointer;
     transition: all 0.15s ease;
     user-select: none;
   }
 
-  .ai-style-option:hover .ai-style-pill {
-    border-color: #AB71E1;
-    color: #AB71E1;
-  }
-
-  .ai-style-option input:checked + .ai-style-pill {
-    background: #AB71E1;
+  .ai-style-pill:hover:not(:disabled) {
     border-color: #AB71E1;
     color: white;
+    background: #AB71E1;
   }
 
-  .ai-style-option input:focus-visible + .ai-style-pill {
+  .ai-style-pill:active:not(:disabled) { transform: scale(0.97); }
+
+  .ai-style-pill:focus-visible {
+    outline: none;
     box-shadow: 0 0 0 3px rgba(171, 113, 225, 0.35);
   }
 
-  .ai-prompt-generate {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 12px 18px;
-    background: #AB71E1;
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(171, 113, 225, 0.35);
-    transition: transform 0.15s ease, background 0.2s ease, opacity 0.2s ease;
-  }
-
-  .ai-prompt-generate:hover:not(:disabled) { background: #9559cd; }
-  .ai-prompt-generate:active:not(:disabled) { transform: scale(0.98); }
-  .ai-prompt-generate:disabled { opacity: 0.6; cursor: not-allowed; }
-
-  :global(.ai-prompt-generate-icon) {
-    width: 22px;
-    height: 22px;
-    filter: invert(100%);
-  }
+  .ai-style-pill:disabled { opacity: 0.6; cursor: not-allowed; }
 </style>

@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { GoogleGenAI } from '@google/genai';
 import { getStore } from '@netlify/blobs';
+import { STYLE_SUFFIXES } from '$lib/ai/styles.js';
 
 const rawTokens = env.ALLOWED_TOKENS_LIST || '';
 const tokenArray = rawTokens.split(',').map(t => t.trim());
@@ -38,19 +39,10 @@ const MODEL = 'gemini-2.5-flash-image';
 const DEFAULT_PROMPT =
   "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel.";
 
-const STYLE_SUFFIXES = {
-  Watercolor: 'Render the final image as a soft watercolor painting with gentle washes and bleeding edges.',
-  Crayon: 'Render the final image as a vibrant crayon drawing on lightly textured paper.',
-  'Felt Craft': 'Render the final image as a handmade felt craft scene, with fuzzy 3D fabric textures.',
-  Claymation: 'Render the final image as a claymation scene with sculpted clay characters on a tabletop set.',
-  Storybook: "Render the final image in the style of a classic children's storybook illustration."
-};
-
 export async function POST({ request }) {
   const form = await request.formData();
   const token = form.get('token');
   const imageFile = form.get('image');
-  const customPrompt = form.get('prompt');
   const style = form.get('style');
 
   if (typeof token !== 'string' || !ALLOWED_TOKENS.has(token)) {
@@ -63,16 +55,11 @@ export async function POST({ request }) {
     throw error(500, 'Server is missing GEMINI_API_KEY');
   }
 
-  const rawBase =
-    typeof customPrompt === 'string' && customPrompt.trim()
-      ? customPrompt.trim()
-      : DEFAULT_PROMPT;
-  const basePrompt = /[.!?]$/.test(rawBase) ? rawBase : rawBase + '.';
-  const styleSuffix =
+  const suffix =
     typeof style === 'string' && Object.hasOwn(STYLE_SUFFIXES, style)
-      ? ' ' + STYLE_SUFFIXES[style]
+      ? STYLE_SUFFIXES[style]
       : '';
-  const finalPrompt = basePrompt + styleSuffix;
+  const finalPrompt = suffix ? DEFAULT_PROMPT + ' ' + suffix : DEFAULT_PROMPT;
 
   await recordUsage(token, { style, prompt: finalPrompt });
 

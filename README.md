@@ -184,8 +184,11 @@ MIT
 * [x] Improve lighthouse score
 * [x] Tap not working in drawing canvas, only dragging
 * [x] Add record access token to parent settings in AI area with toggles disabled unless access token granted.
+* [x] Progress meter or progressive fill in while image is generating
+* [ ] Add playwright, especially so Claude can UI test
 * [ ] Maybe add route to confirm access token as well?
-* [ ] Progress meter or progressive fill in while image is generating
+* [ ] Add download image animation and prevent multiple downloads
+* [ ] Simplify prompts
 * [ ] BYO Key?
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
