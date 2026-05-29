@@ -191,6 +191,8 @@ MIT
 * [x] Add Eraser control
 * [x] Increase size of line thickness pop-up
 * [x] See what aspect ratios we can use when rendering an image - try to preserve current canvas
+* [x] Make delete tutorial friendlier
+* [ ] Make timer animation more fun
 * [ ] Add playwright, especially so Claude can UI test
 * [ ] Maybe add route to confirm access token as well?
 * [ ] BYO Key?
