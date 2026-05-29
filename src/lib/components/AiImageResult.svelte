@@ -15,6 +15,7 @@
   let progress = $state(0); // 0 → 1
   let revealed = $state(false); // final image crossfaded in
   let waiting = $state(false); // overran the estimate, gently reassuring
+  let exiting = $state(false); // download tapped: modal morphs into a polaroid and flies off
 
   let rafId = 0;
   let startTime = 0;
@@ -90,6 +91,7 @@
       revealed = false;
       waiting = false;
       done = false;
+      exiting = false;
     }
   });
 
@@ -128,16 +130,33 @@
   }
 
   function handleDownload() {
-    if (!ui.aiResultUrl) return;
+    if (!ui.aiResultUrl || exiting) return;
     const a = document.createElement('a');
     a.href = ui.aiResultUrl;
     a.download = `splotch-ai-${timestamp()}.png`;
     document.body.appendChild(a);
     a.click();
     a.remove();
+
+    // Morph the modal into a polaroid, hold it in the center, then let it fly
+    // off to the bottom-left. The fly-out animation's end dismisses the modal.
+    exiting = true;
+  }
+
+  // Fires when the polaroid fly-out finishes. We match on target rather than
+  // animation name because Svelte scopes local @keyframes names at build time
+  // (e.g. "svelte-abc123-ai-polaroid-fly"), so an exact name check won't match.
+  // The dialog's only own animation is the fly-out; child animations (sparkles,
+  // the dial out-transition, the download pop) bubble up but have a different
+  // target, so this stays specific to the send-off.
+  function handleAnimationEnd(e) {
+    if (exiting && e.target === dialogEl) {
+      closeAiResult();
+    }
   }
 
   function handleDialogPointerDown(e) {
+    if (exiting) return;
     const rect = dialogEl.getBoundingClientRect();
     const inside =
       e.clientX >= rect.left && e.clientX <= rect.right &&
@@ -156,9 +175,11 @@
 
 <dialog
   class="ai-result-modal"
+  class:polaroid-mode={exiting}
   bind:this={dialogEl}
   onpointerdown={handleDialogPointerDown}
   onclose={handleDialogClose}
+  onanimationend={handleAnimationEnd}
 >
   <div class="ai-result-content">
     <button class="ai-result-close" aria-label="Close" onclick={closeAiResult}>
@@ -209,8 +230,9 @@
       </div>
 
       {#if revealed && ui.aiResultUrl}
-        <button class="ai-result-download" aria-label="Download" onclick={handleDownload}>
+        <button class="ai-result-download" onclick={handleDownload}>
           <Icon name="download" class="ai-result-download-icon" />
+          <span>Download</span>
         </button>
       {/if}
     {/if}
@@ -471,16 +493,19 @@
 
   /* ── Download button ── */
   .ai-result-download {
-    width: 56px;
     height: 56px;
+    padding: 0 30px;
     background: #ab71e1;
     border: none;
-    border-radius: 50%;
+    border-radius: 28px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 14px;
+    gap: 10px;
+    color: white;
+    font-size: 17px;
+    font-weight: 700;
     box-shadow: 0 4px 12px rgba(171, 113, 225, 0.4);
     transition: transform 0.15s ease, background 0.2s ease;
     animation: downloadPop 0.4s backwards 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -495,10 +520,48 @@
   }
 
   :global(.ai-result-download-icon) {
-    width: 100%;
-    height: 100%;
+    width: 22px;
+    height: 22px;
     pointer-events: none;
     filter: invert(100%);
+  }
+
+  /* ── Polaroid send-off: tapping download morphs the whole modal into a
+        polaroid that lingers, then sails off to the bottom-left and closes. ── */
+  .ai-result-modal.polaroid-mode {
+    background: #fdfcf7;
+    /* Tilt and settle like a freshly printed photo, then fly off after a beat.
+       The fly-out's delay (0.9s) covers the morph + a brief hold in the center. */
+    transform: translate(-50%, -50%) rotate(-3deg);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.4s ease;
+    animation: ai-polaroid-fly 0.85s 0.9s cubic-bezier(0.55, 0, 0.85, 0.2) forwards;
+  }
+
+  /* Hide the controls so the card reads as a clean polaroid. The download
+     button keeps its footprint, leaving the thick blank border at the bottom. */
+  .ai-result-modal.polaroid-mode .ai-result-close,
+  .ai-result-modal.polaroid-mode .ai-result-download {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  @keyframes ai-polaroid-fly {
+    0% {
+      transform: translate(-50%, -50%) rotate(-3deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(calc(-50% - 42vw), calc(-50% + 48vh)) scale(0.12) rotate(-28deg);
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ai-result-modal.polaroid-mode {
+      transition: none;
+      animation: ai-polaroid-fly 0.4s 0.5s ease forwards;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
