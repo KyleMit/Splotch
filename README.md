@@ -185,6 +185,7 @@ MIT
 * [x] Tap not working in drawing canvas, only dragging
 * [x] Add record access token to parent settings in AI area with toggles disabled unless access token granted.
 * [ ] Maybe add route to confirm access token as well?
+* [ ] Progress meter or progressive fill in while image is generating
 * [ ] BYO Key?
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg

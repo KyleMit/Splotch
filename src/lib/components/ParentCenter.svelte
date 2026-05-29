@@ -23,6 +23,7 @@
   let installOs = $state('ios');
   let pwaInstalled = $state(false);
   let accessCodeInput = $state('');
+  let aiLocked = $derived(!settings.aiAccessToken);
 
   function submitAccessCode() {
     const code = accessCodeInput.trim();
@@ -331,11 +332,17 @@
       </section>
 
       <section class="setting-group">
-        <h3 class="setting-group-heading">AI</h3>
+        <h3 class="setting-group-heading">
+          AI
+          {#if aiLocked}
+            <span class="lock-badge"><Icon name="lock" class="lock-badge-icon" />Locked</span>
+          {/if}
+        </h3>
 
-        {#if !settings.aiAccessToken}
+        {#if aiLocked}
           <div class="setting access-code">
             <label class="access-code-label" for="aiAccessCode">Access Code</label>
+            <p class="access-code-hint">Enter an access code to unlock AI features.</p>
             <div class="access-code-row">
               <input
                 id="aiAccessCode"
@@ -356,48 +363,50 @@
           </div>
         {/if}
 
-        <div class="setting">
-          <div class="setting-toggle">
-            <label class="setting-info" for="aiImageToggle">
-              <Icon name="wand-stars" class="setting-icon" />
-              <span class="setting-label">AI Image Button</span>
-            </label>
-            <button
-              class="toggle-switch"
-              class:active={settings.aiAccessToken && settings.aiImageEnabled}
-              id="aiImageToggle"
-              role="switch"
-              aria-label="AI Image Button"
-              aria-checked={settings.aiAccessToken && settings.aiImageEnabled}
-              disabled={!settings.aiAccessToken}
-              onclick={() => setAiImage(!settings.aiImageEnabled)}
-            >
-              <span class="toggle-switch-thumb"></span>
-            </button>
-          </div>
-        </div>
-
-        {#if settings.aiAccessToken && settings.aiImageEnabled}
-          <div class="setting" transition:slide={{ duration: 220 }}>
+        <div class="ai-controls" class:locked={aiLocked} aria-hidden={aiLocked}>
+          <div class="setting">
             <div class="setting-toggle">
-              <label class="setting-info" for="aiCustomizationToggle">
-                <Icon name="customize" class="setting-icon" />
-                <span class="setting-label">AI Customization</span>
+              <label class="setting-info" for="aiImageToggle">
+                <Icon name="wand-stars" class="setting-icon" />
+                <span class="setting-label">AI Image Button</span>
               </label>
               <button
                 class="toggle-switch"
-                class:active={settings.aiCustomizationEnabled}
-                id="aiCustomizationToggle"
+                class:active={!aiLocked && settings.aiImageEnabled}
+                id="aiImageToggle"
                 role="switch"
-                aria-label="AI Customization"
-                aria-checked={settings.aiCustomizationEnabled}
-                onclick={() => setAiCustomization(!settings.aiCustomizationEnabled)}
+                aria-label="AI Image Button"
+                aria-checked={!aiLocked && settings.aiImageEnabled}
+                disabled={aiLocked}
+                onclick={() => setAiImage(!settings.aiImageEnabled)}
               >
                 <span class="toggle-switch-thumb"></span>
               </button>
             </div>
           </div>
-        {/if}
+
+          {#if !aiLocked && settings.aiImageEnabled}
+            <div class="setting" transition:slide={{ duration: 220 }}>
+              <div class="setting-toggle">
+                <label class="setting-info" for="aiCustomizationToggle">
+                  <Icon name="customize" class="setting-icon" />
+                  <span class="setting-label">AI Customization</span>
+                </label>
+                <button
+                  class="toggle-switch"
+                  class:active={settings.aiCustomizationEnabled}
+                  id="aiCustomizationToggle"
+                  role="switch"
+                  aria-label="AI Customization"
+                  aria-checked={settings.aiCustomizationEnabled}
+                  onclick={() => setAiCustomization(!settings.aiCustomizationEnabled)}
+                >
+                  <span class="toggle-switch-thumb"></span>
+                </button>
+              </div>
+            </div>
+          {/if}
+        </div>
       </section>
     </div>
 
@@ -782,13 +791,48 @@
     background: #ddd;
   }
 
+  /* Locked AI controls */
+  .lock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #eee;
+    color: #999;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    vertical-align: middle;
+  }
+
+  :global(.lock-badge-icon) {
+    width: 13px;
+    height: 13px;
+  }
+
+  .ai-controls.locked {
+    opacity: 0.5;
+    filter: grayscale(1);
+    pointer-events: none;
+    user-select: none;
+  }
+
   /* AI access code entry */
   .access-code-label {
     display: block;
     font-size: 14px;
     font-weight: 500;
     color: #555;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
+  }
+
+  .access-code-hint {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    color: #777;
+    line-height: 1.4;
   }
 
   .access-code-row {
