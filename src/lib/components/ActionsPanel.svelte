@@ -205,7 +205,7 @@
     display: flex;
     flex-direction: reverse;
     gap: 8px;
-    z-index: 900;
+    z-index: 901;
     transition: left 0.3s ease;
   }
 
@@ -316,6 +316,16 @@
       left: calc(100% + 8px);
       bottom: 0;
       flex-direction: row;
+    }
+  }
+
+  /* On very narrow portrait screens the horizontal flyout runs off the right
+     edge, so stack the sizes vertically. It stays anchored to the right of the
+     button (bottom-aligned) so it runs up alongside the other action buttons
+     instead of over the top of them. */
+  @media (orientation: portrait) and (max-width: 319px) {
+    .stroke-width-menu {
+      flex-direction: column;
     }
   }
 
