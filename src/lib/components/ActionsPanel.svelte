@@ -301,7 +301,7 @@
     left: 0;
     bottom: calc(100% + 8px);
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     gap: 6px;
     padding: 6px;
     background: white;
@@ -315,6 +315,7 @@
     .stroke-width-menu {
       left: calc(100% + 8px);
       bottom: 0;
+      flex-direction: row;
     }
   }
 
