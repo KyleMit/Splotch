@@ -1,3 +1,4 @@
+// cSpell:ignore SLOWMO
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 4173;
@@ -8,7 +9,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: 'list',
+  reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL,
     trace: 'on-first-retry',
