@@ -10,6 +10,7 @@
     setScreenshot,
     setUndoButton,
     setStrokeWidthControl,
+    setEraser,
     setColoringBook,
     setAiImage,
     setAiCustomization,
@@ -264,6 +265,26 @@
               aria-label="Stroke Width Button"
               aria-checked={settings.strokeWidthControlEnabled}
               onclick={() => setStrokeWidthControl(!settings.strokeWidthControlEnabled)}
+            >
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="setting">
+          <div class="setting-toggle">
+            <label class="setting-info" for="eraserToggle">
+              <Icon name="eraser" class="setting-icon" />
+              <span class="setting-label">Eraser Button</span>
+            </label>
+            <button
+              class="toggle-switch"
+              class:active={settings.eraserEnabled}
+              id="eraserToggle"
+              role="switch"
+              aria-label="Eraser Button"
+              aria-checked={settings.eraserEnabled}
+              onclick={() => setEraser(!settings.eraserEnabled)}
             >
               <span class="toggle-switch-thumb"></span>
             </button>

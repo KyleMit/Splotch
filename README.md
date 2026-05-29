@@ -187,7 +187,8 @@ MIT
 * [x] Progress meter or progressive fill in while image is generating
 * [x] Only allow for pre-selected options in customization or have a separate setting to allow for custom prompt
 * [x] Polaroid screenshot should be shape of canvas, maybe also add polaroid frame
-* [ ] Add download image animation and prevent multiple downloads
+* [x] Add download image animation and prevent multiple downloads
+* [x] Add Eraser control
 * [ ] See what aspect ratios we can use when rendering an image - try to preserve current canvas
 * [ ] Add playwright, especially so Claude can UI test
 * [ ] Maybe add route to confirm access token as well?
@@ -212,7 +213,6 @@ MIT
   * [ ] It takes about 10s on ios for the pencil sounds to come in
   * [ ] Sometimes it doesn't register clicks on color changes
 * [ ] Controls
-  * [ ] Eraser (/eraser branch)
   * [ ] Brush type (blend mode with previous drawing)
 
 

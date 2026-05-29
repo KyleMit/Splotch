@@ -3,9 +3,11 @@
   import {
     initDrawingCanvas,
     setColor,
-    setStrokeWidth
+    setStrokeWidth,
+    setEraserMode
   } from '$lib/drawing/engine.js';
   import { colors } from '$lib/state/colors.svelte.js';
+  import { toolState } from '$lib/state/tool.svelte.js';
   import { canvasState } from '$lib/state/canvas.svelte.js';
   import { strokeState, getStrokeWidthPx } from '$lib/state/strokeWidth.svelte.js';
   import { coloringBookState } from '$lib/state/coloringBook.svelte.js';
@@ -38,6 +40,10 @@
 
   $effect(() => {
     setStrokeWidth(getStrokeWidthPx(strokeState.size));
+  });
+
+  $effect(() => {
+    setEraserMode(toolState.eraser);
   });
 
   // Body class tracks whether an overlay is active — paper texture moves

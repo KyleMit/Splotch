@@ -9,6 +9,7 @@
   } from '$lib/state/colors.svelte.js';
   import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine.js';
   import { openColorPicker } from '$lib/state/ui.svelte.js';
+  import { toolState, selectPen } from '$lib/state/tool.svelte.js';
 
   let paletteEl;
   let swatchEls = $state({});
@@ -45,6 +46,7 @@
   }
 
   function handleSwatchUp(e, hex) {
+    selectPen();
     selectPaletteColor(hex);
     ringAnimateKey = hex + ':' + Date.now();
     releaseAllPointers();
@@ -54,6 +56,7 @@
   }
 
   function handleCustomUp(e) {
+    selectPen();
     selectCustomSwatch();
     if (swatchEls[CUSTOM_SWATCH]) {
       const rect = swatchEls[CUSTOM_SWATCH].getBoundingClientRect();
@@ -159,10 +162,10 @@
   {#each PALETTE_COLORS as { hex, label }, i (hex)}
     <button
       class="color-swatch"
-      class:active={colors.activeSwatch === hex}
+      class:active={!toolState.eraser && colors.activeSwatch === hex}
       class:ring-animate={ringAnimateKey?.startsWith(hex + ':')}
       data-color={hex}
-      style="background-color: {hex}; {colors.activeSwatch === hex ? `box-shadow: ${ringShadow(hex)}; --ring-color: ${getRingColor(hex)};` : ''}"
+      style="background-color: {hex}; {!toolState.eraser && colors.activeSwatch === hex ? `box-shadow: ${ringShadow(hex)}; --ring-color: ${getRingColor(hex)};` : ''}"
       style:display={isVisible(i, totalSwatches) ? 'block' : 'none'}
       aria-label={label}
       onpointerup={(e) => handleSwatchUp(e, hex)}
@@ -174,10 +177,10 @@
 
   <button
     class="color-swatch gradient-swatch"
-    class:active={colors.activeSwatch === CUSTOM_SWATCH}
+    class:active={!toolState.eraser && colors.activeSwatch === CUSTOM_SWATCH}
     data-color="custom"
     aria-label="Custom Color"
-    style={colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected ? `box-shadow: ${gradientRingShadow(colors.customColor)};` : ''}
+    style={!toolState.eraser && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected ? `box-shadow: ${gradientRingShadow(colors.customColor)};` : ''}
     style:display={isVisible(totalSwatches - 1, totalSwatches) ? 'block' : 'none'}
     onpointerup={handleCustomUp}
     onpointerdown={(e) => { releaseAllPointers(); e.preventDefault(); e.stopPropagation(); }}

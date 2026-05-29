@@ -6,6 +6,7 @@
 let canvas, ctx;
 let currentColor = '';
 let currentLineWidth = 8;
+let eraserActive = false;
 let lastColorChangeTime = 0;
 let activePointerIds = new Set();
 let activePointers = new Map();
@@ -107,6 +108,7 @@ function startDrawing(e) {
       isDrawing: true,
       color: currentColor,
       lineWidth: currentLineWidth,
+      erase: eraserActive,
       lastTime: Date.now(),
       distanceWindow: [],
       windowStartTime: Date.now()
@@ -116,6 +118,11 @@ function startDrawing(e) {
 
   const dotRadius = currentLineWidth / 2;
 
+  // Erasing clears pixels via destination-out; the stroke color is irrelevant
+  // there, only its (opaque) alpha matters.
+  const op = eraserActive ? 'destination-out' : 'source-over';
+
+  ctx.globalCompositeOperation = op;
   ctx.strokeStyle = currentColor;
   ctx.fillStyle = currentColor;
   ctx.beginPath();
@@ -123,8 +130,10 @@ function startDrawing(e) {
   ctx.fill();
   ctx.beginPath();
   ctx.moveTo(x, y);
+  ctx.globalCompositeOperation = 'source-over';
 
   if (virtualCtx) {
+    virtualCtx.globalCompositeOperation = op;
     virtualCtx.strokeStyle = currentColor;
     virtualCtx.fillStyle = currentColor;
     virtualCtx.beginPath();
@@ -132,6 +141,7 @@ function startDrawing(e) {
     virtualCtx.fill();
     virtualCtx.beginPath();
     virtualCtx.moveTo(x, y);
+    virtualCtx.globalCompositeOperation = 'source-over';
   }
 
   if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0 });
@@ -165,20 +175,26 @@ function draw(e) {
   const windowTime = Math.max(now - pointerState.windowStartTime, 1);
   const speed = totalDistance / windowTime;
 
+  const op = pointerState.erase ? 'destination-out' : 'source-over';
+
+  ctx.globalCompositeOperation = op;
   ctx.strokeStyle = pointerState.color;
   ctx.lineWidth = pointerState.lineWidth;
   ctx.beginPath();
   ctx.moveTo(pointerState.x, pointerState.y);
   ctx.lineTo(x, y);
   ctx.stroke();
+  ctx.globalCompositeOperation = 'source-over';
 
   if (virtualCtx) {
+    virtualCtx.globalCompositeOperation = op;
     virtualCtx.strokeStyle = pointerState.color;
     virtualCtx.lineWidth = pointerState.lineWidth;
     virtualCtx.beginPath();
     virtualCtx.moveTo(pointerState.x, pointerState.y);
     virtualCtx.lineTo(x, y);
     virtualCtx.stroke();
+    virtualCtx.globalCompositeOperation = 'source-over';
   }
 
   pointerState.x = x;
@@ -191,11 +207,17 @@ function draw(e) {
 function stopDrawing(e) {
   if (!e || e.pointerId === undefined) return;
 
+  const wasErasing = activePointers.get(e.pointerId)?.erase;
+
   activePointers.delete(e.pointerId);
   activePointerIds.delete(e.pointerId);
 
   ctx.beginPath();
   if (virtualCtx) virtualCtx.beginPath();
+
+  // Erasing can leave the canvas blank; re-scan so empty-dependent buttons
+  // (screenshot, AI) reflect the new state.
+  if (wasErasing) setCanvasEmptyState(scanCanvasIsEmpty());
 
   if (onDrawStopCallback) onDrawStopCallback();
 
@@ -276,6 +298,10 @@ export function setColor(color) {
 
 export function setStrokeWidth(widthPx) {
   currentLineWidth = widthPx;
+}
+
+export function setEraserMode(active) {
+  eraserActive = active;
 }
 
 export function clearCanvas() {

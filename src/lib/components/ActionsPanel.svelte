@@ -4,6 +4,7 @@
   import { canvasState } from '$lib/state/canvas.svelte.js';
   import { settings } from '$lib/state/settings.svelte.js';
   import { strokeState, STROKE_SIZES, setStrokeSize } from '$lib/state/strokeWidth.svelte.js';
+  import { toolState, selectEraser } from '$lib/state/tool.svelte.js';
   import { ui, openColoringBook, openAiPrompt } from '$lib/state/ui.svelte.js';
   import { undo } from '$lib/drawing/engine.js';
   import { saveScreenshot } from '$lib/drawing/screenshot.js';
@@ -73,6 +74,10 @@
     strokeState.menuOpen = !strokeState.menuOpen;
   }
 
+  function handleEraserClick() {
+    selectEraser();
+  }
+
   function handleStrokeSizeClick(size) {
     setStrokeSize(size);
     strokeState.menuOpen = false;
@@ -128,6 +133,18 @@
       {/each}
     </div>
   </div>
+
+  <button
+    class="action-button"
+    class:active={toolState.eraser}
+    id="eraserButton"
+    aria-label="Eraser"
+    aria-pressed={toolState.eraser}
+    hidden={!settings.eraserEnabled}
+    onclick={handleEraserClick}
+  >
+    <Icon name="eraser" class="action-icon" />
+  </button>
 
   <button
     class="action-button"
@@ -230,6 +247,18 @@
   .action-button:active:not(:disabled) {
     transform: scale(0.95);
     background: #ede7f6;
+  }
+
+  /* Selected tool (e.g. eraser): purple ring + tinted fill, matching the
+     active stroke-size button. */
+  .action-button.active {
+    border-color: #AB71E1;
+    background: #ede7f6;
+    box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
+  }
+
+  .action-button.active :global(.action-icon) {
+    filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
   }
 
   .action-button:disabled,

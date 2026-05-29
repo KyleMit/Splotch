@@ -5,6 +5,7 @@ const SAVE_ON_DELETE_KEY = 'splotch-save-on-delete';
 const SCREENSHOT_KEY = 'splotch-screenshot-enabled';
 const UNDO_KEY = 'splotch-undo-button-enabled';
 const STROKE_CTRL_KEY = 'splotch-stroke-width-control';
+const ERASER_KEY = 'splotch-eraser-enabled';
 const COLORING_BOOK_KEY = 'splotch-coloring-book-enabled';
 const AI_IMAGE_KEY = 'splotch-ai-image-enabled';
 const AI_CUSTOMIZATION_KEY = 'splotch-ai-customization-enabled';
@@ -17,6 +18,7 @@ export const settings = $state({
   screenshotEnabled: readBool(SCREENSHOT_KEY, true),
   undoButtonEnabled: readBool(UNDO_KEY, true),
   strokeWidthControlEnabled: readBool(STROKE_CTRL_KEY, true),
+  eraserEnabled: readBool(ERASER_KEY, true),
   coloringBookEnabled: readBool(COLORING_BOOK_KEY, true),
   aiImageEnabled: readBool(AI_IMAGE_KEY, true),
   aiCustomizationEnabled: readBool(AI_CUSTOMIZATION_KEY, true),
@@ -28,6 +30,7 @@ export function setSaveOnDelete(v) { settings.saveOnDeleteEnabled = v; writeBool
 export function setScreenshot(v) { settings.screenshotEnabled = v; writeBool(SCREENSHOT_KEY, v); }
 export function setUndoButton(v) { settings.undoButtonEnabled = v; writeBool(UNDO_KEY, v); }
 export function setStrokeWidthControl(v) { settings.strokeWidthControlEnabled = v; writeBool(STROKE_CTRL_KEY, v); }
+export function setEraser(v) { settings.eraserEnabled = v; writeBool(ERASER_KEY, v); }
 export function setColoringBook(v) { settings.coloringBookEnabled = v; writeBool(COLORING_BOOK_KEY, v); }
 export function setAiImage(v) { settings.aiImageEnabled = v; writeBool(AI_IMAGE_KEY, v); }
 export function setAiCustomization(v) { settings.aiCustomizationEnabled = v; writeBool(AI_CUSTOMIZATION_KEY, v); }
