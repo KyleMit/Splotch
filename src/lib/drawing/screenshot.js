@@ -1,4 +1,4 @@
-import { exportCanvasBlob } from './engine.js';
+import { exportCanvasBlob, getActiveCanvas } from './engine.js';
 import { getActiveOverlayImage } from './overlay.js';
 
 function timestamp() {
@@ -38,6 +38,13 @@ function playPolaroidAnimation(imageUrl) {
   img.className = 'polaroid-image';
   img.src = imageUrl;
   img.alt = '';
+
+  // Match the polaroid photo to the drawing's aspect ratio instead of
+  // cropping it to a fixed shape.
+  const canvas = getActiveCanvas();
+  if (canvas && canvas.width > 0 && canvas.height > 0) {
+    img.style.setProperty('--polaroid-aspect', `${canvas.width} / ${canvas.height}`);
+  }
 
   const button = document.getElementById('screenshotButton');
   if (button) {

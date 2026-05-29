@@ -185,10 +185,12 @@ MIT
 * [x] Tap not working in drawing canvas, only dragging
 * [x] Add record access token to parent settings in AI area with toggles disabled unless access token granted.
 * [x] Progress meter or progressive fill in while image is generating
+* [x] Only allow for pre-selected options in customization or have a separate setting to allow for custom prompt
+* [x] Polaroid screenshot should be shape of canvas, maybe also add polaroid frame
+* [ ] Add download image animation and prevent multiple downloads
+* [ ] See what aspect ratios we can use when rendering an image - try to preserve current canvas
 * [ ] Add playwright, especially so Claude can UI test
 * [ ] Maybe add route to confirm access token as well?
-* [ ] Add download image animation and prevent multiple downloads
-* [ ] Simplify prompts
 * [ ] BYO Key?
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
@@ -200,9 +202,7 @@ MIT
   * [ ] Pages should be able to be favorited. First book should be favorites
   * [ ] Delete should wipe the page (or first book should be to clear the background)
 * [ ] Add sparkles to AI Customization screen
-* [ ] Only allow for pre-selected options in customization or have a separate setting to allow for custom prompt
 * [ ] Increase size of line thickness pop-up
-* [ ] Polaroid screenshot should be shape of canvas, maybe also add polaroid frame
 * [ ] Parent center control to increase button size
 * [ ] Investigate line smoothing while drawing
 * [ ] Efficiently layout broad range of colors on small devices
