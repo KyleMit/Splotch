@@ -99,12 +99,7 @@
       return;
     }
 
-    try {
-      await generateAiImage();
-    } catch (err) {
-      console.error(err);
-      alert("Sorry, that didn't work. Please try again.");
-    }
+    generateAiImage();
   }
 </script>
 

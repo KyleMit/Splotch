@@ -14,8 +14,6 @@
   let drawingBlob = null;
   let prompt = $state('');
   let style = $state('');
-  let generating = $state(false);
-  let errorMsg = $state(null);
 
   $effect(() => {
     if (!dialogEl) return;
@@ -28,7 +26,6 @@
         }
         prompt = '';
         style = '';
-        errorMsg = null;
         loadPreview();
         dialogEl.showModal();
       }
@@ -52,23 +49,18 @@
     drawingBlob = null;
   }
 
-  async function handleGenerate() {
-    if (generating || !drawingBlob) return;
-    generating = true;
-    errorMsg = null;
-    try {
-      await generateAiImage({ blob: drawingBlob, prompt: prompt.trim(), style });
-      closeAiPrompt();
-    } catch (err) {
-      console.error(err);
-      errorMsg = "Sorry, that didn't work. Please try again.";
-    } finally {
-      generating = false;
-    }
+  function handleGenerate() {
+    if (!drawingBlob) return;
+    // Hand off immediately to the result modal, which shows the progress dial
+    // (and any error) over the blurred drawing.
+    const blob = drawingBlob;
+    const trimmed = prompt.trim();
+    const chosenStyle = style;
+    closeAiPrompt();
+    generateAiImage({ blob, prompt: trimmed, style: chosenStyle });
   }
 
   function handleDialogPointerDown(e) {
-    if (generating) return;
     const rect = dialogEl.getBoundingClientRect();
     const inside =
       e.clientX >= rect.left && e.clientX <= rect.right &&
@@ -92,7 +84,7 @@
   onclose={handleDialogClose}
 >
   <div class="ai-prompt-content">
-    <button class="ai-prompt-close" aria-label="Close" onclick={closeAiPrompt} disabled={generating}>
+    <button class="ai-prompt-close" aria-label="Close" onclick={closeAiPrompt}>
       <Icon name="close" class="ai-prompt-close-icon" />
     </button>
 
@@ -107,10 +99,9 @@
       placeholder={DEFAULT_PROMPT}
       bind:value={prompt}
       rows="3"
-      disabled={generating}
     ></textarea>
 
-    <fieldset class="ai-prompt-styles" disabled={generating}>
+    <fieldset class="ai-prompt-styles">
       <legend>Style</legend>
       <div class="ai-style-options">
         {#each STYLES as s}
@@ -122,20 +113,13 @@
       </div>
     </fieldset>
 
-    {#if errorMsg}
-      <p class="ai-prompt-error">{errorMsg}</p>
-    {/if}
-
     <button
       class="ai-prompt-generate"
       onclick={handleGenerate}
-      disabled={generating || !previewUrl}
+      disabled={!previewUrl}
     >
-      <Icon
-        name={generating ? 'loading' : 'wand-stars'}
-        class="ai-prompt-generate-icon {generating ? 'spin' : ''}"
-      />
-      <span>{generating ? 'Generating…' : 'Generate'}</span>
+      <Icon name="wand-stars" class="ai-prompt-generate-icon" />
+      <span>Generate</span>
     </button>
   </div>
 </dialog>
@@ -302,14 +286,6 @@
     box-shadow: 0 0 0 3px rgba(171, 113, 225, 0.35);
   }
 
-  .ai-prompt-styles[disabled] .ai-style-pill { opacity: 0.5; cursor: not-allowed; }
-
-  .ai-prompt-error {
-    margin: 0;
-    color: #c0392b;
-    font-size: 14px;
-  }
-
   .ai-prompt-generate {
     display: inline-flex;
     align-items: center;
@@ -335,10 +311,5 @@
     width: 22px;
     height: 22px;
     filter: invert(100%);
-  }
-
-  /* aiSpin keyframe lives in app.css (shared with ActionsPanel). */
-  :global(.ai-prompt-generate-icon.spin) {
-    animation: aiSpin 1s linear infinite;
   }
 </style>

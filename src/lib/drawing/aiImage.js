@@ -1,4 +1,9 @@
-import { ui, openAiResult } from '$lib/state/ui.svelte.js';
+import {
+  ui,
+  startAiGeneration,
+  finishAiGeneration,
+  failAiGeneration
+} from '$lib/state/ui.svelte.js';
 import { settings } from '$lib/state/settings.svelte.js';
 import { exportCanvasBlob } from './engine.js';
 import { getActiveOverlayImage } from './overlay.js';
@@ -9,7 +14,9 @@ export async function generateAiImage({ blob = null, prompt = '', style = '' } =
     blob ?? (await exportCanvasBlob(getActiveOverlayImage(), { includePaperTexture: false }));
   if (!imageBlob) return;
 
-  ui.aiGenerating = true;
+  // Open the result modal right away in its loading state, showing the child's
+  // own drawing (blurred) behind the progress dial while we wait.
+  startAiGeneration(URL.createObjectURL(imageBlob));
   try {
     const form = new FormData();
     form.append('token', settings.aiAccessToken);
@@ -23,8 +30,9 @@ export async function generateAiImage({ blob = null, prompt = '', style = '' } =
       throw new Error(`AI image request failed (${res.status}): ${msg}`);
     }
     const outBlob = await res.blob();
-    openAiResult(URL.createObjectURL(outBlob));
-  } finally {
-    ui.aiGenerating = false;
+    finishAiGeneration(URL.createObjectURL(outBlob));
+  } catch (err) {
+    failAiGeneration();
+    console.error(err);
   }
 }
