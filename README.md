@@ -202,21 +202,21 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Put all controls in a side "drawer" that stays open / closed
 * [x] Parent Center toggle should be to enable custom controls
 * [x] Then progressively disclose which custom controls can be pinned
-* [ ] Remove the metaphor of disabling individual controls, and add the metaphor of pinning them. Update the labels of each individual control to say pin.  Use the pin.svg and combine with the icon, in the top right to suggest the control will be pinned when toggling.  If controls are pinned, it means they will stay open even if the drawer is closed.  This allows the user to customize which controls they would like to always see, while hiding the ones they don't want to see.  If every single control is pinned, you can drop the chevron arrows to open close since it won't do anything. If even one is not pinned, then we'll still need chevrons to display the full list.  Make sure the pinned buttons and the collapsable buttons animate in appropriately.  They should not 
+* [x] Add ability to "pin" controls while being able to hide the others
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
+* [ ] The eraser should show a size bubble where it's being applied
+* [ ] The eraser should use the stroke width levels for the pen, but should be about 20% bigger at each level.  It is hard to erase with the same exact size as the current pen.
+* [ ] When hitting the AI option without customization enabled, it should also pull up loading spinner when clicked.
+* [ ] Add Parent Center button to Auto-save AI generated images toggle. If enabled, there no longer needs to be a Download button and you can use the extra real estate to show a bigger picture.
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
 * [ ] Maybe add route to confirm access token as well?
 * [ ] BYO Key?
-* [ ] The eraser should show a size bubble where it's being applied
 * [ ] Figure out what happened to progressive disclosure of top colors
 * [ ] Increase default timer
 * [ ] Increase size of pulsations when overtime
 * [ ] Start adding crazier and crazier animations if time goes super long
 * [ ] If call fails and you need to try again, enable a way to do so immediately
-* [ ] AI option without customization should also pull up loading spinner
-* [ ] When advanced controls are enabled, all buttons should be in a drawer that can be opened and closed
-* [ ] Auto save AI generated images toggle. No longer need download button
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
   * [x] Make sure white backgrounds become transparent

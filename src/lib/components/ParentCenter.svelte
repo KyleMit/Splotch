@@ -7,17 +7,16 @@
     settings,
     setSound,
     setSaveOnDelete,
-    setScreenshot,
-    setUndoButton,
-    setStrokeWidthControl,
-    setEraser,
-    setColoringBook,
+    setStrokeWidthPinned,
+    setEraserPinned,
+    setColoringBookPinned,
+    setScreenshotPinned,
+    setUndoPinned,
     setAiImage,
     setAiCustomization,
     setAiAccessToken,
     setAdvancedControls
   } from '$lib/state/settings.svelte.js';
-  import { clearOverlay } from '$lib/state/coloringBook.svelte.js';
 
   let dialogEl;
   let buttonEl;
@@ -93,15 +92,6 @@
 
   function handleDialogClose() {
     if (ui.parentCenterOpen) closeParentCenter();
-  }
-
-  // Side-effects on top of the persisted settings rune. (Toggles below set
-  // the persisted value directly; we just need to react to it for the
-  // coloring-book case, where disabling should also clear any active page.)
-  function toggleColoringBook() {
-    const next = !settings.coloringBookEnabled;
-    setColoringBook(next);
-    if (!next) clearOverlay();
   }
 </script>
 
@@ -276,17 +266,20 @@
         <div class="setting" transition:slide={{ duration: 220 }}>
           <div class="setting-toggle">
             <label class="setting-info" for="strokeWidthToggle">
-              <Icon name="line-weight" class="setting-icon" />
-              <span class="setting-label">Stroke Width Button</span>
+              <span class="pin-icon-combo">
+                <Icon name="line-weight" class="setting-icon" />
+                <Icon name="pin" class="pin-badge" />
+              </span>
+              <span class="setting-label">Pin Stroke Width</span>
             </label>
             <button
               class="toggle-switch"
-              class:active={settings.strokeWidthControlEnabled}
+              class:active={settings.strokeWidthPinned}
               id="strokeWidthToggle"
               role="switch"
-              aria-label="Stroke Width Button"
-              aria-checked={settings.strokeWidthControlEnabled}
-              onclick={() => setStrokeWidthControl(!settings.strokeWidthControlEnabled)}
+              aria-label="Pin Stroke Width"
+              aria-checked={settings.strokeWidthPinned}
+              onclick={() => setStrokeWidthPinned(!settings.strokeWidthPinned)}
             >
               <span class="toggle-switch-thumb"></span>
             </button>
@@ -296,17 +289,20 @@
         <div class="setting" transition:slide={{ duration: 220 }}>
           <div class="setting-toggle">
             <label class="setting-info" for="eraserToggle">
-              <Icon name="eraser" class="setting-icon" />
-              <span class="setting-label">Eraser Button</span>
+              <span class="pin-icon-combo">
+                <Icon name="eraser" class="setting-icon" />
+                <Icon name="pin" class="pin-badge" />
+              </span>
+              <span class="setting-label">Pin Eraser</span>
             </label>
             <button
               class="toggle-switch"
-              class:active={settings.eraserEnabled}
+              class:active={settings.eraserPinned}
               id="eraserToggle"
               role="switch"
-              aria-label="Eraser Button"
-              aria-checked={settings.eraserEnabled}
-              onclick={() => setEraser(!settings.eraserEnabled)}
+              aria-label="Pin Eraser"
+              aria-checked={settings.eraserPinned}
+              onclick={() => setEraserPinned(!settings.eraserPinned)}
             >
               <span class="toggle-switch-thumb"></span>
             </button>
@@ -316,17 +312,20 @@
         <div class="setting" transition:slide={{ duration: 220 }}>
           <div class="setting-toggle">
             <label class="setting-info" for="coloringBookToggle">
-              <Icon name="shapes" class="setting-icon" />
-              <span class="setting-label">Coloring Book Button</span>
+              <span class="pin-icon-combo">
+                <Icon name="shapes" class="setting-icon" />
+                <Icon name="pin" class="pin-badge" />
+              </span>
+              <span class="setting-label">Pin Coloring Book</span>
             </label>
             <button
               class="toggle-switch"
-              class:active={settings.coloringBookEnabled}
+              class:active={settings.coloringBookPinned}
               id="coloringBookToggle"
               role="switch"
-              aria-label="Coloring Book Button"
-              aria-checked={settings.coloringBookEnabled}
-              onclick={toggleColoringBook}
+              aria-label="Pin Coloring Book"
+              aria-checked={settings.coloringBookPinned}
+              onclick={() => setColoringBookPinned(!settings.coloringBookPinned)}
             >
               <span class="toggle-switch-thumb"></span>
             </button>
@@ -336,17 +335,20 @@
         <div class="setting" transition:slide={{ duration: 220 }}>
           <div class="setting-toggle">
             <label class="setting-info" for="screenshotToggle">
-              <Icon name="camera" class="setting-icon" />
-              <span class="setting-label">Screenshot Button</span>
+              <span class="pin-icon-combo">
+                <Icon name="camera" class="setting-icon" />
+                <Icon name="pin" class="pin-badge" />
+              </span>
+              <span class="setting-label">Pin Screenshot</span>
             </label>
             <button
               class="toggle-switch"
-              class:active={settings.screenshotEnabled}
+              class:active={settings.screenshotPinned}
               id="screenshotToggle"
               role="switch"
-              aria-label="Screenshot Button"
-              aria-checked={settings.screenshotEnabled}
-              onclick={() => setScreenshot(!settings.screenshotEnabled)}
+              aria-label="Pin Screenshot"
+              aria-checked={settings.screenshotPinned}
+              onclick={() => setScreenshotPinned(!settings.screenshotPinned)}
             >
               <span class="toggle-switch-thumb"></span>
             </button>
@@ -356,17 +358,20 @@
         <div class="setting" transition:slide={{ duration: 220 }}>
           <div class="setting-toggle">
             <label class="setting-info" for="undoToggle">
-              <Icon name="undo" class="setting-icon" />
-              <span class="setting-label">Undo Button</span>
+              <span class="pin-icon-combo">
+                <Icon name="undo" class="setting-icon" />
+                <Icon name="pin" class="pin-badge" />
+              </span>
+              <span class="setting-label">Pin Undo</span>
             </label>
             <button
               class="toggle-switch"
-              class:active={settings.undoButtonEnabled}
+              class:active={settings.undoPinned}
               id="undoToggle"
               role="switch"
-              aria-label="Undo Button"
-              aria-checked={settings.undoButtonEnabled}
-              onclick={() => setUndoButton(!settings.undoButtonEnabled)}
+              aria-label="Pin Undo"
+              aria-checked={settings.undoPinned}
+              onclick={() => setUndoPinned(!settings.undoPinned)}
             >
               <span class="toggle-switch-thumb"></span>
             </button>
@@ -776,6 +781,24 @@
     width: 20px;
     height: 20px;
     flex-shrink: 0;
+  }
+
+  /* Control icon with a small pin badge in the top-right, signalling that the
+     toggle pins the control to the always-visible set. */
+  .pin-icon-combo {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+
+  :global(.pin-badge) {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 12px;
+    height: 12px;
+    /* tint to the purple accent so it reads as the pin affordance */
+    filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
   }
 
   .setting-label {
