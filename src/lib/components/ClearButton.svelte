@@ -280,7 +280,7 @@
     bind:this={buttonEl}
     onpointerdown={startClearDrag}
   >
-    <Icon name="trash" class="clear-icon" aria-hidden="true" />
+    <img src="/icons/broom.webp" class="clear-icon" alt="" aria-hidden="true" />
   </button>
 </div>
 
@@ -297,7 +297,7 @@
   <div class="coachmark-ring" bind:this={coachmarkRingEl}></div>
   <div class="coachmark-ghost" bind:this={coachmarkGhostEl}>
     <div class="coachmark-button">
-      <Icon name="trash" class="coachmark-trash" aria-hidden="true" />
+      <img src="/icons/broom.webp" class="coachmark-trash" alt="" aria-hidden="true" />
     </div>
     <Icon name="swipe-down" class="coachmark-hand" aria-hidden="true" />
   </div>
@@ -359,8 +359,9 @@
   }
 
   :global(.clear-icon) {
-    width: 32px;
-    height: 32px;
+    width: 50px;
+    height: 50px;
+    display: block;
     pointer-events: none;
     margin-right: 2px;
     transition: margin 0.3s ease;
@@ -488,8 +489,9 @@
   }
 
   :global(.coachmark-trash) {
-    width: 32px;
-    height: 32px;
+    width: 50px;
+    height: 50px;
+    display: block;
   }
 
   /* Hand rests on the lower-right of the ghost button, like a fingertip. */
@@ -580,8 +582,8 @@
     }
 
     :global(.clear-icon) {
-      width: 32px;
-      height: 32px;
+      width: 50px;
+      height: 50px;
       margin-right: 2px;
     }
   }
