@@ -204,12 +204,17 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Then progressively disclose which custom controls can be pinned
 * [x] Add ability to "pin" controls while being able to hide the others
 * [x] The eraser should show a size bubble where it's being applied
+* [x] The eraser should use the stroke width levels for the pen, but should be about 20% bigger at each level.  It is hard to erase with the same exact size as the current pen.
+* [x] Svgify the trash can icon
+* [ ] When hitting the AI option without customization enabled, it should also pull up loading spinner when clicked.
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
-* [x] The eraser should use the stroke width levels for the pen, but should be about 20% bigger at each level.  It is hard to erase with the same exact size as the current pen.
-* [ ] When hitting the AI option without customization enabled, it should also pull up loading spinner when clicked.
 * [ ] Add Parent Center button to Auto-save AI generated images toggle. If enabled, there no longer needs to be a Download button and you can use the extra real estate to show a bigger picture. Should auto
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
+* [ ] Fun loading sound while AI is loading
+* [ ] Full color the controls
+* [ ] Hand draw icons
+* [ ] Admin Center to provide access codes
 * [ ] Maybe add route to confirm access token as well?
 * [ ] BYO Key?
 * [ ] Figure out what happened to progressive disclosure of top colors
@@ -259,3 +264,6 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * Forest Fairy
 * Wizard's Owl
 
+
+
+I want to create an admin center to manage access codes.  It should be hidden to regular users and validated on the server side. First wire up the access to the admin. the route should live on /admin.  If a user visits the root URL with the query param ?admin-key=xxx then it should save the admin key they provided in local storage
