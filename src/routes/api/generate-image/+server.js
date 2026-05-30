@@ -3,10 +3,7 @@ import { env } from '$env/dynamic/private';
 import { GoogleGenAI } from '@google/genai';
 import { getStore } from '@netlify/blobs';
 import { STYLE_SUFFIXES } from '$lib/ai/styles.js';
-
-const rawTokens = env.ALLOWED_TOKENS_LIST || '';
-const tokenArray = rawTokens.split(',').map(t => t.trim());
-const ALLOWED_TOKENS = new Set(tokenArray);
+import { isAllowedToken } from '$lib/server/tokens.js';
 
 /**
  * Record that a token generated an image, so we can spot a token going rogue.
@@ -45,7 +42,7 @@ export async function POST({ request }) {
   const imageFile = form.get('image');
   const style = form.get('style');
 
-  if (typeof token !== 'string' || !ALLOWED_TOKENS.has(token)) {
+  if (typeof token !== 'string' || !(await isAllowedToken(token))) {
     throw error(403, 'Invalid access token');
   }
   if (!(imageFile instanceof Blob)) {

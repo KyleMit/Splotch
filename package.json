@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
+    "dev:netlify": "netlify dev",
     "build": "vite build",
     "preview": "vite preview",
     "test": "playwright test",

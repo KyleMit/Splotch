@@ -1,58 +1,398 @@
 <script>
-  // Access is validated in +page.server.js before this renders, which also
-  // builds the invite links so the raw token list never ships as client logic.
-  let { data } = $props();
+  import { enhance } from '$app/forms';
+  import Icon from '$lib/components/Icon.svelte';
+
+  // Access is validated in +page.server.js before this renders. Tokens and the
+  // prebuilt invite links arrive via `data`; the raw list logic stays server-side.
+  let { data, form } = $props();
+
+  // Carry the admin key on every mutating request. Named actions drop the
+  // page's query string, so it's re-attached to each form's action URL where
+  // requireAdmin() reads it back from `url`.
+  let key = $derived(encodeURIComponent(data.accessKey ?? ''));
+
+  // Per-row "copied" feedback for the invite links.
+  let copied = $state('');
+  async function copyLink(url) {
+    try {
+      await navigator.clipboard.writeText(url);
+      copied = url;
+      setTimeout(() => {
+        if (copied === url) copied = '';
+      }, 1500);
+    } catch {
+      // Clipboard may be unavailable (e.g. non-secure context); ignore.
+    }
+  }
 </script>
 
-<main class="admin">
-  <h1>Admin</h1>
+<div class="admin-page">
+  <main class="admin">
+    <header class="admin-header">
+      <span class="admin-badge"><Icon name="lock" class="badge-icon" /></span>
+      <div>
+        <h1>Admin</h1>
+        <p class="subtitle">Manage AI access codes</p>
+      </div>
+    </header>
 
-  <section>
-    <h2>Access Tokens</h2>
-    {#if data.invites.length === 0}
-      <p>No tokens configured.</p>
-    {:else}
-      <ul class="invites">
-        {#each data.invites as invite (invite.token)}
-          <li>
-            <span class="token">{invite.token}</span>
-            <a href={invite.url}>{invite.url}</a>
-          </li>
-        {/each}
-      </ul>
+    {#if form?.error}
+      <div class="flash flash-error" role="alert">{form.error}</div>
+    {:else if form?.message}
+      <div class="flash flash-success" role="status">{form.message}</div>
     {/if}
-  </section>
-</main>
+
+    <section class="card">
+      <h2>Add a code</h2>
+      <form method="POST" action={`?/add&access-key=${key}`} use:enhance class="add-form">
+        <input
+          type="text"
+          name="token"
+          placeholder="e.g. sunny-meadow"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          required
+        />
+        <button type="submit" class="btn btn-primary">Add code</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Access codes</h2>
+        <span class="count">{data.invites.length}</span>
+      </div>
+
+      {#if data.invites.length === 0}
+        <div class="empty">
+          <Icon name="wand-stars" class="empty-icon" />
+          <p>No access codes yet. Add one above to start handing out invites.</p>
+        </div>
+      {:else}
+        <ul class="invites">
+          {#each data.invites as invite (invite.token)}
+            <li class="invite">
+              <div class="invite-info">
+                <span class="token">{invite.token}</span>
+                <a class="invite-url" href={invite.url}>{invite.url}</a>
+              </div>
+              <div class="invite-actions">
+                <button
+                  type="button"
+                  class="btn btn-ghost"
+                  class:copied={copied === invite.url}
+                  onclick={() => copyLink(invite.url)}
+                >
+                  {copied === invite.url ? 'Copied!' : 'Copy link'}
+                </button>
+                <form method="POST" action={`?/remove&access-key=${key}`} use:enhance>
+                  <input type="hidden" name="token" value={invite.token} />
+                  <button type="submit" class="btn btn-danger" aria-label={`Remove ${invite.token}`}>
+                    <Icon name="trash" class="trash-icon" />
+                  </button>
+                </form>
+              </div>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </section>
+  </main>
+</div>
 
 <style>
-  .admin {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-    font-family: 'Quicksand Variable', sans-serif;
+  /* The global app.css locks the body (no scroll, no text selection) for the
+     drawing canvas. The admin page is a normal document, so it opts back in. */
+  .admin-page {
+    position: fixed;
+    inset: 0;
+    overflow-y: auto;
+    background: #f5f5f5;
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-overflow-scrolling: touch;
   }
 
+  .admin {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: clamp(20px, 5vw, 48px) 16px 64px;
+    font-family: 'Quicksand Variable', 'Quicksand', sans-serif;
+    color: #333;
+  }
+
+  .admin-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .admin-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #AB71E1, #7c4dcf);
+    box-shadow: 0 6px 16px rgba(124, 77, 207, 0.35);
+    flex-shrink: 0;
+  }
+
+  :global(.admin-badge .badge-icon) {
+    width: 26px;
+    height: 26px;
+    filter: brightness(0) invert(1);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .subtitle {
+    margin: 2px 0 0;
+    color: #888;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  /* Flash messages */
+  .flash {
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+
+  .flash-success {
+    background: #ecfdf3;
+    color: #1f7a4d;
+    border: 1px solid #b6f0cf;
+  }
+
+  .flash-error {
+    background: #fef2f2;
+    color: #b42318;
+    border: 1px solid #fbd5d2;
+  }
+
+  /* Cards */
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  }
+
+  .card h2 {
+    margin: 0 0 16px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #444;
+  }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .card-head h2 {
+    margin: 0;
+  }
+
+  .count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 12px;
+    background: #f0e9fb;
+    color: #7c4dcf;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  /* Add form */
+  .add-form {
+    display: flex;
+    gap: 10px;
+  }
+
+  .add-form input {
+    flex: 1;
+    min-width: 0;
+    padding: 11px 14px;
+    font-size: 15px;
+    font-family: inherit;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: #fff;
+    color: #333;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .add-form input:focus {
+    outline: none;
+    border-color: #AB71E1;
+    box-shadow: 0 0 0 3px rgba(171, 113, 225, 0.18);
+  }
+
+  /* Buttons */
+  .btn {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.05s ease;
+    white-space: nowrap;
+  }
+
+  .btn:active {
+    transform: translateY(1px);
+  }
+
+  .btn-primary {
+    padding: 11px 18px;
+    color: #fff;
+    background: #AB71E1;
+    flex-shrink: 0;
+  }
+
+  .btn-primary:hover {
+    background: #9961d1;
+  }
+
+  .btn-ghost {
+    padding: 8px 14px;
+    color: #7c4dcf;
+    background: #f5f0fc;
+  }
+
+  .btn-ghost:hover {
+    background: #ece0fb;
+  }
+
+  .btn-ghost.copied {
+    color: #1f7a4d;
+    background: #ecfdf3;
+  }
+
+  .btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    color: #b42318;
+    background: #fef2f2;
+  }
+
+  .btn-danger:hover {
+    background: #fbe0de;
+  }
+
+  :global(.btn-danger .trash-icon) {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Invite list */
   .invites {
     list-style: none;
     padding: 0;
+    margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 10px;
   }
 
-  .invites li {
+  .invite {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    background: #fafafa;
+  }
+
+  .invite-info {
     display: flex;
     flex-direction: column;
-    gap: 0.125rem;
+    gap: 3px;
+    min-width: 0;
   }
 
   .token {
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 15px;
+    color: #333;
   }
 
-  .invites a {
+  .invite-url {
     font-family: 'Courier New', monospace;
-    font-size: 0.85rem;
+    font-size: 12.5px;
+    color: #999;
+    text-decoration: none;
     word-break: break-all;
+  }
+
+  .invite-url:hover {
+    color: #7c4dcf;
+    text-decoration: underline;
+  }
+
+  .invite-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 24px 12px;
+    color: #999;
+  }
+
+  :global(.empty .empty-icon) {
+    width: 40px;
+    height: 40px;
+    opacity: 0.4;
+    margin-bottom: 10px;
+  }
+
+  .empty p {
+    margin: 0;
+    font-size: 14px;
+    max-width: 320px;
+    margin-inline: auto;
+  }
+
+  @media (max-width: 480px) {
+    .invite {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .invite-actions {
+      justify-content: flex-end;
+    }
   }
 </style>

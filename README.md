@@ -206,6 +206,7 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] The eraser should show a size bubble where it's being applied
 * [x] The eraser should use the stroke width levels for the pen, but should be about 20% bigger at each level.  It is hard to erase with the same exact size as the current pen.
 * [x] Svgify the trash can icon
+* [ ] Flash of 2 row configuration then 1 row
 * [ ] When hitting the AI option without customization enabled, it should also pull up loading spinner when clicked.
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
