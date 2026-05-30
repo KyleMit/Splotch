@@ -237,4 +237,14 @@
   @media (max-width: 420px) {
     .ai-style-options { grid-template-columns: repeat(2, 1fr); }
   }
+
+  /* Short viewports (e.g. landscape on a small phone): trim chrome so the
+     picker fits without forcing a scroll. The modal already scrolls via
+     max-height/overflow-y, but tighter spacing keeps it from feeling cramped. */
+  @media (max-height: 560px) {
+    .ai-prompt-modal { max-height: 94vh; }
+    .ai-prompt-content { padding: 16px 16px 14px; gap: 10px; }
+    .ai-prompt-styles legend { margin-bottom: 8px; }
+    .ai-style-options { gap: 8px; }
+  }
 </style>

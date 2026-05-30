@@ -606,4 +606,45 @@
       opacity: 0;
     }
   }
+
+  /* ── Short viewports (e.g. landscape on a small phone) ──
+     The stage is normally width-driven with a 4/3 aspect ratio, so on a wide
+     but short screen it grows taller than the viewport and gets clipped. Here
+     we flip it to be height-driven: the stage sizes from the available height
+     (reserving room for the download row), and the modal shrinks to wrap it. */
+  @media (max-height: 560px) {
+    .ai-result-modal {
+      width: auto;
+      max-width: 94vw;
+      max-height: 94vh;
+    }
+
+    .ai-result-content {
+      padding: 16px;
+      gap: 12px;
+    }
+
+    .ai-stage,
+    .ai-result-error {
+      width: auto;
+      /* 32px content padding + 12px gap + 44px download button = 88px reserved */
+      height: calc(92vh - 88px);
+      max-width: 90vw;
+    }
+
+    .ai-result-error-emoji {
+      font-size: 36px;
+    }
+
+    .ai-result-download {
+      height: 44px;
+      padding: 0 22px;
+      font-size: 15px;
+    }
+
+    .ai-result-close {
+      top: 8px;
+      right: 8px;
+    }
+  }
 </style>

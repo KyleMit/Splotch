@@ -199,12 +199,23 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Make delete tutorial friendlier
 * [x] Add playwright, especially so Claude can UI test
 * [x] Make timer animation more fun
+* [ ] Parent Center toggle should be to enable custom controls
+* [ ] Then progressively disclose which custom controls can be pinned
 * [ ] Put all controls in a side "drawer" that stays open / closed
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
 * [ ] Maybe add route to confirm access token as well?
 * [ ] BYO Key?
+* [ ] The eraser should show a size bubble where it's being applied
+* [ ] Figure out what happened to progressive disclosure of top colors
+* [ ] Increase default timer
+* [ ] Increase size of pulsations when overtime
+* [ ] Start adding crazier and crazier animations if time goes super long
+* [ ] If call fails and you need to try again, enable a way to do so immediately
+* [ ] AI option without customization should also pull up loading spinner
+* [ ] When advanced controls are enabled, all buttons should be in a drawer that can be opened and closed
+* [ ] Auto save AI generated images toggle. No longer need download button
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
   * [x] Make sure white backgrounds become transparent
