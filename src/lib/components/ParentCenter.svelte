@@ -15,6 +15,7 @@
     setAiImage,
     setAiCustomization,
     setAiAccessToken,
+    setAdminAccessToken,
     setAdvancedControls
   } from '$lib/state/settings.svelte.js';
 
@@ -35,6 +36,24 @@
 
   const APP_VERSION =
     typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
+
+  // Hidden admin unlock: tapping the version text 5 times prompts for the
+  // access key, which is then persisted to localStorage. The key is only
+  // trusted after server-side validation against ADMIN_ACCESS_TOKEN.
+  let versionClicks = 0;
+  function handleVersionClick() {
+    versionClicks += 1;
+    if (versionClicks < 5) return;
+    versionClicks = 0;
+    const key = window.prompt('Enter admin access key');
+    if (key && key.trim()) setAdminAccessToken(key.trim());
+  }
+
+  let adminLink = $derived(
+    settings.adminAccessToken
+      ? `/admin?access-key=${encodeURIComponent(settings.adminAccessToken)}`
+      : ''
+  );
 
   function detectOS() {
     if (typeof navigator === 'undefined') return 'ios';
@@ -467,7 +486,11 @@
           View on GitHub
         </a>
       </p>
-      <p class="version-text">Version {APP_VERSION}</p>
+      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+      <p class="version-text" onclick={handleVersionClick}>Version {APP_VERSION}</p>
+      {#if adminLink}
+        <p class="admin-link"><a href={adminLink}>Admin</a></p>
+      {/if}
     </footer>
   </div>
 </dialog>
@@ -1001,5 +1024,10 @@
     font-size: 12px;
     color: #bbb;
     font-family: 'Courier New', monospace;
+    user-select: none;
+  }
+
+  .admin-link {
+    font-size: 12px;
   }
 </style>
