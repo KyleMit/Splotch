@@ -206,7 +206,7 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] The eraser should show a size bubble where it's being applied
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
-* [ ] The eraser should use the stroke width levels for the pen, but should be about 20% bigger at each level.  It is hard to erase with the same exact size as the current pen.
+* [x] The eraser should use the stroke width levels for the pen, but should be about 20% bigger at each level.  It is hard to erase with the same exact size as the current pen.
 * [ ] When hitting the AI option without customization enabled, it should also pull up loading spinner when clicked.
 * [ ] Add Parent Center button to Auto-save AI generated images toggle. If enabled, there no longer needs to be a Download button and you can use the extra real estate to show a bigger picture. Should auto
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection

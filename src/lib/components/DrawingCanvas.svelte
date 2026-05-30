@@ -9,7 +9,7 @@
   import { colors } from '$lib/state/colors.svelte.js';
   import { toolState } from '$lib/state/tool.svelte.js';
   import { canvasState } from '$lib/state/canvas.svelte.js';
-  import { strokeState, getStrokeWidthPx } from '$lib/state/strokeWidth.svelte.js';
+  import { strokeState, getStrokeWidthPx, getEraserWidthPx } from '$lib/state/strokeWidth.svelte.js';
   import { coloringBookState } from '$lib/state/coloringBook.svelte.js';
   import { playDrawSound, stopDrawSound } from '$lib/audio/drawingSound.js';
 
@@ -19,7 +19,7 @@
   // Bubble that previews the eraser footprint at the pointer while erasing.
   let eraserCursor = $state({ visible: false, x: 0, y: 0 });
 
-  const eraserSizePx = $derived(getStrokeWidthPx(strokeState.size));
+  const eraserSizePx = $derived(getEraserWidthPx(strokeState.size));
 
   function updateEraserCursor(e) {
     if (!toolState.eraser || !containerEl) return;

@@ -3,6 +3,8 @@
 // onMount and adapt reactive state (active color, stroke width) by calling
 // setColor() / setStrokeWidth() from $effect.
 
+import { ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte.js';
+
 let canvas, ctx;
 let currentColor = '';
 let currentLineWidth = 8;
@@ -101,13 +103,18 @@ function startDrawing(e) {
 
   const { x, y } = pointerToCanvas(e);
 
+  // The eraser runs a bit larger than the pen at the same stroke level.
+  const lineWidth = eraserActive
+    ? currentLineWidth * ERASER_SIZE_MULTIPLIER
+    : currentLineWidth;
+
   if (e.pointerId !== undefined) {
     activePointers.set(e.pointerId, {
       x,
       y,
       isDrawing: true,
       color: currentColor,
-      lineWidth: currentLineWidth,
+      lineWidth,
       erase: eraserActive,
       lastTime: Date.now(),
       distanceWindow: [],
@@ -116,7 +123,7 @@ function startDrawing(e) {
     activePointerIds.add(e.pointerId);
   }
 
-  const dotRadius = currentLineWidth / 2;
+  const dotRadius = lineWidth / 2;
 
   // Erasing clears pixels via destination-out; the stroke color is irrelevant
   // there, only its (opaque) alpha matters.
