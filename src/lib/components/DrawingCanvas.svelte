@@ -14,6 +14,24 @@
   import { playDrawSound, stopDrawSound } from '$lib/audio/drawingSound.js';
 
   let canvasEl;
+  let containerEl;
+
+  // Bubble that previews the eraser footprint at the pointer while erasing.
+  let eraserCursor = $state({ visible: false, x: 0, y: 0 });
+
+  const eraserSizePx = $derived(getStrokeWidthPx(strokeState.size));
+
+  function updateEraserCursor(e) {
+    if (!toolState.eraser || !containerEl) return;
+    const rect = containerEl.getBoundingClientRect();
+    eraserCursor.x = e.clientX - rect.left;
+    eraserCursor.y = e.clientY - rect.top;
+    eraserCursor.visible = true;
+  }
+
+  function hideEraserCursor() {
+    eraserCursor.visible = false;
+  }
 
   onMount(() => {
     const engine = initDrawingCanvas(canvasEl, {
@@ -44,6 +62,7 @@
 
   $effect(() => {
     setEraserMode(toolState.eraser);
+    if (!toolState.eraser) hideEraserCursor();
   });
 
   // Body class tracks whether an overlay is active — paper texture moves
@@ -54,7 +73,7 @@
   });
 </script>
 
-<div class="canvas-container">
+<div class="canvas-container" bind:this={containerEl}>
   <img
     class="coloring-overlay"
     id="coloringOverlay"
@@ -62,7 +81,25 @@
     alt=""
     hidden={!coloringBookState.overlayUrl}
   />
-  <canvas bind:this={canvasEl} id="drawingCanvas" tabindex="0"></canvas>
+  <canvas
+    bind:this={canvasEl}
+    id="drawingCanvas"
+    class:erasing={toolState.eraser}
+    tabindex="0"
+    onpointerdown={updateEraserCursor}
+    onpointermove={updateEraserCursor}
+    onpointerenter={updateEraserCursor}
+    onpointerleave={hideEraserCursor}
+  ></canvas>
+  {#if eraserCursor.visible}
+    <div
+      class="eraser-bubble"
+      style:left="{eraserCursor.x}px"
+      style:top="{eraserCursor.y}px"
+      style:width="{eraserSizePx}px"
+      style:height="{eraserSizePx}px"
+    ></div>
+  {/if}
 </div>
 
 <style>
@@ -86,6 +123,22 @@
     background-image: url('/icons/handmade-paper.webp');
     background-repeat: repeat;
     outline: none; /* Remove focus outline */
+  }
+
+  #drawingCanvas.erasing {
+    cursor: none;
+  }
+
+  .eraser-bubble {
+    position: absolute;
+    box-sizing: border-box;
+    transform: translate(-50%, -50%);
+    border: 2px solid rgba(80, 80, 80, 0.7);
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.35);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+    z-index: 3;
   }
 
   .coloring-overlay {
