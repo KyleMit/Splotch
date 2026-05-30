@@ -102,7 +102,7 @@
       <div class="coloring-book-view">
         <div class="coloring-book-header">
           <button class="coloring-back-button" aria-label="Back" onclick={() => (activeBook = null)}>
-            <Icon name="chevron-back" class="coloring-back-icon" />
+            <Icon name="chevron-left" class="coloring-back-icon" />
           </button>
           <h2>{activeBook.name}</h2>
         </div>

@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { slide } from 'svelte/transition';
   import Icon from './Icon.svelte';
   import { canvasState } from '$lib/state/canvas.svelte.js';
   import { settings } from '$lib/state/settings.svelte.js';
@@ -15,12 +16,29 @@
   let coloringBtnEl;
   let aiBtnEl;
   let leftOffset = $state(8);
+  let drawerOpen = $state(true);
+  let isPortrait = $state(false);
+
+  // Chevron points the way the drawer will move: forward (out) to open,
+  // back (toward the corner it tucks into) to close. Landscape slides
+  // left/right, portrait slides up/down.
+  const chevronIcon = $derived(
+    isPortrait
+      ? (drawerOpen ? 'chevron-down' : 'chevron-up')
+      : (drawerOpen ? 'chevron-left' : 'chevron-right')
+  );
+
+  function toggleDrawer() {
+    drawerOpen = !drawerOpen;
+    // Tidy up any open flyout as the controls tuck away.
+    if (!drawerOpen) strokeState.menuOpen = false;
+  }
 
   // Reposition the panel relative to the color palette in landscape;
   // in portrait it pins to bottom-left.
   function updatePanelPosition() {
     if (!panelEl) return;
-    const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+    isPortrait = window.matchMedia('(orientation: portrait)').matches;
     const colorPalette = document.querySelector('.color-palette');
     if (!colorPalette) return;
 
@@ -109,6 +127,8 @@
 </script>
 
 <div class="actions-panel" bind:this={panelEl} style:left="{leftOffset}px">
+  {#if drawerOpen}
+  <div class="actions-drawer" transition:slide={{ axis: isPortrait ? 'y' : 'x', duration: 280 }}>
   <div class="stroke-width-wrapper" bind:this={strokeWrapperEl} hidden={!settings.strokeWidthControlEnabled}>
     <button
       class="action-button"
@@ -195,6 +215,17 @@
   >
     <Icon name="undo" class="action-icon" />
   </button>
+  </div>
+  {/if}
+
+  <button
+    class="drawer-toggle"
+    aria-label={drawerOpen ? 'Collapse controls' : 'Expand controls'}
+    aria-expanded={drawerOpen}
+    onclick={toggleDrawer}
+  >
+    <Icon name={chevronIcon} class="drawer-toggle-icon" />
+  </button>
 </div>
 
 <style>
@@ -203,8 +234,8 @@
     bottom: 8px;
     left: 8px;
     display: flex;
-    flex-direction: reverse;
-    gap: 8px;
+    flex-direction: row;
+    align-items: center;
     z-index: 901;
     transition: left 0.3s ease;
   }
@@ -215,6 +246,69 @@
       left: 8px;
       bottom: 8px;
     }
+  }
+
+  /* Collapsible drawer holding the action buttons. The buttons grow from the
+     corner; the toggle rides along at the far end (right in landscape, top in
+     portrait). The spacing toward the toggle lives on the drawer as a margin
+     (not a flex gap) so the slide transition collapses it too — the toggle
+     glides to the corner instead of snapping the last few pixels. */
+  .actions-drawer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin-right: 8px;
+  }
+
+  @media (orientation: portrait) {
+    .actions-drawer {
+      flex-direction: column-reverse;
+      margin-right: 0;
+      margin-top: 8px;
+    }
+  }
+
+  /* Drawer open/close toggle. Deliberately low-key (no background, muted grey)
+     so it mirrors the Parent Center button and doesn't compete with the tools. */
+  .drawer-toggle {
+    width: 48px;
+    height: 48px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.4;
+    transition: opacity 0.2s ease;
+    touch-action: manipulation;
+    flex-shrink: 0;
+  }
+
+  .drawer-toggle:hover {
+    opacity: 0.7;
+  }
+
+  .drawer-toggle:active {
+    opacity: 1;
+  }
+
+  :global(.drawer-toggle-icon) {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    filter: invert(60%) grayscale(100%);
+    transition: filter 0.2s ease;
+  }
+
+  .drawer-toggle:hover :global(.drawer-toggle-icon) {
+    filter: invert(40%) grayscale(100%);
+  }
+
+  .drawer-toggle:active :global(.drawer-toggle-icon) {
+    filter: invert(0%) grayscale(100%);
   }
 
   .action-button {

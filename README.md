@@ -199,9 +199,11 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Make delete tutorial friendlier
 * [x] Add playwright, especially so Claude can UI test
 * [x] Make timer animation more fun
-* [ ] Parent Center toggle should be to enable custom controls
-* [ ] Then progressively disclose which custom controls can be pinned
 * [ ] Put all controls in a side "drawer" that stays open / closed
+* [ ] Parent Center toggle should be to enable custom controls
+  * Add a parent center toggle to "Enable advanced controls" that should default on. If the option is enabled, then you should be able to see the drawer chevrons.  the drawer itself should default closed and the state should be remembered in local settings.  If the option is disabled in Parent Center, then you shouldn't even see the chevrons to open/close the drawer.
+* [ ] Then progressively disclose which custom controls can be pinned
+  * In the parent center, just like the AI customization toggle is progressively disclosed and animated in when the AI Image button is enabled, the toggles for each individual button should be hidden unless "Enable advanced controls" is enabled.  If it is enabled, each individual control no longer needs to be disabled. However, I'd still like to keep some customization.  The pro
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
