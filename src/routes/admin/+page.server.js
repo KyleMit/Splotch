@@ -12,5 +12,19 @@ export function load({ url }) {
     throw error(403, 'Forbidden');
   }
 
-  return {};
+  // Enumerate the allowed AI tokens here on the server (same parsing as the
+  // image API) so the raw list never ships to the client. The page just
+  // renders the prebuilt invite links.
+  const rawTokens = env.ALLOWED_TOKENS_LIST || '';
+  const tokens = rawTokens
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  const invites = tokens.map((token) => ({
+    token,
+    url: `${url.origin}/?ai_access_token=${encodeURIComponent(token)}`
+  }));
+
+  return { invites };
 }
