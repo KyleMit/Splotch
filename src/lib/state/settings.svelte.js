@@ -11,6 +11,8 @@ const AI_IMAGE_KEY = 'splotch-ai-image-enabled';
 const AI_CUSTOMIZATION_KEY = 'splotch-ai-customization-enabled';
 const AI_ACCESS_TOKEN_KEY = 'splotch-ai-access-token';
 const AI_ACCESS_TOKEN_PARAM = 'ai_access_token';
+const ADVANCED_CONTROLS_KEY = 'splotch-advanced-controls';
+const DRAWER_OPEN_KEY = 'splotch-drawer-open';
 
 export const settings = $state({
   soundEnabled: readBool(SOUND_KEY, true),
@@ -22,7 +24,13 @@ export const settings = $state({
   coloringBookEnabled: readBool(COLORING_BOOK_KEY, true),
   aiImageEnabled: readBool(AI_IMAGE_KEY, true),
   aiCustomizationEnabled: readBool(AI_CUSTOMIZATION_KEY, true),
-  aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, '')
+  aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
+  // Master switch for the collapsible action drawer. When on, the chevron
+  // toggle shows and the drawer can be opened/closed; when off, the controls
+  // are always visible and the chevron is hidden.
+  advancedControlsEnabled: readBool(ADVANCED_CONTROLS_KEY, true),
+  // Remembered open/closed state of the drawer (defaults closed).
+  drawerOpen: readBool(DRAWER_OPEN_KEY, false)
 });
 
 export function setSound(v) { settings.soundEnabled = v; writeBool(SOUND_KEY, v); }
@@ -35,6 +43,8 @@ export function setColoringBook(v) { settings.coloringBookEnabled = v; writeBool
 export function setAiImage(v) { settings.aiImageEnabled = v; writeBool(AI_IMAGE_KEY, v); }
 export function setAiCustomization(v) { settings.aiCustomizationEnabled = v; writeBool(AI_CUSTOMIZATION_KEY, v); }
 export function setAiAccessToken(v) { settings.aiAccessToken = v; writeString(AI_ACCESS_TOKEN_KEY, v); }
+export function setAdvancedControls(v) { settings.advancedControlsEnabled = v; writeBool(ADVANCED_CONTROLS_KEY, v); }
+export function setDrawerOpen(v) { settings.drawerOpen = v; writeBool(DRAWER_OPEN_KEY, v); }
 
 export function captureAiAccessTokenFromUrl() {
   if (typeof window === 'undefined') return;

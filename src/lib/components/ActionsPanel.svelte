@@ -3,7 +3,7 @@
   import { slide } from 'svelte/transition';
   import Icon from './Icon.svelte';
   import { canvasState } from '$lib/state/canvas.svelte.js';
-  import { settings } from '$lib/state/settings.svelte.js';
+  import { settings, setDrawerOpen } from '$lib/state/settings.svelte.js';
   import { strokeState, STROKE_SIZES, setStrokeSize } from '$lib/state/strokeWidth.svelte.js';
   import { toolState, selectEraser } from '$lib/state/tool.svelte.js';
   import { ui, openColoringBook, openAiPrompt } from '$lib/state/ui.svelte.js';
@@ -16,22 +16,27 @@
   let coloringBtnEl;
   let aiBtnEl;
   let leftOffset = $state(8);
-  let drawerOpen = $state(true);
   let isPortrait = $state(false);
+
+  // When advanced controls are disabled the drawer and its chevron are removed
+  // entirely, simplifying the UI. When enabled, the chevron shows and the
+  // drawer expands per its remembered open state.
+  const drawerExpanded = $derived(settings.advancedControlsEnabled && settings.drawerOpen);
 
   // Chevron points the way the drawer will move: forward (out) to open,
   // back (toward the corner it tucks into) to close. Landscape slides
   // left/right, portrait slides up/down.
   const chevronIcon = $derived(
     isPortrait
-      ? (drawerOpen ? 'chevron-down' : 'chevron-up')
-      : (drawerOpen ? 'chevron-left' : 'chevron-right')
+      ? (settings.drawerOpen ? 'chevron-down' : 'chevron-up')
+      : (settings.drawerOpen ? 'chevron-left' : 'chevron-right')
   );
 
   function toggleDrawer() {
-    drawerOpen = !drawerOpen;
+    const next = !settings.drawerOpen;
+    setDrawerOpen(next);
     // Tidy up any open flyout as the controls tuck away.
-    if (!drawerOpen) strokeState.menuOpen = false;
+    if (!next) strokeState.menuOpen = false;
   }
 
   // Reposition the panel relative to the color palette in landscape;
@@ -127,7 +132,7 @@
 </script>
 
 <div class="actions-panel" bind:this={panelEl} style:left="{leftOffset}px">
-  {#if drawerOpen}
+  {#if drawerExpanded}
   <div class="actions-drawer" transition:slide={{ axis: isPortrait ? 'y' : 'x', duration: 280 }}>
   <div class="stroke-width-wrapper" bind:this={strokeWrapperEl} hidden={!settings.strokeWidthControlEnabled}>
     <button
@@ -218,14 +223,16 @@
   </div>
   {/if}
 
+  {#if settings.advancedControlsEnabled}
   <button
     class="drawer-toggle"
-    aria-label={drawerOpen ? 'Collapse controls' : 'Expand controls'}
-    aria-expanded={drawerOpen}
+    aria-label={settings.drawerOpen ? 'Collapse controls' : 'Expand controls'}
+    aria-expanded={settings.drawerOpen}
     onclick={toggleDrawer}
   >
     <Icon name={chevronIcon} class="drawer-toggle-icon" />
   </button>
+  {/if}
 </div>
 
 <style>

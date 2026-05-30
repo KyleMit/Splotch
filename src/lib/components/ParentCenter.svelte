@@ -14,7 +14,8 @@
     setColoringBook,
     setAiImage,
     setAiCustomization,
-    setAiAccessToken
+    setAiAccessToken,
+    setAdvancedControls
   } from '$lib/state/settings.svelte.js';
   import { clearOverlay } from '$lib/state/coloringBook.svelte.js';
 
@@ -250,6 +251,26 @@
 
       <section class="setting-group">
         <h3 class="setting-group-heading">Controls</h3>
+
+        <div class="setting">
+          <div class="setting-toggle">
+            <label class="setting-info" for="advancedControlsToggle">
+              <Icon name="dashboard-customize" class="setting-icon" />
+              <span class="setting-label">Enable Advanced Controls</span>
+            </label>
+            <button
+              class="toggle-switch"
+              class:active={settings.advancedControlsEnabled}
+              id="advancedControlsToggle"
+              role="switch"
+              aria-label="Enable Advanced Controls"
+              aria-checked={settings.advancedControlsEnabled}
+              onclick={() => setAdvancedControls(!settings.advancedControlsEnabled)}
+            >
+              <span class="toggle-switch-thumb"></span>
+            </button>
+          </div>
+        </div>
 
         <div class="setting">
           <div class="setting-toggle">
