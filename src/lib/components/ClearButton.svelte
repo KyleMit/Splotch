@@ -280,7 +280,7 @@
     bind:this={buttonEl}
     onpointerdown={startClearDrag}
   >
-    <img src="/icons/broom.webp" class="clear-icon" alt="" aria-hidden="true" />
+    <img src="/icons/sweep-icon.webp" class="clear-icon" alt="" aria-hidden="true" />
   </button>
 </div>
 
@@ -297,7 +297,7 @@
   <div class="coachmark-ring" bind:this={coachmarkRingEl}></div>
   <div class="coachmark-ghost" bind:this={coachmarkGhostEl}>
     <div class="coachmark-button">
-      <img src="/icons/broom.webp" class="coachmark-trash" alt="" aria-hidden="true" />
+      <img src="/icons/sweep-icon.webp" class="coachmark-trash" alt="" aria-hidden="true" />
     </div>
     <Icon name="swipe-down" class="coachmark-hand" aria-hidden="true" />
   </div>
