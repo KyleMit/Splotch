@@ -201,9 +201,8 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Make timer animation more fun
 * [x] Put all controls in a side "drawer" that stays open / closed
 * [x] Parent Center toggle should be to enable custom controls
-* [ ] Then progressively disclose which custom controls can be pinned
-  * In the parent center, just like the AI customization toggle is progressively disclosed and animated in when the AI Image button is enabled, the toggles for each individual button should be hidden unless "Enable advanced controls" is enabled.
-* [ ] Remove the metaphor of disabling individual controls, and add the metaphor of pinning them. Update the labels of each individual control to say pin.  Use the pin.svg and combine with the icon, in the top right to suggest the control will be pinned when toggling.  If controls are pinned, it means they will stay open even if the drawer is closed.  This allows the user to customize which controls they would like to always see, while hiding the ones they don't want to see.  If all controls are pinned, you can drop the chevron arrows to open close since it won't do anything.
+* [x] Then progressively disclose which custom controls can be pinned
+* [ ] Remove the metaphor of disabling individual controls, and add the metaphor of pinning them. Update the labels of each individual control to say pin.  Use the pin.svg and combine with the icon, in the top right to suggest the control will be pinned when toggling.  If controls are pinned, it means they will stay open even if the drawer is closed.  This allows the user to customize which controls they would like to always see, while hiding the ones they don't want to see.  If every single control is pinned, you can drop the chevron arrows to open close since it won't do anything. If even one is not pinned, then we'll still need chevrons to display the full list.  Make sure the pinned buttons and the collapsable buttons animate in appropriately.  They should not 
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection

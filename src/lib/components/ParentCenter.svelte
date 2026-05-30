@@ -272,7 +272,8 @@
           </div>
         </div>
 
-        <div class="setting">
+        {#if settings.advancedControlsEnabled}
+        <div class="setting" transition:slide={{ duration: 220 }}>
           <div class="setting-toggle">
             <label class="setting-info" for="strokeWidthToggle">
               <Icon name="line-weight" class="setting-icon" />
@@ -292,7 +293,7 @@
           </div>
         </div>
 
-        <div class="setting">
+        <div class="setting" transition:slide={{ duration: 220 }}>
           <div class="setting-toggle">
             <label class="setting-info" for="eraserToggle">
               <Icon name="eraser" class="setting-icon" />
@@ -312,7 +313,7 @@
           </div>
         </div>
 
-        <div class="setting">
+        <div class="setting" transition:slide={{ duration: 220 }}>
           <div class="setting-toggle">
             <label class="setting-info" for="coloringBookToggle">
               <Icon name="shapes" class="setting-icon" />
@@ -332,7 +333,7 @@
           </div>
         </div>
 
-        <div class="setting">
+        <div class="setting" transition:slide={{ duration: 220 }}>
           <div class="setting-toggle">
             <label class="setting-info" for="screenshotToggle">
               <Icon name="camera" class="setting-icon" />
@@ -352,7 +353,7 @@
           </div>
         </div>
 
-        <div class="setting">
+        <div class="setting" transition:slide={{ duration: 220 }}>
           <div class="setting-toggle">
             <label class="setting-info" for="undoToggle">
               <Icon name="undo" class="setting-icon" />
@@ -371,6 +372,7 @@
             </button>
           </div>
         </div>
+        {/if}
       </section>
 
       <section class="setting-group">
