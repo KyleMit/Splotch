@@ -18,25 +18,10 @@
   let leftOffset = $state(8);
   let isPortrait = $state(false);
 
-  // Advanced controls is the master switch — off means no controls at all.
-  const master = $derived(settings.advancedControlsEnabled);
-  const open = $derived(settings.drawerOpen);
-  // The AI button is gated by its access token + enable toggle, and is always
-  // part of the collapsible group (it isn't pinnable).
-  const aiPresent = $derived(!!settings.aiAccessToken && settings.aiImageEnabled);
-  const allPinned = $derived(
-    settings.strokeWidthPinned &&
-    settings.eraserPinned &&
-    settings.coloringBookPinned &&
-    settings.screenshotPinned &&
-    settings.undoPinned
-  );
-  // Pinned controls stay visible with the drawer closed; the chevron only earns
-  // its place when something is still hidden — an unpinned control or the AI
-  // button. Once everything shown is pinned, the chevron would be a no-op.
-  const showChevron = $derived(master && (!allPinned || aiPresent));
-
-  const slideParams = $derived({ axis: isPortrait ? 'y' : 'x', duration: 280 });
+  // When advanced controls are disabled the drawer and its chevron are removed
+  // entirely, simplifying the UI. When enabled, the chevron shows and the
+  // drawer expands per its remembered open state.
+  const drawerExpanded = $derived(settings.advancedControlsEnabled && settings.drawerOpen);
 
   // Chevron points the way the drawer will move: forward (out) to open,
   // back (toward the corner it tucks into) to close. Landscape slides
@@ -147,8 +132,9 @@
 </script>
 
 <div class="actions-panel" bind:this={panelEl} style:left="{leftOffset}px">
-  {#if master && (settings.strokeWidthPinned || open)}
-  <div class="stroke-width-wrapper" bind:this={strokeWrapperEl} transition:slide={slideParams}>
+  {#if drawerExpanded}
+  <div class="actions-drawer" transition:slide={{ axis: isPortrait ? 'y' : 'x', duration: 280 }}>
+  <div class="stroke-width-wrapper" bind:this={strokeWrapperEl} hidden={!settings.strokeWidthControlEnabled}>
     <button
       class="action-button"
       id="strokeWidthButton"
@@ -172,50 +158,42 @@
       {/each}
     </div>
   </div>
-  {/if}
 
-  {#if master && (settings.eraserPinned || open)}
   <button
     class="action-button"
     class:active={toolState.eraser}
     id="eraserButton"
     aria-label="Eraser"
     aria-pressed={toolState.eraser}
+    hidden={!settings.eraserEnabled}
     onclick={handleEraserClick}
-    transition:slide={slideParams}
   >
     <Icon name="eraser" class="action-icon" />
   </button>
-  {/if}
 
-  {#if master && (settings.coloringBookPinned || open)}
   <button
     class="action-button"
     id="coloringBookButton"
     aria-label="Coloring books"
+    hidden={!settings.coloringBookEnabled}
     onclick={handleColoringBookClick}
     bind:this={coloringBtnEl}
-    transition:slide={slideParams}
   >
     <Icon name="shapes" class="action-icon" />
   </button>
-  {/if}
 
-  {#if master && (settings.screenshotPinned || open)}
   <button
     class="action-button"
     class:disabled={canvasState.canvasEmpty}
     id="screenshotButton"
     aria-label="Save screenshot"
     disabled={canvasState.canvasEmpty}
+    hidden={!settings.screenshotEnabled}
     onclick={handleScreenshotClick}
-    transition:slide={slideParams}
   >
     <Icon name="camera" class="action-icon" />
   </button>
-  {/if}
 
-  {#if master && aiPresent && open}
   <button
     class="action-button"
     class:disabled={canvasState.canvasEmpty || ui.aiGenerating}
@@ -224,29 +202,28 @@
     aria-label="Create AI image"
     aria-busy={ui.aiGenerating}
     disabled={canvasState.canvasEmpty || ui.aiGenerating}
+    hidden={!settings.aiAccessToken || !settings.aiImageEnabled}
     onclick={handleAiImageClick}
     bind:this={aiBtnEl}
-    transition:slide={slideParams}
   >
     <Icon name={ui.aiGenerating ? 'loading' : 'wand-stars'} class="action-icon" />
   </button>
-  {/if}
 
-  {#if master && (settings.undoPinned || open)}
   <button
     class="action-button"
     class:disabled={!canvasState.canUndo}
     id="undoButton"
     aria-label="Undo"
     disabled={!canvasState.canUndo}
+    hidden={!settings.undoButtonEnabled}
     onclick={handleUndoClick}
-    transition:slide={slideParams}
   >
     <Icon name="undo" class="action-icon" />
   </button>
+  </div>
   {/if}
 
-  {#if showChevron}
+  {#if settings.advancedControlsEnabled}
   <button
     class="drawer-toggle"
     aria-label={settings.drawerOpen ? 'Collapse controls' : 'Expand controls'}
@@ -278,20 +255,22 @@
     }
   }
 
-  /* Each control carries its own spacing on the side facing away from the
-     anchored corner (right in landscape, top in portrait). Because the slide
-     transition animates margins on its axis, a collapsing control closes its
-     gap smoothly and the remaining controls — plus the chevron — glide to the
-     corner with no snap. Scoped to direct children so the stroke button nested
-     inside its wrapper isn't double-spaced. */
-  .actions-panel > .action-button,
-  .actions-panel > .stroke-width-wrapper {
+  /* Collapsible drawer holding the action buttons. The buttons grow from the
+     corner; the toggle rides along at the far end (right in landscape, top in
+     portrait). The spacing toward the toggle lives on the drawer as a margin
+     (not a flex gap) so the slide transition collapses it too — the toggle
+     glides to the corner instead of snapping the last few pixels. */
+  .actions-drawer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
     margin-right: 8px;
   }
 
   @media (orientation: portrait) {
-    .actions-panel > .action-button,
-    .actions-panel > .stroke-width-wrapper {
+    .actions-drawer {
+      flex-direction: column-reverse;
       margin-right: 0;
       margin-top: 8px;
     }
@@ -355,6 +334,11 @@
     padding: 8px;
   }
 
+  /* Author display:flex above outranks the UA [hidden] rule, so restore it. */
+  .action-button[hidden] {
+    display: none;
+  }
+
   .action-button:hover:not(:disabled) {
     background: #f5f5f5;
     border-color: #AB71E1;
@@ -407,6 +391,10 @@
   /* Stroke width: trigger button wrapper + flyout menu */
   .stroke-width-wrapper {
     position: relative;
+  }
+
+  .stroke-width-wrapper[hidden] {
+    display: none;
   }
 
   .stroke-width-menu {

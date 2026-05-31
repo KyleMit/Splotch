@@ -2,13 +2,11 @@ import { readBool, writeBool, readString, writeString } from '../storage.js';
 
 const SOUND_KEY = 'splotch-sound-enabled';
 const SAVE_ON_DELETE_KEY = 'splotch-save-on-delete';
-// Per-control "pin" flags. A pinned control stays visible while the drawer is
-// closed; unpinned controls live behind the chevron. Default off (unpinned).
-const STROKE_PIN_KEY = 'splotch-pin-stroke-width';
-const ERASER_PIN_KEY = 'splotch-pin-eraser';
-const COLORING_BOOK_PIN_KEY = 'splotch-pin-coloring-book';
-const SCREENSHOT_PIN_KEY = 'splotch-pin-screenshot';
-const UNDO_PIN_KEY = 'splotch-pin-undo';
+const SCREENSHOT_KEY = 'splotch-screenshot-enabled';
+const UNDO_KEY = 'splotch-undo-button-enabled';
+const STROKE_CTRL_KEY = 'splotch-stroke-width-control';
+const ERASER_KEY = 'splotch-eraser-enabled';
+const COLORING_BOOK_KEY = 'splotch-coloring-book-enabled';
 const AI_IMAGE_KEY = 'splotch-ai-image-enabled';
 const AI_CUSTOMIZATION_KEY = 'splotch-ai-customization-enabled';
 const AI_ACCESS_TOKEN_KEY = 'splotch-ai-access-token';
@@ -20,11 +18,11 @@ const DRAWER_OPEN_KEY = 'splotch-drawer-open';
 export const settings = $state({
   soundEnabled: readBool(SOUND_KEY, true),
   saveOnDeleteEnabled: readBool(SAVE_ON_DELETE_KEY, false),
-  strokeWidthPinned: readBool(STROKE_PIN_KEY, false),
-  eraserPinned: readBool(ERASER_PIN_KEY, false),
-  coloringBookPinned: readBool(COLORING_BOOK_PIN_KEY, false),
-  screenshotPinned: readBool(SCREENSHOT_PIN_KEY, false),
-  undoPinned: readBool(UNDO_PIN_KEY, false),
+  screenshotEnabled: readBool(SCREENSHOT_KEY, true),
+  undoButtonEnabled: readBool(UNDO_KEY, true),
+  strokeWidthControlEnabled: readBool(STROKE_CTRL_KEY, true),
+  eraserEnabled: readBool(ERASER_KEY, true),
+  coloringBookEnabled: readBool(COLORING_BOOK_KEY, true),
   aiImageEnabled: readBool(AI_IMAGE_KEY, true),
   aiCustomizationEnabled: readBool(AI_CUSTOMIZATION_KEY, true),
   aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
@@ -41,11 +39,11 @@ export const settings = $state({
 
 export function setSound(v) { settings.soundEnabled = v; writeBool(SOUND_KEY, v); }
 export function setSaveOnDelete(v) { settings.saveOnDeleteEnabled = v; writeBool(SAVE_ON_DELETE_KEY, v); }
-export function setStrokeWidthPinned(v) { settings.strokeWidthPinned = v; writeBool(STROKE_PIN_KEY, v); }
-export function setEraserPinned(v) { settings.eraserPinned = v; writeBool(ERASER_PIN_KEY, v); }
-export function setColoringBookPinned(v) { settings.coloringBookPinned = v; writeBool(COLORING_BOOK_PIN_KEY, v); }
-export function setScreenshotPinned(v) { settings.screenshotPinned = v; writeBool(SCREENSHOT_PIN_KEY, v); }
-export function setUndoPinned(v) { settings.undoPinned = v; writeBool(UNDO_PIN_KEY, v); }
+export function setScreenshot(v) { settings.screenshotEnabled = v; writeBool(SCREENSHOT_KEY, v); }
+export function setUndoButton(v) { settings.undoButtonEnabled = v; writeBool(UNDO_KEY, v); }
+export function setStrokeWidthControl(v) { settings.strokeWidthControlEnabled = v; writeBool(STROKE_CTRL_KEY, v); }
+export function setEraser(v) { settings.eraserEnabled = v; writeBool(ERASER_KEY, v); }
+export function setColoringBook(v) { settings.coloringBookEnabled = v; writeBool(COLORING_BOOK_KEY, v); }
 export function setAiImage(v) { settings.aiImageEnabled = v; writeBool(AI_IMAGE_KEY, v); }
 export function setAiCustomization(v) { settings.aiCustomizationEnabled = v; writeBool(AI_CUSTOMIZATION_KEY, v); }
 export function setAiAccessToken(v) { settings.aiAccessToken = v; writeString(AI_ACCESS_TOKEN_KEY, v); }
