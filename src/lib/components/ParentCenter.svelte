@@ -486,6 +486,9 @@
       {#if adminLink}
         <p class="admin-link"><a href={adminLink}>Admin</a></p>
       {/if}
+      {#if import.meta.env.DEV}
+        <p class="admin-link"><a href="/dev/ai-timer">AI Timer</a></p>
+      {/if}
     </footer>
   </div>
 </dialog>
