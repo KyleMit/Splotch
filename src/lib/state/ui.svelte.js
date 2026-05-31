@@ -62,6 +62,20 @@ export function startAiGeneration(previewUrl) {
   ui.aiResultOpen = true;
 }
 
+// Slot the blurred drawing in behind the dial once it's ready. Used when the
+// modal was opened ahead of the canvas export (so the spinner launches on tap),
+// then the preview arrives a beat later.
+export function setAiPreview(previewUrl) {
+  // The user may have dismissed the loading modal before the export finished —
+  // if so, drop the preview rather than leaking the object URL.
+  if (!ui.aiResultOpen) {
+    URL.revokeObjectURL(previewUrl);
+    return;
+  }
+  if (ui.aiPreviewUrl && ui.aiPreviewUrl !== previewUrl) URL.revokeObjectURL(ui.aiPreviewUrl);
+  ui.aiPreviewUrl = previewUrl ?? null;
+}
+
 // The finished image has arrived — hand it to the modal so the dial can race to
 // completion and reveal it.
 export function finishAiGeneration(url) {

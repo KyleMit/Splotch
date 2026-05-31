@@ -213,11 +213,11 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
   * [x] Make sure white backgrounds become transparent
   * [x] Make sure background works with screenshot feature
-* [ ] When hitting the AI option without customization enabled, it should also pull up loading spinner when clicked.
+* [x] When hitting the AI option without customization enabled, it should also pull up loading spinner when clicked.
 * [ ] Full color the controls
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
-* [ ] Add Parent Center button to Auto-save AI generated images toggle. If enabled, there no longer needs to be a Download button and you can use the extra real estate to show a bigger picture. Should auto
+* [ ] Add Parent Center button to Auto-save AI generated images toggle. If enabled, there no longer needs to be a Download button and you can use the extra real estate to show a bigger picture. Should also auto save kids photos when saving the AI photo.  Detect if the kids
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
 * [ ] Auto save AI generated images toggle. No longer need download button
 * [ ] Fun loading sound while AI is loading

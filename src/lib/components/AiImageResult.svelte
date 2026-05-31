@@ -54,6 +54,13 @@
 
   function startDial() {
     cancelAnimationFrame(rafId);
+    // The modal can open before the drawing has been exported (so the spinner
+    // launches the moment the button is tapped). Seed the stage with the
+    // window's aspect — the drawing fills the canvas, so the placeholder box
+    // closely matches the preview that slots in a beat later, avoiding a resize.
+    if (typeof window !== 'undefined' && window.innerHeight > 0) {
+      imgAspect = window.innerWidth / window.innerHeight;
+    }
     progress = 0;
     revealed = false;
     waiting = false;
@@ -193,10 +200,21 @@
       e.clientX >= rect.left && e.clientX <= rect.right &&
       e.clientY >= rect.top && e.clientY <= rect.bottom;
     if (!inside) {
-      closeAiResult();
+      // Swallow the tap either way so it doesn't fall through to the canvas.
       e.preventDefault();
       e.stopPropagation();
+      // While the image is still generating, a tap outside must NOT dismiss the
+      // modal — that would throw away an in-flight request the child can't get
+      // back. Only the X closes the loading spinner. Once it's done (revealed or
+      // errored), tapping off to dismiss is fine.
+      if (!ui.aiGenerating) closeAiResult();
     }
+  }
+
+  function handleDialogCancel(e) {
+    // Esc requests a dialog close; block it while generating so, like a backdrop
+    // tap, it can't discard an in-flight request. Only the X dismisses then.
+    if (ui.aiGenerating) e.preventDefault();
   }
 
   function handleDialogClose() {
@@ -209,6 +227,7 @@
   class:polaroid-mode={exiting}
   bind:this={dialogEl}
   onpointerdown={handleDialogPointerDown}
+  oncancel={handleDialogCancel}
   onclose={handleDialogClose}
   onanimationend={handleAnimationEnd}
 >
@@ -238,6 +257,10 @@
             aria-hidden="true"
             onload={handleImgLoad}
           />
+        {:else}
+          <!-- Modal opened ahead of the export: reserve a drawing-shaped box so
+               the dial has a home until the blurred preview slots in. -->
+          <div class="stage-sizer placeholder-sizer" style="aspect-ratio: {imgAspect};" aria-hidden="true"></div>
         {/if}
 
         {#if ui.aiPreviewUrl}
@@ -380,6 +403,13 @@
        is limited by the height reserve (padding + gap + download + some air). */
     max-width: 100%;
     max-height: calc(88vh - 130px);
+  }
+
+  /* No image yet (modal opened before the export finished): a definite width so
+     the aspect-ratio resolves a height, giving the dial a stable box to sit in.
+     A tall portrait drawing is reined in by max-height (width then follows). */
+  .placeholder-sizer {
+    width: min(78vw, 340px);
   }
 
   .stage-img {
