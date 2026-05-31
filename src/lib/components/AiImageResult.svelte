@@ -140,6 +140,20 @@
     };
   });
 
+  // The stage shrink-wraps the actual image's aspect ratio (captured on load)
+  // so a tall portrait render fills the modal instead of being letterboxed in a
+  // fixed 4:3 box. Falls back to 4/3 until the first image reports its size.
+  let imgAspect = $state(4 / 3);
+  function handleImgLoad(e) {
+    const { naturalWidth: w, naturalHeight: h } = e.target;
+    if (w > 0 && h > 0) imgAspect = w / h;
+  }
+
+  // Keep the confetti's circular mask hole aligned with the round dial as the
+  // stage aspect changes: the vertical radius (% of height) tracks the fixed
+  // horizontal radius (31% of width). At 4:3 this resolves to the original 41%.
+  const confettiMaskRy = $derived(`${(31 * imgAspect).toFixed(1)}%`);
+
   function timestamp() {
     const d = new Date();
     const pad = (n) => String(n).padStart(2, '0');
@@ -209,7 +223,23 @@
         <p>Hmm, that didn't work. Please try again!</p>
       </div>
     {:else}
-      <div class="ai-stage">
+      <div class="ai-stage" style="--confetti-ry: {confettiMaskRy};">
+        <!-- Hidden in-flow sizer: a real <img> drives the stage size from the
+             image's own dimensions (capped by max-width/max-height). Replaced
+             elements size identically in every browser — unlike an
+             aspect-ratio + max-width box, which WebKit collapses/distorts. The
+             visible images below overlay it. Uses the result once it's here, or
+             the preview while loading (same aspect, so no resize on reveal). -->
+        {#if ui.aiResultUrl || ui.aiPreviewUrl}
+          <img
+            class="stage-sizer"
+            src={ui.aiResultUrl || ui.aiPreviewUrl}
+            alt=""
+            aria-hidden="true"
+            onload={handleImgLoad}
+          />
+        {/if}
+
         {#if ui.aiPreviewUrl}
           <img
             class="stage-img preview"
@@ -235,16 +265,18 @@
             {/each}
           </div>
 
-          <div
-            class="dial"
-            class:waiting
-            style="--c1: {dialColor}; --c2: {dialColor2}; --angle: {wedgeAngle};"
-            out:scale={{ duration: 480, start: 1.35, opacity: 0, easing: backOut }}
-          >
-            <div class="dial-glow"></div>
-            <div class="dial-pie"></div>
-            <div class="dial-sheen"></div>
-            <div class="dial-core"></div>
+          <div class="dial-wrap">
+            <div
+              class="dial"
+              class:waiting
+              style="--c1: {dialColor}; --c2: {dialColor2}; --angle: {wedgeAngle};"
+              out:scale={{ duration: 480, start: 1.35, opacity: 0, easing: backOut }}
+            >
+              <div class="dial-glow"></div>
+              <div class="dial-pie"></div>
+              <div class="dial-sheen"></div>
+              <div class="dial-core"></div>
+            </div>
           </div>
         {/if}
       </div>
@@ -270,9 +302,11 @@
     border: none;
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    max-width: 640px;
-    width: 90%;
-    max-height: 85vh;
+    /* A definite width (not shrink-to-fit, which browsers resolve differently
+       for a transform-centered fixed dialog). The image is centered inside with
+       side spacing, so a tall render reads as a framed card rather than a strip. */
+    width: min(92vw, 420px);
+    max-height: 94vh;
     overflow: hidden;
     padding: 0;
   }
@@ -284,12 +318,12 @@
   }
 
   .ai-result-content {
-    padding: 32px;
+    padding: 24px;
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
   }
 
   .ai-result-close {
@@ -323,20 +357,35 @@
   /* ── Stage: holds the blurred drawing, the dial, and the final image ── */
   .ai-stage {
     position: relative;
-    width: 100%;
-    aspect-ratio: 4 / 3;
+    display: block;
+    line-height: 0; /* drop the inline-image baseline gap under the sizer */
     border-radius: 12px;
     overflow: hidden;
     background: #fcfbf8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    /* Size comes from .stage-sizer below — the modal shrink-wraps this box. */
+  }
+
+  /* The invisible sizer: fits the image's natural aspect within the max width
+     and the available viewport height (reserving the download row), sizing to
+     whichever binds. It occupies layout (so the stage takes its size) but isn't
+     painted — the .stage-img overlays show the actual picture. */
+  .stage-sizer {
+    display: block;
+    visibility: hidden;
+    width: auto;
+    height: auto;
+    /* Shrunk down so the image clears the viewport edges and leaves margin
+       around the whole card. Width is capped to the content box; a tall image
+       is limited by the height reserve (padding + gap + download + some air). */
+    max-width: 100%;
+    max-height: calc(88vh - 130px);
   }
 
   .stage-img {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: contain;
@@ -363,12 +412,26 @@
   }
 
   /* ── The radial timer dial ── */
-  .dial {
+  /* A full-stage flex layer centers the dial — robust everywhere, and leaves the
+     dial's own transform free for the scale/pulse/exit animations. */
+  .dial-wrap {
     position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .dial {
+    position: relative; /* containing block for the glow/pie/sheen/core */
     width: 52%;
     aspect-ratio: 1;
     border-radius: 50%;
-    z-index: 2;
     will-change: transform;
   }
 
@@ -435,13 +498,13 @@
        translucent face — they fall behind it and vanish into it. The ellipse is
        sized in % of the 4:3 stage, so it stays a circle matching the dial. */
     -webkit-mask-image: radial-gradient(
-      ellipse 31% 41% at 50% 50%,
+      ellipse 31% var(--confetti-ry, 41%) at 50% 50%,
       transparent 0,
       transparent 95%,
       #000 100%
     );
     mask-image: radial-gradient(
-      ellipse 31% 41% at 50% 50%,
+      ellipse 31% var(--confetti-ry, 41%) at 50% 50%,
       transparent 0,
       transparent 95%,
       #000 100%
@@ -505,8 +568,8 @@
 
   /* ── Error state ── */
   .ai-result-error {
-    width: 100%;
-    aspect-ratio: 4 / 3;
+    width: min(86vw, 380px);
+    min-height: 240px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -526,18 +589,18 @@
 
   /* ── Download button ── */
   .ai-result-download {
-    height: 56px;
-    padding: 0 30px;
+    height: 44px;
+    padding: 0 22px;
     background: #ab71e1;
     border: none;
-    border-radius: 28px;
+    border-radius: 22px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     color: white;
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 700;
     box-shadow: 0 4px 12px rgba(171, 113, 225, 0.4);
     transition: transform 0.15s ease, background 0.2s ease;
@@ -553,8 +616,8 @@
   }
 
   :global(.ai-result-download-icon) {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
     pointer-events: none;
     filter: invert(100%);
   }
@@ -607,44 +670,14 @@
     }
   }
 
-  /* ── Short viewports (e.g. landscape on a small phone) ──
-     The stage is normally width-driven with a 4/3 aspect ratio, so on a wide
-     but short screen it grows taller than the viewport and gets clipped. Here
-     we flip it to be height-driven: the stage sizes from the available height
-     (reserving room for the download row), and the modal shrinks to wrap it. */
-  @media (max-height: 560px) {
-    .ai-result-modal {
-      width: auto;
-      max-width: 94vw;
-      max-height: 94vh;
-    }
-
-    .ai-result-content {
-      padding: 16px;
-      gap: 12px;
-    }
-
-    .ai-stage,
+  /* Very short viewports: shrink the error art so it still fits. */
+  @media (max-height: 480px) {
     .ai-result-error {
-      width: auto;
-      /* 32px content padding + 12px gap + 44px download button = 88px reserved */
-      height: calc(92vh - 88px);
-      max-width: 90vw;
+      min-height: 0;
+      height: calc(94vh - 96px);
     }
-
     .ai-result-error-emoji {
       font-size: 36px;
-    }
-
-    .ai-result-download {
-      height: 44px;
-      padding: 0 22px;
-      font-size: 15px;
-    }
-
-    .ai-result-close {
-      top: 8px;
-      right: 8px;
     }
   }
 </style>

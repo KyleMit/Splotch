@@ -208,39 +208,40 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] When advanced controls are enabled, all buttons should be in a drawer that can be opened and closed
 * [x] Flash of 2 row configuration then 1 row
 * [x] There are breadcrumbs on the /admin page, also add them to the /dev/ai-timer page
+* [x] The eraser should show a size bubble where it's being applied
+* [x] Add "color book" style picker with background overlay
+  * [x] For the breadcrumb menu navigation, use the chevron-back.svg
+  * [x] Make sure white backgrounds become transparent
+  * [x] Make sure background works with screenshot feature
 * [ ] When hitting the AI option without customization enabled, it should also pull up loading spinner when clicked.
+* [ ] Full color the controls
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
 * [ ] Add Parent Center button to Auto-save AI generated images toggle. If enabled, there no longer needs to be a Download button and you can use the extra real estate to show a bigger picture. Should auto
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
+* [ ] Auto save AI generated images toggle. No longer need download button
 * [ ] Fun loading sound while AI is loading
-* [ ] Full color the controls
 * [ ] Hand draw icons
 * [ ] Admin Center to provide access codes
 * [ ] Maybe add route to confirm access token as well?
 * [ ] BYO Key?
-* [ ] The eraser should show a size bubble where it's being applied
 * [ ] Figure out what happened to progressive disclosure of top colors
 * [ ] Increase default timer
 * [ ] Increase size of pulsations when overtime
 * [ ] Start adding crazier and crazier animations if time goes super long
 * [ ] If call fails and you need to try again, enable a way to do so immediately
 * [ ] AI option without customization should also pull up loading spinner
-* [ ] Auto save AI generated images toggle. No longer need download button
-* [ ] Add "color book" style picker with background overlay
-  * [x] For the breadcrumb menu navigation, use the chevron-back.svg
-  * [x] Make sure white backgrounds become transparent
-  * [x] Make sure background works with screenshot feature
+* [ ] Add sparkles to AI Customization screen
+* [ ] Parent center control to increase button size
+* [ ] Investigate line smoothing while drawing
+* [ ] Efficiently layout broad range of colors on small devices in advanced color picker
+* [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
+* [ ] Coloring Book
   * [ ] Make sure background works horizontally and vertically
   * [ ] Make sure book selection screen is scrollable.
   * [ ] Come up with other book selections
   * [ ] Pages should be able to be favorited. First book should be favorites
   * [ ] Delete should wipe the page (or first book should be to clear the background)
-* [ ] Add sparkles to AI Customization screen
-* [ ] Parent center control to increase button size
-* [ ] Investigate line smoothing while drawing
-* [ ] Efficiently layout broad range of colors on small devices
-* [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * [ ] Bugs
   * [ ] Make sure we can refresh PWA
   * [ ] It takes about 10s on ios for the pencil sounds to come in
@@ -268,7 +269,3 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * Pegasus
 * Forest Fairy
 * Wizard's Owl
-
-
-
-I want to create an admin center to manage access codes.  It should be hidden to regular users and validated on the server side. First wire up the access to the admin. the route should live on /admin.  Clicking on the version-text in the parent center 5 times should bring up a prompt for the user to enter the access key.  If they enter it, it should be saved in local storage.  If there is a value in local storage, then underneath the version text should be a link to /admin?access-key=xxx. Then when the page is rendered, it should validate that the access key matches the one in the .env file with the key `ADMIN_ACCESS_TOKEN`.  In a subsequent request, we'll wire up the actual admin page. It'll definitely have a backend, so it's fine to put any secret validation logic there
