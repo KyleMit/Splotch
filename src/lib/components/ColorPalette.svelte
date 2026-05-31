@@ -84,7 +84,9 @@
   }
 
   // Visible-buttons calc — hide swatches that don't fit in the available space.
-  let palette1Col = $state(false);
+  // The 1-vs-2 column choice itself is handled by CSS media queries (see the
+  // <style> block) so it's correct on the prerendered first paint; JS here only
+  // decides how many swatches to show.
   let portrait = $state(false);
   let visibleCount = $state(PALETTE_COLORS.length + 1);
 
@@ -121,10 +123,10 @@
       const heightFor1Col = buttonSize * total + gap * (total - 1);
 
       if (heightFor1Col <= availableHeight) {
-        palette1Col = true;
+        // Single column (matches the CSS min-height media query) — all fit.
         visibleCount = total;
       } else {
-        palette1Col = false;
+        // Two columns — show only as many full rows of 2 as fit.
         const numRows = Math.floor((availableHeight + gap) / (buttonSize + gap));
         visibleCount = Math.min(numRows * 2, total);
       }
@@ -133,11 +135,16 @@
 
   onMount(() => {
     updateLayout();
-    setTimeout(updateLayout, 100);
-    window.addEventListener('resize', updateLayout);
+    // A ResizeObserver recomputes the moment the palette gets its real measured
+    // size — its callback is delivered between layout and paint, so the layout
+    // lands before the first paint instead of snapping in ~100ms later (the
+    // flash-of-unstyled 2-row → 1-row jump). It also covers window resizes,
+    // since the palette resizes along with the window.
+    const ro = new ResizeObserver(() => updateLayout());
+    ro.observe(paletteEl);
     window.addEventListener('orientationchange', updateLayout);
     return () => {
-      window.removeEventListener('resize', updateLayout);
+      ro.disconnect();
       window.removeEventListener('orientationchange', updateLayout);
     };
   });
@@ -153,11 +160,9 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="color-palette"
-  class:landscape-1col={!portrait && palette1Col}
   bind:this={paletteEl}
   onpointerdown={handlePaletteDown}
   onpointerup={handlePaletteUp}
-  style={!portrait && !palette1Col ? 'grid-template-columns: repeat(2, 1fr);' : (!portrait && palette1Col ? 'grid-template-columns: 1fr;' : '')}
 >
   {#each PALETTE_COLORS as { hex, label }, i (hex)}
     <button
@@ -286,6 +291,17 @@
     color: white;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     pointer-events: none;
+  }
+
+  /* Tall enough in landscape to stack all swatches in a single column. Done in
+     CSS (not JS) so the prerendered first paint already has the right column
+     count — otherwise the default 2-column grid paints and visibly snaps to one
+     column once JS measures. Breakpoint mirrors updateLayout()'s heightFor1Col:
+     8 swatches × 60px + 7 gaps × 12px + 24px padding = 588px. */
+  @media (orientation: landscape) and (min-height: 588px) {
+    .color-palette {
+      grid-template-columns: 1fr;
+    }
   }
 
   @media (orientation: portrait) {

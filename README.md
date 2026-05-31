@@ -205,6 +205,7 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] The eraser should show a size bubble where it's being applied
 * [x] The eraser should use the stroke width levels for the pen, but should be about 20% bigger at each level.  It is hard to erase with the same exact size as the current pen.
 * [x] Svgify the trash can icon
+* [x] When advanced controls are enabled, all buttons should be in a drawer that can be opened and closed
 * [ ] Flash of 2 row configuration then 1 row
 * [ ] When hitting the AI option without customization enabled, it should also pull up loading spinner when clicked.
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
@@ -224,7 +225,7 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [ ] Start adding crazier and crazier animations if time goes super long
 * [ ] If call fails and you need to try again, enable a way to do so immediately
 * [ ] AI option without customization should also pull up loading spinner
-* [ ] When advanced controls are enabled, all buttons should be in a drawer that can be opened and closed
+* [ ] There are breadcrumbs on the /admin page, also add them to the /dev/ai-timer page
 * [ ] Auto save AI generated images toggle. No longer need download button
 * [ ] Add "color book" style picker with background overlay
   * [x] For the breadcrumb menu navigation, use the chevron-back.svg
