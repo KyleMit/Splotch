@@ -549,7 +549,7 @@
     max-width: 500px;
     width: 90%;
     max-height: 80vh;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 0;
   }
 
@@ -566,6 +566,8 @@
   .parent-help-content {
     padding: 32px;
     position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
   }
 
   .parent-help-content h2 {
