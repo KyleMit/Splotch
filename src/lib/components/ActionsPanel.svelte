@@ -5,7 +5,7 @@
   import { canvasState } from '$lib/state/canvas.svelte.js';
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte.js';
   import { strokeState, STROKE_SIZES, setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte.js';
-  import { toolState, selectEraser } from '$lib/state/tool.svelte.js';
+  import { toolState, selectEraser, selectPen } from '$lib/state/tool.svelte.js';
   import { ui, openColoringBook, openAiPrompt } from '$lib/state/ui.svelte.js';
   import { undo } from '$lib/drawing/engine.js';
   import { saveScreenshot } from '$lib/drawing/screenshot.js';
@@ -98,7 +98,10 @@
   }
 
   function handleEraserClick() {
-    selectEraser();
+    // Tapping the eraser again toggles back to the pen. selectPen only flips the
+    // tool flag — colors.activeColor is untouched, so the previous color resumes.
+    if (toolState.eraser) selectPen();
+    else selectEraser();
   }
 
   function handleStrokeSizeClick(size) {
