@@ -475,6 +475,7 @@
 
     <footer class="parent-help-footer">
       <p>Having issues? <a href="https://github.com/KyleMit/Splotch/issues/new/choose" target="_blank" rel="noopener noreferrer">Report a problem</a></p>
+      <p><a href="/privacy">Privacy Policy</a> — no ads, no tracking, no accounts.</p>
       <p class="github-link">
         <a href="https://github.com/KyleMit/Splotch" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub">
           <Icon name="github" class="github-icon" aria-label="GitHub" role="img" />

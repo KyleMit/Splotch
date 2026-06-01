@@ -128,7 +128,7 @@ npx @capacitor/assets generate --android   # (and --ios later)
   *Everyone*.
 * [ ] **Target audience & content**: select **Children** age bands → this opts
   you into the **Families policy** (see §5).
-* [ ] Privacy Policy URL (required — see §5).
+* [x] Privacy Policy URL → `https://splotch.art/privacy` (see §5).
 * [ ] Store listing copy + graphics (see §4).
 * [ ] Set up **Closed testing** track first; promote to Production after review.
 
@@ -193,7 +193,9 @@ though Splotch collects nothing, you must still *prove* it.
 
 ### Legal / privacy artifacts to produce
 
-* [ ] **Privacy Policy** page (host on splotch.art). ← required by both stores.
+* [x] **Privacy Policy** page — created at `/privacy`
+  (`src/routes/privacy/+page.svelte`), live at `https://splotch.art/privacy`.
+  ← required by both stores. Contact is via GitHub issues (no email).
 * [ ] (Optional) **Terms of Use**.
 * [ ] Decide the wording for the **photo-library add** permission prompt
   (iOS `NSPhotoLibraryAddUsageDescription`, Android runtime prompt).
