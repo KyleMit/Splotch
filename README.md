@@ -214,7 +214,7 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
   * [x] Make sure white backgrounds become transparent
   * [x] Make sure background works with screenshot feature
 * [x] When hitting the AI option without customization enabled, it should also pull up loading spinner when clicked.
-* [ ] Full color the controls
+* [x] Full color the controls
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
 * [ ] Add Parent Center button to Auto-save AI generated images toggle. If enabled, there no longer needs to be a Download button and you can use the extra real estate to show a bigger picture. Should also auto save kids photos when saving the AI photo.  Detect if the kids

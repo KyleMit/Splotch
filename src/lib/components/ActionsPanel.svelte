@@ -24,6 +24,10 @@
   // drawer expands per its remembered open state.
   const drawerExpanded = $derived(settings.advancedControlsEnabled && settings.drawerOpen);
 
+  // The stroke-size lines preview what you'll lay down: the pen color, or the
+  // eraser's pink while erasing. Inherited by the icons via currentColor.
+  const strokeMenuColor = $derived(toolState.eraser ? '#fb3675' : colors.activeColor);
+
   // Chevron points the way the drawer will move: forward (out) to open,
   // back (toward the corner it tucks into) to close. Landscape slides
   // left/right, portrait slides up/down.
@@ -149,7 +153,7 @@
     >
       <Icon name={toolState.eraser ? 'line-weight-eraser' : 'line-weight'} class="action-icon" />
     </button>
-    <div class="stroke-width-menu" hidden={!strokeState.menuOpen}>
+    <div class="stroke-width-menu" hidden={!strokeState.menuOpen} style:color={strokeMenuColor}>
       {#each STROKE_SIZES as size}
         <button
           class="stroke-size-button"
@@ -452,6 +456,9 @@
     border: 2px solid #ddd;
     border-radius: 12px;
     cursor: pointer;
+    /* Inherit the menu's color so the line icons (currentColor) pick up the
+       active pen/eraser color — buttons don't inherit color by default. */
+    color: inherit;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -475,7 +482,9 @@
     box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
   }
 
-  .stroke-size-button.active :global(.action-icon) {
+  /* The selected size reads from the button's purple ring/fill; its line keeps
+     the current color (currentColor), so only tint non-color icons here. */
+  .stroke-size-button.active :global(.action-icon:not(.icon-color)) {
     filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
   }
 </style>
