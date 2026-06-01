@@ -359,8 +359,8 @@
   }
 
   :global(.clear-icon) {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     display: block;
     pointer-events: none;
     margin-right: 2px;
@@ -489,8 +489,8 @@
   }
 
   :global(.coachmark-trash) {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     display: block;
   }
 
@@ -582,8 +582,8 @@
     }
 
     :global(.clear-icon) {
-      width: 50px;
-      height: 50px;
+      width: 45px;
+      height: 45px;
       margin-right: 2px;
     }
   }

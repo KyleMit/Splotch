@@ -358,7 +358,7 @@
     box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
   }
 
-  .action-button.active :global(.action-icon) {
+  .action-button.active :global(.action-icon:not(.icon-color)) {
     filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
   }
 
@@ -374,11 +374,17 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
+  }
+
+  /* Tint the monochrome icons to match the UI. Full-color spot icons (tagged
+     .icon-color in Icon.svelte) opt out so they show their own palette; the
+     button's opacity already conveys the disabled state for those. */
+  :global(.action-icon:not(.icon-color)) {
     filter: invert(12%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
   }
 
-  .action-button:disabled :global(.action-icon),
-  .action-button.disabled :global(.action-icon) {
+  .action-button:disabled :global(.action-icon:not(.icon-color)),
+  .action-button.disabled :global(.action-icon:not(.icon-color)) {
     filter: invert(80%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
   }
 

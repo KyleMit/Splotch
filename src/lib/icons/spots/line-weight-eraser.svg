@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0.00 0.00 421.00 277.00">
+<path stroke="#fc93ac" stroke-width="2.00" fill="none" stroke-linecap="butt" vector-effect="non-scaling-stroke" d="
+  M 352.12 213.73
+  Q 348.85 209.84 343.77 207.77
+  Q 328.19 201.42 275.56 178.90
+  Q 273.16 177.88 267.99 178.70"
+/>
+<path fill="#fc3675" d="
+  M 352.12 213.73
+  Q 348.85 209.84 343.77 207.77
+  Q 328.19 201.42 275.56 178.90
+  Q 273.16 177.88 267.99 178.70
+  Q 269.37 174.64 273.34 164.37
+  Q 289.08 123.72 304.90 82.53
+  Q 316.09 53.43 327.54 23.36
+  Q 330.49 15.63 332.25 13.56
+  C 336.51 8.56 342.93 6.02 349.65 6.36
+  Q 352.75 6.52 357.76 8.83
+  Q 359.33 9.55 369.75 13.80
+  C 380.10 18.03 392.13 23.86 401.24 27.49
+  Q 407.41 29.95 409.81 32.34
+  C 414.70 37.21 416.90 43.75 416.22 50.47
+  Q 415.98 52.84 413.18 59.88
+  Q 382.64 136.72 352.12 213.73
+  Z"
+/>
+<rect fill="#fc3675" x="-9.05" y="-2.98" transform="translate(83.17,22.65) rotate(-1.5)" width="18.10" height="5.96" rx="2.86"/>
+<rect fill="#fc3675" x="-9.64" y="-3.24" transform="translate(108.67,24.86) rotate(10.1)" width="19.28" height="6.48" rx="3.13"/>
+<rect fill="#fc3675" x="-9.28" y="-2.88" transform="translate(58.45,25.88) rotate(-13.9)" width="18.56" height="5.76" rx="2.78"/>
+<rect fill="#fc3675" x="-8.71" y="-2.93" transform="translate(261.76,27.24) rotate(-24.1)" width="17.42" height="5.86" rx="2.83"/>
+<rect fill="#fc3675" x="-9.63" y="-3.22" transform="translate(134.14,31.30) rotate(17.2)" width="19.26" height="6.44" rx="3.12"/>
+<rect fill="#fc3675" x="-9.04" y="-2.80" transform="translate(35.75,33.25) rotate(-21.6)" width="18.08" height="5.60" rx="2.72"/>
+<rect fill="#fc3675" x="-9.65" y="-2.91" transform="translate(238.63,36.15) rotate(-19.5)" width="19.30" height="5.82" rx="2.82"/>
+<rect fill="#fc3675" x="-9.96" y="-3.24" transform="translate(160.09,39.34) rotate(15.2)" width="19.92" height="6.48" rx="3.13"/>
+<rect fill="#fc3675" x="-9.68" y="-3.20" transform="translate(213.61,42.40) rotate(-10.1)" width="19.36" height="6.40" rx="3.09"/>
+<rect fill="#fc3675" x="-10.07" y="-3.20" transform="translate(187.05,43.76) rotate(3.3)" width="20.14" height="6.40" rx="3.08"/>
+<rect fill="#fc3675" x="-10.02" y="-4.15" transform="translate(81.34,81.20) rotate(-0.7)" width="20.04" height="8.30" rx="3.96"/>
+<rect fill="#fc3675" x="-9.98" y="-3.85" transform="translate(55.72,83.79) rotate(-13.4)" width="19.96" height="7.70" rx="3.71"/>
+<rect fill="#fc3675" x="-10.11" y="-4.05" transform="translate(106.93,83.88) rotate(11.8)" width="20.22" height="8.10" rx="3.89"/>
+<rect fill="#fc3675" x="-8.10" y="-3.68" transform="translate(251.60,86.88) rotate(-23.7)" width="16.20" height="7.36" rx="3.53"/>
+<rect fill="#fc3675" x="-9.72" y="-3.77" transform="translate(131.83,90.52) rotate(17.2)" width="19.44" height="7.54" rx="3.64"/>
+<rect fill="#fc3675" x="-10.19" y="-3.79" transform="translate(30.81,91.38) rotate(-20.8)" width="20.38" height="7.58" rx="3.66"/>
+<rect fill="#fc3675" x="-9.75" y="-3.62" transform="translate(230.52,94.78) rotate(-18.9)" width="19.50" height="7.24" rx="3.50"/>
+<rect fill="#fc3675" x="-9.86" y="-3.86" transform="translate(156.35,97.60) rotate(13.9)" width="19.72" height="7.72" rx="3.72"/>
+<rect fill="#fc3675" x="-9.84" y="-3.68" transform="translate(206.84,100.54) rotate(-10.4)" width="19.68" height="7.36" rx="3.53"/>
+<rect fill="#fc3675" x="-9.97" y="-3.94" transform="translate(181.33,101.62) rotate(2.4)" width="19.94" height="7.88" rx="3.77"/>
+<rect fill="#fc3675" x="-13.76" y="-6.81" transform="translate(58.83,143.93) rotate(-9.9)" width="27.52" height="13.62" rx="6.49"/>
+<rect fill="#fc3675" x="-13.33" y="-6.42" transform="translate(90.47,143.06) rotate(4.7)" width="26.66" height="12.84" rx="6.12"/>
+<rect fill="#fc3675" x="-13.03" y="-6.39" transform="translate(120.86,149.80) rotate(16.4)" width="26.06" height="12.78" rx="6.11"/>
+<rect fill="#fc3675" x="-11.76" y="-6.02" transform="translate(235.99,150.53) rotate(-21.5)" width="23.52" height="12.04" rx="5.76"/>
+<rect fill="#fc3675" x="-13.86" y="-7.02" transform="translate(27.16,152.77) rotate(-21.2)" width="27.72" height="14.04" rx="6.71"/>
+<rect fill="#fc3675" x="-11.79" y="-6.07" transform="translate(149.38,158.66) rotate(13.7)" width="23.58" height="12.14" rx="5.80"/>
+<rect fill="#fc3675" x="-12.64" y="-6.19" transform="translate(208.73,159.29) rotate(-13.4)" width="25.28" height="12.38" rx="5.91"/>
+<rect fill="#fc3675" x="-12.93" y="-6.22" transform="translate(178.41,162.82) rotate(1.7)" width="25.86" height="12.44" rx="5.92"/>
+<path fill="#fcf0e3" d="
+  M 267.99 178.70
+  Q 273.16 177.88 275.56 178.90
+  Q 328.19 201.42 343.77 207.77
+  Q 348.85 209.84 352.12 213.73
+  Q 351.28 215.82 350.52 218.09
+  Q 349.57 220.90 348.94 222.47
+  Q 340.82 242.79 336.17 254.92
+  C 332.88 263.50 326.01 268.60 316.79 268.53
+  Q 312.79 268.51 303.62 264.60
+  Q 279.13 254.17 270.20 250.47
+  Q 259.57 246.05 257.43 244.24
+  C 249.61 237.60 248.62 227.76 252.33 218.34
+  Q 258.92 201.62 265.75 183.27
+  Q 266.37 181.58 267.99 178.70
+  Z"
+/>
+<path fill="#fc3675" d="
+  M 68.06 218.99
+  Q 62.97 219.26 58.71 220.10
+  Q 54.86 220.86 53.27 220.45
+  C 41.81 217.49 43.24 200.63 54.51 199.31
+  Q 61.37 198.51 66.97 198.22
+  Q 72.58 197.93 79.48 198.01
+  C 90.83 198.14 94.01 214.75 82.93 218.90
+  Q 81.39 219.47 77.48 219.12
+  Q 73.16 218.73 68.06 218.99
+  Z"
+/>
+<rect fill="#fc3675" x="-21.54" y="-10.26" transform="translate(115.98,215.98) rotate(17.8)" width="43.08" height="20.52" rx="9.47"/>
+<rect fill="#fc3675" x="-19.10" y="-10.80" transform="translate(22.40,219.47) rotate(-20.9)" width="38.20" height="21.60" rx="10.29"/>
+<path fill="#fc3675" d="
+  M 188.10 228.58
+  C 187.57 220.91 191.88 217.66 199.03 216.34
+  Q 208.08 214.66 215.64 212.07
+  Q 218.92 210.95 221.49 211.08
+  C 229.32 211.47 232.93 218.94 229.98 225.74
+  Q 227.75 230.89 222.18 232.46
+  Q 209.87 235.92 199.33 238.10
+  C 193.14 239.38 188.52 234.58 188.10 228.58
+  Z"
+/>
+<rect fill="#fc3675" x="-21.12" y="-10.43" transform="translate(162.07,228.28) rotate(7.5)" width="42.24" height="20.86" rx="9.68"/>
+</svg>
