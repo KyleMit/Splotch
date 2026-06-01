@@ -9,7 +9,7 @@
   import { colors } from '$lib/state/colors.svelte.js';
   import { toolState } from '$lib/state/tool.svelte.js';
   import { canvasState } from '$lib/state/canvas.svelte.js';
-  import { strokeState, getStrokeWidthPx, getEraserWidthPx } from '$lib/state/strokeWidth.svelte.js';
+  import { strokeState, activeStrokeSize, getStrokeWidthPx, getEraserWidthPx } from '$lib/state/strokeWidth.svelte.js';
   import { coloringBookState } from '$lib/state/coloringBook.svelte.js';
   import { playDrawSound, stopDrawSound } from '$lib/audio/drawingSound.js';
 
@@ -19,7 +19,7 @@
   // Bubble that previews the eraser footprint at the pointer while erasing.
   let eraserCursor = $state({ visible: false, x: 0, y: 0 });
 
-  const eraserSizePx = $derived(getEraserWidthPx(strokeState.size));
+  const eraserSizePx = $derived(getEraserWidthPx(strokeState.eraserSize));
 
   function updateEraserCursor(e) {
     if (!toolState.eraser || !containerEl) return;
@@ -46,7 +46,7 @@
       }
     });
 
-    setStrokeWidth(getStrokeWidthPx());
+    setStrokeWidth(getStrokeWidthPx(activeStrokeSize()));
 
     return () => engine.teardown();
   });
@@ -56,8 +56,10 @@
     setColor(colors.activeColor);
   });
 
+  // Push the active tool's level into the engine; re-runs when the level or the
+  // tool changes, so switching pen↔eraser restores that tool's width.
   $effect(() => {
-    setStrokeWidth(getStrokeWidthPx(strokeState.size));
+    setStrokeWidth(getStrokeWidthPx(activeStrokeSize()));
   });
 
   $effect(() => {

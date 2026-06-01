@@ -4,7 +4,7 @@
   import Icon from './Icon.svelte';
   import { canvasState } from '$lib/state/canvas.svelte.js';
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte.js';
-  import { strokeState, STROKE_SIZES, setStrokeSize } from '$lib/state/strokeWidth.svelte.js';
+  import { strokeState, STROKE_SIZES, setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte.js';
   import { toolState, selectEraser } from '$lib/state/tool.svelte.js';
   import { ui, openColoringBook, openAiPrompt } from '$lib/state/ui.svelte.js';
   import { undo } from '$lib/drawing/engine.js';
@@ -142,15 +142,15 @@
       aria-expanded={strokeState.menuOpen}
       onclick={handleStrokeBtnClick}
     >
-      <Icon name="line-weight" class="action-icon" />
+      <Icon name={toolState.eraser ? 'line-weight-eraser' : 'line-weight'} class="action-icon" />
     </button>
     <div class="stroke-width-menu" hidden={!strokeState.menuOpen}>
       {#each STROKE_SIZES as size}
         <button
           class="stroke-size-button"
-          class:active={strokeState.size === size}
+          class:active={activeStrokeSize() === size}
           aria-label="Size {size}"
-          aria-pressed={strokeState.size === size}
+          aria-pressed={activeStrokeSize() === size}
           onclick={() => handleStrokeSizeClick(size)}
         >
           <Icon name="size-{size}" class="action-icon" />
