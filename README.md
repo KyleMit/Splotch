@@ -224,19 +224,19 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
   * [x] Make sure background works with screenshot feature
 * [x] When hitting the AI option without customization enabled, it should also pull up loading spinner when clicked.
 * [x] Full color the controls
+* [x] Admin Center to provide access codes
+* [x] Auto-save AI Art
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
+* [ ] Figure out what happened to progressive disclosure of top colors
 * [ ] Red hat test AI prompts
 * [ ] Add Parental Gate to AI stuff
   * [ ] Currently not a big difference between default and cartoon
-* [ ] Add Parent Center button to Auto-save AI generated images toggle. If enabled, there no longer needs to be a Download button and you can use the extra real estate to show a bigger picture. Should also auto save kids photos when saving the AI photo.  Detect if the kids drawing has changed since last AI generation, and if not don't download a new one
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
 * [ ] Auto save AI generated images toggle. No longer need download button
 * [ ] Fun loading sound while AI is loading
 * [ ] Hand draw icons
-* [ ] Admin Center to provide access codes
 * [ ] Maybe add route to confirm access token as well?
 * [ ] BYO Key?
-* [ ] Figure out what happened to progressive disclosure of top colors
 * [ ] Increase default timer
 * [ ] Increase size of pulsations when overtime
 * [ ] Start adding crazier and crazier animations if time goes super long

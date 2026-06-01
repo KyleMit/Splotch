@@ -3,6 +3,7 @@
   import { backOut } from 'svelte/easing';
   import Icon from './Icon.svelte';
   import { ui, closeAiResult } from '$lib/state/ui.svelte.js';
+  import { settings } from '$lib/state/settings.svelte.js';
 
   let dialogEl;
 
@@ -225,6 +226,7 @@
 <dialog
   class="ai-result-modal"
   class:polaroid-mode={exiting}
+  class:autosave={settings.autoSaveAiEnabled}
   bind:this={dialogEl}
   onpointerdown={handleDialogPointerDown}
   oncancel={handleDialogCancel}
@@ -305,10 +307,14 @@
       </div>
 
       {#if revealed && ui.aiResultUrl}
-        <button class="ai-result-download" onclick={handleDownload}>
-          <Icon name="download" class="ai-result-download-icon" />
-          <span>Download</span>
-        </button>
+        {#if settings.autoSaveAiEnabled}
+          <p class="ai-result-saved">✓ Saved to your photos</p>
+        {:else}
+          <button class="ai-result-download" onclick={handleDownload}>
+            <Icon name="download" class="ai-result-download-icon" />
+            <span>Download</span>
+          </button>
+        {/if}
       {/if}
     {/if}
   </div>
@@ -403,6 +409,12 @@
        is limited by the height reserve (padding + gap + download + some air). */
     max-width: 100%;
     max-height: calc(88vh - 130px);
+  }
+
+  /* Auto-save on: no Download button, so the freed vertical space goes to the
+     image — only a slim "Saved" caption is reserved below it. */
+  .ai-result-modal.autosave .stage-sizer {
+    max-height: calc(92vh - 86px);
   }
 
   /* No image yet (modal opened before the export finished): a definite width so
@@ -615,6 +627,15 @@
     margin: 0;
     font-size: 16px;
     font-weight: 600;
+  }
+
+  /* ── Saved caption (auto-save mode, replaces the Download button) ── */
+  .ai-result-saved {
+    margin: 0;
+    color: #4CAF50;
+    font-size: 15px;
+    font-weight: 700;
+    animation: downloadPop 0.4s backwards 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* ── Download button ── */

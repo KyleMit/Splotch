@@ -9,6 +9,33 @@ import {
 import { settings } from '$lib/state/settings.svelte.js';
 import { exportCanvasBlob } from './engine.js';
 import { getActiveOverlayImage } from './overlay.js';
+import { saveImageBlob } from './screenshot.js';
+
+// Signature of the drawing saved on the previous AI run. Lets us skip re-saving
+// the child's artwork when they re-roll a new style on an unchanged drawing —
+// the AI image is always fresh, but the drawing copy would just be a duplicate.
+let lastSavedDrawingSig = null;
+
+async function blobSignature(blob) {
+  try {
+    const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
+    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return null;
+  }
+}
+
+// Drop the finished AI image into the gallery (a download on the web), and tuck
+// the child's own drawing in alongside it — but only when the drawing actually
+// changed since the last AI run, so duplicates don't pile up.
+async function autoSaveImages(aiBlob, drawingBlob) {
+  await saveImageBlob(aiBlob, 'splotch-ai');
+  const sig = await blobSignature(drawingBlob);
+  if (sig === null || sig !== lastSavedDrawingSig) {
+    await saveImageBlob(drawingBlob, 'splotch');
+  }
+  lastSavedDrawingSig = sig;
+}
 
 export async function generateAiImage({ blob = null, style = '' } = {}) {
   if (ui.aiGenerating) return;
@@ -46,6 +73,7 @@ export async function generateAiImage({ blob = null, style = '' } = {}) {
     }
     const outBlob = await res.blob();
     finishAiGeneration(URL.createObjectURL(outBlob));
+    if (settings.autoSaveAiEnabled) await autoSaveImages(outBlob, imageBlob);
   } catch (err) {
     failAiGeneration();
     console.error(err);

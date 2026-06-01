@@ -27,7 +27,7 @@ async function findAlbumId(Media, name) {
 // Native: drop the PNG straight into the device photo library. Android requires
 // an album identifier, so we tuck drawings into a "Splotch" album (creating it
 // once); iOS saves to the camera roll with add-only permission.
-async function saveToGallery(blob) {
+async function saveToGallery(blob, baseName = 'splotch') {
   const { Media } = await import('@capacitor-community/media');
   const dataUrl = await blobToDataUrl(blob);
 
@@ -37,9 +37,32 @@ async function saveToGallery(blob) {
       await Media.createAlbum({ name: ALBUM_NAME });
       albumId = await findAlbumId(Media, ALBUM_NAME);
     }
-    await Media.savePhoto({ path: dataUrl, albumIdentifier: albumId, fileName: `splotch-${timestamp()}` });
+    await Media.savePhoto({ path: dataUrl, albumIdentifier: albumId, fileName: `${baseName}-${timestamp()}` });
   } else {
     await Media.savePhoto({ path: dataUrl });
+  }
+}
+
+// Persist a PNG blob: native drops it into the photo gallery, the web triggers a
+// file download. No polaroid animation — for silent/background saves (e.g. the
+// AI auto-save), where the caller owns its own feedback.
+export async function saveImageBlob(blob, baseName = 'splotch') {
+  if (!blob) return;
+  if (isNative()) {
+    try {
+      await saveToGallery(blob, baseName);
+    } catch (err) {
+      console.error('Save to gallery failed:', err);
+    }
+  } else {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${baseName}-${timestamp()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   }
 }
 

@@ -9,6 +9,7 @@ const ERASER_KEY = 'splotch-eraser-enabled';
 const COLORING_BOOK_KEY = 'splotch-coloring-book-enabled';
 const AI_IMAGE_KEY = 'splotch-ai-image-enabled';
 const AI_CUSTOMIZATION_KEY = 'splotch-ai-customization-enabled';
+const AUTO_SAVE_AI_KEY = 'splotch-auto-save-ai';
 const AI_ACCESS_TOKEN_KEY = 'splotch-ai-access-token';
 const AI_ACCESS_TOKEN_PARAM = 'ai_access_token';
 const ADMIN_ACCESS_TOKEN_KEY = 'splotch-admin-access-token';
@@ -25,6 +26,10 @@ export const settings = $state({
   coloringBookEnabled: readBool(COLORING_BOOK_KEY, true),
   aiImageEnabled: readBool(AI_IMAGE_KEY, true),
   aiCustomizationEnabled: readBool(AI_CUSTOMIZATION_KEY, true),
+  // When on, a finished AI image is dropped straight into the photo gallery
+  // (a download on the web) along with the child's drawing — no Download button,
+  // and the freed space goes to a larger preview.
+  autoSaveAiEnabled: readBool(AUTO_SAVE_AI_KEY, false),
   aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
   // Admin access key. Hidden from regular users (unlocked via the version-text
   // easter egg) and validated server-side against ADMIN_ACCESS_TOKEN.
@@ -46,6 +51,7 @@ export function setEraser(v) { settings.eraserEnabled = v; writeBool(ERASER_KEY,
 export function setColoringBook(v) { settings.coloringBookEnabled = v; writeBool(COLORING_BOOK_KEY, v); }
 export function setAiImage(v) { settings.aiImageEnabled = v; writeBool(AI_IMAGE_KEY, v); }
 export function setAiCustomization(v) { settings.aiCustomizationEnabled = v; writeBool(AI_CUSTOMIZATION_KEY, v); }
+export function setAutoSaveAi(v) { settings.autoSaveAiEnabled = v; writeBool(AUTO_SAVE_AI_KEY, v); }
 export function setAiAccessToken(v) { settings.aiAccessToken = v; writeString(AI_ACCESS_TOKEN_KEY, v); }
 export function setAdminAccessToken(v) { settings.adminAccessToken = v; writeString(ADMIN_ACCESS_TOKEN_KEY, v); }
 export function setAdvancedControls(v) { settings.advancedControlsEnabled = v; writeBool(ADVANCED_CONTROLS_KEY, v); }
@@ -64,6 +70,7 @@ export function reloadSettings() {
   settings.coloringBookEnabled = readBool(COLORING_BOOK_KEY, settings.coloringBookEnabled);
   settings.aiImageEnabled = readBool(AI_IMAGE_KEY, settings.aiImageEnabled);
   settings.aiCustomizationEnabled = readBool(AI_CUSTOMIZATION_KEY, settings.aiCustomizationEnabled);
+  settings.autoSaveAiEnabled = readBool(AUTO_SAVE_AI_KEY, settings.autoSaveAiEnabled);
   settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);
   settings.adminAccessToken = readString(ADMIN_ACCESS_TOKEN_KEY, settings.adminAccessToken);
   settings.advancedControlsEnabled = readBool(ADVANCED_CONTROLS_KEY, settings.advancedControlsEnabled);

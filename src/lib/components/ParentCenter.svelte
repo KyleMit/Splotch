@@ -14,6 +14,7 @@
     setColoringBook,
     setAiImage,
     setAiCustomization,
+    setAutoSaveAi,
     setAiAccessToken,
     setAdminAccessToken,
     setAdvancedControls
@@ -467,6 +468,27 @@
                   <span class="toggle-switch-thumb"></span>
                 </button>
               </div>
+            </div>
+
+            <div class="setting" transition:slide={{ duration: 220 }}>
+              <div class="setting-toggle">
+                <label class="setting-info" for="autoSaveAiToggle">
+                  <Icon name="download" class="setting-icon" />
+                  <span class="setting-label">Auto-Save AI Images</span>
+                </label>
+                <button
+                  class="toggle-switch"
+                  class:active={settings.autoSaveAiEnabled}
+                  id="autoSaveAiToggle"
+                  role="switch"
+                  aria-label="Auto-Save AI Images"
+                  aria-checked={settings.autoSaveAiEnabled}
+                  onclick={() => setAutoSaveAi(!settings.autoSaveAiEnabled)}
+                >
+                  <span class="toggle-switch-thumb"></span>
+                </button>
+              </div>
+              <p class="setting-help">Saves each AI image and the drawing to your photos, and shows a larger preview</p>
             </div>
           {/if}
         </div>
