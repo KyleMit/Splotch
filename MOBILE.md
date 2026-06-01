@@ -57,21 +57,37 @@ device is offline the AI button is **hidden** automatically
 
 ### Prerequisites (one-time)
 
-* [ ] Install **Android Studio** (bundles the JDK + Android SDK + emulator).
-  This machine currently has **no JDK/SDK/Android Studio** — install before
-  building.
-* [ ] In Android Studio, install an SDK Platform (API 34+) and create or attach
-  a device/emulator.
+This dev machine is now set up (2026-06):
+
+* [x] **Android Studio** + Android SDK installed (SDK at
+  `%LOCALAPPDATA%\Android\Sdk`; platforms 34 & 36, build-tools 34/35, `adb`,
+  emulator, several AVDs).
+* [x] **Node 22** (via nvm-windows) — Capacitor 8 requires Node ≥ 22. The repo's
+  default node was 18; run `nvm use 22.11.0` in an **elevated** terminal once to
+  make 22 the persistent default (the symlink swap needs admin).
+* [x] **Full JDK 21** at `%USERPROFILE%\.jdks\jdk-21.0.11+10` — Capacitor 8
+  plugins need a Java **21** toolchain, and Android Studio's bundled JBR is only
+  17. `JAVA_HOME` (user scope) points here. NOTE: it must be a *full* JDK (with
+  `jlink`/`jmods`); a JetBrains JBR will fail AGP's `JdkImageTransform`.
+  - In **Android Studio**: Settings → Build → Build Tools → Gradle → set
+    **Gradle JDK** to this JDK 21 (or "JAVA_HOME"), else in-IDE builds fail.
 * [ ] (iOS, later) macOS + **Xcode** + CocoaPods.
 
 ### Commands
 
 ```bash
-npm run build:cap     # static build into build/ (CAPACITOR=true)
+npm run build:cap     # static build into build/ (CAPACITOR=true, via cross-env)
 npm run cap:sync      # build:cap + copy web assets & plugins into native projects
 npm run cap:android   # cap:sync + open the Android project in Android Studio
 npm run cap:ios       # cap:sync + open the iOS project in Xcode (after add)
 ```
+
+> **Windows note:** the scripts use `cross-env` so `CAPACITOR=true` / `SLOWMO=`
+> work under `cmd.exe` (npm's default shell on Windows), not just bash.
+>
+> **CLI Gradle builds** (outside Android Studio) need `JAVA_HOME` → the JDK 21
+> above. From `android/`:
+> `./gradlew :app:assembleDebug` (APK) or `:app:bundleRelease` (AAB).
 
 From Android Studio: **Run ▶** to test on emulator/device; **Build → Generate
 Signed Bundle/APK** to produce a release `.aab`.
@@ -108,12 +124,21 @@ npx @capacitor/assets generate --android   # (and --ios later)
 
 ### Signing & bundling
 
+* [x] **Signing is wired up:** `android/app/build.gradle` reads creds from
+  `android/keystore.properties` (git-ignored; `.gitignore` updated, template at
+  `android/keystore.properties.example`). Without that file, release builds are
+  unsigned; with it, `bundleRelease` is signed automatically.
 * [ ] Create an **upload keystore** (`keytool`) and store it + passwords in a
-  password manager. **Losing it means you can't update the app.**
-* [ ] Configure signing in `android/app/build.gradle` (or via Android Studio).
-  Keep the keystore **out of git** (add to `.gitignore`).
+  password manager. **Losing it means you can't update the app.** From `android/`:
+  ```bash
+  keytool -genkeypair -v -keystore upload-keystore.jks -alias upload \
+    -keyalg RSA -keysize 2048 -validity 10000
+  ```
+  Then `cp keystore.properties.example keystore.properties` and fill in the
+  passwords/alias you just set.
 * [ ] Enroll in **Play App Signing** (recommended) when creating the app.
-* [ ] Produce a release **`.aab`** (Android App Bundle) — Play requires AAB.
+* [ ] Produce a release **`.aab`**: from `android/`, `./gradlew :app:bundleRelease`
+  → `android/app/build/outputs/bundle/release/app-release.aab` (Play requires AAB).
 
 ### Google Play Console setup
 
