@@ -1,5 +1,6 @@
 import { exportCanvasBlob, getActiveCanvas } from './engine.js';
 import { getActiveOverlayImage } from './overlay.js';
+import { isNative, getPlatform } from '$lib/platform.js';
 
 function timestamp() {
   const d = new Date();
@@ -7,17 +8,62 @@ function timestamp() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
 }
 
+const ALBUM_NAME = 'Splotch';
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function findAlbumId(Media, name) {
+  const { albums } = await Media.getAlbums();
+  return albums.find((a) => a.name === name)?.identifier ?? null;
+}
+
+// Native: drop the PNG straight into the device photo library. Android requires
+// an album identifier, so we tuck drawings into a "Splotch" album (creating it
+// once); iOS saves to the camera roll with add-only permission.
+async function saveToGallery(blob) {
+  const { Media } = await import('@capacitor-community/media');
+  const dataUrl = await blobToDataUrl(blob);
+
+  if (getPlatform() === 'android') {
+    let albumId = await findAlbumId(Media, ALBUM_NAME);
+    if (!albumId) {
+      await Media.createAlbum({ name: ALBUM_NAME });
+      albumId = await findAlbumId(Media, ALBUM_NAME);
+    }
+    await Media.savePhoto({ path: dataUrl, albumIdentifier: albumId, fileName: `splotch-${timestamp()}` });
+  } else {
+    await Media.savePhoto({ path: dataUrl });
+  }
+}
+
 export async function saveScreenshot() {
   const blob = await exportCanvasBlob(getActiveOverlayImage());
   if (!blob) return;
 
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `splotch-${timestamp()}.png`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+
+  if (isNative()) {
+    try {
+      await saveToGallery(blob);
+    } catch (err) {
+      console.error('Save to gallery failed:', err);
+    }
+  } else {
+    // Browser: trigger a normal file download.
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `splotch-${timestamp()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
 
   playPolaroidAnimation(url);
 }

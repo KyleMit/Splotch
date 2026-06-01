@@ -27,6 +27,13 @@ export const strokeState = $state({
   menuOpen: false
 });
 
+// Re-read the persisted pen/eraser levels into the live store after the durable
+// storage layer recovers values evicted by the native WebView (see storage.js).
+export function reloadStrokeWidth() {
+  strokeState.penSize = readInt(PEN_SIZE_KEY, strokeState.penSize, STROKE_SIZES);
+  strokeState.eraserSize = readInt(ERASER_SIZE_KEY, strokeState.eraserSize, STROKE_SIZES);
+}
+
 // The level for the tool that's currently active. Reads toolState so it stays
 // reactive inside $derived, $effect, and template expressions.
 export function activeStrokeSize() {

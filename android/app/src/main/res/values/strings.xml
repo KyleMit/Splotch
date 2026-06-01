@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Splotch</string>
+    <string name="title_activity_main">Splotch</string>
+    <string name="package_name">art.splotch.app</string>
+    <string name="custom_url_scheme">art.splotch.app</string>
+</resources>

@@ -51,6 +51,25 @@ export function setAdminAccessToken(v) { settings.adminAccessToken = v; writeStr
 export function setAdvancedControls(v) { settings.advancedControlsEnabled = v; writeBool(ADVANCED_CONTROLS_KEY, v); }
 export function setDrawerOpen(v) { settings.drawerOpen = v; writeBool(DRAWER_OPEN_KEY, v); }
 
+// Re-read every persisted setting into the live store. Used after the durable
+// storage layer recovers values that the native WebView had evicted (see
+// hydrateDurableStorage in storage.js). A no-op visually when nothing changed.
+export function reloadSettings() {
+  settings.soundEnabled = readBool(SOUND_KEY, settings.soundEnabled);
+  settings.saveOnDeleteEnabled = readBool(SAVE_ON_DELETE_KEY, settings.saveOnDeleteEnabled);
+  settings.screenshotEnabled = readBool(SCREENSHOT_KEY, settings.screenshotEnabled);
+  settings.undoButtonEnabled = readBool(UNDO_KEY, settings.undoButtonEnabled);
+  settings.strokeWidthControlEnabled = readBool(STROKE_CTRL_KEY, settings.strokeWidthControlEnabled);
+  settings.eraserEnabled = readBool(ERASER_KEY, settings.eraserEnabled);
+  settings.coloringBookEnabled = readBool(COLORING_BOOK_KEY, settings.coloringBookEnabled);
+  settings.aiImageEnabled = readBool(AI_IMAGE_KEY, settings.aiImageEnabled);
+  settings.aiCustomizationEnabled = readBool(AI_CUSTOMIZATION_KEY, settings.aiCustomizationEnabled);
+  settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);
+  settings.adminAccessToken = readString(ADMIN_ACCESS_TOKEN_KEY, settings.adminAccessToken);
+  settings.advancedControlsEnabled = readBool(ADVANCED_CONTROLS_KEY, settings.advancedControlsEnabled);
+  settings.drawerOpen = readBool(DRAWER_OPEN_KEY, settings.drawerOpen);
+}
+
 export function captureAiAccessTokenFromUrl() {
   if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);

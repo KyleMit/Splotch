@@ -34,7 +34,12 @@ export async function generateAiImage({ blob = null, style = '' } = {}) {
     form.append('image', imageBlob, 'drawing.png');
     if (style) form.append('style', style);
 
-    const res = await fetch('/api/generate-image', { method: 'POST', body: form });
+    // On the web this is a same-origin relative call. In the native apps there
+    // is no local server, so __NATIVE_API_BASE__ (set at build time) points the
+    // request at the hosted endpoint; the server returns permissive CORS so the
+    // WebView origin can reach it.
+    const apiBase = typeof __NATIVE_API_BASE__ !== 'undefined' ? __NATIVE_API_BASE__ : '';
+    const res = await fetch(`${apiBase}/api/generate-image`, { method: 'POST', body: form });
     if (!res.ok) {
       const msg = await res.text().catch(() => '');
       throw new Error(`AI image request failed (${res.status}): ${msg}`);

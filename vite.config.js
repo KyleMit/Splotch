@@ -3,21 +3,34 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 const BUILD_VERSION = new Date().toISOString().slice(0, 16).replace('T', ' ');
 
+// The native apps bundle a static export and never use a service worker (the
+// shell and all assets are already on-device), so skip the PWA plugin there.
+const isCapacitor = process.env.CAPACITOR === 'true';
+
+// On a native device there is no local server, so the AI button must call the
+// hosted endpoint. On the web this stays empty and the relative path is used.
+const NATIVE_API_BASE = isCapacitor ? 'https://splotch.art' : '';
+
 export default {
   define: {
-    __APP_VERSION__: JSON.stringify(BUILD_VERSION)
+    __APP_VERSION__: JSON.stringify(BUILD_VERSION),
+    __NATIVE_API_BASE__: JSON.stringify(NATIVE_API_BASE)
   },
   plugins: [
     sveltekit(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'favicon-96x96.png', 'apple-touch-icon.png', 'sounds/*.mp3'],
-      manifest: false,
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,woff2,webmanifest}'],
-        skipWaiting: true,
-        clientsClaim: true
-      }
-    })
+    ...(isCapacitor
+      ? []
+      : [
+          VitePWA({
+            registerType: 'autoUpdate',
+            includeAssets: ['favicon.ico', 'favicon-96x96.png', 'apple-touch-icon.png', 'sounds/*.mp3'],
+            manifest: false,
+            workbox: {
+              globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,woff2,webmanifest}'],
+              skipWaiting: true,
+              clientsClaim: true
+            }
+          })
+        ])
   ]
 };

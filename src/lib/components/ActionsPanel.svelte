@@ -8,6 +8,7 @@
   import { strokeState, STROKE_SIZES, setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte.js';
   import { toolState, selectEraser, selectPen } from '$lib/state/tool.svelte.js';
   import { ui, openColoringBook, openAiPrompt } from '$lib/state/ui.svelte.js';
+  import { network } from '$lib/state/network.svelte.js';
   import { undo } from '$lib/drawing/engine.js';
   import { saveScreenshot } from '$lib/drawing/screenshot.js';
   import { generateAiImage } from '$lib/drawing/aiImage.js';
@@ -211,7 +212,7 @@
     aria-label="Create AI image"
     aria-busy={ui.aiGenerating}
     disabled={canvasState.canvasEmpty || ui.aiGenerating}
-    hidden={!settings.aiAccessToken || !settings.aiImageEnabled}
+    hidden={!settings.aiAccessToken || !settings.aiImageEnabled || !network.online}
     onclick={handleAiImageClick}
     bind:this={aiBtnEl}
   >

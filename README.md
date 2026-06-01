@@ -103,6 +103,15 @@ npm install -g netlify-cli
 netlify deploy --prod
 ```
 
+### Native Apps (Android & iOS)
+
+The same codebase ships as native apps via [Capacitor](https://capacitorjs.com/). The native build is a fully static, offline-first export; only the AI button reaches the network (it calls the hosted endpoint). See [`MOBILE.md`](./MOBILE.md) for the full build/workflow guide and the store release checklist.
+
+```bash
+npm run cap:sync       # static build + copy into the native projects
+npm run cap:android    # also open the Android project in Android Studio
+```
+
 
 ## AI Image Generation
 
@@ -216,6 +225,8 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] When hitting the AI option without customization enabled, it should also pull up loading spinner when clicked.
 * [x] Full color the controls
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
+* [ ] Red hat test AI prompts
+* [ ] Add Parental Gate to AI stuff
   * [ ] Currently not a big difference between default and cartoon
 * [ ] Add Parent Center button to Auto-save AI generated images toggle. If enabled, there no longer needs to be a Download button and you can use the extra real estate to show a bigger picture. Should also auto save kids photos when saving the AI photo.  Detect if the kids
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection

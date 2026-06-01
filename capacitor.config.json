@@ -1,0 +1,15 @@
+{
+  "appId": "art.splotch.app",
+  "appName": "Splotch",
+  "webDir": "build",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#ffffff"
+  },
+  "ios": {
+    "backgroundColor": "#ffffff",
+    "contentInset": "always"
+  }
+}

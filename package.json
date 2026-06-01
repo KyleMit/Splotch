@@ -6,13 +6,18 @@
     "dev": "vite dev",
     "dev:netlify": "netlify dev",
     "build": "vite build",
+    "build:cap": "CAPACITOR=true vite build",
     "preview": "vite preview",
+    "cap:sync": "npm run build:cap && cap sync",
+    "cap:android": "npm run cap:sync && cap open android",
+    "cap:ios": "npm run cap:sync && cap open ios",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:headed": "SLOWMO=500 playwright test --headed",
     "test:debug": "playwright test --debug"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@playwright/test": "^1.60.0",
     "@sveltejs/adapter-netlify": "^4.3.0",
     "@sveltejs/kit": "^2.5.0",
@@ -23,8 +28,17 @@
     "vite-plugin-pwa": "^0.20.0"
   },
   "dependencies": {
+    "@capacitor-community/media": "^9.1.0",
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/ios": "^8.3.4",
+    "@capacitor/network": "^8.0.1",
+    "@capacitor/preferences": "^8.0.1",
     "@fontsource-variable/quicksand": "^5.2.10",
     "@google/genai": "^2.6.0",
-    "@netlify/blobs": "^10.7.8"
+    "@netlify/blobs": "^10.7.8",
+    "@sveltejs/adapter-static": "^3.0.10"
   }
 }
