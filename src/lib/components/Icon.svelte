@@ -15,7 +15,7 @@
   // monochrome icons with a CSS `filter` must leave these alone. We tag them
   // with `icon-color` so those filter rules can opt out (see ActionsPanel).
   const COLOR_ICONS = new Set([
-    'camera', 'eraser', 'line-weight', 'shapes', 'sweep-icon', 'undo', 'wand-stars'
+    'camera', 'eraser', 'line-weight', 'palette', 'shapes', 'sweep-icon', 'undo', 'wand-stars'
   ]);
 
   let { name, class: className = '', ...rest } = $props();

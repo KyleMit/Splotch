@@ -10,6 +10,7 @@
   import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine.js';
   import { openColorPicker } from '$lib/state/ui.svelte.js';
   import { toolState, selectPen } from '$lib/state/tool.svelte.js';
+  import Icon from './Icon.svelte';
 
   let paletteEl;
   let swatchEls = $state({});
@@ -191,7 +192,7 @@
     onpointerdown={(e) => { releaseAllPointers(); e.preventDefault(); e.stopPropagation(); }}
     onpointercancel={(e) => { releaseAllPointers(); e.stopPropagation(); }}
     bind:this={swatchEls[CUSTOM_SWATCH]}
-  ></button>
+  ><Icon name="palette" class="palette-icon" aria-hidden="true" /></button>
 </div>
 
 <style>
@@ -265,31 +266,23 @@
     }
   }
 
+  /* The custom-color swatch is the artist's palette icon rather than a flat
+     color. White fill keeps it reading as a swatch alongside the others. */
   .gradient-swatch {
-    background: conic-gradient(
-      from 0deg at 50% 50%,
-      #EC534E 0deg,
-      #F89C45 60deg,
-      #F9D24F 120deg,
-      #8CC864 180deg,
-      #62A2E9 240deg,
-      #AB71E1 300deg,
-      #EC534E 360deg
-    ) !important;
+    background: white !important;
     position: relative;
     border-color: white !important;
   }
 
-  .gradient-swatch::after {
-    content: '+';
+  /* Centered absolutely (not via flex) so it survives the inline display:block/
+     none the layout toggles on each swatch. The SVG keeps its aspect ratio. */
+  .gradient-swatch :global(.palette-icon) {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 28px;
-    font-weight: bold;
-    color: white;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    width: 104%;
+    height: 104%;
     pointer-events: none;
   }
 
