@@ -3,6 +3,7 @@
   import { slide } from 'svelte/transition';
   import Icon from './Icon.svelte';
   import { canvasState } from '$lib/state/canvas.svelte.js';
+  import { colors } from '$lib/state/colors.svelte.js';
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte.js';
   import { strokeState, STROKE_SIZES, setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte.js';
   import { toolState, selectEraser, selectPen } from '$lib/state/tool.svelte.js';
@@ -144,6 +145,7 @@
       aria-label="Stroke width"
       aria-expanded={strokeState.menuOpen}
       onclick={handleStrokeBtnClick}
+      style:color={colors.activeColor}
     >
       <Icon name={toolState.eraser ? 'line-weight-eraser' : 'line-weight'} class="action-icon" />
     </button>
