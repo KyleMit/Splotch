@@ -255,6 +255,10 @@
         <Icon name="install-app" class="tab-icon" />
         <span>Install</span>
       </button>
+      <button class="tab-button" class:active={activeTab === 'about'} onclick={() => (activeTab = 'about')}>
+        <Icon name="splotchy" class="tab-icon" />
+        <span>About</span>
+      </button>
     </div>
 
     <div class="tab-content" class:active={activeTab === 'install'}>
@@ -665,24 +669,33 @@
       </section>
     </div>
 
-    <footer class="parent-help-footer">
-      <p>Having issues? <a href="https://github.com/KyleMit/Splotch/issues/new/choose" target="_blank" rel="noopener noreferrer">Report a problem</a></p>
-      <p><a href="/privacy">Privacy Policy</a> — no ads, no tracking, no accounts.</p>
-      <p class="github-link">
-        <a href="https://github.com/KyleMit/Splotch" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub">
-          <Icon name="github" class="github-icon" aria-label="GitHub" role="img" />
-          View on GitHub
-        </a>
-      </p>
-      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
-      <p class="version-text" onclick={handleVersionClick}>Version {APP_VERSION}</p>
-      {#if adminLink}
-        <p class="admin-link"><a href={adminLink}>Admin</a></p>
-      {/if}
-      {#if import.meta.env.DEV}
-        <p class="admin-link"><a href="/dev/ai-timer">AI Timer</a></p>
-      {/if}
-    </footer>
+    <div class="tab-content" class:active={activeTab === 'about'}>
+      <section class="setting-group">
+        <div class="about-brand">
+          <Icon name="splotchy" class="about-icon" aria-label="Splotch" role="img" />
+          <p class="about-tagline">A joyful, kid-friendly drawing app — no ads, no tracking, no accounts.</p>
+        </div>
+
+        <div class="parent-help-footer">
+          <p>Having issues? <a href="https://github.com/KyleMit/Splotch/issues/new/choose" target="_blank" rel="noopener noreferrer">Report a problem</a></p>
+          <p><a href="/privacy">Privacy Policy</a> — no ads, no tracking, no accounts.</p>
+          <p class="github-link">
+            <a href="https://github.com/KyleMit/Splotch" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub">
+              <Icon name="github" class="github-icon" aria-label="GitHub" role="img" />
+              View on GitHub
+            </a>
+          </p>
+          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+          <p class="version-text" onclick={handleVersionClick}>Version {APP_VERSION}</p>
+          {#if adminLink}
+            <p class="admin-link"><a href={adminLink}>Admin</a></p>
+          {/if}
+          {#if import.meta.env.DEV}
+            <p class="admin-link"><a href="/dev/ai-timer">AI Timer</a></p>
+          {/if}
+        </div>
+      </section>
+    </div>
   </div>
 </dialog>
 
@@ -831,6 +844,34 @@
 
   .tab-content.active {
     display: block;
+  }
+
+  /* Four tabs get cramped on narrow portrait screens. First tighten the
+     spacing; then, when that runs out, stack the icon over the label so each
+     tab needs far less horizontal room. */
+  @media (max-width: 480px) {
+    .parent-help-content {
+      padding: 24px 20px;
+    }
+
+    .tab-buttons {
+      gap: 4px;
+    }
+
+    .tab-button {
+      padding: 10px 8px;
+      font-size: 14px;
+      gap: 6px;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .tab-button {
+      flex-direction: column;
+      gap: 4px;
+      padding: 10px 4px;
+      font-size: 12px;
+    }
   }
 
   .help-section {
@@ -1254,8 +1295,30 @@
     color: #b04a4a;
   }
 
+  /* About tab branding */
+  .about-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  :global(.about-icon) {
+    width: 96px;
+    height: 96px;
+  }
+
+  .about-tagline {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.5;
+    max-width: 320px;
+  }
+
   .parent-help-footer {
-    margin-top: 32px;
     padding-top: 20px;
     border-top: 1px solid #e0e0e0;
     text-align: center;

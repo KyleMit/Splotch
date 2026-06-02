@@ -16,7 +16,7 @@
   // with `icon-color` so those filter rules can opt out (see ActionsPanel).
   const COLOR_ICONS = new Set([
     'camera', 'eraser', 'line-weight', 'line-weight-eraser', 'palette',
-    'shapes', 'sweep-icon', 'undo', 'wand-stars',
+    'shapes', 'splotchy', 'sweep-icon', 'undo', 'wand-stars',
     // Stroke-size lines use currentColor (driven by the active pen/eraser color),
     // so they must skip the monochrome tint filter too.
     'size-1', 'size-2', 'size-3', 'size-4', 'size-5'

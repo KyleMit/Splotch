@@ -228,10 +228,10 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Auto-save AI Art
 * [x] Auto save AI generated images toggle. No longer need download button
 * [x] Add BYO Key
-* [ ] On android, remove bottom nav bar and add app color to navbar cutout
+* [x] On android, remove bottom nav bar and add app color to navbar cutout
+* [x] Add about tab with splotch logo.  Figure out how to wrap tabs on portrait device
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
-* [ ] Add about tab
 * [ ] Figure out release notes (in about tab) and proper versioning / ideally with gh releases
 * [ ] Figure out what happened to progressive disclosure of top colors
 * [ ] Red hat test AI prompts

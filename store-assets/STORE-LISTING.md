@@ -3,39 +3,20 @@
 
 # Splotch — Google Play store listing
 
-Paste these into **Play Console → Grow → Store presence → Main store listing**.
-Character counts are shown against Google's limits. All copy is original and
-avoids keyword stuffing, emoji, price/rank claims, and "#1/best" superlatives
-(per the Metadata policy).
-
----
 
 ## App name  (max 30)
 
 ```
-Splotch
+Splotch: Drawing for Kids
 ```
 
-`7 / 30`. The field is already filled. If you'd rather use the extra room for
-discoverability, a compliant alternative is **`Splotch: Drawing for Kids`**
-(`26 / 30`) — descriptive, no keyword stuffing. Pick one; don't change it often,
-as the name affects branding and search.
-
----
 
 ## Short description  (max 80)
 
 ```
-A calm, ad-free drawing and coloring app made for little hands.
+Doodle, color, and create. A quiet, ad-free coloring app made for little hands
 ```
 
-`62 / 80`.
-
-Alternatives:
-- `Simple, ad-free drawing and coloring for toddlers — no ads, no accounts.` (71)
-- `Doodle, color, and create. A quiet, ad-free art app made for little kids.` (73)
-
----
 
 ## Full description  (max 4000)
 
@@ -73,34 +54,4 @@ Splotch collects nothing. No ads. No tracking. No analytics. No third-party adve
 Splotch is also free and open source. If you spot a problem or have an idea, you can reach us through the project on GitHub.
 
 Open it up, hand over the device, and let them make a mess. That's the whole idea.
-```
-
-Count when pasted: ~2,050 / 4000 — comfortably under the cap.
-
-> Edit the AI paragraph if you ship without the AI feature enabled, and make sure
-> the description matches what your **Data safety** form declares (see MOBILE.md §1
-> "Data & privacy posture").
-
----
-
-## Graphics
-
-| Asset | Spec | File |
-|---|---|---|
-| App icon | 512×512 PNG | `icon-512.png` |
-| Feature graphic | 1024×500 PNG | `feature-graphic.png` |
-| Phone screenshots | 1080×1920 (9:16) | `screenshots/phone/*.png` (5) |
-| 7" tablet screenshots | 1920×1080 (16:9) | `screenshots/tablet7/*.png` (5) |
-| 10" tablet screenshots | 1920×1080 (16:9) | `screenshots/tablet10/*.png` (5) |
-| Video | — | skipped (optional) |
-
-See `README.md` in this folder for what each screenshot shows and how they were
-generated.
-
----
-
-## "What's new" / release notes (max 500, optional for first release)
-
-```
-First release of Splotch — a simple, ad-free drawing and coloring app for little hands. Draw with chunky crayon strokes, color inside the lines, pick from a rainbow of colors, and save your masterpiece. No ads, no tracking, no accounts.
 ```
