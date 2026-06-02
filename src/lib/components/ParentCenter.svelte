@@ -16,9 +16,11 @@
     setAiCustomization,
     setAutoSaveAi,
     setAiAccessToken,
+    setAiUserApiKey,
     setAdminAccessToken,
     setAdvancedControls
   } from '$lib/state/settings.svelte.js';
+  import { apiUrl } from '$lib/api.js';
   import { clearOverlay } from '$lib/state/coloringBook.svelte.js';
 
   let dialogEl;
@@ -26,14 +28,92 @@
   let activeTab = $state('settings');
   let installOs = $state('ios');
   let pwaInstalled = $state(false);
-  let accessCodeInput = $state('');
-  let aiLocked = $derived(!settings.aiAccessToken);
+  // The single AI field accepts either a Gemini API key (BYOK) or a secret
+  // access code. AI unlocks when the parent has provided either one.
+  let keyInput = $state('');
+  let keyStatus = $state('idle'); // 'idle' | 'checking' | 'error' | 'success'
+  let keyMessage = $state('');
+  let hasApiKey = $derived(!!settings.aiUserApiKey);
+  let hasAccessCode = $derived(!!settings.aiAccessToken);
+  let aiLocked = $derived(!hasApiKey && !hasAccessCode);
 
-  function submitAccessCode() {
-    const code = accessCodeInput.trim();
-    if (!code) return;
-    setAiAccessToken(code);
-    accessCodeInput = '';
+  // Show the saved key with everything but the last four characters masked, so
+  // a parent can recognise it without exposing the whole secret.
+  let maskedKey = $derived(maskSecret(settings.aiUserApiKey));
+
+  function maskSecret(value) {
+    if (!value) return '';
+    if (value.length <= 4) return '*'.repeat(value.length);
+    return '*'.repeat(value.length - 4) + value.slice(-4);
+  }
+
+  function resetKeyFeedback() {
+    keyStatus = 'idle';
+    keyMessage = '';
+  }
+
+  async function submitKey() {
+    const value = keyInput.trim();
+    if (!value || keyStatus === 'checking') return;
+    keyStatus = 'checking';
+    keyMessage = '';
+
+    // Gemini API keys are issued in the form "AIza…". Treat anything else as a
+    // secret access code and check it against the managed allowlist instead.
+    const looksLikeApiKey = /^AIza/.test(value);
+
+    try {
+      if (looksLikeApiKey) {
+        const res = await fetch(apiUrl('/api/verify-key'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: value })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          setAiUserApiKey(value);
+          setAiImage(true); // turn the feature on the moment a valid key lands
+          keyInput = '';
+          keyStatus = 'success';
+          keyMessage = 'Your key works and has been accepted!';
+        } else {
+          keyStatus = 'error';
+          keyMessage = data.error || "That key didn't work. Double-check it and try again.";
+        }
+      } else {
+        const res = await fetch(apiUrl('/api/verify-access-code'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: value })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          setAiAccessToken(data.accessCode || value);
+          setAiImage(true); // turn the feature on the moment a valid code lands
+          keyInput = '';
+          keyStatus = 'success';
+          keyMessage = 'Access granted! You have special access — no API key needed.';
+        } else {
+          keyStatus = 'error';
+          keyMessage = "That doesn't look like a valid key or access code. Please try again.";
+        }
+      }
+    } catch {
+      keyStatus = 'error';
+      keyMessage = 'Could not reach the server. Check your connection and try again.';
+    }
+  }
+
+  function forgetKey() {
+    setAiUserApiKey('');
+    keyInput = '';
+    resetKeyFeedback();
+  }
+
+  function forgetAccessCode() {
+    setAiAccessToken('');
+    keyInput = '';
+    resetKeyFeedback();
   }
 
   const APP_VERSION =
@@ -87,6 +167,8 @@
         activeTab = 'settings';
         installOs = detectOS();
         pwaInstalled = isPWAInstalled();
+        keyInput = '';
+        resetKeyFeedback();
         dialogEl.showModal();
       }
     } else {
@@ -402,52 +484,117 @@
 
     <div class="tab-content" class:active={activeTab === 'ai'}>
       <section class="setting-group">
-        <h3 class="setting-group-heading">
-          AI
-          {#if aiLocked}
-            <span class="lock-badge"><Icon name="lock" class="lock-badge-icon" />Locked</span>
-          {/if}
-        </h3>
-
         {#if aiLocked}
-          <div class="setting access-code">
-            <label class="access-code-label" for="aiAccessCode">Access Code</label>
-            <p class="access-code-hint">Enter an access code to unlock AI features.</p>
+          <div class="setting byok">
+            <p class="byok-intro">
+              Splotch turns drawings into AI art with Google's Gemini. To keep
+              the app free with no accounts, you <strong>bring your own key</strong> (BYOK):
+              you paste a Gemini API key, it's saved only on this device, and it's
+              used only for your child's creations. Any usage is billed to your own
+              Google account.  We never keep a copy of your key.
+            </p>
+
+            <details class="byok-howto">
+              <summary>How do I get a Gemini API key?</summary>
+              <ol>
+                <li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.</li>
+                <li>Sign in with a Google account.</li>
+                <li>Click <strong>Create API key</strong> and confirm.</li>
+                <li>Copy the key (it starts with <code>AIza…</code>) and paste it below.</li>
+              </ol>
+              <p class="byok-howto-note">The free tier is generous and is plenty for occasional use.</p>
+            </details>
+
+            <label class="access-code-label" for="aiKeyInput">Gemini API Key</label>
             <div class="access-code-row">
               <input
-                id="aiAccessCode"
+                id="aiKeyInput"
                 class="access-code-input"
                 type="text"
-                placeholder="Enter access code"
-                bind:value={accessCodeInput}
-                onkeydown={(e) => e.key === 'Enter' && submitAccessCode()}
+                inputmode="text"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                placeholder="Paste your Gemini API key"
+                bind:value={keyInput}
+                onkeydown={(e) => e.key === 'Enter' && submitKey()}
               />
               <button
                 class="access-code-submit"
-                onclick={submitAccessCode}
-                disabled={!accessCodeInput.trim()}
+                onclick={submitKey}
+                disabled={!keyInput.trim() || keyStatus === 'checking'}
               >
-                Submit
+                {keyStatus === 'checking' ? 'Checking…' : 'Save'}
               </button>
             </div>
+            <p class="byok-secret-hint">Have an access code? You can enter it here too.</p>
+          </div>
+        {:else}
+          <div class="setting byok byok-active">
+            {#if hasApiKey}
+              <p class="byok-intro">
+                You're using <strong>your own Gemini API key</strong>. Usage is billed
+                to your Google account. Forget the key any time to switch it off.
+              </p>
+              <label class="access-code-label" for="aiKeyActive">Gemini API Key</label>
+              <div class="access-code-row">
+                <input
+                  id="aiKeyActive"
+                  class="access-code-input"
+                  type="text"
+                  readonly
+                  aria-label="Saved Gemini API key (masked)"
+                  value={maskedKey}
+                />
+                <button class="access-code-submit forget" onclick={forgetKey}>Forget</button>
+              </div>
+            {:else}
+              <p class="byok-intro">
+                You have <strong>special access</strong> via an access code — AI art
+                is on us, no API key needed. Forget the code any time to remove it.
+              </p>
+              <label class="access-code-label" for="aiCodeActive">Access Code</label>
+              <div class="access-code-row">
+                <input
+                  id="aiCodeActive"
+                  class="access-code-input"
+                  type="text"
+                  readonly
+                  aria-label="Saved access code"
+                  value={settings.aiAccessToken}
+                />
+                <button class="access-code-submit forget" onclick={forgetAccessCode}>Forget</button>
+              </div>
+            {/if}
           </div>
         {/if}
 
-        <div class="ai-controls" class:locked={aiLocked} aria-hidden={aiLocked}>
+        {#if keyMessage}
+          <p
+            class="byok-message"
+            class:error={keyStatus === 'error'}
+            class:success={keyStatus === 'success'}
+            role={keyStatus === 'error' ? 'alert' : 'status'}
+          >
+            {keyMessage}
+          </p>
+        {/if}
+
+        {#if !aiLocked}
+        <div class="ai-controls">
           <div class="setting">
             <div class="setting-toggle">
               <label class="setting-info" for="aiImageToggle">
                 <Icon name="wand-stars" class="setting-icon" />
-                <span class="setting-label">AI Image Button</span>
+                <span class="setting-label">Create AI Images</span>
               </label>
               <button
                 class="toggle-switch"
-                class:active={!aiLocked && settings.aiImageEnabled}
+                class:active={settings.aiImageEnabled}
                 id="aiImageToggle"
                 role="switch"
-                aria-label="AI Image Button"
-                aria-checked={!aiLocked && settings.aiImageEnabled}
-                disabled={aiLocked}
+                aria-label="Create AI Images"
+                aria-checked={settings.aiImageEnabled}
                 onclick={() => setAiImage(!settings.aiImageEnabled)}
               >
                 <span class="toggle-switch-thumb"></span>
@@ -455,7 +602,7 @@
             </div>
           </div>
 
-          {#if !aiLocked && settings.aiImageEnabled}
+          {#if settings.aiImageEnabled}
             <div class="setting" transition:slide={{ duration: 220 }}>
               <div class="setting-toggle">
                 <label class="setting-info" for="aiCustomizationToggle">
@@ -498,6 +645,7 @@
             </div>
           {/if}
         </div>
+        {/if}
       </section>
     </div>
 
@@ -892,32 +1040,9 @@
     background: #ddd;
   }
 
-  /* Locked AI controls */
-  .lock-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: 8px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: #eee;
-    color: #999;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.4px;
-    vertical-align: middle;
-  }
-
-  :global(.lock-badge-icon) {
-    width: 13px;
-    height: 13px;
-  }
-
-  .ai-controls.locked {
-    opacity: 0.5;
-    filter: grayscale(1);
-    pointer-events: none;
-    user-select: none;
+  /* AI feature toggles — spaced off from the key/code panel above them. */
+  .ai-controls {
+    margin-top: 24px;
   }
 
   /* AI access code entry */
@@ -977,6 +1102,118 @@
   .access-code-submit:disabled {
     background: #ccc;
     cursor: not-allowed;
+  }
+
+  /* BYOK (bring your own key) panel */
+  .byok-intro {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.5;
+  }
+
+  .byok-active .byok-intro {
+    color: #666;
+  }
+
+  .byok-howto {
+    margin: 0 0 14px 0;
+    border: 1px solid #e6e6e6;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .byok-howto summary {
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #AB71E1;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+  }
+
+  .byok-howto summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .byok-howto summary::after {
+    content: '›';
+    float: right;
+    color: #bbb;
+    transition: transform 0.2s ease;
+  }
+
+  .byok-howto[open] summary::after {
+    transform: rotate(90deg);
+  }
+
+  .byok-howto ol {
+    margin: 0;
+    padding: 0 16px 8px 32px;
+    color: #666;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .byok-howto a {
+    color: #AB71E1;
+    font-weight: 600;
+  }
+
+  .byok-howto code {
+    background: #f0e9f8;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 12px;
+  }
+
+  .byok-howto-note {
+    margin: 0;
+    padding: 0 12px 12px;
+    font-size: 12px;
+    color: #999;
+  }
+
+  .byok-secret-hint {
+    margin: 10px 0 0 0;
+    font-size: 12px;
+    color: #aaa;
+  }
+
+  .access-code-input[readonly] {
+    background: #f0f0f0;
+    color: #777;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  .access-code-submit.forget {
+    background: #ededed;
+    color: #b04a4a;
+  }
+
+  .access-code-submit.forget:hover {
+    background: #e2e2e2;
+  }
+
+  .byok-message {
+    margin: 12px 0 0 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .byok-message.success {
+    background: #e9f7ec;
+    color: #2e7d4f;
+  }
+
+  .byok-message.error {
+    background: #fdecec;
+    color: #b04a4a;
   }
 
   .parent-help-footer {

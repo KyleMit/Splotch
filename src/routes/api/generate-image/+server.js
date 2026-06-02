@@ -39,16 +39,23 @@ const DEFAULT_PROMPT =
 export async function POST({ request }) {
   const form = await request.formData();
   const token = form.get('token');
+  const apiKey = form.get('apiKey');
   const imageFile = form.get('image');
   const style = form.get('style');
 
-  if (typeof token !== 'string' || !(await isAllowedToken(token))) {
+  // Two ways in: the parent's own Gemini key (BYOK) bills their Google account
+  // and skips the allowlist; otherwise a managed access token unlocks our key.
+  const userKey = typeof apiKey === 'string' ? apiKey.trim() : '';
+  const usingByok = userKey.length > 0;
+
+  if (!usingByok && (typeof token !== 'string' || !(await isAllowedToken(token)))) {
     throw error(403, 'Invalid access token');
   }
   if (!(imageFile instanceof Blob)) {
     throw error(400, 'Missing image');
   }
-  if (!env.GEMINI_API_KEY) {
+  const effectiveKey = usingByok ? userKey : env.GEMINI_API_KEY;
+  if (!effectiveKey) {
     throw error(500, 'Server is missing GEMINI_API_KEY');
   }
 
@@ -58,12 +65,18 @@ export async function POST({ request }) {
       : '';
   const finalPrompt = suffix ? DEFAULT_PROMPT + ' ' + suffix : DEFAULT_PROMPT;
 
-  await recordUsage(token, { style, prompt: finalPrompt });
+  // Only the managed tokens are worth a per-token tally (to spot one going
+  // rogue). BYOK requests run on the parent's own quota, so just log them.
+  if (usingByok) {
+    console.log(`[ai-usage] byok style=${style || 'none'} at=${new Date().toISOString()}`);
+  } else {
+    await recordUsage(token, { style, prompt: finalPrompt });
+  }
 
   const inputBytes = new Uint8Array(await imageFile.arrayBuffer());
   const inputBase64 = Buffer.from(inputBytes).toString('base64');
 
-  const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+  const ai = new GoogleGenAI({ apiKey: effectiveKey });
   let response;
   try {
     response = await ai.models.generateContent({

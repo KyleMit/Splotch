@@ -12,6 +12,10 @@ const AI_CUSTOMIZATION_KEY = 'splotch-ai-customization-enabled';
 const AUTO_SAVE_AI_KEY = 'splotch-auto-save-ai';
 const AI_ACCESS_TOKEN_KEY = 'splotch-ai-access-token';
 const AI_ACCESS_TOKEN_PARAM = 'ai_access_token';
+// The parent's own Gemini API key (BYOK). Stored only on this device and sent
+// with each AI request so the server bills the parent's Google account instead
+// of ours. Either this OR aiAccessToken being set unlocks the AI features.
+const AI_USER_API_KEY = 'splotch-ai-user-api-key';
 const ADMIN_ACCESS_TOKEN_KEY = 'splotch-admin-access-token';
 const ADVANCED_CONTROLS_KEY = 'splotch-advanced-controls';
 const DRAWER_OPEN_KEY = 'splotch-drawer-open';
@@ -31,6 +35,8 @@ export const settings = $state({
   // and the freed space goes to a larger preview.
   autoSaveAiEnabled: readBool(AUTO_SAVE_AI_KEY, false),
   aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
+  // Parent-supplied Gemini API key (BYOK). Empty unless the parent entered one.
+  aiUserApiKey: readString(AI_USER_API_KEY, ''),
   // Admin access key. Hidden from regular users (unlocked via the version-text
   // easter egg) and validated server-side against ADMIN_ACCESS_TOKEN.
   adminAccessToken: readString(ADMIN_ACCESS_TOKEN_KEY, ''),
@@ -53,6 +59,7 @@ export function setAiImage(v) { settings.aiImageEnabled = v; writeBool(AI_IMAGE_
 export function setAiCustomization(v) { settings.aiCustomizationEnabled = v; writeBool(AI_CUSTOMIZATION_KEY, v); }
 export function setAutoSaveAi(v) { settings.autoSaveAiEnabled = v; writeBool(AUTO_SAVE_AI_KEY, v); }
 export function setAiAccessToken(v) { settings.aiAccessToken = v; writeString(AI_ACCESS_TOKEN_KEY, v); }
+export function setAiUserApiKey(v) { settings.aiUserApiKey = v; writeString(AI_USER_API_KEY, v); }
 export function setAdminAccessToken(v) { settings.adminAccessToken = v; writeString(ADMIN_ACCESS_TOKEN_KEY, v); }
 export function setAdvancedControls(v) { settings.advancedControlsEnabled = v; writeBool(ADVANCED_CONTROLS_KEY, v); }
 export function setDrawerOpen(v) { settings.drawerOpen = v; writeBool(DRAWER_OPEN_KEY, v); }
@@ -72,6 +79,7 @@ export function reloadSettings() {
   settings.aiCustomizationEnabled = readBool(AI_CUSTOMIZATION_KEY, settings.aiCustomizationEnabled);
   settings.autoSaveAiEnabled = readBool(AUTO_SAVE_AI_KEY, settings.autoSaveAiEnabled);
   settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);
+  settings.aiUserApiKey = readString(AI_USER_API_KEY, settings.aiUserApiKey);
   settings.adminAccessToken = readString(ADMIN_ACCESS_TOKEN_KEY, settings.adminAccessToken);
   settings.advancedControlsEnabled = readBool(ADVANCED_CONTROLS_KEY, settings.advancedControlsEnabled);
   settings.drawerOpen = readBool(DRAWER_OPEN_KEY, settings.drawerOpen);

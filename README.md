@@ -226,17 +226,17 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Full color the controls
 * [x] Admin Center to provide access codes
 * [x] Auto-save AI Art
+* [x] Auto save AI generated images toggle. No longer need download button
+* [ ] Add BYO Key
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
+  * [ ] Currently not a big difference between default and cartoon
 * [ ] Figure out what happened to progressive disclosure of top colors
 * [ ] Red hat test AI prompts
 * [ ] Add Parental Gate to AI stuff
-  * [ ] Currently not a big difference between default and cartoon
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
-* [ ] Auto save AI generated images toggle. No longer need download button
 * [ ] Fun loading sound while AI is loading
 * [ ] Hand draw icons
 * [ ] Maybe add route to confirm access token as well?
-* [ ] BYO Key?
 * [ ] Increase default timer
 * [ ] Increase size of pulsations when overtime
 * [ ] Start adding crazier and crazier animations if time goes super long

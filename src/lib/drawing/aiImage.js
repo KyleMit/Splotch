@@ -7,6 +7,7 @@ import {
   closeAiResult
 } from '$lib/state/ui.svelte.js';
 import { settings } from '$lib/state/settings.svelte.js';
+import { apiUrl } from '$lib/api.js';
 import { exportCanvasBlob } from './engine.js';
 import { getActiveOverlayImage } from './overlay.js';
 import { saveImageBlob } from './screenshot.js';
@@ -57,16 +58,15 @@ export async function generateAiImage({ blob = null, style = '' } = {}) {
 
   try {
     const form = new FormData();
-    form.append('token', settings.aiAccessToken);
+    // Prefer the parent's own Gemini key (BYOK); fall back to a managed access
+    // token. The server uses whichever it receives — a key bills the parent's
+    // Google account, a token uses ours.
+    if (settings.aiUserApiKey) form.append('apiKey', settings.aiUserApiKey);
+    else form.append('token', settings.aiAccessToken);
     form.append('image', imageBlob, 'drawing.png');
     if (style) form.append('style', style);
 
-    // On the web this is a same-origin relative call. In the native apps there
-    // is no local server, so __NATIVE_API_BASE__ (set at build time) points the
-    // request at the hosted endpoint; the server returns permissive CORS so the
-    // WebView origin can reach it.
-    const apiBase = typeof __NATIVE_API_BASE__ !== 'undefined' ? __NATIVE_API_BASE__ : '';
-    const res = await fetch(`${apiBase}/api/generate-image`, { method: 'POST', body: form });
+    const res = await fetch(apiUrl('/api/generate-image'), { method: 'POST', body: form });
     if (!res.ok) {
       const msg = await res.text().catch(() => '');
       throw new Error(`AI image request failed (${res.status}): ${msg}`);
