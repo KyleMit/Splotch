@@ -21,7 +21,7 @@
     setAdvancedControls
   } from '$lib/state/settings.svelte.js';
   import { apiUrl } from '$lib/api.js';
-  import { getPlatform } from '$lib/platform.js';
+  import { getPlatform, isNative } from '$lib/platform.js';
   import { clearOverlay } from '$lib/state/coloringBook.svelte.js';
 
   let dialogEl;
@@ -29,6 +29,10 @@
   let activeTab = $state('settings');
   let installOs = $state('ios');
   let pwaInstalled = $state(false);
+  // True inside a native Capacitor shell. Native builds are already "installed",
+  // so we drop the PWA install step and only show the device-lock setup for the
+  // platform we're actually running on.
+  let native = $state(false);
   // 'web' | 'ios' | 'android' — set when the modal opens. Drives the copy that
   // tells the parent exactly where their API key is kept on this platform.
   let platform = $state('web');
@@ -40,6 +44,19 @@
   let hasApiKey = $derived(!!settings.aiUserApiKey);
   let hasAccessCode = $derived(!!settings.aiAccessToken);
   let aiLocked = $derived(!hasApiKey && !hasAccessCode);
+
+  // Which OS setup sections to render. On native we know the exact platform, so
+  // we show just that one; on the web we show both, detected OS first.
+  let setupOsList = $derived(
+    native
+      ? [platform === 'android' ? 'android' : 'ios']
+      : installOs === 'android'
+        ? ['android', 'ios']
+        : ['ios', 'android']
+  );
+  // Native builds have a single setup step per platform, so the accordion
+  // numbering is dropped.
+  let showSectionNumbers = $derived(!native);
 
   // Show the saved key with everything but the last four characters masked, so
   // a parent can recognise it without exposing the whole secret.
@@ -181,6 +198,7 @@
         installOs = detectOS();
         pwaInstalled = isPWAInstalled();
         platform = getPlatform();
+        native = isNative();
         keyInput = '';
         resetKeyFeedback();
         dialogEl.showModal();
@@ -252,8 +270,8 @@
         <span>AI</span>
       </button>
       <button class="tab-button" class:active={activeTab === 'install'} onclick={() => (activeTab = 'install')}>
-        <Icon name="install-app" class="tab-icon" />
-        <span>Install</span>
+        <Icon name="pin" class="tab-icon" />
+        <span>Setup</span>
       </button>
       <button class="tab-button" class:active={activeTab === 'about'} onclick={() => (activeTab = 'about')}>
         <Icon name="splotchy" class="tab-icon" />
@@ -262,27 +280,29 @@
     </div>
 
     <div class="tab-content" class:active={activeTab === 'install'}>
-      {#each installOs === 'android' ? ['android', 'ios'] : ['ios', 'android'] as os (os)}
+      {#each setupOsList as os (os)}
         {#if os === 'ios'}
           <section class="os-section">
             <h3 class="os-heading">iOS</h3>
-            <details class="help-section">
-              <summary>
-                <span class="summary-text">
-                  <span class="section-number">1.</span> Install as App
-                  {#if pwaInstalled}<span class="install-check">✓</span>{/if}
-                </span>
-              </summary>
-              <ol>
-                <li>Tap the <strong>Share</strong> button (square with arrow)</li>
-                <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
-                <li>Tap <strong>"Add"</strong> in the top right</li>
-                <li>Launch from your home screen for fullscreen mode</li>
-              </ol>
-            </details>
+            {#if !native}
+              <details class="help-section">
+                <summary>
+                  <span class="summary-text">
+                    <span class="section-number">1.</span> Install as App
+                    {#if pwaInstalled}<span class="install-check">✓</span>{/if}
+                  </span>
+                </summary>
+                <ol>
+                  <li>Tap the <strong>Share</strong> button (square with arrow)</li>
+                  <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
+                  <li>Tap <strong>"Add"</strong> in the top right</li>
+                  <li>Launch from your home screen for fullscreen mode</li>
+                </ol>
+              </details>
+            {/if}
 
             <details class="help-section">
-              <summary><span class="summary-text"><span class="section-number">2.</span> Enable Guided Access</span></summary>
+              <summary><span class="summary-text">{#if showSectionNumbers}<span class="section-number">2.</span> {/if}Enable Guided Access</span></summary>
               <ol>
                 <li>Go to <strong>Settings → Accessibility → Guided Access</strong></li>
                 <li>Turn on <strong>Guided Access</strong></li>
@@ -296,23 +316,25 @@
         {:else}
           <section class="os-section">
             <h3 class="os-heading">Android</h3>
-            <details class="help-section">
-              <summary>
-                <span class="summary-text">
-                  <span class="section-number">1.</span> Install as App
-                  {#if pwaInstalled}<span class="install-check">✓</span>{/if}
-                </span>
-              </summary>
-              <ol>
-                <li>Tap the <strong>menu</strong> (three dots)</li>
-                <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
-                <li>Follow the prompts</li>
-                <li>Launch from your home screen for fullscreen mode</li>
-              </ol>
-            </details>
+            {#if !native}
+              <details class="help-section">
+                <summary>
+                  <span class="summary-text">
+                    <span class="section-number">1.</span> Install as App
+                    {#if pwaInstalled}<span class="install-check">✓</span>{/if}
+                  </span>
+                </summary>
+                <ol>
+                  <li>Tap the <strong>menu</strong> (three dots)</li>
+                  <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
+                  <li>Follow the prompts</li>
+                  <li>Launch from your home screen for fullscreen mode</li>
+                </ol>
+              </details>
+            {/if}
 
             <details class="help-section">
-              <summary><span class="summary-text"><span class="section-number">2.</span> Enable App Pinning</span></summary>
+              <summary><span class="summary-text">{#if showSectionNumbers}<span class="section-number">2.</span> {/if}Enable App Pinning</span></summary>
               <ol>
                 <li>Go to <strong>Settings → Security → App Pinning</strong></li>
                 <li>Turn on <strong>App Pinning</strong></li>
