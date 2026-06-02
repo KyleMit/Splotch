@@ -22,6 +22,7 @@
     'size-1', 'size-2', 'size-3', 'size-4', 'size-5'
   ]);
 
+  /** @type {{ name: import('./icon-names').IconName, class?: string, [key: string]: unknown }} */
   let { name, class: className = '', ...rest } = $props();
 
   const markup = $derived(icons[name] ?? '');

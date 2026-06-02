@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "icons:types": "node scripts/generate-icon-names.mjs",
+    "predev": "npm run icons:types",
+    "prebuild": "npm run icons:types",
+    "prebuild:cap": "npm run icons:types",
     "dev": "vite dev",
     "dev:netlify": "netlify dev",
     "build": "vite build",
