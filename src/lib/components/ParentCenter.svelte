@@ -71,7 +71,7 @@
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
-          setAiUserApiKey(value);
+          await setAiUserApiKey(value); // persist to secure storage (Keychain/Keystore or encrypted IndexedDB)
           setAiImage(true); // turn the feature on the moment a valid key lands
           keyInput = '';
           keyStatus = 'success';

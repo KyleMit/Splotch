@@ -70,6 +70,20 @@ export function writeString(key, value) {
   mirror(key, value);
 }
 
+// Delete a key from localStorage and, on native, its durable Preferences mirror.
+// Used to scrub a value that has moved elsewhere (e.g. a plaintext API key that's
+// been migrated into secure storage).
+export function removeKey(key) {
+  track(key);
+  if (!browser) return;
+  localStorage.removeItem(key);
+  if (isNative()) {
+    getPrefs()
+      .then((Preferences) => Preferences.remove({ key }))
+      .catch(() => {});
+  }
+}
+
 export function readInt(key, fallback, allowed = null) {
   track(key);
   if (!browser) return fallback;

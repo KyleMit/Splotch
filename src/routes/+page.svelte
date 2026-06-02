@@ -10,7 +10,7 @@
   import AiImagePrompt from '$lib/components/AiImagePrompt.svelte';
   import AiImageResult from '$lib/components/AiImageResult.svelte';
   import { initPWAUpdates } from '$lib/pwa/updates.js';
-  import { captureAiAccessTokenFromUrl, reloadSettings } from '$lib/state/settings.svelte.js';
+  import { captureAiAccessTokenFromUrl, reloadSettings, hydrateApiKey } from '$lib/state/settings.svelte.js';
   import { reloadStrokeWidth } from '$lib/state/strokeWidth.svelte.js';
   import { hydrateDurableStorage } from '$lib/storage.js';
   import { initNetwork } from '$lib/state/network.svelte.js';
@@ -18,6 +18,9 @@
 
   onMount(() => {
     captureAiAccessTokenFromUrl();
+    // Load the BYOK Gemini key from secure storage into the live store (async,
+    // transparent — the AI button is only used long after boot completes).
+    hydrateApiKey();
     initNetwork();
 
     // Native only: recover any settings the WebView's localStorage may have

@@ -33,6 +33,7 @@
     "vite-plugin-pwa": "^0.20.0"
   },
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "^8.0.0",
     "@capacitor-community/media": "^9.1.0",
     "@capacitor/android": "^8.3.4",
     "@capacitor/cli": "^8.3.4",
@@ -44,6 +45,7 @@
     "@fontsource-variable/quicksand": "^5.2.10",
     "@google/genai": "^2.6.0",
     "@netlify/blobs": "^10.7.8",
-    "@sveltejs/adapter-static": "^3.0.10"
+    "@sveltejs/adapter-static": "^3.0.10",
+    "idb": "^8.0.3"
   }
 }

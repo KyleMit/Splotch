@@ -1,4 +1,5 @@
-import { readBool, writeBool, readString, writeString } from '../storage.js';
+import { readBool, writeBool, readString, writeString, removeKey } from '../storage.js';
+import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage.js';
 
 const SOUND_KEY = 'splotch-sound-enabled';
 const SAVE_ON_DELETE_KEY = 'splotch-save-on-delete';
@@ -15,6 +16,10 @@ const AI_ACCESS_TOKEN_PARAM = 'ai_access_token';
 // The parent's own Gemini API key (BYOK). Stored only on this device and sent
 // with each AI request so the server bills the parent's Google account instead
 // of ours. Either this OR aiAccessToken being set unlocks the AI features.
+// The key itself is no longer kept here in plaintext — it lives in secure
+// storage (Keychain/Keystore on native, an encrypted IndexedDB payload on the
+// web). This constant only names the legacy localStorage slot so hydrateApiKey
+// can migrate and scrub any key written by an earlier build.
 const AI_USER_API_KEY = 'splotch-ai-user-api-key';
 const ADMIN_ACCESS_TOKEN_KEY = 'splotch-admin-access-token';
 const ADVANCED_CONTROLS_KEY = 'splotch-advanced-controls';
@@ -35,8 +40,9 @@ export const settings = $state({
   // and the freed space goes to a larger preview.
   autoSaveAiEnabled: readBool(AUTO_SAVE_AI_KEY, false),
   aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
-  // Parent-supplied Gemini API key (BYOK). Empty unless the parent entered one.
-  aiUserApiKey: readString(AI_USER_API_KEY, ''),
+  // Parent-supplied Gemini API key (BYOK). Held in memory only; hydrated from
+  // secure storage on boot by hydrateApiKey(). Empty until then / unless set.
+  aiUserApiKey: '',
   // Admin access key. Hidden from regular users (unlocked via the version-text
   // easter egg) and validated server-side against ADMIN_ACCESS_TOKEN.
   adminAccessToken: readString(ADMIN_ACCESS_TOKEN_KEY, ''),
@@ -59,7 +65,12 @@ export function setAiImage(v) { settings.aiImageEnabled = v; writeBool(AI_IMAGE_
 export function setAiCustomization(v) { settings.aiCustomizationEnabled = v; writeBool(AI_CUSTOMIZATION_KEY, v); }
 export function setAutoSaveAi(v) { settings.autoSaveAiEnabled = v; writeBool(AUTO_SAVE_AI_KEY, v); }
 export function setAiAccessToken(v) { settings.aiAccessToken = v; writeString(AI_ACCESS_TOKEN_KEY, v); }
-export function setAiUserApiKey(v) { settings.aiUserApiKey = v; writeString(AI_USER_API_KEY, v); }
+// Update the live value immediately (so the UI reacts at once), then persist to
+// secure storage. Returns the persistence promise so callers can await it.
+export function setAiUserApiKey(v) {
+  settings.aiUserApiKey = v;
+  return v ? saveApiKey(v) : clearApiKey();
+}
 export function setAdminAccessToken(v) { settings.adminAccessToken = v; writeString(ADMIN_ACCESS_TOKEN_KEY, v); }
 export function setAdvancedControls(v) { settings.advancedControlsEnabled = v; writeBool(ADVANCED_CONTROLS_KEY, v); }
 export function setDrawerOpen(v) { settings.drawerOpen = v; writeBool(DRAWER_OPEN_KEY, v); }
@@ -79,10 +90,31 @@ export function reloadSettings() {
   settings.aiCustomizationEnabled = readBool(AI_CUSTOMIZATION_KEY, settings.aiCustomizationEnabled);
   settings.autoSaveAiEnabled = readBool(AUTO_SAVE_AI_KEY, settings.autoSaveAiEnabled);
   settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);
-  settings.aiUserApiKey = readString(AI_USER_API_KEY, settings.aiUserApiKey);
   settings.adminAccessToken = readString(ADMIN_ACCESS_TOKEN_KEY, settings.adminAccessToken);
   settings.advancedControlsEnabled = readBool(ADVANCED_CONTROLS_KEY, settings.advancedControlsEnabled);
   settings.drawerOpen = readBool(DRAWER_OPEN_KEY, settings.drawerOpen);
+}
+
+// Pull the saved Gemini key out of secure storage into the live store on boot.
+// One-time migration: if an earlier build left a plaintext key in localStorage,
+// move it into secure storage and scrub the plaintext copy. Safe to call on the
+// web and on native; never throws.
+export async function hydrateApiKey() {
+  // Best-effort: ask the browser not to evict our encrypted IndexedDB (web only).
+  requestPersistentStorage();
+
+  let key = await loadApiKey();
+
+  if (!key) {
+    const legacy = readString(AI_USER_API_KEY, '');
+    if (legacy) {
+      await saveApiKey(legacy);
+      removeKey(AI_USER_API_KEY); // remove the plaintext copy now that it's secured
+      key = legacy;
+    }
+  }
+
+  if (key) settings.aiUserApiKey = key;
 }
 
 export function captureAiAccessTokenFromUrl() {
