@@ -75,6 +75,8 @@ This dev machine is now set up (2026-06):
 
 ### Commands
 
+**Web-asset / sync commands:**
+
 ```bash
 npm run build:cap     # static build into build/ (CAPACITOR=true, via cross-env)
 npm run cap:sync      # build:cap + copy web assets & plugins into native projects
@@ -82,12 +84,27 @@ npm run cap:android   # cap:sync + open the Android project in Android Studio
 npm run cap:ios       # cap:sync + open the iOS project in Xcode (after add)
 ```
 
-> **Windows note:** the scripts use `cross-env` so `CAPACITOR=true` / `SLOWMO=`
-> work under `cmd.exe` (npm's default shell on Windows), not just bash.
+**Android build/sign commands** (each runs `cap:sync` first, then Gradle):
+
+```bash
+npm run android:apk     # debug APK  -> android/app/build/outputs/apk/debug/app-debug.apk
+npm run android:run     # build + install the debug app onto the connected device/emulator
+npm run android:bundle  # SIGNED release AAB (see Signing below for the prerequisite)
+npm run android:clean   # gradle clean (no cap:sync)
+```
+
+> **Prerequisites for the `android:*` scripts** (one-time, see §2 prereqs):
+> 1. **Node 22** active (`nvm use 22.11.0` — needs an elevated shell to stick).
+> 2. **`JAVA_HOME`** pointing at the **full JDK 21** — Gradle reads it. It's set
+>    at user scope, so a freshly-opened terminal already has it (an *already-open*
+>    terminal from before setup won't — reopen it).
+> 3. For `android:bundle`, `android/keystore.properties` must exist (see Signing).
 >
-> **CLI Gradle builds** (outside Android Studio) need `JAVA_HOME` → the JDK 21
-> above. From `android/`:
-> `./gradlew :app:assembleDebug` (APK) or `:app:bundleRelease` (AAB).
+> **Why `.\gradlew` in the scripts?** This machine has
+> `NoDefaultCurrentDirectoryInExePath=1`, so `cmd.exe` (npm's shell) won't run a
+> bare `gradlew` from the current dir — the explicit `.\` is required. These
+> scripts are therefore Windows-oriented; on macOS/Linux run `./gradlew` directly
+> from `android/`.
 
 From Android Studio: **Run ▶** to test on emulator/device; **Build → Generate
 Signed Bundle/APK** to produce a release `.aab`.
@@ -128,17 +145,24 @@ npx @capacitor/assets generate --android   # (and --ios later)
   `android/keystore.properties` (git-ignored; `.gitignore` updated, template at
   `android/keystore.properties.example`). Without that file, release builds are
   unsigned; with it, `bundleRelease` is signed automatically.
-* [ ] Create an **upload keystore** (`keytool`) and store it + passwords in a
-  password manager. **Losing it means you can't update the app.** From `android/`:
-  ```bash
-  keytool -genkeypair -v -keystore upload-keystore.jks -alias upload \
-    -keyalg RSA -keysize 2048 -validity 10000
-  ```
-  Then `cp keystore.properties.example keystore.properties` and fill in the
-  passwords/alias you just set.
+* [x] **Upload keystore created** at `android/upload-keystore.jks` (alias
+  `upload`, RSA 2048, ~valid to 2053), and `android/keystore.properties` is filled
+  in. Both are git-ignored. **Store the `.jks` + passwords in a password manager —
+  losing them means you can't update the app.**
+  - To recreate from scratch: from `android/`,
+    ```bash
+    keytool -genkeypair -v -keystore upload-keystore.jks -alias upload \
+      -keyalg RSA -keysize 2048 -validity 10000
+    ```
+    then `cp keystore.properties.example keystore.properties` and fill it in.
+  - ⚠️ In `keystore.properties`, do **not** wrap values in quotes — Java
+    `.properties` treats quotes as literal characters, so a quoted password fails
+    with *"keystore password was incorrect"*.
 * [ ] Enroll in **Play App Signing** (recommended) when creating the app.
-* [ ] Produce a release **`.aab`**: from `android/`, `./gradlew :app:bundleRelease`
+* [x] **Produce a signed release `.aab`:** `npm run android:bundle`
   → `android/app/build/outputs/bundle/release/app-release.aab` (Play requires AAB).
+  Verify it's signed with `jarsigner -verify <aab>` (expect `jar verified`; the
+  self-signed / no-timestamp warnings are normal for an upload key).
 
 ### Google Play Console setup
 
