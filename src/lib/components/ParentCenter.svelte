@@ -21,6 +21,7 @@
     setAdvancedControls
   } from '$lib/state/settings.svelte.js';
   import { apiUrl } from '$lib/api.js';
+  import { getPlatform } from '$lib/platform.js';
   import { clearOverlay } from '$lib/state/coloringBook.svelte.js';
 
   let dialogEl;
@@ -28,6 +29,9 @@
   let activeTab = $state('settings');
   let installOs = $state('ios');
   let pwaInstalled = $state(false);
+  // 'web' | 'ios' | 'android' — set when the modal opens. Drives the copy that
+  // tells the parent exactly where their API key is kept on this platform.
+  let platform = $state('web');
   // The single AI field accepts either a Gemini API key (BYOK) or a secret
   // access code. AI unlocks when the parent has provided either one.
   let keyInput = $state('');
@@ -46,6 +50,15 @@
     if (value.length <= 4) return '*'.repeat(value.length);
     return '*'.repeat(value.length - 4) + value.slice(-4);
   }
+
+  // How/where the key is stored, in plain language, per platform.
+  let keyStorageNote = $derived(
+    platform === 'ios'
+      ? "Your key is saved in this device's iOS Keychain — encrypted by the system and kept only on this device"
+      : platform === 'android'
+        ? "Your key is saved in this device's Android Keystore — encrypted by the system and kept only on this device."
+        : 'Your key is encrypted and stored only in this browser on this device.'
+  );
 
   function resetKeyFeedback() {
     keyStatus = 'idle';
@@ -167,6 +180,7 @@
         activeTab = 'settings';
         installOs = detectOS();
         pwaInstalled = isPWAInstalled();
+        platform = getPlatform();
         keyInput = '';
         resetKeyFeedback();
         dialogEl.showModal();
@@ -527,6 +541,7 @@
                 {keyStatus === 'checking' ? 'Checking…' : 'Save'}
               </button>
             </div>
+            <p class="byok-storage-note"><Icon name="lock" class="byok-storage-icon" />{keyStorageNote}</p>
             <p class="byok-secret-hint">Have an access code? You can enter it here too.</p>
           </div>
         {:else}
@@ -548,6 +563,7 @@
                 />
                 <button class="access-code-submit forget" onclick={forgetKey}>Forget</button>
               </div>
+              <p class="byok-storage-note"><Icon name="lock" class="byok-storage-icon" />{keyStorageNote}</p>
             {:else}
               <p class="byok-intro">
                 You have <strong>special access</strong> via an access code — AI art
@@ -1180,6 +1196,28 @@
     margin: 10px 0 0 0;
     font-size: 12px;
     color: #aaa;
+  }
+
+  /* "Here's where your key lives" reassurance line. */
+  .byok-storage-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 10px 0 0 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #6b8e6b;
+  }
+
+  .byok-active .byok-storage-note {
+    margin-top: 8px;
+  }
+
+  :global(.byok-storage-icon) {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    margin-top: 1px;
   }
 
   .access-code-input[readonly] {
