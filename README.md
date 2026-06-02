@@ -234,6 +234,7 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [ ] Figure out release notes (in about tab) and proper versioning / ideally with gh releases
 * [ ] Figure out what happened to progressive disclosure of top colors
 * [ ] Red hat test AI prompts
+* [ ] Remove install instructions tab from parent center on android/ios deployment targets
 * [ ] Add Parental Gate to AI stuff
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
 * [ ] Use indexdb instead of localstorage

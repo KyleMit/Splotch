@@ -14,6 +14,7 @@
     "android:apk": "npm run cap:sync && cd android && .\\gradlew :app:assembleDebug",
     "android:run": "npm run cap:sync && cd android && .\\gradlew :app:installDebug",
     "android:bundle": "npm run cap:sync && cd android && .\\gradlew :app:bundleRelease",
+    "android:verify": "\"%JAVA_HOME%\\bin\\jarsigner\" -verify android/app/build/outputs/bundle/release/app-release.aab",
     "android:clean": "cd android && .\\gradlew clean",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
