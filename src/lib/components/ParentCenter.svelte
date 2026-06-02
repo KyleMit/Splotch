@@ -151,6 +151,10 @@
         <Icon name="settings" class="tab-icon" />
         <span>Settings</span>
       </button>
+      <button class="tab-button" class:active={activeTab === 'ai'} onclick={() => (activeTab = 'ai')}>
+        <Icon name="wand-stars" class="tab-icon" />
+        <span>AI</span>
+      </button>
       <button class="tab-button" class:active={activeTab === 'install'} onclick={() => (activeTab = 'install')}>
         <Icon name="install-app" class="tab-icon" />
         <span>Install</span>
@@ -394,7 +398,9 @@
         </div>
         {/if}
       </section>
+    </div>
 
+    <div class="tab-content" class:active={activeTab === 'ai'}>
       <section class="setting-group">
         <h3 class="setting-group-heading">
           AI
