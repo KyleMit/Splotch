@@ -161,7 +161,7 @@ npx @capacitor/assets generate --android   # (and --ios later)
 * [ ] Enroll in **Play App Signing** (recommended) when creating the app.
 * [x] **Produce a signed release `.aab`:** `npm run android:bundle`
   → `android/app/build/outputs/bundle/release/app-release.aab` (Play requires AAB).
-  Verify it's signed with `jarsigner -verify <aab>` (expect `jar verified`; the
+  Verify it's signed with `npm run android:verify` (expect `jar verified`; the
   self-signed / no-timestamp warnings are normal for an upload key).
 
 ### Google Play Console setup

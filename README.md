@@ -227,7 +227,8 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Admin Center to provide access codes
 * [x] Auto-save AI Art
 * [x] Auto save AI generated images toggle. No longer need download button
-* [ ] Add BYO Key
+* [x] Add BYO Key
+* [ ] On android, remove bottom nav bar and add app color to navbar cutout
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
 * [ ] Add about tab
