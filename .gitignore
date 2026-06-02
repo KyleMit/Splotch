@@ -154,3 +154,6 @@ workbox-*.js.map
 .DS_Store
 build/
 .netlify/
+
+# android studio
+android/.idea

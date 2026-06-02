@@ -1,0 +1,64 @@
+diff --git a/node_modules/@capacitor/cli/dist/android/add.js b/node_modules/@capacitor/cli/dist/android/add.js
+index 395ca01..41fb81c 100644
+--- a/node_modules/@capacitor/cli/dist/android/add.js
++++ b/node_modules/@capacitor/cli/dist/android/add.js
+@@ -46,7 +46,10 @@ sdk.dir=${defaultAndroidPath}
+ }
+ exports.createLocalProperties = createLocalProperties;
+ async function gradleSync(platformDir) {
+-    await (0, subprocess_1.runCommand)(`./gradlew`, [], {
++    const gradlewCmd = process.platform === 'win32'
++        ? (0, path_1.resolve)(platformDir, 'gradlew.bat')
++        : './gradlew';
++    await (0, subprocess_1.runCommand)(gradlewCmd, [], {
+         cwd: platformDir,
+     });
+ }
+diff --git a/node_modules/@capacitor/cli/dist/android/build.js b/node_modules/@capacitor/cli/dist/android/build.js
+index 90752e9..92ef83f 100644
+--- a/node_modules/@capacitor/cli/dist/android/build.js
++++ b/node_modules/@capacitor/cli/dist/android/build.js
+@@ -15,7 +15,10 @@ async function buildAndroid(config, buildOptions) {
+     const arg = releaseTypeIsAAB ? `:app:bundle${flavor}Release` : `assemble${flavor}Release`;
+     const gradleArgs = [arg];
+     try {
+-        await (0, common_1.runTask)('Running Gradle build', async () => (0, subprocess_1.runCommand)('./gradlew', gradleArgs, {
++        const gradlewCmd = process.platform === 'win32'
++            ? (0, path_1.join)(config.android.platformDirAbs, 'gradlew.bat')
++            : './gradlew';
++        await (0, common_1.runTask)('Running Gradle build', async () => (0, subprocess_1.runCommand)(gradlewCmd, gradleArgs, {
+             cwd: config.android.platformDirAbs,
+         }));
+     }
+diff --git a/node_modules/@capacitor/cli/dist/android/run.js b/node_modules/@capacitor/cli/dist/android/run.js
+index 3f52728..09bbbe7 100644
+--- a/node_modules/@capacitor/cli/dist/android/run.js
++++ b/node_modules/@capacitor/cli/dist/android/run.js
+@@ -17,7 +17,10 @@ async function runAndroid(config, { target: selectedTarget, targetName: selected
+     const gradleArgs = [arg];
+     debug('Invoking ./gradlew with args: %O', gradleArgs);
+     try {
+-        await (0, common_1.runTask)('Running Gradle build', async () => (0, subprocess_1.runCommand)('./gradlew', gradleArgs, {
++        const gradlewCmd = process.platform === 'win32'
++            ? (0, path_1.join)(config.android.platformDirAbs, 'gradlew.bat')
++            : './gradlew';
++        await (0, common_1.runTask)('Running Gradle build', async () => (0, subprocess_1.runCommand)(gradlewCmd, gradleArgs, {
+             cwd: config.android.platformDirAbs,
+         }));
+     }
+diff --git a/node_modules/@capacitor/cli/dist/tasks/migrate.js b/node_modules/@capacitor/cli/dist/tasks/migrate.js
+index b8798aa..ce3afed 100644
+--- a/node_modules/@capacitor/cli/dist/tasks/migrate.js
++++ b/node_modules/@capacitor/cli/dist/tasks/migrate.js
+@@ -378,7 +378,10 @@ function getGradleWrapperVersion(filename) {
+     return semverVersion ? semverVersion : '0.0.0';
+ }
+ async function updateGradleWrapperFiles(platformDir) {
+-    await (0, subprocess_1.runCommand)(`./gradlew`, ['wrapper', '--distribution-type', 'all', '--gradle-version', gradleVersion, '--warning-mode', 'all'], {
++    const gradlewCmd = process.platform === 'win32'
++        ? (0, path_1.resolve)(platformDir, 'gradlew.bat')
++        : './gradlew';
++    await (0, subprocess_1.runCommand)(gradlewCmd, ['wrapper', '--distribution-type', 'all', '--gradle-version', gradleVersion, '--warning-mode', 'all'], {
+         cwd: platformDir,
+     });
+ }

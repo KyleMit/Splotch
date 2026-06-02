@@ -230,23 +230,22 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Add BYO Key
 * [x] On android, remove bottom nav bar and add app color to navbar cutout
 * [x] Add about tab with splotch logo.  Figure out how to wrap tabs on portrait device
+* [x] Remove install instructions tab from parent center on android/ios deployment targets
+* [x] Maybe add route to confirm access token as well?
+* [x] AI option without customization should also pull up loading spinner
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
 * [ ] Figure out release notes (in about tab) and proper versioning / ideally with gh releases
 * [ ] Figure out what happened to progressive disclosure of top colors
 * [ ] Red hat test AI prompts
-* [ ] Remove install instructions tab from parent center on android/ios deployment targets
-* [ ] Add Parental Gate to AI stuff
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
 * [ ] Use indexdb instead of localstorage
 * [ ] Fun loading sound while AI is loading
 * [ ] Hand draw icons
-* [ ] Maybe add route to confirm access token as well?
 * [ ] Increase default timer
 * [ ] Increase size of pulsations when overtime
 * [ ] Start adding crazier and crazier animations if time goes super long
 * [ ] If call fails and you need to try again, enable a way to do so immediately
-* [ ] AI option without customization should also pull up loading spinner
 * [ ] Add sparkles to AI Customization screen
 * [ ] Parent center control to increase button size
 * [ ] Investigate line smoothing while drawing
