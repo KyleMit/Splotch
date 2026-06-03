@@ -8,6 +8,21 @@ export const PALETTE_COLORS = [
   { hex: '#0a0b10', label: 'Black' }
 ];
 
+// Order in which swatches drop off as the palette runs out of room (first
+// listed → first to be hidden). This is independent of the display order
+// above: colors still render in PALETTE_COLORS order; only which ones hide
+// changes. Red goes first, then orange, green, yellow; blue and purple (the
+// default selection) hang on longer, and black is kept the longest.
+export const TRIM_ORDER = [
+  '#EC534E', // Red
+  '#F89C45', // Orange
+  '#8CC864', // Green
+  '#F9D24F', // Yellow
+  '#62A2E9', // Blue
+  '#AB71E1', // Purple
+  '#0a0b10'  // Black
+];
+
 export const CUSTOM_SWATCH = 'custom';
 
 export const colors = $state({

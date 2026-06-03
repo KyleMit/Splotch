@@ -234,18 +234,19 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Maybe add route to confirm access token as well?
 * [x] AI option without customization should also pull up loading spinner
 * [x] Figure out release notes (in about tab) and proper versioning / ideally with gh releases
+* [x] Fix graceful degradation of color palette
+* [ ] If call fails and you need to try again, enable a way to do so immediately
+* [ ] Hide IP from native releases
+* [ ] Use indexdb instead of localstorage
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
-* [ ] Figure out what happened to progressive disclosure of top colors
 * [ ] Red hat test AI prompts
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
-* [ ] Use indexdb instead of localstorage
 * [ ] Fun loading sound while AI is loading
 * [ ] Hand draw icons
 * [ ] Increase default timer
 * [ ] Increase size of pulsations when overtime
 * [ ] Start adding crazier and crazier animations if time goes super long
-* [ ] If call fails and you need to try again, enable a way to do so immediately
 * [ ] Add sparkles to AI Customization screen
 * [ ] Parent center control to increase button size
 * [ ] Investigate line smoothing while drawing

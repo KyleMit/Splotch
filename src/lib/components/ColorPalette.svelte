@@ -1,7 +1,7 @@
 <script>
-  import { onMount } from 'svelte';
   import {
     PALETTE_COLORS,
+    TRIM_ORDER,
     CUSTOM_SWATCH,
     colors,
     selectPaletteColor,
@@ -12,7 +12,6 @@
   import { toolState, selectPen } from '$lib/state/tool.svelte.js';
   import Icon from './Icon.svelte';
 
-  let paletteEl;
   let swatchEls = $state({});
 
   // Track the most recent click so we can fire the confirmation ring animation
@@ -84,95 +83,29 @@
     e.stopPropagation();
   }
 
-  // Visible-buttons calc — hide swatches that don't fit in the available space.
-  // The 1-vs-2 column choice itself is handled by CSS media queries (see the
-  // <style> block) so it's correct on the prerendered first paint; JS here only
-  // decides how many swatches to show.
-  let portrait = $state(false);
-  let visibleCount = $state(PALETTE_COLORS.length + 1);
-
-  function updateLayout() {
-    if (!paletteEl) return;
-    const isPortrait = window.matchMedia('(orientation: portrait)').matches;
-    portrait = isPortrait;
-    const rect = paletteEl.getBoundingClientRect();
-
-    if (isPortrait) {
-      const padding = 10;
-      const gap = 8;
-      const buttonSize = 55;
-      const availableWidth = rect.width - padding * 2;
-      const gradientWidth = buttonSize + gap;
-      const availableWithoutGradient = availableWidth - gradientWidth;
-
-      let currentWidth = 0;
-      let count = 0;
-      for (let i = 0; i < PALETTE_COLORS.length; i++) {
-        const btnWidth = buttonSize + (i > 0 ? gap : 0);
-        if (currentWidth + btnWidth <= availableWithoutGradient) {
-          currentWidth += btnWidth;
-          count++;
-        } else break;
-      }
-      visibleCount = count + 1; // +1 for gradient
-    } else {
-      const padding = 12;
-      const gap = 12;
-      const buttonSize = 60;
-      const availableHeight = rect.height - padding * 2;
-      const total = PALETTE_COLORS.length + 1;
-      const heightFor1Col = buttonSize * total + gap * (total - 1);
-
-      if (heightFor1Col <= availableHeight) {
-        // Single column (matches the CSS min-height media query) — all fit.
-        visibleCount = total;
-      } else {
-        // Two columns — show only as many full rows of 2 as fit.
-        const numRows = Math.floor((availableHeight + gap) / (buttonSize + gap));
-        visibleCount = Math.min(numRows * 2, total);
-      }
-    }
-  }
-
-  onMount(() => {
-    updateLayout();
-    // A ResizeObserver recomputes the moment the palette gets its real measured
-    // size — its callback is delivered between layout and paint, so the layout
-    // lands before the first paint instead of snapping in ~100ms later (the
-    // flash-of-unstyled 2-row → 1-row jump). It also covers window resizes,
-    // since the palette resizes along with the window.
-    const ro = new ResizeObserver(() => updateLayout());
-    ro.observe(paletteEl);
-    window.addEventListener('orientationchange', updateLayout);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('orientationchange', updateLayout);
-    };
-  });
-
-  // Count visible from the END so the gradient swatch is always shown.
-  function isVisible(index, total) {
-    return index >= total - visibleCount;
-  }
-
-  const totalSwatches = PALETTE_COLORS.length + 1;
+  // Each swatch is tagged with its trim rank (0 = first to be hidden) so the
+  // <style> block can drop swatches by priority at each breakpoint. Hiding is
+  // done entirely in CSS media queries — no JS measurement — so the layout is
+  // correct on the prerendered first paint with no resize flash. The palette
+  // always spans the full relevant viewport dimension (height in landscape,
+  // width in portrait), so viewport breakpoints map directly onto its room.
+  const trimRank = new Map(TRIM_ORDER.map((hex, i) => [hex, i]));
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="color-palette"
-  bind:this={paletteEl}
   onpointerdown={handlePaletteDown}
   onpointerup={handlePaletteUp}
 >
-  {#each PALETTE_COLORS as { hex, label }, i (hex)}
+  {#each PALETTE_COLORS as { hex, label } (hex)}
     <button
       class="color-swatch"
       class:active={!toolState.eraser && colors.activeSwatch === hex}
       class:ring-animate={ringAnimateKey?.startsWith(hex + ':')}
       data-color={hex}
+      data-trim-rank={trimRank.get(hex)}
       style="background-color: {hex}; {!toolState.eraser && colors.activeSwatch === hex ? `box-shadow: ${ringShadow(hex)}; --ring-color: ${getRingColor(hex)};` : ''}"
-      style:display={isVisible(i, totalSwatches) ? 'block' : 'none'}
       aria-label={label}
       onpointerup={(e) => handleSwatchUp(e, hex)}
       onpointerdown={(e) => { releaseAllPointers(); e.preventDefault(); e.stopPropagation(); }}
@@ -187,7 +120,6 @@
     data-color="custom"
     aria-label="Custom Color"
     style={!toolState.eraser && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected ? `box-shadow: ${gradientRingShadow(colors.customColor)};` : ''}
-    style:display={isVisible(totalSwatches - 1, totalSwatches) ? 'block' : 'none'}
     onpointerup={handleCustomUp}
     onpointerdown={(e) => { releaseAllPointers(); e.preventDefault(); e.stopPropagation(); }}
     onpointercancel={(e) => { releaseAllPointers(); e.stopPropagation(); }}
@@ -213,6 +145,7 @@
   }
 
   .color-swatch {
+    display: block;
     position: relative;
     width: 60px;
     height: 60px;
@@ -274,8 +207,8 @@
     border-color: white !important;
   }
 
-  /* Centered absolutely (not via flex) so it survives the inline display:block/
-     none the layout toggles on each swatch. The SVG keeps its aspect ratio. */
+  /* Centered absolutely (not via flex) so it survives the display:block/none
+     toggling on each swatch. The SVG keeps its aspect ratio. */
   .gradient-swatch :global(.palette-icon) {
     position: absolute;
     top: 50%;
@@ -286,12 +219,17 @@
     pointer-events: none;
   }
 
-  /* Tall enough in landscape to stack all swatches in a single column. Done in
-     CSS (not JS) so the prerendered first paint already has the right column
-     count — otherwise the default 2-column grid paints and visibly snaps to one
-     column once JS measures. Breakpoint mirrors updateLayout()'s heightFor1Col:
-     8 swatches × 60px + 7 gaps × 12px + 24px padding = 588px. */
-  @media (orientation: landscape) and (min-height: 588px) {
+  /* Landscape prefers a single column (1 bar) and trims swatches one at a time,
+     staying single-column as long as no more than two need to go. A single
+     column holds N swatches when height ≥ 72·N + 12 (60px swatch + 12px gap,
+     24px padding), so:
+       • ≥ 588px → all 8 fit
+       • ≥ 516px → 7 fit  (rank 0 trimmed)
+       • ≥ 444px → 6 fit  (ranks 0–1 trimmed)
+     Below 444px a 3rd swatch would have to go, so we fall back to the roomier
+     2-column grid (the default layout) — which fits all 8 again, then trims in
+     pairs. */
+  @media (orientation: landscape) and (min-height: 444px) {
     .color-palette {
       grid-template-columns: 1fr;
     }
@@ -317,5 +255,69 @@
       height: 55px;
       flex-shrink: 0;
     }
+  }
+
+  /* ── Trim-by-priority ──────────────────────────────────────────────────────
+     Swatches drop off as the palette runs out of room, in TRIM_ORDER priority
+     (data-trim-rank: 0 = first to go). Where rules cascade (portrait, and the
+     2-column landscape pass), each smaller breakpoint hides one more rank and a
+     smaller viewport satisfies every larger max-* threshold at once; the
+     single-column landscape rules use bounded min/max ranges instead, since a
+     rank can become visible again when the layout switches to two columns. The
+     gradient swatch has no trim rank, so it is never hidden.
+
+     PORTRAIT — palette is a full-width row (55px swatches, 8px gaps, 10px side
+     padding) plus the always-present gradient. k palette swatches + gradient
+     fit when width ≥ 63·(k+1) + 12  ⇒  rank r needs width ≥ 63·(7−r) + 75. */
+  @media (orientation: portrait) and (max-width: 515.98px) { /* rank 0: Red    */
+    .color-swatch[data-trim-rank='0'] { display: none; }
+  }
+  @media (orientation: portrait) and (max-width: 452.98px) { /* rank 1: Orange */
+    .color-swatch[data-trim-rank='1'] { display: none; }
+  }
+  @media (orientation: portrait) and (max-width: 389.98px) { /* rank 2: Green  */
+    .color-swatch[data-trim-rank='2'] { display: none; }
+  }
+  @media (orientation: portrait) and (max-width: 326.98px) { /* rank 3: Yellow */
+    .color-swatch[data-trim-rank='3'] { display: none; }
+  }
+  @media (orientation: portrait) and (max-width: 263.98px) { /* rank 4: Blue   */
+    .color-swatch[data-trim-rank='4'] { display: none; }
+  }
+  @media (orientation: portrait) and (max-width: 200.98px) { /* rank 5: Purple */
+    .color-swatch[data-trim-rank='5'] { display: none; }
+  }
+  @media (orientation: portrait) and (max-width: 137.98px) { /* rank 6: Black  */
+    .color-swatch[data-trim-rank='6'] { display: none; }
+  }
+
+  /* LANDSCAPE, single column (1 bar) — trim one swatch at a time by priority.
+     Bounded with min-height: 444px so these never fire in the 2-column range
+     below (where rank 0/1 are visible again at 300–444px). */
+  @media (orientation: landscape) and (min-height: 444px) and (max-height: 587.98px) {
+    .color-swatch[data-trim-rank='0'] { display: none; } /* < 588px: 7 fit  */
+  }
+  @media (orientation: landscape) and (min-height: 444px) and (max-height: 515.98px) {
+    .color-swatch[data-trim-rank='1'] { display: none; } /* < 516px: 6 fit  */
+  }
+
+  /* LANDSCAPE, two columns (2 bar) — used below 444px tall, where the grid shows
+     full rows of two and drops a pair at a time. All thresholds stay under 300px
+     (= 4 rows × 72 + 12, where all 8 first overflow two columns), so they never
+     touch the single-column range above. n rows fit when height ≥ 72·n + 12. */
+  @media (orientation: landscape) and (max-height: 299.98px) { /* 4→3 rows: ranks 0,1 */
+    .color-swatch[data-trim-rank='0'],
+    .color-swatch[data-trim-rank='1'] { display: none; }
+  }
+  @media (orientation: landscape) and (max-height: 227.98px) { /* 3→2 rows: ranks 2,3 */
+    .color-swatch[data-trim-rank='2'],
+    .color-swatch[data-trim-rank='3'] { display: none; }
+  }
+  @media (orientation: landscape) and (max-height: 155.98px) { /* 2→1 rows: ranks 4,5 */
+    .color-swatch[data-trim-rank='4'],
+    .color-swatch[data-trim-rank='5'] { display: none; }
+  }
+  @media (orientation: landscape) and (max-height: 83.98px) {  /* 1→0 rows: rank 6     */
+    .color-swatch[data-trim-rank='6'] { display: none; }
   }
 </style>
