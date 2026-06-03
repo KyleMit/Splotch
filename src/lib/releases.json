@@ -1,5 +1,10 @@
 [
   {
+    "version": "1.0.1",
+    "date": "2026-06-03",
+    "bodyHtml": "<h2>🚀 Improved</h2>\n<ul>\n<li>More colors now fit on smaller screens.</li>\n<li>The clear button is friendlier and more fun.</li>\n<li>A colorful gradient sweeps in while you&#39;re clearing the canvas.</li>\n</ul>\n<h2>🛠 Fixed</h2>\n<ul>\n<li>The color palette now adapts more gracefully across devices.</li>\n</ul>"
+  },
+  {
     "version": "1.0.0",
     "date": "2026-06-01",
     "bodyHtml": "<h2>✨ New</h2>\n<ul>\n<li>First public release of Splotch — a quiet, ad-free drawing app made for the youngest artists.</li>\n<li>Draw with big, chunky, crayon-like strokes and a row of bright, friendly colors.</li>\n<li>Rainbow color picker for hundreds more colors.</li>\n<li>Coloring book pages to fill in.</li>\n<li>Parent Center: settings, install help, and an About page — no ads, no tracking, no accounts.</li>\n</ul>"
