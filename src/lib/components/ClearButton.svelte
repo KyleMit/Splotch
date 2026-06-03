@@ -9,6 +9,7 @@
   let containerEl;
   let buttonEl;
   let acceptZoneEl;
+  let clearPreviewEl;
   let pageTurnOverlayEl;
   let coachmarkRingEl;
   let coachmarkGhostEl;
@@ -21,6 +22,8 @@
   let startPointerX = 0;
   let startPointerY = 0;
   let homeButtonCenter = { x: 0, y: 0 };
+  // Edge-triggered so the threshold haptic fires once per crossing, not per frame.
+  let clearReady = false;
 
   const ACCEPT_RADIUS_FACTOR = 0.4;
   const HOLD_DURATION = 500;
@@ -117,6 +120,8 @@
     isDragging = true;
     startPointerX = clientX;
     startPointerY = clientY;
+    clearReady = false;
+    document.documentElement.style.setProperty('--clear-progress', '0');
 
     releaseAllPointers();
 
@@ -164,12 +169,26 @@
 
     const distance = Math.sqrt(dx * dx + dy * dy);
     const threshold = getAcceptRadius();
+
+    // Continuous 0→1 drag progress drives the radial paper wash that previews
+    // the clear (see .clear-preview). Inherited from :root so any element can read it.
+    const progress = Math.min(distance / threshold, 1);
+    document.documentElement.style.setProperty('--clear-progress', `${progress}`);
+
     if (distance >= threshold) {
       buttonEl.classList.add('delete-ready');
       acceptZoneEl.classList.add('threshold-reached');
+      clearPreviewEl.classList.add('committed');
+      // Fire a single tactile "click" the moment we cross the point of no return.
+      if (!clearReady) {
+        clearReady = true;
+        navigator.vibrate?.(15);
+      }
     } else {
       buttonEl.classList.remove('delete-ready');
       acceptZoneEl.classList.remove('threshold-reached');
+      clearPreviewEl.classList.remove('committed');
+      clearReady = false;
     }
 
     e.preventDefault();
@@ -197,6 +216,12 @@
     setTimeout(() => {
       if (!isDragging) acceptZoneEl.style.display = 'none';
     }, 250);
+
+    // Retract the radial wash. On commit the canvas is already blank, so this
+    // reveals fresh paper just as the confirmation ripple sweeps over it.
+    clearReady = false;
+    clearPreviewEl.classList.remove('committed');
+    document.documentElement.style.setProperty('--clear-progress', '0');
 
     buttonEl.classList.remove('delete-ready');
 
@@ -285,6 +310,11 @@
 </div>
 
 <div class="clear-accept-zone" id="clearAcceptZone" bind:this={acceptZoneEl}></div>
+
+<!-- Radial paper wash: emanates from the button's home corner and grows with
+     drag progress, previewing the clear before the user commits to it. -->
+<div class="clear-preview" bind:this={clearPreviewEl} aria-hidden="true"></div>
+
 <div class="page-turn-overlay" bind:this={pageTurnOverlayEl}></div>
 
 <!-- Animated coachmark: a ghost button + hand mimes the drag-to-clear gesture. -->
@@ -401,6 +431,33 @@
     background: radial-gradient(circle,
       rgba(255, 56, 56, 0) 50%,
       rgba(255, 56, 56, 0.22) 100%);
+  }
+
+  /* Radial paper wash previewing the clear mid-drag. A paper-colored
+     (#fcfbf8) gradient anchored at the button's home corner (top-right) that
+     both grows and strengthens as --clear-progress climbs 0→1. Paper, not
+     white, so it reads as "returning to blank canvas," and same origin as the
+     confirmation ripple below so the preview and the commit feel continuous. */
+  .clear-preview {
+    position: fixed;
+    inset: 0;
+    z-index: 400; /* above the canvas, below the confirmation ripple (500) */
+    pointer-events: none;
+    opacity: var(--clear-progress, 0);
+    background: radial-gradient(circle at 100% 0,
+      rgba(252, 251, 248, 0.9),
+      rgba(252, 251, 248, 0) calc(var(--clear-progress, 0) * 130%));
+    transition: opacity 0.12s linear, background 0.12s linear;
+  }
+
+  /* Point of no return: the wash snaps to flood the whole canvas, giving the
+     threshold a distinct climax instead of a featureless ramp. */
+  .clear-preview:global(.committed) {
+    opacity: 0.92;
+    background: radial-gradient(circle at 100% 0,
+      rgba(252, 251, 248, 0.95),
+      rgba(252, 251, 248, 0.82) 140%);
+    transition: opacity 0.18s ease, background 0.18s ease;
   }
 
   /* Clear-confirmation ripple: a single white circle anchored at the
@@ -555,6 +612,11 @@
   /* Respect reduced-motion: drop the loop, show a single static "here's the
      gesture" frame instead. */
   @media (prefers-reduced-motion: reduce) {
+    /* Keep the wash (it conveys state, not just motion) but make it instant. */
+    .clear-preview {
+      transition: none;
+    }
+
     .coachmark-ghost {
       animation: none;
       transform: translate(var(--tx), var(--ty));

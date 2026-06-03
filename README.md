@@ -235,9 +235,10 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] AI option without customization should also pull up loading spinner
 * [x] Figure out release notes (in about tab) and proper versioning / ideally with gh releases
 * [x] Fix graceful degradation of color palette
-* [x] Don't include copyright coloring pages on web deployment
+* [x] Don't include copyright coloring pages on mobile deployment
+* [x] Do't use indexdb instead of localstorage - forces load into async
+* [ ] Make clear action more intuitive
 * [ ] If call fails and you need to try again, enable a way to do so immediately
-* [ ] Use indexdb instead of localstorage
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
 * [ ] Red hat test AI prompts
