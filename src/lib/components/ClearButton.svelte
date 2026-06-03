@@ -305,7 +305,10 @@
     bind:this={buttonEl}
     onpointerdown={startClearDrag}
   >
-    <Icon name="sweep-icon" class="clear-icon" aria-hidden="true" />
+    <!-- Both lids render; the existing .dragging class (added imperatively in
+         startClearDrag) decides which is shown — see the CSS below. -->
+    <Icon name="trash-closed" class="clear-icon clear-icon-closed" aria-hidden="true" />
+    <Icon name="trash-open" class="clear-icon clear-icon-open" aria-hidden="true" />
   </button>
 </div>
 
@@ -327,7 +330,7 @@
   <div class="coachmark-ring" bind:this={coachmarkRingEl}></div>
   <div class="coachmark-ghost" bind:this={coachmarkGhostEl}>
     <div class="coachmark-button">
-      <Icon name="sweep-icon" class="coachmark-trash" aria-hidden="true" />
+      <Icon name="trash-open" class="coachmark-trash" aria-hidden="true" />
     </div>
     <Icon name="swipe-down" class="coachmark-hand" aria-hidden="true" />
   </div>
@@ -380,6 +383,21 @@
 
   .clear-button:global(.dragging) :global(.clear-icon) {
     margin-right: 0;
+  }
+
+  /* Closed lid at rest, open lid while dragging — driven entirely by the same
+     .dragging class that morphs the button from docked to round. Scoped under
+     .clear-button so these out-specify Icon.svelte's scoped `span` rule. */
+  .clear-button :global(.clear-icon-open) {
+    display: none;
+  }
+
+  .clear-button:global(.dragging) :global(.clear-icon-closed) {
+    display: none;
+  }
+
+  .clear-button:global(.dragging) :global(.clear-icon-open) {
+    display: block;
   }
 
   .clear-button:global(.delete-ready) {

@@ -39,6 +39,8 @@ export type IconName =
   | 'sweep-icon'
   | 'swipe-down'
   | 'trash'
+  | 'trash-closed'
+  | 'trash-open'
   | 'undo'
   | 'volume-off'
   | 'volume-on'

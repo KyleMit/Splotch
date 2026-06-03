@@ -237,7 +237,7 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Fix graceful degradation of color palette
 * [x] Don't include copyright coloring pages on mobile deployment
 * [x] Do't use indexdb instead of localstorage - forces load into async
-* [ ] Make clear action more intuitive
+* [x] Make clear action more intuitive
 * [ ] If call fails and you need to try again, enable a way to do so immediately
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
