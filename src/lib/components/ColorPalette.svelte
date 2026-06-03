@@ -84,7 +84,7 @@
   }
 
   // Each swatch is tagged with its trim rank (0 = first to be hidden) so the
-  // <style> block can drop swatches by priority at each breakpoint. Hiding is
+  // style block can drop swatches by priority at each breakpoint. Hiding is
   // done entirely in CSS media queries — no JS measurement — so the layout is
   // correct on the prerendered first paint with no resize flash. The palette
   // always spans the full relevant viewport dimension (height in landscape,
