@@ -233,9 +233,9 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Remove install instructions tab from parent center on android/ios deployment targets
 * [x] Maybe add route to confirm access token as well?
 * [x] AI option without customization should also pull up loading spinner
+* [x] Figure out release notes (in about tab) and proper versioning / ideally with gh releases
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
-* [ ] Figure out release notes (in about tab) and proper versioning / ideally with gh releases
 * [ ] Figure out what happened to progressive disclosure of top colors
 * [ ] Red hat test AI prompts
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection

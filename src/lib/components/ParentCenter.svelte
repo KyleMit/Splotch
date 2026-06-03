@@ -23,6 +23,8 @@
   import { apiUrl } from '$lib/api.js';
   import { getPlatform, isNative } from '$lib/platform.js';
   import { clearOverlay } from '$lib/state/coloringBook.svelte.js';
+  // Generated at build time from releases/*.md (see scripts/generate-releases.mjs).
+  import releases from '$lib/releases.json';
 
   let dialogEl;
   let buttonEl;
@@ -148,6 +150,10 @@
 
   const APP_VERSION =
     typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
+
+  // The most recent release powers the "What's New" block in the About tab.
+  const latestRelease = releases[0];
+  const RELEASES_URL = 'https://github.com/KyleMit/Splotch/releases';
 
   // Hidden admin unlock: tapping the version text 5 times prompts for the
   // access key, which is then persisted to localStorage. The key is only
@@ -697,6 +703,19 @@
           <Icon name="splotchy" class="about-icon" aria-label="Splotch" role="img" />
           <p class="about-tagline">A joyful, kid-friendly drawing app — no ads, no tracking, no accounts.</p>
         </div>
+
+        {#if latestRelease}
+          <div class="whats-new">
+            <h3 class="whats-new-heading">
+              What's New <span class="whats-new-version">v{latestRelease.version}</span>
+            </h3>
+            <!-- bodyHtml is our own first-party Markdown rendered to HTML at build time. -->
+            <div class="whats-new-body">{@html latestRelease.bodyHtml}</div>
+            <p class="all-releases">
+              <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer">See all releases →</a>
+            </p>
+          </div>
+        {/if}
 
         <div class="parent-help-footer">
           <p>Having issues? <a href="https://github.com/KyleMit/Splotch/issues/new/choose" target="_blank" rel="noopener noreferrer">Report a problem</a></p>
@@ -1338,6 +1357,74 @@
     color: #666;
     line-height: 1.5;
     max-width: 320px;
+  }
+
+  .whats-new {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #f7f7f9;
+    border-radius: 12px;
+  }
+
+  .whats-new-heading {
+    margin: 0 0 10px 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #333;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .whats-new-version {
+    font-size: 13px;
+    font-weight: 600;
+    color: #999;
+  }
+
+  /* Content is build-time-rendered Markdown, so style its tags globally. */
+  .whats-new-body :global(h2),
+  .whats-new-body :global(h3) {
+    margin: 12px 0 6px 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #444;
+  }
+
+  .whats-new-body :global(h2:first-child),
+  .whats-new-body :global(h3:first-child) {
+    margin-top: 0;
+  }
+
+  .whats-new-body :global(ul) {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  .whats-new-body :global(li) {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.5;
+    margin-bottom: 4px;
+  }
+
+  .whats-new-body :global(a) {
+    color: #6b5bd2;
+  }
+
+  .all-releases {
+    margin: 12px 0 0 0;
+    font-size: 13px;
+  }
+
+  .all-releases a {
+    color: #6b5bd2;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .all-releases a:hover {
+    text-decoration: underline;
   }
 
   .parent-help-footer {

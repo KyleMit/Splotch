@@ -1,7 +1,11 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { readFileSync } from 'node:fs';
 
-const BUILD_VERSION = new Date().toISOString().slice(0, 16).replace('T', ' ');
+// The user-facing release version is the single source of truth in package.json
+// (bumped by scripts/release.mjs). BUILD_TIME is kept separately for debugging.
+const APP_VERSION = JSON.parse(readFileSync('./package.json', 'utf8')).version;
+const BUILD_TIME = new Date().toISOString().slice(0, 16).replace('T', ' ');
 
 // The native apps bundle a static export and never use a service worker (the
 // shell and all assets are already on-device), so skip the PWA plugin there.
@@ -13,7 +17,8 @@ const NATIVE_API_BASE = isCapacitor ? 'https://splotch.art' : '';
 
 export default {
   define: {
-    __APP_VERSION__: JSON.stringify(BUILD_VERSION),
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+    __BUILD_TIME__: JSON.stringify(BUILD_TIME),
     __NATIVE_API_BASE__: JSON.stringify(NATIVE_API_BASE)
   },
   plugins: [
