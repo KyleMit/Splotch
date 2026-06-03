@@ -238,6 +238,9 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Don't include copyright coloring pages on mobile deployment
 * [x] Do't use indexdb instead of localstorage - forces load into async
 * [x] Make clear action more intuitive
+* [ ] Add haptics for trashcan when in the clear accept zone
+* [ ] Add sound effects when deleting
+* [ ] Add even more color for tall landscape view
 * [ ] If call fails and you need to try again, enable a way to do so immediately
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon

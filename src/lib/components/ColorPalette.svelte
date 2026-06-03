@@ -98,9 +98,10 @@
   onpointerdown={handlePaletteDown}
   onpointerup={handlePaletteUp}
 >
-  {#each PALETTE_COLORS as { hex, label } (hex)}
+  {#each PALETTE_COLORS as { hex, label, bonus } (hex)}
     <button
       class="color-swatch"
+      class:bonus
       class:active={!toolState.eraser && colors.activeSwatch === hex}
       class:ring-animate={ringAnimateKey?.startsWith(hex + ':')}
       data-color={hex}
@@ -155,6 +156,12 @@
     transition: all 0.2s ease;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     touch-action: manipulation; /* Prevent iOS gesture delays */
+  }
+
+  /* Bonus colors are extras: hidden everywhere by default, revealed only on a
+     tall landscape by the min-height rules in the trim section below. */
+  .color-swatch.bonus {
+    display: none;
   }
 
   .color-swatch:active {
@@ -258,66 +265,85 @@
   }
 
   /* ── Trim-by-priority ──────────────────────────────────────────────────────
-     Swatches drop off as the palette runs out of room, in TRIM_ORDER priority
-     (data-trim-rank: 0 = first to go). Where rules cascade (portrait, and the
-     2-column landscape pass), each smaller breakpoint hides one more rank and a
-     smaller viewport satisfies every larger max-* threshold at once; the
-     single-column landscape rules use bounded min/max ranges instead, since a
-     rank can become visible again when the layout switches to two columns. The
-     gradient swatch has no trim rank, so it is never hidden.
+     Swatches drop off (and bonus ones appear) as the palette's room changes, in
+     TRIM_ORDER priority. data-trim-rank 0–9 maps to that order: ranks 0–2 are the
+     bonus colors (Brown, Teal, Pink — hidden by default, revealed only on a tall
+     landscape) and ranks 3–9 are the core seven (shown by default, trimmed as
+     space shrinks). Where rules cascade (portrait, and the 2-column landscape
+     pass), each smaller breakpoint hides one more rank and a smaller viewport
+     satisfies every larger max-* threshold at once; the single-column landscape
+     rules use bounded min/max ranges instead, since a rank can become visible
+     again when the layout switches to two columns. The gradient swatch has no
+     trim rank, so it is never hidden.
 
      PORTRAIT — palette is a full-width row (55px swatches, 8px gaps, 10px side
-     padding) plus the always-present gradient. k palette swatches + gradient
-     fit when width ≥ 63·(k+1) + 12  ⇒  rank r needs width ≥ 63·(7−r) + 75. */
-  @media (orientation: portrait) and (max-width: 515.98px) { /* rank 0: Red    */
-    .color-swatch[data-trim-rank='0'] { display: none; }
-  }
-  @media (orientation: portrait) and (max-width: 452.98px) { /* rank 1: Orange */
-    .color-swatch[data-trim-rank='1'] { display: none; }
-  }
-  @media (orientation: portrait) and (max-width: 389.98px) { /* rank 2: Green  */
-    .color-swatch[data-trim-rank='2'] { display: none; }
-  }
-  @media (orientation: portrait) and (max-width: 326.98px) { /* rank 3: Yellow */
+     padding) plus the always-present gradient. k core swatches + gradient fit
+     when width ≥ 63·(k+1) + 12. Bonus colors never appear here (default-hidden,
+     and only landscape reveals them). */
+  @media (orientation: portrait) and (max-width: 515.98px) { /* rank 3: Red    */
     .color-swatch[data-trim-rank='3'] { display: none; }
   }
-  @media (orientation: portrait) and (max-width: 263.98px) { /* rank 4: Blue   */
+  @media (orientation: portrait) and (max-width: 452.98px) { /* rank 4: Orange */
     .color-swatch[data-trim-rank='4'] { display: none; }
   }
-  @media (orientation: portrait) and (max-width: 200.98px) { /* rank 5: Purple */
+  @media (orientation: portrait) and (max-width: 389.98px) { /* rank 5: Green  */
     .color-swatch[data-trim-rank='5'] { display: none; }
   }
-  @media (orientation: portrait) and (max-width: 137.98px) { /* rank 6: Black  */
+  @media (orientation: portrait) and (max-width: 326.98px) { /* rank 6: Yellow */
     .color-swatch[data-trim-rank='6'] { display: none; }
   }
+  @media (orientation: portrait) and (max-width: 263.98px) { /* rank 7: Blue   */
+    .color-swatch[data-trim-rank='7'] { display: none; }
+  }
+  @media (orientation: portrait) and (max-width: 200.98px) { /* rank 8: Purple */
+    .color-swatch[data-trim-rank='8'] { display: none; }
+  }
+  @media (orientation: portrait) and (max-width: 137.98px) { /* rank 9: Black  */
+    .color-swatch[data-trim-rank='9'] { display: none; }
+  }
 
-  /* LANDSCAPE, single column (1 bar) — trim one swatch at a time by priority.
-     Bounded with min-height: 444px so these never fire in the 2-column range
-     below (where rank 0/1 are visible again at 300–444px). */
+  /* LANDSCAPE, bonus reveal (1 bar, tall) — bonus colors are default-hidden; show
+     them one at a time as extra vertical room opens up. A single column holds N
+     swatches at height ≥ 72·N + 12, and the core fills 8 slots at 588px, so the
+     9th/10th/11th slots open at 660/732/804px. */
+  @media (orientation: landscape) and (min-height: 660px) {
+    .color-swatch.bonus[data-trim-rank='2'] { display: block; } /* Pink  */
+  }
+  @media (orientation: landscape) and (min-height: 732px) {
+    .color-swatch.bonus[data-trim-rank='1'] { display: block; } /* Teal  */
+  }
+  @media (orientation: landscape) and (min-height: 804px) {
+    .color-swatch.bonus[data-trim-rank='0'] { display: block; } /* Brown */
+  }
+
+  /* LANDSCAPE, single column (1 bar) — trim core swatches one at a time by
+     priority. Bounded with min-height: 444px so these never fire in the 2-column
+     range below (where Red/Orange are visible again at 300–444px). */
   @media (orientation: landscape) and (min-height: 444px) and (max-height: 587.98px) {
-    .color-swatch[data-trim-rank='0'] { display: none; } /* < 588px: 7 fit  */
+    .color-swatch[data-trim-rank='3'] { display: none; } /* Red:    < 588px → 7 fit */
   }
   @media (orientation: landscape) and (min-height: 444px) and (max-height: 515.98px) {
-    .color-swatch[data-trim-rank='1'] { display: none; } /* < 516px: 6 fit  */
+    .color-swatch[data-trim-rank='4'] { display: none; } /* Orange: < 516px → 6 fit */
   }
 
   /* LANDSCAPE, two columns (2 bar) — used below 444px tall, where the grid shows
      full rows of two and drops a pair at a time. All thresholds stay under 300px
-     (= 4 rows × 72 + 12, where all 8 first overflow two columns), so they never
-     touch the single-column range above. n rows fit when height ≥ 72·n + 12. */
-  @media (orientation: landscape) and (max-height: 299.98px) { /* 4→3 rows: ranks 0,1 */
-    .color-swatch[data-trim-rank='0'],
-    .color-swatch[data-trim-rank='1'] { display: none; }
+     (= 4 rows × 72 + 12, where all 8 core first overflow two columns), so they
+     never touch the single-column range above. n rows fit at height ≥ 72·n + 12.
+     Bonus colors stay hidden here (default-hidden, never revealed below 660px). */
+  @media (orientation: landscape) and (max-height: 299.98px) { /* 4→3 rows: Red, Orange */
+    .color-swatch[data-trim-rank='3'],
+    .color-swatch[data-trim-rank='4'] { display: none; }
   }
-  @media (orientation: landscape) and (max-height: 227.98px) { /* 3→2 rows: ranks 2,3 */
-    .color-swatch[data-trim-rank='2'],
-    .color-swatch[data-trim-rank='3'] { display: none; }
-  }
-  @media (orientation: landscape) and (max-height: 155.98px) { /* 2→1 rows: ranks 4,5 */
-    .color-swatch[data-trim-rank='4'],
-    .color-swatch[data-trim-rank='5'] { display: none; }
-  }
-  @media (orientation: landscape) and (max-height: 83.98px) {  /* 1→0 rows: rank 6     */
+  @media (orientation: landscape) and (max-height: 227.98px) { /* 3→2 rows: Green, Yellow */
+    .color-swatch[data-trim-rank='5'],
     .color-swatch[data-trim-rank='6'] { display: none; }
+  }
+  @media (orientation: landscape) and (max-height: 155.98px) { /* 2→1 rows: Blue, Purple */
+    .color-swatch[data-trim-rank='7'],
+    .color-swatch[data-trim-rank='8'] { display: none; }
+  }
+  @media (orientation: landscape) and (max-height: 83.98px) {  /* 1→0 rows: Black */
+    .color-swatch[data-trim-rank='9'] { display: none; }
   }
 </style>
