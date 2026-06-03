@@ -235,8 +235,8 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] AI option without customization should also pull up loading spinner
 * [x] Figure out release notes (in about tab) and proper versioning / ideally with gh releases
 * [x] Fix graceful degradation of color palette
+* [x] Don't include copyright coloring pages on web deployment
 * [ ] If call fails and you need to try again, enable a way to do so immediately
-* [ ] Hide IP from native releases
 * [ ] Use indexdb instead of localstorage
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon

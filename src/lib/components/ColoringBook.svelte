@@ -2,11 +2,17 @@
   import Icon from './Icon.svelte';
   import { ui, closeColoringBook } from '$lib/state/ui.svelte.js';
   import {
-    BOOKS,
+    booksForPlatform,
     coloringBookState,
     setOverlay,
     clearOverlay
   } from '$lib/state/coloringBook.svelte.js';
+  import { isNative } from '$lib/platform.js';
+
+  // Only show books licensed for this platform. Native builds also strip the
+  // web-only books' assets at build time (scripts/strip-native-assets.mjs), so
+  // this filter and that strip must agree — both read the same `platforms`.
+  const books = booksForPlatform(isNative() ? 'mobile' : 'web');
 
   let dialogEl;
   let activeBook = $state(null);
@@ -85,7 +91,7 @@
               <span class="coloring-book-label">Clear Page</span>
             </button>
           {/if}
-          {#each BOOKS as book (book.id)}
+          {#each books as book (book.id)}
             <button
               class="coloring-tile coloring-book-tile"
               type="button"

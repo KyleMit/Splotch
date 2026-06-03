@@ -1,0 +1,49 @@
+// Removes web-only coloring-book assets from the static export so they are
+// never bundled into the native (Android/iOS) app. Runs after `vite build` in
+// the `build:cap` script, against the freshly produced `build/` output — it
+// never touches the source `static/` tree.
+//
+// Source of truth is the `platforms` field in src/lib/state/books.js. A book
+// that does not list 'mobile' (e.g. licensed IP like Bluey / Frozen) has its
+// asset folder deleted here, matching the runtime filter in ColoringBook.svelte.
+
+import { rmSync, existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { BOOKS } from '../src/lib/state/books.js';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const BUILD_DIR = join(ROOT, 'build'); // capacitor.config.json webDir
+
+const webOnly = BOOKS.filter((book) => !(book.platforms ?? ['web', 'mobile']).includes('mobile'));
+
+if (webOnly.length === 0) {
+  console.log('[strip-native-assets] no web-only books — nothing to strip.');
+  process.exit(0);
+}
+
+// Each book's assets live under one folder (derived from its asset paths, so we
+// stay correct even if a folder name ever diverges from the book id).
+const dirs = new Set();
+for (const book of webOnly) {
+  for (const assetPath of [book.cover, ...book.pages]) {
+    dirs.add(dirname(assetPath)); // e.g. '/coloring/bluey'
+  }
+}
+
+let removed = 0;
+for (const dir of dirs) {
+  const target = join(BUILD_DIR, dir);
+  if (existsSync(target)) {
+    rmSync(target, { recursive: true, force: true });
+    console.log(`[strip-native-assets] removed ${dir}`);
+    removed++;
+  } else {
+    console.warn(`[strip-native-assets] expected but not found: ${dir}`);
+  }
+}
+
+console.log(
+  `[strip-native-assets] stripped ${removed} folder(s) for ${webOnly.length} web-only book(s): ` +
+    webOnly.map((b) => b.id).join(', ')
+);
