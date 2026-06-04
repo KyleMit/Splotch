@@ -65,7 +65,7 @@
 </script>
 
 <dialog
-  class="coloring-book-modal"
+  class="coloring-book-modal modal-dialog modal-fly-in"
   id="coloring-book-dialog"
   bind:this={dialogEl}
   onpointerdown={handleDialogPointerDown}
@@ -145,17 +145,6 @@
     max-height: 85vh;
     overflow-y: auto;
     padding: 0;
-  }
-
-  .coloring-book-modal::backdrop {
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-
-  .coloring-book-modal[open] {
-    animation: dialogFlyFromOrigin 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
-    transform-origin: center;
   }
 
   .coloring-book-content {

@@ -131,7 +131,7 @@
 
 <dialog
   id="color-picker"
-  class="color-picker"
+  class="color-picker modal-dialog modal-fly-in"
   bind:this={dialogEl}
   onpointerdown={handleDialogDown}
   onclose={handleDialogClose}
@@ -181,17 +181,6 @@
     overflow: hidden;
     padding: 0;
     touch-action: none;
-  }
-
-  .color-picker::backdrop {
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-
-  .color-picker[open] {
-    animation: dialogFlyFromOrigin 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
-    transform-origin: center;
   }
 
   .picker {

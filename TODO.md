@@ -22,40 +22,6 @@ Tasks are ordered by recommended attack order. Priority tags: **[High]** / **[Me
 
 ---
 
-## Task 3 — Extract shared modal CSS **[Med, low-risk]**
-
-**Files:** `src/lib/components/ParentCenter.svelte`, `AiImageResult.svelte`,
-`ColoringBook.svelte`, `ColorPicker.svelte`, `AiImagePrompt.svelte`; global stylesheet
-`src/app.css`
-
-**Problem:** The `::backdrop` blur treatment and the `dialogFlyFromOrigin` open
-animation are copy-pasted verbatim across all five `<dialog>`-based modals. Each block
-looks roughly like:
-
-```css
-.modal::backdrop {
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-.modal[open] {
-  animation: dialogFlyFromOrigin 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
-}
-```
-
-**Approach:** Move the shared backdrop styling and the `@keyframes dialogFlyFromOrigin`
-definition into `src/app.css` under a shared class (e.g. `.modal-dialog`). Add that
-class to each `<dialog>` and delete the per-component duplicates. Keep component-specific
-modal styling (sizing, layout, colors) local. Confirm `app.css` is globally imported
-(check `src/routes/+layout.svelte`).
-
-**Acceptance criteria:**
-- All five modals still animate in and show the blurred backdrop identically.
-- The duplicated CSS blocks are removed from the components.
-- No visual regression (open each modal and compare).
-
----
-
 ## Task 4 — Decompose `ParentCenter.svelte` **[High, larger effort]**
 
 **File:** `src/lib/components/ParentCenter.svelte` (~1491 lines)

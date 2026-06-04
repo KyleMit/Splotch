@@ -69,7 +69,7 @@
 </script>
 
 <dialog
-  class="ai-prompt-modal"
+  class="ai-prompt-modal modal-dialog modal-fly-in"
   bind:this={dialogEl}
   onpointerdown={handleDialogPointerDown}
   onclose={handleDialogClose}
@@ -114,17 +114,6 @@
     max-height: 90vh;
     overflow-y: auto;
     padding: 0;
-  }
-
-  .ai-prompt-modal::backdrop {
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-
-  .ai-prompt-modal[open] {
-    animation: dialogFlyFromOrigin 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
-    transform-origin: center;
   }
 
   .ai-prompt-content {

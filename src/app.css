@@ -59,6 +59,21 @@ body {
   }
 }
 
+/* Shared dialog-modal treatment. Every <dialog>-based modal carries
+   .modal-dialog for the dimmed, blurred backdrop. Modals that fly in from
+   their opening button add .modal-fly-in; ones with their own open
+   choreography (e.g. AiImageResult) take .modal-dialog alone. */
+.modal-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.modal-dialog.modal-fly-in[open] {
+  animation: dialogFlyFromOrigin 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+  transform-origin: center;
+}
+
 /* Spin animation reused by any "AI thinking" icon. */
 @keyframes aiSpin {
   to { transform: rotate(360deg); }

@@ -256,7 +256,7 @@
 </button>
 
 <dialog
-  class="parent-help-modal"
+  class="parent-help-modal modal-dialog modal-fly-in"
   id="parentHelpModal"
   bind:this={dialogEl}
   onclick={handleBackdropClick}
@@ -797,16 +797,6 @@
     max-height: 80vh;
     overflow: hidden;
     padding: 0;
-  }
-
-  .parent-help-modal::backdrop {
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-  }
-
-  .parent-help-modal[open] {
-    animation: dialogFlyFromOrigin 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
-    transform-origin: center;
   }
 
   .parent-help-content {

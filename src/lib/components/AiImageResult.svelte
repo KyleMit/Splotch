@@ -224,7 +224,7 @@
 </script>
 
 <dialog
-  class="ai-result-modal"
+  class="ai-result-modal modal-dialog"
   class:polaroid-mode={exiting}
   class:autosave={settings.autoSaveAiEnabled}
   bind:this={dialogEl}
@@ -338,12 +338,6 @@
     max-height: 94vh;
     overflow: hidden;
     padding: 0;
-  }
-
-  .ai-result-modal::backdrop {
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
   }
 
   .ai-result-content {
