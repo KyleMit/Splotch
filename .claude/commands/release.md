@@ -63,3 +63,7 @@ Follow these steps:
    `fastlane/metadata/en-US/release_notes.txt`. If they want the `.aab`
    attached to the GitHub release, it must be built first with
    `npm run android:bundle` before running the release.
+
+8. **Point to the next step.** Once the version is committed and tagged, the
+   store artifacts still need to be compiled — that's a separate step. Suggest
+   the user run **`/build`** next to produce the signed `.aab` for this version.
