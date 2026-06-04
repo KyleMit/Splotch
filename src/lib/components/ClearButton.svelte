@@ -25,10 +25,15 @@
   // Edge-triggered so the threshold haptic fires once per crossing, not per frame.
   let clearReady = false;
 
+  // Drag must reach this fraction of the smaller viewport dimension to commit a clear.
   const ACCEPT_RADIUS_FACTOR = 0.4;
+  // ms to hold the button still before the gesture tutorial pops up.
   const HOLD_DURATION = 500;
+  // px of pointer travel that counts as a real drag (cancels the hold tutorial).
   const MOVEMENT_THRESHOLD = 50;
+  // Rapid taps within this window (ms) accumulate toward the tutorial trigger.
   const MULTI_CLICK_WINDOW = 1000;
+  // Number of taps inside the window that surfaces the tutorial for a stuck user.
   const MULTI_CLICK_THRESHOLD = 3;
 
   let holdTimer = null;
@@ -293,6 +298,10 @@
       document.removeEventListener('pointercancel', stopClearDrag);
       window.removeEventListener('orientationchange', resetButtonPosition);
       window.removeEventListener('resize', onResize);
+      // Cancel any timer left pending by a mid-interaction unmount so its
+      // callback can't fire against torn-down DOM.
+      if (holdTimer) clearTimeout(holdTimer);
+      if (tutorialDismissTimer) clearTimeout(tutorialDismissTimer);
     };
   });
 </script>
