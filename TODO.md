@@ -22,50 +22,6 @@ Tasks are ordered by recommended attack order. Priority tags: **[High]** / **[Me
 
 ---
 
-## Task 4 — Decompose `ParentCenter.svelte` **[High, larger effort]**
-
-**File:** `src/lib/components/ParentCenter.svelte` (~1491 lines)
-
-**Problem:** This single component handles ~6 unrelated responsibilities: BYOK Gemini
-key management (submit/validate/forget/mask), access-code redemption, ~8 settings
-toggles, iOS/Android "add to home screen" setup instructions, the about/release-notes
-view, and an admin-unlock easter egg. Its size makes it the biggest readability and
-maintainability liability in the repo.
-
-**Approach:** Split into child components, leaving `ParentCenter` as a ~250-line tab
-orchestrator that owns modal open/close state and routes between tabs. Suggested split:
-- `AiKeyManager.svelte` — BYOK key entry/validation/forget + access-code redemption,
-  the masked-key display, and the status message. Talks to
-  `src/lib/state/settings.svelte.js` and the `/api/verify-key` /
-  `/api/verify-access-code` endpoints.
-- `SettingsToggles.svelte` — the toggle list, bound to `settings.svelte.js`.
-- `SetupInstructions.svelte` — the iOS/Android accordion content (OS detection,
-  PWA-installed detection).
-- `AboutTab.svelte` — release notes (`src/lib/releases.json`), links, version info.
-
-Keep state ownership clear: shared reactive state lives in the `state/` modules
-(`settings.svelte.js`, `ui.svelte.js`), so children should import those directly rather
-than receiving everything via props — minimize prop drilling.
-
-**Watch out for:**
-- This component uses Svelte 5 runes. Preserve `$state`/`$derived`/`$effect` semantics
-  when moving code; don't convert `$derived` values into `$effect` writes.
-- There is an `$effect` that imperatively resets several pieces of local state when the
-  modal opens (look near the top, ~line 194). Decide where reset logic lives once the
-  pieces are split (likely each child resets its own, or the orchestrator passes an
-  `open` signal).
-- The admin easter egg / unlock flow must keep working.
-
-**Acceptance criteria:**
-- `ParentCenter.svelte` is substantially smaller (target < ~300 lines) and reads as an
-  orchestrator.
-- Each extracted concern lives in its own component with a clear responsibility.
-- All existing behavior preserved: key submit/validate/forget, access-code redemption,
-  every toggle, setup instructions per-OS, about tab, admin unlock.
-- `npm test` passes; manually exercise each tab.
-
----
-
 ## Task 5 — Harden the admin route **[Med, security]**
 
 **File:** `src/routes/admin/+page.server.js`
@@ -176,18 +132,3 @@ Small, independent items. Each can be done in isolation.
   pick `handle<Event>` for non-trivial handlers. Cosmetic; do opportunistically.
 
 **Acceptance criteria:** behavior unchanged; readability improved.
-
----
-
-## Explicitly NOT recommended (conscious decisions)
-
-These came up in review but are fine as designed — don't "fix" them without a reason:
-
-- **CORS `*` on `/api/*`** (`src/hooks.server.js`): intentional and documented. The
-  native WebView origins call the hosted API cross-origin; routes are token-gated
-  server-side. Leave as-is.
-- **CSRF tokens on the API routes:** already handled via the `csrf.trustedOrigins`
-  config for the Capacitor WebView origins. No change needed.
-- **`scanCanvasIsEmpty()` full pixel scan** (`engine.js:35`): runs only on erase-stroke
-  end and undo (not in the move loop), so it's a one-shot `pointerup` cost — acceptable.
-  Only revisit if profiling on a very large canvas shows a real hitch.
