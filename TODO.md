@@ -23,28 +23,6 @@ Tasks are ordered by recommended attack order. Priority tags: **[High]** / **[Me
 ---
 
 
-## Task 7 — Fix the speed-tracking window in `draw()` **[Low, correctness/clarity]**
-
-**File:** `src/lib/drawing/engine.js`, `draw()` ~lines 174-183
-
-**Problem:** The "100ms sliding window" used to compute pointer speed (which drives the
-drawing sound) is subtly incorrect: it `push`es a distance on every move but only ever
-`shift`s a *single* element when `now - windowStartTime > 100`, and resets
-`windowStartTime` at that point. So it's not a true sliding window and the divisor
-(`windowTime`) resets oddly. It's not a performance problem (the array stays ~6-12
-elements), just confusing and slightly wrong.
-
-**Approach:** Replace with an honest time-windowed structure — store `{ t, distance }`
-samples, drop entries older than 100ms from the front each move, and divide summed
-distance by the actual elapsed span. Or simplify to an exponential moving average of
-instantaneous speed if exactness isn't needed (the consumer is just an audio cue).
-
-**Acceptance criteria:**
-- Drawing sound still responds to stroke speed sensibly.
-- The windowing logic is correct and readable.
-
----
-
 ## Task 8 — Object-URL lifecycle cleanup **[Low]**
 
 **Files:** `src/lib/drawing/screenshot.js`, `src/lib/drawing/aiImage.js`,

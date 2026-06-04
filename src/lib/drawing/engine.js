@@ -26,6 +26,11 @@ let onUndoStateChange = null;
 let canvasEmpty = true;
 let onCanvasEmptyChange = null;
 
+// Pointer speed (which drives the drawing sound) is averaged over the most
+// recent slice of the stroke so the audio cue tracks gesture speed without
+// reacting to every per-frame jitter.
+const SPEED_WINDOW_MS = 100;
+
 function setCanvasEmptyState(empty) {
   if (canvasEmpty === empty) return;
   canvasEmpty = empty;
@@ -141,8 +146,10 @@ function startDrawing(e) {
       lineWidth,
       erase: eraserActive,
       lastTime: Date.now(),
-      distanceWindow: [],
-      windowStartTime: Date.now()
+      // Time-stamped distance samples for the sliding speed window. The first
+      // entry is a zero-distance anchor so the very first move has a span to
+      // divide by.
+      speedSamples: [{ t: Date.now(), distance: 0 }]
     });
     activePointerIds.add(e.pointerId);
   }
@@ -186,15 +193,18 @@ function draw(e) {
   const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
   const now = Date.now();
-  pointerState.distanceWindow.push(distance);
-  const windowDuration = 100;
-  if (now - pointerState.windowStartTime > windowDuration) {
-    pointerState.distanceWindow.shift();
-    pointerState.windowStartTime = now;
-  }
-  const totalDistance = pointerState.distanceWindow.reduce((sum, d) => sum + d, 0);
-  const windowTime = Math.max(now - pointerState.windowStartTime, 1);
-  const speed = totalDistance / windowTime;
+  // Honest sliding window: stamp each move's distance with its time, drop
+  // samples older than SPEED_WINDOW_MS, then divide the distance covered since
+  // the oldest surviving sample by that elapsed span. (The oldest sample is the
+  // anchor for the span, so its own distance — travelled before it — is excluded.)
+  const samples = pointerState.speedSamples;
+  samples.push({ t: now, distance });
+  const cutoff = now - SPEED_WINDOW_MS;
+  while (samples.length > 1 && samples[0].t < cutoff) samples.shift();
+  let windowDistance = 0;
+  for (let i = 1; i < samples.length; i++) windowDistance += samples[i].distance;
+  const windowSpan = Math.max(now - samples[0].t, 1);
+  const speed = windowDistance / windowSpan;
 
   for (const c of activeContexts()) {
     strokeSegment(c, pointerState, x, y);
