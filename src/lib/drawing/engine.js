@@ -31,6 +31,11 @@ let onCanvasEmptyChange = null;
 // reacting to every per-frame jitter.
 const SPEED_WINDOW_MS = 100;
 
+// After a color/tool change, ignore touch/mouse pointerdowns for a short window
+// so the tap that picked the color doesn't immediately start a stray stroke.
+// Pen input is precise enough to skip the debounce.
+const COLOR_CHANGE_DEBOUNCE_MS = 100;
+
 function setCanvasEmptyState(empty) {
   if (canvasEmpty === empty) return;
   canvasEmpty = empty;
@@ -124,7 +129,7 @@ export function releaseAllPointers() {
 
 function startDrawing(e) {
   const timeSinceColorChange = Date.now() - lastColorChangeTime;
-  const requiredDelay = e.pointerType === 'pen' ? 0 : 100;
+  const requiredDelay = e.pointerType === 'pen' ? 0 : COLOR_CHANGE_DEBOUNCE_MS;
   if (timeSinceColorChange < requiredDelay) return;
 
   saveUndoSnapshot();

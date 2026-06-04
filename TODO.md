@@ -15,8 +15,6 @@ under `src/routes/api/` and `src/routes/admin/`. Tests use Playwright (`npm test
 
 Small, independent items. Each can be done in isolation.
 
-- **Magic `100`ms gesture window in `engine.js`** (`startDrawing` line ~98, the
-  color-change debounce; and the speed window) — name it.
 - **`aria-live="polite"` on the BYOK key status message** in the AI key UI (currently
   uses `role` alone) so screen readers announce validation results.
 - **Consistent event-handler naming:** the codebase mixes `handleX` and inline lambdas;
