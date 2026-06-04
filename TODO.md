@@ -19,28 +19,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ---
 
-## 4. Guard `localStorage` writes against exceptions
-
-**Problem:** The write helpers call `localStorage.setItem`/`removeItem` unguarded.
-`setItem` throws `QuotaExceededError` when storage is full and `SecurityError` in
-locked-down or private-mode WebViews. These helpers run synchronously inside every
-settings `setX` handler, so a throw propagates into the UI event handler and can break
-a toggle. The durable native mirror is already `.catch()`-wrapped; the primary web write
-is not.
-
-**Affected files:**
-- `src/lib/storage.js` — `writeBool` (~55), `writeString` (~69), `writeInt` (~79), and the `removeItem` path (~100)
-
-**Approach:** Wrap the `localStorage.setItem`/`removeItem` calls in try/catch so a failed
-web write degrades gracefully (the durable mirror still provides native fallback). Log at
-most once; do not let the exception escape into the caller.
-
-**Acceptance criteria:** a thrown `setItem` (simulate by stubbing) no longer breaks the
-calling setter; normal persistence behavior unchanged; existing storage unit tests
-(`src/lib/storage.test.js`) still pass under `npm run test:unit`.
-
----
-
 ## 5. Avoid the full-canvas `getImageData` scan on every erase-end / undo
 
 **Problem:** `scanCanvasIsEmpty()` calls `getImageData(0, 0, canvas.width,

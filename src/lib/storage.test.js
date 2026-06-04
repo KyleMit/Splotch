@@ -91,6 +91,36 @@ describe('removeKey', () => {
   });
 });
 
+describe('resilience to a throwing localStorage', () => {
+  it('does not let a setItem throw escape into the caller', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError');
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      expect(() => writeBool('k', true)).not.toThrow();
+      expect(() => writeString('s', 'v')).not.toThrow();
+      expect(() => writeInt('n', 1)).not.toThrow();
+    } finally {
+      spy.mockRestore();
+      warn.mockRestore();
+    }
+  });
+
+  it('does not let a removeItem throw escape into the caller', () => {
+    const spy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError');
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      expect(() => removeKey('k')).not.toThrow();
+    } finally {
+      spy.mockRestore();
+      warn.mockRestore();
+    }
+  });
+});
+
 describe('mirror to durable storage (native)', () => {
   it('does not touch Preferences on the web', async () => {
     ctrl.native = false;

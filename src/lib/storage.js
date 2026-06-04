@@ -23,6 +23,23 @@ function track(key) {
   managedKeys.add(key);
 }
 
+// localStorage.setItem can throw — QuotaExceededError when storage is full, or
+// SecurityError in locked-down / private-mode WebViews. These run synchronously
+// inside every settings setX handler, so an escaping throw would break the toggle
+// that triggered it. Swallow the failure (the native durable mirror still backs
+// the value up) and warn at most once so we don't spam the console.
+let storageWarned = false;
+function safeLocalStorage(op) {
+  try {
+    op();
+  } catch (err) {
+    if (!storageWarned) {
+      storageWarned = true;
+      console.warn('localStorage write failed; relying on durable mirror', err);
+    }
+  }
+}
+
 let prefsPromise = null;
 function getPrefs() {
   if (!prefsPromise) {
@@ -52,7 +69,7 @@ export function writeBool(key, value) {
   track(key);
   if (!browser) return;
   const str = value ? 'true' : 'false';
-  localStorage.setItem(key, str);
+  safeLocalStorage(() => localStorage.setItem(key, str));
   mirror(key, str);
 }
 
@@ -66,7 +83,7 @@ export function readString(key, fallback) {
 export function writeString(key, value) {
   track(key);
   if (!browser) return;
-  localStorage.setItem(key, value);
+  safeLocalStorage(() => localStorage.setItem(key, value));
   mirror(key, value);
 }
 
@@ -76,7 +93,7 @@ export function writeString(key, value) {
 export function removeKey(key) {
   track(key);
   if (!browser) return;
-  localStorage.removeItem(key);
+  safeLocalStorage(() => localStorage.removeItem(key));
   if (isNative()) {
     getPrefs()
       .then((Preferences) => Preferences.remove({ key }))
@@ -97,7 +114,7 @@ export function writeInt(key, value) {
   track(key);
   if (!browser) return;
   const str = String(value);
-  localStorage.setItem(key, str);
+  safeLocalStorage(() => localStorage.setItem(key, str));
   mirror(key, str);
 }
 
