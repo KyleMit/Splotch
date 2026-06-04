@@ -1,15 +1,21 @@
 <script>
   import { enhance } from '$app/forms';
   import Icon from '$lib/components/Icon.svelte';
+  import { setAdminLinkVisible } from '$lib/state/settings.svelte.js';
 
-  // Access is validated in +page.server.js before this renders. Tokens and the
-  // prebuilt invite links arrive via `data`; the raw list logic stays server-side.
+  // `data.authed` tells us whether the request carried a valid admin session
+  // cookie. When false we render a login form; otherwise the tokens and prebuilt
+  // invite links arrive via `data`. The secret never reaches the client.
   let { data, form } = $props();
 
-  // Carry the admin key on every mutating request. Named actions drop the
-  // page's query string, so it's re-attached to each form's action URL where
-  // requireAdmin() reads it back from `url`.
-  let key = $derived(encodeURIComponent(data.accessKey ?? ''));
+  // Keep the public /admin link (in the About tab) in sync with reality: it
+  // stays visible exactly while an admin_session cookie is present. Logging in
+  // sets the cookie (→ visible); logging out, a failed login, or arriving/leaving
+  // without one all resolve to no cookie (→ hidden). `data.hasSession` re-reads
+  // on every load, including the redirects that follow login and logout.
+  $effect(() => {
+    setAdminLinkVisible(data.hasSession);
+  });
 
   // Per-row "copied" feedback for the invite links.
   let copied = $state('');
@@ -43,8 +49,33 @@
         <h1>Admin</h1>
         <p class="subtitle">Manage AI access codes</p>
       </div>
+      {#if data.authed}
+        <form method="POST" action="?/logout" use:enhance class="logout-form">
+          <button type="submit" class="btn btn-ghost">Sign out</button>
+        </form>
+      {/if}
     </header>
 
+    {#if !data.authed}
+      <section class="card">
+        <h2>Sign in</h2>
+        {#if form?.loginError}
+          <div class="flash flash-error" role="alert">{form.loginError}</div>
+        {/if}
+        <form method="POST" action="?/login" use:enhance class="add-form">
+          <input
+            type="password"
+            name="access-key"
+            placeholder="Admin access key"
+            autocomplete="current-password"
+            autocapitalize="off"
+            spellcheck="false"
+            required
+          />
+          <button type="submit" class="btn btn-primary">Sign in</button>
+        </form>
+      </section>
+    {:else}
     {#if form?.error}
       <div class="flash flash-error" role="alert">{form.error}</div>
     {:else if form?.message}
@@ -53,7 +84,7 @@
 
     <section class="card">
       <h2>Add a code</h2>
-      <form method="POST" action={`?/add&access-key=${key}`} use:enhance class="add-form">
+      <form method="POST" action="?/add" use:enhance class="add-form">
         <input
           type="text"
           name="token"
@@ -95,7 +126,7 @@
                 >
                   {copied === invite.url ? 'Copied!' : 'Copy link'}
                 </button>
-                <form method="POST" action={`?/remove&access-key=${key}`} use:enhance>
+                <form method="POST" action="?/remove" use:enhance>
                   <input type="hidden" name="token" value={invite.token} />
                   <button type="submit" class="btn btn-danger" aria-label={`Remove ${invite.token}`}>
                     <Icon name="trash" class="trash-icon" />
@@ -107,6 +138,7 @@
         </ul>
       {/if}
     </section>
+    {/if}
   </main>
 </div>
 
@@ -176,6 +208,11 @@
     align-items: center;
     gap: 16px;
     margin-bottom: 28px;
+  }
+
+  /* Push the sign-out control to the far end of the header row. */
+  .logout-form {
+    margin-left: auto;
   }
 
   .admin-badge {

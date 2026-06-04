@@ -21,9 +21,9 @@ const AI_ACCESS_TOKEN_PARAM = 'ai_access_token';
 // web). This constant only names the legacy localStorage slot so hydrateApiKey
 // can migrate and scrub any key written by an earlier build.
 const AI_USER_API_KEY = 'splotch-ai-user-api-key';
-const ADMIN_ACCESS_TOKEN_KEY = 'splotch-admin-access-token';
 const ADVANCED_CONTROLS_KEY = 'splotch-advanced-controls';
 const DRAWER_OPEN_KEY = 'splotch-drawer-open';
+const ADMIN_LINK_VISIBLE_KEY = 'splotch-admin-link-visible';
 
 export const settings = $state({
   soundEnabled: readBool(SOUND_KEY, true),
@@ -43,15 +43,17 @@ export const settings = $state({
   // Parent-supplied Gemini API key (BYOK). Held in memory only; hydrated from
   // secure storage on boot by hydrateApiKey(). Empty until then / unless set.
   aiUserApiKey: '',
-  // Admin access key. Hidden from regular users (unlocked via the version-text
-  // easter egg) and validated server-side against ADMIN_ACCESS_TOKEN.
-  adminAccessToken: readString(ADMIN_ACCESS_TOKEN_KEY, ''),
   // Master switch for the collapsible action drawer. When on, the chevron
   // toggle shows and the drawer can be opened/closed; when off, the controls
   // are always visible and the chevron is hidden.
   advancedControlsEnabled: readBool(ADVANCED_CONTROLS_KEY, true),
   // Remembered open/closed state of the drawer (defaults closed).
-  drawerOpen: readBool(DRAWER_OPEN_KEY, false)
+  drawerOpen: readBool(DRAWER_OPEN_KEY, false),
+  // Whether the hidden link to the /admin console is shown in the About tab.
+  // Unlocked by the version-tap easter egg and kept visible for anyone who has
+  // an admin_session cookie; reset to hidden on logout / failed login / leaving
+  // the admin page without signing in (see /admin and AboutTab).
+  adminLinkVisible: readBool(ADMIN_LINK_VISIBLE_KEY, false)
 });
 
 export function setSound(v) { settings.soundEnabled = v; writeBool(SOUND_KEY, v); }
@@ -71,9 +73,9 @@ export function setAiUserApiKey(v) {
   settings.aiUserApiKey = v;
   return v ? saveApiKey(v) : clearApiKey();
 }
-export function setAdminAccessToken(v) { settings.adminAccessToken = v; writeString(ADMIN_ACCESS_TOKEN_KEY, v); }
 export function setAdvancedControls(v) { settings.advancedControlsEnabled = v; writeBool(ADVANCED_CONTROLS_KEY, v); }
 export function setDrawerOpen(v) { settings.drawerOpen = v; writeBool(DRAWER_OPEN_KEY, v); }
+export function setAdminLinkVisible(v) { settings.adminLinkVisible = v; writeBool(ADMIN_LINK_VISIBLE_KEY, v); }
 
 // Re-read every persisted setting into the live store. Used after the durable
 // storage layer recovers values that the native WebView had evicted (see
@@ -90,9 +92,9 @@ export function reloadSettings() {
   settings.aiCustomizationEnabled = readBool(AI_CUSTOMIZATION_KEY, settings.aiCustomizationEnabled);
   settings.autoSaveAiEnabled = readBool(AUTO_SAVE_AI_KEY, settings.autoSaveAiEnabled);
   settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);
-  settings.adminAccessToken = readString(ADMIN_ACCESS_TOKEN_KEY, settings.adminAccessToken);
   settings.advancedControlsEnabled = readBool(ADVANCED_CONTROLS_KEY, settings.advancedControlsEnabled);
   settings.drawerOpen = readBool(DRAWER_OPEN_KEY, settings.drawerOpen);
+  settings.adminLinkVisible = readBool(ADMIN_LINK_VISIBLE_KEY, settings.adminLinkVisible);
 }
 
 // Pull the saved Gemini key out of secure storage into the live store on boot.

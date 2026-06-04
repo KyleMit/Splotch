@@ -21,8 +21,9 @@ const config = {
     // that multipart POST with a 403 ("Cross-site form submissions are forbidden")
     // *before* hooks.server.js can add CORS headers, so the WebView surfaces it as
     // a CORS failure. Trust the Capacitor origins (Android: https://localhost,
-    // iOS: capacitor://localhost). Safe here: no endpoint uses ambient cookies —
-    // the AI route is token-gated, /admin takes its key in the query string.
+    // iOS: capacitor://localhost). Safe here: the AI route is token-gated, and
+    // /admin's only cookie is SameSite=strict, so it's never sent on the
+    // cross-site requests these trusted origins make.
     csrf: { trustedOrigins: ['https://localhost', 'capacitor://localhost'] }
   }
 };

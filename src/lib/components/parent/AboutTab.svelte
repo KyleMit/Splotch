@@ -1,6 +1,6 @@
 <script>
   import Icon from '../Icon.svelte';
-  import { settings, setAdminAccessToken } from '$lib/state/settings.svelte.js';
+  import { settings, setAdminLinkVisible } from '$lib/state/settings.svelte.js';
   // Generated at build time from releases/*.md (see scripts/generate-releases.mjs).
   import releases from '$lib/releases.json';
 
@@ -11,23 +11,19 @@
   const latestRelease = releases[0];
   const RELEASES_URL = 'https://github.com/KyleMit/Splotch/releases';
 
-  // Hidden admin unlock: tapping the version text 5 times prompts for the
-  // access key, which is then persisted to localStorage. The key is only
-  // trusted after server-side validation against ADMIN_ACCESS_TOKEN.
+  // Hidden admin unlock: tapping the version text 5 times reveals the link to
+  // the admin console. The reveal is persisted (so it survives a refresh) and
+  // stays put for anyone holding an admin_session cookie; the /admin page resets
+  // it on logout / failed login / leaving without signing in. The secret itself
+  // is collected by the console's login form, so it never touches the client.
   let versionClicks = 0;
+  let showAdminLink = $derived(settings.adminLinkVisible);
   function handleVersionClick() {
     versionClicks += 1;
     if (versionClicks < 5) return;
     versionClicks = 0;
-    const key = window.prompt('Enter admin access key');
-    if (key && key.trim()) setAdminAccessToken(key.trim());
+    setAdminLinkVisible(true);
   }
-
-  let adminLink = $derived(
-    settings.adminAccessToken
-      ? `/admin?access-key=${encodeURIComponent(settings.adminAccessToken)}`
-      : ''
-  );
 </script>
 
 <section class="setting-group">
@@ -60,8 +56,8 @@
     </p>
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
     <p class="version-text" onclick={handleVersionClick}>Version {APP_VERSION}</p>
-    {#if adminLink}
-      <p class="admin-link"><a href={adminLink}>Admin</a></p>
+    {#if showAdminLink}
+      <p class="admin-link"><a href="/admin">Admin</a></p>
     {/if}
     {#if import.meta.env.DEV}
       <p class="admin-link"><a href="/dev/ai-timer">AI Timer</a></p>

@@ -22,33 +22,6 @@ Tasks are ordered by recommended attack order. Priority tags: **[High]** / **[Me
 
 ---
 
-## Task 5 — Harden the admin route **[Med, security]**
-
-**File:** `src/routes/admin/+page.server.js`
-
-**Problem:** The admin secret travels in the `access-key` URL query param
-(`requireAdmin`, line ~14), so it leaks into browser history, server/CDN logs, and
-`Referer` headers. The comparison `key !== expected` (line ~16) is also non-constant-time.
-`requireAdmin(url)` is duplicated across `load` and both form actions.
-
-**Approach:**
-- Replace the query-param secret with an HTTP-only cookie set via a POST login step,
-  or at minimum stop reflecting `access-key` back into the page/links.
-- Use `crypto.timingSafeEqual` (Node `crypto`) for the comparison, guarding for
-  length-mismatch first.
-- Centralize the check — a `handle` hook scoped to `/admin` in `src/hooks.server.js`,
-  or a single shared helper — so it isn't repeated in three places.
-
-**Note:** This is acceptable as-is if the admin page is genuinely private and rarely
-used. Treat as a judgment call; the constant-time comparison and de-duplication are
-worth doing regardless.
-
-**Acceptance criteria:**
-- Admin auth still gates `load`, `add`, and `remove`.
-- The secret is no longer exposed in URLs/logs (if the cookie approach is taken).
-- Comparison is constant-time; the check exists in one place.
-
----
 
 ## Task 6 — Cap the uploaded image size in image generation **[Low–Med, security]**
 
