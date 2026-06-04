@@ -23,30 +23,6 @@ Tasks are ordered by recommended attack order. Priority tags: **[High]** / **[Me
 ---
 
 
-## Task 8 — Object-URL lifecycle cleanup **[Low]**
-
-**Files:** `src/lib/drawing/screenshot.js`, `src/lib/drawing/aiImage.js`,
-`src/lib/components/AiImagePrompt.svelte`
-
-**Problem:** Several `URL.createObjectURL(...)` calls are not reliably paired with
-`URL.revokeObjectURL(...)` on error or component-unmount paths, leaking blob URLs.
-- `aiImage.js`: preview URL created (~line 49/57) not revoked if generation fails.
-- `screenshot.js`: URL(s) created in `saveScreenshot` (~lines 58/73) not revoked on the
-  native path / error path.
-- `AiImagePrompt.svelte`: `loadPreview()` creates a URL relying on manual
-  `cleanupPreview()`; unmount before cleanup leaks it.
-
-**Approach:** Track the current object URL in a variable, revoke the previous one before
-creating a new one, and revoke in `finally`/error branches and on component teardown
-(an `$effect` cleanup return in the Svelte component).
-
-**Acceptance criteria:**
-- No leaked blob URLs across generate-success, generate-failure, screenshot, and
-  modal-close/unmount flows.
-- Existing behavior (preview shows, screenshot saves, AI result displays) unchanged.
-
----
-
 ## Task 9 — Minor cleanups **[Low]**
 
 Small, independent items. Each can be done in isolation.

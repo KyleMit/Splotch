@@ -42,6 +42,11 @@
     drawingBlob = null;
   }
 
+  // The open/close $effect above only revokes on an explicit close. If the
+  // component is torn down while the picker is still open, revoke here so the
+  // preview's object URL doesn't outlive the component.
+  $effect(() => () => cleanupPreview());
+
   function handleSelectStyle(style) {
     if (!drawingBlob) return;
     // Picking a style immediately hands off to the result modal, which shows
