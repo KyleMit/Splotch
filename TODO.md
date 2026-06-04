@@ -19,33 +19,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ---
 
-## 2. Extract a shared `<ToggleRow>` component
-
-**Problem:** The toggle-row markup is duplicated ~8× inside `SettingsToggles.svelte` and
-~3× more in `AiKeyManager.svelte`, and the entire toggle `<style>` block (~100 lines,
-including the literal brand color `#AB71E1`) is copy-pasted verbatim between the two
-files. They are already drifting — `SettingsToggles` has `:disabled` rules the AI copy
-lacks. Each copy hand-duplicates the `id` / `for` / `aria-label` / visible-`label`
-quadruplet, so a typo in any one is a silent accessibility regression.
-
-**Affected files:**
-- `src/lib/components/parent/SettingsToggles.svelte` (toggle blocks ~29-193; styles ~197-306)
-- `src/lib/components/parent/AiKeyManager.svelte` (toggle blocks ~230-288; styles ~296-383)
-
-**Approach:** Create `src/lib/components/parent/ToggleRow.svelte` taking props like
-`{ icon, label, checked, onToggle, help? }`, owning the `<div class="setting-toggle">`
-markup, the `role="switch"`/`aria-checked`/`aria-label` wiring (deriving `aria-label`
-from `label` so they can't diverge), and the scoped styles. Replace each repeated block
-in both components with a single `<ToggleRow … />`. Move the shared `.setting*` /
-`.toggle-switch*` styles into the new component.
-
-**Acceptance criteria:** every existing toggle renders and behaves identically (including
-`role="switch"`, `aria-checked`, keyboard/screen-reader behavior, and the `:disabled`
-state where present); no toggle-row markup or styles remain duplicated across the two
-files. App builds and `npm run test:e2e` passes.
-
----
-
 ## 3. Extract a shared `<Modal>` wrapper (and fix ParentCenter backdrop dismissal)
 
 **Problem:** Five components each reimplement the same dialog scaffolding: an open/close

@@ -1,6 +1,7 @@
 <script>
   import { slide } from 'svelte/transition';
   import Icon from '../Icon.svelte';
+  import ToggleRow from './ToggleRow.svelte';
   import {
     settings,
     setAiImage,
@@ -228,65 +229,35 @@
   {#if !aiLocked}
   <div class="ai-controls">
     <div class="setting">
-      <div class="setting-toggle">
-        <label class="setting-info" for="aiImageToggle">
-          <Icon name="wand-stars" class="setting-icon" />
-          <span class="setting-label">Create AI Images</span>
-        </label>
-        <button
-          class="toggle-switch"
-          class:active={settings.aiImageEnabled}
-          id="aiImageToggle"
-          role="switch"
-          aria-label="Create AI Images"
-          aria-checked={settings.aiImageEnabled}
-          onclick={() => setAiImage(!settings.aiImageEnabled)}
-        >
-          <span class="toggle-switch-thumb"></span>
-        </button>
-      </div>
+      <ToggleRow
+        icon="wand-stars"
+        label="Create AI Images"
+        id="aiImageToggle"
+        checked={settings.aiImageEnabled}
+        onToggle={setAiImage}
+      />
     </div>
 
     {#if settings.aiImageEnabled}
       <div class="setting" transition:slide={{ duration: 220 }}>
-        <div class="setting-toggle">
-          <label class="setting-info" for="aiCustomizationToggle">
-            <Icon name="customize" class="setting-icon" />
-            <span class="setting-label">AI Customization</span>
-          </label>
-          <button
-            class="toggle-switch"
-            class:active={settings.aiCustomizationEnabled}
-            id="aiCustomizationToggle"
-            role="switch"
-            aria-label="AI Customization"
-            aria-checked={settings.aiCustomizationEnabled}
-            onclick={() => setAiCustomization(!settings.aiCustomizationEnabled)}
-          >
-            <span class="toggle-switch-thumb"></span>
-          </button>
-        </div>
+        <ToggleRow
+          icon="customize"
+          label="AI Customization"
+          id="aiCustomizationToggle"
+          checked={settings.aiCustomizationEnabled}
+          onToggle={setAiCustomization}
+        />
       </div>
 
       <div class="setting" transition:slide={{ duration: 220 }}>
-        <div class="setting-toggle">
-          <label class="setting-info" for="autoSaveAiToggle">
-            <Icon name="download" class="setting-icon" />
-            <span class="setting-label">Auto-Save AI Images</span>
-          </label>
-          <button
-            class="toggle-switch"
-            class:active={settings.autoSaveAiEnabled}
-            id="autoSaveAiToggle"
-            role="switch"
-            aria-label="Auto-Save AI Images"
-            aria-checked={settings.autoSaveAiEnabled}
-            onclick={() => setAutoSaveAi(!settings.autoSaveAiEnabled)}
-          >
-            <span class="toggle-switch-thumb"></span>
-          </button>
-        </div>
-        <p class="setting-help">Saves each AI image and the drawing to your photos, and shows a larger preview</p>
+        <ToggleRow
+          icon="download"
+          label="Auto-Save AI Images"
+          id="autoSaveAiToggle"
+          checked={settings.autoSaveAiEnabled}
+          onToggle={setAutoSaveAi}
+          help="Saves each AI image and the drawing to your photos, and shows a larger preview"
+        />
       </div>
     {/if}
   </div>
@@ -306,80 +277,6 @@
     padding: 12px 16px;
     background: #f8f8f8;
     border-radius: 8px;
-  }
-
-  .setting-toggle {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .setting-help {
-    margin: 6px 0 0 30px;
-    font-size: 13px;
-    color: #777;
-    line-height: 1.4;
-  }
-
-  .setting-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-  }
-
-  :global(.setting-icon) {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
-
-  .setting-label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #555;
-  }
-
-  /* iOS-style toggle switch (boolean settings) */
-  .toggle-switch {
-    width: 52px;
-    height: 32px;
-    background: #ddd;
-    border: none;
-    border-radius: 999px;
-    padding: 0;
-    position: relative;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    flex-shrink: 0;
-  }
-
-  .toggle-switch:hover {
-    background: #ccc;
-  }
-
-  .toggle-switch.active {
-    background: #AB71E1;
-  }
-
-  .toggle-switch.active:hover {
-    background: #9961d1;
-  }
-
-  .toggle-switch-thumb {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 26px;
-    height: 26px;
-    background: white;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s ease;
-  }
-
-  .toggle-switch.active .toggle-switch-thumb {
-    transform: translateX(20px);
   }
 
   /* AI feature toggles — spaced off from the key/code panel above them. */
