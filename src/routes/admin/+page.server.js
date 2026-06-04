@@ -1,6 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { getTokens, addToken, removeToken } from '$lib/server/tokens.js';
 import { rateLimit } from '$lib/server/rateLimit.js';
 
@@ -10,17 +10,30 @@ import { rateLimit } from '$lib/server/rateLimit.js';
 export const prerender = false;
 export const ssr = true;
 
-// The admin secret lives in an HTTP-only cookie set by the `login` action. It
-// never travels in the URL, so it can't leak into browser history, server/CDN
-// logs, or Referer headers. The cookie is scoped to /admin and lives ~10 years
-// — effectively permanent — and is renewed on every authenticated load so it
-// slides forward and never lapses while in use. The logout button is the
-// explicit way to clear it.
+// A *derived* session token lives in an HTTP-only cookie set by the `login`
+// action — never the raw secret itself. It never travels in the URL, so it
+// can't leak into browser history, server/CDN logs, or Referer headers. The
+// cookie is scoped to /admin and lives ~10 years — effectively permanent — and
+// is renewed on every authenticated load so it slides forward and never lapses
+// while in use. The logout button is the explicit way to clear it.
 const SESSION_COOKIE = 'admin_session';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 365 * 10;
 
+// The cookie stores HMAC-SHA256(key = ADMIN_ACCESS_TOKEN, "admin-session-v1")
+// rather than the secret verbatim. It's a deterministic, one-way function of
+// the secret: the server can recompute and verify it on every request without
+// any server-side session store, but an attacker who exfiltrates the cookie
+// can't invert the HMAC to recover ADMIN_ACCESS_TOKEN. Bump the label to
+// invalidate every outstanding session at once. If the secret is unset there is
+// nothing to authenticate against, so the token is empty (and never matches).
+function sessionToken() {
+  const secret = env.ADMIN_ACCESS_TOKEN;
+  if (!secret) return '';
+  return createHmac('sha256', secret).update('admin-session-v1').digest('hex');
+}
+
 function setSession(cookies) {
-  cookies.set(SESSION_COOKIE, env.ADMIN_ACCESS_TOKEN, {
+  cookies.set(SESSION_COOKIE, sessionToken(), {
     path: '/admin',
     httpOnly: true,
     sameSite: 'strict',
@@ -40,9 +53,11 @@ function secretMatches(provided, expected) {
 }
 
 // Single source of truth for "is this an authenticated admin request?" — used
-// by the loader and every mutating action so the check isn't duplicated.
+// by the loader and every mutating action so the check isn't duplicated. The
+// cookie holds the derived session token, so we compare against the recomputed
+// token (constant-time) rather than the raw secret.
 function isAdmin(cookies) {
-  return secretMatches(cookies.get(SESSION_COOKIE), env.ADMIN_ACCESS_TOKEN);
+  return secretMatches(cookies.get(SESSION_COOKIE), sessionToken());
 }
 
 function requireAdmin(cookies) {

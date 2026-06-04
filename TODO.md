@@ -19,27 +19,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ---
 
-## 9. Don't store the raw admin secret in the session cookie
-
-**Problem:** The `admin_session` cookie is set to `env.ADMIN_ACCESS_TOKEN` verbatim with a
-~10-year lifetime, so the (effectively permanent) cookie *is* the master secret. It is
-HttpOnly + SameSite=strict + path-scoped and the tradeoff is documented, but any cookie
-exfiltration leaks the actual admin password with no rotation/revocation short of
-changing the env var.
-
-**Affected files:**
-- `src/routes/admin/+page.server.js:22-46` — `setSession`, `secretMatches`, `isAdmin`
-
-**Approach:** Store an opaque random session id or an HMAC of the secret (HMAC keyed by a
-server-only secret) rather than the secret itself; compare with the existing constant-time
-check. Keep the sliding-renewal behavior. Optionally shorten the lifetime.
-
-**Acceptance criteria:** admin login, the authenticated loader, all mutating actions, and
-logout work as before; the stored cookie value is no longer equal to
-`ADMIN_ACCESS_TOKEN`; an attacker holding the cookie value cannot derive the secret.
-
----
-
 ## 10. Harden `ClearButton` animation teardown
 
 **Problem:** `stopClearDrag` runs a chained `setTimeout` choreography (nested ~600ms →
