@@ -129,16 +129,22 @@ export async function hydrateDurableStorage() {
   let restored = false;
   try {
     const Preferences = await getPrefs();
-    for (const key of managedKeys) {
+    // Fire every durable get concurrently rather than one serial bridge
+    // round-trip per key — ~15 keys on the cold-start critical path.
+    const keys = [...managedKeys];
+    const durable = await Promise.all(keys.map((key) => Preferences.get({ key })));
+    const backups = [];
+    keys.forEach((key, i) => {
       const local = localStorage.getItem(key);
-      const { value } = await Preferences.get({ key });
+      const { value } = durable[i];
       if (local === null && value !== null) {
         localStorage.setItem(key, value); // WebView lost it — recover from durable store
         restored = true;
       } else if (local !== null && value === null) {
-        await Preferences.set({ key, value: local }); // back up the existing value
+        backups.push(Preferences.set({ key, value: local })); // back up the existing value
       }
-    }
+    });
+    await Promise.all(backups);
   } catch {
     // If the durable layer is unavailable we simply keep the localStorage copy.
   }

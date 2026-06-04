@@ -19,23 +19,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ---
 
-## 7. Parallelize durable-storage hydration
-
-**Problem:** `hydrateDurableStorage` awaits `Preferences.get` (and sometimes `set`) one
-key at a time, ~15 serial native bridge round-trips on the cold-start critical path
-before `reloadSettings`/`reloadStrokeWidth` run.
-
-**Affected files:**
-- `src/lib/storage.js` — `hydrateDurableStorage` (~115-123)
-
-**Approach:** Collect the per-key work into an array and `await Promise.all(...)` (or batch
-the gets). Native-only path; does not affect web boot.
-
-**Acceptance criteria:** hydration result identical to the serial version; measured cold
-boot does fewer serial awaits; no regression in settings recovery after eviction.
-
----
-
 ## 8. Add rate limiting to `/api/generate-image`
 
 **Problem:** `verify-key` and `verify-access-code` are rate-limited, but

@@ -238,6 +238,8 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Don't include copyright coloring pages on mobile deployment
 * [x] Do't use indexdb instead of localstorage - forces load into async
 * [x] Make clear action more intuitive
+* [ ] Convert codebase to TS
+* [ ] Sound doesn't come in right away on fresh page load
 * [ ] Add haptics for trashcan when in the clear accept zone
 * [ ] Add sound effects when deleting
 * [ ] Add even more color for tall landscape view
@@ -264,7 +266,6 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
   * [ ] Delete should wipe the page (or first book should be to clear the background)
 * [ ] Bugs
   * [ ] Make sure we can refresh PWA
-  * [ ] It takes about 10s on ios for the pencil sounds to come in
   * [ ] Sometimes it doesn't register clicks on color changes
 * [ ] Controls
   * [ ] Brush type (blend mode with previous drawing)
