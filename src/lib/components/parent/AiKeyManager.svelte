@@ -219,6 +219,7 @@
       class:error={keyStatus === 'error'}
       class:success={keyStatus === 'success'}
       role={keyStatus === 'error' ? 'alert' : 'status'}
+      aria-live="polite"
     >
       {keyMessage}
     </p>
