@@ -27,9 +27,10 @@
     "android:verify": "node scripts/android-verify.mjs",
     "android:open": "start \"\" \"android\\app\\build\\outputs\\bundle\\release\"",
     "android:clean": "cd android && .\\gradlew clean",
-    "test": "playwright test",
+    "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
+    "test:e2e": "playwright test",
     "test:ui": "playwright test --ui",
     "test:headed": "cross-env SLOWMO=500 playwright test --headed",
     "test:debug": "playwright test --debug"
