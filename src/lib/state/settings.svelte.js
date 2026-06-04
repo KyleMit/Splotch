@@ -25,47 +25,71 @@ const ADVANCED_CONTROLS_KEY = 'splotch-advanced-controls';
 const DRAWER_OPEN_KEY = 'splotch-drawer-open';
 const ADMIN_LINK_VISIBLE_KEY = 'splotch-admin-link-visible';
 
-export const settings = $state({
-  soundEnabled: readBool(SOUND_KEY, true),
-  saveOnDeleteEnabled: readBool(SAVE_ON_DELETE_KEY, false),
-  screenshotEnabled: readBool(SCREENSHOT_KEY, true),
-  undoButtonEnabled: readBool(UNDO_KEY, true),
-  strokeWidthControlEnabled: readBool(STROKE_CTRL_KEY, true),
-  eraserEnabled: readBool(ERASER_KEY, true),
-  coloringBookEnabled: readBool(COLORING_BOOK_KEY, true),
-  aiImageEnabled: readBool(AI_IMAGE_KEY, true),
-  aiCustomizationEnabled: readBool(AI_CUSTOMIZATION_KEY, true),
+// Single source of truth for every boolean setting: live-state property name ->
+// [localStorage key, default]. The initial $state, the per-setting setters, and
+// reloadSettings() are all generated from this table, so adding a boolean
+// setting means adding one entry here (plus a one-line named-export wrapper so
+// the setter keeps its stable import name — ES modules can't generate those).
+// Forgetting the reloadSettings entry — the bug this table exists to prevent —
+// is now impossible.
+const BOOL_SETTINGS = {
+  soundEnabled: [SOUND_KEY, true],
+  saveOnDeleteEnabled: [SAVE_ON_DELETE_KEY, false],
+  screenshotEnabled: [SCREENSHOT_KEY, true],
+  undoButtonEnabled: [UNDO_KEY, true],
+  strokeWidthControlEnabled: [STROKE_CTRL_KEY, true],
+  eraserEnabled: [ERASER_KEY, true],
+  coloringBookEnabled: [COLORING_BOOK_KEY, true],
+  aiImageEnabled: [AI_IMAGE_KEY, true],
+  aiCustomizationEnabled: [AI_CUSTOMIZATION_KEY, true],
   // When on, a finished AI image is dropped straight into the photo gallery
   // (a download on the web) along with the child's drawing — no Download button,
   // and the freed space goes to a larger preview.
-  autoSaveAiEnabled: readBool(AUTO_SAVE_AI_KEY, false),
-  aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
-  // Parent-supplied Gemini API key (BYOK). Held in memory only; hydrated from
-  // secure storage on boot by hydrateApiKey(). Empty until then / unless set.
-  aiUserApiKey: '',
+  autoSaveAiEnabled: [AUTO_SAVE_AI_KEY, false],
   // Master switch for the collapsible action drawer. When on, the chevron
   // toggle shows and the drawer can be opened/closed; when off, the controls
   // are always visible and the chevron is hidden.
-  advancedControlsEnabled: readBool(ADVANCED_CONTROLS_KEY, true),
+  advancedControlsEnabled: [ADVANCED_CONTROLS_KEY, true],
   // Remembered open/closed state of the drawer (defaults closed).
-  drawerOpen: readBool(DRAWER_OPEN_KEY, false),
+  drawerOpen: [DRAWER_OPEN_KEY, false],
   // Whether the hidden link to the /admin console is shown in the About tab.
   // Unlocked by the version-tap easter egg and kept visible for anyone who has
   // an admin_session cookie; reset to hidden on logout / failed login / leaving
   // the admin page without signing in (see /admin and AboutTab).
-  adminLinkVisible: readBool(ADMIN_LINK_VISIBLE_KEY, false)
+  adminLinkVisible: [ADMIN_LINK_VISIBLE_KEY, false]
+};
+
+export const settings = $state({
+  ...Object.fromEntries(
+    Object.entries(BOOL_SETTINGS).map(([prop, [key, def]]) => [prop, readBool(key, def)])
+  ),
+  // String setting (special case): the managed-access token, persisted verbatim.
+  aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
+  // Parent-supplied Gemini API key (BYOK). Held in memory only; hydrated from
+  // secure storage on boot by hydrateApiKey(). Empty until then / unless set.
+  aiUserApiKey: ''
 });
 
-export function setSound(v) { settings.soundEnabled = v; writeBool(SOUND_KEY, v); }
-export function setSaveOnDelete(v) { settings.saveOnDeleteEnabled = v; writeBool(SAVE_ON_DELETE_KEY, v); }
-export function setScreenshot(v) { settings.screenshotEnabled = v; writeBool(SCREENSHOT_KEY, v); }
-export function setUndoButton(v) { settings.undoButtonEnabled = v; writeBool(UNDO_KEY, v); }
-export function setStrokeWidthControl(v) { settings.strokeWidthControlEnabled = v; writeBool(STROKE_CTRL_KEY, v); }
-export function setEraser(v) { settings.eraserEnabled = v; writeBool(ERASER_KEY, v); }
-export function setColoringBook(v) { settings.coloringBookEnabled = v; writeBool(COLORING_BOOK_KEY, v); }
-export function setAiImage(v) { settings.aiImageEnabled = v; writeBool(AI_IMAGE_KEY, v); }
-export function setAiCustomization(v) { settings.aiCustomizationEnabled = v; writeBool(AI_CUSTOMIZATION_KEY, v); }
-export function setAutoSaveAi(v) { settings.autoSaveAiEnabled = v; writeBool(AUTO_SAVE_AI_KEY, v); }
+// Build a setter that updates the live value and persists it to localStorage.
+function makeBoolSetter(prop) {
+  const [key] = BOOL_SETTINGS[prop];
+  return (v) => { settings[prop] = v; writeBool(key, v); };
+}
+
+export const setSound = makeBoolSetter('soundEnabled');
+export const setSaveOnDelete = makeBoolSetter('saveOnDeleteEnabled');
+export const setScreenshot = makeBoolSetter('screenshotEnabled');
+export const setUndoButton = makeBoolSetter('undoButtonEnabled');
+export const setStrokeWidthControl = makeBoolSetter('strokeWidthControlEnabled');
+export const setEraser = makeBoolSetter('eraserEnabled');
+export const setColoringBook = makeBoolSetter('coloringBookEnabled');
+export const setAiImage = makeBoolSetter('aiImageEnabled');
+export const setAiCustomization = makeBoolSetter('aiCustomizationEnabled');
+export const setAutoSaveAi = makeBoolSetter('autoSaveAiEnabled');
+export const setAdvancedControls = makeBoolSetter('advancedControlsEnabled');
+export const setDrawerOpen = makeBoolSetter('drawerOpen');
+export const setAdminLinkVisible = makeBoolSetter('adminLinkVisible');
+
 export function setAiAccessToken(v) { settings.aiAccessToken = v; writeString(AI_ACCESS_TOKEN_KEY, v); }
 // Update the live value immediately (so the UI reacts at once), then persist to
 // secure storage. Returns the persistence promise so callers can await it.
@@ -73,28 +97,15 @@ export function setAiUserApiKey(v) {
   settings.aiUserApiKey = v;
   return v ? saveApiKey(v) : clearApiKey();
 }
-export function setAdvancedControls(v) { settings.advancedControlsEnabled = v; writeBool(ADVANCED_CONTROLS_KEY, v); }
-export function setDrawerOpen(v) { settings.drawerOpen = v; writeBool(DRAWER_OPEN_KEY, v); }
-export function setAdminLinkVisible(v) { settings.adminLinkVisible = v; writeBool(ADMIN_LINK_VISIBLE_KEY, v); }
 
 // Re-read every persisted setting into the live store. Used after the durable
 // storage layer recovers values that the native WebView had evicted (see
 // hydrateDurableStorage in storage.js). A no-op visually when nothing changed.
 export function reloadSettings() {
-  settings.soundEnabled = readBool(SOUND_KEY, settings.soundEnabled);
-  settings.saveOnDeleteEnabled = readBool(SAVE_ON_DELETE_KEY, settings.saveOnDeleteEnabled);
-  settings.screenshotEnabled = readBool(SCREENSHOT_KEY, settings.screenshotEnabled);
-  settings.undoButtonEnabled = readBool(UNDO_KEY, settings.undoButtonEnabled);
-  settings.strokeWidthControlEnabled = readBool(STROKE_CTRL_KEY, settings.strokeWidthControlEnabled);
-  settings.eraserEnabled = readBool(ERASER_KEY, settings.eraserEnabled);
-  settings.coloringBookEnabled = readBool(COLORING_BOOK_KEY, settings.coloringBookEnabled);
-  settings.aiImageEnabled = readBool(AI_IMAGE_KEY, settings.aiImageEnabled);
-  settings.aiCustomizationEnabled = readBool(AI_CUSTOMIZATION_KEY, settings.aiCustomizationEnabled);
-  settings.autoSaveAiEnabled = readBool(AUTO_SAVE_AI_KEY, settings.autoSaveAiEnabled);
+  for (const [prop, [key]] of Object.entries(BOOL_SETTINGS)) {
+    settings[prop] = readBool(key, settings[prop]);
+  }
   settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);
-  settings.advancedControlsEnabled = readBool(ADVANCED_CONTROLS_KEY, settings.advancedControlsEnabled);
-  settings.drawerOpen = readBool(DRAWER_OPEN_KEY, settings.drawerOpen);
-  settings.adminLinkVisible = readBool(ADMIN_LINK_VISIBLE_KEY, settings.adminLinkVisible);
 }
 
 // Pull the saved Gemini key out of secure storage into the live store on boot.

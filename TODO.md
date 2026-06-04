@@ -19,27 +19,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ---
 
-## 6. Replace the triplicated settings definitions with a descriptor table
-
-**Problem:** Each of the ~13 boolean settings is written three times — in the `$state`
-initializer, in a hand-written `setX` setter, and in `reloadSettings()`. Adding a setting
-means editing three places; forgetting the `reloadSettings` entry means the setting
-silently fails to recover after a native WebView eviction, with nothing to catch it.
-
-**Affected files:**
-- `src/lib/state/settings.svelte.js:28-98`
-
-**Approach:** Define a descriptor table, e.g. `const BOOL_SETTINGS = { soundEnabled:
-[SOUND_KEY, true], … }`, and generate the initial `$state`, the setters, and the
-`reloadSettings` loop from it. Keep `aiUserApiKey` (secure-storage-backed) and
-`aiAccessToken` as explicit special cases.
-
-**Acceptance criteria:** all settings read/write/persist and reload exactly as before;
-adding a new boolean setting requires editing exactly one place; settings unit tests
-pass under `npm run test:unit`.
-
----
-
 ## 7. Parallelize durable-storage hydration
 
 **Problem:** `hydrateDurableStorage` awaits `Preferences.get` (and sometimes `set`) one
