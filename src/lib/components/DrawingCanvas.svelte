@@ -4,7 +4,8 @@
     initDrawingCanvas,
     setColor,
     setStrokeWidth,
-    setEraserMode
+    setEraserMode,
+    getCanvasRect
   } from '$lib/drawing/engine.js';
   import { colors } from '$lib/state/colors.svelte.js';
   import { toolState } from '$lib/state/tool.svelte.js';
@@ -14,7 +15,6 @@
   import { playDrawSound, stopDrawSound } from '$lib/audio/drawingSound.js';
 
   let canvasEl;
-  let containerEl;
 
   // Bubble that previews the eraser footprint at the pointer while erasing.
   let eraserCursor = $state({ visible: false, x: 0, y: 0 });
@@ -22,8 +22,10 @@
   const eraserSizePx = $derived(getEraserWidthPx(strokeState.eraserSize));
 
   function updateEraserCursor(e) {
-    if (!toolState.eraser || !containerEl) return;
-    const rect = containerEl.getBoundingClientRect();
+    if (!toolState.eraser) return;
+    // The canvas fills the container, so its cached client rect shares the
+    // container's origin — reuse it instead of forcing another reflow per move.
+    const rect = getCanvasRect();
     eraserCursor.x = e.clientX - rect.left;
     eraserCursor.y = e.clientY - rect.top;
     eraserCursor.visible = true;
@@ -75,7 +77,7 @@
   });
 </script>
 
-<div class="canvas-container" bind:this={containerEl}>
+<div class="canvas-container">
   <img
     class="coloring-overlay"
     id="coloringOverlay"

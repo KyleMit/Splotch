@@ -18,6 +18,13 @@ let onDrawStopCallback = null;
 let virtualCanvas = null;
 let virtualCtx = null;
 
+// Cached canvas geometry so the pointer hot path never calls
+// getBoundingClientRect() (each call forces a synchronous reflow). Recomputed
+// only on resize/scroll/orientation change — see refreshCanvasRect().
+let canvasRect = { left: 0, top: 0, width: 0, height: 0 };
+let rectScaleX = 1;
+let rectScaleY = 1;
+
 let undoStack = [];
 const MAX_UNDO_STACK_SIZE = 10;
 let canUndo = false;
@@ -73,16 +80,32 @@ function resizeCanvas() {
   ctx.drawImage(virtualCanvas, 0, 0);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+
+  refreshCanvasRect();
+}
+
+// Snapshot the canvas's client rect and the backing-pixel scale factors. Called
+// only off the hot path (resize/scroll/orientation), so the per-pointermove
+// pointerToCanvas() can stay reflow-free.
+function refreshCanvasRect() {
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  canvasRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+  rectScaleX = rect.width ? canvas.width / rect.width : 1;
+  rectScaleY = rect.height ? canvas.height / rect.height : 1;
 }
 
 function pointerToCanvas(e) {
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
   return {
-    x: (e.clientX - rect.left) * scaleX,
-    y: (e.clientY - rect.top) * scaleY
+    x: (e.clientX - canvasRect.left) * rectScaleX,
+    y: (e.clientY - canvasRect.top) * rectScaleY
   };
+}
+
+// The cached canvas client rect, so components can position pointer-following
+// UI (e.g. the eraser cursor) without their own per-move getBoundingClientRect.
+export function getCanvasRect() {
+  return canvasRect;
 }
 
 // Every drawing op must also land on the off-screen virtualCtx so the picture
@@ -288,6 +311,10 @@ export function initDrawingCanvas(canvasElement, options = {}) {
 
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
+  // Scroll/orientation move the canvas in the viewport without resizing it, so
+  // refresh the cached rect (left/top) without the full backing-store rebuild.
+  window.addEventListener('scroll', refreshCanvasRect, true);
+  window.addEventListener('orientationchange', refreshCanvasRect);
 
   canvas.addEventListener('pointerdown', startDrawing);
   canvas.addEventListener('pointermove', draw);
@@ -298,6 +325,8 @@ export function initDrawingCanvas(canvasElement, options = {}) {
   return {
     teardown() {
       window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('scroll', refreshCanvasRect, true);
+      window.removeEventListener('orientationchange', refreshCanvasRect);
       canvas.removeEventListener('pointerdown', startDrawing);
       canvas.removeEventListener('pointermove', draw);
       canvas.removeEventListener('pointerup', stopDrawing);
