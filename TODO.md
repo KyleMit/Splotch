@@ -23,25 +23,6 @@ Tasks are ordered by recommended attack order. Priority tags: **[High]** / **[Me
 ---
 
 
-## Task 6 — Cap the uploaded image size in image generation **[Low–Med, security]**
-
-**File:** `src/routes/api/generate-image/+server.js`
-
-**Problem:** The uploaded image blob is read fully into memory and base64-encoded
-(lines ~76-77) with no size limit. A valid-token holder could submit a very large
-payload (memory/DoS pressure).
-
-**Approach:** After confirming `imageFile instanceof Blob` (line ~54), reject when
-`imageFile.size` exceeds a sane cap (e.g. ~15 MB) with `throw error(413, ...)`.
-Optionally validate `imageFile.type` against an allowlist (`image/png`, `image/jpeg`,
-`image/webp`).
-
-**Acceptance criteria:**
-- Oversized uploads are rejected before the arrayBuffer read.
-- Normal drawings (well under the cap) still generate successfully.
-
----
-
 ## Task 7 — Fix the speed-tracking window in `draw()` **[Low, correctness/clarity]**
 
 **File:** `src/lib/drawing/engine.js`, `draw()` ~lines 174-183

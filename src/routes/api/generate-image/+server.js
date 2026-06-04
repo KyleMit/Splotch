@@ -40,6 +40,10 @@ async function recordUsage(token, { style, prompt }) {
 }
 
 const MODEL = 'gemini-2.5-flash-image';
+// A drawing screenshot is well under a megabyte; cap the upload so a valid-token
+// holder can't push us into a memory/DoS situation by base64-ing a huge blob.
+const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const DEFAULT_PROMPT =
   "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel.";
 
@@ -60,6 +64,14 @@ export async function POST({ request, platform }) {
   }
   if (!(imageFile instanceof Blob)) {
     throw error(400, 'Missing image');
+  }
+  if (imageFile.size > MAX_IMAGE_BYTES) {
+    throw error(413, 'Image is too large');
+  }
+  // An empty type is fine (some Blobs arrive without one); only reject a type
+  // that's present and not on the allowlist.
+  if (imageFile.type && !ALLOWED_IMAGE_TYPES.includes(imageFile.type)) {
+    throw error(415, 'Unsupported image type');
   }
   const effectiveKey = usingByok ? userKey : env.GEMINI_API_KEY;
   if (!effectiveKey) {
