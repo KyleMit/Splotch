@@ -4,6 +4,7 @@
   import Icon from './Icon.svelte';
   import { ui, closeAiResult } from '$lib/state/ui.svelte.js';
   import { settings } from '$lib/state/settings.svelte.js';
+  import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
 
   let dialogEl;
 
@@ -105,16 +106,6 @@
     }
   });
 
-  // Show/hide the native dialog.
-  $effect(() => {
-    if (!dialogEl) return;
-    if (ui.aiResultOpen) {
-      if (!dialogEl.open) dialogEl.showModal();
-    } else {
-      if (dialogEl.open) dialogEl.close();
-    }
-  });
-
   // ── Derived visuals ────────────────────────────────────────────────────
   // A friendly violet → blue → teal → green sweep as the dial fills — no
   // alarming red at the start. Two offset hues give the wedge a gradient
@@ -194,33 +185,6 @@
     }
   }
 
-  function handleDialogPointerDown(e) {
-    if (exiting) return;
-    const rect = dialogEl.getBoundingClientRect();
-    const inside =
-      e.clientX >= rect.left && e.clientX <= rect.right &&
-      e.clientY >= rect.top && e.clientY <= rect.bottom;
-    if (!inside) {
-      // Swallow the tap either way so it doesn't fall through to the canvas.
-      e.preventDefault();
-      e.stopPropagation();
-      // While the image is still generating, a tap outside must NOT dismiss the
-      // modal — that would throw away an in-flight request the child can't get
-      // back. Only the X closes the loading spinner. Once it's done (revealed or
-      // errored), tapping off to dismiss is fine.
-      if (!ui.aiGenerating) closeAiResult();
-    }
-  }
-
-  function handleDialogCancel(e) {
-    // Esc requests a dialog close; block it while generating so, like a backdrop
-    // tap, it can't discard an in-flight request. Only the X dismisses then.
-    if (ui.aiGenerating) e.preventDefault();
-  }
-
-  function handleDialogClose() {
-    if (ui.aiResultOpen) closeAiResult();
-  }
 </script>
 
 <dialog
@@ -228,9 +192,18 @@
   class:polaroid-mode={exiting}
   class:autosave={settings.autoSaveAiEnabled}
   bind:this={dialogEl}
-  onpointerdown={handleDialogPointerDown}
-  oncancel={handleDialogCancel}
-  onclose={handleDialogClose}
+  use:modalDialog={() => ({
+    open: ui.aiResultOpen,
+    onRequestClose: closeAiResult,
+    // While the image is still generating, neither a backdrop tap nor Esc may
+    // dismiss — that would throw away an in-flight request the child can't get
+    // back. Only the X closes the spinner; once revealed or errored, off-taps
+    // and Esc dismiss as usual.
+    allowDismiss: () => !ui.aiGenerating,
+    // During the polaroid send-off the modal is animating away; swallow stray
+    // backdrop taps without dismissing (the fly-out's end closes it).
+    blockBackdropAt: () => exiting
+  })}
   onanimationend={handleAnimationEnd}
 >
   <div class="ai-result-content">

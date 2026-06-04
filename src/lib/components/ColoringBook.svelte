@@ -8,31 +8,14 @@
     clearOverlay
   } from '$lib/state/coloringBook.svelte.js';
   import { isNative } from '$lib/platform.js';
+  import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
 
   // Only show books licensed for this platform. Native builds also strip the
   // web-only books' assets at build time (scripts/strip-native-assets.mjs), so
   // this filter and that strip must agree — both read the same `platforms`.
   const books = booksForPlatform(isNative() ? 'mobile' : 'web');
 
-  let dialogEl;
   let activeBook = $state(null);
-
-  $effect(() => {
-    if (!dialogEl) return;
-    if (ui.coloringBookOpen) {
-      if (!dialogEl.open) {
-        if (ui.coloringBookOrigin) {
-          const { x, y } = ui.coloringBookOrigin;
-          dialogEl.style.setProperty('--origin-x', `${x - window.innerWidth / 2}px`);
-          dialogEl.style.setProperty('--origin-y', `${y - window.innerHeight / 2}px`);
-        }
-        activeBook = null;
-        dialogEl.showModal();
-      }
-    } else {
-      if (dialogEl.open) dialogEl.close();
-    }
-  });
 
   function pickPage(src) {
     setOverlay(src);
@@ -44,32 +27,19 @@
     closeColoringBook();
   }
 
-  function handleDialogPointerDown(e) {
-    const rect = dialogEl.getBoundingClientRect();
-    const inside =
-      e.clientX >= rect.left && e.clientX <= rect.right &&
-      e.clientY >= rect.top && e.clientY <= rect.bottom;
-    if (!inside) {
-      closeColoringBook();
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  }
-
-  function handleDialogClose() {
-    if (ui.coloringBookOpen) closeColoringBook();
-    activeBook = null;
-  }
-
   const overlayActive = $derived(!!coloringBookState.overlayUrl);
 </script>
 
 <dialog
   class="coloring-book-modal modal-dialog modal-fly-in"
   id="coloring-book-dialog"
-  bind:this={dialogEl}
-  onpointerdown={handleDialogPointerDown}
-  onclose={handleDialogClose}
+  use:modalDialog={() => ({
+    open: ui.coloringBookOpen,
+    origin: ui.coloringBookOrigin,
+    onRequestClose: closeColoringBook,
+    onOpen: () => (activeBook = null),
+    onClose: () => (activeBook = null)
+  })}
 >
   <div class="coloring-book-content">
     <button class="coloring-book-close" aria-label="Close" onclick={closeColoringBook}>

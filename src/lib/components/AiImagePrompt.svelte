@@ -5,28 +5,10 @@
   import { getActiveOverlayImage } from '$lib/drawing/overlay.js';
   import { generateAiImage } from '$lib/drawing/aiImage.js';
   import { STYLE_NAMES } from '$lib/ai/styles.js';
+  import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
 
-  let dialogEl;
   let previewUrl = $state(null);
   let drawingBlob = null;
-
-  $effect(() => {
-    if (!dialogEl) return;
-    if (ui.aiPromptOpen) {
-      if (!dialogEl.open) {
-        if (ui.aiPromptOrigin) {
-          const { x, y } = ui.aiPromptOrigin;
-          dialogEl.style.setProperty('--origin-x', `${x - window.innerWidth / 2}px`);
-          dialogEl.style.setProperty('--origin-y', `${y - window.innerHeight / 2}px`);
-        }
-        loadPreview();
-        dialogEl.showModal();
-      }
-    } else {
-      if (dialogEl.open) dialogEl.close();
-      cleanupPreview();
-    }
-  });
 
   async function loadPreview() {
     cleanupPreview();
@@ -55,29 +37,17 @@
     closeAiPrompt();
     generateAiImage({ blob, style });
   }
-
-  function handleDialogPointerDown(e) {
-    const rect = dialogEl.getBoundingClientRect();
-    const inside =
-      e.clientX >= rect.left && e.clientX <= rect.right &&
-      e.clientY >= rect.top && e.clientY <= rect.bottom;
-    if (!inside) {
-      closeAiPrompt();
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  }
-
-  function handleDialogClose() {
-    if (ui.aiPromptOpen) closeAiPrompt();
-  }
 </script>
 
 <dialog
   class="ai-prompt-modal modal-dialog modal-fly-in"
-  bind:this={dialogEl}
-  onpointerdown={handleDialogPointerDown}
-  onclose={handleDialogClose}
+  use:modalDialog={() => ({
+    open: ui.aiPromptOpen,
+    origin: ui.aiPromptOrigin,
+    onRequestClose: closeAiPrompt,
+    onOpen: loadPreview,
+    onClose: cleanupPreview
+  })}
 >
   <div class="ai-prompt-content">
     <button class="ai-prompt-close" aria-label="Close" onclick={closeAiPrompt}>

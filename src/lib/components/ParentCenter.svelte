@@ -5,30 +5,10 @@
   import AiKeyManager from './parent/AiKeyManager.svelte';
   import SetupInstructions from './parent/SetupInstructions.svelte';
   import AboutTab from './parent/AboutTab.svelte';
+  import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
 
-  let dialogEl;
   let buttonEl;
   let activeTab = $state('settings');
-
-  // Drive each tab's open-time reset (re-detect platform, clear stale input,
-  // re-read install state) by handing the children the modal's open signal.
-  // They own their own reset logic so this stays a pure tab orchestrator.
-  $effect(() => {
-    if (!dialogEl) return;
-    if (ui.parentCenterOpen) {
-      if (!dialogEl.open) {
-        if (ui.parentCenterOrigin) {
-          const { x, y } = ui.parentCenterOrigin;
-          dialogEl.style.setProperty('--origin-x', `${x - window.innerWidth / 2}px`);
-          dialogEl.style.setProperty('--origin-y', `${y - window.innerHeight / 2}px`);
-        }
-        activeTab = 'settings';
-        dialogEl.showModal();
-      }
-    } else {
-      if (dialogEl.open) dialogEl.close();
-    }
-  });
 
   function openModal() {
     if (!buttonEl) return;
@@ -37,18 +17,6 @@
       x: (rect.left + rect.right) / 2,
       y: (rect.top + rect.bottom) / 2
     });
-  }
-
-  function handleBackdropClick(e) {
-    const rect = dialogEl.getBoundingClientRect();
-    const inside =
-      e.clientX >= rect.left && e.clientX <= rect.right &&
-      e.clientY >= rect.top && e.clientY <= rect.bottom;
-    if (!inside) closeParentCenter();
-  }
-
-  function handleDialogClose() {
-    if (ui.parentCenterOpen) closeParentCenter();
   }
 </script>
 
@@ -65,9 +33,12 @@
 <dialog
   class="parent-help-modal modal-dialog modal-fly-in"
   id="parentHelpModal"
-  bind:this={dialogEl}
-  onclick={handleBackdropClick}
-  onclose={handleDialogClose}
+  use:modalDialog={() => ({
+    open: ui.parentCenterOpen,
+    origin: ui.parentCenterOrigin,
+    onRequestClose: closeParentCenter,
+    onOpen: () => (activeTab = 'settings')
+  })}
 >
   <div class="parent-help-content">
     <button class="parent-help-close" aria-label="Close" onclick={closeParentCenter}>×</button>

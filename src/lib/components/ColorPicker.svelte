@@ -2,6 +2,7 @@
   import { ui, closeColorPicker } from '$lib/state/ui.svelte.js';
   import { pickCustomColor, colors } from '$lib/state/colors.svelte.js';
   import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine.js';
+  import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
 
   // Static palette grid. The original kept it in HTML; here it's a data-driven
   // {#each} so the template stays declarative and rows can be lazily hidden via
@@ -18,27 +19,9 @@
     { name: 'greys', colors: ['#ffffff', '#90A4AE', '#78909C', '#607D8B', '#546E7A', '#455A64', '#37474F', '#263238', '#1A1F24'] }
   ];
 
-  let dialogEl;
   let pickerEl;
   let hoveredHex = $state(null);
   let isTrackingDrag = false;
-
-  // Open/close the dialog in response to ui.colorPickerOpen.
-  $effect(() => {
-    if (!dialogEl) return;
-    if (ui.colorPickerOpen) {
-      if (!dialogEl.open) {
-        if (ui.colorPickerOrigin) {
-          const { x, y } = ui.colorPickerOrigin;
-          dialogEl.style.setProperty('--origin-x', `${x - window.innerWidth / 2}px`);
-          dialogEl.style.setProperty('--origin-y', `${y - window.innerHeight / 2}px`);
-        }
-        dialogEl.showModal();
-      }
-    } else {
-      if (dialogEl.open) dialogEl.close();
-    }
-  });
 
   function selectColor(hex) {
     pickCustomColor(hex);
@@ -85,11 +68,6 @@
     e.stopPropagation();
   }
 
-  function isPointInsideDialog(x, y) {
-    const rect = dialogEl.getBoundingClientRect();
-    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
-  }
-
   // Block-out zone around the gradient swatch so toddler mis-taps don't dismiss.
   function isPointInGradientBlockZone(x, y) {
     const gradientSwatch = document.querySelector('.gradient-swatch');
@@ -107,34 +85,21 @@
     const bottom = swatchCy < vh / 2 ? rect.bottom + padding : vh;
     return x >= left && x <= right && y >= top && y <= bottom;
   }
-
-  function handleDialogDown(e) {
-    if (!isPointInsideDialog(e.clientX, e.clientY)) {
-      if (isPointInGradientBlockZone(e.clientX, e.clientY)) {
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-      }
-      closeColorPicker();
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  }
-
-  function handleDialogClose() {
-    hoveredHex = null;
-    isTrackingDrag = false;
-    // Sync rune in case dialog was closed via Esc.
-    if (ui.colorPickerOpen) closeColorPicker();
-  }
 </script>
 
 <dialog
   id="color-picker"
   class="color-picker modal-dialog modal-fly-in"
-  bind:this={dialogEl}
-  onpointerdown={handleDialogDown}
-  onclose={handleDialogClose}
+  use:modalDialog={() => ({
+    open: ui.colorPickerOpen,
+    origin: ui.colorPickerOrigin,
+    onRequestClose: closeColorPicker,
+    blockBackdropAt: isPointInGradientBlockZone,
+    onClose: () => {
+      hoveredHex = null;
+      isTrackingDrag = false;
+    }
+  })}
 >
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div

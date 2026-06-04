@@ -19,36 +19,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ---
 
-## 3. Extract a shared `<Modal>` wrapper (and fix ParentCenter backdrop dismissal)
-
-**Problem:** Five components each reimplement the same dialog scaffolding: an open/close
-`$effect` calling `showModal()`/`close()`, the `--origin-x/--origin-y` transform math
-(`x - window.innerWidth / 2`, etc.), a verbatim backdrop hit-test rectangle, and an
-Esc-resync close handler. The duplication hides a real inconsistency: `ParentCenter`
-dismisses its backdrop with `onclick` (no `stopPropagation`), while the other four use
-`onpointerdown` + `preventDefault`/`stopPropagation` to stop the tap leaking to the
-canvas underneath — so a backdrop tap in ParentCenter can fall through to the drawing.
-
-**Affected files (all the repeated pattern):**
-- `src/lib/components/ColorPicker.svelte` (open effect ~27-41; backdrop ~88-91; close ~124-129)
-- `src/lib/components/ColoringBook.svelte` (~20-35; ~48-51; ~59-62)
-- `src/lib/components/ParentCenter.svelte` (~16-31; backdrop dismiss `onclick` at ~69)
-- `src/lib/components/AiImagePrompt.svelte` (~13-29; ~60-63; ~71-73)
-- `src/lib/components/AiImageResult.svelte` (~199-202 backdrop hit-test)
-
-**Approach:** Build a `<Modal>` wrapper (or a `useModalDialog(dialogEl, { open, origin,
-onDismiss })` action) that owns the show/close effect, the origin transform, the
-`onpointerdown` backdrop dismissal with `preventDefault`/`stopPropagation`, and the Esc
-re-sync. Each component supplies only its content and an `onDismiss` callback. Migrate
-all five, which also fixes the ParentCenter fall-through. Do this incrementally — migrate
-one component, verify, then the next.
-
-**Acceptance criteria:** all five dialogs open/close (button, backdrop, Esc) and animate
-from their origin exactly as before; a backdrop tap never reaches the canvas in any of
-them; no duplicated open/close/backdrop/Esc logic remains. `npm run test:e2e` passes.
-
----
-
 ## 4. Guard `localStorage` writes against exceptions
 
 **Problem:** The write helpers call `localStorage.setItem`/`removeItem` unguarded.
