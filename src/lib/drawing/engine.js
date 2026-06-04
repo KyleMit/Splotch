@@ -75,6 +75,30 @@ function pointerToCanvas(e) {
   };
 }
 
+// Every drawing op must also land on the off-screen virtualCtx so the picture
+// survives a resize (resizeCanvas replays it). Yield whichever contexts exist
+// so each op is written once instead of being hand-mirrored.
+function activeContexts() {
+  return virtualCtx ? [ctx, virtualCtx] : [ctx];
+}
+
+// The canvas backing a given context — their pixel dimensions differ, so
+// clearRect callers need the right one.
+function canvasFor(c) {
+  return c === ctx ? canvas : virtualCanvas;
+}
+
+function strokeSegment(c, ps, x, y) {
+  c.globalCompositeOperation = ps.erase ? 'destination-out' : 'source-over';
+  c.strokeStyle = ps.color;
+  c.lineWidth = ps.lineWidth;
+  c.beginPath();
+  c.moveTo(ps.x, ps.y);
+  c.lineTo(x, y);
+  c.stroke();
+  c.globalCompositeOperation = 'source-over';
+}
+
 export function releaseAllPointers() {
   if (!ctx) return;
   ctx.beginPath();
@@ -129,26 +153,16 @@ function startDrawing(e) {
   // there, only its (opaque) alpha matters.
   const op = eraserActive ? 'destination-out' : 'source-over';
 
-  ctx.globalCompositeOperation = op;
-  ctx.strokeStyle = currentColor;
-  ctx.fillStyle = currentColor;
-  ctx.beginPath();
-  ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.globalCompositeOperation = 'source-over';
-
-  if (virtualCtx) {
-    virtualCtx.globalCompositeOperation = op;
-    virtualCtx.strokeStyle = currentColor;
-    virtualCtx.fillStyle = currentColor;
-    virtualCtx.beginPath();
-    virtualCtx.arc(x, y, dotRadius, 0, Math.PI * 2);
-    virtualCtx.fill();
-    virtualCtx.beginPath();
-    virtualCtx.moveTo(x, y);
-    virtualCtx.globalCompositeOperation = 'source-over';
+  for (const c of activeContexts()) {
+    c.globalCompositeOperation = op;
+    c.strokeStyle = currentColor;
+    c.fillStyle = currentColor;
+    c.beginPath();
+    c.arc(x, y, dotRadius, 0, Math.PI * 2);
+    c.fill();
+    c.beginPath();
+    c.moveTo(x, y);
+    c.globalCompositeOperation = 'source-over';
   }
 
   if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0 });
@@ -182,26 +196,8 @@ function draw(e) {
   const windowTime = Math.max(now - pointerState.windowStartTime, 1);
   const speed = totalDistance / windowTime;
 
-  const op = pointerState.erase ? 'destination-out' : 'source-over';
-
-  ctx.globalCompositeOperation = op;
-  ctx.strokeStyle = pointerState.color;
-  ctx.lineWidth = pointerState.lineWidth;
-  ctx.beginPath();
-  ctx.moveTo(pointerState.x, pointerState.y);
-  ctx.lineTo(x, y);
-  ctx.stroke();
-  ctx.globalCompositeOperation = 'source-over';
-
-  if (virtualCtx) {
-    virtualCtx.globalCompositeOperation = op;
-    virtualCtx.strokeStyle = pointerState.color;
-    virtualCtx.lineWidth = pointerState.lineWidth;
-    virtualCtx.beginPath();
-    virtualCtx.moveTo(pointerState.x, pointerState.y);
-    virtualCtx.lineTo(x, y);
-    virtualCtx.stroke();
-    virtualCtx.globalCompositeOperation = 'source-over';
+  for (const c of activeContexts()) {
+    strokeSegment(c, pointerState, x, y);
   }
 
   pointerState.x = x;
@@ -253,12 +249,10 @@ export function undo() {
   if (!canUndo || undoStack.length === 0 || !canvas || !ctx) return;
 
   const snapshot = undoStack.pop();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(snapshot, 0, 0);
-
-  if (virtualCtx && virtualCanvas) {
-    virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
-    virtualCtx.drawImage(snapshot, 0, 0);
+  for (const c of activeContexts()) {
+    const target = canvasFor(c);
+    c.clearRect(0, 0, target.width, target.height);
+    c.drawImage(snapshot, 0, 0);
   }
 
   setCanvasEmptyState(scanCanvasIsEmpty());
@@ -313,9 +307,9 @@ export function setEraserMode(active) {
 
 export function clearCanvas() {
   saveUndoSnapshot();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (virtualCtx && virtualCanvas) {
-    virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
+  for (const c of activeContexts()) {
+    const target = canvasFor(c);
+    c.clearRect(0, 0, target.width, target.height);
   }
   setCanvasEmptyState(true);
 }
