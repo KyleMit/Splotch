@@ -24,7 +24,7 @@
     "android:emulator": "npm run cap:sync && cap run android --target Pixel_7_Pro_API_33",
     "android:live": "cap run android --target Pixel_7_Pro_API_33 --live-reload --port 5173",
     "android:bundle": "npm run cap:sync && cd android && .\\gradlew :app:bundleRelease",
-    "android:verify": "\"%JAVA_HOME%\\bin\\jarsigner\" -verify android/app/build/outputs/bundle/release/app-release.aab",
+    "android:verify": "node scripts/android-verify.mjs",
     "android:open": "start \"\" \"android\\app\\build\\outputs\\bundle\\release\"",
     "android:clean": "cd android && .\\gradlew clean",
     "test": "playwright test",

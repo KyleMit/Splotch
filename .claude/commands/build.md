@@ -30,8 +30,10 @@ currently supported (just Android for now).
    build into the native project and runs `gradlew :app:bundleRelease`. It is
    slow (minutes) — let it finish. If Gradle fails, surface the error and stop.
 
-4. **Verify the signature.** Run `npm run android:verify` and confirm it reports
-   the bundle as verified. If verification fails, surface it and stop.
+4. **Verify the signature.** Run `npm run android:verify`. This wraps `jarsigner`
+   in `scripts/android-verify.mjs`, which prints just `jar verified.` and exits 0
+   on success. On success that one line is all you'll see. If it fails, the script
+   dumps the full jarsigner output and exits non-zero — surface that and stop.
 
 5. **Report.** Tell the user:
    - the version + versionCode of the built `.aab` and its path
