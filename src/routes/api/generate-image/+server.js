@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import { getStore } from '@netlify/blobs';
 import { STYLE_SUFFIXES } from '$lib/ai/styles.js';
 import { isAllowedToken } from '$lib/server/tokens.js';
+import { rateLimit } from '$lib/server/rateLimit.js';
 
 /**
  * Record that a token generated an image, so we can spot a token going rogue.
@@ -40,6 +41,14 @@ async function recordUsage(token, { style, prompt }) {
 }
 
 const MODEL = 'gemini-2.5-flash-image';
+// Burst guardrail for managed (non-BYOK) tokens, which spend *our* Gemini quota.
+// A real generation takes several seconds, so back-to-back human use stays well
+// under this; the cap only blunts a leaked token being hammered in a tight loop
+// before we notice the usage tally and pull it. Per-instance like the verify
+// limiters (resets on cold start) — a cost guardrail, not a hard boundary. BYOK
+// requests bill the parent's own key and are intentionally not throttled.
+const GENERATE_LIMIT = 15;
+const GENERATE_WINDOW_MS = 60_000;
 // A drawing screenshot is well under a megabyte; cap the upload so a valid-token
 // holder can't push us into a memory/DoS situation by base64-ing a huge blob.
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
@@ -61,6 +70,20 @@ export async function POST({ request, platform }) {
 
   if (!usingByok && (typeof token !== 'string' || !(await isAllowedToken(token)))) {
     throw error(403, 'Invalid access token');
+  }
+  // Throttle valid managed tokens per token (so a leaked one can't be hammered
+  // from many IPs to burn our quota). BYOK runs on the parent's own key, so skip.
+  if (!usingByok) {
+    const { limited, retryAfter } = rateLimit(`generate-image:${token}`, {
+      limit: GENERATE_LIMIT,
+      windowMs: GENERATE_WINDOW_MS
+    });
+    if (limited) {
+      return new Response('Too many requests. Please wait a moment.', {
+        status: 429,
+        headers: { 'Retry-After': String(retryAfter) }
+      });
+    }
   }
   if (!(imageFile instanceof Blob)) {
     throw error(400, 'Missing image');

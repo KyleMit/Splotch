@@ -19,28 +19,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ---
 
-## 8. Add rate limiting to `/api/generate-image`
-
-**Problem:** `verify-key` and `verify-access-code` are rate-limited, but
-`generate-image` — the most expensive endpoint, which spends *your* Gemini quota for
-managed (non-BYOK) tokens — is not. A leaked managed token can be hammered with no
-per-token/per-IP throttle until noticed via the Blobs usage tally and manually pulled.
-
-**Affected files:**
-- `src/routes/api/generate-image/+server.js`
-- `src/lib/server/rateLimit.js` (existing limiter to reuse)
-
-**Approach:** Apply `rateLimit()` keyed by token (and/or IP) on the generate path, with a
-tighter limit than the verify endpoints. Only throttle managed-token requests if BYOK
-requests should stay unlimited (decide and document). Note the limiter is per-instance on
-Netlify — this is a cost guardrail, not a hard security boundary.
-
-**Acceptance criteria:** normal usage is unaffected; rapid repeated calls with one token
-get throttled with a clear status; `tests/generate-image.spec.js` still passes (extend it
-to cover the throttle if practical).
-
----
-
 ## 9. Don't store the raw admin secret in the session cookie
 
 **Problem:** The `admin_session` cookie is set to `env.ADMIN_ACCESS_TOKEN` verbatim with a
