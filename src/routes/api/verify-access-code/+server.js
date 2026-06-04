@@ -1,5 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { isAllowedToken } from '$lib/server/tokens.js';
+import { rateLimit } from '$lib/server/rateLimit.js';
 
 /**
  * Verify a secret access code against the managed allowlist. This is the
@@ -7,7 +8,17 @@ import { isAllowedToken } from '$lib/server/tokens.js';
  * bringing their own. Body: { code }. On a match we echo the code back as the
  * canonical access code for the client to persist. Returns { ok, accessCode? }.
  */
-export async function POST({ request }) {
+export async function POST({ request, getClientAddress }) {
+  // Throttle per IP: this endpoint is an unauthenticated oracle for guessing
+  // allowlisted tokens, so cap brute-force bursts before checking the code.
+  const { limited, retryAfter } = rateLimit(`verify-access-code:${getClientAddress()}`);
+  if (limited) {
+    return json(
+      { ok: false, error: 'Too many attempts. Please wait a moment.' },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+    );
+  }
+
   let body;
   try {
     body = await request.json();

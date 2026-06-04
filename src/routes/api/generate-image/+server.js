@@ -11,9 +11,16 @@ import { isAllowedToken } from '$lib/server/tokens.js';
  * tally in Netlify Blobs (dashboard → Blobs → "ai-usage") that we can audit
  * later and use to decide which token to pull from ALLOWED_TOKENS_LIST.
  */
+// Show only the last 4 chars of a token in logs — the full secret should never
+// land in the function log or any downstream log drain.
+function maskToken(token) {
+  const t = String(token ?? '');
+  return t.length <= 4 ? '****' : `…${t.slice(-4)}`;
+}
+
 async function recordUsage(token, { style, prompt }) {
   const now = new Date().toISOString();
-  console.log(`[ai-usage] token=${token} style=${style || 'none'} prompt=${JSON.stringify(prompt)} at=${now}`);
+  console.log(`[ai-usage] token=${maskToken(token)} style=${style || 'none'} prompt=${JSON.stringify(prompt)} at=${now}`);
 
   try {
     const store = getStore('ai-usage');
@@ -36,7 +43,7 @@ const MODEL = 'gemini-2.5-flash-image';
 const DEFAULT_PROMPT =
   "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel.";
 
-export async function POST({ request }) {
+export async function POST({ request, platform }) {
   const form = await request.formData();
   const token = form.get('token');
   const apiKey = form.get('apiKey');
@@ -70,7 +77,12 @@ export async function POST({ request }) {
   if (usingByok) {
     console.log(`[ai-usage] byok style=${style || 'none'} at=${new Date().toISOString()}`);
   } else {
-    await recordUsage(token, { style, prompt: finalPrompt });
+    // The synchronous audit log inside recordUsage runs immediately; only the
+    // Blobs write is async, and we don't make the image wait on it. waitUntil
+    // keeps the function alive long enough to finish on Netlify; without it
+    // (local dev) it's a fire-and-forget whose errors are caught internally.
+    const usage = recordUsage(token, { style, prompt: finalPrompt });
+    if (platform?.context?.waitUntil) platform.context.waitUntil(usage);
   }
 
   const inputBytes = new Uint8Array(await imageFile.arrayBuffer());
