@@ -276,7 +276,10 @@ function saveUndoSnapshot() {
   const snapshotCtx = snapshot.getContext('2d');
   snapshotCtx.drawImage(canvas, 0, 0);
 
-  undoStack.push(snapshot);
+  // Capture emptiness alongside the pixels. This runs before the stroke that
+  // prompted the snapshot dirties the canvas, so `canvasEmpty` exactly describes
+  // these pixels — letting undo() restore the empty state without re-scanning.
+  undoStack.push({ image: snapshot, wasEmpty: canvasEmpty });
   if (undoStack.length > MAX_UNDO_STACK_SIZE) undoStack.shift();
 
   canUndo = true;
@@ -290,10 +293,10 @@ export function undo() {
   for (const c of activeContexts()) {
     const target = canvasFor(c);
     c.clearRect(0, 0, target.width, target.height);
-    c.drawImage(snapshot, 0, 0);
+    c.drawImage(snapshot.image, 0, 0);
   }
 
-  setCanvasEmptyState(scanCanvasIsEmpty());
+  setCanvasEmptyState(snapshot.wasEmpty);
 
   canUndo = undoStack.length > 0;
   if (onUndoStateChange) onUndoStateChange(canUndo);
@@ -301,7 +304,11 @@ export function undo() {
 
 export function initDrawingCanvas(canvasElement, options = {}) {
   canvas = canvasElement;
-  ctx = canvas.getContext('2d', { willReadFrequently: false });
+  // willReadFrequently keeps the backing store CPU-side so the empty-check
+  // getImageData (on erase-end) is a cheap memcpy instead of a synchronous
+  // GPU→CPU texture readback. This canvas is read for empty-checks/snapshots
+  // and never WebGL-composited, so a CPU backing store is the right tradeoff.
+  ctx = canvas.getContext('2d', { willReadFrequently: true });
 
   onDrawSoundCallback = options.onDrawSound || null;
   onDrawStopCallback = options.onDrawStop || null;

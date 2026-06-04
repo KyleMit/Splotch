@@ -19,30 +19,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ---
 
-## 5. Avoid the full-canvas `getImageData` scan on every erase-end / undo
-
-**Problem:** `scanCanvasIsEmpty()` calls `getImageData(0, 0, canvas.width,
-canvas.height)` over the entire canvas and loops every 4th byte. It's invoked from
-`stopDrawing` whenever the user was erasing and from `undo()`. The 2D context is created
-with `willReadFrequently: false`, so the GPU→CPU readback hits the slow path, and the JS
-scan is O(pixels) on the main thread — a perceptible hitch on stroke-end on a large
-canvas.
-
-**Affected files:**
-- `src/lib/drawing/engine.js:45` — `scanCanvasIsEmpty()`
-- `src/lib/drawing/engine.js` — the `getContext('2d', …)` call (around the `ctx` setup, ~line 281)
-
-**Approach:** Either set `willReadFrequently: true` on the context (it is read for empty
-checks/snapshots and never WebGL-composited), or make the readback cheap by drawing a
-downscaled copy into a small offscreen canvas and calling `getImageData` on that. Measure
-before/after if practical.
-
-**Acceptance criteria:** empty-canvas detection (clear-button enable/disable, undo state)
-remains correct; no full-resolution `getImageData` runs synchronously on stroke-end for
-typical canvases. `npm run test:e2e` passes.
-
----
-
 ## 6. Replace the triplicated settings definitions with a descriptor table
 
 **Problem:** Each of the ~13 boolean settings is written three times — in the `$state`
