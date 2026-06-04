@@ -66,6 +66,11 @@
     e.stopPropagation();
   }
 
+  function handleSwatchCancel(e) {
+    releaseAllPointers();
+    e.stopPropagation();
+  }
+
   // Each swatch is tagged with its trim rank (0 = first to be hidden) so the
   // style block can drop swatches by priority at each breakpoint. Hiding is
   // done entirely in CSS media queries — no JS measurement — so the layout is
@@ -92,8 +97,8 @@
       style="background-color: {hex}; {!toolState.eraser && colors.activeSwatch === hex ? `box-shadow: ${ringShadow(hex)}; --ring-color: ${getRingColor(hex)};` : ''}"
       aria-label={label}
       onpointerup={(e) => handleSwatchUp(e, hex)}
-      onpointerdown={(e) => { releaseAllPointers(); e.preventDefault(); e.stopPropagation(); }}
-      onpointercancel={(e) => { releaseAllPointers(); e.stopPropagation(); }}
+      onpointerdown={handlePaletteDown}
+      onpointercancel={handleSwatchCancel}
       bind:this={swatchEls[hex]}
     ></button>
   {/each}
@@ -105,8 +110,8 @@
     aria-label="Custom Color"
     style={!toolState.eraser && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected ? `box-shadow: ${gradientRingShadow(colors.customColor)};` : ''}
     onpointerup={handleCustomUp}
-    onpointerdown={(e) => { releaseAllPointers(); e.preventDefault(); e.stopPropagation(); }}
-    onpointercancel={(e) => { releaseAllPointers(); e.stopPropagation(); }}
+    onpointerdown={handlePaletteDown}
+    onpointercancel={handleSwatchCancel}
     bind:this={swatchEls[CUSTOM_SWATCH]}
   ><Icon name="palette" class="palette-icon" aria-hidden="true" /></button>
 </div>
