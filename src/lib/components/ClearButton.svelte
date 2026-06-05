@@ -1,10 +1,10 @@
 <script>
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
-  import { clearCanvas } from '$lib/drawing/engine.js';
-  import { releaseAllPointers } from '$lib/drawing/engine.js';
-  import { saveDrawingIfEnabled } from '$lib/drawing/saveOnDelete.js';
-  import { stopDrawSound } from '$lib/audio/drawingSound.js';
+  import { clearCanvas } from '$lib/drawing/engine';
+  import { releaseAllPointers } from '$lib/drawing/engine';
+  import { saveDrawingIfEnabled } from '$lib/drawing/saveOnDelete';
+  import { stopDrawSound } from '$lib/audio/drawingSound';
 
   let containerEl;
   let buttonEl;

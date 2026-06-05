@@ -5,7 +5,7 @@
   import AiKeyManager from './parent/AiKeyManager.svelte';
   import SetupInstructions from './parent/SetupInstructions.svelte';
   import AboutTab from './parent/AboutTab.svelte';
-  import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
+  import { modalDialog } from '$lib/actions/modalDialog.svelte';
 
   let buttonEl;
   let activeTab = $state('settings');

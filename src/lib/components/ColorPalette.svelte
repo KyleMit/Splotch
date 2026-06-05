@@ -7,7 +7,7 @@
     selectPaletteColor,
     selectCustomSwatch
   } from '$lib/state/colors.svelte';
-  import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine.js';
+  import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine';
   import { openColorPicker } from '$lib/state/ui.svelte';
   import { toolState, selectPen } from '$lib/state/tool.svelte';
   import { layout } from '$lib/state/layout.svelte';

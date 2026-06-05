@@ -8,7 +8,7 @@
     undo,
     clearCanvas,
     isCanvasEmpty
-  } from '$lib/drawing/engine.js';
+  } from '$lib/drawing/engine';
 
   let canvasEl;
   let wrapperEl;

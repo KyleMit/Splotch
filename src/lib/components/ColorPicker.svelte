@@ -1,9 +1,9 @@
 <script>
   import { ui, closeColorPicker } from '$lib/state/ui.svelte';
   import { pickCustomColor, colors } from '$lib/state/colors.svelte';
-  import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine.js';
+  import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine';
   import { layout } from '$lib/state/layout.svelte';
-  import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
+  import { modalDialog } from '$lib/actions/modalDialog.svelte';
 
   // Static palette grid. The original kept it in HTML; here it's a data-driven
   // {#each} so the template stays declarative and rows can be lazily hidden via

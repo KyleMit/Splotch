@@ -1,33 +1,36 @@
-import { exportCanvasBlob, getActiveCanvas } from './engine.js';
-import { getActiveOverlayImage } from './overlay.js';
+import { exportCanvasBlob, getActiveCanvas } from './engine';
+import { getActiveOverlayImage } from './overlay';
 import { isNative, getPlatform } from '$lib/platform';
 
 function timestamp() {
   const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
+  const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
 }
 
 const ALBUM_NAME = 'Splotch';
 
-function blobToDataUrl(blob) {
+function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
+    reader.onloadend = () => resolve(reader.result as string);
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
 }
 
-async function findAlbumId(Media, name) {
+// `Media` is the dynamically-imported @capacitor-community/media plugin; its
+// album/photo shapes aren't worth re-declaring here, so it's loosely typed.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function findAlbumId(Media: any, name: string): Promise<string | undefined> {
   const { albums } = await Media.getAlbums();
-  return albums.find((a) => a.name === name)?.identifier ?? null;
+  return albums.find((a: { name: string; identifier: string }) => a.name === name)?.identifier;
 }
 
 // Native: drop the PNG straight into the device photo library. Android requires
 // an album identifier, so we tuck drawings into a "Splotch" album (creating it
 // once); iOS saves to the camera roll with add-only permission.
-async function saveToGallery(blob, baseName = 'splotch') {
+async function saveToGallery(blob: Blob, baseName = 'splotch') {
   const { Media } = await import('@capacitor-community/media');
   const dataUrl = await blobToDataUrl(blob);
 
@@ -46,7 +49,7 @@ async function saveToGallery(blob, baseName = 'splotch') {
 // Persist a PNG blob: native drops it into the photo gallery, the web triggers a
 // file download. No polaroid animation — for silent/background saves (e.g. the
 // AI auto-save), where the caller owns its own feedback.
-export async function saveImageBlob(blob, baseName = 'splotch') {
+export async function saveImageBlob(blob: Blob | null, baseName = 'splotch') {
   if (!blob) return;
   if (isNative()) {
     try {
@@ -93,7 +96,7 @@ export async function saveScreenshot() {
 
 const POLAROID_DURATION_MS = 1900;
 
-function playPolaroidAnimation(imageUrl) {
+function playPolaroidAnimation(imageUrl: string) {
   const overlay = document.createElement('div');
   overlay.className = 'polaroid-overlay';
 

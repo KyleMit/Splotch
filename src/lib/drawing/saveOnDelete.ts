@@ -1,10 +1,10 @@
 import { settings } from '$lib/state/settings.svelte';
-import { exportCanvasBlob, isCanvasEmpty } from './engine.js';
-import { getActiveOverlayImage } from './overlay.js';
+import { exportCanvasBlob, isCanvasEmpty } from './engine';
+import { getActiveOverlayImage } from './overlay';
 
 function timestamp() {
   const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
+  const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
 }
 

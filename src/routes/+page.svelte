@@ -9,7 +9,7 @@
   import ParentCenter from '$lib/components/ParentCenter.svelte';
   import AiImagePrompt from '$lib/components/AiImagePrompt.svelte';
   import AiImageResult from '$lib/components/AiImageResult.svelte';
-  import { initPWAUpdates } from '$lib/pwa/updates.js';
+  import { initPWAUpdates } from '$lib/pwa/updates';
   import { captureAiAccessTokenFromUrl, reloadSettings, hydrateApiKey } from '$lib/state/settings.svelte';
   import { reloadStrokeWidth } from '$lib/state/strokeWidth.svelte';
   import { hydrateDurableStorage } from '$lib/storage';

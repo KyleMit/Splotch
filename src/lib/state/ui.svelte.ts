@@ -85,7 +85,7 @@ function swapObjectUrl(prev: string | null, next: string | null = null): string 
 // Open the result modal in its loading state. `previewUrl` is an object URL of
 // the child's own drawing — shown blurred behind the progress dial while the
 // AI image is being generated.
-export function startAiGeneration(previewUrl: string) {
+export function startAiGeneration(previewUrl: string | null) {
   ui.aiPreviewUrl = swapObjectUrl(ui.aiPreviewUrl, previewUrl);
   ui.aiResultUrl = swapObjectUrl(ui.aiResultUrl);
   ui.aiError = false;

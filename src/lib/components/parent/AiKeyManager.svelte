@@ -10,7 +10,7 @@
     setAiAccessToken,
     setAiUserApiKey
   } from '$lib/state/settings.svelte';
-  import { apiUrl } from '$lib/api.js';
+  import { apiUrl } from '$lib/api';
   import { getPlatform } from '$lib/platform';
 
   // `open` flips true when the Parent Center modal opens; we use it to clear the

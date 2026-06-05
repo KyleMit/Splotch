@@ -25,13 +25,23 @@
 //                   still swallowed; Esc is preventDefault'd).
 //   blockBackdropAt (x, y) => boolean positional veto for backdrop dismissal only:
 //                   return true to swallow a tap in that region without dismissing.
-export function modalDialog(node, getOptions) {
-  function isInsideDialog(x, y) {
+interface ModalOptions {
+  open: boolean;
+  onRequestClose?: () => void;
+  origin?: { x: number; y: number } | null;
+  onOpen?: () => void;
+  onClose?: () => void;
+  allowDismiss?: () => boolean;
+  blockBackdropAt?: (x: number, y: number) => boolean;
+}
+
+export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOptions) {
+  function isInsideDialog(x: number, y: number) {
     const r = node.getBoundingClientRect();
     return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
   }
 
-  function onPointerDown(e) {
+  function onPointerDown(e: PointerEvent) {
     // Taps on the content fall through to the dialog's own controls.
     if (isInsideDialog(e.clientX, e.clientY)) return;
     // Tap landed on the backdrop. Always swallow it so it can't leak to the
@@ -44,7 +54,7 @@ export function modalDialog(node, getOptions) {
     o.onRequestClose?.();
   }
 
-  function onCancel(e) {
+  function onCancel(e: Event) {
     const o = getOptions();
     // Block Esc when dismissal is currently disallowed (e.g. an in-flight
     // request the dialog can't get back).

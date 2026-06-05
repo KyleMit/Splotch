@@ -5,33 +5,74 @@
 
 import { ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte';
 
-let canvas, ctx;
+interface DrawSoundData {
+  speed: number;
+}
+
+interface PointerState {
+  x: number;
+  y: number;
+  isDrawing: boolean;
+  color: string;
+  lineWidth: number;
+  erase: boolean;
+  lastTime: number;
+  speedSamples: { t: number; distance: number }[];
+}
+
+interface UndoSnapshot {
+  image: HTMLCanvasElement;
+  wasEmpty: boolean;
+}
+
+interface CanvasRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+interface InitOptions {
+  onDrawSound?: ((data: DrawSoundData) => void) | null;
+  onDrawStop?: (() => void) | null;
+  onUndoStateChange?: ((canUndo: boolean) => void) | null;
+  onCanvasEmptyChange?: ((empty: boolean) => void) | null;
+  initialColor?: string;
+}
+
+interface ExportOptions {
+  includePaperTexture?: boolean;
+}
+
+// Set in initDrawingCanvas() before any handler runs (definite-assignment `!`).
+let canvas!: HTMLCanvasElement;
+let ctx!: CanvasRenderingContext2D;
 let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let lastColorChangeTime = 0;
-let activePointerIds = new Set();
-let activePointers = new Map();
-let onDrawSoundCallback = null;
-let onDrawStopCallback = null;
+let activePointerIds = new Set<number>();
+let activePointers = new Map<number, PointerState>();
+let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
+let onDrawStopCallback: (() => void) | null = null;
 
-let virtualCanvas = null;
-let virtualCtx = null;
+let virtualCanvas: HTMLCanvasElement | null = null;
+let virtualCtx: CanvasRenderingContext2D | null = null;
 
 // Cached canvas geometry so the pointer hot path never calls
 // getBoundingClientRect() (each call forces a synchronous reflow). Recomputed
 // only on resize/scroll/orientation change — see refreshCanvasRect().
-let canvasRect = { left: 0, top: 0, width: 0, height: 0 };
+let canvasRect: CanvasRect = { left: 0, top: 0, width: 0, height: 0 };
 let rectScaleX = 1;
 let rectScaleY = 1;
 
-let undoStack = [];
+let undoStack: UndoSnapshot[] = [];
 const MAX_UNDO_STACK_SIZE = 10;
 let canUndo = false;
-let onUndoStateChange = null;
+let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
 
 let canvasEmpty = true;
-let onCanvasEmptyChange = null;
+let onCanvasEmptyChange: ((empty: boolean) => void) | null = null;
 
 // Pointer speed (which drives the drawing sound) is averaged over the most
 // recent slice of the stroke so the audio cue tracks gesture speed without
@@ -43,13 +84,13 @@ const SPEED_WINDOW_MS = 100;
 // Pen input is precise enough to skip the debounce.
 const COLOR_CHANGE_DEBOUNCE_MS = 100;
 
-function setCanvasEmptyState(empty) {
+function setCanvasEmptyState(empty: boolean) {
   if (canvasEmpty === empty) return;
   canvasEmpty = empty;
   if (onCanvasEmptyChange) onCanvasEmptyChange(empty);
 }
 
-function scanCanvasIsEmpty() {
+function scanCanvasIsEmpty(): boolean {
   if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) return true;
   const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
   for (let i = 3; i < data.length; i += 4) {
@@ -66,18 +107,20 @@ function resizeCanvas() {
     virtualCanvas.width = Math.max(rect.width, rect.height) * 2;
     virtualCanvas.height = Math.max(rect.width, rect.height) * 2;
     virtualCtx = virtualCanvas.getContext('2d');
-    virtualCtx.lineCap = 'round';
-    virtualCtx.lineJoin = 'round';
+    if (virtualCtx) {
+      virtualCtx.lineCap = 'round';
+      virtualCtx.lineJoin = 'round';
+    }
   }
 
-  if (canvas.width > 0 && canvas.height > 0) {
+  if (virtualCtx && canvas.width > 0 && canvas.height > 0) {
     virtualCtx.drawImage(canvas, 0, 0);
   }
 
   canvas.width = Math.round(rect.width);
   canvas.height = Math.round(rect.height);
 
-  ctx.drawImage(virtualCanvas, 0, 0);
+  if (virtualCanvas) ctx.drawImage(virtualCanvas, 0, 0);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
@@ -95,7 +138,7 @@ function refreshCanvasRect() {
   rectScaleY = rect.height ? canvas.height / rect.height : 1;
 }
 
-function pointerToCanvas(e) {
+function pointerToCanvas(e: PointerEvent) {
   return {
     x: (e.clientX - canvasRect.left) * rectScaleX,
     y: (e.clientY - canvasRect.top) * rectScaleY
@@ -104,24 +147,24 @@ function pointerToCanvas(e) {
 
 // The cached canvas client rect, so components can position pointer-following
 // UI (e.g. the eraser cursor) without their own per-move getBoundingClientRect.
-export function getCanvasRect() {
+export function getCanvasRect(): CanvasRect {
   return canvasRect;
 }
 
 // Every drawing op must also land on the off-screen virtualCtx so the picture
 // survives a resize (resizeCanvas replays it). Yield whichever contexts exist
 // so each op is written once instead of being hand-mirrored.
-function activeContexts() {
+function activeContexts(): CanvasRenderingContext2D[] {
   return virtualCtx ? [ctx, virtualCtx] : [ctx];
 }
 
 // The canvas backing a given context — their pixel dimensions differ, so
 // clearRect callers need the right one.
-function canvasFor(c) {
-  return c === ctx ? canvas : virtualCanvas;
+function canvasFor(c: CanvasRenderingContext2D): HTMLCanvasElement {
+  return c === ctx ? canvas : virtualCanvas!;
 }
 
-function strokeSegment(c, ps, x, y) {
+function strokeSegment(c: CanvasRenderingContext2D, ps: PointerState, x: number, y: number) {
   c.globalCompositeOperation = ps.erase ? 'destination-out' : 'source-over';
   c.strokeStyle = ps.color;
   c.lineWidth = ps.lineWidth;
@@ -150,7 +193,7 @@ export function releaseAllPointers() {
   activePointerIds.clear();
 }
 
-function startDrawing(e) {
+function startDrawing(e: PointerEvent) {
   const timeSinceColorChange = Date.now() - lastColorChangeTime;
   const requiredDelay = e.pointerType === 'pen' ? 0 : COLOR_CHANGE_DEBOUNCE_MS;
   if (timeSinceColorChange < requiredDelay) return;
@@ -165,22 +208,20 @@ function startDrawing(e) {
     ? currentLineWidth * ERASER_SIZE_MULTIPLIER
     : currentLineWidth;
 
-  if (e.pointerId !== undefined) {
-    activePointers.set(e.pointerId, {
-      x,
-      y,
-      isDrawing: true,
-      color: currentColor,
-      lineWidth,
-      erase: eraserActive,
-      lastTime: Date.now(),
-      // Time-stamped distance samples for the sliding speed window. The first
-      // entry is a zero-distance anchor so the very first move has a span to
-      // divide by.
-      speedSamples: [{ t: Date.now(), distance: 0 }]
-    });
-    activePointerIds.add(e.pointerId);
-  }
+  activePointers.set(e.pointerId, {
+    x,
+    y,
+    isDrawing: true,
+    color: currentColor,
+    lineWidth,
+    erase: eraserActive,
+    lastTime: Date.now(),
+    // Time-stamped distance samples for the sliding speed window. The first
+    // entry is a zero-distance anchor so the very first move has a span to
+    // divide by.
+    speedSamples: [{ t: Date.now(), distance: 0 }]
+  });
+  activePointerIds.add(e.pointerId);
 
   const dotRadius = lineWidth / 2;
 
@@ -204,12 +245,12 @@ function startDrawing(e) {
 
   if (e.pointerType !== 'pen') {
     try {
-      if (e.pointerId !== undefined) canvas.setPointerCapture(e.pointerId);
+      canvas.setPointerCapture(e.pointerId);
     } catch {}
   }
 }
 
-function draw(e) {
+function draw(e: PointerEvent) {
   const pointerState = activePointers.get(e.pointerId);
   if (!pointerState || !pointerState.isDrawing) return;
 
@@ -245,8 +286,8 @@ function draw(e) {
   if (onDrawSoundCallback) onDrawSoundCallback({ speed });
 }
 
-function stopDrawing(e) {
-  if (!e || e.pointerId === undefined) return;
+function stopDrawing(e?: PointerEvent) {
+  if (!e) return;
 
   const wasErasing = activePointers.get(e.pointerId)?.erase;
 
@@ -274,7 +315,7 @@ function saveUndoSnapshot() {
   snapshot.width = canvas.width;
   snapshot.height = canvas.height;
   const snapshotCtx = snapshot.getContext('2d');
-  snapshotCtx.drawImage(canvas, 0, 0);
+  if (snapshotCtx) snapshotCtx.drawImage(canvas, 0, 0);
 
   // Capture emptiness alongside the pixels. This runs before the stroke that
   // prompted the snapshot dirties the canvas, so `canvasEmpty` exactly describes
@@ -290,6 +331,7 @@ export function undo() {
   if (!canUndo || undoStack.length === 0 || !canvas || !ctx) return;
 
   const snapshot = undoStack.pop();
+  if (!snapshot) return;
   for (const c of activeContexts()) {
     const target = canvasFor(c);
     c.clearRect(0, 0, target.width, target.height);
@@ -302,13 +344,13 @@ export function undo() {
   if (onUndoStateChange) onUndoStateChange(canUndo);
 }
 
-export function initDrawingCanvas(canvasElement, options = {}) {
+export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
   canvas = canvasElement;
   // willReadFrequently keeps the backing store CPU-side so the empty-check
   // getImageData (on erase-end) is a cheap memcpy instead of a synchronous
   // GPU→CPU texture readback. This canvas is read for empty-checks/snapshots
   // and never WebGL-composited, so a CPU backing store is the right tradeoff.
-  ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx = canvas.getContext('2d', { willReadFrequently: true })!;
 
   onDrawSoundCallback = options.onDrawSound || null;
   onDrawStopCallback = options.onDrawStop || null;
@@ -343,16 +385,16 @@ export function initDrawingCanvas(canvasElement, options = {}) {
   };
 }
 
-export function setColor(color) {
+export function setColor(color: string) {
   currentColor = color;
   lastColorChangeTime = Date.now();
 }
 
-export function setStrokeWidth(widthPx) {
+export function setStrokeWidth(widthPx: number) {
   currentLineWidth = widthPx;
 }
 
-export function setEraserMode(active) {
+export function setEraserMode(active: boolean) {
   eraserActive = active;
 }
 
@@ -365,13 +407,13 @@ export function clearCanvas() {
   setCanvasEmptyState(true);
 }
 
-export function isCanvasEmpty() {
+export function isCanvasEmpty(): boolean {
   return canvasEmpty;
 }
 
-let paperTextureImage = null;
-let paperTexturePromise = null;
-function loadPaperTexture() {
+let paperTextureImage: HTMLImageElement | null = null;
+let paperTexturePromise: Promise<HTMLImageElement | null> | null = null;
+function loadPaperTexture(): Promise<HTMLImageElement | null> {
   if (paperTextureImage) return Promise.resolve(paperTextureImage);
   if (paperTexturePromise) return paperTexturePromise;
   paperTexturePromise = new Promise((resolve) => {
@@ -386,7 +428,10 @@ function loadPaperTexture() {
   return paperTexturePromise;
 }
 
-export async function exportCanvasBlob(overlayImage = null, options = {}) {
+export async function exportCanvasBlob(
+  overlayImage: HTMLImageElement | null = null,
+  options: ExportOptions = {}
+): Promise<Blob | null> {
   const { includePaperTexture = true } = options;
   if (!canvas || canvas.width === 0 || canvas.height === 0) return null;
 
@@ -397,7 +442,7 @@ export async function exportCanvasBlob(overlayImage = null, options = {}) {
   const out = document.createElement('canvas');
   out.width = Math.round(w * dpr);
   out.height = Math.round(h * dpr);
-  const outCtx = out.getContext('2d');
+  const outCtx = out.getContext('2d')!;
   outCtx.imageSmoothingEnabled = true;
   outCtx.imageSmoothingQuality = 'high';
   outCtx.scale(dpr, dpr);
@@ -439,6 +484,6 @@ export function focusCanvas() {
   if (canvas) canvas.focus();
 }
 
-export function getActiveCanvas() {
+export function getActiveCanvas(): HTMLCanvasElement {
   return canvas;
 }

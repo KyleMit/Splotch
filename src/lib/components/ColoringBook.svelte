@@ -8,7 +8,7 @@
     clearOverlay
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
-  import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
+  import { modalDialog } from '$lib/actions/modalDialog.svelte';
 
   // Only show books licensed for this platform. Native builds also strip the
   // web-only books' assets at build time (scripts/strip-native-assets.mjs), so

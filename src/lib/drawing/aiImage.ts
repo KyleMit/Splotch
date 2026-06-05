@@ -7,17 +7,17 @@ import {
   closeAiResult
 } from '$lib/state/ui.svelte';
 import { settings } from '$lib/state/settings.svelte';
-import { apiUrl } from '$lib/api.js';
-import { exportCanvasBlob } from './engine.js';
-import { getActiveOverlayImage } from './overlay.js';
-import { saveImageBlob } from './screenshot.js';
+import { apiUrl } from '$lib/api';
+import { exportCanvasBlob } from './engine';
+import { getActiveOverlayImage } from './overlay';
+import { saveImageBlob } from './screenshot';
 
 // Signature of the drawing saved on the previous AI run. Lets us skip re-saving
 // the child's artwork when they re-roll a new style on an unchanged drawing —
 // the AI image is always fresh, but the drawing copy would just be a duplicate.
-let lastSavedDrawingSig = null;
+let lastSavedDrawingSig: string | null = null;
 
-async function blobSignature(blob) {
+async function blobSignature(blob: Blob): Promise<string | null> {
   try {
     const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
     return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -29,7 +29,7 @@ async function blobSignature(blob) {
 // Drop the finished AI image into the gallery (a download on the web), and tuck
 // the child's own drawing in alongside it — but only when the drawing actually
 // changed since the last AI run, so duplicates don't pile up.
-async function autoSaveImages(aiBlob, drawingBlob) {
+async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob) {
   await saveImageBlob(aiBlob, 'splotch-ai');
   const sig = await blobSignature(drawingBlob);
   if (sig === null || sig !== lastSavedDrawingSig) {
@@ -38,7 +38,9 @@ async function autoSaveImages(aiBlob, drawingBlob) {
   lastSavedDrawingSig = sig;
 }
 
-export async function generateAiImage({ blob = null, style = '' } = {}) {
+export async function generateAiImage(
+  { blob = null, style = '' }: { blob?: Blob | null; style?: string } = {}
+) {
   if (ui.aiGenerating) return;
 
   // Launch the loading modal the instant the button is tapped. When the caller

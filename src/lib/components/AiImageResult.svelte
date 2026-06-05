@@ -4,7 +4,7 @@
   import Icon from './Icon.svelte';
   import { ui, closeAiResult } from '$lib/state/ui.svelte';
   import { settings } from '$lib/state/settings.svelte';
-  import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
+  import { modalDialog } from '$lib/actions/modalDialog.svelte';
 
   let dialogEl;
 

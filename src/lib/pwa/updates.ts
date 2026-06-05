@@ -1,7 +1,7 @@
 // PWA auto-update lifecycle: checks for an updated service worker on load,
 // hourly, on visibility change, and on focus.
 
-let updateCheckInterval = null;
+let updateCheckInterval: ReturnType<typeof setInterval> | null = null;
 
 export function initPWAUpdates() {
   if (import.meta.env.DEV) return;
@@ -39,7 +39,7 @@ async function checkForUpdates() {
 
     await registration.update();
 
-    const activateWaitingSW = (sw) => {
+    const activateWaitingSW = (sw: ServiceWorker) => {
       sw.postMessage({ type: 'SKIP_WAITING' });
       navigator.serviceWorker.addEventListener(
         'controllerchange',
@@ -54,7 +54,7 @@ async function checkForUpdates() {
     }
 
     if (registration.installing) {
-      registration.installing.addEventListener('statechange', function () {
+      registration.installing.addEventListener('statechange', function (this: ServiceWorker) {
         if (this.state === 'installed' && registration.waiting) {
           setTimeout(() => {
             if (registration.waiting) activateWaitingSW(registration.waiting);
@@ -63,6 +63,6 @@ async function checkForUpdates() {
       });
     }
   } catch (error) {
-    console.log('Update check failed:', error.message);
+    console.log('Update check failed:', error instanceof Error ? error.message : error);
   }
 }

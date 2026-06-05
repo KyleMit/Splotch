@@ -10,9 +10,9 @@
   import { ui, openColoringBook, openAiPrompt } from '$lib/state/ui.svelte';
   import { network } from '$lib/state/network.svelte';
   import { layout } from '$lib/state/layout.svelte';
-  import { undo } from '$lib/drawing/engine.js';
-  import { saveScreenshot } from '$lib/drawing/screenshot.js';
-  import { generateAiImage } from '$lib/drawing/aiImage.js';
+  import { undo } from '$lib/drawing/engine';
+  import { saveScreenshot } from '$lib/drawing/screenshot';
+  import { generateAiImage } from '$lib/drawing/aiImage';
 
   let strokeWrapperEl;
   let coloringBtnEl;

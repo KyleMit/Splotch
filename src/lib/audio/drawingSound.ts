@@ -1,9 +1,9 @@
 import { settings } from '$lib/state/settings.svelte';
 
-let currentStrokeSoundIndex = null;
-let currentSound = null;
+let currentStrokeSoundIndex: number | null = null;
+let currentSound: HTMLAudioElement | null = null;
 let isSoundPaused = false;
-let pencilSounds = null;
+let pencilSounds: HTMLAudioElement[] | null = null;
 
 const SPEED_THRESHOLD = 0.15;
 const SOUND_VOLUME = 0.2;
@@ -33,7 +33,7 @@ export function preloadDrawSounds() {
   pencilSounds.forEach((a) => a.load());
 }
 
-export function playDrawSound(movementData = {}) {
+export function playDrawSound(movementData: { speed?: number } = {}) {
   if (!settings.soundEnabled) return;
   ensureSounds();
   if (!pencilSounds) return;
