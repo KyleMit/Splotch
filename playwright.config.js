@@ -26,9 +26,17 @@ export default defineConfig({
     }
   ],
   webServer: {
-    command: `vite dev --port ${PORT}`,
+    // Exercise the production artifact (service worker, adapter output,
+    // minification) instead of the dev server. `vite preview` defaults to 4173,
+    // matching PORT above. PUBLIC_ENABLE_DEV_HARNESS unlocks the /dev/* test
+    // harnesses in the built app (404 otherwise); it's never set in the Netlify
+    // deploy. Set DEV_SERVER=1 for fast local iteration against `vite dev`.
+    command: process.env.DEV_SERVER
+      ? `vite dev --port ${PORT}`
+      : `vite build && vite preview --port ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000
+    timeout: 180_000,
+    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' }
   }
 });

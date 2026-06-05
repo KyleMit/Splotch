@@ -19,24 +19,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ---
 
-## 11. Run e2e tests against the production build, not the dev server
-
-**Problem:** `playwright.config.js` starts the app with `vite dev`, so e2e never exercises
-the service worker, the adapter output, or production minification — exactly the things
-most likely to break a release.
-
-**Affected files:**
-- `playwright.config.js:29` — `webServer.command`
-
-**Approach:** Change the CI `webServer` to `vite build && vite preview --port 4173` (align
-the port with the server type). Keep a fast dev-server option for local iteration if
-desired. Confirm the SW/precache doesn't destabilize existing specs; adjust waits if so.
-
-**Acceptance criteria:** `npm run test:e2e` runs against the built artifact and passes;
-the configured port matches the server actually started.
-
----
-
 ## 12. Add a cleanliness guard to the release script
 
 **Problem:** `release.mjs` runs `git add -A`, then commits, tags, and pushes. A stray

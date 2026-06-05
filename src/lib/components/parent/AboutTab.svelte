@@ -62,6 +62,9 @@
     {#if import.meta.env.DEV}
       <p class="admin-link"><a href="/dev/ai-timer">AI Timer</a></p>
     {/if}
+        {#if import.meta.env.DEV}
+      <p class="admin-link"><a href="/dev/engine">Drawing Engine</a></p>
+    {/if}
   </div>
 </section>
 
