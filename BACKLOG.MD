@@ -2,7 +2,7 @@
 
 ## TODO
 
-* [ ] Convert codebase to TS
+* [x] Convert codebase to TS
 * [ ] Add style guide
 * [ ] Run performance profiling and analyze results
 * [ ] Add playwright test for multi-touch usage

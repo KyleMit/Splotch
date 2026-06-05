@@ -101,7 +101,6 @@
 * Duck
 * Horse
 * Pig
-* ---
 * Sheep
 * Chicken
 * Goat
