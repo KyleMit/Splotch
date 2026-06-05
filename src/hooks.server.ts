@@ -4,7 +4,9 @@
 // already token-gated server-side, so allowing any origin here is safe — it
 // can't be abused without a valid access token. Only /api/* is opened up; the
 // rest of the site stays same-origin.
-export async function handle({ event, resolve }) {
+import type { Handle } from '@sveltejs/kit';
+
+export const handle: Handle = async ({ event, resolve }) => {
   const isApi = event.url.pathname.startsWith('/api/');
 
   // Answer the CORS preflight before hitting any route logic.

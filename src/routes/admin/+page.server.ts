@@ -1,8 +1,9 @@
-import { error, fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { getTokens, addToken, removeToken } from '$lib/server/tokens';
 import { rateLimit } from '$lib/server/rateLimit';
+import type { Actions, PageServerLoad } from './$types';
 
 // Must be server-rendered: it has form actions and validates the admin secret
 // against an HTTP-only session cookie, neither of which is compatible with the
@@ -32,7 +33,7 @@ function sessionToken() {
   return createHmac('sha256', secret).update('admin-session-v1').digest('hex');
 }
 
-function setSession(cookies) {
+function setSession(cookies: Cookies) {
   cookies.set(SESSION_COOKIE, sessionToken(), {
     path: '/admin',
     httpOnly: true,
@@ -44,7 +45,7 @@ function setSession(cookies) {
 // Constant-time secret comparison. The length check happens first and is not
 // itself a secret leak (an attacker already controls their own input length);
 // timingSafeEqual then guards against byte-by-byte timing attacks on the value.
-function secretMatches(provided, expected) {
+function secretMatches(provided: string | undefined, expected: string | undefined) {
   if (!expected || !provided) return false;
   const a = Buffer.from(provided);
   const b = Buffer.from(expected);
@@ -56,22 +57,22 @@ function secretMatches(provided, expected) {
 // by the loader and every mutating action so the check isn't duplicated. The
 // cookie holds the derived session token, so we compare against the recomputed
 // token (constant-time) rather than the raw secret.
-function isAdmin(cookies) {
+function isAdmin(cookies: Cookies) {
   return secretMatches(cookies.get(SESSION_COOKIE), sessionToken());
 }
 
-function requireAdmin(cookies) {
+function requireAdmin(cookies: Cookies) {
   if (!isAdmin(cookies)) throw error(403, 'Forbidden');
 }
 
-function buildInvites(tokens, origin) {
+function buildInvites(tokens: string[], origin: string) {
   return tokens.map((token) => ({
     token,
     url: `${origin}/?ai_access_token=${encodeURIComponent(token)}`
   }));
 }
 
-export async function load({ cookies, url }) {
+export const load: PageServerLoad = async ({ cookies, url }) => {
   // `hasSession` just reports whether an admin_session cookie is present (valid
   // or not). The client uses it only to decide whether to keep the public
   // /admin link visible in the About tab — it's not a security signal, so a
@@ -81,7 +82,9 @@ export async function load({ cookies, url }) {
   // Unauthenticated visitors get the login form instead of a 403, so the page
   // is usable without ever putting the secret in a link.
   if (!isAdmin(cookies)) {
-    return { authed: false, hasSession };
+    // `invites` is always present (empty here) so the page's union type stays
+    // simple — the invites section only renders in the authed branch anyway.
+    return { authed: false, hasSession, invites: [] as { token: string; url: string }[] };
   }
   // Renew the session on each authenticated load so its expiry keeps sliding
   // forward — an actively-used admin never has to log in again.
@@ -94,7 +97,7 @@ export async function load({ cookies, url }) {
   };
 }
 
-export const actions = {
+export const actions: Actions = {
   login: async ({ request, cookies, getClientAddress }) => {
     // Throttle per IP: this is an unauthenticated oracle for guessing the admin
     // secret, so cap brute-force bursts before checking the key — the same

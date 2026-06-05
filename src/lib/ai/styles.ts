@@ -2,7 +2,7 @@
 // in the order these keys are defined, and the server appends the matching
 // suffix to the base prompt. "Default" applies no extra styling so kids can
 // see the plain magical illustration without picking a particular style.
-export const STYLE_SUFFIXES = {
+export const STYLE_SUFFIXES: Record<string, string> = {
   Default: '',
   Crayon: 'Render the final image as a vibrant crayon drawing on lightly textured paper with playful wax strokes.',
   Watercolor: 'Render the final image as a soft watercolor painting with gentle washes and bleeding edges.',

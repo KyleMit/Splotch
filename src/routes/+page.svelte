@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
   import DrawingCanvas from '$lib/components/DrawingCanvas.svelte';
   import ColorPalette from '$lib/components/ColorPalette.svelte';
@@ -34,12 +34,12 @@
     });
 
     // Prevent context menu on long press
-    const blockContextMenu = (e) => e.preventDefault();
+    const blockContextMenu = (e: Event) => e.preventDefault();
     document.addEventListener('contextmenu', blockContextMenu);
 
     // Wake lock to prevent screen sleep — request on first pointerdown, and
     // re-request when the page becomes visible again.
-    let wakeLock = null;
+    let wakeLock: WakeLockSentinel | null = null;
     async function requestWakeLock() {
       try {
         if ('wakeLock' in navigator) {

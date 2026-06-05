@@ -2,11 +2,9 @@
   "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
     "strict": true,
-    // Keep the un-migrated .js resolvable during the gradual migration, but
-    // don't type-check it — only graded .ts/.svelte files are held to strict.
-    // Once every src file is .ts this can be flipped to allowJs:false.
-    "allowJs": true,
-    "checkJs": false,
+    // All of src/ is now TypeScript. Config files (vite/svelte/vitest/playwright)
+    // and build scripts live outside src/ and are unaffected by this.
+    "allowJs": false,
     "skipLibCheck": true
   }
 }

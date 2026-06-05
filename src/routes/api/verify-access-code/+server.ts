@@ -1,6 +1,7 @@
 import { error, json } from '@sveltejs/kit';
 import { isAllowedToken } from '$lib/server/tokens';
 import { rateLimit } from '$lib/server/rateLimit';
+import type { RequestHandler } from './$types';
 
 /**
  * Verify a secret access code against the managed allowlist. This is the
@@ -8,7 +9,7 @@ import { rateLimit } from '$lib/server/rateLimit';
  * bringing their own. Body: { code }. On a match we echo the code back as the
  * canonical access code for the client to persist. Returns { ok, accessCode? }.
  */
-export async function POST({ request, getClientAddress }) {
+export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   // Throttle per IP: this endpoint is an unauthenticated oracle for guessing
   // allowlisted tokens, so cap brute-force bursts before checking the code.
   const { limited, retryAfter } = rateLimit(`verify-access-code:${getClientAddress()}`);

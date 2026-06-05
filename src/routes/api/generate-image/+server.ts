@@ -5,6 +5,7 @@ import { getStore } from '@netlify/blobs';
 import { STYLE_SUFFIXES } from '$lib/ai/styles';
 import { isAllowedToken } from '$lib/server/tokens';
 import { rateLimit } from '$lib/server/rateLimit';
+import type { RequestHandler } from './$types';
 
 /**
  * Record that a token generated an image, so we can spot a token going rogue.
@@ -14,12 +15,15 @@ import { rateLimit } from '$lib/server/rateLimit';
  */
 // Show only the last 4 chars of a token in logs — the full secret should never
 // land in the function log or any downstream log drain.
-function maskToken(token) {
+function maskToken(token: unknown) {
   const t = String(token ?? '');
   return t.length <= 4 ? '****' : `…${t.slice(-4)}`;
 }
 
-async function recordUsage(token, { style, prompt }) {
+async function recordUsage(
+  token: string,
+  { style, prompt }: { style: FormDataEntryValue | null; prompt: string }
+) {
   const now = new Date().toISOString();
   console.log(`[ai-usage] token=${maskToken(token)} style=${style || 'none'} prompt=${JSON.stringify(prompt)} at=${now}`);
 
@@ -36,7 +40,10 @@ async function recordUsage(token, { style, prompt }) {
   } catch (err) {
     // Blobs is only wired up in the Netlify runtime; don't fail the request
     // (e.g. during local `vite dev`) just because usage couldn't be persisted.
-    console.warn('[ai-usage] failed to persist usage to Netlify Blobs:', err?.message ?? err);
+    console.warn(
+      '[ai-usage] failed to persist usage to Netlify Blobs:',
+      err instanceof Error ? err.message : err
+    );
   }
 }
 
@@ -56,7 +63,7 @@ const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const DEFAULT_PROMPT =
   "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel.";
 
-export async function POST({ request, platform }) {
+export const POST: RequestHandler = async ({ request, platform }) => {
   const form = await request.formData();
   const token = form.get('token');
   const apiKey = form.get('apiKey');
@@ -116,8 +123,10 @@ export async function POST({ request, platform }) {
     // Blobs write is async, and we don't make the image wait on it. waitUntil
     // keeps the function alive long enough to finish on Netlify; without it
     // (local dev) it's a fire-and-forget whose errors are caught internally.
-    const usage = recordUsage(token, { style, prompt: finalPrompt });
-    if (platform?.context?.waitUntil) platform.context.waitUntil(usage);
+    const usage = recordUsage(token as string, { style, prompt: finalPrompt });
+    const ctx = (platform as { context?: { waitUntil?: (p: Promise<unknown>) => void } } | undefined)
+      ?.context;
+    if (ctx?.waitUntil) ctx.waitUntil(usage);
   }
 
   const inputBytes = new Uint8Array(await imageFile.arrayBuffer());
@@ -140,7 +149,7 @@ export async function POST({ request, platform }) {
     });
   } catch (err) {
     console.error('Gemini call failed:', err);
-    throw error(502, `Gemini request failed: ${err?.message ?? String(err)}`);
+    throw error(502, `Gemini request failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   const parts = response?.candidates?.[0]?.content?.parts ?? [];
@@ -151,10 +160,10 @@ export async function POST({ request, platform }) {
     throw error(502, `Model did not return an image: ${reason}`);
   }
 
-  const outBytes = Buffer.from(imagePart.inlineData.data, 'base64');
+  const outBytes = Buffer.from(imagePart.inlineData!.data!, 'base64');
   return new Response(outBytes, {
     headers: {
-      'Content-Type': imagePart.inlineData.mimeType || 'image/png',
+      'Content-Type': imagePart.inlineData!.mimeType || 'image/png',
       'Cache-Control': 'no-store'
     }
   });

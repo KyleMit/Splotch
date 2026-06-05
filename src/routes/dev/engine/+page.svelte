@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import {
     initDrawingCanvas,
@@ -10,9 +10,17 @@
     isCanvasEmpty
   } from '$lib/drawing/engine';
 
-  let canvasEl;
-  let wrapperEl;
-  let engine = null;
+  let canvasEl: HTMLCanvasElement;
+  let wrapperEl: HTMLDivElement;
+  let engine: ReturnType<typeof initDrawingCanvas> | null = null;
+
+  // The Playwright engine spec reaches the harness through these window globals.
+  interface EngineHarnessWindow {
+    __engineState: { canUndo: boolean; canvasEmpty: boolean };
+    __engine: Record<string, unknown>;
+    __engineReady: boolean;
+  }
+  const win = window as unknown as Window & EngineHarnessWindow;
 
   // Mirrors how the app wires the engine (see DrawingCanvas.svelte), but routes
   // the undo/empty callbacks into a window object the Playwright spec inspects,
@@ -21,21 +29,21 @@
     engine = initDrawingCanvas(canvasEl, {
       initialColor: '#ff0000',
       onUndoStateChange: (canUndo) => {
-        window.__engineState.canUndo = canUndo;
+        win.__engineState.canUndo = canUndo;
       },
       onCanvasEmptyChange: (empty) => {
-        window.__engineState.canvasEmpty = empty;
+        win.__engineState.canvasEmpty = empty;
       }
     });
     setStrokeWidth(8);
 
-    window.__engineState = { canUndo: false, canvasEmpty: true };
+    win.__engineState = { canUndo: false, canvasEmpty: true };
 
     // Expose the real engine API + a few read helpers. The spec drives strokes
     // with real Playwright pointer input on the canvas; these are for the
     // imperative operations the app invokes from buttons (undo/clear) and for
     // reading the resulting bitmap.
-    window.__engine = {
+    win.__engine = {
       setColor,
       setStrokeWidth,
       setEraserMode,
@@ -45,7 +53,7 @@
 
       // Count of non-transparent pixels on the visible canvas.
       nonTransparentCount() {
-        const ctx = canvasEl.getContext('2d');
+        const ctx = canvasEl.getContext('2d')!;
         const { data } = ctx.getImageData(0, 0, canvasEl.width, canvasEl.height);
         let n = 0;
         for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) n++;
@@ -53,14 +61,14 @@
       },
 
       // [r, g, b, a] at a canvas-space pixel.
-      pixelAt(x, y) {
-        const ctx = canvasEl.getContext('2d');
+      pixelAt(x: number, y: number) {
+        const ctx = canvasEl.getContext('2d')!;
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,
       // so the spec can verify the virtual-canvas content survives a resize.
-      resizeTo(w, h) {
+      resizeTo(w: number, h: number) {
         wrapperEl.style.width = `${w}px`;
         wrapperEl.style.height = `${h}px`;
         window.dispatchEvent(new Event('resize'));
@@ -70,9 +78,9 @@
       // test, where the < 100ms timing must be deterministic (real Playwright
       // input can't reliably hit a sub-100ms window). Goes through the same
       // pointerdown/move/up handlers the engine binds.
-      strokeSync(points, pointerType = 'mouse') {
+      strokeSync(points: { x: number; y: number }[], pointerType = 'mouse') {
         const rect = canvasEl.getBoundingClientRect();
-        const ev = (type, p) =>
+        const ev = (type: string, p: { x: number; y: number }) =>
           canvasEl.dispatchEvent(
             new PointerEvent(type, {
               pointerId: 1,
@@ -89,7 +97,7 @@
       }
     };
 
-    window.__engineReady = true;
+    win.__engineReady = true;
   });
 
   onDestroy(() => {
