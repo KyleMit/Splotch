@@ -9,16 +9,21 @@
   import { toolState, selectEraser, selectPen } from '$lib/state/tool.svelte.js';
   import { ui, openColoringBook, openAiPrompt } from '$lib/state/ui.svelte.js';
   import { network } from '$lib/state/network.svelte.js';
+  import { layout } from '$lib/state/layout.svelte.js';
   import { undo } from '$lib/drawing/engine.js';
   import { saveScreenshot } from '$lib/drawing/screenshot.js';
   import { generateAiImage } from '$lib/drawing/aiImage.js';
 
-  let panelEl;
   let strokeWrapperEl;
   let coloringBtnEl;
   let aiBtnEl;
-  let leftOffset = $state(8);
   let isPortrait = $state(false);
+
+  // Landscape: sit just past the color palette so we clear it. Portrait: pin to
+  // the bottom-left corner. paletteWidth is published by ColorPalette (0 until
+  // measured), so this settles once the palette lays out — no querySelector and
+  // no mount-time setTimeout to dodge the layout race.
+  const leftOffset = $derived(isPortrait ? 8 : layout.paletteWidth + 8);
 
   // When advanced controls are disabled the drawer and its chevron are removed
   // entirely, simplifying the UI. When enabled, the chevron shows and the
@@ -45,27 +50,17 @@
     if (!next) strokeState.menuOpen = false;
   }
 
-  // Reposition the panel relative to the color palette in landscape;
-  // in portrait it pins to bottom-left.
-  function updatePanelPosition() {
-    if (!panelEl) return;
+  // Track orientation so the chevron direction and drawer-slide axis match the
+  // layout. The panel's left offset follows layout.paletteWidth reactively, so
+  // there's nothing to measure here.
+  function updateOrientation() {
     isPortrait = window.matchMedia('(orientation: portrait)').matches;
-    const colorPalette = document.querySelector('.color-palette');
-    if (!colorPalette) return;
-
-    if (isPortrait) {
-      leftOffset = 8;
-    } else {
-      const paletteRect = colorPalette.getBoundingClientRect();
-      leftOffset = paletteRect.width + 8;
-    }
   }
 
   onMount(() => {
-    updatePanelPosition();
-    setTimeout(updatePanelPosition, 100);
-    window.addEventListener('resize', updatePanelPosition);
-    window.addEventListener('orientationchange', updatePanelPosition);
+    updateOrientation();
+    window.addEventListener('resize', updateOrientation);
+    window.addEventListener('orientationchange', updateOrientation);
 
     // Click outside closes stroke menu
     const onDocPointerDown = (e) => {
@@ -84,8 +79,8 @@
     window.addEventListener('keydown', onKeyDown);
 
     return () => {
-      window.removeEventListener('resize', updatePanelPosition);
-      window.removeEventListener('orientationchange', updatePanelPosition);
+      window.removeEventListener('resize', updateOrientation);
+      window.removeEventListener('orientationchange', updateOrientation);
       document.removeEventListener('pointerdown', onDocPointerDown);
       window.removeEventListener('keydown', onKeyDown);
     };
@@ -140,7 +135,7 @@
   }
 </script>
 
-<div class="actions-panel" bind:this={panelEl} style:left="{leftOffset}px">
+<div class="actions-panel" style:left="{leftOffset}px">
   {#if drawerExpanded}
   <div class="actions-drawer" transition:slide={{ axis: isPortrait ? 'y' : 'x', duration: 280 }}>
   <div class="stroke-width-wrapper" bind:this={strokeWrapperEl} hidden={!settings.strokeWidthControlEnabled}>

@@ -267,6 +267,7 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
   * [ ] Come up with other book selections
   * [ ] Pages should be able to be favorited. First book should be favorites
   * [ ] Delete should wipe the page (or first book should be to clear the background)
+  * [ ] Add ability for users to upload color book bundles (IP hidden from iOS store release)
 * [ ] Bugs
   * [ ] Make sure we can refresh PWA
   * [ ] Sometimes it doesn't register clicks on color changes

@@ -10,10 +10,30 @@
   import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine.js';
   import { openColorPicker } from '$lib/state/ui.svelte.js';
   import { toolState, selectPen } from '$lib/state/tool.svelte.js';
+  import { layout } from '$lib/state/layout.svelte.js';
   import { getRingColor } from '$lib/colorRing.js';
+  import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
 
+  let paletteEl;
   let swatchEls = $state({});
+
+  // Publish layout values siblings need (ActionsPanel offsets past our width;
+  // ColorPicker block-zones around the gradient swatch) so they don't have to
+  // reach in via querySelector. A ResizeObserver keeps the width current as the
+  // palette trims swatches at breakpoints.
+  onMount(() => {
+    layout.gradientSwatchEl = swatchEls[CUSTOM_SWATCH];
+    const ro = new ResizeObserver(() => {
+      layout.paletteWidth = paletteEl.getBoundingClientRect().width;
+    });
+    ro.observe(paletteEl);
+    return () => {
+      ro.disconnect();
+      layout.paletteWidth = 0;
+      layout.gradientSwatchEl = null;
+    };
+  });
 
   // Track the most recent click so we can fire the confirmation ring animation
   // only on the actual selection (not on every reactivity change).
@@ -83,6 +103,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="color-palette"
+  bind:this={paletteEl}
   onpointerdown={handlePaletteDown}
   onpointerup={handlePaletteUp}
 >

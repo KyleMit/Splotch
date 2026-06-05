@@ -21,9 +21,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ## Minor cleanup (do opportunistically; remove each line when done)
 
-- **Cross-component DOM reach:** `ActionsPanel.svelte:51` and `ColorPicker.svelte:95`
-  measure another component's element via `querySelector` (`ActionsPanel` with a 100ms
-  `setTimeout` layout race). Share the needed layout value through state instead.
 - **`SetupInstructions.svelte`** iOS/Android branches are near-identical and could be
   data-driven; it also hand-rolls a UA sniff alongside the imported `$lib/platform.js`.
 

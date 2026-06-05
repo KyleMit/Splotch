@@ -2,6 +2,7 @@
   import { ui, closeColorPicker } from '$lib/state/ui.svelte.js';
   import { pickCustomColor, colors } from '$lib/state/colors.svelte.js';
   import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine.js';
+  import { layout } from '$lib/state/layout.svelte.js';
   import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
 
   // Static palette grid. The original kept it in HTML; here it's a data-driven
@@ -70,7 +71,7 @@
 
   // Block-out zone around the gradient swatch so toddler mis-taps don't dismiss.
   function isPointInGradientBlockZone(x, y) {
-    const gradientSwatch = document.querySelector('.gradient-swatch');
+    const gradientSwatch = layout.gradientSwatchEl;
     if (!gradientSwatch) return false;
     const rect = gradientSwatch.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) return false;
