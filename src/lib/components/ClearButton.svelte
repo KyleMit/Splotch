@@ -432,8 +432,8 @@
   }
 
   :global(.clear-icon) {
-    width: 45px;
-    height: 45px;
+    width: 40px;
+    height: 40px;
     display: block;
     pointer-events: none;
     margin-right: 2px;
@@ -687,8 +687,8 @@
     }
 
     :global(.clear-icon) {
-      width: 45px;
-      height: 45px;
+      width: 38px;
+      height: 38px;
       margin-right: 2px;
     }
   }

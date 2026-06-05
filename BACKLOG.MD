@@ -6,6 +6,7 @@
 * [x] Run all tests on CI
 * [x] Add playwright test for multi-touch usage
 * [x] Add parent center config for orientation change
+* [ ] Make icons bigger on an ipad pro
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
 * [ ] Run performance profiling and analyze results
