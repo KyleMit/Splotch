@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 // Engine-level tests. These drive the real imperative drawing engine through
 // the /dev/engine harness (see src/routes/dev/engine), which mounts a real
@@ -7,7 +7,12 @@ import { expect, test } from '@playwright/test';
 // input on the canvas; undo/clear are invoked the way the app's buttons do.
 
 /** Drag a stroke through the given canvas-space points using real mouse input. */
-async function drawStroke(page, box, points) {
+async function drawStroke(
+  page: Page,
+  box: { x: number; y: number } | null,
+  points: { x: number; y: number }[]
+) {
+  if (!box) throw new Error('canvas has no bounding box');
   await page.mouse.move(box.x + points[0].x, box.y + points[0].y);
   await page.mouse.down();
   for (const p of points.slice(1)) {
@@ -16,8 +21,8 @@ async function drawStroke(page, box, points) {
   await page.mouse.up();
 }
 
-const state = (page) => page.evaluate(() => window.__engineState);
-const count = (page) => page.evaluate(() => window.__engine.nonTransparentCount());
+const state = (page: Page) => page.evaluate(() => window.__engineState);
+const count = (page: Page) => page.evaluate(() => window.__engine.nonTransparentCount());
 
 test.beforeEach(async ({ page }) => {
   // Navigate ONCE, then poll for readiness. The harness sets window.__engineReady

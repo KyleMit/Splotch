@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
 // Svelte component wiring (palette, action drawer, tool/stroke state, AI fetch,
@@ -8,7 +8,7 @@ import { expect, test } from '@playwright/test';
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
-async function gotoApp(page, path = '/') {
+async function gotoApp(page: Page, path = '/') {
   await page.goto(path);
   // The canvas mounts on the client; once it's visible the app has hydrated.
   await expect(page.locator('#drawingCanvas')).toBeVisible();
@@ -17,7 +17,7 @@ async function gotoApp(page, path = '/') {
 // The action drawer is collapsed by default (drawerOpen=false), so its buttons
 // (undo, eraser, screenshot, AI, coloring) aren't rendered until the chevron is
 // tapped. Retrying the tap also rides out any hydration lag on the first click.
-async function openDrawer(page) {
+async function openDrawer(page: Page) {
   const undo = page.locator('#undoButton');
   if (await undo.isVisible().catch(() => false)) return; // already open (e.g. persisted)
   // The chevron rides the panel's `left` transition (it repositions next to the
@@ -33,7 +33,7 @@ async function openDrawer(page) {
 // only when the menu isn't already open, and retry — this rides out the action
 // panel repositioning/re-rendering right after a reload without ever toggling a
 // just-opened menu back shut.
-async function openStrokeMenu(page) {
+async function openStrokeMenu(page: Page) {
   const sentinel = page.locator('button[aria-label="Size 3"]'); // present whenever the menu is open
   await expect(async () => {
     if (!(await sentinel.isVisible().catch(() => false))) {
@@ -44,8 +44,9 @@ async function openStrokeMenu(page) {
 }
 
 /** Drag a stroke through canvas-relative points with real mouse input. */
-async function draw(page, points) {
+async function draw(page: Page, points: { x: number; y: number }[]) {
   const box = await page.locator('#drawingCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
   await page.mouse.move(box.x + points[0].x, box.y + points[0].y);
   await page.mouse.down();
   for (const p of points.slice(1)) await page.mouse.move(box.x + p.x, box.y + p.y);
@@ -53,10 +54,10 @@ async function draw(page, points) {
 }
 
 /** First non-transparent pixel on the canvas as [r,g,b,a], or null if blank. */
-function firstOpaquePixel(page) {
+function firstOpaquePixel(page: Page): Promise<number[] | null> {
   return page.evaluate(() => {
-    const c = document.getElementById('drawingCanvas');
-    const { data } = c.getContext('2d').getImageData(0, 0, c.width, c.height);
+    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
     for (let i = 3; i < data.length; i += 4) {
       if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
     }
@@ -81,7 +82,7 @@ test('selecting a palette color activates it and paints in that color', async ({
   const px = await firstOpaquePixel(page);
   expect(px).not.toBeNull();
   // #62A2E9 is blue-dominant — the painted pixel should be more blue than red.
-  expect(px[2]).toBeGreaterThan(px[0]);
+  expect(px![2]).toBeGreaterThan(px![0]);
 });
 
 test('picking a color exits eraser mode', async ({ page }) => {

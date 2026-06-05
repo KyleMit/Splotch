@@ -1,4 +1,4 @@
-import { chromium } from '@playwright/test';
+import { chromium, type FullConfig } from '@playwright/test';
 
 // Warm Vite's dep optimizer once before the parallel workers run.
 //
@@ -9,13 +9,13 @@ import { chromium } from '@playwright/test';
 // interactions can't ride it out (e.g. the ai-timer click-retry). Loading each
 // route here — sequentially, polling through the auto-reload until it actually
 // settles — means every worker afterwards gets an already-optimized server.
-export default async function globalSetup(config) {
-  const { baseURL } = config.projects[0].use;
+export default async function globalSetup(config: FullConfig) {
+  const baseURL = config.projects[0].use.baseURL ?? '';
   const browser = await chromium.launch();
   const page = await browser.newPage();
 
   // [route, readiness predicate run in the page].
-  const routes = [
+  const routes: [string, () => boolean][] = [
     ['/', () => !!document.getElementById('drawingCanvas')],
     ['/dev/engine', () => window.__engineReady === true],
     ['/dev/ai-timer', () => document.querySelectorAll('button').length > 0]

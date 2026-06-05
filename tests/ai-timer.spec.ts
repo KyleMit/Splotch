@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 // Exercises the AI render timer animation via the dev-only debug harness at
 // /dev/ai-timer, which feeds AiImageResult.svelte the sample artifacts through
@@ -8,7 +8,7 @@ import { expect, test } from '@playwright/test';
 // Playwright waits for elements but not for Svelte to hydrate, so a click fired
 // right after navigation can hit the SSR'd button before its handler is wired.
 // Retry the trigger until the modal actually opens.
-async function trigger(page, name) {
+async function trigger(page: Page, name: RegExp) {
   await expect(async () => {
     await page.getByRole('button', { name }).click({ timeout: 1000 });
     await expect(page.locator('dialog.ai-result-modal')).toBeVisible({ timeout: 1000 });

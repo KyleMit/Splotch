@@ -1,4 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type APIRequestContext } from '@playwright/test';
+
+// A multipart field value as accepted by Playwright's request.post({ multipart }).
+type MultipartField = string | number | boolean | { name: string; mimeType: string; buffer: Buffer };
 
 // Server-side guards on /api/generate-image. These hit the endpoint directly
 // (no page) because the size/type caps are pure request validation. Passing an
@@ -12,7 +15,7 @@ const TINY_PNG = Buffer.from(
   'base64'
 );
 
-function form(buffer, mimeType, fileName = 'drawing.png') {
+function form(buffer: Buffer, mimeType: string, fileName = 'drawing.png') {
   return {
     apiKey: 'byok-test-key', // BYOK path → skips the token allowlist
     image: { name: fileName, mimeType, buffer }
@@ -22,7 +25,7 @@ function form(buffer, mimeType, fileName = 'drawing.png') {
 // Managed-token variant (no apiKey) → exercises the allowlist + per-token rate
 // limit. `daycare-club` comes from the .env ALLOWED_TOKENS_LIST that vite dev
 // loads; no other spec uses managed tokens, so its limiter bucket stays ours.
-function managedForm(buffer, mimeType, token, fileName = 'drawing.png') {
+function managedForm(buffer: Buffer, mimeType: string, token: string, fileName = 'drawing.png') {
   return {
     token,
     image: { name: fileName, mimeType, buffer }
@@ -37,10 +40,14 @@ const GENERATE_LIMIT = 15;
 // submission, so the guard 403s it unless the Origin matches the site — which
 // the real app's same-origin fetch always sends. Mirror that here so these
 // requests reach the size/type/rate guards under test instead of the CSRF wall.
-function postImage(request, baseURL, multipart) {
+function postImage(
+  request: APIRequestContext,
+  baseURL: string | undefined,
+  multipart: Record<string, MultipartField>
+) {
   return request.post('/api/generate-image', {
     multipart,
-    headers: { origin: baseURL }
+    headers: { origin: baseURL ?? '' }
   });
 }
 
@@ -70,7 +77,7 @@ test('throttles a managed token hammered in a burst', async ({ request, baseURL 
   // so we exhaust the window without spending any real quota. BYOK requests are
   // intentionally not throttled, so this only fires on the managed-token path.
   const token = 'daycare-club';
-  const statuses = [];
+  const statuses: number[] = [];
   for (let i = 0; i < GENERATE_LIMIT + 1; i++) {
     const res = await postImage(request, baseURL, managedForm(TINY_PNG, 'image/gif', token, 'drawing.gif'));
     statuses.push(res.status());

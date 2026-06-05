@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 // Layer 4 — the color palette trims/reveals swatches purely via CSS media
 // queries (no JS measurement), so a broken breakpoint only shows up in what's
@@ -23,23 +23,23 @@ const CORE = [C.purple, C.blue, C.green, C.yellow, C.orange, C.red, C.black];
 
 /** data-color of every palette swatch (excluding the always-on custom swatch)
  *  that is currently rendered (not display:none). */
-async function visibleSwatches(page) {
+async function visibleSwatches(page: Page) {
   return page
     .locator('.color-palette .color-swatch:not(.gradient-swatch)')
-    .evaluateAll((els) =>
+    .evaluateAll((els: HTMLElement[]) =>
       els
         .filter((el) => getComputedStyle(el).display !== 'none')
         .map((el) => el.dataset.color)
     );
 }
 
-async function loadAt(page, width, height) {
+async function loadAt(page: Page, width: number, height: number) {
   await page.setViewportSize({ width, height });
   await page.goto('/');
   await expect(page.locator('.color-palette')).toBeVisible();
 }
 
-async function expectVisible(page, expected) {
+async function expectVisible(page: Page, expected: string[]) {
   await expect.poll(async () => (await visibleSwatches(page)).sort()).toEqual([...expected].sort());
   // The custom (gradient) swatch is never trimmed.
   await expect(page.locator('.color-palette .gradient-swatch')).toBeVisible();
