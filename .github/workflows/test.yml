@@ -6,8 +6,8 @@ on:
   pull_request:
 
 jobs:
-  playwright:
-    name: Playwright
+  test:
+    name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -21,11 +21,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run unit tests
+        run: npm run test:unit
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run tests
-        run: npm test
+      - name: Run e2e tests
+        run: npm run test:e2e
         env:
           # The generate-image rate-limit spec drives the managed-token path,
           # which requires the token to be allowlisted. Locally this comes from
