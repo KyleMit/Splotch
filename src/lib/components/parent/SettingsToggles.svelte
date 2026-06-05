@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
   import {
@@ -11,8 +11,8 @@
     setEraser,
     setColoringBook,
     setAdvancedControls
-  } from '$lib/state/settings.svelte.js';
-  import { clearOverlay } from '$lib/state/coloringBook.svelte.js';
+  } from '$lib/state/settings.svelte';
+  import { clearOverlay } from '$lib/state/coloringBook.svelte';
 
   // Side-effect on top of the persisted setting: disabling the coloring book
   // should also clear any active overlay page.

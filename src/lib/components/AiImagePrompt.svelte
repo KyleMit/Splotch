@@ -1,14 +1,14 @@
-<script>
+<script lang="ts">
   import Icon from './Icon.svelte';
-  import { ui, closeAiPrompt } from '$lib/state/ui.svelte.js';
-  import { exportCanvasBlob } from '$lib/drawing/engine.js';
-  import { getActiveOverlayImage } from '$lib/drawing/overlay.js';
-  import { generateAiImage } from '$lib/drawing/aiImage.js';
-  import { STYLE_NAMES } from '$lib/ai/styles.js';
-  import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
+  import { ui, closeAiPrompt } from '$lib/state/ui.svelte';
+  import { exportCanvasBlob } from '$lib/drawing/engine';
+  import { getActiveOverlayImage } from '$lib/drawing/overlay';
+  import { generateAiImage } from '$lib/drawing/aiImage';
+  import { STYLE_NAMES } from '$lib/ai/styles';
+  import { modalDialog } from '$lib/actions/modalDialog.svelte';
 
-  let previewUrl = $state(null);
-  let drawingBlob = null;
+  let previewUrl = $state<string | null>(null);
+  let drawingBlob: Blob | null = null;
 
   async function loadPreview() {
     cleanupPreview();
@@ -29,7 +29,7 @@
   // preview's object URL doesn't outlive the component.
   $effect(() => () => cleanupPreview());
 
-  function handleSelectStyle(style) {
+  function handleSelectStyle(style: string) {
     if (!drawingBlob) return;
     // Picking a style immediately hands off to the result modal, which shows
     // the progress dial (and any error) over the blurred drawing.

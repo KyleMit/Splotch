@@ -26,6 +26,11 @@ jobs:
 
       - name: Run tests
         run: npm test
+        env:
+          # The generate-image rate-limit spec drives the managed-token path,
+          # which requires the token to be allowlisted. Locally this comes from
+          # .env (git-ignored); supply the same non-secret test token in CI.
+          ALLOWED_TOKENS_LIST: daycare-club
 
       - name: Upload report
         if: ${{ !cancelled() }}

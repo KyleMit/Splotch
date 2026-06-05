@@ -1,12 +1,13 @@
-<script>
+<script lang="ts">
   import { enhance } from '$app/forms';
   import Icon from '$lib/components/Icon.svelte';
-  import { setAdminLinkVisible } from '$lib/state/settings.svelte.js';
+  import { setAdminLinkVisible } from '$lib/state/settings.svelte';
+  import type { PageData, ActionData } from './$types';
 
   // `data.authed` tells us whether the request carried a valid admin session
   // cookie. When false we render a login form; otherwise the tokens and prebuilt
   // invite links arrive via `data`. The secret never reaches the client.
-  let { data, form } = $props();
+  let { data, form }: { data: PageData; form: ActionData } = $props();
 
   // Keep the public /admin link (in the About tab) in sync with reality: it
   // stays visible exactly while an admin_session cookie is present. Logging in
@@ -19,7 +20,7 @@
 
   // Per-row "copied" feedback for the invite links.
   let copied = $state('');
-  async function copyLink(url) {
+  async function copyLink(url: string) {
     try {
       await navigator.clipboard.writeText(url);
       copied = url;

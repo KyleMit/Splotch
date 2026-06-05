@@ -1,9 +1,9 @@
-<script>
-  import { ui, closeColorPicker } from '$lib/state/ui.svelte.js';
-  import { pickCustomColor, colors } from '$lib/state/colors.svelte.js';
-  import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine.js';
-  import { layout } from '$lib/state/layout.svelte.js';
-  import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
+<script lang="ts">
+  import { ui, closeColorPicker } from '$lib/state/ui.svelte';
+  import { pickCustomColor, colors } from '$lib/state/colors.svelte';
+  import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine';
+  import { layout } from '$lib/state/layout.svelte';
+  import { modalDialog } from '$lib/actions/modalDialog.svelte';
 
   // Static palette grid. The original kept it in HTML; here it's a data-driven
   // {#each} so the template stays declarative and rows can be lazily hidden via
@@ -20,11 +20,11 @@
     { name: 'greys', colors: ['#ffffff', '#90A4AE', '#78909C', '#607D8B', '#546E7A', '#455A64', '#37474F', '#263238', '#1A1F24'] }
   ];
 
-  let pickerEl;
-  let hoveredHex = $state(null);
+  let pickerEl: HTMLDivElement;
+  let hoveredHex = $state<string | null>(null);
   let isTrackingDrag = false;
 
-  function selectColor(hex) {
+  function selectColor(hex: string) {
     pickCustomColor(hex);
     releaseAllPointers();
     focusCanvas();
@@ -33,21 +33,21 @@
     isTrackingDrag = false;
   }
 
-  function handlePickerDown(e) {
-    const hex = e.target.closest('.hexagon');
+  function handlePickerDown(e: PointerEvent) {
+    const hex = (e.target as HTMLElement).closest('.hexagon') as HTMLElement | null;
     if (!hex) return;
     isTrackingDrag = true;
-    hoveredHex = hex.dataset.color;
+    hoveredHex = hex.dataset.color ?? null;
     e.preventDefault();
     e.stopPropagation();
   }
 
-  function handlePickerMove(e) {
+  function handlePickerMove(e: PointerEvent) {
     if (!isTrackingDrag) return;
     const element = document.elementFromPoint(e.clientX, e.clientY);
-    const hex = element?.closest?.('.hexagon');
+    const hex = element?.closest?.('.hexagon') as HTMLElement | null;
     if (hex && pickerEl.contains(hex)) {
-      hoveredHex = hex.dataset.color;
+      hoveredHex = hex.dataset.color ?? null;
     } else {
       hoveredHex = null;
     }
@@ -55,13 +55,13 @@
     e.stopPropagation();
   }
 
-  function handlePickerUp(e) {
+  function handlePickerUp(e: PointerEvent) {
     if (!isTrackingDrag) return;
     isTrackingDrag = false;
     const element = document.elementFromPoint(e.clientX, e.clientY);
-    const hex = element?.closest?.('.hexagon');
+    const hex = element?.closest?.('.hexagon') as HTMLElement | null;
     if (hex && pickerEl.contains(hex)) {
-      selectColor(hex.dataset.color);
+      selectColor(hex.dataset.color ?? '');
     } else {
       hoveredHex = null;
     }
@@ -70,7 +70,7 @@
   }
 
   // Block-out zone around the gradient swatch so toddler mis-taps don't dismiss.
-  function isPointInGradientBlockZone(x, y) {
+  function isPointInGradientBlockZone(x: number, y: number) {
     const gradientSwatch = layout.gradientSwatchEl;
     if (!gradientSwatch) return false;
     const rect = gradientSwatch.getBoundingClientRect();

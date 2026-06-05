@@ -1,14 +1,16 @@
-<script>
+<script lang="ts">
+  import type { IconName } from './icon-names';
+
   const modules = import.meta.glob('../icons/*.svg', {
     eager: true,
     query: '?raw',
     import: 'default'
   });
 
-  const icons = {};
+  const icons: Record<string, string> = {};
   for (const [path, src] of Object.entries(modules)) {
-    const key = path.split('/').pop().replace('.svg', '');
-    icons[key] = src;
+    const key = (path.split('/').pop() ?? '').replace('.svg', '');
+    icons[key] = src as string;
   }
 
   // Full-color "spot" icons carry their own palette, so callers that tint
@@ -22,8 +24,12 @@
     'size-1', 'size-2', 'size-3', 'size-4', 'size-5'
   ]);
 
-  /** @type {{ name: import('./icon-names').IconName, class?: string, [key: string]: unknown }} */
-  let { name, class: className = '', ...rest } = $props();
+  interface Props {
+    name: IconName;
+    class?: string;
+    [key: string]: unknown;
+  }
+  let { name, class: className = '', ...rest }: Props = $props();
 
   const markup = $derived(icons[name] ?? '');
   const colorClass = $derived(COLOR_ICONS.has(name) ? ' icon-color' : '');

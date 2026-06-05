@@ -1,22 +1,22 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
   import { slide } from 'svelte/transition';
   import Icon from './Icon.svelte';
-  import { canvasState } from '$lib/state/canvas.svelte.js';
-  import { colors } from '$lib/state/colors.svelte.js';
-  import { settings, setDrawerOpen } from '$lib/state/settings.svelte.js';
-  import { strokeState, STROKE_SIZES, setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte.js';
-  import { toolState, selectEraser, selectPen } from '$lib/state/tool.svelte.js';
-  import { ui, openColoringBook, openAiPrompt } from '$lib/state/ui.svelte.js';
-  import { network } from '$lib/state/network.svelte.js';
-  import { layout } from '$lib/state/layout.svelte.js';
-  import { undo } from '$lib/drawing/engine.js';
-  import { saveScreenshot } from '$lib/drawing/screenshot.js';
-  import { generateAiImage } from '$lib/drawing/aiImage.js';
+  import { canvasState } from '$lib/state/canvas.svelte';
+  import { colors } from '$lib/state/colors.svelte';
+  import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
+  import { strokeState, STROKE_SIZES, setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte';
+  import { toolState, selectEraser, selectPen } from '$lib/state/tool.svelte';
+  import { ui, openColoringBook, openAiPrompt } from '$lib/state/ui.svelte';
+  import { network } from '$lib/state/network.svelte';
+  import { layout } from '$lib/state/layout.svelte';
+  import { undo } from '$lib/drawing/engine';
+  import { saveScreenshot } from '$lib/drawing/screenshot';
+  import { generateAiImage } from '$lib/drawing/aiImage';
 
-  let strokeWrapperEl;
-  let coloringBtnEl;
-  let aiBtnEl;
+  let strokeWrapperEl: HTMLDivElement | undefined;
+  let coloringBtnEl: HTMLButtonElement | undefined;
+  let aiBtnEl: HTMLButtonElement | undefined;
   let isPortrait = $state(false);
 
   // Landscape: sit just past the color palette so we clear it. Portrait: pin to
@@ -63,14 +63,14 @@
     window.addEventListener('orientationchange', updateOrientation);
 
     // Click outside closes stroke menu
-    const onDocPointerDown = (e) => {
-      if (strokeState.menuOpen && strokeWrapperEl && !strokeWrapperEl.contains(e.target)) {
+    const onDocPointerDown = (e: PointerEvent) => {
+      if (strokeState.menuOpen && strokeWrapperEl && !strokeWrapperEl.contains(e.target as Node)) {
         strokeState.menuOpen = false;
       }
     };
     document.addEventListener('pointerdown', onDocPointerDown);
 
-    const onKeyDown = (e) => {
+    const onKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         handleUndoClick();
@@ -105,7 +105,7 @@
     else selectEraser();
   }
 
-  function handleStrokeSizeClick(size) {
+  function handleStrokeSizeClick(size: number) {
     setStrokeSize(size);
     strokeState.menuOpen = false;
   }
@@ -158,7 +158,7 @@
           aria-pressed={activeStrokeSize() === size}
           onclick={() => handleStrokeSizeClick(size)}
         >
-          <Icon name="size-{size}" class="action-icon" />
+          <Icon name={`size-${size}` as import('./icon-names').IconName} class="action-icon" />
         </button>
       {/each}
     </div>

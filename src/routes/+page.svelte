@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
   import DrawingCanvas from '$lib/components/DrawingCanvas.svelte';
   import ColorPalette from '$lib/components/ColorPalette.svelte';
@@ -9,12 +9,12 @@
   import ParentCenter from '$lib/components/ParentCenter.svelte';
   import AiImagePrompt from '$lib/components/AiImagePrompt.svelte';
   import AiImageResult from '$lib/components/AiImageResult.svelte';
-  import { initPWAUpdates } from '$lib/pwa/updates.js';
-  import { captureAiAccessTokenFromUrl, reloadSettings, hydrateApiKey } from '$lib/state/settings.svelte.js';
-  import { reloadStrokeWidth } from '$lib/state/strokeWidth.svelte.js';
-  import { hydrateDurableStorage } from '$lib/storage.js';
-  import { initNetwork } from '$lib/state/network.svelte.js';
-  import { isNative } from '$lib/platform.js';
+  import { initPWAUpdates } from '$lib/pwa/updates';
+  import { captureAiAccessTokenFromUrl, reloadSettings, hydrateApiKey } from '$lib/state/settings.svelte';
+  import { reloadStrokeWidth } from '$lib/state/strokeWidth.svelte';
+  import { hydrateDurableStorage } from '$lib/storage';
+  import { initNetwork } from '$lib/state/network.svelte';
+  import { isNative } from '$lib/platform';
 
   onMount(() => {
     captureAiAccessTokenFromUrl();
@@ -34,12 +34,12 @@
     });
 
     // Prevent context menu on long press
-    const blockContextMenu = (e) => e.preventDefault();
+    const blockContextMenu = (e: Event) => e.preventDefault();
     document.addEventListener('contextmenu', blockContextMenu);
 
     // Wake lock to prevent screen sleep — request on first pointerdown, and
     // re-request when the page becomes visible again.
-    let wakeLock = null;
+    let wakeLock: WakeLockSentinel | null = null;
     async function requestWakeLock() {
       try {
         if ('wakeLock' in navigator) {

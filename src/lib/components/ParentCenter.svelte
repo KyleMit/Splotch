@@ -1,13 +1,13 @@
-<script>
+<script lang="ts">
   import Icon from './Icon.svelte';
-  import { ui, openParentCenter, closeParentCenter } from '$lib/state/ui.svelte.js';
+  import { ui, openParentCenter, closeParentCenter } from '$lib/state/ui.svelte';
   import SettingsToggles from './parent/SettingsToggles.svelte';
   import AiKeyManager from './parent/AiKeyManager.svelte';
   import SetupInstructions from './parent/SetupInstructions.svelte';
   import AboutTab from './parent/AboutTab.svelte';
-  import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
+  import { modalDialog } from '$lib/actions/modalDialog.svelte';
 
-  let buttonEl;
+  let buttonEl: HTMLButtonElement;
   let activeTab = $state('settings');
 
   function openModal() {

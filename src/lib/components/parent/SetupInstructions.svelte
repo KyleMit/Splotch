@@ -1,5 +1,5 @@
-<script>
-  import { isNative, getPlatform } from '$lib/platform.js';
+<script lang="ts">
+  import { isNative, getPlatform } from '$lib/platform';
 
   // `open` flips true when the Parent Center modal opens; we re-run platform/OS
   // detection then so the instructions match the current device and install state.
@@ -30,7 +30,7 @@
   function detectOS() {
     if (typeof navigator === 'undefined') return 'ios';
     const ua = navigator.userAgent || navigator.vendor || '';
-    if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return 'ios';
+    if (/iPad|iPhone|iPod/.test(ua) && !(window as { MSStream?: unknown }).MSStream) return 'ios';
     if (/android/i.test(ua)) return 'android';
     return 'ios';
   }
@@ -41,7 +41,7 @@
       window.matchMedia('(display-mode: standalone)').matches ||
       window.matchMedia('(display-mode: fullscreen)').matches ||
       window.matchMedia('(display-mode: minimal-ui)').matches ||
-      window.navigator.standalone === true
+      (window.navigator as { standalone?: boolean }).standalone === true
     );
   }
 

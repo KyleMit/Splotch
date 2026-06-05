@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { onDestroy } from 'svelte';
   import AiImageResult from '$lib/components/AiImageResult.svelte';
   import Icon from '$lib/components/Icon.svelte';
@@ -8,7 +8,7 @@
     finishAiGeneration,
     failAiGeneration,
     closeAiResult
-  } from '$lib/state/ui.svelte.js';
+  } from '$lib/state/ui.svelte';
 
   // Sample artifacts stand in for a real generation: the child's drawing (shown
   // blurred behind the dial) and the finished "AI" image that's revealed. They
@@ -23,7 +23,7 @@
   // production code is touched — this page just calls the same public actions.
 
   let delayMs = $state(10000);
-  let pending = 0; // setTimeout id for the scheduled "finish"
+  let pending: ReturnType<typeof setTimeout> | 0 = 0; // setTimeout id for the scheduled "finish"
 
   function clearPending() {
     if (pending) {
@@ -62,7 +62,7 @@
   // Once the modal opens it's a modal <dialog>, so it makes the rest of the page
   // inert and the buttons below become unclickable. Global key listeners still
   // fire, so offer hotkeys to drive the animation while it's on screen.
-  function onKeyDown(e) {
+  function onKeyDown(e: KeyboardEvent) {
     if (e.target instanceof HTMLInputElement) return;
     const k = e.key.toLowerCase();
     if (k === 'p') play();

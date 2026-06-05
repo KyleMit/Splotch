@@ -1,0 +1,10 @@
+{
+  "extends": "./.svelte-kit/tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    // All of src/ is now TypeScript. Config files (vite/svelte/vitest/playwright)
+    // and build scripts live outside src/ and are unaffected by this.
+    "allowJs": false,
+    "skipLibCheck": true
+  }
+}

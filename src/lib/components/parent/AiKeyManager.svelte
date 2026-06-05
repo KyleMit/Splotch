@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { slide } from 'svelte/transition';
   import Icon from '../Icon.svelte';
   import ToggleRow from './ToggleRow.svelte';
@@ -9,9 +9,9 @@
     setAutoSaveAi,
     setAiAccessToken,
     setAiUserApiKey
-  } from '$lib/state/settings.svelte.js';
-  import { apiUrl } from '$lib/api.js';
-  import { getPlatform } from '$lib/platform.js';
+  } from '$lib/state/settings.svelte';
+  import { apiUrl } from '$lib/api';
+  import { getPlatform } from '$lib/platform';
 
   // `open` flips true when the Parent Center modal opens; we use it to clear the
   // input and any stale feedback, and to re-read the current platform.
@@ -33,7 +33,7 @@
   // a parent can recognise it without exposing the whole secret.
   let maskedKey = $derived(maskSecret(settings.aiUserApiKey));
 
-  function maskSecret(value) {
+  function maskSecret(value: string) {
     if (!value) return '';
     if (value.length <= 4) return '*'.repeat(value.length);
     return '*'.repeat(value.length - 4) + value.slice(-4);

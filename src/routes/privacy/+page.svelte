@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   // Friendly, plain-language privacy policy. Splotch collects nothing, so this
   // mostly exists to *prove* that — and it's required by the app stores (see
   // MOBILE.md). Keep the tone simple enough for a parent to skim in 30 seconds.
