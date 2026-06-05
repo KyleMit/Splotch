@@ -6,7 +6,6 @@
     booksForPlatform,
     coloringBookState,
     setOverlayPage,
-    updateOverlayOrientation,
     clearOverlay
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
@@ -44,10 +43,6 @@
       window.removeEventListener('resize', onChange);
       window.screen.orientation?.removeEventListener?.('change', onChange);
     };
-  });
-
-  $effect(() => {
-    updateOverlayOrientation(orientation);
   });
 
   function pickPage(page: ColoringPage) {

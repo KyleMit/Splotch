@@ -6,7 +6,7 @@
 * [x] Run all tests on CI
 * [x] Add playwright test for multi-touch usage
 * [ ] Run performance profiling and analyze results
-  * [ ] I'd like to run a real performance profile against the actual drawing canvas.  What's the best way to accomplish this.  Ideally we'd track it with multi touch to make sure it doesn't burden perf in those circumstances.  I can do multi-touch on my phone, but not sure how to profile there.  If you can run the chrome profiler while simulating multiple touches, that would be great.  I'd just like to be able to get real-world data, analyze that data and then figure out where there might be performance bottlnecks we can solve
+  * [ ] I'd like to run a real performance profile against the actual drawing canvas.  What's the best way to accomplish this.  Ideally we'd track it with multi touch to make sure it doesn't burden perf in those circumstances.  I can do multi-touch on my phone, but not sure how to profile there.  If you can run the chrome profiler while simulating multiple touches, that would be great.  I'd just like to be able to get real-world data, analyze that data and then figure out where there might be performance bottlenecks we can solve
 * [ ] Add style guide
 * [ ] Add haptics for trashcan when in the clear accept zone
 * [ ] Add sound effects when deleting

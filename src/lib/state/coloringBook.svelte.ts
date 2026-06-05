@@ -25,11 +25,6 @@ export function setOverlayPage(page: ColoringPage, orientation: BookOrientation)
   coloringBookState.overlayUrl = pageImage(page, orientation);
 }
 
-export function updateOverlayOrientation(orientation: BookOrientation) {
-  if (!coloringBookState.overlayPage) return;
-  coloringBookState.overlayUrl = pageImage(coloringBookState.overlayPage, orientation);
-}
-
 export function clearOverlay() {
   coloringBookState.overlayUrl = null;
   coloringBookState.overlayPage = null;
