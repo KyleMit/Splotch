@@ -1,5 +1,10 @@
 [
   {
+    "version": "1.1.0",
+    "date": "2026-06-05",
+    "bodyHtml": "<h2>✨ New</h2>\n<ul>\n<li>Lock screen rotation so your drawing stays put — on by default.</li>\n<li>Tap the speaker icon to mute or unmute sounds.</li>\n</ul>\n<h2>🚀 Improved</h2>\n<ul>\n<li>Coloring pages now adapt to both portrait and landscape.</li>\n<li>Sounds start sooner for snappier feedback.</li>\n<li>Better screen-reader support for in-app messages.</li>\n</ul>\n<h2>🛠 Fixed</h2>\n<ul>\n<li>Your coloring page no longer resets when you rotate the device.</li>\n<li>Fixed the layout on wide screens.</li>\n</ul>"
+  },
+  {
     "version": "1.0.1",
     "date": "2026-06-03",
     "bodyHtml": "<h2>🚀 Improved</h2>\n<ul>\n<li>More colors now fit on smaller screens.</li>\n<li>The clear button is friendlier and more fun.</li>\n<li>A colorful gradient sweeps in while you&#39;re clearing the canvas.</li>\n</ul>\n<h2>🛠 Fixed</h2>\n<ul>\n<li>The color palette now adapts more gracefully across devices.</li>\n</ul>"
