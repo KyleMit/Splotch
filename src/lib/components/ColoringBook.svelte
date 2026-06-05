@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import Icon from './Icon.svelte';
   import { ui, closeColoringBook } from '$lib/state/ui.svelte';
   import {
@@ -8,6 +8,7 @@
     clearOverlay
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
+  import type { Book } from '$lib/state/books';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
 
   // Only show books licensed for this platform. Native builds also strip the
@@ -15,9 +16,9 @@
   // this filter and that strip must agree — both read the same `platforms`.
   const books = booksForPlatform(isNative() ? 'mobile' : 'web');
 
-  let activeBook = $state(null);
+  let activeBook = $state<Book | null>(null);
 
-  function pickPage(src) {
+  function pickPage(src: string) {
     setOverlay(src);
     closeColoringBook();
   }

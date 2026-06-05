@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
   import { clearCanvas } from '$lib/drawing/engine';
@@ -6,13 +6,13 @@
   import { saveDrawingIfEnabled } from '$lib/drawing/saveOnDelete';
   import { stopDrawSound } from '$lib/audio/drawingSound';
 
-  let containerEl;
-  let buttonEl;
-  let acceptZoneEl;
-  let clearPreviewEl;
-  let pageTurnOverlayEl;
-  let coachmarkRingEl;
-  let coachmarkGhostEl;
+  let containerEl: HTMLDivElement;
+  let buttonEl: HTMLButtonElement;
+  let acceptZoneEl: HTMLDivElement;
+  let clearPreviewEl: HTMLDivElement;
+  let pageTurnOverlayEl: HTMLDivElement;
+  let coachmarkRingEl: HTMLDivElement;
+  let coachmarkGhostEl: HTMLDivElement;
 
   let tutorialVisible = $state(false);
   let tutorialFadeOut = $state(false);
@@ -36,20 +36,20 @@
   // Number of taps inside the window that surfaces the tutorial for a stuck user.
   const MULTI_CLICK_THRESHOLD = 3;
 
-  let holdTimer = null;
+  let holdTimer: ReturnType<typeof setTimeout> | null = null;
   let holdStartX = 0;
   let holdStartY = 0;
   let clickCount = 0;
   let lastClickTime = 0;
-  let tutorialDismissTimer = null;
-  let lastOrientation = null;
+  let tutorialDismissTimer: ReturnType<typeof setTimeout> | null = null;
+  let lastOrientation: boolean | null = null;
 
   // Timers driving the post-commit reset choreography (acceptZone hide, sound
   // stop, page-turn cleanup, final restore). Tracked so a mid-animation unmount
   // can cancel them — every callback touches DOM that's about to be torn down.
-  const resetTimers = new Set();
+  const resetTimers = new Set<ReturnType<typeof setTimeout>>();
 
-  function scheduleReset(fn, delay) {
+  function scheduleReset(fn: () => void, delay: number) {
     const id = setTimeout(() => {
       resetTimers.delete(id);
       fn();
@@ -116,7 +116,7 @@
     tutorialFadeOut = true;
   }
 
-  function startClearDrag(e) {
+  function startClearDrag(e: PointerEvent) {
     const now = Date.now();
     if (now - lastClickTime < MULTI_CLICK_WINDOW) {
       clickCount++;
@@ -130,8 +130,8 @@
     }
     lastClickTime = now;
 
-    const clientX = e.clientX ?? e.touches?.[0]?.clientX;
-    const clientY = e.clientY ?? e.touches?.[0]?.clientY;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
     holdStartX = clientX;
     holdStartY = clientY;
     holdTimer = setTimeout(showTutorial, HOLD_DURATION);
@@ -165,11 +165,11 @@
     e.stopPropagation();
   }
 
-  function dragClear(e) {
+  function dragClear(e: PointerEvent) {
     if (!isDragging) return;
 
-    const clientX = e.clientX ?? e.touches?.[0]?.clientX;
-    const clientY = e.clientY ?? e.touches?.[0]?.clientY;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
 
     const deltaX = Math.abs(clientX - holdStartX);
     const deltaY = Math.abs(clientY - holdStartY);
@@ -214,7 +214,7 @@
     e.stopPropagation();
   }
 
-  function stopClearDrag(e) {
+  function stopClearDrag(e: PointerEvent) {
     if (!isDragging) return;
 
     if (holdTimer) {
@@ -223,8 +223,8 @@
     }
     isDragging = false;
 
-    const clientX = e.clientX ?? e.changedTouches?.[0]?.clientX;
-    const clientY = e.clientY ?? e.changedTouches?.[0]?.clientY;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
     const dx = clientX - startPointerX;
     const dy = clientY - startPointerY;
     const distance = Math.sqrt(dx * dx + dy * dy);

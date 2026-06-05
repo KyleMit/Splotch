@@ -16,7 +16,7 @@
     "dev:cap": "cross-env CAPACITOR=true vite dev --host",
     "dev:netlify": "netlify dev",
     "build": "vite build",
-    "build:cap": "cross-env CAPACITOR=true vite build && node scripts/strip-native-assets.mjs",
+    "build:cap": "cross-env CAPACITOR=true vite build && node --experimental-strip-types scripts/strip-native-assets.mjs",
     "preview": "vite preview",
     "cap:sync": "npm run build:cap && cap sync",
     "cap:android": "npm run cap:sync && cap open android",

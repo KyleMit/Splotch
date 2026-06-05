@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
   import {
     initDrawingCanvas,
@@ -15,14 +15,14 @@
   import { settings } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
 
-  let canvasEl;
+  let canvasEl: HTMLCanvasElement;
 
   // Bubble that previews the eraser footprint at the pointer while erasing.
   let eraserCursor = $state({ visible: false, x: 0, y: 0 });
 
   const eraserSizePx = $derived(getEraserWidthPx(strokeState.eraserSize));
 
-  function updateEraserCursor(e) {
+  function updateEraserCursor(e: PointerEvent) {
     if (!toolState.eraser) return;
     // The canvas fills the container, so its cached client rect shares the
     // container's origin — reuse it instead of forcing another reflow per move.

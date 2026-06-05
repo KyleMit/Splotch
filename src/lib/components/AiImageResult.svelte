@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { scale } from 'svelte/transition';
   import { backOut } from 'svelte/easing';
   import Icon from './Icon.svelte';
@@ -6,7 +6,7 @@
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
 
-  let dialogEl;
+  let dialogEl: HTMLDialogElement;
 
   // ── Progress dial state ────────────────────────────────────────────────
   // We can't know exactly when the backend finishes, but it's ~10s. The dial
@@ -25,9 +25,9 @@
 
   // Mostly-linear so it advances at a steady, even pace — just a touch of sine
   // easing softens the very start and end without a slow ramp or a late rush.
-  const fillCurve = (t) => 0.55 * t + 0.45 * (-(Math.cos(Math.PI * t) - 1) / 2);
+  const fillCurve = (t: number) => 0.55 * t + 0.45 * (-(Math.cos(Math.PI * t) - 1) / 2);
 
-  function loop(now) {
+  function loop(now: number) {
     const elapsed = now - startTime;
     if (!done) {
       if (elapsed < ESTIMATE) {
@@ -124,7 +124,7 @@
   // render identical markup — no hydration mismatch.
   const CONFETTI_COLORS = ['#FF6FB5', '#FFD23F', '#5CC8FF', '#7BE08A', '#C792EA', '#FF9E4D'];
   const confetti = Array.from({ length: 38 }, (_, i) => {
-    const r = (seed) => {
+    const r = (seed: number) => {
       const x = Math.sin((i + 1) * seed) * 10000;
       return x - Math.floor(x);
     };
@@ -143,8 +143,8 @@
   // so a tall portrait render fills the modal instead of being letterboxed in a
   // fixed 4:3 box. Falls back to 4/3 until the first image reports its size.
   let imgAspect = $state(4 / 3);
-  function handleImgLoad(e) {
-    const { naturalWidth: w, naturalHeight: h } = e.target;
+  function handleImgLoad(e: Event) {
+    const { naturalWidth: w, naturalHeight: h } = e.target as HTMLImageElement;
     if (w > 0 && h > 0) imgAspect = w / h;
   }
 
@@ -155,7 +155,7 @@
 
   function timestamp() {
     const d = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
+    const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
   }
 
@@ -179,7 +179,7 @@
   // The dialog's only own animation is the fly-out; child animations (confetti,
   // the dial out-transition, the download pop) bubble up but have a different
   // target, so this stays specific to the send-off.
-  function handleAnimationEnd(e) {
+  function handleAnimationEnd(e: AnimationEvent) {
     if (exiting && e.target === dialogEl) {
       closeAiResult();
     }

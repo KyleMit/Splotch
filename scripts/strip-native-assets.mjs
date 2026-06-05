@@ -3,14 +3,17 @@
 // the `build:cap` script, against the freshly produced `build/` output — it
 // never touches the source `static/` tree.
 //
-// Source of truth is the `platforms` field in src/lib/state/books.js. A book
+// Source of truth is the `platforms` field in src/lib/state/books.ts. A book
 // that does not list 'mobile' (e.g. licensed IP like Bluey / Frozen) has its
 // asset folder deleted here, matching the runtime filter in ColoringBook.svelte.
+//
+// books.ts is TypeScript, so this script is launched with Node's
+// --experimental-strip-types (see the build:cap npm script) to import it directly.
 
 import { rmSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BOOKS } from '../src/lib/state/books.js';
+import { BOOKS } from '../src/lib/state/books.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BUILD_DIR = join(ROOT, 'build'); // capacitor.config.json webDir

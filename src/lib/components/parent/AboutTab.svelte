@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import Icon from '../Icon.svelte';
   import { settings, setAdminLinkVisible } from '$lib/state/settings.svelte';
   // Generated at build time from releases/*.md (see scripts/generate-releases.mjs).

@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import {
     PALETTE_COLORS,
     TRIM_ORDER,
@@ -15,8 +15,8 @@
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
 
-  let paletteEl;
-  let swatchEls = $state({});
+  let paletteEl: HTMLDivElement;
+  let swatchEls = $state<Record<string, HTMLButtonElement>>({});
 
   // Publish layout values siblings need (ActionsPanel offsets past our width;
   // ColorPicker block-zones around the gradient swatch) so they don't have to
@@ -37,18 +37,18 @@
 
   // Track the most recent click so we can fire the confirmation ring animation
   // only on the actual selection (not on every reactivity change).
-  let ringAnimateKey = $state(null);
+  let ringAnimateKey = $state<string | null>(null);
 
-  function ringShadow(color) {
+  function ringShadow(color: string) {
     const ringColor = getRingColor(color);
     return `0 0 0 0.5px white, 0 0 0 4.5px ${ringColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
   }
 
-  function gradientRingShadow(color) {
+  function gradientRingShadow(color: string) {
     return `0 0 0 0.5px white, 0 0 0 4.5px ${color}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
   }
 
-  function handleSwatchUp(e, hex) {
+  function handleSwatchUp(e: PointerEvent, hex: string) {
     selectPen();
     selectPaletteColor(hex);
     ringAnimateKey = hex + ':' + Date.now();
@@ -58,7 +58,7 @@
     e.stopPropagation();
   }
 
-  function handleCustomUp(e) {
+  function handleCustomUp(e: PointerEvent) {
     selectPen();
     selectCustomSwatch();
     if (swatchEls[CUSTOM_SWATCH]) {
@@ -76,17 +76,17 @@
     e.stopPropagation();
   }
 
-  function handlePaletteDown(e) {
+  function handlePaletteDown(e: PointerEvent) {
     releaseAllPointers();
     e.preventDefault();
     e.stopPropagation();
   }
 
-  function handlePaletteUp(e) {
+  function handlePaletteUp(e: PointerEvent) {
     e.stopPropagation();
   }
 
-  function handleSwatchCancel(e) {
+  function handleSwatchCancel(e: PointerEvent) {
     releaseAllPointers();
     e.stopPropagation();
   }

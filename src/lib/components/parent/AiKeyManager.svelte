@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { slide } from 'svelte/transition';
   import Icon from '../Icon.svelte';
   import ToggleRow from './ToggleRow.svelte';
@@ -33,7 +33,7 @@
   // a parent can recognise it without exposing the whole secret.
   let maskedKey = $derived(maskSecret(settings.aiUserApiKey));
 
-  function maskSecret(value) {
+  function maskSecret(value: string) {
     if (!value) return '';
     if (value.length <= 4) return '*'.repeat(value.length);
     return '*'.repeat(value.length - 4) + value.slice(-4);

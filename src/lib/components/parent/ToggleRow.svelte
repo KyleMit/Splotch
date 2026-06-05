@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import Icon from '../Icon.svelte';
 
   // A single iOS-style toggle row: an icon + label on the left, a switch on the
