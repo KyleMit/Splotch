@@ -10,7 +10,9 @@
     setStrokeWidthControl,
     setEraser,
     setColoringBook,
-    setAdvancedControls
+    setAdvancedControls,
+    setLockRotation,
+    setForceLandscapeOrientation
   } from '$lib/state/settings.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
 
@@ -46,6 +48,29 @@
       help="Saves the current drawing each time the page is cleared"
     />
   </div>
+
+    <div class="setting">
+    <ToggleRow
+      icon={settings.lockRotationEnabled ? 'mobile-lock' : 'mobile-rotate'}
+      label="Lock device rotation"
+      id="lockRotationToggle"
+      checked={settings.lockRotationEnabled}
+      onToggle={setLockRotation}
+    />
+  </div>
+
+  {#if settings.lockRotationEnabled}
+  <div class="setting" transition:slide={{ duration: 220 }}>
+    <ToggleRow
+      icon={settings.forceLandscapeOrientation ? 'mobile-landscape' : 'mobile-portrait'}
+      label="Force landscape orientation"
+      id="forceLandscapeToggle"
+      checked={settings.forceLandscapeOrientation}
+      onToggle={setForceLandscapeOrientation}
+    />
+  </div>
+  {/if}
+  
 </section>
 
 <section class="setting-group">

@@ -24,6 +24,16 @@ const AI_USER_API_KEY = 'splotch-ai-user-api-key';
 const ADVANCED_CONTROLS_KEY = 'splotch-advanced-controls';
 const DRAWER_OPEN_KEY = 'splotch-drawer-open';
 const ADMIN_LINK_VISIBLE_KEY = 'splotch-admin-link-visible';
+const LOCK_ROTATION_KEY = 'splotch-lock-rotation';
+const FORCE_LANDSCAPE_KEY = 'splotch-force-landscape';
+
+function defaultForceLandscapeOrientation() {
+  if (typeof window === 'undefined') return true;
+  // iPad Mini and larger tablets have a smallest CSS viewport side around
+  // 744px; Android tablet layouts commonly start at 600dp. Phone-class devices
+  // stay below that, even in landscape, so they default to portrait.
+  return Math.min(window.innerWidth, window.innerHeight) >= 600;
+}
 
 // Single source of truth for every boolean setting: live-state property name ->
 // [localStorage key, default]. The initial $state, the per-setting setters, and
@@ -56,7 +66,12 @@ const BOOL_SETTINGS = {
   // Unlocked by the version-tap easter egg and kept visible for anyone who has
   // an admin_session cookie; reset to hidden on logout / failed login / leaving
   // the admin page without signing in (see /admin and AboutTab).
-  adminLinkVisible: [ADMIN_LINK_VISIBLE_KEY, false]
+  adminLinkVisible: [ADMIN_LINK_VISIBLE_KEY, false],
+  // Parent device-orientation controls. The force-landscape default is filled
+  // in below from the viewport so phones start portrait while tablet-class
+  // devices, including iPad Mini, start landscape.
+  lockRotationEnabled: [LOCK_ROTATION_KEY, false],
+  forceLandscapeOrientation: [FORCE_LANDSCAPE_KEY, defaultForceLandscapeOrientation()]
 } satisfies Record<string, [string, boolean]>;
 
 type BoolSettingKey = keyof typeof BOOL_SETTINGS;
@@ -96,6 +111,8 @@ export const setAutoSaveAi = makeBoolSetter('autoSaveAiEnabled');
 export const setAdvancedControls = makeBoolSetter('advancedControlsEnabled');
 export const setDrawerOpen = makeBoolSetter('drawerOpen');
 export const setAdminLinkVisible = makeBoolSetter('adminLinkVisible');
+export const setLockRotation = makeBoolSetter('lockRotationEnabled');
+export const setForceLandscapeOrientation = makeBoolSetter('forceLandscapeOrientation');
 
 export function setAiAccessToken(v: string) { settings.aiAccessToken = v; writeString(AI_ACCESS_TOKEN_KEY, v); }
 // Update the live value immediately (so the UI reacts at once), then persist to

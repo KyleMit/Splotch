@@ -1,11 +1,22 @@
 <script lang="ts">
+  import type { IconName } from '../icon-names';
   import Icon from '../Icon.svelte';
 
   // A single iOS-style toggle row: an icon + label on the left, a switch on the
   // right, and an optional help line below. `aria-label` is derived from `label`
   // so the visible text and the accessible name can never diverge. `onToggle`
   // receives the next boolean value.
-  let { icon, label, id, checked, onToggle, help = '', disabled = false } = $props();
+  interface Props {
+    icon: IconName;
+    label: string;
+    id: string;
+    checked: boolean;
+    onToggle: (next: boolean) => void;
+    help?: string;
+    disabled?: boolean;
+  }
+
+  let { icon, label, id, checked, onToggle, help = '', disabled = false }: Props = $props();
 </script>
 
 <div class="setting-toggle">

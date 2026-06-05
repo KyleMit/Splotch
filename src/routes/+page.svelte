@@ -10,11 +10,18 @@
   import AiImagePrompt from '$lib/components/AiImagePrompt.svelte';
   import AiImageResult from '$lib/components/AiImageResult.svelte';
   import { initPWAUpdates } from '$lib/pwa/updates';
-  import { captureAiAccessTokenFromUrl, reloadSettings, hydrateApiKey } from '$lib/state/settings.svelte';
+  import { captureAiAccessTokenFromUrl, reloadSettings, hydrateApiKey, settings } from '$lib/state/settings.svelte';
   import { reloadStrokeWidth } from '$lib/state/strokeWidth.svelte';
   import { hydrateDurableStorage } from '$lib/storage';
   import { initNetwork } from '$lib/state/network.svelte';
   import { isNative } from '$lib/platform';
+  import { applyDeviceOrientationPreference } from '$lib/orientation';
+
+  $effect(() => {
+    settings.lockRotationEnabled;
+    settings.forceLandscapeOrientation;
+    applyDeviceOrientationPreference();
+  });
 
   onMount(() => {
     captureAiAccessTokenFromUrl();
@@ -30,6 +37,7 @@
       if (restored) {
         reloadSettings();
         reloadStrokeWidth();
+        applyDeviceOrientationPreference();
       }
     });
 
