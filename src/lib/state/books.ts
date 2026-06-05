@@ -12,9 +12,21 @@
 // Licensed IP (Bluey, Frozen) is web-only: we don't bundle it into the
 // App Store / Play Store builds.
 
-export const PLATFORMS = { WEB: 'web', MOBILE: 'mobile' };
+// Distribution platforms a book may ship on — distinct from the runtime
+// platform in platform.ts (which also has 'ios'/'android').
+export type BookPlatform = 'web' | 'mobile';
 
-export const BOOKS = [
+export interface Book {
+  id: string;
+  name: string;
+  platforms?: BookPlatform[];
+  cover: string;
+  pages: string[];
+}
+
+export const PLATFORMS = { WEB: 'web', MOBILE: 'mobile' } as const;
+
+export const BOOKS: Book[] = [
   {
     id: 'frozen',
     name: 'Frozen',
@@ -60,6 +72,6 @@ export const BOOKS = [
 ];
 
 /** Books allowed on the given platform ('web' | 'mobile'). */
-export function booksForPlatform(platform) {
+export function booksForPlatform(platform: BookPlatform): Book[] {
   return BOOKS.filter((book) => (book.platforms ?? ['web', 'mobile']).includes(platform));
 }

@@ -6,12 +6,13 @@ import { browser } from '$app/environment';
 // during SSR/prerender (Node), where no such global exists.
 
 /** True only when running inside a native Capacitor shell (Android/iOS). */
-export function isNative() {
+export function isNative(): boolean {
   return browser && globalThis.Capacitor?.isNativePlatform?.() === true;
 }
 
-/** 'android' | 'ios' | 'web' */
-export function getPlatform() {
+export type Platform = 'android' | 'ios' | 'web';
+
+export function getPlatform(): Platform {
   if (!browser) return 'web';
-  return globalThis.Capacitor?.getPlatform?.() ?? 'web';
+  return (globalThis.Capacitor?.getPlatform?.() ?? 'web') as Platform;
 }

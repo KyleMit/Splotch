@@ -5,7 +5,12 @@
 // the token/key oracles — not to enforce a durable, cross-instance quota. If we
 // ever need that, swap the Map for a Netlify Blobs counter (see tokens.js).
 
-const buckets = new Map();
+const buckets = new Map<string, number[]>();
+
+export interface RateLimitResult {
+  limited: boolean;
+  retryAfter: number;
+}
 
 /**
  * Sliding-window limiter. Records a hit for `key` and reports whether the caller
@@ -14,7 +19,10 @@ const buckets = new Map();
  * Returns `{ limited, retryAfter }` — `retryAfter` is seconds until the oldest
  * hit in the window ages out (only meaningful when `limited` is true).
  */
-export function rateLimit(key, { limit = 10, windowMs = 60_000 } = {}) {
+export function rateLimit(
+  key: string,
+  { limit = 10, windowMs = 60_000 }: { limit?: number; windowMs?: number } = {}
+): RateLimitResult {
   const now = Date.now();
   const cutoff = now - windowMs;
 

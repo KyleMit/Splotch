@@ -11,7 +11,7 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     setupFiles: ['./vitest-setup.js'],
-    include: ['src/**/*.{test,spec}.js'],
+    include: ['src/**/*.{test,spec}.{js,ts}'],
     // The Playwright specs live under tests/ and must not be picked up here.
     exclude: ['tests/**', 'node_modules/**', '.svelte-kit/**']
   }

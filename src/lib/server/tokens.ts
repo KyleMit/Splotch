@@ -10,9 +10,11 @@ const KEY = 'list';
 
 // In-memory fallback for environments where Netlify Blobs isn't wired up
 // (e.g. plain `vite dev`). Mutations there won't survive a restart.
-let memoryTokens = null;
+let memoryTokens: string[] | null = null;
 
-function seedFromEnv() {
+type TokenStore = ReturnType<typeof getStore>;
+
+function seedFromEnv(): string[] {
   const raw = env.ALLOWED_TOKENS_LIST || '';
   return raw
     .split(',')
@@ -34,13 +36,14 @@ async function readStore() {
     await store.setJSON(KEY, seeded);
     return { store, list: seeded };
   } catch (err) {
-    console.warn('[tokens] Netlify Blobs unavailable, using in-memory list:', err?.message ?? err);
+    const detail = err instanceof Error ? err.message : err;
+    console.warn('[tokens] Netlify Blobs unavailable, using in-memory list:', detail);
     if (memoryTokens === null) memoryTokens = seedFromEnv();
     return { store: null, list: memoryTokens };
   }
 }
 
-async function persist(store, list) {
+async function persist(store: TokenStore | null, list: string[]) {
   if (store) {
     await store.setJSON(KEY, list);
   } else {
@@ -55,14 +58,14 @@ export async function getTokens() {
 }
 
 /** Whether `token` is currently allowed. */
-export async function isAllowedToken(token) {
+export async function isAllowedToken(token: unknown) {
   if (typeof token !== 'string') return false;
   const { list } = await readStore();
   return list.includes(token);
 }
 
 /** Add a token. Returns `{ ok, error?, tokens? }`. */
-export async function addToken(token) {
+export async function addToken(token: unknown) {
   const t = String(token ?? '').trim();
   if (!t) return { ok: false, error: 'Token cannot be empty' };
   const { store, list } = await readStore();
@@ -73,10 +76,10 @@ export async function addToken(token) {
 }
 
 /** Remove a token. Returns `{ ok, tokens }`. */
-export async function removeToken(token) {
+export async function removeToken(token: unknown) {
   const t = String(token ?? '').trim();
   const { store, list } = await readStore();
-  const next = list.filter((x) => x !== t);
+  const next = list.filter((x: string) => x !== t);
   await persist(store, next);
   return { ok: true, tokens: next };
 }

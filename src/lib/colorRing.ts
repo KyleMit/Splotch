@@ -2,7 +2,7 @@
 // the ring reads as a contrasting outline — but for very dark swatches (e.g.
 // black) darkening is invisible, so we lighten instead. Pure function, kept out
 // of the .svelte component so it can be unit-tested directly.
-export function getRingColor(color) {
+export function getRingColor(color: string): string {
   let hex = color.replace('#', '');
   if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
   const r = parseInt(hex.substr(0, 2), 16);
@@ -11,9 +11,9 @@ export function getRingColor(color) {
 
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   const shift = luminance < 0.2
-    ? (v) => Math.min(255, Math.round(v + 38))
-    : (v) => Math.max(0, Math.round(v * 0.9));
+    ? (v: number) => Math.min(255, Math.round(v + 38))
+    : (v: number) => Math.max(0, Math.round(v * 0.9));
 
-  const toHex = (v) => v.toString(16).padStart(2, '0');
+  const toHex = (v: number) => v.toString(16).padStart(2, '0');
   return `#${toHex(shift(r))}${toHex(shift(g))}${toHex(shift(b))}`;
 }
