@@ -30,7 +30,7 @@
 
   <div class="setting">
     <ToggleRow
-      icon="volume-on"
+      icon={settings.soundEnabled ? 'volume-on' : 'volume-off'}
       label="Drawing Sounds"
       id="soundToggle"
       checked={settings.soundEnabled}
