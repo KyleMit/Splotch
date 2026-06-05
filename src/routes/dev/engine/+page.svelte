@@ -94,6 +94,45 @@
         ev('pointerdown', points[0]);
         for (let i = 1; i < points.length; i++) ev('pointermove', points[i]);
         ev('pointerup', points[points.length - 1]);
+      },
+
+      // Synchronous synthetic multi-touch — drives several pointers at once
+      // through the same pointerdown/move/up handlers the engine binds. Every
+      // pointer goes down first, then all advance one step at a time in lockstep
+      // (round-robin), then all lift — so the engine is tracking up to N
+      // concurrent pointerIds (its activePointers map is keyed by pointerId) the
+      // way real multi-touch arrives. Used by the multi-touch spec, where the
+      // simultaneity must be deterministic in a single synchronous tick.
+      multiStrokeSync(
+        strokes: { pointerId: number; points: { x: number; y: number }[] }[],
+        pointerType = 'touch'
+      ) {
+        const rect = canvasEl.getBoundingClientRect();
+        const ev = (type: string, pointerId: number, p: { x: number; y: number }) =>
+          canvasEl.dispatchEvent(
+            new PointerEvent(type, {
+              pointerId,
+              pointerType,
+              isPrimary: false,
+              clientX: rect.left + p.x,
+              clientY: rect.top + p.y,
+              bubbles: true,
+              cancelable: true
+            })
+          );
+
+        for (const s of strokes) ev('pointerdown', s.pointerId, s.points[0]);
+
+        const maxLen = Math.max(...strokes.map((s) => s.points.length));
+        for (let i = 1; i < maxLen; i++) {
+          for (const s of strokes) {
+            if (i < s.points.length) ev('pointermove', s.pointerId, s.points[i]);
+          }
+        }
+
+        for (const s of strokes) {
+          ev('pointerup', s.pointerId, s.points[s.points.length - 1]);
+        }
       }
     };
 

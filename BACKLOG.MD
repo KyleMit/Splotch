@@ -3,10 +3,10 @@
 ## TODO
 
 * [x] Convert codebase to TS
-* [ ] Run all tests on CI
-* [ ] Add style guide
+* [x] Run all tests on CI
+* [x] Add playwright test for multi-touch usage
 * [ ] Run performance profiling and analyze results
-* [ ] Add playwright test for multi-touch usage
+* [ ] Add style guide
 * [ ] Add haptics for trashcan when in the clear accept zone
 * [ ] Add sound effects when deleting
 * [ ] Add even more color for tall landscape view
