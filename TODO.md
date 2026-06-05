@@ -19,24 +19,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ---
 
-## 12. Add a cleanliness guard to the release script
-
-**Problem:** `release.mjs` runs `git add -A`, then commits, tags, and pushes. A stray
-edited file in the working tree gets swept into the release commit unnoticed.
-
-**Affected files:**
-- `scripts/release.mjs:96-116`
-
-**Approach:** Before staging, run `git status --porcelain` and abort (or prompt/warn) if
-files outside the known generated/version paths are dirty. Alternatively stage only the
-specific generated/version files instead of `-A`. Optionally `rmSync` the temp notes dir
-after the `gh` call.
-
-**Acceptance criteria:** a release with an unrelated dirty file is blocked or clearly
-warns before committing; a clean release proceeds exactly as before.
-
----
-
 ## Minor cleanup (do opportunistically; remove each line when done)
 
 - **AI object-URL helper:** `aiImage.js` creates blob URLs (~49/57/75) with no revoke

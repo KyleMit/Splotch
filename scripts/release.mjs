@@ -9,7 +9,7 @@
 // Native version numbers are set with capacitor-set-version so Android and iOS
 // stay in sync; package.json is the canonical semver source.
 
-import { readFileSync, writeFileSync, existsSync, mkdtempSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
@@ -95,6 +95,38 @@ if (dryRun) {
 
 // --- 4. commit + tag -----------------------------------------------------
 
+// Cleanliness guard: by this point everything dirty in the tree should be a
+// file the release itself just rewrote (version bumps + generated artifacts).
+// Anything else is a stray edit that `git add -A` would silently sweep into the
+// release commit — abort so it can't ride along unnoticed.
+const RELEASE_PATHS = [
+  'package.json',
+  'package-lock.json',
+  'src/lib/releases.json',
+  'android/',
+  'ios/',
+  'fastlane/',
+  'releases/'
+];
+const isReleasePath = (p) =>
+  RELEASE_PATHS.some((allowed) => (allowed.endsWith('/') ? p.startsWith(allowed) : p === allowed));
+
+const stray = execSync('git status --porcelain', { cwd: ROOT, encoding: 'utf8' })
+  .split(/\r?\n/)
+  .filter(Boolean)
+  .map((line) => line.slice(3)) // strip the "XY " status columns
+  .map((p) => (p.includes(' -> ') ? p.split(' -> ')[1] : p)) // rename: keep the new path
+  .map((p) => p.replace(/^"(.*)"$/, '$1')) // unquote paths git escapes
+  .filter((p) => !isReleasePath(p));
+
+if (stray.length) {
+  console.error('\nWorking tree has changes outside the release artifacts:');
+  for (const p of stray) console.error(`  ${p}`);
+  console.error('\nCommit, stash, or revert them before releasing — otherwise `git add -A`');
+  console.error('would sweep them into the release commit.');
+  process.exit(1);
+}
+
 run('git', ['add', '-A']);
 run('git', ['commit', '-m', `release: v${version}`]);
 run('git', ['tag', `v${version}`]);
@@ -112,7 +144,8 @@ if (noPublish) {
 run('git', ['push']);
 run('git', ['push', 'origin', `v${version}`]);
 
-const notesPath = join(mkdtempSync(join(tmpdir(), 'splotch-rel-')), 'notes.md');
+const notesDir = mkdtempSync(join(tmpdir(), 'splotch-rel-'));
+const notesPath = join(notesDir, 'notes.md');
 writeFileSync(notesPath, body + '\n');
 
 const ghArgs = ['release', 'create', `v${version}`, '--title', `v${version}`, '--notes-file', notesPath];
@@ -124,5 +157,6 @@ if (existsSync(aab)) {
   console.log('(no app-release.aab found — run `npm run android:bundle` first to attach it)');
 }
 run('gh', ghArgs);
+rmSync(notesDir, { recursive: true, force: true });
 
 console.log(`\n✓ Released v${version}: https://github.com/KyleMit/Splotch/releases/tag/v${version}`);

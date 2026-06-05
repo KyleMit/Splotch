@@ -269,24 +269,3 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
   * [ ] Sometimes it doesn't register clicks on color changes
 * [ ] Controls
   * [ ] Brush type (blend mode with previous drawing)
-
-
-## Coloring Book Sections
-
-### Outer space
-
-* Rocket ship
-* Astronaut
-* The moon and stars
-* Space Station
-* Meteor shower
-* Rover on mars
-
-## Mythical & Magical Creatures
-
-* Unicorn
-* Friendly Dragon
-* Mermaid
-* Pegasus
-* Forest Fairy
-* Wizard's Owl
