@@ -70,7 +70,7 @@ const BOOL_SETTINGS = {
   // Parent device-orientation controls. The force-landscape default is filled
   // in below from the viewport so phones start portrait while tablet-class
   // devices, including iPad Mini, start landscape.
-  lockRotationEnabled: [LOCK_ROTATION_KEY, false],
+  lockRotationEnabled: [LOCK_ROTATION_KEY, true],
   forceLandscapeOrientation: [FORCE_LANDSCAPE_KEY, defaultForceLandscapeOrientation()]
 } satisfies Record<string, [string, boolean]>;
 
