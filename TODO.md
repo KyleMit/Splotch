@@ -21,9 +21,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ## Minor cleanup (do opportunistically; remove each line when done)
 
-- **`drawingSound.js`** re-arms a `clearTimeout`/`setTimeout` pair on every `pointermove`
-  that never fires (stroke-end already stops sound); and `.play()` is called without a
-  `.catch()`, producing unhandled-rejection noise. Remove the redundant timer; add `.catch(() => {})`.
 - **Cross-component DOM reach:** `ActionsPanel.svelte:51` and `ColorPicker.svelte:95`
   measure another component's element via `querySelector` (`ActionsPanel` with a 100ms
   `setTimeout` layout race). Share the needed layout value through state instead.

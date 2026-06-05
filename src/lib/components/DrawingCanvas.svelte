@@ -12,7 +12,8 @@
   import { canvasState } from '$lib/state/canvas.svelte.js';
   import { strokeState, activeStrokeSize, getStrokeWidthPx, getEraserWidthPx } from '$lib/state/strokeWidth.svelte.js';
   import { coloringBookState } from '$lib/state/coloringBook.svelte.js';
-  import { playDrawSound, stopDrawSound } from '$lib/audio/drawingSound.js';
+  import { settings } from '$lib/state/settings.svelte.js';
+  import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound.js';
 
   let canvasEl;
 
@@ -51,6 +52,13 @@
     setStrokeWidth(getStrokeWidthPx(activeStrokeSize()));
 
     return () => engine.teardown();
+  });
+
+  // Warm up the pencil-sound assets as soon as sound is on (at mount, or when
+  // toggled on later) so the first stroke isn't silent for a few seconds while
+  // they fetch/decode. Skipped while sound is off to avoid the wasted download.
+  $effect(() => {
+    if (settings.soundEnabled) preloadDrawSounds();
   });
 
   // Reactive bridges: when the store changes, push into the imperative engine.

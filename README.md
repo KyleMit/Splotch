@@ -238,10 +238,11 @@ Watch the tests run headed with `npm run test:headed -- ai-timer
 * [x] Don't include copyright coloring pages on mobile deployment
 * [x] Do't use indexdb instead of localstorage - forces load into async
 * [x] Make clear action more intuitive
+* [x] Sound doesn't come in right away on fresh page load
 * [ ] Convert codebase to TS
+* [ ] Add style guide
 * [ ] Run performance profiling and analyze results
 * [ ] Add playwright test for multi-touch usage
-* [ ] Sound doesn't come in right away on fresh page load
 * [ ] Add haptics for trashcan when in the clear accept zone
 * [ ] Add sound effects when deleting
 * [ ] Add even more color for tall landscape view
