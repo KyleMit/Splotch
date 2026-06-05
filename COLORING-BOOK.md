@@ -1,5 +1,24 @@
 # Coloring Book Sections
 
+## Frozen
+
+* Ana
+* Elsa
+* Kristoph
+* Sven
+* Olaf
+* Pabbie
+
+
+## Bluey
+
+* Bluey
+* Bingo
+* Bandit
+* Chili
+* Muffin
+* Socks
+
 ## Outer space
 
 * Rocket ship
@@ -9,7 +28,7 @@
 * Meteor shower
 * Rover on mars
 
-# Mythical & Magical Creatures
+## Mythical & Magical Creatures
 
 * Unicorn
 * Friendly Dragon

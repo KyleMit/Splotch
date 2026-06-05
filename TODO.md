@@ -21,9 +21,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ## Minor cleanup (do opportunistically; remove each line when done)
 
-- **AI object-URL helper:** `aiImage.js` creates blob URLs (~49/57/75) with no revoke
-  in-file; revocation lives in `ui.svelte.js` as 4 repeated revoke-on-replace blocks.
-  Consolidate into a `swapObjectUrl(prev, next)` helper in the UI store.
 - **`ui.svelte.js` `*Origin` fields** (`colorPickerOrigin`, `coloringBookOrigin`,
   `parentCenterOrigin`, `aiPromptOrigin`) are added dynamically on first open instead of
   declared in the initial `$state`. Declare them as `null` for discoverability.

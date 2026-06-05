@@ -47,16 +47,20 @@ export function closeAiPrompt() {
   ui.aiPromptOpen = false;
 }
 
+// Revoke the outgoing object URL (when there is one and it's actually being
+// replaced) and return the incoming one, so a single assignment swaps the value
+// without leaking the old blob. Call with `next` omitted to revoke and clear.
+function swapObjectUrl(prev, next = null) {
+  if (prev && prev !== next) URL.revokeObjectURL(prev);
+  return next ?? null;
+}
+
 // Open the result modal in its loading state. `previewUrl` is an object URL of
 // the child's own drawing — shown blurred behind the progress dial while the
 // AI image is being generated.
 export function startAiGeneration(previewUrl) {
-  if (ui.aiPreviewUrl && ui.aiPreviewUrl !== previewUrl) URL.revokeObjectURL(ui.aiPreviewUrl);
-  if (ui.aiResultUrl) {
-    URL.revokeObjectURL(ui.aiResultUrl);
-    ui.aiResultUrl = null;
-  }
-  ui.aiPreviewUrl = previewUrl ?? null;
+  ui.aiPreviewUrl = swapObjectUrl(ui.aiPreviewUrl, previewUrl);
+  ui.aiResultUrl = swapObjectUrl(ui.aiResultUrl);
   ui.aiError = false;
   ui.aiGenerating = true;
   ui.aiResultOpen = true;
@@ -72,8 +76,7 @@ export function setAiPreview(previewUrl) {
     URL.revokeObjectURL(previewUrl);
     return;
   }
-  if (ui.aiPreviewUrl && ui.aiPreviewUrl !== previewUrl) URL.revokeObjectURL(ui.aiPreviewUrl);
-  ui.aiPreviewUrl = previewUrl ?? null;
+  ui.aiPreviewUrl = swapObjectUrl(ui.aiPreviewUrl, previewUrl);
 }
 
 // The finished image has arrived — hand it to the modal so the dial can race to
@@ -85,8 +88,7 @@ export function finishAiGeneration(url) {
     URL.revokeObjectURL(url);
     return;
   }
-  if (ui.aiResultUrl && ui.aiResultUrl !== url) URL.revokeObjectURL(ui.aiResultUrl);
-  ui.aiResultUrl = url;
+  ui.aiResultUrl = swapObjectUrl(ui.aiResultUrl, url);
   ui.aiGenerating = false;
 }
 
@@ -100,12 +102,6 @@ export function closeAiResult() {
   ui.aiResultOpen = false;
   ui.aiGenerating = false;
   ui.aiError = false;
-  if (ui.aiResultUrl) {
-    URL.revokeObjectURL(ui.aiResultUrl);
-    ui.aiResultUrl = null;
-  }
-  if (ui.aiPreviewUrl) {
-    URL.revokeObjectURL(ui.aiPreviewUrl);
-    ui.aiPreviewUrl = null;
-  }
+  ui.aiResultUrl = swapObjectUrl(ui.aiResultUrl);
+  ui.aiPreviewUrl = swapObjectUrl(ui.aiPreviewUrl);
 }
