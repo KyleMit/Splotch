@@ -16,7 +16,7 @@
   // stays put for anyone holding an admin_session cookie; the /admin page resets
   // it on logout / failed login / leaving without signing in. The secret itself
   // is collected by the console's login form, so it never touches the client.
-  let versionClicks = 0;
+  let versionClicks = $state(0);
   let showAdminLink = $derived(settings.adminLinkVisible);
   function handleVersionClick() {
     versionClicks += 1;

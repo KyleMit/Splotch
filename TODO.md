@@ -21,8 +21,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ## Minor cleanup (do opportunistically; remove each line when done)
 
-- **`AboutTab.svelte:19`** `versionClicks` is a plain `let`, not `$state` — works today
-  only because nothing renders it. Make it `$state(0)` (or comment why it's non-reactive).
 - **Brand color `#AB71E1`** (and hover `#9961d1`) is a literal hex in ~8 places across the
   parent components and the canvas background. Promote to a `--brand` CSS custom property.
 - **`drawingSound.js`** re-arms a `clearTimeout`/`setTimeout` pair on every `pointermove`
