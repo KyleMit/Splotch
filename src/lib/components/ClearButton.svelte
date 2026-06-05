@@ -44,6 +44,20 @@
   let tutorialDismissTimer = null;
   let lastOrientation = null;
 
+  // Timers driving the post-commit reset choreography (acceptZone hide, sound
+  // stop, page-turn cleanup, final restore). Tracked so a mid-animation unmount
+  // can cancel them — every callback touches DOM that's about to be torn down.
+  const resetTimers = new Set();
+
+  function scheduleReset(fn, delay) {
+    const id = setTimeout(() => {
+      resetTimers.delete(id);
+      fn();
+    }, delay);
+    resetTimers.add(id);
+    return id;
+  }
+
   function isPortrait() {
     return window.matchMedia('(orientation: portrait)').matches;
   }
@@ -218,7 +232,7 @@
 
     acceptZoneEl.classList.remove('visible');
     acceptZoneEl.classList.remove('threshold-reached');
-    setTimeout(() => {
+    scheduleReset(() => {
       if (!isDragging) acceptZoneEl.style.display = 'none';
     }, 250);
 
@@ -242,11 +256,11 @@
 
       pageTurnOverlayEl.classList.add('animating');
 
-      setTimeout(() => {
+      scheduleReset(() => {
         stopDrawSound();
       }, 300);
 
-      setTimeout(() => {
+      scheduleReset(() => {
         pageTurnOverlayEl.classList.remove('animating');
 
         containerEl.style.transform = '';
@@ -254,7 +268,7 @@
         buttonEl.style.transition = 'none';
         buttonEl.style.transform = 'scale(0.8)';
 
-        setTimeout(() => {
+        scheduleReset(() => {
           containerEl.classList.remove('dragging-active');
           buttonEl.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
           buttonEl.style.opacity = '1';
@@ -302,6 +316,8 @@
       // callback can't fire against torn-down DOM.
       if (holdTimer) clearTimeout(holdTimer);
       if (tutorialDismissTimer) clearTimeout(tutorialDismissTimer);
+      for (const id of resetTimers) clearTimeout(id);
+      resetTimers.clear();
     };
   });
 </script>

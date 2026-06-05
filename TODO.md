@@ -19,27 +19,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ---
 
-## 10. Harden `ClearButton` animation teardown
-
-**Problem:** `stopClearDrag` runs a chained `setTimeout` choreography (nested ~600ms →
-50ms plus a ~300ms timeout) that is never tracked or cleared. The `onMount` cleanup clears
-only `holdTimer` and `tutorialDismissTimer`, so a mid-animation unmount fires callbacks
-against torn-down DOM.
-
-**Affected files:**
-- `src/lib/components/ClearButton.svelte` — `stopClearDrag` (~239-268); `onMount` cleanup (~303-304)
-
-**Approach:** Track every timeout id created during the reset choreography and clear them
-all in the `onMount` teardown, or drive the reset off CSS `transitionend` instead of
-hardcoded delays. (Optionally, longer-term, extract the drag gesture into a `use:` action;
-not required for this task.)
-
-**Acceptance criteria:** the clear/reset animation looks and behaves identically; no timer
-callback runs after the component unmounts (verify by unmounting mid-animation);
-`npm run test:e2e` passes.
-
----
-
 ## 11. Run e2e tests against the production build, not the dev server
 
 **Problem:** `playwright.config.js` starts the app with `vite dev`, so e2e never exercises
