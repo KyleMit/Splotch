@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getRingColor } from './colorRing.js';
-import { PALETTE_COLORS } from './state/colors.svelte.js';
+import { getRingColor } from './colorRing';
+import { PALETTE_COLORS } from './state/colors.svelte';
 
 describe('getRingColor', () => {
   it('darkens a normal-luminance swatch by ~10%', () => {

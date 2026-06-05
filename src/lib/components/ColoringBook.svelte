@@ -1,13 +1,13 @@
 <script>
   import Icon from './Icon.svelte';
-  import { ui, closeColoringBook } from '$lib/state/ui.svelte.js';
+  import { ui, closeColoringBook } from '$lib/state/ui.svelte';
   import {
     booksForPlatform,
     coloringBookState,
     setOverlay,
     clearOverlay
-  } from '$lib/state/coloringBook.svelte.js';
-  import { isNative } from '$lib/platform.js';
+  } from '$lib/state/coloringBook.svelte';
+  import { isNative } from '$lib/platform';
   import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
 
   // Only show books licensed for this platform. Native builds also strip the

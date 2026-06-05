@@ -8,7 +8,7 @@
     finishAiGeneration,
     failAiGeneration,
     closeAiResult
-  } from '$lib/state/ui.svelte.js';
+  } from '$lib/state/ui.svelte';
 
   // Sample artifacts stand in for a real generation: the child's drawing (shown
   // blurred behind the dial) and the finished "AI" image that's revealed. They

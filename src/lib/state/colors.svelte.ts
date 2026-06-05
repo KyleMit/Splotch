@@ -2,7 +2,14 @@
 // `bonus` colors are extras that only appear on a tall landscape (see the trim
 // rules in ColorPalette.svelte); when hidden, the remaining seven collapse back
 // to the core rainbow. Purple must stay at index 0 — it's the default selection.
-export const PALETTE_COLORS = [
+export interface PaletteColor {
+  hex: string;
+  label: string;
+  /** Extra swatch shown only when there's the most room (see ColorPalette). */
+  bonus?: boolean;
+}
+
+export const PALETTE_COLORS: PaletteColor[] = [
   { hex: '#AB71E1', label: 'Purple' },
   { hex: '#62A2E9', label: 'Blue' },
   { hex: '#4FC4C0', label: 'Teal', bonus: true },
@@ -20,7 +27,7 @@ export const PALETTE_COLORS = [
 // so they are the first to go and only show when there's the most room. Among
 // the core seven, red goes first, then orange, green, yellow; blue and purple
 // (the default selection) hang on longer, and black is kept the longest.
-export const TRIM_ORDER = [
+export const TRIM_ORDER: string[] = [
   '#B5835A', // Brown  (bonus)
   '#4FC4C0', // Teal   (bonus)
   '#F47CB0', // Pink   (bonus)
@@ -43,7 +50,7 @@ export const colors = $state({
   lastColorChangeAt: 0
 });
 
-export function selectPaletteColor(hex) {
+export function selectPaletteColor(hex: string) {
   colors.activeSwatch = hex;
   colors.activeColor = hex;
   colors.lastColorChangeAt = Date.now();
@@ -57,7 +64,7 @@ export function selectCustomSwatch() {
   }
 }
 
-export function pickCustomColor(hex) {
+export function pickCustomColor(hex: string) {
   colors.customColor = hex;
   colors.customColorSelected = true;
   colors.activeSwatch = CUSTOM_SWATCH;

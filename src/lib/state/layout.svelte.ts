@@ -3,7 +3,12 @@
 // querySelector. That coupling tied callers to another component's CSS class
 // names and forced a mount-time setTimeout to dodge layout races; reading the
 // value reactively here removes both.
-export const layout = $state({
+interface LayoutState {
+  paletteWidth: number;
+  gradientSwatchEl: HTMLElement | null;
+}
+
+export const layout: LayoutState = $state({
   // Rendered width of the color palette bar. ActionsPanel sits just past it
   // (paletteWidth + gap) in landscape so it clears the palette. 0 until the
   // palette has measured itself, so dependents settle once it lays out.

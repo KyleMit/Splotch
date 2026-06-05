@@ -6,12 +6,12 @@
     colors,
     selectPaletteColor,
     selectCustomSwatch
-  } from '$lib/state/colors.svelte.js';
+  } from '$lib/state/colors.svelte';
   import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine.js';
-  import { openColorPicker } from '$lib/state/ui.svelte.js';
-  import { toolState, selectPen } from '$lib/state/tool.svelte.js';
-  import { layout } from '$lib/state/layout.svelte.js';
-  import { getRingColor } from '$lib/colorRing.js';
+  import { openColorPicker } from '$lib/state/ui.svelte';
+  import { toolState, selectPen } from '$lib/state/tool.svelte';
+  import { layout } from '$lib/state/layout.svelte';
+  import { getRingColor } from '$lib/colorRing';
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
 

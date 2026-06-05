@@ -1,5 +1,5 @@
-import { readBool, writeBool, readString, writeString, removeKey } from '../storage.js';
-import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage.js';
+import { readBool, writeBool, readString, writeString, removeKey } from '../storage';
+import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage';
 
 const SOUND_KEY = 'splotch-sound-enabled';
 const SAVE_ON_DELETE_KEY = 'splotch-save-on-delete';
@@ -57,23 +57,30 @@ const BOOL_SETTINGS = {
   // an admin_session cookie; reset to hidden on logout / failed login / leaving
   // the admin page without signing in (see /admin and AboutTab).
   adminLinkVisible: [ADMIN_LINK_VISIBLE_KEY, false]
-};
+} satisfies Record<string, [string, boolean]>;
 
-export const settings = $state({
-  ...Object.fromEntries(
-    Object.entries(BOOL_SETTINGS).map(([prop, [key, def]]) => [prop, readBool(key, def)])
-  ),
+type BoolSettingKey = keyof typeof BOOL_SETTINGS;
+
+interface Settings extends Record<BoolSettingKey, boolean> {
   // String setting (special case): the managed-access token, persisted verbatim.
-  aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
+  aiAccessToken: string;
   // Parent-supplied Gemini API key (BYOK). Held in memory only; hydrated from
   // secure storage on boot by hydrateApiKey(). Empty until then / unless set.
+  aiUserApiKey: string;
+}
+
+export const settings: Settings = $state({
+  ...(Object.fromEntries(
+    Object.entries(BOOL_SETTINGS).map(([prop, [key, def]]) => [prop, readBool(key, def)])
+  ) as Record<BoolSettingKey, boolean>),
+  aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
   aiUserApiKey: ''
 });
 
 // Build a setter that updates the live value and persists it to localStorage.
-function makeBoolSetter(prop) {
+function makeBoolSetter(prop: BoolSettingKey) {
   const [key] = BOOL_SETTINGS[prop];
-  return (v) => { settings[prop] = v; writeBool(key, v); };
+  return (v: boolean) => { settings[prop] = v; writeBool(key, v); };
 }
 
 export const setSound = makeBoolSetter('soundEnabled');
@@ -90,10 +97,10 @@ export const setAdvancedControls = makeBoolSetter('advancedControlsEnabled');
 export const setDrawerOpen = makeBoolSetter('drawerOpen');
 export const setAdminLinkVisible = makeBoolSetter('adminLinkVisible');
 
-export function setAiAccessToken(v) { settings.aiAccessToken = v; writeString(AI_ACCESS_TOKEN_KEY, v); }
+export function setAiAccessToken(v: string) { settings.aiAccessToken = v; writeString(AI_ACCESS_TOKEN_KEY, v); }
 // Update the live value immediately (so the UI reacts at once), then persist to
 // secure storage. Returns the persistence promise so callers can await it.
-export function setAiUserApiKey(v) {
+export function setAiUserApiKey(v: string) {
   settings.aiUserApiKey = v;
   return v ? saveApiKey(v) : clearApiKey();
 }
@@ -102,7 +109,7 @@ export function setAiUserApiKey(v) {
 // storage layer recovers values that the native WebView had evicted (see
 // hydrateDurableStorage in storage.js). A no-op visually when nothing changed.
 export function reloadSettings() {
-  for (const [prop, [key]] of Object.entries(BOOL_SETTINGS)) {
+  for (const [prop, [key]] of Object.entries(BOOL_SETTINGS) as [BoolSettingKey, [string, boolean]][]) {
     settings[prop] = readBool(key, settings[prop]);
   }
   settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);

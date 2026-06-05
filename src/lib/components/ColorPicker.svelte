@@ -1,8 +1,8 @@
 <script>
-  import { ui, closeColorPicker } from '$lib/state/ui.svelte.js';
-  import { pickCustomColor, colors } from '$lib/state/colors.svelte.js';
+  import { ui, closeColorPicker } from '$lib/state/ui.svelte';
+  import { pickCustomColor, colors } from '$lib/state/colors.svelte';
   import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine.js';
-  import { layout } from '$lib/state/layout.svelte.js';
+  import { layout } from '$lib/state/layout.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
 
   // Static palette grid. The original kept it in HTML; here it's a data-driven

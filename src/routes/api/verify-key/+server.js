@@ -1,6 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { GoogleGenAI } from '@google/genai';
-import { rateLimit } from '$lib/server/rateLimit.js';
+import { rateLimit } from '$lib/server/rateLimit';
 
 // A cheap text model is enough to prove the key authenticates with Gemini —
 // we only care that the request isn't rejected for bad credentials. (The image

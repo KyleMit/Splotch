@@ -1,7 +1,7 @@
 <script>
   import { enhance } from '$app/forms';
   import Icon from '$lib/components/Icon.svelte';
-  import { setAdminLinkVisible } from '$lib/state/settings.svelte.js';
+  import { setAdminLinkVisible } from '$lib/state/settings.svelte';
 
   // `data.authed` tells us whether the request carried a valid admin session
   // cookie. When false we render a login form; otherwise the tokens and prebuilt

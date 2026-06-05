@@ -9,9 +9,9 @@
     setAutoSaveAi,
     setAiAccessToken,
     setAiUserApiKey
-  } from '$lib/state/settings.svelte.js';
+  } from '$lib/state/settings.svelte';
   import { apiUrl } from '$lib/api.js';
-  import { getPlatform } from '$lib/platform.js';
+  import { getPlatform } from '$lib/platform';
 
   // `open` flips true when the Parent Center modal opens; we use it to clear the
   // input and any stale feedback, and to re-read the current platform.

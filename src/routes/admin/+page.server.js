@@ -1,8 +1,8 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { getTokens, addToken, removeToken } from '$lib/server/tokens.js';
-import { rateLimit } from '$lib/server/rateLimit.js';
+import { getTokens, addToken, removeToken } from '$lib/server/tokens';
+import { rateLimit } from '$lib/server/rateLimit';
 
 // Must be server-rendered: it has form actions and validates the admin secret
 // against an HTTP-only session cookie, neither of which is compatible with the

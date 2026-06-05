@@ -2,9 +2,9 @@ import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { GoogleGenAI } from '@google/genai';
 import { getStore } from '@netlify/blobs';
-import { STYLE_SUFFIXES } from '$lib/ai/styles.js';
-import { isAllowedToken } from '$lib/server/tokens.js';
-import { rateLimit } from '$lib/server/rateLimit.js';
+import { STYLE_SUFFIXES } from '$lib/ai/styles';
+import { isAllowedToken } from '$lib/server/tokens';
+import { rateLimit } from '$lib/server/rateLimit';
 
 /**
  * Record that a token generated an image, so we can spot a token going rogue.

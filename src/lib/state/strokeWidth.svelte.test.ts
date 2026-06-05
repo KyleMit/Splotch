@@ -9,8 +9,8 @@ import {
   getStrokeWidthPx,
   getEraserWidthPx,
   reloadStrokeWidth
-} from './strokeWidth.svelte.js';
-import { selectPen, selectEraser, toolState } from './tool.svelte.js';
+} from './strokeWidth.svelte';
+import { selectPen, selectEraser, toolState } from './tool.svelte';
 
 const PEN_KEY = 'splotch-stroke-width-size';
 const ERASER_KEY = 'splotch-eraser-width-size';

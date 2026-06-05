@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { isNative } from '$lib/platform.js';
+import { isNative } from '$lib/platform';
 
 // Tracks connectivity so the UI can hide internet-only features (the AI button)
 // when offline — everything else in Splotch works fully offline. On the web we

@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { isNative } from './platform.js';
+import { isNative } from './platform';
 
 // Secure home for the parent's Gemini API key.
 //
@@ -24,8 +24,10 @@ const MASTER_KEY_ROW = 'master-key'; // the non-extractable AES-GCM CryptoKey
 const PAYLOAD_ROW = 'gemini-api-key'; // { iv, data }
 
 // --- native plugin (lazy so it's never loaded on the web or during SSR) ---
-let pluginPromise = null;
-function getPlugin() {
+type SecureStoragePlugin = (typeof import('@aparajita/capacitor-secure-storage'))['SecureStorage'];
+
+let pluginPromise: Promise<SecureStoragePlugin> | null = null;
+function getPlugin(): Promise<SecureStoragePlugin> {
   if (!pluginPromise) {
     pluginPromise = import('@aparajita/capacitor-secure-storage').then((m) => m.SecureStorage);
   }
@@ -33,8 +35,8 @@ function getPlugin() {
 }
 
 // --- web: IndexedDB via idb (also lazy) ---
-let dbPromise = null;
-function getDb() {
+let dbPromise: Promise<import('idb').IDBPDatabase> | null = null;
+function getDb(): Promise<import('idb').IDBPDatabase> {
   if (!dbPromise) {
     dbPromise = import('idb').then(({ openDB }) =>
       openDB(DB_NAME, DB_VERSION, {
@@ -50,7 +52,7 @@ function getDb() {
 // Get (or lazily create) the persistent, non-extractable master key. Because it
 // can never be exported, code that reads IndexedDB can't lift the raw bytes out —
 // it can only ask the browser to decrypt, within this origin.
-async function getMasterKey(db) {
+async function getMasterKey(db: import('idb').IDBPDatabase): Promise<CryptoKey> {
   const existing = await db.get(STORE, MASTER_KEY_ROW);
   if (existing) return existing;
   const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, [
@@ -61,7 +63,7 @@ async function getMasterKey(db) {
   return key;
 }
 
-async function webSave(value) {
+async function webSave(value: string) {
   const db = await getDb();
   const key = await getMasterKey(db);
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -94,7 +96,7 @@ async function webClear() {
 }
 
 /** Persist the parent's API key to the platform's secure store. */
-export async function saveApiKey(value) {
+export async function saveApiKey(value: string) {
   if (!browser || !value) return;
   if (isNative()) {
     const SecureStorage = await getPlugin();

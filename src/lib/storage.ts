@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { isNative } from './platform.js';
+import { isNative } from './platform';
 
 // Storage is dual-layer so the web app and the native apps share one code path:
 //
@@ -17,9 +17,9 @@ import { isNative } from './platform.js';
 // Every key that flows through read*/write* is remembered so the durable layer
 // knows exactly what to back up and restore. State stores read their keys at
 // init (before hydrate runs), so this set is complete by then.
-const managedKeys = new Set();
+const managedKeys = new Set<string>();
 
-function track(key) {
+function track(key: string) {
   managedKeys.add(key);
 }
 
@@ -29,7 +29,7 @@ function track(key) {
 // that triggered it. Swallow the failure (the native durable mirror still backs
 // the value up) and warn at most once so we don't spam the console.
 let storageWarned = false;
-function safeLocalStorage(op) {
+function safeLocalStorage(op: () => void) {
   try {
     op();
   } catch (err) {
@@ -40,8 +40,10 @@ function safeLocalStorage(op) {
   }
 }
 
-let prefsPromise = null;
-function getPrefs() {
+type Preferences = (typeof import('@capacitor/preferences'))['Preferences'];
+
+let prefsPromise: Promise<Preferences> | null = null;
+function getPrefs(): Promise<Preferences> {
   if (!prefsPromise) {
     prefsPromise = import('@capacitor/preferences').then((m) => m.Preferences);
   }
@@ -50,14 +52,14 @@ function getPrefs() {
 
 // Fire-and-forget durable mirror. Never throws into the caller — a failed
 // durable write just means we fall back to the localStorage copy.
-function mirror(key, value) {
+function mirror(key: string, value: string) {
   if (!isNative()) return;
   getPrefs()
     .then((Preferences) => Preferences.set({ key, value: String(value) }))
     .catch(() => {});
 }
 
-export function readBool(key, fallback) {
+export function readBool(key: string, fallback: boolean): boolean {
   track(key);
   if (!browser) return fallback;
   const raw = localStorage.getItem(key);
@@ -65,7 +67,7 @@ export function readBool(key, fallback) {
   return raw === 'true';
 }
 
-export function writeBool(key, value) {
+export function writeBool(key: string, value: boolean) {
   track(key);
   if (!browser) return;
   const str = value ? 'true' : 'false';
@@ -73,14 +75,14 @@ export function writeBool(key, value) {
   mirror(key, str);
 }
 
-export function readString(key, fallback) {
+export function readString<T extends string | null>(key: string, fallback: T): string | T {
   track(key);
   if (!browser) return fallback;
   const raw = localStorage.getItem(key);
   return raw === null ? fallback : raw;
 }
 
-export function writeString(key, value) {
+export function writeString(key: string, value: string) {
   track(key);
   if (!browser) return;
   safeLocalStorage(() => localStorage.setItem(key, value));
@@ -90,7 +92,7 @@ export function writeString(key, value) {
 // Delete a key from localStorage and, on native, its durable Preferences mirror.
 // Used to scrub a value that has moved elsewhere (e.g. a plaintext API key that's
 // been migrated into secure storage).
-export function removeKey(key) {
+export function removeKey(key: string) {
   track(key);
   if (!browser) return;
   safeLocalStorage(() => localStorage.removeItem(key));
@@ -101,16 +103,16 @@ export function removeKey(key) {
   }
 }
 
-export function readInt(key, fallback, allowed = null) {
+export function readInt(key: string, fallback: number, allowed: number[] | null = null): number {
   track(key);
   if (!browser) return fallback;
-  const raw = parseInt(localStorage.getItem(key), 10);
+  const raw = parseInt(localStorage.getItem(key) ?? '', 10);
   if (Number.isNaN(raw)) return fallback;
   if (allowed && !allowed.includes(raw)) return fallback;
   return raw;
 }
 
-export function writeInt(key, value) {
+export function writeInt(key: string, value: number) {
   track(key);
   if (!browser) return;
   const str = String(value);
@@ -133,7 +135,7 @@ export async function hydrateDurableStorage() {
     // round-trip per key — ~15 keys on the cold-start critical path.
     const keys = [...managedKeys];
     const durable = await Promise.all(keys.map((key) => Preferences.get({ key })));
-    const backups = [];
+    const backups: Promise<unknown>[] = [];
     keys.forEach((key, i) => {
       const local = localStorage.getItem(key);
       const { value } = durable[i];

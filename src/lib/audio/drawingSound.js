@@ -1,4 +1,4 @@
-import { settings } from '$lib/state/settings.svelte.js';
+import { settings } from '$lib/state/settings.svelte';
 
 let currentStrokeSoundIndex = null;
 let currentSound = null;

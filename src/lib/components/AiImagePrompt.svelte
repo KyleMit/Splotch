@@ -1,10 +1,10 @@
 <script>
   import Icon from './Icon.svelte';
-  import { ui, closeAiPrompt } from '$lib/state/ui.svelte.js';
+  import { ui, closeAiPrompt } from '$lib/state/ui.svelte';
   import { exportCanvasBlob } from '$lib/drawing/engine.js';
   import { getActiveOverlayImage } from '$lib/drawing/overlay.js';
   import { generateAiImage } from '$lib/drawing/aiImage.js';
-  import { STYLE_NAMES } from '$lib/ai/styles.js';
+  import { STYLE_NAMES } from '$lib/ai/styles';
   import { modalDialog } from '$lib/actions/modalDialog.svelte.js';
 
   let previewUrl = $state(null);

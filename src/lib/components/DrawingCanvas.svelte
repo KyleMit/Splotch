@@ -7,12 +7,12 @@
     setEraserMode,
     getCanvasRect
   } from '$lib/drawing/engine.js';
-  import { colors } from '$lib/state/colors.svelte.js';
-  import { toolState } from '$lib/state/tool.svelte.js';
-  import { canvasState } from '$lib/state/canvas.svelte.js';
-  import { strokeState, activeStrokeSize, getStrokeWidthPx, getEraserWidthPx } from '$lib/state/strokeWidth.svelte.js';
-  import { coloringBookState } from '$lib/state/coloringBook.svelte.js';
-  import { settings } from '$lib/state/settings.svelte.js';
+  import { colors } from '$lib/state/colors.svelte';
+  import { toolState } from '$lib/state/tool.svelte';
+  import { canvasState } from '$lib/state/canvas.svelte';
+  import { strokeState, activeStrokeSize, getStrokeWidthPx, getEraserWidthPx } from '$lib/state/strokeWidth.svelte';
+  import { coloringBookState } from '$lib/state/coloringBook.svelte';
+  import { settings } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound.js';
 
   let canvasEl;

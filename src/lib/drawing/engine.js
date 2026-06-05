@@ -3,7 +3,7 @@
 // onMount and adapt reactive state (active color, stroke width) by calling
 // setColor() / setStrokeWidth() from $effect.
 
-import { ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte.js';
+import { ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte';
 
 let canvas, ctx;
 let currentColor = '';

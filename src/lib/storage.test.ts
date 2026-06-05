@@ -4,18 +4,18 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // factories, so the factories can close over this mutable state.
 const ctrl = vi.hoisted(() => ({ native: false }));
 
-vi.mock('./platform.js', () => ({
+vi.mock('./platform', () => ({
   isNative: () => ctrl.native,
   getPlatform: () => (ctrl.native ? 'android' : 'web')
 }));
 
 // In-memory stand-in for the durable Capacitor Preferences store.
-const prefsStore = vi.hoisted(() => new Map());
+const prefsStore = vi.hoisted(() => new Map<string, string>());
 vi.mock('@capacitor/preferences', () => ({
   Preferences: {
-    get: async ({ key }) => ({ value: prefsStore.has(key) ? prefsStore.get(key) : null }),
-    set: async ({ key, value }) => void prefsStore.set(key, value),
-    remove: async ({ key }) => void prefsStore.delete(key)
+    get: async ({ key }: { key: string }) => ({ value: prefsStore.has(key) ? prefsStore.get(key) : null }),
+    set: async ({ key, value }: { key: string; value: string }) => void prefsStore.set(key, value),
+    remove: async ({ key }: { key: string }) => void prefsStore.delete(key)
   }
 }));
 
@@ -28,7 +28,7 @@ import {
   writeInt,
   removeKey,
   hydrateDurableStorage
-} from './storage.js';
+} from './storage';
 
 beforeEach(() => {
   localStorage.clear();

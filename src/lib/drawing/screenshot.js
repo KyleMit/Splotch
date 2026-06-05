@@ -1,6 +1,6 @@
 import { exportCanvasBlob, getActiveCanvas } from './engine.js';
 import { getActiveOverlayImage } from './overlay.js';
-import { isNative, getPlatform } from '$lib/platform.js';
+import { isNative, getPlatform } from '$lib/platform';
 
 function timestamp() {
   const d = new Date();

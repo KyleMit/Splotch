@@ -7,7 +7,7 @@ import {
   selectPaletteColor,
   selectCustomSwatch,
   pickCustomColor
-} from './colors.svelte.js';
+} from './colors.svelte';
 
 beforeEach(() => {
   // Reset to the documented default selection (Purple at index 0).

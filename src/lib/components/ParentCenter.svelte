@@ -1,6 +1,6 @@
 <script>
   import Icon from './Icon.svelte';
-  import { ui, openParentCenter, closeParentCenter } from '$lib/state/ui.svelte.js';
+  import { ui, openParentCenter, closeParentCenter } from '$lib/state/ui.svelte';
   import SettingsToggles from './parent/SettingsToggles.svelte';
   import AiKeyManager from './parent/AiKeyManager.svelte';
   import SetupInstructions from './parent/SetupInstructions.svelte';

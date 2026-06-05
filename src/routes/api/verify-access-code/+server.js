@@ -1,6 +1,6 @@
 import { error, json } from '@sveltejs/kit';
-import { isAllowedToken } from '$lib/server/tokens.js';
-import { rateLimit } from '$lib/server/rateLimit.js';
+import { isAllowedToken } from '$lib/server/tokens';
+import { rateLimit } from '$lib/server/rateLimit';
 
 /**
  * Verify a secret access code against the managed allowlist. This is the

@@ -1,5 +1,5 @@
 <script>
-  import { isNative, getPlatform } from '$lib/platform.js';
+  import { isNative, getPlatform } from '$lib/platform';
 
   // `open` flips true when the Parent Center modal opens; we re-run platform/OS
   // detection then so the instructions match the current device and install state.

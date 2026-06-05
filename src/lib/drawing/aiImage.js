@@ -5,8 +5,8 @@ import {
   finishAiGeneration,
   failAiGeneration,
   closeAiResult
-} from '$lib/state/ui.svelte.js';
-import { settings } from '$lib/state/settings.svelte.js';
+} from '$lib/state/ui.svelte';
+import { settings } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api.js';
 import { exportCanvasBlob } from './engine.js';
 import { getActiveOverlayImage } from './overlay.js';

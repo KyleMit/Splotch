@@ -1,4 +1,4 @@
-import { settings } from '$lib/state/settings.svelte.js';
+import { settings } from '$lib/state/settings.svelte';
 import { exportCanvasBlob, isCanvasEmpty } from './engine.js';
 import { getActiveOverlayImage } from './overlay.js';
 
