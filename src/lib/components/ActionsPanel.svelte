@@ -14,9 +14,9 @@
   import { saveScreenshot } from '$lib/drawing/screenshot';
   import { generateAiImage } from '$lib/drawing/aiImage';
 
-  let strokeWrapperEl: HTMLDivElement | undefined;
-  let coloringBtnEl: HTMLButtonElement | undefined;
-  let aiBtnEl: HTMLButtonElement | undefined;
+  let strokeWrapperEl: HTMLDivElement | undefined = $state();
+  let coloringBtnEl: HTMLButtonElement | undefined = $state();
+  let aiBtnEl: HTMLButtonElement | undefined = $state();
   let isPortrait = $state(false);
 
   // Landscape: sit just past the color palette so we clear it. Portrait: pin to

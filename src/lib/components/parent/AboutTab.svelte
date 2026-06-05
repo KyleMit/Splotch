@@ -54,8 +54,7 @@
         View on GitHub
       </a>
     </p>
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
-    <p class="version-text" onclick={handleVersionClick}>Version {APP_VERSION}</p>
+    <button type="button" class="version-text" onclick={handleVersionClick}>Version {APP_VERSION}</button>
     {#if showAdminLink}
       <p class="admin-link"><a href="/admin">Admin</a></p>
     {/if}
@@ -220,6 +219,16 @@
   }
 
   .version-text {
+    /* A real <button> for accessibility, reset to look like the plain text it
+       replaced (the surrounding footer <p>s are centered with an 8px gap). */
+    display: block;
+    width: 100%;
+    margin: 0 0 8px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: center;
     font-size: 12px;
     color: #bbb;
     font-family: 'Courier New', monospace;
