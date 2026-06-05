@@ -220,12 +220,12 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   const dialog = page.locator('#coloring-book-dialog');
   await expect(dialog).toBeVisible();
 
-  // Animals ships on web; open it and pick its first page.
-  await dialog.getByRole('button', { name: /Animals coloring book/i }).click();
-  await dialog.getByRole('button', { name: /Animals coloring page/i }).first().click();
+  // Farm ships on web and mobile; open it and pick its first page.
+  await dialog.getByRole('button', { name: /Farm coloring book/i }).click();
+  await dialog.getByRole('button', { name: /Farm coloring page/i }).first().click();
 
   await expect(dialog).toBeHidden();
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toBeVisible();
-  expect(await overlay.getAttribute('src')).toMatch(/\/coloring\/animals\//);
+  expect(await overlay.getAttribute('src')).toMatch(/\/coloring\/farm\/.+-(wide|tall)\.webp$/);
 });

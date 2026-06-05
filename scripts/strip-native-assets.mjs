@@ -13,7 +13,7 @@
 import { rmSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BOOKS } from '../src/lib/state/books.ts';
+import { BOOKS, bookAssetPaths } from '../src/lib/state/books.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BUILD_DIR = join(ROOT, 'build'); // capacitor.config.json webDir
@@ -29,7 +29,7 @@ if (webOnly.length === 0) {
 // stay correct even if a folder name ever diverges from the book id).
 const dirs = new Set();
 for (const book of webOnly) {
-  for (const assetPath of [book.cover, ...book.pages]) {
+  for (const assetPath of bookAssetPaths(book)) {
     dirs.add(dirname(assetPath)); // e.g. '/coloring/bluey'
   }
 }

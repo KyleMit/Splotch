@@ -1,14 +1,16 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
   import { ui, closeColoringBook } from '$lib/state/ui.svelte';
   import {
     booksForPlatform,
     coloringBookState,
-    setOverlay,
+    setOverlayPage,
+    updateOverlayOrientation,
     clearOverlay
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
-  import type { Book } from '$lib/state/books';
+  import { pageImage, type Book, type BookOrientation, type ColoringPage } from '$lib/state/books';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
 
   // Only show books licensed for this platform. Native builds also strip the
@@ -17,9 +19,39 @@
   const books = booksForPlatform(isNative() ? 'mobile' : 'web');
 
   let activeBook = $state<Book | null>(null);
+  let orientation = $state<BookOrientation>('landscape');
 
-  function pickPage(src: string) {
-    setOverlay(src);
+  function readOrientation(): BookOrientation {
+    if (typeof window === 'undefined') return 'landscape';
+    return window.matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape';
+  }
+
+  function syncOrientation() {
+    orientation = readOrientation();
+  }
+
+  onMount(() => {
+    const media = window.matchMedia('(orientation: portrait)');
+    syncOrientation();
+    const onChange = () => syncOrientation();
+
+    media.addEventListener('change', onChange);
+    window.addEventListener('resize', onChange);
+    window.screen.orientation?.addEventListener?.('change', onChange);
+
+    return () => {
+      media.removeEventListener('change', onChange);
+      window.removeEventListener('resize', onChange);
+      window.screen.orientation?.removeEventListener?.('change', onChange);
+    };
+  });
+
+  $effect(() => {
+    updateOverlayOrientation(orientation);
+  });
+
+  function pickPage(page: ColoringPage) {
+    setOverlayPage(page, orientation);
     closeColoringBook();
   }
 
@@ -83,15 +115,15 @@
           </button>
           <h2>{activeBook.name}</h2>
         </div>
-        <div class="coloring-grid coloring-pages-grid">
-          {#each activeBook.pages as src (src)}
+        <div class="coloring-grid coloring-pages-grid" class:portrait-pages={orientation === 'portrait'}>
+          {#each activeBook.pages as page (page.id)}
             <button
               class="coloring-tile"
               type="button"
               aria-label="{activeBook.name} coloring page"
-              onclick={() => pickPage(src)}
+              onclick={() => pickPage(page)}
             >
-              <img {src} alt="" loading="lazy" />
+              <img src={pageImage(page, orientation)} alt="" loading="lazy" />
             </button>
           {/each}
         </div>
@@ -111,7 +143,7 @@
     border: none;
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    max-width: 640px;
+    max-width: min(920px, calc(100vw - 32px));
     width: 90%;
     max-height: 85vh;
     overflow-y: auto;
@@ -210,13 +242,11 @@
   }
 
   .coloring-pages-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   }
 
-  @media (orientation: portrait) {
-    .coloring-pages-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
+  .coloring-pages-grid.portrait-pages {
+    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
   }
 
   .coloring-tile {
@@ -266,6 +296,28 @@
 
   .coloring-book-tile img {
     padding: 8px 8px 28px 8px;
+  }
+
+  .coloring-pages-grid .coloring-tile {
+    aspect-ratio: 3 / 2;
+  }
+
+  .coloring-pages-grid.portrait-pages .coloring-tile {
+    aspect-ratio: 2 / 3;
+  }
+
+  @media (max-width: 520px) {
+    .coloring-book-content {
+      padding: 24px 18px;
+    }
+
+    .coloring-books-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .coloring-pages-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   .coloring-book-label {

@@ -195,13 +195,13 @@ async function run() {
       console.log(`${t.name} 01-draw done`);
     }
 
-    // SCENE 2 — coloring book (Animals pages grid; avoids 3rd-party covers)
+    // SCENE 2 — coloring book (Farm pages grid)
     {
       const { ctx, page } = await newCtx(browser, t.device);
       await expandDrawer(page);
       await page.locator('#coloringBookButton').click();
       await sleep(450);
-      await page.locator('button[aria-label="Animals coloring book"]').click();
+      await page.locator('button[aria-label="Farm coloring book"]').click();
       await sleep(500);
       await shot(page, `${t.dir}/02-coloring-book.png`);
       await ctx.close();
@@ -215,9 +215,9 @@ async function run() {
       await setStroke(page, 5);
       await page.locator('#coloringBookButton').click();
       await sleep(450);
-      await page.locator('button[aria-label="Animals coloring book"]').click();
+      await page.locator('button[aria-label="Farm coloring book"]').click();
       await sleep(400);
-      await page.locator('button[aria-label="Animals coloring page"]').first().click();
+      await page.locator('button[aria-label="Farm coloring page"]').first().click();
       await sleep(700); // wait for overlay image to load
       const box = await canvasBox(page);
       await colorInLines(page, box);

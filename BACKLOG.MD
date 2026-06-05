@@ -6,6 +6,7 @@
 * [x] Run all tests on CI
 * [x] Add playwright test for multi-touch usage
 * [ ] Run performance profiling and analyze results
+  * [ ] I'd like to run a real performance profile against the actual drawing canvas.  What's the best way to accomplish this.  Ideally we'd track it with multi touch to make sure it doesn't burden perf in those circumstances.  I can do multi-touch on my phone, but not sure how to profile there.  If you can run the chrome profiler while simulating multiple touches, that would be great.  I'd just like to be able to get real-world data, analyze that data and then figure out where there might be performance bottlnecks we can solve
 * [ ] Add style guide
 * [ ] Add haptics for trashcan when in the clear accept zone
 * [ ] Add sound effects when deleting
@@ -17,6 +18,7 @@
 * [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
 * [ ] Fun loading sound while AI is loading
 * [ ] Hand draw icons
+* [ ] Native integration with apple pencil to use eraser
 * [ ] Increase default timer
 * [ ] Increase size of pulsations when overtime
 * [ ] Start adding crazier and crazier animations if time goes super long
@@ -25,17 +27,17 @@
 * [ ] Investigate line smoothing while drawing
 * [ ] Efficiently layout broad range of colors on small devices in advanced color picker
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
-* [ ] Coloring Book
+* Coloring Book
   * [ ] Make sure background works horizontally and vertically
   * [ ] Make sure book selection screen is scrollable.
   * [ ] Come up with other book selections
   * [ ] Pages should be able to be favorited. First book should be favorites
   * [ ] Delete should wipe the page (or first book should be to clear the background)
   * [ ] Add ability for users to upload color book bundles (IP hidden from iOS store release)
-* [ ] Bugs
+* Bugs
   * [ ] Make sure we can refresh PWA
   * [ ] Sometimes it doesn't register clicks on color changes
-* [ ] Controls
+* Controls
   * [ ] Brush type (blend mode with previous drawing)
 
 
