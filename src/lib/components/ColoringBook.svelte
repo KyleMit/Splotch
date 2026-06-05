@@ -242,11 +242,11 @@
   }
 
   .coloring-pages-grid {
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .coloring-pages-grid.portrait-pages {
-    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .coloring-tile {
@@ -316,6 +316,10 @@
     }
 
     .coloring-pages-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .coloring-pages-grid.portrait-pages {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
