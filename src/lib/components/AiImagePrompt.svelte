@@ -179,11 +179,11 @@
   }
 
   .ai-style-option:hover:not(:disabled) .ai-style-thumb {
-    border-color: #AB71E1;
+    border-color: var(--brand);
     transform: translateY(-2px);
   }
 
-  .ai-style-option:hover:not(:disabled) .ai-style-label { color: #AB71E1; }
+  .ai-style-option:hover:not(:disabled) .ai-style-label { color: var(--brand); }
 
   .ai-style-option:active:not(:disabled) .ai-style-thumb { transform: scale(0.97); }
 
@@ -192,7 +192,7 @@
   }
 
   .ai-style-option:focus-visible .ai-style-thumb {
-    border-color: #AB71E1;
+    border-color: var(--brand);
     box-shadow: 0 0 0 3px rgba(171, 113, 225, 0.35);
   }
 

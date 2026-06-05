@@ -21,8 +21,6 @@ test:unit`); e2e uses Playwright (`npm run test:e2e`).
 
 ## Minor cleanup (do opportunistically; remove each line when done)
 
-- **Brand color `#AB71E1`** (and hover `#9961d1`) is a literal hex in ~8 places across the
-  parent components and the canvas background. Promote to a `--brand` CSS custom property.
 - **`drawingSound.js`** re-arms a `clearTimeout`/`setTimeout` pair on every `pointermove`
   that never fires (stroke-end already stops sound); and `.play()` is called without a
   `.catch()`, producing unhandled-rejection noise. Remove the redundant timer; add `.catch(() => {})`.

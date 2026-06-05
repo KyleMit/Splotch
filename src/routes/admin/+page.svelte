@@ -222,7 +222,7 @@
     width: 52px;
     height: 52px;
     border-radius: 16px;
-    background: linear-gradient(135deg, #AB71E1, #7c4dcf);
+    background: linear-gradient(135deg, var(--brand), #7c4dcf);
     box-shadow: 0 6px 16px rgba(124, 77, 207, 0.35);
     flex-shrink: 0;
   }
@@ -330,7 +330,7 @@
 
   .add-form input:focus {
     outline: none;
-    border-color: #AB71E1;
+    border-color: var(--brand);
     box-shadow: 0 0 0 3px rgba(171, 113, 225, 0.18);
   }
 
@@ -353,12 +353,12 @@
   .btn-primary {
     padding: 11px 18px;
     color: #fff;
-    background: #AB71E1;
+    background: var(--brand);
     flex-shrink: 0;
   }
 
   .btn-primary:hover {
-    background: #9961d1;
+    background: var(--brand-hover);
   }
 
   .btn-ghost {

@@ -311,7 +311,7 @@
 
   .access-code-input:focus {
     outline: none;
-    border-color: #AB71E1;
+    border-color: var(--brand);
   }
 
   .access-code-submit {
@@ -319,7 +319,7 @@
     font-size: 14px;
     font-weight: 600;
     color: #fff;
-    background: #AB71E1;
+    background: var(--brand);
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -328,7 +328,7 @@
   }
 
   .access-code-submit:hover {
-    background: #9961d1;
+    background: var(--brand-hover);
   }
 
   .access-code-submit:disabled {
@@ -360,7 +360,7 @@
     padding: 10px 12px;
     font-size: 13px;
     font-weight: 600;
-    color: #AB71E1;
+    color: var(--brand);
     cursor: pointer;
     user-select: none;
     list-style: none;
@@ -390,7 +390,7 @@
   }
 
   .byok-howto a {
-    color: #AB71E1;
+    color: var(--brand);
     font-weight: 600;
   }
 

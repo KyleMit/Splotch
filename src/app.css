@@ -6,6 +6,14 @@
      - keyframes shared across components
      - styles for DOM elements created imperatively (polaroid, body classes) */
 
+:root {
+  /* Brand accent used for active/hover chrome across parent + AI UI.
+     Custom properties pierce Svelte's style scoping, so components
+     reference these directly via var(). */
+  --brand: #AB71E1;
+  --brand-hover: #9961d1;
+}
+
 * {
   margin: 0;
   padding: 0;

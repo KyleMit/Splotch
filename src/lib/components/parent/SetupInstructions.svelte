@@ -190,7 +190,7 @@
   }
 
   .section-number {
-    color: #AB71E1;
+    color: var(--brand);
     margin-right: 8px;
   }
 

@@ -181,7 +181,7 @@
   }
 
   .parent-help-footer a {
-    color: #AB71E1;
+    color: var(--brand);
     text-decoration: none;
     font-weight: 500;
   }

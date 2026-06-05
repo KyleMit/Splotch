@@ -234,7 +234,7 @@
   }
 
   button {
-    background: #ab71e1;
+    background: var(--brand);
     color: white;
     border: none;
     border-radius: 8px;
@@ -250,7 +250,7 @@
   input[type='range'] {
     flex: 1;
     min-width: 160px;
-    accent-color: #ab71e1;
+    accent-color: var(--brand);
   }
 
   .hint {
@@ -293,7 +293,7 @@
   .state dd {
     margin: 0;
     font-family: ui-monospace, monospace;
-    color: #ab71e1;
+    color: var(--brand);
   }
 
   .thumbs {

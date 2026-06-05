@@ -134,7 +134,7 @@
   .back {
     display: inline-block;
     margin-bottom: 20px;
-    color: #AB71E1;
+    color: var(--brand);
     text-decoration: none;
     font-weight: 600;
   }
@@ -145,7 +145,7 @@
 
   h1 {
     font-size: clamp(1.8rem, 5vw, 2.4rem);
-    color: #AB71E1;
+    color: var(--brand);
     margin-bottom: 4px;
   }
 
@@ -198,6 +198,6 @@
   }
 
   a {
-    color: #AB71E1;
+    color: var(--brand);
   }
 </style>

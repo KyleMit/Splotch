@@ -609,7 +609,7 @@
   .ai-result-download {
     height: 44px;
     padding: 0 22px;
-    background: #ab71e1;
+    background: var(--brand);
     border: none;
     border-radius: 22px;
     cursor: pointer;

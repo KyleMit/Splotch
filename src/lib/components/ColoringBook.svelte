@@ -236,7 +236,7 @@
   }
 
   .coloring-tile:hover {
-    border-color: #AB71E1;
+    border-color: var(--brand);
     background: #f5f0ff;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(171, 113, 225, 0.25);

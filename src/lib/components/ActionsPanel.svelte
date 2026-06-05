@@ -351,7 +351,7 @@
 
   .action-button:hover:not(:disabled) {
     background: #f5f5f5;
-    border-color: #AB71E1;
+    border-color: var(--brand);
     box-shadow: 0 4px 12px rgba(171, 113, 225, 0.3);
   }
 
@@ -363,7 +363,7 @@
   /* Selected tool (e.g. eraser): purple ring + tinted fill, matching the
      active stroke-size button. */
   .action-button.active {
-    border-color: #AB71E1;
+    border-color: var(--brand);
     background: #ede7f6;
     box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
   }
@@ -469,7 +469,7 @@
   }
 
   .stroke-size-button:hover {
-    border-color: #AB71E1;
+    border-color: var(--brand);
     background: #f5f0ff;
   }
 
@@ -478,7 +478,7 @@
   }
 
   .stroke-size-button.active {
-    border-color: #AB71E1;
+    border-color: var(--brand);
     background: #ede7f6;
     box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
   }

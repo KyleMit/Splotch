@@ -82,11 +82,11 @@
   }
 
   .toggle-switch.active {
-    background: #AB71E1;
+    background: var(--brand);
   }
 
   .toggle-switch.active:hover {
-    background: #9961d1;
+    background: var(--brand-hover);
   }
 
   .toggle-switch-thumb {

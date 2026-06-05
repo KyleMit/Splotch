@@ -198,8 +198,8 @@
   }
 
   .tab-button.active {
-    color: #AB71E1;
-    border-bottom-color: #AB71E1;
+    color: var(--brand);
+    border-bottom-color: var(--brand);
   }
 
   /* Tab Content */
