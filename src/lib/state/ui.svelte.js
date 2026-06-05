@@ -1,9 +1,13 @@
 export const ui = $state({
   colorPickerOpen: false,
+  colorPickerOrigin: null,
   coloringBookOpen: false,
+  coloringBookOrigin: null,
   parentCenterOpen: false,
+  parentCenterOrigin: null,
   clearTutorialVisible: false,
   aiPromptOpen: false,
+  aiPromptOrigin: null,
   aiGenerating: false,
   aiResultOpen: false,
   aiResultUrl: null,
