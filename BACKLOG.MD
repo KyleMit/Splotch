@@ -6,6 +6,7 @@
 * [x] Run all tests on CI
 * [x] Add playwright test for multi-touch usage
 * [x] Add parent center config for orientation change
+* [ ] E2e tests for native
 * [ ] Make icons bigger on an ipad pro
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
@@ -38,6 +39,9 @@
   * [ ] Pages should be able to be favorited. First book should be favorites
   * [ ] Delete should wipe the page (or first book should be to clear the background)
   * [ ] Add ability for users to upload color book bundles (IP hidden from iOS store release)
+  * [ ] Generate coloring book workflow
+  * [ ] Save to device.
+  * [ ] Export/import
 * Bugs
   * [ ] Make sure we can refresh PWA
   * [ ] Sometimes it doesn't register clicks on color changes

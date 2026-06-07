@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from '../Icon.svelte';
   import { settings, setAdminLinkVisible } from '$lib/state/settings.svelte';
+  import { isNative } from '$lib/platform';
   // Generated at build time from releases/*.md (see scripts/generate-releases.mjs).
   import releases from '$lib/releases.json';
 
@@ -16,8 +17,11 @@
   // stays put for anyone holding an admin_session cookie; the /admin page resets
   // it on logout / failed login / leaving without signing in. The secret itself
   // is collected by the console's login form, so it never touches the client.
+  // The admin console is a hosted-only route (server-rendered token management);
+  // the native build is a static export with no server, so navigating there
+  // 500s. Never reveal the link inside a native shell.
   let versionClicks = $state(0);
-  let showAdminLink = $derived(settings.adminLinkVisible);
+  let showAdminLink = $derived(settings.adminLinkVisible && !isNative());
   function handleVersionClick() {
     versionClicks += 1;
     if (versionClicks < 5) return;
