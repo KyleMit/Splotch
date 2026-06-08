@@ -1,3 +1,4 @@
+import type { MediaPlugin } from '@capacitor-community/media';
 import { exportCanvasBlob, getActiveCanvas } from './engine';
 import { getActiveOverlayImage } from './overlay';
 import { isNative, getPlatform } from '$lib/platform';
@@ -28,12 +29,9 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-// `Media` is the dynamically-imported @capacitor-community/media plugin; its
-// album/photo shapes aren't worth re-declaring here, so it's loosely typed.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function findAlbumId(Media: any, name: string): Promise<string | undefined> {
+async function findAlbumId(Media: MediaPlugin, name: string): Promise<string | undefined> {
   const { albums } = await Media.getAlbums();
-  return albums.find((a: { name: string; identifier: string }) => a.name === name)?.identifier;
+  return albums.find((a) => a.name === name)?.identifier;
 }
 
 // Native: drop the PNG straight into the device photo library. Android requires
