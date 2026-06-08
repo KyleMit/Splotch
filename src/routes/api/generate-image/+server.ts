@@ -145,7 +145,8 @@ export const POST: RequestHandler = async ({ request, platform }) => {
             { text: finalPrompt }
           ]
         }
-      ]
+      ],
+      config: { abortSignal: AbortSignal.timeout(120_000) }
     });
   } catch (err) {
     console.error('Gemini call failed:', err);

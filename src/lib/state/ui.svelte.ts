@@ -19,6 +19,7 @@ interface UiState {
   aiResultUrl: string | null;
   aiPreviewUrl: string | null;
   aiError: boolean;
+  aiErrorMessage: string | null;
 }
 
 export const ui: UiState = $state({
@@ -35,7 +36,8 @@ export const ui: UiState = $state({
   aiResultOpen: false,
   aiResultUrl: null,
   aiPreviewUrl: null,
-  aiError: false
+  aiError: false,
+  aiErrorMessage: null
 });
 
 export function buttonCenter(el: HTMLElement): Origin {
@@ -94,6 +96,7 @@ export function startAiGeneration(previewUrl: string | null) {
   ui.aiPreviewUrl = swapObjectUrl(ui.aiPreviewUrl, previewUrl);
   ui.aiResultUrl = swapObjectUrl(ui.aiResultUrl);
   ui.aiError = false;
+  ui.aiErrorMessage = null;
   ui.aiGenerating = true;
   ui.aiResultOpen = true;
 }
@@ -124,16 +127,18 @@ export function finishAiGeneration(url: string) {
   ui.aiGenerating = false;
 }
 
-export function failAiGeneration() {
+export function failAiGeneration(message?: string) {
   if (!ui.aiResultOpen) return;
   ui.aiGenerating = false;
   ui.aiError = true;
+  ui.aiErrorMessage = message ?? null;
 }
 
 export function closeAiResult() {
   ui.aiResultOpen = false;
   ui.aiGenerating = false;
   ui.aiError = false;
+  ui.aiErrorMessage = null;
   ui.aiResultUrl = swapObjectUrl(ui.aiResultUrl);
   ui.aiPreviewUrl = swapObjectUrl(ui.aiPreviewUrl);
 }

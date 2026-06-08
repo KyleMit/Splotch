@@ -89,7 +89,7 @@
     {#if ui.aiError}
       <div class="ai-result-error">
         <span class="ai-result-error-emoji">😕</span>
-        <p>Hmm, that didn't work. Please try again!</p>
+        <p>{ui.aiErrorMessage ?? "Hmm, that didn't work. Please try again!"}</p>
       </div>
     {:else}
       <div class="ai-stage" style="--confetti-ry: {confettiMaskRy};">

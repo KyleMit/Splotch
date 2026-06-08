@@ -38,6 +38,8 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob) {
   lastSavedDrawingSig = sig;
 }
 
+const AI_TIMEOUT_MS = 120_000;
+
 export async function generateAiImage(
   { blob = null, style = '' }: { blob?: Blob | null; style?: string } = {}
 ) {
@@ -58,6 +60,9 @@ export async function generateAiImage(
   }
   if (!blob) setAiPreview(URL.createObjectURL(imageBlob));
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+
   try {
     const form = new FormData();
     // Prefer the parent's own Gemini key (BYOK); fall back to a managed access
@@ -68,7 +73,11 @@ export async function generateAiImage(
     form.append('image', imageBlob, 'drawing.png');
     if (style) form.append('style', style);
 
-    const res = await fetch(apiUrl('/api/generate-image'), { method: 'POST', body: form });
+    const res = await fetch(apiUrl('/api/generate-image'), {
+      method: 'POST',
+      body: form,
+      signal: controller.signal
+    });
     if (!res.ok) {
       const msg = await res.text().catch(() => '');
       throw new Error(`AI image request failed (${res.status}): ${msg}`);
@@ -77,7 +86,10 @@ export async function generateAiImage(
     finishAiGeneration(URL.createObjectURL(outBlob));
     if (settings.autoSaveAiEnabled) await autoSaveImages(outBlob, imageBlob);
   } catch (err) {
-    failAiGeneration();
+    const timedOut = err instanceof DOMException && err.name === 'AbortError';
+    failAiGeneration(timedOut ? "That's taking too long — please try again." : undefined);
     console.error(err);
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
