@@ -157,3 +157,6 @@ build/
 
 # android studio
 android/.idea
+
+# Maestro smoke-test screenshot (npm run test:android) — written to cwd
+/smoke-launch.png
