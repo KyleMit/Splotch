@@ -49,12 +49,6 @@
   * [ ] Sometimes it doesn't register clicks on color changes
 * Controls
   * [ ] Brush type (blend mode with previous drawing)
-* Arch review skills
-
-Add a slash command to do an /verify-plan of the codebase.  Suggest any better names for the command and use the following prompt as a starting point, but refine if it would be helpful.
-
-* review the codebase to look for chunks of javascript that could meaningfully be extracted into a standalone function with a clean scope, purpose, and descriptive name.  They don't have to be immediately re-used elsewhere, but they should be able to be unit testable.  First document any opportunities and some suggested names / implementations in a file TODO.md at the repository root.  The TODO should instruct an AI to address each of the issues, one at a time, and then update the TODO file to remove the suggestion once it's been addressed.
-
 
 ## DONE
 
