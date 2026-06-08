@@ -17,6 +17,8 @@
 * [ ] Add sound effects when deleting
 * [ ] Add even more color for tall landscape view
 * [ ] If call fails and you need to try again, enable a way to do so immediately
+* [ ] Be able to regenerate metadata screenshot
+* [ ] Choose more fun store screenshot generation
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
 * [ ] Red hat test AI prompts
@@ -47,6 +49,8 @@
   * [ ] Sometimes it doesn't register clicks on color changes
 * Controls
   * [ ] Brush type (blend mode with previous drawing)
+* Arch review
+  * do a comprehensive pass of the existing repository and see if there are any areas for improvement in terms of performance, readability, or maintainability.  what architectural or minor cleanup tasks would you recommend to improve the overall health of the code. write your findings in a file TODO.md with each recommendation listed on it's own, including the basic changes and why.  The TODO should instruct an AI to address each of the issues, one at a time, and then update the TODO file to remove the suggestion once it's been addressed.
 
 
 ## DONE
