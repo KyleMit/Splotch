@@ -17,11 +17,11 @@ on:
 jobs:
   smoke:
     name: Maestro launch smoke test
-    # macOS gives the emulator hardware acceleration with no KVM setup. macos-latest
-    # is Apple Silicon, so the emulator image must be arm64-v8a (the original
-    # x86_64 sample would not boot here). Cheaper alternative: ubuntu-latest with a
-    # KVM-enable step + arch x86_64.
-    runs-on: macos-latest
+    # Ubuntu + KVM is the most reliable path for Android emulators in CI.
+    # macOS ARM runners (macos-latest → macos-15-arm64) hit an HVF init failure
+    # with emulator 36.x ("HVF error: HV_UNSUPPORTED"), so the emulator never
+    # boots. Ubuntu KVM + x86_64 is cheaper, faster, and battle-tested.
+    runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +38,12 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
 
       - name: Install dependencies
         run: npm ci
@@ -63,7 +69,7 @@ jobs:
         with:
           api-level: 33
           target: google_apis
-          arch: arm64-v8a
+          arch: x86_64
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -noaudio -no-boot-anim -camera-back none
           disable-animations: true
