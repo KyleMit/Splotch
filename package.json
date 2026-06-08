@@ -13,6 +13,7 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
     "dev": "vite dev",
+    "dev:host": "vite dev --host",
     "dev:cap": "cross-env CAPACITOR=true vite dev --host",
     "dev:netlify": "netlify dev",
     "build": "vite build",
