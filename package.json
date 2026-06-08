@@ -33,6 +33,7 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:android": "maestro test .maestro/smoke.yaml",
     "test:ui": "playwright test --ui",
     "test:headed": "cross-env SLOWMO=500 playwright test --headed",
     "test:debug": "playwright test --debug"
