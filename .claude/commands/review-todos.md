@@ -1,6 +1,6 @@
 # Review TODOs
 
-Read `TODO.md` and the current codebase, then validate each item against the actual code.
+Read `docs/TODO.md` and the current codebase, then validate each item against the actual code.
 
 ## For each item, decide: keep, enrich, or remove
 
@@ -17,7 +17,7 @@ Read `TODO.md` and the current codebase, then validate each item against the act
 
 ## Output
 
-1. Edit `TODO.md` in place — remove the items that don't hold up, enrich the ones that do
+1. Edit `docs/TODO.md` in place — remove the items that don't hold up, enrich the ones that do
 2. In your response, print two short lists:
    - **Kept / enriched** — one line each, noting what insight you added (if any)
    - **Removed** — one line each, with the reason

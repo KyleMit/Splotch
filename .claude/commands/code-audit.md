@@ -1,6 +1,6 @@
 # Code Audit
 
-Do a comprehensive pass of the repository and produce a prioritized list of improvements in `TODO.md`.
+Do a comprehensive pass of the repository and produce a prioritized list of improvements in `docs/TODO.md`.
 
 ## How to audit
 
@@ -15,7 +15,7 @@ Skip anything already tracked in an open issue or obviously intentional (e.g. a 
 
 ## Output format
 
-Write (or append) `TODO.md` using this exact structure so that `/fix-next-todo` can work through it item by item:
+Write (or append) `docs/TODO.md` using this exact structure so that `/fix-next-todo` can work through it item by item:
 
 ```markdown
 # TODO
@@ -33,4 +33,4 @@ Write (or append) `TODO.md` using this exact structure so that `/fix-next-todo` 
 
 Order items by impact: highest-value or lowest-risk changes first. Group related items together when the order doesn't matter. Aim for 5–15 items; skip trivial style nits unless they appear broadly.
 
-After writing `TODO.md`, print a one-paragraph summary of the top themes you found.
+After writing `docs/TODO.md`, print a one-paragraph summary of the top themes you found.
