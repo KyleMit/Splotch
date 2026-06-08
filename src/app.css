@@ -82,6 +82,50 @@ body {
   transform-origin: center;
 }
 
+/* Shared modal card: centering, white surface, rounded corners, shadow.
+   Per-modal width/max-height/overflow stays in each component. */
+.modal-shell {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  background: white;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  padding: 0;
+}
+
+/* Absolute-positioned close button (top-right corner) and its icon, shared
+   across all icon-style modal close buttons. */
+.modal-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close-icon {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  filter: invert(60%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(85%);
+  transition: filter 0.2s ease;
+}
+
+.modal-close-btn:not(:disabled):hover .modal-close-icon {
+  filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
+}
+
 /* Spin animation reused by any "AI thinking" icon. */
 @keyframes aiSpin {
   to { transform: rotate(360deg); }

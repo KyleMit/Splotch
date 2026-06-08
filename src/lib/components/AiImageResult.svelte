@@ -178,7 +178,7 @@
 </script>
 
 <dialog
-  class="ai-result-modal modal-dialog"
+  class="ai-result-modal modal-dialog modal-shell"
   class:polaroid-mode={exiting}
   class:autosave={settings.autoSaveAiEnabled}
   bind:this={dialogEl}
@@ -197,8 +197,8 @@
   onanimationend={handleAnimationEnd}
 >
   <div class="ai-result-content">
-    <button class="ai-result-close" aria-label="Close" onclick={closeAiResult}>
-      <Icon name="close" class="ai-result-close-icon" />
+    <button class="ai-result-close modal-close-btn" aria-label="Close" onclick={closeAiResult}>
+      <Icon name="close" class="modal-close-icon" />
     </button>
 
     {#if ui.aiError}
@@ -285,22 +285,12 @@
 
 <style>
   .ai-result-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    margin: 0;
-    background: white;
-    border: none;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     /* A definite width (not shrink-to-fit, which browsers resolve differently
        for a transform-centered fixed dialog). The image is centered inside with
        side spacing, so a tall render reads as a framed card rather than a strip. */
     width: min(92vw, 420px);
     max-height: 94vh;
     overflow: hidden;
-    padding: 0;
   }
 
   .ai-result-content {
@@ -313,31 +303,7 @@
   }
 
   .ai-result-close {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 32px;
-    height: 32px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     z-index: 2;
-  }
-
-  :global(.ai-result-close-icon) {
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    filter: invert(60%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(85%);
-    transition: filter 0.2s ease;
-  }
-
-  .ai-result-close:hover :global(.ai-result-close-icon) {
-    filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
   }
 
   /* ── Stage: holds the blurred drawing, the dial, and the final image ── */

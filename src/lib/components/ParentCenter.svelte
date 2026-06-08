@@ -31,7 +31,7 @@
 </button>
 
 <dialog
-  class="parent-help-modal modal-dialog modal-fly-in"
+  class="parent-help-modal modal-dialog modal-fly-in modal-shell"
   id="parentHelpModal"
   use:modalDialog={() => ({
     open: ui.parentCenterOpen,
@@ -41,7 +41,7 @@
   })}
 >
   <div class="parent-help-content">
-    <button class="parent-help-close" aria-label="Close" onclick={closeParentCenter}>×</button>
+    <button class="parent-help-close modal-close-btn" aria-label="Close" onclick={closeParentCenter}>×</button>
     <h2>Parent Center</h2>
 
     <div class="tab-buttons">
@@ -124,20 +124,10 @@
 
   /* Modal dialog */
   .parent-help-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    margin: 0;
-    background: white;
-    border: none;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     max-width: 500px;
     width: 90%;
     max-height: 80vh;
     overflow: hidden;
-    padding: 0;
   }
 
   .parent-help-content {
@@ -240,18 +230,10 @@
   }
 
   .parent-help-close {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 32px;
-    height: 32px;
-    background: transparent;
-    border: none;
+    padding: 0;
     font-size: 32px;
     line-height: 32px;
     color: #999;
-    cursor: pointer;
-    padding: 0;
     transition: color 0.2s ease;
   }
 

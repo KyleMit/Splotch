@@ -59,7 +59,7 @@
 </script>
 
 <dialog
-  class="coloring-book-modal modal-dialog modal-fly-in"
+  class="coloring-book-modal modal-dialog modal-fly-in modal-shell"
   id="coloring-book-dialog"
   use:modalDialog={() => ({
     open: ui.coloringBookOpen,
@@ -70,8 +70,8 @@
   })}
 >
   <div class="coloring-book-content">
-    <button class="coloring-book-close" aria-label="Close" onclick={closeColoringBook}>
-      <Icon name="close" class="coloring-book-close-icon" />
+    <button class="coloring-book-close modal-close-btn" aria-label="Close" onclick={closeColoringBook}>
+      <Icon name="close" class="modal-close-icon" />
     </button>
 
     {#if !activeBook}
@@ -129,20 +129,10 @@
 
 <style>
   .coloring-book-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    margin: 0;
-    background: white;
-    border: none;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     max-width: min(920px, calc(100vw - 32px));
     width: 90%;
     max-height: 85vh;
     overflow-y: auto;
-    padding: 0;
   }
 
   .coloring-book-content {
@@ -158,32 +148,8 @@
   }
 
   .coloring-book-close {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 32px;
-    height: 32px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     transition: opacity 0.2s ease;
     z-index: 1;
-  }
-
-  :global(.coloring-book-close-icon) {
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    filter: invert(60%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(85%);
-    transition: filter 0.2s ease;
-  }
-
-  .coloring-book-close:hover :global(.coloring-book-close-icon) {
-    filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
   }
 
   .coloring-book-header {

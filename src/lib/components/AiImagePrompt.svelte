@@ -40,7 +40,7 @@
 </script>
 
 <dialog
-  class="ai-prompt-modal modal-dialog modal-fly-in"
+  class="ai-prompt-modal modal-dialog modal-fly-in modal-shell"
   use:modalDialog={() => ({
     open: ui.aiPromptOpen,
     origin: ui.aiPromptOrigin,
@@ -50,8 +50,8 @@
   })}
 >
   <div class="ai-prompt-content">
-    <button class="ai-prompt-close" aria-label="Close" onclick={closeAiPrompt}>
-      <Icon name="close" class="ai-prompt-close-icon" />
+    <button class="ai-prompt-close modal-close-btn" aria-label="Close" onclick={closeAiPrompt}>
+      <Icon name="close" class="modal-close-icon" />
     </button>
 
     <fieldset class="ai-prompt-styles">
@@ -75,20 +75,10 @@
 
 <style>
   .ai-prompt-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    margin: 0;
-    background: white;
-    border: none;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     max-width: 480px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
-    padding: 0;
   }
 
   .ai-prompt-content {
@@ -100,34 +90,12 @@
   }
 
   .ai-prompt-close {
-    position: absolute;
     top: 12px;
     right: 12px;
-    width: 32px;
-    height: 32px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     z-index: 1;
   }
 
   .ai-prompt-close:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  :global(.ai-prompt-close-icon) {
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    filter: invert(60%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(85%);
-    transition: filter 0.2s ease;
-  }
-
-  .ai-prompt-close:hover:not(:disabled) :global(.ai-prompt-close-icon) {
-    filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
-  }
 
   .ai-prompt-styles {
     border: none;
