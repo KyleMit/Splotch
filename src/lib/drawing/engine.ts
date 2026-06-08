@@ -111,6 +111,22 @@ function resizeCanvas() {
       virtualCtx.lineCap = 'round';
       virtualCtx.lineJoin = 'round';
     }
+  } else if (rect.width * 2 > virtualCanvas.width || rect.height * 2 > virtualCanvas.height) {
+    // Viewport grew beyond the initial virtual canvas (e.g. device rotated to a
+    // larger dimension). Grow it and copy existing pixels so no drawing is lost.
+    const newW = Math.max(rect.width * 2, virtualCanvas.width);
+    const newH = Math.max(rect.height * 2, virtualCanvas.height);
+    const grown = document.createElement('canvas');
+    grown.width = newW;
+    grown.height = newH;
+    const grownCtx = grown.getContext('2d');
+    if (grownCtx) {
+      grownCtx.lineCap = 'round';
+      grownCtx.lineJoin = 'round';
+      grownCtx.drawImage(virtualCanvas, 0, 0);
+    }
+    virtualCanvas = grown;
+    virtualCtx = grownCtx;
   }
 
   if (virtualCtx && canvas.width > 0 && canvas.height > 0) {
