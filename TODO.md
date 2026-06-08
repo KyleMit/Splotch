@@ -2,8 +2,6 @@
 
 Instructions for the AI agent: address these recommendations one at a time. For each item, inspect the referenced code, make the smallest coherent improvement, run the relevant checks/tests, and then remove that completed recommendation from this file in the same change.
 
-- Add validation for the coloring-book catalog in `src/lib/state/books.ts`. A Node script (e.g., `scripts/check-assets.mjs`) that imports `BOOKS`, constructs the expected cover/portrait/landscape paths using the same convention as `books.ts`, and calls `fs.existsSync` for each would catch broken asset references before release. It should also cross-check that platform filtering agrees with `scripts/strip-native-assets.mjs`. Wire it as a pre-release step.
-
 - Add bounded timeouts/cancellation around AI generation. The `fetch` in `src/lib/drawing/aiImage.ts` has no timeout — if the server hangs, the spinner runs forever. Wrap it with an `AbortController` + `setTimeout` (120 s is a reasonable outer bound; AI generation typically finishes in 10–20 s). On the server side, check whether the `@google/genai` SDK `generateContent` call accepts a timeout/signal option, and pass one if it does. Surface a distinct timeout error message to the user.
 
 - Replace loose `any` typing around the Capacitor Media plugin in `src/lib/drawing/screenshot.ts`. A narrow local interface for `getAlbums()`, `createAlbum()`, and `savePhoto()` would make the contracts visible and catch any API shape changes at compile time. First check whether `@capacitor-community/media` exports a `MediaPlugin` type that can be imported directly — if it does, use that instead of a local interface.
