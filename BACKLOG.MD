@@ -49,8 +49,9 @@
   * [ ] Sometimes it doesn't register clicks on color changes
 * Controls
   * [ ] Brush type (blend mode with previous drawing)
-* Arch review
+* Arch review skills
   * do a comprehensive pass of the existing repository and see if there are any areas for improvement in terms of performance, readability, or maintainability.  what architectural or minor cleanup tasks would you recommend to improve the overall health of the code. write your findings in a file TODO.md with each recommendation listed on it's own, including the basic changes and why.  The TODO should instruct an AI to address each of the issues, one at a time, and then update the TODO file to remove the suggestion once it's been addressed.
+  * verify the suggestions in TODO.md by reviewing the current codebase and seeing if they're helpful suggestions that improve the readability, maintainability, performance, or architecture of the current code base.  If they're helpful, add any additional insight you have to help make the change or explain why.  If they're unhelpful, explain why in your response and remove them from TODO.md
 
 
 ## DONE
