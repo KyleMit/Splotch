@@ -50,11 +50,13 @@
 * Controls
   * [ ] Brush type (blend mode with previous drawing)
 * Arch review skills
-  * Add a slash command to do an /arch-review of the codebase.  Suggest any better names for the command and use the following prompt as a starting point, but refine if it would be helpful.
-    * do a comprehensive pass of the existing repository and see if there are any areas for improvement in terms of performance, readability, or maintainability.  what architectural or minor cleanup tasks would you recommend to improve the overall health of the code. write your findings in a file TODO.md with each recommendation listed on it's own, including the basic changes and why.  The TODO should instruct an AI to address each of the issues, one at a time, and then update the TODO file to remove the suggestion once it's been addressed.
-  * Add a slash command to do an /verify-plan of the codebase.  Suggest any better names for the command and use the following prompt as a starting point, but refine if it would be helpful.
-    * verify the suggestions in TODO.md by reviewing the current codebase and seeing if they're helpful suggestions that improve the readability, maintainability, performance, or architecture of the current code base.  If they're helpful, add any additional insight you have to help make the change or explain why.  If they're unhelpful, explain why in your response and remove them from TODO.md
-  * review the codebase to look for chunks of javascript that could meaningfully be extracted into a standalone function with a clean scope, purpose, and descriptive name.  They don't have to be immediately re-used elsewhere, but they should be able to be unit testable.  First document any opportunities and some suggested names / implementations in a file TODO.md at the repository root.  The TODO should instruct an AI to address each of the issues, one at a time, and then update the TODO file to remove the suggestion once it's been addressed.
+
+Add a slash command to do an /verify-plan of the codebase.  Suggest any better names for the command and use the following prompt as a starting point, but refine if it would be helpful.
+
+verify the suggestions in TODO.md by reviewing the current codebase and seeing if they're helpful suggestions that improve the readability, maintainability, performance, or architecture of the current code base.  If they're helpful, add any additional insight you have to help make the change or explain why.  If they're unhelpful, explain why in your response and remove them from TODO.md
+
+
+* review the codebase to look for chunks of javascript that could meaningfully be extracted into a standalone function with a clean scope, purpose, and descriptive name.  They don't have to be immediately re-used elsewhere, but they should be able to be unit testable.  First document any opportunities and some suggested names / implementations in a file TODO.md at the repository root.  The TODO should instruct an AI to address each of the issues, one at a time, and then update the TODO file to remove the suggestion once it's been addressed.
 
 
 ## DONE
