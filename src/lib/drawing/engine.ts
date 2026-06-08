@@ -313,9 +313,16 @@ function stopDrawing(e?: PointerEvent) {
   ctx.beginPath();
   if (virtualCtx) virtualCtx.beginPath();
 
-  // Erasing can leave the canvas blank; re-scan so empty-dependent buttons
-  // (screenshot, AI) reflect the new state.
-  if (wasErasing) setCanvasEmptyState(scanCanvasIsEmpty());
+  // Erasing can leave the canvas blank; defer the scan so it runs after the
+  // gesture frame instead of blocking pointer-event processing.
+  if (wasErasing) {
+    const scan = () => setCanvasEmptyState(scanCanvasIsEmpty());
+    if (typeof requestIdleCallback !== 'undefined') {
+      requestIdleCallback(scan);
+    } else {
+      setTimeout(scan, 0);
+    }
+  }
 
   if (onDrawStopCallback) onDrawStopCallback();
 
