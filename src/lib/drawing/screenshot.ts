@@ -2,10 +2,19 @@ import { exportCanvasBlob, getActiveCanvas } from './engine';
 import { getActiveOverlayImage } from './overlay';
 import { isNative, getPlatform } from '$lib/platform';
 
-function timestamp() {
+export function timestamp() {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+}
+
+export function triggerDownload(url: string, filename: string) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 const ALBUM_NAME = 'Splotch';
@@ -59,12 +68,7 @@ export async function saveImageBlob(blob: Blob | null, baseName = 'splotch') {
     }
   } else {
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${baseName}-${timestamp()}.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    triggerDownload(url, `${baseName}-${timestamp()}.png`);
     URL.revokeObjectURL(url);
   }
 }
@@ -82,13 +86,7 @@ export async function saveScreenshot() {
       console.error('Save to gallery failed:', err);
     }
   } else {
-    // Browser: trigger a normal file download.
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `splotch-${timestamp()}.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    triggerDownload(url, `splotch-${timestamp()}.png`);
   }
 
   playPolaroidAnimation(url);

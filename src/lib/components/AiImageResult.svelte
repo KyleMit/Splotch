@@ -5,6 +5,7 @@
   import { ui, closeAiResult } from '$lib/state/ui.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import { timestamp, triggerDownload } from '$lib/drawing/screenshot';
 
   let dialogEl: HTMLDialogElement;
 
@@ -153,20 +154,9 @@
   // horizontal radius (31% of width). At 4:3 this resolves to the original 41%.
   const confettiMaskRy = $derived(`${(31 * imgAspect).toFixed(1)}%`);
 
-  function timestamp() {
-    const d = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
-  }
-
   function handleDownload() {
     if (!ui.aiResultUrl || exiting) return;
-    const a = document.createElement('a');
-    a.href = ui.aiResultUrl;
-    a.download = `splotch-ai-${timestamp()}.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    triggerDownload(ui.aiResultUrl, `splotch-ai-${timestamp()}.png`);
 
     // Morph the modal into a polaroid, hold it in the center, then let it fly
     // off to the bottom-left. The fly-out animation's end dismisses the modal.
