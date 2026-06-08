@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { ui, openParentCenter, closeParentCenter } from '$lib/state/ui.svelte';
+  import { ui, openParentCenter, closeParentCenter, buttonCenter } from '$lib/state/ui.svelte';
   import SettingsToggles from './parent/SettingsToggles.svelte';
   import AiKeyManager from './parent/AiKeyManager.svelte';
   import SetupInstructions from './parent/SetupInstructions.svelte';
@@ -12,11 +12,7 @@
 
   function openModal() {
     if (!buttonEl) return;
-    const rect = buttonEl.getBoundingClientRect();
-    openParentCenter({
-      x: (rect.left + rect.right) / 2,
-      y: (rect.top + rect.bottom) / 2
-    });
+    openParentCenter(buttonCenter(buttonEl));
   }
 </script>
 

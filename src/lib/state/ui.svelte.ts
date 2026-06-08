@@ -38,6 +38,11 @@ export const ui: UiState = $state({
   aiError: false
 });
 
+export function buttonCenter(el: HTMLElement): Origin {
+  const rect = el.getBoundingClientRect();
+  return { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2 };
+}
+
 export function openColorPicker(origin: Origin | null) {
   ui.colorPickerOrigin = origin;
   ui.colorPickerOpen = true;

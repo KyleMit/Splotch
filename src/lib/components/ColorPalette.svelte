@@ -8,7 +8,7 @@
     selectCustomSwatch
   } from '$lib/state/colors.svelte';
   import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine';
-  import { openColorPicker } from '$lib/state/ui.svelte';
+  import { openColorPicker, buttonCenter } from '$lib/state/ui.svelte';
   import { toolState, selectPen } from '$lib/state/tool.svelte';
   import { layout } from '$lib/state/layout.svelte';
   import { getRingColor } from '$lib/colorRing';
@@ -61,15 +61,7 @@
   function handleCustomUp(e: PointerEvent) {
     selectPen();
     selectCustomSwatch();
-    if (swatchEls[CUSTOM_SWATCH]) {
-      const rect = swatchEls[CUSTOM_SWATCH].getBoundingClientRect();
-      openColorPicker({
-        x: (rect.left + rect.right) / 2,
-        y: (rect.top + rect.bottom) / 2
-      });
-    } else {
-      openColorPicker(null);
-    }
+    openColorPicker(swatchEls[CUSTOM_SWATCH] ? buttonCenter(swatchEls[CUSTOM_SWATCH]) : null);
     releaseAllPointers();
     focusCanvas();
     e.preventDefault();

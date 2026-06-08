@@ -2,8 +2,6 @@
 
 Instructions for the AI agent: address these recommendations one at a time. For each item, inspect the referenced code, make the smallest coherent improvement, run the relevant checks/tests, and then remove that completed recommendation from this file in the same change.
 
-- Centralize modal open/close and origin behavior where practical. `ParentCenter.svelte`, and any other component that calls `openColoringBook` / `openParentCenter` / `openAiPrompt`, calculates button center with `const rect = buttonEl.getBoundingClientRect(); { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2 }`. A one-line helper `function buttonCenter(el: HTMLElement): Origin` would eliminate the repeated geometry and the null-handling boilerplate that comes with it.
-
 - Add validation for the coloring-book catalog in `src/lib/state/books.ts`. A Node script (e.g., `scripts/check-assets.mjs`) that imports `BOOKS`, constructs the expected cover/portrait/landscape paths using the same convention as `books.ts`, and calls `fs.existsSync` for each would catch broken asset references before release. It should also cross-check that platform filtering agrees with `scripts/strip-native-assets.mjs`. Wire it as a pre-release step.
 
 - Add bounded timeouts/cancellation around AI generation. The `fetch` in `src/lib/drawing/aiImage.ts` has no timeout — if the server hangs, the spinner runs forever. Wrap it with an `AbortController` + `setTimeout` (120 s is a reasonable outer bound; AI generation typically finishes in 10–20 s). On the server side, check whether the `@google/genai` SDK `generateContent` call accepts a timeout/signal option, and pass one if it does. Surface a distinct timeout error message to the user.
