@@ -2,9 +2,8 @@
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
   import { clearCanvas } from '$lib/drawing/engine';
-  import { releaseAllPointers } from '$lib/drawing/engine';
   import { saveDrawingIfEnabled } from '$lib/drawing/saveOnDelete';
-  import { stopDrawSound } from '$lib/audio/drawingSound';
+  import { dragToClear } from '$lib/actions/dragToClear';
 
   let containerEl: HTMLDivElement;
   let buttonEl: HTMLButtonElement;
@@ -16,54 +15,18 @@
 
   let tutorialVisible = $state(false);
   let tutorialFadeOut = $state(false);
-
-  // Drag state — imperative because it runs at pointer-event rate.
+  // Tracked so resetButtonPosition can skip a reset mid-gesture.
   let isDragging = false;
-  let startPointerX = 0;
-  let startPointerY = 0;
-  let homeButtonCenter = { x: 0, y: 0 };
-  // Edge-triggered so the threshold haptic fires once per crossing, not per frame.
-  let clearReady = false;
 
-  // Drag must reach this fraction of the smaller viewport dimension to commit a clear.
-  const ACCEPT_RADIUS_FACTOR = 0.4;
-  // ms to hold the button still before the gesture tutorial pops up.
-  const HOLD_DURATION = 500;
-  // px of pointer travel that counts as a real drag (cancels the hold tutorial).
-  const MOVEMENT_THRESHOLD = 50;
-  // Rapid taps within this window (ms) accumulate toward the tutorial trigger.
-  const MULTI_CLICK_WINDOW = 1000;
-  // Number of taps inside the window that surfaces the tutorial for a stuck user.
-  const MULTI_CLICK_THRESHOLD = 3;
-
-  let holdTimer: ReturnType<typeof setTimeout> | null = null;
-  let holdStartX = 0;
-  let holdStartY = 0;
-  let clickCount = 0;
-  let lastClickTime = 0;
   let tutorialDismissTimer: ReturnType<typeof setTimeout> | null = null;
   let lastOrientation: boolean | null = null;
-
-  // Timers driving the post-commit reset choreography (acceptZone hide, sound
-  // stop, page-turn cleanup, final restore). Tracked so a mid-animation unmount
-  // can cancel them — every callback touches DOM that's about to be torn down.
-  const resetTimers = new Set<ReturnType<typeof setTimeout>>();
-
-  function scheduleReset(fn: () => void, delay: number) {
-    const id = setTimeout(() => {
-      resetTimers.delete(id);
-      fn();
-    }, delay);
-    resetTimers.add(id);
-    return id;
-  }
 
   function isPortrait() {
     return window.matchMedia('(orientation: portrait)').matches;
   }
 
   function getAcceptRadius() {
-    return Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
+    return Math.min(window.innerWidth, window.innerHeight) * 0.4;
   }
 
   function showTutorial() {
@@ -116,175 +79,6 @@
     tutorialFadeOut = true;
   }
 
-  function startClearDrag(e: PointerEvent) {
-    const now = Date.now();
-    if (now - lastClickTime < MULTI_CLICK_WINDOW) {
-      clickCount++;
-      if (clickCount >= MULTI_CLICK_THRESHOLD) {
-        showTutorial();
-        clickCount = 0;
-        return;
-      }
-    } else {
-      clickCount = 1;
-    }
-    lastClickTime = now;
-
-    const clientX = e.clientX;
-    const clientY = e.clientY;
-    holdStartX = clientX;
-    holdStartY = clientY;
-    holdTimer = setTimeout(showTutorial, HOLD_DURATION);
-
-    isDragging = true;
-    startPointerX = clientX;
-    startPointerY = clientY;
-    clearReady = false;
-    document.documentElement.style.setProperty('--clear-progress', '0');
-
-    releaseAllPointers();
-
-    const rect = buttonEl.getBoundingClientRect();
-    homeButtonCenter = {
-      x: (rect.left + rect.right) / 2,
-      y: (rect.top + rect.bottom) / 2
-    };
-
-    containerEl.classList.add('dragging-active');
-    buttonEl.classList.add('dragging');
-
-    const radius = getAcceptRadius();
-    acceptZoneEl.style.left = `${homeButtonCenter.x - radius}px`;
-    acceptZoneEl.style.top = `${homeButtonCenter.y - radius}px`;
-    acceptZoneEl.style.width = `${radius * 2}px`;
-    acceptZoneEl.style.height = `${radius * 2}px`;
-    acceptZoneEl.style.display = 'block';
-    requestAnimationFrame(() => acceptZoneEl.classList.add('visible'));
-
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  function dragClear(e: PointerEvent) {
-    if (!isDragging) return;
-
-    const clientX = e.clientX;
-    const clientY = e.clientY;
-
-    const deltaX = Math.abs(clientX - holdStartX);
-    const deltaY = Math.abs(clientY - holdStartY);
-    if (deltaX > MOVEMENT_THRESHOLD || deltaY > MOVEMENT_THRESHOLD) {
-      if (holdTimer) {
-        clearTimeout(holdTimer);
-        holdTimer = null;
-      }
-      // Once the user is actually dragging, the demo has served its purpose.
-      if (tutorialVisible) dismissTutorial();
-    }
-
-    const dx = clientX - startPointerX;
-    const dy = clientY - startPointerY;
-    containerEl.style.transform = `translate(${dx}px, ${dy}px)`;
-
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const threshold = getAcceptRadius();
-
-    // Continuous 0→1 drag progress drives the radial paper wash that previews
-    // the clear (see .clear-preview). Inherited from :root so any element can read it.
-    const progress = Math.min(distance / threshold, 1);
-    document.documentElement.style.setProperty('--clear-progress', `${progress}`);
-
-    if (distance >= threshold) {
-      buttonEl.classList.add('delete-ready');
-      acceptZoneEl.classList.add('threshold-reached');
-      clearPreviewEl.classList.add('committed');
-      // Fire a single tactile "click" the moment we cross the point of no return.
-      if (!clearReady) {
-        clearReady = true;
-        navigator.vibrate?.(15);
-      }
-    } else {
-      buttonEl.classList.remove('delete-ready');
-      acceptZoneEl.classList.remove('threshold-reached');
-      clearPreviewEl.classList.remove('committed');
-      clearReady = false;
-    }
-
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  function stopClearDrag(e: PointerEvent) {
-    if (!isDragging) return;
-
-    if (holdTimer) {
-      clearTimeout(holdTimer);
-      holdTimer = null;
-    }
-    isDragging = false;
-
-    const clientX = e.clientX;
-    const clientY = e.clientY;
-    const dx = clientX - startPointerX;
-    const dy = clientY - startPointerY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const threshold = getAcceptRadius();
-
-    acceptZoneEl.classList.remove('visible');
-    acceptZoneEl.classList.remove('threshold-reached');
-    scheduleReset(() => {
-      if (!isDragging) acceptZoneEl.style.display = 'none';
-    }, 250);
-
-    // Retract the radial wash. On commit the canvas is already blank, so this
-    // reveals fresh paper just as the confirmation ripple sweeps over it.
-    clearReady = false;
-    clearPreviewEl.classList.remove('committed');
-    document.documentElement.style.setProperty('--clear-progress', '0');
-
-    buttonEl.classList.remove('delete-ready');
-
-    if (distance >= threshold) {
-      if (tutorialVisible) dismissTutorial();
-
-      saveDrawingIfEnabled();
-      clearCanvas();
-
-      buttonEl.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-      buttonEl.style.opacity = '0';
-      buttonEl.style.transform = 'scale(0.8)';
-
-      pageTurnOverlayEl.classList.add('animating');
-
-      scheduleReset(() => {
-        stopDrawSound();
-      }, 300);
-
-      scheduleReset(() => {
-        pageTurnOverlayEl.classList.remove('animating');
-
-        containerEl.style.transform = '';
-        buttonEl.classList.remove('dragging');
-        buttonEl.style.transition = 'none';
-        buttonEl.style.transform = 'scale(0.8)';
-
-        scheduleReset(() => {
-          containerEl.classList.remove('dragging-active');
-          buttonEl.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-          buttonEl.style.opacity = '1';
-          buttonEl.style.transform = '';
-        }, 50);
-      }, 600);
-    } else {
-      containerEl.classList.remove('dragging-active');
-      containerEl.style.transform = '';
-      buttonEl.classList.remove('dragging');
-    }
-
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
   function resetButtonPosition() {
     if (tutorialVisible) dismissTutorial(); // geometry would be stale after a layout change
     if (!containerEl || isDragging) return;
@@ -301,23 +95,12 @@
 
   onMount(() => {
     lastOrientation = isPortrait();
-    document.addEventListener('pointermove', dragClear);
-    document.addEventListener('pointerup', stopClearDrag);
-    document.addEventListener('pointercancel', stopClearDrag);
     window.addEventListener('orientationchange', resetButtonPosition);
     window.addEventListener('resize', onResize);
     return () => {
-      document.removeEventListener('pointermove', dragClear);
-      document.removeEventListener('pointerup', stopClearDrag);
-      document.removeEventListener('pointercancel', stopClearDrag);
       window.removeEventListener('orientationchange', resetButtonPosition);
       window.removeEventListener('resize', onResize);
-      // Cancel any timer left pending by a mid-interaction unmount so its
-      // callback can't fire against torn-down DOM.
-      if (holdTimer) clearTimeout(holdTimer);
       if (tutorialDismissTimer) clearTimeout(tutorialDismissTimer);
-      for (const id of resetTimers) clearTimeout(id);
-      resetTimers.clear();
     };
   });
 </script>
@@ -328,10 +111,23 @@
     id="clearButton"
     aria-label="Clear drawing"
     bind:this={buttonEl}
-    onpointerdown={startClearDrag}
+    use:dragToClear={() => ({
+      containerEl,
+      acceptZoneEl,
+      clearPreviewEl,
+      pageTurnOverlayEl,
+      onClear: () => {
+        saveDrawingIfEnabled();
+        clearCanvas();
+      },
+      onTutorialShow: showTutorial,
+      onTutorialDismiss: dismissTutorial,
+      onDragStart: () => { isDragging = true; },
+      onDragEnd: () => { isDragging = false; }
+    })}
   >
-    <!-- Both lids render; the existing .dragging class (added imperatively in
-         startClearDrag) decides which is shown — see the CSS below. -->
+    <!-- Both lids render; the .dragging class (added imperatively by the
+         dragToClear action) decides which is shown — see the CSS below. -->
     <Icon name="trash-closed" class="clear-icon clear-icon-closed" aria-hidden="true" />
     <Icon name="trash-open" class="clear-icon clear-icon-open" aria-hidden="true" />
   </button>
