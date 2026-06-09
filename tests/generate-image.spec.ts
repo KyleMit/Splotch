@@ -85,6 +85,10 @@ test('throttles a managed token hammered in a burst', async ({ request, baseURL 
 
   // Requests within the limit clear the throttle (rejected only by the type
   // guard); the one that tips over the limit gets a 429 with a Retry-After.
+  //
+  // A 403 here means the token is not in ALLOWED_TOKENS_LIST — copy .env.example
+  // to .env so the test server has the token available.
+  expect(statuses[0], 'token rejected (403) — copy .env.example to .env').not.toBe(403);
   expect(statuses.slice(0, GENERATE_LIMIT)).not.toContain(429);
   const res = await postImage(request, baseURL, managedForm(TINY_PNG, 'image/gif', token, 'drawing.gif'));
   expect(res.status()).toBe(429);
