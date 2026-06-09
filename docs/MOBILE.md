@@ -65,6 +65,16 @@ This dev machine is now set up (2026-06):
 * [x] **Node 22** (via nvm-windows) — Capacitor 8 requires Node ≥ 22. The repo's
   default node was 18; run `nvm use 22.11.0` in an **elevated** terminal once to
   make 22 the persistent default (the symlink swap needs admin).
+* [x] **Android SDK `platform-tools` on PATH** — Android Studio installs `adb`
+  at `%LOCALAPPDATA%\Android\Sdk\platform-tools` but does not add it to PATH
+  automatically. Add it once (user scope, new terminal required to take effect):
+  ```powershell
+  [Environment]::SetEnvironmentVariable(
+    "Path",
+    [Environment]::GetEnvironmentVariable("Path","User") + ";$env:LOCALAPPDATA\Android\Sdk\platform-tools",
+    "User"
+  )
+  ```
 * [x] **Full JDK 21** at `%USERPROFILE%\.jdks\jdk-21.0.11+10` — Capacitor 8
   plugins need a Java **21** toolchain, and Android Studio's bundled JBR is only
   17. `JAVA_HOME` (user scope) points here. NOTE: it must be a *full* JDK (with
@@ -114,6 +124,73 @@ Regenerate launcher icons / splash after changing artwork in `assets/`:
 ```bash
 npx @capacitor/assets generate --android   # (and --ios later)
 ```
+
+### Running the web app on a real Android device
+
+Two options depending on what you want to test:
+
+**Option A — Web dev server (fastest iteration, real touch input)**
+
+Useful when you want to test or profile the web build without a full Capacitor
+sync. The phone's browser hits your local dev server over USB.
+
+1. Start the dev server: `npm run dev`
+2. Connect the phone via USB and run:
+   ```bash
+   npm run adb:reverse
+   ```
+   This forwards the phone's port 5173 to the desktop's dev server
+   (`adb reverse tcp:5173 tcp:5173`), so `http://localhost:5173` on the phone
+   resolves to your machine. The dev server port is pinned to 5173 in
+   `vite.config.ts` so this script is always correct.
+3. Open Chrome on the phone and navigate to `http://localhost:5173`.
+
+Re-run `npm run adb:reverse` after each USB reconnect.
+
+If port 5173 is already in use from a stale dev server, kill it first:
+```bash
+npm run dev:kill
+```
+
+**Option B — Install the debug APK (tests the Capacitor shell)**
+
+```bash
+npm run android:run
+```
+
+This does a full `cap:sync` + Gradle build + ADB install. Use this when testing
+Capacitor plugins, storage, or the offline AI flow — not needed for canvas/perf
+work.
+
+---
+
+### Performance profiling with Chrome DevTools (remote debugging)
+
+Remote debugging lets you run Chrome DevTools on your desktop while drawing on
+the phone with real multi-touch input — the best way to get accurate profiles.
+
+#### One-time setup
+
+1. On the Android device: **Settings → Developer options → USB debugging → ON**.
+   (Enable Developer options by tapping *Build number* 7 times in *About phone*.)
+2. Connect via USB; accept the "Allow USB debugging?" prompt on the device.
+3. Choose "USB Tethering" as the USB connection mode
+4. Verify ADB sees the device:
+   ```bash
+   npm run adb:devices
+   ```
+   The device should show as `device` (not `unauthorized`).
+
+#### Recording a profile
+
+1. Start the app on the phone (Option A or B above).
+2. On the desktop, open Chrome and navigate to `chrome://inspect/#devices`.
+3. Find your device and the open tab, then click **Inspect**. A DevTools window
+   opens, connected to the phone's Chrome instance.
+4. In DevTools, open the **Performance** panel.
+5. Click **Record** (⏺), draw on the phone for 10–15 seconds (use multi-touch
+   freely — this captures real finger input), then click **Stop**.
+6. Export the trace: click the **⋮** menu → **Save profile…** → save as `.json`.
 
 ## 3. Android release checklist
 

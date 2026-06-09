@@ -16,6 +16,7 @@ const isCapacitor = process.env.CAPACITOR === 'true';
 const NATIVE_API_BASE = isCapacitor ? 'https://splotch.art' : '';
 
 export default {
+  server: { port: 5173, strictPort: true },
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
     __BUILD_TIME__: JSON.stringify(BUILD_TIME),

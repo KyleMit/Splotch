@@ -2,27 +2,22 @@
 
 ## TODO
 
-* [x] Convert codebase to TS
-* [x] Run all tests on CI
-* [x] Add playwright test for multi-touch usage
-* [x] Add parent center config for orientation change
-* [ ] E2e tests for native
+* [ ] Run performance profiling and analyze results
+  * [ ] Generate source maps on local so trace works even better (or don't minify in the first place)
+* [ ] Replace server routes with API so I can have admin page on native
 * [ ] Make icons bigger on an ipad pro
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
-* [ ] Run performance profiling and analyze results
-  * [ ] I'd like to run a real performance profile against the actual drawing canvas.  What's the best way to accomplish this.  Ideally we'd track it with multi touch to make sure it doesn't burden perf in those circumstances.  I can do multi-touch on my phone, but not sure how to profile there.  If you can run the chrome profiler while simulating multiple touches, that would be great.  I'd just like to be able to get real-world data, analyze that data and then figure out where there might be performance bottlenecks we can solve
 * [ ] Add style guide
 * [ ] Add haptics for trashcan when in the clear accept zone
 * [ ] Add sound effects when deleting
 * [ ] Add even more color for tall landscape view
-* [ ] If call fails and you need to try again, enable a way to do so immediately
-* [ ] Be able to regenerate metadata screenshot
-* [ ] Choose more fun store screenshot generation
+* [ ] If AI call fails and you need to try again, enable a way to do so immediately
+* [ ] Generate more fun store screenshot generation
 * [ ] AI Style icons should use custom image and then generate corresponding output for each.
   * [ ] Currently not a big difference between default and cartoon
+  * [ ] Build custom AI Prompts in the parent center.  Generate a logo for them from the base style and then enable.  
 * [ ] Red hat test AI prompts
-* [ ] AI Style icon that allows for manual text input to customize prompt. does not need to also respect style selection
 * [ ] Fun loading sound while AI is loading
 * [ ] Hand draw icons
 * [ ] Native integration with apple pencil to use eraser
@@ -34,7 +29,6 @@
 * [ ] Investigate line smoothing while drawing
 * [ ] Efficiently layout broad range of colors on small devices in advanced color picker
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
-* [ ] Replace server routes with API so I can have admin page on native
 * Prettier Assets
 * Coloring Book
   * [ ] Make sure background works horizontally and vertically
@@ -128,3 +122,9 @@
 * [x] Do't use indexdb instead of localstorage - forces load into async
 * [x] Make clear action more intuitive
 * [x] Sound doesn't come in right away on fresh page load
+* [x] Convert codebase to TS
+* [x] Run all tests on CI
+* [x] Add playwright test for multi-touch usage
+* [x] Add parent center config for orientation change
+* [x] E2e tests for native
+* [x] Be able to regenerate metadata screenshot
