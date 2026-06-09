@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, type GenerateContentResponse } from '@google/genai';
 import { getStore } from '@netlify/blobs';
 import { STYLE_SUFFIXES } from '$lib/ai/styles';
 import { isAllowedToken } from '$lib/server/tokens';
@@ -70,6 +70,20 @@ function buildPromptForStyle(
 ): string {
   const suffix = typeof style === 'string' && Object.hasOwn(suffixes, style) ? suffixes[style] : '';
   return suffix ? defaultPrompt + ' ' + suffix : defaultPrompt;
+}
+
+function extractImagePart(response: GenerateContentResponse): { data: string; mimeType: string } {
+  const parts = response?.candidates?.[0]?.content?.parts ?? [];
+  const imagePart = parts.find((p) => p.inlineData?.data);
+  if (!imagePart) {
+    const textPart = parts.find((p) => typeof p.text === 'string');
+    const reason = textPart?.text || response?.candidates?.[0]?.finishReason || 'no image part returned';
+    throw error(502, `Model did not return an image: ${reason}`);
+  }
+  return {
+    data: imagePart.inlineData!.data!,
+    mimeType: imagePart.inlineData!.mimeType || 'image/png'
+  };
 }
 
 export const POST: RequestHandler = async ({ request, platform }) => {
@@ -158,18 +172,11 @@ export const POST: RequestHandler = async ({ request, platform }) => {
     throw error(502, `Gemini request failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  const parts = response?.candidates?.[0]?.content?.parts ?? [];
-  const imagePart = parts.find((p) => p.inlineData?.data);
-  if (!imagePart) {
-    const textPart = parts.find((p) => typeof p.text === 'string');
-    const reason = textPart?.text || response?.candidates?.[0]?.finishReason || 'no image part returned';
-    throw error(502, `Model did not return an image: ${reason}`);
-  }
-
-  const outBytes = Buffer.from(imagePart.inlineData!.data!, 'base64');
+  const { data, mimeType } = extractImagePart(response);
+  const outBytes = Buffer.from(data, 'base64');
   return new Response(outBytes, {
     headers: {
-      'Content-Type': imagePart.inlineData!.mimeType || 'image/png',
+      'Content-Type': mimeType,
       'Cache-Control': 'no-store'
     }
   });
