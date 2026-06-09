@@ -130,30 +130,3 @@
 * [x] Be able to regenerate metadata screenshot
 
 
-     22 [chromium] › tests/generate-image.spec.ts:66:1 › lets a normal-sized, allowed upload past the guards
-[WebServer] Gemini call failed: ApiError: {"error":{"code":400,"message":"API key not valid. Please pass a valid API key.","status":"INVALID_ARGUMENT","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"API_KEY_INVALID","domain":"googleapis.com","metadata":{"service":"generativelanguage.googleapis.com"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"API key not valid. Please pass a valid API key."}]}}
-[WebServer]     at throwErrorIfNotOK (file:///Users/kylemit/Code/Splotch/node_modules/@google/genai/dist/node/index.mjs:13596:30)
-[WebServer]     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-[WebServer]     at async file:///Users/kylemit/Code/Splotch/node_modules/@google/genai/dist/node/index.mjs:13296:13
-[WebServer]     at async Models.generateContent (file:///Users/kylemit/Code/Splotch/node_modules/@google/genai/dist/node/index.mjs:14704:24)
-[WebServer]     at async POST (file:///Users/kylemit/Code/Splotch/.svelte-kit/output/server/entries/endpoints/api/generate-image/_server.ts.js:104:16)
-[WebServer]     at async render_endpoint (file:///Users/kylemit/Code/Splotch/.svelte-kit/output/server/index.js:52:22)
-[WebServer]     at async resolve2 (file:///Users/kylemit/Code/Splotch/.svelte-kit/output/server/index.js:3732:23)
-[WebServer]     at async Object.handle (file:///Users/kylemit/Code/Splotch/.svelte-kit/output/server/entries/hooks.server.js:6:20)
-[WebServer]     at async fn (file:///Users/kylemit/Code/Splotch/.svelte-kit/output/server/index.js:3578:16)
-[WebServer]     at async handle (file:///Users/kylemit/Code/Splotch/.svelte-kit/output/server/index.js:3561:22) {
-[WebServer]   status: 400
-[WebServer] }
-
-
-
-     23 [chromium] › tests/generate-image.spec.ts:74:1 › throttles a managed token hammered in a burst
-[WebServer] [tokens] Netlify Blobs unavailable, using in-memory list: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
-[WebServer] [tokens] Netlify Blobs unavailable, using in-memory list: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
-[WebServer] [tokens] Netlify Blobs unavailable, using in-memory list: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
-[WebServer] [tokens] Netlify Blobs unavailable, using in-memory list: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
-[WebServer] [tokens] Netlify Blobs unavailable, using in-memory list: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
-[WebServer] [tokens] Netlify Blobs unavailable, using in-memory list: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
-[WebServer] [tokens] Netlify Blobs unavailable, using in-memory list: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
-[WebServer] [tokens] Netlify Blobs unavailable, using in-memory list: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token
-[WebServer] [tokens] Netlify Blobs unavailable, using in-memory list: The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token

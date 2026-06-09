@@ -168,8 +168,10 @@ export const POST: RequestHandler = async ({ request, platform }) => {
       config: { abortSignal: AbortSignal.timeout(120_000) }
     });
   } catch (err) {
-    console.error('Gemini call failed:', err);
-    throw error(502, `Gemini request failed: ${err instanceof Error ? err.message : String(err)}`);
+    const msg = err instanceof Error ? err.message : String(err);
+    const status = (err as { status?: number }).status;
+    console.error(`Gemini call failed (${status ?? 'unknown'}): ${msg.split('\n')[0]}`);
+    throw error(502, `Gemini request failed: ${msg}`);
   }
 
   const { data, mimeType } = extractImagePart(response);
