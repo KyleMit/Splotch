@@ -4,11 +4,6 @@
 > After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 
-- [ ] **[Extract] buildPromptForStyle** — File: `src/routes/api/generate-image/+server.ts`, ~line 111
-  Lines 111–115 look up a style suffix and append it to the default prompt. Extract into:
-  `function buildPromptForStyle(style: FormDataEntryValue | null, defaultPrompt: string, suffixes: Record<string, string>): string`
-  Live in the same file (or move to `$lib/ai/styles.ts` alongside `STYLE_SUFFIXES`). Pure function; makes the prompt-composition step testable without an HTTP context.
-
 - [ ] **[Extract] extractImagePart** — File: `src/routes/api/generate-image/+server.ts`, ~line 156
   Lines 156–162 navigate the Gemini response shape (`candidates[0].content.parts`), find the image part, and construct a diagnostic reason string from the text part or finish reason on failure. Extract into:
   `function extractImagePart(response: GenerateContentResponse): { data: string; mimeType: string }`  (throws on missing image)

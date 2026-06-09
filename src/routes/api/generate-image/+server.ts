@@ -63,6 +63,15 @@ const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const DEFAULT_PROMPT =
   "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel.";
 
+function buildPromptForStyle(
+  style: FormDataEntryValue | null,
+  defaultPrompt: string,
+  suffixes: Record<string, string>
+): string {
+  const suffix = typeof style === 'string' && Object.hasOwn(suffixes, style) ? suffixes[style] : '';
+  return suffix ? defaultPrompt + ' ' + suffix : defaultPrompt;
+}
+
 export const POST: RequestHandler = async ({ request, platform }) => {
   const form = await request.formData();
   const token = form.get('token');
@@ -108,11 +117,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
     throw error(500, 'Server is missing GEMINI_API_KEY');
   }
 
-  const suffix =
-    typeof style === 'string' && Object.hasOwn(STYLE_SUFFIXES, style)
-      ? STYLE_SUFFIXES[style]
-      : '';
-  const finalPrompt = suffix ? DEFAULT_PROMPT + ' ' + suffix : DEFAULT_PROMPT;
+  const finalPrompt = buildPromptForStyle(style, DEFAULT_PROMPT, STYLE_SUFFIXES);
 
   // Only the managed tokens are worth a per-token tally (to spot one going
   // rogue). BYOK requests run on the parent's own quota, so just log them.
