@@ -92,6 +92,14 @@ export async function saveScreenshot() {
 
 const POLAROID_DURATION_MS = 1900;
 
+function getPolaroidFrameOffset(buttonRect: DOMRect): { fromX: number; fromY: number } {
+  const cx = (buttonRect.left + buttonRect.right) / 2;
+  const cy = (buttonRect.top + buttonRect.bottom) / 2;
+  const fromX = Math.round(cx - window.innerWidth / 2);
+  const fromY = Math.round(cy - window.innerHeight / 2);
+  return { fromX, fromY };
+}
+
 function playPolaroidAnimation(imageUrl: string) {
   const overlay = document.createElement('div');
   overlay.className = 'polaroid-overlay';
@@ -116,11 +124,7 @@ function playPolaroidAnimation(imageUrl: string) {
 
   const button = document.getElementById('screenshotButton');
   if (button) {
-    const rect = button.getBoundingClientRect();
-    const cx = (rect.left + rect.right) / 2;
-    const cy = (rect.top + rect.bottom) / 2;
-    const fromX = Math.round(cx - window.innerWidth / 2);
-    const fromY = Math.round(cy - window.innerHeight / 2);
+    const { fromX, fromY } = getPolaroidFrameOffset(button.getBoundingClientRect());
     frame.style.setProperty('--from-x', `${fromX}px`);
     frame.style.setProperty('--from-y', `${fromY}px`);
   }
