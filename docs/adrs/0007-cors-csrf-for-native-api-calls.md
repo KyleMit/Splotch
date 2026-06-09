@@ -1,0 +1,34 @@
+# ADR-0007: CORS and CSRF Strategy for Native-to-Web API Calls
+
+**Status:** Active  
+**Date:** 2026-06-01 (committed in 4370205)
+
+## Context
+
+The native apps (Android: `https://localhost`, iOS: `capacitor://localhost`) call the hosted `https://splotch.art/api/generate-image` cross-origin. Two SvelteKit protections must be aligned:
+
+1. **CSRF guard** (`kit.csrf`): SvelteKit rejects cross-origin POST requests with a `multipart/form-data` content type with `403 "Cross-site POST form submissions are forbidden"`. This check runs in `respond.js` **before** `hooks.server.ts`, so CORS headers added in the hook are never attached — the WebView sees "No 'Access-Control-Allow-Origin' header" and misreports it as a CORS error.
+
+2. **CORS**: The `/api/*` routes need permissive `Access-Control-Allow-Origin` so the WebView origin can receive the response.
+
+## Decision
+
+**CSRF:** Add the two Capacitor WebView origins to `kit.csrf.trustedOrigins` in `svelte.config.js`:
+
+```js
+csrf: { trustedOrigins: ['https://localhost', 'capacitor://localhost'] }
+```
+
+This is safe because:
+- The AI endpoint is **token-gated** (no ambient auth that CSRF could abuse).
+- The `/admin` route uses a cookie, but it is `SameSite=Strict` and therefore not sent on the cross-site requests these origins make.
+
+**CORS:** `hooks.server.ts` adds `Access-Control-Allow-Origin: *` and handles `OPTIONS` preflights for all `/api/*` routes. Wildcard is safe because the token gate is the real authorization boundary.
+
+## Consequences
+
+- **+** Native AI generation works without rebuilding the app after the server-side fix is deployed.
+- **+** CSRF protection remains active for all other origins.
+- **+** No changes needed to the native APK or IPA when the CORS/CSRF config changes — it's purely server-side.
+- **-** The two trusted origins must be manually maintained if Capacitor changes its WebView origin scheme in a future major version.
+- **-** Debugging CSRF vs. CORS failures in the WebView is non-obvious; the misreported error ("No CORS header") masks the real cause (CSRF 403). To verify: `curl -i -X POST https://splotch.art/api/generate-image -H "Origin: https://localhost" -F token=x -F image=@tiny.png` — a healthy response is `403 {"message":"Invalid access token"}` WITH a CORS header present.
