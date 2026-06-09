@@ -4,11 +4,6 @@
 > After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 
-- [ ] **[Extract] growVirtualCanvas** — File: `src/lib/drawing/engine.ts`, ~line 114
-  The `else if` branch in `resizeCanvas()` (lines 114–130) creates a replacement canvas, configures its context, and copies existing pixels to avoid data loss on viewport expansion. Extract into:
-  `function growVirtualCanvas(existing: HTMLCanvasElement, newW: number, newH: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D | null }`
-  Live in the same file. Makes `resizeCanvas()` read as a high-level sequence and isolates the grow-and-copy logic for unit testing.
-
 - [ ] **[Extract] calculateStrokeSpeed** — File: `src/lib/drawing/engine.ts`, ~line 280
   The sliding-window velocity calculation in `draw()` (lines 280–292) maintains a timestamped sample array, trims stale entries, sums covered distance, and divides by the window span. Currently inline in the hot pointer-move path. Extract into:
   `function calculateStrokeSpeed(samples: { t: number; distance: number }[], newSample: { t: number; distance: number }, windowMs: number): number`

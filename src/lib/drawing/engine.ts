@@ -99,6 +99,23 @@ function scanCanvasIsEmpty(): boolean {
   return true;
 }
 
+function growVirtualCanvas(
+  existing: HTMLCanvasElement,
+  newW: number,
+  newH: number
+): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D | null } {
+  const grown = document.createElement('canvas');
+  grown.width = newW;
+  grown.height = newH;
+  const grownCtx = grown.getContext('2d');
+  if (grownCtx) {
+    grownCtx.lineCap = 'round';
+    grownCtx.lineJoin = 'round';
+    grownCtx.drawImage(existing, 0, 0);
+  }
+  return { canvas: grown, ctx: grownCtx };
+}
+
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
 
@@ -116,17 +133,7 @@ function resizeCanvas() {
     // larger dimension). Grow it and copy existing pixels so no drawing is lost.
     const newW = Math.max(rect.width * 2, virtualCanvas.width);
     const newH = Math.max(rect.height * 2, virtualCanvas.height);
-    const grown = document.createElement('canvas');
-    grown.width = newW;
-    grown.height = newH;
-    const grownCtx = grown.getContext('2d');
-    if (grownCtx) {
-      grownCtx.lineCap = 'round';
-      grownCtx.lineJoin = 'round';
-      grownCtx.drawImage(virtualCanvas, 0, 0);
-    }
-    virtualCanvas = grown;
-    virtualCtx = grownCtx;
+    ({ canvas: virtualCanvas, ctx: virtualCtx } = growVirtualCanvas(virtualCanvas, newW, newH));
   }
 
   if (virtualCtx && canvas.width > 0 && canvas.height > 0) {
