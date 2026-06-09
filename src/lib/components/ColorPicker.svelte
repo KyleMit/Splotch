@@ -42,15 +42,15 @@
     e.stopPropagation();
   }
 
+  function findHexagonInPicker(x: number, y: number, pickerEl: HTMLElement): string | null {
+    const element = document.elementFromPoint(x, y);
+    const hex = element?.closest?.('.hexagon') as HTMLElement | null;
+    return hex && pickerEl.contains(hex) ? (hex.dataset.color ?? null) : null;
+  }
+
   function handlePickerMove(e: PointerEvent) {
     if (!isTrackingDrag) return;
-    const element = document.elementFromPoint(e.clientX, e.clientY);
-    const hex = element?.closest?.('.hexagon') as HTMLElement | null;
-    if (hex && pickerEl.contains(hex)) {
-      hoveredHex = hex.dataset.color ?? null;
-    } else {
-      hoveredHex = null;
-    }
+    hoveredHex = findHexagonInPicker(e.clientX, e.clientY, pickerEl);
     e.preventDefault();
     e.stopPropagation();
   }
@@ -58,10 +58,9 @@
   function handlePickerUp(e: PointerEvent) {
     if (!isTrackingDrag) return;
     isTrackingDrag = false;
-    const element = document.elementFromPoint(e.clientX, e.clientY);
-    const hex = element?.closest?.('.hexagon') as HTMLElement | null;
-    if (hex && pickerEl.contains(hex)) {
-      selectColor(hex.dataset.color ?? '');
+    const color = findHexagonInPicker(e.clientX, e.clientY, pickerEl);
+    if (color) {
+      selectColor(color);
     } else {
       hoveredHex = null;
     }

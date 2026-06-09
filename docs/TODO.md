@@ -4,11 +4,6 @@
 > After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 
-- [ ] **[Extract] findHexagonInPicker** — File: `src/lib/components/ColorPicker.svelte`, ~line 47
-  The same two-step pattern — `element?.closest?.('.hexagon') as HTMLElement | null` then validate `pickerEl.contains(hex)` and read `hex.dataset.color` — appears in both `handlePickerMove` (lines 47–53) and `handlePickerUp` (lines 61–65). Extract into:
-  `function findHexagonInPicker(x: number, y: number, pickerEl: HTMLElement): string | null`
-  Live in the same `<script>` block. Returns the color string or null, eliminating the duplication and naming the "hit-test the picker for a hovered color" intent.
-
 - [ ] **[Extract] buildPromptForStyle** — File: `src/routes/api/generate-image/+server.ts`, ~line 111
   Lines 111–115 look up a style suffix and append it to the default prompt. Extract into:
   `function buildPromptForStyle(style: FormDataEntryValue | null, defaultPrompt: string, suffixes: Record<string, string>): string`
