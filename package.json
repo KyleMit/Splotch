@@ -40,7 +40,8 @@
     "test:android:device": "maestro test .maestro/smoke.yaml",
     "test:ui": "playwright test --ui",
     "test:headed": "cross-env SLOWMO=500 playwright test --headed",
-    "test:debug": "playwright test --debug"
+    "test:debug": "playwright test --debug",
+    "gen:large-image": "node scripts/gen-large-image.mjs"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

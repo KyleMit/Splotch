@@ -35,6 +35,7 @@
 * [ ] Efficiently layout broad range of colors on small devices in advanced color picker
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * [ ] Replace server routes with API so I can have admin page on native
+* Prettier Assets
 * Coloring Book
   * [ ] Make sure background works horizontally and vertically
   * [ ] Make sure book selection screen is scrollable.
@@ -50,6 +51,8 @@
   * [ ] Sometimes it doesn't register clicks on color changes
 * Controls
   * [ ] Brush type (blend mode with previous drawing)
+
+
 
 ## DONE
 
