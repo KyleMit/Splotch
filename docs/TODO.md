@@ -4,11 +4,6 @@
 > After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 
-- [ ] **[Extract] calculateStrokeSpeed** — File: `src/lib/drawing/engine.ts`, ~line 280
-  The sliding-window velocity calculation in `draw()` (lines 280–292) maintains a timestamped sample array, trims stale entries, sums covered distance, and divides by the window span. Currently inline in the hot pointer-move path. Extract into:
-  `function calculateStrokeSpeed(samples: { t: number; distance: number }[], newSample: { t: number; distance: number }, windowMs: number): number`
-  Live in the same file. Makes `draw()` read as intent (track position → compute speed → stroke → notify) and makes the algorithm independently unit-testable.
-
 - [ ] **[Extract] findHexagonInPicker** — File: `src/lib/components/ColorPicker.svelte`, ~line 47
   The same two-step pattern — `element?.closest?.('.hexagon') as HTMLElement | null` then validate `pickerEl.contains(hex)` and read `hex.dataset.color` — appears in both `handlePickerMove` (lines 47–53) and `handlePickerUp` (lines 61–65). Extract into:
   `function findHexagonInPicker(x: number, y: number, pickerEl: HTMLElement): string | null`

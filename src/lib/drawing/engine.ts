@@ -273,6 +273,24 @@ function startDrawing(e: PointerEvent) {
   }
 }
 
+// Honest sliding window: stamp each move's distance with its time, drop
+// samples older than windowMs, then divide the distance covered since the
+// oldest surviving sample by that elapsed span. (The oldest sample is the
+// anchor for the span, so its own distance — travelled before it — is excluded.)
+function calculateStrokeSpeed(
+  samples: { t: number; distance: number }[],
+  newSample: { t: number; distance: number },
+  windowMs: number
+): number {
+  samples.push(newSample);
+  const cutoff = newSample.t - windowMs;
+  while (samples.length > 1 && samples[0].t < cutoff) samples.shift();
+  let windowDistance = 0;
+  for (let i = 1; i < samples.length; i++) windowDistance += samples[i].distance;
+  const windowSpan = Math.max(newSample.t - samples[0].t, 1);
+  return windowDistance / windowSpan;
+}
+
 function draw(e: PointerEvent) {
   const pointerState = activePointers.get(e.pointerId);
   if (!pointerState || !pointerState.isDrawing) return;
@@ -285,18 +303,11 @@ function draw(e: PointerEvent) {
   const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
   const now = Date.now();
-  // Honest sliding window: stamp each move's distance with its time, drop
-  // samples older than SPEED_WINDOW_MS, then divide the distance covered since
-  // the oldest surviving sample by that elapsed span. (The oldest sample is the
-  // anchor for the span, so its own distance — travelled before it — is excluded.)
-  const samples = pointerState.speedSamples;
-  samples.push({ t: now, distance });
-  const cutoff = now - SPEED_WINDOW_MS;
-  while (samples.length > 1 && samples[0].t < cutoff) samples.shift();
-  let windowDistance = 0;
-  for (let i = 1; i < samples.length; i++) windowDistance += samples[i].distance;
-  const windowSpan = Math.max(now - samples[0].t, 1);
-  const speed = windowDistance / windowSpan;
+  const speed = calculateStrokeSpeed(
+    pointerState.speedSamples,
+    { t: now, distance },
+    SPEED_WINDOW_MS
+  );
 
   for (const c of activeContexts()) {
     strokeSegment(c, pointerState, x, y);
