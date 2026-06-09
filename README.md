@@ -19,7 +19,7 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 
 ## Tech Stack
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full tech stack, UI component glossary, and dev tooling notes.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full tech stack, source map, and UI component glossary. See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for dev setup, conventions, and the dual-build explained.
 
 ## Getting Started
 
