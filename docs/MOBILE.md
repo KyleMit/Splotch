@@ -22,6 +22,11 @@ native apps can't run a server, so they build a **fully static** export instead:
 * The server-only routes (`/api`, `/admin`, `/dev`) are excluded from the bundle
   (`strict: false`). The home page is prerendered to `index.html`; `200.html` is
   the SPA fallback.
+* The admin console is still reachable on device: the bundle includes a
+  prerendered `/admin/native`, a static page that manages the same access tokens through
+  the hosted `/api/admin/*` endpoints (bearer-session auth, stored in the
+  Keychain/Keystore — see `docs/API.md`). The About-tab admin link points
+  there on native.
 
 ### Offline vs. online
 

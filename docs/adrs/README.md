@@ -19,3 +19,4 @@ This directory records significant architectural decisions made in the Splotch p
 | [0013](0013-platform-detection-without-capacitor-core.md) | Platform Detection Without Importing @capacitor/core | Active |
 | [0014](0014-in-memory-rate-limiting.md) | In-Memory Rate Limiting (Per-Instance Sliding Window) | Active |
 | [0015](0015-capped-dpr-canvas-rendering.md) | Capped-DPR Canvas Rendering (min(devicePixelRatio, 2)) | Active |
+| [0016](0016-admin-console-bearer-api-for-native.md) | Admin Console via Shared Server Core + Bearer-Session API for Native | Active |

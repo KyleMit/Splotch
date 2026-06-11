@@ -9,6 +9,7 @@ The `docs/` folder is the source of truth for design decisions and ongoing work.
 | `docs/ARCHITECTURE.md` | Anytime you need the full tech stack, source map, or UI element hierarchy |
 | `docs/adrs/README.md` | Before making or discussing any architectural decision — check if it's already documented |
 | `docs/TESTING.md` | Before writing, running, or modifying tests |
+| `docs/API.md` | Before adding, changing, or calling any `/api/*` endpoint |
 | `docs/MOBILE.md` | Before touching anything Android/iOS/Capacitor related |
 | `docs/BACKLOG.md` | When asked what to work on next |
 | `docs/TODO.md` | When using `/fix-next-todo` or `/review-todos` |

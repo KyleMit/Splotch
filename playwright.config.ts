@@ -37,6 +37,9 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
-    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' }
+    // ADMIN_ACCESS_TOKEN is the known secret tests/admin.spec.ts signs in with.
+    // Token mutations land in the in-memory fallback (no Netlify Blobs here),
+    // so they reset with the server and never touch real data.
+    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true', ADMIN_ACCESS_TOKEN: 'test-admin-secret' }
   }
 });

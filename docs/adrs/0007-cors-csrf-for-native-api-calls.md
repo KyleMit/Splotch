@@ -22,8 +22,9 @@ csrf: { trustedOrigins: ['https://localhost', 'capacitor://localhost'] }
 This is safe because:
 - The AI endpoint is **token-gated** (no ambient auth that CSRF could abuse).
 - The `/admin` route uses a cookie, but it is `SameSite=Strict` and therefore not sent on the cross-site requests these origins make.
+- The `/api/admin/*` endpoints (ADR-0016) use JSON bodies, which SvelteKit's CSRF guard doesn't apply to anyway, and authenticate per-request via a bearer header — no ambient credential to ride.
 
-**CORS:** `hooks.server.ts` adds `Access-Control-Allow-Origin: *` and handles `OPTIONS` preflights for all `/api/*` routes. Wildcard is safe because the token gate is the real authorization boundary.
+**CORS:** `hooks.server.ts` adds `Access-Control-Allow-Origin: *` and handles `OPTIONS` preflights for all `/api/*` routes, allowing `GET, POST, DELETE` plus the `Content-Type` and `Authorization` headers (the bearer session for `/api/admin/*`). Wildcard is safe because every endpoint carries its own credential gate and none relies on cookies — a wildcard origin can't be combined with credentialed (cookie) requests in any case.
 
 ## Consequences
 

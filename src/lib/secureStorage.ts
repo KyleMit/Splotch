@@ -1,27 +1,31 @@
 import { browser } from '$app/environment';
 import { isNative } from './platform';
 
-// Secure home for the parent's Gemini API key.
+// Secure home for the app's client-held secrets — the parent's Gemini API key
+// and the admin session token (used by the native apps to authenticate against
+// /api/admin/*).
 //
-//  • Native (iOS/Android): the key is handed to @aparajita/capacitor-secure-storage,
-//    which stores it in the iOS Keychain / Android Keystore — hardware-backed and
+//  • Native (iOS/Android): secrets are handed to @aparajita/capacitor-secure-storage,
+//    which stores them in the iOS Keychain / Android Keystore — hardware-backed and
 //    persistent until the app is deleted.
 //
-//  • Web: there's no hardware vault, so the next best thing — the raw key is never
+//  • Web: there's no hardware vault, so the next best thing — the raw value is never
 //    written in plaintext. It's AES-GCM encrypted with a *non-extractable* CryptoKey
 //    that the browser sandboxes inside IndexedDB: its raw bytes can't be exported or
 //    exfiltrated, only used to decrypt within this exact origin. Only the ciphertext
 //    and IV are persisted. This is transparent on boot (no passphrase/prompt), which
 //    keeps setup a one-time, "set and forget" step for parents.
 
-const NATIVE_KEY = 'gemini-api-key';
+// Each secret has a stable name that doubles as the native store key and the
+// IndexedDB row key for its { iv, data } payload on the web.
+const API_KEY = 'gemini-api-key';
+const ADMIN_SESSION = 'admin-session';
 
 // IndexedDB layout for the web path.
 const DB_NAME = 'splotch-secure';
 const DB_VERSION = 1;
 const STORE = 'secrets';
 const MASTER_KEY_ROW = 'master-key'; // the non-extractable AES-GCM CryptoKey
-const PAYLOAD_ROW = 'gemini-api-key'; // { iv, data }
 
 // --- native plugin (lazy so it's never loaded on the web or during SSR) ---
 type SecureStoragePlugin = (typeof import('@aparajita/capacitor-secure-storage'))['SecureStorage'];
@@ -63,7 +67,7 @@ async function getMasterKey(db: import('idb').IDBPDatabase): Promise<CryptoKey> 
   return key;
 }
 
-async function webSave(value: string) {
+async function webSave(name: string, value: string) {
   const db = await getDb();
   const key = await getMasterKey(db);
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -72,69 +76,80 @@ async function webSave(value: string) {
     key,
     new TextEncoder().encode(value)
   );
-  await db.put(STORE, { iv, data }, PAYLOAD_ROW);
+  await db.put(STORE, { iv, data }, name);
 }
 
-async function webLoad() {
+async function webLoad(name: string) {
   const db = await getDb();
-  const record = await db.get(STORE, PAYLOAD_ROW);
+  const record = await db.get(STORE, name);
   if (!record) return null;
   const key = await getMasterKey(db);
   try {
     const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: record.iv }, key, record.data);
     return new TextDecoder().decode(plain);
   } catch {
-    return null; // master key missing/rotated or payload corrupt — treat as no key
+    return null; // master key missing/rotated or payload corrupt — treat as no value
   }
 }
 
-async function webClear() {
+async function webClear(name: string) {
   const db = await getDb();
-  await db.delete(STORE, PAYLOAD_ROW);
+  await db.delete(STORE, name);
   // The master key is left in place: it's useless without a payload and lets a
-  // re-entered key reuse the same sandboxed key object.
+  // re-entered secret reuse the same sandboxed key object.
 }
 
-/** Persist the parent's API key to the platform's secure store. */
-export async function saveApiKey(value: string) {
+/** Persist a named secret to the platform's secure store. */
+async function saveSecret(name: string, value: string) {
   if (!browser || !value) return;
   if (isNative()) {
     const SecureStorage = await getPlugin();
-    await SecureStorage.set(NATIVE_KEY, value);
+    await SecureStorage.set(name, value);
   } else {
-    await webSave(value);
+    await webSave(name, value);
   }
 }
 
-/** Read the saved API key back, or null if none is stored. Never throws. */
-export async function loadApiKey() {
+/** Read a named secret back, or null if none is stored. Never throws. */
+async function loadSecret(name: string) {
   if (!browser) return null;
   try {
     if (isNative()) {
       const SecureStorage = await getPlugin();
-      const value = await SecureStorage.get(NATIVE_KEY);
+      const value = await SecureStorage.get(name);
       return typeof value === 'string' ? value : null;
     }
-    return await webLoad();
+    return await webLoad(name);
   } catch {
     return null;
   }
 }
 
-/** Remove the saved API key. Best-effort; never throws. */
-export async function clearApiKey() {
+/** Remove a named secret. Best-effort; never throws. */
+async function clearSecret(name: string) {
   if (!browser) return;
   try {
     if (isNative()) {
       const SecureStorage = await getPlugin();
-      await SecureStorage.remove(NATIVE_KEY);
+      await SecureStorage.remove(name);
     } else {
-      await webClear();
+      await webClear(name);
     }
   } catch {
     // best-effort
   }
 }
+
+// The parent's Gemini API key.
+export const saveApiKey = (value: string) => saveSecret(API_KEY, value);
+export const loadApiKey = () => loadSecret(API_KEY);
+export const clearApiKey = () => clearSecret(API_KEY);
+
+// The derived admin session token (never the raw admin secret), returned by
+// POST /api/admin/login and replayed as a bearer header by the admin console.
+export const saveAdminSession = (value: string) => saveSecret(ADMIN_SESSION, value);
+export const loadAdminSession = () => loadSecret(ADMIN_SESSION);
+export const clearAdminSession = () => clearSecret(ADMIN_SESSION);
 
 // Ask the browser not to evict our IndexedDB during low-storage cleanups, so the
 // key survives across sessions without the parent ever re-entering it. Web only.

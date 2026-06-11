@@ -1,9 +1,11 @@
 // The native apps load from a WebView origin (https://localhost on Android,
-// capacitor://localhost on iOS) but call the hosted /api/generate-image. That's
-// a cross-origin request, so the endpoint needs permissive CORS. The route is
-// already token-gated server-side, so allowing any origin here is safe — it
-// can't be abused without a valid access token. Only /api/* is opened up; the
-// rest of the site stays same-origin.
+// capacitor://localhost on iOS) but call the hosted /api/* endpoints. Those are
+// cross-origin requests, so the endpoints need permissive CORS. Every route is
+// already gated server-side (access token for generate-image, bearer session
+// for /api/admin/*), so allowing any origin here is safe — nothing under /api
+// can be abused without a valid credential, and none of it relies on cookies
+// (the wildcard origin is incompatible with credentialed requests anyway).
+// Only /api/* is opened up; the rest of the site stays same-origin.
 import type { Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -29,7 +31,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type'
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
   };
 }

@@ -14,14 +14,15 @@
 
   // Hidden admin unlock: tapping the version text 5 times reveals the link to
   // the admin console. The reveal is persisted (so it survives a refresh) and
-  // stays put for anyone holding an admin_session cookie; the /admin page resets
-  // it on logout / failed login / leaving without signing in. The secret itself
-  // is collected by the console's login form, so it never touches the client.
-  // The admin console is a hosted-only route (server-rendered token management);
-  // the native build is a static export with no server, so navigating there
-  // 500s. Never reveal the link inside a native shell.
+  // stays put for anyone holding an admin session; the console resets it on
+  // logout / failed login / leaving without signing in. The secret itself is
+  // collected by the console's login form, so it never touches the client.
+  // The web console (/admin) is server-rendered with a cookie session; the
+  // native build is a static export with no server, so it gets /admin/native,
+  // which manages the same tokens through the hosted /api/admin endpoints.
   let versionClicks = $state(0);
-  let showAdminLink = $derived(settings.adminLinkVisible && !isNative());
+  let showAdminLink = $derived(settings.adminLinkVisible);
+  let adminHref = $derived(isNative() ? '/admin/native' : '/admin');
   function handleVersionClick() {
     versionClicks += 1;
     if (versionClicks < 5) return;
@@ -60,7 +61,7 @@
     </p>
     <button type="button" class="version-text" onclick={handleVersionClick}>Version {APP_VERSION}</button>
     {#if showAdminLink}
-      <p class="admin-link"><a href="/admin">Admin</a></p>
+      <p class="admin-link"><a href={adminHref}>Admin</a></p>
     {/if}
     {#if import.meta.env.DEV}
       <p class="admin-link"><a href="/dev/ai-timer">AI Timer</a></p>
