@@ -125,6 +125,8 @@ function scanCanvasIsEmpty(): boolean {
   return true;
 }
 
+// Viewport grew beyond the current virtual canvas (e.g. a desktop window
+// stretched larger). Grow it and copy existing pixels so no drawing is lost.
 function growVirtualCanvas(
   existing: HTMLCanvasElement,
   newW: number,
@@ -134,37 +136,28 @@ function growVirtualCanvas(
   grown.width = newW;
   grown.height = newH;
   const grownCtx = grown.getContext('2d');
-  if (grownCtx) {
-    grownCtx.lineCap = 'round';
-    grownCtx.lineJoin = 'round';
-    grownCtx.drawImage(existing, 0, 0);
-  }
+  if (grownCtx) grownCtx.drawImage(existing, 0, 0);
   return { canvas: grown, ctx: grownCtx };
 }
 
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
 
+  // A max(w,h) square covers both orientations, so rotation never loses pixels;
+  // anything larger (e.g. a resized desktop window) goes through the grow path.
+  const squareSide = Math.ceil(Math.max(rect.width, rect.height));
   if (!virtualCanvas) {
     virtualCanvas = document.createElement('canvas');
-    virtualCanvas.width = Math.max(rect.width, rect.height) * 2;
-    virtualCanvas.height = Math.max(rect.width, rect.height) * 2;
+    virtualCanvas.width = squareSide;
+    virtualCanvas.height = squareSide;
     virtualCtx = virtualCanvas.getContext('2d');
-    if (virtualCtx) {
-      virtualCtx.lineCap = 'round';
-      virtualCtx.lineJoin = 'round';
-    }
-  } else if (rect.width * 2 > virtualCanvas.width || rect.height * 2 > virtualCanvas.height) {
-    // Viewport grew beyond the initial virtual canvas (e.g. device rotated to a
-    // larger dimension). Grow it and copy existing pixels so no drawing is lost.
-    const newW = Math.max(rect.width * 2, virtualCanvas.width);
-    const newH = Math.max(rect.height * 2, virtualCanvas.height);
+  } else if (squareSide > virtualCanvas.width || squareSide > virtualCanvas.height) {
+    const newW = Math.max(squareSide, virtualCanvas.width);
+    const newH = Math.max(squareSide, virtualCanvas.height);
     ({ canvas: virtualCanvas, ctx: virtualCtx } = growVirtualCanvas(virtualCanvas, newW, newH));
   }
 
-  if (virtualCtx && canvas.width > 0 && canvas.height > 0) {
-    virtualCtx.drawImage(canvas, 0, 0);
-  }
+  syncVirtualCanvas();
 
   canvas.width = Math.round(rect.width);
   canvas.height = Math.round(rect.height);
@@ -200,17 +193,15 @@ export function getCanvasRect(): CanvasRect {
   return canvasRect;
 }
 
-// Every drawing op must also land on the off-screen virtualCtx so the picture
-// survives a resize (resizeCanvas replays it). Yield whichever contexts exist
-// so each op is written once instead of being hand-mirrored.
-function activeContexts(): CanvasRenderingContext2D[] {
-  return virtualCtx ? [ctx, virtualCtx] : [ctx];
-}
-
-// The canvas backing a given context — their pixel dimensions differ, so
-// clearRect callers need the right one.
-function canvasFor(c: CanvasRenderingContext2D): HTMLCanvasElement {
-  return c === ctx ? canvas : virtualCanvas!;
+// The picture must survive resize/rotation, so the visible canvas is copied
+// into the off-screen virtual canvas after each completed drawing op (rather
+// than mirroring every stroke segment in the pointer hot path). The visible
+// region maps 1:1 to the virtual canvas at the origin, and the clearRect is
+// required so erased pixels propagate.
+function syncVirtualCanvas() {
+  if (!virtualCtx || canvas.width === 0 || canvas.height === 0) return;
+  virtualCtx.clearRect(0, 0, canvas.width, canvas.height);
+  virtualCtx.drawImage(canvas, 0, 0);
 }
 
 function strokeSegment(c: CanvasRenderingContext2D, ps: PointerState, x: number, y: number) {
@@ -227,8 +218,8 @@ function strokeSegment(c: CanvasRenderingContext2D, ps: PointerState, x: number,
 export function releaseAllPointers() {
   if (!ctx) return;
   ctx.beginPath();
-  if (virtualCtx) virtualCtx.beginPath();
 
+  if (activePointers.size > 0) syncVirtualCanvas();
   activePointers.clear();
 
   activePointerIds.forEach((pointerId) => {
@@ -278,17 +269,15 @@ function startDrawing(e: PointerEvent) {
   // there, only its (opaque) alpha matters.
   const op = eraserActive ? 'destination-out' : 'source-over';
 
-  for (const c of activeContexts()) {
-    c.globalCompositeOperation = op;
-    c.strokeStyle = currentColor;
-    c.fillStyle = currentColor;
-    c.beginPath();
-    c.arc(x, y, dotRadius, 0, Math.PI * 2);
-    c.fill();
-    c.beginPath();
-    c.moveTo(x, y);
-    c.globalCompositeOperation = 'source-over';
-  }
+  ctx.globalCompositeOperation = op;
+  ctx.strokeStyle = currentColor;
+  ctx.fillStyle = currentColor;
+  ctx.beginPath();
+  ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.globalCompositeOperation = 'source-over';
 
   if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0 });
 
@@ -335,9 +324,7 @@ function draw(e: PointerEvent) {
     SPEED_WINDOW_MS
   );
 
-  for (const c of activeContexts()) {
-    strokeSegment(c, pointerState, x, y);
-  }
+  strokeSegment(ctx, pointerState, x, y);
 
   pointerState.x = x;
   pointerState.y = y;
@@ -349,16 +336,16 @@ function draw(e: PointerEvent) {
 function stopDrawing(e?: PointerEvent) {
   if (!e) return;
 
-  const wasErasing = activePointers.get(e.pointerId)?.erase;
+  const pointerState = activePointers.get(e.pointerId);
 
   activePointers.delete(e.pointerId);
   activePointerIds.delete(e.pointerId);
 
   ctx.beginPath();
-  if (virtualCtx) virtualCtx.beginPath();
 
-  if (wasErasing) {
-    setCanvasEmptyState(scanCanvasIsEmpty());
+  if (pointerState) {
+    syncVirtualCanvas();
+    if (pointerState.erase) setCanvasEmptyState(scanCanvasIsEmpty());
   }
 
   if (onDrawStopCallback) onDrawStopCallback();
@@ -392,10 +379,13 @@ export function undo() {
 
   const snapshot = undoStack.pop();
   if (!snapshot) return;
-  for (const c of activeContexts()) {
-    const target = canvasFor(c);
-    c.clearRect(0, 0, target.width, target.height);
-    c.drawImage(snapshot.image, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(snapshot.image, 0, 0);
+  // Wipe the whole virtual canvas (not just the visible region) so undone
+  // content doesn't reappear from off-screen after a rotation.
+  if (virtualCtx && virtualCanvas) {
+    virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
+    virtualCtx.drawImage(snapshot.image, 0, 0);
   }
 
   setCanvasEmptyState(snapshot.wasEmpty);
@@ -456,9 +446,9 @@ export function setEraserMode(active: boolean) {
 
 export function clearCanvas() {
   saveUndoSnapshot();
-  for (const c of activeContexts()) {
-    const target = canvasFor(c);
-    c.clearRect(0, 0, target.width, target.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (virtualCtx && virtualCanvas) {
+    virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
   }
   setCanvasEmptyState(true);
 }
