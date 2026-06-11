@@ -4,9 +4,6 @@
 > After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 
-- [ ] **[Maintainability] Save-on-delete uses a web-only download path that silently fails on native** — File(s): `src/lib/drawing/saveOnDelete.ts`, `src/lib/drawing/screenshot.ts`
-  `saveDrawingIfEnabled()` hand-builds an `<a download>` click, which does nothing inside a Capacitor WebView — so the "save on delete" setting is a no-op on Android/iOS, contradicting ARCHITECTURE.md ("saves to the gallery"). `screenshot.ts` already has the platform-aware `saveImageBlob()` (gallery on native, download on web). Replace the body of `saveDrawingIfEnabled` with `await saveImageBlob(await exportCanvasBlob(getActiveOverlayImage()))` and delete the local copy of `timestamp()` (duplicated verbatim from screenshot.ts — export it from one place). Manually verify on web (download still triggers) and ideally on the emulator (`npm run android:run` → enable save-on-delete → clear → check Splotch album).
-
 - [ ] **[Architecture] Snapshot undo state per stroke group, not per pointerdown** — File(s): `src/lib/drawing/engine.ts`
   `saveUndoSnapshot()` runs synchronously inside every `pointerdown` (engine.ts:224): it allocates a full-canvas copy *per finger*, so a ten-finger toddler mash allocates 10 full-resolution canvases in one gesture, evicts the entire 10-deep history, adds latency before the first dot renders, and makes the undo button revert one finger at a time. Snapshot only when the active-pointer count goes 0 → 1 (i.e. in `startDrawing`, gate on `activePointers.size === 0` before adding the new pointer). One undo then reverts the whole multi-touch gesture, memory churn drops ~10×, and subsequent fingers start instantly. Update/extend the engine unit or Playwright dev-harness tests for multi-pointer undo behavior.
 
