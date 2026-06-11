@@ -26,7 +26,6 @@
 * [ ] Start adding crazier and crazier animations if time goes super long
 * [ ] Add sparkles to AI Customization screen
 * [ ] Parent center control to increase button size
-* [ ] Investigate line smoothing while drawing
 * [ ] Efficiently layout broad range of colors on small devices in advanced color picker
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * Prettier Assets
@@ -128,5 +127,6 @@
 * [x] Add parent center config for orientation change
 * [x] E2e tests for native
 * [x] Be able to regenerate metadata screenshot
+* [x] Investigate line smoothing while drawing — `draw()` now replays coalesced pointer events and renders midpoint-smoothed quadratic segments
 
 

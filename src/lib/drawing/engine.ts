@@ -12,6 +12,8 @@ interface DrawSoundData {
 interface PointerState {
   x: number;
   y: number;
+  midX: number;
+  midY: number;
   isDrawing: boolean;
   color: string;
   lineWidth: number;
@@ -204,15 +206,26 @@ function syncVirtualCanvas() {
   virtualCtx.drawImage(canvas, 0, 0);
 }
 
-function strokeSegment(c: CanvasRenderingContext2D, ps: PointerState, x: number, y: number) {
-  c.globalCompositeOperation = ps.erase ? 'destination-out' : 'source-over';
-  c.strokeStyle = ps.color;
-  c.lineWidth = ps.lineWidth;
-  c.beginPath();
-  c.moveTo(ps.x, ps.y);
-  c.lineTo(x, y);
-  c.stroke();
-  c.globalCompositeOperation = 'source-over';
+// One quadratic segment per input point: the path runs midpoint-to-midpoint
+// with the raw point as the control, so consecutive segments share a tangent
+// and the stroke curves smoothly instead of showing straight-chord corners.
+function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
+  ctx.globalCompositeOperation = ps.erase ? 'destination-out' : 'source-over';
+  ctx.strokeStyle = ps.color;
+  ctx.lineWidth = ps.lineWidth;
+  ctx.beginPath();
+  ctx.moveTo(ps.midX, ps.midY);
+  for (const { x, y } of points) {
+    const midX = (ps.x + x) / 2;
+    const midY = (ps.y + y) / 2;
+    ctx.quadraticCurveTo(ps.x, ps.y, midX, midY);
+    ps.x = x;
+    ps.y = y;
+    ps.midX = midX;
+    ps.midY = midY;
+  }
+  ctx.stroke();
+  ctx.globalCompositeOperation = 'source-over';
 }
 
 export function releaseAllPointers() {
@@ -251,6 +264,8 @@ function startDrawing(e: PointerEvent) {
   activePointers.set(e.pointerId, {
     x,
     y,
+    midX: x,
+    midY: y,
     isDrawing: true,
     color: currentColor,
     lineWidth,
@@ -312,6 +327,15 @@ function draw(e: PointerEvent) {
 
   e.preventDefault();
 
+  // Browsers coalesce fast input to ~one pointermove per frame but keep the
+  // intermediate samples; replay them all so quick scribbles don't render as
+  // straight chords. Synthetic/untrusted events report an empty list — fall
+  // back to the event itself.
+  const coalesced = e.getCoalescedEvents?.() ?? [];
+  const events = coalesced.length > 0 ? coalesced : [e];
+
+  // Speed is sampled from the final event only: one chord per pointermove,
+  // matching the cadence the sliding window was tuned for.
   const { x, y } = pointerToCanvas(e);
   const deltaX = x - pointerState.x;
   const deltaY = y - pointerState.y;
@@ -324,10 +348,8 @@ function draw(e: PointerEvent) {
     SPEED_WINDOW_MS
   );
 
-  strokeSegment(ctx, pointerState, x, y);
+  strokeSmoothSegments(pointerState, events.map(pointerToCanvas));
 
-  pointerState.x = x;
-  pointerState.y = y;
   pointerState.lastTime = now;
 
   if (onDrawSoundCallback) onDrawSoundCallback({ speed });
