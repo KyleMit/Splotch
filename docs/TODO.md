@@ -4,12 +4,6 @@
 > After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 
-- [ ] **[Performance] Use coalesced pointer events and midpoint smoothing in `draw()`** — File(s): `src/lib/drawing/engine.ts`
-  Browsers coalesce fast touch input to ~one pointermove per frame, so quick scribbles render as visible straight chords (engine.ts:294–321 draws one `lineTo` segment per event). In `draw()`, iterate `e.getCoalescedEvents?.() ?? [e]` and render a segment per coalesced point to recover the input the browser already collected. While there, replace straight `lineTo` chains with `quadraticCurveTo` through segment midpoints (previous point as control point) so strokes curve smoothly. Keep the speed-sample logic fed from the final event only. This resolves the BACKLOG.md item "Investigate line smoothing while drawing" — tick it off there. Verify by fast scribbling on `/dev/engine` (mouse + touch emulation) and on a real device.
-
-- [ ] **[Performance] Preload the paper texture instead of lazy-loading on first export** — File(s): `src/lib/drawing/engine.ts`
-  `loadPaperTexture()` (engine.ts:450) is first called inside `exportCanvasBlob()`; the fetch + WebP decode blocked the main thread for ~226ms in the 2026-06-09 trace — a visible stall the first time a user saves/shares. Warm it after `initDrawingCanvas` completes: `requestIdleCallback(() => loadPaperTexture())` with a `setTimeout(…, 0)` fallback (Safari lacks `requestIdleCallback`). `loadPaperTexture` already deduplicates via `paperTexturePromise`, so the early call is safe.
-
 - [ ] **[Maintainability] Save-on-delete uses a web-only download path that silently fails on native** — File(s): `src/lib/drawing/saveOnDelete.ts`, `src/lib/drawing/screenshot.ts`
   `saveDrawingIfEnabled()` hand-builds an `<a download>` click, which does nothing inside a Capacitor WebView — so the "save on delete" setting is a no-op on Android/iOS, contradicting ARCHITECTURE.md ("saves to the gallery"). `screenshot.ts` already has the platform-aware `saveImageBlob()` (gallery on native, download on web). Replace the body of `saveDrawingIfEnabled` with `await saveImageBlob(await exportCanvasBlob(getActiveOverlayImage()))` and delete the local copy of `timestamp()` (duplicated verbatim from screenshot.ts — export it from one place). Manually verify on web (download still triggers) and ideally on the emulator (`npm run android:run` → enable save-on-delete → clear → check Splotch album).
 

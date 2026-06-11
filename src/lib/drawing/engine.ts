@@ -439,6 +439,15 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   canvas.addEventListener('pointerout', stopDrawing);
   canvas.addEventListener('pointercancel', stopDrawing);
 
+  // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
+  // first export. Safari lacks requestIdleCallback.
+  const warmTexture = () => void loadPaperTexture();
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(warmTexture);
+  } else {
+    setTimeout(warmTexture, 0);
+  }
+
   return {
     teardown() {
       window.removeEventListener('resize', resizeCanvas);
