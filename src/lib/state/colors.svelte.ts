@@ -46,21 +46,18 @@ export const colors = $state({
   activeSwatch: PALETTE_COLORS[0].hex,
   activeColor: PALETTE_COLORS[0].hex,
   customColor: '#AB71E1',
-  customColorSelected: false,
-  lastColorChangeAt: 0
+  customColorSelected: false
 });
 
 export function selectPaletteColor(hex: string) {
   colors.activeSwatch = hex;
   colors.activeColor = hex;
-  colors.lastColorChangeAt = Date.now();
 }
 
 export function selectCustomSwatch() {
   colors.activeSwatch = CUSTOM_SWATCH;
   if (colors.customColorSelected) {
     colors.activeColor = colors.customColor;
-    colors.lastColorChangeAt = Date.now();
   }
 }
 
@@ -69,5 +66,4 @@ export function pickCustomColor(hex: string) {
   colors.customColorSelected = true;
   colors.activeSwatch = CUSTOM_SWATCH;
   colors.activeColor = hex;
-  colors.lastColorChangeAt = Date.now();
 }

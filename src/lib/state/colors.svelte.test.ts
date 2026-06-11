@@ -15,7 +15,6 @@ beforeEach(() => {
   colors.activeColor = PALETTE_COLORS[0].hex;
   colors.customColor = '#AB71E1';
   colors.customColorSelected = false;
-  colors.lastColorChangeAt = 0;
 });
 
 describe('palette invariants', () => {
@@ -29,11 +28,10 @@ describe('palette invariants', () => {
 });
 
 describe('selectPaletteColor', () => {
-  it('sets the active swatch and color and stamps the change time', () => {
+  it('sets the active swatch and color', () => {
     selectPaletteColor('#62A2E9');
     expect(colors.activeSwatch).toBe('#62A2E9');
     expect(colors.activeColor).toBe('#62A2E9');
-    expect(colors.lastColorChangeAt).toBeGreaterThan(0);
   });
 });
 
@@ -44,7 +42,6 @@ describe('pickCustomColor', () => {
     expect(colors.customColorSelected).toBe(true);
     expect(colors.activeSwatch).toBe(CUSTOM_SWATCH);
     expect(colors.activeColor).toBe('#123456');
-    expect(colors.lastColorChangeAt).toBeGreaterThan(0);
   });
 });
 

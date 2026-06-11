@@ -4,9 +4,6 @@
 > After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 
-- [ ] **[Readability] Remove dead `colors.lastColorChangeAt` state** — File(s): `src/lib/state/colors.svelte.ts`, `src/lib/state/colors.svelte.test.ts`
-  `lastColorChangeAt` is written by all three setters but never read by any app code — the stray-stroke debounce actually uses the engine's private `lastColorChangeTime`, stamped via `setColor()` (engine.ts:53, 422–425). Delete the field, its three assignments, and the test assertions that reference it (colors.svelte.test.ts:18,36,47). If a future feature needs the timestamp, the engine already owns it.
-
 - [ ] **[Performance] Position the eraser bubble with `transform` instead of `left`/`top`** — File(s): `src/lib/components/DrawingCanvas.svelte`
   The eraser cursor updates `style:left`/`style:top` from `$state` on every pointermove (DrawingCanvas.svelte:106–114), forcing style/layout work per frame while erasing. Switch to a single `style:transform="translate3d({x}px, {y}px, 0) translate(-50%, -50%)"` (move the existing `translate(-50%,-50%)` out of the CSS class) so updates stay compositor-only. Size can stay as width/height since it only changes on stroke-level changes.
 
