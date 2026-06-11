@@ -1,86 +1,35 @@
 # TODO
 
-Performance findings from Chrome trace (iPad Pro emulation, 2026-06-09).
-Drawing hot path is healthy — pointermove p50 0.14ms, max 0.83ms, zero jank events.
-These are the three areas worth tightening.
+> Work through these items one at a time using `/fix-next-todo`.
+> After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
+> Do **not** `git add` or `git commit` — the user reviews the diff first.
 
----
+- [ ] **[Performance] Stop mirroring every stroke segment onto the virtual canvas in the pointer hot path** — File(s): `src/lib/drawing/engine.ts`
+  `draw()` strokes each segment twice via `activeContexts()` (engine.ts:312–314) — once on the visible canvas and once on the virtual buffer, which is `max(w,h)*2` square (3500–5000px on phones), doubling per-frame raster work. The mirror only exists so content survives resize/rotation. Replace it with a `syncVirtualCanvas()` helper — `virtualCtx.clearRect(0, 0, canvas.width, canvas.height)` then `virtualCtx.drawImage(canvas, 0, 0)` — called from `stopDrawing()` and at the top of `resizeCanvas()` (replacing the bare `drawImage` there; the clearRect is required so erased pixels propagate). The visible region maps 1:1 to the virtual canvas at the origin, so this is exact, including `destination-out` erasing. Then remove the virtual context from the `startDrawing`/`draw` loops (keep `clearCanvas` and `undo` writing to both, or route them through the sync helper — note `undo` already wipes the virtual canvas's off-screen regions today, engine.ts:369–373, so semantics don't regress). Consider whether the 2×-square buffer can shrink while in there.
 
-## PERF: Speed up `scanCanvasIsEmpty()` on large canvases
+- [ ] **[Performance] Use coalesced pointer events and midpoint smoothing in `draw()`** — File(s): `src/lib/drawing/engine.ts`
+  Browsers coalesce fast touch input to ~one pointermove per frame, so quick scribbles render as visible straight chords (engine.ts:294–321 draws one `lineTo` segment per event). In `draw()`, iterate `e.getCoalescedEvents?.() ?? [e]` and render a segment per coalesced point to recover the input the browser already collected. While there, replace straight `lineTo` chains with `quadraticCurveTo` through segment midpoints (previous point as control point) so strokes curve smoothly. Keep the speed-sample logic fed from the final event only. This resolves the BACKLOG.md item "Investigate line smoothing while drawing" — tick it off there. Verify by fast scribbling on `/dev/engine` (mouse + touch emulation) and on a real device.
 
-**File:** `src/lib/drawing/engine.ts:93`
+- [ ] **[Performance] Preload the paper texture instead of lazy-loading on first export** — File(s): `src/lib/drawing/engine.ts`
+  `loadPaperTexture()` (engine.ts:450) is first called inside `exportCanvasBlob()`; the fetch + WebP decode blocked the main thread for ~226ms in the 2026-06-09 trace — a visible stall the first time a user saves/shares. Warm it after `initDrawingCanvas` completes: `requestIdleCallback(() => loadPaperTexture())` with a `setTimeout(…, 0)` fallback (Safari lacks `requestIdleCallback`). `loadPaperTexture` already deduplicates via `paperTexturePromise`, so the early call is safe.
 
-`scanCanvasIsEmpty()` calls `getImageData(0, 0, width, height)` and walks every
-alpha byte. For the trace session (iPad Pro viewport) this took **9–11ms** in
-`requestIdleCallback` — deferred correctly, so it never blocked a frame. But
-cost scales with canvas area and will hurt on large viewports or low-end devices.
+- [ ] **[Maintainability] Save-on-delete uses a web-only download path that silently fails on native** — File(s): `src/lib/drawing/saveOnDelete.ts`, `src/lib/drawing/screenshot.ts`
+  `saveDrawingIfEnabled()` hand-builds an `<a download>` click, which does nothing inside a Capacitor WebView — so the "save on delete" setting is a no-op on Android/iOS, contradicting ARCHITECTURE.md ("saves to the gallery"). `screenshot.ts` already has the platform-aware `saveImageBlob()` (gallery on native, download on web). Replace the body of `saveDrawingIfEnabled` with `await saveImageBlob(await exportCanvasBlob(getActiveOverlayImage()))` and delete the local copy of `timestamp()` (duplicated verbatim from screenshot.ts — export it from one place). Manually verify on web (download still triggers) and ideally on the emulator (`npm run android:run` → enable save-on-delete → clear → check Splotch album).
 
-**Fix:** Sample a sparse grid instead of scanning every pixel.
+- [ ] **[Architecture] Snapshot undo state per stroke group, not per pointerdown** — File(s): `src/lib/drawing/engine.ts`
+  `saveUndoSnapshot()` runs synchronously inside every `pointerdown` (engine.ts:224): it allocates a full-canvas copy *per finger*, so a ten-finger toddler mash allocates 10 full-resolution canvases in one gesture, evicts the entire 10-deep history, adds latency before the first dot renders, and makes the undo button revert one finger at a time. Snapshot only when the active-pointer count goes 0 → 1 (i.e. in `startDrawing`, gate on `activePointers.size === 0` before adding the new pointer). One undo then reverts the whole multi-touch gesture, memory churn drops ~10×, and subsequent fingers start instantly. Update/extend the engine unit or Playwright dev-harness tests for multi-pointer undo behavior.
 
-```ts
-function scanCanvasIsEmpty(): boolean {
-  if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) return true;
-  const STEP = 8;
-  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const stride = canvas.width * 4;
-  for (let y = 0; y < canvas.height; y += STEP) {
-    for (let x = 0; x < canvas.width; x += STEP) {
-      if (data[y * stride + x * 4 + 3] !== 0) return false;
-    }
-  }
-  return true;
-}
-```
+- [ ] **[Performance] Decide on devicePixelRatio rendering for the drawing canvas (after the two engine perf items land)** — File(s): `src/lib/drawing/engine.ts`, `docs/adrs/`
+  The backing store is CSS pixels (`canvas.width = Math.round(rect.width)`, engine.ts:143–144), so on DPR 2–3 devices strokes render at 1/2–1/3 resolution and look soft; `exportCanvasBlob` (engine.ts:472) only upscales the already-low-res pixels. After the `willReadFrequently` removal and virtual-canvas de-mirroring land, profile on a real device (MOBILE.md §2 has the `chrome://inspect` workflow), then either: render at `min(devicePixelRatio, 2)` — scale `canvas.width/height` by the factor and multiply `currentLineWidth`/dot radius by it (pointer mapping already adapts via `rectScaleX/Y`; the virtual canvas and undo snapshots must use the same factor) — or keep 1× deliberately and record it as an ADR via `/create-adr` so the tradeoff is documented. Don't raise DPR before the perf items: it multiplies their cost 4–9×.
 
-Sampling every 8px reduces iterations by ~64× with negligible false-empty risk
-(an 8px gap between any drawn pixel and any sampled pixel is effectively zero).
+- [ ] **[Performance] Move the pencil sound to Web Audio** — File(s): `src/lib/audio/drawingSound.ts`
+  The current implementation toggles `HTMLAudioElement.play()/pause()` from the per-pointermove callback when speed crosses a threshold (drawingSound.ts:54–64) — audible start latency and main-thread hitches on old Android WebViews, and no way to do speed-based modulation. Decode the three MP3s once into `AudioBuffer`s (fetch + `decodeAudioData` in `preloadDrawSounds`), play a looping `AudioBufferSourceNode` through a `GainNode` per stroke, and map speed to gain (and optionally `playbackRate`) instead of pausing — ramp with `gain.linearRampToValueAtTime` to avoid clicks. Keep the existing exports (`preloadDrawSounds`, `playDrawSound`, `stopDrawSound`) so DrawingCanvas.svelte doesn't change. Note the AudioContext must be created/resumed on a user gesture (first pointerdown). Update the ARCHITECTURE.md source-map line for `audio/drawingSound.ts` when the behavior changes.
 
----
+- [ ] **[Readability] Remove dead `colors.lastColorChangeAt` state** — File(s): `src/lib/state/colors.svelte.ts`, `src/lib/state/colors.svelte.test.ts`
+  `lastColorChangeAt` is written by all three setters but never read by any app code — the stray-stroke debounce actually uses the engine's private `lastColorChangeTime`, stamped via `setColor()` (engine.ts:53, 422–425). Delete the field, its three assignments, and the test assertions that reference it (colors.svelte.test.ts:18,36,47). If a future feature needs the timestamp, the engine already owns it.
 
-## PERF: Preload paper texture instead of lazy-loading on first export
+- [ ] **[Performance] Position the eraser bubble with `transform` instead of `left`/`top`** — File(s): `src/lib/components/DrawingCanvas.svelte`
+  The eraser cursor updates `style:left`/`style:top` from `$state` on every pointermove (DrawingCanvas.svelte:106–114), forcing style/layout work per frame while erasing. Switch to a single `style:transform="translate3d({x}px, {y}px, 0) translate(-50%, -50%)"` (move the existing `translate(-50%,-50%)` out of the CSS class) so updates stay compositor-only. Size can stay as width/height since it only changes on stroke-level changes.
 
-**File:** `src/lib/drawing/engine.ts:457`
-
-`loadPaperTexture()` is called the first time `exportCanvasBlob()` runs. The
-WebP decode + Promise chain blocked the main thread for **226ms** in the trace —
-a visible stall the first time a user shares or saves their drawing.
-
-**Fix:** Kick off the load eagerly after the canvas initialises (or in an idle
-callback), so the image is already decoded by the time export is triggered.
-
-In `init()` or wherever the canvas is set up:
-
-```ts
-// Warm the paper texture cache; ignore the result — export will await it.
-if (typeof requestIdleCallback !== 'undefined') {
-  requestIdleCallback(() => loadPaperTexture());
-} else {
-  setTimeout(() => loadPaperTexture(), 0);
-}
-```
-
-`loadPaperTexture` already deduplicates via `paperTexturePromise`, so calling it
-early is safe.
-
----
-
-## PERF: Investigate forced layout from UI dependency
-
-**File:** Vite dep `chunk-AYX5C5U2.js:737`
-
-A function in a bundled Vite dependency reads a layout-sensitive property
-synchronously, forcing an **8.1ms layout** (LocalFrameView::performLayout).
-The chunk hash suggests it is a UI component library (likely @melt-ui or
-floating-ui). The forced layout appeared during non-drawing interactions
-(toolbar/panel clicks).
-
-**Fix:**
-1. Identify the package: in Chrome DevTools Source panel, open the Network tab,
-   filter for `AYX5C5U2`, and check the Response Headers → `x-vite-dep-id`, or
-   search the Vite dep cache at `node_modules/.vite/deps/_metadata.json` for the
-   matching chunk name.
-2. If it is floating-ui's `computePosition`, wrap the call in a rAF or schedule
-   it with `flushSync` only when strictly needed.
-3. If it is @melt-ui, check if the component is reading `offsetWidth`/
-   `getBoundingClientRect` during a state update — move that read outside the
-   write that precedes it.
+- [ ] **[Performance] Investigate forced layout from a bundled dependency** — File(s): TBD (Vite dep `chunk-AYX5C5U2.js:737`)
+  From the 2026-06-09 trace: a function in a Vite-bundled dep reads a layout-sensitive property synchronously, forcing an 8.1ms layout during toolbar/panel interactions (not while drawing). Note: package.json has no melt-ui/floating-ui, so the chunk is likely Svelte/SvelteKit internals or a Capacitor plugin. Identify it by checking `node_modules/.vite/deps/_metadata.json` for the chunk hash (or re-trace with `build.sourcemap: true`); then move the offending read outside the preceding DOM write, or batch it in a rAF. If the trace is stale and the chunk no longer exists, re-profile first and drop this item if it doesn't reproduce.

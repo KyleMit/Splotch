@@ -90,11 +90,37 @@ function setCanvasEmptyState(empty: boolean) {
   if (onCanvasEmptyChange) onCanvasEmptyChange(empty);
 }
 
+// Emptiness is scanned on a small CPU-side scratch canvas instead of the main
+// canvas: reading the (GPU-backed) main canvas directly would either force a
+// slow readback or require willReadFrequently, which de-accelerates every
+// stroke. Downscaling shrinks the pixel loop ~16× and the drawImage stays
+// GPU→GPU until the tiny scratch readback.
+const EMPTY_SCAN_SCALE = 0.25;
+// Downscale rounding can smear residue to near-zero alpha; anything below this
+// counts as empty.
+const EMPTY_SCAN_ALPHA_THRESHOLD = 4;
+let emptyScanCanvas: HTMLCanvasElement | null = null;
+let emptyScanCtx: CanvasRenderingContext2D | null = null;
+
 function scanCanvasIsEmpty(): boolean {
   if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) return true;
-  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  if (!emptyScanCanvas) {
+    emptyScanCanvas = document.createElement('canvas');
+    emptyScanCtx = emptyScanCanvas.getContext('2d', { willReadFrequently: true });
+  }
+  if (!emptyScanCtx) return true;
+  const w = Math.max(1, Math.ceil(canvas.width * EMPTY_SCAN_SCALE));
+  const h = Math.max(1, Math.ceil(canvas.height * EMPTY_SCAN_SCALE));
+  if (emptyScanCanvas.width !== w || emptyScanCanvas.height !== h) {
+    emptyScanCanvas.width = w;
+    emptyScanCanvas.height = h;
+  } else {
+    emptyScanCtx.clearRect(0, 0, w, h);
+  }
+  emptyScanCtx.drawImage(canvas, 0, 0, w, h);
+  const { data } = emptyScanCtx.getImageData(0, 0, w, h);
   for (let i = 3; i < data.length; i += 4) {
-    if (data[i] !== 0) return false;
+    if (data[i] >= EMPTY_SCAN_ALPHA_THRESHOLD) return false;
   }
   return true;
 }
@@ -380,11 +406,7 @@ export function undo() {
 
 export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
   canvas = canvasElement;
-  // willReadFrequently keeps the backing store CPU-side so the empty-check
-  // getImageData (on erase-end) is a cheap memcpy instead of a synchronous
-  // GPU→CPU texture readback. This canvas is read for empty-checks/snapshots
-  // and never WebGL-composited, so a CPU backing store is the right tradeoff.
-  ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  ctx = canvas.getContext('2d')!;
 
   onDrawSoundCallback = options.onDrawSound || null;
   onDrawStopCallback = options.onDrawStop || null;
