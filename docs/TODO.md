@@ -4,9 +4,6 @@
 > After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 
-- [ ] **[Performance] Move the pencil sound to Web Audio** — File(s): `src/lib/audio/drawingSound.ts`
-  The current implementation toggles `HTMLAudioElement.play()/pause()` from the per-pointermove callback when speed crosses a threshold (drawingSound.ts:54–64) — audible start latency and main-thread hitches on old Android WebViews, and no way to do speed-based modulation. Decode the three MP3s once into `AudioBuffer`s (fetch + `decodeAudioData` in `preloadDrawSounds`), play a looping `AudioBufferSourceNode` through a `GainNode` per stroke, and map speed to gain (and optionally `playbackRate`) instead of pausing — ramp with `gain.linearRampToValueAtTime` to avoid clicks. Keep the existing exports (`preloadDrawSounds`, `playDrawSound`, `stopDrawSound`) so DrawingCanvas.svelte doesn't change. Note the AudioContext must be created/resumed on a user gesture (first pointerdown). Update the ARCHITECTURE.md source-map line for `audio/drawingSound.ts` when the behavior changes.
-
 - [ ] **[Readability] Remove dead `colors.lastColorChangeAt` state** — File(s): `src/lib/state/colors.svelte.ts`, `src/lib/state/colors.svelte.test.ts`
   `lastColorChangeAt` is written by all three setters but never read by any app code — the stray-stroke debounce actually uses the engine's private `lastColorChangeTime`, stamped via `setColor()` (engine.ts:53, 422–425). Delete the field, its three assignments, and the test assertions that reference it (colors.svelte.test.ts:18,36,47). If a future feature needs the timestamp, the engine already owns it.
 

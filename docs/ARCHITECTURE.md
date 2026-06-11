@@ -55,7 +55,7 @@
 | `components/` | Svelte UI components. Each component owns its scoped styles. |
 | `ai/styles.ts` | AI style presets (names, prompts, icons) for the image-generation picker. |
 | `api.ts` | Single helper (`apiUrl`) that prefixes paths with `__NATIVE_API_BASE__` on native, or leaves them relative on web. |
-| `audio/drawingSound.ts` | Plays pencil-scratch audio while drawing; pauses/resumes based on pointer speed crossing a threshold. |
+| `audio/drawingSound.ts` | Plays pencil-scratch audio while drawing via Web Audio: MP3s are decoded once into `AudioBuffer`s, each stroke plays a looping `AudioBufferSourceNode` through a `GainNode`, and pointer speed modulates the gain (ramped to avoid clicks). |
 | `colorRing.ts` | Honeycomb color-ring layout math for the custom color picker. |
 | `platform.ts` | `isNative()` and `getPlatform()` — reads the Capacitor global without importing `@capacitor/core`, so the module is safe to evaluate during SSR. |
 | `storage.ts` | Dual-layer storage: synchronous reads from `localStorage` (fast, no async flash); on native, every write is also mirrored to Capacitor Preferences for durability. `hydrateDurableStorage()` restores settings on app launch. |
