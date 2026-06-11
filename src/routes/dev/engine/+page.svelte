@@ -157,7 +157,9 @@
   }
 
   /* Fixed at the origin with a known size so the spec's pointer coordinates map
-     1:1 onto canvas pixels (resizeCanvas sets canvas.width = rect.width). */
+     1:1 onto canvas pixels (resizeCanvas sets canvas.width = rect.width ×
+     renderScale, and Playwright's default deviceScaleFactor of 1 keeps
+     renderScale at 1). */
   .canvas-wrapper {
     position: fixed;
     top: 0;

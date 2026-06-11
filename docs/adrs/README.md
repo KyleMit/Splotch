@@ -18,3 +18,4 @@ This directory records significant architectural decisions made in the Splotch p
 | [0012](0012-android-build-toolchain.md) | Android Build Toolchain Requirements (Node 22 + JDK 21 Temurin) | Active |
 | [0013](0013-platform-detection-without-capacitor-core.md) | Platform Detection Without Importing @capacitor/core | Active |
 | [0014](0014-in-memory-rate-limiting.md) | In-Memory Rate Limiting (Per-Instance Sliding Window) | Active |
+| [0015](0015-capped-dpr-canvas-rendering.md) | Capped-DPR Canvas Rendering (min(devicePixelRatio, 2)) | Active |

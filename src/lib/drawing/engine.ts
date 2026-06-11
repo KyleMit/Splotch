@@ -61,6 +61,14 @@ let onDrawStopCallback: (() => void) | null = null;
 let virtualCanvas: HTMLCanvasElement | null = null;
 let virtualCtx: CanvasRenderingContext2D | null = null;
 
+// Strokes rasterize at the device pixel ratio so they stay crisp on mobile
+// screens, capped at 2× — DPR-3 panels would cost 9× the pixels for detail a
+// finger-drawn stroke can't use (see ADR 0015). Fixed for the session at init:
+// a mid-session DPR change (desktop zoom, monitor move) would otherwise need
+// every pixel surface (virtual canvas, undo stack) rescaled in place.
+const MAX_RENDER_SCALE = 2;
+let renderScale = 1;
+
 // Cached canvas geometry so the pointer hot path never calls
 // getBoundingClientRect() (each call forces a synchronous reflow). Recomputed
 // only on resize/scroll/orientation change — see refreshCanvasRect().
@@ -111,8 +119,10 @@ function scanCanvasIsEmpty(): boolean {
     emptyScanCtx = emptyScanCanvas.getContext('2d', { willReadFrequently: true });
   }
   if (!emptyScanCtx) return true;
-  const w = Math.max(1, Math.ceil(canvas.width * EMPTY_SCAN_SCALE));
-  const h = Math.max(1, Math.ceil(canvas.height * EMPTY_SCAN_SCALE));
+  // Scan relative to CSS pixels so the readback loop stays the same size
+  // regardless of renderScale.
+  const w = Math.max(1, Math.ceil((canvas.width * EMPTY_SCAN_SCALE) / renderScale));
+  const h = Math.max(1, Math.ceil((canvas.height * EMPTY_SCAN_SCALE) / renderScale));
   if (emptyScanCanvas.width !== w || emptyScanCanvas.height !== h) {
     emptyScanCanvas.width = w;
     emptyScanCanvas.height = h;
@@ -147,7 +157,7 @@ function resizeCanvas() {
 
   // A max(w,h) square covers both orientations, so rotation never loses pixels;
   // anything larger (e.g. a resized desktop window) goes through the grow path.
-  const squareSide = Math.ceil(Math.max(rect.width, rect.height));
+  const squareSide = Math.ceil(Math.max(rect.width, rect.height) * renderScale);
   if (!virtualCanvas) {
     virtualCanvas = document.createElement('canvas');
     virtualCanvas.width = squareSide;
@@ -161,8 +171,8 @@ function resizeCanvas() {
 
   syncVirtualCanvas();
 
-  canvas.width = Math.round(rect.width);
-  canvas.height = Math.round(rect.height);
+  canvas.width = Math.round(rect.width * renderScale);
+  canvas.height = Math.round(rect.height * renderScale);
 
   if (virtualCanvas) ctx.drawImage(virtualCanvas, 0, 0);
   ctx.lineCap = 'round';
@@ -259,10 +269,10 @@ function startDrawing(e: PointerEvent) {
 
   const { x, y } = pointerToCanvas(e);
 
-  // The eraser runs a bit larger than the pen at the same stroke level.
-  const lineWidth = eraserActive
-    ? currentLineWidth * ERASER_SIZE_MULTIPLIER
-    : currentLineWidth;
+  // The eraser runs a bit larger than the pen at the same stroke level. Stroke
+  // widths are authored in CSS pixels, so they scale to backing-store pixels.
+  const lineWidth =
+    (eraserActive ? currentLineWidth * ERASER_SIZE_MULTIPLIER : currentLineWidth) * renderScale;
 
   activePointers.set(e.pointerId, {
     x,
@@ -429,6 +439,8 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   onCanvasEmptyChange = options.onCanvasEmptyChange || null;
   currentColor = options.initialColor || '#AB71E1';
 
+  renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
+
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
   // Scroll/orientation move the canvas in the viewport without resizing it, so
@@ -515,17 +527,20 @@ export async function exportCanvasBlob(
   const { includePaperTexture = true } = options;
   if (!canvas || canvas.width === 0 || canvas.height === 0) return null;
 
-  const dpr = Math.max(window.devicePixelRatio || 1, 2);
-  const w = canvas.width;
-  const h = canvas.height;
+  // Compose in CSS-pixel coordinates at an export scale of at least 2×, so the
+  // paper texture and overlay keep their on-screen proportions while the
+  // already-high-res strokes pass through with minimal resampling.
+  const exportScale = Math.max(window.devicePixelRatio || 1, 2);
+  const w = canvas.width / renderScale;
+  const h = canvas.height / renderScale;
 
   const out = document.createElement('canvas');
-  out.width = Math.round(w * dpr);
-  out.height = Math.round(h * dpr);
+  out.width = Math.round(w * exportScale);
+  out.height = Math.round(h * exportScale);
   const outCtx = out.getContext('2d')!;
   outCtx.imageSmoothingEnabled = true;
   outCtx.imageSmoothingQuality = 'high';
-  outCtx.scale(dpr, dpr);
+  outCtx.scale(exportScale, exportScale);
 
   outCtx.fillStyle = '#fcfbf8';
   outCtx.fillRect(0, 0, w, h);
