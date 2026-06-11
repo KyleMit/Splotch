@@ -69,6 +69,21 @@ test('five simultaneous touch pointers each paint an independent line', async ({
   expect((await page.evaluate(() => window.__engineState)).canvasEmpty).toBe(false);
 });
 
+test('a five-pointer gesture snapshots once and undoes as a single unit', async ({ page }) => {
+  await page.evaluate((strokes) => window.__engine.multiStrokeSync(strokes), STROKES);
+  expect(await count(page)).toBeGreaterThan(0);
+  expect((await page.evaluate(() => window.__engineState)).canUndo).toBe(true);
+
+  // One undo reverts all five fingers — the gesture pushed a single snapshot
+  // (when the active-pointer count went 0 → 1), not one per pointerdown.
+  await page.evaluate(() => window.__engine.undo());
+
+  expect(await count(page)).toBe(0);
+  const s = await page.evaluate(() => window.__engineState);
+  expect(s.canvasEmpty).toBe(true);
+  expect(s.canUndo).toBe(false);
+});
+
 test('a pinch/spread across five pointers does not zoom or scale the canvas', async ({ page }) => {
   const canvas = page.locator('#engineCanvas');
 

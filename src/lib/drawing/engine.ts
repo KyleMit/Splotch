@@ -251,7 +251,10 @@ function startDrawing(e: PointerEvent) {
   const requiredDelay = e.pointerType === 'pen' ? 0 : COLOR_CHANGE_DEBOUNCE_MS;
   if (timeSinceColorChange < requiredDelay) return;
 
-  saveUndoSnapshot();
+  // One snapshot per stroke group (active-pointer count going 0 → 1), not per
+  // finger: a multi-touch gesture undoes as a single unit, and later fingers
+  // skip the full-canvas copy so they start instantly.
+  if (activePointers.size === 0) saveUndoSnapshot();
   setCanvasEmptyState(false);
 
   const { x, y } = pointerToCanvas(e);
