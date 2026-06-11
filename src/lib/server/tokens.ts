@@ -11,6 +11,8 @@ const KEY = 'list';
 // In-memory fallback for environments where Netlify Blobs isn't wired up
 // (e.g. plain `vite dev`). Mutations there won't survive a restart.
 let memoryTokens: string[] | null = null;
+// Once Blobs fails once, skip retrying it for the lifetime of this instance.
+let blobsUnavailable = false;
 
 type TokenStore = ReturnType<typeof getStore>;
 
@@ -27,20 +29,23 @@ function seedFromEnv(): string[] {
  * Returns `{ store, list }` where `store` is null when Blobs is unavailable.
  */
 async function readStore() {
-  try {
-    const store = getStore(STORE_NAME);
-    const list = await store.get(KEY, { type: 'json' });
-    if (Array.isArray(list)) return { store, list };
-    // First run against Blobs: seed from the env var so nothing is lost.
-    const seeded = seedFromEnv();
-    await store.setJSON(KEY, seeded);
-    return { store, list: seeded };
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : err;
-    console.warn('[tokens] Netlify Blobs unavailable, using in-memory list:', detail);
-    if (memoryTokens === null) memoryTokens = seedFromEnv();
-    return { store: null, list: memoryTokens };
+  if (!blobsUnavailable) {
+    try {
+      const store = getStore(STORE_NAME);
+      const list = await store.get(KEY, { type: 'json' });
+      if (Array.isArray(list)) return { store, list };
+      // First run against Blobs: seed from the env var so nothing is lost.
+      const seeded = seedFromEnv();
+      await store.setJSON(KEY, seeded);
+      return { store, list: seeded };
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : err;
+      console.warn('[tokens] Netlify Blobs unavailable, using in-memory list:', detail);
+      blobsUnavailable = true;
+    }
   }
+  if (memoryTokens === null) memoryTokens = seedFromEnv();
+  return { store: null, list: memoryTokens };
 }
 
 async function persist(store: TokenStore | null, list: string[]) {
