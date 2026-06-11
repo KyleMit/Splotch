@@ -106,8 +106,7 @@
   {#if eraserCursor.visible}
     <div
       class="eraser-bubble"
-      style:left="{eraserCursor.x}px"
-      style:top="{eraserCursor.y}px"
+      style:transform="translate3d({eraserCursor.x}px, {eraserCursor.y}px, 0) translate(-50%, -50%)"
       style:width="{eraserSizePx}px"
       style:height="{eraserSizePx}px"
     ></div>
@@ -143,8 +142,9 @@
 
   .eraser-bubble {
     position: absolute;
+    top: 0;
+    left: 0;
     box-sizing: border-box;
-    transform: translate(-50%, -50%);
     border: 2px solid rgba(80, 80, 80, 0.7);
     border-radius: 50%;
     background-color: rgba(255, 255, 255, 0.35);
