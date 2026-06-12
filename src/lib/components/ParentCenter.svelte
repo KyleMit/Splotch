@@ -5,194 +5,15 @@
   import AiKeyManager from './parent/AiKeyManager.svelte';
   import SetupInstructions from './parent/SetupInstructions.svelte';
   import AboutTab from './parent/AboutTab.svelte';
+  import TabPager from './TabPager.svelte';
+  import TabPagerTab from './TabPagerTab.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
 
   let buttonEl: HTMLButtonElement;
-  const tabs = ['settings', 'ai', 'install', 'about'] as const;
-  const swipeActivationDistance = 20;
-  const swipeAxisRatio = 1.2;
-  const swipeRetreatTolerance = 12;
-  type ParentTab = (typeof tabs)[number];
-  type SwipeState = {
-    x: number;
-    y: number;
-    pointerId: number;
-    width: number;
-    direction: -1 | 1 | null;
-    active: boolean;
-    maxProgress: number;
-    retreated: boolean;
-  };
-  let activeTab = $state<ParentTab>('settings');
-  let swipeStart = $state<SwipeState | null>(null);
-  let swipeOffset = $state(0);
-  let swiping = $state(false);
-  let activeTabIndex = $derived(tabs.indexOf(activeTab));
-  let trackTransform = $derived(`translateX(calc(-${activeTabIndex * 100}% + ${swipeOffset}px))`);
-  let settleFrame: number | null = null;
-  let suppressNextClick = false;
-  let suppressClickTimer: ReturnType<typeof setTimeout> | null = null;
 
   function openModal() {
     if (!buttonEl) return;
     openParentCenter(buttonCenter(buttonEl));
-  }
-
-  function resetSwipe() {
-    if (settleFrame !== null) cancelAnimationFrame(settleFrame);
-    if (suppressClickTimer !== null) clearTimeout(suppressClickTimer);
-    settleFrame = null;
-    suppressClickTimer = null;
-    suppressNextClick = false;
-    swipeStart = null;
-    swipeOffset = 0;
-    swiping = false;
-  }
-
-  function setActiveTab(tab: ParentTab) {
-    resetSwipe();
-    activeTab = tab;
-  }
-
-  function moveTab(offset: -1 | 1) {
-    const current = tabs.indexOf(activeTab);
-    const next = current + offset;
-    if (next < 0 || next >= tabs.length) return;
-    activeTab = tabs[next];
-  }
-
-  function canMove(offset: -1 | 1) {
-    const current = tabs.indexOf(activeTab);
-    const next = current + offset;
-    return next >= 0 && next < tabs.length;
-  }
-
-  function isInteractiveTarget(target: EventTarget | null) {
-    return (
-      target instanceof Element &&
-      !!target.closest('button, a, input, textarea, select, [role="switch"]')
-    );
-  }
-
-  function suppressClickAfterSwipe() {
-    suppressNextClick = true;
-    if (suppressClickTimer !== null) clearTimeout(suppressClickTimer);
-    suppressClickTimer = setTimeout(() => {
-      suppressNextClick = false;
-      suppressClickTimer = null;
-    }, 350);
-  }
-
-  function clearClickSuppression() {
-    suppressNextClick = false;
-    if (suppressClickTimer !== null) clearTimeout(suppressClickTimer);
-    suppressClickTimer = null;
-  }
-
-  function onPanelClickCapture(e: MouseEvent) {
-    if (!suppressNextClick) return;
-    suppressNextClick = false;
-    if (suppressClickTimer !== null) clearTimeout(suppressClickTimer);
-    suppressClickTimer = null;
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-  }
-
-  function onPanelPointerDown(e: PointerEvent) {
-    clearClickSuppression();
-    if (!e.isPrimary || e.button !== 0 || isInteractiveTarget(e.target)) return;
-    const width =
-      e.currentTarget instanceof HTMLElement ? e.currentTarget.getBoundingClientRect().width : 1;
-    swipeStart = {
-      x: e.clientX,
-      y: e.clientY,
-      pointerId: e.pointerId,
-      width,
-      direction: null,
-      active: false,
-      maxProgress: 0,
-      retreated: false
-    };
-    swipeOffset = 0;
-    swiping = false;
-  }
-
-  function onPanelPointerMove(e: PointerEvent) {
-    if (!swipeStart || swipeStart.pointerId !== e.pointerId) return;
-    const dx = e.clientX - swipeStart.x;
-    const dy = e.clientY - swipeStart.y;
-    const absX = Math.abs(dx);
-    const absY = Math.abs(dy);
-
-    if (!swipeStart.active) {
-      if (absX < swipeActivationDistance) return;
-      if (absX < absY * swipeAxisRatio) return;
-      swipeStart.direction = dx < 0 ? 1 : -1;
-      swipeStart.active = true;
-      swiping = true;
-      if (e.currentTarget instanceof HTMLElement) e.currentTarget.setPointerCapture(e.pointerId);
-    }
-
-    const direction = swipeStart.direction;
-    if (!direction) return;
-    const movingInDirection = direction === 1 ? dx < 0 : dx > 0;
-    const progress = movingInDirection ? absX : 0;
-    if (progress + swipeRetreatTolerance < swipeStart.maxProgress) {
-      swipeStart.retreated = true;
-    }
-    swipeStart.maxProgress = Math.max(swipeStart.maxProgress, progress);
-
-    const maxOffset = swipeStart.width;
-    let nextOffset = Math.min(progress, maxOffset) * -direction;
-
-    if (!canMove(direction)) nextOffset *= 0.25;
-    swipeOffset = nextOffset;
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  function onPanelPointerUp(e: PointerEvent) {
-    if (!swipeStart || swipeStart.pointerId !== e.pointerId) return;
-    if (
-      e.currentTarget instanceof HTMLElement &&
-      e.currentTarget.hasPointerCapture(e.pointerId)
-    ) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-    const dx = e.clientX - swipeStart.x;
-    const direction = swipeStart.direction;
-    const accepted =
-      swipeStart.active &&
-      direction !== null &&
-      canMove(direction) &&
-      !swipeStart.retreated &&
-      Math.abs(dx) >= swipeActivationDistance &&
-      (direction === 1 ? dx < 0 : dx > 0);
-    swipeStart = null;
-
-    if (swiping) {
-      suppressClickAfterSwipe();
-      settleFrame = requestAnimationFrame(() => {
-        swiping = false;
-        if (accepted && direction) moveTab(direction);
-        swipeOffset = 0;
-        settleFrame = null;
-      });
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  }
-
-  function onPanelPointerCancel(e: PointerEvent) {
-    if (swipeStart?.pointerId !== e.pointerId) return;
-    swipeStart = null;
-    if (swiping) suppressClickAfterSwipe();
-    settleFrame = requestAnimationFrame(() => {
-      swiping = false;
-      swipeOffset = 0;
-      settleFrame = null;
-    });
   }
 </script>
 
@@ -212,85 +33,37 @@
   use:modalDialog={() => ({
     open: ui.parentCenterOpen,
     origin: ui.parentCenterOrigin,
-    onRequestClose: closeParentCenter,
-    onOpen: () => {
-      resetSwipe();
-      activeTab = 'settings';
-    }
+    onRequestClose: closeParentCenter
   })}
 >
   <div class="parent-help-content">
     <button class="parent-help-close modal-close-btn" aria-label="Close" onclick={closeParentCenter}>×</button>
     <h2>Parent Center</h2>
 
-    <div class="tab-buttons" style:--active-tab-index={activeTabIndex}>
-      <button class="tab-button" class:active={activeTab === 'settings'} onclick={() => setActiveTab('settings')}>
-        <Icon name="settings" class="tab-icon" />
-        <span>Settings</span>
-      </button>
-      <button class="tab-button" class:active={activeTab === 'ai'} onclick={() => setActiveTab('ai')}>
-        <Icon name="wand-stars" class="tab-icon" />
-        <span>AI</span>
-      </button>
-      <button class="tab-button" class:active={activeTab === 'install'} onclick={() => setActiveTab('install')}>
-        <Icon name="pin" class="tab-icon" />
-        <span>Setup</span>
-      </button>
-      <button class="tab-button" class:active={activeTab === 'about'} onclick={() => setActiveTab('about')}>
-        <Icon name="splotchy" class="tab-icon" />
-        <span>About</span>
-      </button>
-      <span class="tab-active-indicator" aria-hidden="true"></span>
-    </div>
-
-    <div
-      class="tab-panels"
-      role="region"
-      aria-label="Parent Center panels"
-      onpointerdown={onPanelPointerDown}
-      onpointermove={onPanelPointerMove}
-      onpointerup={onPanelPointerUp}
-      onpointercancel={onPanelPointerCancel}
-      onclickcapture={onPanelClickCapture}
+    <TabPager
+      initialTab="settings"
+      resetKey={ui.parentCenterOpen}
+      ariaLabel="Parent Center panels"
     >
-      <div class="tab-track" class:swiping style:transform={trackTransform}>
-        <div
-          class="tab-content"
-          role="tabpanel"
-          aria-hidden={activeTab !== 'settings'}
-          inert={activeTab !== 'settings' ? true : undefined}
-        >
+      {#snippet tabs()}
+        <TabPagerTab id="settings" label="Settings" icon="settings" />
+        <TabPagerTab id="ai" label="AI" icon="wand-stars" />
+        <TabPagerTab id="install" label="Setup" icon="pin" />
+        <TabPagerTab id="about" label="About" icon="splotchy" />
+      {/snippet}
+
+      {#snippet children(tabId)}
+        {#if tabId === 'settings'}
           <SettingsToggles />
-        </div>
-
-        <div
-          class="tab-content"
-          role="tabpanel"
-          aria-hidden={activeTab !== 'ai'}
-          inert={activeTab !== 'ai' ? true : undefined}
-        >
+        {:else if tabId === 'ai'}
           <AiKeyManager open={ui.parentCenterOpen} />
-        </div>
-
-        <div
-          class="tab-content"
-          role="tabpanel"
-          aria-hidden={activeTab !== 'install'}
-          inert={activeTab !== 'install' ? true : undefined}
-        >
+        {:else if tabId === 'install'}
           <SetupInstructions open={ui.parentCenterOpen} />
-        </div>
-
-        <div
-          class="tab-content"
-          role="tabpanel"
-          aria-hidden={activeTab !== 'about'}
-          inert={activeTab !== 'about' ? true : undefined}
-        >
+        {:else if tabId === 'about'}
           <AboutTab />
-        </div>
-      </div>
-    </div>
+        {/if}
+      {/snippet}
+    </TabPager>
   </div>
 </dialog>
 
@@ -357,126 +130,9 @@
     font-weight: 600;
   }
 
-  /* Tab Buttons */
-  .tab-buttons {
-    --tab-gap: 8px;
-    display: flex;
-    gap: var(--tab-gap);
-    margin-bottom: 24px;
-    border-bottom: 2px solid #e0e0e0;
-    position: relative;
-  }
-
-  .tab-button {
-    flex: 1;
-    padding: 12px 16px;
-    background: transparent;
-    border: none;
-    border-bottom: 3px solid transparent;
-    color: #999;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-bottom: -2px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  :global(.tab-icon) {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    opacity: 0.7;
-    transition: opacity 0.2s ease;
-  }
-
-  .tab-button.active :global(.tab-icon) {
-    opacity: 1;
-  }
-
-  .tab-button:hover {
-    color: #666;
-    background: #f5f5f5;
-  }
-
-  .tab-button.active {
-    color: var(--brand);
-  }
-
-  .tab-active-indicator {
-    position: absolute;
-    left: 0;
-    bottom: -2px;
-    width: calc((100% - (var(--tab-gap) * 3)) / 4);
-    height: 3px;
-    border-radius: 999px 999px 0 0;
-    background: var(--brand);
-    pointer-events: none;
-    transform: translateX(calc(var(--active-tab-index) * (100% + var(--tab-gap))));
-    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  /* Tab Content */
-  .tab-panels {
-    overflow: hidden;
-    touch-action: pan-y;
-  }
-
-  .tab-track {
-    display: flex;
-    align-items: flex-start;
-    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: transform;
-  }
-
-  .tab-track.swiping {
-    transition: none;
-  }
-
-  .tab-content {
-    flex: 0 0 100%;
-    min-width: 0;
-    padding: 0 1px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .tab-track {
-      transition: none;
-    }
-
-    .tab-active-indicator {
-      transition: none;
-    }
-  }
-
-  /* Four tabs get cramped on narrow portrait screens. First tighten the
-     spacing; then, when that runs out, stack the icon over the label so each
-     tab needs far less horizontal room. */
   @media (max-width: 480px) {
     .parent-help-content {
       padding: 24px 20px;
-    }
-
-    .tab-buttons {
-      --tab-gap: 4px;
-    }
-
-    .tab-button {
-      padding: 10px 8px;
-      font-size: 14px;
-      gap: 6px;
-    }
-  }
-
-  @media (max-width: 380px) {
-    .tab-button {
-      flex-direction: column;
-      gap: 4px;
-      padding: 10px 4px;
-      font-size: 12px;
     }
   }
 
