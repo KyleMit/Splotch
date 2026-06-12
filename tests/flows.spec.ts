@@ -175,6 +175,65 @@ test('the drawer open state persists across a reload', async ({ page }) => {
   await expect(page.locator('#undoButton')).toBeVisible();
 });
 
+test('parent center panels can be changed with horizontal swipes', async ({ page }) => {
+  await gotoApp(page);
+
+  await page.getByRole('button', { name: 'Parent Center' }).click();
+  await expect(page.locator('#parentHelpModal')).toBeVisible();
+  await expect(page.locator('.tab-button.active')).toContainText('Settings');
+  await page.waitForTimeout(400); // let the fly-in transform finish before measuring coordinates
+
+  const panels = page.locator('.tab-panels');
+  const box = await panels.boundingBox();
+  if (!box) throw new Error('parent center panels have no bounding box');
+
+  const y = box.y + Math.min(80, box.height / 2);
+  await page.mouse.move(box.x + box.width * 0.55, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.15, y);
+  await page.mouse.up();
+
+  await expect(page.locator('.tab-button.active')).toContainText('AI');
+
+  await page.mouse.move(box.x + box.width * 0.15, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.55, y);
+  await page.mouse.up();
+
+  await expect(page.locator('.tab-button.active')).toContainText('Settings');
+
+  await page.mouse.move(box.x + box.width * 0.55, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.15, y);
+  await page.mouse.move(box.x + box.width * 0.5, y);
+  await page.mouse.up();
+
+  await expect(page.locator('.tab-button.active')).toContainText('Settings');
+
+  await page.getByRole('button', { name: /Setup/ }).click();
+  await expect(page.locator('.tab-button.active')).toContainText('Setup');
+  await page.waitForTimeout(300);
+
+  const setupDetails = page.locator('.help-section').first();
+  const setupSummary = setupDetails.locator('summary');
+  await expect(setupSummary).toBeVisible();
+  await setupSummary.click();
+  await expect(setupDetails).toHaveAttribute('open', '');
+
+  const summaryBox = await setupSummary.boundingBox();
+  if (!summaryBox) throw new Error('setup summary has no bounding box');
+  const summaryY = summaryBox.y + summaryBox.height / 2;
+  await page.mouse.move(summaryBox.x + summaryBox.width * 0.75, summaryY);
+  await page.mouse.down();
+  await page.mouse.move(summaryBox.x + summaryBox.width * 0.15, summaryY);
+  await page.mouse.up();
+
+  await expect(page.locator('.tab-button.active')).toContainText('About');
+
+  await page.getByRole('button', { name: /Setup/ }).click();
+  await expect(setupDetails).toHaveAttribute('open', '');
+});
+
 // ── AI generation flow (mocked endpoint) ────────────────────────────────────
 
 test('the AI button posts the drawing and reveals the generated result', async ({ page }) => {

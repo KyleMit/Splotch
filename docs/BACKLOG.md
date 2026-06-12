@@ -11,7 +11,6 @@
 * [ ] Run performance profiling and analyze results
   * [ ] Run performance profile on device
 * [ ] Hand draw icons
-* [ ] Swipe through Parental Control Menu
 * [ ] Add volume slider when volume is enabled. Start at normal volume as 50%
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
@@ -134,4 +133,5 @@
 * [x] Investigate line smoothing while drawing — `draw()` now replays coalesced pointer events and renders midpoint-smoothed quadratic segments
 * [x] Replace server routes with API so I can have admin page on native
 * [x] Make sure background works horizontally and vertically
+* [x] Swipe through Parental Control Menu
 
