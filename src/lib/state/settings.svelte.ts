@@ -1,7 +1,8 @@
-import { readBool, writeBool, readString, writeString, removeKey } from '../storage';
+import { readBool, writeBool, readString, writeString, readInt, writeInt, removeKey } from '../storage';
 import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage';
 
 const SOUND_KEY = 'splotch-sound-enabled';
+const SOUND_VOLUME_KEY = 'splotch-sound-volume';
 const SAVE_ON_DELETE_KEY = 'splotch-save-on-delete';
 const SCREENSHOT_KEY = 'splotch-screenshot-enabled';
 const UNDO_KEY = 'splotch-undo-button-enabled';
@@ -76,7 +77,14 @@ const BOOL_SETTINGS = {
 
 type BoolSettingKey = keyof typeof BOOL_SETTINGS;
 
+function clampVolume(v: number) {
+  if (!Number.isFinite(v)) return 50;
+  return Math.max(0, Math.min(100, Math.round(v)));
+}
+
 interface Settings extends Record<BoolSettingKey, boolean> {
+  // Drawing sound volume percentage. 50 is the normal authored volume, 100 is 2x.
+  soundVolume: number;
   // String setting (special case): the managed-access token, persisted verbatim.
   aiAccessToken: string;
   // Parent-supplied Gemini API key (BYOK). Held in memory only; hydrated from
@@ -88,6 +96,7 @@ export const settings: Settings = $state({
   ...(Object.fromEntries(
     Object.entries(BOOL_SETTINGS).map(([prop, [key, def]]) => [prop, readBool(key, def)])
   ) as Record<BoolSettingKey, boolean>),
+  soundVolume: clampVolume(readInt(SOUND_VOLUME_KEY, 50)),
   aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
   aiUserApiKey: ''
 });
@@ -114,6 +123,12 @@ export const setAdminLinkVisible = makeBoolSetter('adminLinkVisible');
 export const setLockRotation = makeBoolSetter('lockRotationEnabled');
 export const setForceLandscapeOrientation = makeBoolSetter('forceLandscapeOrientation');
 
+export function setSoundVolume(v: number) {
+  const next = clampVolume(v);
+  settings.soundVolume = next;
+  writeInt(SOUND_VOLUME_KEY, next);
+}
+
 export function setAiAccessToken(v: string) { settings.aiAccessToken = v; writeString(AI_ACCESS_TOKEN_KEY, v); }
 // Update the live value immediately (so the UI reacts at once), then persist to
 // secure storage. Returns the persistence promise so callers can await it.
@@ -129,6 +144,7 @@ export function reloadSettings() {
   for (const [prop, [key]] of Object.entries(BOOL_SETTINGS) as [BoolSettingKey, [string, boolean]][]) {
     settings[prop] = readBool(key, settings[prop]);
   }
+  settings.soundVolume = clampVolume(readInt(SOUND_VOLUME_KEY, settings.soundVolume));
   settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);
 }
 

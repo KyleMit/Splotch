@@ -11,7 +11,6 @@
 * [ ] Run performance profiling and analyze results
   * [ ] Run performance profile on device
 * [ ] Hand draw icons
-* [ ] Add volume slider setting below the volume toggle that should animate in when the volume is enabled. Volume level should be stored in user preferences and start at 50% volume which will be treated as the normal volume.  Increasing it to 100% will effectively double the output.  Decreasing to 0% will effectively disable the output.  While the user is sliding the control, play the drawing sounds at the current volume they'll be set to while the user is still holding the control.
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
 * [ ] Parent center control to increase button size
@@ -134,4 +133,4 @@
 * [x] Replace server routes with API so I can have admin page on native
 * [x] Make sure background works horizontally and vertically
 * [x] Swipe through Parental Control Menu
-
+* [x] Add volume slider setting

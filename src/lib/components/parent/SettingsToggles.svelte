@@ -4,6 +4,7 @@
   import {
     settings,
     setSound,
+    setSoundVolume,
     setSaveOnDelete,
     setScreenshot,
     setUndoButton,
@@ -15,6 +16,10 @@
     setForceLandscapeOrientation
   } from '$lib/state/settings.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
+  import { playDrawSound, stopDrawSound } from '$lib/audio/drawingSound';
+
+  const PREVIEW_SPEED = 0.45;
+  let previewingVolume = false;
 
   // Side-effect on top of the persisted setting: disabling the coloring book
   // should also clear any active overlay page.
@@ -22,6 +27,26 @@
     const next = !settings.coloringBookEnabled;
     setColoringBook(next);
     if (!next) clearOverlay();
+  }
+
+  function previewVolume() {
+    if (!settings.soundEnabled || !previewingVolume) return;
+    playDrawSound({ speed: PREVIEW_SPEED });
+  }
+
+  function startVolumePreview() {
+    previewingVolume = true;
+    previewVolume();
+  }
+
+  function stopVolumePreview() {
+    previewingVolume = false;
+    stopDrawSound();
+  }
+
+  function updateSoundVolume(event: Event) {
+    setSoundVolume(Number((event.currentTarget as HTMLInputElement).value));
+    previewVolume();
   }
 </script>
 
@@ -36,6 +61,32 @@
       checked={settings.soundEnabled}
       onToggle={setSound}
     />
+    {#if settings.soundEnabled}
+      <div class="volume-setting" transition:slide={{ duration: 220 }}>
+        <label class="volume-label" for="soundVolume">
+          <span>Volume</span>
+          <span>{settings.soundVolume}%</span>
+        </label>
+        <input
+          id="soundVolume"
+          class="volume-slider"
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          value={settings.soundVolume}
+          aria-label="Drawing sound volume"
+          oninput={updateSoundVolume}
+          onpointerdown={startVolumePreview}
+          onpointerup={stopVolumePreview}
+          onpointercancel={stopVolumePreview}
+          onlostpointercapture={stopVolumePreview}
+          onkeydown={startVolumePreview}
+          onkeyup={stopVolumePreview}
+          onblur={stopVolumePreview}
+        />
+      </div>
+    {/if}
   </div>
 
   <div class="setting">
@@ -165,5 +216,27 @@
     padding: 12px 16px;
     background: #f8f8f8;
     border-radius: 8px;
+  }
+
+  .volume-setting {
+    margin: 12px 0 2px 30px;
+  }
+
+  .volume-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+  }
+
+  .volume-slider {
+    width: 100%;
+    height: 32px;
+    accent-color: var(--brand);
+    cursor: pointer;
   }
 </style>

@@ -16,6 +16,10 @@ let loadStarted = false;
 let currentSource: AudioBufferSourceNode | null = null;
 let currentGain: GainNode | null = null;
 
+function volumeMultiplier() {
+  return Math.max(0, Math.min(settings.soundVolume, 100)) / 50;
+}
+
 function ensureContext(): AudioContext | null {
   if (audioContext) return audioContext;
   if (typeof AudioContext === 'undefined') return null;
@@ -74,7 +78,7 @@ export function playDrawSound(movementData: { speed?: number } = {}) {
   }
 
   const { speed = 0 } = movementData;
-  const target = SOUND_VOLUME * Math.min(speed / FULL_VOLUME_SPEED, 1);
+  const target = SOUND_VOLUME * volumeMultiplier() * Math.min(speed / FULL_VOLUME_SPEED, 1);
   rampGainTo(currentGain!.gain, target, ctx.currentTime, GAIN_RAMP_S);
 }
 
