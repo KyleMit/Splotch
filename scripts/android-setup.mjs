@@ -1,99 +1,76 @@
-// cspell:ignore sdkmanager avdmanager cmdline playstore temurin libexec
-import { spawnSync } from 'node:child_process';
-import { existsSync, writeFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { homedir } from 'node:os';
-import { fileURLToPath } from 'node:url';
+// cspell:ignore sdkmanager avdmanager avds cmdline playstore temurin libexec winget Adoptium
+// One-time emulator setup for local Android work: installs the API 33 Play
+// Store system image, creates the Pixel 7 Pro AVD, and writes
+// android/local.properties. Checks the required SDK tools are on PATH first
+// and prints per-platform fix instructions if not. Safe to re-run.
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const AVD_NAME = 'Pixel_7_Pro_API_33';
+import { existsSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { ROOT, isWindows, hasCommand, run, capture, fail } from './lib/utils.mjs';
+import { ANDROID_HOME, AVD_NAME } from './lib/android.mjs';
+
 const ABI = process.arch === 'arm64' ? 'arm64-v8a' : 'x86_64';
 const SYSTEM_IMAGE = `system-images;android-33;google_apis_playstore;${ABI}`;
 const DEVICE_ID = 'pixel_7_pro';
-const ANDROID_HOME = process.env.ANDROID_HOME ?? join(homedir(), 'Library', 'Android', 'sdk');
 
-const REQUIRED = [
-  {
-    cmd: 'java',
-    fix: [
+const addToPath = (subdir) =>
+  isWindows
+    ? `Add to PATH (System Properties → Environment Variables):  %LOCALAPPDATA%\\Android\\Sdk\\${subdir.replaceAll('/', '\\')}`
+    : `Add to ~/.zshrc:  export PATH="$ANDROID_HOME/${subdir}:$PATH"`;
+
+const javaFix = isWindows
+  ? [
+      'Install JDK 21:  winget install EclipseAdoptium.Temurin.21.JDK',
+      'Then set JAVA_HOME to the install directory (System Properties → Environment Variables)',
+    ]
+  : [
       'Install JDK 21:  brew install --cask temurin@21',
       'Then add to ~/.zshrc:  export JAVA_HOME="$(/usr/libexec/java_home -v 21)"',
-    ],
-  },
-  {
-    cmd: 'sdkmanager',
-    fix: [
-      'Android Studio → SDK Manager → SDK Tools → Android SDK Command-line Tools (latest) → Apply',
-      'Then add to ~/.zshrc:  export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"',
-    ],
-  },
-  {
-    cmd: 'avdmanager',
-    fix: [
-      'Android Studio → SDK Manager → SDK Tools → Android SDK Command-line Tools (latest) → Apply',
-      'Then add to ~/.zshrc:  export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"',
-    ],
-  },
-  {
-    cmd: 'emulator',
-    fix: ['Add to ~/.zshrc:  export PATH="$ANDROID_HOME/emulator:$PATH"'],
-  },
-  {
-    cmd: 'adb',
-    fix: ['Add to ~/.zshrc:  export PATH="$ANDROID_HOME/platform-tools:$PATH"'],
-  },
+    ];
+
+const cmdlineToolsFix = [
+  'Android Studio → SDK Manager → SDK Tools → Android SDK Command-line Tools (latest) → Apply',
+  addToPath('cmdline-tools/latest/bin'),
 ];
 
-const missing = REQUIRED.filter(({ cmd }) => spawnSync('which', [cmd], { stdio: 'ignore' }).status !== 0);
+const REQUIRED = [
+  { cmd: 'java', fix: javaFix },
+  { cmd: 'sdkmanager', fix: cmdlineToolsFix },
+  { cmd: 'avdmanager', fix: cmdlineToolsFix },
+  { cmd: 'emulator', fix: [addToPath('emulator')] },
+  { cmd: 'adb', fix: [addToPath('platform-tools')] },
+];
+
+const missing = REQUIRED.filter(({ cmd }) => !hasCommand(cmd));
 if (missing.length > 0) {
-  console.error('[android-setup] Missing tools — not found on PATH:\n');
-  for (const { cmd, fix } of missing) {
-    console.error(`  ${cmd}:`);
-    for (const line of fix) console.error(`    ${line}`);
-  }
-  console.error('\nAfter fixing, open a new terminal or run: source ~/.zshrc\n');
-  process.exit(1);
+  const lines = ['[android-setup] Missing tools — not found on PATH:', ''];
+  for (const { cmd, fix } of missing) lines.push(`  ${cmd}:`, ...fix.map((f) => `    ${f}`));
+  lines.push('', isWindows ? 'After fixing, open a new terminal.' : 'After fixing, open a new terminal or run: source ~/.zshrc');
+  fail(lines.join('\n'));
 }
 
 const imageDir = join(ANDROID_HOME, 'system-images', 'android-33', 'google_apis_playstore', ABI);
-if (!existsSync(imageDir)) {
-  console.log(`[android-setup] Accepting SDK licenses …`);
-  spawnSync('sdkmanager', ['--licenses'], {
-    input: Array(20).fill('y').join('\n'),
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-
-  console.log(`[android-setup] Installing ${SYSTEM_IMAGE} …`);
-  const install = spawnSync('sdkmanager', [SYSTEM_IMAGE], { stdio: 'inherit' });
-  if (install.status !== 0) {
-    console.error(`[android-setup] sdkmanager failed (exit ${install.status})`);
-    process.exit(install.status ?? 1);
-  }
+if (existsSync(imageDir)) {
+  console.log('[android-setup] System image already installed.');
 } else {
-  console.log(`[android-setup] System image already installed.`);
+  console.log(`[android-setup] Installing ${SYSTEM_IMAGE} (auto-accepting licenses) …`);
+  run('sdkmanager', [SYSTEM_IMAGE], { input: 'y\n'.repeat(20) });
 }
 
-const { stdout: avdList = '' } = spawnSync('avdmanager', ['list', 'avd', '--compact'], { encoding: 'utf8' });
-if (avdList.split('\n').map(l => l.trim()).includes(AVD_NAME)) {
+const avds = capture('avdmanager', ['list', 'avd', '--compact']).split('\n').map((l) => l.trim());
+if (avds.includes(AVD_NAME)) {
   console.log(`[android-setup] AVD "${AVD_NAME}" already exists — nothing to do.`);
 } else {
   console.log(`[android-setup] Creating AVD "${AVD_NAME}" …`);
-  const create = spawnSync('avdmanager', [
-    'create', 'avd', '--name', AVD_NAME, '--package', SYSTEM_IMAGE, '--device', DEVICE_ID,
-  ], {
+  run('avdmanager', ['create', 'avd', '--name', AVD_NAME, '--package', SYSTEM_IMAGE, '--device', DEVICE_ID], {
     input: 'no\n',
-    stdio: ['pipe', 'inherit', 'inherit'],
   });
-  if (create.status !== 0) {
-    console.error(`[android-setup] avdmanager failed (exit ${create.status})`);
-    process.exit(create.status ?? 1);
-  }
 }
 
 const localProps = join(ROOT, 'android', 'local.properties');
 if (!existsSync(localProps)) {
-  writeFileSync(localProps, `sdk.dir=${ANDROID_HOME}\n`);
+  writeFileSync(localProps, `sdk.dir=${ANDROID_HOME.replaceAll('\\', '/')}\n`);
   console.log(`[android-setup] Wrote android/local.properties (sdk.dir=${ANDROID_HOME})`);
 }
 
-console.log(`[android-setup] Done — run "npm run android:boot" then "npm run android:emulator".`);
+console.log('[android-setup] Done — run "npm run android:boot" then "npm run android:emulator".');

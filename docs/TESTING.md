@@ -91,14 +91,14 @@ npm run test:android:device   # run against an emulator you already have running
 
 | Script | What happens |
 | --- | --- |
-| `test:android` | Runs `scripts/android-emulator-smoke.mjs`: boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`), runs `npm run android:run` (build + install), runs Maestro, and **always** kills the emulator afterward — even on failure. Self-contained and self-cleaning. |
+| `test:android` | Runs `scripts/android-emulator-smoke.mjs`: boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`), builds + installs (`cap:sync` then the platform's `gradlew :app:installDebug`), runs Maestro, and **always** kills the emulator afterward — even on failure. Self-contained and self-cleaning. |
 | `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected. Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses. |
 
 > `scripts/android-emulator-smoke.mjs` is emulator-lifecycle glue only — Maestro
-> does the actual assertions. It's a deliberately small local-dev helper: Windows
-> only (it shells `npm run android:run`, which uses `.\gradlew`), and it hardcodes
-> the AVD and the default SDK / Maestro install locations. Tweak those constants
-> at the top of the file if your setup differs.
+> does the actual assertions. It's a deliberately small local-dev helper that
+> works on both Windows and macOS: the AVD name and SDK / Maestro locations
+> resolve per-platform in `scripts/lib/android.mjs` (override the SDK with
+> `ANDROID_HOME`).
 
 ### Prerequisites
 

@@ -1,22 +1,22 @@
 // Generates Google Play store assets (phone + tablet screenshots and the
 // feature graphic) by driving the real Splotch app in a headless browser.
-//
-//   1. start the dev server:  npx vite dev --port 4173
-//   2. run:                   node scripts/store-shots.mjs
+// A dev server is started automatically (or reused if one is already on 4173):
+//   node scripts/store-shots.mjs
 //
 // Output lands in store-assets/. Screenshots are captured at the exact pixel
 // sizes Google Play wants (phone 1080x1920 = 9:16, tablet 1920x1080 = 16:9).
+
 import { chromium } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { join } from 'node:path';
+import { ROOT, sleep } from './lib/utils.mjs';
+import {
+  ensureDevServer, openAppPage, canvasBox, expandDrawer, pickColor,
+  setStrokeSize, drawStroke, dismissMenu, circlePts, arcPts, zigzag,
+} from './lib/app-driver.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
-const OUT = path.join(ROOT, 'store-assets');
-const BASE = 'http://localhost:4173/';
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const OUT = join(ROOT, 'store-assets');
+const PORT = 4173;
 
 // 9:16 portrait phone -> 1080x1920; 16:9 landscape tablet -> 1920x1080.
 const PHONE = { width: 432, height: 768, deviceScaleFactor: 2.5 };
@@ -28,74 +28,7 @@ const C = {
   yellow: '#F9D24F', orange: '#F89C45', red: '#EC534E', black: '#0a0b10'
 };
 
-async function canvasBox(page) {
-  return page.locator('#drawingCanvas').boundingBox();
-}
-
-// Pick a palette swatch by hex, then respect the 100ms post-color-change guard
-// the drawing engine enforces before it starts a new stroke.
-async function pickColor(page, hex) {
-  const sw = page.locator(`.color-swatch[data-color="${hex}"]`);
-  if ((await sw.count()) && (await sw.first().isVisible())) {
-    await sw.first().click({ force: true });
-    await sleep(220);
-    return true;
-  }
-  return false; // swatch not shown at this viewport width
-}
-
-// Draw one freehand stroke through a list of {x,y} canvas-relative points.
-async function stroke(page, box, pts) {
-  if (pts.length === 0) return;
-  const abs = pts.map((p) => ({ x: box.x + p.x, y: box.y + p.y }));
-  await page.mouse.move(abs[0].x, abs[0].y);
-  await page.mouse.down();
-  for (let i = 1; i < abs.length; i++) {
-    await page.mouse.move(abs[i].x, abs[i].y, { steps: 6 });
-  }
-  await page.mouse.up();
-  await sleep(40);
-}
-
-function circlePts(cx, cy, r, turns = 1, n = 48) {
-  const pts = [];
-  for (let i = 0; i <= n * turns; i++) {
-    const a = (i / n) * Math.PI * 2;
-    pts.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
-  }
-  return pts;
-}
-function zigzag(x0, y, x1, amp, step) {
-  const pts = []; let up = true;
-  for (let x = x0; x <= x1; x += step) { pts.push({ x, y: y + (up ? -amp : amp) }); up = !up; }
-  return pts;
-}
-function arcPts(cx, cy, r, a0, a1, n = 60) {
-  const pts = [];
-  for (let i = 0; i <= n; i++) {
-    const a = a0 + (a1 - a0) * (i / n);
-    pts.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
-  }
-  return pts;
-}
-
-async function setStroke(page, size) {
-  const btn = page.locator('#strokeWidthButton');
-  if (!(await btn.count())) return;
-  await btn.click();
-  await sleep(150);
-  await page.locator(`button[aria-label="Size ${size}"]`).click();
-  await sleep(150);
-}
-
-async function expandDrawer(page) {
-  // The action drawer (eraser / coloring book / camera / undo) starts collapsed.
-  const toggle = page.locator('.drawer-toggle');
-  if ((await toggle.count()) && (await page.locator('#coloringBookButton').count()) === 0) {
-    await toggle.click();
-    await sleep(350);
-  }
-}
+const shot = (page, file) => page.screenshot({ path: join(OUT, file) });
 
 // Paint a cheerful child's drawing onto the canvas: a rainbow, sun, grass and a
 // flower. Uses only colors shown in every orientation (the portrait palette
@@ -111,15 +44,15 @@ async function drawScene(page, box) {
   const arc = [C.red, C.orange, C.yellow, C.green];
   for (let i = 0; i < arc.length; i++) {
     if (await pickColor(page, arc[i])) {
-      await stroke(page, box, arcPts(cx, cy, r0 - i * step, Math.PI, Math.PI * 2));
+      await drawStroke(page, box, arcPts(cx, cy, r0 - i * step, Math.PI, Math.PI * 2));
     }
   }
   // Sun in the top-left
   if (await pickColor(page, C.yellow)) {
     const sx = W * 0.16, sy = H * 0.16, r = Math.min(W, H) * 0.07;
-    await stroke(page, box, circlePts(sx, sy, r, 2));
+    await drawStroke(page, box, circlePts(sx, sy, r, 2));
     for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
-      await stroke(page, box, [
+      await drawStroke(page, box, [
         { x: sx + Math.cos(a) * r * 1.5, y: sy + Math.sin(a) * r * 1.5 },
         { x: sx + Math.cos(a) * r * 2.1, y: sy + Math.sin(a) * r * 2.1 }
       ]);
@@ -127,14 +60,14 @@ async function drawScene(page, box) {
   }
   // Grass along the bottom + a flower (red bloom, green stem)
   if (await pickColor(page, C.green)) {
-    await stroke(page, box, zigzag(W * 0.2, H * 0.93, W * 0.96, 14, 26));
-    await stroke(page, box, [{ x: W * 0.78, y: H * 0.92 }, { x: W * 0.78, y: H * 0.74 }]);
+    await drawStroke(page, box, zigzag(W * 0.2, H * 0.93, W * 0.96, 14, 26));
+    await drawStroke(page, box, [{ x: W * 0.78, y: H * 0.92 }, { x: W * 0.78, y: H * 0.74 }]);
   }
   if (await pickColor(page, C.red)) {
-    await stroke(page, box, circlePts(W * 0.78, H * 0.7, Math.min(W, H) * 0.05, 2));
+    await drawStroke(page, box, circlePts(W * 0.78, H * 0.7, Math.min(W, H) * 0.05, 2));
   }
   if (await pickColor(page, C.yellow)) {
-    await stroke(page, box, circlePts(W * 0.78, H * 0.7, Math.min(W, H) * 0.02, 2));
+    await drawStroke(page, box, circlePts(W * 0.78, H * 0.7, Math.min(W, H) * 0.02, 2));
   }
 }
 
@@ -148,7 +81,7 @@ async function colorInLines(page, box) {
       const rr = (i / 60);
       pts.push({ x: cx + Math.cos(a) * rx * rr, y: cy + Math.sin(a) * ry * rr });
     }
-    await stroke(page, box, pts);
+    await drawStroke(page, box, pts);
   };
   await scribble(C.orange, W * 0.5, H * 0.45, W * 0.18, H * 0.16);
   await scribble(C.yellow, W * 0.5, H * 0.62, W * 0.14, H * 0.1);
@@ -156,23 +89,8 @@ async function colorInLines(page, box) {
   await scribble(C.blue, W * 0.65, H * 0.4, W * 0.08, H * 0.07);
 }
 
-async function newCtx(browser, device) {
-  const ctx = await browser.newContext({
-    viewport: { width: device.width, height: device.height },
-    deviceScaleFactor: device.deviceScaleFactor,
-    hasTouch: true,
-    isMobile: false
-  });
-  const page = await ctx.newPage();
-  await page.goto(BASE, { waitUntil: 'networkidle' });
-  await page.waitForSelector('#drawingCanvas');
-  await sleep(400);
-  return { ctx, page };
-}
-
-const shot = (page, file) => page.screenshot({ path: path.join(OUT, file) });
-
-async function run() {
+const { base, stop } = await ensureDevServer(PORT);
+try {
   const browser = await chromium.launch();
   const targets = [
     { name: 'phone', device: PHONE, dir: 'screenshots/phone' },
@@ -180,16 +98,14 @@ async function run() {
   ];
 
   for (const t of targets) {
-    const isPhone = t.name === 'phone';
     // SCENE 1 — free drawing
     {
-      const { ctx, page } = await newCtx(browser, t.device);
+      const { ctx, page } = await openAppPage(browser, base, t.device);
       await expandDrawer(page);
-      await setStroke(page, 4);
+      await setStrokeSize(page, 4);
       const box = await canvasBox(page);
       await drawScene(page, box);
-      await page.locator('#drawingCanvas').click({ position: { x: 5, y: 5 } }); // dismiss any menu
-      await sleep(150);
+      await dismissMenu(page);
       await shot(page, `${t.dir}/01-draw.png`);
       await ctx.close();
       console.log(`${t.name} 01-draw done`);
@@ -197,7 +113,7 @@ async function run() {
 
     // SCENE 2 — coloring book (Farm pages grid)
     {
-      const { ctx, page } = await newCtx(browser, t.device);
+      const { ctx, page } = await openAppPage(browser, base, t.device);
       await expandDrawer(page);
       await page.locator('#coloringBookButton').click();
       await sleep(450);
@@ -210,9 +126,9 @@ async function run() {
 
     // SCENE 3 — coloring a page within the lines
     {
-      const { ctx, page } = await newCtx(browser, t.device);
+      const { ctx, page } = await openAppPage(browser, base, t.device);
       await expandDrawer(page);
-      await setStroke(page, 5);
+      await setStrokeSize(page, 5);
       await page.locator('#coloringBookButton').click();
       await sleep(450);
       await page.locator('button[aria-label="Farm coloring book"]').click();
@@ -221,8 +137,7 @@ async function run() {
       await sleep(700); // wait for overlay image to load
       const box = await canvasBox(page);
       await colorInLines(page, box);
-      await page.locator('#drawingCanvas').click({ position: { x: 5, y: 5 } });
-      await sleep(150);
+      await dismissMenu(page);
       await shot(page, `${t.dir}/03-color-page.png`);
       await ctx.close();
       console.log(`${t.name} 03-color-page done`);
@@ -230,7 +145,7 @@ async function run() {
 
     // SCENE 4 — rainbow color picker
     {
-      const { ctx, page } = await newCtx(browser, t.device);
+      const { ctx, page } = await openAppPage(browser, base, t.device);
       await page.locator('.color-swatch[data-color="custom"]').click();
       await sleep(500);
       await shot(page, `${t.dir}/04-color-picker.png`);
@@ -240,7 +155,7 @@ async function run() {
 
     // SCENE 5 — Parent Center (settings / trust)
     {
-      const { ctx, page } = await newCtx(browser, t.device);
+      const { ctx, page } = await openAppPage(browser, base, t.device);
       await page.locator('#parentHelpButton').click();
       await sleep(500);
       await shot(page, `${t.dir}/05-parent-center.png`);
@@ -251,19 +166,21 @@ async function run() {
 
   // FEATURE GRAPHIC — 1024x500
   {
-    const iconB64 = readFileSync(path.join(OUT, 'icon-512.png')).toString('base64');
-    const html = featureGraphicHtml(iconB64);
+    const iconB64 = readFileSync(join(OUT, 'icon-512.png')).toString('base64');
     const ctx = await browser.newContext({ viewport: { width: 1024, height: 500 }, deviceScaleFactor: 1 });
     const page = await ctx.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle' });
+    await page.setContent(featureGraphicHtml(iconB64), { waitUntil: 'networkidle' });
     await sleep(300);
-    await page.screenshot({ path: path.join(OUT, 'feature-graphic.png') });
+    await page.screenshot({ path: join(OUT, 'feature-graphic.png') });
     await ctx.close();
     console.log('feature-graphic done');
   }
 
   await browser.close();
+} finally {
+  stop();
 }
+console.log('ALL DONE');
 
 function featureGraphicHtml(iconB64) {
   return `<!doctype html><html><head><meta charset="utf-8">
@@ -303,5 +220,3 @@ function featureGraphicHtml(iconB64) {
     </div>
   </body></html>`;
 }
-
-run().then(() => console.log('ALL DONE')).catch((e) => { console.error(e); process.exit(1); });

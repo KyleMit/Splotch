@@ -1,14 +1,13 @@
 // Validates every asset referenced in the coloring-book catalog exists on disk,
 // and that the platform filtering used by strip-native-assets.mjs is consistent
 // with booksForPlatform. Run with:
-//   node --experimental-strip-types scripts/check-assets.mjs
+//   npm run check:assets
 
 import { existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { ROOT, fail, webOnlyBooks } from './lib/utils.mjs';
 import { BOOKS, booksForPlatform, bookAssetPaths } from '../src/lib/state/books.ts';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STATIC_DIR = join(ROOT, 'static');
 
 let errors = 0;
@@ -26,12 +25,12 @@ for (const book of BOOKS) {
 }
 console.log(`[check-assets] ${checked} asset(s) checked across ${BOOKS.length} book(s).`);
 
-// 2. Cross-check platform filtering: strip-native-assets drops books that lack
-//    'mobile' in their platforms array; booksForPlatform('mobile') is the
-//    complement. If any book appears in both sets, the filters disagree.
+// 2. Cross-check platform filtering: strip-native-assets drops webOnlyBooks
+//    (defined script-side in lib/utils.mjs); booksForPlatform('mobile') is the
+//    app-side complement. If any book appears in both sets, the filters disagree.
 const mobileBooks = new Set(booksForPlatform('mobile').map((b) => b.id));
-const webOnlyBooks = BOOKS.filter((b) => !(b.platforms ?? ['web', 'mobile']).includes('mobile'));
-const overlap = webOnlyBooks.filter((b) => mobileBooks.has(b.id));
+const webOnly = webOnlyBooks(BOOKS);
+const overlap = webOnly.filter((b) => mobileBooks.has(b.id));
 
 if (overlap.length > 0) {
   console.error(
@@ -42,14 +41,11 @@ if (overlap.length > 0) {
 } else {
   console.log(
     `[check-assets] platform filtering OK — ` +
-      (webOnlyBooks.length > 0
-        ? `${webOnlyBooks.length} web-only book(s) will be stripped from native: ${webOnlyBooks.map((b) => b.id).join(', ')}`
+      (webOnly.length > 0
+        ? `${webOnly.length} web-only book(s) will be stripped from native: ${webOnly.map((b) => b.id).join(', ')}`
         : 'all books ship on mobile.')
   );
 }
 
-if (errors > 0) {
-  console.error(`[check-assets] ${errors} error(s) found — fix before releasing.`);
-  process.exit(1);
-}
+if (errors > 0) fail(`[check-assets] ${errors} error(s) found — fix before releasing.`);
 console.log('[check-assets] all checks passed.');

@@ -12,14 +12,12 @@
 
 import { rmSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { ROOT, webOnlyBooks } from './lib/utils.mjs';
 import { BOOKS, bookAssetPaths } from '../src/lib/state/books.ts';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BUILD_DIR = join(ROOT, 'build'); // capacitor.config.json webDir
 
-const webOnly = BOOKS.filter((book) => !(book.platforms ?? ['web', 'mobile']).includes('mobile'));
-
+const webOnly = webOnlyBooks(BOOKS);
 if (webOnly.length === 0) {
   console.log('[strip-native-assets] no web-only books — nothing to strip.');
   process.exit(0);
@@ -27,12 +25,7 @@ if (webOnly.length === 0) {
 
 // Each book's assets live under one folder (derived from its asset paths, so we
 // stay correct even if a folder name ever diverges from the book id).
-const dirs = new Set();
-for (const book of webOnly) {
-  for (const assetPath of bookAssetPaths(book)) {
-    dirs.add(dirname(assetPath)); // e.g. '/coloring/bluey'
-  }
-}
+const dirs = new Set(webOnly.flatMap((book) => bookAssetPaths(book).map((p) => dirname(p))));
 
 let removed = 0;
 for (const dir of dirs) {

@@ -6,39 +6,18 @@
 // Run directly (`node scripts/generate-releases.mjs`) or via the pre* npm hooks.
 // It never touches version numbers — that is release.mjs's job.
 
-import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { marked } from 'marked';
+import { ROOT, fail, parseFrontmatter, compareSemverDesc, writeFileDeep } from './lib/utils.mjs';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const RELEASES_DIR = join(ROOT, 'releases');
-
 const ANDROID_CHANGELOG_LIMIT = 500; // Google Play "What's new" hard limit.
 
-// --- parsing -------------------------------------------------------------
-
-// Minimal `key: value` frontmatter reader — we never need nested YAML here.
 function parseRelease(filename) {
-  const raw = readFileSync(join(RELEASES_DIR, filename), 'utf8');
-  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
-  if (!match) throw new Error(`${filename}: missing or malformed frontmatter`);
-
-  const meta = {};
-  for (const line of match[1].split(/\r?\n/)) {
-    const m = line.match(/^([A-Za-z][\w]*):\s*(.*)$/);
-    if (m) meta[m[1]] = m[2].trim();
-  }
-  return { filename, meta, body: match[2].trim() };
-}
-
-function semverDesc(a, b) {
-  const pa = a.meta.version.split('.').map(Number);
-  const pb = b.meta.version.split('.').map(Number);
-  for (let i = 0; i < 3; i++) {
-    if ((pb[i] || 0) !== (pa[i] || 0)) return (pb[i] || 0) - (pa[i] || 0);
-  }
-  return 0;
+  const parsed = parseFrontmatter(readFileSync(join(RELEASES_DIR, filename), 'utf8'));
+  if (!parsed) fail(`${filename}: missing or malformed frontmatter`);
+  return { filename, meta: parsed.meta, body: parsed.body };
 }
 
 // Markdown -> plain text for the store changelogs.
@@ -60,27 +39,18 @@ function toPlainText(body) {
 }
 
 function write(path, contents) {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, contents);
-  console.log(`  wrote ${path.replace(ROOT + '\\', '').replace(ROOT + '/', '')}`);
+  writeFileDeep(path, contents);
+  console.log(`  wrote ${relative(ROOT, path)}`);
 }
 
-// --- main ----------------------------------------------------------------
-
-if (!existsSync(RELEASES_DIR)) {
-  console.error(`No releases/ directory at ${RELEASES_DIR}`);
-  process.exit(1);
-}
+if (!existsSync(RELEASES_DIR)) fail(`No releases/ directory at ${RELEASES_DIR}`);
 
 const releases = readdirSync(RELEASES_DIR)
   .filter((f) => /^\d+\.\d+\.\d+\.md$/.test(f))
   .map(parseRelease)
-  .sort(semverDesc);
+  .sort((a, b) => compareSemverDesc(a.meta.version, b.meta.version));
 
-if (releases.length === 0) {
-  console.error('No release files found in releases/ (expected e.g. 1.0.0.md)');
-  process.exit(1);
-}
+if (releases.length === 0) fail('No release files found in releases/ (expected e.g. 1.0.0.md)');
 
 console.log(`Generating release artifacts from ${releases.length} release file(s)…`);
 
@@ -99,10 +69,7 @@ for (const r of releases) {
   const code = r.meta.androidVersionCode;
   if (!code) continue; // not yet assigned (release.mjs fills it in)
   const text = toPlainText(r.body);
-  write(
-    join(ROOT, 'fastlane', 'metadata', 'android', 'en-US', 'changelogs', `${code}.txt`),
-    text + '\n'
-  );
+  write(join(ROOT, 'fastlane', 'metadata', 'android', 'en-US', 'changelogs', `${code}.txt`), text + '\n');
   if (r === releases[0] && text.length > ANDROID_CHANGELOG_LIMIT) {
     console.warn(
       `  ⚠ ${r.filename}: Android changelog is ${text.length} chars ` +
@@ -113,9 +80,6 @@ for (const r of releases) {
 
 // 3. App Store "What's New" — deliver uploads a single current value, so only
 //    the latest release goes here, overwritten each time.
-write(
-  join(ROOT, 'fastlane', 'metadata', 'en-US', 'release_notes.txt'),
-  toPlainText(releases[0].body) + '\n'
-);
+write(join(ROOT, 'fastlane', 'metadata', 'en-US', 'release_notes.txt'), toPlainText(releases[0].body) + '\n');
 
 console.log('Done.');

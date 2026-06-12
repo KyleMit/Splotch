@@ -10,55 +10,35 @@
 // stay in sync; package.json is the canonical semver source.
 
 import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { execSync } from 'node:child_process';
+import { ROOT, fail, run, capture, parseFrontmatter } from './lib/utils.mjs';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const version = args.find((a) => !a.startsWith('-'));
 const dryRun = args.includes('--dry-run');
 const noPublish = args.includes('--no-publish');
 
 if (!version || !/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(version)) {
-  console.error('Usage: node scripts/release.mjs <semver> [--no-publish] [--dry-run]');
-  console.error('  <semver> must look like 1.2.0');
-  process.exit(1);
+  fail('Usage: node scripts/release.mjs <semver> [--no-publish] [--dry-run]\n  <semver> must look like 1.2.0');
 }
 
 const releaseFile = join(ROOT, 'releases', `${version}.md`);
 if (!existsSync(releaseFile)) {
-  console.error(`Missing ${releaseFile}`);
-  console.error(`Create the notes first (or run the /release command), then re-run.`);
-  process.exit(1);
-}
-
-// npm/npx/gh are .cmd shims on Windows, so we go through the shell — which means
-// quoting any argument that contains whitespace (e.g. the commit message).
-function run(cmd, cmdArgs) {
-  const full = [cmd, ...cmdArgs.map((a) => (/\s/.test(a) ? `"${a}"` : a))].join(' ');
-  console.log(`$ ${full}`);
-  return execSync(full, { cwd: ROOT, stdio: 'inherit' });
+  fail(`Missing ${releaseFile}\nCreate the notes first (or run the /release command), then re-run.`);
 }
 
 // --- 1. resolve the Android versionCode ----------------------------------
 
-const gradlePath = join(ROOT, 'android', 'app', 'build.gradle');
-const gradle = readFileSync(gradlePath, 'utf8');
+const gradle = readFileSync(join(ROOT, 'android', 'app', 'build.gradle'), 'utf8');
 const currentCode = Number(gradle.match(/versionCode\s+(\d+)/)?.[1] ?? 0);
 
 // Reuse the code already pinned in the release file if present (idempotent
 // re-runs); otherwise assign the next monotonic integer and pin it.
-const raw = readFileSync(releaseFile, 'utf8');
-const fm = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
-if (!fm) {
-  console.error(`${releaseFile}: malformed frontmatter`);
-  process.exit(1);
-}
-let frontmatter = fm[1];
-const body = fm[2].trim();
-const pinned = Number(frontmatter.match(/androidVersionCode:\s*(\d+)/)?.[1]);
+const parsed = parseFrontmatter(readFileSync(releaseFile, 'utf8'));
+if (!parsed) fail(`${releaseFile}: malformed frontmatter`);
+let { frontmatter, body } = parsed;
+const pinned = Number(parsed.meta.androidVersionCode);
 const versionCode = Number.isInteger(pinned) ? pinned : currentCode + 1;
 
 if (!Number.isInteger(pinned)) {
@@ -111,7 +91,7 @@ const RELEASE_PATHS = [
 const isReleasePath = (p) =>
   RELEASE_PATHS.some((allowed) => (allowed.endsWith('/') ? p.startsWith(allowed) : p === allowed));
 
-const stray = execSync('git status --porcelain', { cwd: ROOT, encoding: 'utf8' })
+const stray = capture('git', ['status', '--porcelain'])
   .split(/\r?\n/)
   .filter(Boolean)
   .map((line) => line.slice(3)) // strip the "XY " status columns
@@ -120,11 +100,12 @@ const stray = execSync('git status --porcelain', { cwd: ROOT, encoding: 'utf8' }
   .filter((p) => !isReleasePath(p));
 
 if (stray.length) {
-  console.error('\nWorking tree has changes outside the release artifacts:');
-  for (const p of stray) console.error(`  ${p}`);
-  console.error('\nCommit, stash, or revert them before releasing — otherwise `git add -A`');
-  console.error('would sweep them into the release commit.');
-  process.exit(1);
+  fail(
+    `\nWorking tree has changes outside the release artifacts:\n` +
+      stray.map((p) => `  ${p}`).join('\n') +
+      '\n\nCommit, stash, or revert them before releasing — otherwise `git add -A`\n' +
+      'would sweep them into the release commit.'
+  );
 }
 
 run('git', ['add', '-A']);

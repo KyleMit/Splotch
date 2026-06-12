@@ -11,39 +11,22 @@
 // jarsigner output so the real problem is visible. Used by `npm run android:verify`.
 
 import { spawnSync } from 'node:child_process';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { ROOT, isWindows, fail } from './lib/utils.mjs';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const AAB = join(ROOT, 'android', 'app', 'build', 'outputs', 'bundle', 'release', 'app-release.aab');
 
-const javaHome = process.env.JAVA_HOME;
-if (!javaHome) {
-  console.error('[android-verify] JAVA_HOME is not set — cannot locate jarsigner.');
-  process.exit(1);
-}
+if (!process.env.JAVA_HOME) fail('[android-verify] JAVA_HOME is not set — cannot locate jarsigner.');
+const jarsigner = join(process.env.JAVA_HOME, 'bin', isWindows ? 'jarsigner.exe' : 'jarsigner');
 
-const exe = process.platform === 'win32' ? 'jarsigner.exe' : 'jarsigner';
-const jarsigner = join(javaHome, 'bin', exe);
-
-const { stdout = '', stderr = '', status, error } = spawnSync(jarsigner, ['-verify', AAB], {
-  encoding: 'utf8',
-});
-
-if (error) {
-  console.error(`[android-verify] failed to run jarsigner: ${error.message}`);
-  process.exit(1);
-}
+const { stdout = '', stderr = '', status, error } = spawnSync(jarsigner, ['-verify', AAB], { encoding: 'utf8' });
+if (error) fail(`[android-verify] failed to run jarsigner: ${error.message}`);
 
 const output = stdout + stderr;
-const verified = /^jar verified\.$/m.test(output);
-
-if (verified && status === 0) {
+if (status === 0 && /^jar verified\.$/m.test(output)) {
   console.log('jar verified.');
-  process.exit(0);
+} else {
+  console.error('[android-verify] bundle did NOT verify. Full jarsigner output:\n');
+  console.error(output.trim());
+  process.exit(status || 1);
 }
-
-// Something is actually wrong — show everything so it can be diagnosed.
-console.error('[android-verify] bundle did NOT verify. Full jarsigner output:\n');
-console.error(output.trim());
-process.exit(status || 1);
