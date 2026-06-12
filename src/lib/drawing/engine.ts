@@ -527,12 +527,21 @@ export async function exportCanvasBlob(
   const { includePaperTexture = true } = options;
   if (!canvas || canvas.width === 0 || canvas.height === 0) return null;
 
+  // Snapshot the strokes before any await: save-on-delete fire-and-forgets the
+  // export and then clears the live canvas synchronously, so reading `canvas`
+  // after the paper-texture await (even a cache hit yields a microtask) would
+  // export a blank page.
+  const snapshot = document.createElement('canvas');
+  snapshot.width = canvas.width;
+  snapshot.height = canvas.height;
+  snapshot.getContext('2d')!.drawImage(canvas, 0, 0);
+
   // Compose in CSS-pixel coordinates at an export scale of at least 2×, so the
   // paper texture and overlay keep their on-screen proportions while the
   // already-high-res strokes pass through with minimal resampling.
   const exportScale = Math.max(window.devicePixelRatio || 1, 2);
-  const w = canvas.width / renderScale;
-  const h = canvas.height / renderScale;
+  const w = snapshot.width / renderScale;
+  const h = snapshot.height / renderScale;
 
   const out = document.createElement('canvas');
   out.width = Math.round(w * exportScale);
@@ -556,7 +565,7 @@ export async function exportCanvasBlob(
     }
   }
 
-  outCtx.drawImage(canvas, 0, 0, w, h);
+  outCtx.drawImage(snapshot, 0, 0, w, h);
 
   if (overlayImage && overlayImage.naturalWidth > 0 && overlayImage.naturalHeight > 0) {
     const scale = Math.min(

@@ -4,9 +4,6 @@
 > After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 
-- [ ] **[Correctness] Save-on-delete exports a blank canvas** — File(s): `src/lib/drawing/engine.ts`, `src/lib/components/ClearButton.svelte`
-  `ClearButton`'s `onClear` fire-and-forgets `saveDrawingIfEnabled()` and then synchronously calls `clearCanvas()`. But `exportCanvasBlob()` only reads the live canvas (`outCtx.drawImage(canvas, …)`, engine.ts:559) *after* `await loadPaperTexture()` (engine.ts:549) — even a cache-hit await yields a microtask, which runs after `clearCanvas()` has wiped the pixels. So the "saved" drawing is a blank page. Fix in the engine so every caller is race-free: snapshot the visible canvas synchronously at the top of `exportCanvasBlob` (drawImage into a temp canvas before any `await`) and compose from that snapshot. Add a regression test via the `/dev/engine` harness (draw → clear with save-on-delete semantics → assert exported blob has non-transparent pixels); there is currently zero coverage of `saveOnDelete.ts`.
-
 - [ ] **[Correctness] PWA auto-update can reload the page mid-drawing** — File(s): `src/lib/pwa/updates.ts`
   `checkForUpdates()` runs on every window focus/visibilitychange and, when a waiting service worker exists, posts `SKIP_WAITING` and calls `window.location.reload()` on controllerchange. A child who tabs away and back while a deploy is pending loses their drawing instantly. Gate `activateWaitingSW` on `canvasState.canvasEmpty` (import from `$lib/state/canvas.svelte`) — apply immediately only when the canvas is blank, otherwise let the waiting worker activate on the next launch. While there, note `ARCHITECTURE.md` says this module "prompts" for updates — it force-applies; fix the description as part of the doc item below if not already done.
 

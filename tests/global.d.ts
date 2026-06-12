@@ -14,6 +14,11 @@ declare global {
       undo(): void;
       clearCanvas(): void;
       isCanvasEmpty(): boolean;
+      exportCanvasBlob(
+        overlayImage?: HTMLImageElement | null,
+        options?: { includePaperTexture?: boolean }
+      ): Promise<Blob | null>;
+      blobRedPixelCount(blob: Blob | null): Promise<number>;
       nonTransparentCount(): number;
       pixelAt(x: number, y: number): number[];
       resizeTo(w: number, h: number): void;

@@ -7,7 +7,8 @@
     setEraserMode,
     undo,
     clearCanvas,
-    isCanvasEmpty
+    isCanvasEmpty,
+    exportCanvasBlob
   } from '$lib/drawing/engine';
 
   let canvasEl: HTMLCanvasElement;
@@ -50,6 +51,26 @@
       undo,
       clearCanvas,
       isCanvasEmpty,
+      exportCanvasBlob,
+
+      // Decode an exported blob and count its stroke pixels. The harness draws
+      // in pure red; the paper background never is, so a red count > 0 means
+      // the drawing made it into the export.
+      async blobRedPixelCount(blob: Blob | null) {
+        if (!blob) return -1;
+        const bitmap = await createImageBitmap(blob);
+        const decodeCanvas = document.createElement('canvas');
+        decodeCanvas.width = bitmap.width;
+        decodeCanvas.height = bitmap.height;
+        const decodeCtx = decodeCanvas.getContext('2d')!;
+        decodeCtx.drawImage(bitmap, 0, 0);
+        const { data } = decodeCtx.getImageData(0, 0, bitmap.width, bitmap.height);
+        let n = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i] > 200 && data[i + 1] < 100 && data[i + 2] < 100) n++;
+        }
+        return n;
+      },
 
       // Count of non-transparent pixels on the visible canvas.
       nonTransparentCount() {
