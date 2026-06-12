@@ -40,7 +40,7 @@
 | `drawing/engine.ts` | Imperative canvas engine. Owns the `<canvas>`, virtual canvas (composite buffer), undo stack, and all pointer tracking. Components connect via callbacks (`onDrawSound`, `onUndoStateChange`, etc.) and direct calls (`setColor`, `setStrokeWidth`, `clearCanvas`). |
 | `drawing/overlay.ts` | Manages the coloring-book overlay image rendered behind the drawing layer. |
 | `drawing/saveOnDelete.ts` | Saves the current drawing to the gallery before clearing, when the setting is enabled. |
-| `drawing/screenshot.ts` | Exports the canvas as a PNG blob. On native, saves to the photo library; on web, triggers a download. |
+| `drawing/screenshot.ts` | Persists canvas PNGs (exported via `engine.exportCanvasBlob`): on native, saves to the photo library; on web, triggers a download. `saveScreenshot` also plays the polaroid animation. |
 | `state/canvas.svelte.ts` | Thin `$state` object bridging the imperative engine's callbacks (`canUndo`, `canvasEmpty`) into Svelte reactivity. |
 | `state/colors.svelte.ts` | Active color selection and the full palette. |
 | `state/strokeWidth.svelte.ts` | Stroke width levels and eraser size multiplier. |
@@ -56,7 +56,7 @@
 | `ai/styles.ts` | AI style presets (names, prompts, icons) for the image-generation picker. |
 | `api.ts` | Single helper (`apiUrl`) that prefixes paths with `__NATIVE_API_BASE__` on native, or leaves them relative on web. |
 | `audio/drawingSound.ts` | Plays pencil-scratch audio while drawing via Web Audio: MP3s are decoded once into `AudioBuffer`s, each stroke plays a looping `AudioBufferSourceNode` through a `GainNode`, and pointer speed modulates the gain (ramped to avoid clicks). |
-| `colorRing.ts` | Honeycomb color-ring layout math for the custom color picker. |
+| `colorRing.ts` | Computes the selection-ring color for palette swatches (slightly darker than the swatch, or lighter for very dark colors). The honeycomb layout itself is pure CSS in `ColorPicker.svelte`. |
 | `platform.ts` | `isNative()` and `getPlatform()` — reads the Capacitor global without importing `@capacitor/core`, so the module is safe to evaluate during SSR. |
 | `storage.ts` | Dual-layer storage: synchronous reads from `localStorage` (fast, no async flash); on native, every write is also mirrored to Capacitor Preferences for durability. `hydrateDurableStorage()` restores settings on app launch. |
 | `secureStorage.ts` | Named client-held secrets (BYO Gemini key, admin session token): Keychain/Keystore via `@aparajita/capacitor-secure-storage` on native, AES-GCM-encrypted IndexedDB on web. |
