@@ -27,6 +27,8 @@
     "cap:ios": "npm run cap:sync && cap open ios",
     "android:apk": "npm run cap:sync && cd android && .\\gradlew :app:assembleDebug",
     "android:run": "npm run cap:sync && cd android && .\\gradlew :app:installDebug",
+    "android:setup": "node scripts/android-setup.mjs",
+    "android:boot": "emulator -avd Pixel_7_Pro_API_33",
     "android:emulator": "npm run cap:sync && cap run android --target Pixel_7_Pro_API_33",
     "android:live": "cap run android --target Pixel_7_Pro_API_33 --live-reload --port 5173",
     "android:bundle": "npm run cap:sync && cd android && .\\gradlew :app:bundleRelease",

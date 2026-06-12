@@ -1,4 +1,4 @@
-<!-- cspell:ignore prerendered keytool IARC -->
+<!-- cspell:ignore prerendered keytool IARC temurin libexec gradlew andro -->
 
 # Splotch — Native App (Capacitor) Guide & Release Checklist
 
@@ -60,9 +60,69 @@ device is offline the AI button is **hidden** automatically
 
 ## 2. Developer workflow
 
-### Prerequisites (one-time)
+### Prerequisites (macOS)
 
-This dev machine is now set up (2026-06):
+
+1. **Install Android Studio** (brings the SDK, `adb`, and the emulator):
+
+   <https://developer.android.com/studio>
+
+   Launch it once and complete the setup wizard — it installs the SDK to
+   `~/Library/Android/sdk`, including `platform-tools` (`adb`).
+
+2. **Install a full JDK 21** — Capacitor 8 plugins need a Java 21 toolchain
+   (Android Studio's bundled JBR is too old and isn't a full JDK):
+
+   ```bash
+   brew install --cask temurin@21
+   ```
+
+3. **Wire up the shell environment** — add to `~/.zshrc`, then open a new
+   terminal:
+
+   ```bash
+   export ANDROID_HOME="$HOME/Library/Android/sdk"
+   export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+   export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
+   ```
+
+   In Android Studio, also set Settings → Build, Execution, Deployment → Build
+   Tools → Gradle → **Gradle JDK** to JDK 21 (or "JAVA_HOME"), or in-IDE builds
+   will fail.
+
+4. **Connect a device**: on the phone enable **Developer options** (tap *Build
+   number* 7× in *About phone*) → **USB debugging → ON**, plug in via USB,
+   accept the "Allow USB debugging?" prompt, then verify:
+
+   ```bash
+   npm run adb:devices   # should list the phone as "device", not "unauthorized"
+   ```
+
+   For an emulator instead: run `npm run android:setup` after installing
+   Command-line Tools (see below) — it installs the API 33 system image and
+   creates the `Pixel_7_Pro_API_33` AVD automatically.
+
+5. **Run the app** — two flows:
+   * **Web dev server over USB** (fastest iteration): `npm run dev`, then
+     `npm run adb:reverse`, then open `http://localhost:5173` in Chrome on the
+     phone. See "Running the web app on a real Android device" below.
+   * **Native debug build**: the `android:apk`/`android:run`/`android:bundle`
+     scripts invoke `.\gradlew` and are **Windows-only**. On macOS run Gradle
+     directly:
+
+     ```bash
+     npm run cap:sync
+     cd android && ./gradlew :app:installDebug
+     ```
+
+     or use Capacitor's cross-platform runner: `npx cap run android`.
+
+6. **Debug with Chrome DevTools**: on desktop Chrome open
+   `chrome://inspect/#devices` and click **Inspect** on the phone's tab — see
+   "Performance profiling with Chrome DevTools" below for the full flow.
+
+### Prerequisites (Windows OS)
+
 
 * [x] **Android Studio** + Android SDK installed (SDK at
   `%LOCALAPPDATA%\Android\Sdk`; platforms 34 & 36, build-tools 34/35, `adb`,
