@@ -223,7 +223,7 @@
     <button class="parent-help-close modal-close-btn" aria-label="Close" onclick={closeParentCenter}>×</button>
     <h2>Parent Center</h2>
 
-    <div class="tab-buttons">
+    <div class="tab-buttons" style:--active-tab-index={activeTabIndex}>
       <button class="tab-button" class:active={activeTab === 'settings'} onclick={() => setActiveTab('settings')}>
         <Icon name="settings" class="tab-icon" />
         <span>Settings</span>
@@ -240,6 +240,7 @@
         <Icon name="splotchy" class="tab-icon" />
         <span>About</span>
       </button>
+      <span class="tab-active-indicator" aria-hidden="true"></span>
     </div>
 
     <div
@@ -358,10 +359,12 @@
 
   /* Tab Buttons */
   .tab-buttons {
+    --tab-gap: 8px;
     display: flex;
-    gap: 8px;
+    gap: var(--tab-gap);
     margin-bottom: 24px;
     border-bottom: 2px solid #e0e0e0;
+    position: relative;
   }
 
   .tab-button {
@@ -401,7 +404,19 @@
 
   .tab-button.active {
     color: var(--brand);
-    border-bottom-color: var(--brand);
+  }
+
+  .tab-active-indicator {
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: calc((100% - (var(--tab-gap) * 3)) / 4);
+    height: 3px;
+    border-radius: 999px 999px 0 0;
+    background: var(--brand);
+    pointer-events: none;
+    transform: translateX(calc(var(--active-tab-index) * (100% + var(--tab-gap))));
+    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   /* Tab Content */
@@ -431,6 +446,10 @@
     .tab-track {
       transition: none;
     }
+
+    .tab-active-indicator {
+      transition: none;
+    }
   }
 
   /* Four tabs get cramped on narrow portrait screens. First tighten the
@@ -442,7 +461,7 @@
     }
 
     .tab-buttons {
-      gap: 4px;
+      --tab-gap: 4px;
     }
 
     .tab-button {
