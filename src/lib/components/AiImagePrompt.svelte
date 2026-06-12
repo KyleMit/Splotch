@@ -24,9 +24,9 @@
     drawingBlob = null;
   }
 
-  // The open/close $effect above only revokes on an explicit close. If the
-  // component is torn down while the picker is still open, revoke here so the
-  // preview's object URL doesn't outlive the component.
+  // The modalDialog action's onClose only revokes on an explicit close. This
+  // teardown effect covers the component being unmounted while the picker is
+  // still open, so the preview's object URL doesn't outlive the component.
   $effect(() => () => cleanupPreview());
 
   function handleSelectStyle(style: string) {
