@@ -31,7 +31,6 @@
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * Prettier Assets
 * Coloring Book
-  * [ ] Make sure background works horizontally and vertically
   * [ ] Make sure book selection screen is scrollable.
   * [ ] Come up with other book selections
   * [ ] Pages should be able to be favorited. First book should be favorites
@@ -130,4 +129,5 @@
 * [x] Be able to regenerate metadata screenshot
 * [x] Investigate line smoothing while drawing — `draw()` now replays coalesced pointer events and renders midpoint-smoothed quadratic segments
 * [x] Replace server routes with API so I can have admin page on native
+* [x] Make sure background works horizontally and vertically
 

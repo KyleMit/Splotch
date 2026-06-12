@@ -15,11 +15,6 @@ export const coloringBookState: ColoringBookState = $state({
   overlayPage: null
 });
 
-export function setOverlay(url: string) {
-  coloringBookState.overlayUrl = url;
-  coloringBookState.overlayPage = null;
-}
-
 export function setOverlayPage(page: ColoringPage, orientation: BookOrientation) {
   coloringBookState.overlayPage = page;
   coloringBookState.overlayUrl = pageImage(page, orientation);

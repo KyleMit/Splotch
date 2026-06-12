@@ -5,9 +5,6 @@
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 
 
-- [ ] **[Readability] Remove dead coloring-book overlay state** — File(s): `src/lib/state/coloringBook.svelte.ts`
-  `setOverlay()` is exported but never called, and `coloringBookState.overlayPage` is written by `setOverlayPage`/`clearOverlay` but never read anywhere. Delete `setOverlay`. For `overlayPage`: either delete it too, or (better, one small step) use it to re-derive `overlayUrl` when orientation changes so the overlay swaps to the matching tall/wide art on rotation — BACKLOG already tracks "make sure background works horizontally and vertically", and the data to fix it is being stored and thrown away. If taking the rotation fix, the existing orientation listener in `ColoringBook.svelte` can call `setOverlayPage(coloringBookState.overlayPage, newOrientation)` when an overlay page is set.
-
 - [ ] **[Maintainability] `saveScreenshot` reimplements `saveImageBlob`** — File(s): `src/lib/drawing/screenshot.ts`
   `saveScreenshot()` (lines 74–91) duplicates the native-gallery-vs-web-download branch that `saveImageBlob()` already owns, including the same try/catch and error log. Refactor so `saveScreenshot` exports the blob, delegates persistence to `saveImageBlob`, then plays the polaroid. Watch the object-URL lifetime: the polaroid animation needs its own `URL.createObjectURL(blob)` revoked after `POLAROID_DURATION_MS` (the web path of `saveImageBlob` revokes its internal URL immediately, which is fine — just don't share one URL for both).
 

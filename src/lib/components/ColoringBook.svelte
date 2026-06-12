@@ -27,6 +27,9 @@
 
   function syncOrientation() {
     orientation = readOrientation();
+    if (coloringBookState.overlayPage) {
+      setOverlayPage(coloringBookState.overlayPage, orientation);
+    }
   }
 
   onMount(() => {
