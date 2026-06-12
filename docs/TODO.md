@@ -5,9 +5,6 @@
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 
 
-- [ ] **[Maintainability] Extract the duplicated verify-credential flow in `submitKey`** — File(s): `src/lib/components/parent/AiKeyManager.svelte`
-  The BYOK and access-code branches of `submitKey()` are near-identical: POST JSON to a verify endpoint, parse `{ ok }`, persist the credential, `setAiImage(true)`, clear the input, set success/error feedback. Extract a small helper so the two branches each become a few lines and a future third credential type doesn't copy the block a third time. Behavior must stay identical, including the `data.error` passthrough existing only on the API-key path.
-
 - [ ] **[Readability] Fix stale module descriptions in ARCHITECTURE.md** — File(s): `docs/ARCHITECTURE.md`
   Three Source Map rows no longer match the code: `colorRing.ts` is described as "Honeycomb color-ring layout math for the custom color picker" but it computes the selection-ring color for palette swatches (the honeycomb layout is pure CSS in `ColorPicker.svelte`); `drawing/screenshot.ts` is described as "Exports the canvas as a PNG blob" but the export lives in `engine.exportCanvasBlob` — screenshot.ts saves/downloads and plays the polaroid; `pwa/updates.ts` "Detects and prompts for PWA service worker updates" — it applies updates automatically (no prompt). Reword each row to match reality (and re-check after the PWA item above lands).
 

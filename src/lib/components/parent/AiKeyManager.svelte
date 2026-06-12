@@ -61,6 +61,33 @@
     }
   });
 
+  type VerifyResponse = { ok?: boolean; error?: string; accessCode?: string };
+
+  async function verifyAndSave(opts: {
+    endpoint: string;
+    body: Record<string, string>;
+    persist: (data: VerifyResponse) => void | Promise<void>;
+    successMessage: string;
+    failureMessage: (data: VerifyResponse) => string;
+  }) {
+    const res = await fetch(apiUrl(opts.endpoint), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(opts.body)
+    });
+    const data: VerifyResponse = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) {
+      await opts.persist(data);
+      setAiImage(true); // turn the feature on the moment a valid credential lands
+      keyInput = '';
+      keyStatus = 'success';
+      keyMessage = opts.successMessage;
+    } else {
+      keyStatus = 'error';
+      keyMessage = opts.failureMessage(data);
+    }
+  }
+
   async function submitKey() {
     const value = keyInput.trim();
     if (!value || keyStatus === 'checking') return;
@@ -73,39 +100,24 @@
 
     try {
       if (looksLikeApiKey) {
-        const res = await fetch(apiUrl('/api/verify-key'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey: value })
+        await verifyAndSave({
+          endpoint: '/api/verify-key',
+          body: { apiKey: value },
+          // persist to secure storage (Keychain/Keystore or encrypted IndexedDB)
+          persist: () => setAiUserApiKey(value),
+          successMessage: 'Your key works and has been accepted!',
+          failureMessage: (data) =>
+            data.error || "That key didn't work. Double-check it and try again."
         });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.ok) {
-          await setAiUserApiKey(value); // persist to secure storage (Keychain/Keystore or encrypted IndexedDB)
-          setAiImage(true); // turn the feature on the moment a valid key lands
-          keyInput = '';
-          keyStatus = 'success';
-          keyMessage = 'Your key works and has been accepted!';
-        } else {
-          keyStatus = 'error';
-          keyMessage = data.error || "That key didn't work. Double-check it and try again.";
-        }
       } else {
-        const res = await fetch(apiUrl('/api/verify-access-code'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: value })
+        await verifyAndSave({
+          endpoint: '/api/verify-access-code',
+          body: { code: value },
+          persist: (data) => setAiAccessToken(data.accessCode || value),
+          successMessage: 'Access granted! You have special access — no API key needed.',
+          failureMessage: () =>
+            "That doesn't look like a valid key or access code. Please try again."
         });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.ok) {
-          setAiAccessToken(data.accessCode || value);
-          setAiImage(true); // turn the feature on the moment a valid code lands
-          keyInput = '';
-          keyStatus = 'success';
-          keyMessage = 'Access granted! You have special access — no API key needed.';
-        } else {
-          keyStatus = 'error';
-          keyMessage = "That doesn't look like a valid key or access code. Please try again.";
-        }
       }
     } catch {
       keyStatus = 'error';
