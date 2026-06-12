@@ -4,9 +4,6 @@
 > After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 
-- [ ] **[Correctness] PWA auto-update can reload the page mid-drawing** — File(s): `src/lib/pwa/updates.ts`
-  `checkForUpdates()` runs on every window focus/visibilitychange and, when a waiting service worker exists, posts `SKIP_WAITING` and calls `window.location.reload()` on controllerchange. A child who tabs away and back while a deploy is pending loses their drawing instantly. Gate `activateWaitingSW` on `canvasState.canvasEmpty` (import from `$lib/state/canvas.svelte`) — apply immediately only when the canvas is blank, otherwise let the waiting worker activate on the next launch. While there, note `ARCHITECTURE.md` says this module "prompts" for updates — it force-applies; fix the description as part of the doc item below if not already done.
-
 - [ ] **[Performance] Investigate forced layout from a bundled dependency** — File(s): TBD (Vite dep `chunk-AYX5C5U2.js:737`)
   From the 2026-06-09 trace: a function in a Vite-bundled dep reads a layout-sensitive property synchronously, forcing an 8.1ms layout during toolbar/panel interactions (not while drawing). Note: package.json has no melt-ui/floating-ui, so the chunk is likely Svelte/SvelteKit internals or a Capacitor plugin. Identify it by checking `node_modules/.vite/deps/_metadata.json` for the chunk hash (or re-trace with `build.sourcemap: true`); then move the offending read outside the preceding DOM write, or batch it in a rAF. If the trace is stale and the chunk no longer exists, re-profile first and drop this item if it doesn't reproduce.
 

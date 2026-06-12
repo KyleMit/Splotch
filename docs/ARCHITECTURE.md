@@ -61,7 +61,7 @@
 | `storage.ts` | Dual-layer storage: synchronous reads from `localStorage` (fast, no async flash); on native, every write is also mirrored to Capacitor Preferences for durability. `hydrateDurableStorage()` restores settings on app launch. |
 | `secureStorage.ts` | Named client-held secrets (BYO Gemini key, admin session token): Keychain/Keystore via `@aparajita/capacitor-secure-storage` on native, AES-GCM-encrypted IndexedDB on web. |
 | `orientation.ts` | Device orientation detection utilities. |
-| `pwa/updates.ts` | Detects and prompts for PWA service worker updates. |
+| `pwa/updates.ts` | Checks for PWA service worker updates and auto-applies them (with a reload) only while the canvas is blank; otherwise the update activates on next launch. |
 | `server/tokens.ts` | Server-only: validates and manages AI access tokens (stored in Netlify Blobs). |
 | `server/admin.ts` | Server-only: admin auth core (secret check, derived session token, invite building) shared by the `/admin` page actions and the `/api/admin/*` endpoints. |
 | `server/rateLimit.ts` | Server-only: per-token rate limiting for the image generation endpoint. |

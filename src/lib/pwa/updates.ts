@@ -1,5 +1,9 @@
 // PWA auto-update lifecycle: checks for an updated service worker on load,
-// hourly, on visibility change, and on focus.
+// hourly, on visibility change, and on focus. A waiting worker is applied
+// (with a reload) only while the canvas is blank — never mid-drawing;
+// otherwise it activates on the next launch.
+
+import { canvasState } from '$lib/state/canvas.svelte';
 
 let updateCheckInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -40,6 +44,7 @@ async function checkForUpdates() {
     await registration.update();
 
     const activateWaitingSW = (sw: ServiceWorker) => {
+      if (!canvasState.canvasEmpty) return;
       sw.postMessage({ type: 'SKIP_WAITING' });
       navigator.serviceWorker.addEventListener(
         'controllerchange',
