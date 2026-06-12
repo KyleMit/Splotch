@@ -74,20 +74,8 @@ export async function saveImageBlob(blob: Blob | null, baseName = 'splotch') {
 export async function saveScreenshot() {
   const blob = await exportCanvasBlob(getActiveOverlayImage());
   if (!blob) return;
-
-  const url = URL.createObjectURL(blob);
-
-  if (isNative()) {
-    try {
-      await saveToGallery(blob);
-    } catch (err) {
-      console.error('Save to gallery failed:', err);
-    }
-  } else {
-    triggerDownload(url, `splotch-${timestamp()}.png`);
-  }
-
-  playPolaroidAnimation(url);
+  await saveImageBlob(blob);
+  playPolaroidAnimation(URL.createObjectURL(blob));
 }
 
 const POLAROID_DURATION_MS = 1900;

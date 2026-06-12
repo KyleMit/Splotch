@@ -5,9 +5,6 @@
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 
 
-- [ ] **[Maintainability] `saveScreenshot` reimplements `saveImageBlob`** — File(s): `src/lib/drawing/screenshot.ts`
-  `saveScreenshot()` (lines 74–91) duplicates the native-gallery-vs-web-download branch that `saveImageBlob()` already owns, including the same try/catch and error log. Refactor so `saveScreenshot` exports the blob, delegates persistence to `saveImageBlob`, then plays the polaroid. Watch the object-URL lifetime: the polaroid animation needs its own `URL.createObjectURL(blob)` revoked after `POLAROID_DURATION_MS` (the web path of `saveImageBlob` revokes its internal URL immediately, which is fine — just don't share one URL for both).
-
 - [ ] **[Maintainability] Extract the duplicated verify-credential flow in `submitKey`** — File(s): `src/lib/components/parent/AiKeyManager.svelte`
   The BYOK and access-code branches of `submitKey()` are near-identical: POST JSON to a verify endpoint, parse `{ ok }`, persist the credential, `setAiImage(true)`, clear the input, set success/error feedback. Extract a small helper so the two branches each become a few lines and a future third credential type doesn't copy the block a third time. Behavior must stay identical, including the `data.error` passthrough existing only on the API-key path.
 
