@@ -14,7 +14,7 @@ export default defineConfig({
   use: {
     baseURL,
     trace: 'on-first-retry',
-    // Slow each action down when SLOWMO is set (ms), e.g. `SLOWMO=500 npm run test:headed`
+    // Slow each action down when SLOWMO is set (ms), e.g. `SLOWMO=500 npm run test:e2e:headed`
     launchOptions: {
       slowMo: Number(process.env.SLOWMO) || 0
     }

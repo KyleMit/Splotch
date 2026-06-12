@@ -18,7 +18,7 @@ Migrate the entire codebase to TypeScript with strict mode enabled. The migratio
 5. Routes and hooks
 6. Config files (Vite, Playwright, Vitest)
 
-All new code must be TypeScript. `svelte-check` runs as part of `predev` and `prebuild` to surface type errors before build or test.
+All new code must be TypeScript. `svelte-check` runs via `npm run check` (and in CI) to surface type errors before build or test.
 
 ## Consequences
 

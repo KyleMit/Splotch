@@ -16,9 +16,18 @@ npm install
 npm run dev       # http://localhost:5173
 ```
 
-Two pre-hooks run automatically before `dev` and `build`:
-- `icons:types` — generates `src/lib/icons/icon-names.d.ts` from the SVG files in `src/lib/icons/`
-- `releases:gen` — generates `src/lib/releases.json` from git tags (used by the About tab)
+Two generators run automatically before every build (the `prebuild`/`prebuild:cap` hooks):
+
+- `gen:icons` — generates `src/lib/components/icon-names.d.ts` from the SVG files in `src/lib/icons/`
+- `gen:releases` — generates `src/lib/releases.json` and the fastlane store changelogs from `releases/*.md`
+
+To see every npm script with a one-line description, run:
+
+```bash
+npm run info
+```
+
+The descriptions live in the `scripts-info` section of `package.json`; script naming follows ADR-0019.
 
 ## Environment variables
 
@@ -60,8 +69,8 @@ npx tsc --noEmit       # TypeScript only
 ```bash
 npm test                   # unit + E2E (what CI runs on every push)
 npm run test:unit:watch    # Vitest watch mode
-npm run test:headed        # Playwright with browser visible (SLOWMO=500)
-npm run test:ui            # Playwright UI mode
+npm run test:e2e:headed    # Playwright with browser visible (SLOWMO=500)
+npm run test:e2e:ui        # Playwright UI mode
 ```
 
 See the [testing guide](../.claude/skills/testing/SKILL.md) for the full test strategy, including the Android smoke test.
@@ -94,7 +103,7 @@ Set `PUBLIC_ENABLE_DEV_HARNESS=true` in `.env.local` to unlock:
 ## Adding a new icon
 
 1. Drop an SVG into `src/lib/icons/`.
-2. Run `npm run icons:types` (or just `npm run dev` — it runs automatically).
+2. Run `npm run gen:icons` (it also runs automatically before every build).
 3. Use `<Icon name="your-icon-name" />` — the `name` prop is type-checked against the generated union.
 
 ## Release process

@@ -22,3 +22,4 @@ This directory records significant architectural decisions made in the Splotch p
 | [0016](0016-admin-console-bearer-api-for-native.md) | Admin Console via Shared Server Core + Bearer-Session API for Native | Active |
 | [0017](0017-cross-platform-node-scripts.md) | Cross-Platform Node Scripts with Shared Helpers in scripts/lib/ | Active |
 | [0018](0018-claude-native-knowledge-tiers.md) | Project Knowledge in Claude Code-Native Tiers (Skills, Rules, Nested CLAUDE.md) | Active |
+| [0019](0019-npm-script-naming-and-scripts-info.md) | npm Script Naming Conventions + scripts-info Self-Documentation | Active |

@@ -1,6 +1,6 @@
 // Generate a TypeScript union of icon names from the SVGs in src/lib/icons/,
 // so <Icon name="…"> gets editor autocomplete + typo checking (see Icon.svelte).
-// Runs automatically via the predev/prebuild npm hooks; run manually with:
+// Runs automatically via the prebuild npm hooks; run manually with:
 //   node scripts/generate-icon-names.mjs
 
 import { globSync, writeFileSync } from 'node:fs';

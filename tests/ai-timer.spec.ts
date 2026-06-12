@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 // Exercises the AI render timer animation via the dev-only debug harness at
 // /dev/ai-timer, which feeds AiImageResult.svelte the sample artifacts through
 // the real generation state seam — no Gemini call. Watch it run with:
-//   npm run test:headed -- ai-timer
+//   npm run test:e2e:headed -- ai-timer
 
 // Playwright waits for elements but not for Svelte to hydrate, so a click fired
 // right after navigation can hit the SSR'd button before its handler is wired.

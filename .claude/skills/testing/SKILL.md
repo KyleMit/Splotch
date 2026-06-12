@@ -38,9 +38,9 @@ including the native dual-layer hydrate via a mocked `@capacitor/preferences`).
 
 ```bash
 npm run test:e2e           # headless
-npm run test:ui            # Playwright UI mode
-npm run test:headed        # headed, slowed down (SLOWMO=500)
-npm run test:debug         # inspector
+npm run test:e2e:ui        # Playwright UI mode
+npm run test:e2e:headed    # headed, slowed down (SLOWMO=500)
+npm run test:e2e:debug     # inspector
 ```
 
 Configured in `playwright.config.ts`. By default it builds the production
