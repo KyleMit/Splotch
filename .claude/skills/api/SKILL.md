@@ -1,3 +1,8 @@
+---
+name: api
+description: HTTP API reference for the /api/* endpoints — generate-image, verify-access-code, verify-key, and the admin bearer-session endpoints, plus the CORS, rate-limiting, and auth model. Use before adding, changing, or calling any /api endpoint.
+---
+
 # Splotch HTTP API
 
 The hosted SvelteKit app (Netlify, `https://splotch.art`) serves a small JSON

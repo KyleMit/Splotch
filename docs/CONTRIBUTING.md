@@ -7,7 +7,7 @@
   nvm use 22
   ```
 - **npm** (bundled with Node)
-- For native Android work, see the full toolchain setup in [MOBILE.md](MOBILE.md).
+- For native Android work, see the full toolchain setup in the [mobile guide](../.claude/skills/mobile/SKILL.md).
 
 ## Local setup
 
@@ -64,7 +64,7 @@ npm run test:headed        # Playwright with browser visible (SLOWMO=500)
 npm run test:ui            # Playwright UI mode
 ```
 
-See [TESTING.md](TESTING.md) for the full test strategy, including the Android smoke test.
+See the [testing guide](../.claude/skills/testing/SKILL.md) for the full test strategy, including the Android smoke test.
 
 ## Dev routes
 

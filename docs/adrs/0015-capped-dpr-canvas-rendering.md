@@ -39,5 +39,5 @@ Non-obvious invariants:
 - **+** Exports contain real stroke detail instead of interpolated blur; the AI image upload also sends a sharper source.
 - **+** Rollback is trivial if on-device profiling shows regressions: `MAX_RENDER_SCALE` is a single constant (set it to 1).
 - **-** 4× the pixels on every surface. The dominant cost is the undo stack (10 full-canvas snapshots, ADR-0004): roughly ~44 MB on a typical phone and up to ~160 MB on a 10″ tablet, versus a quarter of that at 1×. If this bites on low-RAM devices, the mitigations (1× snapshots, smaller stack) trade undo fidelity or depth.
-- **-** 4× fill rate per stroke segment and 4× per-stroke copies (snapshot, virtual-canvas sync). Expected to be absorbed by the GPU post-perf-work, but **not yet verified on a real device** — the `chrome://inspect` profiling workflow in MOBILE.md §2 is the follow-up.
+- **-** 4× fill rate per stroke segment and 4× per-stroke copies (snapshot, virtual-canvas sync). Expected to be absorbed by the GPU post-perf-work, but **not yet verified on a real device** — the `chrome://inspect` profiling workflow in the mobile guide (`.claude/skills/mobile/SKILL.md` §2) is the follow-up.
 - **-** Mid-session DPR changes render at the stale scale until reload.

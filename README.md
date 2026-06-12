@@ -19,7 +19,7 @@ A simple, delightful drawing app designed for toddlers (2+ years old). Features 
 
 ## Tech Stack
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full tech stack, source map, and UI component glossary. See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for dev setup, conventions, and the dual-build explained.
+See the [architecture guide](.claude/skills/architecture/SKILL.md) for the full tech stack, source map, and UI component glossary. See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for dev setup, conventions, and the dual-build explained.
 
 ## Getting Started
 
@@ -74,7 +74,7 @@ netlify deploy --prod
 
 ### Native Apps (Android & iOS)
 
-The same codebase ships as native apps via [Capacitor](https://capacitorjs.com/). The native build is a fully static, offline-first export; only the AI button reaches the network (it calls the hosted endpoint). See [`docs/MOBILE.md`](docs/MOBILE.md) for the full build/workflow guide and the store release checklist.
+The same codebase ships as native apps via [Capacitor](https://capacitorjs.com/). The native build is a fully static, offline-first export; only the AI button reaches the network (it calls the hosted endpoint). See the [mobile guide](.claude/skills/mobile/SKILL.md) for the full build/workflow guide and the store release checklist.
 
 ```bash
 npm run cap:sync       # static build + copy into the native projects

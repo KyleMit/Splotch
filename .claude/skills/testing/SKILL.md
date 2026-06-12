@@ -1,3 +1,8 @@
+---
+name: testing
+description: Full testing guide — the three-tier strategy (Vitest unit, Playwright E2E, Maestro Android smoke), every test command, CI workflow triggers, and Maestro installation. Use before writing, running, or modifying tests, or when debugging CI test failures.
+---
+
 <!-- cspell:ignore Maestro maestro Vitest happydom apksigner swiftshader reactivecircus avds -->
 
 # Splotch — Testing Guide
@@ -103,7 +108,7 @@ npm run test:android:device   # run against an emulator you already have running
 ### Prerequisites
 
 1. **Android toolchain** — the same one used to build the app: Node ≥ 22, full
-   JDK 21, and the Android SDK. See [MOBILE.md](MOBILE.md) and the
+   JDK 21, and the Android SDK. See the `mobile` skill and the
    `android:*` scripts.
 2. **An AVD** — the scripts default to `Pixel_7_Pro_API_33`. List yours with
    `emulator -list-avds`.

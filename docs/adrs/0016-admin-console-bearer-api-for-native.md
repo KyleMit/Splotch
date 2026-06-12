@@ -31,7 +31,7 @@ Alternatives considered for making admin work on device:
 - The About-tab link is `isNative() ? '/admin/native' : '/admin'`. `/admin/native` also works on the web (it talks to the same-origin API), but `/admin` remains the canonical web console because of its cookie session.
 - CORS/CSRF: covered by ADR-0007 — the admin API is JSON (outside SvelteKit's CSRF guard) and cookie-free, so the existing `/api/*` wildcard CORS is safe; the allowed methods/headers were extended to `GET, DELETE` and `Authorization`.
 
-The API surface is documented in `docs/API.md`; E2E coverage is `tests/admin.spec.ts`.
+The API surface is documented in `.claude/skills/api/SKILL.md`; E2E coverage is `tests/admin.spec.ts`.
 
 ## Consequences
 

@@ -19,7 +19,7 @@ Two alternatives were considered when simplifying:
 - **Rewrite the shell-heavy scripts in bash.** `android-setup.mjs` in
   particular is ~90% process orchestration, which bash expresses more tersely
   (`command -v`, `yes |`, `set -e`). Rejected: the project explicitly supports
-  Windows development (see MOBILE.md and ADR-0011/0012), bash would be a lone
+  Windows development (see the mobile guide in `.claude/skills/mobile/SKILL.md` and ADR-0011/0012), bash would be a lone
   outlier among eleven Node scripts, and the team standardizes on
   Node/TypeScript tooling everywhere else.
 - **Keep each script fully self-contained.** Zero-import scripts are easy to

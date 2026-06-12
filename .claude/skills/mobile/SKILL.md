@@ -1,3 +1,8 @@
+---
+name: mobile
+description: Capacitor native app guide — Android/iOS toolchain setup (macOS + Windows), build/sign/run commands, on-device testing, Chrome remote profiling, and the store release & kids-compliance checklists. Use before touching anything Android, iOS, or Capacitor related.
+---
+
 <!-- cspell:ignore prerendered keytool IARC temurin libexec gradlew andro -->
 
 # Splotch — Native App (Capacitor) Guide & Release Checklist
@@ -25,7 +30,7 @@ native apps can't run a server, so they build a **fully static** export instead:
 * The admin console is still reachable on device: the bundle includes a
   prerendered `/admin/native`, a static page that manages the same access tokens through
   the hosted `/api/admin/*` endpoints (bearer-session auth, stored in the
-  Keychain/Keystore — see `docs/API.md`). The About-tab admin link points
+  Keychain/Keystore — see the `api` skill). The About-tab admin link points
   there on native.
 
 ### Offline vs. online

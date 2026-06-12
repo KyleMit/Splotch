@@ -1,3 +1,8 @@
+---
+name: architecture
+description: Splotch tech stack, file-by-file source map of src/, route table, and the canonical UI element glossary. Use when navigating unfamiliar parts of the codebase, deciding where new code belongs, or needing the proper name of a UI element.
+---
+
 # Splotch – Architecture
 
 ## Tech Stack
@@ -27,7 +32,7 @@
 ### Testing
 - **[Vitest](https://vitest.dev/) + happy-dom** — unit tests for pure logic and state modules (`npm run test:unit`).
 - **[Playwright](https://playwright.dev/)** — E2E web tests against the production build (`npm run test:e2e`).
-- **[Maestro](https://maestro.mobile.dev/)** — Android smoke test that boots a real emulator and asserts the UI renders (`npm run test:android`). See [TESTING.md](TESTING.md).
+- **[Maestro](https://maestro.mobile.dev/)** — Android smoke test that boots a real emulator and asserts the UI renders (`npm run test:android`). See the `testing` skill.
 
 ---
 
@@ -76,7 +81,7 @@
 | `/api/generate-image` | Serverless function (Netlify). Accepts a base64 PNG + style prompt, calls Gemini, returns the generated image. Token-gated + rate-limited. Not bundled for native. |
 | `/api/verify-access-code` | Validates an invite token string. |
 | `/api/verify-key` | Validates a user-supplied Gemini API key (BYO Key flow). |
-| `/api/admin/*` | JSON twin of the `/admin` console for the native apps (bearer-session auth). See [`docs/API.md`](API.md). Not bundled for native — the apps call the hosted endpoints. |
+| `/api/admin/*` | JSON twin of the `/admin` console for the native apps (bearer-session auth). See the `api` skill. Not bundled for native — the apps call the hosted endpoints. |
 | `/admin` | Token management console (server-rendered, cookie-authenticated). Not bundled for native. |
 | `/admin/native` | Static, prerendered variant of the console for the native apps; manages the same tokens through `/api/admin/*`. |
 | `/privacy` | Static privacy policy page. |
