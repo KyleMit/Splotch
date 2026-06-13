@@ -94,6 +94,17 @@ const SPEED_WINDOW_MS = 100;
 // Pen input is precise enough to skip the debounce.
 const COLOR_CHANGE_DEBOUNCE_MS = 100;
 
+// iOS/WebKit can silently merge a fast tap-then-drag into one pointer stream: it
+// drops the intervening pointerup + pointerdown and resumes the SAME pointerId
+// at the new spot, with no coalesced samples bridging the gap. draw() then
+// curves from the old position to the resumed one — a stray straight line
+// joining what should be two separate strokes. A long idle gap AND a jump too
+// large for continuous contact together mean the finger really lifted, so the
+// stroke is restarted at the resumed point. The jump is a fraction of the
+// canvas's shorter side, so it scales with canvas size and render scale.
+const POINTER_RESUME_GAP_MS = 100;
+const POINTER_RESUME_JUMP_RATIO = 0.1;
+
 function setCanvasEmptyState(empty: boolean) {
   if (canvasEmpty === empty) return;
   canvasEmpty = empty;
@@ -346,22 +357,41 @@ function draw(e: PointerEvent) {
   // back to the event itself.
   const coalesced = e.getCoalescedEvents?.() ?? [];
   const events = coalesced.length > 0 ? coalesced : [e];
+  const points = events.map(pointerToCanvas);
+
+  const now = Date.now();
+
+  // A resumed pointer (see POINTER_RESUME_GAP_MS) reappears far from where it
+  // left off after an idle gap, with no coalesced samples bridging the two.
+  // Restart the path there so the next segment doesn't span the gap.
+  const resume = points[0];
+  const resumeDeltaX = resume.x - pointerState.x;
+  const resumeDeltaY = resume.y - pointerState.y;
+  const jump = Math.sqrt(resumeDeltaX * resumeDeltaX + resumeDeltaY * resumeDeltaY);
+  const jumpThreshold = POINTER_RESUME_JUMP_RATIO * Math.min(canvas.width, canvas.height);
+  if (now - pointerState.lastTime > POINTER_RESUME_GAP_MS && jump > jumpThreshold) {
+    pointerState.x = resume.x;
+    pointerState.y = resume.y;
+    pointerState.midX = resume.x;
+    pointerState.midY = resume.y;
+    pointerState.speedSamples = [{ t: now, distance: 0 }];
+    ctx.beginPath();
+  }
 
   // Speed is sampled from the final event only: one chord per pointermove,
   // matching the cadence the sliding window was tuned for.
-  const { x, y } = pointerToCanvas(e);
-  const deltaX = x - pointerState.x;
-  const deltaY = y - pointerState.y;
+  const last = points[points.length - 1];
+  const deltaX = last.x - pointerState.x;
+  const deltaY = last.y - pointerState.y;
   const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-  const now = Date.now();
   const speed = calculateStrokeSpeed(
     pointerState.speedSamples,
     { t: now, distance },
     SPEED_WINDOW_MS
   );
 
-  strokeSmoothSegments(pointerState, events.map(pointerToCanvas));
+  strokeSmoothSegments(pointerState, points);
 
   pointerState.lastTime = now;
 

@@ -145,6 +145,26 @@ test('erasing only part of the drawing leaves the canvas non-empty', async ({ pa
   expect((await state(page)).canvasEmpty).toBe(false);
 });
 
+test('a pointer resumed far away after an idle gap does not draw a connecting line', async ({ page }) => {
+  // iOS/WebKit can merge a fast tap-then-drag into one pointer stream, dropping
+  // the pointerup + pointerdown and resuming the SAME pointer at a new spot.
+  // Reproduce it directly: press, idle past the resume gap, then move far away
+  // WITHOUT lifting — the engine must restart the stroke instead of bridging
+  // the two spots with a stray line.
+  const box = await page.locator('#engineCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+
+  await page.mouse.move(box.x + 40, box.y + 40);
+  await page.mouse.down();
+  await page.waitForTimeout(200);
+  await page.mouse.move(box.x + 260, box.y + 260);
+  await page.mouse.up();
+
+  // The diagonal midpoint between the two spots stays blank — no connecting line.
+  const midAlpha = await page.evaluate(() => window.__engine.pixelAt(150, 150)[3]);
+  expect(midAlpha).toBe(0);
+});
+
 test('a color change debounces the immediately-following touch/mouse stroke', async ({ page }) => {
   // Same synchronous tick as the color change → < 100ms → the mouse stroke is
   // dropped (prevents color-bleed artifacts right after picking a color).
