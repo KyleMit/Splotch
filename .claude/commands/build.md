@@ -58,7 +58,7 @@ it doesn't).
    a Team configured on the App target — if the archive step fails with a
    signing/provisioning error, tell the user to open `npm run cap:ios` →
    Signing & Capabilities and select their team (Apple Developer Program
-   account required; see the `mobile` skill §6).
+   account required; see the `mobile` skill's `ios.md`).
 
 3. **Build the `.ipa`.** Run `npm run ios:ipa`. This syncs the web build,
    archives Release, and exports per `ios/App/ExportOptions.plist`. Slow
