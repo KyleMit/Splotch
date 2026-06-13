@@ -39,8 +39,8 @@ self-documented via a `scripts-info` block; `npm run info` prints the catalog.
 Naming rules:
 
 * **Namespace by domain, variant narrows it:** `dev:*`, `build:*`, `check:*`,
-  `test:*`, `gen:*`, `cap:*`, `android:*`, `adb:*`. The bare namespace name is
-  the most common action (`dev`, `build`, `test`, `check`).
+  `test:*`, `gen:*`, `cap:*`, `android:*`, `ios:*`, `adb:*`. The bare namespace
+  name is the most common action (`dev`, `build`, `test`, `check`).
 * **Generated artifacts live under `gen:*`** (`gen:icons`, `gen:releases`,
   `gen:large-image`) — the renames `icons:types` → `gen:icons` and
   `releases:gen` → `gen:releases` enforce this.
@@ -52,7 +52,7 @@ Naming rules:
 * **npm lifecycle hooks** (`pre*`/`post*`) keep npm's standard names and are
   grouped next to the script they wrap.
 * The `scripts` block is ordered by workflow: `info`, lifecycle/install, dev,
-  build, check, test, gen, cap, android, adb, maintenance, release.
+  build, check, test, gen, cap, android, ios, adb, maintenance, release.
 
 Documentation rules:
 

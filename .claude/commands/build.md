@@ -1,5 +1,5 @@
 ---
-description: Build the signed release artifacts for the current version (Android now; iOS later)
+description: Build the signed release artifacts for the current version (Android .aab, iOS .ipa)
 ---
 
 You are building the **release artifacts** for Splotch — the signed binaries you
@@ -8,12 +8,13 @@ the version and writes the changelog/notes; `/build` just compiles the artifacts
 for whatever version is currently committed. So `/build` is normally run *after*
 `/release` (or any time you want a fresh local build).
 
-Today this builds **Android** only (a signed `.aab`). iOS will be added here
-later — when it is, build whichever platforms the user asks for, defaulting to
-all available.
+This builds **Android** (a signed `.aab`) and **iOS** (an App Store `.ipa`;
+macOS + Xcode + a signing team only — see the `mobile` skill).
 
-Optional argument: a platform (`android`). If omitted, build every platform
-currently supported (just Android for now).
+Optional argument: a platform (`android` or `ios`). If omitted, build every
+platform this machine can (iOS requires macOS with full Xcode — check
+`xcodebuild -version` works before attempting it, and skip iOS with a note if
+it doesn't).
 
 ## Android
 
@@ -48,4 +49,24 @@ currently supported (just Android for now).
 
 ## iOS
 
-Not set up yet. If the user asks for iOS, tell them it isn't wired up and stop.
+1. **Show what will be built.** Same version check as Android — the iOS
+   `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` are bumped by `/release`
+   alongside Android, so report the same version + build number.
+
+2. **Check the toolchain + signing.** `xcodebuild -version` must work (full
+   Xcode, not Command Line Tools). Signing is automatic via Xcode, but it needs
+   a Team configured on the App target — if the archive step fails with a
+   signing/provisioning error, tell the user to open `npm run cap:ios` →
+   Signing & Capabilities and select their team (Apple Developer Program
+   account required; see the `mobile` skill §6).
+
+3. **Build the `.ipa`.** Run `npm run ios:ipa`. This syncs the web build,
+   archives Release, and exports per `ios/App/ExportOptions.plist`. Slow
+   (minutes) — let it finish. If xcodebuild fails, surface the error and stop.
+
+4. **Report.** Tell the user:
+   - the version + build number of the exported `.ipa` and its path
+     (`ios/App/build/ipa/App.ipa`),
+   - that uploading is **manual**: drag the `.ipa` into Apple's **Transporter**
+     app (or Xcode Organizer). The matching "What's New" text lives at
+     `fastlane/metadata/en-US/release_notes.txt`.

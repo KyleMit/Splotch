@@ -4,6 +4,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -46,6 +47,15 @@ export function capture(cmd, args = [], { cwd = ROOT } = {}) {
 
 export const hasCommand = (cmd) =>
   spawnSync(isWindows ? 'where' : 'which', [cmd], { stdio: 'ignore' }).status === 0;
+
+// Prefer Maestro from PATH; fall back to its default install location.
+// Shared by the Android and iOS smoke tests.
+export const maestroPath = () => {
+  if (hasCommand('maestro')) return 'maestro';
+  return isWindows
+    ? join(process.env.USERPROFILE ?? '', 'maestro', 'bin', 'maestro.bat')
+    : join(homedir(), '.maestro', 'bin', 'maestro');
+};
 
 // Split a "---\nkey: value\n---\nbody" document. Returns null if the document
 // has no frontmatter block. `frontmatter` is the raw text between the fences;

@@ -1,10 +1,13 @@
-// Generates Google Play store assets (phone + tablet screenshots and the
-// feature graphic) by driving the real Splotch app in a headless browser.
+// Generates the store assets for BOTH stores (Google Play + Apple App Store):
+// phone/tablet screenshots per store and the Play feature graphic, by driving
+// the real Splotch app in a headless browser.
 // A dev server is started automatically (or reused if one is already on 4173):
-//   node scripts/store-shots.mjs
+//   npm run gen:shots
 //
 // Output lands in store-assets/. Screenshots are captured at the exact pixel
-// sizes Google Play wants (phone 1080x1920 = 9:16, tablet 1920x1080 = 16:9).
+// sizes each store wants:
+//   Google Play  phone 1080x1920 (9:16)   tablet 1920x1080 (16:9)
+//   App Store    iPhone 6.9" 1290x2796    iPad 13" 2732x2048
 
 import { chromium } from '@playwright/test';
 import { readFileSync } from 'node:fs';
@@ -18,9 +21,12 @@ import {
 const OUT = join(ROOT, 'store-assets');
 const PORT = 4173;
 
-// 9:16 portrait phone -> 1080x1920; 16:9 landscape tablet -> 1920x1080.
+// Google Play: 9:16 portrait phone -> 1080x1920; 16:9 landscape tablet -> 1920x1080.
 const PHONE = { width: 432, height: 768, deviceScaleFactor: 2.5 };
 const TABLET = { width: 1280, height: 720, deviceScaleFactor: 1.5 };
+// App Store: iPhone 6.9" portrait -> 1290x2796; iPad 13" landscape -> 2732x2048.
+const IPHONE = { width: 430, height: 932, deviceScaleFactor: 3 };
+const IPAD = { width: 1366, height: 1024, deviceScaleFactor: 2 };
 
 // Brand palette (from src/lib/state/colors.svelte.js)
 const C = {
@@ -94,7 +100,9 @@ try {
   const browser = await chromium.launch();
   const targets = [
     { name: 'phone', device: PHONE, dir: 'screenshots/phone' },
-    { name: 'tablet', device: TABLET, dir: 'screenshots/tablet10' }
+    { name: 'tablet', device: TABLET, dir: 'screenshots/tablet10' },
+    { name: 'iphone', device: IPHONE, dir: 'screenshots/iphone69' },
+    { name: 'ipad', device: IPAD, dir: 'screenshots/ipad13' }
   ];
 
   for (const t of targets) {

@@ -12,8 +12,8 @@
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
-import { ROOT, isWindows, sleep } from './lib/utils.mjs';
-import { ADB, EMULATOR, AVD_NAME, maestroPath } from './lib/android.mjs';
+import { ROOT, isWindows, sleep, maestroPath } from './lib/utils.mjs';
+import { ADB, EMULATOR, AVD_NAME } from './lib/android.mjs';
 
 const execFileAsync = promisify(execFile);
 

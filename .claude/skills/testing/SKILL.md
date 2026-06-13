@@ -1,25 +1,26 @@
 ---
 name: testing
-description: Full testing guide — the three-tier strategy (Vitest unit, Playwright E2E, Maestro Android smoke), every test command, CI workflow triggers, and Maestro installation. Use before writing, running, or modifying tests, or when debugging CI test failures.
+description: Full testing guide — the three-tier strategy (Vitest unit, Playwright E2E, Maestro native smoke on Android + iOS), every test command, CI workflow triggers, and Maestro installation. Use before writing, running, or modifying tests, or when debugging CI test failures.
 ---
 
-<!-- cspell:ignore Maestro maestro Vitest happydom apksigner swiftshader reactivecircus avds -->
+<!-- cspell:ignore Maestro maestro Vitest happydom apksigner swiftshader reactivecircus avds xcodebuild simctl -->
 
 # Splotch — Testing Guide
 
 Splotch has three layers of automated tests. The first two run on every push/PR;
-the third (a real Android device launch) is heavy, so it runs only on tagged
-releases and on demand.
+the third (a real device launch) is heavy, so it runs only on tagged releases
+and on demand.
 
 | Layer | Tool | Command | Runs in CI |
 | --- | --- | --- | --- |
 | Unit | Vitest (happy-dom) | `npm run test:unit` | every push / PR |
 | E2E (web) | Playwright | `npm run test:e2e` | every push / PR |
 | Smoke (Android) | Maestro + emulator | `npm run test:android` | **tagged releases only** |
+| Smoke (iOS) | Maestro + simulator | `npm run test:ios` | local only (needs macOS + Xcode) |
 
-`npm test` runs the first two (`test:unit` + `test:e2e`). The Android smoke test
-is intentionally **not** part of `npm test` — it needs an emulator and the native
-toolchain.
+`npm test` runs the first two (`test:unit` + `test:e2e`). The native smoke tests
+are intentionally **not** part of `npm test` — they need an emulator/simulator
+and the native toolchains.
 
 ---
 
@@ -53,15 +54,15 @@ that's what the Android smoke test is for.
 
 ---
 
-## Android deployment smoke test — Maestro
+## Native deployment smoke test — Maestro (Android + iOS)
 
 ### What it does and why
 
 The web E2E suite runs in a browser, so it can't tell you whether the *shipped
-Android app* actually boots. The smoke test fills that gap: it installs the app
-on a real Android emulator, launches it, and asserts that the UI renders — proving
-the Capacitor WebView started **and** loaded the production web bundle (not a
-white screen or a crash).
+native app* actually boots. The smoke test fills that gap: it installs the app
+on a real Android emulator or iOS simulator, launches it, and asserts that the
+UI renders — proving the Capacitor WebView started **and** loaded the production
+web bundle (not a white screen or a crash).
 
 The assertion is a single, meaningful signal: the **"Parent Center"** button
 (the always-present help button, `src/lib/components/ParentCenter.svelte`) must
@@ -92,18 +93,21 @@ it's git-ignored.
 ```bash
 npm run test:android          # headless one-shot: boot → build+install → test → tear down
 npm run test:android:device   # run against an emulator you already have running
+npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcode)
 ```
 
 | Script | What happens |
 | --- | --- |
 | `test:android` | Runs `scripts/android-emulator-smoke.mjs`: boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`), builds + installs (`cap:sync` then the platform's `gradlew :app:installDebug`), runs Maestro, and **always** kills the emulator afterward — even on failure. Self-contained and self-cleaning. |
 | `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected. Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses. |
+| `test:ios` | Runs `scripts/ios-simulator-smoke.mjs`: reuses a booted iPhone simulator (or boots the newest available one), builds the debug app with `xcodebuild`, installs via `simctl`, runs the same Maestro flow, and shuts the simulator down if the script booted it. No signing required. |
 
-> `scripts/android-emulator-smoke.mjs` is emulator-lifecycle glue only — Maestro
-> does the actual assertions. It's a deliberately small local-dev helper that
-> works on both Windows and macOS: the AVD name and SDK / Maestro locations
-> resolve per-platform in `scripts/lib/android.mjs` (override the SDK with
-> `ANDROID_HOME`).
+> The smoke scripts are device-lifecycle glue only — Maestro does the actual
+> assertions, and both platforms run the **same flow file**. The Android helper
+> works on Windows and macOS (AVD name and SDK locations resolve per-platform
+> in `scripts/lib/android.mjs`; override the SDK with `ANDROID_HOME`); the iOS
+> helper is macOS-only and fails fast elsewhere. Maestro's install location
+> resolves in `scripts/lib/utils.mjs`.
 
 ### Prerequisites
 

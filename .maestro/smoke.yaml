@@ -1,12 +1,15 @@
-# Deployment smoke test (Maestro). Proves the shipped Android app actually boots:
-# the Capacitor WebView starts AND the production web bundle renders — not a
-# white screen or a crash. "Parent Center" is the accessibility label of the
-# always-present help button (src/lib/components/ParentCenter.svelte), so seeing
-# it means real UI painted, not just that the process launched.
+# Deployment smoke test (Maestro), shared by Android and iOS. Proves the
+# shipped app actually boots: the Capacitor WebView starts AND the production
+# web bundle renders — not a white screen or a crash. "Parent Center" is the
+# accessibility label of the always-present help button
+# (src/lib/components/ParentCenter.svelte), so seeing it means real UI painted,
+# not just that the process launched.
 #
-# Run ad-hoc against an installed app on a booted emulator/device:
-#   npm run android:run     # build + install the debug APK to the device
-#   npm run test:android    # this flow
+# Self-contained runs (boot device, build, install, test, tear down):
+#   npm run test:android    # headless Android emulator
+#   npm run test:ios        # iOS simulator (macOS-only)
+# Or ad-hoc against an app already installed on a running emulator/simulator:
+#   npm run test:android:device
 appId: art.splotch.app
 ---
 - launchApp:

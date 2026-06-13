@@ -1,23 +1,32 @@
-# Splotch — Google Play store assets
+# Splotch — store assets (Google Play + Apple App Store)
 
-Generated assets for the Play Console **Main store listing**. Copy for the text
-fields is in [`STORE-LISTING.md`](./STORE-LISTING.md).
+Generated assets for both store listings. Copy for the text fields:
+
+* Google Play → [`STORE-LISTING.md`](./STORE-LISTING.md)
+* Apple App Store → [`APP-STORE-LISTING.md`](./APP-STORE-LISTING.md)
 
 ## Contents
 
 ```
 store-assets/
-├── STORE-LISTING.md          # app name / short + full description / release notes
-├── icon-512.png              # App icon        512×512   (Play limit: ≤1 MB)
-├── feature-graphic.png       # Feature graphic 1024×500  (Play limit: ≤15 MB)
+├── STORE-LISTING.md          # Google Play: app name / short + full description
+├── APP-STORE-LISTING.md      # App Store: name / subtitle / keywords / privacy label
+├── icon-512.png              # Play app icon  512×512   (Play limit: ≤1 MB)
+├── feature-graphic.png       # Play feature graphic 1024×500 (Play limit: ≤15 MB)
 └── screenshots/
-    ├── phone/    01–05  1080×1920 (9:16 portrait)   (Play limit: ≤8 MB each)
-    ├── tablet7/  01–05  1920×1080 (16:9 landscape)
-    └── tablet10/ 01–05  1920×1080 (16:9 landscape)
+    ├── phone/     01–05  1080×1920 (9:16 portrait)    Google Play phone
+    ├── tablet7/   01–05  1920×1080 (16:9 landscape)   Google Play 7" tablet
+    ├── tablet10/  01–05  1920×1080 (16:9 landscape)   Google Play 10" tablet
+    ├── iphone69/  01–05  1290×2796 (portrait)         App Store iPhone 6.9"
+    └── ipad13/    01–05  2732×2048 (landscape)        App Store iPad 13"
 ```
 
-Every screenshot is ≥1080 px on each side, so the phone set is **promotion
-eligible** and the 10" set meets the higher 1080 px minimum.
+Every Play screenshot is ≥1080 px on each side, so the phone set is **promotion
+eligible** and the 10" set meets the higher 1080 px minimum. The App Store sets
+use the exact sizes App Store Connect accepts for the required 6.9" iPhone and
+13" iPad slots (smaller devices scale down automatically). The App Store icon is
+not in this folder — Apple takes the 1024×1024 `AppIcon` from the app binary's
+asset catalog.
 
 ## What each screenshot shows
 
@@ -31,17 +40,16 @@ eligible** and the 10" set meets the higher 1080 px minimum.
 
 ## Portrait vs. landscape
 
-Google Play accepts **either** 16:9 or 9:16 for every device type — you do **not**
-need both orientations. Splotch is fully responsive, so the assets use the most
-natural fit:
+Both stores accept a single orientation per device type. Splotch is fully
+responsive, so the assets use the most natural fit:
 
-- **Phone → portrait (9:16).** This is the standard for phone listings and how
-  most users hold a phone.
-- **Tablets → landscape (16:9).** Shows off the wide canvas; tablets are commonly
-  used in landscape.
+- **Phones → portrait.** This is the standard for phone listings and how most
+  users hold a phone.
+- **Tablets → landscape.** Shows off the wide canvas; tablets are commonly used
+  in landscape.
 
-The 7" and 10" tablet images are intentionally identical (same 1920×1080 capture)
-— Play allows reusing them, and it satisfies both size specs.
+The 7" and 10" Play tablet images are intentionally identical (same 1920×1080
+capture) — Play allows reusing them, and it satisfies both size specs.
 
 ## Regenerating
 
@@ -49,13 +57,14 @@ Screenshots are captured from the **real running app** (not mockups), so they
 always match what ships. From the repo root:
 
 ```bash
-npx vite dev --port 4173        # in one terminal
-node scripts/store-shots.mjs    # in another — writes everything into store-assets/
+npm run gen:shots
 ```
 
-The script (`scripts/store-shots.mjs`) drives the app in headless Chromium at the
-exact target pixel sizes, draws on the canvas, opens each dialog, and also renders
-the feature graphic from an inline HTML template using `icon-512.png`.
+The script (`scripts/store-shots.mjs`) starts a dev server on port 4173 (or
+reuses one already there), drives the app in headless Chromium at the exact
+target pixel sizes per store, draws on the canvas, opens each dialog, and also
+renders the Play feature graphic from an inline HTML template using
+`icon-512.png`.
 
 `icon-512.png` is `assets/icon.png` (the 1024² source) resized to 512².
 
@@ -64,12 +73,15 @@ the feature graphic from an inline HTML template using `icon-512.png`.
 - **Third-party IP kept out.** The app's coloring books include Bluey and Frozen
   pages, which are trademarked. The screenshots deliberately use only the generic
   **Animals** book to avoid a metadata/IP rejection. Consider whether those
-  branded packs should ship in the public Play build at all.
+  branded packs should ship in the public store builds at all.
 - **App icon transparency.** `icon-512.png` is a 24-bit PNG on a solid (white)
-  background — accepted by Play, which applies its own shape mask. If you prefer a
-  colored backdrop behind the "S", regenerate the source and re-run.
-- **Description must match Data safety.** The full description mentions the
-  optional AI upload; make sure that lines up with the Data safety form (see
-  MOBILE.md §1).
-- **Feature graphic** has no embedded text-as-the-only-content issues, but review
-  it against the current brand before publishing.
+  background — accepted by Play, which applies its own shape mask. iOS icons
+  must not have alpha; `@capacitor/assets` flattens them when generating the
+  asset catalog. If you prefer a colored backdrop behind the "S", regenerate the
+  source and re-run.
+- **Description must match the privacy declarations.** The full description
+  mentions the optional AI upload; make sure that lines up with the Play Data
+  safety form and the App Store privacy nutrition label (see the `mobile`
+  skill).
+- **Feature graphic** (Play-only) has no embedded text-as-the-only-content
+  issues, but review it against the current brand before publishing.

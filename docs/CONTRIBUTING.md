@@ -7,7 +7,7 @@
   nvm use 22
   ```
 - **npm** (bundled with Node)
-- For native Android work, see the full toolchain setup in the [mobile guide](../.claude/skills/mobile/SKILL.md).
+- For native Android/iOS work, see the full toolchain setup in the [mobile guide](../.claude/skills/mobile/SKILL.md). (iOS needs macOS + full Xcode; no CocoaPods — the project uses Swift Package Manager.)
 
 ## Local setup
 
@@ -73,7 +73,7 @@ npm run test:e2e:headed    # Playwright with browser visible (SLOWMO=500)
 npm run test:e2e:ui        # Playwright UI mode
 ```
 
-See the [testing guide](../.claude/skills/testing/SKILL.md) for the full test strategy, including the Android smoke test.
+See the [testing guide](../.claude/skills/testing/SKILL.md) for the full test strategy, including the native smoke tests (`test:android`, `test:ios`).
 
 ## Dev routes
 

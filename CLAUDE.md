@@ -3,7 +3,7 @@
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
 
 * **Web** (`splotch.art`, Netlify): SSR + `/api/*` serverless functions + `/admin` console + PWA.
-* **Native** (Capacitor; Android now, iOS later): fully static export, no server routes — the apps call the hosted API.
+* **Native** (Capacitor; Android + iOS): fully static export, no server routes — the apps call the hosted API.
 
 The `CAPACITOR=true` env var at build time is the **single signal** for all web-vs-native branching (`svelte.config.js`, `vite.config.ts`). Do not add runtime platform branches that could be build-time branches instead.
 
