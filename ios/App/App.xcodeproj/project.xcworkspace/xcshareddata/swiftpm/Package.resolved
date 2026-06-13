@@ -1,0 +1,42 @@
+{
+  "originHash" : "0afceb04c2ff8c658d2368f1d64c1637f36a367f7400cf88a94359df171ab534",
+  "pins" : [
+    {
+      "identity" : "capacitor-swift-pm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ionic-team/capacitor-swift-pm.git",
+      "state" : {
+        "revision" : "992959f0467c781eb6a1637e69d87481238c3672",
+        "version" : "8.3.4"
+      }
+    },
+    {
+      "identity" : "ion-ios-filesystem",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ionic-team/ion-ios-filesystem.git",
+      "state" : {
+        "revision" : "0d81e26e828ff9582807e2339112cedf2e0fab85",
+        "version" : "1.1.2"
+      }
+    },
+    {
+      "identity" : "keychain-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/evgenyneu/keychain-swift.git",
+      "state" : {
+        "revision" : "265806607b45687a3d646e4c9837c31c90f202e8",
+        "version" : "21.0.0"
+      }
+    },
+    {
+      "identity" : "sdwebimage",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SDWebImage/SDWebImage.git",
+      "state" : {
+        "revision" : "2de3a496eaf6df9a1312862adcfd54acd73c39c0",
+        "version" : "5.21.7"
+      }
+    }
+  ],
+  "version" : 3
+}

@@ -135,6 +135,17 @@ curl -s https://splotch.art/api/admin/tokens \
 
 ---
 
+## Validating the API
+
+Run `npm run test:api:smoke` to check the live `/api/*` contract end-to-end. It's
+self-contained — it boots a throwaway `vite dev` with a test `ADMIN_ACCESS_TOKEN`,
+exercises the admin auth flow (login success/failure, the bearer gate, and a
+token add/remove round-trip) plus the `verify-access-code` shape, then tears the
+server down. No Gemini key or Netlify Blobs needed; `generate-image` and
+`verify-key` (which make live model calls) are out of scope. Use it to sanity-check
+the contract after changing any endpoint — it's the cheap counterpart to the
+Playwright admin E2E in `tests/admin.spec.ts`.
+
 ## Local development
 
 - `vite dev` / `netlify dev` run all endpoints same-origin — no CORS in

@@ -14,3 +14,4 @@ paths:
 * Admin auth: the raw `ADMIN_ACCESS_TOKEN` is exchanged once for a derived HMAC session token; all secret comparisons must be constant-time (`timingSafeEqual`). The web `/admin` console and the JSON `/api/admin/*` endpoints share one core (`src/lib/server/admin.ts` + `tokens.ts`) — the console never loops through the API.
 * `/api/admin/tokens` mutations return the full snapshot shape (`tokens` + `invites`) so clients never need a follow-up fetch — preserve this for new admin endpoints.
 * When adding or changing an endpoint, update the API reference in `.claude/skills/api/SKILL.md` as part of the same change.
+* After changing an endpoint, run `npm run test:api:smoke` to validate the live `/api/*` contract (self-contained; boots its own test server). Extend the smoke script (`scripts/api-smoke.mjs`) when you add an endpoint or change a response shape.

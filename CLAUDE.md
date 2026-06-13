@@ -27,6 +27,15 @@ Script naming and the `scripts-info` descriptions follow ADR-0019: `namespace:va
 * **Svelte 5 runes only.** No legacy stores (`writable`, `readable`, `derived` from `svelte/store`).
 * All npm scripts use `cross-env` for env vars so they work on Windows `cmd.exe`.
 
+## Token efficiency
+
+* **Use the structured tools, not raw shell.** Reach for Grep / Glob / Read instead of
+  `grep` / `find` / `ls` / `cat` / `head`. Reserve Bash for things that actually execute
+  (npm, npx, git, `node scripts/*`).
+* **Delegate fan-out search to the `explorer` subagent** (`.claude/agents/explorer.md`, Haiku) —
+  it does the cheap reading and returns only the conclusion, keeping the main context lean.
+* **`/clear` between unrelated tasks** rather than carrying stale context across them.
+
 ## Where knowledge lives
 
 On-demand **skills** (invoke when the topic comes up — don't guess from memory):
