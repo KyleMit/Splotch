@@ -2,9 +2,9 @@
 
 ## TODO
 
-* [ ] Fable - prompt
-  * [ ] I'm looking for a way to supercharge my workflow, while still remaining token efficient. Review my current Claude Code configuration, check my Claude Code session history, perform an online search to identify examples of best-in-class tooling, and ask questions to help align my Claude Code configuration with my existing development workflow. Synthesize the results and update my configuration so that it presents an integrated development system that works for me.
-  * [ ] /insights
+
+* [ ] On iPad
+* [ ] /insights
 * [ ] Extract style guide conventions from existing code?
   * [ ] Do I need to enforce programmatically? Add linter or formatter?
 * [ ] Add iOS build bundle
@@ -134,3 +134,4 @@
 * [x] Make sure background works horizontally and vertically
 * [x] Swipe through Parental Control Menu
 * [x] Add volume slider setting
+* [x] Claude workflow audit
