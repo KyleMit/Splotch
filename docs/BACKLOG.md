@@ -2,8 +2,6 @@
 
 ## TODO
 
-
-* [ ] On iPad
 * [ ] /insights
 * [ ] Extract style guide conventions from existing code?
   * [ ] Do I need to enforce programmatically? Add linter or formatter?
@@ -135,3 +133,4 @@
 * [x] Swipe through Parental Control Menu
 * [x] Add volume slider setting
 * [x] Claude workflow audit
+* [x] Fix loading spinner not displaying 2nd time

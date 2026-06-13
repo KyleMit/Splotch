@@ -24,8 +24,16 @@
     }
   });
 
+  // Reset the dial's display state here in the parent — not in AiDial, which is
+  // unmounted by `{#if !revealed}` the moment generation completes and so never
+  // sees the modal close. Without this, `revealed` stays true and the spinner
+  // never mounts on the next generation.
   $effect(() => {
-    if (!ui.aiResultOpen) exiting = false;
+    if (!ui.aiResultOpen) {
+      exiting = false;
+      revealed = false;
+      progress = 0;
+    }
   });
 
   function handleImgLoad(e: Event) {
