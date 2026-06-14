@@ -23,9 +23,10 @@
         ? ['android', 'ios']
         : ['ios', 'android']
   );
-  // Native builds have a single setup step per platform, so the accordion
-  // numbering is dropped.
-  let showSectionNumbers = $derived(!native);
+
+  function lockTitle(os: string) {
+    return os === 'ios' ? 'Enable Guided Access' : 'Enable App Pinning';
+  }
 
   function detectOS() {
     if (typeof navigator === 'undefined') return 'ios';
@@ -55,69 +56,73 @@
   });
 </script>
 
-{#each setupOsList as os (os)}
+<!-- The two checklists are authored once here and reused across the web
+     accordion and the flat native view. -->
+{#snippet installSteps(os: string)}
   {#if os === 'ios'}
-    <section class="os-section">
-      <h3 class="os-heading">iOS</h3>
-      {#if !native}
-        <details class="help-section">
-          <summary>
-            <span class="summary-text">
-              <span class="section-number">1.</span> Install as App
-              {#if pwaInstalled}<span class="install-check">✓</span>{/if}
-            </span>
-          </summary>
-          <ol>
-            <li>Tap the <strong>Share</strong> button (square with arrow)</li>
-            <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
-            <li>Tap <strong>"Add"</strong> in the top right</li>
-            <li>Launch from your home screen for fullscreen mode</li>
-          </ol>
-        </details>
-      {/if}
+    <ol class="steps">
+      <li>Tap the <strong>Share</strong> button (square with arrow)</li>
+      <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
+      <li>Tap <strong>"Add"</strong> in the top right</li>
+      <li>Launch from your home screen for fullscreen mode</li>
+    </ol>
+  {:else}
+    <ol class="steps">
+      <li>Tap the <strong>menu</strong> (three dots)</li>
+      <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
+      <li>Follow the prompts</li>
+      <li>Launch from your home screen for fullscreen mode</li>
+    </ol>
+  {/if}
+{/snippet}
 
-      <details class="help-section">
-        <summary><span class="summary-text">{#if showSectionNumbers}<span class="section-number">2.</span> {/if}Enable Guided Access</span></summary>
-        <ol>
-          <li>Go to <strong>Settings → Accessibility → Guided Access</strong></li>
-          <li>Turn on <strong>Guided Access</strong></li>
-          <li>Set a passcode</li>
-          <li>Open Splotch and triple-click the side button</li>
-          <li>Tap <strong>Start</strong> to lock the app</li>
-          <li>Triple-click and enter passcode to exit</li>
-        </ol>
-      </details>
+{#snippet lockSteps(os: string)}
+  {#if os === 'ios'}
+    <ol class="steps">
+      <li>Go to <strong>Settings → Accessibility → Guided Access</strong></li>
+      <li>Turn on <strong>Guided Access</strong></li>
+      <li>Set a passcode</li>
+      <li>Open Splotch and triple-click the side button</li>
+      <li>Tap <strong>Start</strong> to lock the app</li>
+      <li>Triple-click and enter passcode to exit</li>
+    </ol>
+  {:else}
+    <ol class="steps">
+      <li>Go to <strong>Settings → Security → App Pinning</strong></li>
+      <li>Turn on <strong>App Pinning</strong></li>
+      <li>Open Splotch and tap the <strong>Recent Apps</strong> button</li>
+      <li>Swipe up on Splotch and tap the <strong>Pin</strong> icon</li>
+      <li>Tap <strong>Start</strong> to lock the app</li>
+      <li>Long-press Back + Recent Apps to exit</li>
+    </ol>
+  {/if}
+{/snippet}
+
+{#each setupOsList as os (os)}
+  {#if native}
+    <!-- Native builds have a single setup step, so the lock-setup title stands
+         in as the section header and the steps render flat — no OS label, no
+         accordion toggle. -->
+    <section class="os-section">
+      <h3 class="lock-heading">{lockTitle(os)}</h3>
+      {@render lockSteps(os)}
     </section>
   {:else}
     <section class="os-section">
-      <h3 class="os-heading">Android</h3>
-      {#if !native}
-        <details class="help-section">
-          <summary>
-            <span class="summary-text">
-              <span class="section-number">1.</span> Install as App
-              {#if pwaInstalled}<span class="install-check">✓</span>{/if}
-            </span>
-          </summary>
-          <ol>
-            <li>Tap the <strong>menu</strong> (three dots)</li>
-            <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
-            <li>Follow the prompts</li>
-            <li>Launch from your home screen for fullscreen mode</li>
-          </ol>
-        </details>
-      {/if}
+      <h3 class="os-heading">{os === 'ios' ? 'iOS' : 'Android'}</h3>
+      <details class="help-section">
+        <summary>
+          <span class="summary-text">
+            <span class="section-number">1.</span> Install as App
+            {#if pwaInstalled}<span class="install-check">✓</span>{/if}
+          </span>
+        </summary>
+        {@render installSteps(os)}
+      </details>
 
       <details class="help-section">
-        <summary><span class="summary-text">{#if showSectionNumbers}<span class="section-number">2.</span> {/if}Enable App Pinning</span></summary>
-        <ol>
-          <li>Go to <strong>Settings → Security → App Pinning</strong></li>
-          <li>Turn on <strong>App Pinning</strong></li>
-          <li>Open Splotch and tap the <strong>Recent Apps</strong> button</li>
-          <li>Swipe up on Splotch and tap the <strong>Pin</strong> icon</li>
-          <li>Tap <strong>Start</strong> to lock the app</li>
-          <li>Long-press Back + Recent Apps to exit</li>
-        </ol>
+        <summary><span class="summary-text"><span class="section-number">2.</span> {lockTitle(os)}</span></summary>
+        {@render lockSteps(os)}
       </details>
     </section>
   {/if}
@@ -184,6 +189,16 @@
     letter-spacing: 0.6px;
   }
 
+  /* Native: the lock-setup title is the section header, styled to match the
+     accordion summary it replaces. */
+  .lock-heading {
+    margin: 0;
+    padding: 16px 16px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #555;
+  }
+
   .summary-text {
     flex: 1;
     text-align: left;
@@ -201,18 +216,18 @@
     font-size: 20px;
   }
 
-  .help-section ol {
+  .steps {
     padding: 16px 24px 16px 40px;
     margin: 0;
     color: #666;
     line-height: 1.8;
   }
 
-  .help-section li {
+  .steps li {
     margin-bottom: 8px;
   }
 
-  .help-section li:last-child {
+  .steps li:last-child {
     margin-bottom: 0;
   }
 </style>
