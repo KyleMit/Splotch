@@ -159,27 +159,9 @@ This does a full `cap:sync` + Gradle build + ADB install. Use this when testing
 Capacitor plugins, storage, or the offline AI flow — not needed for canvas/perf
 work.
 
-**Option C — Public tunnel (any phone, off-network, no USB)**
-
-When the phone isn't on the same network (or there's no USB cable — e.g. an
-iPhone, or a dev server running in a cloud session):
-
-```bash
-npm run dev:tunnel
-```
-
-This runs `dev:host` and opens a Cloudflare quick tunnel, printing a public
-`https://*.trycloudflare.com` URL. Open that URL in any phone browser. No
-Cloudflare account is needed; the `cloudflared` binary is downloaded on first
-run. Stop with `Ctrl-C` (the dev server and tunnel both shut down).
-
-> **Restricted networks (incl. Claude Code on the web cloud sessions):** the
-> tunnel needs outbound access to `api.trycloudflare.com` and `*.argotunnel.com`.
-> Cloud sessions run behind an egress allowlist, so the command prints setup
-> guidance and exits unless those hosts are added to the environment's **Custom**
-> allowed domains (see the [network access docs](https://code.claude.com/docs/en/claude-code-on-the-web#network-access)).
-> The LAN/USB options above don't apply in a cloud session — there's no shared
-> network with the phone.
+To preview the dev server on a phone that isn't on your local network (or from a
+Claude Code cloud session), see **[docs/CLOUD.md](../../../docs/CLOUD.md)** and
+`npm run dev:tunnel`.
 
 ## 3. Testing
 
