@@ -158,5 +158,8 @@ build/
 # android studio
 android/.idea
 
+# iOS personal signing (DEVELOPMENT_TEAM) — included by ios/debug.xcconfig, passed to ios:archive
+ios/local.xcconfig
+
 # Maestro smoke-test screenshot (npm run test:android) — written to cwd
 /smoke-launch.png

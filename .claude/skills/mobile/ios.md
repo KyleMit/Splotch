@@ -34,13 +34,42 @@ shared assets see **[native.md](native.md)**; Android lives in
    installs, and launches via the Capacitor CLI (it prompts for a target).
 
 4. **Real device**: requires a (free or paid) Apple Developer account signed
-   into Xcode and a Team selected under **App target → Signing &
-   Capabilities** (see §4 — `DEVELOPMENT_TEAM` is not committed). A free
-   account can run on your own device; distributing needs the paid program.
+   into Xcode and a signing Team. The team is supplied via the untracked
+   `ios/local.xcconfig` (see §4 — `DEVELOPMENT_TEAM` is kept out of git), so it
+   never needs editing in the pbxproj. A free account can run on your own
+   device; distributing needs the paid program.
 
 5. **Debug with Safari Web Inspector** (the iOS equivalent of
    `chrome://inspect`): Safari → Settings → Advanced → "Show features for web
    developers", then **Develop → \<device/simulator\> → Splotch**.
+
+## 1a. On-device debugging (physical iPhone/iPad)
+
+Running on real hardware needs a few device-side toggles the simulator doesn't.
+Do these once per device:
+
+1. **Cable + trust**: connect the device to the Mac via USB and tap **Trust**
+   on the "Trust This Computer?" prompt (enter the device passcode).
+2. **Developer Mode** (iOS/iPadOS 16+): Settings → Privacy & Security →
+   **Developer Mode** → on, then restart. The toggle only appears after Xcode
+   has connected to the device once.
+3. **Web Inspector on the device** (required for §1.5 to see it): Settings →
+   Apps → Safari → Advanced → **Web Inspector** → on.
+4. **Signing**: sign into Xcode with an Apple ID and select your Team (§1.4). A
+   free account runs on your own device.
+
+Then run it:
+
+* `npm run cap:ios`, pick the device in Xcode's target dropdown, **Run ▶** — or
+  `npm run ios:run:choose` and choose the device at the prompt. Native logs stream to
+  the Xcode console (or Console.app).
+* **Live reload**: `npm run ios:live` paired with `dev:cap` points the app at
+  the laptop's dev server (device and Mac on the same network).
+* **Inspect the web layer**: with the app running, Safari → **Develop →
+  \<device\> → Splotch** for DOM / console / network / breakpoints (§1.5).
+* **Wireless debugging**: after the first wired run, tick **"Connect via
+  network"** on the device row in Xcode → Window → Devices and Simulators; the
+  cable is then optional.
 
 ## 2. Build / run commands
 
@@ -104,11 +133,20 @@ npx @capacitor/assets generate --ios
    <https://developer.apple.com/programs/enroll/> — $99/yr. Enroll as an
    **individual** (the app lists under your legal name) unless you have a
    DUNS-registered organization. Identity verification can take a few days.
-3. Sign into Xcode (**Settings → Accounts → +**) with that account, then in
-   `ios/App/App.xcodeproj` → App target → **Signing & Capabilities**: check
-   *Automatically manage signing* and pick your Team. `DEVELOPMENT_TEAM` is a
-   personal value — leave it out of commits (it's fine locally; don't commit
-   the pbxproj diff that adds it).
+3. Sign into Xcode (**Settings → Accounts → +**) with that account. Signing is
+   *Automatic*; the Team is **not** set in the pbxproj (that would churn for
+   anyone else and bake a personal ID into git). Instead create an untracked
+   **`ios/local.xcconfig`** (gitignored) with your Team ID:
+
+   ```
+   DEVELOPMENT_TEAM = XXXXXXXXXX
+   ```
+
+   `ios/debug.xcconfig` pulls it in via `#include? "local.xcconfig"` (covers all
+   Debug builds — `ios:run`, `ios:run:ipad`, `cap:ios` Run), and `ios:archive`
+   passes it with `-xcconfig ../local.xcconfig` for the Release/IPA path. Find
+   your Team ID in Xcode → Settings → Accounts (or developer.apple.com →
+   Membership). One-time per clone; `cap sync` never clobbers it.
 4. Accept the agreements in App Store Connect
    (<https://appstoreconnect.apple.com> → Business) — uploads fail with a
    cryptic error until the Paid/Free Apps agreement is accepted.

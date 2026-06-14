@@ -1,1 +1,4 @@
 CAPACITOR_DEBUG = true
+
+// Optional personal signing overrides (DEVELOPMENT_TEAM) — untracked, see .gitignore.
+#include? "local.xcconfig"

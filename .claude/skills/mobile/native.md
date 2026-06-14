@@ -130,7 +130,7 @@ The shared baseline both depend on:
 * [ ] (Optional) **Terms of Use**.
 * [x] Wording for the **photo-library add** permission prompt: iOS
   `NSPhotoLibraryAddUsageDescription` is set in `ios/App/App/Info.plist`
-  ("Splotch saves the drawings you take a photo of to your photo library.");
+  ("Splotch can save a screenshot of your drawing to your photo library.");
   the Android runtime prompt is system-worded.
 
 ## 5. Known follow-ups / nice-to-haves (cross-platform)

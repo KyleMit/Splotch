@@ -49,8 +49,12 @@ is Apple's recommended default for a single-developer project.
   Windows-only `android:*` Gradle scripts.
 * **Automatic signing, nothing committed.** `ExportOptions.plist` uses
   `signingStyle: automatic` + method `app-store-connect`; the developer's
-  `DEVELOPMENT_TEAM` is configured locally in Xcode and deliberately kept out
-  of the committed `project.pbxproj`. There is no iOS analog of
+  `DEVELOPMENT_TEAM` is deliberately kept out of the committed
+  `project.pbxproj` (committing it churns for other contributors and bakes a
+  personal ID into git). It lives in an untracked `ios/local.xcconfig`
+  (gitignored), pulled into Debug builds via `#include? "local.xcconfig"` in
+  `ios/debug.xcconfig` and into the Release archive via `-xcconfig
+  ../local.xcconfig` on `ios:archive`. There is no iOS analog of
   `keystore.properties` to back up — Apple holds the distribution certificate.
 * Version numbers are not managed in Xcode: `scripts/release.mjs` sets
   `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` via `capacitor-set-version`,
