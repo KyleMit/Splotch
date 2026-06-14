@@ -1,0 +1,67 @@
+# TODO
+
+> Work through these items one at a time using `/fix-next-todo`.
+> After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
+> Do **not** `git add` or `git commit` — the user reviews the diff first.
+
+## Sticky `:hover` on touch devices
+
+iOS WebKit (and most touch browsers) apply `:hover` on tap and keep it stuck until
+the user taps elsewhere. Any `:hover` rule that changes border/background/box-shadow
+leaves the element looking active/highlighted after a tap. The fix is to wrap the
+`:hover` rule in `@media (hover: hover)` so it only engages for true pointing devices.
+Already fixed in `ActionsPanel.svelte` for `.action-button` and `.stroke-size-button`
+(reference implementation). The items below are the remaining unguarded rules.
+
+Priority is by how exposed each is on the native (touch) app: toddler-facing drawing
+UI first, then Parent Center (reachable on-device), then web-only admin/dev/static
+pages last.
+
+### Toddler-facing drawing UI (highest priority — native touch app)
+
+- [ ] **[Bug] Guard remaining ActionsPanel hover rules** — File(s): `src/lib/components/ActionsPanel.svelte`
+  `.drawer-toggle:hover` (and its `:global(.drawer-toggle-icon)` variant) is still
+  unguarded — same panel we just partly fixed. Wrap in `@media (hover: hover)`.
+
+- [ ] **[Bug] Guard ColoringBook hover rules** — File(s): `src/lib/components/ColoringBook.svelte`
+  `.coloring-back-button:hover` (+ icon variant) and `.coloring-tile:hover` change
+  highlight state; a tapped coloring tile or the back button stays visually
+  highlighted after selection. Wrap each in `@media (hover: hover)`.
+
+- [ ] **[Bug] Guard ColorPicker hexagon hover** — File(s): `src/lib/components/ColorPicker.svelte`
+  `.hexagon:hover` and `.hexagon:hover::after` highlight the hovered swatch. On touch
+  the last-tapped color stays enlarged/highlighted. Note this component also has a
+  JS-driven `class:hover={hoveredHex === hex}` path (line ~119) — verify the desired
+  active state comes from the class, then guard the CSS `:hover` with `@media (hover: hover)`.
+
+- [ ] **[Bug] Guard AiImagePrompt style-option hover** — File(s): `src/lib/components/AiImagePrompt.svelte`
+  `.ai-style-option:hover:not(:disabled) .ai-style-thumb` and `… .ai-style-label`
+  leave the last-tapped art-style option looking selected. Wrap in `@media (hover: hover)`.
+
+- [ ] **[Bug] Guard AiImageResult download hover** — File(s): `src/lib/components/AiImageResult.svelte`
+  `.ai-result-download:hover` changes background; sticks after tap on native. Wrap in `@media (hover: hover)`.
+
+- [ ] **[Bug] Guard modal-close-btn hover** — File(s): `src/app.css`
+  `.modal-close-btn:not(:disabled):hover .modal-close-icon` — global rule for the
+  modal close button shown across native dialogs. Wrap in `@media (hover: hover)`.
+
+### Parent Center (medium — reachable on-device)
+
+- [ ] **[Bug] Guard ParentCenter hover rules** — File(s): `src/lib/components/ParentCenter.svelte`
+  `.parent-help-button:hover` (+ icon variant) and `.parent-help-close:hover`.
+  Wrap in `@media (hover: hover)`.
+
+- [ ] **[Bug] Guard parent settings control hovers** — File(s): `src/lib/components/parent/ToggleRow.svelte`, `src/lib/components/parent/SetupInstructions.svelte`, `src/lib/components/parent/AiKeyManager.svelte`, `src/lib/components/parent/AboutTab.svelte`, `src/lib/components/TabPager.svelte`
+  ToggleRow `.toggle-switch:hover` / `.toggle-switch.active:hover` / `.toggle-switch:disabled:hover`;
+  SetupInstructions `.help-section summary:hover`; AiKeyManager `.access-code-submit:hover`
+  and `.access-code-submit.forget:hover`; AboutTab link hovers; TabPager `:global(.tab-button:hover)`.
+  Wrap each in `@media (hover: hover)`. (Link/`:disabled` hovers are low-risk but
+  worth doing in the same sweep for consistency.)
+
+### Web-only (lowest — desktop/mouse, not in native bundle)
+
+- [ ] **[Polish] Guard admin/dev/static hover rules** — File(s): `src/lib/components/admin/AdminConsole.svelte`, `src/routes/privacy/+page.svelte`, `src/routes/dev/ai-timer/+page.svelte`
+  AdminConsole (`a.crumb`, `.btn-primary`, `.btn-ghost`, `.btn-danger`, `.invite-url`),
+  the privacy `.back` link, and the dev ai-timer harness (`a.crumb`, `button`). These
+  are web-only desktop surfaces so the sticky-hover bug is unlikely to bite, but
+  guarding them keeps the pattern uniform. Low priority / optional.

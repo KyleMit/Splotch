@@ -336,10 +336,15 @@
     display: none;
   }
 
-  .action-button:hover:not(:disabled) {
-    background: #f5f5f5;
-    border-color: var(--brand);
-    box-shadow: 0 4px 12px rgba(171, 113, 225, 0.3);
+  /* Guard hover behind a real pointer: iOS WebKit applies :hover on tap and
+     keeps it sticky until the user taps elsewhere, which left the eraser
+     looking active (purple border) after deselecting. */
+  @media (hover: hover) {
+    .action-button:hover:not(:disabled) {
+      background: #f5f5f5;
+      border-color: var(--brand);
+      box-shadow: 0 4px 12px rgba(171, 113, 225, 0.3);
+    }
   }
 
   .action-button:active:not(:disabled) {
@@ -455,9 +460,11 @@
     touch-action: manipulation;
   }
 
-  .stroke-size-button:hover {
-    border-color: var(--brand);
-    background: #f5f0ff;
+  @media (hover: hover) {
+    .stroke-size-button:hover {
+      border-color: var(--brand);
+      background: #f5f0ff;
+    }
   }
 
   .stroke-size-button:active {
