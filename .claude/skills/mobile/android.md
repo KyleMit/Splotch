@@ -159,6 +159,10 @@ This does a full `cap:sync` + Gradle build + ADB install. Use this when testing
 Capacitor plugins, storage, or the offline AI flow — not needed for canvas/perf
 work.
 
+To preview the dev server on a phone that isn't on your local network (or from a
+Claude Code cloud session), see **[docs/CLOUD.md](../../../docs/CLOUD.md)** and
+`npm run dev:tunnel`.
+
 ## 3. Testing
 
 * **Native smoke test**: `npm run test:android` boots an emulator, builds +
