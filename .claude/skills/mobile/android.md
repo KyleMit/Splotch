@@ -159,9 +159,10 @@ This does a full `cap:sync` + Gradle build + ADB install. Use this when testing
 Capacitor plugins, storage, or the offline AI flow — not needed for canvas/perf
 work.
 
-To preview the dev server on a phone that isn't on your local network (or from a
-Claude Code cloud session), see **[docs/CLOUD.md](../../../docs/CLOUD.md)** and
-`npm run dev:tunnel`.
+To preview the dev server on a phone that isn't on your local network, run
+`npm run dev:tunnel` (Cloudflare quick tunnel, no account). From a Claude Code
+cloud session that tunnel can't reach its edge — use `npm run dev:tunnel:ngrok`
+instead; see **[docs/CLOUD.md](../../../docs/CLOUD.md)**.
 
 ## 3. Testing
 

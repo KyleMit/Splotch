@@ -41,9 +41,11 @@ it:
 #!/bin/bash
 set -e
 npm install
-npx playwright install --with-deps chromium                                      # E2E browser (chromium-only)
-node -e "import('cloudflared').then(m=>m.install(m.bin)).catch(()=>{})" || true  # prefetch the dev:tunnel binary
+npx playwright install --with-deps chromium   # E2E browser (chromium-only)
 ```
+
+The phone-preview tunnel (`dev:tunnel:ngrok`, below) needs no prefetch — its
+native binary comes down with `npm install`.
 
 Keep it under ~5 min so the cache builds. **Skip the Android/iOS/Capacitor
 toolchains** — there's no emulator, Xcode, or USB device in a cloud container, so
@@ -63,38 +65,36 @@ playwright.download.prss.microsoft.com
 ## Previewing the dev server on a phone
 
 Because there's no inbound forwarding, viewing the running app on a phone needs
-an **outbound** tunnel:
+an **outbound** tunnel. In a cloud session that tunnel is **ngrok** — the
+Cloudflare quick tunnel (`npm run dev:tunnel`) can't reach its edge through the
+egress proxy, so it's the wrong tool here (the why is in
+[ADR-0021](adrs/0021-cloud-session-tunneling.md)).
 
 ```bash
-npm run dev:tunnel
+npm run dev:tunnel:ngrok
 ```
 
-This runs `dev:host` and opens a [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/),
-printing a public `https://*.trycloudflare.com` URL to open in any phone
-browser. No Cloudflare account is needed; the `cloudflared` binary downloads on
-first run. `Ctrl-C` shuts down both the tunnel and the dev server.
+This runs `dev:host` and opens an [ngrok](https://ngrok.com) tunnel, printing a
+public `https://*.ngrok.*` URL to open in any phone browser. `Ctrl-C` shuts down
+both the tunnel and the dev server. Two things must be in place first:
 
-> The same command works from your own machine, where it needs no extra setup —
-> handy for testing on a phone that isn't on your Wi-Fi.
+1. **An ngrok authtoken** in the `NGROK_AUTHTOKEN` env var — free from the
+   [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken),
+   set via the environment's env settings dialog.
+2. **The ngrok hosts on the egress allowlist** — add these to the environment's
+   **Custom** allowed domains (see the
+   [network access docs](https://code.claude.com/docs/en/claude-code-on-the-web#network-access)):
 
-### Making the tunnel reachable from a cloud session
+   ```
+   *.ngrok.com
+   *.ngrok-agent.com
+   *.ngrok.io
+   ```
 
-The tunnel is itself an outbound connection, so it hits the egress allowlist.
-By default `npm run dev:tunnel` in a cloud session prints setup guidance and
-exits. To allow it, add these hosts to the environment's **Custom** allowed
-domains (see the [network access docs](https://code.claude.com/docs/en/claude-code-on-the-web#network-access)):
+ngrok's agent reaches its edge over TCP/443, which the SNI-based allowlist proxy
+forwards once those names are allowed. Without the token or the allowlist
+entries, `dev:tunnel:ngrok` prints what's missing and exits.
 
-```
-api.trycloudflare.com
-*.argotunnel.com
-*.v2.argotunnel.com
-```
-
-The egress proxy is a transparent, hostname/SNI-based filter on standard TLS, so
-443-based transports traverse it once allowlisted — that's why `dev:tunnel`
-passes `--protocol http2` (Cloudflare's default QUIC on UDP/7844 is blocked).
-Raw-TCP tunnels like localtunnel won't work regardless. If the Cloudflare edge
-still won't connect, [ngrok](https://ngrok.com) is the most proxy-tolerant
-alternative (free authtoken via an `NGROK_AUTHTOKEN` env var; allowlist
-`*.ngrok.com`, `*.ngrok-agent.com`, `*.ngrok.io`). Running `dev:tunnel` from a
-machine with normal internet access needs none of this.
+> **Off-cloud, use `npm run dev:tunnel` instead** — the Cloudflare quick tunnel
+> needs no account and no allowlist on a machine with normal internet access.
+> It only fails inside the cloud sandbox.
