@@ -32,17 +32,26 @@ unit tests (`npm run test:unit`) work out of the box.
 
 ### Recommended setup script (environment config)
 
-The hook covers deps, but the Playwright **E2E** tier needs a browser binary the
-hook can't fetch. Put heavy, cacheable installs in the environment's **Setup
-script** field (env settings dialog) — it's snapshotted, so later sessions skip
-it:
+The SessionStart hook already handles node deps, so the **Setup script** field
+(env settings dialog) is **optional**. Leave it empty unless you want to run the
+Playwright **E2E** tier in the cloud.
+
+> **Do not run `npm install` / `npm ci` in the setup script.** It executes in a
+> phase where the repo (and its `package-lock.json`) isn't at the working
+> directory, so npm fails with `can only install with an existing
+> package-lock.json`. Node deps belong in the SessionStart hook above. The setup
+> script is for **repo-independent**, cacheable system installs only.
+
+The one thing worth caching here is the E2E browser (the snapshot keeps it, so
+later sessions skip the ~150 MB download):
 
 ```bash
 #!/bin/bash
-set -e
-npm install
-npx playwright install --with-deps chromium                                      # E2E browser (chromium-only)
-node -e "import('cloudflared').then(m=>m.install(m.bin)).catch(()=>{})" || true  # prefetch the dev:tunnel binary
+# Repo-independent installs only — node deps come from the SessionStart hook.
+# Chromium-only, pinned to the repo's @playwright/test version. Non-fatal so a
+# blocked download never blocks session startup.
+npx --yes playwright@1.60.0 install --with-deps chromium \
+  || echo "playwright browser install skipped — allowlist cdn.playwright.dev?"
 ```
 
 Keep it under ~5 min so the cache builds. **Skip the Android/iOS/Capacitor
