@@ -20,6 +20,46 @@ The constraint that matters here is **networking**:
   laptop, so the LAN (`dev:host`) and USB (`adb:reverse`) flows in the mobile
   guide do **not** apply in a cloud session.
 
+## Getting dependencies ready
+
+### Automatic: the SessionStart hook
+
+`.claude/hooks/session-start.sh` (registered in `.claude/settings.json`) runs at
+the start of every cloud session: `npm install` + `svelte-kit sync`, guarded by
+`CLAUDE_CODE_REMOTE` so it's a no-op on local machines. Once it's on the default
+branch, every cloud session starts with deps installed — `npm run check` and the
+unit tests (`npm run test:unit`) work out of the box.
+
+### Recommended setup script (environment config)
+
+The hook covers deps, but the Playwright **E2E** tier needs a browser binary the
+hook can't fetch. Put heavy, cacheable installs in the environment's **Setup
+script** field (env settings dialog) — it's snapshotted, so later sessions skip
+it:
+
+```bash
+#!/bin/bash
+set -e
+npm install
+npx playwright install --with-deps chromium                                      # E2E browser (chromium-only)
+node -e "import('cloudflared').then(m=>m.install(m.bin)).catch(()=>{})" || true  # prefetch the dev:tunnel binary
+```
+
+Keep it under ~5 min so the cache builds. **Skip the Android/iOS/Capacitor
+toolchains** — there's no emulator, Xcode, or USB device in a cloud container, so
+the `android:*` / `ios:*` / `test:android` scripts can't run there.
+
+### Allowlist additions for E2E
+
+`npm run test:e2e` (and `npm test`) need the Playwright browser CDN, which is
+**not** in the Trusted defaults. Add to **Custom** allowed domains alongside the
+defaults:
+
+```
+cdn.playwright.dev
+playwright.download.prss.microsoft.com
+```
+
 ## Previewing the dev server on a phone
 
 Because there's no inbound forwarding, viewing the running app on a phone needs
@@ -50,5 +90,11 @@ api.trycloudflare.com
 *.v2.argotunnel.com
 ```
 
-Even allowlisted, the proxy-only transport can limit the tunnel; running
-`dev:tunnel` from a machine with normal internet access is the reliable path.
+The egress proxy is a transparent, hostname/SNI-based filter on standard TLS, so
+443-based transports traverse it once allowlisted — that's why `dev:tunnel`
+passes `--protocol http2` (Cloudflare's default QUIC on UDP/7844 is blocked).
+Raw-TCP tunnels like localtunnel won't work regardless. If the Cloudflare edge
+still won't connect, [ngrok](https://ngrok.com) is the most proxy-tolerant
+alternative (free authtoken via an `NGROK_AUTHTOKEN` env var; allowlist
+`*.ngrok.com`, `*.ngrok-agent.com`, `*.ngrok.io`). Running `dev:tunnel` from a
+machine with normal internet access needs none of this.
