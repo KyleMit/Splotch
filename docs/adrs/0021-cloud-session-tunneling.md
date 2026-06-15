@@ -264,6 +264,11 @@ needs no repo tooling at all.
 ## 7. Full setup — Fly.io relay + chisel (repeatable)
 
 Everything below is what makes this independently reproducible in a fresh session.
+For day-to-day use the per-session steps are wrapped in `npm run dev:tunnel`
+(`scripts/cloud-tunnel.mjs`) and summarised in [docs/CLOUD.md](../CLOUD.md); this
+section is the underlying detail. Note that `--host` is **not** required in the
+cloud — the chisel client forwards via `localhost`, so plain `vite dev` works; the
+only thing the tunnel needs from Vite is the `allowedHosts` entry below.
 
 ### 7.1 One small repo change (already committed)
 
