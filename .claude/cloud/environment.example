@@ -8,9 +8,14 @@
 
 [allowed-domains]
 # Trusted defaults (npm, GitHub, package registries) are implicit. Add:
-splotch-tunnel-kyle.fly.dev                     # phone-preview reverse tunnel (ADR-0021)
+splotch-tunnel-kyle.fly.dev                     # phone-preview reverse tunnel (ADR-0021, chisel — primary)
 cdn.playwright.dev                              # E2E browser download
 playwright.download.prss.microsoft.com          # E2E browser download
+# Optional — only for the Microsoft Dev Tunnels alternative instead of chisel (ADR-0021 §9):
+# *.rel.tunnels.api.visualstudio.com            # devtunnel control plane + WebSocket data relay
+# *.devtunnels.ms                               # devtunnel public preview URL
+# aka.ms                                        # devtunnel CLI binary download (one-time)
+# *.blob.core.windows.net                       # devtunnel CLI binary download (one-time)
 
 [env]
 # Secrets — set the values in the dialog, NEVER commit them.
