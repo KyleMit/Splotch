@@ -44,8 +44,8 @@ npm install
 npx playwright install --with-deps chromium   # E2E browser (chromium-only)
 ```
 
-The phone-preview tunnel (`dev:tunnel:ngrok`, below) needs no prefetch — its
-native binary comes down with `npm install`.
+The phone-preview tunnel (below) needs no prefetch — the chisel client binary is
+a single `curl` away at session time (see [ADR-0021](adrs/0021-cloud-session-tunneling.md)).
 
 Keep it under ~5 min so the cache builds. **Skip the Android/iOS/Capacitor
 toolchains** — there's no emulator, Xcode, or USB device in a cloud container, so
@@ -65,36 +65,40 @@ playwright.download.prss.microsoft.com
 ## Previewing the dev server on a phone
 
 Because there's no inbound forwarding, viewing the running app on a phone needs
-an **outbound** tunnel. In a cloud session that tunnel is **ngrok** — the
-Cloudflare quick tunnel (`npm run dev:tunnel`) can't reach its edge through the
-egress proxy, so it's the wrong tool here (the why is in
-[ADR-0021](adrs/0021-cloud-session-tunneling.md)).
+an **outbound** tunnel — but the cloud egress is a TLS-terminating, HTTP-only
+MITM gateway (Anthropic's Envoy "Egress Gateway"), not the SNI pass-through we
+once assumed. That rules out **every** turnkey tunnel: Cloudflare
+(`npm run dev:tunnel`) targets a non-443 edge, and ngrok (`dev:tunnel:ngrok`)
+dies on the gateway's cert pinning and ALPN re-origination. The full proof, the
+reproducible probe, and the list of dead ends are in
+[ADR-0021](adrs/0021-cloud-session-tunneling.md) — **read it before trying any
+other tunnel here.**
 
-```bash
-npm run dev:tunnel:ngrok
-```
+The one shape that works is a **self-hosted HTTP/WebSocket reverse tunnel**: a
+relay you run on a host you can allowlist, reached by a Go client that trusts
+the system CA. We use [chisel](https://github.com/jpillora/chisel) fronted by a
+[Fly.io](https://fly.io) relay (free `*.fly.dev` HTTPS).
 
-This runs `dev:host` and opens an [ngrok](https://ngrok.com) tunnel, printing a
-public `https://*.ngrok.*` URL to open in any phone browser. `Ctrl-C` shuts down
-both the tunnel and the dev server. Two things must be in place first:
+**Quick version** (ADR-0021 §7 has the complete, repeatable steps):
 
-1. **An ngrok authtoken** in the `NGROK_AUTHTOKEN` env var — free from the
-   [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken),
-   set via the environment's env settings dialog.
-2. **The ngrok hosts on the egress allowlist** — add these to the environment's
-   **Custom** allowed domains (see the
-   [network access docs](https://code.claude.com/docs/en/claude-code-on-the-web#network-access)):
-
+1. **Server, once (your machine):** deploy chisel on Fly with the ADR's
+   `Dockerfile` + `fly.toml`, then `fly scale count 1` (exactly one machine —
+   HA breaks the tunnel). Set the shared secret as a Fly secret `AUTH`.
+2. **Two env settings (Claude web env dialog — take effect next session):**
+   allowlist `<app>.fly.dev`, and add `TUNNEL_AUTH` equal to the Fly `AUTH`.
+3. **Sandbox, each session:**
+   ```bash
+   curl -sSL https://github.com/jpillora/chisel/releases/download/v1.10.1/chisel_1.10.1_linux_amd64.gz \
+     | gunzip > /tmp/chisel && chmod +x /tmp/chisel
+   TUNNEL_HOST=<app>.fly.dev npm run dev:host          # background
+   /tmp/chisel client --auth "$TUNNEL_AUTH" --keepalive 25s \
+     https://<app>.fly.dev R:127.0.0.1:9000:localhost:5173   # background
+   curl -s -o /dev/null -w '%{http_code}\n' https://<app>.fly.dev/   # 200 == live
    ```
-   *.ngrok.com
-   *.ngrok-agent.com
-   *.ngrok.io
-   ```
-
-ngrok's agent reaches its edge over TCP/443, which the SNI-based allowlist proxy
-forwards once those names are allowed. Without the token or the allowlist
-entries, `dev:tunnel:ngrok` prints what's missing and exits.
+   `200` ⇒ open `https://<app>.fly.dev` on the phone.
 
 > **Off-cloud, use `npm run dev:tunnel` instead** — the Cloudflare quick tunnel
 > needs no account and no allowlist on a machine with normal internet access.
-> It only fails inside the cloud sandbox.
+> The cloud sandbox is the hostile case; a normal machine has none of these
+> constraints. `dev:tunnel:ngrok` is kept only for genuine SNI-pass-through
+> egress environments; it does **not** work in the current Anthropic sandbox.

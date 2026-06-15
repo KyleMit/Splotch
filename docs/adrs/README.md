@@ -24,4 +24,4 @@ This directory records significant architectural decisions made in the Splotch p
 | [0018](0018-claude-native-knowledge-tiers.md) | Project Knowledge in Claude Code-Native Tiers (Skills, Rules, Nested CLAUDE.md) | Active |
 | [0019](0019-npm-script-naming-and-scripts-info.md) | npm Script Naming Conventions + scripts-info Self-Documentation | Active |
 | [0020](0020-ios-build-toolchain.md) | iOS Build Toolchain (Swift Package Manager, xcodebuild Scripts, Automatic Signing) | Active |
-| [0021](0021-cloud-session-tunneling.md) | Tunneling the Dev Server from Claude Code Cloud Sessions (ngrok, not Cloudflare) | Active |
+| [0021](0021-cloud-session-tunneling.md) | Tunneling the Dev Server from Claude Code Cloud Sessions (self-hosted chisel reverse tunnel) | Active |
