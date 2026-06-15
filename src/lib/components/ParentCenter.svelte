@@ -38,7 +38,7 @@
 >
   <div class="parent-help-content">
     <button class="parent-help-close modal-close-btn" aria-label="Close" onclick={closeParentCenter}>×</button>
-    <h2>Parent Controls</h2>
+    <h2>Parent Center</h2>
 
     <TabPager
       initialTab="settings"
