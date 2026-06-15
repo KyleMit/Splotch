@@ -120,3 +120,37 @@ in the env config too if you want a bare `npm run dev` to accept the tunnel host
 > `cloudflared tunnel --url http://localhost:5173` or `ngrok http 5173`. The
 > cloud sandbox is the only hostile case; the chisel relay above exists solely
 > to satisfy its egress gateway.
+
+### Zero-infrastructure alternative: Microsoft Dev Tunnels
+
+If you don't want to stand up the chisel relay for a quick one-off preview,
+[Microsoft Dev Tunnels](https://learn.microsoft.com/azure/developer/dev-tunnels/)
+(`devtunnel`) is the **one turnkey tunnel that works against the cloud egress** —
+its .NET client speaks WebSocket-over-443 to allowlistable Microsoft hosts and trusts
+the system CA store (verified end-to-end; see [ADR-0021 §9](adrs/0021-cloud-session-tunneling.md#9-validated-alternative-microsoft-dev-tunnels-zero-infrastructure)).
+No relay to run, nothing to pay for. It's **not** the default because it needs a
+Microsoft/GitHub identity (use a dedicated/throwaway account), re-auth roughly each
+session (~8h token; the ephemeral container wipes the login cache), and routes traffic
+through Microsoft's relay.
+
+Allowlist entries it needs (add to **Custom** allowed domains; take effect next session):
+
+```
+*.rel.tunnels.api.visualstudio.com    # control plane + WebSocket data relay
+*.devtunnels.ms                        # the public preview URL the phone opens
+aka.ms                                 # one-time CLI binary download (redirects to the blob host)
+*.blob.core.windows.net                # one-time CLI binary download
+```
+
+Then, in the session:
+
+```bash
+wget -q https://aka.ms/TunnelsCliDownload/linux-x64 -O /tmp/devtunnel && chmod +x /tmp/devtunnel
+/tmp/devtunnel user login -g -d                                          # GitHub device-code login
+TUNNEL_HOST=.devtunnels.ms npm run dev &                                 # leading-dot wildcard for vite allowedHosts
+/tmp/devtunnel host -p 5173 --protocol http --allow-anonymous            # prints https://<id>-5173.<cluster>.devtunnels.ms
+```
+
+Open the printed `https://<id>-5173.<cluster>.devtunnels.ms` URL on the phone (the
+port-as-subdomain form — the `…devtunnels.ms:5173` form won't work through the gateway).
+`--allow-anonymous` makes it world-reachable while live, same as the chisel URL.

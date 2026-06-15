@@ -1,6 +1,6 @@
 # ADR-0021: Tunneling the Dev Server from Claude Code Cloud Sessions
 
-**Status:** Active (rev. 2026-06)
+**Status:** Active (rev. 2026-06b)
 **Date:** 2026-06
 
 > **This revision supersedes two earlier decisions in this ADR.** We first shipped
@@ -14,6 +14,19 @@
 > reverse tunnel** (chisel on Fly.io). The findings here are deliberately exhaustive
 > because the conclusion — "you must run your own relay" — is expensive enough to
 > deserve a full proof.
+
+> **Rev. 2026-06b — one turnkey exception, proven live: Microsoft Dev Tunnels.** The
+> blanket "every off-the-shelf tunnel fails" above turned out to have a single
+> exception. Microsoft's `devtunnel` CLI is a **.NET** client that tunnels over a
+> **WebSocket on 443** to **stable, allowlistable Microsoft relay hosts**, and (being
+> .NET) trusts the **system CA store** — so it clears all three of §3's requirements
+> with **no relay to run or pay for**. This was verified end-to-end on 2026-06-15 (full
+> evidence in §9). **chisel remains the blessed primary** — it needs no third-party
+> identity, no per-session re-auth, and keeps your dev traffic off a vendor's relay —
+> but Dev Tunnels is now documented in **§9** as the validated **zero-infrastructure /
+> zero-cost alternative** for a quick one-off preview where those trade-offs are
+> acceptable. The §2–§4 proof stays in full: it is exactly what lets us see *why* Dev
+> Tunnels clears the bar where ngrok/Cloudflare/Tailscale cannot.
 
 ---
 
@@ -180,6 +193,12 @@ only thing the gateway cares about.
 | **SSH-based** (localhost.run, pinggy, serveo) | SSH (port 22, or SSH-over-443) | #1 | SSH is not HTTP; the gateway `400`s non-HTTP bytes (L4) and won't `CONNECT` (L5). |
 | **Raw-TCP** (bore, classic localtunnel) | raw TCP to a high port | #1 | No raw-TCP path exists; only HTTP to 443. |
 | **Built-in "session ingress"** | n/a | — | Env vars (`CLAUDE_CODE_POST_FOR_SESSION_INGRESS_V2`) hint at an Anthropic-internal inbound channel, but no documented/user-exposed tool forwards a local port to a public URL. Not usable. |
+| **Microsoft Dev Tunnels** (`devtunnel`) | **WebSocket over HTTPS/443** to `*.rel.tunnels.api.visualstudio.com`; .NET client | **none — passes all three** | The one turnkey exception. .NET → system CA store (req. #3); WSS/443 (req. #1); stable allowlistable MS hosts (req. #2). **Verified live end-to-end 2026-06-15** — see [§9](#9-validated-alternative-microsoft-dev-tunnels-zero-infrastructure). Not the primary (see §9 for why); documented as the zero-infra alternative. |
+
+> **The exception that proves the rule.** Every *other* row fails on req. #1 or #3 because
+> its agent's wire transport isn't plain HTTP/WSS-over-443-with-system-CA. Dev Tunnels
+> passes precisely because its transport *is* — it is not a different kind of gateway, it
+> is the same gateway finally meeting a turnkey client shaped to fit it. See §9.
 
 ### Why ngrok in particular looked plausible but isn't
 
@@ -219,6 +238,13 @@ We chose **chisel**, because: it is Go (system-store TLS — clears req. #3 with
 its `--backend` flag lets one public hostname serve *both* the tunnel control WS and the
 proxied app (clean single-URL HTTPS for the phone), and it is a single static binary on
 each end.
+
+> This is the one shape that's viable *and self-hostable*. A **turnkey** product can
+> also fit the three requirements if its agent happens to match them — Microsoft Dev
+> Tunnels does (its .NET client speaks WSS/443 to allowlistable MS hosts and trusts the
+> system store), giving zero-infrastructure tunneling. We still chose self-hosted chisel
+> as the primary; §9 documents the Dev Tunnels alternative and the trade-offs behind that
+> choice.
 
 ---
 
@@ -405,9 +431,11 @@ Sandbox side is identical to §7.4 with `splotch-tunnel-kyle.fly.dev` → `tun.y
   dependencies; off-cloud previewing is a one-line `cloudflared`/`ngrok` invocation that
   needs no committed tooling.
 * **−** It requires the user to run and pay for (pennies) a public relay and edit two env
-  settings + the allowlist. This is materially more setup than a one-line tunnel — the
-  entire point of §2–§4 is to prove that the simpler options are *impossible*, not merely
-  inconvenient, so the cost is justified.
+  settings + the allowlist. This is materially more setup than a one-line tunnel — §2–§4
+  prove the *turnkey* options are impossible, with one exception (Dev Tunnels, §9). We
+  keep chisel primary anyway: it needs no third-party identity, no per-session re-auth,
+  and keeps dev traffic off a vendor relay. When that setup cost isn't worth it for a
+  quick one-off preview, §9 is the zero-infrastructure escape hatch.
 * **−** The relay must run **exactly one** machine. Fly's default HA spins up two; the
   reverse tunnel registers on only one, so the other serves `502` for ~half of requests.
   `fly scale count 1` is mandatory, and `min_machines_running = 1` keeps it warm.
@@ -421,6 +449,117 @@ Sandbox side is identical to §7.4 with `splotch-tunnel-kyle.fly.dev` → `tun.y
   If the sandbox ever ships real inbound forwarding, or the egress becomes a
   genuine pass-through / honours `CONNECT`, this whole apparatus can be retired —
   re-run [Appendix A](#appendix-a-the-reproducible-probe) to check.
+
+---
+
+## 9. Validated alternative: Microsoft Dev Tunnels (zero-infrastructure)
+
+[Microsoft Dev Tunnels](https://learn.microsoft.com/azure/developer/dev-tunnels/)
+(`devtunnel` CLI) is the **one turnkey product that clears all three of §3's
+requirements**, so it tunnels the dev server out of a cloud session with **no relay to
+run and nothing to pay for**. It is *not* the blessed primary (trade-offs below), but it
+is the right tool for a quick one-off preview when you don't want to stand up chisel.
+
+### 9.1 Why it works where ngrok/Cloudflare don't
+
+It is the same egress gateway from §2 — Dev Tunnels just happens to ship a client shaped
+to fit it:
+
+* **req. #1 (HTTP/WSS over 443):** the host↔relay link is a plain WebSocket on 443
+  (`wss://<cluster>-data.rel.tunnels.api.visualstudio.com/api/v1/Host/Connect/<id>`),
+  and the public preview URL is plain HTTPS on 443. No custom ALPN, no non-443 port.
+* **req. #2 (allowlistable relay host):** the relay and control plane are stable Microsoft
+  vendor hostnames under `*.rel.tunnels.api.visualstudio.com`, and the preview URL is
+  under `*.devtunnels.ms` — both addable to the egress allowlist.
+* **req. #3 (system CA store):** `devtunnel` is a **.NET** binary; .NET on Linux uses the
+  OpenSSL/system trust store, so it accepts the Anthropic "Egress Gateway" MITM cert
+  automatically — the exact opposite of ngrok's `rustls` pinning. This was the keystone
+  unknown, now confirmed in practice (§9.3).
+
+### 9.2 Allowlist entries required
+
+Add these to the env config's **Custom** allowed domains (they bind at **session start**,
+so add them, then open a new session):
+
+```
+# Runtime — control plane + WebSocket data relay (covers global.rel… and <cluster>-data.rel…)
+*.rel.tunnels.api.visualstudio.com
+# Runtime — the public *.devtunnels.ms preview URL the phone opens
+*.devtunnels.ms
+# One-time CLI binary download (aka.ms redirects to the blob host)
+aka.ms
+*.blob.core.windows.net
+```
+
+GitHub device-flow login uses `github.com`, which is already a Trusted default. (Using a
+Microsoft account instead — `devtunnel user login -d` without `-g` — would also need
+`login.microsoftonline.com`.)
+
+### 9.3 Verified live, end-to-end (2026-06-15)
+
+Run from a cloud session with the §9.2 hosts allowlisted, the GitHub download hosts
+included:
+
+```bash
+# 1. install the CLI (closed-source; no GitHub release — only the MS blob)
+wget -q https://aka.ms/TunnelsCliDownload/linux-x64 -O /tmp/devtunnel && chmod +x /tmp/devtunnel
+/tmp/devtunnel --version
+#   → "Tunnel service URI: https://global.rel.tunnels.api.visualstudio.com/  cluster: use"
+#     (the version call already reaches the control plane *through* the gateway — first
+#      proof the .NET client trusts the MITM cert)
+
+# 2. log in (GitHub device flow; one-time per session — see the re-auth caveat in §9.4)
+/tmp/devtunnel user login -g -d        # → "Logged in as <user> using GitHub."
+
+# 3. start Vite, accepting any *.devtunnels.ms host. The hostname is only allocated at
+#    `host` time, so use vite's leading-dot wildcard via the existing TUNNEL_HOST hook:
+TUNNEL_HOST=.devtunnels.ms npm run dev                                   # background
+
+# 4. host the port (anonymous = world-reachable URL, like the chisel *.fly.dev URL)
+/tmp/devtunnel host -p 5173 --protocol http --allow-anonymous --verbose  # background
+#   → control plane PUT/GET 200/201
+#   → "Connecting to host tunnel relay wss://use-data.rel.tunnels.api.visualstudio.com/…"
+#   → "Connected with subprotocol 'tunnel-relay-host'"  /  "Ready to accept connections"
+#   → "Connect via browser: https://<id>-5173.use.devtunnels.ms"
+
+# 5. verify end-to-end from inside the sandbox
+curl -s -o /dev/null -w '%{http_code} ssl_verify=%{ssl_verify_result}\n' \
+  https://<id>-5173.use.devtunnels.ms/
+#   → 200 ssl_verify=0   (full Splotch HTML; path: sandbox → *.devtunnels.ms edge →
+#                          WSS relay → devtunnel host → Vite localhost:5173)
+```
+
+Confirmed in that run:
+
+* The WSS host-relay handshake completed with **no TLS error** — req. #3 holds in
+  practice (the .NET client trusts the system CA store; ngrok's `rustls` could not).
+* The canonical preview URL is the **`https://<id>-<port>.<cluster>.devtunnels.ms`** form
+  on 443. The alternate **`https://<id>.<cluster>.devtunnels.ms:<port>`** form fails
+  (`HTTP 000`) — it targets a non-443 port the gateway won't carry. Always use the
+  port-as-subdomain form.
+* Vite's host check passed with `TUNNEL_HOST=.devtunnels.ms` (the leading dot is vite's
+  wildcard for a domain + all subdomains) — no per-tunnel `allowedHosts` edit needed.
+
+### 9.4 Trade-offs — why this is the alternative, not the primary
+
+* **− Third-party identity.** Hosting a tunnel requires a Microsoft or GitHub account
+  (the OAuth grant is identity-only — verify identity / list visible resources, **no**
+  repo or write scopes — and short-lived + revocable, but it is still an account you hand
+  to a vendor). For shared use, authorize a **dedicated/throwaway account**, not your
+  primary identity.
+* **− Per-session re-auth.** The login token (~8h for GitHub) is cached under
+  `~/.local/share/DevTunnels/`, which an ephemeral cloud container wipes on reclaim — so
+  each new session needs the device-code login again. There is **no static forever-secret**
+  equivalent to chisel's `TUNNEL_AUTH`. (You can persist the token cache via a secret env
+  var — the Entra/MSAL path keeps a ~90-day refresh token — but that adds machinery and
+  stores a renewable credential, eroding the simplicity win.)
+* **− Traffic transits Microsoft's relay**, not a box you control.
+* **− Public while live.** `--allow-anonymous` makes the URL reachable by anyone who has
+  it (same caveat as the chisel `*.fly.dev` URL). Drop the flag to require client auth.
+
+chisel costs ~pennies/month and more first-time setup, but it has none of the four
+downsides above — hence it stays primary. Reach for Dev Tunnels when you want a preview
+*right now* with zero infrastructure and the re-auth + identity trade is acceptable.
 
 ---
 
