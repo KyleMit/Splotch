@@ -16,7 +16,13 @@ const isCapacitor = process.env.CAPACITOR === 'true';
 const NATIVE_API_BASE = isCapacitor ? 'https://splotch.art' : '';
 
 export default {
-  server: { port: 5173, strictPort: true },
+  server: {
+    port: 5173,
+    strictPort: true,
+    // Allow a phone-preview reverse tunnel (e.g. chisel) to forward in under its
+    // own hostname; no effect on normal dev/build, only when TUNNEL_HOST is set.
+    ...(process.env.TUNNEL_HOST ? { allowedHosts: [process.env.TUNNEL_HOST] } : {})
+  },
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
     __BUILD_TIME__: JSON.stringify(BUILD_TIME),
