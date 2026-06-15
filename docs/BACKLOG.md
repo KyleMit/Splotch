@@ -5,7 +5,6 @@
 * [ ] /insights
 * [ ] Extract style guide conventions from existing code?
   * [ ] Do I need to enforce programmatically? Add linter or formatter?
-* [ ] Add iOS build bundle
 * [ ] Run performance profiling and analyze results
   * [ ] Run performance profile on device
 * [ ] Hand draw icons
@@ -134,3 +133,4 @@
 * [x] Add volume slider setting
 * [x] Claude workflow audit
 * [x] Fix loading spinner not displaying 2nd time
+* [x] Add iOS build bundle
