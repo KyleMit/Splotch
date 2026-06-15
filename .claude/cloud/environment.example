@@ -1,0 +1,28 @@
+# Claude Code on the web — environment configuration (reference; see docs/CLOUD.md, ADR-0021).
+#
+# There is NO official as-code / CLI provisioning for these environments — allowed domains,
+# env vars, and the setup script are stateful cloud objects edited only in the web dialog
+# (verified against the Claude Code on the web docs, 2026-06). This file is the committed,
+# reviewable record of how the environment should be configured; paste from it into the
+# dialog. Secret VALUES live only in the dialog and must never be committed.
+
+[allowed-domains]
+# Trusted defaults (npm, GitHub, package registries) are implicit. Add:
+splotch-tunnel-kyle.fly.dev                     # phone-preview reverse tunnel (ADR-0021)
+cdn.playwright.dev                              # E2E browser download
+playwright.download.prss.microsoft.com          # E2E browser download
+
+[env]
+# Secrets — set the values in the dialog, NEVER commit them.
+TUNNEL_AUTH=                                     # chisel shared secret (matches the Fly `AUTH` secret)
+GEMINI_API_KEY=                                  # /api/generate-image model calls
+ADMIN_ACCESS_TOKEN=                              # /admin console + /api/admin/* auth
+ALLOWED_TOKENS_LIST=                             # seed access codes
+# Non-secret — safe to pin here. Lets plain `npm run dev` accept the tunnel host (vite
+# allowedHosts). `npm run dev:tunnel` injects this itself, so it's optional if you only
+# ever preview via that script.
+TUNNEL_HOST=splotch-tunnel-kyle.fly.dev
+
+[setup-script]
+# One-line bootstrap to paste in the dialog; real logic is committed in the target file.
+bash .claude/cloud/setup.sh

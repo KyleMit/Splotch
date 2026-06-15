@@ -33,23 +33,31 @@ unit tests (`npm run test:unit`) work out of the box.
 ### Recommended setup script (environment config)
 
 The hook covers deps, but the Playwright **E2E** tier needs a browser binary the
-hook can't fetch. Put heavy, cacheable installs in the environment's **Setup
-script** field (env settings dialog) — it's snapshotted, so later sessions skip
-it:
+hook can't fetch, and the phone-preview tunnel wants its client binary cached. Both
+are heavy, cacheable, repo-independent installs — the job of the environment's
+**Setup script** field (env settings dialog), which is snapshotted so later sessions
+skip it.
+
+That field can't be version-controlled, so keep it a one-line bootstrap and commit
+the real logic in [`.claude/cloud/setup.sh`](../.claude/cloud/setup.sh):
 
 ```bash
-#!/bin/bash
-set -e
-npm install
-npx playwright install --with-deps chromium   # E2E browser (chromium-only)
+bash .claude/cloud/setup.sh
 ```
 
-The phone-preview tunnel (below) needs no prefetch — the chisel client binary is
-a single `curl` away at session time (see [ADR-0021](adrs/0021-cloud-session-tunneling.md)).
+The script installs the chromium E2E browser and caches the chisel tunnel client (so
+the per-session `curl` the tunnel steps below would otherwise need is skipped). Keep
+it under ~5 min so the cache builds. **Skip the Android/iOS/Capacitor toolchains** —
+there's no emulator, Xcode, or USB device in a cloud container, so the `android:*` /
+`ios:*` / `test:android` scripts can't run there.
 
-Keep it under ~5 min so the cache builds. **Skip the Android/iOS/Capacitor
-toolchains** — there's no emulator, Xcode, or USB device in a cloud container, so
-the `android:*` / `ios:*` / `test:android` scripts can't run there.
+### Committing the environment config
+
+There is **no** official as-code or CLI provisioning for these environments — the
+allowed domains, env vars, and setup script are edited only in the web dialog. The
+committed record of how to fill that dialog lives in
+[`.claude/cloud/environment.example`](../.claude/cloud/environment.example); paste
+from it. Secret **values** stay in the dialog and are never committed.
 
 ### Allowlist additions for E2E
 
@@ -84,18 +92,28 @@ the system CA. We use [chisel](https://github.com/jpillora/chisel) fronted by a
 1. **Server, once (your machine):** deploy chisel on Fly with the ADR's
    `Dockerfile` + `fly.toml`, then `fly scale count 1` (exactly one machine —
    HA breaks the tunnel). Set the shared secret as a Fly secret `AUTH`.
-2. **Two env settings (Claude web env dialog — take effect next session):**
-   allowlist `<app>.fly.dev`, and add `TUNNEL_AUTH` equal to the Fly `AUTH`.
-3. **Sandbox, each session:**
+2. **Env settings (Claude web env dialog — take effect next session):** allowlist
+   `<app>.fly.dev` and set `TUNNEL_AUTH` to the Fly `AUTH` (full config in
+   [`.claude/cloud/environment.example`](../.claude/cloud/environment.example)).
+3. **Sandbox, each session — one command:**
    ```bash
-   curl -sSL https://github.com/jpillora/chisel/releases/download/v1.10.1/chisel_1.10.1_linux_amd64.gz \
-     | gunzip > /tmp/chisel && chmod +x /tmp/chisel
-   TUNNEL_HOST=<app>.fly.dev npm run dev:host          # background
-   /tmp/chisel client --auth "$TUNNEL_AUTH" --keepalive 25s \
-     https://<app>.fly.dev R:127.0.0.1:9000:localhost:5173   # background
-   curl -s -o /dev/null -w '%{http_code}\n' https://<app>.fly.dev/   # 200 == live
+   npm run dev:tunnel
    ```
-   `200` ⇒ open `https://<app>.fly.dev` on the phone.
+   It starts `vite dev`, connects the chisel client, waits for the public URL to
+   answer `200`, and prints it. `Live: https://<app>.fly.dev` ⇒ open it on the phone.
+
+`dev:tunnel` defaults `TUNNEL_HOST` to the relay host and injects it into vite, so it
+runs plain `npm run dev` under the hood — **`--host` is not needed in the cloud** (no
+LAN; chisel forwards via localhost). The only thing the tunnel needs from vite is
+`server.allowedHosts`, which `TUNNEL_HOST` drives (`vite.config.ts`). Set `TUNNEL_HOST`
+in the env config too if you want a bare `npm run dev` to accept the tunnel host.
+
+> **One live tunnel at a time, and it's public while live.** The relay binds the
+> reverse port once: the *first* session to connect owns the URL; a second session's
+> client just retries forever (`server cannot listen on R:…`) and never serves — there
+> is no priority. And while a tunnel is up, `https://<app>.fly.dev` is reachable by
+> anyone with the URL — chisel's `AUTH` gates *establishing* the tunnel, not HTTP access
+> to the served app (ADR-0021 §security). Don't leave tunnels running unattended.
 
 > **Off-cloud this is all unnecessary** — on a machine with normal internet,
 > any quick tunnel works with no account and no allowlist, e.g.
