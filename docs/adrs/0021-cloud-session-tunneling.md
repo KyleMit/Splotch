@@ -252,11 +252,12 @@ Verified end-to-end: with the client connected, `curl https://<app>.fly.dev/` fr
 the sandbox returns **HTTP 200** and the Splotch app HTML (`<title>Splotch - Drawing for
 Kids</title>`), and the page loads in a phone browser. No `wstunnel` fallback was needed.
 
-The previous `dev:tunnel` (Cloudflare) and `dev:tunnel:ngrok` scripts remain in the repo:
-**`dev:tunnel` is still the correct zero-config choice off-cloud** (a normal machine has
-none of these constraints). `dev:tunnel:ngrok` is retained only for environments whose
-egress is a genuine SNI pass-through; **it does not work in the current Anthropic cloud
-sandbox** and should not be presented as the cloud path.
+The earlier `dev:tunnel` (Cloudflare) and `dev:tunnel:ngrok` scripts — and their
+`cloudflared` / `@ngrok/ngrok` dependencies — have been **removed**: one never worked in
+the sandbox (ngrok) and the other added a dependency for a job that is one `curl` line
+off-cloud (`cloudflared tunnel --url http://localhost:5173` or `ngrok http 5173` on a
+normal machine). The cloud path is the chisel reverse tunnel documented in §7; off-cloud
+needs no repo tooling at all.
 
 ---
 
@@ -395,8 +396,9 @@ Sandbox side is identical to §7.4 with `splotch-tunnel-kyle.fly.dev` → `tun.y
   time. The previously documented ngrok path never worked against this gateway.
 * **+** The mechanism is honestly characterised: §2 is a reproducible proof, so the next
   person doesn't re-litigate ngrok/Cloudflare from scratch.
-* **+** Off-cloud keeps zero-config Cloudflare (`dev:tunnel`); the cloud path is the only
-  thing that changed.
+* **+** The repo sheds two tunnel scripts and their `cloudflared` / `@ngrok/ngrok`
+  dependencies; off-cloud previewing is a one-line `cloudflared`/`ngrok` invocation that
+  needs no committed tooling.
 * **−** It requires the user to run and pay for (pennies) a public relay and edit two env
   settings + the allowlist. This is materially more setup than a one-line tunnel — the
   entire point of §2–§4 is to prove that the simpler options are *impossible*, not merely
@@ -409,8 +411,9 @@ Sandbox side is identical to §7.4 with `splotch-tunnel-kyle.fly.dev` → `tun.y
   the preview content is sensitive.
 * **−** Env-var/allowlist changes only take effect in a **new** session, so the relay
   must be stood up before the session that uses it.
-* **−** Three moving parts now exist (`cloudflared`, `@ngrok/ngrok`, chisel/Fly), split by
-  environment. If the sandbox ever ships real inbound forwarding, or the egress becomes a
+* **−** The cloud path is external to the repo (a Fly relay + chisel binary fetched at
+  session time), so it isn't exercised by CI and depends on user-side setup staying alive.
+  If the sandbox ever ships real inbound forwarding, or the egress becomes a
   genuine pass-through / honours `CONNECT`, this whole apparatus can be retired —
   re-run [Appendix A](#appendix-a-the-reproducible-probe) to check.
 

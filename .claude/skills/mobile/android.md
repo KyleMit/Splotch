@@ -159,10 +159,13 @@ This does a full `cap:sync` + Gradle build + ADB install. Use this when testing
 Capacitor plugins, storage, or the offline AI flow — not needed for canvas/perf
 work.
 
-To preview the dev server on a phone that isn't on your local network, run
-`npm run dev:tunnel` (Cloudflare quick tunnel, no account). From a Claude Code
-cloud session that tunnel can't reach its edge — use `npm run dev:tunnel:ngrok`
-instead; see **[docs/CLOUD.md](../../../docs/CLOUD.md)**.
+To preview the dev server on a phone that isn't on your local network, use an
+outbound tunnel. Off-cloud, any quick tunnel works (e.g. `cloudflared tunnel
+--url http://localhost:5173`, or `ngrok http 5173`). From a Claude Code cloud
+session the egress is a TLS-terminating, HTTP-only MITM gateway and those tools
+fail — the working path is a self-hosted chisel reverse tunnel. See
+**[docs/CLOUD.md](../../../docs/CLOUD.md)** and
+**[ADR-0021](../../../docs/adrs/0021-cloud-session-tunneling.md)**.
 
 ## 3. Testing
 

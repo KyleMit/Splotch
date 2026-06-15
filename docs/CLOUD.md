@@ -67,9 +67,9 @@ playwright.download.prss.microsoft.com
 Because there's no inbound forwarding, viewing the running app on a phone needs
 an **outbound** tunnel — but the cloud egress is a TLS-terminating, HTTP-only
 MITM gateway (Anthropic's Envoy "Egress Gateway"), not the SNI pass-through we
-once assumed. That rules out **every** turnkey tunnel: Cloudflare
-(`npm run dev:tunnel`) targets a non-443 edge, and ngrok (`dev:tunnel:ngrok`)
-dies on the gateway's cert pinning and ALPN re-origination. The full proof, the
+once assumed. That rules out **every** turnkey tunnel: Cloudflare's quick tunnel
+targets a non-443 edge, and ngrok dies on the gateway's cert pinning and ALPN
+re-origination. The full proof, the
 reproducible probe, and the list of dead ends are in
 [ADR-0021](adrs/0021-cloud-session-tunneling.md) — **read it before trying any
 other tunnel here.**
@@ -97,8 +97,8 @@ the system CA. We use [chisel](https://github.com/jpillora/chisel) fronted by a
    ```
    `200` ⇒ open `https://<app>.fly.dev` on the phone.
 
-> **Off-cloud, use `npm run dev:tunnel` instead** — the Cloudflare quick tunnel
-> needs no account and no allowlist on a machine with normal internet access.
-> The cloud sandbox is the hostile case; a normal machine has none of these
-> constraints. `dev:tunnel:ngrok` is kept only for genuine SNI-pass-through
-> egress environments; it does **not** work in the current Anthropic sandbox.
+> **Off-cloud this is all unnecessary** — on a machine with normal internet,
+> any quick tunnel works with no account and no allowlist, e.g.
+> `cloudflared tunnel --url http://localhost:5173` or `ngrok http 5173`. The
+> cloud sandbox is the only hostile case; the chisel relay above exists solely
+> to satisfy its egress gateway.
