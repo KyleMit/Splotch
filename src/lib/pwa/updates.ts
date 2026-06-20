@@ -2,6 +2,12 @@
 // hourly, on visibility change, and on focus. A waiting worker is applied
 // (with a reload) only while the canvas is blank — never mid-drawing;
 // otherwise it activates on the next launch.
+//
+// Cache-bust for stale clients: on every init we fetch /version.json from the
+// network and compare it with __APP_VERSION__ (compiled in at build time). If
+// they differ the running SW is serving old HTML, so we navigate to
+// ?v=<deployed-version>. The SW's NetworkFirst navigation handler sees the
+// unfamiliar URL, fetches fresh HTML from the origin, and we're unstuck.
 
 import { canvasState } from '$lib/state/canvas.svelte';
 
@@ -11,6 +17,13 @@ export function initPWAUpdates() {
   if (import.meta.env.DEV) return;
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 
+  // Remove any cache-bust param left in the URL from a previous redirect.
+  const url = new URL(window.location.href);
+  if (url.searchParams.has('v')) {
+    url.searchParams.delete('v');
+    history.replaceState(null, '', url.toString());
+  }
+
   navigator.serviceWorker.ready.then((registration) => {
     registration.addEventListener('updatefound', () => {
       console.log('Update found, installing...');
@@ -18,6 +31,7 @@ export function initPWAUpdates() {
   });
 
   checkForUpdates();
+  checkVersionMismatch();
 
   updateCheckInterval = setInterval(() => {
     checkForUpdates();
@@ -34,6 +48,21 @@ export function initPWAUpdates() {
   window.addEventListener('beforeunload', () => {
     if (updateCheckInterval) clearInterval(updateCheckInterval);
   });
+}
+
+async function checkVersionMismatch() {
+  try {
+    const resp = await fetch('/version.json', { cache: 'no-store' });
+    if (!resp.ok) return;
+    const { version } = await resp.json();
+    if (version !== __APP_VERSION__) {
+      const next = new URL(window.location.href);
+      next.searchParams.set('v', version);
+      window.location.replace(next.toString());
+    }
+  } catch {
+    // offline or version.json unavailable — skip
+  }
 }
 
 async function checkForUpdates() {
