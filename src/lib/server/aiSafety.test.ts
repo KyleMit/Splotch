@@ -33,15 +33,29 @@ describe('classifyGeminiResponse', () => {
     expect(r).toEqual({ kind: 'safety', reason: 'IMAGE_SAFETY' });
   });
 
-  it('treats a text-only / no-image response as empty (try again)', () => {
+  it('treats a prose-only refusal (no image) as a safety refusal', () => {
     const r = classifyGeminiResponse(
-      resp({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: "I can't do that" }] } }] })
+      resp({
+        candidates: [
+          { finishReason: 'STOP', content: { parts: [{ text: 'I cannot fulfill this request. The original image contains offensive content.' }] } }
+        ]
+      })
     );
-    expect(r).toEqual({ kind: 'empty', reason: "I can't do that" });
+    expect(r).toEqual({
+      kind: 'safety',
+      reason: 'I cannot fulfill this request. The original image contains offensive content.'
+    });
   });
 
-  it('falls back to a generic empty reason when nothing useful is present', () => {
+  it('treats a response with no content at all as empty (try again)', () => {
     const r = classifyGeminiResponse(resp({ candidates: [{ content: { parts: [] } }] }));
+    expect(r).toMatchObject({ kind: 'empty' });
+  });
+
+  it('treats a blank/whitespace text part as empty, not a refusal', () => {
+    const r = classifyGeminiResponse(
+      resp({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '   ' }] } }] })
+    );
     expect(r).toMatchObject({ kind: 'empty' });
   });
 });

@@ -80,6 +80,13 @@ human review.
   `promptFeedback.blockReason` and policy `finishReason`s (`SAFETY`,
   `IMAGE_SAFETY`, `PROHIBITED_CONTENT`, `RECITATION`, `BLOCKLIST`, `SPII`) as
   `safety`; `isSafetyError()` catches the SDK throwing on blocked content.
+- A **prose-only response (no image part) is also classified `safety`**, not
+  `empty`. The red-team run surfaced that Gemini often refuses an unsafe drawing
+  by *replying in text* ("I cannot fulfill this request… offensive content")
+  with a plain `STOP` finishReason and **no** `IMAGE_SAFETY` signal. For an
+  image-generation model a text answer means it declined to draw, so it maps to
+  `422` ("draw something else") rather than a `502` retry that can never
+  succeed. A response with genuinely no content stays `empty` → `502`.
 - `/api/generate-image` returns **`422`** for a safety refusal (vs `502` for an
   upstream/empty failure). The client (`aiImage.ts`) maps `422` to a distinct
   `aiErrorKind: 'safety'`; `AiImageResult.svelte` shows a child-friendly "let's

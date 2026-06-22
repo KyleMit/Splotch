@@ -43,8 +43,17 @@ export function classifyGeminiResponse(response: GenerateContentResponse): Safet
     return { kind: 'safety', reason: String(finishReason) };
   }
 
-  const textPart = parts.find((p) => typeof p.text === 'string');
-  return { kind: 'empty', reason: textPart?.text || String(finishReason ?? 'no image part returned') };
+  // No image, but the model answered in prose. For an image-generation model
+  // that means it declined to draw (often a content refusal like "I cannot
+  // fulfill this request") rather than a transient failure — Gemini does not
+  // always attach an IMAGE_SAFETY finishReason to such refusals. Treat it as a
+  // safety refusal so the child is guided to a different drawing instead of a
+  // "try again" that can never succeed.
+  const textPart = parts.find((p) => typeof p.text === 'string' && p.text.trim());
+  if (textPart) return { kind: 'safety', reason: textPart.text! };
+
+  // Nothing usable at all — a genuine empty/upstream failure (retryable).
+  return { kind: 'empty', reason: String(finishReason ?? 'no image part returned') };
 }
 
 // A thrown Gemini error usually means a real API failure (auth, quota, 5xx), but
