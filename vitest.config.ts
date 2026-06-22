@@ -8,6 +8,11 @@ import { defineConfig } from 'vitest/config';
 // for the storage/state layers.
 export default defineConfig({
   plugins: [sveltekit()],
+  define: {
+    __APP_VERSION__: JSON.stringify('1.0.0-test'),
+    __BUILD_TIME__: JSON.stringify('2026-01-01T00:00:00Z'),
+    __NATIVE_API_BASE__: JSON.stringify('')
+  },
   test: {
     environment: 'happy-dom',
     setupFiles: ['./vitest-setup.ts'],

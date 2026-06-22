@@ -50,7 +50,7 @@ export function initPWAUpdates() {
   });
 }
 
-async function checkVersionMismatch() {
+export async function checkVersionMismatch() {
   try {
     const resp = await fetch('/version.json', { cache: 'no-store' });
     if (!resp.ok) return;
@@ -65,7 +65,7 @@ async function checkVersionMismatch() {
   }
 }
 
-async function checkForUpdates() {
+export async function checkForUpdates() {
   try {
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) return;
