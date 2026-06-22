@@ -3,6 +3,9 @@
 /playwright-report/
 /playwright/.cache/
 
+# run-splotch driver screenshots (.claude/skills/run-splotch)
+/screenshots/
+
 # Logs
 logs
 *.log

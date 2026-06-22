@@ -3,6 +3,8 @@
 ## TODO
 
 * [ ] /insights
+* [ ] /run-skill-generator
+* [ ] Red hat test AI prompts
 * [ ] Extract style guide conventions from existing code?
   * [ ] Do I need to enforce programmatically? Add linter or formatter?
 * [ ] Run performance profiling and analyze results
@@ -19,7 +21,6 @@
 * [ ] Generate more fun store screenshot generation
 * [ ] AI Style buttons should use custom image and then generate corresponding output for each.
   * [ ] Build custom AI Prompts in the parent center.  Generate a logo for them from the base style and then enable.  Save logo locally
-* [ ] Red hat test AI prompts
 * [ ] Native integration with apple pencil to use eraser
 * [ ] Efficiently layout broad range of colors on small devices in advanced color picker
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
