@@ -30,17 +30,46 @@ export default {
   },
   plugins: [
     sveltekit(),
+    // Emit a version.json on every build so the running app can detect
+    // when the deployed version has moved on and force a fresh fetch.
+    {
+      name: 'emit-version-json',
+      generateBundle() {
+        this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ version: APP_VERSION }) });
+      }
+    } satisfies import('vite').Plugin,
     ...(isCapacitor
       ? []
       : [
           VitePWA({
-            registerType: 'autoUpdate',
+            // 'prompt' disables vite-plugin-pwa's own auto-send-SKIP_WAITING /
+            // auto-reload, leaving updates.ts as the sole driver. This preserves
+            // the canvas-empty guard (never interrupt a mid-drawing session).
+            registerType: 'prompt',
             includeAssets: ['favicon.ico', 'favicon-96x96.png', 'apple-touch-icon.png', 'sounds/*.mp3'],
             manifest: false,
             workbox: {
-              globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,mp3,woff2,webmanifest}'],
-              skipWaiting: true,
-              clientsClaim: true
+              // Exclude html — navigation requests use the NetworkFirst runtime
+              // cache below so a manual refresh always fetches fresh markup.
+              globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}'],
+              // Do NOT set skipWaiting here. The new SW enters "waiting" state
+              // and updates.ts activates it (via SKIP_WAITING message) only when
+              // the canvas is blank, so mid-drawing sessions are never disrupted.
+              clientsClaim: true,
+              // vite-plugin-pwa defaults navigateFallback to 'index.html', which
+              // would register a CacheFirst NavigationRoute that shadows our
+              // NetworkFirst handler. Override to '' to suppress it.
+              navigateFallback: '',
+              runtimeCaching: [
+                {
+                  urlPattern: ({ request }) => request.mode === 'navigate',
+                  handler: 'NetworkFirst',
+                  options: {
+                    cacheName: 'pages',
+                    networkTimeoutSeconds: 5
+                  }
+                }
+              ]
             }
           })
         ])

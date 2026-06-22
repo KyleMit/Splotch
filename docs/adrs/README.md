@@ -25,3 +25,4 @@ This directory records significant architectural decisions made in the Splotch p
 | [0019](0019-npm-script-naming-and-scripts-info.md) | npm Script Naming Conventions + scripts-info Self-Documentation | Active |
 | [0020](0020-ios-build-toolchain.md) | iOS Build Toolchain (Swift Package Manager, xcodebuild Scripts, Automatic Signing) | Active |
 | [0021](0021-cloud-session-tunneling.md) | Tunneling the Dev Server from Claude Code Cloud Sessions (self-hosted chisel reverse tunnel) | Active |
+| [0022](0022-pwa-service-worker-strategy.md) | PWA Service Worker Strategy — vite-plugin-pwa as Manifest Injector with Custom Update Lifecycle | Active |
