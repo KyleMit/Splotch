@@ -508,6 +508,10 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
 }
 
 export function setColor(color: string) {
+  // Only a genuine change arms the debounce. The reactive bridge in
+  // DrawingCanvas re-pushes the current color on mount (and on unrelated
+  // store updates); arming on those would swallow the user's first stroke.
+  if (color === currentColor) return;
   currentColor = color;
   lastColorChangeTime = Date.now();
 }

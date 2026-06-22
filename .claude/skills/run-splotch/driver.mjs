@@ -48,8 +48,15 @@ const port = Number(values.port);
 const externalUrl = values.url ?? null;
 
 // Readiness predicate per route — what to poll for before interacting.
+// For "/", the <canvas> is in the DOM before onMount runs initDrawingCanvas,
+// which attaches the pointer listeners. initDrawingCanvas resizes the backing
+// store off its 300x150 default just before binding them, so a non-default
+// width means the engine is initialized and a stroke will register.
 const ready = {
-  '/': () => !!document.getElementById('drawingCanvas'),
+  '/': () => {
+    const c = document.getElementById('drawingCanvas');
+    return !!c && c.width > 300;
+  },
   '/dev/engine': () => window.__engineReady === true
 };
 const isReady = ready[route] ?? (() => document.readyState === 'complete');
@@ -106,17 +113,12 @@ async function main() {
   }
 
   if (draw && route === '/') {
-    // Async settings hydration calls setColor() shortly after mount, which arms
-    // a 100ms COLOR_CHANGE_DEBOUNCE that swallows the next pointerdown. Settle
-    // past it before the stroke (see src/lib/drawing/engine.ts).
-    await page.waitForTimeout(800);
     const box = await page.locator('#drawingCanvas').boundingBox();
     if (box) {
       const cx = box.x + box.width / 2;
       const cy = box.y + box.height / 2;
       await page.mouse.move(cx - 200, cy - 80);
       await page.mouse.down();
-      await page.waitForTimeout(50);
       for (const [dx, dy] of [[-100, 80], [40, -120], [160, 100], [240, -40]]) {
         await page.mouse.move(cx + dx, cy + dy, { steps: 12 });
       }

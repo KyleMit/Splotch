@@ -81,11 +81,11 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
 
 ## Gotchas
 
-- **First stroke gets swallowed.** Async settings hydration calls `setColor()`
-  shortly after mount, arming a 100ms `COLOR_CHANGE_DEBOUNCE` in
-  `src/lib/drawing/engine.ts` that ignores the next `pointerdown`. The driver
-  settles ~800ms before drawing so the stroke registers; if you script your own
-  draw, do the same or the canvas comes out blank.
+- **The canvas exists before it's interactive.** `#drawingCanvas` is in the DOM
+  before `onMount` runs `initDrawingCanvas` and binds the pointer listeners, so
+  polling for the element alone draws into a dead canvas. The driver waits for the
+  engine to resize the backing store off its 300×150 default (which happens right
+  before it binds listeners); do the same if you script your own draw.
 - **Cold `vite dev` re-optimizes deps** on the first hit, briefly 504-ing modules
   and auto-reloading. The driver *polls* for readiness instead of re-navigating
   (same trick as `tests/global-setup.ts`); a plain `goto` + immediate screenshot
