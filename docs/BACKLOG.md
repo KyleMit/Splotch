@@ -2,9 +2,6 @@
 
 ## TODO
 
-* [ ] /insights
-* [ ] /run-skill-generator
-* [ ] Red hat test AI prompts
 * [ ] Extract style guide conventions from existing code?
   * [ ] Do I need to enforce programmatically? Add linter or formatter?
 * [ ] Run performance profiling and analyze results
@@ -40,7 +37,6 @@
   * [ ] Save to device.
   * [ ] Export/import
 * Bugs
-  * [ ] Make sure we can refresh PWA
   * [ ] Sometimes it doesn't register clicks on color changes
 * Controls
   * [ ] Brush type (blend mode with previous drawing)
@@ -135,3 +131,7 @@
 * [x] Claude workflow audit
 * [x] Fix loading spinner not displaying 2nd time
 * [x] Add iOS build bundle
+* [x] /insights
+* [x] /run-skill-generator
+* [x] Make sure we can refresh PWA
+* [x] Red hat test AI prompts

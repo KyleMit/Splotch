@@ -95,9 +95,13 @@
     </button>
 
     {#if ui.aiError}
-      <div class="ai-result-error">
-        <span class="ai-result-error-emoji">😕</span>
+      {@const safety = ui.aiErrorKind === 'safety'}
+      <div class="ai-result-error" class:safety>
+        <span class="ai-result-error-emoji">{safety ? '🎨' : '😕'}</span>
         <p>{ui.aiErrorMessage ?? "Hmm, that didn't work. Please try again!"}</p>
+        {#if safety}
+          <p class="ai-result-error-sub">That picture didn't work — try drawing something different!</p>
+        {/if}
       </div>
     {:else}
       <div class="ai-stage" style="--confetti-ry: {confettiMaskRy};">
@@ -267,6 +271,12 @@
     margin: 0;
     font-size: 16px;
     font-weight: 600;
+  }
+  .ai-result-error-sub {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #888;
+    max-width: 280px;
   }
 
   /* ── Saved caption (auto-save mode, replaces the Download button) ── */

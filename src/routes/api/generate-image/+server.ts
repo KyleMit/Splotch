@@ -1,11 +1,21 @@
 import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { GoogleGenAI, type GenerateContentResponse } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { getStore } from '@netlify/blobs';
 import { STYLE_SUFFIXES } from '$lib/ai/styles';
 import { isAllowedToken } from '$lib/server/tokens';
 import { rateLimit } from '$lib/server/rateLimit';
+import { classifyGeminiResponse, isSafetyError } from '$lib/server/aiSafety';
 import type { RequestHandler } from './$types';
+
+// A safety refusal is the model declining the drawing on policy grounds — the
+// child should try a *different* drawing, not retry the same one. We surface it
+// as a distinct 422 (vs 502 for genuine upstream failures) so the client can
+// show the right guidance. See ADR-0023.
+const SAFETY_STATUS = 422;
+function safetyRefusal(reason: string): never {
+  throw error(SAFETY_STATUS, `Drawing was blocked for safety: ${reason}`);
+}
 
 /**
  * Record that a token generated an image, so we can spot a token going rogue.
@@ -70,20 +80,6 @@ function buildPromptForStyle(
 ): string {
   const suffix = typeof style === 'string' && Object.hasOwn(suffixes, style) ? suffixes[style] : '';
   return suffix ? defaultPrompt + ' ' + suffix : defaultPrompt;
-}
-
-function extractImagePart(response: GenerateContentResponse): { data: string; mimeType: string } {
-  const parts = response?.candidates?.[0]?.content?.parts ?? [];
-  const imagePart = parts.find((p) => p.inlineData?.data);
-  if (!imagePart) {
-    const textPart = parts.find((p) => typeof p.text === 'string');
-    const reason = textPart?.text || response?.candidates?.[0]?.finishReason || 'no image part returned';
-    throw error(502, `Model did not return an image: ${reason}`);
-  }
-  return {
-    data: imagePart.inlineData!.data!,
-    mimeType: imagePart.inlineData!.mimeType || 'image/png'
-  };
 }
 
 export const POST: RequestHandler = async ({ request, platform }) => {
@@ -171,14 +167,19 @@ export const POST: RequestHandler = async ({ request, platform }) => {
     const msg = err instanceof Error ? err.message : String(err);
     const status = (err as { status?: number }).status;
     console.error(`Gemini call failed (${status ?? 'unknown'}): ${msg.split('\n')[0]}`);
+    // The SDK can throw on blocked content — route that to the safety path too.
+    if (isSafetyError(err)) safetyRefusal(msg.split('\n')[0]);
     throw error(502, `Gemini request failed: ${msg}`);
   }
 
-  const { data, mimeType } = extractImagePart(response);
-  const outBytes = Buffer.from(data, 'base64');
+  const classified = classifyGeminiResponse(response);
+  if (classified.kind === 'safety') safetyRefusal(classified.reason);
+  if (classified.kind === 'empty') throw error(502, `Model did not return an image: ${classified.reason}`);
+
+  const outBytes = Buffer.from(classified.data, 'base64');
   return new Response(outBytes, {
     headers: {
-      'Content-Type': mimeType,
+      'Content-Type': classified.mimeType,
       'Cache-Control': 'no-store'
     }
   });

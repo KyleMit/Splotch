@@ -80,6 +80,12 @@ export async function generateAiImage(
     });
     if (!res.ok) {
       const msg = await res.text().catch(() => '');
+      // 422 = Gemini refused the drawing on safety grounds (see ADR-0023). That's
+      // not a retry — guide the child to draw something else, in their language.
+      if (res.status === 422) {
+        failAiGeneration("Let's try drawing something else!", 'safety');
+        return;
+      }
       throw new Error(`AI image request failed (${res.status}): ${msg}`);
     }
     const outBlob = await res.blob();
@@ -87,7 +93,10 @@ export async function generateAiImage(
     if (settings.autoSaveAiEnabled) await autoSaveImages(outBlob, imageBlob);
   } catch (err) {
     const timedOut = err instanceof DOMException && err.name === 'AbortError';
-    failAiGeneration(timedOut ? "That's taking too long — please try again." : undefined);
+    failAiGeneration(
+      timedOut ? "That's taking too long — please try again." : undefined,
+      timedOut ? 'retry' : 'generic'
+    );
     console.error(err);
   } finally {
     clearTimeout(timeoutId);

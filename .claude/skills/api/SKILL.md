@@ -33,6 +33,14 @@ PNG, style prompt, and either an allow-listed access token or a BYO Gemini
 key. Token-gated and rate-limited; see `src/routes/api/generate-image` and
 ADR-0006.
 
+On success returns the image bytes. Failure modes are split so the client can
+guide the child correctly (ADR-0023): a **`422`** means Gemini refused the
+drawing on **safety** grounds — the child should draw something *different* (the
+app shows "let's try drawing something else!"); a **`502`** is a genuine
+upstream/empty failure (retryable). The safety vs. empty/error split is decided
+by `classifyGeminiResponse` / `isSafetyError` in `src/lib/server/aiSafety.ts`,
+and probed by the manual red-team suite (`npm run redteam`, `tests/redteam/`).
+
 ### `POST /api/verify-access-code`
 
 Checks a "special access" invite code against the managed allowlist.

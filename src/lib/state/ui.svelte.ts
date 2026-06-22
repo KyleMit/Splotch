@@ -20,7 +20,13 @@ interface UiState {
   aiPreviewUrl: string | null;
   aiError: boolean;
   aiErrorMessage: string | null;
+  // 'safety'  — Gemini refused the drawing; guide the child to draw something else.
+  // 'retry'   — a transient failure (timeout, server); the same drawing may work.
+  // 'generic' — anything else.
+  aiErrorKind: AiErrorKind;
 }
+
+export type AiErrorKind = 'generic' | 'safety' | 'retry';
 
 export const ui: UiState = $state({
   colorPickerOpen: false,
@@ -37,7 +43,8 @@ export const ui: UiState = $state({
   aiResultUrl: null,
   aiPreviewUrl: null,
   aiError: false,
-  aiErrorMessage: null
+  aiErrorMessage: null,
+  aiErrorKind: 'generic'
 });
 
 export function buttonCenter(el: HTMLElement): Origin {
@@ -97,6 +104,7 @@ export function startAiGeneration(previewUrl: string | null) {
   ui.aiResultUrl = swapObjectUrl(ui.aiResultUrl);
   ui.aiError = false;
   ui.aiErrorMessage = null;
+  ui.aiErrorKind = 'generic';
   ui.aiGenerating = true;
   ui.aiResultOpen = true;
 }
@@ -127,11 +135,12 @@ export function finishAiGeneration(url: string) {
   ui.aiGenerating = false;
 }
 
-export function failAiGeneration(message?: string) {
+export function failAiGeneration(message?: string, kind: AiErrorKind = 'generic') {
   if (!ui.aiResultOpen) return;
   ui.aiGenerating = false;
   ui.aiError = true;
   ui.aiErrorMessage = message ?? null;
+  ui.aiErrorKind = kind;
 }
 
 export function closeAiResult() {
@@ -139,6 +148,7 @@ export function closeAiResult() {
   ui.aiGenerating = false;
   ui.aiError = false;
   ui.aiErrorMessage = null;
+  ui.aiErrorKind = 'generic';
   ui.aiResultUrl = swapObjectUrl(ui.aiResultUrl);
   ui.aiPreviewUrl = swapObjectUrl(ui.aiPreviewUrl);
 }

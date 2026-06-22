@@ -48,11 +48,17 @@
     finishAiGeneration(aiOutputUrl);
   }
 
-  function triggerError() {
+  // Scaffold each real failure mode so the error UI can be reviewed without a
+  // Gemini call. These mirror exactly what src/lib/drawing/aiImage.ts passes to
+  // failAiGeneration() for a 422 safety refusal, a timeout, and a server error.
+  function fail(message: string | undefined, kind: 'safety' | 'retry' | 'generic') {
     clearPending();
     if (!ui.aiResultOpen) startAiGeneration(drawingInputUrl);
-    failAiGeneration();
+    failAiGeneration(message, kind);
   }
+  const triggerSafety = () => fail("Let's try drawing something else!", 'safety');
+  const triggerTimeout = () => fail("That's taking too long — please try again.", 'retry');
+  const triggerServerError = () => fail(undefined, 'generic');
 
   function reset() {
     clearPending();
@@ -67,7 +73,9 @@
     const k = e.key.toLowerCase();
     if (k === 'p') play();
     else if (k === 'f') finishNow();
-    else if (k === 'e') triggerError();
+    else if (k === 's') triggerSafety();
+    else if (k === 'e') triggerServerError();
+    else if (k === 't') triggerTimeout();
     else if (k === 'r') reset();
   }
 
@@ -114,20 +122,28 @@
     <div class="group">
       <span class="group-label">Jump</span>
       <button onclick={finishNow}>⏩ Finish now</button>
-      <button onclick={triggerError}>⚠ Error</button>
       <button onclick={reset}>✕ Reset</button>
+    </div>
+
+    <div class="group">
+      <span class="group-label">Failures</span>
+      <button onclick={triggerSafety}>🎨 Safety blocked (422)</button>
+      <button onclick={triggerServerError}>⚠ Server error (502)</button>
+      <button onclick={triggerTimeout}>⏱ Timeout</button>
     </div>
   </div>
 
   <p class="hint">
     The modal blocks the page once open — use hotkeys to drive it from anywhere:
-    <kbd>P</kbd> play · <kbd>F</kbd> finish · <kbd>E</kbd> error · <kbd>R</kbd> reset.
+    <kbd>P</kbd> play · <kbd>F</kbd> finish · <kbd>S</kbd> safety · <kbd>E</kbd> server
+    error · <kbd>T</kbd> timeout · <kbd>R</kbd> reset.
   </p>
 
   <dl class="state" aria-label="ui state">
     <div><dt>aiResultOpen</dt><dd>{ui.aiResultOpen}</dd></div>
     <div><dt>aiGenerating</dt><dd>{ui.aiGenerating}</dd></div>
     <div><dt>aiError</dt><dd>{ui.aiError}</dd></div>
+    <div><dt>aiErrorKind</dt><dd>{ui.aiErrorKind}</dd></div>
     <div><dt>hasResult</dt><dd>{!!ui.aiResultUrl}</dd></div>
   </dl>
 
