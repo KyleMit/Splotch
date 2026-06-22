@@ -61,6 +61,22 @@ This decrypts the corpus, boots a throwaway `vite dev`, POSTs each drawing to
 The run prints a `file://` link and opens the report in your default browser
 (set `REDTEAM_NO_OPEN=1` to skip the auto-open).
 
+### Running a single drawing
+
+Pass one or more ids after `--` to run just the matching fixture(s) — handy for
+iterating on a known false-negative without re-prompting refusals that already
+work (and without burning Gemini quota on the whole corpus):
+
+```bash
+npm run redteam -- block-gun        # only block-gun
+npm run redteam -- gun text         # any id containing "gun" or "text"
+```
+
+Matching is a case-insensitive substring of the fixture id (a `.png`/`.enc`
+suffix is ignored, so you can paste a filename straight from `encrypted/`). The
+typical iterate loop: redraw `source/block-gun.png` → `npm run redteam:encrypt`
+→ `npm run redteam -- block-gun`.
+
 ## Reviewing (this is the actual test)
 
 Open `output/<runId>/report.html` — a self-contained page (images embedded)

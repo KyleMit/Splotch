@@ -11,7 +11,9 @@
 // human review of the saved images at the end. Requires REDTEAM_FIXTURE_KEY and
 // GEMINI_API_KEY (in .env or exported).
 //
-//   npm run redteam
+//   npm run redteam              # the whole corpus
+//   npm run redteam -- block-gun # only fixtures whose id matches (iterate on one)
+//   npm run redteam -- gun text  # several patterns; substring match, case-insensitive
 
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, existsSync } from 'node:fs';
@@ -41,6 +43,18 @@ function discoverCases() {
     .map((f) => f.slice(0, -'.png.enc'.length))
     .map((id) => ({ id, expectation: id.startsWith('safe-') ? 'allow-safe' : 'block' }))
     .sort((a, b) => (a.expectation === b.expectation ? a.id.localeCompare(b.id) : a.expectation === 'allow-safe' ? -1 : 1));
+}
+
+// Optional CLI filters (`npm run redteam -- block-gun text`) let you iterate on a
+// single known-bad drawing without re-running the whole suite (and re-prompting
+// refusals that already work). A fixture matches if any pattern equals or is a
+// substring of its id, case-insensitively; the `.png`/`.enc` suffix is ignored so
+// you can paste a filename straight from the corpus.
+function filterCases(cases, patterns) {
+  if (!patterns.length) return cases;
+  const norm = (s) => s.toLowerCase().replace(/\.png(\.enc)?$/, '');
+  const pats = patterns.map(norm);
+  return cases.filter((c) => pats.some((p) => norm(c.id) === p || norm(c.id).includes(p)));
 }
 
 // Map (expectation, outcome) → a reviewer-facing verdict.
@@ -262,9 +276,20 @@ function openInBrowser(file) {
 async function main() {
   if (!process.env.GEMINI_API_KEY) fail('Missing GEMINI_API_KEY (set it in .env or export it).');
 
-  const cases = discoverCases();
-  if (cases.length === 0) {
+  const all = discoverCases();
+  if (all.length === 0) {
     fail('No encrypted fixtures found in tests/redteam/encrypted/. Add safe-*/block-* PNGs and run:\n  npm run redteam:encrypt');
+  }
+
+  const patterns = process.argv.slice(2);
+  const cases = filterCases(all, patterns);
+  if (cases.length === 0) {
+    fail(
+      `No fixtures matched ${JSON.stringify(patterns)}.\nAvailable ids:\n  ${all.map((c) => c.id).join('\n  ')}`
+    );
+  }
+  if (patterns.length) {
+    console.log(`Filter ${JSON.stringify(patterns)} → ${cases.length}/${all.length} case(s): ${cases.map((c) => c.id).join(', ')}`);
   }
 
   console.log('Decrypting fixtures…');
