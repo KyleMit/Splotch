@@ -2,10 +2,8 @@
 
 ## TODO
 
-* [ ] Extract style guide conventions from existing code?
-  * [ ] Do I need to enforce programmatically? Add linter or formatter?
-* [ ] Run performance profiling and analyze results
-  * [ ] Run performance profile on device
+
+
 * [ ] Hand draw icons
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
@@ -14,12 +12,13 @@
 * [ ] Add haptics for trashcan when in the clear accept zone
 * [ ] Add sound effects when deleting
 * [ ] Add even more color for tall landscape view
-* [ ] If AI call fails and you need to try again, enable a way to do so immediately
 * [ ] Generate more fun store screenshot generation
-* [ ] AI Style buttons should use custom image and then generate corresponding output for each.
+* [ ] Efficiently layout broad range of colors on small devices in advanced color picker
+* AI Art
+  * [ ] If AI call fails and you need to try again, enable a way to do so immediately
+  * [ ] AI Style buttons should use custom image and then generate corresponding output for each.
   * [ ] Build custom AI Prompts in the parent center.  Generate a logo for them from the base style and then enable.  Save logo locally
 * [ ] Native integration with apple pencil to use eraser
-* [ ] Efficiently layout broad range of colors on small devices in advanced color picker
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * Loading Spinner
   * [ ] Fun loading sound while AI is loading
@@ -36,11 +35,16 @@
   * [ ] Generate coloring book workflow
   * [ ] Save to device.
   * [ ] Export/import
+* Performance
+  * [ ] Run performance profiling and analyze results
+  * [ ] Run performance profile on device
 * Bugs
   * [ ] Sometimes it doesn't register clicks on color changes
 * Controls
   * [ ] Brush type (blend mode with previous drawing)
-
+* Clean Code
+  * [ ] Extract style guide conventions from existing code?
+  * [ ] Do I need to enforce programmatically? Add linter or formatter?
 
 
 ## DONE
