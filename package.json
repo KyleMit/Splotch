@@ -73,7 +73,7 @@
     "postinstall": "Apply the @capacitor/cli Windows gradlew patch via patch-package (ADR-0011)",
     "predev": "svelte-kit sync (regenerate .svelte-kit types) before dev",
     "dev": "Dev server at localhost:5173 (no /api functions)",
-    "predev:netlify": "Checks the Netlify CLI is on PATH before dev:netlify, with an install hint if not",
+    "predev:netlify": "Checks the Netlify CLI is on PATH, logged in, and linked before dev:netlify (Blobs needs auth), with a hint if not",
     "dev:netlify": "Dev server with the /api/* serverless functions (Netlify Dev)",
     "dev:host": "Dev server exposed on the local network (for phones and other devices)",
     "dev:cap": "Dev server in native mode (CAPACITOR=true) on the network, for android:live",
