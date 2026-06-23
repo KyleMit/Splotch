@@ -12,7 +12,15 @@
 # no package.json of its own, so drive the dev server explicitly via a custom command run from
 # web/ (svelte-kit sync + vite dev, resolving node_modules upward to the root). All requests —
 # static, SSR, and /api/* — proxy to the vite dev server on targetPort.
+#
+# `publish` points netlify-cli's static file server at the SvelteKit static/ dir — the files
+# meant to be served verbatim, mirroring production. Without it, netlify-cli warns ("Unable to
+# determine public folder...") and defaults to cwd (web/), exposing source files like
+# svelte.config.js over HTTP. static/ has no _redirects catch-all, so (unlike the build output —
+# the reason there's no [build] block) it can't shadow dynamic routes; anything not found there
+# falls through to the vite proxy.
 [dev]
   framework = "#custom"
   command = "node ../scripts/web.mjs dev"
   targetPort = 5173
+  publish = "static"
