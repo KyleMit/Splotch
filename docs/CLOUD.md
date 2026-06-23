@@ -105,7 +105,7 @@ the system CA. We use [chisel](https://github.com/jpillora/chisel) fronted by a
 `dev:tunnel` defaults `TUNNEL_HOST` to the relay host and injects it into vite, so it
 runs plain `npm run dev` under the hood — **`--host` is not needed in the cloud** (no
 LAN; chisel forwards via localhost). The only thing the tunnel needs from vite is
-`server.allowedHosts`, which `TUNNEL_HOST` drives (`vite.config.ts`). Set `TUNNEL_HOST`
+`server.allowedHosts`, which `TUNNEL_HOST` drives (`web/vite.config.ts`). Set `TUNNEL_HOST`
 in the env config too if you want a bare `npm run dev` to accept the tunnel host.
 
 > **One live tunnel at a time, and it's public while live.** The relay binds the

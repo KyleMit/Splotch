@@ -98,7 +98,7 @@ async function main() {
 
   // Cold `vite dev` re-optimizes deps on first hit, briefly 504-ing modules and
   // auto-reloading. Poll the readiness predicate (don't keep re-navigating) so we
-  // ride that reload to a settled page — same trick as tests/global-setup.ts.
+  // ride that reload to a settled page — same trick as web/tests/global-setup.ts.
   const url = baseURL + route;
   const deadline = Date.now() + 90_000;
   let last = 0;

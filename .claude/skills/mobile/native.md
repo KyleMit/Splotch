@@ -19,7 +19,7 @@ the `/api/generate-image` serverless function + the `/admin` console). The
 native apps can't run a server, so they build a **fully static** export instead:
 
 * **`CAPACITOR=true vite build`** swaps in `adapter-static` (see
-  `svelte.config.js`) and skips the PWA service worker (see `vite.config.js`).
+  `web/svelte.config.js`) and skips the PWA service worker (see `web/vite.config.ts`).
 * Output goes to **`build/`**, which Capacitor copies into the native projects
   (`webDir` in `capacitor.config.json`).
 * The server-only routes (`/api`, `/admin`, `/dev`) are excluded from the bundle
@@ -35,18 +35,18 @@ native apps can't run a server, so they build a **fully static** export instead:
 
 The **core engine is 100% offline**: canvas, colors, stroke widths, eraser,
 sounds, coloring books, screenshots — all bundled on-device (fonts via
-`@fontsource-variable/quicksand`, sounds in `static/sounds`, coloring pages in
-`static/coloring`). No network needed.
+`@fontsource-variable/quicksand`, sounds in `web/static/sounds`, coloring pages in
+`web/static/coloring`). No network needed.
 
 The **only** online feature is the **AI "magic image" button**. On native it
 calls the hosted endpoint `https://splotch.art/api/generate-image`
-(`__NATIVE_API_BASE__`, injected at build time in `vite.config.js`). When the
+(`__NATIVE_API_BASE__`, injected at build time in `web/vite.config.ts`). When the
 device is offline the AI button is **hidden** automatically
-(`src/lib/state/network.svelte.js` + `@capacitor/network`).
+(`web/src/lib/state/network.svelte.js` + `@capacitor/network`).
 
 ### Storage
 
-`src/lib/storage.js` is dual-layer:
+`web/src/lib/storage.js` is dual-layer:
 
 * Synchronous **localStorage** for fast reads (web + native WebView).
 * On native, every write is also mirrored to **Capacitor Preferences** (durable
@@ -56,7 +56,7 @@ device is offline the AI button is **hidden** automatically
 ### Screen orientation
 
 The parent-center rotation toggle (`lockRotationEnabled` +
-`forceLandscapeOrientation`) is applied by `src/lib/orientation.ts`. On native it
+`forceLandscapeOrientation`) is applied by `web/src/lib/orientation.ts`. On native it
 locks via **`@capacitor/screen-orientation`**, which calls Android's
 `Activity.setRequestedOrientation` — this **overrides the OS Auto-Rotate setting**,
 so the parent's choice is honored even on a device with rotation turned off. The
@@ -134,7 +134,7 @@ The shared baseline both depend on:
 ### Legal / privacy artifacts (required by both stores)
 
 * [x] **Privacy Policy** page — created at `/privacy`
-  (`src/routes/privacy/+page.svelte`), live at `https://splotch.art/privacy`.
+  (`web/src/routes/privacy/+page.svelte`), live at `https://splotch.art/privacy`.
   ← required by both stores. Contact is via GitHub issues (no email). It must
   state: no personal data collected, no ads, no tracking, no third-party
   analytics; explain the optional AI feature (drawing sent to the AI service

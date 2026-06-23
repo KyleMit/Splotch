@@ -1,10 +1,10 @@
 ---
 paths:
-  - "tests/**"
-  - "src/**/*.test.ts"
-  - "playwright.config.ts"
-  - "vitest.config.ts"
-  - "vitest-setup.ts"
+  - "web/tests/**"
+  - "web/src/**/*.test.ts"
+  - "web/playwright.config.ts"
+  - "web/vitest.config.ts"
+  - "web/vitest-setup.ts"
   - ".maestro/**"
 ---
 

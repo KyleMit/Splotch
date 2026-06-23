@@ -19,8 +19,8 @@ npm run dev       # http://localhost:5173
 
 Two generators run automatically before every build (the `prebuild`/`prebuild:cap` hooks):
 
-- `gen:icons` — generates `src/lib/components/icon-names.d.ts` from the SVG files in `src/lib/icons/`
-- `gen:releases` — generates `src/lib/releases.json` and the fastlane store changelogs from `releases/*.md`
+- `gen:icons` — generates `web/src/lib/components/icon-names.d.ts` from the SVG files in `web/src/lib/icons/`
+- `gen:releases` — generates `web/src/lib/releases.json` and the fastlane store changelogs from `releases/*.md`
 
 To see every npm script with a one-line description, run:
 
@@ -57,7 +57,24 @@ Splotch ships as two distinct build targets from the same source:
 | Web (Netlify) | `npm run build` | `adapter-netlify` | `/api/*`, `/admin` included |
 | Native (Capacitor) | `npm run build:cap` | `adapter-static` | excluded (`strict: false`) |
 
-The switch is the `CAPACITOR` env var, read by both `svelte.config.js` (adapter selection) and `vite.config.ts` (PWA plugin, `__NATIVE_API_BASE__`).
+The switch is the `CAPACITOR` env var, read by both `web/svelte.config.js` (adapter selection) and `web/vite.config.ts` (PWA plugin, `__NATIVE_API_BASE__`).
+
+### Repository layout (ADR-0024)
+
+The SvelteKit app lives in **`web/`** (`web/src/`, the Vite/SvelteKit/test configs, `web/netlify.toml`,
+and the `web/build/` output). The Capacitor native projects (`android/`, `ios/`),
+`capacitor.config.json` (`webDir: "web/build"`), the single root `package.json`/`node_modules`,
+and `scripts/` stay at the repo root. `npm run dev:netlify` runs `netlify dev --cwd web` so
+netlify-cli's file watcher is scoped to `web/` and never traverses the large native trees (the
+cause of the `EMFILE` crash this layout fixes). All the npm scripts still run from the repo root;
+the web toolchain is dispatched into `web/` by `scripts/web.mjs`.
+
+> **Production deploy — open item.** Netlify runs install + build in one directory, but
+> `package.json` (root) and the app/output (`web/`) are now split. Local dev is fixed and
+> unaffected, but the production Netlify build (base directory, publish path, and the
+> adapter-netlify functions location) must be reconciled and **validated on a Netlify deploy
+> preview before merging to `main`** — do not assume the live `splotch.art` deploy still works
+> until that preview is green.
 
 On native the AI button calls the **hosted** endpoint (`https://splotch.art/api/generate-image`) via `__NATIVE_API_BASE__`. On web it uses a same-origin relative path.
 
@@ -93,11 +110,11 @@ Set `PUBLIC_ENABLE_DEV_HARNESS=true` in `.env.local` to unlock:
 
 **Svelte 5 runes only.** Use `$state`, `$derived`, `$effect`, `$props`. No legacy stores (`writable`, `readable`).
 
-**State lives in `src/lib/state/`**, not in components. Components read state and call setters; they don't own shared state.
+**State lives in `web/src/lib/state/`**, not in components. Components read state and call setters; they don't own shared state.
 
-**The drawing engine is imperative.** `src/lib/drawing/engine.ts` is a plain TypeScript module (not a Svelte store). Components wire into it via callbacks on mount and call its exported functions directly (`setColor`, `clearCanvas`, etc.).
+**The drawing engine is imperative.** `web/src/lib/drawing/engine.ts` is a plain TypeScript module (not a Svelte store). Components wire into it via callbacks on mount and call its exported functions directly (`setColor`, `clearCanvas`, etc.).
 
-**Svelte actions for complex gestures.** Drag interactions (drag-to-clear) and dialog wiring live in `src/lib/actions/`, not inline in components.
+**Svelte actions for complex gestures.** Drag interactions (drag-to-clear) and dialog wiring live in `web/src/lib/actions/`, not inline in components.
 
 **No comments on obvious code.** Add a comment only when the *why* is non-obvious — a hidden constraint, a workaround, a subtle invariant. Don't describe what the code does; the names do that.
 
@@ -107,7 +124,7 @@ Set `PUBLIC_ENABLE_DEV_HARNESS=true` in `.env.local` to unlock:
 
 ## Adding a new icon
 
-1. Drop an SVG into `src/lib/icons/`.
+1. Drop an SVG into `web/src/lib/icons/`.
 2. Run `npm run gen:icons` (it also runs automatically before every build).
 3. Use `<Icon name="your-icon-name" />` — the `name` prop is type-checked against the generated union.
 

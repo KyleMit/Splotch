@@ -27,3 +27,4 @@ This directory records significant architectural decisions made in the Splotch p
 | [0021](0021-cloud-session-tunneling.md) | Tunneling the Dev Server from Claude Code Cloud Sessions (self-hosted chisel reverse tunnel) | Active |
 | [0022](0022-pwa-service-worker-strategy.md) | PWA Service Worker Strategy — vite-plugin-pwa as Manifest Injector with Custom Update Lifecycle | Active |
 | [0023](0023-redteam-ai-safety-integration-test.md) | Red-Team Integration Test for AI Image Safety (Manual, Token-Gated, Encrypted Fixtures, Excluded from CI) | Active |
+| [0024](0024-web-app-subdirectory-for-netlify-watcher.md) | Web App in web/ Subdirectory to Scope the Netlify Dev Watcher | Active |

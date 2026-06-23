@@ -5,7 +5,13 @@ Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two tar
 * **Web** (`splotch.art`, Netlify): SSR + `/api/*` serverless functions + `/admin` console + PWA.
 * **Native** (Capacitor; Android + iOS): fully static export, no server routes — the apps call the hosted API.
 
-The `CAPACITOR=true` env var at build time is the **single signal** for all web-vs-native branching (`svelte.config.js`, `vite.config.ts`). Do not add runtime platform branches that could be build-time branches instead.
+The SvelteKit app lives in **`web/`** (its `src/`, configs, `netlify.toml`, build output); the
+Capacitor native trees (`android/`, `ios/`), `capacitor.config.json`, the single root
+`package.json`/`node_modules`, and `scripts/` stay at the repo root. This keeps netlify-cli's
+file watcher (run via `netlify dev --cwd web`) off the large native trees — see ADR-0024. The web
+toolchain runs with `cwd = web/` through `scripts/web.mjs`.
+
+The `CAPACITOR=true` env var at build time is the **single signal** for all web-vs-native branching (`web/svelte.config.js`, `web/vite.config.ts`). Do not add runtime platform branches that could be build-time branches instead.
 
 ## Commands
 
@@ -39,7 +45,7 @@ On-demand **skills** (invoke when the topic comes up — don't guess from memory
 | `testing` | writing/running tests beyond the basics, or debugging CI failures |
 | `adrs` | proposing or discussing any architectural approach |
 
-Path-scoped **rules** in `.claude/rules/` (load automatically): `svelte.md`, `server-api.md`, `testing.md`. Nested CLAUDE.md files in `src/`, `android/`, and `scripts/` cover those areas.
+Path-scoped **rules** in `.claude/rules/` (load automatically): `svelte.md`, `server-api.md`, `testing.md`. Nested CLAUDE.md files in `web/src/`, `android/`, and `scripts/` cover those areas.
 
 Remaining `docs/`:
 

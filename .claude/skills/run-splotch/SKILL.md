@@ -88,7 +88,7 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
   before it binds listeners); do the same if you script your own draw.
 - **Cold `vite dev` re-optimizes deps** on the first hit, briefly 504-ing modules
   and auto-reloading. The driver *polls* for readiness instead of re-navigating
-  (same trick as `tests/global-setup.ts`); a plain `goto` + immediate screenshot
+  (same trick as `web/tests/global-setup.ts`); a plain `goto` + immediate screenshot
   can catch the transient error page.
 - **`--port` defaults to 5199**, not the usual 5173, to avoid clashing with a dev
   server you already have running. Pass `--port 5173` to reuse one, or `--keep`

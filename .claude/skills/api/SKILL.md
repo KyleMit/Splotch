@@ -8,7 +8,7 @@ description: HTTP API reference for the /api/* endpoints — generate-image, ver
 The hosted SvelteKit app (Netlify, `https://splotch.art`) serves a small JSON
 API under `/api/*`. On the web it's called same-origin; the native apps (a
 static export with no server) call the hosted endpoints cross-origin via
-`apiUrl()` (`src/lib/api.ts`, base injected at build time as
+`apiUrl()` (`web/src/lib/api.ts`, base injected at build time as
 `__NATIVE_API_BASE__`).
 
 **CORS:** `hooks.server.ts` answers preflights and adds
@@ -19,7 +19,7 @@ credential the caller must already hold (access token, Gemini key, or admin
 session) and nothing under `/api` uses cookies. See ADR-0007.
 
 **Rate limiting:** unauthenticated oracles are throttled per IP with a
-sliding window (default 10 hits/min, `src/lib/server/rateLimit.ts`,
+sliding window (default 10 hits/min, `web/src/lib/server/rateLimit.ts`,
 ADR-0014). Throttled responses are `429` with a `Retry-After` header.
 
 ---
@@ -30,7 +30,7 @@ ADR-0014). Throttled responses are `429` with a `Retry-After` header.
 
 Generates a stylized image from a drawing. `multipart/form-data` with the
 PNG, style prompt, and either an allow-listed access token or a BYO Gemini
-key. Token-gated and rate-limited; see `src/routes/api/generate-image` and
+key. Token-gated and rate-limited; see `web/src/routes/api/generate-image` and
 ADR-0006.
 
 On success returns the image bytes. Failure modes are split so the client can
@@ -38,7 +38,7 @@ guide the child correctly (ADR-0023): a **`422`** means Gemini refused the
 drawing on **safety** grounds — the child should draw something *different* (the
 app shows "let's try drawing something else!"); a **`502`** is a genuine
 upstream/empty failure (retryable). The safety vs. empty/error split is decided
-by `classifyGeminiResponse` / `isSafetyError` in `src/lib/server/aiSafety.ts`,
+by `classifyGeminiResponse` / `isSafetyError` in `web/src/lib/server/aiSafety.ts`,
 and probed by the manual red-team suite (`npm run redteam`, `tests/redteam/`).
 
 The Gemini call is hardened to *increase* those refusals (the audience is
@@ -46,7 +46,7 @@ toddlers): a `systemInstruction` tells the model to decline unsafe drawings in
 plain text rather than "beautify" them, and `safetySettings` set every
 configurable harm category (including the `HARM_CATEGORY_IMAGE_*` output
 categories) to `BLOCK_LOW_AND_ABOVE`. Both live in
-`src/routes/api/generate-image/+server.ts`.
+`web/src/routes/api/generate-image/+server.ts`.
 
 ### `POST /api/verify-access-code`
 
@@ -78,8 +78,8 @@ Rate-limited per IP.
 
 JSON twin of the server-rendered `/admin` console, used by the native apps'
 `/admin/native` page (the static bundle has no server to run the console's
-form actions). Both front doors call the same core (`src/lib/server/admin.ts`
-+ `src/lib/server/tokens.ts`) — the web console executes it directly in its
+form actions). Both front doors call the same core (`web/src/lib/server/admin.ts`
++ `web/src/lib/server/tokens.ts`) — the web console executes it directly in its
 form actions and **never** loops back through these endpoints.
 
 ### Authentication model
