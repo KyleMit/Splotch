@@ -1,5 +1,10 @@
 [
   {
+    "version": "1.2.0",
+    "date": "2026-06-22",
+    "bodyHtml": "<h2>✨ New</h2>\n<ul>\n<li>Splotch is now on iPhone and iPad.</li>\n<li>A volume slider to fine-tune the sound.</li>\n<li>Swipe between tabs in Parent Controls.</li>\n</ul>\n<h2>🚀 Improved</h2>\n<ul>\n<li>Smoother, crisper strokes.</li>\n<li>Faster drawing and saving.</li>\n</ul>\n<h2>🛠 Fixed</h2>\n<ul>\n<li>The first stroke now always draws.</li>\n<li>No more streaky multi-touch lines on iPhone/iPad.</li>\n<li>Saving no longer creates a blank picture.</li>\n<li>App updates no longer leave stale content.</content>\n</invoke></li>\n</ul>"
+  },
+  {
     "version": "1.1.0",
     "date": "2026-06-05",
     "bodyHtml": "<h2>✨ New</h2>\n<ul>\n<li>Lock screen rotation so your drawing stays put — on by default.</li>\n<li>Tap the speaker icon to mute or unmute sounds.</li>\n</ul>\n<h2>🚀 Improved</h2>\n<ul>\n<li>Coloring pages now adapt to both portrait and landscape.</li>\n<li>Sounds start sooner for snappier feedback.</li>\n<li>Better screen-reader support for in-app messages.</li>\n</ul>\n<h2>🛠 Fixed</h2>\n<ul>\n<li>Your coloring page no longer resets when you rotate the device.</li>\n<li>Fixed the layout on wide screens.</li>\n</ul>"
