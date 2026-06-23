@@ -2,15 +2,15 @@
 
 Generated assets for both store listings. Copy for the text fields:
 
-* Google Play → [`STORE-LISTING.md`](./STORE-LISTING.md)
-* Apple App Store → [`APP-STORE-LISTING.md`](./APP-STORE-LISTING.md)
+* Google Play → [`STORE-LISTING-ANDROID.md`](./STORE-LISTING-ANDROID.md)
+* Apple App Store → [`STORE-LISTING-IOS.md`](./STORE-LISTING-IOS.md)
 
 ## Contents
 
 ```
 store-assets/
-├── STORE-LISTING.md          # Google Play: app name / short + full description
-├── APP-STORE-LISTING.md      # App Store: name / subtitle / keywords / privacy label
+├── STORE-LISTING-ANDROID.md  # Google Play: app name / short + full description
+├── STORE-LISTING-IOS.md      # App Store: name / subtitle / keywords / privacy label
 ├── icon-512.png              # Play app icon  512×512   (Play limit: ≤1 MB)
 ├── feature-graphic.png       # Play feature graphic 1024×500 (Play limit: ≤15 MB)
 └── screenshots/

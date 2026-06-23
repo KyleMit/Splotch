@@ -171,10 +171,10 @@ npx @capacitor/assets generate --ios
 ### App Store Connect setup
 
 * [ ] Listing fields + screenshots: copy/paste from
-  `store-assets/APP-STORE-LISTING.md`, upload
+  `store-assets/STORE-LISTING-IOS.md`, upload
   `store-assets/screenshots/iphone69/` and `ipad13/`.
 * [ ] **App Privacy** nutrition label (declarations written out in
-  `APP-STORE-LISTING.md`); privacy policy URL `https://splotch.art/privacy`.
+  `STORE-LISTING-IOS.md`); privacy policy URL `https://splotch.art/privacy`.
 * [ ] **Age rating** questionnaire → 4+; opt into **Kids Category, 5 & Under**
   (see Kids Category below for the extra rules this triggers).
 * [ ] **TestFlight**: internal testing needs no review; invite yourself, smoke
@@ -194,7 +194,7 @@ COPPA/GDPR-K, privacy policy). The Apple Kids Category adds:
 * [ ] **Privacy Nutrition Label** ("App Privacy") in App Store Connect — declare
   data types. The AI image upload = "User Content" used for app functionality,
   not linked to identity, not for tracking. Exact declarations are written out
-  in `store-assets/APP-STORE-LISTING.md`.
+  in `store-assets/STORE-LISTING-IOS.md`.
 * [x] Privacy Policy URL (same one — `https://splotch.art/privacy`).
 * [ ] Note: the AI button is an external network feature — confirm it doesn't
   need a parental gate (it sends the child's own drawing for processing; no

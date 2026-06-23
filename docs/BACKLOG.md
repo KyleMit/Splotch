@@ -20,6 +20,10 @@
   * [ ] Build custom AI Prompts in the parent center.  Generate a logo for them from the base style and then enable.  Save logo locally
 * [ ] Native integration with apple pencil to use eraser
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
+* [ ] Add /about page for marketing page with download links
+* [ ] Once ios and android stores ship, link to native downloads in parent center
+* [ ] Setup fastlane to automate store deployments
+* [ ] Parent center window should not bounce around in height so much when the height of content changes.  set min height.
 * Loading Spinner
   * [ ] Fun loading sound while AI is loading
   * [ ] Increase default timer

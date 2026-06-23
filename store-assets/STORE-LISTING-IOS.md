@@ -86,6 +86,14 @@ Generated per release — `fastlane/metadata/en-US/release_notes.txt` (written b
 | Privacy Policy URL | https://splotch.art/privacy |
 
 
+## General
+
+| Field | Value |
+| --- | --- |
+| Copyright | 2026 Kyle Mitofsky |
+| Routing App Coverage File | N/A — not a routing/navigation app |
+
+
 ## Categories & age
 
 | Field | Value |
