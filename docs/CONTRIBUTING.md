@@ -7,6 +7,7 @@
   nvm use 22
   ```
 - **npm** (bundled with Node)
+- **Netlify CLI** (optional) — only needed to run the `/api/*` serverless functions locally via `npm run dev:netlify`. Install globally with `npm install -g netlify-cli`.
 - For native Android/iOS work, see the full toolchain setup in the [mobile guide](../.claude/skills/mobile/SKILL.md). (iOS needs macOS + full Xcode; no CocoaPods — the project uses Swift Package Manager.)
 
 ## Local setup
@@ -41,7 +42,11 @@ None are required for local development. The app works fully offline without any
 | `ADMIN_PASSWORD` | Netlify env | Password for the `/admin` token console (server-only) |
 | `GOOGLE_API_KEY` | Netlify env | Gemini API key for the hosted image generation endpoint (server-only) |
 
-To test the AI flow locally, run `npm run dev:netlify` instead of `npm run dev` — this starts the Netlify Dev server so the `/api/*` serverless functions are available.
+To test the AI flow locally, run `npm run dev:netlify` instead of `npm run dev` — this starts the Netlify Dev server so the `/api/*` serverless functions are available. This requires the Netlify CLI, which is installed globally (it is not a project dependency):
+
+```bash
+npm install -g netlify-cli
+```
 
 ## The dual-build
 
