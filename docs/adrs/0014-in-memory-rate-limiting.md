@@ -27,4 +27,4 @@ An opportunistic cleanup pass runs when the `buckets` Map exceeds 5,000 entries 
 - **+** No external dependency; works identically in local dev and in production.
 - **-** State resets on cold start. A token that hit the limit resets its counter when the function instance is recycled. This is acceptable: the limit is a **cost guardrail** to blunt a tight hammering loop, not a hard security boundary. The real response to a rogue token is revocation via the admin console.
 - **-** Concurrent Netlify instances don't share state — a token could exceed the per-instance limit on one instance while staying under limit on another. In practice, Netlify routes similar traffic to the same warm instance, but this is not guaranteed.
-- **-** If a durable, cross-instance rate limit is ever required, the `Map` should be replaced with a Netlify Blobs counter (the code already shows this path in a comment).
+- **-** If a durable, cross-instance rate limit is ever required, the `Map` should be replaced with a Netlify Blobs counter (the code already shows this path in a comment; the Blobs storage model and its eventual-consistency constraint are in ADR-0025).

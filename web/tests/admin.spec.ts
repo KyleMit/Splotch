@@ -39,6 +39,9 @@ test('web /admin rejects a wrong key', async ({ page }) => {
 
 test('web /admin signs in via cookie session, manages tokens, signs out', async ({ page }) => {
   await signIn(page, '/admin');
+  // The preview server has no Netlify Blobs, so the token list is the in-memory
+  // env-seeded fallback — the console must warn that edits won't persist.
+  await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
   await addsAndRemovesToken(page, `e2e-web-${Date.now()}`);
 
   await page.getByRole('button', { name: 'Sign out' }).click();
@@ -52,6 +55,9 @@ test('web /admin signs in via cookie session, manages tokens, signs out', async 
 
 test('native console /admin/native signs in via the API and manages tokens', async ({ page }) => {
   await signIn(page, '/admin/native');
+  // The native door's JSON snapshot can't carry a persistence signal, so it
+  // never shows the Blobs-fallback warning (the prop defaults to persistent).
+  await expect(page.getByText('Netlify Blobs is unavailable')).toBeHidden();
   await addsAndRemovesToken(page, `e2e-native-${Date.now()}`);
 
   // The bearer session persists in secure storage, so a reload stays signed in.

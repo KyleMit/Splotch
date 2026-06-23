@@ -5,7 +5,7 @@ import {
   verifySessionToken,
   buildInvites
 } from '$lib/server/admin';
-import { getTokens, addToken, removeToken } from '$lib/server/tokens';
+import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
 import { getUsage } from '$lib/server/usage';
 import { rateLimit } from '$lib/server/rateLimit';
 import type { Actions, PageServerLoad } from './$types';
@@ -61,12 +61,17 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
   if (!isAdmin(cookies)) {
     // `invites` is always present (empty here) so the page's union type stays
     // simple — the invites section only renders in the authed branch anyway.
-    return { authed: false, hasSession, invites: [] as { token: string; url: string }[] };
+    return {
+      authed: false,
+      hasSession,
+      persistent: true,
+      invites: [] as { token: string; url: string }[]
+    };
   }
   // Renew the session on each authenticated load so its expiry keeps sliding
   // forward — an actively-used admin never has to log in again.
   setSession(cookies);
-  const tokens = await getTokens();
+  const { tokens, persistent } = await getTokensStatus();
   // Pair each invite with its generation tally (web admin only — the native
   // /api/admin/tokens snapshot doesn't carry usage, so AdminConsole renders
   // the stats only when `usage` is present). `usage[token] ?? null` keeps the
@@ -77,7 +82,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
     ...invite,
     usage: usage[invite.token] ?? null
   }));
-  return { authed: true, hasSession, invites };
+  return { authed: true, hasSession, persistent, invites };
 }
 
 export const actions: Actions = {

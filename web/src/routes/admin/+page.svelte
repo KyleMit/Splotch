@@ -51,6 +51,7 @@
 <AdminConsole
   authed={data.authed}
   invites={data.invites}
+  persistent={data.persistent}
   {flash}
   loginError={form?.loginError ?? null}
   onlogin={(key) => submit('?/login', { 'access-key': key })}

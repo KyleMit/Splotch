@@ -16,7 +16,7 @@ Options:
 
 Image generation runs in a **Netlify serverless function** at `/api/generate-image`. The Gemini key is stored in a Netlify environment variable (`GEMINI_API_KEY`) and never sent to the client.
 
-Access to the managed endpoint is **token-gated**: the client must supply an `access-token` form field that is validated against an allowlist stored in Netlify Blobs. Tokens are provisioned via the `/admin` console and can be revoked by removing them from the list.
+Access to the managed endpoint is **token-gated**: the client must supply an `access-token` form field that is validated against an allowlist stored in Netlify Blobs (storage details, consistency constraints, and the env-seeded fallback: ADR-0025). Tokens are provisioned via the `/admin` console and can be revoked by removing them from the list.
 
 A **rate limiter** (sliding window, in-memory per instance) caps managed tokens at 15 requests per minute to blunt a leaked token being hammered before it's noticed and revoked.
 
@@ -33,4 +33,4 @@ The model is `gemini-2.5-flash-image` (flash tier: lower cost and latency vs. Pr
 - **+** Usage audit trail without a managed database.
 - **-** Adds a server round-trip; generation latency is network-bound in addition to model latency (a 120-second timeout is in place).
 - **-** In-memory rate limiting resets on Netlify cold starts and does not coordinate across concurrent instances — it's a cost guardrail, not a hard boundary.
-- **-** Netlify Blobs is only available in the Netlify runtime; usage writes fail silently during local `vite dev`.
+- **-** Netlify Blobs is only available in the Netlify runtime; under local `vite dev` token edits and usage fall back to a per-instance in-memory list. Production carries its own constraint — strong-consistency reads are unsupported in the SSR function and degrade silently — both covered by ADR-0025.

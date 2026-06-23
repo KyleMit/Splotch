@@ -3,7 +3,7 @@
 ## TODO
 
 * [ ] Why do I need a deno.lock file if I already have package-lock? I'd like to npm to be my default package manager.  I think it has to do with running netlify dev.  Is there any way I can get netlify to use npm as well.
-* [ ] Figure out if I need to log into 
+* [ ] Figure out if I need to log into netlify from CLI - document in pre dev step if so
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
 * [ ] Add sound effects when deleting
@@ -145,5 +145,5 @@
 * [x] /run-skill-generator
 * [x] Make sure we can refresh PWA
 * [x] Red hat test AI prompts
-* [ ] Fix admin center persistence and Update admin center to also include usage stats
+* [x] Fix admin center persistence and Update admin center to also include usage stats
 

@@ -60,9 +60,12 @@ export async function recordTokenUsage(
 /**
  * Read the usage tally for each token, as a map keyed by token. Tokens with no
  * recorded usage are omitted (so the caller can distinguish "never used" from a
- * Blobs outage). Strong consistency so the admin sees the true latest count
- * rather than a lagging replica. Best-effort: any read failure yields an empty
- * map rather than throwing, so a Blobs hiccup never 500s the admin page.
+ * Blobs outage). Eventual consistency (the default): strong reads need an
+ * `uncachedEdgeURL` that the adapter-netlify SSR function's Blobs context does
+ * NOT provide, so a strong read throws BlobsConsistencyError every time and the
+ * admin sees only "never used". Slightly-stale counts are fine here. Best-effort:
+ * any read failure yields an empty map rather than throwing, so a Blobs hiccup
+ * never 500s the admin page.
  */
 export async function getUsage(tokens: string[]): Promise<Record<string, TokenUsage>> {
   let store: ReturnType<typeof getStore>;
@@ -79,10 +82,7 @@ export async function getUsage(tokens: string[]): Promise<Record<string, TokenUs
   const entries = await Promise.all(
     tokens.map(async (token) => {
       try {
-        const usage = (await store.get(token, {
-          type: 'json',
-          consistency: 'strong'
-        })) as TokenUsage | null;
+        const usage = (await store.get(token, { type: 'json' })) as TokenUsage | null;
         return usage && typeof usage.count === 'number' ? ([token, usage] as const) : null;
       } catch (err) {
         console.warn(

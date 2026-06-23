@@ -34,6 +34,7 @@
   let {
     authed,
     invites,
+    persistent = true,
     flash = null,
     loginError = null,
     onlogin,
@@ -43,6 +44,10 @@
   }: {
     authed: boolean;
     invites: Invite[];
+    // `false` = Netlify Blobs is unavailable, so this list is the per-instance
+    // in-memory copy seeded from env vars and edits won't survive a restart.
+    // Defaults to `true` so the native door (which can't know) never warns.
+    persistent?: boolean;
     flash?: Flash | null;
     loginError?: string | null;
     onlogin: (key: string) => Promise<boolean>;
@@ -174,6 +179,14 @@
         </form>
       </section>
     {:else}
+      {#if !persistent}
+        <div class="flash flash-warning" role="alert">
+          <strong>Netlify Blobs is unavailable.</strong> You're viewing a local-only copy seeded
+          from the <code>ALLOWED_TOKENS_LIST</code> env var. Any codes you add or remove here won't
+          be saved and may reset at any time.
+        </div>
+      {/if}
+
       {#if flash}
         <div
           class="flash"
@@ -385,6 +398,26 @@
     background: #fef2f2;
     color: #b42318;
     border: 1px solid #fbd5d2;
+  }
+
+  .flash-warning {
+    background: #fffaeb;
+    color: #93600b;
+    border: 1px solid #fce5a8;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  .flash-warning strong {
+    font-weight: 700;
+  }
+
+  .flash-warning code {
+    font-family: 'Courier New', monospace;
+    font-size: 0.92em;
+    background: #fdefc7;
+    padding: 1px 5px;
+    border-radius: 5px;
   }
 
   /* Cards */

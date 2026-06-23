@@ -48,15 +48,21 @@ async function readStore(): Promise<{ store: TokenStore | null; list: string[] }
   const store = openStore();
   if (store) {
     try {
-      // Strong consistency is required: with the default (eventual) read, a
-      // replica that lags the latest write can report the key as absent, which
-      // would trip the seed-on-empty branch below and clobber the admin's saved
-      // tokens with the env defaults.
-      const list = await store.get(KEY, { type: 'json', consistency: 'strong' });
+      // Eventual consistency (the default): a strong read needs an
+      // `uncachedEdgeURL` that the adapter-netlify SSR function's Blobs context
+      // does NOT provide, so a strong read throws BlobsConsistencyError every
+      // time and we'd silently fall through to the env seed below on every
+      // request. The cost of eventual reads is that a replica lagging the latest
+      // write can report the key as absent and trip the seed-on-empty branch; the
+      // `onlyIfNew` write below makes that seed atomic so it can never clobber an
+      // existing list.
+      const list = await store.get(KEY, { type: 'json' });
       if (Array.isArray(list)) return { store, list };
-      // Genuine first run against Blobs: seed from the env var so nothing is lost.
+      // First run against Blobs (or a stale-empty read): seed from the env var,
+      // but only if the key truly doesn't exist yet, so a lagging replica can't
+      // overwrite tokens the admin already saved.
       const seeded = seedFromEnv();
-      await store.setJSON(KEY, seeded);
+      await store.setJSON(KEY, seeded, { onlyIfNew: true });
       return { store, list: seeded };
     } catch (err) {
       // Transient Blobs error: degrade to memory for THIS request only. Do not
@@ -82,6 +88,19 @@ async function persist(store: TokenStore | null, list: string[]) {
 export async function getTokens() {
   const { list } = await readStore();
   return [...list];
+}
+
+/**
+ * Like getTokens, but also reports whether the list is durably backed by Netlify
+ * Blobs (`persistent: true`) or came from the per-instance in-memory fallback
+ * seeded from ALLOWED_TOKENS_LIST (`persistent: false`). A null store from
+ * readStore is exactly the fallback case — Blobs is unconfigured or a read
+ * failed — so edits won't survive a cold start. The /admin page surfaces this as
+ * a banner so an operator isn't fooled by env-seeded data that looks live.
+ */
+export async function getTokensStatus(): Promise<{ tokens: string[]; persistent: boolean }> {
+  const { store, list } = await readStore();
+  return { tokens: [...list], persistent: store !== null };
 }
 
 /** Whether `token` is currently allowed. */

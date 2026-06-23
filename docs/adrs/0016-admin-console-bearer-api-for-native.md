@@ -15,7 +15,7 @@ Alternatives considered for making admin work on device:
 
 ## Decision
 
-**Shared core:** `src/lib/server/admin.ts` owns secret verification, the derived session token (`HMAC-SHA256(key = ADMIN_ACCESS_TOKEN, "admin-session-v1")`), constant-time comparison, and invite-URL building. Token CRUD stays in `src/lib/server/tokens.ts` (Netlify Blobs).
+**Shared core:** `src/lib/server/admin.ts` owns secret verification, the derived session token (`HMAC-SHA256(key = ADMIN_ACCESS_TOKEN, "admin-session-v1")`), constant-time comparison, and invite-URL building. Token CRUD stays in `src/lib/server/tokens.ts` (Netlify Blobs; storage model in ADR-0025).
 
 **Two front doors, one session token:**
 
