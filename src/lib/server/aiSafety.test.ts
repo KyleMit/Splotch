@@ -73,4 +73,14 @@ describe('isSafetyError', () => {
     expect(isSafetyError(Object.assign(new Error('Resource exhausted'), { status: 429 }))).toBe(false);
     expect(isSafetyError(Object.assign(new Error('API key invalid'), { status: 401 }))).toBe(false);
   });
+
+  it('does not treat a 400 validation error as a safety error (category names in the message)', () => {
+    const err = Object.assign(
+      new Error(
+        `Invalid value at 'safety_settings[0].category' (HarmCategory), "HARM_CATEGORY_IMAGE_DANGEROUS_CONTENT". status: INVALID_ARGUMENT`
+      ),
+      { status: 400 }
+    );
+    expect(isSafetyError(err)).toBe(false);
+  });
 });

@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import { getStore } from '@netlify/blobs';
 import { STYLE_SUFFIXES } from '$lib/ai/styles';
 import { isAllowedToken } from '$lib/server/tokens';
@@ -72,6 +72,33 @@ const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const DEFAULT_PROMPT =
   "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel.";
+
+// The audience is toddlers (2+), so the model must REFUSE unsafe drawings rather
+// than do what it does by default — quietly "beautify" a gun into a gilded gun or
+// anatomy into a tower. We tell it to decline in plain text instead of drawing;
+// that text-only reply is classified as a safety refusal (→ 422) by aiSafety.ts.
+// See ADR-0023.
+const SAFETY_SYSTEM_INSTRUCTION = `You turn a young child's drawing into a polished, whimsical illustration for Splotch, a drawing app for toddlers aged 2 and up. The result must be appropriate for a 2-year-old.
+
+If the drawing depicts or implies ANY of the following, do NOT generate an image:
+- a weapon (gun, knife, etc.), violence, blood, gore, or self-harm;
+- nudity, genitalia, or sexual content;
+- a hate symbol, extremist imagery, slurs, or offensive text;
+- drugs, alcohol, or other adult or dangerous content.
+
+In those cases respond with a single short sentence declining, e.g. "I can't turn that drawing into a picture — let's draw something else!". Never sanitize, beautify, or partially transform unsafe content into a "nicer" version — refuse it entirely. Only generate an image when the drawing is wholesome and clearly appropriate for a toddler.`;
+
+// Tighten every configurable harm category to its most aggressive setting. These
+// only affect the configurable categories — the always-on child-safety filter is
+// separate — but lowering them increases refusals of borderline drawings. The
+// SDK also exports `HARM_CATEGORY_IMAGE_*` enums, but the gemini-2.5-flash-image
+// v1beta endpoint rejects them with a 400, so only the standard categories here.
+const SAFETY_SETTINGS = [
+  HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+  HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+  HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+  HarmCategory.HARM_CATEGORY_HARASSMENT
+].map((category) => ({ category, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE }));
 
 function buildPromptForStyle(
   style: FormDataEntryValue | null,
@@ -161,7 +188,11 @@ export const POST: RequestHandler = async ({ request, platform }) => {
           ]
         }
       ],
-      config: { abortSignal: AbortSignal.timeout(120_000) }
+      config: {
+        abortSignal: AbortSignal.timeout(120_000),
+        systemInstruction: SAFETY_SYSTEM_INSTRUCTION,
+        safetySettings: SAFETY_SETTINGS
+      }
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

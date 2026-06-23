@@ -93,6 +93,24 @@ human review.
   try drawing something else!". All three failure modes (safety/server/timeout)
   are previewable at `/dev/ai-timer` without a Gemini call.
 
+**Hardening the model toward refusal.** On Gemini's defaults the red-team found
+the image model would *transform* an unsafe drawing rather than refuse it (a gun
+became a gilded gun, anatomy a stylized tower). Because the audience is toddlers,
+the `generateContent` call is configured to lean hard toward refusal:
+- a **`systemInstruction`** instructs the model to decline unsafe drawings (weapons,
+  violence, nudity, hate symbols, etc.) with a short *text* reply instead of
+  drawing, and to never "beautify" them — that prose reply is exactly what the
+  classifier now turns into a `422`.
+- **`safetySettings`** set every configurable harm category to
+  `BLOCK_LOW_AND_ABOVE`, including the image-output categories
+  (`HARM_CATEGORY_IMAGE_DANGEROUS_CONTENT`/`_SEXUALLY_EXPLICIT`/`_HATE`/
+  `_HARASSMENT`). This only tightens the *configurable* filters (the always-on
+  child-safety filter is separate), but it raises refusals of borderline drawings.
+
+These are a best-effort, in-band mitigation, not a guarantee — a dedicated
+pre-generation moderation pass was considered and deferred unless the red-team
+shows the in-band controls still leak.
+
 The classifier is pure and **unit-tested in CI** (`aiSafety.test.ts`) — the only
 part of this work that runs unattended; everything token/Gemini-dependent stays
 manual.

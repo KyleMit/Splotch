@@ -41,6 +41,13 @@ upstream/empty failure (retryable). The safety vs. empty/error split is decided
 by `classifyGeminiResponse` / `isSafetyError` in `src/lib/server/aiSafety.ts`,
 and probed by the manual red-team suite (`npm run redteam`, `tests/redteam/`).
 
+The Gemini call is hardened to *increase* those refusals (the audience is
+toddlers): a `systemInstruction` tells the model to decline unsafe drawings in
+plain text rather than "beautify" them, and `safetySettings` set every
+configurable harm category (including the `HARM_CATEGORY_IMAGE_*` output
+categories) to `BLOCK_LOW_AND_ABOVE`. Both live in
+`src/routes/api/generate-image/+server.ts`.
+
 ### `POST /api/verify-access-code`
 
 Checks a "special access" invite code against the managed allowlist.

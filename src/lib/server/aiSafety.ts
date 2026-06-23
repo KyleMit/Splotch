@@ -62,6 +62,10 @@ export function classifyGeminiResponse(response: GenerateContentResponse): Safet
 export function isSafetyError(err: unknown): boolean {
   const status = (err as { status?: number })?.status;
   const msg = (err instanceof Error ? err.message : String(err)).toUpperCase();
-  if (status === 400 && /SAFET|PROHIBIT|BLOCK/.test(msg)) return true;
+  // A 400 INVALID_ARGUMENT is a *request* error (a bad field/value), not a content
+  // refusal — don't let category names that appear in such a message (e.g.
+  // "safety_settings", "HARM_CATEGORY_…") get mistaken for a safety block.
+  if (/INVALID_ARGUMENT|INVALID VALUE AT/.test(msg)) return false;
+  if (status === 400 && /BLOCKED|PROHIBIT|SAFETY POLICY/.test(msg)) return true;
   return /PROHIBITED_CONTENT|IMAGE_SAFETY/.test(msg);
 }
