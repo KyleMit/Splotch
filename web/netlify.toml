@@ -1,11 +1,11 @@
-# This file configures LOCAL `netlify dev --cwd web` only. Production deploy config
-# (build command, publish dir, base directory) is a separate open item — see ADR-0024
-# and docs/CONTRIBUTING.md — because package.json lives at the repo root, not here.
+# LOCAL `netlify dev --cwd web` config only (run via `npm run dev:netlify`). Production deploy
+# config lives in the repo-root netlify.toml — see ADR-0024. Headers are defined there because
+# they apply to the deployed site, not to local dev.
 #
-# Deliberately NO [build] block: it would point `publish` at the build output, whose
-# adapter-netlify `_redirects` catch-all (`/* -> /.netlify/functions/sveltekit-render`)
-# would shadow the dev proxy and 404 every dynamic route (the SSR function only exists
-# in a real build, not in `netlify dev`).
+# Deliberately NO [build] block here: it would point `publish` at the build output, whose
+# adapter-netlify `_redirects` catch-all (`/* -> /.netlify/functions/sveltekit-render`) would
+# shadow the dev proxy and 404 every dynamic route (the SSR function only exists in a real build,
+# not in `netlify dev`).
 #
 # The app lives in web/ (siblings android/ ios/ stay at the repo root). `netlify dev --cwd web`
 # scopes netlify-cli's file watcher to web/, keeping the large native trees out of it. web/ has
@@ -16,35 +16,3 @@
   framework = "#custom"
   command = "node ../scripts/web.mjs dev"
   targetPort = 5173
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "no-referrer"
-
-[[headers]]
-  for = "/manifest.webmanifest"
-  [headers.values]
-    Content-Type = "application/manifest+json"
-
-[[headers]]
-  for = "/*.js"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.css"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/sw.js"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-[[headers]]
-  for = "/version.json"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"

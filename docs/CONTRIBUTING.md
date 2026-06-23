@@ -69,12 +69,14 @@ netlify-cli's file watcher is scoped to `web/` and never traverses the large nat
 cause of the `EMFILE` crash this layout fixes). All the npm scripts still run from the repo root;
 the web toolchain is dispatched into `web/` by `scripts/web.mjs`.
 
-> **Production deploy — open item.** Netlify runs install + build in one directory, but
-> `package.json` (root) and the app/output (`web/`) are now split. Local dev is fixed and
-> unaffected, but the production Netlify build (base directory, publish path, and the
-> adapter-netlify functions location) must be reconciled and **validated on a Netlify deploy
-> preview before merging to `main`** — do not assume the live `splotch.art` deploy still works
-> until that preview is green.
+> **Production deploy.** Netlify builds from the repo **root** (where `package.json` + the
+> lockfile live). The root `netlify.toml` build command runs `npm run build` (which builds the
+> app in `web/`) then `node scripts/stage-netlify.mjs`, which copies `web/build → build` and
+> `web/.netlify → .netlify` so Netlify sees the standard root layout (`publish = "build"`, SSR
+> function in `.netlify/functions-internal`). Local `netlify dev` uses `web/netlify.toml`
+> instead. This is implemented but **must be confirmed green on a Netlify deploy preview before
+> merging to `main`** — don't assume the live `splotch.art` deploy works until that preview
+> passes.
 
 On native the AI button calls the **hosted** endpoint (`https://splotch.art/api/generate-image`) via `__NATIVE_API_BASE__`. On web it uses a same-origin relative path.
 

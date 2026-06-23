@@ -1,0 +1,46 @@
+# Production deploy config — the Netlify site builds from the repo ROOT (base directory = root,
+# the default), because package.json + the lockfile live here so `npm ci` works. The SvelteKit
+# app lives in web/ (ADR-0024): `npm run build` runs the build with cwd=web/, so adapter-netlify
+# writes its output under web/; scripts/stage-netlify.mjs then copies web/build -> build and
+# web/.netlify -> .netlify so Netlify sees the standard "app at root" layout it expects.
+#
+# Local development uses web/netlify.toml instead (via `npm run dev:netlify`, which runs
+# `netlify dev --cwd web`). Keep these two in sync only where it matters — headers live here
+# because they apply to the deployed site.
+[build]
+  command = "npm run build && node scripts/stage-netlify.mjs"
+  # After staging, build/ (root) holds the static assets and .netlify/functions-internal holds
+  # the adapter-netlify SSR function that build/_redirects rewrites all dynamic routes to.
+  publish = "build"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/version.json"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"

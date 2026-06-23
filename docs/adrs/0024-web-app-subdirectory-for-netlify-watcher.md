@@ -56,11 +56,15 @@ explicit custom command in `web/netlify.toml` (`[dev] framework = "#custom"` + `
   `scripts/*.mjs`, and the Android CI job are unaffected (native trees never moved).
 - **−** The app no longer lives at the repo root, so tooling runs through the `scripts/web.mjs`
   cwd shim, and `scripts/*.mjs` that touch `src/`/`static/`/`build/`/`tests/` use `web/…` paths.
-- **−** **Production deploy is an open item.** Netlify runs install + build in one directory,
-  but `package.json` (root) and the app/output (`web/`) are now split. The local-dev fix does
-  not change production; the production Netlify build (base dir, publish path, and adapter-netlify
-  functions location) must be reconciled and **validated on a Netlify deploy preview before this
-  reaches `main`**. See `docs/CONTRIBUTING.md`.
+- **Production deploy** keeps the Netlify base at the repo **root** (so `npm ci` finds the root
+  `package.json`/lockfile). `npm run build` runs the SvelteKit build with cwd=web/, so
+  adapter-netlify writes under `web/`; `scripts/stage-netlify.mjs` (the tail of the root
+  `netlify.toml` build command) then copies `web/build → build` and `web/.netlify → .netlify`,
+  reproducing the standard "app at root" layout Netlify expects (`publish = "build"`, SSR
+  function at `.netlify/functions-internal`). Two `netlify.toml` files result: the root one for
+  production, `web/netlify.toml` for local `netlify dev`. **This must still be confirmed green on
+  a Netlify deploy preview before merging** — it is implemented but not yet validated against a
+  real Netlify build.
 
 Supersedes the root-level layout assumed by ADR-0001 (the dual-adapter strategy itself is
 unchanged; only the file locations moved).
