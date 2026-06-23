@@ -133,7 +133,7 @@ sync. The phone's browser hits your local dev server over USB.
    This forwards the phone's port 5173 to the desktop's dev server
    (`adb reverse tcp:5173 tcp:5173`), so `http://localhost:5173` on the phone
    resolves to your machine. The dev server port is pinned to 5173 in
-   `vite.config.ts` so this script is always correct.
+   `web/vite.config.ts` so this script is always correct.
 3. Open Chrome on the phone and navigate to `http://localhost:5173`.
 
 Re-run `npm run adb:reverse` after each USB reconnect.

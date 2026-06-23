@@ -1,0 +1,18 @@
+# LOCAL `netlify dev --cwd web` config only (run via `npm run dev:netlify`). Production deploy
+# config lives in the repo-root netlify.toml — see ADR-0024. Headers are defined there because
+# they apply to the deployed site, not to local dev.
+#
+# Deliberately NO [build] block here: it would point `publish` at the build output, whose
+# adapter-netlify `_redirects` catch-all (`/* -> /.netlify/functions/sveltekit-render`) would
+# shadow the dev proxy and 404 every dynamic route (the SSR function only exists in a real build,
+# not in `netlify dev`).
+#
+# The app lives in web/ (siblings android/ ios/ stay at the repo root). `netlify dev --cwd web`
+# scopes netlify-cli's file watcher to web/, keeping the large native trees out of it. web/ has
+# no package.json of its own, so drive the dev server explicitly via a custom command run from
+# web/ (svelte-kit sync + vite dev, resolving node_modules upward to the root). All requests —
+# static, SSR, and /api/* — proxy to the vite dev server on targetPort.
+[dev]
+  framework = "#custom"
+  command = "node ../scripts/web.mjs dev"
+  targetPort = 5173

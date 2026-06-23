@@ -14,6 +14,11 @@ SvelteKit supports pluggable adapters, but a project can only be built with one 
 
 ## Decision
 
+> **Layout note (2026-06):** the SvelteKit app moved into the `web/` subdirectory (Capacitor's
+> `android/`/`ios/` stay at the repo root) to scope netlify-cli's file watcher — see
+> [ADR-0024](0024-web-app-subdirectory-for-netlify-watcher.md). The strategy below is unchanged;
+> the config files now live at `web/svelte.config.js` and `web/vite.config.ts`.
+
 Use the `CAPACITOR=true` environment variable as a build-time signal to branch between two adapters in `svelte.config.js`:
 
 - **Web build:** `@sveltejs/adapter-netlify` — produces SSR pages and Netlify functions.

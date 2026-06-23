@@ -1,7 +1,7 @@
 ---
 paths:
-  - "src/**/*.svelte"
-  - "src/**/*.svelte.ts"
+  - "web/src/**/*.svelte"
+  - "web/src/**/*.svelte.ts"
 ---
 
 # Svelte component rules

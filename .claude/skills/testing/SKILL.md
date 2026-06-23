@@ -31,7 +31,7 @@ npm run test:unit          # one-shot
 npm run test:unit:watch    # watch mode
 ```
 
-Configured in `vitest.config.js`. Environment is **happy-dom** (not jsdom).
+Configured in `web/vitest.config.ts`. Environment is **happy-dom** (not jsdom).
 Covers the pure logic + state modules (`colorRing`, `state/*`, `storage`,
 including the native dual-layer hydrate via a mocked `@capacitor/preferences`).
 
@@ -44,9 +44,9 @@ npm run test:e2e:headed    # headed, slowed down (SLOWMO=500)
 npm run test:e2e:debug     # inspector
 ```
 
-Configured in `playwright.config.ts`. By default it builds the production
+Configured in `web/playwright.config.ts`. By default it builds the production
 artifact and serves it with `vite preview` (set `DEV_SERVER=1` for fast
-iteration against `vite dev`). Specs live in `tests/` and exercise the real
+iteration against `vite dev`). Specs live in `web/tests/` and exercise the real
 drawing engine, the responsive palette, and the full UI flows.
 
 These run on real Chromium but **cannot catch native or WebView boot failures** —
@@ -65,7 +65,7 @@ UI renders — proving the Capacitor WebView started **and** loaded the producti
 web bundle (not a white screen or a crash).
 
 The assertion is a single, meaningful signal: the **"Parent Center"** button
-(the always-present help button, `src/lib/components/ParentCenter.svelte`) must
+(the always-present help button, `web/src/lib/components/ParentCenter.svelte`) must
 become visible. Seeing its accessibility label means real UI painted, not just
 that the process launched.
 

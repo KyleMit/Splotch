@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: Splotch tech stack, file-by-file source map of src/, route table, and the canonical UI element glossary. Use when navigating unfamiliar parts of the codebase, deciding where new code belongs, or needing the proper name of a UI element.
+description: Splotch tech stack, file-by-file source map of web/src/, route table, and the canonical UI element glossary. Use when navigating unfamiliar parts of the codebase, deciding where new code belongs, or needing the proper name of a UI element.
 ---
 
 # Splotch – Architecture
@@ -14,7 +14,7 @@ description: Splotch tech stack, file-by-file source map of src/, route table, a
 - **[Vite](https://vite.dev/)** — build tool. Injects three compile-time constants: `__APP_VERSION__`, `__BUILD_TIME__`, `__NATIVE_API_BASE__`.
 
 ### Native (Capacitor)
-- **[Capacitor 8](https://capacitorjs.com/)** — wraps the static web export in an Android/iOS shell. The native build is triggered by `CAPACITOR=true` at build time; `svelte.config.js` and `vite.config.ts` both branch on this env var.
+- **[Capacitor 8](https://capacitorjs.com/)** — wraps the static web export in an Android/iOS shell. The native build is triggered by `CAPACITOR=true` at build time; `web/svelte.config.js` and `web/vite.config.ts` both branch on this env var.
 - **`@capacitor/network`** — detects online/offline state to show or hide the AI button on device.
 - **`@capacitor/preferences`** — durable storage (UserDefaults/SharedPreferences) that backs up settings the WebView's localStorage might evict.
 - **`@capacitor-community/media`** — saves drawings to the device photo library in a "Splotch" album.
@@ -38,7 +38,7 @@ description: Splotch tech stack, file-by-file source map of src/, route table, a
 
 ## Source Map
 
-### `src/lib/`
+### `web/src/lib/`
 
 | Path | Purpose |
 |---|---|
@@ -73,7 +73,7 @@ description: Splotch tech stack, file-by-file source map of src/, route table, a
 | `icons/` | SVG icon assets. `npm run gen:icons` generates `components/icon-names.d.ts` from them — the typed `IconName` union used by `<Icon>`. |
 | `releases.json` | Auto-generated from `releases/*.md` by `npm run gen:releases`; consumed by the About tab in Parent Center. |
 
-### `src/routes/`
+### `web/src/routes/`
 
 | Route | Description |
 |---|---|

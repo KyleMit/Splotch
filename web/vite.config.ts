@@ -3,8 +3,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'node:fs';
 
 // The user-facing release version is the single source of truth in package.json
-// (bumped by scripts/release.mjs). BUILD_TIME is kept separately for debugging.
-const APP_VERSION = JSON.parse(readFileSync('./package.json', 'utf8')).version;
+// (bumped by scripts/release.mjs). It stays at the repo root (one dir up from web/).
+// BUILD_TIME is kept separately for debugging.
+const APP_VERSION = JSON.parse(readFileSync('../package.json', 'utf8')).version;
 const BUILD_TIME = new Date().toISOString().slice(0, 16).replace('T', ' ');
 
 // The native apps bundle a static export and never use a service worker (the

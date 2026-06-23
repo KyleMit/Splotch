@@ -1,8 +1,18 @@
+# Production deploy config — the Netlify site builds from the repo ROOT (base directory = root,
+# the default), because package.json + the lockfile live here so `npm ci` works. The SvelteKit
+# app lives in web/ (ADR-0024): `npm run build` runs the build with cwd=web/, so adapter-netlify
+# writes its output under web/; scripts/stage-netlify.mjs then copies web/build -> build and
+# web/.netlify -> .netlify so Netlify sees the standard "app at root" layout it expects.
+#
+# Local development uses web/netlify.toml instead (via `npm run dev:netlify`, which runs
+# `netlify dev --cwd web`). Keep these two in sync only where it matters — headers live here
+# because they apply to the deployed site.
 [build]
-  command = "npm run build"
-  # adapter-netlify writes static assets to build/ and functions to
-  # .netlify/functions-internal/; the publish dir must point at build/.
-  publish = "build"
+  command = "npm run build && node scripts/stage-netlify.mjs"
+  # Static assets are published straight from web/build (no copy needed). Only the SSR function
+  # is relocated: Netlify always looks for it at <base>/.netlify/functions-internal (base = root),
+  # but adapter-netlify writes it under web/.netlify, so stage-netlify.mjs copies that one tree up.
+  publish = "web/build"
 
 [[headers]]
   for = "/*"

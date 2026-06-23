@@ -169,6 +169,7 @@ ios/local.xcconfig
 
 # Red-team AI safety fixtures (ADR-0023). Only encrypted/*.enc is committed;
 # the plaintext sources, decrypted copies, and run outputs stay local.
-/tests/redteam/source/
-/tests/redteam/decrypted/
-/tests/redteam/output/
+# Anchored at web/ since the app moved into that subdirectory (ADR-0024).
+/web/tests/redteam/source/
+/web/tests/redteam/decrypted/
+/web/tests/redteam/output/

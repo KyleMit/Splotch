@@ -13,9 +13,9 @@
 import { rmSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { ROOT, webOnlyBooks } from './lib/utils.mjs';
-import { BOOKS, bookAssetPaths } from '../src/lib/state/books.ts';
+import { BOOKS, bookAssetPaths } from '../web/src/lib/state/books.ts';
 
-const BUILD_DIR = join(ROOT, 'build'); // capacitor.config.json webDir
+const BUILD_DIR = join(ROOT, 'web', 'build'); // capacitor.config.json webDir
 
 const webOnly = webOnlyBooks(BOOKS);
 if (webOnly.length === 0) {

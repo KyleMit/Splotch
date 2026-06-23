@@ -1,9 +1,9 @@
 ---
 paths:
-  - "src/routes/api/**"
-  - "src/routes/admin/**"
-  - "src/lib/server/**"
-  - "src/hooks.server.ts"
+  - "web/src/routes/api/**"
+  - "web/src/routes/admin/**"
+  - "web/src/lib/server/**"
+  - "web/src/hooks.server.ts"
 ---
 
 # Server & API rules

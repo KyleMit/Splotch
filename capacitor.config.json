@@ -1,7 +1,7 @@
 {
   "appId": "art.splotch.app",
   "appName": "Splotch",
-  "webDir": "build",
+  "webDir": "web/build",
   "server": {
     "androidScheme": "https"
   },

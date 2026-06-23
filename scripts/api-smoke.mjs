@@ -7,6 +7,8 @@
 
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { join } from 'node:path';
+import { ROOT } from './lib/utils.mjs';
 
 const PORT = Number(process.env.SMOKE_PORT ?? 5199);
 const BASE = `http://localhost:${PORT}`;
@@ -121,6 +123,7 @@ let server;
 try {
 	console.log('Starting test dev server…');
 	server = spawn('npx', ['vite', 'dev', '--port', String(PORT), '--strictPort'], {
+		cwd: join(ROOT, 'web'),
 		env: { ...process.env, ADMIN_ACCESS_TOKEN: ADMIN_SECRET, ALLOWED_TOKENS_LIST: SEED_TOKENS },
 		stdio: ['ignore', 'ignore', 'inherit']
 	});

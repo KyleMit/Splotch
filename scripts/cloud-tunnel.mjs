@@ -10,6 +10,8 @@
 
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { ROOT } from './lib/utils.mjs';
 
 const TUNNEL_HOST = process.env.TUNNEL_HOST || 'splotch-tunnel-kyle.fly.dev';
 const TUNNEL_AUTH = process.env.TUNNEL_AUTH;
@@ -64,6 +66,7 @@ function track(name, child) {
 try {
 	console.log('Starting vite dev…');
 	track('vite', spawn('npx', ['vite', 'dev', '--port', String(PORT), '--strictPort'], {
+		cwd: join(ROOT, 'web'),
 		// TUNNEL_HOST drives vite's server.allowedHosts (vite.config.ts) so the tunnel host is
 		// accepted; --host is intentionally omitted (chisel forwards via localhost).
 		env: { ...process.env, TUNNEL_HOST },
