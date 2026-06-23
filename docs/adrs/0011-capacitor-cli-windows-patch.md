@@ -30,7 +30,7 @@ process.platform === 'win32'
 
 The patch lives at `patches/@capacitor+cli+8.3.4.patch` and is re-applied automatically via `postinstall: patch-package` in `package.json`.
 
-The affected npm scripts (`android:apk`, `android:run`, `android:bundle`, `android:clean`) avoid `cap run` entirely (`cd android && .\gradlew ...`), so only `android:emulator` (which uses `cap run android`) requires the patch.
+The affected npm scripts (`android:apk`, `android:run`, `android:bundle`, `android:clean`) avoid `cap run` entirely — they invoke the Gradle wrapper via `scripts/gradle.mjs` — so only `android:emulator` (which uses `cap run android`) requires the patch.
 
 ## Consequences
 

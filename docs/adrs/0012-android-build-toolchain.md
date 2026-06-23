@@ -22,11 +22,11 @@ A full JDK 21 (Eclipse Temurin recommended) with `jlink` present must be used.
 - **Android SDK** at `%LOCALAPPDATA%\Android\Sdk`. The SDK path is recorded in the git-ignored `android/local.properties` (`sdk.dir=...`) rather than via the `ANDROID_HOME` environment variable (which is not set at user scope on this machine).
 - **cross-env** is used in npm scripts so `CAPACITOR=true` works under Windows `cmd.exe` (npm's default shell on Windows), which doesn't support `VAR=value command` syntax.
 
-Gradle scripts use `.\gradlew` (not bare `gradlew`) because `NoDefaultCurrentDirectoryInExePath=1` is set on this machine — cmd.exe won't find an executable in the current directory without the explicit `.\` prefix. This makes the scripts Windows-specific; on macOS/Linux use `./gradlew`.
+The `android:*` npm scripts invoke the Gradle wrapper through `scripts/gradle.mjs`, which resolves `gradlew.bat` on Windows and `./gradlew` on macOS/Linux and spawns it from `android/`. This keeps the scripts cross-platform (ADR-0017) while still satisfying Windows, where `NoDefaultCurrentDirectoryInExePath=1` means cmd.exe won't run a bare `gradlew` from the current directory — resolving the wrapper to an absolute path sidesteps that. (The original scripts hard-coded `.\gradlew` and were Windows-only; superseded once macOS Android builds became active.)
 
 ## Consequences
 
 - **+** Documented requirements prevent hours of debugging "why does this build fail on a clean checkout."
+- **+** `npm run android:bundle` (and the other `android:*` scripts) work identically on macOS, Linux, and Windows — no `.\gradlew` vs `./gradlew` footgun.
 - **-** Two separate Java installations may be present (JBR in Android Studio, Temurin for builds); it's easy to configure the wrong one in Android Studio's Gradle JDK setting.
 - **-** `nvm use` requires elevation — an easy step to forget when opening a new terminal.
-- **-** The `.\gradlew` syntax in npm scripts means they won't work unmodified on macOS/Linux; use `cap run android` or `./gradlew` directly on those platforms.

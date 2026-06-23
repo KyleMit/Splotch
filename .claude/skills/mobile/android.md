@@ -54,16 +54,10 @@ build model and shared assets see **[native.md](native.md)**; iOS lives in
    * **Web dev server over USB** (fastest iteration): `npm run dev`, then
      `npm run adb:reverse`, then open `http://localhost:5173` in Chrome on the
      phone. See "Running the web app on a real device" below.
-   * **Native debug build**: the `android:apk`/`android:run`/`android:bundle`
-     scripts invoke `.\gradlew` and are **Windows-only**. On macOS run Gradle
-     directly:
-
-     ```bash
-     npm run cap:sync
-     cd android && ./gradlew :app:installDebug
-     ```
-
-     or use Capacitor's cross-platform runner: `npx cap run android`.
+   * **Native debug build**: `npm run android:run` (cap:sync + build + install)
+     works on macOS and Windows alike — the `android:*` scripts go through
+     `scripts/gradle.mjs`, which resolves the right Gradle wrapper per platform
+     (ADR-0017). You can also use Capacitor's runner: `npx cap run android`.
 
 6. **Debug with Chrome DevTools**: on desktop Chrome open
    `chrome://inspect/#devices` and click **Inspect** on the phone's tab — see
@@ -113,11 +107,10 @@ npm run android:clean   # gradle clean (no cap:sync)
 >    terminal from before setup won't — reopen it).
 > 3. For `android:bundle`, `android/keystore.properties` must exist (see §4).
 >
-> **Why `.\gradlew` in the scripts?** This machine has
-> `NoDefaultCurrentDirectoryInExePath=1`, so `cmd.exe` (npm's shell) won't run a
-> bare `gradlew` from the current dir — the explicit `.\` is required. These
-> scripts are therefore Windows-oriented; on macOS/Linux run `./gradlew` directly
-> from `android/`.
+> These scripts run the Gradle wrapper through `scripts/gradle.mjs`, which picks
+> `gradlew.bat` on Windows and `./gradlew` on macOS/Linux (ADR-0017), so the same
+> `npm run android:*` command works on every platform — no `.\gradlew` vs
+> `./gradlew` footgun.
 
 From Android Studio: **Run ▶** to test on emulator/device; **Build → Generate
 Signed Bundle/APK** to produce a release `.aab`.

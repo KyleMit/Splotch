@@ -63,9 +63,10 @@ Documentation rules:
 * Description wording matches the prose docs (`CLAUDE.md` command table,
   `docs/CONTRIBUTING.md`, the `testing`/`mobile` skills) so the catalog and
   the guides never disagree about what a script is for.
-* Windows-only scripts (`android:apk`/`run`/`bundle`/`clean`/`open`, see the
-  `.\gradlew` rationale in the mobile skill) say so in their description and
-  point at the macOS alternative.
+* Scripts that wrap platform-specific tooling (`android:apk`/`run`/`bundle`/
+  `clean`/`open`) go through a Node helper in `scripts/` (e.g. `gradle.mjs`,
+  `open-path.mjs`) so they run on every OS (ADR-0017); their descriptions name
+  the artifact, not a platform caveat.
 * **Adding or renaming a script means updating `scripts-info` in the same
   change** — a script showing its raw command in `npm run info` output is the
   signal that a description is missing.
