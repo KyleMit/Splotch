@@ -3,7 +3,7 @@
 // Playwright app drivers in lib/app-driver.mjs.
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -48,14 +48,19 @@ export function capture(cmd, args = [], { cwd = ROOT } = {}) {
 export const hasCommand = (cmd) =>
   spawnSync(isWindows ? 'where' : 'which', [cmd], { stdio: 'ignore' }).status === 0;
 
-// Prefer Maestro from PATH; fall back to its default install location.
-// Shared by the Android and iOS smoke tests.
-export const maestroPath = () => {
-  if (hasCommand('maestro')) return 'maestro';
-  return isWindows
+// Maestro's default install location when it isn't on PATH (curl installer on
+// macOS/Linux drops it in ~/.maestro/bin; Windows users extract it themselves).
+const maestroDefaultPath = () =>
+  isWindows
     ? join(process.env.USERPROFILE ?? '', 'maestro', 'bin', 'maestro.bat')
     : join(homedir(), '.maestro', 'bin', 'maestro');
-};
+
+// Prefer Maestro from PATH; fall back to its default install location.
+// Shared by the Android and iOS smoke tests.
+export const maestroPath = () => (hasCommand('maestro') ? 'maestro' : maestroDefaultPath());
+
+// Whether Maestro is usable at all — on PATH or at its default location.
+export const maestroInstalled = () => hasCommand('maestro') || existsSync(maestroDefaultPath());
 
 // Split a "---\nkey: value\n---\nbody" document. Returns null if the document
 // has no frontmatter block. `frontmatter` is the raw text between the fences;

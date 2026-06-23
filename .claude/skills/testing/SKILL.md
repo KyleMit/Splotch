@@ -118,12 +118,17 @@ npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcod
    `emulator -list-avds`.
 3. **Maestro CLI** — see below. Needs Java 17+ (the JDK 21 above covers it).
 
+> On macOS/Linux, `npm run android:setup` provisions all three (system image,
+> the `Pixel_7_Pro_API_33` AVD, **and** Maestro) and is safe to re-run — it
+> skips whatever is already present.
+
 ### Installing Maestro
 
 Maestro is **not** an npm package, so it can't be a dev dependency — it's a
 standalone JVM-based CLI installed separately.
 
-**macOS / Linux:**
+**macOS / Linux:** `npm run android:setup` installs it automatically (re-run it
+if Maestro is missing). To install it on its own:
 
 ```bash
 curl -fsSL "https://get.maestro.mobile.dev" | bash
@@ -131,6 +136,10 @@ curl -fsSL "https://get.maestro.mobile.dev" | bash
 ```
 
 > Use `get.maestro.mobile.dev` — `get.maestro.dev` does not work.
+>
+> The smoke scripts resolve Maestro via `scripts/lib/utils.mjs` (PATH first,
+> then `~/.maestro/bin`), so they run even before you reopen your shell to pick
+> up the PATH entry the installer adds.
 
 **Windows (native, no WSL):**
 

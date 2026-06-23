@@ -1,12 +1,13 @@
 // cspell:ignore sdkmanager avdmanager avds cmdline playstore temurin libexec winget Adoptium
 // One-time emulator setup for local Android work: installs the API 33 Play
-// Store system image, creates the Pixel 7 Pro AVD, and writes
-// android/local.properties. Checks the required SDK tools are on PATH first
-// and prints per-platform fix instructions if not. Safe to re-run.
+// Store system image, creates the Pixel 7 Pro AVD, writes
+// android/local.properties, and installs the Maestro smoke-test CLI. Checks the
+// required SDK tools are on PATH first and prints per-platform fix instructions
+// if not. Safe to re-run.
 
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, isWindows, hasCommand, run, capture, fail } from './lib/utils.mjs';
+import { ROOT, isWindows, hasCommand, run, capture, fail, maestroInstalled } from './lib/utils.mjs';
 import { ANDROID_HOME, AVD_NAME } from './lib/android.mjs';
 
 const ABI = process.arch === 'arm64' ? 'arm64-v8a' : 'x86_64';
@@ -71,6 +72,29 @@ const localProps = join(ROOT, 'android', 'local.properties');
 if (!existsSync(localProps)) {
   writeFileSync(localProps, `sdk.dir=${ANDROID_HOME.replaceAll('\\', '/')}\n`);
   console.log(`[android-setup] Wrote android/local.properties (sdk.dir=${ANDROID_HOME})`);
+}
+
+// Maestro drives the native smoke test (npm run test:android). It's a
+// standalone JVM CLI, not an npm package, so it installs separately. The JDK 21
+// checked above satisfies its Java requirement. macOS/Linux have a one-line
+// installer; Windows has no clean CLI installer, so point the user at the
+// manual steps instead of failing silently later in the smoke test.
+if (maestroInstalled()) {
+  console.log('[android-setup] Maestro already installed.');
+} else if (isWindows) {
+  fail(
+    [
+      '[android-setup] Maestro is not installed (needed for "npm run test:android").',
+      '  Install it manually on Windows:',
+      '    1. Download maestro.zip from https://github.com/mobile-dev-inc/maestro/releases',
+      '    2. Extract it to %USERPROFILE%\\maestro',
+      '    3. Add %USERPROFILE%\\maestro\\bin to your User PATH',
+      '    4. Open a new terminal and verify:  maestro --version',
+    ].join('\n')
+  );
+} else {
+  console.log('[android-setup] Installing Maestro (https://get.maestro.mobile.dev) …');
+  run('bash', ['-c', 'curl -fsSL https://get.maestro.mobile.dev | bash']);
 }
 
 console.log('[android-setup] Done — run "npm run android:boot" then "npm run android:emulator".');

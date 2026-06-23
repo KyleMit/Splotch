@@ -47,8 +47,9 @@ build model and shared assets see **[native.md](native.md)**; iOS lives in
    ```
 
    For an emulator instead: run `npm run android:setup` after installing
-   Command-line Tools — it installs the API 33 system image and creates the
-   `Pixel_7_Pro_API_33` AVD automatically.
+   Command-line Tools — it installs the API 33 system image, creates the
+   `Pixel_7_Pro_API_33` AVD, and (on macOS/Linux) installs the Maestro
+   smoke-test CLI automatically. It's idempotent — re-run it any time.
 
 5. **Run the app** — two flows:
    * **Web dev server over USB** (fastest iteration): `npm run dev`, then
