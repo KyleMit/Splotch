@@ -9,9 +9,10 @@
 # because they apply to the deployed site.
 [build]
   command = "npm run build && node scripts/stage-netlify.mjs"
-  # After staging, build/ (root) holds the static assets and .netlify/functions-internal holds
-  # the adapter-netlify SSR function that build/_redirects rewrites all dynamic routes to.
-  publish = "build"
+  # Static assets are published straight from web/build (no copy needed). Only the SSR function
+  # is relocated: Netlify always looks for it at <base>/.netlify/functions-internal (base = root),
+  # but adapter-netlify writes it under web/.netlify, so stage-netlify.mjs copies that one tree up.
+  publish = "web/build"
 
 [[headers]]
   for = "/*"
