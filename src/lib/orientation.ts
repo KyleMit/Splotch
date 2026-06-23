@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { isNative } from '$lib/platform';
 import { settings } from '$lib/state/settings.svelte';
 
 type OrientationLockType = 'portrait' | 'landscape';
@@ -10,25 +11,38 @@ type LockableScreenOrientation = ScreenOrientation & {
 
 let lastRequested: OrientationLockType | 'unlocked' | null = null;
 
-export function applyDeviceOrientationPreference() {
+export async function applyDeviceOrientationPreference() {
   if (!browser) return;
 
-  const orientation = window.screen.orientation as LockableScreenOrientation | undefined;
-  const target = settings.lockRotationEnabled
+  const target: OrientationLockType | 'unlocked' = settings.lockRotationEnabled
     ? settings.forceLandscapeOrientation ? 'landscape' : 'portrait'
     : 'unlocked';
 
   if (target === lastRequested) return;
   lastRequested = target;
 
+  // Native: lock at the Activity level via @capacitor/screen-orientation. Unlike
+  // the Web Screen Orientation API, this overrides the OS Auto-Rotate setting, so
+  // the parent's choice is honored even when the device has rotation turned off.
+  if (isNative()) {
+    try {
+      const { ScreenOrientation } = await import('@capacitor/screen-orientation');
+      if (target === 'unlocked') await ScreenOrientation.unlock();
+      else await ScreenOrientation.lock({ orientation: target });
+    } catch {
+      // Plugin unavailable or the platform refused the lock — the setting stays
+      // persisted for the next launch.
+    }
+    return;
+  }
+
+  // Web fallback. Browsers may require fullscreen/user activation, and some
+  // WebViews do not expose locking at all; failures are swallowed since the
+  // setting remains persisted for platforms that can honor it.
+  const orientation = window.screen.orientation as LockableScreenOrientation | undefined;
   if (target === 'unlocked') {
     orientation?.unlock?.();
     return;
   }
-
-  orientation?.lock?.(target).catch(() => {
-    // Browsers may require fullscreen/user activation, and some WebViews do not
-    // expose locking at all. The setting remains persisted for platforms that
-    // can honor it.
-  });
+  orientation?.lock?.(target).catch(() => {});
 }

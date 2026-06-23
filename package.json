@@ -160,6 +160,7 @@
     "@capacitor/ios": "^8.3.4",
     "@capacitor/network": "^8.0.1",
     "@capacitor/preferences": "^8.0.1",
+    "@capacitor/screen-orientation": "^8.0.1",
     "@fontsource-variable/quicksand": "^5.2.10",
     "@google/genai": "^2.6.0",
     "@netlify/blobs": "^10.7.8",
