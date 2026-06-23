@@ -2,15 +2,18 @@
 
 ## TODO
 
-* [ ] Hand draw icons
+* [ ] Why do I need a deno.lock file if I already have package-lock? I'd like to npm to be my default package manager.  I think it has to do with running netlify dev.  Is there any way I can get netlify to use npm as well.
+* [ ] Figure out if I need to log into 
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
-* [ ] Parent center control to increase button size
-  * [ ] Make icons bigger on an ipad pro
 * [ ] Add sound effects when deleting
 * [ ] Add even more color for tall landscape view
 * [ ] Generate more fun store screenshot generation
 * [ ] Efficiently layout broad range of colors on small devices in advanced color picker
+* Icons
+  * [ ] Hand draw icons
+  * [ ] Parent center control to increase button size
+  * [ ] Make icons bigger on an ipad pro
 * Native
   * [ ] Add haptics for trashcan when in the clear accept zone
   * [ ] Native integration with apple pencil to use eraser
