@@ -53,6 +53,18 @@ device is offline the AI button is **hidden** automatically
   `UserDefaults`/`SharedPreferences`). On launch, `hydrateDurableStorage()`
   restores any settings the WebView may have evicted. The web is unaffected.
 
+### Screen orientation
+
+The parent-center rotation toggle (`lockRotationEnabled` +
+`forceLandscapeOrientation`) is applied by `src/lib/orientation.ts`. On native it
+locks via **`@capacitor/screen-orientation`**, which calls Android's
+`Activity.setRequestedOrientation` — this **overrides the OS Auto-Rotate setting**,
+so the parent's choice is honored even on a device with rotation turned off. The
+Web Screen Orientation API (the web fallback) can't do this: it only chooses an
+orientation within what the OS already permits, so with Auto-Rotate off it
+silently no-ops. The branch is keyed on `isNative()` (ADR-0013). Adding/removing
+this plugin requires a fresh native build — `cap:sync` alone won't register it.
+
 ### Data & privacy posture (important for store forms)
 
 * **No analytics, no tracking, no ads, no accounts, no third-party SDKs.**
