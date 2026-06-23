@@ -14,8 +14,8 @@ import {
   pickColor, setStrokeSize, drawStroke, dismissMenu, circlePts,
 } from './lib/app-driver.mjs';
 
-const SVG_FILE = join(ROOT, 'static', 'large-image.svg');
-const OUT = join(ROOT, 'static', 'large-image.png');
+const SVG_FILE = join(ROOT, 'web', 'static', 'large-image.svg');
+const OUT = join(ROOT, 'web', 'static', 'large-image.png');
 const PORT = 4173;
 
 // SVG viewBox dimensions

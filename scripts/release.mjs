@@ -82,7 +82,7 @@ if (dryRun) {
 const RELEASE_PATHS = [
   'package.json',
   'package-lock.json',
-  'src/lib/releases.json',
+  'web/src/lib/releases.json',
   'android/',
   'ios/',
   'fastlane/',

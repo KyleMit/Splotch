@@ -11,7 +11,7 @@ import { join } from 'node:path';
 import { ROOT, fail } from './lib/utils.mjs';
 import { encryptDir, decryptDir } from './lib/fixtureCrypto.mjs';
 
-const BASE = join(ROOT, 'tests', 'redteam');
+const BASE = join(ROOT, 'web', 'tests', 'redteam');
 const SOURCE = join(BASE, 'source');
 const ENCRYPTED = join(BASE, 'encrypted');
 const DECRYPTED = join(BASE, 'decrypted');

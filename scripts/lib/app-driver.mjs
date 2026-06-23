@@ -27,7 +27,7 @@ export async function ensureDevServer(port, timeout = 90_000) {
   console.log('Starting dev server…');
   const vite = join(ROOT, 'node_modules', 'vite', 'bin', 'vite.js');
   const server = spawn(process.execPath, [vite, 'dev', '--port', String(port), '--strictPort'], {
-    cwd: ROOT,
+    cwd: join(ROOT, 'web'),
     stdio: 'ignore',
   });
   const stop = () => {

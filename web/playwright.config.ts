@@ -32,8 +32,8 @@ export default defineConfig({
     // harnesses in the built app (404 otherwise); it's never set in the Netlify
     // deploy. Set DEV_SERVER=1 for fast local iteration against `vite dev`.
     command: process.env.DEV_SERVER
-      ? `vite dev --port ${PORT}`
-      : `vite build && vite preview --port ${PORT}`,
+      ? `npx vite dev --port ${PORT}`
+      : `npx vite build && npx vite preview --port ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

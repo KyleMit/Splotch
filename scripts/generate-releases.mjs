@@ -62,7 +62,7 @@ const appData = releases.map((r) => ({
   date: r.meta.date,
   bodyHtml: marked.parse(r.body).trim()
 }));
-write(join(ROOT, 'src', 'lib', 'releases.json'), JSON.stringify(appData, null, 2) + '\n');
+write(join(ROOT, 'web', 'src', 'lib', 'releases.json'), JSON.stringify(appData, null, 2) + '\n');
 
 // 2. Google Play changelogs — one file per versionCode (supply layout).
 for (const r of releases) {

@@ -26,7 +26,7 @@ const PORT = Number(process.env.REDTEAM_PORT ?? 5198);
 const BASE = `http://localhost:${PORT}`;
 const TOKEN = 'redteam-token';
 
-const BASE_DIR = join(ROOT, 'tests', 'redteam');
+const BASE_DIR = join(ROOT, 'web', 'tests', 'redteam');
 const ENCRYPTED = join(BASE_DIR, 'encrypted');
 const DECRYPTED = join(BASE_DIR, 'decrypted');
 const runId = new Date().toISOString().replace(/[:.]/g, '-');
@@ -300,7 +300,7 @@ async function main() {
 
   console.log('Starting throwaway dev server…');
   const server = spawn('npx', ['vite', 'dev', '--port', String(PORT), '--strictPort'], {
-    cwd: ROOT,
+    cwd: join(ROOT, 'web'),
     env: { ...process.env, ALLOWED_TOKENS_LIST: TOKEN, PUBLIC_ENABLE_DEV_HARNESS: 'true' },
     stdio: ['ignore', 'ignore', 'inherit'],
     shell: process.platform === 'win32'

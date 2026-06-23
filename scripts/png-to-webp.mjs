@@ -9,9 +9,9 @@ import sharp from 'sharp';
 const quality = Number(process.env.QUALITY ?? 80);
 const lossless = process.env.LOSSLESS === '1';
 
-const files = globSync('static/**/*.png');
+const files = globSync('web/static/**/*.png');
 if (files.length === 0) {
-  console.log('No PNGs found under static/');
+  console.log('No PNGs found under web/static/');
   process.exit(0);
 }
 
