@@ -24,24 +24,46 @@ function seedFromEnv(): string[] {
     .filter(Boolean);
 }
 
+// Open the Blobs store, or null when Blobs isn't configured at all (e.g. plain
+// `vite dev`, where getStore throws MissingBlobsEnvironmentError). That's a
+// permanent property of the instance, so we latch it to avoid retrying. A
+// transient *operation* failure must NOT latch — see readStore.
+function openStore(): TokenStore | null {
+  if (blobsUnavailable) return null;
+  try {
+    return getStore(STORE_NAME);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : err;
+    console.warn('[tokens] Netlify Blobs unavailable, using in-memory list:', detail);
+    blobsUnavailable = true;
+    return null;
+  }
+}
+
 /**
  * Resolve the current token list and the backing store (if available).
  * Returns `{ store, list }` where `store` is null when Blobs is unavailable.
  */
-async function readStore() {
-  if (!blobsUnavailable) {
+async function readStore(): Promise<{ store: TokenStore | null; list: string[] }> {
+  const store = openStore();
+  if (store) {
     try {
-      const store = getStore(STORE_NAME);
-      const list = await store.get(KEY, { type: 'json' });
+      // Strong consistency is required: with the default (eventual) read, a
+      // replica that lags the latest write can report the key as absent, which
+      // would trip the seed-on-empty branch below and clobber the admin's saved
+      // tokens with the env defaults.
+      const list = await store.get(KEY, { type: 'json', consistency: 'strong' });
       if (Array.isArray(list)) return { store, list };
-      // First run against Blobs: seed from the env var so nothing is lost.
+      // Genuine first run against Blobs: seed from the env var so nothing is lost.
       const seeded = seedFromEnv();
       await store.setJSON(KEY, seeded);
       return { store, list: seeded };
     } catch (err) {
+      // Transient Blobs error: degrade to memory for THIS request only. Do not
+      // latch blobsUnavailable, or one blip would make the warm instance
+      // silently drop every future write.
       const detail = err instanceof Error ? err.message : err;
-      console.warn('[tokens] Netlify Blobs unavailable, using in-memory list:', detail);
-      blobsUnavailable = true;
+      console.warn('[tokens] Netlify Blobs read failed, using in-memory list:', detail);
     }
   }
   if (memoryTokens === null) memoryTokens = seedFromEnv();

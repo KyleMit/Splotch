@@ -4,6 +4,7 @@
 
 
 
+* [ ] Fix admin center persistence and Update admin center to also include usage stats
 * [ ] Hand draw icons
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
