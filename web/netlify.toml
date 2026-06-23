@@ -4,6 +4,15 @@
   # .netlify/functions-internal/; the publish dir must point at build/.
   publish = "build"
 
+# The app lives in web/ (siblings android/ ios/ stay at the repo root). `netlify dev --cwd web`
+# scopes netlify-cli's file watcher to web/, keeping the large native trees out of it. web/ has
+# no package.json of its own, so drive the dev server explicitly via a custom command run from
+# web/ (svelte-kit sync + vite dev, resolving node_modules upward to the root).
+[dev]
+  framework = "#custom"
+  command = "node ../scripts/web.mjs dev"
+  targetPort = 5173
+
 [[headers]]
   for = "/*"
   [headers.values]

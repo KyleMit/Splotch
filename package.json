@@ -5,10 +5,10 @@
   "scripts": {
     "info": "npx scripts-info",
     "postinstall": "patch-package",
-    "predev": "svelte-kit sync",
-    "dev": "vite dev",
+    "predev": "node scripts/web.mjs svelte-kit sync",
+    "dev": "node scripts/web.mjs vite dev",
     "predev:netlify": "node scripts/check-netlify-cli.mjs",
-    "dev:netlify": "netlify dev",
+    "dev:netlify": "netlify dev --cwd web",
     "dev:host": "vite dev --host",
     "dev:cap": "cross-env CAPACITOR=true vite dev --host",
     "dev:tunnel": "node scripts/cloud-tunnel.mjs",
