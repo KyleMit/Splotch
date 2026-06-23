@@ -6,6 +6,7 @@ import {
   buildInvites
 } from '$lib/server/admin';
 import { getTokens, addToken, removeToken } from '$lib/server/tokens';
+import { getUsage } from '$lib/server/usage';
 import { rateLimit } from '$lib/server/rateLimit';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -66,11 +67,17 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
   // forward — an actively-used admin never has to log in again.
   setSession(cookies);
   const tokens = await getTokens();
-  return {
-    authed: true,
-    hasSession,
-    invites: buildInvites(tokens, url.origin)
-  };
+  // Pair each invite with its generation tally (web admin only — the native
+  // /api/admin/tokens snapshot doesn't carry usage, so AdminConsole renders
+  // the stats only when `usage` is present). `usage[token] ?? null` keeps the
+  // field always-defined here so the component can tell "never used" (null)
+  // apart from "usage unavailable" (undefined, the native case).
+  const usage = await getUsage(tokens);
+  const invites = buildInvites(tokens, url.origin).map((invite) => ({
+    ...invite,
+    usage: usage[invite.token] ?? null
+  }));
+  return { authed: true, hasSession, invites };
 }
 
 export const actions: Actions = {

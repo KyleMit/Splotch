@@ -2,24 +2,22 @@
 
 ## TODO
 
-
-
-* [ ] Fix admin center persistence and Update admin center to also include usage stats
 * [ ] Hand draw icons
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
 * [ ] Parent center control to increase button size
   * [ ] Make icons bigger on an ipad pro
-* [ ] Add haptics for trashcan when in the clear accept zone
 * [ ] Add sound effects when deleting
 * [ ] Add even more color for tall landscape view
 * [ ] Generate more fun store screenshot generation
 * [ ] Efficiently layout broad range of colors on small devices in advanced color picker
+* Native
+  * [ ] Add haptics for trashcan when in the clear accept zone
+  * [ ] Native integration with apple pencil to use eraser
 * AI Art
   * [ ] If AI call fails and you need to try again, enable a way to do so immediately
   * [ ] AI Style buttons should use custom image and then generate corresponding output for each.
   * [ ] Build custom AI Prompts in the parent center.  Generate a logo for them from the base style and then enable.  Save logo locally
-* [ ] Native integration with apple pencil to use eraser
 * [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * [ ] Add /about page for marketing page with download links
 * [ ] Once ios and android stores ship, link to native downloads in parent center
@@ -144,3 +142,5 @@
 * [x] /run-skill-generator
 * [x] Make sure we can refresh PWA
 * [x] Red hat test AI prompts
+* [ ] Fix admin center persistence and Update admin center to also include usage stats
+

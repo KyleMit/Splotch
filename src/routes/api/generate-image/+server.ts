@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
-import { getStore } from '@netlify/blobs';
 import { STYLE_SUFFIXES } from '$lib/ai/styles';
 import { isAllowedToken } from '$lib/server/tokens';
+import { recordTokenUsage } from '$lib/server/usage';
 import { rateLimit } from '$lib/server/rateLimit';
 import { classifyGeminiResponse, isSafetyError } from '$lib/server/aiSafety';
 import type { RequestHandler } from './$types';
@@ -15,46 +15,6 @@ import type { RequestHandler } from './$types';
 const SAFETY_STATUS = 422;
 function safetyRefusal(reason: string): never {
   throw error(SAFETY_STATUS, `Drawing was blocked for safety: ${reason}`);
-}
-
-/**
- * Record that a token generated an image, so we can spot a token going rogue.
- * Logs to the Netlify function log (real-time) and keeps a durable per-token
- * tally in Netlify Blobs (dashboard → Blobs → "ai-usage") that we can audit
- * later and use to decide which token to pull from ALLOWED_TOKENS_LIST.
- */
-// Show only the last 4 chars of a token in logs — the full secret should never
-// land in the function log or any downstream log drain.
-function maskToken(token: unknown) {
-  const t = String(token ?? '');
-  return t.length <= 4 ? '****' : `…${t.slice(-4)}`;
-}
-
-async function recordUsage(
-  token: string,
-  { style, prompt }: { style: FormDataEntryValue | null; prompt: string }
-) {
-  const now = new Date().toISOString();
-  console.log(`[ai-usage] token=${maskToken(token)} style=${style || 'none'} prompt=${JSON.stringify(prompt)} at=${now}`);
-
-  try {
-    const store = getStore('ai-usage');
-    const prev = (await store.get(token, { type: 'json' })) || {};
-    await store.setJSON(token, {
-      count: (prev.count || 0) + 1,
-      firstUsed: prev.firstUsed || now,
-      lastUsed: now,
-      lastStyle: style || null,
-      lastPrompt: prompt
-    });
-  } catch (err) {
-    // Blobs is only wired up in the Netlify runtime; don't fail the request
-    // (e.g. during local `vite dev`) just because usage couldn't be persisted.
-    console.warn(
-      '[ai-usage] failed to persist usage to Netlify Blobs:',
-      err instanceof Error ? err.message : err
-    );
-  }
 }
 
 const MODEL = 'gemini-2.5-flash-image';
@@ -163,11 +123,14 @@ export const POST: RequestHandler = async ({ request, platform }) => {
   if (usingByok) {
     console.log(`[ai-usage] byok style=${style || 'none'} at=${new Date().toISOString()}`);
   } else {
-    // The synchronous audit log inside recordUsage runs immediately; only the
-    // Blobs write is async, and we don't make the image wait on it. waitUntil
+    // The synchronous audit log inside recordTokenUsage runs immediately; only
+    // the Blobs write is async, and we don't make the image wait on it. waitUntil
     // keeps the function alive long enough to finish on Netlify; without it
     // (local dev) it's a fire-and-forget whose errors are caught internally.
-    const usage = recordUsage(token as string, { style, prompt: finalPrompt });
+    const usage = recordTokenUsage(token as string, {
+      style: typeof style === 'string' ? style : null,
+      prompt: finalPrompt
+    });
     const ctx = (platform as { context?: { waitUntil?: (p: Promise<unknown>) => void } } | undefined)
       ?.context;
     if (ctx?.waitUntil) ctx.waitUntil(usage);

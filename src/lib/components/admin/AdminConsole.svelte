@@ -5,9 +5,22 @@
   // auth transport and data; this component owns the markup, styles, and
   // small interaction state (copy feedback, clearing inputs). Callbacks return
   // whether the operation succeeded so the component knows when to reset.
+  // Per-token AI generation tally (mirrors $lib/server/usage TokenUsage). Kept
+  // structural here so this client component never imports server code.
+  export interface Usage {
+    count: number;
+    firstUsed: string;
+    lastUsed: string;
+    lastStyle: string | null;
+    lastPrompt: string;
+  }
   export interface Invite {
     token: string;
     url: string;
+    // `undefined` = usage tracking isn't wired up for this front door (native);
+    // `null` = tracked but never used; an object = the tally. The component
+    // renders the stats line only when this is not `undefined`.
+    usage?: Usage | null;
   }
   export interface Flash {
     kind: 'success' | 'error';
@@ -65,6 +78,35 @@
     run(async () => {
       if (await onadd(newToken.trim())) newToken = '';
     });
+  }
+
+  // Compact "3 days ago" label for a last-used timestamp, falling back to a
+  // plain date if the value won't parse.
+  function timeAgo(iso: string) {
+    const then = new Date(iso).getTime();
+    if (Number.isNaN(then)) return '';
+    const secondsAgo = Math.round((Date.now() - then) / 1000);
+    const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+    const units: [Intl.RelativeTimeFormatUnit, number][] = [
+      ['year', 31_536_000],
+      ['month', 2_592_000],
+      ['week', 604_800],
+      ['day', 86_400],
+      ['hour', 3_600],
+      ['minute', 60]
+    ];
+    for (const [unit, secs] of units) {
+      if (Math.abs(secondsAgo) >= secs) return rtf.format(-Math.round(secondsAgo / secs), unit);
+    }
+    return rtf.format(-secondsAgo, 'second');
+  }
+
+  // Detail shown on hover/long-press, for auditing a token that looks busy.
+  function usageDetail(usage: Usage) {
+    const parts = [`First used ${new Date(usage.firstUsed).toLocaleString()}`];
+    if (usage.lastStyle) parts.push(`Last style: ${usage.lastStyle}`);
+    if (usage.lastPrompt) parts.push(`Last prompt: ${usage.lastPrompt}`);
+    return parts.join('\n');
   }
 
   // Per-row "copied" feedback for the invite links.
@@ -178,6 +220,18 @@
                 <div class="invite-info">
                   <span class="token">{invite.token}</span>
                   <a class="invite-url" href={invite.url}>{invite.url}</a>
+                  {#if invite.usage !== undefined}
+                    {#if invite.usage}
+                      <span class="usage" title={usageDetail(invite.usage)}>
+                        <strong>{invite.usage.count}</strong>
+                        {invite.usage.count === 1 ? 'generation' : 'generations'}
+                        <span class="usage-sep" aria-hidden="true">·</span>
+                        last used {timeAgo(invite.usage.lastUsed)}
+                      </span>
+                    {:else}
+                      <span class="usage usage-none">Never used</span>
+                    {/if}
+                  {/if}
                 </div>
                 <div class="invite-actions">
                   <button
@@ -511,6 +565,28 @@
   .invite-url:hover {
     color: #7c4dcf;
     text-decoration: underline;
+  }
+
+  .usage {
+    margin-top: 2px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #777;
+  }
+
+  .usage strong {
+    color: #7c4dcf;
+    font-weight: 700;
+  }
+
+  .usage-sep {
+    margin: 0 4px;
+    color: #ccc;
+  }
+
+  .usage-none {
+    font-style: italic;
+    color: #aaa;
   }
 
   .invite-actions {
