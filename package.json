@@ -137,8 +137,8 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@playwright/test": "^1.60.0",
-    "@sveltejs/adapter-netlify": "^4.3.0",
-    "@sveltejs/kit": "^2.5.0",
+    "@sveltejs/adapter-netlify": "^6.0.4",
+    "@sveltejs/kit": "^2.31.0",
     "@sveltejs/vite-plugin-svelte": "^4.0.0",
     "capacitor-set-version": "^2.2.0",
     "cross-env": "^10.1.0",
