@@ -14,16 +14,18 @@ async function signIn(page: Page, path: string) {
   await page.goto(path);
   await page.getByPlaceholder('Admin access key').fill(ADMIN_KEY);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: 'Add a code' })).toBeVisible();
+  await expect(page.getByPlaceholder('Add a code…')).toBeVisible();
 }
 
 async function addsAndRemovesToken(page: Page, token: string) {
-  await page.getByPlaceholder('e.g. sunny-meadow').fill(token);
+  await page.getByPlaceholder('Add a code…').fill(token);
   await page.getByRole('button', { name: 'Add code' }).click();
   await expect(page.getByText(`Added “${token}”`)).toBeVisible();
-  // The invite row pairs the raw token with its prebuilt invite link.
+  // The invite row shows the raw token and exposes its prebuilt invite link
+  // behind a "Copy link" action (no longer rendered as a visible URL).
+  const row = page.getByRole('listitem').filter({ hasText: token });
   await expect(page.getByText(token, { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: new RegExp(`ai_access_token=${token}`) })).toBeVisible();
+  await expect(row.getByRole('button', { name: 'Copy link' })).toBeVisible();
 
   await page.getByRole('button', { name: `Remove ${token}` }).click();
   await expect(page.getByText(`Removed “${token}”`)).toBeVisible();
@@ -62,7 +64,7 @@ test('native console /admin/native signs in via the API and manages tokens', asy
 
   // The bearer session persists in secure storage, so a reload stays signed in.
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Add a code' })).toBeVisible();
+  await expect(page.getByPlaceholder('Add a code…')).toBeVisible();
 
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();

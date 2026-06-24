@@ -114,18 +114,38 @@
     return parts.join('\n');
   }
 
-  // Per-row "copied" feedback for the invite links.
+  // Per-button "copied" feedback. The key distinguishes which cell flashed
+  // (e.g. `token:code` vs `token:url`) so only the clicked button reacts.
   let copied = $state('');
-  async function copyLink(url: string) {
+  async function copy(key: string, text: string) {
     try {
-      await navigator.clipboard.writeText(url);
-      copied = url;
+      await navigator.clipboard.writeText(text);
+      copied = key;
       setTimeout(() => {
-        if (copied === url) copied = '';
+        if (copied === key) copied = '';
       }, 1500);
     } catch {
       // Clipboard may be unavailable (e.g. non-secure context); ignore.
     }
+  }
+
+  // The narrow layout collapses the per-row actions into a single "Copy" plus a
+  // "⋯" button that opens this modal sheet — the same Copy code / Copy link /
+  // Remove actions, just one tap deeper. `menuInvite` is the row it belongs to.
+  let menuInvite = $state<Invite | null>(null);
+  let menuEl = $state<HTMLDialogElement>();
+
+  function openMenu(invite: Invite) {
+    menuInvite = invite;
+    menuEl?.showModal();
+  }
+  function closeMenu() {
+    menuEl?.close();
+  }
+  // A click whose target is the <dialog> itself (not its content) landed on the
+  // ::backdrop, so dismiss.
+  function onMenuClick(event: MouseEvent) {
+    if (event.target === menuEl) closeMenu();
   }
 </script>
 
@@ -198,22 +218,22 @@
         </div>
       {/if}
 
-      <section class="card">
-        <h2>Add a code</h2>
-        <form onsubmit={handleAdd} class="add-form">
-          <input
-            type="text"
-            name="token"
-            placeholder="e.g. sunny-meadow"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            required
-            bind:value={newToken}
-          />
-          <button type="submit" class="btn btn-primary" disabled={busy}>Add code</button>
-        </form>
-      </section>
+      <form onsubmit={handleAdd} class="add-form add-bar">
+        <input
+          type="text"
+          name="token"
+          placeholder="Add a code…"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          required
+          bind:value={newToken}
+        />
+        <button type="submit" class="btn btn-primary add-button" disabled={busy} aria-label="Add code">
+          <span class="add-label">Add code</span>
+          <Icon name="plus" class="add-icon" />
+        </button>
+      </form>
 
       <section class="card">
         <div class="card-head">
@@ -232,7 +252,6 @@
               <li class="invite">
                 <div class="invite-info">
                   <span class="token">{invite.token}</span>
-                  <a class="invite-url" href={invite.url}>{invite.url}</a>
                   {#if invite.usage !== undefined}
                     {#if invite.usage}
                       <span class="usage" title={usageDetail(invite.usage)}>
@@ -246,14 +265,23 @@
                     {/if}
                   {/if}
                 </div>
-                <div class="invite-actions">
+
+                <div class="invite-actions invite-actions-full">
                   <button
                     type="button"
                     class="btn btn-ghost"
-                    class:copied={copied === invite.url}
-                    onclick={() => copyLink(invite.url)}
+                    class:copied={copied === `${invite.token}:code`}
+                    onclick={() => copy(`${invite.token}:code`, invite.token)}
                   >
-                    {copied === invite.url ? 'Copied!' : 'Copy link'}
+                    {copied === `${invite.token}:code` ? 'Copied!' : 'Copy code'}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-ghost"
+                    class:copied={copied === `${invite.token}:url`}
+                    onclick={() => copy(`${invite.token}:url`, invite.url)}
+                  >
+                    {copied === `${invite.token}:url` ? 'Copied!' : 'Copy link'}
                   </button>
                   <button
                     type="button"
@@ -262,7 +290,26 @@
                     aria-label={`Remove ${invite.token}`}
                     onclick={() => run(() => onremove(invite.token))}
                   >
-                    <Icon name="trash" class="trash-icon" />
+                    Remove
+                  </button>
+                </div>
+
+                <div class="invite-actions invite-actions-compact">
+                  <button
+                    type="button"
+                    class="btn btn-ghost"
+                    class:copied={copied === `${invite.token}:code`}
+                    onclick={() => copy(`${invite.token}:code`, invite.token)}
+                  >
+                    {copied === `${invite.token}:code` ? 'Copied!' : 'Copy'}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-icon"
+                    aria-label={`More options for ${invite.token}`}
+                    onclick={() => openMenu(invite)}
+                  >
+                    <Icon name="more-horiz" class="more-icon" />
                   </button>
                 </div>
               </li>
@@ -272,6 +319,46 @@
       </section>
     {/if}
   </main>
+
+  <dialog class="more-menu" bind:this={menuEl} onclick={onMenuClick} onclose={() => (menuInvite = null)}>
+    {#if menuInvite}
+      {@const inv = menuInvite}
+      <div class="more-menu-card">
+        <p class="more-menu-title">{inv.token}</p>
+        <button
+          type="button"
+          class="more-menu-item"
+          onclick={() => {
+            copy(`${inv.token}:code`, inv.token);
+            closeMenu();
+          }}
+        >
+          Copy code
+        </button>
+        <button
+          type="button"
+          class="more-menu-item"
+          onclick={() => {
+            copy(`${inv.token}:url`, inv.url);
+            closeMenu();
+          }}
+        >
+          Copy link
+        </button>
+        <button
+          type="button"
+          class="more-menu-item more-menu-item-danger"
+          disabled={busy}
+          onclick={() => {
+            closeMenu();
+            run(() => onremove(inv.token));
+          }}
+        >
+          Remove
+        </button>
+      </div>
+    {/if}
+  </dialog>
 </div>
 
 <style>
@@ -461,10 +548,15 @@
     font-weight: 700;
   }
 
-  /* Add form */
+  /* Add form (shared by the sign-in card and the standalone add bar) */
   .add-form {
     display: flex;
     gap: 10px;
+  }
+
+  /* The add bar sits directly on the page (no card wrapper). */
+  .add-bar {
+    margin-bottom: 24px;
   }
 
   .add-form input {
@@ -484,6 +576,21 @@
     outline: none;
     border-color: var(--brand);
     box-shadow: 0 0 0 3px rgba(171, 113, 225, 0.18);
+  }
+
+  /* The add button shows its "Add code" label by default and collapses to the
+     "+" icon only when space is tight (handled in the media query below). */
+  .add-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  :global(.add-button .add-icon) {
+    display: none;
+    width: 22px;
+    height: 22px;
+    filter: brightness(0) invert(1);
   }
 
   /* Buttons */
@@ -534,12 +641,7 @@
   }
 
   .btn-danger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    padding: 0;
+    padding: 8px 14px;
     color: #b42318;
     background: #fef2f2;
   }
@@ -548,19 +650,33 @@
     background: #fbe0de;
   }
 
-  :global(.btn-danger .trash-icon) {
-    width: 18px;
-    height: 18px;
+  /* Square icon-only button (the "⋯" more control). */
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    color: #999;
+    background: transparent;
   }
 
-  /* Invite list */
+  .btn-icon:hover {
+    background: #f0f0f0;
+  }
+
+  :global(.btn-icon .more-icon) {
+    width: 20px;
+    height: 20px;
+    filter: invert(63%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(95%) contrast(85%);
+  }
+
+  /* Invite list — one card of rows split by hairline dividers. */
   .invites {
     list-style: none;
     padding: 0;
     margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
   }
 
   .invite {
@@ -568,10 +684,17 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 14px 16px;
-    border: 1px solid #eee;
-    border-radius: 12px;
-    background: #fafafa;
+    padding: 14px 4px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .invite:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .invite:first-child {
+    padding-top: 0;
   }
 
   .invite-info {
@@ -587,21 +710,7 @@
     color: #333;
   }
 
-  .invite-url {
-    font-family: 'Courier New', monospace;
-    font-size: 12.5px;
-    color: #999;
-    text-decoration: none;
-    word-break: break-all;
-  }
-
-  .invite-url:hover {
-    color: #7c4dcf;
-    text-decoration: underline;
-  }
-
   .usage {
-    margin-top: 2px;
     font-size: 12.5px;
     font-weight: 500;
     color: #777;
@@ -623,10 +732,86 @@
   }
 
   .invite-actions {
-    display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 8px;
     flex-shrink: 0;
+  }
+
+  /* Full set of labelled actions for wide screens; the compact Copy + "⋯"
+     pair takes over on narrow ones. Only one is shown at a time. */
+  .invite-actions-full {
+    display: inline-flex;
+  }
+
+  .invite-actions-compact {
+    display: none;
+  }
+
+  /* Modal sheet opened by the "⋯" button on narrow screens. */
+  .more-menu {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    width: min(340px, calc(100vw - 48px));
+    padding: 0;
+    border: none;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+  }
+
+  .more-menu::backdrop {
+    background: rgba(20, 16, 30, 0.45);
+  }
+
+  .more-menu-title {
+    margin: 0;
+    padding: 16px 20px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #aaa;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .more-menu-item {
+    display: block;
+    width: 100%;
+    padding: 16px 20px;
+    text-align: left;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    color: #7c4dcf;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+  }
+
+  .more-menu-item:last-child {
+    border-bottom: none;
+  }
+
+  .more-menu-item:hover {
+    background: #faf7ff;
+  }
+
+  .more-menu-item-danger {
+    color: #d92d20;
+  }
+
+  .more-menu-item-danger:hover {
+    background: #fff5f5;
+  }
+
+  .more-menu-item:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
 
   /* Empty state */
@@ -650,14 +835,30 @@
     margin-inline: auto;
   }
 
-  @media (max-width: 480px) {
-    .invite {
-      flex-direction: column;
-      align-items: stretch;
+  /* On narrow screens the three labelled actions won't fit beside the code, so
+     each row collapses to a single "Copy" plus the "⋯" overflow menu, and the
+     add button shrinks to just its "+" icon. */
+  @media (max-width: 560px) {
+    .invite-actions-full {
+      display: none;
     }
 
-    .invite-actions {
-      justify-content: flex-end;
+    .invite-actions-compact {
+      display: inline-flex;
+    }
+
+    .add-button {
+      padding: 11px;
+      width: 46px;
+      flex-shrink: 0;
+    }
+
+    .add-label {
+      display: none;
+    }
+
+    :global(.add-button .add-icon) {
+      display: block;
     }
   }
 </style>

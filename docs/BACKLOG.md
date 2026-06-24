@@ -14,7 +14,6 @@ Why do I need a deno.lock file if I already have package-lock? I'd like to npm t
 
 ---
 
-* [ ] Fix admin center persistence
 * [ ] iPad does not respect force landscape setting
 * [ ] volume slider doesn't work with swipe between tabs on iOS
 * [ ] flash of unstyled content on booting app in iOS where circle and trash can buttons start square and then become rounded 
@@ -25,6 +24,7 @@ Why do I need a deno.lock file if I already have package-lock? I'd like to npm t
 * [ ] Generate more fun store screenshot generation
 * [ ] Efficiently layout broad range of colors on small devices in advanced color picker
 * Icons
+  * [ ] Document https://fonts.google.com/icons?icon.style=Rounded as icon source
   * [ ] Hand draw icons
   * [ ] Parent center control to increase button size
   * [ ] Make icons bigger on an ipad pro
@@ -161,3 +161,4 @@ Why do I need a deno.lock file if I already have package-lock? I'd like to npm t
 * [x] Red hat test AI prompts
 * [x] Update admin center to also include usage stats
 * [x] Figure out if I need to log into netlify from CLI - document in pre dev step if so
+* [x] Fix admin center persistence
