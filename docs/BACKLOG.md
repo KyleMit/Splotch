@@ -3,12 +3,10 @@
 ## TODO
 
 
-Why do I need a deno.lock file if I already have package-lock? I'd like to npm to be my default package manager.  I think it has to do with running netlify dev.  Is there any way I can get netlify to use npm as well.
 
----
-
-* [ ] volume slider doesn't work with swipe between tabs on iOS
 * [ ] flash of unstyled content on booting app in iOS where circle and trash can buttons start square and then become rounded 
+* [ ] inefficent layout on iphone at tops and bottom
+* [ ] volume slider doesn't work with swipe between tabs on iOS
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
 * [ ] Add sound effects when deleting

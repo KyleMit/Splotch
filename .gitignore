@@ -158,6 +158,9 @@ workbox-*.js.map
 build/
 .netlify/
 
+# Netlify CLI's Deno edge-bundler lockfile — no edge functions in this project, regenerable
+deno.lock
+
 # android studio
 android/.idea
 

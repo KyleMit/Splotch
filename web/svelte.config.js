@@ -13,6 +13,9 @@ const isCapacitor = process.env.CAPACITOR === 'true';
 const config = {
   preprocess: vitePreprocess(),
   kit: {
+    // adapterNetlify() (no opts) emits SSR as a Node serverless function. If we ever pass
+    // { edge: true } to run SSR on Netlify's Deno edge runtime, un-ignore and commit deno.lock
+    // (currently gitignored) so the edge runtime pins are reproducible.
     adapter: isCapacitor
       ? adapterStatic({ fallback: '200.html', strict: false })
       : adapterNetlify(),
