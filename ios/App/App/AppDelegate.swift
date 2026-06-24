@@ -46,4 +46,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+    // Make the parent center's rotation lock authoritative: report the app-level
+    // supported orientations from the Capacitor view controller, which
+    // @capacitor/screen-orientation keeps in sync with lock()/unlock(). Without
+    // this, iOS reads the orientations from Info.plist (all of them) and
+    // auto-rotates the WebView back, so the force-landscape/portrait toggle never
+    // sticks.
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        guard let viewController = window?.rootViewController as? CAPBridgeViewController else {
+            return .all
+        }
+        return UIInterfaceOrientationMask(rawValue: viewController.supportedInterfaceOrientations.rawValue)
+    }
+
 }

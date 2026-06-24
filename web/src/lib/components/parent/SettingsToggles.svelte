@@ -16,7 +16,12 @@
     setForceLandscapeOrientation
   } from '$lib/state/settings.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
+  import { supportsOrientationLock } from '$lib/platform';
   import { playDrawSound, stopDrawSound } from '$lib/audio/drawingSound';
+
+  // Windowed platforms (iPadOS 26+) own device orientation through their own
+  // window controls and ignore in-app locks, so the toggles are hidden there.
+  const showOrientationControls = supportsOrientationLock();
 
   const PREVIEW_SPEED = 0.45;
   let previewingVolume = false;
@@ -100,7 +105,8 @@
     />
   </div>
 
-    <div class="setting">
+  {#if showOrientationControls}
+  <div class="setting">
     <ToggleRow
       icon={settings.lockRotationEnabled ? 'mobile-lock' : 'mobile-rotate'}
       label="Lock device rotation"
@@ -120,6 +126,7 @@
       onToggle={setForceLandscapeOrientation}
     />
   </div>
+  {/if}
   {/if}
   
 </section>
