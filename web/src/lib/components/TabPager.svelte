@@ -10,6 +10,9 @@
   const defaultSwipeActivationDistance = 20;
   const swipeAxisRatio = 1.2;
   const swipeRetreatTolerance = 12;
+  const flickVelocityThreshold = 0.5;
+  const flickMinDistance = 6;
+  const velocitySmoothing = 0.4;
 
   type SwipeState = {
     x: number;
@@ -20,6 +23,9 @@
     active: boolean;
     maxProgress: number;
     retreated: boolean;
+    lastX: number;
+    lastTime: number;
+    velocity: number;
   };
 
   interface Props {
@@ -179,7 +185,10 @@
       direction: null,
       active: false,
       maxProgress: 0,
-      retreated: false
+      retreated: false,
+      lastX: e.clientX,
+      lastTime: e.timeStamp,
+      velocity: 0
     };
     swipeOffset = 0;
     swiping = false;
@@ -191,6 +200,15 @@
     const dy = e.clientY - swipeStart.y;
     const absX = Math.abs(dx);
     const absY = Math.abs(dy);
+
+    const dt = e.timeStamp - swipeStart.lastTime;
+    if (dt > 0) {
+      const instantVelocity = (e.clientX - swipeStart.lastX) / dt;
+      swipeStart.velocity =
+        swipeStart.velocity * velocitySmoothing + instantVelocity * (1 - velocitySmoothing);
+      swipeStart.lastX = e.clientX;
+      swipeStart.lastTime = e.timeStamp;
+    }
 
     if (!swipeStart.active) {
       if (absX < swipeActivationDistance) return;
@@ -228,17 +246,35 @@
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
     const dx = e.clientX - swipeStart.x;
-    const direction = swipeStart.direction;
+    const dy = e.clientY - swipeStart.y;
+    const velocity = swipeStart.velocity;
+
+    let direction = swipeStart.direction;
+    // A fast, brief flick can lift before the swipe ever crosses the
+    // activation distance — derive its direction from the release velocity.
+    if (
+      direction === null &&
+      Math.abs(velocity) >= flickVelocityThreshold &&
+      Math.abs(dx) >= flickMinDistance &&
+      Math.abs(dx) >= Math.abs(dy)
+    ) {
+      direction = velocity < 0 ? 1 : -1;
+    }
+
+    const movedInDirection = direction !== null && (direction === 1 ? dx < 0 : dx > 0);
+    const velocityInDirection = direction === 1 ? -velocity : direction === -1 ? velocity : 0;
+    const distanceMet = swipeStart.active && Math.abs(dx) >= swipeActivationDistance;
+    const flickMet = velocityInDirection >= flickVelocityThreshold && Math.abs(dx) >= flickMinDistance;
+
     const accepted =
-      swipeStart.active &&
       direction !== null &&
       canMove(direction) &&
       !swipeStart.retreated &&
-      Math.abs(dx) >= swipeActivationDistance &&
-      (direction === 1 ? dx < 0 : dx > 0);
+      movedInDirection &&
+      (distanceMet || flickMet);
     swipeStart = null;
 
-    if (swiping) {
+    if (swiping || accepted) {
       suppressClickAfterSwipe();
       settleFrame = requestAnimationFrame(() => {
         swiping = false;
