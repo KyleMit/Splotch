@@ -7,32 +7,10 @@
     type TabPagerTab
   } from './tabPagerContext';
 
-  const defaultSwipeActivationDistance = 20;
-  const swipeAxisRatio = 1.2;
-  const swipeRetreatTolerance = 12;
-  const flickVelocityThreshold = 0.5;
-  const flickMinDistance = 6;
-  const velocitySmoothing = 0.4;
-
-  type SwipeState = {
-    x: number;
-    y: number;
-    pointerId: number;
-    width: number;
-    direction: -1 | 1 | null;
-    active: boolean;
-    maxProgress: number;
-    retreated: boolean;
-    lastX: number;
-    lastTime: number;
-    velocity: number;
-  };
-
   interface Props {
     initialTab?: string;
     resetKey?: unknown;
     ariaLabel?: string;
-    swipeActivationDistance?: number;
     tabs: Snippet;
     children: Snippet<[string]>;
   }
@@ -41,7 +19,6 @@
     initialTab,
     resetKey,
     ariaLabel = 'Tab panels',
-    swipeActivationDistance = defaultSwipeActivationDistance,
     tabs,
     children
   }: Props = $props();
@@ -50,19 +27,20 @@
     activeTab: '',
     tabs: []
   });
-  let swipeStart = $state<SwipeState | null>(null);
-  let swipeOffset = $state(0);
-  let swiping = $state(false);
+
+  let panelsEl: HTMLDivElement | null = null;
+  // Fractional scroll position (0 = first panel, 1 = second, …) drives the
+  // active-tab underline so it tracks the finger during a native swipe.
+  let scrollProgress = $state(0);
+  let scrollRaf: number | null = null;
+  let initialized = false;
+  let lastResetKey: unknown;
+  let resetKeyInitialized = false;
+
   let activeTabIndex = $derived(
     Math.max(0, pagerState.tabs.findIndex((tab) => tab.id === pagerState.activeTab))
   );
-  let trackTransform = $derived(`translateX(calc(-${activeTabIndex * 100}% + ${swipeOffset}px))`);
-  let tabStyle = $derived(`--active-tab-index:${activeTabIndex}; --tab-count:${pagerState.tabs.length};`);
-  let settleFrame: number | null = null;
-  let lastResetKey: unknown;
-  let resetKeyInitialized = false;
-  let suppressNextClick = false;
-  let suppressClickTimer: ReturnType<typeof setTimeout> | null = null;
+  let tabStyle = $derived(`--active-tab-index:${scrollProgress}; --tab-count:${pagerState.tabs.length};`);
 
   const context: TabPagerContext = {
     state: pagerState,
@@ -71,11 +49,37 @@
   };
   setContext(tabPagerContextKey, context);
 
+  function prefersReducedMotion() {
+    return typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function indexOfTab(id: string) {
+    const index = pagerState.tabs.findIndex((tab) => tab.id === id);
+    return index === -1 ? 0 : index;
+  }
+
+  function scrollToIndex(index: number, behavior: ScrollBehavior) {
+    // Set scrollLeft directly rather than scrollIntoView: the latter scrolls
+    // every scrollable ancestor, dragging the dialog's vertical scroller down
+    // and hiding the tab headers. We only ever want to pan the pager sideways.
+    panelsEl?.scrollTo({ left: index * panelsEl.clientWidth, behavior });
+  }
+
   $effect(() => {
     const fallback = initialTab ?? pagerState.tabs[0]?.id ?? '';
     if (!pagerState.activeTab || !pagerState.tabs.some((tab) => tab.id === pagerState.activeTab)) {
       pagerState.activeTab = fallback;
     }
+  });
+
+  // Place the scroller on the active panel once the tabs exist — without
+  // animation, so the panel doesn't fly in sideways on first paint.
+  $effect(() => {
+    if (initialized || pagerState.tabs.length === 0) return;
+    initialized = true;
+    const index = indexOfTab(pagerState.activeTab);
+    scrollProgress = index;
+    requestAnimationFrame(() => scrollToIndex(index, 'auto'));
   });
 
   $effect(() => {
@@ -90,25 +94,17 @@
     resetToInitialTab();
   });
 
-  function resetSwipe() {
-    if (settleFrame !== null) cancelAnimationFrame(settleFrame);
-    if (suppressClickTimer !== null) clearTimeout(suppressClickTimer);
-    settleFrame = null;
-    suppressClickTimer = null;
-    suppressNextClick = false;
-    swipeStart = null;
-    swipeOffset = 0;
-    swiping = false;
-  }
-
   function resetToInitialTab() {
-    resetSwipe();
-    pagerState.activeTab = initialTab ?? pagerState.tabs[0]?.id ?? '';
+    const id = initialTab ?? pagerState.tabs[0]?.id ?? '';
+    pagerState.activeTab = id;
+    const index = indexOfTab(id);
+    scrollProgress = index;
+    requestAnimationFrame(() => scrollToIndex(index, 'auto'));
   }
 
-  function setActiveTab(tab: string) {
-    resetSwipe();
-    pagerState.activeTab = tab;
+  function setActiveTab(id: string) {
+    pagerState.activeTab = id;
+    scrollToIndex(indexOfTab(id), prefersReducedMotion() ? 'auto' : 'smooth');
   }
 
   function registerTab(tab: TabPagerTab) {
@@ -119,182 +115,22 @@
     }
 
     const existing = pagerState.tabs[index];
-    if (
-      existing.label === tab.label &&
-      existing.icon === tab.icon
-    ) {
+    if (existing.label === tab.label && existing.icon === tab.icon) {
       return;
     }
 
     pagerState.tabs = pagerState.tabs.map((candidate) => (candidate.id === tab.id ? tab : candidate));
   }
 
-  function moveTab(offset: -1 | 1) {
-    const next = activeTabIndex + offset;
-    if (next < 0 || next >= pagerState.tabs.length) return;
-    pagerState.activeTab = pagerState.tabs[next].id;
-  }
-
-  function canMove(offset: -1 | 1) {
-    const next = activeTabIndex + offset;
-    return next >= 0 && next < pagerState.tabs.length;
-  }
-
-  function isInteractiveTarget(target: EventTarget | null) {
-    return (
-      target instanceof Element &&
-      !!target.closest('button, a, input, textarea, select, [role="switch"], [role="slider"]')
-    );
-  }
-
-  function suppressClickAfterSwipe() {
-    suppressNextClick = true;
-    if (suppressClickTimer !== null) clearTimeout(suppressClickTimer);
-    suppressClickTimer = setTimeout(() => {
-      suppressNextClick = false;
-      suppressClickTimer = null;
-    }, 350);
-  }
-
-  function clearClickSuppression() {
-    suppressNextClick = false;
-    if (suppressClickTimer !== null) clearTimeout(suppressClickTimer);
-    suppressClickTimer = null;
-  }
-
-  function onPanelClickCapture(e: MouseEvent) {
-    if (!suppressNextClick) return;
-    suppressNextClick = false;
-    if (suppressClickTimer !== null) clearTimeout(suppressClickTimer);
-    suppressClickTimer = null;
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-  }
-
-  function onPanelPointerDown(e: PointerEvent) {
-    clearClickSuppression();
-    if (!e.isPrimary || e.button !== 0 || isInteractiveTarget(e.target)) return;
-    const width =
-      e.currentTarget instanceof HTMLElement ? e.currentTarget.getBoundingClientRect().width : 1;
-    swipeStart = {
-      x: e.clientX,
-      y: e.clientY,
-      pointerId: e.pointerId,
-      width,
-      direction: null,
-      active: false,
-      maxProgress: 0,
-      retreated: false,
-      lastX: e.clientX,
-      lastTime: e.timeStamp,
-      velocity: 0
-    };
-    swipeOffset = 0;
-    swiping = false;
-  }
-
-  function onPanelPointerMove(e: PointerEvent) {
-    if (!swipeStart || swipeStart.pointerId !== e.pointerId) return;
-    const dx = e.clientX - swipeStart.x;
-    const dy = e.clientY - swipeStart.y;
-    const absX = Math.abs(dx);
-    const absY = Math.abs(dy);
-
-    const dt = e.timeStamp - swipeStart.lastTime;
-    if (dt > 0) {
-      const instantVelocity = (e.clientX - swipeStart.lastX) / dt;
-      swipeStart.velocity =
-        swipeStart.velocity * velocitySmoothing + instantVelocity * (1 - velocitySmoothing);
-      swipeStart.lastX = e.clientX;
-      swipeStart.lastTime = e.timeStamp;
-    }
-
-    if (!swipeStart.active) {
-      if (absX < swipeActivationDistance) return;
-      if (absX < absY * swipeAxisRatio) return;
-      swipeStart.direction = dx < 0 ? 1 : -1;
-      swipeStart.active = true;
-      swiping = true;
-      if (e.currentTarget instanceof HTMLElement) e.currentTarget.setPointerCapture(e.pointerId);
-    }
-
-    const direction = swipeStart.direction;
-    if (!direction) return;
-    const movingInDirection = direction === 1 ? dx < 0 : dx > 0;
-    const progress = movingInDirection ? absX : 0;
-    if (progress + swipeRetreatTolerance < swipeStart.maxProgress) {
-      swipeStart.retreated = true;
-    }
-    swipeStart.maxProgress = Math.max(swipeStart.maxProgress, progress);
-
-    const maxOffset = swipeStart.width;
-    let nextOffset = Math.min(progress, maxOffset) * -direction;
-
-    if (!canMove(direction)) nextOffset *= 0.25;
-    swipeOffset = nextOffset;
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  function onPanelPointerUp(e: PointerEvent) {
-    if (!swipeStart || swipeStart.pointerId !== e.pointerId) return;
-    if (
-      e.currentTarget instanceof HTMLElement &&
-      e.currentTarget.hasPointerCapture(e.pointerId)
-    ) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-    const dx = e.clientX - swipeStart.x;
-    const dy = e.clientY - swipeStart.y;
-    const velocity = swipeStart.velocity;
-
-    let direction = swipeStart.direction;
-    // A fast, brief flick can lift before the swipe ever crosses the
-    // activation distance — derive its direction from the release velocity.
-    if (
-      direction === null &&
-      Math.abs(velocity) >= flickVelocityThreshold &&
-      Math.abs(dx) >= flickMinDistance &&
-      Math.abs(dx) >= Math.abs(dy)
-    ) {
-      direction = velocity < 0 ? 1 : -1;
-    }
-
-    const movedInDirection = direction !== null && (direction === 1 ? dx < 0 : dx > 0);
-    const velocityInDirection = direction === 1 ? -velocity : direction === -1 ? velocity : 0;
-    const distanceMet = swipeStart.active && Math.abs(dx) >= swipeActivationDistance;
-    const flickMet = velocityInDirection >= flickVelocityThreshold && Math.abs(dx) >= flickMinDistance;
-
-    const accepted =
-      direction !== null &&
-      canMove(direction) &&
-      !swipeStart.retreated &&
-      movedInDirection &&
-      (distanceMet || flickMet);
-    swipeStart = null;
-
-    if (swiping || accepted) {
-      suppressClickAfterSwipe();
-      settleFrame = requestAnimationFrame(() => {
-        swiping = false;
-        if (accepted && direction) moveTab(direction);
-        swipeOffset = 0;
-        settleFrame = null;
-      });
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  }
-
-  function onPanelPointerCancel(e: PointerEvent) {
-    if (swipeStart?.pointerId !== e.pointerId) return;
-    swipeStart = null;
-    if (swiping) suppressClickAfterSwipe();
-    settleFrame = requestAnimationFrame(() => {
-      swiping = false;
-      swipeOffset = 0;
-      settleFrame = null;
+  function onPanelsScroll() {
+    if (scrollRaf !== null) return;
+    scrollRaf = requestAnimationFrame(() => {
+      scrollRaf = null;
+      if (!panelsEl) return;
+      const width = panelsEl.clientWidth || 1;
+      scrollProgress = panelsEl.scrollLeft / width;
+      const nearest = pagerState.tabs[Math.round(scrollProgress)];
+      if (nearest && nearest.id !== pagerState.activeTab) pagerState.activeTab = nearest.id;
     });
   }
 </script>
@@ -308,24 +144,19 @@
   class="tab-panels"
   role="region"
   aria-label={ariaLabel}
-  onpointerdown={onPanelPointerDown}
-  onpointermove={onPanelPointerMove}
-  onpointerup={onPanelPointerUp}
-  onpointercancel={onPanelPointerCancel}
-  onclickcapture={onPanelClickCapture}
+  bind:this={panelsEl}
+  onscroll={onPanelsScroll}
 >
-  <div class="tab-track" class:swiping style:transform={trackTransform}>
-    {#each pagerState.tabs as tab (tab.id)}
-      <div
-        class="tab-content"
-        role="tabpanel"
-        aria-hidden={pagerState.activeTab !== tab.id}
-        inert={pagerState.activeTab !== tab.id ? true : undefined}
-      >
-        {@render children(tab.id)}
-      </div>
-    {/each}
-  </div>
+  {#each pagerState.tabs as tab (tab.id)}
+    <div
+      class="tab-content"
+      role="tabpanel"
+      aria-hidden={pagerState.activeTab !== tab.id}
+      inert={pagerState.activeTab !== tab.id ? true : undefined}
+    >
+      {@render children(tab.id)}
+    </div>
+  {/each}
 </div>
 
 <style>
@@ -387,36 +218,30 @@
     background: var(--brand);
     pointer-events: none;
     transform: translateX(calc(var(--active-tab-index) * (100% + var(--tab-gap))));
-    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .tab-panels {
-    overflow: hidden;
-    touch-action: pan-y;
-  }
-
-  .tab-track {
     display: flex;
     align-items: flex-start;
-    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: transform;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
-  .tab-track.swiping {
-    transition: none;
+  .tab-panels::-webkit-scrollbar {
+    display: none;
   }
 
   .tab-content {
     flex: 0 0 100%;
     min-width: 0;
     padding: 0 1px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .tab-track,
-    .tab-active-indicator {
-      transition: none;
-    }
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
   }
 
   @media (max-width: 480px) {

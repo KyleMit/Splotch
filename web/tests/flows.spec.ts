@@ -175,7 +175,9 @@ test('the drawer open state persists across a reload', async ({ page }) => {
   await expect(page.locator('#undoButton')).toBeVisible();
 });
 
-test('parent center panels can be changed with horizontal swipes', async ({ page }) => {
+test('parent center panels can be changed by tab buttons and native scrolling', async ({
+  page
+}) => {
   await gotoApp(page);
 
   await page.getByRole('button', { name: 'Parent Center' }).click();
@@ -184,53 +186,44 @@ test('parent center panels can be changed with horizontal swipes', async ({ page
   await page.waitForTimeout(400); // let the fly-in transform finish before measuring coordinates
 
   const panels = page.locator('.tab-panels');
-  const box = await panels.boundingBox();
-  if (!box) throw new Error('parent center panels have no bounding box');
 
-  const y = box.y + Math.min(80, box.height / 2);
-  await page.mouse.move(box.x + box.width * 0.55, y);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.15, y);
-  await page.mouse.up();
+  // The panels are a horizontal CSS scroll-snap container (TabPager): swiping is
+  // native momentum scrolling, and the active tab is derived from scroll position.
+  // Mouse-button drags don't scroll such containers, so we drive the scroll the
+  // same way a touch/trackpad fling ultimately does — by moving scrollLeft to a
+  // snap point — and assert the wiring updates the active tab.
+  const scrollToPanel = (index: number) =>
+    panels.evaluate((el, i) => {
+      el.scrollTo({ left: i * el.clientWidth, behavior: 'instant' as ScrollBehavior });
+    }, index);
 
+  // Tab buttons scroll the active panel into view.
+  await page.getByRole('button', { name: /AI/ }).click();
   await expect(page.locator('.tab-button.active')).toContainText('AI');
+  await expect
+    .poll(() => panels.evaluate((el) => Math.round(el.scrollLeft / el.clientWidth)))
+    .toBe(1);
 
-  await page.mouse.move(box.x + box.width * 0.15, y);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.55, y);
-  await page.mouse.up();
-
+  // Scrolling the container (as a swipe does) drives the active tab back.
+  await scrollToPanel(0);
   await expect(page.locator('.tab-button.active')).toContainText('Settings');
 
-  await page.mouse.move(box.x + box.width * 0.55, y);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.15, y);
-  await page.mouse.move(box.x + box.width * 0.5, y);
-  await page.mouse.up();
-
-  await expect(page.locator('.tab-button.active')).toContainText('Settings');
-
-  await page.getByRole('button', { name: /Setup/ }).click();
+  // Scrolling forward to the third panel commits to that tab.
+  await scrollToPanel(2);
   await expect(page.locator('.tab-button.active')).toContainText('Setup');
-  await page.waitForTimeout(300);
 
+  // An open <details> in a panel keeps its state across tab changes.
   const setupDetails = page.locator('.help-section').first();
   const setupSummary = setupDetails.locator('summary');
   await expect(setupSummary).toBeVisible();
   await setupSummary.click();
   await expect(setupDetails).toHaveAttribute('open', '');
 
-  const summaryBox = await setupSummary.boundingBox();
-  if (!summaryBox) throw new Error('setup summary has no bounding box');
-  const summaryY = summaryBox.y + summaryBox.height / 2;
-  await page.mouse.move(summaryBox.x + summaryBox.width * 0.75, summaryY);
-  await page.mouse.down();
-  await page.mouse.move(summaryBox.x + summaryBox.width * 0.15, summaryY);
-  await page.mouse.up();
-
+  await scrollToPanel(3);
   await expect(page.locator('.tab-button.active')).toContainText('About');
 
   await page.getByRole('button', { name: /Setup/ }).click();
+  await expect(page.locator('.tab-button.active')).toContainText('Setup');
   await expect(setupDetails).toHaveAttribute('open', '');
 });
 

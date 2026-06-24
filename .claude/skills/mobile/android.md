@@ -153,6 +153,26 @@ This does a full `cap:sync` + Gradle build + ADB install. Use this when testing
 Capacitor plugins, storage, or the offline AI flow — not needed for canvas/perf
 work.
 
+#### Troubleshooting `android:run`
+
+* **`adb: more than one device/emulator`** (or Gradle installs onto the wrong
+  target) — you have both a physical phone and an emulator connected. Set
+  `ANDROID_SERIAL` to the phone's serial (from `npm run adb:devices`) so adb and
+  Gradle agree on the target, e.g. `npm run android:run:device`, which pins the
+  serial. Closing the emulator also resolves it.
+* **`INSTALL_FAILED_UPDATE_INCOMPATIBLE: … signatures do not match`** — a copy of
+  `art.splotch.app` is already installed that was signed with a *different* key
+  (a Play Store build, or a debug build from another machine — each machine's
+  debug keystore is unique). Android won't overwrite across signing keys.
+  Uninstall the old copy first, then reinstall:
+  ```bash
+  adb -s <serial> uninstall art.splotch.app   # <serial> from adb:devices
+  npm run android:run:device
+  ```
+  ⚠️ Uninstalling wipes that app's local data (drawings, saved settings, stored
+  access code). Harmless on a throwaway test device; warn the user if it's their
+  real phone.
+
 To preview the dev server on a phone that isn't on your local network, use an
 outbound tunnel. Off-cloud, any quick tunnel works (e.g. `cloudflared tunnel
 --url http://localhost:5173`, or `ngrok http 5173`). From a Claude Code cloud
