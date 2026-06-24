@@ -2,10 +2,10 @@
 # config lives in the repo-root netlify.toml — see ADR-0024. Headers are defined there because
 # they apply to the deployed site, not to local dev.
 #
-# Deliberately NO [build] block here: it would point `publish` at the build output, whose
-# adapter-netlify `_redirects` catch-all (`/* -> /.netlify/functions/sveltekit-render`) would
-# shadow the dev proxy and 404 every dynamic route (the SSR function only exists in a real build,
-# not in `netlify dev`).
+# Deliberately NO [build] block here: it would point `publish` at the build output, whose SSR
+# function carries a catch-all route (adapter-netlify v6 emits a V2 function with
+# `export const config = { path: ["/*"] }`) that would shadow the dev proxy and 404 every dynamic
+# route (the SSR function only exists in a real build, not in `netlify dev`).
 #
 # The app lives in web/ (siblings android/ ios/ stay at the repo root). `netlify dev --cwd web`
 # scopes netlify-cli's file watcher to web/, keeping the large native trees out of it. web/ has
@@ -16,7 +16,7 @@
 # `publish` points netlify-cli's static file server at the SvelteKit static/ dir — the files
 # meant to be served verbatim, mirroring production. Without it, netlify-cli warns ("Unable to
 # determine public folder...") and defaults to cwd (web/), exposing source files like
-# svelte.config.js over HTTP. static/ has no _redirects catch-all, so (unlike the build output —
+# svelte.config.js over HTTP. static/ carries no catch-all route, so (unlike the build output —
 # the reason there's no [build] block) it can't shadow dynamic routes; anything not found there
 # falls through to the vite proxy.
 [dev]

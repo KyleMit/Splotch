@@ -124,9 +124,15 @@ snapshot shape so mutations never need a follow-up fetch:
   "tokens": ["sunny-meadow"],
   "invites": [
     { "token": "sunny-meadow", "url": "https://splotch.art/?ai_access_token=sunny-meadow" }
-  ]
+  ],
+  "persistent": true
 }
 ```
+
+`persistent` reports whether the list is durably backed by Netlify Blobs (`true`)
+or the in-memory env-seeded fallback (`false` — local dev, or a deployed function
+without the Blobs context; see ADR-0025). `scripts/blobs-smoke.mjs` asserts it is
+`true` against a real deploy.
 
 | Method | Body | Effect |
 |---|---|---|
@@ -160,6 +166,20 @@ server down. No Gemini key or Netlify Blobs needed; `generate-image` and
 `verify-key` (which make live model calls) are out of scope. Use it to sanity-check
 the contract after changing any endpoint — it's the cheap counterpart to the
 Playwright admin E2E in `tests/admin.spec.ts`.
+
+`test:api:smoke` deliberately runs against `vite dev`, which has **no** Blobs, so
+it can't catch the failure mode of ADR-0025 (a deployed function without the Blobs
+context). For that, run `npm run test:blobs:smoke` against a real deploy:
+
+```bash
+BLOBS_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
+ADMIN_ACCESS_TOKEN=… npm run test:blobs:smoke
+```
+
+It logs in, asserts the snapshot's `persistent` is `true` (false ⇒ Blobs is dead
+on that deploy), round-trips a unique token through Blobs, and cleans it up. Run it
+against a PR's deploy preview before merging an adapter/Netlify-config change, and
+against `https://splotch.art` to confirm production.
 
 ## Local development
 

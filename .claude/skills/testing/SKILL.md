@@ -17,10 +17,30 @@ and on demand.
 | E2E (web) | Playwright | `npm run test:e2e` | every push / PR |
 | Smoke (Android) | Maestro + emulator | `npm run test:android` | **tagged releases only** |
 | Smoke (iOS) | Maestro + simulator | `npm run test:ios` | local only (needs macOS + Xcode) |
+| Smoke (API contract) | Node fetch + throwaway `vite dev` | `npm run test:api:smoke` | on demand |
+| Smoke (deployed Blobs) | Node fetch vs a real deploy | `npm run test:blobs:smoke` | on demand (PR preview / prod) |
 
 `npm test` runs the first two (`test:unit` + `test:e2e`). The native smoke tests
 are intentionally **not** part of `npm test` — they need an emulator/simulator
 and the native toolchains.
+
+## Deploy smoke tests — `test:api:smoke`, `test:blobs:smoke`
+
+Two Node smoke tests guard the server contract, on demand:
+
+- **`test:api:smoke`** boots a throwaway `vite dev` and checks the `/api/*` shapes
+  (admin auth flow, bearer gate, token add/remove, `verify-access-code`). No Blobs,
+  so it asserts the snapshot's `persistent` is `false`. See the `api` skill.
+- **`test:blobs:smoke`** runs against a **real deploy** to prove Netlify Blobs is
+  actually live on the deployed function — the failure mode of ADR-0025, which the
+  local `vite dev` tests structurally cannot catch:
+  ```bash
+  BLOBS_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
+  ADMIN_ACCESS_TOKEN=… npm run test:blobs:smoke
+  ```
+  It asserts `persistent:true`, round-trips a unique token through Blobs, and cleans
+  up. Run it on a PR's deploy preview before merging any adapter/Netlify-config
+  change, and against `https://splotch.art` to confirm prod.
 
 ---
 

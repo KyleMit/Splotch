@@ -48,14 +48,11 @@ async function readStore(): Promise<{ store: TokenStore | null; list: string[] }
   const store = openStore();
   if (store) {
     try {
-      // Eventual consistency (the default): a strong read needs an
-      // `uncachedEdgeURL` that the adapter-netlify SSR function's Blobs context
-      // does NOT provide, so a strong read throws BlobsConsistencyError every
-      // time and we'd silently fall through to the env seed below on every
-      // request. The cost of eventual reads is that a replica lagging the latest
-      // write can report the key as absent and trip the seed-on-empty branch; the
-      // `onlyIfNew` write below makes that seed atomic so it can never clobber an
-      // existing list.
+      // Eventual consistency (the default) is sufficient here and sidesteps the
+      // strong-read context requirements entirely (ADR-0025). Its one cost: a
+      // replica lagging the latest write can report the key as absent and trip
+      // the seed-on-empty branch below — which the `onlyIfNew` write makes atomic
+      // so it can never clobber an existing list.
       const list = await store.get(KEY, { type: 'json' });
       if (Array.isArray(list)) return { store, list };
       // First run against Blobs (or a stale-empty read): seed from the env var,
