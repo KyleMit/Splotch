@@ -137,7 +137,7 @@
   function isInteractiveTarget(target: EventTarget | null) {
     return (
       target instanceof Element &&
-      !!target.closest('button, a, input, textarea, select, [role="switch"]')
+      !!target.closest('button, a, input, textarea, select, [role="switch"], [role="slider"]')
     );
   }
 

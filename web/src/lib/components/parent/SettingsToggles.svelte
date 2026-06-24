@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
   import {
@@ -26,6 +27,22 @@
   const PREVIEW_SPEED = 0.45;
   let previewingVolume = false;
 
+  let volumeTrack: HTMLDivElement;
+  let dragPointerId: number | null = null;
+  let dragStartX = 0;
+  let dragStartValue = 0;
+
+  function clampVolume(value: number) {
+    return Math.round(Math.min(100, Math.max(0, value)));
+  }
+
+  function applyVolume(next: number) {
+    const clamped = clampVolume(next);
+    if (clamped === settings.soundVolume) return;
+    setSoundVolume(clamped);
+    previewVolume();
+  }
+
   // Side-effect on top of the persisted setting: disabling the coloring book
   // should also clear any active overlay page.
   function toggleColoringBook() {
@@ -49,9 +66,74 @@
     stopDrawSound();
   }
 
-  function updateSoundVolume(event: Event) {
-    setSoundVolume(Number((event.currentTarget as HTMLInputElement).value));
-    previewVolume();
+  // Relative drag: grabbing anywhere on the bar and sliding moves the value by
+  // the distance travelled, rather than jumping to the finger like a native range.
+  // Move/up are tracked on window so the drag keeps following the finger even when
+  // it leaves the bar (more reliable than setPointerCapture).
+  function onVolumePointerDown(event: PointerEvent) {
+    if (!event.isPrimary) return;
+    dragPointerId = event.pointerId;
+    dragStartX = event.clientX;
+    dragStartValue = settings.soundVolume;
+    window.addEventListener('pointermove', onVolumePointerMove);
+    window.addEventListener('pointerup', onVolumePointerUp);
+    window.addEventListener('pointercancel', onVolumePointerUp);
+    startVolumePreview();
+    event.preventDefault();
+  }
+
+  function onVolumePointerMove(event: PointerEvent) {
+    if (dragPointerId !== event.pointerId) return;
+    const width = volumeTrack?.clientWidth || 1;
+    const deltaValue = ((event.clientX - dragStartX) / width) * 100;
+    applyVolume(dragStartValue + deltaValue);
+    event.preventDefault();
+  }
+
+  function onVolumePointerUp(event: PointerEvent) {
+    if (dragPointerId !== event.pointerId) return;
+    dragPointerId = null;
+    window.removeEventListener('pointermove', onVolumePointerMove);
+    window.removeEventListener('pointerup', onVolumePointerUp);
+    window.removeEventListener('pointercancel', onVolumePointerUp);
+    stopVolumePreview();
+  }
+
+  onDestroy(() => {
+    window.removeEventListener('pointermove', onVolumePointerMove);
+    window.removeEventListener('pointerup', onVolumePointerUp);
+    window.removeEventListener('pointercancel', onVolumePointerUp);
+  });
+
+  function onVolumeKeyDown(event: KeyboardEvent) {
+    let next = settings.soundVolume;
+    switch (event.key) {
+      case 'ArrowLeft':
+      case 'ArrowDown':
+        next -= 1;
+        break;
+      case 'ArrowRight':
+      case 'ArrowUp':
+        next += 1;
+        break;
+      case 'PageDown':
+        next -= 10;
+        break;
+      case 'PageUp':
+        next += 10;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = 100;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    startVolumePreview();
+    applyVolume(next);
   }
 </script>
 
@@ -68,28 +150,28 @@
     />
     {#if settings.soundEnabled}
       <div class="volume-setting" transition:slide={{ duration: 220 }}>
-        <label class="volume-label" for="soundVolume">
+        <div class="volume-label" id="soundVolumeLabel">
           <span>Volume</span>
           <span>{settings.soundVolume}%</span>
-        </label>
-        <input
-          id="soundVolume"
+        </div>
+        <div
           class="volume-slider"
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          value={settings.soundVolume}
-          aria-label="Drawing sound volume"
-          oninput={updateSoundVolume}
-          onpointerdown={startVolumePreview}
-          onpointerup={stopVolumePreview}
-          onpointercancel={stopVolumePreview}
-          onlostpointercapture={stopVolumePreview}
-          onkeydown={startVolumePreview}
+          role="slider"
+          tabindex="0"
+          aria-labelledby="soundVolumeLabel"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow={settings.soundVolume}
+          aria-valuetext="{settings.soundVolume}%"
+          onpointerdown={onVolumePointerDown}
+          onkeydown={onVolumeKeyDown}
           onkeyup={stopVolumePreview}
           onblur={stopVolumePreview}
-        />
+        >
+          <div class="volume-track" bind:this={volumeTrack}>
+            <div class="volume-fill" style:width="{settings.soundVolume}%"></div>
+          </div>
+        </div>
       </div>
     {/if}
   </div>
@@ -242,8 +324,35 @@
 
   .volume-slider {
     width: 100%;
-    height: 32px;
-    accent-color: var(--brand);
     cursor: pointer;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .volume-slider:focus-visible {
+    outline: none;
+  }
+
+  .volume-slider:focus-visible .volume-track {
+    outline: 3px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  .volume-track {
+    position: relative;
+    width: 100%;
+    height: 34px;
+    border-radius: 999px;
+    background: #e9e9e9;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+  }
+
+  .volume-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--brand);
   }
 </style>

@@ -2,7 +2,6 @@
 
 ## TODO
 
-* [ ] volume slider doesn't work with swipe between tabs on iOS
 * [ ] inefficent layout on iphone at tops and bottom
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
@@ -151,3 +150,4 @@
 * [x] Fix admin center persistence
 * [x] iPad does not respect force landscape setting
 * [x] flash of unstyled content on booting app in iOS where circle and trash can buttons start square and then become rounded 
+* [x] volume slider doesn't work with swipe between tabs on iOS
