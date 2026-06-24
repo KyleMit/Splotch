@@ -341,7 +341,7 @@
   .volume-track {
     position: relative;
     width: 100%;
-    height: 34px;
+    height: 28px;
     border-radius: 999px;
     background: #e9e9e9;
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
