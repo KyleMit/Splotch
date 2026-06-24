@@ -2,11 +2,8 @@
 
 ## TODO
 
-
-
-* [ ] flash of unstyled content on booting app in iOS where circle and trash can buttons start square and then become rounded 
-* [ ] inefficent layout on iphone at tops and bottom
 * [ ] volume slider doesn't work with swipe between tabs on iOS
+* [ ] inefficent layout on iphone at tops and bottom
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
 * [ ] Add sound effects when deleting
@@ -153,3 +150,4 @@
 * [x] Figure out if I need to log into netlify from CLI - document in pre dev step if so
 * [x] Fix admin center persistence
 * [x] iPad does not respect force landscape setting
+* [x] flash of unstyled content on booting app in iOS where circle and trash can buttons start square and then become rounded 

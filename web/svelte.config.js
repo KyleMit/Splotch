@@ -19,6 +19,12 @@ const config = {
     adapter: isCapacitor
       ? adapterStatic({ fallback: '200.html', strict: false })
       : adapterNetlify(),
+    // Inline all CSS into the prerendered <head> so component-scoped styles
+    // (e.g. the swatch / clear-button border-radius) are present at first paint.
+    // Otherwise iPadOS's WebView paints the unstyled square first and the
+    // element's own border-radius transition animates the square->round "snap"
+    // (FOUC). Infinity inlines every CSS file regardless of size.
+    inlineStyleThreshold: Infinity,
     // The native apps load from a WebView origin and call the hosted
     // /api/generate-image cross-origin. SvelteKit's CSRF guard otherwise rejects
     // that multipart POST with a 403 ("Cross-site form submissions are forbidden")
