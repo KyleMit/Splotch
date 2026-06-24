@@ -60,12 +60,10 @@ export async function recordTokenUsage(
 /**
  * Read the usage tally for each token, as a map keyed by token. Tokens with no
  * recorded usage are omitted (so the caller can distinguish "never used" from a
- * Blobs outage). Eventual consistency (the default): strong reads need an
- * `uncachedEdgeURL` that the adapter-netlify SSR function's Blobs context does
- * NOT provide, so a strong read throws BlobsConsistencyError every time and the
- * admin sees only "never used". Slightly-stale counts are fine here. Best-effort:
- * any read failure yields an empty map rather than throwing, so a Blobs hiccup
- * never 500s the admin page.
+ * Blobs outage). Eventual consistency (the default) is sufficient — slightly-stale
+ * counts are fine here, and it sidesteps the strong-read context requirements
+ * entirely (ADR-0025). Best-effort: any read failure yields an empty map rather
+ * than throwing, so a Blobs hiccup never 500s the admin page.
  */
 export async function getUsage(tokens: string[]): Promise<Record<string, TokenUsage>> {
   let store: ReturnType<typeof getStore>;
