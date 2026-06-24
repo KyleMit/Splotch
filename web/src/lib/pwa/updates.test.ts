@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { initPWAUpdates, checkVersionMismatch, checkForUpdates } from './updates.ts';
+import { initPWAUpdates, checkVersionMismatch, checkForUpdates } from './updates';
 
 const canvasState = vi.hoisted(() => ({ canvasEmpty: true }));
 vi.mock('$lib/state/canvas.svelte', () => ({ canvasState }));
