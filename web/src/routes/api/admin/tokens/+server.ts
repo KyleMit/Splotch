@@ -1,6 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { verifySessionToken, buildInvites } from '$lib/server/admin';
-import { getTokens, addToken, removeToken } from '$lib/server/tokens';
+import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
 import type { RequestHandler } from './$types';
 
 // JSON twin of the /admin console's token management, for clients that can't
@@ -28,12 +28,19 @@ function requireSession(request: Request) {
   }
 }
 
-// All three methods return the same { ok, tokens, invites } snapshot so a
-// mutation never costs the client a second round trip to re-fetch the list —
-// it just replaces its local state with the response.
+// All three methods return the same { ok, tokens, invites, persistent } snapshot
+// so a mutation never costs the client a second round trip to re-fetch the list —
+// it just replaces its local state with the response. `persistent` reports whether
+// the list is durably backed by Netlify Blobs (true) or the in-memory env-seeded
+// fallback (false) — the same signal the web /admin banner uses (ADR-0025), and
+// what the deploy smoke test (scripts/blobs-smoke.mjs) asserts to prove the
+// deployed function actually has the Blobs context. After a mutation we keep the
+// caller's `tokens` (authoritative, read-after-write safe under eventual
+// consistency); `persistent` comes from the fresh status read.
 async function snapshot(origin: string, tokens?: string[]) {
-  const list = tokens ?? (await getTokens());
-  return json({ ok: true, tokens: list, invites: buildInvites(list, origin) });
+  const { tokens: current, persistent } = await getTokensStatus();
+  const list = tokens ?? current;
+  return json({ ok: true, tokens: list, invites: buildInvites(list, origin), persistent });
 }
 
 /** List access tokens and their prebuilt invite URLs. */

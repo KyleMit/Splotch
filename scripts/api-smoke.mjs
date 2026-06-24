@@ -91,6 +91,10 @@ async function run() {
 		list.status === 200 && listBody?.ok === true && Array.isArray(listBody?.tokens) && Array.isArray(listBody?.invites),
 		`got ${list.status}`
 	);
+	// vite dev has no Netlify Blobs, so the snapshot must report the in-memory
+	// fallback. The deployed counterpart (scripts/blobs-smoke.mjs) asserts the
+	// opposite — persistent:true — against a real function.
+	check('tokens GET → persistent:false under vite dev', listBody?.persistent === false, `got ${listBody?.persistent}`);
 
 	const newToken = `smoke-${Date.now()}`;
 	const add = await fetch(`${BASE}/api/admin/tokens`, {
