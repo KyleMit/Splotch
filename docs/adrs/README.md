@@ -31,3 +31,4 @@ This directory records significant architectural decisions made in the Splotch p
 | [0025](0025-netlify-blobs-server-storage.md) | Netlify Blobs for Server-Side Storage (Eventual Consistency, Env-Seeded Fallback) | Active |
 | [0026](0026-notch-band-via-safe-area-css.md) | Notch Band via a Safe-Area CSS Strip, Not Per-Platform Native Status Bars | Active |
 | [0027](0027-device-lock-detection-plugin.md) | A Custom `DeviceLock` Capacitor Plugin to Detect Guided Access / App Pinning | Active |
+| [0028](0028-apple-pencil-eraser-plugin.md) | A Custom `PencilEraser` Capacitor Plugin for the Apple Pencil Double-Tap | Active |

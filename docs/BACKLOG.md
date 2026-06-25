@@ -15,8 +15,6 @@
   * [ ] Hand draw icons
   * [ ] Parent center control to increase button size
   * [ ] Make icons bigger on an ipad pro
-* Native
-  * [ ] Native integration with apple pencil to use eraser
 * AI Art
   * [ ] If AI call fails and you need to try again, enable a way to do so immediately
   * [ ] AI Style buttons should use custom image and then generate corresponding output for each.
@@ -153,3 +151,4 @@
 * [x] volume slider doesn't work with swipe between tabs on iOS
 * [x] fix admin center not rendering on mobile
 * [x] Add haptics for trashcan when in the clear accept zone
+* [ ] Native integration with apple pencil to use eraser

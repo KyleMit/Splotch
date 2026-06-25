@@ -109,6 +109,17 @@ Android App-Pinning state for the Parent Center's lock-status ✓):
 * JS side — a typed `registerPlugin(...)` facade with a `web` fallback
   (`web/src/lib/plugins/deviceLock.ts`), loaded through `lazyPluginModule()`.
 
+A second local plugin, **`PencilEraser`** (ADR-0028, iOS-only), shows the **event-emitting**
+variant and how to **attach a UIKit interaction to the web view**: the Apple Pencil
+double-tap (`UIPencilInteraction`) never reaches the WebView, so `PencilEraserPlugin.swift`
+conforms to `UIPencilInteractionDelegate`, and `MainViewController.capacitorDidLoad()` both
+`registerPluginInstance`s it **and** calls `attach(to: bridge?.webView)` to install the
+interaction (hold the instance strongly — `UIPencilInteraction.delegate` is weak). It has
+empty `pluginMethods` and instead `notifyListeners("doubleTap", …)`; the JS facade
+(`web/src/lib/plugins/pencilEraser.ts`) subscribes with `addListener` and exports
+`initPencilEraser()`, which `DrawingCanvas.svelte` lazy-starts only when `isNative()` so
+`@capacitor/core` never loads on web. The web fallback's `addListener` is inert.
+
 Adding native plugin code needs a **fresh native build** (`android:run` / `ios:run`);
 `cap:sync` alone won't compile/register the new Swift/Java classes.
 
