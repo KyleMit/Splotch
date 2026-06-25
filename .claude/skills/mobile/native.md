@@ -74,6 +74,44 @@ forever. This silently blanked `/admin/native` (its render gated on
 `await loadAdminSession()`) until the loaders were funnelled through
 `lazyPluginModule`.
 
+### Custom native plugins
+
+When no published plugin exposes a native capability, add a small **local** plugin
+in the app target itself (see `DeviceLock`, ADR-0027 — it reads iOS Guided Access /
+Android App-Pinning state for the Parent Center's lock-status ✓):
+
+* iOS — the key gotcha: **Capacitor 8 does not auto-discover plugin classes.**
+  `CapacitorBridge.registerPlugins()` only loads its built-ins plus the `packageClassList`
+  that `cap sync` writes into `capacitor.config.json` from installed **npm plugin
+  packages**. An app-local class is never in that list, so it must be registered by hand —
+  otherwise every call fails with `"<name>" plugin is not implemented on ios` (our JS
+  catches this and silently reads "unlocked"). Two files, both added to the App target's
+  Compile Sources:
+  * `DeviceLockPlugin.swift` — an `@objc(...)` class conforming to `CAPPlugin` **and**
+    `CAPBridgedPlugin` (provide `identifier`, `jsName`, `pluginMethods` in Swift;
+    `registerPluginInstance` casts to `CAPPlugin & CAPBridgedPlugin`, so the conformance is
+    required).
+  * `MainViewController.swift` — subclass `CAPBridgeViewController` and override
+    `capacitorDidLoad()` to call `bridge?.registerPluginInstance(DeviceLockPlugin())`. Then
+    point the root VC at it in `ios/App/App/Base.lproj/Main.storyboard`
+    (`customClass="MainViewController" customModule="App" customModuleProvider="target"`).
+    `capacitorDidLoad()` runs right after the bridge is created, before the web view loads.
+  * Do **not** use the legacy Obj-C `CAP_PLUGIN` macro `.m` for an app-local plugin — its
+    category-based conformance is unreliable in the app target and is moot anyway, since
+    discovery is by explicit registration, not runtime enumeration.
+  * Both Swift files need `project.pbxproj` entries (`PBXBuildFile`, `PBXFileReference`, App
+    `PBXGroup` children, `PBXSourcesBuildPhase`) — the App target uses classic Xcode file
+    references, not synchronized groups, and `cap sync` won't add them. Mirror
+    `AppDelegate.swift`. No `Package.swift` edit (SPM, ADR-0020).
+* Android — a `@CapacitorPlugin` class in `android/app/src/main/java/art/splotch/app/`
+  (`DeviceLockPlugin.java`), registered via `registerPlugin(...)` **before**
+  `super.onCreate` in `MainActivity`.
+* JS side — a typed `registerPlugin(...)` facade with a `web` fallback
+  (`web/src/lib/plugins/deviceLock.ts`), loaded through `lazyPluginModule()`.
+
+Adding native plugin code needs a **fresh native build** (`android:run` / `ios:run`);
+`cap:sync` alone won't compile/register the new Swift/Java classes.
+
 ### Screen orientation
 
 The parent-center rotation toggle (`lockRotationEnabled` +

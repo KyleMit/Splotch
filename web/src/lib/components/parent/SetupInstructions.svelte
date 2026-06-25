@@ -1,5 +1,8 @@
 <script lang="ts">
   import { isNative, getPlatform } from '$lib/platform';
+  import { lazyPluginModule } from '$lib/nativePlugin';
+
+  const loadDeviceLock = lazyPluginModule(() => import('$lib/plugins/deviceLock'));
 
   // `open` flips true when the Parent Center modal opens; we re-run platform/OS
   // detection then so the instructions match the current device and install state.
@@ -7,6 +10,9 @@
 
   let installOs = $state('ios');
   let pwaInstalled = $state(false);
+  // True when Guided Access (iOS) / App Pinning (Android) is currently engaged. Native
+  // only — the web can't observe either, so it stays false there. Re-checked on open.
+  let deviceLocked = $state(false);
   // True inside a native Capacitor shell. Native builds are already "installed",
   // so we drop the PWA install step and only show the device-lock setup for the
   // platform we're actually running on.
@@ -25,6 +31,7 @@
   );
 
   function lockTitle(os: string) {
+    if (deviceLocked) return os === 'ios' ? 'Guided Access is on' : 'App Pinning is on';
     return os === 'ios' ? 'Enable Guided Access' : 'Enable App Pinning';
   }
 
@@ -47,12 +54,29 @@
   }
 
   $effect(() => {
-    if (open) {
-      installOs = detectOS();
-      pwaInstalled = isPWAInstalled();
-      platform = getPlatform();
-      native = isNative();
-    }
+    if (!open) return;
+    installOs = detectOS();
+    pwaInstalled = isPWAInstalled();
+    platform = getPlatform();
+    native = isNative();
+
+    // Lock state is a native-only async query, so reset and re-detect each open. The
+    // `cancelled` guard drops a stale result if the modal closes/reopens mid-flight.
+    deviceLocked = false;
+    if (!native) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { DeviceLock } = await loadDeviceLock();
+        const { locked } = await DeviceLock.isLocked();
+        if (!cancelled) deviceLocked = locked;
+      } catch {
+        // Plugin missing/unavailable — treat as unlocked (show the enable steps).
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   });
 </script>
 
@@ -98,14 +122,39 @@
   {/if}
 {/snippet}
 
+<!-- Shown in place of the enable steps once the lock is already active, so the parent
+     just needs to know how to get back out. -->
+{#snippet exitSteps(os: string)}
+  {#if os === 'ios'}
+    <ol class="steps">
+      <li>Triple-click the <strong>side button</strong> (or Home button)</li>
+      <li>Enter your Guided Access passcode</li>
+      <li>Tap <strong>End</strong> in the top left</li>
+    </ol>
+  {:else}
+    <ol class="steps">
+      <li>Touch and hold <strong>Back</strong> + <strong>Recent Apps</strong> together</li>
+      <li>(or swipe up and hold, then tap <strong>Unpin</strong>)</li>
+      <li>Splotch is now unlocked</li>
+    </ol>
+  {/if}
+{/snippet}
+
 {#each setupOsList as os (os)}
   {#if native}
     <!-- Native builds have a single setup step, so the lock-setup title stands
          in as the section header and the steps render flat — no OS label, no
          accordion toggle. -->
     <section class="os-section">
-      <h3 class="lock-heading">{lockTitle(os)}</h3>
-      {@render lockSteps(os)}
+      <h3 class="lock-heading">
+        {lockTitle(os)}
+        {#if deviceLocked}<span class="install-check">✓</span>{/if}
+      </h3>
+      {#if deviceLocked}
+        {@render exitSteps(os)}
+      {:else}
+        {@render lockSteps(os)}
+      {/if}
     </section>
   {:else}
     <section class="os-section">

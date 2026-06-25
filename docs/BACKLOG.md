@@ -3,6 +3,7 @@
 ## TODO
 
 * [ ] inefficent layout on iphone at tops and bottom
+* [ ] swiping up from the bottom is a very common gesture on ipad/android to get the menu bar.  if a stroke starts right at the edge of the bottom of the panel within a certain number of pixels and immediately tracks up, then don't render it. people who want bottom strokes will just have to draw down toward the bottom
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
 * [ ] Add sound effects when deleting

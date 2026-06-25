@@ -238,6 +238,10 @@ the phone with real multi-touch input — the best way to get accurate profiles.
   works.
 * [ ] Test "save to gallery" → confirm a **Splotch** album with the PNG, and
   that the photo-add permission prompt reads sensibly.
+* [ ] Test App Pinning: pin Splotch, reopen the Parent Center → the lock section
+  shows a green ✓ + the unpin steps (via the custom `DeviceLock` plugin,
+  `android/app/src/main/java/art/splotch/app/DeviceLockPlugin.java`, registered in
+  `MainActivity`).
 
 ### Signing & bundling
 

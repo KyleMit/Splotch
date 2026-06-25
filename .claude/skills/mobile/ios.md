@@ -124,7 +124,9 @@ npx @capacitor/assets generate --ios
 * [ ] Test on a real iPhone/iPad: AI flow (access code → image round-trip
   against `https://splotch.art`), offline airplane mode (AI button hides),
   save-to-photos (add-only permission prompt wording), Guided Access tips in
-  the Parent Center read correctly for iOS.
+  the Parent Center read correctly for iOS — and with Guided Access **on**, the
+  lock section shows a green ✓ + the exit steps (via the custom `DeviceLock`
+  plugin, `ios/App/App/DeviceLockPlugin.swift`).
 
 ### Apple Developer account (one-time)
 
