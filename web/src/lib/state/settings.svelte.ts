@@ -1,4 +1,12 @@
-import { readBool, writeBool, readString, writeString, readInt, writeInt, removeKey } from '../storage';
+import {
+  readBool,
+  writeBool,
+  readString,
+  writeString,
+  readInt,
+  writeInt,
+  removeKey,
+} from '../storage';
 import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage';
 
 const SOUND_KEY = 'splotch-sound-enabled';
@@ -83,7 +91,7 @@ const BOOL_SETTINGS = {
   // Sticky per-device detection flag, set the first time an Apple Pencil
   // double-tap fires. Not a user toggle itself — it's what reveals the
   // pencilEraserEnabled row in the Parent Center.
-  applePencilSeen: [APPLE_PENCIL_SEEN_KEY, false]
+  applePencilSeen: [APPLE_PENCIL_SEEN_KEY, false],
 } satisfies Record<string, [string, boolean]>;
 
 type BoolSettingKey = keyof typeof BOOL_SETTINGS;
@@ -109,13 +117,16 @@ export const settings: Settings = $state({
   ) as Record<BoolSettingKey, boolean>),
   soundVolume: clampVolume(readInt(SOUND_VOLUME_KEY, 50)),
   aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
-  aiUserApiKey: ''
+  aiUserApiKey: '',
 });
 
 // Build a setter that updates the live value and persists it to localStorage.
 function makeBoolSetter(prop: BoolSettingKey) {
   const [key] = BOOL_SETTINGS[prop];
-  return (v: boolean) => { settings[prop] = v; writeBool(key, v); };
+  return (v: boolean) => {
+    settings[prop] = v;
+    writeBool(key, v);
+  };
 }
 
 export const setSound = makeBoolSetter('soundEnabled');
@@ -142,7 +153,10 @@ export function setSoundVolume(v: number) {
   writeInt(SOUND_VOLUME_KEY, next);
 }
 
-export function setAiAccessToken(v: string) { settings.aiAccessToken = v; writeString(AI_ACCESS_TOKEN_KEY, v); }
+export function setAiAccessToken(v: string) {
+  settings.aiAccessToken = v;
+  writeString(AI_ACCESS_TOKEN_KEY, v);
+}
 // Update the live value immediately (so the UI reacts at once), then persist to
 // secure storage. Returns the persistence promise so callers can await it.
 export function setAiUserApiKey(v: string) {
@@ -154,7 +168,10 @@ export function setAiUserApiKey(v: string) {
 // storage layer recovers values that the native WebView had evicted (see
 // hydrateDurableStorage in storage.js). A no-op visually when nothing changed.
 export function reloadSettings() {
-  for (const [prop, [key]] of Object.entries(BOOL_SETTINGS) as [BoolSettingKey, [string, boolean]][]) {
+  for (const [prop, [key]] of Object.entries(BOOL_SETTINGS) as [
+    BoolSettingKey,
+    [string, boolean],
+  ][]) {
     settings[prop] = readBool(key, settings[prop]);
   }
   settings.soundVolume = clampVolume(readInt(SOUND_VOLUME_KEY, settings.soundVolume));
@@ -185,6 +202,7 @@ export async function hydrateApiKey() {
 
 export function captureAiAccessTokenFromUrl() {
   if (typeof window === 'undefined') return;
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- one-shot parse of the current URL, not reactive state
   const url = new URL(window.location.href);
   const token = url.searchParams.get(AI_ACCESS_TOKEN_PARAM);
   if (!token) return;

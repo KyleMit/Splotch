@@ -59,7 +59,7 @@ const SAFETY_SETTINGS = [
   HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
   HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
   HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-  HarmCategory.HARM_CATEGORY_HARASSMENT
+  HarmCategory.HARM_CATEGORY_HARASSMENT,
 ].map((category) => ({ category, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE }));
 
 function buildPromptForStyle(
@@ -91,12 +91,12 @@ export const POST: RequestHandler = async ({ request, platform }) => {
   if (!usingByok) {
     const { limited, retryAfter } = rateLimit(`generate-image:${token}`, {
       limit: GENERATE_LIMIT,
-      windowMs: GENERATE_WINDOW_MS
+      windowMs: GENERATE_WINDOW_MS,
     });
     if (limited) {
       return new Response('Too many requests. Please wait a moment.', {
         status: 429,
-        headers: { 'Retry-After': String(retryAfter) }
+        headers: { 'Retry-After': String(retryAfter) },
       });
     }
   }
@@ -129,10 +129,11 @@ export const POST: RequestHandler = async ({ request, platform }) => {
     // (local dev) it's a fire-and-forget whose errors are caught internally.
     const usage = recordTokenUsage(token as string, {
       style: typeof style === 'string' ? style : null,
-      prompt: finalPrompt
+      prompt: finalPrompt,
     });
-    const ctx = (platform as { context?: { waitUntil?: (p: Promise<unknown>) => void } } | undefined)
-      ?.context;
+    const ctx = (
+      platform as { context?: { waitUntil?: (p: Promise<unknown>) => void } } | undefined
+    )?.context;
     if (ctx?.waitUntil) ctx.waitUntil(usage);
   }
 
@@ -149,15 +150,15 @@ export const POST: RequestHandler = async ({ request, platform }) => {
           role: 'user',
           parts: [
             { inlineData: { mimeType: imageFile.type || 'image/png', data: inputBase64 } },
-            { text: finalPrompt }
-          ]
-        }
+            { text: finalPrompt },
+          ],
+        },
       ],
       config: {
         abortSignal: AbortSignal.timeout(120_000),
         systemInstruction: SAFETY_SYSTEM_INSTRUCTION,
-        safetySettings: SAFETY_SETTINGS
-      }
+        safetySettings: SAFETY_SETTINGS,
+      },
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -170,13 +171,14 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 
   const classified = classifyGeminiResponse(response);
   if (classified.kind === 'safety') safetyRefusal(classified.reason);
-  if (classified.kind === 'empty') throw error(502, `Model did not return an image: ${classified.reason}`);
+  if (classified.kind === 'empty')
+    throw error(502, `Model did not return an image: ${classified.reason}`);
 
   const outBytes = Buffer.from(classified.data, 'base64');
   return new Response(outBytes, {
     headers: {
       'Content-Type': classified.mimeType,
-      'Cache-Control': 'no-store'
-    }
+      'Cache-Control': 'no-store',
+    },
   });
-}
+};

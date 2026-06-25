@@ -7,7 +7,7 @@
     startAiGeneration,
     finishAiGeneration,
     failAiGeneration,
-    closeAiResult
+    closeAiResult,
   } from '$lib/state/ui.svelte';
 
   // Sample artifacts stand in for a real generation: the child's drawing (shown
@@ -100,9 +100,8 @@
   <h1>AI render timer — debug view</h1>
   <p class="intro">
     Drives <code>AiImageResult.svelte</code> through the real
-    <code>startAiGeneration&nbsp;→&nbsp;finishAiGeneration</code> state seam using
-    the sample artifacts — no Gemini call. Edit the animation in the component and
-    replay here.
+    <code>startAiGeneration&nbsp;→&nbsp;finishAiGeneration</code> state seam using the sample artifacts
+    — no Gemini call. Edit the animation in the component and replay here.
   </p>
 
   <div class="controls">
@@ -135,16 +134,32 @@
 
   <p class="hint">
     The modal blocks the page once open — use hotkeys to drive it from anywhere:
-    <kbd>P</kbd> play · <kbd>F</kbd> finish · <kbd>S</kbd> safety · <kbd>E</kbd> server
-    error · <kbd>T</kbd> timeout · <kbd>R</kbd> reset.
+    <kbd>P</kbd> play · <kbd>F</kbd> finish · <kbd>S</kbd> safety · <kbd>E</kbd> server error ·
+    <kbd>T</kbd>
+    timeout · <kbd>R</kbd> reset.
   </p>
 
   <dl class="state" aria-label="ui state">
-    <div><dt>aiResultOpen</dt><dd>{ui.aiResultOpen}</dd></div>
-    <div><dt>aiGenerating</dt><dd>{ui.aiGenerating}</dd></div>
-    <div><dt>aiError</dt><dd>{ui.aiError}</dd></div>
-    <div><dt>aiErrorKind</dt><dd>{ui.aiErrorKind}</dd></div>
-    <div><dt>hasResult</dt><dd>{!!ui.aiResultUrl}</dd></div>
+    <div>
+      <dt>aiResultOpen</dt>
+      <dd>{ui.aiResultOpen}</dd>
+    </div>
+    <div>
+      <dt>aiGenerating</dt>
+      <dd>{ui.aiGenerating}</dd>
+    </div>
+    <div>
+      <dt>aiError</dt>
+      <dd>{ui.aiError}</dd>
+    </div>
+    <div>
+      <dt>aiErrorKind</dt>
+      <dd>{ui.aiErrorKind}</dd>
+    </div>
+    <div>
+      <dt>hasResult</dt>
+      <dd>{!!ui.aiResultUrl}</dd>
+    </div>
   </dl>
 
   <div class="thumbs">
@@ -258,10 +273,16 @@
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s ease, transform 0.1s ease;
+    transition:
+      background 0.15s ease,
+      transform 0.1s ease;
   }
-  button:hover { background: #9559cd; }
-  button:active { transform: scale(0.96); }
+  button:hover {
+    background: #9559cd;
+  }
+  button:active {
+    transform: scale(0.96);
+  }
 
   input[type='range'] {
     flex: 1;

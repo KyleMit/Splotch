@@ -4,8 +4,7 @@
   // Generated at build time from releases/*.md (see scripts/generate-releases.mjs).
   import releases from '$lib/releases.json';
 
-  const APP_VERSION =
-    typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
+  const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
   // The most recent release powers the "What's New" block.
   const latestRelease = releases[0];
@@ -41,7 +40,9 @@
 <section class="setting-group">
   <div class="about-brand">
     <Icon name="splotchy" class="about-icon" aria-label="Splotch" role="img" />
-    <p class="about-tagline">A joyful, kid-friendly drawing app — no ads, no tracking, no accounts.</p>
+    <p class="about-tagline">
+      A joyful, kid-friendly drawing app — no ads, no tracking, no accounts.
+    </p>
   </div>
 
   {#if latestRelease}
@@ -49,7 +50,7 @@
       <h3 class="whats-new-heading">
         What's New <span class="whats-new-version">v{latestRelease.version}</span>
       </h3>
-      <!-- bodyHtml is our own first-party Markdown rendered to HTML at build time. -->
+      <!-- eslint-disable-next-line svelte/no-at-html-tags bodyHtml is our own first-party Markdown rendered to HTML at build time -->
       <div class="whats-new-body">{@html latestRelease.bodyHtml}</div>
       <p class="all-releases">
         <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer">See all releases →</a>
@@ -58,15 +59,28 @@
   {/if}
 
   <div class="parent-help-footer">
-    <p>Having issues? <a href="https://github.com/KyleMit/Splotch/issues/new/choose" target="_blank" rel="noopener noreferrer">Report a problem</a></p>
+    <p>
+      Having issues? <a
+        href="https://github.com/KyleMit/Splotch/issues/new/choose"
+        target="_blank"
+        rel="noopener noreferrer">Report a problem</a
+      >
+    </p>
     <p><a href="/privacy">Privacy Policy</a> — no ads, no tracking, no accounts.</p>
     <p class="github-link">
-      <a href="https://github.com/KyleMit/Splotch" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub">
+      <a
+        href="https://github.com/KyleMit/Splotch"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="View source on GitHub"
+      >
         <Icon name="github" class="github-icon" aria-label="GitHub" role="img" />
         View on GitHub
       </a>
     </p>
-    <button type="button" class="version-text" onclick={handleVersionClick}>Version {APP_VERSION}</button>
+    <button type="button" class="version-text" onclick={handleVersionClick}
+      >Version {APP_VERSION}</button
+    >
     {#if showAdminLink}
       <p class="admin-link"><a href={adminHref}>Admin</a></p>
     {/if}

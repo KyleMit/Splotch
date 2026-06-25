@@ -26,12 +26,16 @@ const dryRun = args.includes('--dry-run');
 const noPublish = args.includes('--no-publish');
 
 if (!version || !/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(version)) {
-  fail('Usage: node scripts/release.mjs <semver> [--no-publish] [--dry-run]\n  <semver> must look like 1.2.0');
+  fail(
+    'Usage: node scripts/release.mjs <semver> [--no-publish] [--dry-run]\n  <semver> must look like 1.2.0'
+  );
 }
 
 const releaseFile = join(ROOT, 'releases', `${version}.md`);
 if (!existsSync(releaseFile)) {
-  fail(`Missing ${releaseFile}\nCreate the notes first (or run the /release command), then re-run.`);
+  fail(
+    `Missing ${releaseFile}\nCreate the notes first (or run the /release command), then re-run.`
+  );
 }
 
 // --- 1. resolve the Android versionCode ----------------------------------
@@ -92,7 +96,7 @@ const RELEASE_PATHS = [
   'android/',
   'ios/',
   'fastlane/',
-  'releases/'
+  'releases/',
 ];
 const isReleasePath = (p) =>
   RELEASE_PATHS.some((allowed) => (allowed.endsWith('/') ? p.startsWith(allowed) : p === allowed));
@@ -135,8 +139,25 @@ const notesDir = mkdtempSync(join(tmpdir(), 'splotch-rel-'));
 const notesPath = join(notesDir, 'notes.md');
 writeFileSync(notesPath, body + '\n');
 
-const ghArgs = ['release', 'create', `v${version}`, '--title', `v${version}`, '--notes-file', notesPath];
-const aab = join(ROOT, 'android', 'app', 'build', 'outputs', 'bundle', 'release', 'app-release.aab');
+const ghArgs = [
+  'release',
+  'create',
+  `v${version}`,
+  '--title',
+  `v${version}`,
+  '--notes-file',
+  notesPath,
+];
+const aab = join(
+  ROOT,
+  'android',
+  'app',
+  'build',
+  'outputs',
+  'bundle',
+  'release',
+  'app-release.aab'
+);
 if (existsSync(aab)) {
   ghArgs.push(aab);
   console.log('Attaching built release bundle: app-release.aab');
@@ -146,4 +167,6 @@ if (existsSync(aab)) {
 run('gh', ghArgs);
 rmSync(notesDir, { recursive: true, force: true });
 
-console.log(`\n✓ Released v${version}: https://github.com/KyleMit/Splotch/releases/tag/v${version}`);
+console.log(
+  `\n✓ Released v${version}: https://github.com/KyleMit/Splotch/releases/tag/v${version}`
+);

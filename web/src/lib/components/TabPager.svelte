@@ -1,11 +1,7 @@
 <script lang="ts">
   import { setContext } from 'svelte';
   import type { Snippet } from 'svelte';
-  import {
-    tabPagerContextKey,
-    type TabPagerContext,
-    type TabPagerTab
-  } from './tabPagerContext';
+  import { tabPagerContextKey, type TabPagerContext, type TabPagerTab } from './tabPagerContext';
 
   interface Props {
     initialTab?: string;
@@ -15,17 +11,11 @@
     children: Snippet<[string]>;
   }
 
-  let {
-    initialTab,
-    resetKey,
-    ariaLabel = 'Tab panels',
-    tabs,
-    children
-  }: Props = $props();
+  let { initialTab, resetKey, ariaLabel = 'Tab panels', tabs, children }: Props = $props();
 
   let pagerState: TabPagerContext['state'] = $state({
     activeTab: '',
-    tabs: []
+    tabs: [],
   });
 
   let panelsEl: HTMLDivElement | null = null;
@@ -37,20 +27,21 @@
   let lastResetKey: unknown;
   let resetKeyInitialized = false;
 
-  let activeTabIndex = $derived(
-    Math.max(0, pagerState.tabs.findIndex((tab) => tab.id === pagerState.activeTab))
+  let tabStyle = $derived(
+    `--active-tab-index:${scrollProgress}; --tab-count:${pagerState.tabs.length};`
   );
-  let tabStyle = $derived(`--active-tab-index:${scrollProgress}; --tab-count:${pagerState.tabs.length};`);
 
   const context: TabPagerContext = {
     state: pagerState,
     registerTab,
-    setActiveTab
+    setActiveTab,
   };
   setContext(tabPagerContextKey, context);
 
   function prefersReducedMotion() {
-    return typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return (
+      typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
   }
 
   function indexOfTab(id: string) {
@@ -119,7 +110,9 @@
       return;
     }
 
-    pagerState.tabs = pagerState.tabs.map((candidate) => (candidate.id === tab.id ? tab : candidate));
+    pagerState.tabs = pagerState.tabs.map((candidate) =>
+      candidate.id === tab.id ? tab : candidate
+    );
   }
 
   function onPanelsScroll() {

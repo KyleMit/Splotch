@@ -12,7 +12,7 @@ interface ColoringBookState {
 
 export const coloringBookState: ColoringBookState = $state({
   overlayUrl: null,
-  overlayPage: null
+  overlayPage: null,
 });
 
 export function setOverlayPage(page: ColoringPage, orientation: BookOrientation) {

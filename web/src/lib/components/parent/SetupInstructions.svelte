@@ -170,7 +170,10 @@
       </details>
 
       <details class="help-section">
-        <summary><span class="summary-text"><span class="section-number">2.</span> {lockTitle(os)}</span></summary>
+        <summary
+          ><span class="summary-text"><span class="section-number">2.</span> {lockTitle(os)}</span
+          ></summary
+        >
         {@render lockSteps(os)}
       </details>
     </section>
@@ -259,7 +262,7 @@
   }
 
   .install-check {
-    color: #4CAF50;
+    color: #4caf50;
     font-weight: bold;
     margin-left: 8px;
     font-size: 20px;

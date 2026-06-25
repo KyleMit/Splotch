@@ -6,7 +6,7 @@ import {
   colors,
   selectPaletteColor,
   selectCustomSwatch,
-  pickCustomColor
+  pickCustomColor,
 } from './colors.svelte';
 
 beforeEach(() => {

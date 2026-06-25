@@ -89,7 +89,11 @@ async function run() {
   // persistent:true. V1-function regression (no NETLIFY_BLOBS_CONTEXT) → false.
   const list = await fetch(`${BASE}/api/admin/tokens`, { headers: auth });
   const listBody = await json(list);
-  check('GET tokens → 200 snapshot', list.status === 200 && listBody?.ok === true, `got ${list.status}`);
+  check(
+    'GET tokens → 200 snapshot',
+    list.status === 200 && listBody?.ok === true,
+    `got ${list.status}`
+  );
   check(
     'Blobs is live on the deployed function (persistent:true)',
     listBody?.persistent === true,
@@ -100,8 +104,16 @@ async function run() {
   // little patience for eventual consistency across replicas).
   const add = await post('/api/admin/tokens', auth, { token: probe });
   const addBody = await json(add);
-  check('POST adds the probe token', add.status === 200 && addBody?.tokens?.includes(probe), `got ${add.status}`);
-  check('POST snapshot still persistent:true', addBody?.persistent === true, `persistent=${addBody?.persistent}`);
+  check(
+    'POST adds the probe token',
+    add.status === 200 && addBody?.tokens?.includes(probe),
+    `got ${add.status}`
+  );
+  check(
+    'POST snapshot still persistent:true',
+    addBody?.persistent === true,
+    `persistent=${addBody?.persistent}`
+  );
 
   let readBack = false;
   for (let attempt = 0; attempt < 6 && !readBack; attempt++) {
@@ -109,12 +121,20 @@ async function run() {
     const after = await json(await fetch(`${BASE}/api/admin/tokens`, { headers: auth }));
     readBack = Boolean(after?.tokens?.includes(probe));
   }
-  check('probe token reads back from Blobs', readBack, 'not visible after retries — write did not durably land');
+  check(
+    'probe token reads back from Blobs',
+    readBack,
+    'not visible after retries — write did not durably land'
+  );
 
   // Cleanup: remove the probe so the shared site-wide store stays clean.
   const del = await post('/api/admin/tokens', auth, { token: probe });
   const delBody = await json(del);
-  check('DELETE removes the probe token', del.status === 200 && !delBody?.tokens?.includes(probe), `got ${del.status}`);
+  check(
+    'DELETE removes the probe token',
+    del.status === 200 && !delBody?.tokens?.includes(probe),
+    `got ${del.status}`
+  );
 
   return { session, probe };
 }
@@ -128,7 +148,11 @@ try {
   console.error(`\nFATAL: ${err.message}`);
   // Best-effort cleanup if we got far enough to add the probe.
   if (ctx?.session && ctx?.probe) {
-    await post('/api/admin/tokens', { Authorization: `Bearer ${ctx.session}` }, { token: ctx.probe }).catch(() => {});
+    await post(
+      '/api/admin/tokens',
+      { Authorization: `Bearer ${ctx.session}` },
+      { token: ctx.probe }
+    ).catch(() => {});
   }
 }
 

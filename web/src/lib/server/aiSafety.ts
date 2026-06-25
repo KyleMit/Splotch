@@ -17,7 +17,7 @@ const SAFETY_REASONS = new Set([
   'PROHIBITED_CONTENT',
   'RECITATION',
   'BLOCKLIST',
-  'SPII'
+  'SPII',
 ]);
 
 export function classifyGeminiResponse(response: GenerateContentResponse): SafetyClassification {
@@ -33,7 +33,7 @@ export function classifyGeminiResponse(response: GenerateContentResponse): Safet
     return {
       kind: 'image',
       data: imagePart.inlineData!.data!,
-      mimeType: imagePart.inlineData!.mimeType || 'image/png'
+      mimeType: imagePart.inlineData!.mimeType || 'image/png',
     };
   }
 

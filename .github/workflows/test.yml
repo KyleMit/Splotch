@@ -9,6 +9,35 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      # Build-time/transitive advisories are tracked by Dependabot PRs; CI only
+      # hard-fails on critical severities so the gate stays meaningful, not noisy.
+      - name: Audit dependencies
+        run: npm audit --audit-level=critical
+
   test:
     name: Tests
     runs-on: ubuntu-latest

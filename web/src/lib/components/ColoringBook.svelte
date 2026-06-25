@@ -6,7 +6,7 @@
     booksForPlatform,
     coloringBookState,
     setOverlayPage,
-    clearOverlay
+    clearOverlay,
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
   import { pageImage, type Book, type BookOrientation, type ColoringPage } from '$lib/state/books';
@@ -69,11 +69,15 @@
     origin: ui.coloringBookOrigin,
     onRequestClose: closeColoringBook,
     onOpen: () => (activeBook = null),
-    onClose: () => (activeBook = null)
+    onClose: () => (activeBook = null),
   })}
 >
   <div class="coloring-book-content">
-    <button class="coloring-book-close modal-close-btn" aria-label="Close" onclick={closeColoringBook}>
+    <button
+      class="coloring-book-close modal-close-btn"
+      aria-label="Close"
+      onclick={closeColoringBook}
+    >
       <Icon name="close" class="modal-close-icon" />
     </button>
 
@@ -108,12 +112,19 @@
     {:else}
       <div class="coloring-book-view">
         <div class="coloring-book-header">
-          <button class="coloring-back-button" aria-label="Back" onclick={() => (activeBook = null)}>
+          <button
+            class="coloring-back-button"
+            aria-label="Back"
+            onclick={() => (activeBook = null)}
+          >
             <Icon name="chevron-left" class="coloring-back-icon" />
           </button>
           <h2>{activeBook.name}</h2>
         </div>
-        <div class="coloring-grid coloring-pages-grid" class:portrait-pages={orientation === 'portrait'}>
+        <div
+          class="coloring-grid coloring-pages-grid"
+          class:portrait-pages={orientation === 'portrait'}
+        >
           {#each activeBook.pages as page (page.id)}
             <button
               class="coloring-tile"

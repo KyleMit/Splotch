@@ -10,7 +10,7 @@
   /* Brand accent used for active/hover chrome across parent + AI UI.
      Custom properties pierce Svelte's style scoping, so components
      reference these directly via var(). */
-  --brand: #AB71E1;
+  --brand: #ab71e1;
   --brand-hover: #9961d1;
 }
 
@@ -25,7 +25,14 @@ body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  font-family: 'Quicksand Variable', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    'Quicksand Variable',
+    'Quicksand',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   background: #f5f5f5;
   touch-action: none; /* Prevent default touch behaviors */
   user-select: none;
@@ -59,10 +66,8 @@ body {
    each modal appears to fly out from the button that opened it. */
 @keyframes dialogFlyFromOrigin {
   0% {
-    transform: translate(
-      calc(-50% + var(--origin-x, 0px)),
-      calc(-50% + var(--origin-y, 0px))
-    ) scale(0.05);
+    transform: translate(calc(-50% + var(--origin-x, 0px)), calc(-50% + var(--origin-y, 0px)))
+      scale(0.05);
     opacity: 0;
   }
   60% {
@@ -135,7 +140,9 @@ body {
 
 /* Spin animation reused by any "AI thinking" icon. */
 @keyframes aiSpin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Coloring-book mode: when a page is overlaid, paper texture moves from the
@@ -175,9 +182,15 @@ body.has-coloring-overlay #drawingCanvas {
 }
 
 @keyframes polaroid-flash {
-  0% { opacity: 0; }
-  15% { opacity: 0.85; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .polaroid-frame {

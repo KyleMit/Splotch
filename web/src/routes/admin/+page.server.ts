@@ -3,7 +3,7 @@ import {
   sessionToken,
   verifyAdminSecret,
   verifySessionToken,
-  buildInvites
+  buildInvites,
 } from '$lib/server/admin';
 import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
 import { getUsage } from '$lib/server/usage';
@@ -33,7 +33,7 @@ function setSession(cookies: Cookies) {
     path: '/admin',
     httpOnly: true,
     sameSite: 'strict',
-    maxAge: SESSION_MAX_AGE
+    maxAge: SESSION_MAX_AGE,
   });
 }
 
@@ -65,7 +65,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
       authed: false,
       hasSession,
       persistent: true,
-      invites: [] as { token: string; url: string }[]
+      invites: [] as { token: string; url: string }[],
     };
   }
   // Renew the session on each authenticated load so its expiry keeps sliding
@@ -80,10 +80,10 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
   const usage = await getUsage(tokens);
   const invites = buildInvites(tokens, url.origin).map((invite) => ({
     ...invite,
-    usage: usage[invite.token] ?? null
+    usage: usage[invite.token] ?? null,
   }));
   return { authed: true, hasSession, persistent, invites };
-}
+};
 
 export const actions: Actions = {
   login: async ({ request, cookies, getClientAddress }) => {
@@ -121,5 +121,5 @@ export const actions: Actions = {
     const token = String(form.get('token') ?? '').trim();
     await removeToken(token);
     return { success: true, message: `Removed “${token}”` };
-  }
+  },
 };

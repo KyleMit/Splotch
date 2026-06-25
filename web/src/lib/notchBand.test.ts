@@ -8,7 +8,7 @@ import {
   computeNotchBandState,
   ERASER_BAND_COLOR,
   NOTCH_INSET_THRESHOLD_PX,
-  type NotchBandInput
+  type NotchBandInput,
 } from './notchBand';
 import { PALETTE_COLORS } from './state/colors.svelte';
 
@@ -25,7 +25,7 @@ const NO_CUTOUT: NotchBandInput = {
   insetLeft: 0,
   insetRight: 0,
   activeColor: '#AB71E1',
-  eraser: false
+  eraser: false,
 };
 
 describe('bandColor', () => {
@@ -75,7 +75,7 @@ describe('cutoutEdge', () => {
   it('uses the top inset in portrait', () => {
     expect(cutoutEdge({ ...NO_CUTOUT, insetTop: NOTCH_INSET })).toEqual({
       edge: 'top',
-      inset: NOTCH_INSET
+      inset: NOTCH_INSET,
     });
   });
 
@@ -107,13 +107,15 @@ describe('statusBarHiddenFor', () => {
   });
 
   it('shows the status bar on Android native in portrait', () => {
-    expect(
-      statusBarHiddenFor({ ...NO_CUTOUT, platform: 'android', orientation: 'portrait' })
-    ).toBe(false);
+    expect(statusBarHiddenFor({ ...NO_CUTOUT, platform: 'android', orientation: 'portrait' })).toBe(
+      false
+    );
   });
 
   it('makes no visibility call on iOS native or web', () => {
-    expect(statusBarHiddenFor({ ...NO_CUTOUT, platform: 'ios', orientation: 'landscape' })).toBeNull();
+    expect(
+      statusBarHiddenFor({ ...NO_CUTOUT, platform: 'ios', orientation: 'landscape' })
+    ).toBeNull();
     expect(
       statusBarHiddenFor({ ...NO_CUTOUT, platform: 'web', native: false, orientation: 'landscape' })
     ).toBeNull();
@@ -134,7 +136,7 @@ describe('computeNotchBandState — deployment targets', () => {
       ...NO_CUTOUT,
       platform: 'web',
       native: false,
-      activeColor: purple
+      activeColor: purple,
     });
     expect(state.themeColor).toBe(purple);
     expect(state.statusBarStyle).toBeNull();
@@ -148,7 +150,7 @@ describe('computeNotchBandState — deployment targets', () => {
       platform: 'web',
       native: false,
       insetTop: NOTCH_INSET,
-      activeColor: purple
+      activeColor: purple,
     });
     expect(state.show).toBe(true);
     expect(state.edge).toBe('top');
@@ -162,7 +164,7 @@ describe('computeNotchBandState — deployment targets', () => {
       ...NO_CUTOUT,
       platform: 'android',
       insetTop: 34,
-      activeColor: purple
+      activeColor: purple,
     });
     expect(state.show).toBe(true);
     expect(state.color).toBe(purple);
@@ -175,7 +177,7 @@ describe('computeNotchBandState — deployment targets', () => {
       ...NO_CUTOUT,
       platform: 'ios',
       insetTop: NOTCH_INSET,
-      activeColor: '#0a0b10'
+      activeColor: '#0a0b10',
     });
     expect(state.show).toBe(true);
     expect(state.color).toBe('#0a0b10');
@@ -192,7 +194,7 @@ describe('computeNotchBandState — landscape moves the band to the cutout side'
       orientation: 'landscape',
       insetTop: 0,
       insetLeft: NOTCH_INSET,
-      activeColor: '#62A2E9'
+      activeColor: '#62A2E9',
     });
     expect(state.show).toBe(true);
     expect(state.edge).toBe('left');
@@ -204,7 +206,7 @@ describe('computeNotchBandState — landscape moves the band to the cutout side'
     const state = computeNotchBandState({
       ...NO_CUTOUT,
       platform: 'android',
-      orientation: 'landscape'
+      orientation: 'landscape',
     });
     expect(state.show).toBe(false); // nothing to paint
     expect(state.statusBarHidden).toBe(true); // but still reclaim the top edge
@@ -232,7 +234,7 @@ describe('computeNotchBandState — color follows the active tool', () => {
     const state = computeNotchBandState({
       ...NO_CUTOUT,
       insetTop: NOTCH_INSET,
-      activeColor: '#62A2E9'
+      activeColor: '#62A2E9',
     });
     expect(state.color).toBe('#62A2E9');
     expect(state.themeColor).toBe('#62A2E9');
@@ -243,7 +245,7 @@ describe('computeNotchBandState — color follows the active tool', () => {
       ...NO_CUTOUT,
       insetTop: NOTCH_INSET,
       activeColor: '#62A2E9',
-      eraser: true
+      eraser: true,
     });
     expect(state.color).toBe(ERASER_BAND_COLOR);
     expect(state.themeColor).toBe(ERASER_BAND_COLOR);

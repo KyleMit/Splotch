@@ -6,17 +6,19 @@ const ctrl = vi.hoisted(() => ({ native: false }));
 
 vi.mock('./platform', () => ({
   isNative: () => ctrl.native,
-  getPlatform: () => (ctrl.native ? 'android' : 'web')
+  getPlatform: () => (ctrl.native ? 'android' : 'web'),
 }));
 
 // In-memory stand-in for the durable Capacitor Preferences store.
 const prefsStore = vi.hoisted(() => new Map<string, string>());
 vi.mock('@capacitor/preferences', () => ({
   Preferences: {
-    get: async ({ key }: { key: string }) => ({ value: prefsStore.has(key) ? prefsStore.get(key) : null }),
+    get: async ({ key }: { key: string }) => ({
+      value: prefsStore.has(key) ? prefsStore.get(key) : null,
+    }),
     set: async ({ key, value }: { key: string; value: string }) => void prefsStore.set(key, value),
-    remove: async ({ key }: { key: string }) => void prefsStore.delete(key)
-  }
+    remove: async ({ key }: { key: string }) => void prefsStore.delete(key),
+  },
 }));
 
 import {
@@ -27,7 +29,7 @@ import {
   readInt,
   writeInt,
   removeKey,
-  hydrateDurableStorage
+  hydrateDurableStorage,
 } from './storage';
 
 beforeEach(() => {

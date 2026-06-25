@@ -19,7 +19,9 @@ export async function applyDeviceOrientationPreference() {
   if (!supportsOrientationLock()) return;
 
   const target: OrientationLockType | 'unlocked' = settings.lockRotationEnabled
-    ? settings.forceLandscapeOrientation ? 'landscape' : 'portrait'
+    ? settings.forceLandscapeOrientation
+      ? 'landscape'
+      : 'portrait'
     : 'unlocked';
 
   if (target === lastRequested) return;

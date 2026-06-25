@@ -14,8 +14,17 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, sleep } from './lib/utils.mjs';
 import {
-  ensureDevServer, openAppPage, canvasBox, expandDrawer, pickColor,
-  setStrokeSize, drawStroke, dismissMenu, circlePts, arcPts, zigzag,
+  ensureDevServer,
+  openAppPage,
+  canvasBox,
+  expandDrawer,
+  pickColor,
+  setStrokeSize,
+  drawStroke,
+  dismissMenu,
+  circlePts,
+  arcPts,
+  zigzag,
 } from './lib/app-driver.mjs';
 
 const OUT = join(ROOT, 'store-assets');
@@ -30,8 +39,13 @@ const IPAD = { width: 1366, height: 1024, deviceScaleFactor: 2 };
 
 // Brand palette (from src/lib/state/colors.svelte.js)
 const C = {
-  purple: '#AB71E1', blue: '#62A2E9', green: '#8CC864',
-  yellow: '#F9D24F', orange: '#F89C45', red: '#EC534E', black: '#0a0b10'
+  purple: '#AB71E1',
+  blue: '#62A2E9',
+  green: '#8CC864',
+  yellow: '#F9D24F',
+  orange: '#F89C45',
+  red: '#EC534E',
+  black: '#0a0b10',
 };
 
 const shot = (page, file) => page.screenshot({ path: join(OUT, file) });
@@ -40,10 +54,12 @@ const shot = (page, file) => page.screenshot({ path: join(OUT, file) });
 // flower. Uses only colors shown in every orientation (the portrait palette
 // hides purple/blue), so the hero shot is full on both phone and tablet.
 async function drawScene(page, box) {
-  const W = box.width, H = box.height;
+  const W = box.width,
+    H = box.height;
   // Keep the arc clear of the action-button column (left in portrait): endpoints
   // sit above the toolbar and inset from the left edge.
-  const cx = W * 0.56, cy = H * 0.5;
+  const cx = W * 0.56,
+    cy = H * 0.5;
   const r0 = Math.min(W * 0.38, H * 0.34);
   const step = Math.max(20, r0 * 0.16); // scale ring spacing to the arc, not the screen
   // Rainbow arcs (outer -> inner)
@@ -55,19 +71,24 @@ async function drawScene(page, box) {
   }
   // Sun in the top-left
   if (await pickColor(page, C.yellow)) {
-    const sx = W * 0.16, sy = H * 0.16, r = Math.min(W, H) * 0.07;
+    const sx = W * 0.16,
+      sy = H * 0.16,
+      r = Math.min(W, H) * 0.07;
     await drawStroke(page, box, circlePts(sx, sy, r, 2));
     for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
       await drawStroke(page, box, [
         { x: sx + Math.cos(a) * r * 1.5, y: sy + Math.sin(a) * r * 1.5 },
-        { x: sx + Math.cos(a) * r * 2.1, y: sy + Math.sin(a) * r * 2.1 }
+        { x: sx + Math.cos(a) * r * 2.1, y: sy + Math.sin(a) * r * 2.1 },
       ]);
     }
   }
   // Grass along the bottom + a flower (red bloom, green stem)
   if (await pickColor(page, C.green)) {
     await drawStroke(page, box, zigzag(W * 0.2, H * 0.93, W * 0.96, 14, 26));
-    await drawStroke(page, box, [{ x: W * 0.78, y: H * 0.92 }, { x: W * 0.78, y: H * 0.74 }]);
+    await drawStroke(page, box, [
+      { x: W * 0.78, y: H * 0.92 },
+      { x: W * 0.78, y: H * 0.74 },
+    ]);
   }
   if (await pickColor(page, C.red)) {
     await drawStroke(page, box, circlePts(W * 0.78, H * 0.7, Math.min(W, H) * 0.05, 2));
@@ -78,13 +99,14 @@ async function drawScene(page, box) {
 }
 
 async function colorInLines(page, box) {
-  const W = box.width, H = box.height;
+  const W = box.width,
+    H = box.height;
   const scribble = async (hex, cx, cy, rx, ry) => {
     if (!(await pickColor(page, hex))) return;
     const pts = [];
     for (let i = 0; i <= 60; i++) {
       const a = (i / 6) * Math.PI;
-      const rr = (i / 60);
+      const rr = i / 60;
       pts.push({ x: cx + Math.cos(a) * rx * rr, y: cy + Math.sin(a) * ry * rr });
     }
     await drawStroke(page, box, pts);
@@ -102,7 +124,7 @@ try {
     { name: 'phone', device: PHONE, dir: 'screenshots/phone' },
     { name: 'tablet', device: TABLET, dir: 'screenshots/tablet10' },
     { name: 'iphone', device: IPHONE, dir: 'screenshots/iphone69' },
-    { name: 'ipad', device: IPAD, dir: 'screenshots/ipad13' }
+    { name: 'ipad', device: IPAD, dir: 'screenshots/ipad13' },
   ];
 
   for (const t of targets) {
@@ -175,7 +197,10 @@ try {
   // FEATURE GRAPHIC — 1024x500
   {
     const iconB64 = readFileSync(join(OUT, 'icon-512.png')).toString('base64');
-    const ctx = await browser.newContext({ viewport: { width: 1024, height: 500 }, deviceScaleFactor: 1 });
+    const ctx = await browser.newContext({
+      viewport: { width: 1024, height: 500 },
+      deviceScaleFactor: 1,
+    });
     const page = await ctx.newPage();
     await page.setContent(featureGraphicHtml(iconB64), { waitUntil: 'networkidle' });
     await sleep(300);

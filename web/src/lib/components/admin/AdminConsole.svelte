@@ -40,7 +40,7 @@
     onlogin,
     onlogout,
     onadd,
-    onremove
+    onremove,
   }: {
     authed: boolean;
     invites: Invite[];
@@ -98,7 +98,7 @@
       ['week', 604_800],
       ['day', 86_400],
       ['hour', 3_600],
-      ['minute', 60]
+      ['minute', 60],
     ];
     for (const [unit, secs] of units) {
       if (Math.abs(secondsAgo) >= secs) return rtf.format(-Math.round(secondsAgo / secs), unit);
@@ -202,8 +202,8 @@
       {#if !persistent}
         <div class="flash flash-warning" role="alert">
           <strong>Netlify Blobs is unavailable.</strong> You're viewing a local-only copy seeded
-          from the <code>ALLOWED_TOKENS_LIST</code> env var. Any codes you add or remove here won't
-          be saved and may reset at any time.
+          from the <code>ALLOWED_TOKENS_LIST</code> env var. Any codes you add or remove here won't be
+          saved and may reset at any time.
         </div>
       {/if}
 
@@ -229,7 +229,12 @@
           required
           bind:value={newToken}
         />
-        <button type="submit" class="btn btn-primary add-button" disabled={busy} aria-label="Add code">
+        <button
+          type="submit"
+          class="btn btn-primary add-button"
+          disabled={busy}
+          aria-label="Add code"
+        >
           <span class="add-label">Add code</span>
           <Icon name="plus" class="add-icon" />
         </button>
@@ -320,7 +325,12 @@
     {/if}
   </main>
 
-  <dialog class="more-menu" bind:this={menuEl} onclick={onMenuClick} onclose={() => (menuInvite = null)}>
+  <dialog
+    class="more-menu"
+    bind:this={menuEl}
+    onclick={onMenuClick}
+    onclose={() => (menuInvite = null)}
+  >
     {#if menuInvite}
       {@const inv = menuInvite}
       <div class="more-menu-card">
@@ -569,7 +579,9 @@
     border-radius: 10px;
     background: #fff;
     color: #333;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
   }
 
   .add-form input:focus {
@@ -601,7 +613,10 @@
     border-radius: 10px;
     border: none;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease, transform 0.05s ease;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      transform 0.05s ease;
     white-space: nowrap;
   }
 

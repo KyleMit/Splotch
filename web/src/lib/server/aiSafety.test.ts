@@ -9,7 +9,11 @@ const resp = (value: unknown) => value as GenerateContentResponse;
 describe('classifyGeminiResponse', () => {
   it('returns the image part when the model produced one', () => {
     const r = classifyGeminiResponse(
-      resp({ candidates: [{ content: { parts: [{ inlineData: { data: 'AAAA', mimeType: 'image/png' } }] } }] })
+      resp({
+        candidates: [
+          { content: { parts: [{ inlineData: { data: 'AAAA', mimeType: 'image/png' } }] } },
+        ],
+      })
     );
     expect(r).toEqual({ kind: 'image', data: 'AAAA', mimeType: 'image/png' });
   });
@@ -22,7 +26,9 @@ describe('classifyGeminiResponse', () => {
   });
 
   it('flags a prompt-level block as safety', () => {
-    const r = classifyGeminiResponse(resp({ promptFeedback: { blockReason: 'PROHIBITED_CONTENT' } }));
+    const r = classifyGeminiResponse(
+      resp({ promptFeedback: { blockReason: 'PROHIBITED_CONTENT' } })
+    );
     expect(r).toEqual({ kind: 'safety', reason: 'PROHIBITED_CONTENT' });
   });
 
@@ -37,13 +43,22 @@ describe('classifyGeminiResponse', () => {
     const r = classifyGeminiResponse(
       resp({
         candidates: [
-          { finishReason: 'STOP', content: { parts: [{ text: 'I cannot fulfill this request. The original image contains offensive content.' }] } }
-        ]
+          {
+            finishReason: 'STOP',
+            content: {
+              parts: [
+                {
+                  text: 'I cannot fulfill this request. The original image contains offensive content.',
+                },
+              ],
+            },
+          },
+        ],
       })
     );
     expect(r).toEqual({
       kind: 'safety',
-      reason: 'I cannot fulfill this request. The original image contains offensive content.'
+      reason: 'I cannot fulfill this request. The original image contains offensive content.',
     });
   });
 
@@ -62,7 +77,9 @@ describe('classifyGeminiResponse', () => {
 
 describe('isSafetyError', () => {
   it('treats a 400 with a safety message as a safety error', () => {
-    expect(isSafetyError(Object.assign(new Error('Request blocked for SAFETY'), { status: 400 }))).toBe(true);
+    expect(
+      isSafetyError(Object.assign(new Error('Request blocked for SAFETY'), { status: 400 }))
+    ).toBe(true);
   });
 
   it('treats a prohibited-content message as a safety error regardless of status', () => {
@@ -70,7 +87,9 @@ describe('isSafetyError', () => {
   });
 
   it('does not treat quota/auth errors as safety errors', () => {
-    expect(isSafetyError(Object.assign(new Error('Resource exhausted'), { status: 429 }))).toBe(false);
+    expect(isSafetyError(Object.assign(new Error('Resource exhausted'), { status: 429 }))).toBe(
+      false
+    );
     expect(isSafetyError(Object.assign(new Error('API key invalid'), { status: 401 }))).toBe(false);
   });
 

@@ -10,8 +10,15 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './lib/utils.mjs';
 import {
-  ensureDevServer, openAppPage, canvasBox, expandDrawer,
-  pickColor, setStrokeSize, drawStroke, dismissMenu, circlePts,
+  ensureDevServer,
+  openAppPage,
+  canvasBox,
+  expandDrawer,
+  pickColor,
+  setStrokeSize,
+  drawStroke,
+  dismissMenu,
+  circlePts,
 } from './lib/app-driver.mjs';
 
 const SVG_FILE = join(ROOT, 'web', 'static', 'large-image.svg');
@@ -19,7 +26,8 @@ const OUT = join(ROOT, 'web', 'static', 'large-image.png');
 const PORT = 4173;
 
 // SVG viewBox dimensions
-const SVG_W = 2265, SVG_H = 1388;
+const SVG_W = 2265,
+  SVG_H = 1388;
 
 // 1280x720 @ 1.5x = 1920x1080 screenshot
 const DEVICE = { width: 1280, height: 720, deviceScaleFactor: 1.5 };
@@ -36,9 +44,9 @@ const COLOR_MAP = {
 
 // SIZE_TO_PX: {1:2, 2:4, 3:8, 4:14, 5:22} (from strokeWidth.svelte.ts)
 function svgWidthToAppSize(w) {
-  if (w <= 9) return 2;   // SVG 8   → app 4px
-  if (w <= 14) return 3;  // SVG 14  → app 8px
-  return 4;               // SVG 15+ → app 14px
+  if (w <= 9) return 2; // SVG 8   → app 4px
+  if (w <= 14) return 3; // SVG 14  → app 8px
+  return 4; // SVG 15+ → app 14px
 }
 
 // Extract a single XML attribute value from a tag string.

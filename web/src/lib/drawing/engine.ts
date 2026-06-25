@@ -4,15 +4,17 @@
 // setColor() / setStrokeWidth() from $effect.
 
 import { ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte';
+import {
+  calculateStrokeSpeed,
+  edgeSwipeIsOsGesture,
+  guardedEdgeAt,
+  EDGE_SWIPE_DECISION_PX,
+  type GuardEdge,
+} from './strokeMath';
 
 interface DrawSoundData {
   speed: number;
 }
-
-// Screen edge whose system-gesture band a stroke started in (the top is never
-// guarded). The inward direction — the swipe that gets discarded — is toward
-// the canvas centre, perpendicular to this edge.
-type GuardEdge = 'bottom' | 'left' | 'right';
 
 interface PointerState {
   x: number;
@@ -66,8 +68,8 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let lastColorChangeTime = 0;
-let activePointerIds = new Set<number>();
-let activePointers = new Map<number, PointerState>();
+const activePointerIds = new Set<number>();
+const activePointers = new Map<number, PointerState>();
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
 let onDrawStopCallback: (() => void) | null = null;
 
@@ -89,7 +91,7 @@ let canvasRect: CanvasRect = { left: 0, top: 0, width: 0, height: 0 };
 let rectScaleX = 1;
 let rectScaleY = 1;
 
-let undoStack: UndoSnapshot[] = [];
+const undoStack: UndoSnapshot[] = [];
 const MAX_UNDO_STACK_SIZE = 10;
 let canUndo = false;
 let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
@@ -132,13 +134,7 @@ const POINTER_RESUME_JUMP_RATIO = 0.1;
 // (so we don't suppress ordinary strokes along a phone's long bottom). The top
 // edge is never guarded. Only touch input is affected; pen and mouse never
 // trigger the gesture. Children who want to draw at a guarded edge draw away.
-const EDGE_SWIPE_BAND_PX = 24;
-const EDGE_SWIPE_DECISION_PX = 12;
-
-// Minimum safe-area inset (CSS px) that marks the landscape long-bottom edge as
-// a real home-indicator zone (tablets). Below it the long bottom draws normally;
-// home indicators (~21px) and navigation bars clear it.
-const GESTURE_INSET_MIN_PX = 16;
+// The band/decision/inset thresholds and the geometry live in ./strokeMath.
 
 // OS safe-area insets in CSS px, pushed from the canvas's owner component. Used
 // only to additionally guard a tablet's long bottom edge in landscape (above).
@@ -251,7 +247,7 @@ function refreshCanvasRect() {
 function pointerToCanvas(e: PointerEvent) {
   return {
     x: (e.clientX - canvasRect.left) * rectScaleX,
-    y: (e.clientY - canvasRect.top) * rectScaleY
+    y: (e.clientY - canvasRect.top) * rectScaleY,
   };
 }
 
@@ -364,27 +360,6 @@ function commitEdgeSwipe(ps: PointerState) {
   ps.lastTime = now;
 }
 
-// The guarded edge (if any) a start point sits in — within EDGE_SWIPE_BAND_PX of
-// the edge. Orientation picks the edges (see EDGE_SWIPE_BAND_PX); coordinates
-// are backing-store px so the band scales with renderScale, while the tablet
-// inset gate is a plain CSS-px threshold.
-function guardedEdgeAt(x: number, y: number): GuardEdge | null {
-  const band = EDGE_SWIPE_BAND_PX * renderScale;
-
-  // Portrait: the system home/navbar is always along the bottom.
-  if (canvas.width <= canvas.height) {
-    return y >= canvas.height - band ? 'bottom' : null;
-  }
-
-  // Landscape: a phone's physical-bottom navbar is on a short side edge, so
-  // guard both short edges. A tablet keeps its home indicator on the long
-  // bottom — guard that too, but only when the OS reports an inset there.
-  if (safeInsets.bottom >= GESTURE_INSET_MIN_PX && y >= canvas.height - band) return 'bottom';
-  if (x <= band) return 'left';
-  if (x >= canvas.width - band) return 'right';
-  return null;
-}
-
 // Drop a pointer without rendering anything (an OS edge-swipe). Nothing was
 // painted, so undo/empty state and the group flag are left untouched.
 function discardPointer(e: PointerEvent) {
@@ -408,7 +383,15 @@ function startDrawing(e: PointerEvent) {
   const lineWidth =
     (eraserActive ? currentLineWidth * ERASER_SIZE_MULTIPLIER : currentLineWidth) * renderScale;
 
-  const edgeSwipeGuard = e.pointerType === 'touch' ? guardedEdgeAt(x, y) : null;
+  const edgeSwipeGuard =
+    e.pointerType === 'touch'
+      ? guardedEdgeAt(x, y, {
+          width: canvas.width,
+          height: canvas.height,
+          renderScale,
+          bottomInset: safeInsets.bottom,
+        })
+      : null;
 
   const now = Date.now();
   const pointerState: PointerState = {
@@ -428,7 +411,7 @@ function startDrawing(e: PointerEvent) {
     // divide by.
     speedSamples: [{ t: now, distance: 0 }],
     edgeSwipeGuard,
-    pendingPoints: []
+    pendingPoints: [],
   };
   activePointers.set(e.pointerId, pointerState);
   activePointerIds.add(e.pointerId);
@@ -441,24 +424,6 @@ function startDrawing(e: PointerEvent) {
       canvas.setPointerCapture(e.pointerId);
     } catch {}
   }
-}
-
-// Honest sliding window: stamp each move's distance with its time, drop
-// samples older than windowMs, then divide the distance covered since the
-// oldest surviving sample by that elapsed span. (The oldest sample is the
-// anchor for the span, so its own distance — travelled before it — is excluded.)
-function calculateStrokeSpeed(
-  samples: { t: number; distance: number }[],
-  newSample: { t: number; distance: number },
-  windowMs: number
-): number {
-  samples.push(newSample);
-  const cutoff = newSample.t - windowMs;
-  while (samples.length > 1 && samples[0].t < cutoff) samples.shift();
-  let windowDistance = 0;
-  for (let i = 1; i < samples.length; i++) windowDistance += samples[i].distance;
-  const windowSpan = Math.max(newSample.t - samples[0].t, 1);
-  return windowDistance / windowSpan;
 }
 
 function draw(e: PointerEvent) {
@@ -484,19 +449,10 @@ function draw(e: PointerEvent) {
     const dx = last.x - pointerState.startX;
     const dy = last.y - pointerState.startY;
     if (Math.hypot(dx, dy) < EDGE_SWIPE_DECISION_PX * renderScale) return;
-    // Decided. Resolve travel into an inward component (perpendicular to the
-    // guarded edge, toward the canvas centre) and a cross component along it. A
-    // mostly-inward flick (within ~45°) is the OS gesture — discard the whole
-    // stroke. Anything else is a real stroke; commit it and let the next
-    // pointermove draw normally.
-    let inward = 0;
-    let cross = 0;
-    switch (pointerState.edgeSwipeGuard) {
-      case 'bottom': inward = -dy; cross = Math.abs(dx); break;
-      case 'left': inward = dx; cross = Math.abs(dy); break;
-      case 'right': inward = -dx; cross = Math.abs(dy); break;
-    }
-    if (inward > 0 && inward >= cross) {
+    // Decided. A mostly-inward flick (within ~45° of perpendicular, toward the
+    // canvas centre) is the OS gesture — discard the whole stroke. Anything else
+    // is a real stroke; commit it and let the next pointermove draw normally.
+    if (edgeSwipeIsOsGesture(pointerState.edgeSwipeGuard, dx, dy)) {
       discardPointer(e);
     } else {
       commitEdgeSwipe(pointerState);
@@ -656,7 +612,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
       canvas.removeEventListener('pointerup', stopDrawing);
       canvas.removeEventListener('pointerout', stopDrawing);
       canvas.removeEventListener('pointercancel', stopDrawing);
-    }
+    },
   };
 }
 
@@ -767,10 +723,7 @@ export async function exportCanvasBlob(
   outCtx.drawImage(snapshot, 0, 0, w, h);
 
   if (overlayImage && overlayImage.naturalWidth > 0 && overlayImage.naturalHeight > 0) {
-    const scale = Math.min(
-      w / overlayImage.naturalWidth,
-      h / overlayImage.naturalHeight
-    );
+    const scale = Math.min(w / overlayImage.naturalWidth, h / overlayImage.naturalHeight);
     const drawnW = overlayImage.naturalWidth * scale;
     const drawnH = overlayImage.naturalHeight * scale;
     const offsetX = (w - drawnW) / 2;

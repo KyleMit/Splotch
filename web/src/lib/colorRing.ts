@@ -2,7 +2,11 @@
 // Accepts `#rgb`, `#rrggbb`, or the same without the leading `#`.
 export function relativeLuminance(color: string): number {
   let hex = color.replace('#', '');
-  if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+  if (hex.length === 3)
+    hex = hex
+      .split('')
+      .map((c) => c + c)
+      .join('');
   const r = parseInt(hex.substr(0, 2), 16);
   const g = parseInt(hex.substr(2, 2), 16);
   const b = parseInt(hex.substr(4, 2), 16);
@@ -21,14 +25,19 @@ export function isLightColor(color: string): boolean {
 // of the .svelte component so it can be unit-tested directly.
 export function getRingColor(color: string): string {
   let hex = color.replace('#', '');
-  if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+  if (hex.length === 3)
+    hex = hex
+      .split('')
+      .map((c) => c + c)
+      .join('');
   const r = parseInt(hex.substr(0, 2), 16);
   const g = parseInt(hex.substr(2, 2), 16);
   const b = parseInt(hex.substr(4, 2), 16);
 
-  const shift = relativeLuminance(color) < 0.2
-    ? (v: number) => Math.min(255, Math.round(v + 38))
-    : (v: number) => Math.max(0, Math.round(v * 0.9));
+  const shift =
+    relativeLuminance(color) < 0.2
+      ? (v: number) => Math.min(255, Math.round(v + 38))
+      : (v: number) => Math.max(0, Math.round(v * 0.9));
 
   const toHex = (v: number) => v.toString(16).padStart(2, '0');
   return `#${toHex(shift(r))}${toHex(shift(g))}${toHex(shift(b))}`;

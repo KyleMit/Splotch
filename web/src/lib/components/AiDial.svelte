@@ -181,8 +181,13 @@
   }
 
   @keyframes dialPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.045); }
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.045);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

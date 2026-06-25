@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 // env we invoke that factory directly so we're asserting our own fallback, not Capacitor's
 // runtime selection.
 vi.mock('@capacitor/core', () => ({
-  registerPlugin: (_name: string, impls: { web: () => unknown }) => impls.web()
+  registerPlugin: (_name: string, impls: { web: () => unknown }) => impls.web(),
 }));
 
 import { DeviceLock } from './deviceLock';

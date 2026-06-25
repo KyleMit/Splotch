@@ -10,7 +10,10 @@
 
 <svelte:head>
   <title>Privacy Policy · Splotch</title>
-  <meta name="description" content="Splotch's privacy policy: no ads, no tracking, no accounts, no data collection." />
+  <meta
+    name="description"
+    content="Splotch's privacy policy: no ads, no tracking, no accounts, no data collection."
+  />
 </svelte:head>
 
 <main class="legal">
@@ -21,8 +24,8 @@
     <p class="updated">Last updated: {EFFECTIVE_DATE}</p>
 
     <p class="intro">
-      Splotch is a drawing app made for little kids. We built it to be safe and
-      simple, so the short version is easy to remember:
+      Splotch is a drawing app made for little kids. We built it to be safe and simple, so the short
+      version is easy to remember:
     </p>
 
     <ul class="highlights">
@@ -36,64 +39,58 @@
 
     <h2>The simple truth</h2>
     <p>
-      Everything you draw stays on your device. Splotch does not create a profile
-      about you or your child, does not sell or share any information, and does
-      not show advertising of any kind.
+      Everything you draw stays on your device. Splotch does not create a profile about you or your
+      child, does not sell or share any information, and does not show advertising of any kind.
     </p>
 
     <h2>The one time the internet is used</h2>
     <p>
-      Splotch has an optional “magic image” button that re-imagines a child's
-      drawing as a polished illustration. It's the <em>only</em> feature that
-      uses the internet, and it only runs when someone taps it.
+      Splotch has an optional “magic image” button that re-imagines a child's drawing as a polished
+      illustration. It's the <em>only</em> feature that uses the internet, and it only runs when someone
+      taps it.
     </p>
     <ul>
       <li>
-        When tapped, the current drawing is sent to our image service (which uses
-        Google's Gemini AI) to generate a new picture, which is sent right back.
+        When tapped, the current drawing is sent to our image service (which uses Google's Gemini
+        AI) to generate a new picture, which is sent right back.
       </li>
       <li>
-        We keep a simple count of how often each invite code is used, purely to
-        prevent abuse. This isn't tied to a person and isn't used to identify
-        anyone.
+        We keep a simple count of how often each invite code is used, purely to prevent abuse. This
+        isn't tied to a person and isn't used to identify anyone.
       </li>
       <li>
-        Drawings are not used to build profiles, are not sold, and are not used
-        for advertising or tracking.
+        Drawings are not used to build profiles, are not sold, and are not used for advertising or
+        tracking.
       </li>
       <li>
-        If your device is offline, this button is hidden and the rest of the app
-        works normally.
+        If your device is offline, this button is hidden and the rest of the app works normally.
       </li>
     </ul>
 
     <h2>Saving pictures</h2>
     <p>
-      When you save a drawing, it's stored <strong>locally</strong> in your
-      device's own photo gallery. Splotch never uploads your saved photos
-      anywhere.
+      When you save a drawing, it's stored <strong>locally</strong> in your device's own photo gallery.
+      Splotch never uploads your saved photos anywhere.
     </p>
 
     <h2>Settings on your device</h2>
     <p>
-      Splotch remembers small preferences (like sound on/off and your last color
-      or brush size) using your device's local storage. This stays on your
-      device and is never sent to us.
+      Splotch remembers small preferences (like sound on/off and your last color or brush size)
+      using your device's local storage. This stays on your device and is never sent to us.
     </p>
 
     <h2>Children's privacy</h2>
     <p>
-      Splotch is designed for young children. Because we collect no personal
-      information from anyone, including children under 13, we comply with
-      children's privacy laws such as the Children's Online Privacy Protection
-      Act (COPPA) and the GDPR's protections for children. There are no social
-      features, comments, links out, or in-app purchases.
+      Splotch is designed for young children. Because we collect no personal information from
+      anyone, including children under 13, we comply with children's privacy laws such as the
+      Children's Online Privacy Protection Act (COPPA) and the GDPR's protections for children.
+      There are no social features, comments, links out, or in-app purchases.
     </p>
 
     <h2>Changes to this policy</h2>
     <p>
-      If we ever change this policy, we'll update the date at the top of this
-      page. We'll keep it just as plain and honest as it is today.
+      If we ever change this policy, we'll update the date at the top of this page. We'll keep it
+      just as plain and honest as it is today.
     </p>
 
     <h2>Contact</h2>

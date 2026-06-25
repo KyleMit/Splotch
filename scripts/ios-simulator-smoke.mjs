@@ -25,11 +25,14 @@ const sh = (command, cwd = ROOT) =>
   new Promise((resolve, reject) => {
     const child = spawn(command, { cwd, stdio: 'inherit', shell: true });
     child.on('error', reject);
-    child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`exited ${code}: ${command}`))));
+    child.on('exit', (code) =>
+      code === 0 ? resolve() : reject(new Error(`exited ${code}: ${command}`))
+    );
   });
 
 // 1. Preflight: macOS with full Xcode (Command Line Tools alone has no simctl).
-if (process.platform !== 'darwin') fail('test:ios needs macOS — Xcode and the iOS simulators are Mac-only.');
+if (process.platform !== 'darwin')
+  fail('test:ios needs macOS — Xcode and the iOS simulators are Mac-only.');
 try {
   await execFileAsync('xcodebuild', ['-version']);
 } catch {
@@ -50,7 +53,8 @@ let device = iphones.find((d) => d.state === 'Booted');
 const bootedByUs = !device;
 if (bootedByUs) {
   device = iphones[0];
-  if (!device) fail('No iPhone simulators available — open Xcode once so it installs an iOS runtime.');
+  if (!device)
+    fail('No iPhone simulators available — open Xcode once so it installs an iOS runtime.');
   console.log(`Booting simulator: ${device.name} (${device.udid})`);
   await simctl('bootstatus', device.udid, '-b'); // boots the device and blocks until ready
 } else {

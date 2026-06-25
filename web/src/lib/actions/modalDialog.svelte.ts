@@ -93,6 +93,6 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
       node.removeEventListener('pointerdown', onPointerDown);
       node.removeEventListener('cancel', onCancel);
       node.removeEventListener('close', onClose);
-    }
+    },
   };
 }

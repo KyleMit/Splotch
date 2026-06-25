@@ -20,11 +20,17 @@ await Promise.all(
   files.map(async (src) => {
     const out = src.replace(/\.png$/i, '.webp');
     const before = (await stat(src)).size;
-    await sharp(src).webp(lossless ? { lossless: true } : { quality }).toFile(out);
+    await sharp(src)
+      .webp(lossless ? { lossless: true } : { quality })
+      .toFile(out);
     const after = (await stat(out)).size;
     savedTotal += before - after;
     const pct = (((before - after) / before) * 100).toFixed(0);
-    console.log(`${src}  ${(before / 1024).toFixed(0)}K -> ${(after / 1024).toFixed(0)}K  (-${pct}%)`);
+    console.log(
+      `${src}  ${(before / 1024).toFixed(0)}K -> ${(after / 1024).toFixed(0)}K  (-${pct}%)`
+    );
   })
 );
-console.log(`\nTotal saved: ${(savedTotal / 1024 / 1024).toFixed(2)} MB across ${files.length} files`);
+console.log(
+  `\nTotal saved: ${(savedTotal / 1024 / 1024).toFixed(2)} MB across ${files.length} files`
+);

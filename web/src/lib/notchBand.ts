@@ -127,6 +127,6 @@ export function computeNotchBandState(input: NotchBandInput): NotchBandState {
     // Only flip the native status-bar icons when we're actually painting a band
     // (a real cutout) on a native build; otherwise leave the system default.
     statusBarStyle: input.native && show ? statusBarStyleForBand(color) : null,
-    statusBarHidden: statusBarHiddenFor(input)
+    statusBarHidden: statusBarHiddenFor(input),
   };
 }

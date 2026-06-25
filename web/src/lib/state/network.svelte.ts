@@ -6,7 +6,7 @@ import { isNative } from '$lib/platform';
 // lean on navigator.onLine + the online/offline events; on native we also use
 // @capacitor/network, which reports real device connectivity reliably.
 export const network = $state({
-  online: true
+  online: true,
 });
 
 let initialized = false;

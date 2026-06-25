@@ -44,7 +44,7 @@ export const ui: UiState = $state({
   aiPreviewUrl: null,
   aiError: false,
   aiErrorMessage: null,
-  aiErrorKind: 'generic'
+  aiErrorKind: 'generic',
 });
 
 export function buttonCenter(el: HTMLElement): Origin {

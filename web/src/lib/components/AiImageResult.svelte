@@ -85,7 +85,7 @@
     allowDismiss: () => !ui.aiGenerating,
     // During the polaroid send-off the modal is animating away; swallow stray
     // backdrop taps without dismissing (the fly-out's end closes it).
-    blockBackdropAt: () => exiting
+    blockBackdropAt: () => exiting,
   })}
   onanimationend={handleAnimationEnd}
 >
@@ -100,7 +100,9 @@
         <span class="ai-result-error-emoji">{safety ? '🎨' : '😕'}</span>
         <p>{ui.aiErrorMessage ?? "Hmm, that didn't work. Please try again!"}</p>
         {#if safety}
-          <p class="ai-result-error-sub">That picture didn't work — try drawing something different!</p>
+          <p class="ai-result-error-sub">
+            That picture didn't work — try drawing something different!
+          </p>
         {/if}
       </div>
     {:else}
@@ -122,7 +124,11 @@
         {:else}
           <!-- Modal opened ahead of the export: reserve a drawing-shaped box so
                the dial has a home until the blurred preview slots in. -->
-          <div class="stage-sizer placeholder-sizer" style="aspect-ratio: {imgAspect};" aria-hidden="true"></div>
+          <div
+            class="stage-sizer placeholder-sizer"
+            style="aspect-ratio: {imgAspect};"
+            aria-hidden="true"
+          ></div>
         {/if}
 
         {#if ui.aiPreviewUrl}
@@ -233,7 +239,9 @@
   }
 
   .preview {
-    transition: opacity 0.5s ease, filter 0.2s linear;
+    transition:
+      opacity 0.5s ease,
+      filter 0.2s linear;
     transform: scale(1.04); /* hide blur bleed at edges */
   }
 
@@ -244,7 +252,9 @@
   .result {
     opacity: 0;
     transform: scale(1.08);
-    transition: opacity 0.55s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    transition:
+      opacity 0.55s ease,
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .result.shown {
@@ -282,7 +292,7 @@
   /* ── Saved caption (auto-save mode, replaces the Download button) ── */
   .ai-result-saved {
     margin: 0;
-    color: #4CAF50;
+    color: #4caf50;
     font-size: 15px;
     font-weight: 700;
     animation: downloadPop 0.4s backwards 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -304,16 +314,28 @@
     font-size: 15px;
     font-weight: 700;
     box-shadow: 0 4px 12px rgba(171, 113, 225, 0.4);
-    transition: transform 0.15s ease, background 0.2s ease;
+    transition:
+      transform 0.15s ease,
+      background 0.2s ease;
     animation: downloadPop 0.4s backwards 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .ai-result-download:hover { background: #9559cd; }
-  .ai-result-download:active { transform: scale(0.95); }
+  .ai-result-download:hover {
+    background: #9559cd;
+  }
+  .ai-result-download:active {
+    transform: scale(0.95);
+  }
 
   @keyframes downloadPop {
-    from { transform: scale(0); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+      transform: scale(0);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
 
   :global(.ai-result-download-icon) {
@@ -330,7 +352,9 @@
     /* Tilt and settle like a freshly printed photo, then fly off after a beat.
        The fly-out's delay (0.9s) covers the morph + a brief hold in the center. */
     transform: translate(-50%, -50%) rotate(-3deg);
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.4s ease;
+    transition:
+      transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+      background 0.4s ease;
     animation: ai-polaroid-fly 0.85s 0.9s cubic-bezier(0.55, 0, 0.85, 0.2) forwards;
   }
 

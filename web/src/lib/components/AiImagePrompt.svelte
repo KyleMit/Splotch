@@ -46,7 +46,7 @@
     origin: ui.aiPromptOrigin,
     onRequestClose: closeAiPrompt,
     onOpen: loadPreview,
-    onClose: cleanupPreview
+    onClose: cleanupPreview,
   })}
 >
   <div class="ai-prompt-content">
@@ -57,7 +57,7 @@
     <fieldset class="ai-prompt-styles">
       <legend>Pick a style</legend>
       <div class="ai-style-options">
-        {#each STYLE_NAMES as s}
+        {#each STYLE_NAMES as s (s)}
           <button
             type="button"
             class="ai-style-option"
@@ -95,7 +95,10 @@
     z-index: 1;
   }
 
-  .ai-prompt-close:disabled { opacity: 0.4; cursor: not-allowed; }
+  .ai-prompt-close:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 
   .ai-prompt-styles {
     border: none;
@@ -136,7 +139,9 @@
     border-radius: 12px;
     border: 3px solid transparent;
     background: #fcfbf8;
-    transition: border-color 0.15s ease, transform 0.15s ease;
+    transition:
+      border-color 0.15s ease,
+      transform 0.15s ease;
   }
 
   .ai-style-label {
@@ -151,9 +156,13 @@
     transform: translateY(-2px);
   }
 
-  .ai-style-option:hover:not(:disabled) .ai-style-label { color: var(--brand); }
+  .ai-style-option:hover:not(:disabled) .ai-style-label {
+    color: var(--brand);
+  }
 
-  .ai-style-option:active:not(:disabled) .ai-style-thumb { transform: scale(0.97); }
+  .ai-style-option:active:not(:disabled) .ai-style-thumb {
+    transform: scale(0.97);
+  }
 
   .ai-style-option:focus-visible {
     outline: none;
@@ -164,19 +173,33 @@
     box-shadow: 0 0 0 3px rgba(171, 113, 225, 0.35);
   }
 
-  .ai-style-option:disabled { opacity: 0.6; cursor: not-allowed; }
+  .ai-style-option:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 
   @media (max-width: 420px) {
-    .ai-style-options { grid-template-columns: repeat(2, 1fr); }
+    .ai-style-options {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   /* Short viewports (e.g. landscape on a small phone): trim chrome so the
      picker fits without forcing a scroll. The modal already scrolls via
      max-height/overflow-y, but tighter spacing keeps it from feeling cramped. */
   @media (max-height: 560px) {
-    .ai-prompt-modal { max-height: 94vh; }
-    .ai-prompt-content { padding: 16px 16px 14px; gap: 10px; }
-    .ai-prompt-styles legend { margin-bottom: 8px; }
-    .ai-style-options { gap: 8px; }
+    .ai-prompt-modal {
+      max-height: 94vh;
+    }
+    .ai-prompt-content {
+      padding: 16px 16px 14px;
+      gap: 10px;
+    }
+    .ai-prompt-styles legend {
+      margin-bottom: 8px;
+    }
+    .ai-style-options {
+      gap: 8px;
+    }
   }
 </style>

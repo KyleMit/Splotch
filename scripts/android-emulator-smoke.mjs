@@ -27,7 +27,9 @@ const sh = (command, cwd = ROOT) =>
   new Promise((resolve, reject) => {
     const child = spawn(command, { cwd, stdio: 'inherit', shell: true });
     child.on('error', reject);
-    child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`exited ${code}: ${command}`))));
+    child.on('exit', (code) =>
+      code === 0 ? resolve() : reject(new Error(`exited ${code}: ${command}`))
+    );
   });
 
 // 1. Check hardware acceleration before trying to boot (diagnoses 0xC0000005 crashes).
@@ -38,21 +40,40 @@ try {
   // -accel-check exits non-zero when accel is unavailable; print its output and abort.
   process.stderr.write(err.stdout ?? '');
   process.stderr.write(err.stderr ?? '');
-  throw new Error('Hardware acceleration check failed — emulator will not boot. See output above.');
+  throw new Error(
+    'Hardware acceleration check failed — emulator will not boot. See output above.',
+    {
+      cause: err,
+    }
+  );
 }
 
 // 2. Boot a headless emulator, detached so it keeps running until we kill it.
 console.log(`Booting headless emulator: ${AVD_NAME}`);
 const emulatorProc = spawn(
   EMULATOR,
-  ['-avd', AVD_NAME, '-no-window', '-no-boot-anim', '-no-audio', '-no-snapshot-save', '-gpu', 'swiftshader_indirect'],
+  [
+    '-avd',
+    AVD_NAME,
+    '-no-window',
+    '-no-boot-anim',
+    '-no-audio',
+    '-no-snapshot-save',
+    '-gpu',
+    'swiftshader_indirect',
+  ],
   { detached: true, stdio: 'ignore', windowsHide: true }
 );
 
 // Reject immediately if the emulator exits before the device comes online (e.g. 0xC0000005 crash).
 const emulatorCrash = new Promise((_, reject) => {
   emulatorProc.on('exit', (code) => {
-    if (code !== 0) reject(new Error(`Emulator process exited early with code ${code} (0x${(code >>> 0).toString(16).toUpperCase()})`));
+    if (code !== 0)
+      reject(
+        new Error(
+          `Emulator process exited early with code ${code} (0x${(code >>> 0).toString(16).toUpperCase()})`
+        )
+      );
   });
 });
 
@@ -66,7 +87,10 @@ console.log(`Emulator booted: ${serial}`);
 // 4. Build + install, run the flow, and always tear the emulator down.
 try {
   await sh('npm run cap:sync');
-  await sh(isWindows ? 'gradlew.bat :app:installDebug' : './gradlew :app:installDebug', join(ROOT, 'android'));
+  await sh(
+    isWindows ? 'gradlew.bat :app:installDebug' : './gradlew :app:installDebug',
+    join(ROOT, 'android')
+  );
   await sh(`"${maestroPath()}" test .maestro/smoke.yaml`);
 } finally {
   console.log(`Shutting down ${serial}`);

@@ -47,7 +47,11 @@ async function saveToGallery(blob: Blob, baseName = 'splotch') {
       await Media.createAlbum({ name: ALBUM_NAME });
       albumId = await findAlbumId(Media, ALBUM_NAME);
     }
-    await Media.savePhoto({ path: dataUrl, albumIdentifier: albumId, fileName: `${baseName}-${timestamp()}` });
+    await Media.savePhoto({
+      path: dataUrl,
+      albumIdentifier: albumId,
+      fileName: `${baseName}-${timestamp()}`,
+    });
   } else {
     await Media.savePhoto({ path: dataUrl });
   }

@@ -41,7 +41,7 @@ function getDb(): Promise<import('idb').IDBPDatabase> {
       openDB(DB_NAME, DB_VERSION, {
         upgrade(db) {
           if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
-        }
+        },
       })
     );
   }
@@ -56,7 +56,7 @@ async function getMasterKey(db: import('idb').IDBPDatabase): Promise<CryptoKey> 
   if (existing) return existing;
   const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, [
     'encrypt',
-    'decrypt'
+    'decrypt',
   ]);
   await db.put(STORE, key, MASTER_KEY_ROW);
   return key;

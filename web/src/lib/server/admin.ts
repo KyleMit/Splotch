@@ -48,6 +48,6 @@ export function verifySessionToken(token: string | undefined) {
 export function buildInvites(tokens: string[], origin: string) {
   return tokens.map((token) => ({
     token,
-    url: `${origin}/?ai_access_token=${encodeURIComponent(token)}`
+    url: `${origin}/?ai_access_token=${encodeURIComponent(token)}`,
   }));
 }

@@ -1,0 +1,57 @@
+# Runtime smoke test for the iOS *deployment* — the simulator/Xcode counterpart
+# of android-deploy.yml. Boots an iPhone simulator, builds + installs the debug
+# app, and asserts via Maestro that the UI renders (the Capacitor WebView booted
+# and loaded the production web bundle). Neither the web E2E suite (test.yml) nor
+# the Android smoke can catch an iOS-only WebView boot failure — this can.
+#
+# Tag-only by design: macOS runners are the most expensive thing in CI, so this
+# runs only when a release tag is pushed (the moment an iOS crash would reach App
+# Store users), plus on demand from the Actions tab. The debug build targets the
+# simulator, so no signing secrets or provisioning profiles are involved.
+name: iOS Deploy Smoke
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch: # allow ad-hoc runs from the GitHub Actions tab
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  smoke:
+    name: Maestro launch smoke test (iOS simulator)
+    # macOS runners ship full Xcode and pre-installed iPhone simulators.
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Maestro CLI
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      # test:ios (scripts/ios-simulator-smoke.mjs) auto-discovers and boots an
+      # iPhone simulator, runs cap:sync (baking the production web bundle), builds
+      # the Debug app for the simulator, installs it, runs .maestro/smoke.yaml —
+      # the same flow the Android smoke runs — then shuts the simulator down.
+      - name: Run iOS simulator smoke test
+        run: npm run test:ios
+
+      - name: Upload Maestro report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-ios-report
+          path: ~/.maestro/tests/
+          retention-days: 7
+          if-no-files-found: ignore

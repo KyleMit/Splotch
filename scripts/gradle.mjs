@@ -10,7 +10,8 @@ import { join } from 'node:path';
 import { ROOT, isWindows, run, fail } from './lib/utils.mjs';
 
 const tasks = process.argv.slice(2);
-if (tasks.length === 0) fail('[gradle] no Gradle task given — e.g. node scripts/gradle.mjs :app:bundleRelease');
+if (tasks.length === 0)
+  fail('[gradle] no Gradle task given — e.g. node scripts/gradle.mjs :app:bundleRelease');
 
 const androidDir = join(ROOT, 'android');
 const gradlew = join(androidDir, isWindows ? 'gradlew.bat' : 'gradlew');

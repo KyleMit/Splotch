@@ -32,4 +32,4 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
   const ok = await isAllowedToken(code);
   return ok ? json({ ok: true, accessCode: code }) : json({ ok: false });
-}
+};

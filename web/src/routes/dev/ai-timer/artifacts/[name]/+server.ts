@@ -20,6 +20,6 @@ export const GET: RequestHandler = async ({ params }) => {
 
   const bytes = await readFile(join(process.cwd(), DIR, params.name));
   return new Response(bytes, {
-    headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store' }
+    headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store' },
   });
-}
+};

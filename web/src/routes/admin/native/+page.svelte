@@ -34,9 +34,9 @@
       method,
       headers: {
         Authorization: `Bearer ${session}`,
-        ...(body ? { 'Content-Type': 'application/json' } : {})
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
       },
-      body: body ? JSON.stringify(body) : undefined
+      body: body ? JSON.stringify(body) : undefined,
     });
   }
 
@@ -83,7 +83,7 @@
       response = await fetch(apiUrl('/api/admin/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key })
+        body: JSON.stringify({ key }),
       });
     } catch {
       loginError = 'Could not reach the server. Check your connection.';

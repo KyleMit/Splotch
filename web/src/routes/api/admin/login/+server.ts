@@ -37,4 +37,4 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     return json({ ok: false, error: 'Incorrect access key.' }, { status: 403 });
   }
   return json({ ok: true, session: sessionToken() });
-}
+};

@@ -6,10 +6,7 @@ import { settings, setApplePencilSeen } from '$lib/state/settings.svelte';
 
 export interface PencilEraserPlugin {
   // Fires each time an Apple Pencil (gen 2 / Pro) double-tap is detected natively.
-  addListener(
-    eventName: 'doubleTap',
-    listenerFunc: () => void
-  ): Promise<PluginListenerHandle>;
+  addListener(eventName: 'doubleTap', listenerFunc: () => void): Promise<PluginListenerHandle>;
 }
 
 // Reach this module only through lazyPluginModule() so @capacitor/core stays out of the
@@ -17,8 +14,8 @@ export interface PencilEraserPlugin {
 // the web fallback's listener is inert (the bridge is never started off iOS anyway).
 export const PencilEraser = registerPlugin<PencilEraserPlugin>('PencilEraser', {
   web: () => ({
-    addListener: async () => ({ remove: async () => {} })
-  })
+    addListener: async () => ({ remove: async () => {} }),
+  }),
 });
 
 // Runs on every Apple Pencil double-tap. It always records that a pencil exists on this

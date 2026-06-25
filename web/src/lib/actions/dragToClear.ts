@@ -81,7 +81,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const rect = node.getBoundingClientRect();
     homeButtonCenter = {
       x: (rect.left + rect.right) / 2,
-      y: (rect.top + rect.bottom) / 2
+      y: (rect.top + rect.bottom) / 2,
     };
 
     o.containerEl.classList.add('dragging-active');
@@ -238,6 +238,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       if (holdTimer) clearTimeout(holdTimer);
       for (const id of resetTimers) clearTimeout(id);
       resetTimers.clear();
-    }
+    },
   };
 }
