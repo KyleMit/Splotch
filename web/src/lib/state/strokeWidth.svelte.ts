@@ -18,13 +18,13 @@ const SIZE_TO_PX: Record<number, number> = {
   2: 4,
   3: 8,
   4: 14,
-  5: 22
+  5: 22,
 };
 
 export const strokeState = $state({
   penSize: readInt(PEN_SIZE_KEY, DEFAULT_SIZE, STROKE_SIZES),
   eraserSize: readInt(ERASER_SIZE_KEY, DEFAULT_SIZE, STROKE_SIZES),
-  menuOpen: false
+  menuOpen: false,
 });
 
 // Re-read the persisted pen/eraser levels into the live store after the durable

@@ -5,7 +5,12 @@
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colors } from '$lib/state/colors.svelte';
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
-  import { strokeState, STROKE_SIZES, setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte';
+  import {
+    strokeState,
+    STROKE_SIZES,
+    setStrokeSize,
+    activeStrokeSize,
+  } from '$lib/state/strokeWidth.svelte';
   import { toolState, selectEraser, selectPen } from '$lib/state/tool.svelte';
   import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { network } from '$lib/state/network.svelte';
@@ -48,8 +53,12 @@
   // left/right, portrait slides up/down.
   const chevronIcon = $derived(
     isPortrait
-      ? (settings.drawerOpen ? 'chevron-down' : 'chevron-up')
-      : (settings.drawerOpen ? 'chevron-left' : 'chevron-right')
+      ? settings.drawerOpen
+        ? 'chevron-down'
+        : 'chevron-up'
+      : settings.drawerOpen
+        ? 'chevron-left'
+        : 'chevron-right'
   );
 
   function toggleDrawer() {
@@ -138,106 +147,113 @@
 
 <div class="actions-panel" style:left={leftOffset}>
   {#if drawerExpanded}
-  <div class="actions-drawer" transition:slide={{ axis: isPortrait ? 'y' : 'x', duration: 280 }}>
-  <div class="stroke-width-wrapper" bind:this={strokeWrapperEl} hidden={!settings.strokeWidthControlEnabled}>
-    <button
-      class="action-button"
-      id="strokeWidthButton"
-      aria-label="Stroke width"
-      aria-expanded={strokeState.menuOpen}
-      onclick={handleStrokeBtnClick}
-      style:color={colors.activeColor}
-    >
-      <Icon name={toolState.eraser ? 'line-weight-eraser' : 'line-weight'} class="action-icon" />
-    </button>
-    <div class="stroke-width-menu" hidden={!strokeState.menuOpen} style:color={strokeMenuColor}>
-      {#each STROKE_SIZES as size}
+    <div class="actions-drawer" transition:slide={{ axis: isPortrait ? 'y' : 'x', duration: 280 }}>
+      <div
+        class="stroke-width-wrapper"
+        bind:this={strokeWrapperEl}
+        hidden={!settings.strokeWidthControlEnabled}
+      >
         <button
-          class="stroke-size-button"
-          class:active={activeStrokeSize() === size}
-          aria-label="Size {size}"
-          aria-pressed={activeStrokeSize() === size}
-          onclick={() => handleStrokeSizeClick(size)}
+          class="action-button"
+          id="strokeWidthButton"
+          aria-label="Stroke width"
+          aria-expanded={strokeState.menuOpen}
+          onclick={handleStrokeBtnClick}
+          style:color={colors.activeColor}
         >
-          <Icon name={`size-${size}` as import('./icon-names').IconName} class="action-icon" />
+          <Icon
+            name={toolState.eraser ? 'line-weight-eraser' : 'line-weight'}
+            class="action-icon"
+          />
         </button>
-      {/each}
+        <div class="stroke-width-menu" hidden={!strokeState.menuOpen} style:color={strokeMenuColor}>
+          {#each STROKE_SIZES as size (size)}
+            <button
+              class="stroke-size-button"
+              class:active={activeStrokeSize() === size}
+              aria-label="Size {size}"
+              aria-pressed={activeStrokeSize() === size}
+              onclick={() => handleStrokeSizeClick(size)}
+            >
+              <Icon name={`size-${size}` as import('./icon-names').IconName} class="action-icon" />
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <button
+        class="action-button"
+        class:active={toolState.eraser}
+        id="eraserButton"
+        aria-label="Eraser"
+        aria-pressed={toolState.eraser}
+        hidden={!settings.eraserEnabled}
+        onclick={handleEraserClick}
+      >
+        <Icon name="eraser" class="action-icon" />
+      </button>
+
+      <button
+        class="action-button"
+        id="coloringBookButton"
+        aria-label="Coloring books"
+        hidden={!settings.coloringBookEnabled}
+        onclick={handleColoringBookClick}
+        bind:this={coloringBtnEl}
+      >
+        <Icon name="shapes" class="action-icon" />
+      </button>
+
+      <button
+        class="action-button"
+        class:disabled={canvasState.canvasEmpty}
+        id="screenshotButton"
+        aria-label="Save screenshot"
+        disabled={canvasState.canvasEmpty}
+        hidden={!settings.screenshotEnabled}
+        onclick={handleScreenshotClick}
+      >
+        <Icon name="camera" class="action-icon" />
+      </button>
+
+      <button
+        class="action-button"
+        class:disabled={canvasState.canvasEmpty || ui.aiGenerating}
+        class:loading={ui.aiGenerating}
+        id="aiImageButton"
+        aria-label="Create AI image"
+        aria-busy={ui.aiGenerating}
+        disabled={canvasState.canvasEmpty || ui.aiGenerating}
+        hidden={!settings.aiAccessToken || !settings.aiImageEnabled || !network.online}
+        onclick={handleAiImageClick}
+        bind:this={aiBtnEl}
+      >
+        <Icon name={ui.aiGenerating ? 'loading' : 'wand-stars'} class="action-icon" />
+      </button>
+
+      <button
+        class="action-button"
+        class:disabled={!canvasState.canUndo}
+        id="undoButton"
+        aria-label="Undo"
+        disabled={!canvasState.canUndo}
+        hidden={!settings.undoButtonEnabled}
+        onclick={handleUndoClick}
+      >
+        <Icon name="undo" class="action-icon" />
+      </button>
     </div>
-  </div>
-
-  <button
-    class="action-button"
-    class:active={toolState.eraser}
-    id="eraserButton"
-    aria-label="Eraser"
-    aria-pressed={toolState.eraser}
-    hidden={!settings.eraserEnabled}
-    onclick={handleEraserClick}
-  >
-    <Icon name="eraser" class="action-icon" />
-  </button>
-
-  <button
-    class="action-button"
-    id="coloringBookButton"
-    aria-label="Coloring books"
-    hidden={!settings.coloringBookEnabled}
-    onclick={handleColoringBookClick}
-    bind:this={coloringBtnEl}
-  >
-    <Icon name="shapes" class="action-icon" />
-  </button>
-
-  <button
-    class="action-button"
-    class:disabled={canvasState.canvasEmpty}
-    id="screenshotButton"
-    aria-label="Save screenshot"
-    disabled={canvasState.canvasEmpty}
-    hidden={!settings.screenshotEnabled}
-    onclick={handleScreenshotClick}
-  >
-    <Icon name="camera" class="action-icon" />
-  </button>
-
-  <button
-    class="action-button"
-    class:disabled={canvasState.canvasEmpty || ui.aiGenerating}
-    class:loading={ui.aiGenerating}
-    id="aiImageButton"
-    aria-label="Create AI image"
-    aria-busy={ui.aiGenerating}
-    disabled={canvasState.canvasEmpty || ui.aiGenerating}
-    hidden={!settings.aiAccessToken || !settings.aiImageEnabled || !network.online}
-    onclick={handleAiImageClick}
-    bind:this={aiBtnEl}
-  >
-    <Icon name={ui.aiGenerating ? 'loading' : 'wand-stars'} class="action-icon" />
-  </button>
-
-  <button
-    class="action-button"
-    class:disabled={!canvasState.canUndo}
-    id="undoButton"
-    aria-label="Undo"
-    disabled={!canvasState.canUndo}
-    hidden={!settings.undoButtonEnabled}
-    onclick={handleUndoClick}
-  >
-    <Icon name="undo" class="action-icon" />
-  </button>
-  </div>
   {/if}
 
   {#if settings.advancedControlsEnabled}
-  <button
-    class="drawer-toggle"
-    aria-label={settings.drawerOpen ? 'Collapse controls' : 'Expand controls'}
-    aria-expanded={settings.drawerOpen}
-    onclick={toggleDrawer}
-  >
-    <Icon name={chevronIcon} class="drawer-toggle-icon" />
-  </button>
+    <button
+      class="drawer-toggle"
+      aria-label={settings.drawerOpen ? 'Collapse controls' : 'Expand controls'}
+      aria-expanded={settings.drawerOpen}
+      onclick={toggleDrawer}
+    >
+      <Icon name={chevronIcon} class="drawer-toggle-icon" />
+    </button>
   {/if}
 </div>
 

@@ -47,7 +47,7 @@
       insetLeft,
       insetRight,
       activeColor: colors.activeColor,
-      eraser: toolState.eraser
+      eraser: toolState.eraser,
     })
   );
 

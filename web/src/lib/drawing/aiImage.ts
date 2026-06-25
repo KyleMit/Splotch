@@ -4,7 +4,7 @@ import {
   setAiPreview,
   finishAiGeneration,
   failAiGeneration,
-  closeAiResult
+  closeAiResult,
 } from '$lib/state/ui.svelte';
 import { settings } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api';
@@ -40,9 +40,10 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob) {
 
 const AI_TIMEOUT_MS = 120_000;
 
-export async function generateAiImage(
-  { blob = null, style = '' }: { blob?: Blob | null; style?: string } = {}
-) {
+export async function generateAiImage({
+  blob = null,
+  style = '',
+}: { blob?: Blob | null; style?: string } = {}) {
   if (ui.aiGenerating) return;
 
   // Launch the loading modal the instant the button is tapped. When the caller
@@ -76,7 +77,7 @@ export async function generateAiImage(
     const res = await fetch(apiUrl('/api/generate-image'), {
       method: 'POST',
       body: form,
-      signal: controller.signal
+      signal: controller.signal,
     });
     if (!res.ok) {
       const msg = await res.text().catch(() => '');

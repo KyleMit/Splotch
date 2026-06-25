@@ -7,7 +7,10 @@ import { join } from 'node:path';
 import { ROOT, isWindows, run, fail } from './lib/utils.mjs';
 
 const target = process.argv[2];
-if (!target) fail('[open-path] no path given — e.g. node scripts/open-path.mjs android/app/build/outputs/bundle/release');
+if (!target)
+  fail(
+    '[open-path] no path given — e.g. node scripts/open-path.mjs android/app/build/outputs/bundle/release'
+  );
 
 const path = join(ROOT, target);
 

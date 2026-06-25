@@ -6,7 +6,7 @@ import {
   setEraser,
   setDrawerOpen,
   setAiAccessToken,
-  reloadSettings
+  reloadSettings,
 } from './settings.svelte';
 
 const SOUND_KEY = 'splotch-sound-enabled';

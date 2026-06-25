@@ -25,12 +25,12 @@ function toPlainText(body) {
   return body
     .split(/\r?\n/)
     .map((line) => {
-      let l = line.replace(/^#{1,6}\s+/, '');        // headings -> bare label
-      l = l.replace(/^\s*[-*]\s+/, '• ');         // list item -> bullet
-      l = l.replace(/\*\*(.+?)\*\*/g, '$1');           // bold
-      l = l.replace(/(?<!\*)\*(?!\*)(.+?)\*/g, '$1');  // italic
+      let l = line.replace(/^#{1,6}\s+/, ''); // headings -> bare label
+      l = l.replace(/^\s*[-*]\s+/, '• '); // list item -> bullet
+      l = l.replace(/\*\*(.+?)\*\*/g, '$1'); // bold
+      l = l.replace(/(?<!\*)\*(?!\*)(.+?)\*/g, '$1'); // italic
       l = l.replace(/\[(.+?)\]\((.+?)\)/g, '$1 ($2)'); // links -> text (url)
-      l = l.replace(/`(.+?)`/g, '$1');                 // inline code
+      l = l.replace(/`(.+?)`/g, '$1'); // inline code
       return l.trimEnd();
     })
     .join('\n')
@@ -60,7 +60,7 @@ console.log(`Generating release artifacts from ${releases.length} release file(s
 const appData = releases.map((r) => ({
   version: r.meta.version,
   date: r.meta.date,
-  bodyHtml: marked.parse(r.body).trim()
+  bodyHtml: marked.parse(r.body).trim(),
 }));
 write(join(ROOT, 'web', 'src', 'lib', 'releases.json'), JSON.stringify(appData, null, 2) + '\n');
 
@@ -69,7 +69,10 @@ for (const r of releases) {
   const code = r.meta.androidVersionCode;
   if (!code) continue; // not yet assigned (release.mjs fills it in)
   const text = toPlainText(r.body);
-  write(join(ROOT, 'fastlane', 'metadata', 'android', 'en-US', 'changelogs', `${code}.txt`), text + '\n');
+  write(
+    join(ROOT, 'fastlane', 'metadata', 'android', 'en-US', 'changelogs', `${code}.txt`),
+    text + '\n'
+  );
   if (r === releases[0] && text.length > ANDROID_CHANGELOG_LIMIT) {
     console.warn(
       `  ⚠ ${r.filename}: Android changelog is ${text.length} chars ` +
@@ -80,6 +83,9 @@ for (const r of releases) {
 
 // 3. App Store "What's New" — deliver uploads a single current value, so only
 //    the latest release goes here, overwritten each time.
-write(join(ROOT, 'fastlane', 'metadata', 'en-US', 'release_notes.txt'), toPlainText(releases[0].body) + '\n');
+write(
+  join(ROOT, 'fastlane', 'metadata', 'en-US', 'release_notes.txt'),
+  toPlainText(releases[0].body) + '\n'
+);
 
 console.log('Done.');

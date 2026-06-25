@@ -19,7 +19,7 @@ export const PALETTE_COLORS: PaletteColor[] = [
   { hex: '#B5835A', label: 'Brown', bonus: true },
   { hex: '#EC534E', label: 'Red' },
   { hex: '#F47CB0', label: 'Pink', bonus: true },
-  { hex: '#0a0b10', label: 'Black' }
+  { hex: '#0a0b10', label: 'Black' },
 ];
 
 // Priority order (first listed → first to be hidden / last to appear). This is
@@ -37,7 +37,7 @@ export const TRIM_ORDER: string[] = [
   '#F9D24F', // Yellow
   '#62A2E9', // Blue
   '#AB71E1', // Purple
-  '#0a0b10'  // Black
+  '#0a0b10', // Black
 ];
 
 export const CUSTOM_SWATCH = 'custom';
@@ -46,7 +46,7 @@ export const colors = $state({
   activeSwatch: PALETTE_COLORS[0].hex,
   activeColor: PALETTE_COLORS[0].hex,
   customColor: '#AB71E1',
-  customColorSelected: false
+  customColorSelected: false,
 });
 
 export function selectPaletteColor(hex: string) {

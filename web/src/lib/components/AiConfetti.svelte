@@ -15,13 +15,13 @@
       sway: (r(45.1) * 2 - 1) * (16 + r(8.3) * 24),
       size: 6 + r(77.7) * 6,
       color: CONFETTI_COLORS[Math.floor(r(51.3) * CONFETTI_COLORS.length)],
-      round: r(27.1) < 0.4
+      round: r(27.1) < 0.4,
     };
   });
 </script>
 
 <div class="confetti-layer" aria-hidden="true">
-  {#each confetti as c}
+  {#each confetti as c, i (i)}
     <span
       class="confetti"
       class:round={c.round}
@@ -74,11 +74,21 @@
       transform: translateY(-40px) translateX(0) rotate(0deg);
       opacity: 0;
     }
-    8% { opacity: 1; }
-    25% { transform: translateY(110px) translateX(var(--sway)) rotate(55deg); }
-    50% { transform: translateY(260px) translateX(calc(var(--sway) * -1)) rotate(-40deg); }
-    75% { transform: translateY(410px) translateX(var(--sway)) rotate(65deg); }
-    90% { opacity: 1; }
+    8% {
+      opacity: 1;
+    }
+    25% {
+      transform: translateY(110px) translateX(var(--sway)) rotate(55deg);
+    }
+    50% {
+      transform: translateY(260px) translateX(calc(var(--sway) * -1)) rotate(-40deg);
+    }
+    75% {
+      transform: translateY(410px) translateX(var(--sway)) rotate(65deg);
+    }
+    90% {
+      opacity: 1;
+    }
     100% {
       transform: translateY(540px) translateX(0) rotate(-20deg);
       opacity: 0;

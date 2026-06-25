@@ -66,8 +66,8 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let lastColorChangeTime = 0;
-let activePointerIds = new Set<number>();
-let activePointers = new Map<number, PointerState>();
+const activePointerIds = new Set<number>();
+const activePointers = new Map<number, PointerState>();
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
 let onDrawStopCallback: (() => void) | null = null;
 
@@ -89,7 +89,7 @@ let canvasRect: CanvasRect = { left: 0, top: 0, width: 0, height: 0 };
 let rectScaleX = 1;
 let rectScaleY = 1;
 
-let undoStack: UndoSnapshot[] = [];
+const undoStack: UndoSnapshot[] = [];
 const MAX_UNDO_STACK_SIZE = 10;
 let canUndo = false;
 let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
@@ -251,7 +251,7 @@ function refreshCanvasRect() {
 function pointerToCanvas(e: PointerEvent) {
   return {
     x: (e.clientX - canvasRect.left) * rectScaleX,
-    y: (e.clientY - canvasRect.top) * rectScaleY
+    y: (e.clientY - canvasRect.top) * rectScaleY,
   };
 }
 
@@ -428,7 +428,7 @@ function startDrawing(e: PointerEvent) {
     // divide by.
     speedSamples: [{ t: now, distance: 0 }],
     edgeSwipeGuard,
-    pendingPoints: []
+    pendingPoints: [],
   };
   activePointers.set(e.pointerId, pointerState);
   activePointerIds.add(e.pointerId);
@@ -492,9 +492,18 @@ function draw(e: PointerEvent) {
     let inward = 0;
     let cross = 0;
     switch (pointerState.edgeSwipeGuard) {
-      case 'bottom': inward = -dy; cross = Math.abs(dx); break;
-      case 'left': inward = dx; cross = Math.abs(dy); break;
-      case 'right': inward = -dx; cross = Math.abs(dy); break;
+      case 'bottom':
+        inward = -dy;
+        cross = Math.abs(dx);
+        break;
+      case 'left':
+        inward = dx;
+        cross = Math.abs(dy);
+        break;
+      case 'right':
+        inward = -dx;
+        cross = Math.abs(dy);
+        break;
     }
     if (inward > 0 && inward >= cross) {
       discardPointer(e);
@@ -656,7 +665,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
       canvas.removeEventListener('pointerup', stopDrawing);
       canvas.removeEventListener('pointerout', stopDrawing);
       canvas.removeEventListener('pointercancel', stopDrawing);
-    }
+    },
   };
 }
 
@@ -767,10 +776,7 @@ export async function exportCanvasBlob(
   outCtx.drawImage(snapshot, 0, 0, w, h);
 
   if (overlayImage && overlayImage.naturalWidth > 0 && overlayImage.naturalHeight > 0) {
-    const scale = Math.min(
-      w / overlayImage.naturalWidth,
-      h / overlayImage.naturalHeight
-    );
+    const scale = Math.min(w / overlayImage.naturalWidth, h / overlayImage.naturalHeight);
     const drawnW = overlayImage.naturalWidth * scale;
     const drawnH = overlayImage.naturalHeight * scale;
     const offsetX = (w - drawnW) / 2;

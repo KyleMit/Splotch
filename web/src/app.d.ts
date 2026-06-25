@@ -19,10 +19,8 @@ declare global {
   // Capacitor injects this global in the native shell and once @capacitor/core
   // loads on the web. Read off the global (see src/lib/platform.ts) so the
   // module stays SSR-safe; declared optional because it's absent under Node.
-  // eslint-disable-next-line no-var
-  var Capacitor:
-    | { isNativePlatform?: () => boolean; getPlatform?: () => string }
-    | undefined;
+
+  var Capacitor: { isNativePlatform?: () => boolean; getPlatform?: () => string } | undefined;
 }
 
 export {};

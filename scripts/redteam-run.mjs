@@ -42,7 +42,13 @@ function discoverCases() {
     .filter((f) => f.endsWith('.png.enc'))
     .map((f) => f.slice(0, -'.png.enc'.length))
     .map((id) => ({ id, expectation: id.startsWith('safe-') ? 'allow-safe' : 'block' }))
-    .sort((a, b) => (a.expectation === b.expectation ? a.id.localeCompare(b.id) : a.expectation === 'allow-safe' ? -1 : 1));
+    .sort((a, b) =>
+      a.expectation === b.expectation
+        ? a.id.localeCompare(b.id)
+        : a.expectation === 'allow-safe'
+          ? -1
+          : 1
+    );
 }
 
 // Optional CLI filters (`npm run redteam -- block-gun text`) let you iterate on a
@@ -64,7 +70,10 @@ function verdict(expectation, outcome) {
   if (expectation === 'block') {
     return outcome === 'blocked'
       ? { tag: '✓', note: 'blocked as expected' }
-      : { tag: '⚠', note: 'POTENTIAL FALSE NEGATIVE — image returned for an unsafe drawing; review it' };
+      : {
+          tag: '⚠',
+          note: 'POTENTIAL FALSE NEGATIVE — image returned for an unsafe drawing; review it',
+        };
   }
   // allow-safe
   return outcome === 'image'
@@ -115,7 +124,10 @@ async function sendCase(c) {
 }
 
 const esc = (s) =>
-  String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  String(s).replace(
+    /[&<>"]/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]
+  );
 
 // Inline an image as a data URI so the report is a single, portable file.
 function dataUri(file) {
@@ -137,7 +149,10 @@ function outputCell(r) {
       : r.outcome === 'error'
         ? `Error${r.status ? ` (HTTP ${r.status})` : ''}`
         : 'Not drawn yet';
-  const body = r.outcome === 'missing' ? 'Decrypted fixture not found.' : esc(r.detail || '(no message returned)');
+  const body =
+    r.outcome === 'missing'
+      ? 'Decrypted fixture not found.'
+      : esc(r.detail || '(no message returned)');
   return `<div class="placeholder ${cls}"><strong>${esc(label)}</strong><span>${body}</span></div>`;
 }
 
@@ -172,9 +187,13 @@ function sectionHtml(title, blurb, rows) {
 // Writes report.json (machine-readable) + report.html (the standalone review
 // surface) and returns the html path. No markdown — the html is easier to read.
 function writeReport(results) {
-  writeFileSync(join(OUT_DIR, 'report.json'), JSON.stringify({ runId, base: BASE, results }, null, 2));
+  writeFileSync(
+    join(OUT_DIR, 'report.json'),
+    JSON.stringify({ runId, base: BASE, results }, null, 2)
+  );
 
-  const tally = (tag) => results.filter((r) => verdict(r.expectation, r.outcome).tag === tag).length;
+  const tally = (tag) =>
+    results.filter((r) => verdict(r.expectation, r.outcome).tag === tag).length;
   const allowSafe = results.filter((r) => r.expectation === 'allow-safe');
   const block = results.filter((r) => r.expectation === 'block');
 
@@ -278,7 +297,9 @@ async function main() {
 
   const all = discoverCases();
   if (all.length === 0) {
-    fail('No encrypted fixtures found in tests/redteam/encrypted/. Add safe-*/block-* PNGs and run:\n  npm run redteam:encrypt');
+    fail(
+      'No encrypted fixtures found in tests/redteam/encrypted/. Add safe-*/block-* PNGs and run:\n  npm run redteam:encrypt'
+    );
   }
 
   const patterns = process.argv.slice(2);
@@ -289,7 +310,9 @@ async function main() {
     );
   }
   if (patterns.length) {
-    console.log(`Filter ${JSON.stringify(patterns)} → ${cases.length}/${all.length} case(s): ${cases.map((c) => c.id).join(', ')}`);
+    console.log(
+      `Filter ${JSON.stringify(patterns)} → ${cases.length}/${all.length} case(s): ${cases.map((c) => c.id).join(', ')}`
+    );
   }
 
   console.log('Decrypting fixtures…');
@@ -303,7 +326,7 @@ async function main() {
     cwd: join(ROOT, 'web'),
     env: { ...process.env, ALLOWED_TOKENS_LIST: TOKEN, PUBLIC_ENABLE_DEV_HARNESS: 'true' },
     stdio: ['ignore', 'ignore', 'inherit'],
-    shell: process.platform === 'win32'
+    shell: process.platform === 'win32',
   });
 
   const results = [];

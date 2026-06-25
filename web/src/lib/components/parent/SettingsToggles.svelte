@@ -15,7 +15,7 @@
     setAdvancedControls,
     setLockRotation,
     setForceLandscapeOrientation,
-    setPencilEraserEnabled
+    setPencilEraserEnabled,
   } from '$lib/state/settings.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { supportsOrientationLock } from '$lib/platform';
@@ -189,42 +189,41 @@
   </div>
 
   {#if showOrientationControls}
-  <div class="setting">
-    <ToggleRow
-      icon={settings.lockRotationEnabled ? 'mobile-lock' : 'mobile-rotate'}
-      label="Lock device rotation"
-      id="lockRotationToggle"
-      checked={settings.lockRotationEnabled}
-      onToggle={setLockRotation}
-    />
-  </div>
+    <div class="setting">
+      <ToggleRow
+        icon={settings.lockRotationEnabled ? 'mobile-lock' : 'mobile-rotate'}
+        label="Lock device rotation"
+        id="lockRotationToggle"
+        checked={settings.lockRotationEnabled}
+        onToggle={setLockRotation}
+      />
+    </div>
 
-  {#if settings.lockRotationEnabled}
-  <div class="setting" transition:slide={{ duration: 220 }}>
-    <ToggleRow
-      icon={settings.forceLandscapeOrientation ? 'mobile-landscape' : 'mobile-portrait'}
-      label="Force landscape orientation"
-      id="forceLandscapeToggle"
-      checked={settings.forceLandscapeOrientation}
-      onToggle={setForceLandscapeOrientation}
-    />
-  </div>
-  {/if}
+    {#if settings.lockRotationEnabled}
+      <div class="setting" transition:slide={{ duration: 220 }}>
+        <ToggleRow
+          icon={settings.forceLandscapeOrientation ? 'mobile-landscape' : 'mobile-portrait'}
+          label="Force landscape orientation"
+          id="forceLandscapeToggle"
+          checked={settings.forceLandscapeOrientation}
+          onToggle={setForceLandscapeOrientation}
+        />
+      </div>
+    {/if}
   {/if}
 
   {#if settings.applePencilSeen}
-  <div class="setting" transition:slide={{ duration: 220 }}>
-    <ToggleRow
-      icon="eraser"
-      label="Apple Pencil double-tap to erase"
-      id="pencilEraserToggle"
-      checked={settings.pencilEraserEnabled}
-      onToggle={setPencilEraserEnabled}
-      help="Double-tap an Apple Pencil to switch between drawing and erasing"
-    />
-  </div>
+    <div class="setting" transition:slide={{ duration: 220 }}>
+      <ToggleRow
+        icon="eraser"
+        label="Apple Pencil double-tap to erase"
+        id="pencilEraserToggle"
+        checked={settings.pencilEraserEnabled}
+        onToggle={setPencilEraserEnabled}
+        help="Double-tap an Apple Pencil to switch between drawing and erasing"
+      />
+    </div>
   {/if}
-
 </section>
 
 <section class="setting-group">
@@ -241,55 +240,55 @@
   </div>
 
   {#if settings.advancedControlsEnabled}
-  <div class="setting" transition:slide={{ duration: 220 }}>
-    <ToggleRow
-      icon="line-weight"
-      label="Stroke Width Button"
-      id="strokeWidthToggle"
-      checked={settings.strokeWidthControlEnabled}
-      onToggle={setStrokeWidthControl}
-    />
-  </div>
+    <div class="setting" transition:slide={{ duration: 220 }}>
+      <ToggleRow
+        icon="line-weight"
+        label="Stroke Width Button"
+        id="strokeWidthToggle"
+        checked={settings.strokeWidthControlEnabled}
+        onToggle={setStrokeWidthControl}
+      />
+    </div>
 
-  <div class="setting" transition:slide={{ duration: 220 }}>
-    <ToggleRow
-      icon="eraser"
-      label="Eraser Button"
-      id="eraserToggle"
-      checked={settings.eraserEnabled}
-      onToggle={setEraser}
-    />
-  </div>
+    <div class="setting" transition:slide={{ duration: 220 }}>
+      <ToggleRow
+        icon="eraser"
+        label="Eraser Button"
+        id="eraserToggle"
+        checked={settings.eraserEnabled}
+        onToggle={setEraser}
+      />
+    </div>
 
-  <div class="setting" transition:slide={{ duration: 220 }}>
-    <ToggleRow
-      icon="shapes"
-      label="Coloring Book Button"
-      id="coloringBookToggle"
-      checked={settings.coloringBookEnabled}
-      onToggle={toggleColoringBook}
-    />
-  </div>
+    <div class="setting" transition:slide={{ duration: 220 }}>
+      <ToggleRow
+        icon="shapes"
+        label="Coloring Book Button"
+        id="coloringBookToggle"
+        checked={settings.coloringBookEnabled}
+        onToggle={toggleColoringBook}
+      />
+    </div>
 
-  <div class="setting" transition:slide={{ duration: 220 }}>
-    <ToggleRow
-      icon="camera"
-      label="Screenshot Button"
-      id="screenshotToggle"
-      checked={settings.screenshotEnabled}
-      onToggle={setScreenshot}
-    />
-  </div>
+    <div class="setting" transition:slide={{ duration: 220 }}>
+      <ToggleRow
+        icon="camera"
+        label="Screenshot Button"
+        id="screenshotToggle"
+        checked={settings.screenshotEnabled}
+        onToggle={setScreenshot}
+      />
+    </div>
 
-  <div class="setting" transition:slide={{ duration: 220 }}>
-    <ToggleRow
-      icon="undo"
-      label="Undo Button"
-      id="undoToggle"
-      checked={settings.undoButtonEnabled}
-      onToggle={setUndoButton}
-    />
-  </div>
+    <div class="setting" transition:slide={{ duration: 220 }}>
+      <ToggleRow
+        icon="undo"
+        label="Undo Button"
+        id="undoToggle"
+        checked={settings.undoButtonEnabled}
+        onToggle={setUndoButton}
+      />
+    </div>
   {/if}
 </section>
 

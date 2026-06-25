@@ -47,7 +47,7 @@ export async function recordTokenUsage(
       firstUsed: prev.firstUsed || now,
       lastUsed: now,
       lastStyle: style || null,
-      lastPrompt: prompt
+      lastPrompt: prompt,
     } satisfies TokenUsage);
   } catch (err) {
     console.warn(

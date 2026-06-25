@@ -122,8 +122,12 @@
       },
       onTutorialShow: showTutorial,
       onTutorialDismiss: dismissTutorial,
-      onDragStart: () => { isDragging = true; },
-      onDragEnd: () => { isDragging = false; }
+      onDragStart: () => {
+        isDragging = true;
+      },
+      onDragEnd: () => {
+        isDragging = false;
+      },
     })}
   >
     <!-- Both lids render; the .dragging class (added imperatively by the
@@ -186,8 +190,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: box-shadow 0.2s ease, border-radius 0.3s ease,
-                transform 0.2s ease, background 0.2s ease;
+    transition:
+      box-shadow 0.2s ease,
+      border-radius 0.3s ease,
+      transform 0.2s ease,
+      background 0.2s ease;
     pointer-events: auto; /* Button is clickable */
   }
 
@@ -245,17 +252,16 @@
     z-index: 999; /* Below clear-container (1000) so the button sits on top */
     border-radius: 50%;
     border: 4px dashed rgba(255, 56, 56, 0.45);
-    background: radial-gradient(circle,
-      rgba(255, 56, 56, 0) 55%,
-      rgba(255, 56, 56, 0.06) 100%);
+    background: radial-gradient(circle, rgba(255, 56, 56, 0) 55%, rgba(255, 56, 56, 0.06) 100%);
     box-sizing: border-box;
     opacity: 0;
     transform: scale(0.85);
-    transition: opacity 0.2s ease,
-                transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-                border-color 0.15s ease,
-                border-style 0.15s ease,
-                background 0.15s ease;
+    transition:
+      opacity 0.2s ease,
+      transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+      border-color 0.15s ease,
+      border-style 0.15s ease,
+      background 0.15s ease;
   }
 
   /* .visible / .threshold-reached are toggled imperatively via classList. */
@@ -267,9 +273,7 @@
   .clear-accept-zone:global(.threshold-reached) {
     border-color: rgba(255, 56, 56, 0.9);
     border-style: solid;
-    background: radial-gradient(circle,
-      rgba(255, 56, 56, 0) 50%,
-      rgba(255, 56, 56, 0.22) 100%);
+    background: radial-gradient(circle, rgba(255, 56, 56, 0) 50%, rgba(255, 56, 56, 0.22) 100%);
   }
 
   /* Radial paper wash previewing the clear mid-drag. A paper-colored
@@ -283,20 +287,28 @@
     z-index: 400; /* above the canvas, below the confirmation ripple (500) */
     pointer-events: none;
     opacity: var(--clear-progress, 0);
-    background: radial-gradient(circle at 100% 0,
+    background: radial-gradient(
+      circle at 100% 0,
       rgba(252, 251, 248, 0.9),
-      rgba(252, 251, 248, 0) calc(var(--clear-progress, 0) * 130%));
-    transition: opacity 0.12s linear, background 0.12s linear;
+      rgba(252, 251, 248, 0) calc(var(--clear-progress, 0) * 130%)
+    );
+    transition:
+      opacity 0.12s linear,
+      background 0.12s linear;
   }
 
   /* Point of no return: the wash snaps to flood the whole canvas, giving the
      threshold a distinct climax instead of a featureless ramp. */
   .clear-preview:global(.committed) {
     opacity: 0.92;
-    background: radial-gradient(circle at 100% 0,
+    background: radial-gradient(
+      circle at 100% 0,
       rgba(252, 251, 248, 0.95),
-      rgba(252, 251, 248, 0.82) 140%);
-    transition: opacity 0.18s ease, background 0.18s ease;
+      rgba(252, 251, 248, 0.82) 140%
+    );
+    transition:
+      opacity 0.18s ease,
+      background 0.18s ease;
   }
 
   /* Clear-confirmation ripple: a single white circle anchored at the
@@ -342,7 +354,9 @@
     pointer-events: none; /* Never blocks the real button underneath */
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.4s ease, visibility 0.4s;
+    transition:
+      opacity 0.4s ease,
+      visibility 0.4s;
   }
 
   .clear-coachmark.visible {
@@ -361,9 +375,7 @@
     box-sizing: border-box;
     border-radius: 50%;
     border: 4px dashed rgba(255, 107, 107, 0.4);
-    background: radial-gradient(circle,
-      rgba(255, 107, 107, 0) 60%,
-      rgba(255, 107, 107, 0.05) 100%);
+    background: radial-gradient(circle, rgba(255, 107, 107, 0) 60%, rgba(255, 107, 107, 0.05) 100%);
     animation: coachmarkRing 2.8s ease-in-out infinite;
   }
 
@@ -403,19 +415,44 @@
   /* Ghost peels off the real button, drags to the ring edge, gives a little
      release pop, then fades. The flat tail (90–100%) is the pause between loops. */
   @keyframes coachmarkDrag {
-    0%   { transform: translate(0, 0) scale(1);    opacity: 0; }
-    8%   { transform: translate(0, 0) scale(1);    opacity: 1; }
-    16%  { transform: translate(0, 0) scale(0.94); opacity: 1; }
-    58%  { transform: translate(var(--tx), var(--ty)) scale(0.94); opacity: 1; }
-    70%  { transform: translate(var(--tx), var(--ty)) scale(0.94); opacity: 1; }
-    80%  { transform: translate(var(--tx), var(--ty)) scale(1.05); opacity: 1; }
-    90%  { transform: translate(var(--tx), var(--ty)) scale(1.08); opacity: 0; }
-    100% { transform: translate(var(--tx), var(--ty)) scale(1);    opacity: 0; }
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: 0;
+    }
+    8% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+    16% {
+      transform: translate(0, 0) scale(0.94);
+      opacity: 1;
+    }
+    58% {
+      transform: translate(var(--tx), var(--ty)) scale(0.94);
+      opacity: 1;
+    }
+    70% {
+      transform: translate(var(--tx), var(--ty)) scale(0.94);
+      opacity: 1;
+    }
+    80% {
+      transform: translate(var(--tx), var(--ty)) scale(1.05);
+      opacity: 1;
+    }
+    90% {
+      transform: translate(var(--tx), var(--ty)) scale(1.08);
+      opacity: 0;
+    }
+    100% {
+      transform: translate(var(--tx), var(--ty)) scale(1);
+      opacity: 0;
+    }
   }
 
   /* Ring fades in, then snaps to a confirmed "ready" state as the ghost lands. */
   @keyframes coachmarkRing {
-    0%, 8% {
+    0%,
+    8% {
       opacity: 0;
       transform: scale(0.9);
       border-color: rgba(255, 107, 107, 0.4);
@@ -430,20 +467,22 @@
       transform: scale(1);
       border-color: rgba(255, 107, 107, 0.4);
       border-style: dashed;
-      background: radial-gradient(circle,
+      background: radial-gradient(
+        circle,
         rgba(255, 107, 107, 0) 60%,
-        rgba(255, 107, 107, 0.05) 100%);
+        rgba(255, 107, 107, 0.05) 100%
+      );
     }
-    70%, 86% {
+    70%,
+    86% {
       opacity: 1;
       transform: scale(1.015);
       border-color: rgba(238, 90, 111, 0.85);
       border-style: solid;
-      background: radial-gradient(circle,
-        rgba(238, 90, 111, 0) 50%,
-        rgba(238, 90, 111, 0.18) 100%);
+      background: radial-gradient(circle, rgba(238, 90, 111, 0) 50%, rgba(238, 90, 111, 0.18) 100%);
     }
-    94%, 100% {
+    94%,
+    100% {
       opacity: 0;
     }
   }
@@ -466,9 +505,7 @@
       opacity: 1;
       border-color: rgba(238, 90, 111, 0.85);
       border-style: solid;
-      background: radial-gradient(circle,
-        rgba(238, 90, 111, 0) 50%,
-        rgba(238, 90, 111, 0.18) 100%);
+      background: radial-gradient(circle, rgba(238, 90, 111, 0) 50%, rgba(238, 90, 111, 0.18) 100%);
     }
   }
 

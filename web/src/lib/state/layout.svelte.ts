@@ -16,5 +16,5 @@ export const layout: LayoutState = $state({
 
   // The custom-color (gradient) swatch button. ColorPicker reads its live
   // bounding rect to carve out a mis-tap block zone around it on the backdrop.
-  gradientSwatchEl: null
+  gradientSwatchEl: null,
 });

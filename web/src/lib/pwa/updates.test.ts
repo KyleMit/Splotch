@@ -8,13 +8,13 @@ vi.mock('$lib/state/canvas.svelte', () => ({ canvasState }));
 
 function makeRegistration({
   waiting = null as ServiceWorker | null,
-  installing = null as ServiceWorker | null
+  installing = null as ServiceWorker | null,
 } = {}) {
   return {
     update: vi.fn().mockResolvedValue(undefined),
     waiting,
     installing,
-    addEventListener: vi.fn()
+    addEventListener: vi.fn(),
   } as unknown as ServiceWorkerRegistration;
 }
 
@@ -22,7 +22,7 @@ function makeWorker() {
   return {
     state: 'installed',
     postMessage: vi.fn(),
-    addEventListener: vi.fn()
+    addEventListener: vi.fn(),
   };
 }
 
@@ -30,12 +30,12 @@ function stubServiceWorker(reg?: ServiceWorkerRegistration) {
   const container = {
     ready: new Promise(() => {}), // never resolves — keeps test side-effect-free
     getRegistration: vi.fn().mockResolvedValue(reg),
-    addEventListener: vi.fn()
+    addEventListener: vi.fn(),
   };
   Object.defineProperty(navigator, 'serviceWorker', {
     value: container,
     configurable: true,
-    writable: true
+    writable: true,
   });
   return container;
 }
@@ -50,7 +50,7 @@ describe('checkVersionMismatch', () => {
     Object.defineProperty(window, 'location', {
       value: { href: 'https://splotch.art/', replace: vi.fn() },
       writable: true,
-      configurable: true
+      configurable: true,
     });
   });
 
@@ -61,7 +61,7 @@ describe('checkVersionMismatch', () => {
   it('does nothing when version matches', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ version: '1.0.0-test' })
+      json: () => Promise.resolve({ version: '1.0.0-test' }),
     } as Response);
 
     await checkVersionMismatch();
@@ -72,14 +72,12 @@ describe('checkVersionMismatch', () => {
   it('redirects to ?v= when deployed version differs', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ version: '1.0.1' })
+      json: () => Promise.resolve({ version: '1.0.1' }),
     } as Response);
 
     await checkVersionMismatch();
 
-    expect(window.location.replace).toHaveBeenCalledWith(
-      expect.stringContaining('?v=1.0.1')
-    );
+    expect(window.location.replace).toHaveBeenCalledWith(expect.stringContaining('?v=1.0.1'));
   });
 
   it('does nothing when response is not ok', async () => {
@@ -100,7 +98,7 @@ describe('checkVersionMismatch', () => {
   it('fetches /version.json with cache: no-store', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ version: '1.0.0-test' })
+      json: () => Promise.resolve({ version: '1.0.0-test' }),
     } as Response);
 
     await checkVersionMismatch();
@@ -176,7 +174,7 @@ describe('initPWAUpdates — ?v= URL cleanup', () => {
     stubServiceWorker(undefined);
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ version: '1.0.0-test' })
+      json: () => Promise.resolve({ version: '1.0.0-test' }),
     } as Response);
     // initPWAUpdates guards on DEV; override it for these tests
     (import.meta.env as Record<string, unknown>).DEV = false;
@@ -192,23 +190,19 @@ describe('initPWAUpdates — ?v= URL cleanup', () => {
     Object.defineProperty(window, 'location', {
       value: { href: 'https://splotch.art/?v=1.0.1' },
       writable: true,
-      configurable: true
+      configurable: true,
     });
 
     initPWAUpdates();
 
-    expect(replaceStateSpy).toHaveBeenCalledWith(
-      null,
-      '',
-      expect.not.stringContaining('?v=')
-    );
+    expect(replaceStateSpy).toHaveBeenCalledWith(null, '', expect.not.stringContaining('?v='));
   });
 
   it('does not call replaceState when no ?v= param is present', () => {
     Object.defineProperty(window, 'location', {
       value: { href: 'https://splotch.art/' },
       writable: true,
-      configurable: true
+      configurable: true,
     });
 
     initPWAUpdates();

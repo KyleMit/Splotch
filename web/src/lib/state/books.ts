@@ -41,8 +41,8 @@ function page(book: string, id: string, name: string): ColoringPage {
     name,
     images: {
       portrait: `/coloring/${book}/${id}-tall.webp`,
-      landscape: `/coloring/${book}/${id}-wide.webp`
-    }
+      landscape: `/coloring/${book}/${id}-wide.webp`,
+    },
   };
 }
 
@@ -58,8 +58,8 @@ export const BOOKS: Book[] = [
       page('farm', 'dog', 'Dog'),
       page('farm', 'duck', 'Duck'),
       page('farm', 'horse', 'Horse'),
-      page('farm', 'pig', 'Pig')
-    ]
+      page('farm', 'pig', 'Pig'),
+    ],
   },
   {
     id: 'dinosaur',
@@ -72,8 +72,8 @@ export const BOOKS: Book[] = [
       page('dinosaur', 'stegosaurus', 'Stegosaurus'),
       page('dinosaur', 'trex', 'T. Rex'),
       page('dinosaur', 'triceratops', 'Triceratops'),
-      page('dinosaur', 'velociraptor', 'Velociraptor')
-    ]
+      page('dinosaur', 'velociraptor', 'Velociraptor'),
+    ],
   },
   {
     id: 'creatures',
@@ -86,8 +86,8 @@ export const BOOKS: Book[] = [
       page('creatures', 'mermaid', 'Mermaid'),
       page('creatures', 'owl', 'Owl'),
       page('creatures', 'pegasus', 'Pegasus'),
-      page('creatures', 'unicorn', 'Unicorn')
-    ]
+      page('creatures', 'unicorn', 'Unicorn'),
+    ],
   },
   {
     id: 'nature',
@@ -100,8 +100,8 @@ export const BOOKS: Book[] = [
       page('nature', 'caterpillar', 'Caterpillar'),
       page('nature', 'ladybug', 'Ladybug'),
       page('nature', 'snail', 'Snail'),
-      page('nature', 'spider', 'Spider')
-    ]
+      page('nature', 'spider', 'Spider'),
+    ],
   },
   {
     id: 'objects',
@@ -113,8 +113,8 @@ export const BOOKS: Book[] = [
       page('objects', 'balloon', 'Balloon'),
       page('objects', 'flower', 'Flower'),
       page('objects', 'house', 'House'),
-      page('objects', 'teddy', 'Teddy')
-    ]
+      page('objects', 'teddy', 'Teddy'),
+    ],
   },
   {
     id: 'shapes',
@@ -126,8 +126,8 @@ export const BOOKS: Book[] = [
       page('shapes', 'rectangle', 'Rectangle'),
       page('shapes', 'square', 'Square'),
       page('shapes', 'star', 'Star'),
-      page('shapes', 'triangle', 'Triangle')
-    ]
+      page('shapes', 'triangle', 'Triangle'),
+    ],
   },
   {
     id: 'space',
@@ -140,8 +140,8 @@ export const BOOKS: Book[] = [
       page('space', 'moon', 'Moon'),
       page('space', 'rover', 'Rover'),
       page('space', 'ship', 'Ship'),
-      page('space', 'station', 'Station')
-    ]
+      page('space', 'station', 'Station'),
+    ],
   },
   {
     id: 'vehicles',
@@ -154,9 +154,9 @@ export const BOOKS: Book[] = [
       page('vehicles', 'garbage', 'Garbage Truck'),
       page('vehicles', 'monster', 'Monster Truck'),
       page('vehicles', 'police', 'Police Car'),
-      page('vehicles', 'train', 'Train')
-    ]
-  }
+      page('vehicles', 'train', 'Train'),
+    ],
+  },
 ];
 
 /** Books allowed on the given platform ('web' | 'mobile'). */
@@ -171,6 +171,6 @@ export function pageImage(page: ColoringPage, orientation: BookOrientation): str
 export function bookAssetPaths(book: Book): string[] {
   return [
     book.cover,
-    ...book.pages.flatMap((page) => [page.images.portrait, page.images.landscape])
+    ...book.pages.flatMap((page) => [page.images.portrait, page.images.landscape]),
   ];
 }

@@ -5,7 +5,7 @@
     CUSTOM_SWATCH,
     colors,
     selectPaletteColor,
-    selectCustomSwatch
+    selectCustomSwatch,
   } from '$lib/state/colors.svelte';
   import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine';
   import { openColorPicker, buttonCenter } from '$lib/state/ui.svelte';
@@ -107,7 +107,9 @@
       class:ring-animate={ringAnimateKey?.startsWith(hex + ':')}
       data-color={hex}
       data-trim-rank={trimRank.get(hex)}
-      style="background-color: {hex}; {!toolState.eraser && colors.activeSwatch === hex ? `box-shadow: ${ringShadow(hex)}; --ring-color: ${getRingColor(hex)};` : ''}"
+      style="background-color: {hex}; {!toolState.eraser && colors.activeSwatch === hex
+        ? `box-shadow: ${ringShadow(hex)}; --ring-color: ${getRingColor(hex)};`
+        : ''}"
       aria-label={label}
       onpointerup={(e) => handleSwatchUp(e, hex)}
       onpointerdown={handlePaletteDown}
@@ -121,12 +123,15 @@
     class:active={!toolState.eraser && colors.activeSwatch === CUSTOM_SWATCH}
     data-color="custom"
     aria-label="Custom Color"
-    style={!toolState.eraser && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected ? `box-shadow: ${gradientRingShadow(colors.customColor)};` : ''}
+    style={!toolState.eraser && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected
+      ? `box-shadow: ${gradientRingShadow(colors.customColor)};`
+      : ''}
     onpointerup={handleCustomUp}
     onpointerdown={handlePaletteDown}
     onpointercancel={handleSwatchCancel}
     bind:this={swatchEls[CUSTOM_SWATCH]}
-  ><Icon name="palette" class="palette-icon" aria-hidden="true" /></button>
+    ><Icon name="palette" class="palette-icon" aria-hidden="true" /></button
+  >
 </div>
 
 <style>
@@ -281,26 +286,47 @@
      padding) plus the always-present gradient. k core swatches + gradient fit
      when width ≥ 63·(k+1) + 12. Bonus colors never appear here (default-hidden,
      and only landscape reveals them). */
-  @media (orientation: portrait) and (max-width: 515.98px) { /* rank 3: Red    */
-    .color-swatch[data-trim-rank='3'] { display: none; }
+  @media (orientation: portrait) and (max-width: 515.98px) {
+    /* rank 3: Red    */
+    .color-swatch[data-trim-rank='3'] {
+      display: none;
+    }
   }
-  @media (orientation: portrait) and (max-width: 452.98px) { /* rank 4: Orange */
-    .color-swatch[data-trim-rank='4'] { display: none; }
+  @media (orientation: portrait) and (max-width: 452.98px) {
+    /* rank 4: Orange */
+    .color-swatch[data-trim-rank='4'] {
+      display: none;
+    }
   }
-  @media (orientation: portrait) and (max-width: 389.98px) { /* rank 5: Green  */
-    .color-swatch[data-trim-rank='5'] { display: none; }
+  @media (orientation: portrait) and (max-width: 389.98px) {
+    /* rank 5: Green  */
+    .color-swatch[data-trim-rank='5'] {
+      display: none;
+    }
   }
-  @media (orientation: portrait) and (max-width: 326.98px) { /* rank 6: Yellow */
-    .color-swatch[data-trim-rank='6'] { display: none; }
+  @media (orientation: portrait) and (max-width: 326.98px) {
+    /* rank 6: Yellow */
+    .color-swatch[data-trim-rank='6'] {
+      display: none;
+    }
   }
-  @media (orientation: portrait) and (max-width: 263.98px) { /* rank 7: Blue   */
-    .color-swatch[data-trim-rank='7'] { display: none; }
+  @media (orientation: portrait) and (max-width: 263.98px) {
+    /* rank 7: Blue   */
+    .color-swatch[data-trim-rank='7'] {
+      display: none;
+    }
   }
-  @media (orientation: portrait) and (max-width: 200.98px) { /* rank 8: Purple */
-    .color-swatch[data-trim-rank='8'] { display: none; }
+  @media (orientation: portrait) and (max-width: 200.98px) {
+    /* rank 8: Purple */
+    .color-swatch[data-trim-rank='8'] {
+      display: none;
+    }
   }
-  @media (orientation: portrait) and (max-width: 137.98px) { /* rank 9: Black  */
-    .color-swatch[data-trim-rank='9'] { display: none; }
+  @media (orientation: portrait) and (max-width: 137.98px) {
+    /* rank 9: Black  */
+    .color-swatch[data-trim-rank='9'] {
+      display: none;
+    }
   }
 
   /* LANDSCAPE, bonus reveal (1 bar, tall) — bonus colors are default-hidden; show
@@ -308,23 +334,33 @@
      swatches at height ≥ 72·N + 12, and the core fills 8 slots at 588px, so the
      9th/10th/11th slots open at 660/732/804px. */
   @media (orientation: landscape) and (min-height: 660px) {
-    .color-swatch.bonus[data-trim-rank='2'] { display: block; } /* Pink  */
+    .color-swatch.bonus[data-trim-rank='2'] {
+      display: block;
+    } /* Pink  */
   }
   @media (orientation: landscape) and (min-height: 732px) {
-    .color-swatch.bonus[data-trim-rank='1'] { display: block; } /* Teal  */
+    .color-swatch.bonus[data-trim-rank='1'] {
+      display: block;
+    } /* Teal  */
   }
   @media (orientation: landscape) and (min-height: 804px) {
-    .color-swatch.bonus[data-trim-rank='0'] { display: block; } /* Brown */
+    .color-swatch.bonus[data-trim-rank='0'] {
+      display: block;
+    } /* Brown */
   }
 
   /* LANDSCAPE, single column (1 bar) — trim core swatches one at a time by
      priority. Bounded with min-height: 444px so these never fire in the 2-column
      range below (where Red/Orange are visible again at 300–444px). */
   @media (orientation: landscape) and (min-height: 444px) and (max-height: 587.98px) {
-    .color-swatch[data-trim-rank='3'] { display: none; } /* Red:    < 588px → 7 fit */
+    .color-swatch[data-trim-rank='3'] {
+      display: none;
+    } /* Red:    < 588px → 7 fit */
   }
   @media (orientation: landscape) and (min-height: 444px) and (max-height: 515.98px) {
-    .color-swatch[data-trim-rank='4'] { display: none; } /* Orange: < 516px → 6 fit */
+    .color-swatch[data-trim-rank='4'] {
+      display: none;
+    } /* Orange: < 516px → 6 fit */
   }
 
   /* LANDSCAPE, two columns (2 bar) — used below 444px tall, where the grid shows
@@ -332,19 +368,31 @@
      (= 4 rows × 72 + 12, where all 8 core first overflow two columns), so they
      never touch the single-column range above. n rows fit at height ≥ 72·n + 12.
      Bonus colors stay hidden here (default-hidden, never revealed below 660px). */
-  @media (orientation: landscape) and (max-height: 299.98px) { /* 4→3 rows: Red, Orange */
+  @media (orientation: landscape) and (max-height: 299.98px) {
+    /* 4→3 rows: Red, Orange */
     .color-swatch[data-trim-rank='3'],
-    .color-swatch[data-trim-rank='4'] { display: none; }
+    .color-swatch[data-trim-rank='4'] {
+      display: none;
+    }
   }
-  @media (orientation: landscape) and (max-height: 227.98px) { /* 3→2 rows: Green, Yellow */
+  @media (orientation: landscape) and (max-height: 227.98px) {
+    /* 3→2 rows: Green, Yellow */
     .color-swatch[data-trim-rank='5'],
-    .color-swatch[data-trim-rank='6'] { display: none; }
+    .color-swatch[data-trim-rank='6'] {
+      display: none;
+    }
   }
-  @media (orientation: landscape) and (max-height: 155.98px) { /* 2→1 rows: Blue, Purple */
+  @media (orientation: landscape) and (max-height: 155.98px) {
+    /* 2→1 rows: Blue, Purple */
     .color-swatch[data-trim-rank='7'],
-    .color-swatch[data-trim-rank='8'] { display: none; }
+    .color-swatch[data-trim-rank='8'] {
+      display: none;
+    }
   }
-  @media (orientation: landscape) and (max-height: 83.98px) {  /* 1→0 rows: Black */
-    .color-swatch[data-trim-rank='9'] { display: none; }
+  @media (orientation: landscape) and (max-height: 83.98px) {
+    /* 1→0 rows: Black */
+    .color-swatch[data-trim-rank='9'] {
+      display: none;
+    }
   }
 </style>

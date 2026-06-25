@@ -9,5 +9,5 @@ export interface DeviceLockPlugin {
 // Reach this module only through lazyPluginModule() so @capacitor/core stays out of the
 // SSR/prerender graph — see web/src/lib/nativePlugin.ts.
 export const DeviceLock = registerPlugin<DeviceLockPlugin>('DeviceLock', {
-  web: () => ({ isLocked: async () => ({ locked: false }) })
+  web: () => ({ isLocked: async () => ({ locked: false }) }),
 });

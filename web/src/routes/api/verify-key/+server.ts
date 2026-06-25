@@ -41,7 +41,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
       model: TEST_MODEL,
       contents: 'ping',
       // Keep the probe as small as possible — no thinking, one output token.
-      config: { thinkingConfig: { thinkingBudget: 0 }, maxOutputTokens: 1 }
+      config: { thinkingConfig: { thinkingBudget: 0 }, maxOutputTokens: 1 },
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -50,4 +50,4 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   }
 
   return json({ ok: true });
-}
+};

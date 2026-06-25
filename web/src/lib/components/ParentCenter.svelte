@@ -33,18 +33,16 @@
   use:modalDialog={() => ({
     open: ui.parentCenterOpen,
     origin: ui.parentCenterOrigin,
-    onRequestClose: closeParentCenter
+    onRequestClose: closeParentCenter,
   })}
 >
   <div class="parent-help-content">
-    <button class="parent-help-close modal-close-btn" aria-label="Close" onclick={closeParentCenter}>×</button>
+    <button class="parent-help-close modal-close-btn" aria-label="Close" onclick={closeParentCenter}
+      >×</button
+    >
     <h2>Parent Center</h2>
 
-    <TabPager
-      initialTab="settings"
-      resetKey={ui.parentCenterOpen}
-      ariaLabel="Parent Center panels"
-    >
+    <TabPager initialTab="settings" resetKey={ui.parentCenterOpen} ariaLabel="Parent Center panels">
       {#snippet tabs()}
         <TabPagerTab id="settings" label="Settings" icon="settings" />
         <TabPagerTab id="ai" label="AI" icon="wand-stars" />

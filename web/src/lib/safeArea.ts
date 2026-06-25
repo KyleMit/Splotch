@@ -18,8 +18,7 @@ function measureInset(side: 'top' | 'right' | 'bottom' | 'left'): number {
   const probe = document.createElement('div');
   const axis = horizontal ? 'width' : 'height';
   const cross = horizontal ? 'height:0' : 'width:0';
-  probe.style.cssText =
-    `position:fixed;top:0;left:0;${axis}:env(safe-area-inset-${side});${cross};visibility:hidden;pointer-events:none`;
+  probe.style.cssText = `position:fixed;top:0;left:0;${axis}:env(safe-area-inset-${side});${cross};visibility:hidden;pointer-events:none`;
   document.body.appendChild(probe);
   const rect = probe.getBoundingClientRect();
   probe.remove();
@@ -32,6 +31,6 @@ export function measureSafeAreaInsets(): SafeAreaInsets {
     top: measureInset('top'),
     right: measureInset('right'),
     bottom: measureInset('bottom'),
-    left: measureInset('left')
+    left: measureInset('left'),
   };
 }

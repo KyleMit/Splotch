@@ -47,7 +47,7 @@ async function snapshot(origin: string, tokens?: string[]) {
 export const GET: RequestHandler = async ({ request, url }) => {
   requireSession(request);
   return snapshot(url.origin);
-}
+};
 
 /** Add an access token. Body: { token }. */
 export const POST: RequestHandler = async ({ request, url }) => {
@@ -63,7 +63,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
   const result = await addToken(typeof body?.token === 'string' ? body.token : '');
   if (!result.ok) return json({ ok: false, error: result.error }, { status: 400 });
   return snapshot(url.origin, result.tokens);
-}
+};
 
 /** Remove an access token. Body: { token }. */
 export const DELETE: RequestHandler = async ({ request, url }) => {
@@ -78,4 +78,4 @@ export const DELETE: RequestHandler = async ({ request, url }) => {
 
   const result = await removeToken(typeof body?.token === 'string' ? body.token : '');
   return snapshot(url.origin, result.tokens);
-}
+};

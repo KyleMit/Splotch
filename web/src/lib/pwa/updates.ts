@@ -33,9 +33,12 @@ export function initPWAUpdates() {
   checkForUpdates();
   checkVersionMismatch();
 
-  updateCheckInterval = setInterval(() => {
-    checkForUpdates();
-  }, 60 * 60 * 1000);
+  updateCheckInterval = setInterval(
+    () => {
+      checkForUpdates();
+    },
+    60 * 60 * 1000
+  );
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') checkForUpdates();
@@ -75,11 +78,9 @@ export async function checkForUpdates() {
     const activateWaitingSW = (sw: ServiceWorker) => {
       if (!canvasState.canvasEmpty) return;
       sw.postMessage({ type: 'SKIP_WAITING' });
-      navigator.serviceWorker.addEventListener(
-        'controllerchange',
-        () => window.location.reload(),
-        { once: true }
-      );
+      navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload(), {
+        once: true,
+      });
     };
 
     if (registration.waiting) {

@@ -8,7 +8,7 @@
     setAiCustomization,
     setAutoSaveAi,
     setAiAccessToken,
-    setAiUserApiKey
+    setAiUserApiKey,
   } from '$lib/state/settings.svelte';
   import { apiUrl } from '$lib/api';
   import { getPlatform } from '$lib/platform';
@@ -73,7 +73,7 @@
     const res = await fetch(apiUrl(opts.endpoint), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(opts.body)
+      body: JSON.stringify(opts.body),
     });
     const data: VerifyResponse = await res.json().catch(() => ({}));
     if (res.ok && data.ok) {
@@ -107,7 +107,7 @@
           persist: () => setAiUserApiKey(value),
           successMessage: 'Your key works and has been accepted!',
           failureMessage: (data) =>
-            data.error || "That key didn't work. Double-check it and try again."
+            data.error || "That key didn't work. Double-check it and try again.",
         });
       } else {
         await verifyAndSave({
@@ -116,7 +116,7 @@
           persist: (data) => setAiAccessToken(data.accessCode || value),
           successMessage: 'Access granted! You have special access — no API key needed.',
           failureMessage: () =>
-            "That doesn't look like a valid key or access code. Please try again."
+            "That doesn't look like a valid key or access code. Please try again.",
         });
       }
     } catch {
@@ -142,17 +142,22 @@
   {#if aiLocked}
     <div class="setting byok">
       <p class="byok-intro">
-        Splotch turns drawings into AI art with Google's Gemini. To keep
-        the app free with no accounts, you <strong>bring your own key</strong> (BYOK):
-        you paste a Gemini API key, it's saved only on this device, and it's
-        used only for your child's creations. Any usage is billed to your own
-        Google account.  We never keep a copy of your key.
+        Splotch turns drawings into AI art with Google's Gemini. To keep the app free with no
+        accounts, you <strong>bring your own key</strong> (BYOK): you paste a Gemini API key, it's saved
+        only on this device, and it's used only for your child's creations. Any usage is billed to your
+        own Google account. We never keep a copy of your key.
       </p>
 
       <details class="byok-howto">
         <summary>How do I get a Gemini API key?</summary>
         <ol>
-          <li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.</li>
+          <li>
+            Open <a
+              href="https://aistudio.google.com/apikey"
+              target="_blank"
+              rel="noopener noreferrer">Google AI Studio</a
+            >.
+          </li>
           <li>Sign in with a Google account.</li>
           <li>Click <strong>Create API key</strong> and confirm.</li>
           <li>Copy the key (it starts with <code>AIza…</code>) and paste it below.</li>
@@ -182,15 +187,17 @@
           {keyStatus === 'checking' ? 'Checking…' : 'Save'}
         </button>
       </div>
-      <p class="byok-storage-note"><Icon name="lock" class="byok-storage-icon" />{keyStorageNote}</p>
+      <p class="byok-storage-note">
+        <Icon name="lock" class="byok-storage-icon" />{keyStorageNote}
+      </p>
       <p class="byok-secret-hint">Have an access code? You can enter it here too.</p>
     </div>
   {:else}
     <div class="setting byok byok-active">
       {#if hasApiKey}
         <p class="byok-intro">
-          You're using <strong>your own Gemini API key</strong>. Usage is billed
-          to your Google account. Forget the key any time to switch it off.
+          You're using <strong>your own Gemini API key</strong>. Usage is billed to your Google
+          account. Forget the key any time to switch it off.
         </p>
         <label class="access-code-label" for="aiKeyActive">Gemini API Key</label>
         <div class="access-code-row">
@@ -204,11 +211,13 @@
           />
           <button class="access-code-submit forget" onclick={forgetKey}>Forget</button>
         </div>
-        <p class="byok-storage-note"><Icon name="lock" class="byok-storage-icon" />{keyStorageNote}</p>
+        <p class="byok-storage-note">
+          <Icon name="lock" class="byok-storage-icon" />{keyStorageNote}
+        </p>
       {:else}
         <p class="byok-intro">
-          You have <strong>special access</strong> via an access code — AI art
-          is on us, no API key needed. Forget the code any time to remove it.
+          You have <strong>special access</strong> via an access code — AI art is on us, no API key needed.
+          Forget the code any time to remove it.
         </p>
         <label class="access-code-label" for="aiCodeActive">Access Code</label>
         <div class="access-code-row">
@@ -239,40 +248,40 @@
   {/if}
 
   {#if !aiLocked}
-  <div class="ai-controls">
-    <div class="setting">
-      <ToggleRow
-        icon="wand-stars"
-        label="Create AI Images"
-        id="aiImageToggle"
-        checked={settings.aiImageEnabled}
-        onToggle={setAiImage}
-      />
+    <div class="ai-controls">
+      <div class="setting">
+        <ToggleRow
+          icon="wand-stars"
+          label="Create AI Images"
+          id="aiImageToggle"
+          checked={settings.aiImageEnabled}
+          onToggle={setAiImage}
+        />
+      </div>
+
+      {#if settings.aiImageEnabled}
+        <div class="setting" transition:slide={{ duration: 220 }}>
+          <ToggleRow
+            icon="customize"
+            label="AI Customization"
+            id="aiCustomizationToggle"
+            checked={settings.aiCustomizationEnabled}
+            onToggle={setAiCustomization}
+          />
+        </div>
+
+        <div class="setting" transition:slide={{ duration: 220 }}>
+          <ToggleRow
+            icon="download"
+            label="Auto-Save AI Images"
+            id="autoSaveAiToggle"
+            checked={settings.autoSaveAiEnabled}
+            onToggle={setAutoSaveAi}
+            help="Saves each AI image and the drawing to your photos, and shows a larger preview"
+          />
+        </div>
+      {/if}
     </div>
-
-    {#if settings.aiImageEnabled}
-      <div class="setting" transition:slide={{ duration: 220 }}>
-        <ToggleRow
-          icon="customize"
-          label="AI Customization"
-          id="aiCustomizationToggle"
-          checked={settings.aiCustomizationEnabled}
-          onToggle={setAiCustomization}
-        />
-      </div>
-
-      <div class="setting" transition:slide={{ duration: 220 }}>
-        <ToggleRow
-          icon="download"
-          label="Auto-Save AI Images"
-          id="autoSaveAiToggle"
-          checked={settings.autoSaveAiEnabled}
-          onToggle={setAutoSaveAi}
-          help="Saves each AI image and the drawing to your photos, and shows a larger preview"
-        />
-      </div>
-    {/if}
-  </div>
   {/if}
 </section>
 

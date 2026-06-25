@@ -9,7 +9,7 @@
     undo,
     clearCanvas,
     isCanvasEmpty,
-    exportCanvasBlob
+    exportCanvasBlob,
   } from '$lib/drawing/engine';
 
   let canvasEl: HTMLCanvasElement;
@@ -35,7 +35,7 @@
       },
       onCanvasEmptyChange: (empty) => {
         win.__engineState.canvasEmpty = empty;
-      }
+      },
     });
     setStrokeWidth(8);
 
@@ -111,7 +111,7 @@
               clientX: rect.left + p.x,
               clientY: rect.top + p.y,
               bubbles: true,
-              cancelable: true
+              cancelable: true,
             })
           );
         ev('pointerdown', points[0]);
@@ -140,7 +140,7 @@
               clientX: rect.left + p.x,
               clientY: rect.top + p.y,
               bubbles: true,
-              cancelable: true
+              cancelable: true,
             })
           );
 
@@ -156,7 +156,7 @@
         for (const s of strokes) {
           ev('pointerup', s.pointerId, s.points[s.points.length - 1]);
         }
-      }
+      },
     };
 
     win.__engineReady = true;

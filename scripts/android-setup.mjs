@@ -46,7 +46,12 @@ const missing = REQUIRED.filter(({ cmd }) => !hasCommand(cmd));
 if (missing.length > 0) {
   const lines = ['[android-setup] Missing tools — not found on PATH:', ''];
   for (const { cmd, fix } of missing) lines.push(`  ${cmd}:`, ...fix.map((f) => `    ${f}`));
-  lines.push('', isWindows ? 'After fixing, open a new terminal.' : 'After fixing, open a new terminal or run: source ~/.zshrc');
+  lines.push(
+    '',
+    isWindows
+      ? 'After fixing, open a new terminal.'
+      : 'After fixing, open a new terminal or run: source ~/.zshrc'
+  );
   fail(lines.join('\n'));
 }
 
@@ -58,14 +63,20 @@ if (existsSync(imageDir)) {
   run('sdkmanager', [SYSTEM_IMAGE], { input: 'y\n'.repeat(20) });
 }
 
-const avds = capture('avdmanager', ['list', 'avd', '--compact']).split('\n').map((l) => l.trim());
+const avds = capture('avdmanager', ['list', 'avd', '--compact'])
+  .split('\n')
+  .map((l) => l.trim());
 if (avds.includes(AVD_NAME)) {
   console.log(`[android-setup] AVD "${AVD_NAME}" already exists — nothing to do.`);
 } else {
   console.log(`[android-setup] Creating AVD "${AVD_NAME}" …`);
-  run('avdmanager', ['create', 'avd', '--name', AVD_NAME, '--package', SYSTEM_IMAGE, '--device', DEVICE_ID], {
-    input: 'no\n',
-  });
+  run(
+    'avdmanager',
+    ['create', 'avd', '--name', AVD_NAME, '--package', SYSTEM_IMAGE, '--device', DEVICE_ID],
+    {
+      input: 'no\n',
+    }
+  );
 }
 
 const localProps = join(ROOT, 'android', 'local.properties');

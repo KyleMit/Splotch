@@ -31,7 +31,7 @@
     const response = await fetch(action, {
       method: 'POST',
       headers: { 'x-sveltekit-action': 'true' },
-      body
+      body,
     });
     const result = deserialize(await response.text());
     if (result.type === 'success') await invalidateAll();
