@@ -162,7 +162,7 @@
     "eslint-plugin-svelte": "^3.19.0",
     "globals": "^17.7.0",
     "happy-dom": "^20.10.1",
-    "marked": "^18.0.4",
+    "marked": "^18.0.5",
     "patch-package": "^8.0.1",
     "prettier": "^3.8.4",
     "prettier-plugin-svelte": "^4.1.1",
