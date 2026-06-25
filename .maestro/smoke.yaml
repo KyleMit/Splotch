@@ -33,21 +33,37 @@ appId: art.splotch.app
 # network — only that /admin/native loaded and rendered instead of a blank.
 - tapOn: 'Parent Center'
 - tapOn: 'About'
-- scrollUntilVisible:
-    element:
-      text: 'Version.*'
-    direction: DOWN
-    timeout: 15000
+- takeScreenshot: .maestro/screenshots/smoke-about
+
+# The version-unlock button lives in the About footer, below the fold inside the
+# dialog's vertical scroller. Maestro's built-in scrollUntilVisible swipe gets
+# swallowed by the horizontal scroll-snap tab pager in the iOS WKWebView (it
+# works on Android) — so pan the dialog with explicit, purely-vertical swipes
+# (constant x, so the pager can't read them as a sideways tab change). A small
+# fixed count reaches the short footer and is a no-op once scrolled to the
+# bottom; assertVisible then fails fast with a clear error if it didn't.
+- repeat:
+    times: 6
+    commands:
+      - swipe:
+          start: 50%, 75%
+          end: 50%, 35%
+          duration: 600
+- assertVisible: 'Version.*'
 - repeat:
     times: 5
     commands:
       - tapOn:
           text: 'Version.*'
-- scrollUntilVisible:
-    element:
-      text: 'Admin'
-    direction: DOWN
-    timeout: 10000
+# Revealing the link adds a line to the footer; a couple more vertical swipes
+# guarantee the Admin link is on-screen before tapping it.
+- repeat:
+    times: 2
+    commands:
+      - swipe:
+          start: 50%, 75%
+          end: 50%, 35%
+          duration: 600
 - tapOn: 'Admin'
 - extendedWaitUntil:
     visible: 'Manage AI access codes'
