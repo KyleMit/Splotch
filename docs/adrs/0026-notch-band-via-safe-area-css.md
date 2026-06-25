@@ -12,8 +12,9 @@ and native, on Android and iOS.
 
 There is no single API that colors that strip everywhere:
 
-- **`<meta name="theme-color">`** tints the Android web status bar (Chrome tab /
-  installed PWA) but is ignored by an iOS standalone PWA (which runs
+- **`<meta name="theme-color">`** tints the Android web status bar (Chrome tab;
+  see Consequences for why not the installed PWA) but is ignored by an iOS
+  standalone PWA (which runs
   `black-translucent`) and by the native WebViews.
 - **`@capacitor/status-bar` `setBackgroundColor`** is Android-only and a no-op on
   iOS, where the status bar is a translucent overlay whose background can't be
@@ -98,10 +99,13 @@ color/eraser states, and the no-cutout case, with no DOM.
 - **−** `viewport-fit=cover` is global and shifts every route's relationship to the
   safe area; the inset padding restoring current spacing is a standing tax on any
   new edge-anchored UI (it must add the matching `env(safe-area-inset-*)`).
-- **−** The `theme-color` mechanism only reaches the *installed* Android PWA when
-  the manifest `display` is `standalone` (`web/static/site.webmanifest`).
-  `fullscreen` runs the PWA immersive and hides the status bar entirely, leaving
-  nothing to tint — so the manifest must stay `standalone` for this to work.
+- **−** `theme-color` reaches the Android web status bar only in a Chrome *tab*,
+  not the *installed* PWA: the manifest deliberately uses `display: fullscreen`
+  (`web/static/site.webmanifest`) so the installed PWA runs immersive — maximum
+  canvas for toddlers, no system bars to tap — which also hides the status bar,
+  leaving nothing to tint. `standalone` would tint the status bar but also
+  restores the bottom system navigation bar (PWA `display` controls both bars
+  together, with no top-only option); the lost canvas space wasn't worth it.
 - **−** Cutout detection is a luminance-of-inset heuristic, not a true display-
   cutout API; a device whose status-bar inset sits near the threshold could
   misjudge. Tunable via one constant.

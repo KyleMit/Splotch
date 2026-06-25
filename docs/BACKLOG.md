@@ -2,7 +2,6 @@
 
 ## TODO
 
-* [ ] On android phone, when the web app is installed as a PWA, I don't have the customization of the top status bar
 * [ ] On android, with the two column color layout in landscape mode, the controls drawer is now covered by the color picker, likely because it's been nudged over by the safe-area-inset.
 * [ ] Add incremental version bumps to web.
 * [ ] Possibly add "Check for updates" button on about parent center tab
@@ -157,3 +156,5 @@
 * [x] Add haptics for trashcan when in the clear accept zone
 * [x] Native integration with apple pencil to use eraser
 * [x] On android native in landscape, hide the status bar and move the NotchBand to the hole-punch side, reclaiming the long top edge as canvas
+* [x] Prefer hidden system navigation bar in PWA to customized notch band
+
