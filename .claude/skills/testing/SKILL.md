@@ -16,7 +16,11 @@ and on demand.
 | Unit | Vitest (happy-dom) | `npm run test:unit` | every push / PR |
 | E2E (web) | Playwright | `npm run test:e2e` | every push / PR |
 | Smoke (Android) | Maestro + emulator | `npm run test:android` | **tagged releases only** |
-| Smoke (iOS) | Maestro + simulator | `npm run test:ios` | local only (needs macOS + Xcode) |
+| Smoke (iOS) | Maestro + simulator | `npm run test:ios` | **tagged releases only** (macOS runner) |
+
+A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
+`npm audit --audit-level=critical`) also runs on every push/PR alongside the
+tests — see Continuous integration below.
 | Smoke (API contract) | Node fetch + throwaway `vite dev` | `npm run test:api:smoke` | on demand |
 | Smoke (deployed Blobs) | Node fetch vs a real deploy | `npm run test:blobs:smoke` | on demand (PR preview / prod) |
 
@@ -189,16 +193,26 @@ npm run test:android:device     # re-run as often as you like
 
 | Workflow | Trigger | What it runs |
 | --- | --- | --- |
-| `.github/workflows/test.yml` | every push to `main`, every PR | unit + Playwright E2E |
+| `.github/workflows/test.yml` | every push to `main`, every PR | `quality` (type-check, lint, format:check, audit) + unit + Playwright E2E |
 | `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch` | Android Maestro smoke test |
+| `.github/workflows/ios-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch` | iOS Maestro smoke test (macOS runner) |
+| `.github/workflows/blobs-smoke.yml` | Netlify `deployment_status` success + manual `workflow_dispatch` | Netlify Blobs persistence round-trip (ADR-0025) |
 
-The Android smoke workflow is deliberately tag-only — an emulator job is the
+The `blobs-smoke` workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching the
+deploy's admin secret; without it the job fails at the login step. The iOS smoke
+mirrors Android but on a `macos-latest` runner — the debug build targets the
+simulator, so no signing secrets are involved.
+
+The native smoke workflows are deliberately tag-only — an emulator/simulator job is the
 heaviest thing in CI, and a launch crash is exactly the kind of regression you
-want caught at release time. It runs on **macOS** (hardware-accelerated emulator,
-no KVM setup), builds the **debug** APK (auto-signed, no secrets needed; `cap:sync`
-still bakes the production web bundle), installs it onto an emulator booted by
+want caught at release time. The Android job runs on **Ubuntu + KVM** (the
+emulator-runner's most reliable path; macOS ARM runners hit an HVF init failure),
+builds the **debug** APK (auto-signed, no secrets needed; `cap:sync` still bakes
+the production web bundle), installs it onto an emulator booted by
 `reactivecircus/android-emulator-runner`, and runs `npm run test:android:device`.
-The Maestro report is uploaded as a build artifact.
+The iOS job runs `npm run test:ios` on a macOS runner, which boots a simulator,
+builds the debug app, and runs the same Maestro flow. The Maestro report is
+uploaded as a build artifact.
 
 > CI uses `test:android:device` (not `test:android`) because the emulator-runner
 > action already provides a booted emulator — the one-shot would try to boot a
