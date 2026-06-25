@@ -190,7 +190,7 @@
     "@capacitor/screen-orientation": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
     "@fontsource-variable/quicksand": "^5.2.10",
-    "@google/genai": "^2.6.0",
+    "@google/genai": "^2.10.0",
     "@netlify/blobs": "^10.7.9",
     "@sveltejs/adapter-static": "^3.0.10",
     "idb": "^8.0.3"
