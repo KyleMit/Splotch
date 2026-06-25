@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import ErrorScreen from '$lib/components/ErrorScreen.svelte';
   // Import the package's CSS entry explicitly: the bare specifier resolves to
   // index.css via the package's exports map, but only a path ending in `.css`
   // matches Vite's ambient `*.css` module type (so svelte-check stays happy).
@@ -22,4 +23,10 @@
   });
 </script>
 
-{@render children()}
+<svelte:boundary onerror={(error) => console.error('[render error]', error)}>
+  {@render children()}
+
+  {#snippet failed(_error, reset)}
+    <ErrorScreen onRestart={reset} />
+  {/snippet}
+</svelte:boundary>
