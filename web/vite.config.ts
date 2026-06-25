@@ -1,16 +1,48 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'node:fs';
-
-// The user-facing release version is the single source of truth in package.json
-// (bumped by scripts/release.mjs). It stays at the repo root (one dir up from web/).
-// BUILD_TIME is kept separately for debugging.
-const APP_VERSION = JSON.parse(readFileSync('../package.json', 'utf8')).version;
-const BUILD_TIME = new Date().toISOString().slice(0, 16).replace('T', ' ');
+import { execSync } from 'node:child_process';
 
 // The native apps bundle a static export and never use a service worker (the
 // shell and all assets are already on-device), so skip the PWA plugin there.
 const isCapacitor = process.env.CAPACITOR === 'true';
+
+// package.json (at the repo root, one dir up from web/) holds the canonical
+// major.minor, bumped by scripts/release.mjs. Native keeps that exact version —
+// store submissions need deliberate, controlled numbers. The web build instead
+// auto-derives the patch from git so every push to main gets a fresh version
+// (so /version.json moves and the PWA stuck-client recovery stays live):
+//   major.minor.<commits since the last release tag>   e.g. 1.2.45
+// Netlify's deploy uses a blobless clone (full history + tags, only file blobs
+// deferred), so `git describe` works on prod. If history/tags are ever missing
+// we fall back to major.minor.0+<sha> — still unique per commit, never a stale
+// bare version. BUILD_TIME is kept separately for debugging.
+const PKG_VERSION = JSON.parse(readFileSync('../package.json', 'utf8')).version;
+const BUILD_TIME = new Date().toISOString().slice(0, 16).replace('T', ' ');
+
+function git(args: string): string {
+  return execSync(`git ${args}`, { stdio: ['ignore', 'pipe', 'ignore'] })
+    .toString()
+    .trim();
+}
+
+function webVersion(pkg: string): string {
+  const [major, minor] = pkg.split('.');
+  try {
+    // e.g. "v1.2.0-45-gabc1234" — 45 commits since the last release tag.
+    const match = git('describe --tags --long --match "v*"').match(/-(\d+)-g[0-9a-f]+$/);
+    if (match) return `${major}.${minor}.${match[1]}`;
+  } catch {
+    // no reachable tag — fall through to the SHA-based marker
+  }
+  try {
+    return `${major}.${minor}.0+${git('rev-parse --short HEAD')}`;
+  } catch {
+    return pkg;
+  }
+}
+
+const APP_VERSION = isCapacitor ? PKG_VERSION : webVersion(PKG_VERSION);
 
 // On a native device there is no local server, so the AI button must call the
 // hosted endpoint. On the web this stays empty and the relative path is used.

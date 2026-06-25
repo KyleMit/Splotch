@@ -8,6 +8,12 @@
 //
 // Native version numbers are set with capacitor-set-version so Android and iOS
 // stay in sync; package.json is the canonical semver source.
+//
+// Bump major/minor here for a real release. The package.json *patch* digit is
+// web-irrelevant: the web build derives its patch from the commit count since
+// this release's git tag (major.minor.<commits-since-tag>, ADR-0030), so the tag
+// created below is what resets the web patch to 0. Native still ships the exact
+// package.json version.
 
 import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
