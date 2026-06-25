@@ -1,6 +1,7 @@
 ---
 description: Audit package.json dependencies for updates (incl. majors), then upgrade them one at a time — read the migration guide, fix all usage, verify, and commit each on its own
 argument-hint: "[package-name] (optional — limit the run to a single dependency)"
+disable-model-invocation: true
 ---
 
 Bring the project's dependencies up to date **deliberately**: one package at a
@@ -60,7 +61,10 @@ straight to step 3 for it.
 
 ## Phase 3 — Execute, one package at a time (autonomous)
 
-Work through the approved list **sequentially**. For each package:
+**Start from a clean tree.** Run `git status` first; if anything unrelated is
+uncommitted (e.g. a lockfile the `postinstall` hook reconciled), commit or
+revert it before touching dependencies, so no upgrade commit picks up stray
+changes. Then work through the approved list **sequentially**. For each package:
 
 6. **Read the migration guide.** Use `WebSearch` / `WebFetch` to find the
    release notes / changelog / upgrade guide for the target version (the
@@ -85,7 +89,9 @@ Work through the approved list **sequentially**. For each package:
    broken.
 10. **Commit just this upgrade.** Stage `package.json`, `package-lock.json`, any
     `patches/` change, and the source edits this upgrade required — nothing from
-    other packages. Use a plain imperative subject matching the repo's style,
+    other packages. Review the staged diff (`git diff --cached`) to confirm it's
+    scoped to this one package before committing. Use a plain imperative subject
+    matching the repo's style,
     e.g. `Upgrade vitest to 4.x` or `Bump @capacitor/* to 8.4`. Mention the
     notable breaking change handled in the body if it's non-obvious. Then move to
     the next package.
