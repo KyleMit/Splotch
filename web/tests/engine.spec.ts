@@ -196,6 +196,87 @@ test('a pen pointer bypasses the color-change debounce', async ({ page }) => {
   expect(painted).toBeGreaterThan(0);
 });
 
+// The harness canvas is 300×300 at the viewport origin (renderScale 1) — a
+// square is treated as portrait (width ≤ height), so the bottom band
+// (EDGE_SWIPE_BAND_PX = 24) is y ≥ 276. Portrait guards the bottom from
+// orientation alone, needing no injected insets; landscape tests resize the
+// canvas wider than tall.
+test('in portrait a touch swiping up from the bottom edge is discarded as the OS gesture', async ({ page }) => {
+  const dropped = await page.evaluate(() => {
+    window.__engine.strokeSync([{ x: 60, y: 290 }, { x: 60, y: 230 }], 'touch');
+    return window.__engine.nonTransparentCount();
+  });
+  expect(dropped).toBe(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(true);
+  // A discarded swipe never snapshots, so the undo button stays disabled.
+  expect(s.canUndo).toBe(false);
+});
+
+test('a touch starting at the bottom edge but moving sideways still draws', async ({ page }) => {
+  const painted = await page.evaluate(() => {
+    window.__engine.strokeSync([{ x: 60, y: 290 }, { x: 220, y: 290 }], 'touch');
+    return window.__engine.nonTransparentCount();
+  });
+  expect(painted).toBeGreaterThan(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(false);
+  expect(s.canUndo).toBe(true);
+});
+
+test('an upward touch that starts above the bottom band draws normally', async ({ page }) => {
+  // Only the edge band is special — an upward stroke from mid-canvas is a real
+  // stroke, not the system gesture.
+  const painted = await page.evaluate(() => {
+    window.__engine.strokeSync([{ x: 60, y: 150 }, { x: 60, y: 90 }], 'touch');
+    return window.__engine.nonTransparentCount();
+  });
+  expect(painted).toBeGreaterThan(0);
+});
+
+test('a stationary tap at a guarded edge still leaves a dot', async ({ page }) => {
+  // Lifting before the direction is decided is a tap, not a swipe, so it commits.
+  const painted = await page.evaluate(() => {
+    window.__engine.strokeSync([{ x: 60, y: 290 }], 'touch');
+    return window.__engine.nonTransparentCount();
+  });
+  expect(painted).toBeGreaterThan(0);
+});
+
+test('in phone landscape the guard moves to the short side edges, not the long bottom', async ({ page }) => {
+  // A phone's physical-bottom navbar rotates to a short side edge in landscape.
+  // No insets are injected — orientation alone guards both short edges, so this
+  // works even where the OS exposes no safe-area insets.
+  await page.evaluate(() => window.__engine.resizeTo(400, 300));
+
+  // A swipe inward from the short left edge is the OS gesture → discarded.
+  const fromSide = await page.evaluate(() => {
+    window.__engine.strokeSync([{ x: 8, y: 150 }, { x: 70, y: 150 }], 'touch');
+    return window.__engine.nonTransparentCount();
+  });
+  expect(fromSide).toBe(0);
+
+  // A stroke swiping up from the long bottom edge is NOT the navbar gesture on a
+  // phone in landscape, so it must still draw.
+  const fromBottom = await page.evaluate(() => {
+    window.__engine.strokeSync([{ x: 200, y: 290 }, { x: 200, y: 230 }], 'touch');
+    return window.__engine.nonTransparentCount();
+  });
+  expect(fromBottom).toBeGreaterThan(0);
+});
+
+test('in tablet landscape a reported bottom inset additionally guards the long bottom', async ({ page }) => {
+  // A tablet keeps its home indicator on the long bottom in landscape; the OS
+  // reports an inset there, so an upward swipe from that edge is discarded.
+  const dropped = await page.evaluate(() => {
+    window.__engine.resizeTo(400, 300);
+    window.__engine.setSafeAreaInsets({ top: 0, right: 0, bottom: 30, left: 0 });
+    window.__engine.strokeSync([{ x: 200, y: 290 }, { x: 200, y: 230 }], 'touch');
+    return window.__engine.nonTransparentCount();
+  });
+  expect(dropped).toBe(0);
+});
+
 test('an export started just before a clear still captures the drawing (save-on-delete race)', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 

@@ -9,17 +9,30 @@ interface DrawSoundData {
   speed: number;
 }
 
+// Screen edge whose system-gesture band a stroke started in (the top is never
+// guarded). The inward direction — the swipe that gets discarded — is toward
+// the canvas centre, perpendicular to this edge.
+type GuardEdge = 'bottom' | 'left' | 'right';
+
 interface PointerState {
   x: number;
   y: number;
   midX: number;
   midY: number;
+  startX: number;
+  startY: number;
   isDrawing: boolean;
   color: string;
   lineWidth: number;
   erase: boolean;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
+  // Non-null while a touch that began in a guarded edge's gesture band hasn't
+  // decided its direction yet: render nothing and buffer its points until it
+  // either commits (any non-inward movement, or a stationary tap on lift) or is
+  // discarded as an OS edge-swipe (an inward flick). See EDGE_SWIPE_* below.
+  edgeSwipeGuard: GuardEdge | null;
+  pendingPoints: { x: number; y: number }[];
 }
 
 interface UndoSnapshot {
@@ -104,6 +117,38 @@ const COLOR_CHANGE_DEBOUNCE_MS = 100;
 // canvas's shorter side, so it scales with canvas size and render scale.
 const POINTER_RESUME_GAP_MS = 100;
 const POINTER_RESUME_JUMP_RATIO = 0.1;
+
+// The iPad/Android system gesture for the home/menu bar is a swipe inward from
+// the device's physical-bottom edge, so a touch starting in that edge's gesture
+// band is probably not a stroke. Such a touch is buffered, not drawn, until it
+// has travelled EDGE_SWIPE_DECISION_PX: a swipe inward (perpendicular to the
+// edge, within ~45°) is the system gesture and is discarded; any other
+// direction — or a stationary tap — commits as a normal stroke. Which edges to
+// guard is driven by orientation (always available, so this works even where
+// the OS exposes no safe-area insets): the bottom in portrait, and both short
+// side edges in landscape — a phone's physical bottom rotates to a short edge.
+// A tablet instead keeps its home indicator on the long bottom in landscape, so
+// that edge is additionally guarded, but only when the OS reports an inset there
+// (so we don't suppress ordinary strokes along a phone's long bottom). The top
+// edge is never guarded. Only touch input is affected; pen and mouse never
+// trigger the gesture. Children who want to draw at a guarded edge draw away.
+const EDGE_SWIPE_BAND_PX = 24;
+const EDGE_SWIPE_DECISION_PX = 12;
+
+// Minimum safe-area inset (CSS px) that marks the landscape long-bottom edge as
+// a real home-indicator zone (tablets). Below it the long bottom draws normally;
+// home indicators (~21px) and navigation bars clear it.
+const GESTURE_INSET_MIN_PX = 16;
+
+// OS safe-area insets in CSS px, pushed from the canvas's owner component. Used
+// only to additionally guard a tablet's long bottom edge in landscape (above).
+let safeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+
+// One undo snapshot + one empty-state flip per stroke group (all fingers down
+// together). Set the first time the group paints a pixel — deferred so a
+// buffered edge-swipe candidate that's later discarded never pollutes the undo
+// stack or the empty flag. Reset when the last finger lifts.
+let groupHasDrawn = false;
 
 function setCanvasEmptyState(empty: boolean) {
   if (canvasEmpty === empty) return;
@@ -255,6 +300,7 @@ export function releaseAllPointers() {
 
   if (activePointers.size > 0) syncVirtualCanvas();
   activePointers.clear();
+  groupHasDrawn = false;
 
   activePointerIds.forEach((pointerId) => {
     try {
@@ -267,16 +313,93 @@ export function releaseAllPointers() {
   activePointerIds.clear();
 }
 
+// First paint of a stroke group: snapshot for undo and flip the empty flag,
+// once. A multi-touch gesture undoes as a single unit, and later fingers skip
+// the full-canvas copy so they start instantly.
+function beginRender() {
+  if (groupHasDrawn) return;
+  saveUndoSnapshot();
+  setCanvasEmptyState(false);
+  groupHasDrawn = true;
+}
+
+// Paint the round dot that anchors a stroke at its start point, and kick the
+// drawing sound. Used both for a normal pointerdown and when a deferred
+// edge-swipe candidate commits.
+function renderStrokeStart(ps: PointerState) {
+  beginRender();
+
+  const dotRadius = ps.lineWidth / 2;
+  // Erasing clears pixels via destination-out; the stroke color is irrelevant
+  // there, only its (opaque) alpha matters.
+  const op = ps.erase ? 'destination-out' : 'source-over';
+
+  ctx.globalCompositeOperation = op;
+  ctx.strokeStyle = ps.color;
+  ctx.fillStyle = ps.color;
+  ctx.beginPath();
+  ctx.arc(ps.x, ps.y, dotRadius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(ps.x, ps.y);
+  ctx.globalCompositeOperation = 'source-over';
+
+  if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0 });
+}
+
+// A buffered edge-swipe candidate turned out to be a real stroke: render its
+// start dot and flush every point withheld while the direction was undecided,
+// then let it draw normally from here on.
+function commitEdgeSwipe(ps: PointerState) {
+  ps.edgeSwipeGuard = null;
+  renderStrokeStart(ps);
+  if (ps.pendingPoints.length > 0) {
+    strokeSmoothSegments(ps, ps.pendingPoints);
+    ps.pendingPoints = [];
+  }
+  // Restart speed sampling from the commit point so the buffered span doesn't
+  // register as one giant first chord.
+  const now = Date.now();
+  ps.speedSamples = [{ t: now, distance: 0 }];
+  ps.lastTime = now;
+}
+
+// The guarded edge (if any) a start point sits in — within EDGE_SWIPE_BAND_PX of
+// the edge. Orientation picks the edges (see EDGE_SWIPE_BAND_PX); coordinates
+// are backing-store px so the band scales with renderScale, while the tablet
+// inset gate is a plain CSS-px threshold.
+function guardedEdgeAt(x: number, y: number): GuardEdge | null {
+  const band = EDGE_SWIPE_BAND_PX * renderScale;
+
+  // Portrait: the system home/navbar is always along the bottom.
+  if (canvas.width <= canvas.height) {
+    return y >= canvas.height - band ? 'bottom' : null;
+  }
+
+  // Landscape: a phone's physical-bottom navbar is on a short side edge, so
+  // guard both short edges. A tablet keeps its home indicator on the long
+  // bottom — guard that too, but only when the OS reports an inset there.
+  if (safeInsets.bottom >= GESTURE_INSET_MIN_PX && y >= canvas.height - band) return 'bottom';
+  if (x <= band) return 'left';
+  if (x >= canvas.width - band) return 'right';
+  return null;
+}
+
+// Drop a pointer without rendering anything (an OS edge-swipe). Nothing was
+// painted, so undo/empty state and the group flag are left untouched.
+function discardPointer(e: PointerEvent) {
+  activePointers.delete(e.pointerId);
+  activePointerIds.delete(e.pointerId);
+  ctx.beginPath();
+  try {
+    canvas.releasePointerCapture(e.pointerId);
+  } catch {}
+}
+
 function startDrawing(e: PointerEvent) {
   const timeSinceColorChange = Date.now() - lastColorChangeTime;
   const requiredDelay = e.pointerType === 'pen' ? 0 : COLOR_CHANGE_DEBOUNCE_MS;
   if (timeSinceColorChange < requiredDelay) return;
-
-  // One snapshot per stroke group (active-pointer count going 0 → 1), not per
-  // finger: a multi-touch gesture undoes as a single unit, and later fingers
-  // skip the full-canvas copy so they start instantly.
-  if (activePointers.size === 0) saveUndoSnapshot();
-  setCanvasEmptyState(false);
 
   const { x, y } = pointerToCanvas(e);
 
@@ -285,40 +408,33 @@ function startDrawing(e: PointerEvent) {
   const lineWidth =
     (eraserActive ? currentLineWidth * ERASER_SIZE_MULTIPLIER : currentLineWidth) * renderScale;
 
-  activePointers.set(e.pointerId, {
+  const edgeSwipeGuard = e.pointerType === 'touch' ? guardedEdgeAt(x, y) : null;
+
+  const now = Date.now();
+  const pointerState: PointerState = {
     x,
     y,
     midX: x,
     midY: y,
+    startX: x,
+    startY: y,
     isDrawing: true,
     color: currentColor,
     lineWidth,
     erase: eraserActive,
-    lastTime: Date.now(),
+    lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
     // divide by.
-    speedSamples: [{ t: Date.now(), distance: 0 }]
-  });
+    speedSamples: [{ t: now, distance: 0 }],
+    edgeSwipeGuard,
+    pendingPoints: []
+  };
+  activePointers.set(e.pointerId, pointerState);
   activePointerIds.add(e.pointerId);
 
-  const dotRadius = lineWidth / 2;
-
-  // Erasing clears pixels via destination-out; the stroke color is irrelevant
-  // there, only its (opaque) alpha matters.
-  const op = eraserActive ? 'destination-out' : 'source-over';
-
-  ctx.globalCompositeOperation = op;
-  ctx.strokeStyle = currentColor;
-  ctx.fillStyle = currentColor;
-  ctx.beginPath();
-  ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.globalCompositeOperation = 'source-over';
-
-  if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0 });
+  // A candidate paints nothing yet — renderStrokeStart runs later, on commit.
+  if (!edgeSwipeGuard) renderStrokeStart(pointerState);
 
   if (e.pointerType !== 'pen') {
     try {
@@ -360,6 +476,33 @@ function draw(e: PointerEvent) {
   const points = events.map(pointerToCanvas);
 
   const now = Date.now();
+
+  // Edge-gesture candidate: withhold rendering until the direction is decided.
+  if (pointerState.edgeSwipeGuard) {
+    pointerState.pendingPoints.push(...points);
+    const last = points[points.length - 1];
+    const dx = last.x - pointerState.startX;
+    const dy = last.y - pointerState.startY;
+    if (Math.hypot(dx, dy) < EDGE_SWIPE_DECISION_PX * renderScale) return;
+    // Decided. Resolve travel into an inward component (perpendicular to the
+    // guarded edge, toward the canvas centre) and a cross component along it. A
+    // mostly-inward flick (within ~45°) is the OS gesture — discard the whole
+    // stroke. Anything else is a real stroke; commit it and let the next
+    // pointermove draw normally.
+    let inward = 0;
+    let cross = 0;
+    switch (pointerState.edgeSwipeGuard) {
+      case 'bottom': inward = -dy; cross = Math.abs(dx); break;
+      case 'left': inward = dx; cross = Math.abs(dy); break;
+      case 'right': inward = -dx; cross = Math.abs(dy); break;
+    }
+    if (inward > 0 && inward >= cross) {
+      discardPointer(e);
+    } else {
+      commitEdgeSwipe(pointerState);
+    }
+    return;
+  }
 
   // A resumed pointer (see POINTER_RESUME_GAP_MS) reappears far from where it
   // left off after an idle gap, with no coalesced samples bridging the two.
@@ -403,15 +546,25 @@ function stopDrawing(e?: PointerEvent) {
 
   const pointerState = activePointers.get(e.pointerId);
 
+  // An edge-band touch that lifted before its direction was decided was a tap,
+  // not a swipe — commit it (typically just the start dot). A pointercancel
+  // (the OS took the gesture over) instead leaves it a candidate, so nothing is
+  // rendered and the canvas state below is left alone.
+  if (pointerState?.edgeSwipeGuard && e.type === 'pointerup') {
+    commitEdgeSwipe(pointerState);
+  }
+
   activePointers.delete(e.pointerId);
   activePointerIds.delete(e.pointerId);
 
   ctx.beginPath();
 
-  if (pointerState) {
+  if (pointerState && !pointerState.edgeSwipeGuard) {
     syncVirtualCanvas();
     if (pointerState.erase) setCanvasEmptyState(scanCanvasIsEmpty());
   }
+
+  if (activePointers.size === 0) groupHasDrawn = false;
 
   if (onDrawStopCallback) onDrawStopCallback();
 
@@ -522,6 +675,18 @@ export function setStrokeWidth(widthPx: number) {
 
 export function setEraserMode(active: boolean) {
   eraserActive = active;
+}
+
+// CSS-px OS safe-area insets, used to decide which edges sit under a system
+// gesture zone (see EDGE_SWIPE_BAND_PX). Pushed by the canvas's owner component
+// on mount and whenever orientation/inset changes.
+export function setSafeAreaInsets(insets: {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}) {
+  safeInsets = insets;
 }
 
 export function clearCanvas() {

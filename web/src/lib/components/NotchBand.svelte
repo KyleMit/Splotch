@@ -5,36 +5,25 @@
   import { isNative, getPlatform } from '$lib/platform';
   import { lazyPluginModule } from '$lib/nativePlugin';
   import { computeNotchBandState, type Orientation } from '$lib/notchBand';
+  import { measureSafeAreaInsets } from '$lib/safeArea';
 
   const loadStatusBar = lazyPluginModule(() => import('@capacitor/status-bar'));
 
-  // Measured env(safe-area-inset-*), in CSS px. A hidden probe is the only
-  // reliable way to read a safe-area inset as a number across engines; we need
-  // the number (not just the CSS value) to tell a real notch from a bezel. We
-  // track the top and both sides so the band can follow the hole-punch as it
-  // rotates from the top (portrait) to a side (landscape).
+  // Measured env(safe-area-inset-*), in CSS px — we need the number (not just
+  // the CSS value) to tell a real notch from a bezel. The top and both sides
+  // are tracked so the band can follow the hole-punch as it rotates from the
+  // top (portrait) to a side (landscape).
   let insetTop = $state(0);
   let insetLeft = $state(0);
   let insetRight = $state(0);
   let orientation = $state<Orientation>('portrait');
 
-  function measureInset(side: 'top' | 'left' | 'right'): number {
-    const probe = document.createElement('div');
-    const axis = side === 'top' ? 'height' : 'width';
-    const cross = side === 'top' ? 'width:0' : 'height:0';
-    probe.style.cssText =
-      `position:fixed;top:0;left:0;${axis}:env(safe-area-inset-${side});${cross};visibility:hidden;pointer-events:none`;
-    document.body.appendChild(probe);
-    const rect = probe.getBoundingClientRect();
-    probe.remove();
-    return side === 'top' ? rect.height : rect.width;
-  }
-
   function measure() {
     if (typeof document === 'undefined') return;
-    insetTop = measureInset('top');
-    insetLeft = measureInset('left');
-    insetRight = measureInset('right');
+    const insets = measureSafeAreaInsets();
+    insetTop = insets.top;
+    insetLeft = insets.left;
+    insetRight = insets.right;
     orientation = window.matchMedia('(orientation: landscape)').matches ? 'landscape' : 'portrait';
   }
 

@@ -4,7 +4,6 @@
 
 * [ ] Possibly add "Check for updates" button on about parent center tab
 * [ ] inefficent layout on iphone at tops and bottom
-* [ ] swiping up from the bottom is a very common gesture on ipad/android to get the menu bar.  if a stroke starts right at the edge of the bottom of the panel within a certain number of pixels and immediately tracks up, then don't render it. people who want bottom strokes will just have to draw down toward the bottom
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
 * [ ] Add sound effects when deleting
@@ -20,7 +19,6 @@
   * [ ] If AI call fails and you need to try again, enable a way to do so immediately
   * [ ] AI Style buttons should use custom image and then generate corresponding output for each.
   * [ ] Build custom AI Prompts in the parent center.  Generate a logo for them from the base style and then enable.  Save logo locally
-* [ ] Refactor to use drag and drop API (doesn't work on mobile - polyfill?)
 * [ ] Add /about page for marketing page with download links
 * [ ] Once ios and android stores ship, link to native downloads in parent center
 * [ ] Setup fastlane to automate store deployments
@@ -155,5 +153,7 @@
 * [x] Native integration with apple pencil to use eraser
 * [x] On android native in landscape, hide the status bar and move the NotchBand to the hole-punch side, reclaiming the long top edge as canvas
 * [x] Prefer hidden system navigation bar in PWA to customized notch band
-* [ ] Fix controls drawer overlap from safe-area-inset
+* [x] Fix controls drawer overlap from safe-area-inset
 * [x] Add incremental version bumps to web.
+* [x] prevent accidental swipes from bottom
+* [x] Rule out using drag and drop API (doesn't work on mobile)
