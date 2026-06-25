@@ -118,7 +118,11 @@ interaction (hold the instance strongly — `UIPencilInteraction.delegate` is we
 empty `pluginMethods` and instead `notifyListeners("doubleTap", …)`; the JS facade
 (`web/src/lib/plugins/pencilEraser.ts`) subscribes with `addListener` and exports
 `initPencilEraser()`, which `DrawingCanvas.svelte` lazy-starts only when `isNative()` so
-`@capacitor/core` never loads on web. The web fallback's `addListener` is inert.
+`@capacitor/core` never loads on web. The web fallback's `addListener` is inert. The feature
+is on by default but parent-disablable: the listener's `handleDoubleTap()` sets a sticky
+`applePencilSeen` flag (lazy detection — there's no web API to query pencil pairing) and only
+toggles when `pencilEraserEnabled` is on; the Parent Center shows that toggle only
+`{#if settings.applePencilSeen}` so it appears solely on pencil-capable devices.
 
 Adding native plugin code needs a **fresh native build** (`android:run` / `ios:run`);
 `cap:sync` alone won't compile/register the new Swift/Java classes.

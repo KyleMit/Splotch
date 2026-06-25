@@ -30,6 +30,13 @@ existing tool state.
   eraser," which is predictable for a parent who may not have configured the system setting.
 - **iOS / Apple Pencil only.** We did *not* wire up the generic PointerEvent eraser-button
   path, so eraser-tipped styluses on web/Android are out of scope this round.
+- **Parent opt-out, revealed by use.** Toddlers double-tapping at random flip pen↔eraser and
+  get confused, so parents need an off switch — but only the minority of devices have a
+  pencil, so a permanent toggle would be clutter for everyone else. There is no reliable
+  web-exposed API to ask "is an Apple Pencil paired," so instead of proactive detection we
+  detect **lazily**: the first double-tap sets a sticky per-device flag, and the Parent
+  Center toggle appears only once that flag is set. The feature defaults **on** so it works
+  out of the box; the very first double-tap both erases and reveals the off switch.
 
 ## Decision
 
@@ -54,11 +61,19 @@ and the first to attach a **UIKit interaction to the web view**:
   facade with an inert `web` fallback, loaded through `lazyPluginModule()` so
   `@capacitor/core` stays out of the SSR/prerender graph. It also exports
   `initPencilEraser()`, which (only when `isNative()` and the platform is `ios`) subscribes to
-  `doubleTap`, calls `toggleEraser()` (`tool.svelte.ts`) and an `impactThreshold()` haptic,
-  and returns a cleanup that detaches the listener — synchronous-return even though the
-  subscription resolves asynchronously. `DrawingCanvas.svelte`'s `onMount` lazy-loads and
-  starts it (guarded by `isNative()` so the module — and `@capacitor/core` — never load on
-  web) and runs the cleanup on teardown.
+  `doubleTap` and returns a cleanup that detaches the listener — synchronous-return even
+  though the subscription resolves asynchronously. `DrawingCanvas.svelte`'s `onMount`
+  lazy-loads and starts it (guarded by `isNative()` so the module — and `@capacitor/core` —
+  never load on web) and runs the cleanup on teardown.
+- **Behavior / opt-out** — the listener calls `handleDoubleTap()`, a pure-enough exported
+  function that (1) sets the sticky `applePencilSeen` flag the first time it runs, then
+  (2) toggles the eraser + fires an `impactThreshold()` haptic **only if**
+  `pencilEraserEnabled` is on. Both live in the table-driven `settings.svelte.ts`
+  (`pencilEraserEnabled` default `true`, `applePencilSeen` default `false`). Detection is
+  recorded even while the feature is disabled so the toggle stays available to re-enable.
+  `SettingsToggles.svelte` renders the "Apple Pencil double-tap to erase" row only
+  `{#if settings.applePencilSeen}`, mirroring the existing conditional `showOrientationControls`
+  rows.
 
 `toggleEraser()` was added to `tool.svelte.ts` as the shared flip used by the bridge (and
 available to the on-screen button), keeping the toggle logic in one unit-testable place.
@@ -66,7 +81,10 @@ available to the on-screen button), keeping the toggle logic in one unit-testabl
 ## Consequences
 
 - **+** On iPad with an Apple Pencil 2 / Pro, a double-tap toggles pen ↔ eraser with a haptic
-  tick, matching the on-screen button — no UI change, no web/Android impact.
+  tick, matching the on-screen button — no web/Android impact.
+- **+** Parents get an off switch that only shows up on devices where it's relevant (a pencil
+  has been used), so the Parent Center stays uncluttered for the finger-only majority while
+  giving pencil households a way to stop accidental tool-flipping.
 - **+** Extends ADR-0027's local-plugin pattern to **event-emitting** plugins
   (`notifyListeners` + a JS `addListener` facade) and to **attaching a UIKit interaction to
   the web view** from `capacitorDidLoad()` — documented in the `mobile` skill.
