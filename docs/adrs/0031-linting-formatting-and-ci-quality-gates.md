@@ -41,10 +41,9 @@ these deliberate choices:
   the local loop friction-free. The `quality` job is the gate.
 - **The dependency-audit gate is `critical` only.** `npm audit` reports a large
   pre-existing transitive count (ADR-0029), mostly build-time and unfixable; a
-  `high` gate would make CI perpetually red and be ignored. Instead the
-  actionable update stream is automated via **Dependabot** (`.github/dependabot.yml`,
-  npm + github-actions, grouped minor/patch), and CI hard-fails only on
-  `critical` severities — rare and genuinely worth blocking a release for.
+  `high` gate would make CI perpetually red and be ignored. Instead CI
+  hard-fails only on `critical` severities — rare and genuinely worth blocking a
+  release for.
 - **`precheck` runs `svelte-kit sync`** so `npm run check` generates
   `.svelte-kit/tsconfig.json` and works standalone in CI (mirrors `predev`).
 

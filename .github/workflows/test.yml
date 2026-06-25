@@ -33,7 +33,7 @@ jobs:
       - name: Format check
         run: npm run format:check
 
-      # Build-time/transitive advisories are tracked by Dependabot PRs; CI only
+      # Build-time/transitive advisories are mostly unfixable; CI only
       # hard-fails on critical severities so the gate stays meaningful, not noisy.
       - name: Audit dependencies
         run: npm audit --audit-level=critical
