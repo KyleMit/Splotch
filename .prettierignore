@@ -1,0 +1,11 @@
+**/.svelte-kit/
+**/build/
+**/.netlify/
+**/node_modules/
+android/
+ios/
+package-lock.json
+web/src/lib/components/icon-names.d.ts
+web/src/lib/releases.json
+web/tests/**/*-snapshots/
+*.svg

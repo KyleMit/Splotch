@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # npm dependencies (single root manifest serves the web app and the Capacitor wrapper).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Keep the noise low: batch routine patch/minor bumps into one PR per area,
+      # leaving majors (which need deliberate testing — e.g. adapter-netlify and
+      # @netlify/blobs are load-bearing, ADR-0025) as individual PRs.
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      production-dependencies:
+        dependency-type: production
+        update-types: [minor, patch]
+
+  # GitHub Actions used by the CI / Android-deploy workflows.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
