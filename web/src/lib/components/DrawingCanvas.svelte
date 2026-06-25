@@ -14,6 +14,11 @@
   import { coloringBookState } from '$lib/state/coloringBook.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
+  import { isNative } from '$lib/platform';
+  import { lazyPluginModule } from '$lib/nativePlugin';
+
+  // Loaded lazily and only on native so @capacitor/core never enters the web/SSR graph.
+  const loadPencilEraser = lazyPluginModule(() => import('$lib/plugins/pencilEraser'));
 
   let canvasEl: HTMLCanvasElement;
 
@@ -51,7 +56,19 @@
 
     setStrokeWidth(getStrokeWidthPx(activeStrokeSize()));
 
-    return () => engine.teardown();
+    // Apple Pencil double-tap → toggle eraser (iOS native only). Subscription is async, so
+    // hold the cleanup behind a ref the teardown can call once it resolves.
+    let pencilCleanup: (() => void) | undefined;
+    if (isNative()) {
+      loadPencilEraser().then(({ initPencilEraser }) => {
+        pencilCleanup = initPencilEraser();
+      });
+    }
+
+    return () => {
+      engine.teardown();
+      pencilCleanup?.();
+    };
   });
 
   // Warm up the pencil-sound assets as soon as sound is on (at mount, or when

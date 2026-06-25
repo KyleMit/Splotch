@@ -14,7 +14,8 @@
     setColoringBook,
     setAdvancedControls,
     setLockRotation,
-    setForceLandscapeOrientation
+    setForceLandscapeOrientation,
+    setPencilEraserEnabled
   } from '$lib/state/settings.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { supportsOrientationLock } from '$lib/platform';
@@ -210,7 +211,20 @@
   </div>
   {/if}
   {/if}
-  
+
+  {#if settings.applePencilSeen}
+  <div class="setting" transition:slide={{ duration: 220 }}>
+    <ToggleRow
+      icon="eraser"
+      label="Apple Pencil double-tap to erase"
+      id="pencilEraserToggle"
+      checked={settings.pencilEraserEnabled}
+      onToggle={setPencilEraserEnabled}
+      help="Double-tap an Apple Pencil to switch between drawing and erasing"
+    />
+  </div>
+  {/if}
+
 </section>
 
 <section class="setting-group">

@@ -27,6 +27,8 @@ const DRAWER_OPEN_KEY = 'splotch-drawer-open';
 const ADMIN_LINK_VISIBLE_KEY = 'splotch-admin-link-visible';
 const LOCK_ROTATION_KEY = 'splotch-lock-rotation';
 const FORCE_LANDSCAPE_KEY = 'splotch-force-landscape';
+const PENCIL_ERASER_KEY = 'splotch-pencil-eraser-enabled';
+const APPLE_PENCIL_SEEN_KEY = 'splotch-apple-pencil-seen';
 
 function defaultForceLandscapeOrientation() {
   if (typeof window === 'undefined') return true;
@@ -72,7 +74,16 @@ const BOOL_SETTINGS = {
   // in below from the viewport so phones start portrait while tablet-class
   // devices, including iPad Mini, start landscape.
   lockRotationEnabled: [LOCK_ROTATION_KEY, true],
-  forceLandscapeOrientation: [FORCE_LANDSCAPE_KEY, defaultForceLandscapeOrientation()]
+  forceLandscapeOrientation: [FORCE_LANDSCAPE_KEY, defaultForceLandscapeOrientation()],
+  // Apple Pencil double-tap → toggle eraser (iOS native). On by default; the
+  // toggle that controls it only appears once a pencil has actually been used on
+  // this device (applePencilSeen), giving parents a way to turn it off if a
+  // toddler keeps flipping tools by accident. See web/src/lib/plugins/pencilEraser.ts.
+  pencilEraserEnabled: [PENCIL_ERASER_KEY, true],
+  // Sticky per-device detection flag, set the first time an Apple Pencil
+  // double-tap fires. Not a user toggle itself — it's what reveals the
+  // pencilEraserEnabled row in the Parent Center.
+  applePencilSeen: [APPLE_PENCIL_SEEN_KEY, false]
 } satisfies Record<string, [string, boolean]>;
 
 type BoolSettingKey = keyof typeof BOOL_SETTINGS;
@@ -122,6 +133,8 @@ export const setDrawerOpen = makeBoolSetter('drawerOpen');
 export const setAdminLinkVisible = makeBoolSetter('adminLinkVisible');
 export const setLockRotation = makeBoolSetter('lockRotationEnabled');
 export const setForceLandscapeOrientation = makeBoolSetter('forceLandscapeOrientation');
+export const setPencilEraserEnabled = makeBoolSetter('pencilEraserEnabled');
+export const setApplePencilSeen = makeBoolSetter('applePencilSeen');
 
 export function setSoundVolume(v: number) {
   const next = clampVolume(v);
