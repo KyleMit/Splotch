@@ -154,7 +154,7 @@
     "@playwright/test": "^1.60.0",
     "@sveltejs/adapter-netlify": "^6.0.4",
     "@sveltejs/kit": "^2.31.0",
-    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "capacitor-set-version": "^2.2.0",
     "cross-env": "^10.1.0",
     "eslint": "^10.5.0",
