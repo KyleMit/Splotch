@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { isNative } from './platform';
+import { lazyPluginModule } from './nativePlugin';
 
 // Storage is dual-layer so the web app and the native apps share one code path:
 //
@@ -40,22 +41,16 @@ function safeLocalStorage(op: () => void) {
   }
 }
 
-type Preferences = (typeof import('@capacitor/preferences'))['Preferences'];
-
-let prefsPromise: Promise<Preferences> | null = null;
-function getPrefs(): Promise<Preferences> {
-  if (!prefsPromise) {
-    prefsPromise = import('@capacitor/preferences').then((m) => m.Preferences);
-  }
-  return prefsPromise;
-}
+// Load the durable store lazily. Returns the module namespace, not the
+// Preferences proxy — see lazyPluginModule for why that distinction matters.
+const getPrefs = lazyPluginModule(() => import('@capacitor/preferences'));
 
 // Fire-and-forget durable mirror. Never throws into the caller — a failed
 // durable write just means we fall back to the localStorage copy.
 function mirror(key: string, value: string) {
   if (!isNative()) return;
   getPrefs()
-    .then((Preferences) => Preferences.set({ key, value: String(value) }))
+    .then(({ Preferences }) => Preferences.set({ key, value: String(value) }))
     .catch(() => {});
 }
 
@@ -98,7 +93,7 @@ export function removeKey(key: string) {
   safeLocalStorage(() => localStorage.removeItem(key));
   if (isNative()) {
     getPrefs()
-      .then((Preferences) => Preferences.remove({ key }))
+      .then(({ Preferences }) => Preferences.remove({ key }))
       .catch(() => {});
   }
 }
@@ -130,7 +125,7 @@ export async function hydrateDurableStorage() {
   if (!isNative()) return false;
   let restored = false;
   try {
-    const Preferences = await getPrefs();
+    const { Preferences } = await getPrefs();
     // Fire every durable get concurrently rather than one serial bridge
     // round-trip per key — ~15 keys on the cold-start critical path.
     const keys = [...managedKeys];

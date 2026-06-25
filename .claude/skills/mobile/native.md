@@ -53,6 +53,27 @@ device is offline the AI button is **hidden** automatically
   `UserDefaults`/`SharedPreferences`). On launch, `hydrateDurableStorage()`
   restores any settings the WebView may have evicted. The web is unaffected.
 
+### Loading native plugins (read before adding one)
+
+Always lazy-load a Capacitor plugin through **`lazyPluginModule()`**
+(`web/src/lib/nativePlugin.ts`) and destructure the plugin out of the returned
+module *after* awaiting:
+
+```ts
+const getPrefs = lazyPluginModule(() => import('@capacitor/preferences'));
+const { Preferences } = await getPrefs();
+```
+
+Never let a Promise resolve to the plugin object itself (e.g.
+`import('…').then((m) => m.Preferences)` or `async () => (await import('…')).Preferences`).
+A registered plugin is a Proxy whose every property — `then` included — is a
+native-method call, so it's "thenable": promise assimilation invokes
+`plugin.then(resolve, reject)`, Capacitor dispatches a native method named `then`
+("not implemented"), and it **never settles**. The awaiting promise hangs
+forever. This silently blanked `/admin/native` (its render gated on
+`await loadAdminSession()`) until the loaders were funnelled through
+`lazyPluginModule`.
+
 ### Screen orientation
 
 The parent-center rotation toggle (`lockRotationEnabled` +

@@ -5,6 +5,13 @@
 # (src/lib/components/ParentCenter.svelte), so seeing it means real UI painted,
 # not just that the process launched.
 #
+# It also opens the admin console from the About tab. That guards a native-only
+# regression the web/Playwright suite can't see: the admin link must resolve to
+# the static /admin/native page, never the server-only /admin route (which has
+# no file in the static bundle, so a full navigation white-screens in the
+# WebView). The choice is build-time (__CAPACITOR__) precisely so it can't drift
+# back to a runtime check that fails before window.Capacitor is injected.
+#
 # Self-contained runs (boot device, build, install, test, tear down):
 #   npm run test:android    # headless Android emulator
 #   npm run test:ios        # iOS simulator (macOS-only)
@@ -17,4 +24,32 @@ appId: art.splotch.app
 - extendedWaitUntil:
     visible: 'Parent Center'
     timeout: 30000
-- takeScreenshot: smoke-launch
+- takeScreenshot: .maestro/screenshots/smoke-launch
+
+# Open Parent Center → About, reveal the hidden admin link (5 taps on the
+# version, which sits in the footer below the fold — scroll to it first), follow
+# it, and confirm the admin console actually painted. The "Manage AI access
+# codes" subtitle renders offline (it's above the login form), so this needs no
+# network — only that /admin/native loaded and rendered instead of a blank.
+- tapOn: 'Parent Center'
+- tapOn: 'About'
+- scrollUntilVisible:
+    element:
+      text: 'Version.*'
+    direction: DOWN
+    timeout: 15000
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: 'Version.*'
+- scrollUntilVisible:
+    element:
+      text: 'Admin'
+    direction: DOWN
+    timeout: 10000
+- tapOn: 'Admin'
+- extendedWaitUntil:
+    visible: 'Manage AI access codes'
+    timeout: 15000
+- takeScreenshot: .maestro/screenshots/smoke-admin

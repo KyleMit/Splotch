@@ -27,7 +27,8 @@ export default {
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
     __BUILD_TIME__: JSON.stringify(BUILD_TIME),
-    __NATIVE_API_BASE__: JSON.stringify(NATIVE_API_BASE)
+    __NATIVE_API_BASE__: JSON.stringify(NATIVE_API_BASE),
+    __IS_CAPACITOR__: JSON.stringify(isCapacitor)
   },
   plugins: [
     sveltekit(),

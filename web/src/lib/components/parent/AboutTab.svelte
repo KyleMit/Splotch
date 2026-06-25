@@ -1,7 +1,6 @@
 <script lang="ts">
   import Icon from '../Icon.svelte';
   import { settings, setAdminLinkVisible } from '$lib/state/settings.svelte';
-  import { isNative } from '$lib/platform';
   // Generated at build time from releases/*.md (see scripts/generate-releases.mjs).
   import releases from '$lib/releases.json';
 
@@ -20,9 +19,17 @@
   // The web console (/admin) is server-rendered with a cookie session; the
   // native build is a static export with no server, so it gets /admin/native,
   // which manages the same tokens through the hosted /api/admin endpoints.
+  //
+  // This is a build-time choice, not a runtime one: the native bundle has no
+  // /admin route at all (it's server-only, excluded from the static export),
+  // and Capacitor's WebView can't reach it. Using the compile-time __IS_CAPACITOR__
+  // flag avoids a subtle bug — a runtime isNative() read inside a $derived
+  // memoizes on first render, and if window.Capacitor isn't injected yet it
+  // sticks on '/admin', whose full-navigation white-screens in the WebView.
   let versionClicks = $state(0);
   let showAdminLink = $derived(settings.adminLinkVisible);
-  let adminHref = $derived(isNative() ? '/admin/native' : '/admin');
+  const adminHref =
+    typeof __IS_CAPACITOR__ !== 'undefined' && __IS_CAPACITOR__ ? '/admin/native' : '/admin';
   function handleVersionClick() {
     versionClicks += 1;
     if (versionClicks < 5) return;

@@ -167,8 +167,9 @@ android/.idea
 # iOS personal signing (DEVELOPMENT_TEAM) — included by ios/debug.xcconfig, passed to ios:archive
 ios/local.xcconfig
 
-# Maestro smoke-test screenshot (npm run test:android) — written to cwd
-/smoke-launch.png
+# Maestro smoke-test screenshots (npm run test:android) — takeScreenshot writes
+# these relative to the repo root (Maestro's cwd); keep them out of the tree.
+/.maestro/screenshots/
 
 # Red-team AI safety fixtures (ADR-0023). Only encrypted/*.enc is committed;
 # the plaintext sources, decrypted copies, and run outputs stay local.

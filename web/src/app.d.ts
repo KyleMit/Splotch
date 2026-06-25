@@ -14,6 +14,7 @@ declare global {
   const __APP_VERSION__: string;
   const __BUILD_TIME__: string;
   const __NATIVE_API_BASE__: string;
+  const __IS_CAPACITOR__: boolean;
 
   // Capacitor injects this global in the native shell and once @capacitor/core
   // loads on the web. Read off the global (see src/lib/platform.ts) so the

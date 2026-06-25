@@ -151,3 +151,4 @@
 * [x] iPad does not respect force landscape setting
 * [x] flash of unstyled content on booting app in iOS where circle and trash can buttons start square and then become rounded 
 * [x] volume slider doesn't work with swipe between tabs on iOS
+* [x] fix admin center not rendering on mobile

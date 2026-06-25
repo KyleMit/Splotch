@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { isNative } from './platform';
+import { lazyPluginModule } from './nativePlugin';
 
 // Secure home for the app's client-held secrets — the parent's Gemini API key
 // and the admin session token (used by the native apps to authenticate against
@@ -27,16 +28,10 @@ const DB_VERSION = 1;
 const STORE = 'secrets';
 const MASTER_KEY_ROW = 'master-key'; // the non-extractable AES-GCM CryptoKey
 
-// --- native plugin (lazy so it's never loaded on the web or during SSR) ---
-type SecureStoragePlugin = (typeof import('@aparajita/capacitor-secure-storage'))['SecureStorage'];
-
-let pluginPromise: Promise<SecureStoragePlugin> | null = null;
-function getPlugin(): Promise<SecureStoragePlugin> {
-  if (!pluginPromise) {
-    pluginPromise = import('@aparajita/capacitor-secure-storage').then((m) => m.SecureStorage);
-  }
-  return pluginPromise;
-}
+// Native plugin, loaded lazily so it's never pulled in on the web or during SSR.
+// Returns the module namespace, not the SecureStorage proxy — see
+// lazyPluginModule for why that distinction is load-bearing.
+const getPlugin = lazyPluginModule(() => import('@aparajita/capacitor-secure-storage'));
 
 // --- web: IndexedDB via idb (also lazy) ---
 let dbPromise: Promise<import('idb').IDBPDatabase> | null = null;
@@ -103,7 +98,7 @@ async function webClear(name: string) {
 async function saveSecret(name: string, value: string) {
   if (!browser || !value) return;
   if (isNative()) {
-    const SecureStorage = await getPlugin();
+    const { SecureStorage } = await getPlugin();
     await SecureStorage.set(name, value);
   } else {
     await webSave(name, value);
@@ -115,7 +110,7 @@ async function loadSecret(name: string) {
   if (!browser) return null;
   try {
     if (isNative()) {
-      const SecureStorage = await getPlugin();
+      const { SecureStorage } = await getPlugin();
       const value = await SecureStorage.get(name);
       return typeof value === 'string' ? value : null;
     }
@@ -130,7 +125,7 @@ async function clearSecret(name: string) {
   if (!browser) return;
   try {
     if (isNative()) {
-      const SecureStorage = await getPlugin();
+      const { SecureStorage } = await getPlugin();
       await SecureStorage.remove(name);
     } else {
       await webClear(name);
