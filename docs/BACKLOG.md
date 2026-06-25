@@ -47,7 +47,6 @@
   * [ ] Brush type (blend mode with previous drawing)
 * Clean Code
   * [ ] Extract style guide conventions from existing code?
-  * [x] Do I need to enforce programmatically? Add linter or formatter? — ESLint + Prettier + CI quality gates (ADR-0031)
 
 
 ## DONE
@@ -157,3 +156,4 @@
 * [x] Add incremental version bumps to web.
 * [x] prevent accidental swipes from bottom
 * [x] Rule out using drag and drop API (doesn't work on mobile)
+* [x] Do I need to enforce programmatically? Add linter or formatter? — ESLint + Prettier + CI quality gates (ADR-0031)

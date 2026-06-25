@@ -62,6 +62,14 @@ async function post(path, headers, body) {
   });
 }
 
+async function del(path, headers, body) {
+  return fetch(`${BASE}${path}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(body),
+  });
+}
+
 // Exchange the admin secret for a bearer session, retrying through the per-IP
 // rate limiter that guards the login oracle (a re-run within the window can 429).
 async function login() {
@@ -128,12 +136,12 @@ async function run() {
   );
 
   // Cleanup: remove the probe so the shared site-wide store stays clean.
-  const del = await post('/api/admin/tokens', auth, { token: probe });
-  const delBody = await json(del);
+  const removed = await del('/api/admin/tokens', auth, { token: probe });
+  const removedBody = await json(removed);
   check(
     'DELETE removes the probe token',
-    del.status === 200 && !delBody?.tokens?.includes(probe),
-    `got ${del.status}`
+    removed.status === 200 && !removedBody?.tokens?.includes(probe),
+    `got ${removed.status}`
   );
 
   return { session, probe };
@@ -148,7 +156,7 @@ try {
   console.error(`\nFATAL: ${err.message}`);
   // Best-effort cleanup if we got far enough to add the probe.
   if (ctx?.session && ctx?.probe) {
-    await post(
+    await del(
       '/api/admin/tokens',
       { Authorization: `Bearer ${ctx.session}` },
       { token: ctx.probe }
