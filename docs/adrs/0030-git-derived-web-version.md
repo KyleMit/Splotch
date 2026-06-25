@@ -50,9 +50,12 @@ interval paths, so it cannot interrupt a mid-drawing session.
 
 **This relies on git history + tags at build time.** Netlify's deploy is **not**
 a shallow clone — it is a *blobless* clone (`git clone --filter=blob:none`),
-which carries the full commit graph and all tags and defers only file blobs.
-`git describe`/`git rev-list` need only commit/tree metadata, so they work on
-every Netlify deploy with no `netlify.toml` change.
+which carries the full commit graph and defers only file blobs, so `git
+rev-parse`/`git rev-list` work. But the blobless clone does **not** fetch tags
+(verified: an early deploy rendered `1.2.0+c5707ce`, the SHA fallback, because
+`git describe` found no tag). The root `netlify.toml` build command therefore
+runs `git fetch --tags --force || true` before `npm run build` so the release tag
+is present and `git describe` resolves the commit count.
 
 Tiered fallback, so the marker degrades informatively rather than silently:
 
@@ -71,13 +74,13 @@ Tiered fallback, so the marker degrades informatively rather than silently:
   releases.
 - + Native store versions are untouched — same `package.json` value, same
   `capacitor-set-version` flow.
-- + No build-pipeline change: works on Netlify's blobless clone as-is.
 - − The web **patch** digit in `package.json` is now web-irrelevant (overwritten
   by the commit count); releases should move **major/minor**. Recorded in the
   `release.mjs` header.
-- − Introduces a build-time git dependency. Mitigated by the SHA fallback and the
-  no-git last resort; if a deploy ever shows the `+<sha>` form, the fix is to
-  prefix the Netlify build command with `git fetch --tags --force || true`.
+- − Introduces a build-time git dependency: the Netlify build command must
+  `git fetch --tags` (the blobless clone omits tags). Mitigated by the SHA
+  fallback (`major.minor.0+<sha>`) and the no-git last resort, so a fetch failure
+  degrades gracefully instead of breaking the build.
 - − `git describe`'s reset point is the most recent `v*` tag, so it assumes
   releases are tagged through `release.mjs` (they are). A manual `package.json`
   minor bump without a matching tag would not reset the patch until the tag

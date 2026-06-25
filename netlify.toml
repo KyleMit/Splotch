@@ -8,7 +8,12 @@
 # `netlify dev --cwd web`). Keep these two in sync only where it matters — headers live here
 # because they apply to the deployed site.
 [build]
-  command = "npm run build && node scripts/stage-netlify.mjs"
+  # `git fetch --tags` first: Netlify's blobless clone has the full commit graph
+  # but does NOT fetch tags, so `git describe` in web/vite.config.ts can't see the
+  # release tag and the web version would fall back to major.minor.0+<sha>
+  # (ADR-0030). `|| true` so a fetch hiccup never fails the build — the fallback
+  # still produces a valid per-commit version.
+  command = "git fetch --tags --force || true; npm run build && node scripts/stage-netlify.mjs"
   # Static assets are published straight from web/build (no copy needed). Only the SSR function
   # is relocated: Netlify always looks for it at <base>/.netlify/functions-internal (base = root),
   # but adapter-netlify writes it under web/.netlify, so stage-netlify.mjs copies that one tree up.
