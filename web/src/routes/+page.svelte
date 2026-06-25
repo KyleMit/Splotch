@@ -7,6 +7,7 @@
   import ClearButton from '$lib/components/ClearButton.svelte';
   import ColoringBook from '$lib/components/ColoringBook.svelte';
   import ParentCenter from '$lib/components/ParentCenter.svelte';
+  import NotchBand from '$lib/components/NotchBand.svelte';
   import AiImagePrompt from '$lib/components/AiImagePrompt.svelte';
   import AiImageResult from '$lib/components/AiImageResult.svelte';
   import { initPWAUpdates } from '$lib/pwa/updates';
@@ -75,6 +76,8 @@
     };
   });
 </script>
+
+<NotchBand />
 
 <main class="app-container">
   <ColorPalette />

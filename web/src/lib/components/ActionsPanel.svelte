@@ -235,8 +235,8 @@
 <style>
   .actions-panel {
     position: fixed;
-    bottom: 8px;
-    left: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    left: calc(8px + env(safe-area-inset-left));
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -247,8 +247,8 @@
   @media (orientation: portrait) {
     .actions-panel {
       flex-direction: column-reverse;
-      left: 8px;
-      bottom: 8px;
+      left: calc(8px + env(safe-area-inset-left));
+      bottom: calc(8px + env(safe-area-inset-bottom));
     }
   }
 
