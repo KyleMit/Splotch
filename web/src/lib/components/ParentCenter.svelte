@@ -71,8 +71,8 @@
   /* Trigger button (floats in the bottom-right corner) */
   .parent-help-button {
     position: fixed;
-    bottom: 8px;
-    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    right: calc(8px + env(safe-area-inset-right));
     width: 48px;
     height: 48px;
     background: transparent;

@@ -100,6 +100,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
   * **Hexagon Grid** - Honeycomb pattern of color tiles in the color picker
   * **Color Hexagon** - Individual hexagon-shaped color tile; drag across to explore, lift to select
 * **Drawing Canvas** - Main touch-responsive drawing surface
+* **Notch Band** - Thin strip filling the device's top safe-area inset (the notch / hole-punch area behind the system clock), painted with the active drawing color and cleared to paper-white on the eraser. Hidden on devices without a real cutout (bezel iPads). See ADR-0026.
 * **Clear Button** - Floating trash button for clearing the canvas
   * **Clear Preview Line** - Torn paper edge visual indicator showing where canvas will be cleared during drag
   * **Clear Accept Zone** - Bottom 15% of screen that turns red; drop Clear Button here to confirm

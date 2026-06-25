@@ -160,8 +160,8 @@
 <style>
   .clear-container {
     position: fixed;
-    top: 20px;
-    right: -10px;
+    top: calc(20px + env(safe-area-inset-top));
+    right: calc(-10px + env(safe-area-inset-right));
     z-index: 1000;
     pointer-events: none; /* Allow clicks through container to children */
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -474,7 +474,7 @@
 
   @media (orientation: portrait) {
     .clear-container {
-      top: 90px;
+      top: calc(90px + env(safe-area-inset-top));
     }
 
     .clear-button {
