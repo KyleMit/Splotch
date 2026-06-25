@@ -3,7 +3,6 @@
 ## TODO
 
 * [ ] On android phone, when the web app is installed as a PWA, I don't have the customization of the top status bar
-* [ ] On android native in landscape mode, I'd like to always hide the status bar from the top.  there's too little real estate to display it.  Notably, when the app is pinned, the status bar is always hidden.  But I'd like it to be hidden whether the app is pinned or not when in landscape.  When in portrait, it's fine to have the status bar icons visible when the app is not pinned; when pinned, the icons default to hidden, which is fine.  Also, in landscape mode, the custom NotchBand should always go where the whole punch is at the top of the physical phone, so on the left or right side in landscape.  And you don't need to have a NotchBand at along the long top side. reclaim the extra space as available drawing surface.
 * [ ] On android, with the two column color layout in landscape mode, the controls drawer is now covered by the color picker, likely because it's been nudged over by the safe-area-inset.
 * [ ] Add incremental version bumps to web.
 * [ ] Possibly add "Check for updates" button on about parent center tab
@@ -157,3 +156,4 @@
 * [x] fix admin center not rendering on mobile
 * [x] Add haptics for trashcan when in the clear accept zone
 * [x] Native integration with apple pencil to use eraser
+* [x] On android native in landscape, hide the status bar and move the NotchBand to the hole-punch side, reclaiming the long top edge as canvas

@@ -1,7 +1,9 @@
 package art.splotch.app;
 
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.WindowManager;
 
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -21,13 +23,28 @@ import com.getcapacitor.BridgeActivity;
  * (API 35+) edge-to-edge is enforced by the system, so the app already draws
  * behind that area; on older devices the transparent color provides the same
  * effect.
+ *
+ * <p>We also opt the window into the display cutout on the short edges so the
+ * canvas extends under the hole-punch. In landscape the device's physical top
+ * rotates to a side, so this is what lets the Notch Band paint the cutout there
+ * (and the WebView reclaim that strip) instead of the system letterboxing it.
  */
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(DeviceLockPlugin.class);
         super.onCreate(savedInstanceState);
+        drawUnderDisplayCutout();
         hideNavigationBar();
+    }
+
+    private void drawUnderDisplayCutout() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            WindowManager.LayoutParams params = getWindow().getAttributes();
+            params.layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            getWindow().setAttributes(params);
+        }
     }
 
     @Override

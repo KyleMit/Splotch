@@ -58,16 +58,43 @@ status bar (~20–24px) does not, so those get no band. CSS insets cannot perfec
 separate an Android hole-punch from an iPad status bar (they overlap near ~24px);
 the threshold reliably excludes the bezel-iPad case and is the single tuning knob.
 
-The platform-independent decisions (band color, cutout test, status-bar style,
-the full fan-out) are pure functions in `notchBand.ts`, unit-tested across the
-four targets, the color/eraser states, and the no-cutout case, with no DOM.
+**Orientation.** The hole-punch lives at the device's *physical* top, which
+rotates to a side in landscape, so the band follows it. `NotchBand.svelte`
+measures `env(safe-area-inset-top/left/right)` and reads the orientation;
+`cutoutEdge` picks the top inset in portrait and the deeper of the two side
+insets in landscape, and the band renders along that edge (`.notch-band--top
+/left/right`). The long top edge in landscape is never banded.
+
+For the side cutout to produce a side inset (rather than the system letterboxing
+the WebView away from it), the Android window opts into the cutout on its short
+edges — `LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES`, set in `MainActivity.java`.
+That same opt-in also lets the canvas reclaim the strip as drawing surface.
+
+**Landscape status bar (Android native).** In landscape the long top edge is
+precious canvas, so we hide the system status bar there and show it again in
+portrait (`statusBarHiddenFor` → `@capacitor/status-bar` `hide`/`show`). This is
+Android-native only; iOS and the web targets keep their default status bar. When
+the app is pinned the OS already hides the status bar in either orientation, and
+we don't fight that.
+
+The platform-independent decisions (band color, cutout test, cutout edge,
+status-bar style and visibility, the full fan-out) are pure functions in
+`notchBand.ts`, unit-tested across the four targets, both orientations, the
+color/eraser states, and the no-cutout case, with no DOM.
 
 ## Consequences
 
 - **+** One mechanism and one source of truth instead of three per-platform code
   paths; consistent rendering and a CSS-driven animation we fully control.
 - **+** The decision logic is DOM-free and unit-tested per deployment target.
-- **+** Native coupling is minimal: `setStyle` for icon contrast only, lazy-loaded.
+- **+** Native coupling is minimal: `setStyle` for icon contrast and (Android,
+  landscape) `hide`/`show`, lazy-loaded; the orientation/edge logic stays pure.
+- **+** Landscape gains the long top edge as canvas (status bar hidden), and the
+  existing `.app-container` side padding already keeps UI clear of the now-active
+  side cutout while the band paints it — no extra layout work.
+- **−** The landscape side band depends on Android `SHORT_EDGES` cutout mode and
+  on the device reporting a side inset; a phone that letterboxes the cutout
+  regardless would show no side band (still correct, just unpainted).
 - **−** `viewport-fit=cover` is global and shifts every route's relationship to the
   safe area; the inset padding restoring current spacing is a standing tax on any
   new edge-anchored UI (it must add the matching `env(safe-area-inset-*)`).
