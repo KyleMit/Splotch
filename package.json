@@ -165,6 +165,7 @@
     "@capacitor/cli": "^8.3.4",
     "@capacitor/core": "^8.3.4",
     "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/haptics": "^8.0.2",
     "@capacitor/ios": "^8.3.4",
     "@capacitor/network": "^8.0.1",
     "@capacitor/preferences": "^8.0.1",

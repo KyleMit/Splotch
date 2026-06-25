@@ -1,5 +1,6 @@
 import { releaseAllPointers } from '$lib/drawing/engine';
 import { stopDrawSound } from '$lib/audio/drawingSound';
+import { impactThreshold } from '$lib/haptics';
 
 // Drag-to-clear gesture constants.
 const ACCEPT_RADIUS_FACTOR = 0.4;
@@ -137,7 +138,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       // Fire a single tactile "click" the moment we cross the point of no return.
       if (!clearReady) {
         clearReady = true;
-        navigator.vibrate?.(15);
+        impactThreshold();
       }
     } else {
       node.classList.remove('delete-ready');

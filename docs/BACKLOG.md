@@ -15,7 +15,6 @@
   * [ ] Parent center control to increase button size
   * [ ] Make icons bigger on an ipad pro
 * Native
-  * [ ] Add haptics for trashcan when in the clear accept zone
   * [ ] Native integration with apple pencil to use eraser
 * AI Art
   * [ ] If AI call fails and you need to try again, enable a way to do so immediately
@@ -152,3 +151,4 @@
 * [x] flash of unstyled content on booting app in iOS where circle and trash can buttons start square and then become rounded 
 * [x] volume slider doesn't work with swipe between tabs on iOS
 * [x] fix admin center not rendering on mobile
+* [x] Add haptics for trashcan when in the clear accept zone
