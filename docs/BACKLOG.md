@@ -2,6 +2,7 @@
 
 ## TODO
 
+* [ ] ipad landscape bottom row can sit flush. top status bar should have notch band
 * [ ] Possibly add "Check for updates" button on about parent center tab
 * [ ] inefficent layout on iphone at tops and bottom
 * [ ] Figure out what to do with existing drawing on orientation change
