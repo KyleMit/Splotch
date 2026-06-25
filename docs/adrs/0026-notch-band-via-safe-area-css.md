@@ -71,6 +71,10 @@ four targets, the color/eraser states, and the no-cutout case, with no DOM.
 - **−** `viewport-fit=cover` is global and shifts every route's relationship to the
   safe area; the inset padding restoring current spacing is a standing tax on any
   new edge-anchored UI (it must add the matching `env(safe-area-inset-*)`).
+- **−** The `theme-color` mechanism only reaches the *installed* Android PWA when
+  the manifest `display` is `standalone` (`web/static/site.webmanifest`).
+  `fullscreen` runs the PWA immersive and hides the status bar entirely, leaving
+  nothing to tint — so the manifest must stay `standalone` for this to work.
 - **−** Cutout detection is a luminance-of-inset heuristic, not a true display-
   cutout API; a device whose status-bar inset sits near the threshold could
   misjudge. Tunable via one constant.
