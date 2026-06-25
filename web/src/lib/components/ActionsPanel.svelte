@@ -23,7 +23,16 @@
   // the bottom-left corner. paletteWidth is published by ColorPalette (0 until
   // measured), so this settles once the palette lays out — no querySelector and
   // no mount-time setTimeout to dodge the layout race.
-  const leftOffset = $derived(isPortrait ? 8 : layout.paletteWidth + 8);
+  //
+  // The inline left wins over the stylesheet, so the safe-area inset has to ride
+  // along in this value or it's lost: .app-container's padding-left shifts the
+  // palette right by env(safe-area-inset-left) (the Android landscape hole-punch),
+  // and paletteWidth doesn't include that padding — so we clear inset + width.
+  const leftOffset = $derived(
+    isPortrait
+      ? 'calc(8px + env(safe-area-inset-left))'
+      : `calc(${layout.paletteWidth + 8}px + env(safe-area-inset-left))`
+  );
 
   // When advanced controls are disabled the drawer and its chevron are removed
   // entirely, simplifying the UI. When enabled, the chevron shows and the
@@ -127,7 +136,7 @@
   }
 </script>
 
-<div class="actions-panel" style:left="{leftOffset}px">
+<div class="actions-panel" style:left={leftOffset}>
   {#if drawerExpanded}
   <div class="actions-drawer" transition:slide={{ axis: isPortrait ? 'y' : 'x', duration: 280 }}>
   <div class="stroke-width-wrapper" bind:this={strokeWrapperEl} hidden={!settings.strokeWidthControlEnabled}>

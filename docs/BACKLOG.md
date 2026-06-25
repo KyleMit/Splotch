@@ -2,8 +2,6 @@
 
 ## TODO
 
-* [ ] On android, with the two column color layout in landscape mode, the controls drawer is now covered by the color picker, likely because it's been nudged over by the safe-area-inset.
-* [ ] Add incremental version bumps to web.
 * [ ] Possibly add "Check for updates" button on about parent center tab
 * [ ] inefficent layout on iphone at tops and bottom
 * [ ] swiping up from the bottom is a very common gesture on ipad/android to get the menu bar.  if a stroke starts right at the edge of the bottom of the panel within a certain number of pixels and immediately tracks up, then don't render it. people who want bottom strokes will just have to draw down toward the bottom
@@ -157,4 +155,5 @@
 * [x] Native integration with apple pencil to use eraser
 * [x] On android native in landscape, hide the status bar and move the NotchBand to the hole-punch side, reclaiming the long top edge as canvas
 * [x] Prefer hidden system navigation bar in PWA to customized notch band
-
+* [ ] Fix controls drawer overlap from safe-area-inset
+* [x] Add incremental version bumps to web.
