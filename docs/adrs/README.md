@@ -34,3 +34,4 @@ This directory records significant architectural decisions made in the Splotch p
 | [0028](0028-apple-pencil-eraser-plugin.md) | A Custom `PencilEraser` Capacitor Plugin for the Apple Pencil Double-Tap | Active |
 | [0029](0029-npm-as-package-manager.md) | npm as the Package Manager | Active |
 | [0030](0030-git-derived-web-version.md) | Git-Derived Per-Commit Web Version (major.minor.commits-since-tag) | Active |
+| [0031](0031-linting-formatting-and-ci-quality-gates.md) | Linting, Formatting, and CI Quality Gates (ESLint + Prettier, critical-only audit) | Active |

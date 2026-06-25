@@ -47,7 +47,7 @@
   * [ ] Brush type (blend mode with previous drawing)
 * Clean Code
   * [ ] Extract style guide conventions from existing code?
-  * [ ] Do I need to enforce programmatically? Add linter or formatter?
+  * [x] Do I need to enforce programmatically? Add linter or formatter? — ESLint + Prettier + CI quality gates (ADR-0031)
 
 
 ## DONE
