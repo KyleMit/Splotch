@@ -1,10 +1,43 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import Icon from '../Icon.svelte';
   import { settings, setAdminLinkVisible } from '$lib/state/settings.svelte';
+  import { fetchLatestVersion, applyUpdate } from '$lib/pwa/updates';
   // Generated at build time from releases/*.md (see scripts/generate-releases.mjs).
   import releases from '$lib/releases.json';
 
   const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
+
+  // The update check is web/PWA only — the native apps will eventually surface
+  // store updates instead, so the whole block is compiled out of that bundle.
+  const IS_NATIVE = typeof __IS_CAPACITOR__ !== 'undefined' && __IS_CAPACITOR__;
+
+  // Background updates keep the app mostly in sync on their own (auto-applied
+  // while the canvas is blank). This surfaces the deployed version so a parent
+  // can confirm they're current — or force an update mid-drawing if they want.
+  type UpdateStatus = 'checking' | 'current' | 'available' | 'updating' | 'error';
+  let updateStatus = $state<UpdateStatus>('checking');
+  let latestVersion = $state<string | null>(null);
+
+  async function checkVersion() {
+    updateStatus = 'checking';
+    const version = await fetchLatestVersion();
+    if (version === null) {
+      updateStatus = 'error';
+      return;
+    }
+    latestVersion = version;
+    updateStatus = version === APP_VERSION ? 'current' : 'available';
+  }
+
+  async function handleUpdate() {
+    updateStatus = 'updating';
+    await applyUpdate(latestVersion);
+  }
+
+  onMount(() => {
+    if (!IS_NATIVE) checkVersion();
+  });
 
   // The most recent release powers the "What's New" block.
   const latestRelease = releases[0];
@@ -81,6 +114,23 @@
     <button type="button" class="version-text" onclick={handleVersionClick}
       >Version {APP_VERSION}</button
     >
+    {#if !IS_NATIVE}
+      <p class="update-status">
+        {#if updateStatus === 'checking'}
+          <span class="update-muted">Checking for updates…</span>
+        {:else if updateStatus === 'current'}
+          <span class="update-current">✓ You're on the latest version</span>
+        {:else if updateStatus === 'available'}
+          <span class="update-available">Update available — v{latestVersion}</span>
+          <button type="button" class="update-button" onclick={handleUpdate}>Update now</button>
+        {:else if updateStatus === 'updating'}
+          <span class="update-muted">Updating…</span>
+        {:else}
+          <span class="update-muted">Couldn't check for updates</span>
+          <button type="button" class="update-recheck" onclick={checkVersion}>Try again</button>
+        {/if}
+      </p>
+    {/if}
     {#if showAdminLink}
       <p class="admin-link"><a href={adminHref}>Admin</a></p>
     {/if}
@@ -260,5 +310,54 @@
 
   .admin-link {
     font-size: 12px;
+  }
+
+  .update-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    margin: 0 0 8px !important;
+  }
+
+  .update-muted {
+    color: #bbb;
+  }
+
+  .update-current {
+    color: #2e9e5b;
+    font-weight: 600;
+  }
+
+  .update-available {
+    color: #666;
+    font-weight: 600;
+  }
+
+  .update-button {
+    border: none;
+    border-radius: 999px;
+    padding: 6px 16px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .update-button:hover {
+    filter: brightness(1.05);
+  }
+
+  .update-recheck {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--brand);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: underline;
   }
 </style>

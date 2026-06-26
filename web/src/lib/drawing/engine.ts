@@ -768,3 +768,40 @@ export function focusCanvas() {
 export function getActiveCanvas(): HTMLCanvasElement {
   return canvas;
 }
+
+// Snapshot just the strokes (transparent over the CSS paper background) as a PNG
+// data URL, so a forced reload — e.g. a parent-triggered app update — can stash
+// and later restore an in-progress drawing.
+export function snapshotCanvasDataURL(): string | null {
+  if (!canvas || canvas.width === 0 || canvas.height === 0) return null;
+  try {
+    return canvas.toDataURL('image/png');
+  } catch {
+    return null;
+  }
+}
+
+// Paint a previously snapshotted drawing back onto the live + virtual canvases.
+// The backing-store dimensions are stable across a same-device reload, so the
+// snapshot draws back 1:1; scaling to the current size keeps it sane if they
+// ever differ (e.g. a rotation between snapshot and restore).
+export function restoreCanvasFromDataURL(dataUrl: string): Promise<void> {
+  return new Promise((resolve) => {
+    if (!canvas || !ctx) {
+      resolve();
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      if (virtualCtx && virtualCanvas) {
+        virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
+        virtualCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      }
+      setCanvasEmptyState(false);
+      resolve();
+    };
+    img.onerror = () => resolve();
+    img.src = dataUrl;
+  });
+}

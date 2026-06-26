@@ -1,8 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { initPWAUpdates, checkVersionMismatch, checkForUpdates } from './updates';
+import {
+  initPWAUpdates,
+  checkVersionMismatch,
+  checkForUpdates,
+  fetchLatestVersion,
+  applyUpdate,
+  restoreCanvasAfterUpdate,
+} from './updates';
 
 const canvasState = vi.hoisted(() => ({ canvasEmpty: true }));
 vi.mock('$lib/state/canvas.svelte', () => ({ canvasState }));
+
+const engine = vi.hoisted(() => ({
+  snapshotCanvasDataURL: vi.fn(() => 'data:image/png;base64,SNAP'),
+  restoreCanvasFromDataURL: vi.fn(() => Promise.resolve()),
+}));
+vi.mock('$lib/drawing/engine', () => engine);
 
 // --- helpers ---
 
@@ -104,6 +117,128 @@ describe('checkVersionMismatch', () => {
     await checkVersionMismatch();
 
     expect(globalThis.fetch).toHaveBeenCalledWith('/version.json', { cache: 'no-store' });
+  });
+});
+
+// --- fetchLatestVersion ---
+
+describe('fetchLatestVersion', () => {
+  let originalFetch: typeof fetch;
+
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('returns the deployed version on success', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ version: '1.2.45' }),
+    } as Response);
+
+    await expect(fetchLatestVersion()).resolves.toBe('1.2.45');
+    expect(globalThis.fetch).toHaveBeenCalledWith('/version.json', { cache: 'no-store' });
+  });
+
+  it('returns null when the response is not ok', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false } as Response);
+    await expect(fetchLatestVersion()).resolves.toBeNull();
+  });
+
+  it('returns null when offline (fetch throws)', async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    await expect(fetchLatestVersion()).resolves.toBeNull();
+  });
+});
+
+// --- applyUpdate ---
+
+describe('applyUpdate', () => {
+  beforeEach(() => {
+    canvasState.canvasEmpty = true;
+    sessionStorage.clear();
+    engine.snapshotCanvasDataURL.mockClear();
+    Object.defineProperty(window, 'location', {
+      value: { href: 'https://splotch.art/', replace: vi.fn(), reload: vi.fn() },
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('skips waiting and reloads when a worker is already waiting', async () => {
+    const worker = makeWorker();
+    const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
+    stubServiceWorker(reg);
+
+    await applyUpdate('1.2.45');
+
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+    expect(navigator.serviceWorker.addEventListener).toHaveBeenCalledWith(
+      'controllerchange',
+      expect.any(Function),
+      { once: true }
+    );
+    expect(window.location.replace).not.toHaveBeenCalled();
+  });
+
+  it('falls back to a cache-busting navigation when no worker is waiting', async () => {
+    stubServiceWorker(undefined);
+
+    await applyUpdate('1.2.45');
+
+    expect(window.location.replace).toHaveBeenCalledWith(expect.stringContaining('?v=1.2.45'));
+  });
+
+  it('stashes the canvas before reloading when it is not empty', async () => {
+    canvasState.canvasEmpty = false;
+    stubServiceWorker(undefined);
+
+    await applyUpdate('1.2.45');
+
+    expect(engine.snapshotCanvasDataURL).toHaveBeenCalled();
+    expect(sessionStorage.getItem('splotch:pendingCanvasRestore')).toBe(
+      'data:image/png;base64,SNAP'
+    );
+  });
+
+  it('does not stash the canvas when it is empty', async () => {
+    canvasState.canvasEmpty = true;
+    stubServiceWorker(undefined);
+
+    await applyUpdate('1.2.45');
+
+    expect(engine.snapshotCanvasDataURL).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('splotch:pendingCanvasRestore')).toBeNull();
+  });
+});
+
+// --- restoreCanvasAfterUpdate ---
+
+describe('restoreCanvasAfterUpdate', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    engine.restoreCanvasFromDataURL.mockClear();
+  });
+
+  it('restores and clears a stashed snapshot', async () => {
+    sessionStorage.setItem('splotch:pendingCanvasRestore', 'data:image/png;base64,SNAP');
+
+    await restoreCanvasAfterUpdate();
+
+    expect(engine.restoreCanvasFromDataURL).toHaveBeenCalledWith('data:image/png;base64,SNAP');
+    expect(sessionStorage.getItem('splotch:pendingCanvasRestore')).toBeNull();
+  });
+
+  it('does nothing when no snapshot is stashed', async () => {
+    await restoreCanvasAfterUpdate();
+    expect(engine.restoreCanvasFromDataURL).not.toHaveBeenCalled();
   });
 });
 

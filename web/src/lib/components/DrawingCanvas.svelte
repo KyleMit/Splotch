@@ -23,6 +23,7 @@
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
   import { isNative } from '$lib/platform';
   import { lazyPluginModule } from '$lib/nativePlugin';
+  import { restoreCanvasAfterUpdate } from '$lib/pwa/updates';
 
   // Loaded lazily and only on native so @capacitor/core never enters the web/SSR graph.
   const loadPencilEraser = lazyPluginModule(() => import('$lib/plugins/pencilEraser'));
@@ -70,6 +71,10 @@
     pushInsets();
     window.addEventListener('resize', pushInsets);
     window.addEventListener('orientationchange', pushInsets);
+
+    // Repaint a drawing stashed by a parent-triggered app update (web/PWA only;
+    // a no-op when nothing was stashed). The canvas is sized by init above.
+    void restoreCanvasAfterUpdate();
 
     // Apple Pencil double-tap → toggle eraser (iOS native only). Subscription is async, so
     // hold the cleanup behind a ref the teardown can call once it resolves.

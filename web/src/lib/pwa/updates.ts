@@ -10,8 +10,13 @@
 // unfamiliar URL, fetches fresh HTML from the origin, and we're unstuck.
 
 import { canvasState } from '$lib/state/canvas.svelte';
+import { snapshotCanvasDataURL, restoreCanvasFromDataURL } from '$lib/drawing/engine';
 
 let updateCheckInterval: ReturnType<typeof setInterval> | null = null;
+
+// A drawing stashed across a forced-update reload (see applyUpdate). sessionStorage
+// survives a same-tab reload but not a fresh launch, so a stale entry can't linger.
+const CANVAS_RESTORE_KEY = 'splotch:pendingCanvasRestore';
 
 export function initPWAUpdates() {
   if (import.meta.env.DEV) return;
@@ -66,6 +71,73 @@ export async function checkVersionMismatch() {
   } catch {
     // offline or version.json unavailable — skip
   }
+}
+
+// Read the deployed version from /version.json (emitted on every build). Returns
+// null when offline or unavailable. Web/PWA only — native update checks will
+// eventually come from the app stores, not from here.
+export async function fetchLatestVersion(): Promise<string | null> {
+  try {
+    const resp = await fetch('/version.json', { cache: 'no-store' });
+    if (!resp.ok) return null;
+    const { version } = await resp.json();
+    return typeof version === 'string' ? version : null;
+  } catch {
+    return null;
+  }
+}
+
+// Force the app to the deployed version on demand (the parent's "Update now").
+// Background updates only auto-apply while the canvas is blank; this lets a
+// parent update even mid-drawing, preserving the artwork across the reload.
+export async function applyUpdate(latestVersion: string | null) {
+  if (!canvasState.canvasEmpty) {
+    const snapshot = snapshotCanvasDataURL();
+    if (snapshot) {
+      try {
+        sessionStorage.setItem(CANVAS_RESTORE_KEY, snapshot);
+      } catch {
+        // sessionStorage full/unavailable — update anyway, just don't restore.
+      }
+    }
+  }
+
+  // Prefer activating an already-downloaded waiting worker — a true in-place
+  // swap — then fall back to a cache-busting navigation that pulls fresh HTML.
+  try {
+    const registration = await navigator.serviceWorker?.getRegistration();
+    if (registration) {
+      await registration.update();
+      if (registration.waiting) {
+        navigator.serviceWorker.addEventListener(
+          'controllerchange',
+          () => window.location.reload(),
+          { once: true }
+        );
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        return;
+      }
+    }
+  } catch {
+    // fall through to the navigation fallback
+  }
+
+  const next = new URL(window.location.href);
+  if (latestVersion) next.searchParams.set('v', latestVersion);
+  window.location.replace(next.toString());
+}
+
+// After a forced-update reload, paint any stashed drawing back onto the canvas.
+// Called once from the canvas component on mount; a no-op when nothing's stashed.
+export async function restoreCanvasAfterUpdate() {
+  let snapshot: string | null = null;
+  try {
+    snapshot = sessionStorage.getItem(CANVAS_RESTORE_KEY);
+    if (snapshot) sessionStorage.removeItem(CANVAS_RESTORE_KEY);
+  } catch {
+    return;
+  }
+  if (snapshot) await restoreCanvasFromDataURL(snapshot);
 }
 
 export async function checkForUpdates() {
