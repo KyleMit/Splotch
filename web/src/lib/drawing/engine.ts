@@ -64,10 +64,15 @@ type StrokeOp =
 
 // One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is
 // the canvas-empty state before the group drew, so undo can restore the flag
-// without re-scanning.
+// without re-scanning. `keyframe`, when set, is a cumulative square raster of
+// the whole drawing *through this command* (replacing its now-dropped `ops`):
+// any command whose op list grew past OP_KEYFRAME_THRESHOLD is collapsed to a
+// keyframe so rebuilds blit it instead of re-stroking thousands of ops. See
+// ADR-0035.
 interface StrokeGroupCommand {
   ops: StrokeOp[];
   wasEmpty: boolean;
+  keyframe?: HTMLCanvasElement | null;
 }
 
 interface CanvasRect {
@@ -126,6 +131,16 @@ let rectScaleY = 1;
 // The retained command log; commands older than this fold into the baseline.
 const commandLog: StrokeGroupCommand[] = [];
 const MAX_UNDO_STACK_SIZE = 10;
+
+// A command accrues one path op per pointermove frame, so one uninterrupted
+// scribble (a toddler's specialty) can hold thousands of ops in a single undo
+// unit — and undo/resize replays every retained op as a separate stroke() on
+// the 4×-DPR backing store. Once a committed command passes this many ops we
+// bake it into a cumulative raster keyframe (once, at commit, off the draw
+// frame) and drop its ops, so rebuilds blit instead of re-stroking. Short
+// strokes stay cheap replayable ops (no keyframe), so the common case keeps
+// ADR-0033's low memory; only long scribbles spend a raster. See ADR-0035.
+const OP_KEYFRAME_THRESHOLD = 48;
 // The stroke group currently being drawn (set on first paint, pushed to the log
 // when the last finger lifts), so a multi-touch gesture undoes as a single unit.
 let activeCommand: StrokeGroupCommand | null = null;
@@ -631,34 +646,89 @@ function commitActiveCommand() {
 function pushCommand(cmd: StrokeGroupCommand) {
   commandLog.push(cmd);
   if (commandLog.length > MAX_UNDO_STACK_SIZE) foldOldestIntoBaseline();
+  maybeKeyframe(cmd);
 
   canUndo = true;
   if (onUndoStateChange) onUndoStateChange(canUndo);
 }
 
+// A long command (a continuous scribble) would otherwise replay thousands of
+// stroke()s on every undo/resize. Collapse it once, at commit (off the draw
+// frame), into a cumulative square keyframe of the whole drawing through it,
+// then drop its ops so rebuilds blit the keyframe instead. Built before the ops
+// are cleared, so paintStateThrough still sees them. See ADR-0035.
+function maybeKeyframe(cmd: StrokeGroupCommand) {
+  if (cmd.ops.length <= OP_KEYFRAME_THRESHOLD || !baselineCanvas) return;
+  const index = commandLog.indexOf(cmd);
+  if (index < 0) return;
+  const kf = document.createElement('canvas');
+  kf.width = baselineCanvas.width;
+  kf.height = baselineCanvas.height;
+  const kfCtx = kf.getContext('2d');
+  if (!kfCtx) return;
+  kfCtx.lineCap = 'round';
+  kfCtx.lineJoin = 'round';
+  if (PERF_MARKS) performance.mark('engine.keyframe:start');
+  paintStateThrough(kfCtx, index);
+  cmd.keyframe = kf;
+  cmd.ops = [];
+  if (PERF_MARKS) performance.measure('engine.keyframe', 'engine.keyframe:start');
+}
+
 // History past the cap can no longer be undone, so bake the oldest command into
-// the baseline raster and drop it. Replaying in order keeps eraser
-// destination-out ops hitting exactly the pixels they originally did.
+// the baseline raster and drop it. A keyframed command already holds the
+// cumulative state through itself, so it becomes the new baseline wholesale;
+// otherwise replay its ops in order (keeping eraser destination-out ops hitting
+// exactly the pixels they originally did).
 function foldOldestIntoBaseline() {
   const oldest = commandLog.shift();
-  if (!oldest || !baselineCtx) return;
+  if (!oldest || !baselineCtx || !baselineCanvas) return;
   if (PERF_MARKS) performance.mark('engine.foldBaseline:start');
-  for (const op of oldest.ops) renderOp(baselineCtx, op);
+  if (oldest.keyframe) {
+    baselineCtx.clearRect(0, 0, baselineCanvas.width, baselineCanvas.height);
+    baselineCtx.drawImage(oldest.keyframe, 0, 0);
+  } else {
+    for (const op of oldest.ops) renderOp(baselineCtx, op);
+  }
   if (PERF_MARKS) performance.measure('engine.foldBaseline', 'engine.foldBaseline:start');
 }
 
-// Reconstruct the visible canvas from the baseline plus the surviving command
-// log. The baseline is square (max(w,h)), so replaying it onto a resized or
-// rotated visible canvas restores content that was previously off-screen. A
-// mid-stroke resize still has an uncommitted activeCommand (its ops are
-// recorded but not yet in the log), so replay it last to keep the in-flight
-// stroke; between strokes activeCommand is null and this is a no-op.
-function rebuildFromBaseline() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (baselineCanvas) ctx.drawImage(baselineCanvas, 0, 0);
-  for (const cmd of commandLog) {
-    for (const op of cmd.ops) renderOp(ctx, op);
+// Paint the drawing state through commandLog[upToIndex] (inclusive) onto a
+// target context. Starts from the most recent cumulative keyframe at or below
+// that index (a keyframe is the whole drawing through its command, so blitting
+// it replaces the baseline + every command up to it) and replays only the ops
+// after it. With no keyframe in range it falls back to the baseline + a full
+// replay. The baseline/keyframes are square (max(w,h)), so painting onto a
+// resized or rotated visible canvas restores content that was off-screen.
+function paintStateThrough(target: CanvasRenderingContext2D, upToIndex: number) {
+  let start = -1;
+  for (let i = upToIndex; i >= 0; i--) {
+    if (commandLog[i].keyframe) {
+      start = i;
+      break;
+    }
   }
+  target.clearRect(0, 0, target.canvas.width, target.canvas.height);
+  let begin: number;
+  if (start >= 0) {
+    target.drawImage(commandLog[start].keyframe!, 0, 0);
+    begin = start + 1;
+  } else {
+    if (baselineCanvas) target.drawImage(baselineCanvas, 0, 0);
+    begin = 0;
+  }
+  for (let i = begin; i <= upToIndex; i++) {
+    for (const op of commandLog[i].ops) renderOp(target, op);
+  }
+}
+
+// Reconstruct the visible canvas from the baseline + command log (via the most
+// recent keyframe). A mid-stroke resize still has an uncommitted activeCommand
+// (its ops are recorded but not yet in the log, and it is never keyframed until
+// commit), so replay it last to keep the in-flight stroke; between strokes
+// activeCommand is null and this is a no-op.
+function rebuildFromBaseline() {
+  paintStateThrough(ctx, commandLog.length - 1);
   if (activeCommand) {
     for (const op of activeCommand.ops) renderOp(ctx, op);
   }
@@ -767,6 +837,18 @@ export function clearCanvas() {
 
 export function isCanvasEmpty(): boolean {
   return canvasEmpty;
+}
+
+// Test/profiling seam: how the undo history is currently stored. `keyframes`
+// counts commands collapsed to a cumulative raster (ADR-0035) vs. ones still
+// held as replayable ops. Read by the engine spec to assert a long scribble
+// keyframes instead of accumulating unbounded ops.
+export function getUndoDebug(): { commands: number; keyframes: number; maxOps: number } {
+  return {
+    commands: commandLog.length,
+    keyframes: commandLog.filter((c) => c.keyframe != null).length,
+    maxOps: commandLog.reduce((m, c) => Math.max(m, c.ops.length), 0),
+  };
 }
 
 let paperTextureImage: HTMLImageElement | null = null;

@@ -56,11 +56,12 @@ Read in this order:
    | Hot row | What it is | Where to look |
    | --- | --- | --- |
    | `engine.draw` high **Avg/Max** | per-pointermove stroking (coalesced replay + quadratic segments) | `strokeSmoothSegments` / `draw` in `web/src/lib/drawing/engine.ts`. A high *Max* (vs Avg) = a few heavy frames, often the first move after a resize. |
-   | `engine.commit` high | finalizing a stroke group into the undo log (push, fold check) | should be cheap — recording ops, not copying pixels (ADR-0033). |
-   | `engine.foldBaseline` high | replaying the oldest command onto the baseline raster once the log passes the cap | one stroke render per commit past `MAX_UNDO_STACK_SIZE`; runs at stroke end, off the draw frame. |
+   | `engine.commit` high | finalizing a stroke group into the undo log (push, fold check, keyframe check) | should be cheap — recording ops, not copying pixels (ADR-0033). |
+   | `engine.keyframe` high | collapsing a long command into a cumulative raster (`paintStateThrough`) at commit | fires only for a scribble past `OP_KEYFRAME_THRESHOLD`; a one-off replay at stroke end, off the draw frame (ADR-0035). Stops `engine.undo`/`engine.resize` from replaying thousands of ops. |
+   | `engine.foldBaseline` high | folding the oldest command into the baseline once the log passes the cap | a keyframed command blits onto the baseline; otherwise one stroke render per commit past `MAX_UNDO_STACK_SIZE`; runs at stroke end, off the draw frame. |
    | `engine.scanEmpty` high | `getImageData` readback after an **eraser** stroke | `scanCanvasIsEmpty`; already downscaled 0.25×. Costlier on real devices (GPU→CPU readback). |
-   | `engine.resize` high/frequent | backing-store rebuild + baseline/command-log replay (ADR-0034) | should fire only on resize/rotation — if it fires mid-draw, that's the bug. |
-   | `engine.undo` high | rebuild from baseline + replay the command log (ADR-0033) | scales with retained commands (≤`MAX_UNDO_STACK_SIZE`); a one-off cost at button-press, not per-frame. |
+   | `engine.resize` high/frequent | backing-store rebuild + baseline/command-log replay, blitting keyframes (ADR-0034/0035) | should fire only on resize/rotation — if it fires mid-draw, that's the bug. |
+   | `engine.undo` high | rebuild from baseline + replay the command log, blitting keyframes (ADR-0033/0035) | replay is bounded to ops after the most recent keyframe, not the whole session; a one-off cost at button-press, not per-frame. |
 3. **Where the main thread went** (Chromium/Android only) — Scripting vs
    Rendering vs Painting. Painting/raster dominating = GPU/compositing cost (the
    high-DPR canvas), not JS.

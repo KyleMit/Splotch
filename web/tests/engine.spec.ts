@@ -422,6 +422,66 @@ test('undoing an eraser stroke replays the erased pixels back', async ({ page })
   expect(s.canUndo).toBe(true); // the pen stroke remains undoable
 });
 
+test('a long continuous scribble keyframes instead of accumulating unbounded ops', async ({
+  page,
+}) => {
+  // Regression (ADR-0035): one uninterrupted gesture records one path op per
+  // pointermove, so a long scribble used to leave thousands of ops in a single
+  // command — and undo/resize replayed every one as a separate stroke(), making
+  // undo on a 4×-DPR iPad nearly unresponsive. The command must now collapse to
+  // a cumulative raster keyframe (ops dropped) once it passes the threshold.
+  const box = await page.locator('#engineCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+
+  // ~90 discrete moves in one gesture → ~90 ops, well past OP_KEYFRAME_THRESHOLD.
+  const points = Array.from({ length: 90 }, (_, i) => ({
+    x: 30 + (i % 2 === 0 ? 0 : 200),
+    y: 20 + i * 2,
+  }));
+  await drawStroke(page, box, points);
+
+  expect(await count(page)).toBeGreaterThan(0);
+
+  const debug = await page.evaluate(() => window.__engine.getUndoDebug());
+  // One undo unit, collapsed to a keyframe with its ops dropped — so a rebuild
+  // blits the raster instead of re-stroking ~90 ops.
+  expect(debug.commands).toBe(1);
+  expect(debug.keyframes).toBe(1);
+  expect(debug.maxOps).toBe(0);
+
+  // Undo still reverts the whole scribble in one step, back to blank.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(true);
+  expect(s.canUndo).toBe(false);
+});
+
+test('a keyframed scribble survives a resize and replays from the keyframe', async ({ page }) => {
+  // The keyframe is a cumulative square raster, so a resize rebuilds from it
+  // (drawImage) rather than re-stroking the dropped ops — and the drawing must
+  // still be there afterward.
+  const box = await page.locator('#engineCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+
+  const points = Array.from({ length: 90 }, (_, i) => ({ x: 20 + i * 2, y: 40 }));
+  await drawStroke(page, box, points);
+  expect((await page.evaluate(() => window.__engine.getUndoDebug())).keyframes).toBe(1);
+  const before = await count(page);
+  expect(before).toBeGreaterThan(0);
+
+  await page.evaluate(() => window.__engine.resizeTo(500, 400));
+
+  // Pixels along the stroke persist after the resize, rebuilt from the keyframe.
+  expect(await count(page)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(40, 40)[3])).toBeGreaterThan(0);
+
+  // And it still undoes as a single unit back to blank.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+  expect((await state(page)).canvasEmpty).toBe(true);
+});
+
 test('a multi-touch gesture undoes as a single unit', async ({ page }) => {
   // Two fingers drawing together form one stroke group → one command, so a
   // single undo must remove both strokes (not just the last finger's).

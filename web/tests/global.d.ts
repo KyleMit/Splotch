@@ -15,6 +15,7 @@ declare global {
       undo(): void;
       clearCanvas(): void;
       isCanvasEmpty(): boolean;
+      getUndoDebug(): { commands: number; keyframes: number; maxOps: number };
       exportCanvasBlob(
         overlayImage?: HTMLImageElement | null,
         options?: { includePaperTexture?: boolean }

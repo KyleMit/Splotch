@@ -66,10 +66,12 @@ resize.
 - **+** The per-stroke full-canvas copy is gone — the dominant remaining per-gesture
   raster ADR-0015/0032 flagged. No `drawImage(wholeCanvas)` on `stopDrawing`.
 - **+** One fewer offscreen 4×-DPR surface allocated for the session.
-- **−** `resizeCanvas()` now replays the baseline + log (≤`MAX_UNDO_STACK_SIZE`
-  stroke renders + the active stroke) instead of one `drawImage`. This is a one-off
-  cost on actual resize/rotation — off the drawing frame — matching `undo()`'s
-  existing replay profile, and is instrumented via the `engine.resize` mark.
+- **−** `resizeCanvas()` now replays the baseline + log instead of one
+  `drawImage`. This is a one-off cost on actual resize/rotation — off the drawing
+  frame — matching `undo()`'s replay profile, and is instrumented via the
+  `engine.resize` mark. (Like `undo()`, this replay is bounded by **ADR-0035**,
+  which keyframes long commands so a giant scribble doesn't re-stroke thousands
+  of ops on every rebuild.)
 
 Supersedes the virtual-canvas composite buffer described in **ADR-0004**; updates
 the surviving-surfaces note in **ADR-0015** (the live backing store + baseline are

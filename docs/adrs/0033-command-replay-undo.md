@@ -31,7 +31,7 @@ The single shared `renderOp(targetCtx, op)` paints an op live (target = visible 
 - **+** Undo memory drops from ten 4×-DPR snapshots to one baseline raster + a small command log (per-op kilobytes, not per-snapshot megabytes). Directly removes the dominant cost ADR-0015 flagged.
 - **+** The per-gesture full-canvas snapshot copy is gone — `beginRender()` now opens a command (free) instead of copying the canvas.
 - **+** Redo is a near-trivial follow-up (retain popped commands); deliberately left out of scope here.
-- **−** `undo()` now replays up to `MAX_UNDO_STACK_SIZE` stroke renders instead of one `drawImage`. This is a one-off cost at button-press (not per-frame) and is instrumented via the `engine.undo` mark.
+- **−** `undo()` now replays the retained command log instead of one `drawImage`. This is a one-off cost at button-press (not per-frame), instrumented via the `engine.undo` mark. **(This cost was badly under-estimated as "up to `MAX_UNDO_STACK_SIZE` stroke renders": a command holds one op per pointermove frame, so a single long scribble accumulates thousands of ops and made undo nearly unresponsive on iPad. ADR-0035 fixes this by keyframing long commands.)**
 - **−** A per-commit fold (one stroke render) runs once the log passes the cap — at `pointerup`, off the drawing frame; instrumented via `engine.foldBaseline`.
 - **−** Does **not** reduce the ADR-0015 DPR fill-rate cost (~4970 ms/session raster/paint on Android): that is live stroking against the 4× backing store, independent of undo. `K = 10` is unchanged for now and can be raised cheaply once the change is validated on-device.
 

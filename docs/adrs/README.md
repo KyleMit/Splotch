@@ -38,3 +38,4 @@ This directory records significant architectural decisions made in the Splotch p
 | [0032](0032-performance-profiling-harness.md) | Automated Performance Profiling Harness (build-flag marks + CDP/WebKit capture, web + Android + iOS) | Active |
 | [0033](0033-command-replay-undo.md) | Command-Replay Undo (Single Baseline + Stroke Log, replacing the snapshot stack) | Active |
 | [0034](0034-drop-virtual-canvas-rebuild-on-resize.md) | Drop the Virtual Canvas — Rebuild on Resize from the Baseline + Log | Active |
+| [0035](0035-keyframe-long-commands.md) | Keyframe Long Commands So Undo Doesn't Replay Thousands of Ops | Active |

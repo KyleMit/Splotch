@@ -10,6 +10,7 @@
     clearCanvas,
     isCanvasEmpty,
     exportCanvasBlob,
+    getUndoDebug,
   } from '$lib/drawing/engine';
 
   let canvasEl: HTMLCanvasElement;
@@ -54,6 +55,7 @@
       clearCanvas,
       isCanvasEmpty,
       exportCanvasBlob,
+      getUndoDebug,
 
       // Decode an exported blob and count its stroke pixels. The harness draws
       // in pure red; the paper background never is, so a red count > 0 means
