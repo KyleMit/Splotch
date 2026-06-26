@@ -20,13 +20,23 @@ One command per platform; the analyzer is pure and re-runnable on any saved trac
 | `npm run perf:web:raw` | …no throttle | full CDP trace |
 | `npm run perf:android` | the **real Capacitor WebView** on a connected device/emulator, no throttle | full CDP trace |
 | `npm run perf:ios` | Playwright **WebKit** (the iOS WKWebView engine), production preview | engine marks + FPS (no CDP trace) |
+| `npm run perf:undo` | the **undo/keyframe** question specifically — drives `/dev/engine` (so it can read `getUndoDebug()`) through 3 shaped sessions: 12 long squiggles, 12 short dot/dash marks, a mix; tablet viewport, 4× throttle | CDP trace **+** per-scenario keyframe/op counts, draw-vs-undo timing, and analytic raster memory |
 | `npm run perf:analyze -- <dir or trace.json>` | re-summarize a saved trace | — |
 
 Flags (web/ios): `--device=phone\|tablet\|desktop`, `--no-build` (reuse the last
 build); web also `--throttle=N`. Android: `--no-build` (profile the installed app
-as-is). Each run writes `perf-profiles/<timestamp>-<target>-…/` containing
-`trace.json`, `metrics.json`, `summary.json`, `report.md`, and `screenshot.png`.
-`perf-profiles/` is gitignored.
+as-is). `perf:undo` takes `--throttle=N` / `--no-throttle` / `--no-build`. Each run
+writes `perf-profiles/<timestamp>-<target>-…/` containing `trace.json`,
+`metrics.json`, `summary.json`, `report.md`, and `screenshot.png`; `perf:undo` also
+writes `undo-scenarios.json` / `undo-scenarios.md` (the per-scenario keyframe/op/
+undo-cost/memory tables). `perf-profiles/` is gitignored.
+
+**Undo/keyframe memory caveat:** history rasters (keyframes, the baseline, and the
+old snapshot stack) live in **canvas backing stores, not the JS heap** — so
+`performance.memory` / the heap table can't see them and stay flat. `perf:undo`
+reports the *real* cost analytically: `keyframes × (max(w,h)² × 4 bytes)`. It's also
+re-runnable unchanged against the old snapshot engine for an apples-to-apples
+keyframe-vs-snapshot comparison.
 
 ## How capture works (so the numbers make sense)
 
