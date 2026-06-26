@@ -32,7 +32,22 @@ appId: art.splotch.app
 # codes" subtitle renders offline (it's above the login form), so this needs no
 # network — only that /admin/native loaded and rendered instead of a blank.
 - tapOn: 'Parent Center'
-- tapOn: 'About'
+# Navigate to the About tab (Settings → AI → Setup → About). In the iOS WKWebView
+# a tap on the tab button doesn't register as a click, and the app's programmatic
+# tab nav (scrollTo on the scroll-snap-x pager, TabPager.svelte) is a no-op there
+# too — so drive the manual horizontal swipe the tab pager is built around.
+# scroll-snap-stop:always advances at most one panel per swipe and the scroller
+# clamps at the last panel, so a few left swipes land on About and any extra are
+# harmless no-ops. assertVisible (About-only, above-the-fold tagline) then both
+# waits for the snap to settle and proves we landed on the right tab.
+- repeat:
+    times: 5
+    commands:
+      - swipe:
+          start: 85%, 45%
+          end: 15%, 45%
+          duration: 400
+- assertVisible: 'A joyful.*'
 - takeScreenshot: .maestro/screenshots/smoke-about
 
 # The version-unlock button lives in the About footer, below the fold inside the
