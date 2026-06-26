@@ -7,8 +7,9 @@ import { ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte';
 import {
   calculateStrokeSpeed,
   edgeSwipeIsOsGesture,
+  edgeSwipeDirectionDecided,
   guardedEdgeAt,
-  EDGE_SWIPE_DECISION_PX,
+  pointerWasResumed,
   type GuardEdge,
 } from './strokeMath';
 
@@ -115,10 +116,8 @@ const COLOR_CHANGE_DEBOUNCE_MS = 100;
 // curves from the old position to the resumed one — a stray straight line
 // joining what should be two separate strokes. A long idle gap AND a jump too
 // large for continuous contact together mean the finger really lifted, so the
-// stroke is restarted at the resumed point. The jump is a fraction of the
-// canvas's shorter side, so it scales with canvas size and render scale.
-const POINTER_RESUME_GAP_MS = 100;
-const POINTER_RESUME_JUMP_RATIO = 0.1;
+// stroke is restarted at the resumed point. The gap/jump thresholds and the
+// decision predicate live in ./strokeMath (pointerWasResumed).
 
 // The iPad/Android system gesture for the home/menu bar is a swipe inward from
 // the device's physical-bottom edge, so a touch starting in that edge's gesture
@@ -448,7 +447,7 @@ function draw(e: PointerEvent) {
     const last = points[points.length - 1];
     const dx = last.x - pointerState.startX;
     const dy = last.y - pointerState.startY;
-    if (Math.hypot(dx, dy) < EDGE_SWIPE_DECISION_PX * renderScale) return;
+    if (!edgeSwipeDirectionDecided(Math.hypot(dx, dy), renderScale)) return;
     // Decided. A mostly-inward flick (within ~45° of perpendicular, toward the
     // canvas centre) is the OS gesture — discard the whole stroke. Anything else
     // is a real stroke; commit it and let the next pointermove draw normally.
@@ -467,8 +466,9 @@ function draw(e: PointerEvent) {
   const resumeDeltaX = resume.x - pointerState.x;
   const resumeDeltaY = resume.y - pointerState.y;
   const jump = Math.sqrt(resumeDeltaX * resumeDeltaX + resumeDeltaY * resumeDeltaY);
-  const jumpThreshold = POINTER_RESUME_JUMP_RATIO * Math.min(canvas.width, canvas.height);
-  if (now - pointerState.lastTime > POINTER_RESUME_GAP_MS && jump > jumpThreshold) {
+  if (
+    pointerWasResumed(now - pointerState.lastTime, jump, Math.min(canvas.width, canvas.height))
+  ) {
     pointerState.x = resume.x;
     pointerState.y = resume.y;
     pointerState.midX = resume.x;
