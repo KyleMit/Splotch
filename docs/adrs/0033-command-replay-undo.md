@@ -14,11 +14,11 @@ The two pain points: (a) ten 4×-DPR rasters held in memory, and (b) a full-canv
 Replace the snapshot stack with a **command log replayed over a single baseline raster**.
 
 - Each stroke group (all fingers down together — one undo unit) is recorded as a `StrokeGroupCommand`: an ordered list of **rendered** ops (`dot`, `path`, or `clear`) plus the `wasEmpty` flag from before the group drew. Ops are captured at the exact granularity they were drawn — one `path` op per `strokeSmoothSegments` call, carrying the computed quadratic control/endpoint pairs — so replay reproduces bit-identical pixels (same `beginPath`/`stroke` boundaries, same compositing order). Recording the _rendered_ geometry, not raw pointer input, sidesteps the pointer-resume / coalescing / edge-swipe-deferral subtleties in the live path.
-- One offscreen **baseline** raster (sized to the virtual canvas) holds the state before the oldest retained command. `undo()` = redraw the baseline, then replay the surviving log onto both the visible and virtual canvases.
+- One offscreen **baseline** raster (a `max(w,h)` square) holds the state before the oldest retained command. `undo()` = redraw the baseline, then replay the surviving log on top. (As first landed this replayed onto both the visible and virtual canvases; **ADR-0034** then removed the virtual canvas, so replay targets the visible canvas alone and resize rebuilds the same way.)
 - The log is capped at `MAX_UNDO_STACK_SIZE` (kept at 10). On commit past the cap, the **oldest command folds into the baseline** — replayed once onto the baseline raster, then dropped. In-order folding keeps eraser `destination-out` ops hitting exactly the pixels they originally did.
 - `clearCanvas()` is itself a `clear` command, so clearing is undoable and folds like any other.
 
-The single shared `renderOp(targetCtx, op)` paints an op live (target = visible ctx), during fold (target = baseline), or during undo replay (targets = visible + virtual). The virtual canvas and baseline contexts inherit the round line cap/join the live stroking relies on.
+The single shared `renderOp(targetCtx, op)` paints an op live (target = visible ctx), during fold (target = baseline), or during undo/resize replay (target = visible ctx; see ADR-0034). The baseline context inherits the round line cap/join the live stroking relies on.
 
 ## Alternatives rejected
 

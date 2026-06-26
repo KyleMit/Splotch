@@ -59,7 +59,7 @@ Read in this order:
    | `engine.commit` high | finalizing a stroke group into the undo log (push, fold check) | should be cheap — recording ops, not copying pixels (ADR-0033). |
    | `engine.foldBaseline` high | replaying the oldest command onto the baseline raster once the log passes the cap | one stroke render per commit past `MAX_UNDO_STACK_SIZE`; runs at stroke end, off the draw frame. |
    | `engine.scanEmpty` high | `getImageData` readback after an **eraser** stroke | `scanCanvasIsEmpty`; already downscaled 0.25×. Costlier on real devices (GPU→CPU readback). |
-   | `engine.resize` high/frequent | backing-store rebuild + virtual-canvas copy | should fire only on resize/rotation — if it fires mid-draw, that's the bug. |
+   | `engine.resize` high/frequent | backing-store rebuild + baseline/command-log replay (ADR-0034) | should fire only on resize/rotation — if it fires mid-draw, that's the bug. |
    | `engine.undo` high | rebuild from baseline + replay the command log (ADR-0033) | scales with retained commands (≤`MAX_UNDO_STACK_SIZE`); a one-off cost at button-press, not per-frame. |
 3. **Where the main thread went** (Chromium/Android only) — Scripting vs
    Rendering vs Painting. Painting/raster dominating = GPU/compositing cost (the
@@ -67,8 +67,9 @@ Read in this order:
 4. **Per-phase main-thread busy** — which interaction actually costs CPU (busy,
    not wall-clock — wall is dominated by the scenario's pacing sleeps).
 5. **Top JS by self-time** — corroborates 2–3. `drawImage` = canvas copies
-   (baseline/virtual-canvas sync); `stroke`/`quadraticCurveTo` = live drawing and
-   undo replay; `getImageData` = the empty-scan.
+   (the baseline blit on resize/undo — the per-stroke virtual-canvas sync is gone,
+   ADR-0034); `stroke`/`quadraticCurveTo` = live drawing and undo/resize replay;
+   `getImageData` = the empty-scan.
 
 For a forced-reflow / layout-thrash check, the harness confirmed **0 forced
 synchronous layouts** in the drawing path (the engine caches `canvasRect`). If

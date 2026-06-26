@@ -90,7 +90,8 @@
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,
-      // so the spec can verify the virtual-canvas content survives a resize.
+      // so the spec can verify the drawing (rebuilt from the baseline + command
+      // log) survives a resize.
       resizeTo(w: number, h: number) {
         wrapperEl.style.width = `${w}px`;
         wrapperEl.style.height = `${h}px`;

@@ -1,5 +1,5 @@
-// Imperative drawing engine. Owns the <canvas>, the virtual canvas, the
-// undo stack, and the pointer tracking. Svelte components mount this on
+// Imperative drawing engine. Owns the <canvas>, the undo baseline + command
+// log, and the pointer tracking. Svelte components mount this on
 // onMount and adapt reactive state (active color, stroke width) by calling
 // setColor() / setStrokeWidth() from $effect.
 
@@ -101,10 +101,7 @@ const activePointers = new Map<number, PointerState>();
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
 let onDrawStopCallback: (() => void) | null = null;
 
-let virtualCanvas: HTMLCanvasElement | null = null;
-let virtualCtx: CanvasRenderingContext2D | null = null;
-
-// The undo baseline: one offscreen raster (sized to the virtual canvas) holding
+// The undo baseline: one offscreen raster (a max(w,h) square) holding
 // the state from before the oldest retained command. Undo = redraw this, then
 // replay the surviving command log on top. A single raster replaces the old
 // stack of MAX_UNDO_STACK_SIZE full-canvas snapshots (ADR-0033).
@@ -115,7 +112,7 @@ let baselineCtx: CanvasRenderingContext2D | null = null;
 // screens, capped at 2× — DPR-3 panels would cost 9× the pixels for detail a
 // finger-drawn stroke can't use (see ADR 0015). Fixed for the session at init:
 // a mid-session DPR change (desktop zoom, monitor move) would otherwise need
-// every pixel surface (virtual canvas, undo stack) rescaled in place.
+// every pixel surface (visible canvas, baseline) rescaled in place.
 const MAX_RENDER_SCALE = 2;
 let renderScale = 1;
 
@@ -232,10 +229,10 @@ function scanCanvasIsEmpty(): boolean {
   return empty;
 }
 
-// A backing surface (virtual canvas or undo baseline) grew beyond its current
-// size (e.g. a desktop window stretched larger). Grow it and copy existing
-// pixels so no drawing is lost. The replay path strokes onto these surfaces, so
-// the fresh context inherits the round line cap/join.
+// The undo baseline grew beyond its current size (e.g. a desktop window
+// stretched larger). Grow it and copy existing
+// pixels so no drawing is lost. The fold path strokes onto the baseline, so the
+// fresh context inherits the round line cap/join.
 function growCanvas(
   existing: HTMLCanvasElement,
   newW: number,
@@ -257,56 +254,35 @@ function resizeCanvas() {
   if (PERF_MARKS) performance.mark('engine.resize:start');
   const rect = canvas.getBoundingClientRect();
 
-  // A max(w,h) square covers both orientations, so rotation never loses pixels;
-  // anything larger (e.g. a resized desktop window) goes through the grow path.
+  // The baseline is a max(w,h) square so it covers both orientations and
+  // rotation never loses pixels; anything larger (e.g. a resized desktop window)
+  // goes through the grow path. Replayed ops use its coordinates, and content
+  // off the current (rotated) viewport survives here even though the visible
+  // canvas clips it.
   const squareSide = Math.ceil(Math.max(rect.width, rect.height) * renderScale);
-  if (!virtualCanvas) {
-    virtualCanvas = document.createElement('canvas');
-    virtualCanvas.width = squareSide;
-    virtualCanvas.height = squareSide;
-    virtualCtx = virtualCanvas.getContext('2d');
-    // Undo replay strokes onto the virtual canvas, so it needs the round caps.
-    if (virtualCtx) {
-      virtualCtx.lineCap = 'round';
-      virtualCtx.lineJoin = 'round';
-    }
-  } else if (squareSide > virtualCanvas.width || squareSide > virtualCanvas.height) {
-    const newW = Math.max(squareSide, virtualCanvas.width);
-    const newH = Math.max(squareSide, virtualCanvas.height);
-    ({ canvas: virtualCanvas, ctx: virtualCtx } = growCanvas(virtualCanvas, newW, newH));
-  }
-
-  // The undo baseline tracks the virtual canvas's dimensions: replayed ops use
-  // the same coordinates, and content off the current (rotated) viewport must
-  // survive in both surfaces.
   if (!baselineCanvas) {
     baselineCanvas = document.createElement('canvas');
-    baselineCanvas.width = virtualCanvas.width;
-    baselineCanvas.height = virtualCanvas.height;
+    baselineCanvas.width = squareSide;
+    baselineCanvas.height = squareSide;
     baselineCtx = baselineCanvas.getContext('2d');
     if (baselineCtx) {
       baselineCtx.lineCap = 'round';
       baselineCtx.lineJoin = 'round';
     }
-  } else if (
-    virtualCanvas.width > baselineCanvas.width ||
-    virtualCanvas.height > baselineCanvas.height
-  ) {
-    ({ canvas: baselineCanvas, ctx: baselineCtx } = growCanvas(
-      baselineCanvas,
-      virtualCanvas.width,
-      virtualCanvas.height
-    ));
+  } else if (squareSide > baselineCanvas.width || squareSide > baselineCanvas.height) {
+    const newW = Math.max(squareSide, baselineCanvas.width);
+    const newH = Math.max(squareSide, baselineCanvas.height);
+    ({ canvas: baselineCanvas, ctx: baselineCtx } = growCanvas(baselineCanvas, newW, newH));
   }
 
-  syncVirtualCanvas();
-
+  // Resizing the backing store wipes the visible canvas and resets its context
+  // state, so re-arm the round caps and repaint from the baseline + command log.
   canvas.width = Math.round(rect.width * renderScale);
   canvas.height = Math.round(rect.height * renderScale);
-
-  if (virtualCanvas) ctx.drawImage(virtualCanvas, 0, 0);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+
+  rebuildFromBaseline();
 
   refreshCanvasRect();
 
@@ -337,20 +313,9 @@ export function getCanvasRect(): CanvasRect {
   return canvasRect;
 }
 
-// The picture must survive resize/rotation, so the visible canvas is copied
-// into the off-screen virtual canvas after each completed drawing op (rather
-// than mirroring every stroke segment in the pointer hot path). The visible
-// region maps 1:1 to the virtual canvas at the origin, and the clearRect is
-// required so erased pixels propagate.
-function syncVirtualCanvas() {
-  if (!virtualCtx || canvas.width === 0 || canvas.height === 0) return;
-  virtualCtx.clearRect(0, 0, canvas.width, canvas.height);
-  virtualCtx.drawImage(canvas, 0, 0);
-}
-
 // Paint one recorded op onto a target context. Used both live (target = the
-// visible ctx) and during undo replay (target = the visible/virtual/baseline
-// surfaces). Erasing composites destination-out; everything else source-over.
+// visible ctx) and during undo/resize replay (target = the visible or baseline
+// surface). Erasing composites destination-out; everything else source-over.
 function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   if (op.kind === 'clear') {
     target.clearRect(0, 0, target.canvas.width, target.canvas.height);
@@ -412,7 +377,6 @@ export function releaseAllPointers() {
   if (!ctx) return;
   ctx.beginPath();
 
-  if (activePointers.size > 0) syncVirtualCanvas();
   activePointers.clear();
   groupHasDrawn = false;
   commitActiveCommand();
@@ -638,9 +602,8 @@ function stopDrawing(e?: PointerEvent) {
 
   ctx.beginPath();
 
-  if (pointerState && !pointerState.edgeSwipeGuard) {
-    syncVirtualCanvas();
-    if (pointerState.erase) setCanvasEmptyState(scanCanvasIsEmpty());
+  if (pointerState && !pointerState.edgeSwipeGuard && pointerState.erase) {
+    setCanvasEmptyState(scanCanvasIsEmpty());
   }
 
   if (activePointers.size === 0) {
@@ -684,21 +647,20 @@ function foldOldestIntoBaseline() {
   if (PERF_MARKS) performance.measure('engine.foldBaseline', 'engine.foldBaseline:start');
 }
 
-// Reconstruct the visible + virtual canvases from the baseline plus the
-// surviving command log. Both surfaces are rebuilt so undone content can't
-// reappear from off-screen after a rotation.
+// Reconstruct the visible canvas from the baseline plus the surviving command
+// log. The baseline is square (max(w,h)), so replaying it onto a resized or
+// rotated visible canvas restores content that was previously off-screen. A
+// mid-stroke resize still has an uncommitted activeCommand (its ops are
+// recorded but not yet in the log), so replay it last to keep the in-flight
+// stroke; between strokes activeCommand is null and this is a no-op.
 function rebuildFromBaseline() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (baselineCanvas) ctx.drawImage(baselineCanvas, 0, 0);
-  if (virtualCtx && virtualCanvas) {
-    virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
-    if (baselineCanvas) virtualCtx.drawImage(baselineCanvas, 0, 0);
-  }
   for (const cmd of commandLog) {
-    for (const op of cmd.ops) {
-      renderOp(ctx, op);
-      if (virtualCtx) renderOp(virtualCtx, op);
-    }
+    for (const op of cmd.ops) renderOp(ctx, op);
+  }
+  if (activeCommand) {
+    for (const op of activeCommand.ops) renderOp(ctx, op);
   }
 }
 
@@ -800,9 +762,6 @@ export function clearCanvas() {
   // undoing it replays the strokes that preceded it back from the baseline.
   pushCommand({ ops: [{ kind: 'clear' }], wasEmpty: canvasEmpty });
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (virtualCtx && virtualCanvas) {
-    virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
-  }
   setCanvasEmptyState(true);
 }
 

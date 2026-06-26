@@ -493,3 +493,36 @@ test('the drawing survives a canvas resize (virtual-canvas preservation)', async
   const alpha = await page.evaluate(() => window.__engine.pixelAt(70, 30)[3]);
   expect(alpha).toBeGreaterThan(0);
 });
+
+test('a stroke in progress survives a mid-stroke resize and undoes as one unit', async ({
+  page,
+}) => {
+  // The rebuild replays from the baseline + command log, but a stroke still being
+  // drawn has an uncommitted activeCommand (recorded, not yet in the log). The
+  // resize must replay it too, so the in-flight stroke isn't dropped — and the
+  // whole stroke remains a single undo unit afterwards.
+  const box = await page.locator('#engineCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+
+  await page.mouse.move(box.x + 40, box.y + 40);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 100, box.y + 100);
+
+  // Resize while the finger is still down (the stroke is mid-flight).
+  await page.evaluate(() => window.__engine.resizeTo(500, 400));
+
+  // The portion drawn before the resize is still on the canvas.
+  expect(await page.evaluate(() => window.__engine.pixelAt(40, 40)[3])).toBeGreaterThan(0);
+
+  await page.mouse.move(box.x + 150, box.y + 150);
+  await page.mouse.up();
+
+  expect(await count(page)).toBeGreaterThan(0);
+
+  // One stroke → one command: a single undo clears it back to blank.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(true);
+  expect(s.canUndo).toBe(false);
+});
