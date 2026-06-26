@@ -65,12 +65,15 @@ npx cross-env PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run build
 
 ### A2. Serve it on the LAN — **[Mac]**
 
-`PUBLIC_ENABLE_DEV_HARNESS` is read at **runtime** (`$env/dynamic/public`), so it
-must be set for the preview server too. `--host` exposes it beyond localhost:
-
 ```sh
-npx cross-env PUBLIC_ENABLE_DEV_HARNESS=true npm run preview -- --host --port 4173
+npm run perf:serve
 ```
+
+This serves the build on `0.0.0.0:4173` with the `/dev/*` harness routes unlocked
+(`PUBLIC_ENABLE_DEV_HARNESS` is read at **runtime** via `$env/dynamic/public`, so it
+must be set for the server, which `perf:serve` does; `--host` exposes it beyond
+localhost). It prints the **Network** URL to use from the iPad. Leave it running in
+its own terminal — and stop it before `perf:replay` (same port).
 
 Find the Mac's LAN IP (Wi‑Fi is usually `en0`; try `en1` if blank):
 
@@ -141,6 +144,56 @@ npm run perf:ios:analyze -- perf-profiles/web-inspector-timeline/<export>.json
 > GPU-side cost (the canvas raster) shows in the **paint/composite** records, not
 > in the engine marks: the canvas is GPU-accelerated, so issuing replay ops is
 > cheap on the main thread and rasterization is deferred.
+
+---
+
+## Approach C — Record real finger input, replay it through the harness (best fidelity for the profiler)
+
+Instead of having the harness generate synthetic strokes, capture your own finger
+input on the device once and feed it into the profiler. The replay reproduces the
+real op stream **and** real frame pacing, and reports exactly how the engine stored
+*your* strokes (keyframes / commands / op counts).
+
+### C1. Serve the app on the LAN — **[Mac]**
+
+Build once, then serve (same as A1–A2):
+
+```sh
+npx cross-env PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run build
+npm run perf:serve
+```
+
+Recording uses the **real app at the root** (`/`), not `/dev/engine`.
+
+### C2. Record — **[iPad]** + **[Mac]**
+
+1. **[iPad]** Open `http://<mac-lan-ip>:4173/` (the normal app).
+2. **[Mac]** Attach Web Inspector (Develop → [iPad] → the page) and paste the whole
+   of [`scripts/perf/ipad-recorder.js`](../../../scripts/perf/ipad-recorder.js)
+   into the **Console**. It starts recording immediately.
+3. **[iPad]** Draw, change colors, erase, undo — with your fingers, however a real
+   session goes. The recorder captures every pointer event on the canvas plus the
+   UI actions it recognizes (color / size / eraser / undo / clear).
+4. **[Mac]** When done, in the console: `__rec.stop()` then **`copy(__rec.json())`**
+   (Safari's `copy()` puts it on the **Mac** clipboard). Paste into a file, e.g.
+   `perf-profiles/recordings/my-session.json`.
+
+### C3. Replay under the profiler — **[Mac]**
+
+```sh
+npm run perf:replay -- --recording=perf-profiles/recordings/my-session.json
+```
+
+It opens `/dev/engine`, sizes the canvas to the recorded device, replays your input
+at its recorded timing (add `--turbo` for as-fast-as-possible, `--throttle=N` to
+emulate a slower CPU), captures a CDP trace + engine marks, and writes the usual
+`report.md` plus `replay-summary.md` (how your input was stored + engine.draw/
+keyframe/undo cost). The replay runs in **headless Chromium on the Mac**, so it's
+for op-stream/algorithm fidelity from real input — not on-device hardware numbers
+(for those, profile the replay or your live drawing on the iPad via Approach A/B).
+
+> The replay (`perf:replay`) takes over port 4173 and will stop the `--host`
+> recording server. Record first, then replay.
 
 ---
 

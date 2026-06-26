@@ -21,6 +21,7 @@ One command per platform; the analyzer is pure and re-runnable on any saved trac
 | `npm run perf:android` | the **real Capacitor WebView** on a connected device/emulator, no throttle | full CDP trace |
 | `npm run perf:ios` | Playwright **WebKit** (the iOS WKWebView engine), production preview | engine marks + FPS (no CDP trace) |
 | `npm run perf:undo` | the **undo/keyframe** question specifically — drives `/dev/engine` (so it can read `getUndoDebug()`) through 3 shaped sessions: 12 long squiggles, 12 short dot/dash marks, a mix; tablet viewport, 4× throttle | CDP trace **+** per-scenario keyframe/op counts, draw-vs-undo timing, and analytic raster memory |
+| `npm run perf:replay -- --recording=<f>` | **real recorded finger input** instead of synthetic strokes — replays a recording captured on-device with `scripts/perf/ipad-recorder.js` (see `ipad-device-profiling.md`) at real timing | CDP trace **+** how your input was stored (`getUndoDebug`) + engine.draw/keyframe/undo cost |
 | `npm run perf:analyze -- <dir or trace.json>` | re-summarize a saved trace | — |
 
 Flags (web/ios): `--device=phone\|tablet\|desktop`, `--no-build` (reuse the last
