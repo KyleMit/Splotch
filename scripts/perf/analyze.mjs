@@ -72,6 +72,7 @@ const HARNESS_SYMBOLS = new Set([
   'elementfrompoint',
   'serialize',
   'innerserialize',
+  'computebox',
 ]);
 
 function loadInputs(target) {
