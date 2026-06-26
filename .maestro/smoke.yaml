@@ -32,22 +32,53 @@ appId: art.splotch.app
 # codes" subtitle renders offline (it's above the login form), so this needs no
 # network — only that /admin/native loaded and rendered instead of a blank.
 - tapOn: 'Parent Center'
-- tapOn: 'About'
-- scrollUntilVisible:
-    element:
-      text: 'Version.*'
-    direction: DOWN
-    timeout: 15000
+# Navigate to the About tab (Settings → AI → Setup → About). In the iOS WKWebView
+# a tap on the tab button doesn't register as a click, and the app's programmatic
+# tab nav (scrollTo on the scroll-snap-x pager, TabPager.svelte) is a no-op there
+# too — so drive the manual horizontal swipe the tab pager is built around.
+# scroll-snap-stop:always advances at most one panel per swipe and the scroller
+# clamps at the last panel, so a few left swipes land on About and any extra are
+# harmless no-ops. assertVisible (About-only, above-the-fold tagline) then both
+# waits for the snap to settle and proves we landed on the right tab.
+- repeat:
+    times: 5
+    commands:
+      - swipe:
+          start: 85%, 45%
+          end: 15%, 45%
+          duration: 400
+- assertVisible: 'A joyful.*'
+- takeScreenshot: .maestro/screenshots/smoke-about
+
+# The version-unlock button lives in the About footer, below the fold inside the
+# dialog's vertical scroller. Maestro's built-in scrollUntilVisible swipe gets
+# swallowed by the horizontal scroll-snap tab pager in the iOS WKWebView (it
+# works on Android) — so pan the dialog with explicit, purely-vertical swipes
+# (constant x, so the pager can't read them as a sideways tab change). A small
+# fixed count reaches the short footer and is a no-op once scrolled to the
+# bottom; assertVisible then fails fast with a clear error if it didn't.
+- repeat:
+    times: 6
+    commands:
+      - swipe:
+          start: 50%, 75%
+          end: 50%, 35%
+          duration: 600
+- assertVisible: 'Version.*'
 - repeat:
     times: 5
     commands:
       - tapOn:
           text: 'Version.*'
-- scrollUntilVisible:
-    element:
-      text: 'Admin'
-    direction: DOWN
-    timeout: 10000
+# Revealing the link adds a line to the footer; a couple more vertical swipes
+# guarantee the Admin link is on-screen before tapping it.
+- repeat:
+    times: 2
+    commands:
+      - swipe:
+          start: 50%, 75%
+          end: 50%, 35%
+          duration: 600
 - tapOn: 'Admin'
 - extendedWaitUntil:
     visible: 'Manage AI access codes'
