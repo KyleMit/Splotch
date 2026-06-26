@@ -117,5 +117,13 @@ When you fix something, re-run the same command and compare `summary.json` /
 - **iOS** `perf:ios` profiles the WebKit *engine*, not the Simulator app. For
   device-accurate numbers, run the app on the Simulator, record a **Timeline** in
   Safari Web Inspector (Develop → Simulator → Splotch — see the `mobile` skill),
-  export it, and run `npm run perf:analyze -- <export>.json`. WebKit clamps
+  export it, and run `npm run perf:ios:analyze -- <export>.json` (the Web
+  Inspector export is mark-only/ring-buffered — a different format from
+  `perf:analyze`; see `ipad-device-profiling.md`). WebKit clamps
   `performance.now()` to ~1 ms, so its engine-mark timings are coarse.
+- **Real iPad** (the highest-fidelity target — real WebKit + GPU + 120 Hz
+  ProMotion): there's no automation socket, so it's a manual Safari Web Inspector
+  flow. Full step-by-step runbook (Mac-vs-iPad tagged) in
+  [`ipad-device-profiling.md`](ipad-device-profiling.md); it drives the same
+  `perf:undo` scenarios via the pasteable console driver
+  `scripts/perf/ipad-console-driver.js`.
