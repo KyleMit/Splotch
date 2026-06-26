@@ -6,6 +6,9 @@
 # run-splotch driver screenshots (.claude/skills/run-splotch)
 /screenshots/
 
+# Performance profiling captures (npm run perf:web) — local artifacts.
+/perf-profiles/
+
 # Logs
 logs
 *.log

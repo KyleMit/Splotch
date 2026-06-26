@@ -7,6 +7,12 @@ import { execSync } from 'node:child_process';
 // shell and all assets are already on-device), so skip the PWA plugin there.
 const isCapacitor = process.env.CAPACITOR === 'true';
 
+// Opt-in `performance.mark/measure` instrumentation on the drawing engine's hot
+// paths, read by the profiling harness (scripts/perf/, `npm run perf:web`). Off
+// by default so the marks never ship: with the literal `false` the guarded
+// blocks — and their mark-name strings — dead-code-eliminate from the bundle.
+const perfMarks = process.env.PERF_MARKS === 'true';
+
 // package.json (at the repo root, one dir up from web/) holds the canonical
 // major.minor, bumped by scripts/release.mjs. Native keeps that exact version —
 // store submissions need deliberate, controlled numbers. The web build instead
@@ -60,7 +66,8 @@ export default {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
     __BUILD_TIME__: JSON.stringify(BUILD_TIME),
     __NATIVE_API_BASE__: JSON.stringify(NATIVE_API_BASE),
-    __IS_CAPACITOR__: JSON.stringify(isCapacitor)
+    __IS_CAPACITOR__: JSON.stringify(isCapacitor),
+    __PERF_MARKS__: JSON.stringify(perfMarks)
   },
   plugins: [
     sveltekit(),
