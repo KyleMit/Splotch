@@ -317,19 +317,26 @@ export function renderReport(s) {
     );
   }
 
+  const userTimingOnly = s.settings.captureMode === 'user-timing';
   out.push('\n## Where the main thread went (approximate — nested events may overlap)\n');
-  const b = s.breakdown;
-  out.push(
-    table(
-      ['Bucket', 'Time'],
-      [
-        ['Main-thread busy (RunTask)', ms(b.mainThreadBusyMs)],
-        ['Scripting', ms(b.scriptingMs)],
-        ['Rendering / layout', ms(b.renderingMs)],
-        ['Painting / raster / GPU', ms(b.paintingMs)],
-      ]
-    )
-  );
+  if (userTimingOnly) {
+    out.push(
+      '_Not available from this capture (WebKit has no CDP trace) — engine hot paths and frames below are the signal._'
+    );
+  } else {
+    const b = s.breakdown;
+    out.push(
+      table(
+        ['Bucket', 'Time'],
+        [
+          ['Main-thread busy (RunTask)', ms(b.mainThreadBusyMs)],
+          ['Scripting', ms(b.scriptingMs)],
+          ['Rendering / layout', ms(b.renderingMs)],
+          ['Painting / raster / GPU', ms(b.paintingMs)],
+        ]
+      )
+    );
+  }
 
   out.push('\n## Engine hot paths (user-timing marks)\n');
   if (s.engineHotPaths.length) {
@@ -349,7 +356,15 @@ export function renderReport(s) {
     out.push('_No engine.* marks in this trace — was it built with PERF_MARKS=true?_');
   }
 
-  if (s.phases.length) {
+  if (s.phases.length && userTimingOnly) {
+    out.push('\n## Per-phase wall-clock\n');
+    out.push(
+      table(
+        ['Phase', 'Wall'],
+        s.phases.map((p) => [p.label, ms(p.wallMs)])
+      )
+    );
+  } else if (s.phases.length) {
     out.push('\n## Per-phase main-thread cost (busy time, not wall-clock)\n');
     out.push(
       table(

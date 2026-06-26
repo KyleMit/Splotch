@@ -88,6 +88,25 @@ export async function heapBytes(page) {
   return page.evaluate(() => performance.memory?.usedJSHeapSize ?? null);
 }
 
+// For engines without CDP tracing (WebKit), synthesize the minimal trace the
+// analyzer needs straight from the Performance API: the engine.* and phase:
+// user-timing measures as blink.user_timing 'X' events. No RunTask/CPU-sampler
+// data is available, so the trace-derived report sections show n/a — but the
+// engine hot-path timings (the primary signal) and per-phase wall come through.
+export async function collectMeasures(page) {
+  return page.evaluate(() =>
+    performance.getEntriesByType('measure').map((m) => ({
+      cat: 'blink.user_timing',
+      name: m.name,
+      ph: 'X',
+      ts: m.startTime * 1000,
+      dur: m.duration * 1000,
+      pid: 0,
+      tid: 0,
+    }))
+  );
+}
+
 // Bracket a scenario beat with a user-timing measure (phase:<label>) so the
 // analyzer can slice trace time per beat from the same track as the engine.*
 // marks. The fn's own work happens between the start mark and the measure.

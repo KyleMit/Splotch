@@ -21,6 +21,7 @@ import {
 import {
   startTrace,
   stopTrace,
+  collectMeasures,
   injectObservers,
   readObservers,
   heapBytes,
@@ -122,9 +123,12 @@ export async function driveSession(page, cdp, { outDir, settings }) {
   mkdirSync(outDir, { recursive: true });
   const t0 = Date.now();
 
+  // CDP (Chromium / Android WebView) records a full Chrome trace; WebKit has no
+  // CDP, so we fall back to reading the user-timing marks at the end.
+  const useTrace = !!cdp;
   await injectObservers(page);
   const heapBefore = await heapBytes(page);
-  const events = await startTrace(cdp);
+  const events = useTrace ? await startTrace(cdp) : [];
 
   console.log(`Profiling ${settings.target} ${settings.device ?? ''}…`);
   await expandDrawer(page);
@@ -174,20 +178,26 @@ export async function driveSession(page, cdp, { outDir, settings }) {
 
   const obs = await readObservers(page);
   const heapAfter = await heapBytes(page);
-  await stopTrace(cdp);
+  const traceEvents = useTrace ? events : await collectMeasures(page);
+  if (useTrace) await stopTrace(cdp);
 
   await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
 
-  writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents: events }));
+  writeFileSync(join(outDir, 'trace.json'), JSON.stringify({ traceEvents }));
   const metrics = {
-    settings: { ...settings, startedAt: new Date(t0).toISOString(), durationMs: Date.now() - t0 },
+    settings: {
+      ...settings,
+      captureMode: useTrace ? 'cdp-trace' : 'user-timing',
+      startedAt: new Date(t0).toISOString(),
+      durationMs: Date.now() - t0,
+    },
     longTasks: obs.longTasks,
     frames: obs.frames,
     heap: { beforeBytes: heapBefore ?? 0, afterBytes: heapAfter ?? obs.heapBytes ?? 0 },
   };
   writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2));
 
-  const summary = analyze(events, metrics);
+  const summary = analyze(traceEvents, metrics);
   const report = renderReport(summary);
   writeFileSync(join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
   writeFileSync(join(outDir, 'report.md'), report);
