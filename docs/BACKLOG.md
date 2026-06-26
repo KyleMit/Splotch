@@ -12,6 +12,7 @@
 * [ ] Add even more color for tall landscape view
 * [ ] Generate more fun store screenshot generation
 * [ ] Efficiently layout broad range of colors on small devices in advanced color picker
+* [ ] Parent center window should not bounce around in height so much when the height of content changes.  set min height.
 * Icons
   * [ ] Document https://fonts.google.com/icons?icon.style=Rounded as icon source
   * [ ] Hand draw icons
@@ -21,10 +22,10 @@
   * [ ] If AI call fails and you need to try again, enable a way to do so immediately
   * [ ] AI Style buttons should use custom image and then generate corresponding output for each.
   * [ ] Build custom AI Prompts in the parent center.  Generate a logo for them from the base style and then enable.  Save logo locally
-* [ ] Add /about page for marketing page with download links
-* [ ] Once ios and android stores ship, link to native downloads in parent center
-* [ ] Setup fastlane to automate store deployments
-* [ ] Parent center window should not bounce around in height so much when the height of content changes.  set min height.
+* Native build
+  * [ ] Add /about page for marketing page with download links
+  * [ ] Once ios and android stores ship, link to native downloads in parent center
+  * [ ] Setup fastlane to automate store deployments
 * Loading Spinner
   * [ ] Fun loading sound while AI is loading
   * [ ] Increase default timer
@@ -40,15 +41,10 @@
   * [ ] Generate coloring book workflow
   * [ ] Save to device.
   * [ ] Export/import
-* Performance
-  * [ ] Run performance profiling and analyze results
-  * [ ] Run performance profile on device
 * Bugs
   * [ ] Sometimes it doesn't register clicks on color changes
 * Controls
   * [ ] Brush type (blend mode with previous drawing)
-* Clean Code
-  * [ ] Extract style guide conventions from existing code?
 
 
 ## DONE
@@ -159,3 +155,6 @@
 * [x] prevent accidental swipes from bottom
 * [x] Rule out using drag and drop API (doesn't work on mobile)
 * [x] Do I need to enforce programmatically? Add linter or formatter? — ESLint + Prettier + CI quality gates (ADR-0031)
+* [x] Run performance profiling and analyze results
+* [x] Run performance profile on device
+

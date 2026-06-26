@@ -1,0 +1,91 @@
+# ADR-0032: Automated Performance Profiling Harness
+
+**Status:** Active
+**Date:** 2026-06
+
+## Context
+
+ADR-0015 (capped-DPR canvas rendering) shipped strokes at `min(devicePixelRatio, 2)`
+— 4× the pixels and fill rate — and explicitly marked the cost as "not yet verified
+on a real device," naming Chrome DevTools profiling as the follow-up. That follow-up
+was manual: plug in a phone, open `chrome://inspect`, draw by hand, click Stop, save a
+`.json`, and read it by eye. Manual profiling isn't repeatable, isn't comparable run to
+run, and can't be handed to an agent — so the DPR cost (and any future regression) went
+unmeasured.
+
+We wanted to **programmatically** capture a profile while the app is driven through a
+realistic session (multi-finger drawing, color/size changes, erasing, undo, clear),
+read that profile to find bottlenecks, and re-run it later to catch degradation —
+across web, Android, and iOS.
+
+## Decision
+
+A profiling harness in `scripts/perf/`, built on the existing Playwright app-driver
+(`scripts/lib/app-driver.mjs`), with these deliberate choices:
+
+- **Build-flag-gated instrumentation, not always-on.** A `__PERF_MARKS__` compile-time
+  constant (Vite `define`, ADR-0010), set only by `PERF_MARKS=true`, wraps
+  `performance.mark/measure` around the engine's five hot paths (`draw`,
+  `saveUndoSnapshot`, `scanCanvasIsEmpty`, `resizeCanvas`, `undo`). With the literal
+  `false` in normal builds the blocks — and their mark-name strings — dead-code-
+  eliminate, so **nothing reaches production** (grep-verified in the harness). These
+  marks are the clean, framework-agnostic signal the analyzer keys on; they survive
+  minification where CPU-sampler names don't.
+
+- **Profile the production preview build, not the dev server.** The harness builds with
+  `PERF_MARKS=true`, serves via `vite preview`, and drives the minified bundle that
+  actually ships. Profiling-only builds add `keepNames` so the CPU sampler's self-time
+  is readable.
+
+- **One shared session, three page sources.** `session.mjs` owns the deterministic
+  scenario + capture; the platform entries differ only in how the page is obtained:
+  - **Web** — headless Chromium + preview, selectable viewport and CPU throttle (4× to
+    approximate a phone). Full CDP Chrome trace.
+  - **Android** — the **real Capacitor WebView** on a device/emulator, reached over
+    `adb forward` + `connectOverCDP`, no throttle (the device is the target). Full CDP
+    trace; the native bundle is rebuilt with `PERF_MARKS=true`.
+  - **iOS** — Playwright's **WebKit** (the same WebKit + JavaScriptCore engine the
+    WKWebView runs). WebKit exposes no CDP/Chrome trace, so capture falls back to
+    reading the `engine.*` marks via the Performance API + FPS. This profiles the
+    *engine*, not the Simulator's app shell; device-accurate numbers come from a manual
+    Safari Web Inspector Timeline export fed to the same analyzer.
+
+- **A pure analyzer.** `analyze.mjs` takes only a saved `trace.json` (+ optional
+  `metrics.json`) and is re-runnable standalone — so a native-exported trace, or an old
+  capture, re-summarizes without re-driving. It emits both `report.md` (for a human or
+  agent) and `summary.json` (machine-readable): per-phase main-thread busy time, the
+  engine hot-path table, frame health, long tasks, JS self-time (harness/instrumentation
+  symbols excluded), and heap.
+
+### Alternatives rejected
+
+- **Manual `chrome://inspect`** — not repeatable, not comparable, not agent-readable.
+- **Playwright's coarse `browser.startTracing`** — less control than a direct CDP
+  `Tracing` session and no clean reuse path for the native WebView.
+- **Always-on user-timing marks** — measurable overhead (thousands of `measure` calls
+  per session) and mark strings shipping to production for zero user benefit.
+- **A hard CI perf gate** — headless-runner variance makes absolute-threshold gating
+  flaky; the harness is run on demand (and the analyzer is cheap to re-run on a saved
+  trace) rather than blocking PRs. Left for a future baseline-comparison pass.
+
+## Consequences
+
+- **+** Profiling is one command per platform (`npm run perf:web` / `perf:android` /
+  `perf:ios`) and produces a machine-readable report an agent can act on.
+- **+** First real-hardware numbers for ADR-0015: on the Android emulator the capped-DPR
+  canvas spends ~4970 ms in raster/paint over the session (vs ~210 ms on throttled
+  desktop), confirming the "4× fill rate" cost — while the main thread stays at 60 FPS
+  with `engine.draw` well under one frame. The DPR/compositing cost is a real
+  crispness-vs-perf tradeoff, left for a separate decision rather than changed here.
+- **+** The web drawing path profiled clean (0 forced reflows, sub-ms `draw`, no long
+  tasks), validating the engine's rect-caching and deferred-snapshot design.
+- **−** Headless + CPU throttle only *approximates* a phone; absolute frame numbers want
+  the Android path. The harness labels each capture's target/throttle/build so numbers
+  aren't compared across modes by accident.
+- **−** The iOS path measures the WebKit engine, not the Simulator app, and WebKit clamps
+  `performance.now()` to ~1 ms so its marks are coarse. Device-accurate iOS profiling
+  stays a documented manual step.
+- **−** `perf:android` / `perf:ios` are local-only (need the device/emulator + toolchain
+  and a `PERF_MARKS` native build); they can't run in CI or a cloud session.
+
+The `profiling` skill is the entry point for running the harness and reading a report.

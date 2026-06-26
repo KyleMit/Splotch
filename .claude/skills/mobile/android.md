@@ -189,6 +189,10 @@ fail — the working path is a self-hosted chisel reverse tunnel. See
 
 ### Performance profiling with Chrome DevTools (remote debugging)
 
+> For an **automated** capture + report (drives a scripted session and writes a
+> machine-readable profile), use `npm run perf:android` — see the `profiling`
+> skill (ADR-0032). The manual flow below is for interactive, free-form profiling.
+
 Remote debugging lets you run Chrome DevTools on your desktop while drawing on
 the phone with real multi-touch input — the best way to get accurate profiles.
 

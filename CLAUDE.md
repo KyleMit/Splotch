@@ -43,6 +43,7 @@ On-demand **skills** (invoke when the topic comes up — don't guess from memory
 | `api` | adding, changing, or calling any `/api/*` endpoint |
 | `mobile` | touching anything Android/iOS/Capacitor, or store-release work |
 | `testing` | writing/running tests beyond the basics, or debugging CI failures |
+| `profiling` | measuring drawing/canvas performance, investigating jank, or checking for perf regressions (`npm run perf:*`) |
 | `adrs` | proposing or discussing any architectural approach |
 
 Path-scoped **rules** in `.claude/rules/` (load automatically): `svelte.md`, `server-api.md`, `testing.md`. Nested CLAUDE.md files in `web/src/`, `android/`, and `scripts/` cover those areas.

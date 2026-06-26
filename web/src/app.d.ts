@@ -15,6 +15,10 @@ declare global {
   const __BUILD_TIME__: string;
   const __NATIVE_API_BASE__: string;
   const __IS_CAPACITOR__: boolean;
+  // Build-flag (PERF_MARKS=true) that enables the drawing engine's user-timing
+  // marks for the profiling harness. Literal false in normal builds, so the
+  // guarded blocks dead-code-eliminate and never reach production.
+  const __PERF_MARKS__: boolean;
 
   // Capacitor injects this global in the native shell and once @capacitor/core
   // loads on the web. Read off the global (see src/lib/platform.ts) so the

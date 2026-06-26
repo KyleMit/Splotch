@@ -7,6 +7,12 @@ import { execSync } from 'node:child_process';
 // shell and all assets are already on-device), so skip the PWA plugin there.
 const isCapacitor = process.env.CAPACITOR === 'true';
 
+// Opt-in `performance.mark/measure` instrumentation on the drawing engine's hot
+// paths, read by the profiling harness (scripts/perf/, `npm run perf:web`). Off
+// by default so the marks never ship: with the literal `false` the guarded
+// blocks — and their mark-name strings — dead-code-eliminate from the bundle.
+const perfMarks = process.env.PERF_MARKS === 'true';
+
 // package.json (at the repo root, one dir up from web/) holds the canonical
 // major.minor, bumped by scripts/release.mjs. Native keeps that exact version —
 // store submissions need deliberate, controlled numbers. The web build instead
@@ -54,14 +60,19 @@ export default {
     strictPort: true,
     // Allow a phone-preview reverse tunnel (e.g. chisel) to forward in under its
     // own hostname; no effect on normal dev/build, only when TUNNEL_HOST is set.
-    ...(process.env.TUNNEL_HOST ? { allowedHosts: [process.env.TUNNEL_HOST] } : {})
+    ...(process.env.TUNNEL_HOST ? { allowedHosts: [process.env.TUNNEL_HOST] } : {}),
   },
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
     __BUILD_TIME__: JSON.stringify(BUILD_TIME),
     __NATIVE_API_BASE__: JSON.stringify(NATIVE_API_BASE),
-    __IS_CAPACITOR__: JSON.stringify(isCapacitor)
+    __IS_CAPACITOR__: JSON.stringify(isCapacitor),
+    __PERF_MARKS__: JSON.stringify(perfMarks),
   },
+  // Profiling builds (PERF_MARKS=true) keep function names through minification
+  // so the trace's CPU-sampler self-time is readable instead of mangled (`ci`).
+  // No effect on shipping builds.
+  ...(perfMarks ? { esbuild: { keepNames: true } } : {}),
   plugins: [
     sveltekit(),
     // Emit a version.json on every build so the running app can detect
@@ -69,8 +80,12 @@ export default {
     {
       name: 'emit-version-json',
       generateBundle() {
-        this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ version: APP_VERSION }) });
-      }
+        this.emitFile({
+          type: 'asset',
+          fileName: 'version.json',
+          source: JSON.stringify({ version: APP_VERSION }),
+        });
+      },
     } satisfies import('vite').Plugin,
     ...(isCapacitor
       ? []
@@ -80,7 +95,12 @@ export default {
             // auto-reload, leaving updates.ts as the sole driver. This preserves
             // the canvas-empty guard (never interrupt a mid-drawing session).
             registerType: 'prompt',
-            includeAssets: ['favicon.ico', 'favicon-96x96.png', 'apple-touch-icon.png', 'sounds/*.mp3'],
+            includeAssets: [
+              'favicon.ico',
+              'favicon-96x96.png',
+              'apple-touch-icon.png',
+              'sounds/*.mp3',
+            ],
             manifest: false,
             workbox: {
               // Exclude html — navigation requests use the NetworkFirst runtime
@@ -100,12 +120,12 @@ export default {
                   handler: 'NetworkFirst',
                   options: {
                     cacheName: 'pages',
-                    networkTimeoutSeconds: 5
-                  }
-                }
-              ]
-            }
-          })
-        ])
-  ]
+                    networkTimeoutSeconds: 5,
+                  },
+                },
+              ],
+            },
+          }),
+        ]),
+  ],
 };

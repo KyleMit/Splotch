@@ -13,6 +13,12 @@ import {
   type GuardEdge,
 } from './strokeMath';
 
+// Build-flag-gated user-timing marks on the drawing hot paths, read by the
+// profiling harness (scripts/perf/). __PERF_MARKS__ is a compile-time literal
+// (false unless built with PERF_MARKS=true), so every `if (PERF_MARKS)` block —
+// including its mark/measure name strings — dead-code-eliminates in production.
+const PERF_MARKS = typeof __PERF_MARKS__ !== 'undefined' && __PERF_MARKS__;
+
 interface DrawSoundData {
   speed: number;
 }
@@ -165,6 +171,7 @@ let emptyScanCtx: CanvasRenderingContext2D | null = null;
 
 function scanCanvasIsEmpty(): boolean {
   if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) return true;
+  if (PERF_MARKS) performance.mark('engine.scanEmpty:start');
   if (!emptyScanCanvas) {
     emptyScanCanvas = document.createElement('canvas');
     emptyScanCtx = emptyScanCanvas.getContext('2d', { willReadFrequently: true });
@@ -182,10 +189,15 @@ function scanCanvasIsEmpty(): boolean {
   }
   emptyScanCtx.drawImage(canvas, 0, 0, w, h);
   const { data } = emptyScanCtx.getImageData(0, 0, w, h);
+  let empty = true;
   for (let i = 3; i < data.length; i += 4) {
-    if (data[i] >= EMPTY_SCAN_ALPHA_THRESHOLD) return false;
+    if (data[i] >= EMPTY_SCAN_ALPHA_THRESHOLD) {
+      empty = false;
+      break;
+    }
   }
-  return true;
+  if (PERF_MARKS) performance.measure('engine.scanEmpty', 'engine.scanEmpty:start');
+  return empty;
 }
 
 // Viewport grew beyond the current virtual canvas (e.g. a desktop window
@@ -204,6 +216,7 @@ function growVirtualCanvas(
 }
 
 function resizeCanvas() {
+  if (PERF_MARKS) performance.mark('engine.resize:start');
   const rect = canvas.getBoundingClientRect();
 
   // A max(w,h) square covers both orientations, so rotation never loses pixels;
@@ -230,6 +243,8 @@ function resizeCanvas() {
   ctx.lineJoin = 'round';
 
   refreshCanvasRect();
+
+  if (PERF_MARKS) performance.measure('engine.resize', 'engine.resize:start');
 }
 
 // Snapshot the canvas's client rect and the backing-pixel scale factors. Called
@@ -429,6 +444,8 @@ function draw(e: PointerEvent) {
   const pointerState = activePointers.get(e.pointerId);
   if (!pointerState || !pointerState.isDrawing) return;
 
+  if (PERF_MARKS) performance.mark('engine.draw:start');
+
   e.preventDefault();
 
   // Browsers coalesce fast input to ~one pointermove per frame but keep the
@@ -466,9 +483,7 @@ function draw(e: PointerEvent) {
   const resumeDeltaX = resume.x - pointerState.x;
   const resumeDeltaY = resume.y - pointerState.y;
   const jump = Math.sqrt(resumeDeltaX * resumeDeltaX + resumeDeltaY * resumeDeltaY);
-  if (
-    pointerWasResumed(now - pointerState.lastTime, jump, Math.min(canvas.width, canvas.height))
-  ) {
+  if (pointerWasResumed(now - pointerState.lastTime, jump, Math.min(canvas.width, canvas.height))) {
     pointerState.x = resume.x;
     pointerState.y = resume.y;
     pointerState.midX = resume.x;
@@ -495,6 +510,8 @@ function draw(e: PointerEvent) {
   pointerState.lastTime = now;
 
   if (onDrawSoundCallback) onDrawSoundCallback({ speed });
+
+  if (PERF_MARKS) performance.measure('engine.draw', 'engine.draw:start');
 }
 
 function stopDrawing(e?: PointerEvent) {
@@ -532,6 +549,8 @@ function stopDrawing(e?: PointerEvent) {
 function saveUndoSnapshot() {
   if (!canvas || !ctx) return;
 
+  if (PERF_MARKS) performance.mark('engine.saveUndoSnapshot:start');
+
   const snapshot = document.createElement('canvas');
   snapshot.width = canvas.width;
   snapshot.height = canvas.height;
@@ -546,10 +565,14 @@ function saveUndoSnapshot() {
 
   canUndo = true;
   if (onUndoStateChange) onUndoStateChange(canUndo);
+
+  if (PERF_MARKS) performance.measure('engine.saveUndoSnapshot', 'engine.saveUndoSnapshot:start');
 }
 
 export function undo() {
   if (!canUndo || undoStack.length === 0 || !canvas || !ctx) return;
+
+  if (PERF_MARKS) performance.mark('engine.undo:start');
 
   const snapshot = undoStack.pop();
   if (!snapshot) return;
@@ -566,6 +589,8 @@ export function undo() {
 
   canUndo = undoStack.length > 0;
   if (onUndoStateChange) onUndoStateChange(canUndo);
+
+  if (PERF_MARKS) performance.measure('engine.undo', 'engine.undo:start');
 }
 
 export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
