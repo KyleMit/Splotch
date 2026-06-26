@@ -4,7 +4,6 @@
 
 * [ ] ipad landscape bottom row can sit flush. top status bar should have notch band
 * [ ] include GHA versions in update-dependencies skill
-* [ ] Possibly add "Check for updates" button on about parent center tab
 * [ ] inefficent layout on iphone at tops and bottom
 * [ ] Figure out what to do with existing drawing on orientation change
 * [ ] Get rid of two row color palette
@@ -157,4 +156,4 @@
 * [x] Do I need to enforce programmatically? Add linter or formatter? — ESLint + Prettier + CI quality gates (ADR-0031)
 * [x] Run performance profiling and analyze results
 * [x] Run performance profile on device
-
+* [x] "Check for updates" ruled out on PWA - pretty much always in sync anyway
