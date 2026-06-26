@@ -60,12 +60,11 @@ audit on every push/PR, parallel to the existing `test` job.
   `main`.
 - + Splitting ESLint (style/correctness) from svelte-check (types) keeps linting
   fast and immune to TypeScript-version skew with typescript-eslint.
-- + Dependabot turns the static vulnerability count into a steady stream of small,
-  reviewable update PRs instead of a one-off audit chore.
 - − A one-time Prettier reformat touched most source files; future `git blame`
   crosses that commit (isolated as a single `style:` commit to make it skippable).
-- − The `critical`-only audit gate does not block high/moderate advisories; that
-  is delegated to Dependabot review, by design, to keep the gate meaningful.
+- − The `critical`-only audit gate does not block high/moderate advisories; those
+  are triaged out-of-band via periodic `npm audit` review, by design, to keep the
+  gate meaningful rather than perpetually red.
 - − No pre-commit hook means a contributor can commit lint/format violations
   locally; CI catches them, at the cost of a round-trip. Run `npm run lint` and
   `npm run format` (or `lint:fix`) before pushing.
