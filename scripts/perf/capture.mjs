@@ -35,9 +35,12 @@ export async function stopTrace(cdp) {
 }
 
 // Inject a longtask PerformanceObserver and a requestAnimationFrame frame-timer
-// into the page before navigation; readObservers() drains them at the end.
+// into the already-loaded page right before tracing starts (so the sampling
+// window matches the scenario, not page load); readObservers() drains them at
+// the end. Run via evaluate (not addInitScript) so it works on a native WebView
+// page that's already navigated, the same as the web preview page.
 export async function injectObservers(page) {
-  await page.addInitScript(() => {
+  await page.evaluate(() => {
     const w = window;
     w.__perf = { longTasks: [], frameStamps: [] };
     try {
