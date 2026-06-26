@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   guardedEdgeAt,
   edgeSwipeIsOsGesture,
+  edgeSwipeDirectionDecided,
+  pointerWasResumed,
   calculateStrokeSpeed,
   type SpeedSample,
 } from './strokeMath';
@@ -62,6 +64,49 @@ describe('edgeSwipeIsOsGesture', () => {
     expect(edgeSwipeIsOsGesture('bottom', 40, -10)).toBe(false); // mostly along the edge
     expect(edgeSwipeIsOsGesture('bottom', 0, 30)).toBe(false); // downward (outward)
     expect(edgeSwipeIsOsGesture('left', -30, 0)).toBe(false); // outward off the left edge
+  });
+});
+
+describe('edgeSwipeDirectionDecided', () => {
+  it('is undecided until travel reaches the threshold, then decided at/after it', () => {
+    // Default threshold is 12px at renderScale 1.
+    expect(edgeSwipeDirectionDecided(11, 1)).toBe(false);
+    expect(edgeSwipeDirectionDecided(12, 1)).toBe(true);
+    expect(edgeSwipeDirectionDecided(50, 1)).toBe(true);
+  });
+
+  it('scales the threshold with renderScale', () => {
+    // At scale 2 the threshold is 24px, so 12px no longer decides.
+    expect(edgeSwipeDirectionDecided(12, 2)).toBe(false);
+    expect(edgeSwipeDirectionDecided(24, 2)).toBe(true);
+  });
+});
+
+describe('pointerWasResumed', () => {
+  const minSide = 1000; // jump threshold = 0.1 * 1000 = 100px
+
+  it('requires both a long idle gap and a large jump', () => {
+    expect(pointerWasResumed(200, 150, minSide)).toBe(true);
+  });
+
+  it('is false when the idle gap is too short, even with a big jump', () => {
+    expect(pointerWasResumed(50, 150, minSide)).toBe(false);
+  });
+
+  it('is false when the jump is too small, even after a long gap', () => {
+    expect(pointerWasResumed(200, 50, minSide)).toBe(false);
+  });
+
+  it('treats the thresholds as strict (must exceed, not equal)', () => {
+    expect(pointerWasResumed(100, 150, minSide)).toBe(false); // gap == 100ms
+    expect(pointerWasResumed(200, 100, minSide)).toBe(false); // jump == 100px
+  });
+
+  it('scales the jump threshold with the canvas size', () => {
+    // Smaller canvas (minSide 500 → threshold 50px) decides on a jump that a
+    // larger canvas would treat as continuous contact.
+    expect(pointerWasResumed(200, 60, 500)).toBe(true);
+    expect(pointerWasResumed(200, 60, 1000)).toBe(false);
   });
 });
 

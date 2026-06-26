@@ -69,6 +69,30 @@ export function edgeSwipeIsOsGesture(edge: GuardEdge, dx: number, dy: number): b
   return inward > 0 && inward >= cross;
 }
 
+// Whether a buffered edge-swipe candidate has travelled far enough from its
+// start point to decide its direction. `travel` is the backing-store px distance
+// from the start; the threshold scales with renderScale to stay constant in CSS
+// px. Until decided, engine.ts withholds rendering and keeps buffering points.
+export function edgeSwipeDirectionDecided(travel: number, renderScale: number): boolean {
+  return travel >= EDGE_SWIPE_DECISION_PX * renderScale;
+}
+
+// A pointer reappearing after an idle gap (POINTER_RESUME_GAP_MS) AND far enough
+// that continuous finger contact is implausible was really lifted and set down
+// again — a dropped pointerup/pointerdown pair (see engine.ts). The jump
+// threshold is a fraction of the canvas's shorter backing-store side, so it
+// scales with canvas size and renderScale.
+export const POINTER_RESUME_GAP_MS = 100;
+export const POINTER_RESUME_JUMP_RATIO = 0.1;
+
+export function pointerWasResumed(
+  idleMs: number,
+  jumpDistance: number,
+  minCanvasSide: number
+): boolean {
+  return idleMs > POINTER_RESUME_GAP_MS && jumpDistance > POINTER_RESUME_JUMP_RATIO * minCanvasSide;
+}
+
 // Honest sliding window: stamp each move's distance with its time, drop samples
 // older than windowMs, then divide the distance covered since the oldest
 // surviving sample by that elapsed span. (The oldest sample is the anchor for
