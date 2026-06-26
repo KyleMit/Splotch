@@ -44,8 +44,29 @@ interface PointerState {
   pendingPoints: { x: number; y: number }[];
 }
 
-interface UndoSnapshot {
-  image: HTMLCanvasElement;
+// Undo history is a log of replayable draw ops, not pixel snapshots. Each op is
+// captured at the exact granularity it was rendered (one path op per
+// strokeSmoothSegments call, one dot op per stroke start) so replaying it
+// reproduces bit-identical pixels — same beginPath/stroke boundaries, same
+// compositing order. A 'clear' op wipes the target. See ADR-0033.
+type StrokeOp =
+  | { kind: 'dot'; x: number; y: number; radius: number; color: string; erase: boolean }
+  | {
+      kind: 'path';
+      startX: number;
+      startY: number;
+      segs: { cx: number; cy: number; x: number; y: number }[];
+      color: string;
+      lineWidth: number;
+      erase: boolean;
+    }
+  | { kind: 'clear' };
+
+// One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is
+// the canvas-empty state before the group drew, so undo can restore the flag
+// without re-scanning.
+interface StrokeGroupCommand {
+  ops: StrokeOp[];
   wasEmpty: boolean;
 }
 
@@ -83,6 +104,13 @@ let onDrawStopCallback: (() => void) | null = null;
 let virtualCanvas: HTMLCanvasElement | null = null;
 let virtualCtx: CanvasRenderingContext2D | null = null;
 
+// The undo baseline: one offscreen raster (sized to the virtual canvas) holding
+// the state from before the oldest retained command. Undo = redraw this, then
+// replay the surviving command log on top. A single raster replaces the old
+// stack of MAX_UNDO_STACK_SIZE full-canvas snapshots (ADR-0033).
+let baselineCanvas: HTMLCanvasElement | null = null;
+let baselineCtx: CanvasRenderingContext2D | null = null;
+
 // Strokes rasterize at the device pixel ratio so they stay crisp on mobile
 // screens, capped at 2× — DPR-3 panels would cost 9× the pixels for detail a
 // finger-drawn stroke can't use (see ADR 0015). Fixed for the session at init:
@@ -98,8 +126,12 @@ let canvasRect: CanvasRect = { left: 0, top: 0, width: 0, height: 0 };
 let rectScaleX = 1;
 let rectScaleY = 1;
 
-const undoStack: UndoSnapshot[] = [];
+// The retained command log; commands older than this fold into the baseline.
+const commandLog: StrokeGroupCommand[] = [];
 const MAX_UNDO_STACK_SIZE = 10;
+// The stroke group currently being drawn (set on first paint, pushed to the log
+// when the last finger lifts), so a multi-touch gesture undoes as a single unit.
+let activeCommand: StrokeGroupCommand | null = null;
 let canUndo = false;
 let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
 
@@ -200,9 +232,11 @@ function scanCanvasIsEmpty(): boolean {
   return empty;
 }
 
-// Viewport grew beyond the current virtual canvas (e.g. a desktop window
-// stretched larger). Grow it and copy existing pixels so no drawing is lost.
-function growVirtualCanvas(
+// A backing surface (virtual canvas or undo baseline) grew beyond its current
+// size (e.g. a desktop window stretched larger). Grow it and copy existing
+// pixels so no drawing is lost. The replay path strokes onto these surfaces, so
+// the fresh context inherits the round line cap/join.
+function growCanvas(
   existing: HTMLCanvasElement,
   newW: number,
   newH: number
@@ -211,7 +245,11 @@ function growVirtualCanvas(
   grown.width = newW;
   grown.height = newH;
   const grownCtx = grown.getContext('2d');
-  if (grownCtx) grownCtx.drawImage(existing, 0, 0);
+  if (grownCtx) {
+    grownCtx.lineCap = 'round';
+    grownCtx.lineJoin = 'round';
+    grownCtx.drawImage(existing, 0, 0);
+  }
   return { canvas: grown, ctx: grownCtx };
 }
 
@@ -227,10 +265,38 @@ function resizeCanvas() {
     virtualCanvas.width = squareSide;
     virtualCanvas.height = squareSide;
     virtualCtx = virtualCanvas.getContext('2d');
+    // Undo replay strokes onto the virtual canvas, so it needs the round caps.
+    if (virtualCtx) {
+      virtualCtx.lineCap = 'round';
+      virtualCtx.lineJoin = 'round';
+    }
   } else if (squareSide > virtualCanvas.width || squareSide > virtualCanvas.height) {
     const newW = Math.max(squareSide, virtualCanvas.width);
     const newH = Math.max(squareSide, virtualCanvas.height);
-    ({ canvas: virtualCanvas, ctx: virtualCtx } = growVirtualCanvas(virtualCanvas, newW, newH));
+    ({ canvas: virtualCanvas, ctx: virtualCtx } = growCanvas(virtualCanvas, newW, newH));
+  }
+
+  // The undo baseline tracks the virtual canvas's dimensions: replayed ops use
+  // the same coordinates, and content off the current (rotated) viewport must
+  // survive in both surfaces.
+  if (!baselineCanvas) {
+    baselineCanvas = document.createElement('canvas');
+    baselineCanvas.width = virtualCanvas.width;
+    baselineCanvas.height = virtualCanvas.height;
+    baselineCtx = baselineCanvas.getContext('2d');
+    if (baselineCtx) {
+      baselineCtx.lineCap = 'round';
+      baselineCtx.lineJoin = 'round';
+    }
+  } else if (
+    virtualCanvas.width > baselineCanvas.width ||
+    virtualCanvas.height > baselineCanvas.height
+  ) {
+    ({ canvas: baselineCanvas, ctx: baselineCtx } = growCanvas(
+      baselineCanvas,
+      virtualCanvas.width,
+      virtualCanvas.height
+    ));
   }
 
   syncVirtualCanvas();
@@ -282,26 +348,64 @@ function syncVirtualCanvas() {
   virtualCtx.drawImage(canvas, 0, 0);
 }
 
+// Paint one recorded op onto a target context. Used both live (target = the
+// visible ctx) and during undo replay (target = the visible/virtual/baseline
+// surfaces). Erasing composites destination-out; everything else source-over.
+function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
+  if (op.kind === 'clear') {
+    target.clearRect(0, 0, target.canvas.width, target.canvas.height);
+    return;
+  }
+  target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
+  if (op.kind === 'dot') {
+    target.fillStyle = op.color;
+    target.beginPath();
+    target.arc(op.x, op.y, op.radius, 0, Math.PI * 2);
+    target.fill();
+  } else {
+    target.strokeStyle = op.color;
+    target.lineWidth = op.lineWidth;
+    target.beginPath();
+    target.moveTo(op.startX, op.startY);
+    for (const s of op.segs) target.quadraticCurveTo(s.cx, s.cy, s.x, s.y);
+    target.stroke();
+  }
+  target.globalCompositeOperation = 'source-over';
+}
+
+// Append an op to the active stroke-group command so it can be replayed for
+// undo. No-op between groups (activeCommand is null).
+function recordOp(op: StrokeOp) {
+  if (activeCommand) activeCommand.ops.push(op);
+}
+
 // One quadratic segment per input point: the path runs midpoint-to-midpoint
 // with the raw point as the control, so consecutive segments share a tangent
 // and the stroke curves smoothly instead of showing straight-chord corners.
+// Each call is captured as one path op (matching its own beginPath/stroke
+// boundary) so undo replay reproduces identical pixels and anti-aliasing.
 function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
-  ctx.globalCompositeOperation = ps.erase ? 'destination-out' : 'source-over';
-  ctx.strokeStyle = ps.color;
-  ctx.lineWidth = ps.lineWidth;
-  ctx.beginPath();
-  ctx.moveTo(ps.midX, ps.midY);
+  if (points.length === 0) return;
+  const op: StrokeOp = {
+    kind: 'path',
+    startX: ps.midX,
+    startY: ps.midY,
+    segs: [],
+    color: ps.color,
+    lineWidth: ps.lineWidth,
+    erase: ps.erase,
+  };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
     const midY = (ps.y + y) / 2;
-    ctx.quadraticCurveTo(ps.x, ps.y, midX, midY);
+    op.segs.push({ cx: ps.x, cy: ps.y, x: midX, y: midY });
     ps.x = x;
     ps.y = y;
     ps.midX = midX;
     ps.midY = midY;
   }
-  ctx.stroke();
-  ctx.globalCompositeOperation = 'source-over';
+  renderOp(ctx, op);
+  recordOp(op);
 }
 
 export function releaseAllPointers() {
@@ -311,6 +415,7 @@ export function releaseAllPointers() {
   if (activePointers.size > 0) syncVirtualCanvas();
   activePointers.clear();
   groupHasDrawn = false;
+  commitActiveCommand();
 
   activePointerIds.forEach((pointerId) => {
     try {
@@ -323,12 +428,12 @@ export function releaseAllPointers() {
   activePointerIds.clear();
 }
 
-// First paint of a stroke group: snapshot for undo and flip the empty flag,
-// once. A multi-touch gesture undoes as a single unit, and later fingers skip
-// the full-canvas copy so they start instantly.
+// First paint of a stroke group: open a new undo command and flip the empty
+// flag, once. A multi-touch gesture undoes as a single unit, so later fingers
+// record into the same command. `wasEmpty` is captured before the flag flips.
 function beginRender() {
   if (groupHasDrawn) return;
-  saveUndoSnapshot();
+  activeCommand = { ops: [], wasEmpty: canvasEmpty };
   setCanvasEmptyState(false);
   groupHasDrawn = true;
 }
@@ -339,20 +444,21 @@ function beginRender() {
 function renderStrokeStart(ps: PointerState) {
   beginRender();
 
-  const dotRadius = ps.lineWidth / 2;
   // Erasing clears pixels via destination-out; the stroke color is irrelevant
   // there, only its (opaque) alpha matters.
-  const op = ps.erase ? 'destination-out' : 'source-over';
+  const dot: StrokeOp = {
+    kind: 'dot',
+    x: ps.x,
+    y: ps.y,
+    radius: ps.lineWidth / 2,
+    color: ps.color,
+    erase: ps.erase,
+  };
+  renderOp(ctx, dot);
+  recordOp(dot);
 
-  ctx.globalCompositeOperation = op;
-  ctx.strokeStyle = ps.color;
-  ctx.fillStyle = ps.color;
-  ctx.beginPath();
-  ctx.arc(ps.x, ps.y, dotRadius, 0, Math.PI * 2);
-  ctx.fill();
   ctx.beginPath();
   ctx.moveTo(ps.x, ps.y);
-  ctx.globalCompositeOperation = 'source-over';
 
   if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0 });
 }
@@ -537,7 +643,10 @@ function stopDrawing(e?: PointerEvent) {
     if (pointerState.erase) setCanvasEmptyState(scanCanvasIsEmpty());
   }
 
-  if (activePointers.size === 0) groupHasDrawn = false;
+  if (activePointers.size === 0) {
+    groupHasDrawn = false;
+    commitActiveCommand();
+  }
 
   if (onDrawStopCallback) onDrawStopCallback();
 
@@ -546,48 +655,64 @@ function stopDrawing(e?: PointerEvent) {
   } catch {}
 }
 
-function saveUndoSnapshot() {
-  if (!canvas || !ctx) return;
+// Finalize the stroke group built up since beginRender() and push it onto the
+// undo log. Called once per group, when the last finger lifts.
+function commitActiveCommand() {
+  if (!activeCommand) return;
+  if (PERF_MARKS) performance.mark('engine.commit:start');
+  pushCommand(activeCommand);
+  activeCommand = null;
+  if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
+}
 
-  if (PERF_MARKS) performance.mark('engine.saveUndoSnapshot:start');
-
-  const snapshot = document.createElement('canvas');
-  snapshot.width = canvas.width;
-  snapshot.height = canvas.height;
-  const snapshotCtx = snapshot.getContext('2d');
-  if (snapshotCtx) snapshotCtx.drawImage(canvas, 0, 0);
-
-  // Capture emptiness alongside the pixels. This runs before the stroke that
-  // prompted the snapshot dirties the canvas, so `canvasEmpty` exactly describes
-  // these pixels — letting undo() restore the empty state without re-scanning.
-  undoStack.push({ image: snapshot, wasEmpty: canvasEmpty });
-  if (undoStack.length > MAX_UNDO_STACK_SIZE) undoStack.shift();
+function pushCommand(cmd: StrokeGroupCommand) {
+  commandLog.push(cmd);
+  if (commandLog.length > MAX_UNDO_STACK_SIZE) foldOldestIntoBaseline();
 
   canUndo = true;
   if (onUndoStateChange) onUndoStateChange(canUndo);
+}
 
-  if (PERF_MARKS) performance.measure('engine.saveUndoSnapshot', 'engine.saveUndoSnapshot:start');
+// History past the cap can no longer be undone, so bake the oldest command into
+// the baseline raster and drop it. Replaying in order keeps eraser
+// destination-out ops hitting exactly the pixels they originally did.
+function foldOldestIntoBaseline() {
+  const oldest = commandLog.shift();
+  if (!oldest || !baselineCtx) return;
+  if (PERF_MARKS) performance.mark('engine.foldBaseline:start');
+  for (const op of oldest.ops) renderOp(baselineCtx, op);
+  if (PERF_MARKS) performance.measure('engine.foldBaseline', 'engine.foldBaseline:start');
+}
+
+// Reconstruct the visible + virtual canvases from the baseline plus the
+// surviving command log. Both surfaces are rebuilt so undone content can't
+// reappear from off-screen after a rotation.
+function rebuildFromBaseline() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (baselineCanvas) ctx.drawImage(baselineCanvas, 0, 0);
+  if (virtualCtx && virtualCanvas) {
+    virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
+    if (baselineCanvas) virtualCtx.drawImage(baselineCanvas, 0, 0);
+  }
+  for (const cmd of commandLog) {
+    for (const op of cmd.ops) {
+      renderOp(ctx, op);
+      if (virtualCtx) renderOp(virtualCtx, op);
+    }
+  }
 }
 
 export function undo() {
-  if (!canUndo || undoStack.length === 0 || !canvas || !ctx) return;
+  if (!canUndo || commandLog.length === 0 || !canvas || !ctx) return;
 
   if (PERF_MARKS) performance.mark('engine.undo:start');
 
-  const snapshot = undoStack.pop();
-  if (!snapshot) return;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(snapshot.image, 0, 0);
-  // Wipe the whole virtual canvas (not just the visible region) so undone
-  // content doesn't reappear from off-screen after a rotation.
-  if (virtualCtx && virtualCanvas) {
-    virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
-    virtualCtx.drawImage(snapshot.image, 0, 0);
-  }
+  const undone = commandLog.pop();
+  if (!undone) return;
+  rebuildFromBaseline();
+  setCanvasEmptyState(undone.wasEmpty);
 
-  setCanvasEmptyState(snapshot.wasEmpty);
-
-  canUndo = undoStack.length > 0;
+  canUndo = commandLog.length > 0;
   if (onUndoStateChange) onUndoStateChange(canUndo);
 
   if (PERF_MARKS) performance.measure('engine.undo', 'engine.undo:start');
@@ -671,7 +796,9 @@ export function setSafeAreaInsets(insets: {
 }
 
 export function clearCanvas() {
-  saveUndoSnapshot();
+  // The clear is its own undo command: replaying it wipes the surface, and
+  // undoing it replays the strokes that preceded it back from the baseline.
+  pushCommand({ ops: [{ kind: 'clear' }], wasEmpty: canvasEmpty });
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (virtualCtx && virtualCanvas) {
     virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);

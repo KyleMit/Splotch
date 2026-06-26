@@ -31,8 +31,8 @@ as-is). Each run writes `perf-profiles/<timestamp>-<target>-…/` containing
 ## How capture works (so the numbers make sense)
 
 - **Engine marks** are the clean signal. `PERF_MARKS=true` at build time turns on
-  `performance.mark/measure` around the engine's five hot paths (engine.ts:
-  `draw`, `saveUndoSnapshot`, `scanCanvasIsEmpty`, `resizeCanvas`, `undo`). The
+  `performance.mark/measure` around the engine's hot paths (engine.ts:
+  `draw`, `commit`, `foldBaseline`, `scanCanvasIsEmpty`, `resizeCanvas`, `undo`). The
   `npm run perf:*` scripts set it; normal builds strip the marks entirely. If the
   report says "_No engine.* marks_", the build wasn't a `PERF_MARKS` build.
 - **Headless + CPU throttle approximates a phone** — good for finding hotspots and
@@ -56,17 +56,19 @@ Read in this order:
    | Hot row | What it is | Where to look |
    | --- | --- | --- |
    | `engine.draw` high **Avg/Max** | per-pointermove stroking (coalesced replay + quadratic segments) | `strokeSmoothSegments` / `draw` in `web/src/lib/drawing/engine.ts`. A high *Max* (vs Avg) = a few heavy frames, often the first move after a resize. |
-   | `engine.saveUndoSnapshot` high | full-canvas copy per stroke group, ×renderScale² pixels | undo snapshot cost — the ADR-0015 DPR tradeoff (see below). |
+   | `engine.commit` high | finalizing a stroke group into the undo log (push, fold check) | should be cheap — recording ops, not copying pixels (ADR-0033). |
+   | `engine.foldBaseline` high | replaying the oldest command onto the baseline raster once the log passes the cap | one stroke render per commit past `MAX_UNDO_STACK_SIZE`; runs at stroke end, off the draw frame. |
    | `engine.scanEmpty` high | `getImageData` readback after an **eraser** stroke | `scanCanvasIsEmpty`; already downscaled 0.25×. Costlier on real devices (GPU→CPU readback). |
    | `engine.resize` high/frequent | backing-store rebuild + virtual-canvas copy | should fire only on resize/rotation — if it fires mid-draw, that's the bug. |
-   | `engine.undo` high | restore from snapshot | rare; usually fine. |
+   | `engine.undo` high | rebuild from baseline + replay the command log (ADR-0033) | scales with retained commands (≤`MAX_UNDO_STACK_SIZE`); a one-off cost at button-press, not per-frame. |
 3. **Where the main thread went** (Chromium/Android only) — Scripting vs
    Rendering vs Painting. Painting/raster dominating = GPU/compositing cost (the
    high-DPR canvas), not JS.
 4. **Per-phase main-thread busy** — which interaction actually costs CPU (busy,
    not wall-clock — wall is dominated by the scenario's pacing sleeps).
 5. **Top JS by self-time** — corroborates 2–3. `drawImage` = canvas copies
-   (snapshots / virtual-canvas sync); `getImageData` = the empty-scan.
+   (baseline/virtual-canvas sync); `stroke`/`quadraticCurveTo` = live drawing and
+   undo replay; `getImageData` = the empty-scan.
 
 For a forced-reflow / layout-thrash check, the harness confirmed **0 forced
 synchronous layouts** in the drawing path (the engine caches `canvasRect`). If
@@ -81,9 +83,10 @@ The drawing path is already well-optimized; treat these as the baseline:
 - **Deferred — real user tradeoffs, NOT low-risk oversights:**
   - **Capped-DPR canvas compositing (ADR-0015).** The dominant cost on-device is
     raster/paint of the 4×-pixel canvas (~4970 ms/session on the Android emulator
-    vs ~210 ms throttled-desktop). Changing it (`MAX_RENDER_SCALE`, snapshot scale,
-    undo depth) alters rendered crispness and/or undo memory — needs a deliberate
-    decision, not a drive-by edit.
+    vs ~210 ms throttled-desktop). Changing it (`MAX_RENDER_SCALE`) alters rendered
+    crispness — needs a deliberate decision, not a drive-by edit. Note the undo
+    *memory* cost it used to multiply is gone: undo now keeps one baseline raster
+    plus a tiny command log, not ten full snapshots (ADR-0033).
   - `engine.scanEmpty` ~14 ms on-device per erase-stroke-end — low impact (once per
     stroke), noted for the future.
 
