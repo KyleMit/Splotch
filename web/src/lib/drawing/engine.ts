@@ -483,9 +483,7 @@ function draw(e: PointerEvent) {
   const resumeDeltaX = resume.x - pointerState.x;
   const resumeDeltaY = resume.y - pointerState.y;
   const jump = Math.sqrt(resumeDeltaX * resumeDeltaX + resumeDeltaY * resumeDeltaY);
-  if (
-    pointerWasResumed(now - pointerState.lastTime, jump, Math.min(canvas.width, canvas.height))
-  ) {
+  if (pointerWasResumed(now - pointerState.lastTime, jump, Math.min(canvas.width, canvas.height))) {
     pointerState.x = resume.x;
     pointerState.y = resume.y;
     pointerState.midX = resume.x;
