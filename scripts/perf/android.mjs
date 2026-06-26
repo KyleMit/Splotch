@@ -39,7 +39,7 @@ function requireDevice() {
 
 // The WebView exposes its DevTools over an abstract unix socket named
 // webview_devtools_remote_<pid>. Prefer the app's own pid; fall back to any.
-function findWebviewSocket() {
+function readWebviewSocket() {
   const pid = (adb(['shell', 'pidof', APP_ID]).stdout || '').trim().split(/\s+/)[0];
   const unix = adb(['shell', 'cat', '/proc/net/unix']).stdout || '';
   const sockets = unix
@@ -50,6 +50,18 @@ function findWebviewSocket() {
   if (sockets.length === 0) return null;
   const byPid = pid && sockets.find((s) => s.endsWith(`_${pid}`));
   return byPid || sockets[0];
+}
+
+// A freshly (re)installed app can take several seconds to cold-start its
+// WebView and register the socket, so poll instead of a single fixed wait.
+async function findWebviewSocket(timeoutMs = 25_000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const socket = readWebviewSocket();
+    if (socket) return socket;
+    if (Date.now() > deadline) return null;
+    await sleep(1000);
+  }
 }
 
 async function getWebviewPage(browser) {
@@ -78,12 +90,9 @@ async function main() {
   }
 
   console.log('Launching app…');
-  adb(['shell', 'monkey', '-p', APP_ID, '-c', 'android.intent.category.LAUNCHER', '1'], {
-    stdio: 'ignore',
-  });
-  await sleep(3500);
+  adb(['shell', 'am', 'start', '-n', `${APP_ID}/.MainActivity`], { stdio: 'ignore' });
 
-  const socket = findWebviewSocket();
+  const socket = await findWebviewSocket();
   if (!socket) {
     fail(
       'No WebView DevTools socket found. Is the app a debug build (WebView debugging on) and in the foreground?'
