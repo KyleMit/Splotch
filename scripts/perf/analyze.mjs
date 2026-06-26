@@ -55,6 +55,25 @@ const PAINTING = new Set([
 
 const LONG_TASK_US = 50 * US_PER_MS;
 
+// Symbols that exist only because of profiling/driving, not in the shipped app:
+// the injected rAF FPS sampler, the user-timing API the PERF_MARKS calls hit
+// (stripped from production), and Playwright's synthetic-input plumbing. Excluded
+// from the self-time table so it reflects app compute, not measurement overhead.
+const HARNESS_SYMBOLS = new Set([
+  '__perfframetick',
+  'mark',
+  'measure',
+  'requestanimationframe',
+  'cancelanimationframe',
+  'dispatchevent',
+  'evaluate',
+  'query',
+  'elementsfrompoint',
+  'elementfrompoint',
+  'serialize',
+  'innerserialize',
+]);
+
 function loadInputs(target) {
   const isDir = statSync(target).isDirectory();
   const tracePath = isDir ? join(target, 'trace.json') : target;
@@ -170,8 +189,55 @@ function jsSelfTime(events) {
       return { name, location: loc, selfMs: us / US_PER_MS };
     })
     .filter((f) => f.name !== '(idle)' && f.name !== '(program)')
+    .filter((f) => !HARNESS_SYMBOLS.has(f.name.toLowerCase()))
     .sort((a, b) => b.selfMs - a.selfMs)
     .slice(0, 15);
+}
+
+// Phase brackets (phase:<label>) recorded by the scenario, as trace-clock
+// windows. Both the 'X' complete shape and the 'b'/'e' async pair are handled.
+function phaseWindows(events) {
+  const windows = [];
+  const open = new Map();
+  for (const e of events) {
+    if (!e.cat || !e.cat.includes('blink.user_timing')) continue;
+    if (!e.name.startsWith('phase:')) continue;
+    const label = e.name.replace(/^phase:/, '');
+    if (e.ph === 'X' && typeof e.dur === 'number') {
+      windows.push({ label, startUs: e.ts, endUs: e.ts + e.dur });
+    } else if (e.ph === 'b') {
+      open.set(e.name, e.ts);
+    } else if (e.ph === 'e' && open.has(e.name)) {
+      windows.push({ label, startUs: open.get(e.name), endUs: e.ts });
+      open.delete(e.name);
+    }
+  }
+  return windows.sort((a, b) => a.startUs - b.startUs);
+}
+
+// For each phase window, the main-thread busy time (RunTask within it) and how
+// many of those tasks were long (>50 ms). Wall-clock is dominated by the
+// scenario's pacing sleeps, so busy time is the real per-phase cost signal.
+function perPhase(events, windows) {
+  const tasks = events
+    .filter((e) => e.name === 'RunTask' && e.ph === 'X' && typeof e.dur === 'number')
+    .map((e) => ({ ts: e.ts, dur: e.dur }));
+  return windows.map((w) => {
+    let busyUs = 0;
+    let longTasks = 0;
+    for (const t of tasks) {
+      if (t.ts >= w.startUs && t.ts < w.endUs) {
+        busyUs += t.dur;
+        if (t.dur >= LONG_TASK_US) longTasks += 1;
+      }
+    }
+    return {
+      label: w.label,
+      wallMs: (w.endUs - w.startUs) / US_PER_MS,
+      busyMs: busyUs / US_PER_MS,
+      longTasks,
+    };
+  });
 }
 
 export function analyze(events, metrics = {}) {
@@ -180,7 +246,7 @@ export function analyze(events, metrics = {}) {
     settings: metrics.settings || {},
     breakdown: categoryBreakdown(events),
     engineHotPaths: measures.filter((m) => m.name.startsWith('engine.')),
-    phaseSlices: measures.filter((m) => m.name.startsWith('phase:')),
+    phases: perPhase(events, phaseWindows(events)),
     topSelfTime: jsSelfTime(events),
     frames: metrics.frames || null,
     longTasks: metrics.longTasks
@@ -282,17 +348,17 @@ export function renderReport(s) {
     out.push('_No engine.* marks in this trace — was it built with PERF_MARKS=true?_');
   }
 
-  if (s.phaseSlices.length) {
-    out.push('\n## Per-phase (scenario beats)\n');
+  if (s.phases.length) {
+    out.push('\n## Per-phase main-thread cost (busy time, not wall-clock)\n');
     out.push(
       table(
-        ['Phase', 'Duration'],
-        s.phaseSlices.map((m) => [m.name.replace(/^phase:/, ''), ms(m.maxMs)])
+        ['Phase', 'Busy', 'Long tasks', 'Wall'],
+        s.phases.map((p) => [p.label, ms(p.busyMs), String(p.longTasks), ms(p.wallMs)])
       )
     );
   }
 
-  out.push('\n## Top JS by self-time (V8 sampler)\n');
+  out.push('\n## Top JS by self-time (V8 sampler — app code; harness symbols excluded)\n');
   if (s.topSelfTime.length) {
     out.push(
       table(

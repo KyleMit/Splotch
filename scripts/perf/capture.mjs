@@ -49,11 +49,13 @@ export async function injectObservers(page) {
     } catch {
       // longtask unsupported on this engine (e.g. WebKit) — frames still work.
     }
-    const tick = (t) => {
+    // Named so the analyzer can exclude this sampler's own cost from the
+    // self-time table (HARNESS_SYMBOLS).
+    const __perfFrameTick = (t) => {
       w.__perf.frameStamps.push(t);
-      w.__perf.raf = requestAnimationFrame(tick);
+      w.__perf.raf = requestAnimationFrame(__perfFrameTick);
     };
-    w.__perf.raf = requestAnimationFrame(tick);
+    w.__perf.raf = requestAnimationFrame(__perfFrameTick);
   });
 }
 
