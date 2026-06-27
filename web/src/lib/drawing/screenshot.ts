@@ -2,6 +2,7 @@ import type { MediaPlugin } from '@capacitor-community/media';
 import { exportCanvasBlob, getActiveCanvas } from './engine';
 import { getActiveOverlayImage } from './overlay';
 import { isNative, getPlatform } from '$lib/platform';
+import { saveBlobToFolder } from './folderSave';
 
 export function timestamp() {
   const d = new Date();
@@ -57,10 +58,17 @@ async function saveToGallery(blob: Blob, baseName = 'splotch') {
   }
 }
 
-// Persist a PNG blob: native drops it into the photo gallery, the web triggers a
-// file download. No polaroid animation — for silent/background saves (e.g. the
-// AI auto-save), where the caller owns its own feedback.
-export async function saveImageBlob(blob: Blob | null, baseName = 'splotch') {
+// Persist a PNG blob: native drops it into the photo gallery; the web writes it
+// silently into a parent-chosen folder when available (File System Access API),
+// otherwise triggers a file download. `allowPrompt` lets a user-initiated save
+// open the folder picker / permission prompt; background saves (AI auto-save,
+// save-on-delete) leave it falsy so they stay silent until a folder is already
+// chosen. No polaroid animation — the caller owns its own feedback.
+export async function saveImageBlob(
+  blob: Blob | null,
+  baseName = 'splotch',
+  opts?: { allowPrompt?: boolean }
+) {
   if (!blob) return;
   if (isNative()) {
     try {
@@ -69,8 +77,10 @@ export async function saveImageBlob(blob: Blob | null, baseName = 'splotch') {
       console.error('Save to gallery failed:', err);
     }
   } else {
+    const filename = `${baseName}-${timestamp()}.png`;
+    if (await saveBlobToFolder(blob, filename, opts)) return;
     const url = URL.createObjectURL(blob);
-    triggerDownload(url, `${baseName}-${timestamp()}.png`);
+    triggerDownload(url, filename);
     URL.revokeObjectURL(url);
   }
 }
@@ -78,7 +88,7 @@ export async function saveImageBlob(blob: Blob | null, baseName = 'splotch') {
 export async function saveScreenshot() {
   const blob = await exportCanvasBlob(getActiveOverlayImage());
   if (!blob) return;
-  await saveImageBlob(blob);
+  await saveImageBlob(blob, undefined, { allowPrompt: true });
   playPolaroidAnimation(URL.createObjectURL(blob));
 }
 
