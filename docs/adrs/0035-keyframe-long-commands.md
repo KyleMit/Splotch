@@ -1,6 +1,8 @@
 # ADR-0035: Keyframe Long Commands So Undo Doesn't Replay Thousands of Ops
 
-**Status:** Active
+**Status:** Active (amended by ADR-0036 — keyframing is now a safety net behind
+stroke simplification, and its trigger measures *simplified* segment count, not
+raw op count)
 **Date:** 2026-06
 
 ## Context
@@ -41,7 +43,10 @@ keyframe**, built once at commit (off the draw frame), and drop its ops.
 
 - `OP_KEYFRAME_THRESHOLD` (48) — a command above this many ops is keyframed.
   Short strokes and dots stay cheap replayable ops, so the common case keeps
-  ADR-0033's low memory; only long scribbles spend a raster.
+  ADR-0033's low memory; only long scribbles spend a raster. **(ADR-0036 re-bases
+  this trigger: the constant is now `KEYFRAME_SEGMENT_THRESHOLD` (384) measured
+  against a command's *simplified* segment count, so keyframing fires only for a
+  pathological all-corners gesture that simplification can't thin.)**
 - A command's `keyframe` is a **cumulative** square raster (same `max(w,h) ×
   renderScale` geometry as the baseline) holding the entire drawing *through that
   command*. Built via `paintStateThrough()` at commit, then `ops` is set to `[]`.

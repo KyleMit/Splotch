@@ -1,6 +1,7 @@
 # ADR-0033: Command-Replay Undo (Single Baseline + Stroke Log)
 
-**Status:** Active
+**Status:** Active (the "decimate points" alternative rejected below was later
+adopted in a different form — see ADR-0036)
 **Date:** 2026-06
 
 ## Context
@@ -13,7 +14,7 @@ The two pain points: (a) ten 4×-DPR rasters held in memory, and (b) a full-canv
 
 Replace the snapshot stack with a **command log replayed over a single baseline raster**.
 
-- Each stroke group (all fingers down together — one undo unit) is recorded as a `StrokeGroupCommand`: an ordered list of **rendered** ops (`dot`, `path`, or `clear`) plus the `wasEmpty` flag from before the group drew. Ops are captured at the exact granularity they were drawn — one `path` op per `strokeSmoothSegments` call, carrying the computed quadratic control/endpoint pairs — so replay reproduces bit-identical pixels (same `beginPath`/`stroke` boundaries, same compositing order). Recording the _rendered_ geometry, not raw pointer input, sidesteps the pointer-resume / coalescing / edge-swipe-deferral subtleties in the live path.
+- Each stroke group (all fingers down together — one undo unit) is recorded as a `StrokeGroupCommand`: an ordered list of **rendered** ops (`dot`, `path`, or `clear`) plus the `wasEmpty` flag from before the group drew. Ops are captured at the exact granularity they were drawn — one `path` op per `strokeSmoothSegments` call, carrying the computed quadratic control/endpoint pairs — so replay reproduces bit-identical pixels (same `beginPath`/`stroke` boundaries, same compositing order). Recording the _rendered_ geometry, not raw pointer input, sidesteps the pointer-resume / coalescing / edge-swipe-deferral subtleties in the live path. (ADR-0036 later trades this bit-identical guarantee — replay only matters after an undo/resize — for a 3–4.6× smaller op log, simplifying each command's stored ops at commit with a measured ≤1px edge shift.)
 - One offscreen **baseline** raster (a `max(w,h)` square) holds the state before the oldest retained command. `undo()` = redraw the baseline, then replay the surviving log on top. (As first landed this replayed onto both the visible and virtual canvases; **ADR-0034** then removed the virtual canvas, so replay targets the visible canvas alone and resize rebuilds the same way.)
 - The log is capped at `MAX_UNDO_STACK_SIZE` (kept at 10). On commit past the cap, the **oldest command folds into the baseline** — replayed once onto the baseline raster, then dropped. In-order folding keeps eraser `destination-out` ops hitting exactly the pixels they originally did.
 - `clearCanvas()` is itself a `clear` command, so clearing is undoable and folds like any other.

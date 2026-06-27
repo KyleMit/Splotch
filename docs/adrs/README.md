@@ -39,3 +39,4 @@ This directory records significant architectural decisions made in the Splotch p
 | [0033](0033-command-replay-undo.md) | Command-Replay Undo (Single Baseline + Stroke Log, replacing the snapshot stack) | Active |
 | [0034](0034-drop-virtual-canvas-rebuild-on-resize.md) | Drop the Virtual Canvas — Rebuild on Resize from the Baseline + Log | Active |
 | [0035](0035-keyframe-long-commands.md) | Keyframe Long Commands So Undo Doesn't Replay Thousands of Ops | Active |
+| [0036](0036-stroke-simplification-at-commit.md) | Simplify Stroke Ops at Commit (Ramer–Douglas–Peucker) So Undo Replays Few Segments | Active |

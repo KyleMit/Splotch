@@ -422,34 +422,31 @@ test('undoing an eraser stroke replays the erased pixels back', async ({ page })
   expect(s.canUndo).toBe(true); // the pen stroke remains undoable
 });
 
-test('a long continuous scribble keyframes instead of accumulating unbounded ops', async ({
+test('a long smooth stroke is simplified to far fewer segments without keyframing (ADR-0036)', async ({
   page,
 }) => {
-  // Regression (ADR-0035): one uninterrupted gesture records one path op per
-  // pointermove, so a long scribble used to leave thousands of ops in a single
-  // command — and undo/resize replayed every one as a separate stroke(), making
-  // undo on a 4×-DPR iPad nearly unresponsive. The command must now collapse to
-  // a cumulative raster keyframe (ops dropped) once it passes the threshold.
-  const box = await page.locator('#engineCanvas').boundingBox();
-  if (!box) throw new Error('canvas has no bounding box');
-
-  // ~90 discrete moves in one gesture → ~90 ops, well past OP_KEYFRAME_THRESHOLD.
-  const points = Array.from({ length: 90 }, (_, i) => ({
-    x: 30 + (i % 2 === 0 ? 0 : 200),
-    y: 20 + i * 2,
+  // One uninterrupted gesture records one path op per pointermove, but a smooth
+  // stroke's samples are nearly collinear. Simplification thins them at commit to
+  // a handful of shape-defining points, so the command stays cheap replayable ops
+  // (no keyframe) and the drawing is unchanged. strokeSync gives a deterministic
+  // one-seg-per-move op stream (no input coalescing).
+  const points = Array.from({ length: 120 }, (_, i) => ({
+    x: 20 + i * 2,
+    y: 150 + Math.round(60 * Math.sin(i / 40)),
   }));
-  await drawStroke(page, box, points);
+  await page.evaluate((pts) => window.__engine.strokeSync(pts), points);
 
   expect(await count(page)).toBeGreaterThan(0);
 
   const debug = await page.evaluate(() => window.__engine.getUndoDebug());
-  // One undo unit, collapsed to a keyframe with its ops dropped — so a rebuild
-  // blits the raster instead of re-stroking ~90 ops.
   expect(debug.commands).toBe(1);
-  expect(debug.keyframes).toBe(1);
-  expect(debug.maxOps).toBe(0);
+  expect(debug.keyframes).toBe(0); // simplified, not keyframed
+  // Most of the sampled points are dropped, and the heaviest command's replay
+  // cost stays well under the keyframe budget.
+  expect(debug.keptPoints).toBeLessThan(debug.rawPoints / 2);
+  expect(debug.maxSegments).toBeLessThan(debug.rawPoints);
 
-  // Undo still reverts the whole scribble in one step, back to blank.
+  // Still one undo unit back to blank.
   await page.evaluate(() => window.__engine.undo());
   expect(await count(page)).toBe(0);
   const s = await state(page);
@@ -457,29 +454,95 @@ test('a long continuous scribble keyframes instead of accumulating unbounded ops
   expect(s.canUndo).toBe(false);
 });
 
-test('a keyframed scribble survives a resize and replays from the keyframe', async ({ page }) => {
-  // The keyframe is a cumulative square raster, so a resize rebuilds from it
-  // (drawImage) rather than re-stroking the dropped ops — and the drawing must
-  // still be there afterward.
-  const box = await page.locator('#engineCanvas').boundingBox();
-  if (!box) throw new Error('canvas has no bounding box');
+test('a pathological all-corners gesture keyframes as a safety net (ADR-0035/0036)', async ({
+  page,
+}) => {
+  // Simplification can't thin a gesture that is genuinely all direction changes.
+  // Once a command's *simplified* segment total passes KEYFRAME_SEGMENT_THRESHOLD
+  // it collapses to a cumulative raster keyframe (ops dropped) so undo/resize stay
+  // one drawImage blit instead of re-stroking hundreds of segments on a 4×-DPR
+  // backing store. A tight zigzag keeps every point through RDP.
+  const points = Array.from({ length: 460 }, (_, i) => ({
+    x: i % 2 === 0 ? 30 : 230,
+    y: 20 + Math.floor(i * 0.5),
+  }));
+  await page.evaluate((pts) => window.__engine.strokeSync(pts), points);
 
-  const points = Array.from({ length: 90 }, (_, i) => ({ x: 20 + i * 2, y: 40 }));
-  await drawStroke(page, box, points);
+  expect(await count(page)).toBeGreaterThan(0);
+
+  const debug = await page.evaluate(() => window.__engine.getUndoDebug());
+  // One undo unit, collapsed to a keyframe with its ops dropped.
+  expect(debug.commands).toBe(1);
+  expect(debug.keyframes).toBe(1);
+  expect(debug.maxSegments).toBe(0);
+
+  // Undo still reverts the whole gesture in one step, back to blank.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(true);
+  expect(s.canUndo).toBe(false);
+});
+
+test('a keyframed gesture survives a resize, rebuilt from the keyframe (ADR-0035)', async ({
+  page,
+}) => {
+  // The keyframe is a cumulative square raster, so a resize rebuilds from it
+  // (drawImage) rather than re-stroking the dropped ops — the drawing must still
+  // be there afterward.
+  const points = Array.from({ length: 460 }, (_, i) => ({
+    x: i % 2 === 0 ? 30 : 230,
+    y: 20 + Math.floor(i * 0.5),
+  }));
+  await page.evaluate((pts) => window.__engine.strokeSync(pts), points);
   expect((await page.evaluate(() => window.__engine.getUndoDebug())).keyframes).toBe(1);
-  const before = await count(page);
-  expect(before).toBeGreaterThan(0);
+  expect(await count(page)).toBeGreaterThan(0);
 
   await page.evaluate(() => window.__engine.resizeTo(500, 400));
 
-  // Pixels along the stroke persist after the resize, rebuilt from the keyframe.
+  // The drawing persists after the resize, rebuilt from the keyframe.
   expect(await count(page)).toBeGreaterThan(0);
-  expect(await page.evaluate(() => window.__engine.pixelAt(40, 40)[3])).toBeGreaterThan(0);
 
   // And it still undoes as a single unit back to blank.
   await page.evaluate(() => window.__engine.undo());
   expect(await count(page)).toBe(0);
   expect((await state(page)).canvasEmpty).toBe(true);
+});
+
+test('a back-and-forth scribble keeps its full extent after a rebuild (ADR-0036 tip fidelity)', async ({
+  page,
+}) => {
+  // Simplification drops the dense samples around each turning point, so the
+  // curve through the survivors must pass *through* the tips. The midpoint
+  // smoothing it replaced used those tips only as control points and bulged ~25%
+  // short of them, so a scribble visibly shrank on undo/resize. Draw a horizontal
+  // zigzag, then force a rebuild-from-stored-ops via resize and check the extent.
+  const pts: { x: number; y: number }[] = [{ x: 50, y: 40 }];
+  let y = 40;
+  let dir = 1;
+  for (let s = 0; s < 8; s++) {
+    const from = dir > 0 ? 50 : 250;
+    const to = dir > 0 ? 250 : 50;
+    for (let i = 1; i <= 20; i++) {
+      y += 1.4;
+      pts.push({ x: from + (to - from) * (i / 20), y });
+    }
+    dir *= -1;
+  }
+  await page.evaluate((p) => window.__engine.strokeSync(p), pts);
+
+  const before = await page.evaluate(() => window.__engine.inkBounds());
+  if (!before) throw new Error('nothing drawn');
+
+  // Force the stored (simplified) ops to repaint the visible canvas.
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  const after = await page.evaluate(() => window.__engine.inkBounds());
+  if (!after) throw new Error('rebuild produced an empty canvas');
+
+  // The horizontal span survives — the tips still reach (the old undershoot
+  // shrank this by tens of px; allow only a few px of antialiasing slack).
+  expect(after.maxX).toBeGreaterThanOrEqual(before.maxX - 4);
+  expect(after.minX).toBeLessThanOrEqual(before.minX + 4);
 });
 
 test('a multi-touch gesture undoes as a single unit', async ({ page }) => {

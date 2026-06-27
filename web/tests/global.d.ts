@@ -15,7 +15,15 @@ declare global {
       undo(): void;
       clearCanvas(): void;
       isCanvasEmpty(): boolean;
-      getUndoDebug(): { commands: number; keyframes: number; maxOps: number };
+      getUndoDebug(): {
+        commands: number;
+        keyframes: number;
+        maxOps: number;
+        maxSegments: number;
+        rawPoints: number;
+        keptPoints: number;
+      };
+      inkBounds(): { minX: number; minY: number; maxX: number; maxY: number } | null;
       exportCanvasBlob(
         overlayImage?: HTMLImageElement | null,
         options?: { includePaperTexture?: boolean }

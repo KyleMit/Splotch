@@ -24,6 +24,7 @@ interface DrawSoundData {
 }
 
 interface PointerState {
+  id: number;
   x: number;
   y: number;
   midX: number;
@@ -46,16 +47,26 @@ interface PointerState {
 
 // Undo history is a log of replayable draw ops, not pixel snapshots. Each op is
 // captured at the exact granularity it was rendered (one path op per
-// strokeSmoothSegments call, one dot op per stroke start) so replaying it
-// reproduces bit-identical pixels — same beginPath/stroke boundaries, same
-// compositing order. A 'clear' op wipes the target. See ADR-0033.
+// strokeSmoothSegments call, one dot op per stroke start). Live rendering is
+// bit-identical to its op; the stored ops are then simplified once at commit
+// (ADR-0036) so replay re-strokes far fewer segments without a visible change. A
+// 'clear' op wipes the target. See ADR-0033.
 type StrokeOp =
   | { kind: 'dot'; x: number; y: number; radius: number; color: string; erase: boolean }
   | {
       kind: 'path';
+      // Which pointer drew this op, so commit-time simplification (ADR-0036) can
+      // regroup a multi-touch command's interleaved per-frame ops back into one
+      // run per finger before reducing them. Not used at render time.
+      pid: number;
       startX: number;
       startY: number;
-      segs: { cx: number; cy: number; x: number; y: number }[];
+      // Live ops carry midpoint-smoothed quadratic segments (cx/cy = control,
+      // x/y = endpoint). Simplification (ADR-0036) rewrites a command's ops to
+      // cubic segments (adding c2x/c2y) of a Catmull-Rom spline that passes
+      // *through* the kept points, so a sparse simplified stroke still reaches its
+      // turning points instead of bulging short of them.
+      segs: { cx: number; cy: number; x: number; y: number; c2x?: number; c2y?: number }[];
       color: string;
       lineWidth: number;
       erase: boolean;
@@ -132,15 +143,17 @@ let rectScaleY = 1;
 const commandLog: StrokeGroupCommand[] = [];
 const MAX_UNDO_STACK_SIZE = 10;
 
-// A command accrues one path op per pointermove frame, so one uninterrupted
-// scribble (a toddler's specialty) can hold thousands of ops in a single undo
-// unit — and undo/resize replays every retained op as a separate stroke() on
-// the 4×-DPR backing store. Once a committed command passes this many ops we
-// bake it into a cumulative raster keyframe (once, at commit, off the draw
-// frame) and drop its ops, so rebuilds blit instead of re-stroking. Short
-// strokes stay cheap replayable ops (no keyframe), so the common case keeps
-// ADR-0033's low memory; only long scribbles spend a raster. See ADR-0035.
-const OP_KEYFRAME_THRESHOLD = 48;
+// Keyframe safety net (ADR-0035, now downstream of ADR-0036 simplification).
+// Simplification already collapses a normal long scribble to tens of segments,
+// so the common case stays cheap replayable ops. A pathological high-detail
+// gesture (a finger held down for a minute, every frame a real direction change)
+// can still leave more segments than we want to re-stroke on every undo, so a
+// command whose *simplified* segment total passes this bound is baked into a
+// cumulative raster keyframe (once, at commit, off the draw frame) and its ops
+// dropped — keeping worst-case undo at one drawImage blit. Set well above the
+// segment counts real drawing produces (peak ~140 in profiled sessions) so it
+// fires only for genuine outliers.
+const KEYFRAME_SEGMENT_THRESHOLD = 384;
 // The stroke group currently being drawn (set on first paint, pushed to the log
 // when the last finger lifts), so a multi-touch gesture undoes as a single unit.
 let activeCommand: StrokeGroupCommand | null = null;
@@ -347,7 +360,10 @@ function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     target.lineWidth = op.lineWidth;
     target.beginPath();
     target.moveTo(op.startX, op.startY);
-    for (const s of op.segs) target.quadraticCurveTo(s.cx, s.cy, s.x, s.y);
+    for (const s of op.segs) {
+      if (s.c2x !== undefined) target.bezierCurveTo(s.cx, s.cy, s.c2x, s.c2y!, s.x, s.y);
+      else target.quadraticCurveTo(s.cx, s.cy, s.x, s.y);
+    }
     target.stroke();
   }
   target.globalCompositeOperation = 'source-over';
@@ -359,6 +375,230 @@ function recordOp(op: StrokeOp) {
   if (activeCommand) activeCommand.ops.push(op);
 }
 
+// --- Stroke simplification (ADR-0036) ---
+// A finger drawing records one path op per frame, so a single stroke can hold
+// hundreds of near-collinear samples that undo/resize re-stroke segment by
+// segment. At commit each command's ops are reduced once: per finger, the run of
+// path ops is rebuilt into its raw point list and thinned with
+// Ramer–Douglas–Peucker — a point is dropped when it lies within an
+// epsilon-tolerance of the chord between its surviving neighbours, so only real
+// direction changes remain. The rendered curve already approximates rather than
+// interpolates its points, so thinning them shifts only antialiased stroke
+// edges (<1px), not the stroke's shape or position.
+//
+// The tolerance scales with stroke width: a wiggle far smaller than the round
+// brush's radius can't be seen, so a thick stroke tolerates a coarser polyline
+// than a thin one. Clamped so even the thinnest stroke drops sub-pixel jitter and
+// the thickest doesn't cut visible corners. All in device px — stored coordinates
+// already include renderScale.
+const SIMPLIFY_EPSILON_FRACTION = 0.2;
+const SIMPLIFY_EPSILON_MIN_PX = 2;
+const SIMPLIFY_EPSILON_MAX_PX = 16;
+function simplifyEpsilonFor(lineWidth: number): number {
+  return Math.min(
+    SIMPLIFY_EPSILON_MAX_PX,
+    Math.max(SIMPLIFY_EPSILON_MIN_PX, lineWidth * SIMPLIFY_EPSILON_FRACTION)
+  );
+}
+
+// Lifetime counters (raw samples seen vs. points kept after simplification),
+// surfaced through getUndoDebug for the profiling harness and the engine spec.
+let simplifyRawPoints = 0;
+let simplifyKeptPoints = 0;
+
+type Pt = { x: number; y: number };
+type PathOp = Extract<StrokeOp, { kind: 'path' }>;
+
+// Iterative (stack-based, so a long monotonic stroke can't blow the call stack)
+// Douglas–Peucker. Keeps both endpoints plus every point whose perpendicular
+// distance to the current chord exceeds epsilon.
+function rdpSimplify(points: Pt[], epsilon: number): Pt[] {
+  if (points.length <= 2) return points.slice();
+  const keep = new Uint8Array(points.length);
+  keep[0] = 1;
+  keep[points.length - 1] = 1;
+  const stack: [number, number][] = [[0, points.length - 1]];
+  while (stack.length > 0) {
+    const [a, b] = stack.pop()!;
+    const ax = points[a].x;
+    const ay = points[a].y;
+    const dx = points[b].x - ax;
+    const dy = points[b].y - ay;
+    const len2 = dx * dx + dy * dy;
+    let maxD = -1;
+    let idx = -1;
+    for (let i = a + 1; i < b; i++) {
+      const px = points[i].x - ax;
+      const py = points[i].y - ay;
+      const d = len2 === 0 ? Math.hypot(px, py) : Math.abs(px * dy - py * dx) / Math.sqrt(len2);
+      if (d > maxD) {
+        maxD = d;
+        idx = i;
+      }
+    }
+    if (maxD > epsilon && idx >= 0) {
+      keep[idx] = 1;
+      stack.push([a, idx], [idx, b]);
+    }
+  }
+  const out: Pt[] = [];
+  for (let i = 0; i < points.length; i++) if (keep[i]) out.push(points[i]);
+  return out;
+}
+
+// Recover the polyline a continuous run of one finger's path ops actually
+// rendered. Each segment's control point IS the raw sample at the start of its
+// chord (strokeSmoothSegments sets cx/cy = the previous raw point), so the
+// controls give the interior points — including the turning points of a
+// back-and-forth scribble. The stroke ends not at the final raw sample but at the
+// last segment's anchor (the midpoint the live curve actually drew to; the final
+// raw point's other half is never rendered), so that's the closing point — making
+// the simplified stroke span exactly what the user saw.
+function rawPointsOf(run: PathOp[]): Pt[] {
+  const pts: Pt[] = [];
+  for (const op of run) for (const s of op.segs) pts.push({ x: s.cx, y: s.cy });
+  const lastOp = run[run.length - 1];
+  const lastSeg = lastOp.segs[lastOp.segs.length - 1];
+  pts.push({ x: lastSeg.x, y: lastSeg.y });
+  return pts;
+}
+
+// Render the kept points as a smooth curve that passes THROUGH each of them.
+// The live draw path uses midpoint-smoothed quadratics with the raw point as a
+// *control* (the curve only bulges toward it), which is invisible when points are
+// dense but, on RDP-sparse points, falls ~25% short of every turning point — so a
+// back-and-forth scribble visibly shrinks at its tips on replay. An interpolating
+// Catmull-Rom spline instead hits every kept point, so tips land exactly.
+//
+// Centripetal parameterization (alpha = 0.5): RDP leaves uneven point spacing,
+// and uniform Catmull-Rom overshoots / self-intersects there; centripetal is the
+// standard cure and never loops or cusps.
+const CR_ALPHA = 0.5;
+function catmullRomBezier(p0: Pt, p1: Pt, p2: Pt, p3: Pt) {
+  const knot = (a: Pt, b: Pt) => Math.pow(Math.hypot(b.x - a.x, b.y - a.y), CR_ALPHA) || 1e-6;
+  const t01 = knot(p0, p1);
+  const t12 = knot(p1, p2);
+  const t23 = knot(p2, p3);
+  // Barry–Goldman tangents at p1 and p2, scaled to this segment.
+  const m1x = p2.x - p1.x + t12 * ((p1.x - p0.x) / t01 - (p2.x - p0.x) / (t01 + t12));
+  const m1y = p2.y - p1.y + t12 * ((p1.y - p0.y) / t01 - (p2.y - p0.y) / (t01 + t12));
+  const m2x = p2.x - p1.x + t12 * ((p3.x - p2.x) / t23 - (p3.x - p1.x) / (t12 + t23));
+  const m2y = p2.y - p1.y + t12 * ((p3.y - p2.y) / t23 - (p3.y - p1.y) / (t12 + t23));
+  return {
+    cx: p1.x + m1x / 3,
+    cy: p1.y + m1y / 3,
+    c2x: p2.x - m2x / 3,
+    c2y: p2.y - m2y / 3,
+    x: p2.x,
+    y: p2.y,
+  };
+}
+
+function smoothToSegs(pts: Pt[]): PathOp['segs'] {
+  const n = pts.length;
+  // Reflect the endpoints so the first/last segments have a neighbour to take a
+  // tangent from (a natural end tangent), keeping all knot intervals non-zero.
+  const at = (i: number): Pt =>
+    i < 0
+      ? { x: 2 * pts[0].x - pts[1].x, y: 2 * pts[0].y - pts[1].y }
+      : i >= n
+        ? { x: 2 * pts[n - 1].x - pts[n - 2].x, y: 2 * pts[n - 1].y - pts[n - 2].y }
+        : pts[i];
+  const segs: PathOp['segs'] = [];
+  for (let i = 0; i < n - 1; i++) {
+    segs.push(catmullRomBezier(at(i - 1), pts[i], pts[i + 1], at(i + 2)));
+  }
+  return segs;
+}
+
+function pathStyleMatches(a: PathOp, b: PathOp): boolean {
+  return a.color === b.color && a.lineWidth === b.lineWidth && a.erase === b.erase;
+}
+
+// Reduce one continuous, same-style run of a single finger's path ops to one
+// simplified path op.
+function reducePathRun(run: PathOp[]): PathOp {
+  const raw = rawPointsOf(run);
+  const first = run[0];
+  const kept = rdpSimplify(raw, simplifyEpsilonFor(first.lineWidth));
+  simplifyRawPoints += raw.length;
+  simplifyKeptPoints += kept.length;
+  return {
+    kind: 'path',
+    pid: first.pid,
+    startX: kept[0].x,
+    startY: kept[0].y,
+    segs: smoothToSegs(kept),
+    color: first.color,
+    lineWidth: first.lineWidth,
+    erase: first.erase,
+  };
+}
+
+// Simplify a committed command's per-frame path ops in place. A multi-touch
+// command interleaves several fingers' ops, so they're first regrouped by pointer
+// id, then each finger's ops are split into spatially continuous, same-style
+// sub-runs (a pointer-resume jump or a mid-stroke style/eraser change breaks
+// continuity, so no stray line bridges the gap) before reduction. Each finger's
+// reduced ops are emitted at the position of its first op; dots and clears pass
+// through in place, preserving compositing order for the single-finger case.
+function simplifyCommand(cmd: StrokeGroupCommand) {
+  if (cmd.ops.length === 0) return;
+  if (PERF_MARKS) performance.mark('engine.simplify:start');
+
+  const byPid = new Map<number, PathOp[]>();
+  for (const op of cmd.ops) {
+    if (op.kind !== 'path') continue;
+    const list = byPid.get(op.pid);
+    if (list) list.push(op);
+    else byPid.set(op.pid, [op]);
+  }
+
+  const reducedByPid = new Map<number, PathOp[]>();
+  for (const [pid, ops] of byPid) {
+    const reduced: PathOp[] = [];
+    let run: PathOp[] = [];
+    const flush = () => {
+      if (run.length > 0) reduced.push(reducePathRun(run));
+      run = [];
+    };
+    for (const op of ops) {
+      if (run.length > 0) {
+        const prev = run[run.length - 1];
+        const prevAnchor = prev.segs[prev.segs.length - 1];
+        const continuous = op.startX === prevAnchor.x && op.startY === prevAnchor.y;
+        if (!continuous || !pathStyleMatches(prev, op)) flush();
+      }
+      run.push(op);
+    }
+    flush();
+    reducedByPid.set(pid, reduced);
+  }
+
+  const out: StrokeOp[] = [];
+  const emitted = new Set<number>();
+  for (const op of cmd.ops) {
+    if (op.kind !== 'path') {
+      out.push(op);
+      continue;
+    }
+    if (!emitted.has(op.pid)) {
+      out.push(...reducedByPid.get(op.pid)!);
+      emitted.add(op.pid);
+    }
+  }
+  cmd.ops = out;
+  if (PERF_MARKS) performance.measure('engine.simplify', 'engine.simplify:start');
+}
+
+// Total quadratic segments a command will re-stroke on replay — the keyframe
+// safety net's trigger, measured after simplification.
+function commandSegmentCount(cmd: StrokeGroupCommand): number {
+  let n = 0;
+  for (const op of cmd.ops) if (op.kind === 'path') n += op.segs.length;
+  return n;
+}
+
 // One quadratic segment per input point: the path runs midpoint-to-midpoint
 // with the raw point as the control, so consecutive segments share a tangent
 // and the stroke curves smoothly instead of showing straight-chord corners.
@@ -368,6 +608,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
   if (points.length === 0) return;
   const op: StrokeOp = {
     kind: 'path',
+    pid: ps.id,
     startX: ps.midX,
     startY: ps.midY,
     segs: [],
@@ -494,6 +735,7 @@ function startDrawing(e: PointerEvent) {
 
   const now = Date.now();
   const pointerState: PointerState = {
+    id: e.pointerId,
     x,
     y,
     midX: x,
@@ -645,6 +887,7 @@ function commitActiveCommand() {
 
 function pushCommand(cmd: StrokeGroupCommand) {
   commandLog.push(cmd);
+  simplifyCommand(cmd);
   if (commandLog.length > MAX_UNDO_STACK_SIZE) foldOldestIntoBaseline();
   maybeKeyframe(cmd);
 
@@ -652,13 +895,14 @@ function pushCommand(cmd: StrokeGroupCommand) {
   if (onUndoStateChange) onUndoStateChange(canUndo);
 }
 
-// A long command (a continuous scribble) would otherwise replay thousands of
-// stroke()s on every undo/resize. Collapse it once, at commit (off the draw
-// frame), into a cumulative square keyframe of the whole drawing through it,
-// then drop its ops so rebuilds blit the keyframe instead. Built before the ops
-// are cleared, so paintStateThrough still sees them. See ADR-0035.
+// Safety net: a command whose *simplified* segment total is still large enough
+// to make undo/resize replay expensive is collapsed once, at commit (off the
+// draw frame), into a cumulative square keyframe of the whole drawing through it,
+// then its ops are dropped so rebuilds blit the keyframe instead. Built before
+// the ops are cleared, so paintStateThrough still sees them. See ADR-0035 (the
+// trigger now measures post-simplification segments, ADR-0036).
 function maybeKeyframe(cmd: StrokeGroupCommand) {
-  if (cmd.ops.length <= OP_KEYFRAME_THRESHOLD || !baselineCanvas) return;
+  if (commandSegmentCount(cmd) <= KEYFRAME_SEGMENT_THRESHOLD || !baselineCanvas) return;
   const index = commandLog.indexOf(cmd);
   if (index < 0) return;
   const kf = document.createElement('canvas');
@@ -840,14 +1084,25 @@ export function isCanvasEmpty(): boolean {
 }
 
 // Test/profiling seam: how the undo history is currently stored. `keyframes`
-// counts commands collapsed to a cumulative raster (ADR-0035) vs. ones still
-// held as replayable ops. Read by the engine spec to assert a long scribble
-// keyframes instead of accumulating unbounded ops.
-export function getUndoDebug(): { commands: number; keyframes: number; maxOps: number } {
+// counts commands collapsed to a cumulative raster (ADR-0035) vs. ones still held
+// as replayable ops; `maxSegments` is the heaviest retained command's replay cost
+// (post-simplification, ADR-0036); `rawPoints`/`keptPoints` are the lifetime
+// simplification totals. `maxOps` is retained for the profiling harness.
+export function getUndoDebug(): {
+  commands: number;
+  keyframes: number;
+  maxOps: number;
+  maxSegments: number;
+  rawPoints: number;
+  keptPoints: number;
+} {
   return {
     commands: commandLog.length,
     keyframes: commandLog.filter((c) => c.keyframe != null).length,
     maxOps: commandLog.reduce((m, c) => Math.max(m, c.ops.length), 0),
+    maxSegments: commandLog.reduce((m, c) => Math.max(m, commandSegmentCount(c)), 0),
+    rawPoints: simplifyRawPoints,
+    keptPoints: simplifyKeptPoints,
   };
 }
 

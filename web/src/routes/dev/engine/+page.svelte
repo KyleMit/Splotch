@@ -85,6 +85,30 @@
         return n;
       },
 
+      // Bounding box (backing-store px) of the non-transparent pixels, so a spec
+      // can assert a stroke's extent survives a rebuild (e.g. a scribble's tips
+      // don't shrink after simplification, ADR-0036). Empty canvas → null.
+      inkBounds() {
+        const ctx = canvasEl.getContext('2d')!;
+        const { width, height } = canvasEl;
+        const { data } = ctx.getImageData(0, 0, width, height);
+        let minX = width,
+          minY = height,
+          maxX = -1,
+          maxY = -1;
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            if (data[(y * width + x) * 4 + 3] !== 0) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+        return maxX < 0 ? null : { minX, minY, maxX, maxY };
+      },
+
       // [r, g, b, a] at a canvas-space pixel.
       pixelAt(x: number, y: number) {
         const ctx = canvasEl.getContext('2d')!;
