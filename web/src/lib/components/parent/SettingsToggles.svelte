@@ -2,7 +2,6 @@
   import { onDestroy } from 'svelte';
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
-  import { onMount } from 'svelte';
   import {
     settings,
     setSound,
@@ -32,9 +31,10 @@
   // every other browser the toggle is hidden and saves stay as downloads.
   const showFolderSave = folderSaveSupported();
 
-  // Turning the toggle on requires picking a folder the first time (a user
-  // gesture, which the toggle click is). Only flip the persisted setting once a
-  // folder is actually chosen, so a cancelled picker leaves the toggle off.
+  // Turning the toggle on picks a folder right away when one isn't set yet (the
+  // toggle click is the user gesture the picker needs), so saves go silent from
+  // the next one on. Cancelling the picker leaves the toggle off. Even if it ends
+  // up on without a folder, the next save re-prompts (see saveBlobToFolder).
   async function onToggleFolderSave(next: boolean) {
     if (!next) {
       setSaveToFolder(false);
@@ -44,15 +44,6 @@
       setSaveToFolder(true);
     }
   }
-
-  // Keep the toggle honest: if the setting says on but the remembered folder is
-  // gone (e.g. it was deleted and a save cleared the stale handle), reset to off
-  // so the parent re-picks rather than silently falling back to downloads.
-  onMount(async () => {
-    if (showFolderSave && settings.saveToFolderEnabled && !(await hasSaveFolder())) {
-      setSaveToFolder(false);
-    }
-  });
 
   const PREVIEW_SPEED = 0.45;
   let previewingVolume = false;

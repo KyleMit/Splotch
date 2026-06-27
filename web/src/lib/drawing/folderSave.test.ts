@@ -94,12 +94,37 @@ describe('saveBlobToFolder', () => {
     expect(await saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
   });
 
-  it('never opens the folder picker, even with allowPrompt and no stored folder', async () => {
+  it('does not open the picker for a background save with no stored folder', async () => {
     const picker = vi.fn();
     setPicker(picker);
 
-    expect(await saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
+    expect(await saveBlobToFolder(blob, 'a.png', { allowPrompt: false })).toBe(false);
     expect(picker).not.toHaveBeenCalled();
+  });
+
+  it('prompts for a folder on a user-initiated save when none is stored, then writes', async () => {
+    const { handle, fileHandle, writable } = makeHandle('granted');
+    const picker = vi.fn(async () => handle);
+    setPicker(picker);
+
+    expect(await saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(true);
+    expect(picker).toHaveBeenCalledOnce();
+    expect(handle.getFileHandle).toHaveBeenCalledWith('a.png', { create: true });
+    expect(writable.write).toHaveBeenCalledWith(blob);
+    expect(fileHandle.createWritable).toHaveBeenCalledOnce();
+    // The picked folder is remembered for the next save.
+    expect(await hasSaveFolder()).toBe(true);
+  });
+
+  it('falls back to download when the user cancels the folder picker', async () => {
+    setPicker(
+      vi.fn(async () => {
+        throw new DOMException('cancelled', 'AbortError');
+      })
+    );
+
+    expect(await saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
+    expect(await hasSaveFolder()).toBe(false);
   });
 
   it('writes the blob into a stored, granted folder', async () => {

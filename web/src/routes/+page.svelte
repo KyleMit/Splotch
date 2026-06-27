@@ -15,11 +15,9 @@
     captureAiAccessTokenFromUrl,
     reloadSettings,
     hydrateApiKey,
-    setSaveToFolder,
     settings,
   } from '$lib/state/settings.svelte';
   import { reloadStrokeWidth } from '$lib/state/strokeWidth.svelte';
-  import { folderSaveSupported, hasSaveFolder } from '$lib/drawing/folderSave';
   import { hydrateDurableStorage } from '$lib/storage';
   import { initNetwork } from '$lib/state/network.svelte';
   import { isNative } from '$lib/platform';
@@ -37,17 +35,6 @@
     // transparent — the AI button is only used long after boot completes).
     hydrateApiKey();
     initNetwork();
-
-    // Keep "Save to Folder" honest before the first save: the enabled flag lives
-    // in localStorage but the chosen folder handle lives in IndexedDB, so the two
-    // can drift apart (cleared site data, IDB eviction, an older build). If the
-    // flag is on but no folder is remembered, reset it — otherwise the toggle
-    // reads on while saves silently fall back to a download. Web/desktop only.
-    if (folderSaveSupported() && settings.saveToFolderEnabled) {
-      hasSaveFolder().then((has) => {
-        if (!has) setSaveToFolder(false);
-      });
-    }
 
     // Native only: recover any settings the WebView's localStorage may have
     // evicted from the durable Capacitor Preferences store, then refresh the

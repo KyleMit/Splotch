@@ -44,34 +44,48 @@ Keep a single save entry point and branch by target. The full matrix:
 is attempted only when the **`saveToFolderEnabled`** setting is on, and falls
 back to `triggerDownload` whenever `saveBlobToFolder` returns `false`.
 
-### Folder selection is settings-driven, not save-driven
+### Folder selection: settings-first, save-time fallback
 
-The directory picker is opened from a deliberate **"Save to Folder" toggle in the
-Parent Center** (`SettingsToggles.svelte`), shown only when
+The directory picker is opened primarily from a deliberate **"Save to Folder"
+toggle in the Parent Center** (`SettingsToggles.svelte`), shown only when
 `folderSaveSupported()` is true. The first time a parent turns it on,
 `chooseSaveFolder()` runs `showDirectoryPicker` + `requestPermission` (both need
 transient user activation, which the toggle click provides) and persists the
 granted `FileSystemDirectoryHandle` in IndexedDB (`splotch-fs` / `handles`).
-After that the toggle flips on/off freely without re-prompting. If the parent
-cancels the picker, the setting stays off. We chose this over prompting on the
-child's first save because folder choice is a parent decision and the kid's save
-button should never raise an OS dialog.
+After that the toggle flips on/off freely without re-prompting; cancelling the
+picker leaves the setting off. This keeps folder choice a parent decision, so in
+the normal flow the kid's Screenshot button never raises a dialog.
 
-A handle is structured-cloneable, so it lives in IndexedDB rather than
-localStorage (string-only) — mirroring the lazy-`idb` pattern in
+A `FileSystemDirectoryHandle` is structured-cloneable, so it lives in IndexedDB
+rather than localStorage (string-only) — mirroring the lazy-`idb` pattern in
 `secureStorage.ts`. The boolean toggle persists through the normal localStorage
-settings table; the two are reconciled on Parent Center mount (toggle reset to
-off if its remembered folder has gone).
+settings table.
 
-### `allowPrompt`: who may raise a permission dialog at save time
+Because those two stores can drift apart, the **save path is the fallback**: a
+user-initiated save with the toggle on but no folder set re-runs the picker (see
+`allowPrompt` below). So the toggle isn't a hard precondition — it expresses
+intent, and the folder is guaranteed to exist by the time a save completes
+silently.
 
-`saveBlobToFolder(blob, filename, { allowPrompt })` never opens the *folder
-picker* — that is settings-only. `allowPrompt` governs only re-confirming a
-write **permission** the browser dropped between sessions (in-tab origins lose
-it; installed PWAs keep it). User-initiated saves pass `allowPrompt: true` so a
-lapsed grant can be re-confirmed from within the gesture; background saves leave
-it false and degrade silently to a download rather than surprising anyone with a
-permission prompt.
+### `allowPrompt`: who may raise a dialog at save time
+
+`saveBlobToFolder(blob, filename, { allowPrompt })` takes `allowPrompt: true` for
+user-initiated saves (the Screenshot button) and false for background saves. When
+true it may, from within the user gesture, (a) **pick a folder** if none is set
+yet and (b) **re-confirm a write permission** the browser dropped between
+sessions (in-tab origins lose it; installed PWAs keep it). This save-time pick is
+the safety net that makes the toggle self-healing: if `saveToFolderEnabled` is on
+but no handle exists — a fresh enable, a cleared IndexedDB, an older build — the
+next Screenshot prompts for a folder and then saves into it, instead of silently
+downloading. Background saves leave `allowPrompt` false and degrade to a download
+rather than surprising anyone with a dialog.
+
+The Parent Center toggle still prompts immediately on enable, so the common path
+sets the folder up front and no save ever raises a dialog; the save-time pick
+only fires in the anomalous on-without-folder state. We deliberately do **not**
+reconcile the flag off when the folder is missing — the flag is treated as
+*intent*, and the missing folder is resolved lazily, which removes the
+localStorage/IndexedDB desync as a way to get wedged into silent downloads.
 
 ## Consequences
 

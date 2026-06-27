@@ -78,11 +78,11 @@ export async function clearSaveFolder(): Promise<void> {
 }
 
 // Write `blob` as `filename` into the chosen folder. Returns true once written;
-// false tells the caller to fall back to a download. Never opens the folder
-// picker — folder selection is settings-driven (chooseSaveFolder). `allowPrompt`
-// only lets a user-initiated save re-confirm a permission the browser dropped
-// since the folder was chosen (in-tab origins lose it between sessions);
-// background saves leave it false and degrade silently to a download.
+// false tells the caller to fall back to a download. `allowPrompt` gates the
+// steps that need transient user activation: when set (a user-initiated save) we
+// pick a folder if none is chosen yet, and re-confirm a permission the browser
+// dropped since (in-tab origins lose it between sessions). Background saves leave
+// it false and degrade silently to a download until a folder is set up.
 export async function saveBlobToFolder(
   blob: Blob,
   filename: string,
@@ -92,8 +92,15 @@ export async function saveBlobToFolder(
   const allowPrompt = opts?.allowPrompt ?? false;
 
   try {
-    const handle = await loadHandle();
-    if (!handle) return false;
+    let handle = await loadHandle();
+    if (!handle) {
+      // "Save to Folder" is on but no folder is chosen yet — prompt for one on a
+      // user-initiated save (the gesture that reached here keeps the picker
+      // allowed). Background saves can't prompt, so they fall back to a download.
+      if (!allowPrompt || !(await chooseSaveFolder())) return false;
+      handle = await loadHandle();
+      if (!handle) return false;
+    }
 
     let permission = await handle.queryPermission({ mode: 'readwrite' });
     if (permission !== 'granted' && allowPrompt) {
