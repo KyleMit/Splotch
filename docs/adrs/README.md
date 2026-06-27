@@ -36,3 +36,4 @@ This directory records significant architectural decisions made in the Splotch p
 | [0030](0030-git-derived-web-version.md) | Git-Derived Per-Commit Web Version (major.minor.commits-since-tag) | Active |
 | [0031](0031-linting-formatting-and-ci-quality-gates.md) | Linting, Formatting, and CI Quality Gates (ESLint + Prettier, critical-only audit) | Active |
 | [0032](0032-performance-profiling-harness.md) | Automated Performance Profiling Harness (build-flag marks + CDP/WebKit capture, web + Android + iOS) | Active |
+| [0033](0033-photo-save-targets-per-platform.md) | Photo Save Targets per Platform (Native Gallery, Web Folder Save, Download Fallback) | Active |

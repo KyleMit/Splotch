@@ -3,6 +3,7 @@ import { exportCanvasBlob, getActiveCanvas } from './engine';
 import { getActiveOverlayImage } from './overlay';
 import { isNative, getPlatform } from '$lib/platform';
 import { saveBlobToFolder } from './folderSave';
+import { settings } from '$lib/state/settings.svelte';
 
 export function timestamp() {
   const d = new Date();
@@ -78,7 +79,7 @@ export async function saveImageBlob(
     }
   } else {
     const filename = `${baseName}-${timestamp()}.png`;
-    if (await saveBlobToFolder(blob, filename, opts)) return;
+    if (settings.saveToFolderEnabled && (await saveBlobToFolder(blob, filename, opts))) return;
     const url = URL.createObjectURL(blob);
     triggerDownload(url, filename);
     URL.revokeObjectURL(url);

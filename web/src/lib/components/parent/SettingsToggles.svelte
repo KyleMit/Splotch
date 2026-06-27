@@ -2,11 +2,13 @@
   import { onDestroy } from 'svelte';
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
+  import { onMount } from 'svelte';
   import {
     settings,
     setSound,
     setSoundVolume,
     setSaveOnDelete,
+    setSaveToFolder,
     setScreenshot,
     setUndoButton,
     setStrokeWidthControl,
@@ -19,11 +21,38 @@
   } from '$lib/state/settings.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { supportsOrientationLock } from '$lib/platform';
+  import { folderSaveSupported, chooseSaveFolder, hasSaveFolder } from '$lib/drawing/folderSave';
   import { playDrawSound, stopDrawSound } from '$lib/audio/drawingSound';
 
   // Windowed platforms (iPadOS 26+) own device orientation through their own
   // window controls and ignore in-app locks, so the toggles are hidden there.
   const showOrientationControls = supportsOrientationLock();
+
+  // Silent folder save is desktop-Chromium only (File System Access API). On
+  // every other browser the toggle is hidden and saves stay as downloads.
+  const showFolderSave = folderSaveSupported();
+
+  // Turning the toggle on requires picking a folder the first time (a user
+  // gesture, which the toggle click is). Only flip the persisted setting once a
+  // folder is actually chosen, so a cancelled picker leaves the toggle off.
+  async function onToggleFolderSave(next: boolean) {
+    if (!next) {
+      setSaveToFolder(false);
+      return;
+    }
+    if ((await hasSaveFolder()) || (await chooseSaveFolder())) {
+      setSaveToFolder(true);
+    }
+  }
+
+  // Keep the toggle honest: if the setting says on but the remembered folder is
+  // gone (e.g. it was deleted and a save cleared the stale handle), reset to off
+  // so the parent re-picks rather than silently falling back to downloads.
+  onMount(async () => {
+    if (showFolderSave && settings.saveToFolderEnabled && !(await hasSaveFolder())) {
+      setSaveToFolder(false);
+    }
+  });
 
   const PREVIEW_SPEED = 0.45;
   let previewingVolume = false;
@@ -187,6 +216,19 @@
       help="Saves the current drawing each time the page is cleared"
     />
   </div>
+
+  {#if showFolderSave}
+    <div class="setting">
+      <ToggleRow
+        icon="folder"
+        label="Save to Folder"
+        id="saveToFolderToggle"
+        checked={settings.saveToFolderEnabled}
+        onToggle={onToggleFolderSave}
+        help="Saves pictures straight into a folder you pick, with no download pop-up"
+      />
+    </div>
+  {/if}
 
   {#if showOrientationControls}
     <div class="setting">

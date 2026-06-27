@@ -41,25 +41,16 @@ declare global {
   }
 
   interface FileSystemHandle {
-    queryPermission(descriptor?: {
-      mode?: FileSystemPermissionMode;
-    }): Promise<PermissionState>;
-    requestPermission(descriptor?: {
-      mode?: FileSystemPermissionMode;
-    }): Promise<PermissionState>;
+    queryPermission(descriptor?: { mode?: FileSystemPermissionMode }): Promise<PermissionState>;
+    requestPermission(descriptor?: { mode?: FileSystemPermissionMode }): Promise<PermissionState>;
   }
 
   interface FileSystemDirectoryHandle {
-    getFileHandle(
-      name: string,
-      options?: { create?: boolean }
-    ): Promise<FileSystemFileHandle>;
+    getFileHandle(name: string, options?: { create?: boolean }): Promise<FileSystemFileHandle>;
   }
 
   interface FileSystemFileHandle {
-    createWritable(options?: {
-      keepExistingData?: boolean;
-    }): Promise<FileSystemWritableFileStream>;
+    createWritable(options?: { keepExistingData?: boolean }): Promise<FileSystemWritableFileStream>;
   }
 
   interface FileSystemWritableFileStream {

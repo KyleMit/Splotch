@@ -2,11 +2,12 @@ import { browser } from '$app/environment';
 
 // Silent folder save for the web target. On desktop Chromium (in-tab or
 // installed PWA) the File System Access API lets the parent pick a destination
-// folder once, after which each PNG is written straight into it with no
-// download shelf. The chosen directory handle is structured-cloneable, so it
-// persists in IndexedDB (it can't live in localStorage, which is string-only —
-// that's why lib/storage.ts can't back this). Where the API is missing
-// (Firefox, Safari, mobile) the caller falls back to a normal download.
+// folder once — from the Parent Center, behind a deliberate toggle — after which
+// each PNG is written straight into it with no download shelf. The chosen
+// directory handle is structured-cloneable, so it persists in IndexedDB (it
+// can't live in localStorage, which is string-only — that's why lib/storage.ts
+// can't back this). Where the API is missing (Firefox, Safari, mobile) the
+// toggle is hidden and saves fall back to a normal download.
 
 const DB_NAME = 'splotch-fs';
 const DB_VERSION = 1;
@@ -42,7 +43,30 @@ export function folderSaveSupported(): boolean {
   return browser && 'showDirectoryPicker' in window;
 }
 
-/** Forget the chosen folder, so the next user-initiated save re-prompts. */
+/** Whether a destination folder has already been chosen and remembered. */
+export async function hasSaveFolder(): Promise<boolean> {
+  if (!folderSaveSupported()) return false;
+  return (await loadHandle()) !== null;
+}
+
+// Prompt the parent to pick a destination folder and remember it. Must run
+// inside a user gesture (the Parent Center toggle) — both showDirectoryPicker
+// and requestPermission need transient activation. Returns true once a
+// readwrite folder is chosen and granted; false if the parent cancels.
+export async function chooseSaveFolder(): Promise<boolean> {
+  if (!folderSaveSupported()) return false;
+  try {
+    const handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'pictures' });
+    if ((await handle.requestPermission({ mode: 'readwrite' })) !== 'granted') return false;
+    await storeHandle(handle);
+    return true;
+  } catch {
+    // AbortError (parent cancelled the picker) or any other failure → not chosen.
+    return false;
+  }
+}
+
+/** Forget the chosen folder, so re-enabling the toggle prompts for a new one. */
 export async function clearSaveFolder(): Promise<void> {
   if (!browser) return;
   try {
@@ -54,9 +78,11 @@ export async function clearSaveFolder(): Promise<void> {
 }
 
 // Write `blob` as `filename` into the chosen folder. Returns true once written;
-// false tells the caller to fall back to a download. `allowPrompt` gates the two
-// steps that need transient user activation (folder picker, permission prompt),
-// so background saves stay silent until a folder is already chosen + granted.
+// false tells the caller to fall back to a download. Never opens the folder
+// picker — folder selection is settings-driven (chooseSaveFolder). `allowPrompt`
+// only lets a user-initiated save re-confirm a permission the browser dropped
+// since the folder was chosen (in-tab origins lose it between sessions);
+// background saves leave it false and degrade silently to a download.
 export async function saveBlobToFolder(
   blob: Blob,
   filename: string,
@@ -66,12 +92,8 @@ export async function saveBlobToFolder(
   const allowPrompt = opts?.allowPrompt ?? false;
 
   try {
-    let handle = await loadHandle();
-    if (!handle) {
-      if (!allowPrompt) return false;
-      handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'pictures' });
-      await storeHandle(handle);
-    }
+    const handle = await loadHandle();
+    if (!handle) return false;
 
     let permission = await handle.queryPermission({ mode: 'readwrite' });
     if (permission !== 'granted' && allowPrompt) {
@@ -86,8 +108,8 @@ export async function saveBlobToFolder(
     return true;
   } catch (err) {
     // The folder was moved/removed since we stored it: drop the stale handle so
-    // the next user-initiated save re-prompts. AbortError (picker cancelled) and
-    // any other write failure just fall back to a download.
+    // re-enabling the toggle prompts for a fresh one. AbortError and any other
+    // write failure just fall back to a download.
     if (err instanceof DOMException && err.name === 'NotFoundError') {
       await clearSaveFolder();
     }

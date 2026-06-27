@@ -11,7 +11,12 @@ vi.mock('idb', () => ({
   }),
 }));
 
-import { folderSaveSupported, saveBlobToFolder } from './folderSave';
+import {
+  folderSaveSupported,
+  hasSaveFolder,
+  chooseSaveFolder,
+  saveBlobToFolder,
+} from './folderSave';
 
 const blob = new Blob(['png'], { type: 'image/png' });
 
@@ -24,6 +29,10 @@ function makeHandle(permission: PermissionState = 'granted') {
     getFileHandle: vi.fn(async () => fileHandle),
   };
   return { handle, fileHandle, writable };
+}
+
+function setPicker(impl: () => unknown) {
+  (window as unknown as { showDirectoryPicker: unknown }).showDirectoryPicker = impl;
 }
 
 beforeEach(() => {
@@ -41,8 +50,42 @@ describe('folderSaveSupported', () => {
   });
 
   it('is true when showDirectoryPicker exists', () => {
-    (window as unknown as { showDirectoryPicker: unknown }).showDirectoryPicker = () => {};
+    setPicker(() => {});
     expect(folderSaveSupported()).toBe(true);
+  });
+});
+
+describe('chooseSaveFolder', () => {
+  it('returns false when the API is unsupported', async () => {
+    expect(await chooseSaveFolder()).toBe(false);
+  });
+
+  it('remembers a granted folder', async () => {
+    const { handle } = makeHandle('granted');
+    setPicker(vi.fn(async () => handle));
+
+    expect(await chooseSaveFolder()).toBe(true);
+    expect(handle.requestPermission).toHaveBeenCalledOnce();
+    expect(await hasSaveFolder()).toBe(true);
+  });
+
+  it('does not remember the folder when permission is denied', async () => {
+    const { handle } = makeHandle('denied');
+    setPicker(vi.fn(async () => handle));
+
+    expect(await chooseSaveFolder()).toBe(false);
+    expect(await hasSaveFolder()).toBe(false);
+  });
+
+  it('returns false when the parent cancels the picker', async () => {
+    setPicker(
+      vi.fn(async () => {
+        throw new DOMException('cancelled', 'AbortError');
+      })
+    );
+
+    expect(await chooseSaveFolder()).toBe(false);
+    expect(await hasSaveFolder()).toBe(false);
   });
 });
 
@@ -51,57 +94,60 @@ describe('saveBlobToFolder', () => {
     expect(await saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
   });
 
-  it('does not open the picker for a background save with no stored folder', async () => {
+  it('never opens the folder picker, even with allowPrompt and no stored folder', async () => {
     const picker = vi.fn();
-    (window as unknown as { showDirectoryPicker: unknown }).showDirectoryPicker = picker;
+    setPicker(picker);
 
-    expect(await saveBlobToFolder(blob, 'a.png', { allowPrompt: false })).toBe(false);
+    expect(await saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
     expect(picker).not.toHaveBeenCalled();
   });
 
-  it('picks a folder once then writes the blob when permission is granted', async () => {
+  it('writes the blob into a stored, granted folder', async () => {
     const { handle, fileHandle, writable } = makeHandle('granted');
-    const picker = vi.fn(async () => handle);
-    (window as unknown as { showDirectoryPicker: unknown }).showDirectoryPicker = picker;
+    store.set('saveDir', handle);
+    setPicker(vi.fn());
 
-    expect(await saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(true);
-    expect(picker).toHaveBeenCalledOnce();
-    expect(handle.getFileHandle).toHaveBeenCalledWith('a.png', { create: true });
+    expect(await saveBlobToFolder(blob, 'b.png', { allowPrompt: false })).toBe(true);
+    expect(handle.getFileHandle).toHaveBeenCalledWith('b.png', { create: true });
     expect(fileHandle.createWritable).toHaveBeenCalledOnce();
     expect(writable.write).toHaveBeenCalledWith(blob);
     expect(writable.close).toHaveBeenCalledOnce();
   });
 
-  it('reuses a stored folder silently on subsequent saves', async () => {
-    const { handle } = makeHandle('granted');
+  it('re-confirms a lapsed permission on a user-initiated save', async () => {
+    const handle = {
+      queryPermission: vi.fn(async () => 'prompt' as PermissionState),
+      requestPermission: vi.fn(async () => 'granted' as PermissionState),
+      getFileHandle: vi.fn(async () => ({
+        createWritable: async () => ({ write: async () => {}, close: async () => {} }),
+      })),
+    };
     store.set('saveDir', handle);
-    const picker = vi.fn();
-    (window as unknown as { showDirectoryPicker: unknown }).showDirectoryPicker = picker;
+    setPicker(vi.fn());
 
-    expect(await saveBlobToFolder(blob, 'b.png', { allowPrompt: false })).toBe(true);
-    expect(picker).not.toHaveBeenCalled();
-    expect(handle.getFileHandle).toHaveBeenCalledWith('b.png', { create: true });
+    expect(await saveBlobToFolder(blob, 'c.png', { allowPrompt: true })).toBe(true);
+    expect(handle.requestPermission).toHaveBeenCalledOnce();
   });
 
-  it('falls back to download when permission is denied and cannot prompt', async () => {
-    const { handle, fileHandle } = makeHandle('denied');
+  it('falls back to download when permission is dropped and cannot prompt', async () => {
+    const { handle, fileHandle } = makeHandle('prompt');
     store.set('saveDir', handle);
-    (window as unknown as { showDirectoryPicker: unknown }).showDirectoryPicker = vi.fn();
+    setPicker(vi.fn());
 
-    expect(await saveBlobToFolder(blob, 'c.png', { allowPrompt: false })).toBe(false);
+    expect(await saveBlobToFolder(blob, 'd.png', { allowPrompt: false })).toBe(false);
     expect(handle.requestPermission).not.toHaveBeenCalled();
     expect(fileHandle.createWritable).not.toHaveBeenCalled();
   });
 
-  it('clears a stale handle so the next save re-prompts', async () => {
+  it('clears a stale handle so the parent re-picks', async () => {
     const { handle } = makeHandle('granted');
     handle.getFileHandle = vi.fn(async () => {
       throw new DOMException('gone', 'NotFoundError');
     });
     store.set('saveDir', handle);
-    (window as unknown as { showDirectoryPicker: unknown }).showDirectoryPicker = vi.fn();
+    setPicker(vi.fn());
 
-    expect(await saveBlobToFolder(blob, 'd.png', { allowPrompt: false })).toBe(false);
+    expect(await saveBlobToFolder(blob, 'e.png', { allowPrompt: false })).toBe(false);
     expect(store.has('saveDir')).toBe(false);
   });
 });

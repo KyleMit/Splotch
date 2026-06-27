@@ -12,6 +12,7 @@ import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '.
 const SOUND_KEY = 'splotch-sound-enabled';
 const SOUND_VOLUME_KEY = 'splotch-sound-volume';
 const SAVE_ON_DELETE_KEY = 'splotch-save-on-delete';
+const SAVE_TO_FOLDER_KEY = 'splotch-save-to-folder';
 const SCREENSHOT_KEY = 'splotch-screenshot-enabled';
 const UNDO_KEY = 'splotch-undo-button-enabled';
 const STROKE_CTRL_KEY = 'splotch-stroke-width-control';
@@ -56,6 +57,11 @@ function defaultForceLandscapeOrientation() {
 const BOOL_SETTINGS = {
   soundEnabled: [SOUND_KEY, true],
   saveOnDeleteEnabled: [SAVE_ON_DELETE_KEY, false],
+  // Desktop web only: when on, saved PNGs are written silently into a
+  // parent-chosen folder (File System Access API) instead of triggering the
+  // browser download shelf. Off until the parent picks a folder in the Parent
+  // Center; the folder handle itself lives in IndexedDB (see drawing/folderSave).
+  saveToFolderEnabled: [SAVE_TO_FOLDER_KEY, false],
   screenshotEnabled: [SCREENSHOT_KEY, true],
   undoButtonEnabled: [UNDO_KEY, true],
   strokeWidthControlEnabled: [STROKE_CTRL_KEY, true],
@@ -131,6 +137,7 @@ function makeBoolSetter(prop: BoolSettingKey) {
 
 export const setSound = makeBoolSetter('soundEnabled');
 export const setSaveOnDelete = makeBoolSetter('saveOnDeleteEnabled');
+export const setSaveToFolder = makeBoolSetter('saveToFolderEnabled');
 export const setScreenshot = makeBoolSetter('screenshotEnabled');
 export const setUndoButton = makeBoolSetter('undoButtonEnabled');
 export const setStrokeWidthControl = makeBoolSetter('strokeWidthControlEnabled');
