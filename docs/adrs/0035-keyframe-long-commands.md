@@ -1,8 +1,12 @@
 # ADR-0035: Keyframe Long Commands So Undo Doesn't Replay Thousands of Ops
 
-**Status:** Active (amended by ADR-0036 — keyframing is now a safety net behind
-stroke simplification, and its trigger measures *simplified* segment count, not
-raw op count)
+**Status:** Active — the bounded **safety net** behind ADR-0036. ADR-0036
+simplifies a committed command's ops to a few imperceptible sub-strokes *before*
+this runs, so in practice keyframes fire only for a pathological all-corners
+gesture RDP can't thin (none did on the real sessions). This ADR's trigger
+measures a command's *simplified* segment count (`KEYFRAME_SEGMENT_THRESHOLD`,
+384), so it bounds worst-case undo at one `drawImage` blit when simplification
+isn't enough.
 **Date:** 2026-06
 
 ## Context

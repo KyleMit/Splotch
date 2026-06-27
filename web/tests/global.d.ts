@@ -20,9 +20,21 @@ declare global {
         keyframes: number;
         maxOps: number;
         maxSegments: number;
+        totalSegments: number;
         rawPoints: number;
         keptPoints: number;
       };
+      setSimplifyParams(params: {
+        fraction?: number;
+        min?: number;
+        max?: number;
+        keyframeThreshold?: number;
+        cornerAngleDeg?: number;
+        mode?: 'midpoint' | 'spline';
+        enabled?: boolean;
+        reduce?: boolean;
+        split?: 'none' | 'corner';
+      }): void;
       inkBounds(): { minX: number; minY: number; maxX: number; maxY: number } | null;
       exportCanvasBlob(
         overlayImage?: HTMLImageElement | null,

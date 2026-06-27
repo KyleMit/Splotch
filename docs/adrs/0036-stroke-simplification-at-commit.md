@@ -1,7 +1,50 @@
 # ADR-0036: Simplify Stroke Ops at Commit So Undo Replays Few Segments
 
-**Status:** Active
+**Status:** Active — **enabled by default**. (An earlier revision disabled this,
+having concluded simplification couldn't be made imperceptible; that conclusion
+was wrong — it rested on a strict 0px bar and a reconstruction *bug*, not a real
+floor. See "Outcome".) ADR-0035 keyframing remains as a bounded safety net.
 **Date:** 2026-06
+
+## Outcome (the floor was a bug, not a representation limit)
+
+An earlier revision disabled this ADR, reporting that *no* geometry replay could
+match the live render — even all-points-kept rebuilds shifted ~half a brush width
+at sharp corners — and shipped exact per-frame op replay instead. That was a
+misdiagnosis. Two things were wrong:
+
+1. **The bar was artificial.** It gated on *exact* 0px pixel identity. The real
+   requirement is *imperceptibility*: a shift under ~1–2 CSS px is invisible. RDP
+   thins a stroke enormously inside that budget.
+2. **The "half-brush corner shift" was a reconstruction bug**, mistaken for an
+   inherent floor. `rawPointsOf` recovered each segment's **off-curve control
+   point** (the raw sample the midpoint quadratic only bulges *toward*) and then
+   re-smoothed it, **applying the midpoint halving a second time** — so every
+   rebuilt stroke rendered at roughly half length, saturating the diff. The "merged
+   round-join vs. per-frame round-cap" difference is real but is a property of
+   *merging*, not of simplification, and is fixed by not merging (below).
+
+Reworking the reconstruction (same `perf:units` harness, now gated at the
+perceptual **≤2 px** instead of 0px) closed it:
+
+- Recover the **on-curve anchor points** the live curve actually passed through
+  (run start + each segment anchor), not the control points.
+- Re-interpolate **through** them with the corner-aware centripetal Catmull-Rom,
+  and at a sharp reversal **splice the raw apex back in** so a fast back-and-forth
+  tip reaches as far as the live bulge did (it would otherwise sit just inside).
+- **Split the reduced run into one sub-stroke per span between corners**, so each
+  kept corner is a stroke boundary that renders a round **cap** — the same full
+  disc the live per-frame draw leaves at every frame — instead of a merged round
+  **join**. This removes the corner shift the earlier rebuild was blamed for.
+
+Result on the 64-unit battery (synthetic primitives + every stroke extracted from
+the real sessions): **worst-case shift 2.5 CSS px, the bulk far under 1px**, at a
+mean **~4.3× point reduction** (a 441-point, 32px-brush zigzag rebuilds from **10**
+segments, visually identical). The 2.5px cases are single worst-pixels of edge
+antialiasing on otherwise dead-on curves. Real sessions: undo ~0.1 ms, **no
+keyframes fired**, longest command collapses to ≤28 replay ops. The
+`setSimplifyParams` dev seam and the `perf:units` / `perf:sweep` harnesses stay
+for re-tuning. The rest of this ADR documents the mechanism as shipped.
 
 ## Context
 
@@ -24,9 +67,9 @@ finger recordings) showed why:
 - The rendered curve already **approximates** rather than interpolates its
   samples (midpoint-smoothed quadratics — see `strokeSmoothSegments`), so dropping
   a near-collinear sample shifts only antialiased stroke *edges*, not the
-  stroke's shape. A forced rebuild-from-stored-ops, pixel-diffed against the
-  unsimplified engine on a thick-brush session, differed in **2.2%** of pixels
-  (mean 3.8/255), all on stroke boundaries — visually indistinguishable.
+  stroke's shape. A forced rebuild-from-stored-ops, diffed against the live render
+  (corner-aware spline, below), moves **< 1%** of a stroke's ink beyond ~1px on
+  real recordings — visually indistinguishable (see the sweep, below).
 - "Bit-identical replay" was never user-visible: stored ops only matter *after*
   an undo/resize rebuild, when the simplified strokes are what gets re-drawn.
 - Real strokes thin a lot: **3.0×** fewer points on a tap-heavy session, **4.6×**
@@ -49,28 +92,43 @@ replay copy is thinned. In `web/src/lib/drawing/engine.ts`:
   path op. Dots and clears pass through in place; each finger's reduced ops are
   emitted at the position of its first op, so the single-finger common case keeps
   exact compositing order.
-- `rawPointsOf` recovers the polyline the run actually rendered (each segment's
-  control point *is* the raw sample at its chord's start; the run closes at the
-  last segment's anchor — the midpoint the live curve drew to — not the final raw
-  sample, so the simplified stroke spans exactly what was on screen). `rdpSimplify`
-  thins it (iterative, stack-based — a long monotonic stroke can't blow the call
-  stack).
-- `smoothToSegs` re-renders the kept points with a **centripetal Catmull-Rom
-  spline** (emitted as cubic Bézier segments — the path op's `segs` gained
-  optional `c2x`/`c2y`, and `renderOp` calls `bezierCurveTo` when present). This
-  is the one subtle part: the live draw smooths with *midpoint quadratics* that
-  use each raw point only as a control the curve bulges toward, never reaching it.
-  That undershoot is sub-pixel when points are dense, but after RDP the survivors
-  are far apart, so re-using midpoint smoothing made the curve fall ~25% short of
-  every turning point — a back-and-forth scribble visibly shrank at its tips on
-  replay. An *interpolating* spline passes through every kept point, so tips land
-  exactly; centripetal parameterization (α = 0.5) avoids the loops/overshoot
-  uniform Catmull-Rom produces on RDP's uneven spacing. Guarded by an engine-spec
-  test that asserts a scribble's horizontal extent survives a rebuild.
+- `rawPointsOf` recovers the **on-curve** polyline the run actually rendered: the
+  run's start point plus each segment's **anchor** (`s.x`,`s.y`) — the points the
+  live midpoint quadratics passed *through*. It deliberately does **not** use the
+  segments' control points (`s.cx`,`s.cy`), which are the off-curve raw samples the
+  curve only bulges toward; feeding those back through smoothing double-applies the
+  midpoint halving and renders the stroke at half length (the original
+  shrink-on-undo bug, see "Outcome"). One refinement: where a control forms a sharp
+  apex between its bracketing anchors (a fast reversal), the apex is **spliced back
+  in**, because there the anchors sit just inside the tip the live bulge reached.
+  `rdpSimplify` then thins this polyline (iterative, stack-based — a long monotonic
+  stroke can't blow the call stack).
+- `smoothToSegs` re-renders the kept on-curve points with a **corner-aware
+  centripetal Catmull-Rom spline** (emitted as cubic Bézier segments — the path
+  op's `segs` gained optional `c2x`/`c2y`, and `renderOp` calls `bezierCurveTo`
+  when present); a two-point span is a straight chord to the real endpoint (a
+  midpoint-style segment would stop halfway and shrink the span). Because the kept
+  points are *on* the live curve, an interpolating spline through them tracks it
+  directly. A point whose chord turn is sharper than `cornerAngleDeg` (40°) is a
+  **corner**: its tangents are forced along the adjoining chords so the turn stays
+  sharp and in place (a plain smooth spline would round a hook into a displaced
+  bend) while smooth spans stay smooth.
+- `reducePathRun` then **splits the kept polyline at each corner into separate
+  path ops** (`simplifySplit = 'corner'`), each sharing the corner point with its
+  neighbour. Rendered as separate `stroke()`s, the two round **caps** meeting at
+  the corner reproduce the full disc the live per-frame draw leaves there — where a
+  single merged op would round-**join** and shift the corner by up to half the
+  brush width. Smooth spans (no corner) stay one op. This is what removed the
+  corner error the disabled revision had blamed on simplification itself.
+  Guarded by engine-spec tests asserting a scribble keeps its extent and a hook
+  keeps its corner after a rebuild.
 - Tolerance `simplifyEpsilonFor(lineWidth)` scales with stroke width
-  (`0.2×width`, clamped `[2, 16]` device px): a wiggle far below the round brush's
+  (`0.05×width`, clamped `[1, 6]` device px): a wiggle far below the round brush's
   radius is invisible, so a thick stroke tolerates a coarser polyline than a thin
-  one.
+  one. Tuned down from an initial `0.2× / [2,16]` once the reconstruction was
+  fixed — at the looser tolerance a few sparse real strokes shifted 3–8 px; the
+  `perf:units` sweep settled the whole battery under the perceptual bar here while
+  still averaging ~4.3× reduction.
 - `maybeKeyframe`'s trigger moved from "raw op count > 48" to **simplified
   segment count > `KEYFRAME_SEGMENT_THRESHOLD` (384)**. Simplification collapses
   a normal long scribble well under that, so keyframes now fire only for a
@@ -78,9 +136,34 @@ replay copy is thinned. In `web/src/lib/drawing/engine.ts`:
   change, which RDP can't thin) — bounding worst-case undo at one `drawImage`
   blit. Peak segment count in the profiled real sessions was ~140, so the net
   stays dormant in practice.
-- New `engine.simplify` user-timing mark; `getUndoDebug()` gains `maxSegments`
-  (heaviest retained command's replay cost) and lifetime `rawPoints`/`keptPoints`
-  counters for the harness and the engine spec.
+- New `engine.simplify` user-timing mark; `getUndoDebug()` gains `maxSegments`,
+  `totalSegments`, and lifetime `rawPoints`/`keptPoints` counters for the harness
+  and the engine spec.
+
+## Empirical tuning (`npm run perf:units`, `npm run perf:sweep`)
+
+The algorithm and its constants were chosen empirically, not guessed, through a
+dev-gated `setSimplifyParams()` seam (wired onto `window.__engine` only on
+`/dev/engine`) so a single build can sweep every setting (`fraction`/`min`/`max`,
+`cornerAngleDeg`, `mode`, `split`, `enabled`).
+
+`perf:units` (`scripts/perf/stroke-units.mjs`) is the deciding harness: a battery
+of **64 individual strokes** — synthetic primitives from a dot to a tight zigzag,
+**plus every stroke extracted from the real recordings** — each drawn live, then
+force-rebuilt from its stored ops and diffed at the worst-pixel level (nearest-ink
+ring search), gated at the perceptual **≤2 CSS px**. Treating each stroke as a
+unit test was what surfaced the half-length reconstruction bug (a straight line
+with *zero* points dropped still "shifted" 8.5px → the rebuild was drawing half
+the line) that a whole-canvas, AA-tolerant *moved-ink* metric had hidden. Walking
+the fixes through it — on-curve points, then the 2-point-span straight fix, then
+apex re-insertion, then the epsilon tune — drove the worst case from 8.5px to
+**2.5px** across all 64 units at ~4.3× reduction.
+
+`perf:sweep` (`scripts/perf/simplify-sweep.mjs`) complements it for whole-canvas
+realism: a grid of **non-overlapping** synthetic strokes, **one** forced rebuild
+(a single undo rebuilds *every* retained command since the last baseline, so one
+rebuild exposes all strokes at once; the grid keeps per-stroke attribution
+unambiguous), diffed against *total segments replayed* as the iPad-cost proxy.
 
 ## Consequences
 
@@ -92,9 +175,13 @@ replay copy is thinned. In `web/src/lib/drawing/engine.ts`:
 - **+** ADR-0035's keyframe machinery still guarantees O(1) worst-case undo for a
   pathological stroke — best of both, rather than a replacement.
 - **−** Stored ops are no longer a bit-identical record of what was drawn: a
-  rebuilt stroke's antialiased edges can shift ≤1px (measured 2.2% of pixels). For
-  a toddler finger-paint app this is below the perceptual floor; an app needing
+  rebuilt stroke can shift up to ~2.5 CSS px at a worst pixel (the bulk far under
+  1px) — verified imperceptible on the `perf:units` battery, but an app needing
   exact replay could not make this trade.
+- **−** Corner-splitting emits one `stroke()` per span between corners instead of
+  one per command, so a very wiggly stroke replays as several sub-strokes. Still
+  far fewer ops than the per-frame original (session2's longest command: 28 vs.
+  hundreds), and each is a cheap short stroke.
 - **−** A multi-touch command's *interleaved* per-finger ops are reordered into
   per-finger runs, so two simultaneous overlapping strokes of different colors
   could composite in a different top-to-bottom order than drawn. Rare in practice

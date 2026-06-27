@@ -422,14 +422,11 @@ test('undoing an eraser stroke replays the erased pixels back', async ({ page })
   expect(s.canUndo).toBe(true); // the pen stroke remains undoable
 });
 
-test('a long smooth stroke is simplified to far fewer segments without keyframing (ADR-0036)', async ({
-  page,
-}) => {
-  // One uninterrupted gesture records one path op per pointermove, but a smooth
-  // stroke's samples are nearly collinear. Simplification thins them at commit to
-  // a handful of shape-defining points, so the command stays cheap replayable ops
-  // (no keyframe) and the drawing is unchanged. strokeSync gives a deterministic
-  // one-seg-per-move op stream (no input coalescing).
+test('a moderate stroke stays replayable ops (no keyframe) and undoes cleanly', async ({ page }) => {
+  // Below the keyframe budget a command keeps its exact per-frame ops (the
+  // pixel-perfect default — geometry simplification was retired, see ADR-0036),
+  // so a rebuild re-strokes them verbatim. It must not keyframe and must undo as
+  // one unit. strokeSync gives a deterministic one-seg-per-move op stream.
   const points = Array.from({ length: 120 }, (_, i) => ({
     x: 20 + i * 2,
     y: 150 + Math.round(60 * Math.sin(i / 40)),
@@ -440,11 +437,7 @@ test('a long smooth stroke is simplified to far fewer segments without keyframin
 
   const debug = await page.evaluate(() => window.__engine.getUndoDebug());
   expect(debug.commands).toBe(1);
-  expect(debug.keyframes).toBe(0); // simplified, not keyframed
-  // Most of the sampled points are dropped, and the heaviest command's replay
-  // cost stays well under the keyframe budget.
-  expect(debug.keptPoints).toBeLessThan(debug.rawPoints / 2);
-  expect(debug.maxSegments).toBeLessThan(debug.rawPoints);
+  expect(debug.keyframes).toBe(0);
 
   // Still one undo unit back to blank.
   await page.evaluate(() => window.__engine.undo());
@@ -543,6 +536,31 @@ test('a back-and-forth scribble keeps its full extent after a rebuild (ADR-0036 
   // shrank this by tens of px; allow only a few px of antialiasing slack).
   expect(after.maxX).toBeGreaterThanOrEqual(before.maxX - 4);
   expect(after.minX).toBeLessThanOrEqual(before.minX + 4);
+});
+
+test('a sharp corner stays sharp and in place after a rebuild (ADR-0036 corner fidelity)', async ({
+  page,
+}) => {
+  // A smooth interpolating spline rounds a sharp turn into a displaced bend, so a
+  // hook drawn as a long arm + a sharp reversal would lose its corner on rebuild
+  // (the corner pulls inward, shrinking the extent by tens of px). Corner-aware
+  // splining keeps the turn crisp and located. Draw the hook, rebuild, and check
+  // the corner's reach is preserved.
+  const pts: { x: number; y: number }[] = [];
+  for (let i = 0; i <= 60; i++) pts.push({ x: 40 + i * 3, y: 150 }); // long horizontal arm
+  for (let i = 1; i <= 18; i++) pts.push({ x: 220 - i * 2, y: 150 - i * 6 }); // sharp hook up-left
+  await page.evaluate((p) => window.__engine.strokeSync(p), pts);
+
+  const before = await page.evaluate(() => window.__engine.inkBounds());
+  if (!before) throw new Error('nothing drawn');
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  const after = await page.evaluate(() => window.__engine.inkBounds());
+  if (!after) throw new Error('rebuild produced an empty canvas');
+
+  // The corner (top of the hook) keeps its reach — a rounded corner would pull
+  // the top edge down by tens of px.
+  expect(after.minY).toBeLessThanOrEqual(before.minY + 4);
+  expect(after.maxX).toBeGreaterThanOrEqual(before.maxX - 4);
 });
 
 test('a multi-touch gesture undoes as a single unit', async ({ page }) => {
