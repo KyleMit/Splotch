@@ -277,6 +277,7 @@
         id="screenshotToggle"
         checked={settings.screenshotEnabled}
         onToggle={setScreenshot}
+        help="Lets your child save the drawing to this device's photo gallery"
       />
     </div>
 

@@ -56,7 +56,13 @@ function defaultForceLandscapeOrientation() {
 const BOOL_SETTINGS = {
   soundEnabled: [SOUND_KEY, true],
   saveOnDeleteEnabled: [SAVE_ON_DELETE_KEY, false],
-  screenshotEnabled: [SCREENSHOT_KEY, true],
+  // Saving the child's drawing to the device photo gallery is the only feature
+  // that triggers an OS permission prompt (iOS photo-library "add"; Android
+  // WRITE_EXTERNAL_STORAGE on ≤9). It stays OFF until a parent enables the
+  // Screenshot Button in the Parent Center, so a toddler can't reach the gallery
+  // — or surface the system prompt — without explicit parent approval. The
+  // prompt itself is still deferred to the first actual save (see screenshot.ts).
+  screenshotEnabled: [SCREENSHOT_KEY, false],
   undoButtonEnabled: [UNDO_KEY, true],
   strokeWidthControlEnabled: [STROKE_CTRL_KEY, true],
   eraserEnabled: [ERASER_KEY, true],

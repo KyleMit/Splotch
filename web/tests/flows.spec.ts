@@ -121,6 +121,9 @@ test('the undo button enables on a stroke and reverts it', async ({ page }) => {
 });
 
 test('the screenshot button is gated on the canvas being non-empty', async ({ page }) => {
+  // Saving to the photo gallery is off until a parent enables it, so seed the
+  // setting before boot to exercise the button itself.
+  await page.addInitScript(() => localStorage.setItem('splotch-screenshot-enabled', 'true'));
   await gotoApp(page);
   await openDrawer(page);
 
