@@ -7,6 +7,11 @@ remote profiling, and the Google Play release checklist. For the general
 build model and shared assets see **[native.md](native.md)**; iOS lives in
 **[ios.md](ios.md)**.
 
+> Minimum supported OS: **Android 7.0 / API 24** (`minSdkVersion` in
+> `android/variables.gradle`). This is safely older than the web floor because
+> the System WebView updates via Play independently of the OS — see
+> [docs/COMPATIBILITY.md](../../../docs/COMPATIBILITY.md).
+
 ## 1. Toolchain setup
 
 ### macOS
