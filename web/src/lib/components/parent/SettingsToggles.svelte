@@ -374,7 +374,9 @@
   }
 
   .folder-path {
+    margin-top: 4px;
     font-size: 13px;
+    line-height: 1.4;
     color: #777;
     overflow: hidden;
     text-overflow: ellipsis;
