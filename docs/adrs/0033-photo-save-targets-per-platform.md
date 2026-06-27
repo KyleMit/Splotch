@@ -75,11 +75,12 @@ from it (not persisted) so the Parent Center can show the location.
 ### Parent Center: the folder location, not a toggle
 
 `SettingsToggles.svelte` shows a **"Saved photos folder"** row (when
-`folderSaveSupported()`) displaying the current folder name with a **Change**
-button (`changeSaveFolder()` → re-pick). Before any folder is chosen it reads
-"Chosen when you turn a save option on." This replaces the earlier toggle: the
-parent sees *where* photos go and can repoint it, rather than flipping an opaque
-switch.
+`folderSaveSupported()`). With a folder set it displays the folder name and a
+**Change** button; with none it reads "Not set yet" and offers a **Select
+folder** button — both call `changeSaveFolder()` to pick. This replaces the
+earlier toggle and gives parents a proactive entry point: choose the folder up
+front, then the save features enable without a prompt. The parent sees *where*
+photos go and can repoint it, rather than flipping an opaque switch.
 
 ### `allowPrompt`: who may raise a dialog at save time
 

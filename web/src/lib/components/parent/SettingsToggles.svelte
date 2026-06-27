@@ -202,16 +202,16 @@
         <Icon name="folder" class="setting-icon" />
         <div class="folder-text">
           <span class="folder-title">Saved photos folder</span>
-          <span class="folder-path" class:unset={!settings.saveFolderName}>
-            {settings.saveFolderName ?? 'Chosen when you turn a save option on'}
-          </span>
+          {#if settings.saveFolderName}
+            <span class="folder-path">{settings.saveFolderName}</span>
+          {:else}
+            <span class="folder-path unset">Not set yet</span>
+          {/if}
         </div>
       </div>
-      {#if settings.saveFolderName}
-        <button class="folder-change" id="changeSaveFolderButton" onclick={changeSaveFolder}>
-          Change
-        </button>
-      {/if}
+      <button class="folder-change" id="changeSaveFolderButton" onclick={changeSaveFolder}>
+        {settings.saveFolderName ? 'Change' : 'Select folder'}
+      </button>
     </div>
   {/if}
 
