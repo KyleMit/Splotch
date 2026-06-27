@@ -42,7 +42,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 
 | Path | Purpose |
 |---|---|
-| `drawing/engine.ts` | Imperative canvas engine. Owns the `<canvas>`, virtual canvas (composite buffer), undo stack, and all pointer tracking. Components connect via callbacks (`onDrawSound`, `onUndoStateChange`, etc.) and direct calls (`setColor`, `setStrokeWidth`, `clearCanvas`). |
+| `drawing/engine.ts` | Imperative canvas engine. Owns the `<canvas>`, the undo baseline + command log (ADR-0033/0034), and all pointer tracking. Components connect via callbacks (`onDrawSound`, `onUndoStateChange`, etc.) and direct calls (`setColor`, `setStrokeWidth`, `clearCanvas`). |
 | `drawing/overlay.ts` | Manages the coloring-book overlay image rendered behind the drawing layer. |
 | `drawing/saveOnDelete.ts` | Saves the current drawing to the gallery before clearing, when the setting is enabled. |
 | `drawing/screenshot.ts` | Persists canvas PNGs (exported via `engine.exportCanvasBlob`): on native, saves to the photo library; on web, triggers a download. `saveScreenshot` also plays the polaroid animation. |

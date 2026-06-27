@@ -31,7 +31,12 @@
     "perf:web:raw": "cross-env PERF_MARKS=true node scripts/perf/scenario.mjs --no-throttle",
     "perf:android": "cross-env PERF_MARKS=true node scripts/perf/android.mjs",
     "perf:ios": "cross-env PERF_MARKS=true node scripts/perf/ios.mjs",
+    "perf:undo": "cross-env PERF_MARKS=true node scripts/perf/undo-scenarios.mjs",
+    "perf:replay": "cross-env PERF_MARKS=true node scripts/perf/replay-scenario.mjs",
+    "perf:sweep": "cross-env PERF_MARKS=true node scripts/perf/simplify-sweep.mjs",
+    "perf:serve": "cross-env PUBLIC_ENABLE_DEV_HARNESS=true node scripts/web.mjs vite preview --host --port 4173",
     "perf:analyze": "node scripts/perf/analyze.mjs",
+    "perf:ios:analyze": "node scripts/perf/analyze-webinspector.mjs",
     "test:unit": "node scripts/web.mjs vitest run",
     "test:unit:watch": "node scripts/web.mjs vitest",
     "test:e2e": "node scripts/web.mjs playwright test",
@@ -78,7 +83,8 @@
     "adb:reverse": "adb reverse tcp:5173 tcp:5173",
     "update:browserslist": "npx update-browserslist-db@latest",
     "prerelease": "npm run check:assets",
-    "release": "node scripts/release.mjs"
+    "release": "node scripts/release.mjs",
+    "perf:units": "cross-env PERF_MARKS=true node scripts/perf/stroke-units.mjs"
   },
   "scripts-info": {
     "info": "Lists every npm script with its description (this output)",
@@ -109,7 +115,12 @@
     "perf:web:raw": "perf:web without CPU throttling (raw desktop speed)",
     "perf:android": "Autonomous performance profile of the REAL Capacitor WebView on a connected Android emulator/device (local-only): rebuilds + installs the native app with PERF_MARKS=true, finds the WebView's DevTools socket, forwards it, connects Playwright over CDP, and runs the same toddler session + capture as perf:web (no CPU throttle — the device is the target). --no-build profiles the installed app as-is. Writes to perf-profiles/",
     "perf:ios": "Autonomous performance profile in Playwright's WebKit (the same WebKit+JavaScriptCore engine the iOS WKWebView runs), driving the production preview build. WebKit has no CDP trace, so this captures the engine.* user-timing marks + FPS (not the main-thread/CPU breakdown); it profiles the engine, not the Simulator app. For device-accurate numbers, record a Safari Web Inspector Timeline against the running Simulator and feed it to perf:analyze. Writes to perf-profiles/",
+    "perf:undo": "Focused undo/keyframe profile (ADR-0033/0035): builds the production bundle with PERF_MARKS=true, serves it via vite preview with the /dev/engine harness unlocked, and drives three deliberately-shaped sessions (12 long squiggles; 12 short dot/dash marks; a mix) in headless Chromium under 4x CPU throttle. Records per scenario — via getUndoDebug() — the retained command count, keyframe count, and peak op count, plus engine.draw/keyframe/undo timing and JS-heap footprint while history is resident. Writes trace.json/summary.json/report.md + undo-scenarios.json/.md to perf-profiles/. Flags: --throttle=N, --no-throttle, --no-build. Re-runnable unchanged against the snapshot engine for a side-by-side comparison",
     "perf:analyze": "Re-run the trace analyzer over a saved profile dir or trace.json (regenerates summary.json + report.md without re-capturing — the path a native-exported trace takes): npm run perf:analyze -- perf-profiles/<dir>",
+    "perf:serve": "Serve the current production build on the LAN (0.0.0.0:4173) with the /dev/* harness routes unlocked (PUBLIC_ENABLE_DEV_HARNESS=true), so a real iPad/phone on the same Wi-Fi can reach http://<mac-lan-ip>:4173/ to record real input (scripts/perf/ipad-recorder.js) or /dev/engine. Build first with: cross-env PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run build. Stop it before perf:replay (same port). See the profiling skill's ipad-device-profiling.md",
+    "perf:replay": "Replay a REAL finger-input recording (captured on-device with scripts/perf/ipad-recorder.js) through the engine under the profiler, so the harness measures actual human strokes instead of synthetic squiggles: opens /dev/engine, sizes the canvas to the recorded device, replays the pointer stream + UI actions at recorded timing (real frame pacing), captures a CDP trace + engine marks, and reports how your input was stored (keyframes/commands/op counts). npm run perf:replay -- --recording=<file.json> [--turbo] [--throttle=N] [--no-build]. Writes trace/report + replay-summary to perf-profiles/",
+    "perf:sweep": "Empirically sweep the ADR-0036 stroke-simplification tolerance vs. fidelity: draws a grid of non-overlapping synthetic strokes (live), forces one rebuild-from-stored-ops (the all-strokes replay a single undo triggers), and diffs per cell — AA-tolerant moved-ink + ink-extent delta — across a range of tolerances (scale 0 = no thinning = representation floor), reporting segments replayed, rebuild ms, the fidelity/perf curve, and a recommended setting. Uses the dev-gated setSimplifyParams seam so one build covers every setting. npm run perf:sweep [-- --no-build]. Writes sweep.json/.md + live/rebuilt screenshots to perf-profiles/",
+    "perf:ios:analyze": "Analyze a Safari Web Inspector Timeline export from a REAL iOS device (a different format from perf:analyze — {recording:{records,markers}}, mark-only, ring-buffered, ~1ms clock). Recovers per-op main-thread cost (undo/keyframe/commit) from the enclosing timeline record, plus paint/composite and frame stats: npm run perf:ios:analyze -- <export>.json. See the profiling skill's ipad-device-profiling.md",
     "test:unit": "Unit tests, one-shot (Vitest, happy-dom)",
     "test:unit:watch": "Vitest watch mode",
     "test:e2e": "Playwright E2E tests, headless",
@@ -156,7 +167,8 @@
     "adb:reverse": "Forward the phone's port 5173 to the desktop dev server (re-run after each USB reconnect)",
     "update:browserslist": "Refresh the browserslist database (caniuse-lite) to clear outdated-browserslist warnings",
     "prerelease": "check:assets gate before release",
-    "release": "Cut a release from releases/<version>.md: bump versions, commit, tag, push (use the /release command to draft notes first)"
+    "release": "Cut a release from releases/<version>.md: bump versions, commit, tag, push (use the /release command to draft notes first)",
+    "perf:units": "Per-stroke fidelity unit tests for the drawing engine: draws each of a battery of strokes (synthetic primitives dot→scribble + every stroke extracted from the saved real sessions) live, forces one rebuild-from-stored-ops, and STRICTLY diffs (0px exact ink mismatch, worst coherent shift distance, extent delta), writing per-stroke live/rebuilt/diff PNGs and a pass/fail table. Verifies undo is pixel-identical. npm run perf:units [-- --no-build --filter=<name> --enabled --mode=midpoint|spline --no-reduce]"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

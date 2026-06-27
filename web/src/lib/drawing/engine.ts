@@ -1,5 +1,5 @@
-// Imperative drawing engine. Owns the <canvas>, the virtual canvas, the
-// undo stack, and the pointer tracking. Svelte components mount this on
+// Imperative drawing engine. Owns the <canvas>, the undo baseline + command
+// log, and the pointer tracking. Svelte components mount this on
 // onMount and adapt reactive state (active color, stroke width) by calling
 // setColor() / setStrokeWidth() from $effect.
 
@@ -24,6 +24,7 @@ interface DrawSoundData {
 }
 
 interface PointerState {
+  id: number;
   x: number;
   y: number;
   midX: number;
@@ -44,9 +45,45 @@ interface PointerState {
   pendingPoints: { x: number; y: number }[];
 }
 
-interface UndoSnapshot {
-  image: HTMLCanvasElement;
+// Undo history is a log of replayable draw ops, not pixel snapshots. Each op is
+// captured at the exact granularity it was rendered (one path op per
+// strokeSmoothSegments call, one dot op per stroke start). Live rendering is
+// bit-identical to its op; the stored ops are then simplified once at commit
+// (ADR-0036) so replay re-strokes far fewer segments without a visible change. A
+// 'clear' op wipes the target. See ADR-0033.
+type StrokeOp =
+  | { kind: 'dot'; x: number; y: number; radius: number; color: string; erase: boolean }
+  | {
+      kind: 'path';
+      // Which pointer drew this op, so commit-time simplification (ADR-0036) can
+      // regroup a multi-touch command's interleaved per-frame ops back into one
+      // run per finger before reducing them. Not used at render time.
+      pid: number;
+      startX: number;
+      startY: number;
+      // Live ops carry midpoint-smoothed quadratic segments (cx/cy = control,
+      // x/y = endpoint). Simplification (ADR-0036) rewrites a command's ops to
+      // cubic segments (adding c2x/c2y) of a Catmull-Rom spline that passes
+      // *through* the kept points, so a sparse simplified stroke still reaches its
+      // turning points instead of bulging short of them.
+      segs: { cx: number; cy: number; x: number; y: number; c2x?: number; c2y?: number }[];
+      color: string;
+      lineWidth: number;
+      erase: boolean;
+    }
+  | { kind: 'clear' };
+
+// One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is
+// the canvas-empty state before the group drew, so undo can restore the flag
+// without re-scanning. `keyframe`, when set, is a cumulative square raster of
+// the whole drawing *through this command* (replacing its now-dropped `ops`):
+// any command whose op list grew past OP_KEYFRAME_THRESHOLD is collapsed to a
+// keyframe so rebuilds blit it instead of re-stroking thousands of ops. See
+// ADR-0035.
+interface StrokeGroupCommand {
+  ops: StrokeOp[];
   wasEmpty: boolean;
+  keyframe?: HTMLCanvasElement | null;
 }
 
 interface CanvasRect {
@@ -80,14 +117,18 @@ const activePointers = new Map<number, PointerState>();
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
 let onDrawStopCallback: (() => void) | null = null;
 
-let virtualCanvas: HTMLCanvasElement | null = null;
-let virtualCtx: CanvasRenderingContext2D | null = null;
+// The undo baseline: one offscreen raster (a max(w,h) square) holding
+// the state from before the oldest retained command. Undo = redraw this, then
+// replay the surviving command log on top. A single raster replaces the old
+// stack of MAX_UNDO_STACK_SIZE full-canvas snapshots (ADR-0033).
+let baselineCanvas: HTMLCanvasElement | null = null;
+let baselineCtx: CanvasRenderingContext2D | null = null;
 
 // Strokes rasterize at the device pixel ratio so they stay crisp on mobile
 // screens, capped at 2× — DPR-3 panels would cost 9× the pixels for detail a
 // finger-drawn stroke can't use (see ADR 0015). Fixed for the session at init:
 // a mid-session DPR change (desktop zoom, monitor move) would otherwise need
-// every pixel surface (virtual canvas, undo stack) rescaled in place.
+// every pixel surface (visible canvas, baseline) rescaled in place.
 const MAX_RENDER_SCALE = 2;
 let renderScale = 1;
 
@@ -98,8 +139,25 @@ let canvasRect: CanvasRect = { left: 0, top: 0, width: 0, height: 0 };
 let rectScaleX = 1;
 let rectScaleY = 1;
 
-const undoStack: UndoSnapshot[] = [];
+// The retained command log; commands older than this fold into the baseline.
+const commandLog: StrokeGroupCommand[] = [];
 const MAX_UNDO_STACK_SIZE = 10;
+
+// Keyframe safety net (ADR-0035, now downstream of ADR-0036 simplification).
+// Simplification already collapses a normal long scribble to tens of segments,
+// so the common case stays cheap replayable ops. A pathological high-detail
+// gesture (a finger held down for a minute, every frame a real direction change)
+// can still leave more segments than we want to re-stroke on every undo, so a
+// command whose *simplified* segment total passes this bound is baked into a
+// cumulative raster keyframe (once, at commit, off the draw frame) and its ops
+// dropped — keeping worst-case undo at one drawImage blit. Set well above the
+// segment counts real drawing produces (peak ~140 in profiled sessions) so it
+// fires only for genuine outliers. Mutable so the profiling harness can raise it
+// to Infinity to isolate pure-simplification fidelity (see setSimplifyParams).
+let keyframeSegmentThreshold = 384;
+// The stroke group currently being drawn (set on first paint, pushed to the log
+// when the last finger lifts), so a multi-touch gesture undoes as a single unit.
+let activeCommand: StrokeGroupCommand | null = null;
 let canUndo = false;
 let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
 
@@ -200,9 +258,11 @@ function scanCanvasIsEmpty(): boolean {
   return empty;
 }
 
-// Viewport grew beyond the current virtual canvas (e.g. a desktop window
-// stretched larger). Grow it and copy existing pixels so no drawing is lost.
-function growVirtualCanvas(
+// The undo baseline grew beyond its current size (e.g. a desktop window
+// stretched larger). Grow it and copy existing
+// pixels so no drawing is lost. The fold path strokes onto the baseline, so the
+// fresh context inherits the round line cap/join.
+function growCanvas(
   existing: HTMLCanvasElement,
   newW: number,
   newH: number
@@ -211,7 +271,11 @@ function growVirtualCanvas(
   grown.width = newW;
   grown.height = newH;
   const grownCtx = grown.getContext('2d');
-  if (grownCtx) grownCtx.drawImage(existing, 0, 0);
+  if (grownCtx) {
+    grownCtx.lineCap = 'round';
+    grownCtx.lineJoin = 'round';
+    grownCtx.drawImage(existing, 0, 0);
+  }
   return { canvas: grown, ctx: grownCtx };
 }
 
@@ -219,28 +283,35 @@ function resizeCanvas() {
   if (PERF_MARKS) performance.mark('engine.resize:start');
   const rect = canvas.getBoundingClientRect();
 
-  // A max(w,h) square covers both orientations, so rotation never loses pixels;
-  // anything larger (e.g. a resized desktop window) goes through the grow path.
+  // The baseline is a max(w,h) square so it covers both orientations and
+  // rotation never loses pixels; anything larger (e.g. a resized desktop window)
+  // goes through the grow path. Replayed ops use its coordinates, and content
+  // off the current (rotated) viewport survives here even though the visible
+  // canvas clips it.
   const squareSide = Math.ceil(Math.max(rect.width, rect.height) * renderScale);
-  if (!virtualCanvas) {
-    virtualCanvas = document.createElement('canvas');
-    virtualCanvas.width = squareSide;
-    virtualCanvas.height = squareSide;
-    virtualCtx = virtualCanvas.getContext('2d');
-  } else if (squareSide > virtualCanvas.width || squareSide > virtualCanvas.height) {
-    const newW = Math.max(squareSide, virtualCanvas.width);
-    const newH = Math.max(squareSide, virtualCanvas.height);
-    ({ canvas: virtualCanvas, ctx: virtualCtx } = growVirtualCanvas(virtualCanvas, newW, newH));
+  if (!baselineCanvas) {
+    baselineCanvas = document.createElement('canvas');
+    baselineCanvas.width = squareSide;
+    baselineCanvas.height = squareSide;
+    baselineCtx = baselineCanvas.getContext('2d');
+    if (baselineCtx) {
+      baselineCtx.lineCap = 'round';
+      baselineCtx.lineJoin = 'round';
+    }
+  } else if (squareSide > baselineCanvas.width || squareSide > baselineCanvas.height) {
+    const newW = Math.max(squareSide, baselineCanvas.width);
+    const newH = Math.max(squareSide, baselineCanvas.height);
+    ({ canvas: baselineCanvas, ctx: baselineCtx } = growCanvas(baselineCanvas, newW, newH));
   }
 
-  syncVirtualCanvas();
-
+  // Resizing the backing store wipes the visible canvas and resets its context
+  // state, so re-arm the round caps and repaint from the baseline + command log.
   canvas.width = Math.round(rect.width * renderScale);
   canvas.height = Math.round(rect.height * renderScale);
-
-  if (virtualCanvas) ctx.drawImage(virtualCanvas, 0, 0);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+
+  rebuildFromBaseline();
 
   refreshCanvasRect();
 
@@ -271,46 +342,449 @@ export function getCanvasRect(): CanvasRect {
   return canvasRect;
 }
 
-// The picture must survive resize/rotation, so the visible canvas is copied
-// into the off-screen virtual canvas after each completed drawing op (rather
-// than mirroring every stroke segment in the pointer hot path). The visible
-// region maps 1:1 to the virtual canvas at the origin, and the clearRect is
-// required so erased pixels propagate.
-function syncVirtualCanvas() {
-  if (!virtualCtx || canvas.width === 0 || canvas.height === 0) return;
-  virtualCtx.clearRect(0, 0, canvas.width, canvas.height);
-  virtualCtx.drawImage(canvas, 0, 0);
+// Paint one recorded op onto a target context. Used both live (target = the
+// visible ctx) and during undo/resize replay (target = the visible or baseline
+// surface). Erasing composites destination-out; everything else source-over.
+function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
+  if (op.kind === 'clear') {
+    target.clearRect(0, 0, target.canvas.width, target.canvas.height);
+    return;
+  }
+  target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
+  if (op.kind === 'dot') {
+    target.fillStyle = op.color;
+    target.beginPath();
+    target.arc(op.x, op.y, op.radius, 0, Math.PI * 2);
+    target.fill();
+  } else {
+    target.strokeStyle = op.color;
+    target.lineWidth = op.lineWidth;
+    target.beginPath();
+    target.moveTo(op.startX, op.startY);
+    for (const s of op.segs) {
+      if (s.c2x !== undefined) target.bezierCurveTo(s.cx, s.cy, s.c2x, s.c2y!, s.x, s.y);
+      else target.quadraticCurveTo(s.cx, s.cy, s.x, s.y);
+    }
+    target.stroke();
+  }
+  target.globalCompositeOperation = 'source-over';
+}
+
+// Append an op to the active stroke-group command so it can be replayed for
+// undo. No-op between groups (activeCommand is null).
+function recordOp(op: StrokeOp) {
+  if (activeCommand) activeCommand.ops.push(op);
+}
+
+// --- Stroke simplification (ADR-0036) ---
+// A finger drawing records one path op per frame, so a single stroke can hold
+// hundreds of near-collinear samples that undo/resize re-stroke segment by
+// segment. At commit each command's ops are reduced once: per finger, the run of
+// path ops is rebuilt into its raw point list and thinned with
+// Ramer–Douglas–Peucker — a point is dropped when it lies within an
+// epsilon-tolerance of the chord between its surviving neighbours, so only real
+// direction changes remain. The rendered curve already approximates rather than
+// interpolates its points, so thinning them shifts only antialiased stroke
+// edges (<1px), not the stroke's shape or position.
+//
+// The tolerance scales with stroke width: a wiggle far smaller than the round
+// brush's radius can't be seen, so a thick stroke tolerates a coarser polyline
+// than a thin one. Clamped so even the thinnest stroke drops sub-pixel jitter and
+// the thickest doesn't cut visible corners. All in device px — stored coordinates
+// already include renderScale.
+// Mutable so the dev profiling harness can sweep them at runtime
+// (setSimplifyParams, exposed only on the dev/engine page behind
+// PUBLIC_ENABLE_DEV_HARNESS). Production never calls the setter, so these keep
+// their tuned defaults.
+let simplifyEpsilonFraction = 0.05;
+let simplifyEpsilonMinPx = 1;
+let simplifyEpsilonMaxPx = 6;
+function simplifyEpsilonFor(lineWidth: number): number {
+  return Math.min(
+    simplifyEpsilonMaxPx,
+    Math.max(simplifyEpsilonMinPx, lineWidth * simplifyEpsilonFraction)
+  );
+}
+
+// Lifetime counters (raw samples seen vs. points kept after simplification),
+// surfaced through getUndoDebug for the profiling harness and the engine spec.
+let simplifyRawPoints = 0;
+let simplifyKeptPoints = 0;
+
+// Dev profiling seam (ADR-0036 tuning): override the simplification tolerance
+// and the keyframe safety-net bound so a single build can sweep every setting.
+// Wired onto window.__engine only on the /dev/engine page (PUBLIC_ENABLE_DEV_HARNESS);
+// production never calls it. Resets the lifetime counters so each sweep point
+// reads a clean raw/kept ratio.
+export function setSimplifyParams(params: {
+  fraction?: number;
+  min?: number;
+  max?: number;
+  keyframeThreshold?: number;
+  cornerAngleDeg?: number;
+  mode?: 'midpoint' | 'spline';
+  reduce?: boolean;
+  enabled?: boolean;
+  split?: 'none' | 'corner';
+}) {
+  if (params.fraction !== undefined) simplifyEpsilonFraction = params.fraction;
+  if (params.min !== undefined) simplifyEpsilonMinPx = params.min;
+  if (params.max !== undefined) simplifyEpsilonMaxPx = params.max;
+  if (params.keyframeThreshold !== undefined) keyframeSegmentThreshold = params.keyframeThreshold;
+  if (params.cornerAngleDeg !== undefined)
+    simplifyCornerCos = Math.cos((params.cornerAngleDeg * Math.PI) / 180);
+  if (params.mode !== undefined) simplifyMode = params.mode;
+  if (params.reduce !== undefined) simplifyReduce = params.reduce;
+  if (params.enabled !== undefined) simplifyEnabled = params.enabled;
+  if (params.split !== undefined) simplifySplit = params.split;
+  simplifyRawPoints = 0;
+  simplifyKeptPoints = 0;
+}
+
+type Pt = { x: number; y: number };
+type PathOp = Extract<StrokeOp, { kind: 'path' }>;
+
+// Iterative (stack-based, so a long monotonic stroke can't blow the call stack)
+// Douglas–Peucker. Keeps both endpoints plus every point whose perpendicular
+// distance to the current chord exceeds epsilon.
+function rdpSimplify(points: Pt[], epsilon: number): Pt[] {
+  if (points.length <= 2) return points.slice();
+  const keep = new Uint8Array(points.length);
+  keep[0] = 1;
+  keep[points.length - 1] = 1;
+  const stack: [number, number][] = [[0, points.length - 1]];
+  while (stack.length > 0) {
+    const [a, b] = stack.pop()!;
+    const ax = points[a].x;
+    const ay = points[a].y;
+    const dx = points[b].x - ax;
+    const dy = points[b].y - ay;
+    const len2 = dx * dx + dy * dy;
+    let maxD = -1;
+    let idx = -1;
+    for (let i = a + 1; i < b; i++) {
+      const px = points[i].x - ax;
+      const py = points[i].y - ay;
+      const d = len2 === 0 ? Math.hypot(px, py) : Math.abs(px * dy - py * dx) / Math.sqrt(len2);
+      if (d > maxD) {
+        maxD = d;
+        idx = i;
+      }
+    }
+    if (maxD > epsilon && idx >= 0) {
+      keep[idx] = 1;
+      stack.push([a, idx], [idx, b]);
+    }
+  }
+  const out: Pt[] = [];
+  for (let i = 0; i < points.length; i++) if (keep[i]) out.push(points[i]);
+  return out;
+}
+
+// Recover the ON-CURVE polyline a continuous run of one finger's path ops
+// actually rendered. The live midpoint smoothing draws each quadratic FROM the
+// current on-curve point TO the next anchor (`s.x`,`s.y`), with the raw sample
+// (`s.cx`,`s.cy`) as an OFF-curve control the curve only bulges toward. So the
+// points the rendered stroke truly passes through are the run's start point and
+// each segment's anchor — not the control points. Simplifying must operate on
+// these on-curve points and then re-interpolate THROUGH them; feeding the control
+// points back through midpoint smoothing double-applies the halving and renders
+// the stroke at half length (the classic shrink-on-undo bug).
+function rawPointsOf(run: PathOp[]): Pt[] {
+  const first = run[0];
+  const anchors: Pt[] = [{ x: first.startX, y: first.startY }];
+  const controls: Pt[] = [];
+  for (const op of run)
+    for (const s of op.segs) {
+      anchors.push({ x: s.x, y: s.y });
+      controls.push({ x: s.cx, y: s.cy });
+    }
+  // The on-curve anchors (midpoints) sit just inside the raw sample the live
+  // quadratic bulged toward. On a gentle curve that's invisible, but at a SHARP
+  // reversal the live stroke reaches out to the raw apex while the anchors fall
+  // short — the back-and-forth scribble tip undershoot. Where a control forms a
+  // sharp apex between its bracketing anchors, splice it back in so the rebuilt
+  // curve passes through the same tip the user saw.
+  const pts: Pt[] = [anchors[0]];
+  for (let k = 0; k < controls.length; k++) {
+    if (isCornerAt(anchors[k], controls[k], anchors[k + 1])) pts.push(controls[k]);
+    pts.push(anchors[k + 1]);
+  }
+  return pts;
+}
+
+// Render the kept points as a curve that passes THROUGH each of them. The live
+// draw path uses midpoint-smoothed quadratics with the raw point as a *control*
+// (the curve only bulges toward it), which is invisible when points are dense
+// but, on RDP-sparse points, falls ~25% short of every turning point — so a
+// back-and-forth scribble visibly shrinks at its tips on replay. An interpolating
+// spline instead hits every kept point, so tips land exactly.
+//
+// Smooth spans use a centripetal Catmull-Rom tangent (alpha = 0.5) — RDP leaves
+// uneven spacing and uniform CR overshoots there, centripetal never loops. But a
+// *sharp* turn (a hook, a zigzag tip) must stay sharp and in place: a smooth
+// spline rounds it into a displaced bend (the live render keeps it crisp via its
+// dense samples). So at a detected corner the tangent is forced along the
+// adjoining chord, giving a sharp, correctly-located corner. Threshold tunable
+// via setSimplifyParams (cornerAngleDeg) for the profiling sweep.
+const CR_ALPHA = 0.5;
+let simplifyCornerCos = Math.cos((40 * Math.PI) / 180);
+// Rebuild renderer. 'spline' (the default) interpolates the kept ON-CURVE points
+// (rawPointsOf) with a corner-aware centripetal Catmull-Rom — the correct family
+// for points the live curve passed through. 'midpoint' is a legacy/diagnostic
+// mode that re-applies midpoint smoothing; it HALVES on-curve points and is wrong
+// for reconstruction (kept only for the profiling seam). Tunable via
+// setSimplifyParams.
+let simplifyMode: 'midpoint' | 'spline' = 'spline';
+// When false, keep every raw point (no RDP) — for measuring the renderer floor.
+let simplifyReduce = true;
+// 'corner' splits a reduced run into one stroke op per span between sharp corners,
+// so each kept corner is a stroke boundary and gets a round CAP (a full disc) just
+// like the live per-frame draw — eliminating the merged-path round-JOIN shift at
+// sharp turns. 'none' emits one merged op per run (round joins at every vertex).
+let simplifySplit: 'none' | 'corner' = 'corner';
+// SHIPPING DEFAULT: true. simplifyCommand reduces a committed command's per-frame
+// ops to a few RDP-thinned, corner-split, round-capped sub-strokes (ADR-0036).
+// Verified imperceptible (perf:units): every stroke in the synthetic + real
+// battery rebuilds within ≤2.5 CSS px of the live render (max; the bulk far
+// under), at ~4x fewer points. The key to getting there was reconstructing from
+// the ON-CURVE anchor points (rawPointsOf) and re-interpolating THROUGH them with
+// a corner-aware spline, plus splitting at corners so each kept corner gets a
+// round CAP matching the live per-frame draw — not the earlier control-point /
+// merged-round-join rebuild, which shrank strokes by half and shifted corners.
+// Long all-corners commands that RDP can't thin are still bounded by ADR-0035
+// keyframing.
+let simplifyEnabled = true;
+
+// Midpoint quadratics, identical to the live strokeSmoothSegments construction.
+function midpointToSegs(pts: Pt[]): PathOp['segs'] {
+  const segs: PathOp['segs'] = [];
+  let px = pts[0].x;
+  let py = pts[0].y;
+  for (let i = 1; i < pts.length; i++) {
+    const { x, y } = pts[i];
+    segs.push({ cx: px, cy: py, x: (px + x) / 2, y: (py + y) / 2 });
+    px = x;
+    py = y;
+  }
+  return segs;
+}
+
+// Centripetal Catmull-Rom (Barry–Goldman) tangents at p1 and p2 for segment p1→p2.
+function crTangents(p0: Pt, p1: Pt, p2: Pt, p3: Pt) {
+  const knot = (a: Pt, b: Pt) => Math.pow(Math.hypot(b.x - a.x, b.y - a.y), CR_ALPHA) || 1e-6;
+  const t01 = knot(p0, p1);
+  const t12 = knot(p1, p2);
+  const t23 = knot(p2, p3);
+  return {
+    m1x: p2.x - p1.x + t12 * ((p1.x - p0.x) / t01 - (p2.x - p0.x) / (t01 + t12)),
+    m1y: p2.y - p1.y + t12 * ((p1.y - p0.y) / t01 - (p2.y - p0.y) / (t01 + t12)),
+    m2x: p2.x - p1.x + t12 * ((p3.x - p2.x) / t23 - (p3.x - p1.x) / (t12 + t23)),
+    m2y: p2.y - p1.y + t12 * ((p3.y - p2.y) / t23 - (p3.y - p1.y) / (t12 + t23)),
+  };
+}
+
+// A point is a corner when the turn between its adjoining chords is sharper than
+// the threshold (dot of unit chords below cos(angle)).
+function isCornerAt(prev: Pt, p: Pt, next: Pt): boolean {
+  const ax = p.x - prev.x;
+  const ay = p.y - prev.y;
+  const bx = next.x - p.x;
+  const by = next.y - p.y;
+  const la = Math.hypot(ax, ay);
+  const lb = Math.hypot(bx, by);
+  if (la < 1e-6 || lb < 1e-6) return false;
+  return (ax * bx + ay * by) / (la * lb) < simplifyCornerCos;
+}
+
+function smoothToSegs(pts: Pt[]): PathOp['segs'] {
+  if (pts.length < 2) return [];
+  if (simplifyMode === 'midpoint') return midpointToSegs(pts);
+  // On-curve interpolation must reach the actual endpoint, not the midpoint. Two
+  // points = a straight chord (control on the line); midpointToSegs would draw
+  // only to the halfway point and shrink the span.
+  if (pts.length === 2)
+    return [
+      { cx: (pts[0].x + pts[1].x) / 2, cy: (pts[0].y + pts[1].y) / 2, x: pts[1].x, y: pts[1].y },
+    ];
+  const n = pts.length;
+  // Reflect the endpoints so the first/last segments have a neighbour to take a
+  // tangent from (a natural end tangent), keeping all knot intervals non-zero.
+  const at = (i: number): Pt =>
+    i < 0
+      ? { x: 2 * pts[0].x - pts[1].x, y: 2 * pts[0].y - pts[1].y }
+      : i >= n
+        ? { x: 2 * pts[n - 1].x - pts[n - 2].x, y: 2 * pts[n - 1].y - pts[n - 2].y }
+        : pts[i];
+  const corner: boolean[] = new Array(n).fill(false);
+  for (let i = 1; i < n - 1; i++) corner[i] = isCornerAt(pts[i - 1], pts[i], pts[i + 1]);
+
+  const segs: PathOp['segs'] = [];
+  for (let i = 0; i < n - 1; i++) {
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const t = crTangents(at(i - 1), p1, p2, at(i + 2));
+    // Control leaving p1 / entering p2: chord-aligned at a corner (sharp), else
+    // the smooth centripetal tangent. A corner on either end keeps that end crisp.
+    const c1x = corner[i] ? p1.x + dx / 3 : p1.x + t.m1x / 3;
+    const c1y = corner[i] ? p1.y + dy / 3 : p1.y + t.m1y / 3;
+    const c2x = corner[i + 1] ? p2.x - dx / 3 : p2.x - t.m2x / 3;
+    const c2y = corner[i + 1] ? p2.y - dy / 3 : p2.y - t.m2y / 3;
+    segs.push({ cx: c1x, cy: c1y, c2x, c2y, x: p2.x, y: p2.y });
+  }
+  return segs;
+}
+
+function pathStyleMatches(a: PathOp, b: PathOp): boolean {
+  return a.color === b.color && a.lineWidth === b.lineWidth && a.erase === b.erase;
+}
+
+// Reduce one continuous, same-style run of a single finger's path ops to one or
+// more simplified path ops. With simplifySplit='corner' the kept polyline is cut
+// at each sharp corner into separate stroke ops, so every corner is a stroke
+// boundary that renders a round CAP (full disc) — matching the live per-frame
+// draw, which also caps at each frame and so discs every sharp turn. A single
+// merged op instead round-JOINs the corner, shifting it by up to half the brush
+// width. Spans are emitted overlapping (shared corner point in both neighbours)
+// so the two caps coincide on the corner exactly as the live overlap does.
+function pathOpFrom(pts: Pt[], src: PathOp): PathOp {
+  return {
+    kind: 'path',
+    pid: src.pid,
+    startX: pts[0].x,
+    startY: pts[0].y,
+    segs: smoothToSegs(pts),
+    color: src.color,
+    lineWidth: src.lineWidth,
+    erase: src.erase,
+  };
+}
+
+function reducePathRun(run: PathOp[]): PathOp[] {
+  const raw = rawPointsOf(run);
+  const first = run[0];
+  const kept = simplifyReduce ? rdpSimplify(raw, simplifyEpsilonFor(first.lineWidth)) : raw.slice();
+  simplifyRawPoints += raw.length;
+  simplifyKeptPoints += kept.length;
+
+  if (simplifySplit === 'none' || kept.length < 3) return [pathOpFrom(kept, first)];
+
+  // Cut at interior corner points; each span shares the corner with its neighbour.
+  const ops: PathOp[] = [];
+  let start = 0;
+  for (let i = 1; i < kept.length - 1; i++) {
+    if (isCornerAt(kept[i - 1], kept[i], kept[i + 1])) {
+      ops.push(pathOpFrom(kept.slice(start, i + 1), first));
+      start = i;
+    }
+  }
+  ops.push(pathOpFrom(kept.slice(start), first));
+  return ops;
+}
+
+// Simplify a committed command's per-frame path ops in place. A multi-touch
+// command interleaves several fingers' ops, so they're first regrouped by pointer
+// id, then each finger's ops are split into spatially continuous, same-style
+// sub-runs (a pointer-resume jump or a mid-stroke style/eraser change breaks
+// continuity, so no stray line bridges the gap) before reduction. Each finger's
+// reduced ops are emitted at the position of its first op; dots and clears pass
+// through in place, preserving compositing order for the single-finger case.
+function simplifyCommand(cmd: StrokeGroupCommand) {
+  if (!simplifyEnabled || cmd.ops.length === 0) return;
+  if (PERF_MARKS) performance.mark('engine.simplify:start');
+
+  const byPid = new Map<number, PathOp[]>();
+  for (const op of cmd.ops) {
+    if (op.kind !== 'path') continue;
+    const list = byPid.get(op.pid);
+    if (list) list.push(op);
+    else byPid.set(op.pid, [op]);
+  }
+
+  const reducedByPid = new Map<number, PathOp[]>();
+  for (const [pid, ops] of byPid) {
+    const reduced: PathOp[] = [];
+    let run: PathOp[] = [];
+    const flush = () => {
+      if (run.length > 0) reduced.push(...reducePathRun(run));
+      run = [];
+    };
+    for (const op of ops) {
+      if (run.length > 0) {
+        const prev = run[run.length - 1];
+        const prevAnchor = prev.segs[prev.segs.length - 1];
+        const continuous = op.startX === prevAnchor.x && op.startY === prevAnchor.y;
+        if (!continuous || !pathStyleMatches(prev, op)) flush();
+      }
+      run.push(op);
+    }
+    flush();
+    reducedByPid.set(pid, reduced);
+  }
+
+  const out: StrokeOp[] = [];
+  const emitted = new Set<number>();
+  for (const op of cmd.ops) {
+    if (op.kind !== 'path') {
+      out.push(op);
+      continue;
+    }
+    if (!emitted.has(op.pid)) {
+      out.push(...reducedByPid.get(op.pid)!);
+      emitted.add(op.pid);
+    }
+  }
+  cmd.ops = out;
+  if (PERF_MARKS) performance.measure('engine.simplify', 'engine.simplify:start');
+}
+
+// Total quadratic segments a command will re-stroke on replay — the keyframe
+// safety net's trigger, measured after simplification.
+function commandSegmentCount(cmd: StrokeGroupCommand): number {
+  let n = 0;
+  for (const op of cmd.ops) if (op.kind === 'path') n += op.segs.length;
+  return n;
 }
 
 // One quadratic segment per input point: the path runs midpoint-to-midpoint
 // with the raw point as the control, so consecutive segments share a tangent
 // and the stroke curves smoothly instead of showing straight-chord corners.
+// Each call is captured as one path op (matching its own beginPath/stroke
+// boundary) so undo replay reproduces identical pixels and anti-aliasing.
 function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
-  ctx.globalCompositeOperation = ps.erase ? 'destination-out' : 'source-over';
-  ctx.strokeStyle = ps.color;
-  ctx.lineWidth = ps.lineWidth;
-  ctx.beginPath();
-  ctx.moveTo(ps.midX, ps.midY);
+  if (points.length === 0) return;
+  const op: StrokeOp = {
+    kind: 'path',
+    pid: ps.id,
+    startX: ps.midX,
+    startY: ps.midY,
+    segs: [],
+    color: ps.color,
+    lineWidth: ps.lineWidth,
+    erase: ps.erase,
+  };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
     const midY = (ps.y + y) / 2;
-    ctx.quadraticCurveTo(ps.x, ps.y, midX, midY);
+    op.segs.push({ cx: ps.x, cy: ps.y, x: midX, y: midY });
     ps.x = x;
     ps.y = y;
     ps.midX = midX;
     ps.midY = midY;
   }
-  ctx.stroke();
-  ctx.globalCompositeOperation = 'source-over';
+  renderOp(ctx, op);
+  recordOp(op);
 }
 
 export function releaseAllPointers() {
   if (!ctx) return;
   ctx.beginPath();
 
-  if (activePointers.size > 0) syncVirtualCanvas();
   activePointers.clear();
   groupHasDrawn = false;
+  commitActiveCommand();
 
   activePointerIds.forEach((pointerId) => {
     try {
@@ -323,12 +797,12 @@ export function releaseAllPointers() {
   activePointerIds.clear();
 }
 
-// First paint of a stroke group: snapshot for undo and flip the empty flag,
-// once. A multi-touch gesture undoes as a single unit, and later fingers skip
-// the full-canvas copy so they start instantly.
+// First paint of a stroke group: open a new undo command and flip the empty
+// flag, once. A multi-touch gesture undoes as a single unit, so later fingers
+// record into the same command. `wasEmpty` is captured before the flag flips.
 function beginRender() {
   if (groupHasDrawn) return;
-  saveUndoSnapshot();
+  activeCommand = { ops: [], wasEmpty: canvasEmpty };
   setCanvasEmptyState(false);
   groupHasDrawn = true;
 }
@@ -339,20 +813,21 @@ function beginRender() {
 function renderStrokeStart(ps: PointerState) {
   beginRender();
 
-  const dotRadius = ps.lineWidth / 2;
   // Erasing clears pixels via destination-out; the stroke color is irrelevant
   // there, only its (opaque) alpha matters.
-  const op = ps.erase ? 'destination-out' : 'source-over';
+  const dot: StrokeOp = {
+    kind: 'dot',
+    x: ps.x,
+    y: ps.y,
+    radius: ps.lineWidth / 2,
+    color: ps.color,
+    erase: ps.erase,
+  };
+  renderOp(ctx, dot);
+  recordOp(dot);
 
-  ctx.globalCompositeOperation = op;
-  ctx.strokeStyle = ps.color;
-  ctx.fillStyle = ps.color;
-  ctx.beginPath();
-  ctx.arc(ps.x, ps.y, dotRadius, 0, Math.PI * 2);
-  ctx.fill();
   ctx.beginPath();
   ctx.moveTo(ps.x, ps.y);
-  ctx.globalCompositeOperation = 'source-over';
 
   if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0 });
 }
@@ -409,6 +884,7 @@ function startDrawing(e: PointerEvent) {
 
   const now = Date.now();
   const pointerState: PointerState = {
+    id: e.pointerId,
     x,
     y,
     midX: x,
@@ -532,12 +1008,14 @@ function stopDrawing(e?: PointerEvent) {
 
   ctx.beginPath();
 
-  if (pointerState && !pointerState.edgeSwipeGuard) {
-    syncVirtualCanvas();
-    if (pointerState.erase) setCanvasEmptyState(scanCanvasIsEmpty());
+  if (pointerState && !pointerState.edgeSwipeGuard && pointerState.erase) {
+    setCanvasEmptyState(scanCanvasIsEmpty());
   }
 
-  if (activePointers.size === 0) groupHasDrawn = false;
+  if (activePointers.size === 0) {
+    groupHasDrawn = false;
+    commitActiveCommand();
+  }
 
   if (onDrawStopCallback) onDrawStopCallback();
 
@@ -546,48 +1024,120 @@ function stopDrawing(e?: PointerEvent) {
   } catch {}
 }
 
-function saveUndoSnapshot() {
-  if (!canvas || !ctx) return;
+// Finalize the stroke group built up since beginRender() and push it onto the
+// undo log. Called once per group, when the last finger lifts.
+function commitActiveCommand() {
+  if (!activeCommand) return;
+  if (PERF_MARKS) performance.mark('engine.commit:start');
+  pushCommand(activeCommand);
+  activeCommand = null;
+  if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
+}
 
-  if (PERF_MARKS) performance.mark('engine.saveUndoSnapshot:start');
-
-  const snapshot = document.createElement('canvas');
-  snapshot.width = canvas.width;
-  snapshot.height = canvas.height;
-  const snapshotCtx = snapshot.getContext('2d');
-  if (snapshotCtx) snapshotCtx.drawImage(canvas, 0, 0);
-
-  // Capture emptiness alongside the pixels. This runs before the stroke that
-  // prompted the snapshot dirties the canvas, so `canvasEmpty` exactly describes
-  // these pixels — letting undo() restore the empty state without re-scanning.
-  undoStack.push({ image: snapshot, wasEmpty: canvasEmpty });
-  if (undoStack.length > MAX_UNDO_STACK_SIZE) undoStack.shift();
+function pushCommand(cmd: StrokeGroupCommand) {
+  commandLog.push(cmd);
+  simplifyCommand(cmd);
+  if (commandLog.length > MAX_UNDO_STACK_SIZE) foldOldestIntoBaseline();
+  maybeKeyframe(cmd);
 
   canUndo = true;
   if (onUndoStateChange) onUndoStateChange(canUndo);
+}
 
-  if (PERF_MARKS) performance.measure('engine.saveUndoSnapshot', 'engine.saveUndoSnapshot:start');
+// Safety net: a command whose *simplified* segment total is still large enough
+// to make undo/resize replay expensive is collapsed once, at commit (off the
+// draw frame), into a cumulative square keyframe of the whole drawing through it,
+// then its ops are dropped so rebuilds blit the keyframe instead. Built before
+// the ops are cleared, so paintStateThrough still sees them. See ADR-0035 (the
+// trigger now measures post-simplification segments, ADR-0036).
+function maybeKeyframe(cmd: StrokeGroupCommand) {
+  if (commandSegmentCount(cmd) <= keyframeSegmentThreshold || !baselineCanvas) return;
+  const index = commandLog.indexOf(cmd);
+  if (index < 0) return;
+  const kf = document.createElement('canvas');
+  kf.width = baselineCanvas.width;
+  kf.height = baselineCanvas.height;
+  const kfCtx = kf.getContext('2d');
+  if (!kfCtx) return;
+  kfCtx.lineCap = 'round';
+  kfCtx.lineJoin = 'round';
+  if (PERF_MARKS) performance.mark('engine.keyframe:start');
+  paintStateThrough(kfCtx, index);
+  cmd.keyframe = kf;
+  cmd.ops = [];
+  if (PERF_MARKS) performance.measure('engine.keyframe', 'engine.keyframe:start');
+}
+
+// History past the cap can no longer be undone, so bake the oldest command into
+// the baseline raster and drop it. A keyframed command already holds the
+// cumulative state through itself, so it becomes the new baseline wholesale;
+// otherwise replay its ops in order (keeping eraser destination-out ops hitting
+// exactly the pixels they originally did).
+function foldOldestIntoBaseline() {
+  const oldest = commandLog.shift();
+  if (!oldest || !baselineCtx || !baselineCanvas) return;
+  if (PERF_MARKS) performance.mark('engine.foldBaseline:start');
+  if (oldest.keyframe) {
+    baselineCtx.clearRect(0, 0, baselineCanvas.width, baselineCanvas.height);
+    baselineCtx.drawImage(oldest.keyframe, 0, 0);
+  } else {
+    for (const op of oldest.ops) renderOp(baselineCtx, op);
+  }
+  if (PERF_MARKS) performance.measure('engine.foldBaseline', 'engine.foldBaseline:start');
+}
+
+// Paint the drawing state through commandLog[upToIndex] (inclusive) onto a
+// target context. Starts from the most recent cumulative keyframe at or below
+// that index (a keyframe is the whole drawing through its command, so blitting
+// it replaces the baseline + every command up to it) and replays only the ops
+// after it. With no keyframe in range it falls back to the baseline + a full
+// replay. The baseline/keyframes are square (max(w,h)), so painting onto a
+// resized or rotated visible canvas restores content that was off-screen.
+function paintStateThrough(target: CanvasRenderingContext2D, upToIndex: number) {
+  let start = -1;
+  for (let i = upToIndex; i >= 0; i--) {
+    if (commandLog[i].keyframe) {
+      start = i;
+      break;
+    }
+  }
+  target.clearRect(0, 0, target.canvas.width, target.canvas.height);
+  let begin: number;
+  if (start >= 0) {
+    target.drawImage(commandLog[start].keyframe!, 0, 0);
+    begin = start + 1;
+  } else {
+    if (baselineCanvas) target.drawImage(baselineCanvas, 0, 0);
+    begin = 0;
+  }
+  for (let i = begin; i <= upToIndex; i++) {
+    for (const op of commandLog[i].ops) renderOp(target, op);
+  }
+}
+
+// Reconstruct the visible canvas from the baseline + command log (via the most
+// recent keyframe). A mid-stroke resize still has an uncommitted activeCommand
+// (its ops are recorded but not yet in the log, and it is never keyframed until
+// commit), so replay it last to keep the in-flight stroke; between strokes
+// activeCommand is null and this is a no-op.
+function rebuildFromBaseline() {
+  paintStateThrough(ctx, commandLog.length - 1);
+  if (activeCommand) {
+    for (const op of activeCommand.ops) renderOp(ctx, op);
+  }
 }
 
 export function undo() {
-  if (!canUndo || undoStack.length === 0 || !canvas || !ctx) return;
+  if (!canUndo || commandLog.length === 0 || !canvas || !ctx) return;
 
   if (PERF_MARKS) performance.mark('engine.undo:start');
 
-  const snapshot = undoStack.pop();
-  if (!snapshot) return;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(snapshot.image, 0, 0);
-  // Wipe the whole virtual canvas (not just the visible region) so undone
-  // content doesn't reappear from off-screen after a rotation.
-  if (virtualCtx && virtualCanvas) {
-    virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
-    virtualCtx.drawImage(snapshot.image, 0, 0);
-  }
+  const undone = commandLog.pop();
+  if (!undone) return;
+  rebuildFromBaseline();
+  setCanvasEmptyState(undone.wasEmpty);
 
-  setCanvasEmptyState(snapshot.wasEmpty);
-
-  canUndo = undoStack.length > 0;
+  canUndo = commandLog.length > 0;
   if (onUndoStateChange) onUndoStateChange(canUndo);
 
   if (PERF_MARKS) performance.measure('engine.undo', 'engine.undo:start');
@@ -671,16 +1221,42 @@ export function setSafeAreaInsets(insets: {
 }
 
 export function clearCanvas() {
-  saveUndoSnapshot();
+  // The clear is its own undo command: replaying it wipes the surface, and
+  // undoing it replays the strokes that preceded it back from the baseline.
+  pushCommand({ ops: [{ kind: 'clear' }], wasEmpty: canvasEmpty });
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (virtualCtx && virtualCanvas) {
-    virtualCtx.clearRect(0, 0, virtualCanvas.width, virtualCanvas.height);
-  }
   setCanvasEmptyState(true);
 }
 
 export function isCanvasEmpty(): boolean {
   return canvasEmpty;
+}
+
+// Test/profiling seam: how the undo history is currently stored. `keyframes`
+// counts commands collapsed to a cumulative raster (ADR-0035) vs. ones still held
+// as replayable ops; `maxSegments` is the heaviest retained command's replay cost
+// (post-simplification, ADR-0036); `rawPoints`/`keptPoints` are the lifetime
+// simplification totals. `maxOps` is retained for the profiling harness.
+export function getUndoDebug(): {
+  commands: number;
+  keyframes: number;
+  maxOps: number;
+  maxSegments: number;
+  totalSegments: number;
+  rawPoints: number;
+  keptPoints: number;
+} {
+  return {
+    commands: commandLog.length,
+    keyframes: commandLog.filter((c) => c.keyframe != null).length,
+    maxOps: commandLog.reduce((m, c) => Math.max(m, c.ops.length), 0),
+    maxSegments: commandLog.reduce((m, c) => Math.max(m, commandSegmentCount(c)), 0),
+    // Segments re-stroked on a full rebuild (every retained command's ops) — the
+    // perf proxy the sweep plots against fidelity.
+    totalSegments: commandLog.reduce((m, c) => m + commandSegmentCount(c), 0),
+    rawPoints: simplifyRawPoints,
+    keptPoints: simplifyKeptPoints,
+  };
 }
 
 let paperTextureImage: HTMLImageElement | null = null;
