@@ -175,7 +175,11 @@
   function handlePickerUp(e: PointerEvent) {
     if (!isTrackingDrag) return;
     isTrackingDrag = false;
-    const color = findHexagonInPicker(e.clientX, e.clientY, pickerEl);
+    // The up-point can land in a clip-path gap between hexagons — far likelier
+    // with a pointed Apple Pencil tip than a finger — so elementFromPoint finds
+    // no hexagon even though one is highlighted. Fall back to the tracked hover
+    // so a tap that lit up a swatch always commits it.
+    const color = findHexagonInPicker(e.clientX, e.clientY, pickerEl) ?? hoveredHex;
     if (color) {
       selectColor(color);
     } else {
