@@ -36,36 +36,50 @@ Keep a single save entry point and branch by target. The full matrix:
 | --- | --- | --- |
 | **Native — Android** | `@capacitor-community/media` `savePhoto` into a `"Splotch"` album (created once) | Drawing appears in the gallery's Splotch album |
 | **Native — iOS** | `@capacitor-community/media` `savePhoto` (add-only permission) | Drawing appears in the camera roll |
-| **Web — desktop Chromium** (Chrome/Edge, tab *or* installed PWA) **with "Save to Folder" on** | `saveBlobToFolder` → File System Access writable into the parent-chosen folder | PNG written silently into that folder, **no download shelf** |
-| **Web — desktop Chromium, "Save to Folder" off (default)** | `triggerDownload` (`<a download>`) | Normal browser download |
-| **Web — Firefox / Safari / all mobile browsers** | `triggerDownload` | Normal browser download (the toggle is hidden) |
+| **Web — desktop Chromium** (Chrome/Edge, tab *or* installed PWA) | `saveBlobToFolder` → File System Access writable into the parent-chosen folder | PNG written silently into that folder, **no download shelf** |
+| **Web — Firefox / Safari / all mobile browsers** | `triggerDownload` (`<a download>`) | Normal browser download |
 
-`isNative()` selects the native branch (unchanged). On the web, the folder write
-is attempted only when the **`saveToFolderEnabled`** setting is on, and falls
-back to `triggerDownload` whenever `saveBlobToFolder` returns `false`.
+`isNative()` selects the native branch (unchanged). On the web, `saveImageBlob`
+always tries `saveBlobToFolder` first and falls back to `triggerDownload`
+whenever it returns `false` — which is *every* time on browsers without the File
+System Access API, so those keep today's exact download behaviour with no extra
+gate.
 
-### Folder selection: settings-first, save-time fallback
+### A chosen folder is the prerequisite for the save features — no separate toggle
 
-The directory picker is opened primarily from a deliberate **"Save to Folder"
-toggle in the Parent Center** (`SettingsToggles.svelte`), shown only when
-`folderSaveSupported()` is true. The first time a parent turns it on,
-`chooseSaveFolder()` runs `showDirectoryPicker` + `requestPermission` (both need
-transient user activation, which the toggle click provides) and persists the
-granted `FileSystemDirectoryHandle` in IndexedDB (`splotch-fs` / `handles`).
-After that the toggle flips on/off freely without re-prompting; cancelling the
-picker leaves the setting off. This keeps folder choice a parent decision, so in
-the normal flow the kid's Screenshot button never raises a dialog.
+There is intentionally **no "save to folder" switch**. On a folder-capable
+browser, the directory *is* the enablement: the three save features —
+**Screenshot button**, **Auto-Save on Delete**, **Auto-Save AI** — can't be
+turned on until a folder is picked, and that single folder receives all of them.
+
+`toggleSaveFeature(set, next)` (in `settings.svelte.ts`) wraps each feature's
+toggle. Turning one on with no folder yet runs `chooseSaveFolder()`
+(`showDirectoryPicker` + `requestPermission`, both inside the toggle click's user
+activation) and only enables the feature if a folder is granted; cancelling
+leaves it off. So a parent literally cannot arm saving without choosing a
+destination — done once, set and forget. On browsers without the API the wrapper
+is a plain setter and the features behave as before (download).
+
+Because the features can't be enabled without a folder, `hydrateSaveFolder()`
+runs at boot (web/desktop only): it loads the folder name from the stored handle
+into `settings.saveFolderName`, and if no folder is set it forces those three
+features **off**. That's what makes them default off on a fresh desktop until a
+folder is chosen, and it self-heals the case where the handle is lost
+(cleared site data, IndexedDB eviction) but the feature flags persisted on.
 
 A `FileSystemDirectoryHandle` is structured-cloneable, so it lives in IndexedDB
-rather than localStorage (string-only) — mirroring the lazy-`idb` pattern in
-`secureStorage.ts`. The boolean toggle persists through the normal localStorage
-settings table.
+(`splotch-fs` / `handles`) rather than localStorage (string-only) — mirroring the
+lazy-`idb` pattern in `secureStorage.ts`. `settings.saveFolderName` is derived
+from it (not persisted) so the Parent Center can show the location.
 
-Because those two stores can drift apart, the **save path is the fallback**: a
-user-initiated save with the toggle on but no folder set re-runs the picker (see
-`allowPrompt` below). So the toggle isn't a hard precondition — it expresses
-intent, and the folder is guaranteed to exist by the time a save completes
-silently.
+### Parent Center: the folder location, not a toggle
+
+`SettingsToggles.svelte` shows a **"Saved photos folder"** row (when
+`folderSaveSupported()`) displaying the current folder name with a **Change**
+button (`changeSaveFolder()` → re-pick). Before any folder is chosen it reads
+"Chosen when you turn a save option on." This replaces the earlier toggle: the
+parent sees *where* photos go and can repoint it, rather than flipping an opaque
+switch.
 
 ### `allowPrompt`: who may raise a dialog at save time
 
@@ -73,19 +87,11 @@ silently.
 user-initiated saves (the Screenshot button) and false for background saves. When
 true it may, from within the user gesture, (a) **pick a folder** if none is set
 yet and (b) **re-confirm a write permission** the browser dropped between
-sessions (in-tab origins lose it; installed PWAs keep it). This save-time pick is
-the safety net that makes the toggle self-healing: if `saveToFolderEnabled` is on
-but no handle exists — a fresh enable, a cleared IndexedDB, an older build — the
-next Screenshot prompts for a folder and then saves into it, instead of silently
-downloading. Background saves leave `allowPrompt` false and degrade to a download
+sessions (in-tab origins lose it; installed PWAs keep it). The folder-pick here
+is a pure safety net: features can't be enabled without a folder, so in normal
+use one already exists by save time; it only fires if the handle was lost
+mid-session. Background saves leave `allowPrompt` false and degrade to a download
 rather than surprising anyone with a dialog.
-
-The Parent Center toggle still prompts immediately on enable, so the common path
-sets the folder up front and no save ever raises a dialog; the save-time pick
-only fires in the anomalous on-without-folder state. We deliberately do **not**
-reconcile the flag off when the folder is missing — the flag is treated as
-*intent*, and the missing folder is resolved lazily, which removes the
-localStorage/IndexedDB desync as a way to get wedged into silent downloads.
 
 ## Consequences
 
@@ -97,15 +103,19 @@ localStorage/IndexedDB desync as a way to get wedged into silent downloads.
 - **+** No new dependency — reuses the already-present `idb` and the platform's
   File System Access API; ambient types are hand-declared in `app.d.ts`.
 - **−** The silent path is desktop-Chromium only. Firefox, Safari, and all mobile
-  web stay on the download; the toggle is simply hidden there, so the win is
-  uneven across browsers.
+  web stay on the download (the folder row is hidden and the save features keep
+  their normal defaults there), so the win is uneven across browsers.
+- **−** On desktop Chromium the Screenshot button is **off by default** until a
+  parent picks a folder — a deliberate gate, but it means the save button isn't
+  present out of the box the way it is on other browsers/native.
 - **−** For an in-tab (non-installed) desktop origin, the write permission can
   lapse between sessions, so the first user-initiated save of a session may show
   a one-time permission re-confirm before going silent again; background saves in
   that window quietly download instead.
-- **−** The happy path can't be driven in happy-dom or Playwright (no real
-  picker), so `folderSave.test.ts` covers the dispatch/permission/fallback logic
-  with mocks and the end-to-end folder write is verified manually.
+- **−** The real picker can't be driven in happy-dom or Playwright, so
+  `folderSave.test.ts` covers the dispatch/permission/fallback logic with mocks;
+  the end-to-end folder write and the boot-force are verified against a real
+  handle by substituting the Origin Private File System in a headless run.
 - **−** Mobile has no silent option here; a Web Share sheet
   (`navigator.share({ files })`) for mobile web is a deliberate future follow-up,
   not part of this decision.

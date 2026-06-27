@@ -49,20 +49,26 @@ export async function hasSaveFolder(): Promise<boolean> {
   return (await loadHandle()) !== null;
 }
 
+/** The name of the remembered destination folder, or null if none is set. */
+export async function getSaveFolderName(): Promise<string | null> {
+  if (!folderSaveSupported()) return null;
+  return (await loadHandle())?.name ?? null;
+}
+
 // Prompt the parent to pick a destination folder and remember it. Must run
-// inside a user gesture (the Parent Center toggle) — both showDirectoryPicker
-// and requestPermission need transient activation. Returns true once a
-// readwrite folder is chosen and granted; false if the parent cancels.
-export async function chooseSaveFolder(): Promise<boolean> {
-  if (!folderSaveSupported()) return false;
+// inside a user gesture (the toggle/Change-folder click) — both
+// showDirectoryPicker and requestPermission need transient activation. Returns
+// the chosen folder's name once granted; null if the parent cancels.
+export async function chooseSaveFolder(): Promise<string | null> {
+  if (!folderSaveSupported()) return null;
   try {
     const handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'pictures' });
-    if ((await handle.requestPermission({ mode: 'readwrite' })) !== 'granted') return false;
+    if ((await handle.requestPermission({ mode: 'readwrite' })) !== 'granted') return null;
     await storeHandle(handle);
-    return true;
+    return handle.name;
   } catch {
     // AbortError (parent cancelled the picker) or any other failure → not chosen.
-    return false;
+    return null;
   }
 }
 
@@ -94,9 +100,10 @@ export async function saveBlobToFolder(
   try {
     let handle = await loadHandle();
     if (!handle) {
-      // "Save to Folder" is on but no folder is chosen yet — prompt for one on a
-      // user-initiated save (the gesture that reached here keeps the picker
-      // allowed). Background saves can't prompt, so they fall back to a download.
+      // No folder chosen yet — prompt for one on a user-initiated save (the
+      // gesture that reached here keeps the picker allowed), so a save still
+      // works if the handle was lost. Background saves can't prompt and fall
+      // back to a download.
       if (!allowPrompt || !(await chooseSaveFolder())) return false;
       handle = await loadHandle();
       if (!handle) return false;

@@ -2,12 +2,12 @@
   import { onDestroy } from 'svelte';
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
+  import Icon from '../Icon.svelte';
   import {
     settings,
     setSound,
     setSoundVolume,
     setSaveOnDelete,
-    setSaveToFolder,
     setScreenshot,
     setUndoButton,
     setStrokeWidthControl,
@@ -17,10 +17,12 @@
     setLockRotation,
     setForceLandscapeOrientation,
     setPencilEraserEnabled,
+    toggleSaveFeature,
+    changeSaveFolder,
   } from '$lib/state/settings.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { supportsOrientationLock } from '$lib/platform';
-  import { folderSaveSupported, chooseSaveFolder, hasSaveFolder } from '$lib/drawing/folderSave';
+  import { folderSaveSupported } from '$lib/drawing/folderSave';
   import { playDrawSound, stopDrawSound } from '$lib/audio/drawingSound';
 
   // Windowed platforms (iPadOS 26+) own device orientation through their own
@@ -28,22 +30,8 @@
   const showOrientationControls = supportsOrientationLock();
 
   // Silent folder save is desktop-Chromium only (File System Access API). On
-  // every other browser the toggle is hidden and saves stay as downloads.
+  // every other browser the folder row is hidden and saves stay as downloads.
   const showFolderSave = folderSaveSupported();
-
-  // Turning the toggle on picks a folder right away when one isn't set yet (the
-  // toggle click is the user gesture the picker needs), so saves go silent from
-  // the next one on. Cancelling the picker leaves the toggle off. Even if it ends
-  // up on without a folder, the next save re-prompts (see saveBlobToFolder).
-  async function onToggleFolderSave(next: boolean) {
-    if (!next) {
-      setSaveToFolder(false);
-      return;
-    }
-    if ((await hasSaveFolder()) || (await chooseSaveFolder())) {
-      setSaveToFolder(true);
-    }
-  }
 
   const PREVIEW_SPEED = 0.45;
   let previewingVolume = false;
@@ -203,21 +191,27 @@
       label="Auto-Save on Delete"
       id="saveOnDeleteToggle"
       checked={settings.saveOnDeleteEnabled}
-      onToggle={setSaveOnDelete}
+      onToggle={(next) => toggleSaveFeature(setSaveOnDelete, next)}
       help="Saves the current drawing each time the page is cleared"
     />
   </div>
 
   {#if showFolderSave}
-    <div class="setting">
-      <ToggleRow
-        icon="folder"
-        label="Save to Folder"
-        id="saveToFolderToggle"
-        checked={settings.saveToFolderEnabled}
-        onToggle={onToggleFolderSave}
-        help="Saves pictures straight into a folder you pick, with no download pop-up"
-      />
+    <div class="setting folder-location">
+      <div class="folder-info">
+        <Icon name="folder" class="setting-icon" />
+        <div class="folder-text">
+          <span class="folder-title">Saved photos folder</span>
+          <span class="folder-path" class:unset={!settings.saveFolderName}>
+            {settings.saveFolderName ?? 'Chosen when you turn a save option on'}
+          </span>
+        </div>
+      </div>
+      {#if settings.saveFolderName}
+        <button class="folder-change" id="changeSaveFolderButton" onclick={changeSaveFolder}>
+          Change
+        </button>
+      {/if}
     </div>
   {/if}
 
@@ -309,7 +303,7 @@
         label="Screenshot Button"
         id="screenshotToggle"
         checked={settings.screenshotEnabled}
-        onToggle={setScreenshot}
+        onToggle={(next) => toggleSaveFeature(setScreenshot, next)}
       />
     </div>
 
@@ -351,6 +345,61 @@
     padding: 12px 16px;
     background: #f8f8f8;
     border-radius: 8px;
+  }
+
+  .folder-location {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .folder-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .folder-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .folder-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+  }
+
+  .folder-path {
+    font-size: 13px;
+    color: #777;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .folder-path.unset {
+    font-style: italic;
+    color: #999;
+  }
+
+  .folder-change {
+    flex-shrink: 0;
+    border: none;
+    border-radius: 999px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--brand);
+    cursor: pointer;
+  }
+
+  .folder-change:hover {
+    background: var(--brand-hover);
   }
 
   .volume-setting {

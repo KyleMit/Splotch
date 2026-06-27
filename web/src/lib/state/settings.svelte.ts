@@ -8,11 +8,11 @@ import {
   removeKey,
 } from '../storage';
 import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage';
+import { folderSaveSupported, chooseSaveFolder, getSaveFolderName } from '$lib/drawing/folderSave';
 
 const SOUND_KEY = 'splotch-sound-enabled';
 const SOUND_VOLUME_KEY = 'splotch-sound-volume';
 const SAVE_ON_DELETE_KEY = 'splotch-save-on-delete';
-const SAVE_TO_FOLDER_KEY = 'splotch-save-to-folder';
 const SCREENSHOT_KEY = 'splotch-screenshot-enabled';
 const UNDO_KEY = 'splotch-undo-button-enabled';
 const STROKE_CTRL_KEY = 'splotch-stroke-width-control';
@@ -57,11 +57,6 @@ function defaultForceLandscapeOrientation() {
 const BOOL_SETTINGS = {
   soundEnabled: [SOUND_KEY, true],
   saveOnDeleteEnabled: [SAVE_ON_DELETE_KEY, false],
-  // Desktop web only: when on, saved PNGs are written silently into a
-  // parent-chosen folder (File System Access API) instead of triggering the
-  // browser download shelf. Off until the parent picks a folder in the Parent
-  // Center; the folder handle itself lives in IndexedDB (see drawing/folderSave).
-  saveToFolderEnabled: [SAVE_TO_FOLDER_KEY, false],
   screenshotEnabled: [SCREENSHOT_KEY, true],
   undoButtonEnabled: [UNDO_KEY, true],
   strokeWidthControlEnabled: [STROKE_CTRL_KEY, true],
@@ -115,6 +110,11 @@ interface Settings extends Record<BoolSettingKey, boolean> {
   // Parent-supplied Gemini API key (BYOK). Held in memory only; hydrated from
   // secure storage on boot by hydrateApiKey(). Empty until then / unless set.
   aiUserApiKey: string;
+  // Desktop web only: the name of the folder PNGs are saved into (File System
+  // Access API). Not persisted here — it's derived from the directory handle in
+  // IndexedDB and hydrated on boot by hydrateSaveFolder(). Null until a folder is
+  // picked. On supported browsers the save features require this to be set.
+  saveFolderName: string | null;
 }
 
 export const settings: Settings = $state({
@@ -124,6 +124,7 @@ export const settings: Settings = $state({
   soundVolume: clampVolume(readInt(SOUND_VOLUME_KEY, 50)),
   aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
   aiUserApiKey: '',
+  saveFolderName: null,
 });
 
 // Build a setter that updates the live value and persists it to localStorage.
@@ -137,7 +138,6 @@ function makeBoolSetter(prop: BoolSettingKey) {
 
 export const setSound = makeBoolSetter('soundEnabled');
 export const setSaveOnDelete = makeBoolSetter('saveOnDeleteEnabled');
-export const setSaveToFolder = makeBoolSetter('saveToFolderEnabled');
 export const setScreenshot = makeBoolSetter('screenshotEnabled');
 export const setUndoButton = makeBoolSetter('undoButtonEnabled');
 export const setStrokeWidthControl = makeBoolSetter('strokeWidthControlEnabled');
@@ -205,6 +205,46 @@ export async function hydrateApiKey() {
   }
 
   if (key) settings.aiUserApiKey = key;
+}
+
+// The three save features that, on a folder-capable browser (desktop Chromium),
+// write into the parent-chosen folder. Each requires a folder to be enabled.
+const FOLDER_SAVE_SETTERS = [setScreenshot, setSaveOnDelete, setAutoSaveAi];
+
+// Toggle one of the save features. On a folder-capable browser, turning a
+// feature on with no folder chosen yet prompts for one first (the toggle click
+// is the user gesture the picker needs); cancelling leaves the feature off so a
+// parent can't enable saving without a destination. Elsewhere it's a plain
+// setter. Call from a click handler so the picker keeps its user activation.
+export async function toggleSaveFeature(set: (v: boolean) => void, next: boolean) {
+  if (!next) {
+    set(false);
+    return;
+  }
+  if (folderSaveSupported() && !settings.saveFolderName) {
+    const name = await chooseSaveFolder();
+    if (!name) return;
+    settings.saveFolderName = name;
+  }
+  set(true);
+}
+
+// Re-pick the destination folder (the Parent Center "Change folder" control).
+// Keeps the current folder if the parent cancels.
+export async function changeSaveFolder() {
+  const name = await chooseSaveFolder();
+  if (name) settings.saveFolderName = name;
+}
+
+// Boot hydration (web/desktop only): read the remembered folder name from the
+// directory handle in IndexedDB into the live store. If no folder is set, force
+// the folder-gated save features off — they can't save anywhere until a parent
+// picks a folder, so the toggles (and the Screenshot button) start off.
+export async function hydrateSaveFolder() {
+  if (!folderSaveSupported()) return;
+  const name = await getSaveFolderName();
+  settings.saveFolderName = name;
+  if (!name) for (const set of FOLDER_SAVE_SETTERS) set(false);
 }
 
 export function captureAiAccessTokenFromUrl() {
