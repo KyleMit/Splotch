@@ -9,7 +9,6 @@
     setAutoSaveAi,
     setAiAccessToken,
     setAiUserApiKey,
-    toggleSaveFeature,
   } from '$lib/state/settings.svelte';
   import { apiUrl } from '$lib/api';
   import { getPlatform } from '$lib/platform';
@@ -277,7 +276,7 @@
             label="Auto-Save AI Images"
             id="autoSaveAiToggle"
             checked={settings.autoSaveAiEnabled}
-            onToggle={(next) => toggleSaveFeature(setAutoSaveAi, next)}
+            onToggle={setAutoSaveAi}
             help="Saves each AI image and the drawing to your photos, and shows a larger preview"
           />
         </div>

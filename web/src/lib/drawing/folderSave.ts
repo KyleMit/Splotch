@@ -2,10 +2,11 @@ import { browser } from '$app/environment';
 
 // Silent folder save for the web target. On desktop Chromium (in-tab or
 // installed PWA) the File System Access API lets the parent pick a destination
-// folder once — from the Parent Center, as a prerequisite for enabling any save
-// feature — after which each PNG is written straight into it with no download
-// shelf. Where the API is missing (Firefox, Safari, mobile) saves fall back to a
-// normal download.
+// folder once — behind an optional "Save to Folder" toggle in the Parent Center
+// — after which each PNG is written straight into it with no download shelf.
+// Where the API is missing (Firefox, Safari, mobile) the toggle is hidden and
+// saves fall back to a normal download. Purely additive: the default download
+// path is unchanged, and nothing here touches the native gallery save.
 //
 // The chosen directory handle isn't plain data — JSON.stringify(handle) is "{}"
 // (its binding to a real OS directory plus the permission grant live in browser
@@ -55,26 +56,20 @@ export async function hasSaveFolder(): Promise<boolean> {
   return (await loadHandle()) !== null;
 }
 
-/** The name of the remembered destination folder, or null if none is set. */
-export async function getSaveFolderName(): Promise<string | null> {
-  if (!folderSaveSupported()) return null;
-  return (await loadHandle())?.name ?? null;
-}
-
 // Prompt the parent to pick a destination folder and remember it. Must run
-// inside a user gesture (the toggle/Change-folder click) — both
-// showDirectoryPicker and requestPermission need transient activation. Returns
-// the chosen folder's name once granted; null if the parent cancels.
-export async function chooseSaveFolder(): Promise<string | null> {
-  if (!folderSaveSupported()) return null;
+// inside a user gesture (the toggle click) — both showDirectoryPicker and
+// requestPermission need transient activation. Returns true once a readwrite
+// folder is chosen and granted; false if the parent cancels.
+export async function chooseSaveFolder(): Promise<boolean> {
+  if (!folderSaveSupported()) return false;
   try {
     const handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'pictures' });
-    if ((await handle.requestPermission({ mode: 'readwrite' })) !== 'granted') return null;
+    if ((await handle.requestPermission({ mode: 'readwrite' })) !== 'granted') return false;
     await storeHandle(handle);
-    return handle.name;
+    return true;
   } catch {
     // AbortError (parent cancelled the picker) or any other failure → not chosen.
-    return null;
+    return false;
   }
 }
 
@@ -90,11 +85,11 @@ export async function clearSaveFolder(): Promise<void> {
 }
 
 // Write `blob` as `filename` into the chosen folder. Returns true once written;
-// false tells the caller to fall back to a download. `allowPrompt` gates the
-// steps that need transient user activation: when set (a user-initiated save) we
-// pick a folder if none is chosen yet, and re-confirm a permission the browser
-// dropped since (in-tab origins lose it between sessions). Background saves leave
-// it false and degrade silently to a download until a folder is set up.
+// false tells the caller to fall back to a download. Never opens the folder
+// picker — folder selection is toggle-driven. `allowPrompt` only lets a
+// user-initiated save re-confirm a write permission the browser dropped since
+// the folder was chosen (in-tab origins lose it between sessions); background
+// saves leave it false and degrade silently to a download.
 export async function saveBlobToFolder(
   blob: Blob,
   filename: string,
@@ -104,16 +99,8 @@ export async function saveBlobToFolder(
   const allowPrompt = opts?.allowPrompt ?? false;
 
   try {
-    let handle = await loadHandle();
-    if (!handle) {
-      // No folder chosen yet — prompt for one on a user-initiated save (the
-      // gesture that reached here keeps the picker allowed), so a save still
-      // works if the handle was lost. Background saves can't prompt and fall
-      // back to a download.
-      if (!allowPrompt || !(await chooseSaveFolder())) return false;
-      handle = await loadHandle();
-      if (!handle) return false;
-    }
+    const handle = await loadHandle();
+    if (!handle) return false;
 
     let permission = await handle.queryPermission({ mode: 'readwrite' });
     if (permission !== 'granted' && allowPrompt) {

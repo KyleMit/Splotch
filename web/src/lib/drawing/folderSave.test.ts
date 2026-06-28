@@ -14,18 +14,17 @@ vi.mock('idb', () => ({
 import {
   folderSaveSupported,
   hasSaveFolder,
-  getSaveFolderName,
   chooseSaveFolder,
   saveBlobToFolder,
 } from './folderSave';
 
 const blob = new Blob(['png'], { type: 'image/png' });
 
-function makeHandle(permission: PermissionState = 'granted', name = 'My Pictures') {
+function makeHandle(permission: PermissionState = 'granted') {
   const writable = { write: vi.fn(async () => {}), close: vi.fn(async () => {}) };
   const fileHandle = { createWritable: vi.fn(async () => writable) };
   const handle = {
-    name,
+    name: 'My Pictures',
     queryPermission: vi.fn(async () => permission),
     requestPermission: vi.fn(async () => permission),
     getFileHandle: vi.fn(async () => fileHandle),
@@ -58,51 +57,36 @@ describe('folderSaveSupported', () => {
 });
 
 describe('chooseSaveFolder', () => {
-  it('returns null when the API is unsupported', async () => {
-    expect(await chooseSaveFolder()).toBeNull();
+  it('returns false when the API is unsupported', async () => {
+    expect(await chooseSaveFolder()).toBe(false);
   });
 
-  it('remembers a granted folder and returns its name', async () => {
-    const { handle } = makeHandle('granted', 'Splotch Art');
+  it('remembers a granted folder', async () => {
+    const { handle } = makeHandle('granted');
     setPicker(vi.fn(async () => handle));
 
-    expect(await chooseSaveFolder()).toBe('Splotch Art');
+    expect(await chooseSaveFolder()).toBe(true);
     expect(handle.requestPermission).toHaveBeenCalledOnce();
     expect(await hasSaveFolder()).toBe(true);
-    expect(await getSaveFolderName()).toBe('Splotch Art');
   });
 
   it('does not remember the folder when permission is denied', async () => {
     const { handle } = makeHandle('denied');
     setPicker(vi.fn(async () => handle));
 
-    expect(await chooseSaveFolder()).toBeNull();
+    expect(await chooseSaveFolder()).toBe(false);
     expect(await hasSaveFolder()).toBe(false);
   });
 
-  it('returns null when the parent cancels the picker', async () => {
+  it('returns false when the parent cancels the picker', async () => {
     setPicker(
       vi.fn(async () => {
         throw new DOMException('cancelled', 'AbortError');
       })
     );
 
-    expect(await chooseSaveFolder()).toBeNull();
+    expect(await chooseSaveFolder()).toBe(false);
     expect(await hasSaveFolder()).toBe(false);
-  });
-});
-
-describe('getSaveFolderName', () => {
-  it('is null when no folder is stored', async () => {
-    setPicker(vi.fn());
-    expect(await getSaveFolderName()).toBeNull();
-  });
-
-  it('returns the stored folder name', async () => {
-    const { handle } = makeHandle('granted', 'Kids Drawings');
-    store.set('saveDir', handle);
-    setPicker(vi.fn());
-    expect(await getSaveFolderName()).toBe('Kids Drawings');
   });
 });
 
@@ -111,37 +95,12 @@ describe('saveBlobToFolder', () => {
     expect(await saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
   });
 
-  it('does not open the picker for a background save with no stored folder', async () => {
+  it('never opens the folder picker, even with allowPrompt and no stored folder', async () => {
     const picker = vi.fn();
     setPicker(picker);
 
-    expect(await saveBlobToFolder(blob, 'a.png', { allowPrompt: false })).toBe(false);
-    expect(picker).not.toHaveBeenCalled();
-  });
-
-  it('prompts for a folder on a user-initiated save when none is stored, then writes', async () => {
-    const { handle, fileHandle, writable } = makeHandle('granted');
-    const picker = vi.fn(async () => handle);
-    setPicker(picker);
-
-    expect(await saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(true);
-    expect(picker).toHaveBeenCalledOnce();
-    expect(handle.getFileHandle).toHaveBeenCalledWith('a.png', { create: true });
-    expect(writable.write).toHaveBeenCalledWith(blob);
-    expect(fileHandle.createWritable).toHaveBeenCalledOnce();
-    // The picked folder is remembered for the next save.
-    expect(await hasSaveFolder()).toBe(true);
-  });
-
-  it('falls back to download when the user cancels the folder picker', async () => {
-    setPicker(
-      vi.fn(async () => {
-        throw new DOMException('cancelled', 'AbortError');
-      })
-    );
-
     expect(await saveBlobToFolder(blob, 'a.png', { allowPrompt: true })).toBe(false);
-    expect(await hasSaveFolder()).toBe(false);
+    expect(picker).not.toHaveBeenCalled();
   });
 
   it('writes the blob into a stored, granted folder', async () => {
@@ -181,7 +140,7 @@ describe('saveBlobToFolder', () => {
     expect(fileHandle.createWritable).not.toHaveBeenCalled();
   });
 
-  it('clears a stale handle so the parent re-picks', async () => {
+  it('clears a stale handle so re-enabling re-picks', async () => {
     const { handle } = makeHandle('granted');
     handle.getFileHandle = vi.fn(async () => {
       throw new DOMException('gone', 'NotFoundError');
