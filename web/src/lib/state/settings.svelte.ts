@@ -8,7 +8,12 @@ import {
   removeKey,
 } from '../storage';
 import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage';
-import { folderSaveSupported, chooseSaveFolder, getSaveFolderName } from '$lib/drawing/folderSave';
+import {
+  folderSaveSupported,
+  chooseSaveFolder,
+  getSaveFolderName,
+  clearSaveFolder,
+} from '$lib/drawing/folderSave';
 
 const SOUND_KEY = 'splotch-sound-enabled';
 const SOUND_VOLUME_KEY = 'splotch-sound-volume';
@@ -229,11 +234,20 @@ export async function toggleSaveFeature(set: (v: boolean) => void, next: boolean
   set(true);
 }
 
-// Re-pick the destination folder (the Parent Center "Change folder" control).
+// Re-pick the destination folder (clicking the folder pill / "Choose folder").
 // Keeps the current folder if the parent cancels.
 export async function changeSaveFolder() {
   const name = await chooseSaveFolder();
   if (name) settings.saveFolderName = name;
+}
+
+// Forget the chosen folder (the Parent Center clear button) and turn the
+// folder-gated save features off — without a folder they can't save anywhere,
+// mirroring the boot-time state in hydrateSaveFolder.
+export async function forgetSaveFolder() {
+  await clearSaveFolder();
+  settings.saveFolderName = null;
+  for (const set of FOLDER_SAVE_SETTERS) set(false);
 }
 
 // Boot hydration (web/desktop only): read the remembered folder name from the

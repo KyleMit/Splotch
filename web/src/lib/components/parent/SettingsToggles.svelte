@@ -19,6 +19,7 @@
     setPencilEraserEnabled,
     toggleSaveFeature,
     changeSaveFolder,
+    forgetSaveFolder,
   } from '$lib/state/settings.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { supportsOrientationLock } from '$lib/platform';
@@ -200,18 +201,33 @@
     <div class="setting folder-location">
       <div class="folder-info">
         <Icon name="folder" class="setting-icon" />
-        <div class="folder-text">
-          <span class="folder-title">Saved photos folder</span>
-          {#if settings.saveFolderName}
-            <span class="folder-path">{settings.saveFolderName}</span>
-          {:else}
-            <span class="folder-path unset">Not set yet</span>
-          {/if}
-        </div>
+        <span class="folder-title">Save drawings to</span>
       </div>
-      <button class="folder-change" id="changeSaveFolderButton" onclick={changeSaveFolder}>
-        {settings.saveFolderName ? 'Change' : 'Select folder'}
-      </button>
+      {#if settings.saveFolderName}
+        <div class="folder-actions">
+          <button
+            class="folder-pill"
+            id="changeSaveFolderButton"
+            title="Change folder"
+            onclick={changeSaveFolder}
+          >
+            {settings.saveFolderName}
+          </button>
+          <button
+            class="folder-clear"
+            id="forgetSaveFolderButton"
+            aria-label="Forget folder"
+            title="Forget folder"
+            onclick={forgetSaveFolder}
+          >
+            <Icon name="close" class="folder-clear-icon" />
+          </button>
+        </div>
+      {:else}
+        <button class="folder-change" id="changeSaveFolderButton" onclick={changeSaveFolder}>
+          Choose folder
+        </button>
+      {/if}
     </div>
   {/if}
 
@@ -356,19 +372,8 @@
 
   .folder-info {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 10px;
-    min-width: 0;
-  }
-
-  /* Top-align the icon with the title rather than centring it across both lines. */
-  .folder-info :global(.setting-icon) {
-    margin-top: 1px;
-  }
-
-  .folder-text {
-    display: flex;
-    flex-direction: column;
     min-width: 0;
   }
 
@@ -376,23 +381,10 @@
     font-size: 14px;
     font-weight: 500;
     color: #555;
-  }
-
-  .folder-path {
-    margin-top: 7px;
-    font-size: 13px;
-    line-height: 1.4;
-    color: #777;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .folder-path.unset {
-    font-style: italic;
-    color: #999;
-  }
-
+  /* Empty state: primary CTA to pick a folder. */
   .folder-change {
     flex-shrink: 0;
     border: none;
@@ -407,6 +399,57 @@
 
   .folder-change:hover {
     background: var(--brand-hover);
+  }
+
+  .folder-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  /* Selected state: secondary (lighter) pill showing the current folder. */
+  .folder-pill {
+    min-width: 0;
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: none;
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #7c50bb;
+    background: #efe6fa;
+    cursor: pointer;
+  }
+
+  .folder-pill:hover {
+    background: #e6d7f6;
+  }
+
+  .folder-clear {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    color: #666;
+    background: #e9e9e9;
+    cursor: pointer;
+  }
+
+  .folder-clear:hover {
+    background: #dcdcdc;
+  }
+
+  :global(.folder-clear-icon) {
+    width: 13px;
+    height: 13px;
   }
 
   .volume-setting {
