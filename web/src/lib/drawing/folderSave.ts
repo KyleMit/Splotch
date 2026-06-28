@@ -2,12 +2,18 @@ import { browser } from '$app/environment';
 
 // Silent folder save for the web target. On desktop Chromium (in-tab or
 // installed PWA) the File System Access API lets the parent pick a destination
-// folder once — from the Parent Center, behind a deliberate toggle — after which
-// each PNG is written straight into it with no download shelf. The chosen
-// directory handle is structured-cloneable, so it persists in IndexedDB (it
-// can't live in localStorage, which is string-only — that's why lib/storage.ts
-// can't back this). Where the API is missing (Firefox, Safari, mobile) the
-// toggle is hidden and saves fall back to a normal download.
+// folder once — from the Parent Center, as a prerequisite for enabling any save
+// feature — after which each PNG is written straight into it with no download
+// shelf. Where the API is missing (Firefox, Safari, mobile) saves fall back to a
+// normal download.
+//
+// The chosen directory handle isn't plain data — JSON.stringify(handle) is "{}"
+// (its binding to a real OS directory plus the permission grant live in browser
+// internals, not enumerable fields), so it can't be serialized to a string. It's
+// only persistable via the structured clone algorithm, and among web storage
+// only IndexedDB runs that — localStorage is a string-only map, which is why
+// lib/storage.ts can't back this. Hence the idb dependency, loaded lazily like
+// secureStorage.ts.
 
 const DB_NAME = 'splotch-fs';
 const DB_VERSION = 1;
