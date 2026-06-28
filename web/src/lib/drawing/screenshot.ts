@@ -3,7 +3,6 @@ import { exportCanvasBlob, getActiveCanvas } from './engine';
 import { getActiveOverlayImage } from './overlay';
 import { isNative, getPlatform } from '$lib/platform';
 import { saveBlobToFolder } from './folderSave';
-import { settings } from '$lib/state/settings.svelte';
 
 export function timestamp() {
   const d = new Date();
@@ -60,11 +59,12 @@ async function saveToGallery(blob: Blob, baseName = 'splotch') {
 }
 
 // Persist a PNG blob: native drops it into the photo gallery; the web writes it
-// silently into a parent-chosen folder when the "Save to Folder" setting is on
-// and a folder is set (File System Access API, desktop Chromium), otherwise
-// triggers a file download. `allowPrompt` lets a user-initiated save re-confirm
-// a lapsed folder permission; background saves (AI auto-save, save-on-delete)
-// leave it falsy. No polaroid animation — the caller owns its own feedback.
+// silently into the parent-chosen folder when one is set (File System Access
+// API, desktop Chromium), otherwise triggers a file download. The folder is
+// optional and decoupled from saving — no folder just means a download.
+// `allowPrompt` lets a user-initiated save re-confirm a lapsed folder
+// permission; background saves (AI auto-save, save-on-delete) leave it falsy. No
+// polaroid animation — the caller owns its own feedback.
 export async function saveImageBlob(
   blob: Blob | null,
   baseName = 'splotch',
@@ -79,7 +79,7 @@ export async function saveImageBlob(
     }
   } else {
     const filename = `${baseName}-${timestamp()}.png`;
-    if (settings.saveToFolderEnabled && (await saveBlobToFolder(blob, filename, opts))) return;
+    if (await saveBlobToFolder(blob, filename, opts)) return;
     const url = URL.createObjectURL(blob);
     triggerDownload(url, filename);
     URL.revokeObjectURL(url);

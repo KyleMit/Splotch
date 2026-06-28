@@ -1,12 +1,13 @@
 import { browser } from '$app/environment';
 
 // Silent folder save for the web target. On desktop Chromium (in-tab or
-// installed PWA) the File System Access API lets the parent pick a destination
-// folder once — behind an optional "Save to Folder" toggle in the Parent Center
-// — after which each PNG is written straight into it with no download shelf.
-// Where the API is missing (Firefox, Safari, mobile) the toggle is hidden and
-// saves fall back to a normal download. Purely additive: the default download
-// path is unchanged, and nothing here touches the native gallery save.
+// installed PWA) the File System Access API lets the parent optionally pick a
+// destination folder in the Parent Center; while one is set, each web save is
+// written straight into it with no download shelf. It's purely a convenience and
+// fully decoupled from the save actions: with no folder (or after clearing it)
+// saves just go to the browser's default download location, and the API being
+// missing (Firefox, Safari, mobile) is the same as having no folder. Nothing
+// here touches the native gallery save.
 //
 // The chosen directory handle isn't plain data — JSON.stringify(handle) is "{}"
 // (its binding to a real OS directory plus the permission grant live in browser
@@ -56,20 +57,26 @@ export async function hasSaveFolder(): Promise<boolean> {
   return (await loadHandle()) !== null;
 }
 
+/** The name of the remembered destination folder, or null if none is set. */
+export async function getSaveFolderName(): Promise<string | null> {
+  if (!folderSaveSupported()) return null;
+  return (await loadHandle())?.name ?? null;
+}
+
 // Prompt the parent to pick a destination folder and remember it. Must run
-// inside a user gesture (the toggle click) — both showDirectoryPicker and
-// requestPermission need transient activation. Returns true once a readwrite
-// folder is chosen and granted; false if the parent cancels.
-export async function chooseSaveFolder(): Promise<boolean> {
-  if (!folderSaveSupported()) return false;
+// inside a user gesture (the Choose/Change-folder click) — both
+// showDirectoryPicker and requestPermission need transient activation. Returns
+// the chosen folder's name once granted; null if the parent cancels.
+export async function chooseSaveFolder(): Promise<string | null> {
+  if (!folderSaveSupported()) return null;
   try {
     const handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'pictures' });
-    if ((await handle.requestPermission({ mode: 'readwrite' })) !== 'granted') return false;
+    if ((await handle.requestPermission({ mode: 'readwrite' })) !== 'granted') return null;
     await storeHandle(handle);
-    return true;
+    return handle.name;
   } catch {
     // AbortError (parent cancelled the picker) or any other failure → not chosen.
-    return false;
+    return null;
   }
 }
 
@@ -85,11 +92,12 @@ export async function clearSaveFolder(): Promise<void> {
 }
 
 // Write `blob` as `filename` into the chosen folder. Returns true once written;
-// false tells the caller to fall back to a download. Never opens the folder
-// picker — folder selection is toggle-driven. `allowPrompt` only lets a
-// user-initiated save re-confirm a write permission the browser dropped since
-// the folder was chosen (in-tab origins lose it between sessions); background
-// saves leave it false and degrade silently to a download.
+// false (no folder set, unsupported, or permission lost) tells the caller to
+// fall back to a download. Never opens the folder picker — folder selection is a
+// separate Parent Center action. `allowPrompt` only lets a user-initiated save
+// re-confirm a write permission the browser dropped since the folder was chosen
+// (in-tab origins lose it between sessions); background saves leave it false and
+// degrade silently to a download.
 export async function saveBlobToFolder(
   blob: Blob,
   filename: string,
@@ -115,7 +123,7 @@ export async function saveBlobToFolder(
     return true;
   } catch (err) {
     // The folder was moved/removed since we stored it: drop the stale handle so
-    // re-enabling the toggle prompts for a fresh one. AbortError and any other
+    // it reverts to the no-folder (download) state. AbortError and any other
     // write failure just fall back to a download.
     if (err instanceof DOMException && err.name === 'NotFoundError') {
       await clearSaveFolder();

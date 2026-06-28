@@ -36,46 +36,54 @@ Keep a single save entry point and branch by target. The full matrix:
 | --- | --- | --- |
 | **Native — Android** | `@capacitor-community/media` `savePhoto` into a `"Splotch"` album (created once) | Drawing appears in the gallery's Splotch album |
 | **Native — iOS** | `@capacitor-community/media` `savePhoto` (add-only permission) | Drawing appears in the camera roll |
-| **Web — desktop Chromium** (Chrome/Edge, tab *or* installed PWA) **with "Save to Folder" on** | `saveBlobToFolder` → File System Access writable into the parent-chosen folder | PNG written silently into that folder, **no download shelf** |
-| **Web — desktop Chromium, "Save to Folder" off (default)** | `triggerDownload` (`<a download>`) | Normal browser download |
-| **Web — Firefox / Safari / all mobile browsers** | `triggerDownload` | Normal browser download (the toggle is hidden) |
+| **Web — desktop Chromium** (Chrome/Edge, tab *or* installed PWA) **with a folder chosen** | `saveBlobToFolder` → File System Access writable into the parent-chosen folder | PNG written silently into that folder, **no download shelf** |
+| **Web — desktop Chromium, no folder chosen** | `triggerDownload` (`<a download>`) | Normal browser download |
+| **Web — Firefox / Safari / all mobile browsers** | `triggerDownload` | Normal browser download (the folder row is hidden) |
 
-`isNative()` selects the native branch (unchanged). On the web, the folder write
-is attempted only when the **`saveToFolderEnabled`** setting is on, and falls
-back to `triggerDownload` whenever `saveBlobToFolder` returns `false` — which is
-*every* time on browsers without the File System Access API, so those keep
-today's exact download behaviour.
+`isNative()` selects the native branch (unchanged). On the web, `saveImageBlob`
+always tries `saveBlobToFolder` first and falls back to `triggerDownload`
+whenever it returns `false` — which is every time there's no chosen folder
+(including on browsers without the File System Access API), so those keep today's
+exact download behaviour.
 
-### One optional, additive toggle — deliberately kept small
+### An optional folder — fully decoupled from the save actions
 
-This is intentionally a thin, opt-in enhancement, **not** a reshaping of how
-saving works. An earlier iteration made a chosen folder a prerequisite for the
-three save features (gating the Screenshot button etc. and forcing them off at
-boot); that was pared back because the coupling and the changed defaults were
-disproportionate to a desktop-Chromium-only win (see Consequences).
+This is a thin, opt-in convenience, **not** a reshaping of how saving works. An
+earlier iteration made a chosen folder a *prerequisite* for the three save
+features (gating the Screenshot button etc. and forcing them off at boot); that
+was pared back because the coupling and changed defaults were disproportionate to
+a desktop-Chromium-only win (see Consequences).
 
-What remains: a single **"Save to Folder"** toggle in the Parent Center
-(`SettingsToggles.svelte`), shown only when `folderSaveSupported()`, default off.
-Turning it on runs `chooseSaveFolder()` (`showDirectoryPicker` +
-`requestPermission`, both inside the toggle click's user activation) and only
-flips the setting on if a folder is granted; cancelling leaves it off. Toggling
-off keeps the remembered folder, so re-enabling doesn't re-prompt. Nothing else
-changes: the three save features keep their normal defaults and behaviour, and on
-unsupported browsers the toggle simply isn't shown.
+What remains is decoupled in both directions: **you can save without a folder**
+(it just downloads), and **clearing the folder doesn't stop saving** (it reverts
+to downloads). The presence of a chosen folder is the *only* thing that decides
+where a web save lands — there's no separate enable flag and nothing is gated.
 
-A `FileSystemDirectoryHandle` is structured-cloneable, so it lives in IndexedDB
-(`splotch-fs` / `handles`) rather than localStorage (string-only) — mirroring the
-lazy-`idb` pattern in `secureStorage.ts`.
+Folder management lives in a one-line **"Save drawings to"** row in the Parent
+Center (`SettingsToggles.svelte`), shown only when `folderSaveSupported()`:
+
+- No folder → a primary **Choose folder** button (`changeSaveFolder()` →
+  `chooseSaveFolder()`, the picker inside the click's user activation).
+- Folder set → a lighter secondary **pill showing the folder name** (click to
+  re-pick) plus a circular **clear** button (`forgetSaveFolder()` →
+  `clearSaveFolder()`, which just drops the handle).
+
+`settings.saveFolderName` (reactive, not persisted) backs the display; it's
+hydrated on boot from the stored handle by `hydrateSaveFolder()`, which has no
+side effects on any save feature. The `FileSystemDirectoryHandle` itself is
+structured-cloneable, so it lives in IndexedDB (`splotch-fs` / `handles`) rather
+than localStorage (string-only) — mirroring the lazy-`idb` pattern in
+`secureStorage.ts`.
 
 ### `allowPrompt`: who may raise a dialog at save time
 
 `saveBlobToFolder(blob, filename, { allowPrompt })` takes `allowPrompt: true` for
 user-initiated saves (the Screenshot button) and false for background saves. It
-never opens the folder picker — that is toggle-driven. `allowPrompt` only lets a
-user-initiated save **re-confirm a write permission** the browser dropped between
-sessions (in-tab origins lose it; installed PWAs keep it). Background saves leave
-`allowPrompt` false and degrade to a download
-rather than surprising anyone with a dialog.
+never opens the folder picker — that's a separate Parent Center action.
+`allowPrompt` only lets a user-initiated save **re-confirm a write permission**
+the browser dropped between sessions (in-tab origins lose it; installed PWAs keep
+it). Background saves leave `allowPrompt` false and degrade to a download rather
+than surprising anyone with a dialog.
 
 ## Consequences
 

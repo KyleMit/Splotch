@@ -2,12 +2,12 @@
   import { onDestroy } from 'svelte';
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
+  import Icon from '../Icon.svelte';
   import {
     settings,
     setSound,
     setSoundVolume,
     setSaveOnDelete,
-    setSaveToFolder,
     setScreenshot,
     setUndoButton,
     setStrokeWidthControl,
@@ -17,32 +17,21 @@
     setLockRotation,
     setForceLandscapeOrientation,
     setPencilEraserEnabled,
+    changeSaveFolder,
+    forgetSaveFolder,
   } from '$lib/state/settings.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { supportsOrientationLock } from '$lib/platform';
-  import { folderSaveSupported, chooseSaveFolder, hasSaveFolder } from '$lib/drawing/folderSave';
+  import { folderSaveSupported } from '$lib/drawing/folderSave';
   import { playDrawSound, stopDrawSound } from '$lib/audio/drawingSound';
 
   // Windowed platforms (iPadOS 26+) own device orientation through their own
   // window controls and ignore in-app locks, so the toggles are hidden there.
   const showOrientationControls = supportsOrientationLock();
 
-  // Silent folder save is desktop-Chromium only (File System Access API). On
-  // every other browser the toggle is hidden and saves stay as downloads.
+  // The optional save folder is desktop-Chromium only (File System Access API).
+  // On every other browser the row is hidden and saves stay as downloads.
   const showFolderSave = folderSaveSupported();
-
-  // Turning the toggle on picks a folder the first time (the toggle click is the
-  // user gesture the picker needs); cancelling leaves it off. Re-enabling reuses
-  // the remembered folder without re-prompting.
-  async function onToggleFolderSave(next: boolean) {
-    if (!next) {
-      setSaveToFolder(false);
-      return;
-    }
-    if ((await hasSaveFolder()) || (await chooseSaveFolder())) {
-      setSaveToFolder(true);
-    }
-  }
 
   const PREVIEW_SPEED = 0.45;
   let previewingVolume = false;
@@ -208,15 +197,36 @@
   </div>
 
   {#if showFolderSave}
-    <div class="setting">
-      <ToggleRow
-        icon="folder"
-        label="Save to Folder"
-        id="saveToFolderToggle"
-        checked={settings.saveToFolderEnabled}
-        onToggle={onToggleFolderSave}
-        help="Saves pictures into a folder you pick, instead of downloading them"
-      />
+    <div class="setting folder-location">
+      <div class="folder-info">
+        <Icon name="folder" class="setting-icon" />
+        <span class="folder-title">Save drawings to</span>
+      </div>
+      {#if settings.saveFolderName}
+        <div class="folder-actions">
+          <button
+            class="folder-pill"
+            id="changeSaveFolderButton"
+            title="Change folder"
+            onclick={changeSaveFolder}
+          >
+            {settings.saveFolderName}
+          </button>
+          <button
+            class="folder-clear"
+            id="forgetSaveFolderButton"
+            aria-label="Forget folder"
+            title="Forget folder"
+            onclick={forgetSaveFolder}
+          >
+            <Icon name="close" class="folder-clear-icon" />
+          </button>
+        </div>
+      {:else}
+        <button class="folder-change" id="changeSaveFolderButton" onclick={changeSaveFolder}>
+          Choose folder
+        </button>
+      {/if}
     </div>
   {/if}
 
@@ -350,6 +360,95 @@
     padding: 12px 16px;
     background: #f8f8f8;
     border-radius: 8px;
+  }
+
+  .folder-location {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .folder-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .folder-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+    white-space: nowrap;
+  }
+
+  /* Empty state: primary CTA to pick a folder. */
+  .folder-change {
+    flex-shrink: 0;
+    border: none;
+    border-radius: 999px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--brand);
+    cursor: pointer;
+  }
+
+  .folder-change:hover {
+    background: var(--brand-hover);
+  }
+
+  .folder-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  /* Selected state: secondary (lighter) pill showing the current folder. */
+  .folder-pill {
+    min-width: 0;
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: none;
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #7c50bb;
+    background: #efe6fa;
+    cursor: pointer;
+  }
+
+  .folder-pill:hover {
+    background: #e6d7f6;
+  }
+
+  .folder-clear {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    color: #666;
+    background: #e9e9e9;
+    cursor: pointer;
+  }
+
+  .folder-clear:hover {
+    background: #dcdcdc;
+  }
+
+  :global(.folder-clear-icon) {
+    width: 13px;
+    height: 13px;
   }
 
   .volume-setting {
