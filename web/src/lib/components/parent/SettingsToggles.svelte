@@ -356,9 +356,14 @@
 
   .folder-info {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     min-width: 0;
+  }
+
+  /* Top-align the icon with the title rather than centring it across both lines. */
+  .folder-info :global(.setting-icon) {
+    margin-top: 1px;
   }
 
   .folder-text {
@@ -374,7 +379,7 @@
   }
 
   .folder-path {
-    margin-top: 4px;
+    margin-top: 7px;
     font-size: 13px;
     line-height: 1.4;
     color: #777;
