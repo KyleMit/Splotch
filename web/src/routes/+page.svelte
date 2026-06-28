@@ -10,7 +10,9 @@
   import NotchBand from '$lib/components/NotchBand.svelte';
   import AiImagePrompt from '$lib/components/AiImagePrompt.svelte';
   import AiImageResult from '$lib/components/AiImageResult.svelte';
+  import InstallBanner from '$lib/components/InstallBanner.svelte';
   import { initPWAUpdates } from '$lib/pwa/updates';
+  import { initInstallPrompt } from '$lib/state/install.svelte';
   import {
     captureAiAccessTokenFromUrl,
     reloadSettings,
@@ -71,8 +73,12 @@
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     // The service worker only exists in the web build; the native apps bundle
-    // their shell on-device, so there's nothing to update-check there.
-    if (!isNative()) initPWAUpdates();
+    // their shell on-device, so there's nothing to update-check there. The
+    // install prompt is likewise web-only (the native app is already installed).
+    if (!isNative()) {
+      initPWAUpdates();
+      initInstallPrompt();
+    }
 
     return () => {
       document.removeEventListener('contextmenu', blockContextMenu);
@@ -96,3 +102,4 @@
 <ParentCenter />
 <AiImagePrompt />
 <AiImageResult />
+<InstallBanner />

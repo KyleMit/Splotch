@@ -30,6 +30,7 @@ export type IconName =
   | 'remove-page'
   | 'settings'
   | 'shapes'
+  | 'share-ios'
   | 'size-1'
   | 'size-2'
   | 'size-3'

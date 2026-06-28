@@ -98,6 +98,7 @@ interface InitOptions {
   onDrawStop?: (() => void) | null;
   onUndoStateChange?: ((canUndo: boolean) => void) | null;
   onCanvasEmptyChange?: ((empty: boolean) => void) | null;
+  onStrokeStart?: (() => void) | null;
   initialColor?: string;
 }
 
@@ -163,6 +164,7 @@ let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
 
 let canvasEmpty = true;
 let onCanvasEmptyChange: ((empty: boolean) => void) | null = null;
+let onStrokeStart: (() => void) | null = null;
 
 // Pointer speed (which drives the drawing sound) is averaged over the most
 // recent slice of the stroke so the audio cue tracks gesture speed without
@@ -805,6 +807,7 @@ function beginRender() {
   activeCommand = { ops: [], wasEmpty: canvasEmpty };
   setCanvasEmptyState(false);
   groupHasDrawn = true;
+  if (onStrokeStart) onStrokeStart();
 }
 
 // Paint the round dot that anchors a stroke at its start point, and kick the
@@ -1151,6 +1154,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   onDrawStopCallback = options.onDrawStop || null;
   onUndoStateChange = options.onUndoStateChange || null;
   onCanvasEmptyChange = options.onCanvasEmptyChange || null;
+  onStrokeStart = options.onStrokeStart || null;
   currentColor = options.initialColor || '#AB71E1';
 
   renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);

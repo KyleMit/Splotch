@@ -1,6 +1,16 @@
 <script lang="ts">
   import { isNative, getPlatform } from '$lib/platform';
   import { lazyPluginModule } from '$lib/nativePlugin';
+  import Icon from '../Icon.svelte';
+  import { install, promptInstall } from '$lib/state/install.svelte';
+
+  let installing = $state(false);
+
+  async function oneTapInstall() {
+    installing = true;
+    await promptInstall();
+    installing = false;
+  }
 
   const loadDeviceLock = lazyPluginModule(() => import('$lib/plugins/deviceLock'));
 
@@ -83,9 +93,24 @@
 <!-- The two checklists are authored once here and reused across the web
      accordion and the flat native view. -->
 {#snippet installSteps(os: string)}
+  <!-- Chromium hands us a real one-tap install dialog; offer it up front and keep
+       the manual steps below as a fallback. The prompt is device-wide, so only
+       surface the button in the section matching the device we're running on. -->
+  {#if install.mode === 'oneTap' && os === installOs}
+    <div class="one-tap">
+      <button class="one-tap-btn" onclick={oneTapInstall} disabled={installing} type="button">
+        <Icon name="home" class="one-tap-icon" />
+        Install Splotch
+      </button>
+      <p class="one-tap-hint">One tap — your browser will do the rest.</p>
+    </div>
+  {/if}
   {#if os === 'ios'}
     <ol class="steps">
-      <li>Tap the <strong>Share</strong> button (square with arrow)</li>
+      <li>
+        Tap the <Icon name="share-ios" class="step-icon" aria-label="Share" />
+        <strong>Share</strong> button at the bottom
+      </li>
       <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
       <li>Tap <strong>"Add"</strong> in the top right</li>
       <li>Launch from your home screen for fullscreen mode</li>
@@ -266,6 +291,54 @@
     font-weight: bold;
     margin-left: 8px;
     font-size: 20px;
+  }
+
+  .one-tap {
+    padding: 16px 16px 0;
+    text-align: center;
+  }
+
+  .one-tap-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    border: none;
+    border-radius: 14px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .one-tap-btn:active {
+    transform: scale(0.97);
+  }
+
+  .one-tap-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  :global(.one-tap-icon) {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+  }
+
+  .one-tap-hint {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: #999;
+  }
+
+  :global(.step-icon) {
+    display: inline-flex;
+    width: 17px;
+    height: 17px;
+    vertical-align: -3px;
   }
 
   .steps {
