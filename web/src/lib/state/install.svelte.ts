@@ -30,6 +30,10 @@ interface BeforeInstallPromptEvent extends Event {
 //   'none'    — already installed, native shell, or an unsupported browser.
 export type InstallMode = 'none' | 'oneTap' | 'android' | 'ios';
 
+// The device family, for choosing which manual install steps apply. Distinct
+// from mode: an iOS in-app-browser user is an 'ios' device but mode 'none'.
+export type InstallDeviceOs = 'ios' | 'android' | 'desktop';
+
 export const install = $state({
   mode: 'none' as InstallMode,
   // Parent tapped "not now" — suppress the floating banner (the Parent Center
@@ -50,16 +54,28 @@ function isStandalone() {
   );
 }
 
-function isIosSafari() {
-  const ua = navigator.userAgent || '';
-  const iOS =
-    /iPad|iPhone|iPod/.test(ua) ||
+function isIosDevice() {
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
     // iPadOS 13+ masquerades as desktop Safari; a touch-capable "Mac" is an iPad.
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  if (!iOS) return false;
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
+
+function isIosSafari() {
+  if (!isIosDevice()) return false;
   // Add-to-Home-Screen only exists in real Safari, not the in-app Chrome/Firefox/Edge
   // WebViews (CriOS/FxiOS/EdgiOS) or embedded webviews, so don't promise it there.
+  const ua = navigator.userAgent || '';
   return /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+}
+
+// Single source of truth for "what kind of device is this" — consumers (the
+// Parent Center setup guide) must not re-sniff the UA themselves.
+export function installDeviceOs(): InstallDeviceOs {
+  if (isIosDevice()) return 'ios';
+  if (/android/i.test(navigator.userAgent || '')) return 'android';
+  return 'desktop';
 }
 
 // The fallback hint to show when there's no live one-tap prompt for this device.
@@ -76,13 +92,40 @@ function markInstalled() {
   writeBool(INSTALLED_KEY, true);
 }
 
-// Web-only; no-op inside the native shell. Wires up the Chromium prompt capture
-// and seeds the initial mode from a manual-hint heuristic.
+// beforeinstallprompt is one-shot and can fire before the page component
+// mounts (on a repeat visit the service worker already controls the page, so
+// Chromium's installability check races hydration). Listen from module load,
+// not from initInstallPrompt(), so an early event isn't silently lost.
+if (browser && !isNative()) {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Stop Chrome's default mini-infobar — we own the timing and presentation.
+    e.preventDefault();
+    deferredPrompt = e as BeforeInstallPromptEvent;
+    // The browser only fires this when the app is NOT currently installed, so
+    // it outranks a stale persisted flag (installed once, later uninstalled —
+    // localStorage survives a PWA uninstall).
+    if (install.installed || readBool(INSTALLED_KEY, false)) {
+      install.installed = false;
+      writeBool(INSTALLED_KEY, false);
+    }
+    install.mode = 'oneTap';
+  });
+
+  // Fires after any install path (our dialog, the browser menu, etc.).
+  window.addEventListener('appinstalled', markInstalled);
+}
+
+// Web-only; no-op inside the native shell. Seeds mode/dismissed/installed from
+// persisted state and the manual-hint heuristic.
 export function initInstallPrompt() {
   if (!browser || initialized || isNative()) return;
   initialized = true;
 
   install.dismissed = readBool(DISMISSED_KEY, false);
+
+  // A live prompt captured before init already proved the app is installable
+  // (and not installed) — the listener above has set mode/installed.
+  if (deferredPrompt) return;
 
   if (readBool(INSTALLED_KEY, false) || isStandalone()) {
     install.installed = true;
@@ -91,28 +134,30 @@ export function initInstallPrompt() {
   }
 
   install.mode = manualMode();
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    // Stop Chrome's default mini-infobar — we own the timing and presentation.
-    e.preventDefault();
-    deferredPrompt = e as BeforeInstallPromptEvent;
-    install.mode = 'oneTap';
-  });
-
-  // Fires after any install path (our dialog, the browser menu, etc.).
-  window.addEventListener('appinstalled', markInstalled);
 }
 
 // Replay the stashed Chromium prompt. MUST be called from a user gesture.
 // Returns the user's choice, or 'unavailable' when there's no live prompt
-// (already used, never fired, or non-Chromium) so callers can fall back to the
-// manual hint.
+// (already used, gone stale, never fired, or non-Chromium). On 'unavailable'
+// a still-'oneTap' mode drops to the manual hint so the UI falls back to
+// something a tap can actually do.
 export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unavailable'> {
-  if (!deferredPrompt) return 'unavailable';
+  if (!deferredPrompt) {
+    if (install.mode === 'oneTap') install.mode = manualMode();
+    return 'unavailable';
+  }
   const evt = deferredPrompt;
   deferredPrompt = null; // a beforeinstallprompt event can only be prompt()ed once
-  await evt.prompt();
-  const { outcome } = await evt.userChoice;
+  let outcome: 'accepted' | 'dismissed';
+  try {
+    await evt.prompt();
+    ({ outcome } = await evt.userChoice);
+  } catch {
+    // The stashed event went stale (e.g. Chrome revoked installability since
+    // capture). Swallow it — callers must never be left with a stuck busy flag.
+    if (install.mode === 'oneTap') install.mode = manualMode();
+    return 'unavailable';
+  }
   if (outcome === 'accepted') {
     markInstalled();
   } else {

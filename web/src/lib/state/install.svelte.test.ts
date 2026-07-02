@@ -83,6 +83,14 @@ describe('initInstallPrompt — mode detection', () => {
     expect(install.mode).toBe('oneTap');
   });
 
+  it('captures a prompt that fires before init — the listener lives at module load', async () => {
+    setUA(ANDROID_UA);
+    const { install, initInstallPrompt } = await freshModule();
+    window.dispatchEvent(makePromptEvent('accepted'));
+    initInstallPrompt();
+    expect(install.mode).toBe('oneTap');
+  });
+
   it('treats iPadOS-as-desktop Safari (touch Mac) as iOS', async () => {
     setUA(
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
@@ -112,6 +120,21 @@ describe('initInstallPrompt — already installed', () => {
     initInstallPrompt();
     expect(install.installed).toBe(true);
     expect(install.mode).toBe('none');
+  });
+
+  it('re-offers one-tap when a fresh prompt disproves a stale installed flag', async () => {
+    // localStorage survives a PWA uninstall; beforeinstallprompt only fires
+    // when the app is NOT installed, so the live event wins.
+    setUA(ANDROID_UA);
+    localStorage.setItem(INSTALLED_KEY, 'true');
+    const { install, initInstallPrompt } = await freshModule();
+    initInstallPrompt();
+    expect(install.mode).toBe('none');
+
+    window.dispatchEvent(makePromptEvent('accepted'));
+    expect(install.mode).toBe('oneTap');
+    expect(install.installed).toBe(false);
+    expect(localStorage.getItem(INSTALLED_KEY)).toBe('false');
   });
 
   it('is inert inside the native Capacitor shell', async () => {
@@ -165,6 +188,37 @@ describe('promptInstall', () => {
     window.dispatchEvent(makePromptEvent('accepted'));
     expect(await promptInstall()).toBe('accepted');
     expect(await promptInstall()).toBe('unavailable');
+  });
+
+  it('reports unavailable and drops to the manual hint when the prompt throws', async () => {
+    setUA(ANDROID_UA);
+    const { install, initInstallPrompt, promptInstall } = await freshModule();
+    initInstallPrompt();
+    const e = new Event('beforeinstallprompt');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (e as any).prompt = vi.fn().mockRejectedValue(new Error('prompt went stale'));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (e as any).userChoice = Promise.resolve({ outcome: 'accepted', platform: 'web' });
+    window.dispatchEvent(e);
+
+    expect(await promptInstall()).toBe('unavailable');
+    expect(install.mode).toBe('android');
+  });
+
+  it('drops a stale oneTap mode to the manual hint when the prompt is already spent', async () => {
+    setUA(ANDROID_UA);
+    const { install, initInstallPrompt, promptInstall } = await freshModule();
+    initInstallPrompt();
+    const e = new Event('beforeinstallprompt');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (e as any).prompt = vi.fn().mockResolvedValue(undefined);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (e as any).userChoice = new Promise(() => {}); // dialog still open
+    window.dispatchEvent(e);
+
+    void promptInstall(); // consumes the one-shot event
+    expect(await promptInstall()).toBe('unavailable');
+    expect(install.mode).toBe('android');
   });
 });
 

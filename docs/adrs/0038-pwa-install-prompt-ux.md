@@ -38,7 +38,12 @@ restrained, and worded for the parent.
 A single reactive module, `web/src/lib/state/install.svelte.ts`, owns install
 state and the `beforeinstallprompt` capture (modeled on `network.svelte.ts`: a
 `$state` object plus an `init*()` function called once from `+page.svelte`,
-web-only). It computes a `mode`:
+web-only). One deviation from that model: the `beforeinstallprompt` /
+`appinstalled` listeners register at **module load**, not inside `init*()` — the
+event is one-shot and on a repeat visit (service worker already controlling the
+page) Chromium's installability check races hydration, so an `onMount`-time
+listener could miss it forever. The module also owns device detection
+(`installDeviceOs()`); consumers must not re-sniff the UA. It computes a `mode`:
 
 | `mode` | Meaning | UI |
 |---|---|---|
@@ -50,25 +55,33 @@ web-only). It computes a `mode`:
 `promptInstall()` replays the stashed event from a user gesture and returns the
 outcome. A `beforeinstallprompt` event can only be `prompt()`ed once, so on
 `accepted` we mark installed (and persist it), and on `dismissed` we drop back to
-the manual hint and stop surfacing the floating banner on this device.
+the manual hint and stop surfacing the floating banner on this device. A stale
+or already-spent prompt returns `'unavailable'` (never throws — callers' busy
+flags must not strand) and likewise drops to the manual hint.
 
 Two surfaces consume the state:
 
 1. **Install Banner** (`InstallBanner.svelte`) — a small, rounded, parent-facing
    pill anchored bottom-center. It appears only after the child has drawn at
-   least a few strokes (`canvasState.strokeCount`, fed by a new `onStrokeStart`
-   engine callback), so it feels earned and never blocks the first
-   finger-on-screen moment. On `oneTap` its button fires the native dialog; on
-   `ios`/`android` it expands an inline how-to. It is dismissible, and the
-   dismissal is remembered.
-2. **Parent Center → Setup tab** — the existing step list, upgraded so the
-   "Install as App" step shows the one-tap button when available, with the manual
-   steps retained as a fallback. The Setup guide ignores the banner's
-   `dismissed` flag, so a parent can always find it.
+   least a few strokes (`canvasState.strokeCount`, fed by a new `onStrokeEnd`
+   engine callback that fires at stroke commit), so it feels earned, and it
+   mounts between strokes — never while a finger is mid-stroke. On `oneTap` its
+   button fires the native dialog; on `ios`/`android` it expands an inline
+   how-to. It is dismissible, and the dismissal is remembered.
+2. **Parent Center → Setup tab** — the existing step list, upgraded to show the
+   one-tap button above the per-OS manual steps when available (the prompt is
+   browser-wide — Android *or* desktop Chromium — so it belongs to no single OS
+   section). Section ordering and the installed checkmark come from the install
+   module (`installDeviceOs()`, `install.installed`), not a component-local
+   re-detection. The Setup guide ignores the banner's `dismissed` flag, so a
+   parent can always find it.
 
 Persistence uses the existing dual-layer storage (`splotch-install-dismissed`,
 `splotch-install-completed`). An `appinstalled` listener marks the app installed
-no matter which path the browser used.
+no matter which path the browser used. The persisted installed flag is not
+trusted forever: `beforeinstallprompt` only fires when the app is *not*
+installed, so a later event clears a stale flag (installed once, then
+uninstalled — localStorage survives a PWA uninstall) and re-offers one-tap.
 
 ## Consequences
 
@@ -91,7 +104,7 @@ are met, so the one-tap path never appears in `vite dev` (no service worker) or
 on Firefox — those correctly fall back to the manual hint, which makes the
 one-tap path harder to verify locally (needs a production build / preview).
 
-**−** The engine gains one more callback (`onStrokeStart`). It is a single guarded
-call in `beginRender()`, consistent with the existing callbacks-out pattern
+**−** The engine gains one more callback (`onStrokeEnd`). It is a single call in
+`commitActiveCommand()`, consistent with the existing callbacks-out pattern
 (ADR-0004), but it is one more wire between the imperative engine and reactive
 state.

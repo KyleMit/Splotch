@@ -24,11 +24,13 @@
   async function onPrimary() {
     if (install.mode === 'oneTap') {
       busy = true;
-      // If the live prompt has gone stale, promptInstall() flips mode to the
-      // manual hint; reflect that by expanding the steps instead.
-      const outcome = await promptInstall();
-      busy = false;
-      if (outcome === 'unavailable') showHint = true;
+      try {
+        // If the live prompt has gone stale, promptInstall() drops mode to the
+        // manual hint; expand the steps so the tap isn't a silent no-op.
+        if ((await promptInstall()) === 'unavailable') showHint = true;
+      } finally {
+        busy = false;
+      }
       return;
     }
     showHint = !showHint;

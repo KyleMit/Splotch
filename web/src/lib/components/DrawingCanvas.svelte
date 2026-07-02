@@ -59,7 +59,7 @@
       onCanvasEmptyChange: (empty) => {
         canvasState.canvasEmpty = empty;
       },
-      onStrokeStart: () => {
+      onStrokeEnd: () => {
         canvasState.strokeCount++;
       },
     });
