@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import { STYLE_SUFFIXES } from '$lib/ai/styles';
+import { buildPromptForStyle } from '$lib/ai/prompt';
 import { isAllowedToken } from '$lib/server/tokens';
 import { recordTokenUsage } from '$lib/server/usage';
 import { rateLimit } from '$lib/server/rateLimit';
@@ -30,8 +31,6 @@ const GENERATE_WINDOW_MS = 60_000;
 // holder can't push us into a memory/DoS situation by base64-ing a huge blob.
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
-const DEFAULT_PROMPT =
-  "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel.";
 
 // The audience is toddlers (2+), so the model must REFUSE unsafe drawings rather
 // than do what it does by default — quietly "beautify" a gun into a gilded gun or
@@ -61,15 +60,6 @@ const SAFETY_SETTINGS = [
   HarmCategory.HARM_CATEGORY_HATE_SPEECH,
   HarmCategory.HARM_CATEGORY_HARASSMENT,
 ].map((category) => ({ category, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE }));
-
-function buildPromptForStyle(
-  style: FormDataEntryValue | null,
-  defaultPrompt: string,
-  suffixes: Record<string, string>
-): string {
-  const suffix = typeof style === 'string' && Object.hasOwn(suffixes, style) ? suffixes[style] : '';
-  return suffix ? defaultPrompt + ' ' + suffix : defaultPrompt;
-}
 
 export const POST: RequestHandler = async ({ request, platform }) => {
   const form = await request.formData();
@@ -116,7 +106,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
     throw error(500, 'Server is missing GEMINI_API_KEY');
   }
 
-  const finalPrompt = buildPromptForStyle(style, DEFAULT_PROMPT, STYLE_SUFFIXES);
+  const finalPrompt = buildPromptForStyle(style, STYLE_SUFFIXES);
 
   // Only the managed tokens are worth a per-token tally (to spot one going
   // rogue). BYOK requests run on the parent's own quota, so just log them.
