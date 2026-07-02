@@ -43,6 +43,8 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | Path | Purpose |
 |---|---|
 | `drawing/engine.ts` | Imperative canvas engine. Owns the `<canvas>`, the undo baseline + command log (ADR-0033/0034), and all pointer tracking. Components connect via callbacks (`onDrawSound`, `onUndoStateChange`, etc.) and direct calls (`setColor`, `setStrokeWidth`, `clearCanvas`). |
+| `drawing/strokeMath.ts` | Pure gesture math (edge-swipe guards, pointer-resume detection, stroke speed) factored out of the engine for unit testing. |
+| `drawing/strokeSimplify.ts` | Pure stroke-simplification geometry (ADR-0036): RDP, corner/bulge analysis, and the sample/spline reconstruction pipelines the engine runs at commit. Unit-tested; the engine owns the tunables. |
 | `drawing/overlay.ts` | Manages the coloring-book overlay image rendered behind the drawing layer. |
 | `drawing/saveOnDelete.ts` | Saves the current drawing to the gallery before clearing, when the setting is enabled. |
 | `drawing/screenshot.ts` | Persists canvas PNGs (exported via `engine.exportCanvasBlob`): on native, saves to the photo library; on web, triggers a download. `saveScreenshot` also plays the polaroid animation. |
@@ -53,7 +55,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `state/settings.svelte.ts` | User-configurable toggles (sounds, save-on-delete, screenshot button, coloring books, etc.), persisted via `storage.ts`. |
 | `state/layout.svelte.ts` | Viewport and orientation state. |
 | `state/network.svelte.ts` | Online/offline state via `@capacitor/network`. Controls AI button visibility on native. |
-| `state/install.svelte.ts` | PWA install state (ADR-0037). Captures Chromium's `beforeinstallprompt` for one-tap install, falls back to iOS/Android guided hints; drives the Install Banner and the Parent Center Setup tab. Web-only; inert in the native shell. |
+| `state/install.svelte.ts` | PWA install state (ADR-0038). Captures Chromium's `beforeinstallprompt` for one-tap install, falls back to iOS/Android guided hints; drives the Install Banner and the Parent Center Setup tab. Web-only; inert in the native shell. |
 | `state/coloringBook.svelte.ts` | Selected coloring book and page. |
 | `state/books.ts` | Static catalog of available coloring books and pages. |
 | `actions/dragToClear.ts` | Svelte action that implements the drag-to-clear gesture (pointer tracking, threshold detection, animations). Keeps all gesture logic out of the component. |
@@ -117,7 +119,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
   * **Coloring Page Grid** - Second menu showing the 6 selectable coloring pages in a book
   * **Coloring Page Tile** - Individual coloring page; tap to apply it as the canvas overlay
   * **Coloring Page Overlay** - Selected page rendered behind the drawing canvas with multiply blend, so white areas blend into the paper background and the line art stays visible
-* **Install Banner** - Friendly bottom-center pill prompting "Add Splotch to your home screen", shown on web after the child has drawn a few strokes. One-tap native install on Chromium/Android; guided Share-sheet hint on iOS. Dismissible and remembered. See ADR-0037.
+* **Install Banner** - Friendly bottom-center pill prompting "Add Splotch to your home screen", shown on web after the child has drawn a few strokes. One-tap native install on Chromium/Android; guided Share-sheet hint on iOS. Dismissible and remembered. See ADR-0038.
 * **Parent Help Button** - Floating button that opens the Parent Center
   * **Parent Center** - Modal with platform install guides and app settings
     * **Install Guide** - iOS / Android tabs with step-by-step PWA setup, plus the one-tap install button when the browser supports it (Setup tab)

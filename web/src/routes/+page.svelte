@@ -17,6 +17,7 @@
     captureAiAccessTokenFromUrl,
     reloadSettings,
     hydrateApiKey,
+    hydrateSaveFolder,
     settings,
   } from '$lib/state/settings.svelte';
   import { reloadStrokeWidth } from '$lib/state/strokeWidth.svelte';
@@ -36,6 +37,9 @@
     // Load the BYOK Gemini key from secure storage into the live store (async,
     // transparent — the AI button is only used long after boot completes).
     hydrateApiKey();
+    // Load the optional saved-photo folder name for the Parent Center display
+    // (web/desktop only; no effect on whether saves happen).
+    hydrateSaveFolder();
     initNetwork();
 
     // Native only: recover any settings the WebView's localStorage may have

@@ -423,10 +423,10 @@ test('undoing an eraser stroke replays the erased pixels back', async ({ page })
 });
 
 test('a moderate stroke stays replayable ops (no keyframe) and undoes cleanly', async ({ page }) => {
-  // Below the keyframe budget a command keeps its exact per-frame ops (the
-  // pixel-perfect default — geometry simplification was retired, see ADR-0036),
-  // so a rebuild re-strokes them verbatim. It must not keyframe and must undo as
-  // one unit. strokeSync gives a deterministic one-seg-per-move op stream.
+  // Below the keyframe budget a command keeps replayable ops (simplified at
+  // commit in the live curve family, see ADR-0036), so a rebuild re-strokes
+  // them. It must not keyframe and must undo as one unit. strokeSync gives a
+  // deterministic one-seg-per-move op stream.
   const points = Array.from({ length: 120 }, (_, i) => ({
     x: 20 + i * 2,
     y: 150 + Math.round(60 * Math.sin(i / 40)),

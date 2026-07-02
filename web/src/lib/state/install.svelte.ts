@@ -4,7 +4,7 @@ import { readBool, writeBool } from '$lib/storage';
 
 // "Add to Home Screen" / PWA install, surfaced as a friendly parent-facing prompt.
 //
-// Two worlds, deliberately different (see ADR-0037):
+// Two worlds, deliberately different (see ADR-0038):
 //   • Chromium (Android, desktop Chrome/Edge) fires `beforeinstallprompt`. We
 //     intercept it, stash the event, and replay it from a tap to show the real
 //     one-tap native install dialog — the best possible experience.

@@ -1,4 +1,4 @@
-# ADR-0037: Friendly PWA Install Prompt — Capture `beforeinstallprompt`, Fall Back to Guided Hints
+# ADR-0038: Friendly PWA Install Prompt — Capture `beforeinstallprompt`, Fall Back to Guided Hints
 
 **Status:** Active
 **Date:** 2026-06

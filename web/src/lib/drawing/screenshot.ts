@@ -2,6 +2,7 @@ import type { MediaPlugin } from '@capacitor-community/media';
 import { exportCanvasBlob, getActiveCanvas } from './engine';
 import { getActiveOverlayImage } from './overlay';
 import { isNative, getPlatform } from '$lib/platform';
+import { saveBlobToFolder } from './folderSave';
 
 export function timestamp() {
   const d = new Date();
@@ -57,10 +58,18 @@ async function saveToGallery(blob: Blob, baseName = 'splotch') {
   }
 }
 
-// Persist a PNG blob: native drops it into the photo gallery, the web triggers a
-// file download. No polaroid animation — for silent/background saves (e.g. the
-// AI auto-save), where the caller owns its own feedback.
-export async function saveImageBlob(blob: Blob | null, baseName = 'splotch') {
+// Persist a PNG blob: native drops it into the photo gallery; the web writes it
+// silently into the parent-chosen folder when one is set (File System Access
+// API, desktop Chromium), otherwise triggers a file download. The folder is
+// optional and decoupled from saving — no folder just means a download.
+// `allowPrompt` lets a user-initiated save re-confirm a lapsed folder
+// permission; background saves (AI auto-save, save-on-delete) leave it falsy. No
+// polaroid animation — the caller owns its own feedback.
+export async function saveImageBlob(
+  blob: Blob | null,
+  baseName = 'splotch',
+  opts?: { allowPrompt?: boolean }
+) {
   if (!blob) return;
   if (isNative()) {
     try {
@@ -69,8 +78,10 @@ export async function saveImageBlob(blob: Blob | null, baseName = 'splotch') {
       console.error('Save to gallery failed:', err);
     }
   } else {
+    const filename = `${baseName}-${timestamp()}.png`;
+    if (await saveBlobToFolder(blob, filename, opts)) return;
     const url = URL.createObjectURL(blob);
-    triggerDownload(url, `${baseName}-${timestamp()}.png`);
+    triggerDownload(url, filename);
     URL.revokeObjectURL(url);
   }
 }
@@ -78,8 +89,10 @@ export async function saveImageBlob(blob: Blob | null, baseName = 'splotch') {
 export async function saveScreenshot() {
   const blob = await exportCanvasBlob(getActiveOverlayImage());
   if (!blob) return;
-  await saveImageBlob(blob);
+  // Feedback first: the polaroid must not wait behind the folder write — or the
+  // permission re-confirm dialog — that saveImageBlob may perform on the web.
   playPolaroidAnimation(URL.createObjectURL(blob));
+  await saveImageBlob(blob, undefined, { allowPrompt: true });
 }
 
 const POLAROID_DURATION_MS = 1900;

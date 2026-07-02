@@ -25,6 +25,38 @@ declare global {
   // module stays SSR-safe; declared optional because it's absent under Node.
 
   var Capacitor: { isNativePlatform?: () => boolean; getPlatform?: () => string } | undefined;
+
+  // File System Access API — used by lib/drawing/folderSave.ts for silent
+  // folder saves on desktop Chromium. The bundled TS lib doesn't declare the
+  // picker, and queryPermission/requestPermission aren't on the standard handle
+  // types, so declare only the surface we touch. skipLibCheck smooths over any
+  // overlap with the partial built-in types.
+  type FileSystemPermissionMode = 'read' | 'readwrite';
+
+  interface Window {
+    showDirectoryPicker(options?: {
+      mode?: FileSystemPermissionMode;
+      startIn?: string;
+    }): Promise<FileSystemDirectoryHandle>;
+  }
+
+  interface FileSystemHandle {
+    queryPermission(descriptor?: { mode?: FileSystemPermissionMode }): Promise<PermissionState>;
+    requestPermission(descriptor?: { mode?: FileSystemPermissionMode }): Promise<PermissionState>;
+  }
+
+  interface FileSystemDirectoryHandle {
+    getFileHandle(name: string, options?: { create?: boolean }): Promise<FileSystemFileHandle>;
+  }
+
+  interface FileSystemFileHandle {
+    createWritable(options?: { keepExistingData?: boolean }): Promise<FileSystemWritableFileStream>;
+  }
+
+  interface FileSystemWritableFileStream {
+    write(data: Blob | BufferSource | string): Promise<void>;
+    close(): Promise<void>;
+  }
 }
 
 export {};
