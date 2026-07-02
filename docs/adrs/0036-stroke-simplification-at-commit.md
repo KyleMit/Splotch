@@ -1,10 +1,69 @@
 # ADR-0036: Simplify Stroke Ops at Commit So Undo Replays Few Segments
 
-**Status:** Active — **enabled by default**. (An earlier revision disabled this,
-having concluded simplification couldn't be made imperceptible; that conclusion
-was wrong — it rested on a strict 0px bar and a reconstruction *bug*, not a real
-floor. See "Outcome".) ADR-0035 keyframing remains as a bounded safety net.
-**Date:** 2026-06
+**Status:** Active — **enabled by default**, since 2026-07 with the **'samples'
+reconstruction** (see "Revision"), which halved the worst-case rebuild shift the
+first shipped ('spline') reconstruction left. (An earlier revision disabled
+simplification entirely, having concluded it couldn't be made imperceptible;
+that conclusion was wrong — it rested on a strict 0px bar and a reconstruction
+*bug*, not a real floor. See "Outcome".) ADR-0035 keyframing remains as a
+bounded safety net.
+**Date:** 2026-06 (revised 2026-07)
+
+## Revision (2026-07): rebuild in the live curve family ('samples' mode)
+
+The spline reconstruction below shipped and passed the ≤2px gate on average,
+but its worst strokes (fat-brush fast scribbles) still shifted 2.5 CSS px on
+their first rebuild — users noticed surviving strokes "jump" at the moment of
+undo. The root cause was structural: fitting a *different* curve family
+(corner-aware Catmull-Rom through derived on-curve points) to a curve the live
+draw produced with midpoint-smoothed quadratics, then patching the mismatches
+(corner splits, apex splicing) heuristically.
+
+The revision drops the family mismatch. `sampleReducedOps` rebuilds each run
+with the **exact construction the live draw used**, over a thinned subset of the
+**original finger samples** (fully recoverable from the stored ops — each
+segment's control IS a raw sample; the final sample is the last control
+reflected through the last anchor):
+
+- **RDP thins the raw samples** (epsilon `0.03×lineWidth`, clamped [1, 6]
+  device px — tuned down from 0.05 by the perf:units sweep).
+- **Pinning makes the noticeable places exact.** A sharp-turn sample is kept
+  with its two immediate neighbours (the live bulge toward an apex is a function
+  of exactly those three positions, so the rebuilt tip IS the live tip); the
+  last sample's predecessor is kept so the stroke ends on the live end anchor;
+  and a **bulge-refinement** pass re-inserts neighbours wherever the live
+  curve's deepest reach toward a kept sample (its quadratic vertex) would sit
+  more than epsilon from the rebuilt curve — catching moderate turns the 40°
+  corner test misses. (The distance test must project onto the quadratic —
+  bracket + ternary refine — not sample it coarsely: with a coarse min-of-9
+  metric even a point ON a long span reads as tens of px away, and the pass
+  cascades into keeping everything.)
+- **Consecutive duplicate samples** (a finger holding still) are where midpoint
+  smoothing genuinely breaks tangent continuity and passes THROUGH the sample:
+  they collapse to one pinned point and the emitted op **splits there** (each
+  side landing exactly on the point via a doubled tail sample), so two round
+  caps reproduce the live corner disc. Everywhere else midpoint smoothing is
+  C1-continuous — the merged op needs no corner splitting at all, which is what
+  frees this mode from the spline mode's split-at-every-corner machinery.
+- Re-applying midpoint smoothing over the kept samples then yields quadratics
+  in the same family the live render drew; where samples were kept densely
+  (turns, tips, corners) the rebuilt segments are numerically identical to the
+  live ones.
+
+Measured on the same 64-unit battery (`perf:units`): **0 / 64 over the 2px
+gate, worst shift 1.5 CSS px** (spline mode: 4 over, worst 2.5 px — including
+the reported scribble, which drops from 2.5 px at 40.9× to 1.0 px at 14.7×), at
+a mean **~2.7×** point reduction (spline: ~4.3×). Real-session replays: still
+**0 keyframes**, undo unchanged at ~0.1 ms, commands collapse to ≤7 merged ops.
+The trade is deliberate: ~1.6× more retained segments than spline in exchange
+for structurally exact tips/corners — memory is the least-binding constraint
+and the ADR-0035 keyframe net still bounds the pathological case. Commit-time
+`engine.simplify` grows from ~1 ms/session to ~2 ms avg / ~14 ms worst per
+commit at 4× CPU throttle (the bulge refinement's curve-projection test
+dominates) — still at pointerup, off the draw frame, well under the ~25 ms
+keyframe build the same phase already tolerates. 'spline' stays available
+behind `setSimplifyParams({ mode })` for comparison sweeps; the mechanism it
+uses is documented below as originally shipped.
 
 ## Outcome (the floor was a bug, not a representation limit)
 

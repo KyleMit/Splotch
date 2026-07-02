@@ -12,6 +12,7 @@ import {
   pointerWasResumed,
   type GuardEdge,
 } from './strokeMath';
+import { sampleReducedSpans, splineReducedSpans, type PathSeg } from './strokeSimplify';
 
 // Build-flag-gated user-timing marks on the drawing hot paths, read by the
 // profiling harness (scripts/perf/). __PERF_MARKS__ is a compile-time literal
@@ -62,11 +63,10 @@ type StrokeOp =
       startX: number;
       startY: number;
       // Live ops carry midpoint-smoothed quadratic segments (cx/cy = control,
-      // x/y = endpoint). Simplification (ADR-0036) rewrites a command's ops to
-      // cubic segments (adding c2x/c2y) of a Catmull-Rom spline that passes
-      // *through* the kept points, so a sparse simplified stroke still reaches its
-      // turning points instead of bulging short of them.
-      segs: { cx: number; cy: number; x: number; y: number; c2x?: number; c2y?: number }[];
+      // x/y = endpoint); commit-time simplification (ADR-0036) rewrites them to
+      // fewer segments — quadratics in 'samples' mode, cubics (c2x/c2y set) in
+      // the diagnostic 'spline' mode. See strokeSimplify.ts.
+      segs: PathSeg[];
       color: string;
       lineWidth: number;
       erase: boolean;
@@ -396,7 +396,7 @@ function recordOp(op: StrokeOp) {
 // (setSimplifyParams, exposed only on the dev/engine page behind
 // PUBLIC_ENABLE_DEV_HARNESS). Production never calls the setter, so these keep
 // their tuned defaults.
-let simplifyEpsilonFraction = 0.05;
+let simplifyEpsilonFraction = 0.03;
 let simplifyEpsilonMinPx = 1;
 let simplifyEpsilonMaxPx = 6;
 function simplifyEpsilonFor(lineWidth: number): number {
@@ -422,7 +422,7 @@ export function setSimplifyParams(params: {
   max?: number;
   keyframeThreshold?: number;
   cornerAngleDeg?: number;
-  mode?: 'midpoint' | 'spline';
+  mode?: 'midpoint' | 'spline' | 'samples';
   reduce?: boolean;
   enabled?: boolean;
   split?: 'none' | 'corner';
@@ -441,101 +441,23 @@ export function setSimplifyParams(params: {
   simplifyKeptPoints = 0;
 }
 
-type Pt = { x: number; y: number };
 type PathOp = Extract<StrokeOp, { kind: 'path' }>;
 
-// Iterative (stack-based, so a long monotonic stroke can't blow the call stack)
-// Douglas–Peucker. Keeps both endpoints plus every point whose perpendicular
-// distance to the current chord exceeds epsilon.
-function rdpSimplify(points: Pt[], epsilon: number): Pt[] {
-  if (points.length <= 2) return points.slice();
-  const keep = new Uint8Array(points.length);
-  keep[0] = 1;
-  keep[points.length - 1] = 1;
-  const stack: [number, number][] = [[0, points.length - 1]];
-  while (stack.length > 0) {
-    const [a, b] = stack.pop()!;
-    const ax = points[a].x;
-    const ay = points[a].y;
-    const dx = points[b].x - ax;
-    const dy = points[b].y - ay;
-    const len2 = dx * dx + dy * dy;
-    let maxD = -1;
-    let idx = -1;
-    for (let i = a + 1; i < b; i++) {
-      const px = points[i].x - ax;
-      const py = points[i].y - ay;
-      const d = len2 === 0 ? Math.hypot(px, py) : Math.abs(px * dy - py * dx) / Math.sqrt(len2);
-      if (d > maxD) {
-        maxD = d;
-        idx = i;
-      }
-    }
-    if (maxD > epsilon && idx >= 0) {
-      keep[idx] = 1;
-      stack.push([a, idx], [idx, b]);
-    }
-  }
-  const out: Pt[] = [];
-  for (let i = 0; i < points.length; i++) if (keep[i]) out.push(points[i]);
-  return out;
-}
-
-// Recover the ON-CURVE polyline a continuous run of one finger's path ops
-// actually rendered. The live midpoint smoothing draws each quadratic FROM the
-// current on-curve point TO the next anchor (`s.x`,`s.y`), with the raw sample
-// (`s.cx`,`s.cy`) as an OFF-curve control the curve only bulges toward. So the
-// points the rendered stroke truly passes through are the run's start point and
-// each segment's anchor — not the control points. Simplifying must operate on
-// these on-curve points and then re-interpolate THROUGH them; feeding the control
-// points back through midpoint smoothing double-applies the halving and renders
-// the stroke at half length (the classic shrink-on-undo bug).
-function rawPointsOf(run: PathOp[]): Pt[] {
-  const first = run[0];
-  const anchors: Pt[] = [{ x: first.startX, y: first.startY }];
-  const controls: Pt[] = [];
-  for (const op of run)
-    for (const s of op.segs) {
-      anchors.push({ x: s.x, y: s.y });
-      controls.push({ x: s.cx, y: s.cy });
-    }
-  // The on-curve anchors (midpoints) sit just inside the raw sample the live
-  // quadratic bulged toward. On a gentle curve that's invisible, but at a SHARP
-  // reversal the live stroke reaches out to the raw apex while the anchors fall
-  // short — the back-and-forth scribble tip undershoot. Where a control forms a
-  // sharp apex between its bracketing anchors, splice it back in so the rebuilt
-  // curve passes through the same tip the user saw.
-  const pts: Pt[] = [anchors[0]];
-  for (let k = 0; k < controls.length; k++) {
-    if (isCornerAt(anchors[k], controls[k], anchors[k + 1])) pts.push(controls[k]);
-    pts.push(anchors[k + 1]);
-  }
-  return pts;
-}
-
-// Render the kept points as a curve that passes THROUGH each of them. The live
-// draw path uses midpoint-smoothed quadratics with the raw point as a *control*
-// (the curve only bulges toward it), which is invisible when points are dense
-// but, on RDP-sparse points, falls ~25% short of every turning point — so a
-// back-and-forth scribble visibly shrinks at its tips on replay. An interpolating
-// spline instead hits every kept point, so tips land exactly.
-//
-// Smooth spans use a centripetal Catmull-Rom tangent (alpha = 0.5) — RDP leaves
-// uneven spacing and uniform CR overshoots there, centripetal never loops. But a
-// *sharp* turn (a hook, a zigzag tip) must stay sharp and in place: a smooth
-// spline rounds it into a displaced bend (the live render keeps it crisp via its
-// dense samples). So at a detected corner the tangent is forced along the
-// adjoining chord, giving a sharp, correctly-located corner. Threshold tunable
-// via setSimplifyParams (cornerAngleDeg) for the profiling sweep.
-const CR_ALPHA = 0.5;
+// Turn threshold shared by the corner pinning/splitting in strokeSimplify.ts
+// (cos of the corner angle; sharper turns than this are corners).
 let simplifyCornerCos = Math.cos((40 * Math.PI) / 180);
-// Rebuild renderer. 'spline' (the default) interpolates the kept ON-CURVE points
-// (rawPointsOf) with a corner-aware centripetal Catmull-Rom — the correct family
-// for points the live curve passed through. 'midpoint' is a legacy/diagnostic
-// mode that re-applies midpoint smoothing; it HALVES on-curve points and is wrong
-// for reconstruction (kept only for the profiling seam). Tunable via
-// setSimplifyParams.
-let simplifyMode: 'midpoint' | 'spline' = 'spline';
+// Rebuild renderer. 'samples' (the default) thins the recovered RAW finger
+// samples and re-applies the live midpoint-quadratic construction over them
+// (sampleReducedSpans, strokeSimplify.ts) — the SAME curve family as the live
+// render, so turns, tips,
+// and hold-still corners rebuild exactly and the whole-battery worst shift is
+// ~1.5 CSS px (vs 2.5 for 'spline'). 'spline' interpolates derived ON-CURVE
+// points (rawPointsOf) with a corner-aware centripetal Catmull-Rom — kept for
+// comparison sweeps; it reduces more (~4.3× vs ~2.7×) at visibly lower corner/
+// tip fidelity. 'midpoint' is a legacy/diagnostic mode that re-applies midpoint
+// smoothing to ON-CURVE points; it HALVES them and is wrong for reconstruction
+// (kept only for the profiling seam). Tunable via setSimplifyParams.
+let simplifyMode: 'midpoint' | 'spline' | 'samples' = 'samples';
 // When false, keep every raw point (no RDP) — for measuring the renderer floor.
 let simplifyReduce = true;
 // 'corner' splits a reduced run into one stroke op per span between sharp corners,
@@ -544,144 +466,52 @@ let simplifyReduce = true;
 // sharp turns. 'none' emits one merged op per run (round joins at every vertex).
 let simplifySplit: 'none' | 'corner' = 'corner';
 // SHIPPING DEFAULT: true. simplifyCommand reduces a committed command's per-frame
-// ops to a few RDP-thinned, corner-split, round-capped sub-strokes (ADR-0036).
-// Verified imperceptible (perf:units): every stroke in the synthetic + real
-// battery rebuilds within ≤2.5 CSS px of the live render (max; the bulk far
-// under), at ~4x fewer points. The key to getting there was reconstructing from
-// the ON-CURVE anchor points (rawPointsOf) and re-interpolating THROUGH them with
-// a corner-aware spline, plus splitting at corners so each kept corner gets a
-// round CAP matching the live per-frame draw — not the earlier control-point /
-// merged-round-join rebuild, which shrank strokes by half and shifted corners.
-// Long all-corners commands that RDP can't thin are still bounded by ADR-0035
-// keyframing.
+// ops to a few thinned sub-strokes (ADR-0036, 'samples' mode above). Verified on
+// perf:units: every stroke in the synthetic + real battery rebuilds within
+// ≤1.5 CSS px of the live render (max; the bulk far under), at ~2.7x fewer
+// points. The key is staying in the live render's own curve family — thin the
+// recovered raw samples, pin turn/tip/duplicate neighbourhoods so their local
+// geometry is exact, and re-apply midpoint smoothing — instead of fitting a
+// different spline through derived points (the retired 'spline' mode, which
+// reduced more but shifted corners and scribble tips by up to 2.5 px: the jump
+// users saw on undo). Long all-corners commands that RDP can't thin are still
+// bounded by ADR-0035 keyframing.
 let simplifyEnabled = true;
-
-// Midpoint quadratics, identical to the live strokeSmoothSegments construction.
-function midpointToSegs(pts: Pt[]): PathOp['segs'] {
-  const segs: PathOp['segs'] = [];
-  let px = pts[0].x;
-  let py = pts[0].y;
-  for (let i = 1; i < pts.length; i++) {
-    const { x, y } = pts[i];
-    segs.push({ cx: px, cy: py, x: (px + x) / 2, y: (py + y) / 2 });
-    px = x;
-    py = y;
-  }
-  return segs;
-}
-
-// Centripetal Catmull-Rom (Barry–Goldman) tangents at p1 and p2 for segment p1→p2.
-function crTangents(p0: Pt, p1: Pt, p2: Pt, p3: Pt) {
-  const knot = (a: Pt, b: Pt) => Math.pow(Math.hypot(b.x - a.x, b.y - a.y), CR_ALPHA) || 1e-6;
-  const t01 = knot(p0, p1);
-  const t12 = knot(p1, p2);
-  const t23 = knot(p2, p3);
-  return {
-    m1x: p2.x - p1.x + t12 * ((p1.x - p0.x) / t01 - (p2.x - p0.x) / (t01 + t12)),
-    m1y: p2.y - p1.y + t12 * ((p1.y - p0.y) / t01 - (p2.y - p0.y) / (t01 + t12)),
-    m2x: p2.x - p1.x + t12 * ((p3.x - p2.x) / t23 - (p3.x - p1.x) / (t12 + t23)),
-    m2y: p2.y - p1.y + t12 * ((p3.y - p2.y) / t23 - (p3.y - p1.y) / (t12 + t23)),
-  };
-}
-
-// A point is a corner when the turn between its adjoining chords is sharper than
-// the threshold (dot of unit chords below cos(angle)).
-function isCornerAt(prev: Pt, p: Pt, next: Pt): boolean {
-  const ax = p.x - prev.x;
-  const ay = p.y - prev.y;
-  const bx = next.x - p.x;
-  const by = next.y - p.y;
-  const la = Math.hypot(ax, ay);
-  const lb = Math.hypot(bx, by);
-  if (la < 1e-6 || lb < 1e-6) return false;
-  return (ax * bx + ay * by) / (la * lb) < simplifyCornerCos;
-}
-
-function smoothToSegs(pts: Pt[]): PathOp['segs'] {
-  if (pts.length < 2) return [];
-  if (simplifyMode === 'midpoint') return midpointToSegs(pts);
-  // On-curve interpolation must reach the actual endpoint, not the midpoint. Two
-  // points = a straight chord (control on the line); midpointToSegs would draw
-  // only to the halfway point and shrink the span.
-  if (pts.length === 2)
-    return [
-      { cx: (pts[0].x + pts[1].x) / 2, cy: (pts[0].y + pts[1].y) / 2, x: pts[1].x, y: pts[1].y },
-    ];
-  const n = pts.length;
-  // Reflect the endpoints so the first/last segments have a neighbour to take a
-  // tangent from (a natural end tangent), keeping all knot intervals non-zero.
-  const at = (i: number): Pt =>
-    i < 0
-      ? { x: 2 * pts[0].x - pts[1].x, y: 2 * pts[0].y - pts[1].y }
-      : i >= n
-        ? { x: 2 * pts[n - 1].x - pts[n - 2].x, y: 2 * pts[n - 1].y - pts[n - 2].y }
-        : pts[i];
-  const corner: boolean[] = new Array(n).fill(false);
-  for (let i = 1; i < n - 1; i++) corner[i] = isCornerAt(pts[i - 1], pts[i], pts[i + 1]);
-
-  const segs: PathOp['segs'] = [];
-  for (let i = 0; i < n - 1; i++) {
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const dx = p2.x - p1.x;
-    const dy = p2.y - p1.y;
-    const t = crTangents(at(i - 1), p1, p2, at(i + 2));
-    // Control leaving p1 / entering p2: chord-aligned at a corner (sharp), else
-    // the smooth centripetal tangent. A corner on either end keeps that end crisp.
-    const c1x = corner[i] ? p1.x + dx / 3 : p1.x + t.m1x / 3;
-    const c1y = corner[i] ? p1.y + dy / 3 : p1.y + t.m1y / 3;
-    const c2x = corner[i + 1] ? p2.x - dx / 3 : p2.x - t.m2x / 3;
-    const c2y = corner[i + 1] ? p2.y - dy / 3 : p2.y - t.m2y / 3;
-    segs.push({ cx: c1x, cy: c1y, c2x, c2y, x: p2.x, y: p2.y });
-  }
-  return segs;
-}
 
 function pathStyleMatches(a: PathOp, b: PathOp): boolean {
   return a.color === b.color && a.lineWidth === b.lineWidth && a.erase === b.erase;
 }
 
-// Reduce one continuous, same-style run of a single finger's path ops to one or
-// more simplified path ops. With simplifySplit='corner' the kept polyline is cut
-// at each sharp corner into separate stroke ops, so every corner is a stroke
-// boundary that renders a round CAP (full disc) — matching the live per-frame
-// draw, which also caps at each frame and so discs every sharp turn. A single
-// merged op instead round-JOINs the corner, shifting it by up to half the brush
-// width. Spans are emitted overlapping (shared corner point in both neighbours)
-// so the two caps coincide on the corner exactly as the live overlap does.
-function pathOpFrom(pts: Pt[], src: PathOp): PathOp {
-  return {
-    kind: 'path',
-    pid: src.pid,
-    startX: pts[0].x,
-    startY: pts[0].y,
-    segs: smoothToSegs(pts),
-    color: src.color,
-    lineWidth: src.lineWidth,
-    erase: src.erase,
-  };
-}
-
+// Reduce one continuous, same-style run of a single finger's path ops through
+// the geometry pipeline for the active mode (strokeSimplify.ts), re-attach the
+// run's style to each returned span, and track the lifetime raw/kept counters.
 function reducePathRun(run: PathOp[]): PathOp[] {
-  const raw = rawPointsOf(run);
   const first = run[0];
-  const kept = simplifyReduce ? rdpSimplify(raw, simplifyEpsilonFor(first.lineWidth)) : raw.slice();
-  simplifyRawPoints += raw.length;
-  simplifyKeptPoints += kept.length;
-
-  if (simplifySplit === 'none' || kept.length < 3) return [pathOpFrom(kept, first)];
-
-  // Cut at interior corner points; each span shares the corner with its neighbour.
-  const ops: PathOp[] = [];
-  let start = 0;
-  for (let i = 1; i < kept.length - 1; i++) {
-    if (isCornerAt(kept[i - 1], kept[i], kept[i + 1])) {
-      ops.push(pathOpFrom(kept.slice(start, i + 1), first));
-      start = i;
-    }
-  }
-  ops.push(pathOpFrom(kept.slice(start), first));
-  return ops;
+  const opts = {
+    epsilon: simplifyEpsilonFor(first.lineWidth),
+    cornerCos: simplifyCornerCos,
+    reduce: simplifyReduce,
+  };
+  const { spans, rawCount, keptCount } =
+    simplifyMode === 'samples'
+      ? sampleReducedSpans(run, opts)
+      : splineReducedSpans(run, {
+          ...opts,
+          midpoint: simplifyMode === 'midpoint',
+          split: simplifySplit,
+        });
+  simplifyRawPoints += rawCount;
+  simplifyKeptPoints += keptCount;
+  return spans.map((span) => ({
+    kind: 'path' as const,
+    pid: first.pid,
+    startX: span.startX,
+    startY: span.startY,
+    segs: span.segs,
+    color: first.color,
+    lineWidth: first.lineWidth,
+    erase: first.erase,
+  }));
 }
 
 // Simplify a committed command's per-frame path ops in place. A multi-touch
