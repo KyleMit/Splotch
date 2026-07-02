@@ -41,4 +41,4 @@ This directory records significant architectural decisions made in the Splotch p
 | [0035](0035-keyframe-long-commands.md) | Keyframe Long Commands So Undo Doesn't Replay Thousands of Ops | Active |
 | [0036](0036-stroke-simplification-at-commit.md) | Simplify Stroke Ops at Commit (Ramer–Douglas–Peucker) So Undo Replays Few Segments | Active |
 | [0037](0037-photo-save-targets-per-platform.md) | Photo Save Targets per Platform (Native Gallery, Web Folder Save, Download Fallback) | Active |
-
+| [0038](0038-pwa-install-prompt-ux.md) | Friendly PWA Install Prompt — Capture `beforeinstallprompt`, Fall Back to Guided Hints | Active |
