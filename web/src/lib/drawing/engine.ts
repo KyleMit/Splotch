@@ -739,11 +739,14 @@ function startDrawing(e: PointerEvent) {
   // A candidate paints nothing yet — renderStrokeStart runs later, on commit.
   if (!edgeSwipeGuard) renderStrokeStart(pointerState);
 
-  if (e.pointerType !== 'pen') {
-    try {
-      canvas.setPointerCapture(e.pointerId);
-    } catch {}
-  }
+  // Capture every pointer — pen included — so a stroke keeps flowing to the
+  // canvas when it crosses a floating control (Clear button, Actions Panel) or
+  // the canvas edge, instead of ending on the pointerout that fires there.
+  // Without capture, Apple Pencil strokes were silently cut short at those spots
+  // (touch was already captured, so it never had the problem).
+  try {
+    canvas.setPointerCapture(e.pointerId);
+  } catch {}
 }
 
 function draw(e: PointerEvent) {
