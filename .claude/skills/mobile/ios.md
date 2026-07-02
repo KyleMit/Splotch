@@ -9,6 +9,10 @@ shared assets see **[native.md](native.md)**; Android lives in
 
 > iOS cannot be built on Windows — Xcode and the simulators are macOS-only.
 > No CocoaPods anywhere: the iOS project uses Swift Package Manager (ADR-0020).
+> Minimum supported OS: **iOS 16.4** (`IPHONEOS_DEPLOYMENT_TARGET` in
+> `App.xcodeproj`), aligned with the web bundle's floor — see
+> [docs/COMPATIBILITY.md](../../../docs/COMPATIBILITY.md). It MUST stay ≤ the web
+> `build.target` iOS version in `web/vite.config.ts`.
 
 ## 1. Toolchain setup (macOS-only)
 

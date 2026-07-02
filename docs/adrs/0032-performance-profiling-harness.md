@@ -25,8 +25,10 @@ A profiling harness in `scripts/perf/`, built on the existing Playwright app-dri
 
 - **Build-flag-gated instrumentation, not always-on.** A `__PERF_MARKS__` compile-time
   constant (Vite `define`, ADR-0010), set only by `PERF_MARKS=true`, wraps
-  `performance.mark/measure` around the engine's five hot paths (`draw`,
-  `saveUndoSnapshot`, `scanCanvasIsEmpty`, `resizeCanvas`, `undo`). With the literal
+  `performance.mark/measure` around the engine's hot paths (`draw`,
+  `scanCanvasIsEmpty`, `resizeCanvas`, `undo`, and — since ADR-0033 replaced the
+  snapshot stack — `commit`/`foldBaseline` in place of the old `saveUndoSnapshot`).
+  With the literal
   `false` in normal builds the blocks — and their mark-name strings — dead-code-
   eliminate, so **nothing reaches production** (grep-verified in the harness). These
   marks are the clean, framework-agnostic signal the analyzer keys on; they survive

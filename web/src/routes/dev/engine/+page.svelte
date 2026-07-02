@@ -10,6 +10,8 @@
     clearCanvas,
     isCanvasEmpty,
     exportCanvasBlob,
+    getUndoDebug,
+    setSimplifyParams,
   } from '$lib/drawing/engine';
 
   let canvasEl: HTMLCanvasElement;
@@ -54,6 +56,8 @@
       clearCanvas,
       isCanvasEmpty,
       exportCanvasBlob,
+      getUndoDebug,
+      setSimplifyParams,
 
       // Decode an exported blob and count its stroke pixels. The harness draws
       // in pure red; the paper background never is, so a red count > 0 means
@@ -83,6 +87,30 @@
         return n;
       },
 
+      // Bounding box (backing-store px) of the non-transparent pixels, so a spec
+      // can assert a stroke's extent survives a rebuild (e.g. a scribble's tips
+      // don't shrink after simplification, ADR-0036). Empty canvas → null.
+      inkBounds() {
+        const ctx = canvasEl.getContext('2d')!;
+        const { width, height } = canvasEl;
+        const { data } = ctx.getImageData(0, 0, width, height);
+        let minX = width,
+          minY = height,
+          maxX = -1,
+          maxY = -1;
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            if (data[(y * width + x) * 4 + 3] !== 0) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+        return maxX < 0 ? null : { minX, minY, maxX, maxY };
+      },
+
       // [r, g, b, a] at a canvas-space pixel.
       pixelAt(x: number, y: number) {
         const ctx = canvasEl.getContext('2d')!;
@@ -90,7 +118,8 @@
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,
-      // so the spec can verify the virtual-canvas content survives a resize.
+      // so the spec can verify the drawing (rebuilt from the baseline + command
+      // log) survives a resize.
       resizeTo(w: number, h: number) {
         wrapperEl.style.width = `${w}px`;
         wrapperEl.style.height = `${h}px`;

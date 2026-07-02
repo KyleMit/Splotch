@@ -36,4 +36,9 @@ This directory records significant architectural decisions made in the Splotch p
 | [0030](0030-git-derived-web-version.md) | Git-Derived Per-Commit Web Version (major.minor.commits-since-tag) | Active |
 | [0031](0031-linting-formatting-and-ci-quality-gates.md) | Linting, Formatting, and CI Quality Gates (ESLint + Prettier, critical-only audit) | Active |
 | [0032](0032-performance-profiling-harness.md) | Automated Performance Profiling Harness (build-flag marks + CDP/WebKit capture, web + Android + iOS) | Active |
-| [0033](0033-photo-save-targets-per-platform.md) | Photo Save Targets per Platform (Native Gallery, Web Folder Save, Download Fallback) | Active |
+| [0033](0033-command-replay-undo.md) | Command-Replay Undo (Single Baseline + Stroke Log, replacing the snapshot stack) | Active |
+| [0034](0034-drop-virtual-canvas-rebuild-on-resize.md) | Drop the Virtual Canvas — Rebuild on Resize from the Baseline + Log | Active |
+| [0035](0035-keyframe-long-commands.md) | Keyframe Long Commands So Undo Doesn't Replay Thousands of Ops | Active |
+| [0036](0036-stroke-simplification-at-commit.md) | Simplify Stroke Ops at Commit (Ramer–Douglas–Peucker) So Undo Replays Few Segments | Active |
+| [0037](0037-photo-save-targets-per-platform.md) | Photo Save Targets per Platform (Native Gallery, Web Folder Save, Download Fallback) | Active |
+

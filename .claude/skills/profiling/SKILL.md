@@ -20,19 +20,30 @@ One command per platform; the analyzer is pure and re-runnable on any saved trac
 | `npm run perf:web:raw` | …no throttle | full CDP trace |
 | `npm run perf:android` | the **real Capacitor WebView** on a connected device/emulator, no throttle | full CDP trace |
 | `npm run perf:ios` | Playwright **WebKit** (the iOS WKWebView engine), production preview | engine marks + FPS (no CDP trace) |
+| `npm run perf:undo` | the **undo/keyframe** question specifically — drives `/dev/engine` (so it can read `getUndoDebug()`) through 3 shaped sessions: 12 long squiggles, 12 short dot/dash marks, a mix; tablet viewport, 4× throttle | CDP trace **+** per-scenario keyframe/op counts, draw-vs-undo timing, and analytic raster memory |
+| `npm run perf:replay -- --recording=<f>` | **real recorded finger input** instead of synthetic strokes — replays a recording captured on-device with `scripts/perf/ipad-recorder.js` (see `ipad-device-profiling.md`) at real timing | CDP trace **+** how your input was stored (`getUndoDebug`) + engine.draw/keyframe/undo cost |
 | `npm run perf:analyze -- <dir or trace.json>` | re-summarize a saved trace | — |
 
 Flags (web/ios): `--device=phone\|tablet\|desktop`, `--no-build` (reuse the last
 build); web also `--throttle=N`. Android: `--no-build` (profile the installed app
-as-is). Each run writes `perf-profiles/<timestamp>-<target>-…/` containing
-`trace.json`, `metrics.json`, `summary.json`, `report.md`, and `screenshot.png`.
-`perf-profiles/` is gitignored.
+as-is). `perf:undo` takes `--throttle=N` / `--no-throttle` / `--no-build`. Each run
+writes `perf-profiles/<timestamp>-<target>-…/` containing `trace.json`,
+`metrics.json`, `summary.json`, `report.md`, and `screenshot.png`; `perf:undo` also
+writes `undo-scenarios.json` / `undo-scenarios.md` (the per-scenario keyframe/op/
+undo-cost/memory tables). `perf-profiles/` is gitignored.
+
+**Undo/keyframe memory caveat:** history rasters (keyframes, the baseline, and the
+old snapshot stack) live in **canvas backing stores, not the JS heap** — so
+`performance.memory` / the heap table can't see them and stay flat. `perf:undo`
+reports the *real* cost analytically: `keyframes × (max(w,h)² × 4 bytes)`. It's also
+re-runnable unchanged against the old snapshot engine for an apples-to-apples
+keyframe-vs-snapshot comparison.
 
 ## How capture works (so the numbers make sense)
 
 - **Engine marks** are the clean signal. `PERF_MARKS=true` at build time turns on
-  `performance.mark/measure` around the engine's five hot paths (engine.ts:
-  `draw`, `saveUndoSnapshot`, `scanCanvasIsEmpty`, `resizeCanvas`, `undo`). The
+  `performance.mark/measure` around the engine's hot paths (engine.ts:
+  `draw`, `commit`, `foldBaseline`, `scanCanvasIsEmpty`, `resizeCanvas`, `undo`). The
   `npm run perf:*` scripts set it; normal builds strip the marks entirely. If the
   report says "_No engine.* marks_", the build wasn't a `PERF_MARKS` build.
 - **Headless + CPU throttle approximates a phone** — good for finding hotspots and
@@ -56,17 +67,21 @@ Read in this order:
    | Hot row | What it is | Where to look |
    | --- | --- | --- |
    | `engine.draw` high **Avg/Max** | per-pointermove stroking (coalesced replay + quadratic segments) | `strokeSmoothSegments` / `draw` in `web/src/lib/drawing/engine.ts`. A high *Max* (vs Avg) = a few heavy frames, often the first move after a resize. |
-   | `engine.saveUndoSnapshot` high | full-canvas copy per stroke group, ×renderScale² pixels | undo snapshot cost — the ADR-0015 DPR tradeoff (see below). |
+   | `engine.commit` high | finalizing a stroke group into the undo log (push, fold check, keyframe check) | should be cheap — recording ops, not copying pixels (ADR-0033). |
+   | `engine.keyframe` high | collapsing a long command into a cumulative raster (`paintStateThrough`) at commit | fires only for a scribble past `OP_KEYFRAME_THRESHOLD`; a one-off replay at stroke end, off the draw frame (ADR-0035). Stops `engine.undo`/`engine.resize` from replaying thousands of ops. |
+   | `engine.foldBaseline` high | folding the oldest command into the baseline once the log passes the cap | a keyframed command blits onto the baseline; otherwise one stroke render per commit past `MAX_UNDO_STACK_SIZE`; runs at stroke end, off the draw frame. |
    | `engine.scanEmpty` high | `getImageData` readback after an **eraser** stroke | `scanCanvasIsEmpty`; already downscaled 0.25×. Costlier on real devices (GPU→CPU readback). |
-   | `engine.resize` high/frequent | backing-store rebuild + virtual-canvas copy | should fire only on resize/rotation — if it fires mid-draw, that's the bug. |
-   | `engine.undo` high | restore from snapshot | rare; usually fine. |
+   | `engine.resize` high/frequent | backing-store rebuild + baseline/command-log replay, blitting keyframes (ADR-0034/0035) | should fire only on resize/rotation — if it fires mid-draw, that's the bug. |
+   | `engine.undo` high | rebuild from baseline + replay the command log, blitting keyframes (ADR-0033/0035) | replay is bounded to ops after the most recent keyframe, not the whole session; a one-off cost at button-press, not per-frame. |
 3. **Where the main thread went** (Chromium/Android only) — Scripting vs
    Rendering vs Painting. Painting/raster dominating = GPU/compositing cost (the
    high-DPR canvas), not JS.
 4. **Per-phase main-thread busy** — which interaction actually costs CPU (busy,
    not wall-clock — wall is dominated by the scenario's pacing sleeps).
 5. **Top JS by self-time** — corroborates 2–3. `drawImage` = canvas copies
-   (snapshots / virtual-canvas sync); `getImageData` = the empty-scan.
+   (the baseline blit on resize/undo — the per-stroke virtual-canvas sync is gone,
+   ADR-0034); `stroke`/`quadraticCurveTo` = live drawing and undo/resize replay;
+   `getImageData` = the empty-scan.
 
 For a forced-reflow / layout-thrash check, the harness confirmed **0 forced
 synchronous layouts** in the drawing path (the engine caches `canvasRect`). If
@@ -81,9 +96,10 @@ The drawing path is already well-optimized; treat these as the baseline:
 - **Deferred — real user tradeoffs, NOT low-risk oversights:**
   - **Capped-DPR canvas compositing (ADR-0015).** The dominant cost on-device is
     raster/paint of the 4×-pixel canvas (~4970 ms/session on the Android emulator
-    vs ~210 ms throttled-desktop). Changing it (`MAX_RENDER_SCALE`, snapshot scale,
-    undo depth) alters rendered crispness and/or undo memory — needs a deliberate
-    decision, not a drive-by edit.
+    vs ~210 ms throttled-desktop). Changing it (`MAX_RENDER_SCALE`) alters rendered
+    crispness — needs a deliberate decision, not a drive-by edit. Note the undo
+    *memory* cost it used to multiply is gone: undo now keeps one baseline raster
+    plus a tiny command log, not ten full snapshots (ADR-0033).
   - `engine.scanEmpty` ~14 ms on-device per erase-stroke-end — low impact (once per
     stroke), noted for the future.
 
@@ -102,5 +118,13 @@ When you fix something, re-run the same command and compare `summary.json` /
 - **iOS** `perf:ios` profiles the WebKit *engine*, not the Simulator app. For
   device-accurate numbers, run the app on the Simulator, record a **Timeline** in
   Safari Web Inspector (Develop → Simulator → Splotch — see the `mobile` skill),
-  export it, and run `npm run perf:analyze -- <export>.json`. WebKit clamps
+  export it, and run `npm run perf:ios:analyze -- <export>.json` (the Web
+  Inspector export is mark-only/ring-buffered — a different format from
+  `perf:analyze`; see `ipad-device-profiling.md`). WebKit clamps
   `performance.now()` to ~1 ms, so its engine-mark timings are coarse.
+- **Real iPad** (the highest-fidelity target — real WebKit + GPU + 120 Hz
+  ProMotion): there's no automation socket, so it's a manual Safari Web Inspector
+  flow. Full step-by-step runbook (Mac-vs-iPad tagged) in
+  [`ipad-device-profiling.md`](ipad-device-profiling.md); it drives the same
+  `perf:undo` scenarios via the pasteable console driver
+  `scripts/perf/ipad-console-driver.js`.

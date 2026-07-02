@@ -33,9 +33,7 @@ test.beforeEach(async ({ page }) => {
   // reload before onMount can finish, which never converges.
   await page.goto('/dev/engine', { waitUntil: 'commit' });
   await expect(async () => {
-    const ready = await page
-      .evaluate(() => window.__engineReady === true)
-      .catch(() => false);
+    const ready = await page.evaluate(() => window.__engineReady === true).catch(() => false);
     expect(ready).toBe(true);
   }).toPass({ timeout: 30_000 });
 });
@@ -46,7 +44,10 @@ test('a stroke paints pixels and flips canvasEmpty false', async ({ page }) => {
   expect(await count(page)).toBe(0);
   expect((await state(page)).canvasEmpty).toBe(true);
 
-  await drawStroke(page, box, [{ x: 60, y: 60 }, { x: 160, y: 120 }]);
+  await drawStroke(page, box, [
+    { x: 60, y: 60 },
+    { x: 160, y: 120 },
+  ]);
 
   expect(await count(page)).toBeGreaterThan(0);
   const s = await state(page);
@@ -57,7 +58,10 @@ test('a stroke paints pixels and flips canvasEmpty false', async ({ page }) => {
 test('undo reverts a stroke back to an empty canvas', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
-  await drawStroke(page, box, [{ x: 50, y: 50 }, { x: 150, y: 150 }]);
+  await drawStroke(page, box, [
+    { x: 50, y: 50 },
+    { x: 150, y: 150 },
+  ]);
   expect(await count(page)).toBeGreaterThan(0);
 
   await page.evaluate(() => window.__engine.undo());
@@ -65,18 +69,21 @@ test('undo reverts a stroke back to an empty canvas', async ({ page }) => {
   expect(await count(page)).toBe(0);
   const s = await state(page);
   expect(s.canvasEmpty).toBe(true);
-  // The single pre-stroke snapshot was consumed, so there's nothing left to undo.
+  // The only command was undone back to the empty baseline — nothing left to undo.
   expect(s.canUndo).toBe(false);
 });
 
 test('the undo stack caps at 10 — you cannot undo all the way past the cap', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
-  // 12 distinct strokes → 12 pre-stroke snapshots pushed, but only the last 10
-  // are retained (MAX_UNDO_STACK_SIZE).
+  // 12 distinct strokes → 12 commands, but only the last 10 are retained
+  // (MAX_UNDO_STACK_SIZE); the older two fold into the baseline.
   for (let i = 0; i < 12; i++) {
     const y = 20 + i * 20;
-    await drawStroke(page, box, [{ x: 30, y }, { x: 270, y }]);
+    await drawStroke(page, box, [
+      { x: 30, y },
+      { x: 270, y },
+    ]);
   }
 
   let undos = 0;
@@ -87,21 +94,24 @@ test('the undo stack caps at 10 — you cannot undo all the way past the cap', a
   }
 
   expect(undos).toBe(10);
-  // Two strokes predate the retained snapshots, so the canvas can't reach blank.
+  // Two strokes folded into the baseline, so the canvas can't reach blank.
   expect(await count(page)).toBeGreaterThan(0);
 });
 
 test('clearing the canvas is itself undoable', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
-  await drawStroke(page, box, [{ x: 60, y: 60 }, { x: 200, y: 200 }]);
+  await drawStroke(page, box, [
+    { x: 60, y: 60 },
+    { x: 200, y: 200 },
+  ]);
   const drawn = await count(page);
   expect(drawn).toBeGreaterThan(0);
 
   await page.evaluate(() => window.__engine.clearCanvas());
   expect(await count(page)).toBe(0);
   expect((await state(page)).canvasEmpty).toBe(true);
-  expect((await state(page)).canUndo).toBe(true); // clear pushed a snapshot
+  expect((await state(page)).canUndo).toBe(true); // clear pushed an undo command
 
   await page.evaluate(() => window.__engine.undo());
   expect(await count(page)).toBeGreaterThan(0); // the drawing came back
@@ -111,7 +121,10 @@ test('clearing the canvas is itself undoable', async ({ page }) => {
 test('the eraser removes pixels and re-scans empty on stroke end', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
-  await drawStroke(page, box, [{ x: 60, y: 80 }, { x: 140, y: 80 }]);
+  await drawStroke(page, box, [
+    { x: 60, y: 80 },
+    { x: 140, y: 80 },
+  ]);
   expect(await count(page)).toBeGreaterThan(0);
 
   // Switch to a wide eraser and sweep over the whole stroke with margin.
@@ -119,7 +132,10 @@ test('the eraser removes pixels and re-scans empty on stroke end', async ({ page
     window.__engine.setStrokeWidth(24);
     window.__engine.setEraserMode(true);
   });
-  await drawStroke(page, box, [{ x: 40, y: 80 }, { x: 160, y: 80 }]);
+  await drawStroke(page, box, [
+    { x: 40, y: 80 },
+    { x: 160, y: 80 },
+  ]);
 
   // stopDrawing re-scans the bitmap after an erase, so the empty flag tracks it.
   expect(await count(page)).toBe(0);
@@ -130,8 +146,14 @@ test('erasing only part of the drawing leaves the canvas non-empty', async ({ pa
   const box = await page.locator('#engineCanvas').boundingBox();
 
   // Two well-separated strokes.
-  await drawStroke(page, box, [{ x: 40, y: 50 }, { x: 120, y: 50 }]);
-  await drawStroke(page, box, [{ x: 40, y: 230 }, { x: 120, y: 230 }]);
+  await drawStroke(page, box, [
+    { x: 40, y: 50 },
+    { x: 120, y: 50 },
+  ]);
+  await drawStroke(page, box, [
+    { x: 40, y: 230 },
+    { x: 120, y: 230 },
+  ]);
   expect((await state(page)).canvasEmpty).toBe(false);
 
   // Erase only the top stroke.
@@ -139,13 +161,18 @@ test('erasing only part of the drawing leaves the canvas non-empty', async ({ pa
     window.__engine.setStrokeWidth(24);
     window.__engine.setEraserMode(true);
   });
-  await drawStroke(page, box, [{ x: 30, y: 50 }, { x: 130, y: 50 }]);
+  await drawStroke(page, box, [
+    { x: 30, y: 50 },
+    { x: 130, y: 50 },
+  ]);
 
   expect(await count(page)).toBeGreaterThan(0); // bottom stroke survives
   expect((await state(page)).canvasEmpty).toBe(false);
 });
 
-test('a pointer resumed far away after an idle gap does not draw a connecting line', async ({ page }) => {
+test('a pointer resumed far away after an idle gap does not draw a connecting line', async ({
+  page,
+}) => {
   // iOS/WebKit can merge a fast tap-then-drag into one pointer stream, dropping
   // the pointerup + pointerdown and resuming the SAME pointer at a new spot.
   // Reproduce it directly: press, idle past the resume gap, then move far away
@@ -170,7 +197,13 @@ test('a color change debounces the immediately-following touch/mouse stroke', as
   // dropped (prevents color-bleed artifacts right after picking a color).
   const dropped = await page.evaluate(() => {
     window.__engine.setColor('#0000ff');
-    window.__engine.strokeSync([{ x: 60, y: 60 }, { x: 200, y: 60 }], 'mouse');
+    window.__engine.strokeSync(
+      [
+        { x: 60, y: 60 },
+        { x: 200, y: 60 },
+      ],
+      'mouse'
+    );
     return window.__engine.nonTransparentCount();
   });
   expect(dropped).toBe(0);
@@ -179,7 +212,13 @@ test('a color change debounces the immediately-following touch/mouse stroke', as
   // Past the 100ms window, the same stroke paints.
   await page.waitForTimeout(150);
   const painted = await page.evaluate(() => {
-    window.__engine.strokeSync([{ x: 60, y: 60 }, { x: 200, y: 60 }], 'mouse');
+    window.__engine.strokeSync(
+      [
+        { x: 60, y: 60 },
+        { x: 200, y: 60 },
+      ],
+      'mouse'
+    );
     return window.__engine.nonTransparentCount();
   });
   expect(painted).toBeGreaterThan(0);
@@ -190,7 +229,13 @@ test('a pen pointer bypasses the color-change debounce', async ({ page }) => {
   // change must paint immediately (a child drawing fast shouldn't drop strokes).
   const painted = await page.evaluate(() => {
     window.__engine.setColor('#0000ff');
-    window.__engine.strokeSync([{ x: 60, y: 60 }, { x: 200, y: 60 }], 'pen');
+    window.__engine.strokeSync(
+      [
+        { x: 60, y: 60 },
+        { x: 200, y: 60 },
+      ],
+      'pen'
+    );
     return window.__engine.nonTransparentCount();
   });
   expect(painted).toBeGreaterThan(0);
@@ -201,9 +246,17 @@ test('a pen pointer bypasses the color-change debounce', async ({ page }) => {
 // (EDGE_SWIPE_BAND_PX = 24) is y ≥ 276. Portrait guards the bottom from
 // orientation alone, needing no injected insets; landscape tests resize the
 // canvas wider than tall.
-test('in portrait a touch swiping up from the bottom edge is discarded as the OS gesture', async ({ page }) => {
+test('in portrait a touch swiping up from the bottom edge is discarded as the OS gesture', async ({
+  page,
+}) => {
   const dropped = await page.evaluate(() => {
-    window.__engine.strokeSync([{ x: 60, y: 290 }, { x: 60, y: 230 }], 'touch');
+    window.__engine.strokeSync(
+      [
+        { x: 60, y: 290 },
+        { x: 60, y: 230 },
+      ],
+      'touch'
+    );
     return window.__engine.nonTransparentCount();
   });
   expect(dropped).toBe(0);
@@ -215,7 +268,13 @@ test('in portrait a touch swiping up from the bottom edge is discarded as the OS
 
 test('a touch starting at the bottom edge but moving sideways still draws', async ({ page }) => {
   const painted = await page.evaluate(() => {
-    window.__engine.strokeSync([{ x: 60, y: 290 }, { x: 220, y: 290 }], 'touch');
+    window.__engine.strokeSync(
+      [
+        { x: 60, y: 290 },
+        { x: 220, y: 290 },
+      ],
+      'touch'
+    );
     return window.__engine.nonTransparentCount();
   });
   expect(painted).toBeGreaterThan(0);
@@ -228,7 +287,13 @@ test('an upward touch that starts above the bottom band draws normally', async (
   // Only the edge band is special — an upward stroke from mid-canvas is a real
   // stroke, not the system gesture.
   const painted = await page.evaluate(() => {
-    window.__engine.strokeSync([{ x: 60, y: 150 }, { x: 60, y: 90 }], 'touch');
+    window.__engine.strokeSync(
+      [
+        { x: 60, y: 150 },
+        { x: 60, y: 90 },
+      ],
+      'touch'
+    );
     return window.__engine.nonTransparentCount();
   });
   expect(painted).toBeGreaterThan(0);
@@ -243,7 +308,9 @@ test('a stationary tap at a guarded edge still leaves a dot', async ({ page }) =
   expect(painted).toBeGreaterThan(0);
 });
 
-test('in phone landscape the guard moves to the short side edges, not the long bottom', async ({ page }) => {
+test('in phone landscape the guard moves to the short side edges, not the long bottom', async ({
+  page,
+}) => {
   // A phone's physical-bottom navbar rotates to a short side edge in landscape.
   // No insets are injected — orientation alone guards both short edges, so this
   // works even where the OS exposes no safe-area insets.
@@ -251,7 +318,13 @@ test('in phone landscape the guard moves to the short side edges, not the long b
 
   // A swipe inward from the short left edge is the OS gesture → discarded.
   const fromSide = await page.evaluate(() => {
-    window.__engine.strokeSync([{ x: 8, y: 150 }, { x: 70, y: 150 }], 'touch');
+    window.__engine.strokeSync(
+      [
+        { x: 8, y: 150 },
+        { x: 70, y: 150 },
+      ],
+      'touch'
+    );
     return window.__engine.nonTransparentCount();
   });
   expect(fromSide).toBe(0);
@@ -259,28 +332,47 @@ test('in phone landscape the guard moves to the short side edges, not the long b
   // A stroke swiping up from the long bottom edge is NOT the navbar gesture on a
   // phone in landscape, so it must still draw.
   const fromBottom = await page.evaluate(() => {
-    window.__engine.strokeSync([{ x: 200, y: 290 }, { x: 200, y: 230 }], 'touch');
+    window.__engine.strokeSync(
+      [
+        { x: 200, y: 290 },
+        { x: 200, y: 230 },
+      ],
+      'touch'
+    );
     return window.__engine.nonTransparentCount();
   });
   expect(fromBottom).toBeGreaterThan(0);
 });
 
-test('in tablet landscape a reported bottom inset additionally guards the long bottom', async ({ page }) => {
+test('in tablet landscape a reported bottom inset additionally guards the long bottom', async ({
+  page,
+}) => {
   // A tablet keeps its home indicator on the long bottom in landscape; the OS
   // reports an inset there, so an upward swipe from that edge is discarded.
   const dropped = await page.evaluate(() => {
     window.__engine.resizeTo(400, 300);
     window.__engine.setSafeAreaInsets({ top: 0, right: 0, bottom: 30, left: 0 });
-    window.__engine.strokeSync([{ x: 200, y: 290 }, { x: 200, y: 230 }], 'touch');
+    window.__engine.strokeSync(
+      [
+        { x: 200, y: 290 },
+        { x: 200, y: 230 },
+      ],
+      'touch'
+    );
     return window.__engine.nonTransparentCount();
   });
   expect(dropped).toBe(0);
 });
 
-test('an export started just before a clear still captures the drawing (save-on-delete race)', async ({ page }) => {
+test('an export started just before a clear still captures the drawing (save-on-delete race)', async ({
+  page,
+}) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
-  await drawStroke(page, box, [{ x: 60, y: 60 }, { x: 200, y: 200 }]);
+  await drawStroke(page, box, [
+    { x: 60, y: 60 },
+    { x: 200, y: 200 },
+  ]);
   expect(await count(page)).toBeGreaterThan(0);
 
   // Mirrors ClearButton's onClear: saveDrawingIfEnabled() fire-and-forgets the
@@ -297,10 +389,241 @@ test('an export started just before a clear still captures the drawing (save-on-
   expect(await count(page)).toBe(0); // the clear itself still landed
 });
 
+test('undoing an eraser stroke replays the erased pixels back', async ({ page }) => {
+  // The command-replay undo (ADR-0033) must reproduce destination-out ops in
+  // order: undoing the erase rebuilds from the baseline and replays only the
+  // pen stroke, so the erased pixels return and the canvas is non-empty again.
+  const box = await page.locator('#engineCanvas').boundingBox();
+
+  await drawStroke(page, box, [
+    { x: 60, y: 80 },
+    { x: 200, y: 80 },
+  ]);
+  const drawn = await count(page);
+  expect(drawn).toBeGreaterThan(0);
+
+  await page.evaluate(() => {
+    window.__engine.setStrokeWidth(24);
+    window.__engine.setEraserMode(true);
+  });
+  await drawStroke(page, box, [
+    { x: 40, y: 80 },
+    { x: 220, y: 80 },
+  ]);
+  expect(await count(page)).toBe(0);
+  expect((await state(page)).canvasEmpty).toBe(true);
+
+  await page.evaluate(() => window.__engine.undo());
+
+  // The erase is reverted — the original pen stroke is back, pixel-for-pixel.
+  expect(await count(page)).toBe(drawn);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(false);
+  expect(s.canUndo).toBe(true); // the pen stroke remains undoable
+});
+
+test('a moderate stroke stays replayable ops (no keyframe) and undoes cleanly', async ({ page }) => {
+  // Below the keyframe budget a command keeps its exact per-frame ops (the
+  // pixel-perfect default — geometry simplification was retired, see ADR-0036),
+  // so a rebuild re-strokes them verbatim. It must not keyframe and must undo as
+  // one unit. strokeSync gives a deterministic one-seg-per-move op stream.
+  const points = Array.from({ length: 120 }, (_, i) => ({
+    x: 20 + i * 2,
+    y: 150 + Math.round(60 * Math.sin(i / 40)),
+  }));
+  await page.evaluate((pts) => window.__engine.strokeSync(pts), points);
+
+  expect(await count(page)).toBeGreaterThan(0);
+
+  const debug = await page.evaluate(() => window.__engine.getUndoDebug());
+  expect(debug.commands).toBe(1);
+  expect(debug.keyframes).toBe(0);
+
+  // Still one undo unit back to blank.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(true);
+  expect(s.canUndo).toBe(false);
+});
+
+test('a pathological all-corners gesture keyframes as a safety net (ADR-0035/0036)', async ({
+  page,
+}) => {
+  // Simplification can't thin a gesture that is genuinely all direction changes.
+  // Once a command's *simplified* segment total passes KEYFRAME_SEGMENT_THRESHOLD
+  // it collapses to a cumulative raster keyframe (ops dropped) so undo/resize stay
+  // one drawImage blit instead of re-stroking hundreds of segments on a 4×-DPR
+  // backing store. A tight zigzag keeps every point through RDP.
+  const points = Array.from({ length: 460 }, (_, i) => ({
+    x: i % 2 === 0 ? 30 : 230,
+    y: 20 + Math.floor(i * 0.5),
+  }));
+  await page.evaluate((pts) => window.__engine.strokeSync(pts), points);
+
+  expect(await count(page)).toBeGreaterThan(0);
+
+  const debug = await page.evaluate(() => window.__engine.getUndoDebug());
+  // One undo unit, collapsed to a keyframe with its ops dropped.
+  expect(debug.commands).toBe(1);
+  expect(debug.keyframes).toBe(1);
+  expect(debug.maxSegments).toBe(0);
+
+  // Undo still reverts the whole gesture in one step, back to blank.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(true);
+  expect(s.canUndo).toBe(false);
+});
+
+test('a keyframed gesture survives a resize, rebuilt from the keyframe (ADR-0035)', async ({
+  page,
+}) => {
+  // The keyframe is a cumulative square raster, so a resize rebuilds from it
+  // (drawImage) rather than re-stroking the dropped ops — the drawing must still
+  // be there afterward.
+  const points = Array.from({ length: 460 }, (_, i) => ({
+    x: i % 2 === 0 ? 30 : 230,
+    y: 20 + Math.floor(i * 0.5),
+  }));
+  await page.evaluate((pts) => window.__engine.strokeSync(pts), points);
+  expect((await page.evaluate(() => window.__engine.getUndoDebug())).keyframes).toBe(1);
+  expect(await count(page)).toBeGreaterThan(0);
+
+  await page.evaluate(() => window.__engine.resizeTo(500, 400));
+
+  // The drawing persists after the resize, rebuilt from the keyframe.
+  expect(await count(page)).toBeGreaterThan(0);
+
+  // And it still undoes as a single unit back to blank.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+  expect((await state(page)).canvasEmpty).toBe(true);
+});
+
+test('a back-and-forth scribble keeps its full extent after a rebuild (ADR-0036 tip fidelity)', async ({
+  page,
+}) => {
+  // Simplification drops the dense samples around each turning point, so the
+  // curve through the survivors must pass *through* the tips. The midpoint
+  // smoothing it replaced used those tips only as control points and bulged ~25%
+  // short of them, so a scribble visibly shrank on undo/resize. Draw a horizontal
+  // zigzag, then force a rebuild-from-stored-ops via resize and check the extent.
+  const pts: { x: number; y: number }[] = [{ x: 50, y: 40 }];
+  let y = 40;
+  let dir = 1;
+  for (let s = 0; s < 8; s++) {
+    const from = dir > 0 ? 50 : 250;
+    const to = dir > 0 ? 250 : 50;
+    for (let i = 1; i <= 20; i++) {
+      y += 1.4;
+      pts.push({ x: from + (to - from) * (i / 20), y });
+    }
+    dir *= -1;
+  }
+  await page.evaluate((p) => window.__engine.strokeSync(p), pts);
+
+  const before = await page.evaluate(() => window.__engine.inkBounds());
+  if (!before) throw new Error('nothing drawn');
+
+  // Force the stored (simplified) ops to repaint the visible canvas.
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  const after = await page.evaluate(() => window.__engine.inkBounds());
+  if (!after) throw new Error('rebuild produced an empty canvas');
+
+  // The horizontal span survives — the tips still reach (the old undershoot
+  // shrank this by tens of px; allow only a few px of antialiasing slack).
+  expect(after.maxX).toBeGreaterThanOrEqual(before.maxX - 4);
+  expect(after.minX).toBeLessThanOrEqual(before.minX + 4);
+});
+
+test('a sharp corner stays sharp and in place after a rebuild (ADR-0036 corner fidelity)', async ({
+  page,
+}) => {
+  // A smooth interpolating spline rounds a sharp turn into a displaced bend, so a
+  // hook drawn as a long arm + a sharp reversal would lose its corner on rebuild
+  // (the corner pulls inward, shrinking the extent by tens of px). Corner-aware
+  // splining keeps the turn crisp and located. Draw the hook, rebuild, and check
+  // the corner's reach is preserved.
+  const pts: { x: number; y: number }[] = [];
+  for (let i = 0; i <= 60; i++) pts.push({ x: 40 + i * 3, y: 150 }); // long horizontal arm
+  for (let i = 1; i <= 18; i++) pts.push({ x: 220 - i * 2, y: 150 - i * 6 }); // sharp hook up-left
+  await page.evaluate((p) => window.__engine.strokeSync(p), pts);
+
+  const before = await page.evaluate(() => window.__engine.inkBounds());
+  if (!before) throw new Error('nothing drawn');
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  const after = await page.evaluate(() => window.__engine.inkBounds());
+  if (!after) throw new Error('rebuild produced an empty canvas');
+
+  // The corner (top of the hook) keeps its reach — a rounded corner would pull
+  // the top edge down by tens of px.
+  expect(after.minY).toBeLessThanOrEqual(before.minY + 4);
+  expect(after.maxX).toBeGreaterThanOrEqual(before.maxX - 4);
+});
+
+test('a multi-touch gesture undoes as a single unit', async ({ page }) => {
+  // Two fingers drawing together form one stroke group → one command, so a
+  // single undo must remove both strokes (not just the last finger's).
+  await page.evaluate(() => {
+    window.__engine.multiStrokeSync([
+      {
+        pointerId: 1,
+        points: [
+          { x: 40, y: 60 },
+          { x: 240, y: 60 },
+        ],
+      },
+      {
+        pointerId: 2,
+        points: [
+          { x: 40, y: 200 },
+          { x: 240, y: 200 },
+        ],
+      },
+    ]);
+  });
+  expect(await count(page)).toBeGreaterThan(0);
+  expect((await state(page)).canUndo).toBe(true);
+
+  await page.evaluate(() => window.__engine.undo());
+
+  expect(await count(page)).toBe(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(true);
+  expect(s.canUndo).toBe(false); // the whole group was one undo step
+});
+
+test('undo still works after a canvas resize (replay onto the grown baseline)', async ({
+  page,
+}) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+
+  await drawStroke(page, box, [
+    { x: 30, y: 30 },
+    { x: 120, y: 30 },
+  ]);
+  expect(await count(page)).toBeGreaterThan(0);
+
+  await page.evaluate(() => window.__engine.resizeTo(500, 400));
+  expect(await count(page)).toBeGreaterThan(0); // survived the resize
+
+  await page.evaluate(() => window.__engine.undo());
+
+  expect(await count(page)).toBe(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(true);
+  expect(s.canUndo).toBe(false);
+});
+
 test('the drawing survives a canvas resize (virtual-canvas preservation)', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
-  await drawStroke(page, box, [{ x: 30, y: 30 }, { x: 120, y: 30 }]);
+  await drawStroke(page, box, [
+    { x: 30, y: 30 },
+    { x: 120, y: 30 },
+  ]);
   const before = await count(page);
   expect(before).toBeGreaterThan(0);
 
@@ -310,4 +633,37 @@ test('the drawing survives a canvas resize (virtual-canvas preservation)', async
   expect(await count(page)).toBeGreaterThan(0);
   const alpha = await page.evaluate(() => window.__engine.pixelAt(70, 30)[3]);
   expect(alpha).toBeGreaterThan(0);
+});
+
+test('a stroke in progress survives a mid-stroke resize and undoes as one unit', async ({
+  page,
+}) => {
+  // The rebuild replays from the baseline + command log, but a stroke still being
+  // drawn has an uncommitted activeCommand (recorded, not yet in the log). The
+  // resize must replay it too, so the in-flight stroke isn't dropped — and the
+  // whole stroke remains a single undo unit afterwards.
+  const box = await page.locator('#engineCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+
+  await page.mouse.move(box.x + 40, box.y + 40);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 100, box.y + 100);
+
+  // Resize while the finger is still down (the stroke is mid-flight).
+  await page.evaluate(() => window.__engine.resizeTo(500, 400));
+
+  // The portion drawn before the resize is still on the canvas.
+  expect(await page.evaluate(() => window.__engine.pixelAt(40, 40)[3])).toBeGreaterThan(0);
+
+  await page.mouse.move(box.x + 150, box.y + 150);
+  await page.mouse.up();
+
+  expect(await count(page)).toBeGreaterThan(0);
+
+  // One stroke → one command: a single undo clears it back to blank.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(true);
+  expect(s.canUndo).toBe(false);
 });

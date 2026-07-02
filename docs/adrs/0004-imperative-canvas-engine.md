@@ -16,9 +16,9 @@ Options considered:
 
 The drawing engine (`src/lib/drawing/engine.ts`) is a **module-singleton** of mutable imperative state. Components call `initDrawingCanvas(canvas, options)` on mount, then imperatively call `setColor()`, `setStrokeWidth()`, `undo()`, `clearCanvas()`, and `exportCanvas()`. The engine signals state changes back to Svelte via typed callbacks (`onDrawSound`, `onUndoStateChange`, `onCanvasEmptyChange`). These callbacks are wired into thin `$state` bridging objects in `state/canvas.svelte.ts`.
 
-The virtual canvas (a second off-screen canvas, 2× the viewport dimension) is used as a composite buffer so that drawing content survives viewport resize and orientation change without loss.
+The virtual canvas (a second off-screen canvas, 2× the viewport dimension) was used as a composite buffer so that drawing content survives viewport resize and orientation change without loss. **Superseded by ADR-0034:** the virtual canvas is removed — the ADR-0033 baseline + command log already retain off-screen content, so resize now rebuilds the visible canvas by replaying them instead of mirroring every stroke into a second surface.
 
-Undo snapshots are stored as `HTMLCanvasElement` objects (not image data arrays), capped at `MAX_UNDO_STACK_SIZE = 10`. The canvas approach avoids a `getImageData` / `putImageData` round-trip on every undo step.
+Undo was originally a stack of up to `MAX_UNDO_STACK_SIZE = 10` full-canvas `HTMLCanvasElement` snapshots. **Superseded by ADR-0033:** undo is now a log of replayable stroke commands over a single baseline raster. The imperative-engine and callback-bridge decisions below are unaffected.
 
 `getBoundingClientRect()` is cached in a `canvasRect` variable and refreshed only on resize/scroll/orientation change — avoiding a forced reflow on every pointer event in the hot path.
 
@@ -28,4 +28,4 @@ Undo snapshots are stored as `HTMLCanvasElement` objects (not image data arrays)
 - **+** The engine module can be imported and driven from Playwright tests through a dev-harness route (`/dev/engine`) without involving any Svelte lifecycle.
 - **-** The engine is a module singleton, so the canvas state is global — only one drawing canvas can exist at a time in a page.
 - **-** Callback wiring (`onUndoStateChange`, etc.) is manual; a missed callback means reactive UI doesn't update to reflect engine state.
-- **-** Undo snapshots consume memory in proportion to canvas size × stack depth (10 frames at full viewport resolution).
+- **-** ~~Undo snapshots consume memory in proportion to canvas size × stack depth (10 frames at full viewport resolution).~~ Resolved by ADR-0033: one baseline raster + a small command log.

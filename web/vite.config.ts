@@ -69,6 +69,13 @@ export default {
     __IS_CAPACITOR__: JSON.stringify(isCapacitor),
     __PERF_MARKS__: JSON.stringify(perfMarks),
   },
+  // The supported-browser floor, pinned explicitly so it never silently drifts
+  // with Vite's default (`baseline-widely-available` moves up every year). Keep
+  // in sync with `browserslist` in the root package.json — both are documented
+  // in docs/COMPATIBILITY.md. INVARIANT: the ios/safari versions here MUST stay
+  // >= the native iOS IPHONEOS_DEPLOYMENT_TARGET (ios/App/App.xcodeproj), or an
+  // iOS device could be served syntax/CSS the WebView can't run.
+  build: { target: ['chrome111', 'edge111', 'firefox114', 'safari16.4', 'ios16.4'] },
   // Profiling builds (PERF_MARKS=true) keep function names through minification
   // so the trace's CPU-sampler self-time is readable instead of mangled (`ci`).
   // No effect on shipping builds.
