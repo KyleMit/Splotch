@@ -1,4 +1,4 @@
-# ADR-0033: Photo Save Targets per Platform (Native Gallery, Web Folder Save, Download Fallback)
+# ADR-0037: Photo Save Targets per Platform (Native Gallery, Web Folder Save, Download Fallback)
 
 **Status:** Active
 **Date:** 2026-06
