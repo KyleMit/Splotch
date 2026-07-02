@@ -30,7 +30,7 @@ declare global {
         max?: number;
         keyframeThreshold?: number;
         cornerAngleDeg?: number;
-        mode?: 'midpoint' | 'spline';
+        mode?: 'midpoint' | 'spline' | 'samples';
         enabled?: boolean;
         reduce?: boolean;
         split?: 'none' | 'corner';

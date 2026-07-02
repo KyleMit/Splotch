@@ -79,6 +79,7 @@ baseline**, and every remaining below-floor risk is already feature-detected and
 | `ResizeObserver` | `lib/components/ColorPalette.svelte:27` | Safari 13.1 | within floor | n/a |
 | Service Worker / PWA | `lib/pwa/updates.ts` | broad; web-only | ✅ `'serviceWorker' in navigator` | no offline cache / update prompt |
 | `navigator.clipboard.writeText` | `lib/components/admin/AdminConsole.svelte:122` | Safari 13.1 | admin-only (not kid-facing) | n/a |
+| File System Access (`showDirectoryPicker` + writable handles) | `lib/drawing/folderSave.ts` | desktop Chromium 86+ only; never Firefox / Safari / mobile | ✅ `folderSaveSupported()` | folder row hidden in Parent Center; web saves stay plain downloads |
 | `createImageBitmap` | `routes/dev/engine/+page.svelte` | dev harness only | excluded from prod build | n/a |
 
 ## Polyfills & workarounds
