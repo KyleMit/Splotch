@@ -12,6 +12,7 @@ export type IconName =
   | 'dashboard-customize'
   | 'download'
   | 'eraser'
+  | 'folder'
   | 'github'
   | 'home'
   | 'line-weight'

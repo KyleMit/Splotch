@@ -8,6 +8,13 @@ import {
   removeKey,
 } from '../storage';
 import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage';
+import {
+  folderSaveSupported,
+  chooseSaveFolder,
+  getSaveFolderName,
+  clearSaveFolder,
+  onSaveFolderCleared,
+} from '$lib/drawing/folderSave';
 
 const SOUND_KEY = 'splotch-sound-enabled';
 const SOUND_VOLUME_KEY = 'splotch-sound-volume';
@@ -109,6 +116,12 @@ interface Settings extends Record<BoolSettingKey, boolean> {
   // Parent-supplied Gemini API key (BYOK). Held in memory only; hydrated from
   // secure storage on boot by hydrateApiKey(). Empty until then / unless set.
   aiUserApiKey: string;
+  // Desktop web only: the name of the optional folder web saves are written into
+  // (File System Access API). Not persisted here — derived from the directory
+  // handle in IndexedDB and hydrated on boot by hydrateSaveFolder(). Null when no
+  // folder is set, in which case saves just download. Drives the Parent Center
+  // folder display; nothing else depends on it.
+  saveFolderName: string | null;
 }
 
 export const settings: Settings = $state({
@@ -118,6 +131,7 @@ export const settings: Settings = $state({
   soundVolume: clampVolume(readInt(SOUND_VOLUME_KEY, 50)),
   aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
   aiUserApiKey: '',
+  saveFolderName: null,
 });
 
 // Build a setter that updates the live value and persists it to localStorage.
@@ -198,6 +212,37 @@ export async function hydrateApiKey() {
   }
 
   if (key) settings.aiUserApiKey = key;
+}
+
+// A save that discovers the chosen folder is gone (moved/deleted) drops the
+// stored handle itself; mirror that here so the Parent Center pill doesn't keep
+// naming a folder that no longer receives saves.
+onSaveFolderCleared(() => {
+  settings.saveFolderName = null;
+});
+
+// Pick (or re-pick) the optional destination folder for web saves. Must be
+// called from a click handler so the picker keeps its user activation. Keeps the
+// current folder if the parent cancels. Purely a convenience — it doesn't enable
+// or disable any save action; saves work the same with or without a folder.
+export async function changeSaveFolder() {
+  const name = await chooseSaveFolder();
+  if (name) settings.saveFolderName = name;
+}
+
+// Forget the chosen folder, so web saves revert to the browser's default
+// download location. Doesn't stop anything from saving.
+export async function forgetSaveFolder() {
+  await clearSaveFolder();
+  settings.saveFolderName = null;
+}
+
+// Boot hydration (web/desktop only): read the remembered folder name from the
+// directory handle in IndexedDB into the live store so the Parent Center can
+// show it. No side effects on the save features.
+export async function hydrateSaveFolder() {
+  if (!folderSaveSupported()) return;
+  settings.saveFolderName = await getSaveFolderName();
 }
 
 export function captureAiAccessTokenFromUrl() {
