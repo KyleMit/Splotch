@@ -18,7 +18,7 @@ import { buildAndPreview } from './preview.mjs';
 const args = process.argv.slice(2);
 const build = !args.includes('--no-build');
 const filter = (args.find((a) => a.startsWith('--filter=')) || '').split('=')[1] || '';
-const mode = (args.find((a) => a.startsWith('--mode=')) || '').split('=')[1] || 'spline';
+const mode = (args.find((a) => a.startsWith('--mode=')) || '').split('=')[1] || 'samples';
 const reduce = !args.includes('--no-reduce');
 const split = (args.find((a) => a.startsWith('--split=')) || '').split('=')[1] || 'corner';
 const epsArg = (args.find((a) => a.startsWith('--eps=')) || '').split('=')[1];
@@ -195,8 +195,8 @@ async function main() {
         stroke,
         sizePx: SIZE_PX,
         css: { w: cssW, h: cssH },
-        // Default verifies the SHIPPING engine (exact replay). --enabled tests the
-        // retired simplification path; --mode / --no-reduce tune that path.
+        // Default verifies the SHIPPING config ('samples' rebuild, ADR-0036).
+        // --mode / --eps / --no-reduce / --disabled sweep the alternatives.
         params: {
           mode,
           reduce,

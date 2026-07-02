@@ -30,6 +30,9 @@ const flag = (name, def) => {
   return hit ? hit.split('=')[1] : def;
 };
 const recordingPath = flag('recording', null);
+// Optional simplification-mode override (setSimplifyParams seam), so one build
+// can compare how each rebuild mode stores/replays the same recording.
+const mode = flag('mode', null);
 const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '0'));
 const turbo = args.includes('--turbo');
 const port = Number(flag('port', '4173'));
@@ -75,6 +78,7 @@ async function main() {
     await page.waitForSelector('#engineCanvas');
     await page.waitForFunction(() => window.__engineReady === true);
     await page.evaluate(({ w, h }) => window.__engine.resizeTo(w, h), cssCanvas);
+    if (mode) await page.evaluate((m) => window.__engine.setSimplifyParams({ mode: m }), mode);
     await sleep(150);
 
     const cdp = await ctx.newCDPSession(page);
@@ -116,6 +120,7 @@ async function main() {
         ua: meta.ua,
         pacing: turbo ? 'turbo' : 'real-time',
       },
+      simplifyMode: mode || 'default',
       startedAt: new Date(t0).toISOString(),
       durationMs: Date.now() - t0,
     };

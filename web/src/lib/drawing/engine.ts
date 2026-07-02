@@ -396,7 +396,7 @@ function recordOp(op: StrokeOp) {
 // (setSimplifyParams, exposed only on the dev/engine page behind
 // PUBLIC_ENABLE_DEV_HARNESS). Production never calls the setter, so these keep
 // their tuned defaults.
-let simplifyEpsilonFraction = 0.05;
+let simplifyEpsilonFraction = 0.03;
 let simplifyEpsilonMinPx = 1;
 let simplifyEpsilonMaxPx = 6;
 function simplifyEpsilonFor(lineWidth: number): number {
@@ -422,7 +422,7 @@ export function setSimplifyParams(params: {
   max?: number;
   keyframeThreshold?: number;
   cornerAngleDeg?: number;
-  mode?: 'midpoint' | 'spline';
+  mode?: 'midpoint' | 'spline' | 'samples';
   reduce?: boolean;
   enabled?: boolean;
   split?: 'none' | 'corner';
@@ -446,13 +446,28 @@ type PathOp = Extract<StrokeOp, { kind: 'path' }>;
 
 // Iterative (stack-based, so a long monotonic stroke can't blow the call stack)
 // Douglas–Peucker. Keeps both endpoints plus every point whose perpendicular
-// distance to the current chord exceeds epsilon.
-function rdpSimplify(points: Pt[], epsilon: number): Pt[] {
-  if (points.length <= 2) return points.slice();
+// distance to the current chord exceeds epsilon. `forcedIdx` pins extra indices
+// as kept, so simplification recurses within the spans between them — used by
+// the 'samples' rebuild to protect a sharp apex and its immediate neighbours
+// (whose positions the live curve's bulge geometry depends on).
+function rdpSimplify(points: Pt[], epsilon: number, forcedIdx?: number[]): Pt[] {
+  return rdpKeepIndices(points, epsilon, forcedIdx).map((i) => points[i]);
+}
+
+function rdpKeepIndices(points: Pt[], epsilon: number, forcedIdx?: number[]): number[] {
+  if (points.length <= 2) return points.map((_, i) => i);
   const keep = new Uint8Array(points.length);
   keep[0] = 1;
   keep[points.length - 1] = 1;
-  const stack: [number, number][] = [[0, points.length - 1]];
+  if (forcedIdx) for (const i of forcedIdx) keep[i] = 1;
+  const stack: [number, number][] = [];
+  let prevKept = 0;
+  for (let i = 1; i < points.length; i++) {
+    if (keep[i]) {
+      if (i > prevKept + 1) stack.push([prevKept, i]);
+      prevKept = i;
+    }
+  }
   while (stack.length > 0) {
     const [a, b] = stack.pop()!;
     const ax = points[a].x;
@@ -476,8 +491,8 @@ function rdpSimplify(points: Pt[], epsilon: number): Pt[] {
       stack.push([a, idx], [idx, b]);
     }
   }
-  const out: Pt[] = [];
-  for (let i = 0; i < points.length; i++) if (keep[i]) out.push(points[i]);
+  const out: number[] = [];
+  for (let i = 0; i < points.length; i++) if (keep[i]) out.push(i);
   return out;
 }
 
@@ -513,6 +528,183 @@ function rawPointsOf(run: PathOp[]): Pt[] {
   return pts;
 }
 
+// Recover the ORIGINAL pointer samples a run of path ops was built from. Each
+// live segment's control (`s.cx`,`s.cy`) IS a raw finger sample
+// (strokeSmoothSegments always uses the previous sample as the control), and the
+// final sample — which the live curve never reaches, stopping at its midpoint —
+// is the last control reflected through the last anchor.
+function rawSamplesOf(run: PathOp[]): Pt[] {
+  const samples: Pt[] = [];
+  let lastX = run[0].startX;
+  let lastY = run[0].startY;
+  for (const op of run)
+    for (const s of op.segs) {
+      samples.push({ x: s.cx, y: s.cy });
+      lastX = s.x;
+      lastY = s.y;
+    }
+  const lastControl = samples[samples.length - 1];
+  samples.push({ x: 2 * lastX - lastControl.x, y: 2 * lastY - lastControl.y });
+  return samples;
+}
+
+// The parameter-midpoint of the live quadratic at sample p (anchors are the
+// midpoints to its neighbours, control is p itself): the deepest point the live
+// curve actually reaches toward p.
+function liveVertexAt(prev: Pt, p: Pt, next: Pt): Pt {
+  return { x: p.x + (prev.x + next.x - 2 * p.x) / 8, y: p.y + (prev.y + next.y - 2 * p.y) / 8 };
+}
+
+// Distance from a point to the quadratic through anchors a1→a2 with control c:
+// coarse t-sampling to bracket the nearest region, then ternary refinement
+// inside the bracket. Plain coarse sampling is NOT enough — on a long span the
+// samples sit tens of px apart, so a point lying exactly on the curve can read
+// as far away and a keep/drop test built on it cascades into keeping everything.
+function distToQuad(v: Pt, a1: Pt, c: Pt, a2: Pt): number {
+  const bx = (t: number) => {
+    const u = 1 - t;
+    return u * u * a1.x + 2 * u * t * c.x + t * t * a2.x;
+  };
+  const by = (t: number) => {
+    const u = 1 - t;
+    return u * u * a1.y + 2 * u * t * c.y + t * t * a2.y;
+  };
+  const d = (t: number) => Math.hypot(bx(t) - v.x, by(t) - v.y);
+  let bestT = 0;
+  let best = Infinity;
+  for (let s = 0; s <= 16; s++) {
+    const t = s / 16;
+    const e = d(t);
+    if (e < best) {
+      best = e;
+      bestT = t;
+    }
+  }
+  let lo = Math.max(0, bestT - 1 / 16);
+  let hi = Math.min(1, bestT + 1 / 16);
+  for (let it = 0; it < 24; it++) {
+    const t1 = lo + (hi - lo) / 3;
+    const t2 = hi - (hi - lo) / 3;
+    if (d(t1) < d(t2)) hi = t2;
+    else lo = t1;
+  }
+  return Math.min(best, d((lo + hi) / 2));
+}
+
+// Rebuild a run in the SAME curve family the live draw used — midpoint-smoothed
+// quadratics over the raw finger samples — rather than re-interpolating a
+// different spline through derived on-curve points. Thinning happens in the
+// sample domain, with three fidelity anchors that make the rebuilt curve track
+// the live one instead of approximating it:
+//
+// - A sample that forms a sharp turn is pinned along with its two immediate
+//   neighbours: the live curve's reach at a turn (the quadratic's bulge toward
+//   the apex) is a function of exactly those three sample positions, so keeping
+//   them rebuilds the live tip exactly. The final sample's predecessor is pinned
+//   too, so the stroke ends at the exact live end anchor.
+// - CONSECUTIVE DUPLICATE samples (a finger holding still) collapse to one
+//   point, but that point is where the live curve breaks tangent continuity and
+//   passes THROUGH the sample — a true corner rendered with full round-cap
+//   discs by the per-frame draw. The rebuilt run splits into separate ops there
+//   (each landing exactly on the point via a doubled tail sample), so two round
+//   caps reproduce the live disc where a merged path would round-join.
+// - BULGE REFINEMENT: with sparser neighbours the midpoint construction
+//   under-bulges at a kept sample — the quadratic's reach toward it scales with
+//   neighbour distance, so a moderate turn (below the corner threshold) on an
+//   otherwise straight path can visibly flatten. Wherever the live bulge point
+//   (liveVertexAt) would sit more than the RDP epsilon away from the rebuilt
+//   quadratic, the sample's original neighbours are re-inserted — which makes
+//   the local geometry exact, the same guarantee corner pinning gives — and the
+//   check repeats until every kept sample's bulge is within tolerance.
+//
+// Midpoint smoothing is tangent-continuous for any control sequence, so away
+// from duplicate-sample corners the merged op needs no other splitting: there is
+// no join anywhere that a live round-cap disc isn't already covered by the
+// stroke body.
+function sampleReducedOps(run: PathOp[]): PathOp[] {
+  const first = run[0];
+  const samples = rawSamplesOf(run);
+  simplifyRawPoints += samples.length;
+
+  const pts: Pt[] = [];
+  const dupCorner = new Set<number>();
+  for (const s of samples) {
+    const prev = pts[pts.length - 1];
+    if (prev && Math.abs(s.x - prev.x) < 1e-3 && Math.abs(s.y - prev.y) < 1e-3)
+      dupCorner.add(pts.length - 1);
+    else pts.push({ x: s.x, y: s.y });
+  }
+
+  const n = pts.length;
+  let keptIdx: number[];
+  if (!simplifyReduce || n <= 3) {
+    keptIdx = pts.map((_, i) => i);
+  } else {
+    const epsilon = simplifyEpsilonFor(first.lineWidth);
+    const forced: number[] = [n - 2];
+    for (const j of dupCorner) forced.push(Math.max(0, j - 1), j, Math.min(n - 1, j + 1));
+    for (let i = 1; i < n - 1; i++)
+      if (isCornerAt(pts[i - 1], pts[i], pts[i + 1])) forced.push(i - 1, i, i + 1);
+    keptIdx = rdpKeepIndices(pts, epsilon, forced);
+
+    const bulgeTol = epsilon;
+    const keep = new Set(keptIdx);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      keptIdx = [...keep].sort((a, b) => a - b);
+      for (let k = 1; k < keptIdx.length - 1; k++) {
+        const i = keptIdx[k];
+        if (dupCorner.has(i)) continue;
+        const c = pts[i];
+        const p = pts[keptIdx[k - 1]];
+        const q = pts[keptIdx[k + 1]];
+        const v = liveVertexAt(pts[i - 1], c, pts[i + 1]);
+        const a1 = { x: (p.x + c.x) / 2, y: (p.y + c.y) / 2 };
+        const a2 = { x: (c.x + q.x) / 2, y: (c.y + q.y) / 2 };
+        if (distToQuad(v, a1, c, a2) > bulgeTol) {
+          if (!keep.has(i - 1)) {
+            keep.add(i - 1);
+            changed = true;
+          }
+          if (!keep.has(i + 1)) {
+            keep.add(i + 1);
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+  simplifyKeptPoints += keptIdx.length;
+
+  const kept = keptIdx.map((i) => pts[i]);
+
+  const ops: PathOp[] = [];
+  const emit = (a: number, b: number, endsOnCorner: boolean) => {
+    const span = kept.slice(a, b + 1);
+    if (endsOnCorner || span.length === 1) span.push(span[span.length - 1]);
+    ops.push({
+      kind: 'path',
+      pid: first.pid,
+      startX: a === 0 ? first.startX : kept[a].x,
+      startY: a === 0 ? first.startY : kept[a].y,
+      segs: midpointToSegs(span),
+      color: first.color,
+      lineWidth: first.lineWidth,
+      erase: first.erase,
+    });
+  };
+  let spanStart = 0;
+  for (let k = 1; k < keptIdx.length - 1; k++) {
+    if (dupCorner.has(keptIdx[k])) {
+      emit(spanStart, k, true);
+      spanStart = k;
+    }
+  }
+  emit(spanStart, keptIdx.length - 1, false);
+  return ops;
+}
+
 // Render the kept points as a curve that passes THROUGH each of them. The live
 // draw path uses midpoint-smoothed quadratics with the raw point as a *control*
 // (the curve only bulges toward it), which is invisible when points are dense
@@ -529,13 +721,17 @@ function rawPointsOf(run: PathOp[]): Pt[] {
 // via setSimplifyParams (cornerAngleDeg) for the profiling sweep.
 const CR_ALPHA = 0.5;
 let simplifyCornerCos = Math.cos((40 * Math.PI) / 180);
-// Rebuild renderer. 'spline' (the default) interpolates the kept ON-CURVE points
-// (rawPointsOf) with a corner-aware centripetal Catmull-Rom — the correct family
-// for points the live curve passed through. 'midpoint' is a legacy/diagnostic
-// mode that re-applies midpoint smoothing; it HALVES on-curve points and is wrong
-// for reconstruction (kept only for the profiling seam). Tunable via
-// setSimplifyParams.
-let simplifyMode: 'midpoint' | 'spline' = 'spline';
+// Rebuild renderer. 'samples' (the default) thins the recovered RAW finger
+// samples and re-applies the live midpoint-quadratic construction over them
+// (sampleReducedOps) — the SAME curve family as the live render, so turns, tips,
+// and hold-still corners rebuild exactly and the whole-battery worst shift is
+// ~1.5 CSS px (vs 2.5 for 'spline'). 'spline' interpolates derived ON-CURVE
+// points (rawPointsOf) with a corner-aware centripetal Catmull-Rom — kept for
+// comparison sweeps; it reduces more (~4.3× vs ~2.7×) at visibly lower corner/
+// tip fidelity. 'midpoint' is a legacy/diagnostic mode that re-applies midpoint
+// smoothing to ON-CURVE points; it HALVES them and is wrong for reconstruction
+// (kept only for the profiling seam). Tunable via setSimplifyParams.
+let simplifyMode: 'midpoint' | 'spline' | 'samples' = 'samples';
 // When false, keep every raw point (no RDP) — for measuring the renderer floor.
 let simplifyReduce = true;
 // 'corner' splits a reduced run into one stroke op per span between sharp corners,
@@ -544,16 +740,16 @@ let simplifyReduce = true;
 // sharp turns. 'none' emits one merged op per run (round joins at every vertex).
 let simplifySplit: 'none' | 'corner' = 'corner';
 // SHIPPING DEFAULT: true. simplifyCommand reduces a committed command's per-frame
-// ops to a few RDP-thinned, corner-split, round-capped sub-strokes (ADR-0036).
-// Verified imperceptible (perf:units): every stroke in the synthetic + real
-// battery rebuilds within ≤2.5 CSS px of the live render (max; the bulk far
-// under), at ~4x fewer points. The key to getting there was reconstructing from
-// the ON-CURVE anchor points (rawPointsOf) and re-interpolating THROUGH them with
-// a corner-aware spline, plus splitting at corners so each kept corner gets a
-// round CAP matching the live per-frame draw — not the earlier control-point /
-// merged-round-join rebuild, which shrank strokes by half and shifted corners.
-// Long all-corners commands that RDP can't thin are still bounded by ADR-0035
-// keyframing.
+// ops to a few thinned sub-strokes (ADR-0036, 'samples' mode above). Verified on
+// perf:units: every stroke in the synthetic + real battery rebuilds within
+// ≤1.5 CSS px of the live render (max; the bulk far under), at ~2.7x fewer
+// points. The key is staying in the live render's own curve family — thin the
+// recovered raw samples, pin turn/tip/duplicate neighbourhoods so their local
+// geometry is exact, and re-apply midpoint smoothing — instead of fitting a
+// different spline through derived points (the retired 'spline' mode, which
+// reduced more but shifted corners and scribble tips by up to 2.5 px: the jump
+// users saw on undo). Long all-corners commands that RDP can't thin are still
+// bounded by ADR-0035 keyframing.
 let simplifyEnabled = true;
 
 // Midpoint quadratics, identical to the live strokeSmoothSegments construction.
@@ -663,6 +859,7 @@ function pathOpFrom(pts: Pt[], src: PathOp): PathOp {
 }
 
 function reducePathRun(run: PathOp[]): PathOp[] {
+  if (simplifyMode === 'samples') return sampleReducedOps(run);
   const raw = rawPointsOf(run);
   const first = run[0];
   const kept = simplifyReduce ? rdpSimplify(raw, simplifyEpsilonFor(first.lineWidth)) : raw.slice();
