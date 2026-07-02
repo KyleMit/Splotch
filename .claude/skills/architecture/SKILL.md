@@ -43,6 +43,8 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | Path | Purpose |
 |---|---|
 | `drawing/engine.ts` | Imperative canvas engine. Owns the `<canvas>`, the undo baseline + command log (ADR-0033/0034), and all pointer tracking. Components connect via callbacks (`onDrawSound`, `onUndoStateChange`, etc.) and direct calls (`setColor`, `setStrokeWidth`, `clearCanvas`). |
+| `drawing/strokeMath.ts` | Pure gesture math (edge-swipe guards, pointer-resume detection, stroke speed) factored out of the engine for unit testing. |
+| `drawing/strokeSimplify.ts` | Pure stroke-simplification geometry (ADR-0036): RDP, corner/bulge analysis, and the sample/spline reconstruction pipelines the engine runs at commit. Unit-tested; the engine owns the tunables. |
 | `drawing/overlay.ts` | Manages the coloring-book overlay image rendered behind the drawing layer. |
 | `drawing/saveOnDelete.ts` | Saves the current drawing to the gallery before clearing, when the setting is enabled. |
 | `drawing/screenshot.ts` | Persists canvas PNGs (exported via `engine.exportCanvasBlob`): on native, saves to the photo library; on web, triggers a download. `saveScreenshot` also plays the polaroid animation. |
