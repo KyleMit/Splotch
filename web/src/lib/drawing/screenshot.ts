@@ -89,8 +89,10 @@ export async function saveImageBlob(
 export async function saveScreenshot() {
   const blob = await exportCanvasBlob(getActiveOverlayImage());
   if (!blob) return;
-  await saveImageBlob(blob, undefined, { allowPrompt: true });
+  // Feedback first: the polaroid must not wait behind the folder write — or the
+  // permission re-confirm dialog — that saveImageBlob may perform on the web.
   playPolaroidAnimation(URL.createObjectURL(blob));
+  await saveImageBlob(blob, undefined, { allowPrompt: true });
 }
 
 const POLAROID_DURATION_MS = 1900;

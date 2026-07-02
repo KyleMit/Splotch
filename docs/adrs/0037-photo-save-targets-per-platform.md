@@ -70,10 +70,20 @@ Center (`SettingsToggles.svelte`), shown only when `folderSaveSupported()`:
 
 `settings.saveFolderName` (reactive, not persisted) backs the display; it's
 hydrated on boot from the stored handle by `hydrateSaveFolder()`, which has no
-side effects on any save feature. The `FileSystemDirectoryHandle` itself is
-structured-cloneable, so it lives in IndexedDB (`splotch-fs` / `handles`) rather
-than localStorage (string-only) — mirroring the lazy-`idb` pattern in
-`secureStorage.ts`.
+side effects on any save feature. When a save discovers the folder itself is
+gone (moved/deleted), `folderSave` drops the stored handle and notifies the
+settings mirror via `onSaveFolderCleared`, so the pill never keeps naming a
+folder that no longer receives saves.
+
+The `FileSystemDirectoryHandle` itself is structured-cloneable, so it lives in
+IndexedDB (`splotch-fs` / `handles`) rather than localStorage (string-only),
+through the shared lazy-`idb` helper (`lib/idb.ts`, also used by
+`secureStorage.ts`). A localStorage flag records *that* a folder was chosen and
+an in-memory copy caches the handle, so the common no-folder state never loads
+the idb chunk at boot and repeated saves don't re-read IndexedDB. Folder writes
+dedupe filenames with browser-download-style `(1)` suffixes, because save
+filenames are second-resolution timestamps and a raw `createWritable` would
+silently overwrite a same-second save.
 
 ### `allowPrompt`: who may raise a dialog at save time
 

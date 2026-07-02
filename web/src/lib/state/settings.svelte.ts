@@ -13,6 +13,7 @@ import {
   chooseSaveFolder,
   getSaveFolderName,
   clearSaveFolder,
+  onSaveFolderCleared,
 } from '$lib/drawing/folderSave';
 
 const SOUND_KEY = 'splotch-sound-enabled';
@@ -212,6 +213,13 @@ export async function hydrateApiKey() {
 
   if (key) settings.aiUserApiKey = key;
 }
+
+// A save that discovers the chosen folder is gone (moved/deleted) drops the
+// stored handle itself; mirror that here so the Parent Center pill doesn't keep
+// naming a folder that no longer receives saves.
+onSaveFolderCleared(() => {
+  settings.saveFolderName = null;
+});
 
 // Pick (or re-pick) the optional destination folder for web saves. Must be
 // called from a click handler so the picker keeps its user activation. Keeps the

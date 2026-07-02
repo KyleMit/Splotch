@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { isNative } from './platform';
 import { lazyPluginModule } from './nativePlugin';
+import { lazyIdbDatabase } from './idb';
 
 // Secure home for the app's client-held secrets — the parent's Gemini API key
 // and the admin session token (used by the native apps to authenticate against
@@ -34,19 +35,7 @@ const MASTER_KEY_ROW = 'master-key'; // the non-extractable AES-GCM CryptoKey
 const getPlugin = lazyPluginModule(() => import('@aparajita/capacitor-secure-storage'));
 
 // --- web: IndexedDB via idb (also lazy) ---
-let dbPromise: Promise<import('idb').IDBPDatabase> | null = null;
-function getDb(): Promise<import('idb').IDBPDatabase> {
-  if (!dbPromise) {
-    dbPromise = import('idb').then(({ openDB }) =>
-      openDB(DB_NAME, DB_VERSION, {
-        upgrade(db) {
-          if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
-        },
-      })
-    );
-  }
-  return dbPromise;
-}
+const getDb = lazyIdbDatabase(DB_NAME, STORE, DB_VERSION);
 
 // Get (or lazily create) the persistent, non-extractable master key. Because it
 // can never be exported, code that reads IndexedDB can't lift the raw bytes out —
