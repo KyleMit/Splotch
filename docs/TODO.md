@@ -83,21 +83,26 @@ then performance, then maintainability/architecture sweeps.
   on pointerdown or dialog open (invalidate on resize) and do nearest-neighbor math against the
   cached array; `document.elementFromPoint` can be dropped once centers are cached.
 
-- [ ] **[Perf] `resizeCanvas` does an unthrottled wipe + full command replay on every resize event** — File(s): `web/src/lib/drawing/engine.ts` (lines 282–319, listener ~1037)
+- [ ] **[Perf] `resizeCanvas` does an unthrottled wipe + command replay on every resize event** — File(s): `web/src/lib/drawing/engine.ts` (lines 282–319, listener ~1037)
   A desktop window-edge drag fires resize continuously; each event runs backing-store
   reassignment (which wipes the canvas), possible `growCanvas` reallocation + copy, and
-  `rebuildFromBaseline()` re-stroking every retained command. Coalesce with rAF or a short
+  `rebuildFromBaseline()` replaying the command log (bounded — `paintStateThrough` blits from
+  the most recent keyframe when one exists and the log is op-simplified and capped — but still
+  a full redraw per event). Coalesce with rAF or a short
   trailing debounce: run `refreshCanvasRect()` immediately so pointer mapping stays correct,
   defer the backing-store rebuild to the settled size. Keep the mid-stroke `activeCommand`
   replay working for the final rebuild. Web target only (mobile rotation is a single event).
 
-- [ ] **[Perf] Web bundle ships and SW-precaches ~16 KB of native-only Capacitor chunks** — File(s): `web/src/lib/platform.ts`, `web/src/lib/orientation.ts`, `web/src/lib/haptics.ts`, `web/src/lib/storage.ts`, `web/src/lib/secureStorage.ts`, `web/src/lib/components/DrawingCanvas.svelte`, `web/src/lib/components/NotchBand.svelte`, `web/src/routes/+page.svelte`
-  Verified in a fresh `npm run build`: chunks for `@capacitor/core`, status-bar, haptics,
-  screen-orientation, preferences, pencilEraser, and DeviceLock (~16 KB across ~11 chunks) ship
-  in the web output and `sw.js` precaches all of them, though every call site is gated on
-  `isNative()` — always false on web. Use the literal `__IS_CAPACITOR__` at each branch/thunk
-  site so Vite's define substitution lets Rollup drop the dynamic imports (routing through
-  `isNative()` doesn't tree-shake across modules) — this is the CLAUDE.md single-signal rule.
+- [ ] **[Perf] Web bundle ships and SW-precaches native-only Capacitor chunks (~16 KB measured in one build)** — File(s): `web/src/lib/orientation.ts`, `web/src/lib/haptics.ts`, `web/src/lib/storage.ts`, `web/src/lib/secureStorage.ts`, `web/src/lib/state/network.svelte.ts`, `web/src/lib/drawing/screenshot.ts`, `web/src/lib/components/DrawingCanvas.svelte` (via `$lib/plugins/pencilEraser`), `web/src/lib/components/NotchBand.svelte`, `web/src/lib/platform.ts`
+  Chunks for `@capacitor/core`, status-bar, haptics, screen-orientation, preferences, network,
+  community media, pencilEraser, and DeviceLock ship in the web output and `sw.js` precaches
+  all of them, though every call site is gated on `isNative()` — always false on web (the
+  ~16 KB figure came from one `npm run build`; re-measure, since the plugin wrappers in
+  `web/src/lib/plugins/` also statically pull `@capacitor/core`). Use the literal
+  `__IS_CAPACITOR__` at each branch/thunk site so Vite's define substitution lets Rollup drop
+  the dynamic imports (`isNative()` is a runtime `globalThis.Capacitor` check that can't
+  tree-shake across modules) — this is the CLAUDE.md single-signal rule. Note
+  `+page.svelte`'s `isNative()` gate imports no plugin, so it needs no change.
   Caveats: add `__IS_CAPACITOR__` to `web/vitest.config.ts` defines (or keep `typeof` guards);
   iOS-vs-Android `getPlatform()` checks must stay runtime (one native bundle). Touch one gate
   at a time and re-verify the native build still loads plugins.
@@ -106,9 +111,12 @@ then performance, then maintainability/architecture sweeps.
 
 - [ ] **[Maint] Five components independently re-implement orientation/viewport tracking** — File(s): `web/src/lib/components/ActionsPanel.svelte`, `ColoringBook.svelte`, `ClearButton.svelte`, `NotchBand.svelte`, `DrawingCanvas.svelte`, `web/src/lib/state/layout.svelte.ts`, `web/src/lib/safeArea.ts`
   Each component wires its own `resize` + `orientationchange` listeners (ColoringBook adds a
-  redundant `screen.orientation` listener and a `matchMedia` change listener on top), keeps
-  private `isPortrait`/`orientation` state, and re-creates `window.matchMedia(...)` inside
-  resize callbacks. Extend the existing rune-module precedent (`layout.svelte.ts`) with
+  redundant `screen.orientation` listener and a `matchMedia` change listener on top).
+  ActionsPanel, ColoringBook, and NotchBand each keep private `isPortrait`/`orientation` state
+  and re-create `window.matchMedia(...)` inside resize callbacks; ClearButton calls a plain
+  `isPortrait()` helper to reset its position, and DrawingCanvas only re-pushes safe-area
+  insets — so the consolidation is state for the first three, listener dedup for all five.
+  Extend the existing rune-module precedent (`layout.svelte.ts`) with
   orientation + safe-area-inset fields updated by one listener pair installed once; components
   `$derived` off it. While there, collapse `measureSafeAreaInsets()` from four separate DOM
   probes (append + force-layout + remove, ×2 callers per resize event) to a single fixed
@@ -126,7 +134,9 @@ then performance, then maintainability/architecture sweeps.
 
 - [ ] **[Maint] JSON-body parsing and 429 shaping copy-pasted across every endpoint, with three divergent 429 contracts** — File(s): `web/src/routes/api/verify-access-code/+server.ts`, `verify-key/+server.ts`, `admin/login/+server.ts`, `admin/tokens/+server.ts`, `generate-image/+server.ts`, `web/src/hooks.server.ts`, `web/src/app.d.ts`
   Five copies of the identical `try { await request.json() } catch { throw error(400, …) }`
-  block, and three different 429 body shapes (two JSON variants + one text/plain). Extract
+  block across four endpoints — verify-access-code, verify-key, admin/login, and admin/tokens
+  (which has two: POST and DELETE); generate-image parses `formData()` and has no such block —
+  and three different 429 body shapes (two JSON variants + one text/plain). Extract
   `readJsonBody(request)` and a `throttled(retryAfter)` helper into `web/src/lib/server/`,
   standardize on the JSON 429 shape, and document it in `.claude/skills/api/SKILL.md`. While
   sweeping the endpoints: add `'Access-Control-Max-Age': '86400'` to `corsHeaders()` (native
@@ -157,7 +167,7 @@ then performance, then maintainability/architecture sweeps.
   `scripts/lib/` (per `scripts/CLAUDE.md`) and use them everywhere.
 
 - [ ] **[Maint] Lint/format gates skip the E2E specs and web config files; Playwright harness has real drift** — File(s): `package.json` (lint/format globs), `eslint.config.js`, `web/tests/global-setup.ts`, `web/tests/generate-image.spec.ts`, `web/playwright.config.ts`
-  (a) `web/tests/**` (9 spec files + global-setup) and `web/*.{ts,js}` configs sit outside both
+  (a) `web/tests/**` (8 spec files + global-setup) and `web/*.{ts,js}` configs sit outside both
   the ESLint and Prettier CI gates, so ADR-0031's quality gates don't cover the test layer;
   add them to the `lint`/`format`/`format:check` targets and expect a one-time autofix commit.
   (b) global-setup's dep-optimizer warm-up (browser launch + 3-route warm + 3 s settle streak,
@@ -180,11 +190,13 @@ then performance, then maintainability/architecture sweeps.
   Four small verbatim duplications worth one consolidation sweep: (a) the breadcrumb
   markup + full style block (including the 6-function icon-tint filter) is copy-pasted between
   AdminConsole and the ai-timer harness — extract a `Breadcrumb.svelte`; (b) the
-  `.setting-group`/`.setting` card styles are repeated across all three Parent Center tabs —
+  `.setting-group` rules are repeated across all three Parent Center tabs and the `.setting`
+  card style across two (SettingsToggles + AiKeyManager; AboutTab has only `.setting-group`) —
   hoist into ParentCenter's style block with tightly-scoped `:global`, or a small wrapper
-  component; (c) ParentCenter's close button uses a bespoke `×` glyph with its own styles
-  instead of the shared `.modal-close-btn` + `<Icon name="close" class="modal-close-icon">`
-  pattern every other modal uses (restyles will silently miss it); (d) both dev routes carry an
+  component; (c) ParentCenter's close button has the shared `.modal-close-btn` class but uses
+  a bespoke `×` glyph with its own typographic styles instead of the
+  `<Icon name="close" class="modal-close-icon">` every other modal wraps, so the shared
+  `.modal-close-icon` hover styling silently misses it; (d) both dev routes carry an
   identical `prerender = false` + `PUBLIC_ENABLE_DEV_HARNESS` 404-gate `load` — extract a
   shared `requireDevHarness()` since it's a security-relevant gate with two implementations.
 
