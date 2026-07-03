@@ -1,7 +1,12 @@
 <script lang="ts">
-  import { isNative, getPlatform } from '$lib/platform';
+  import { isNative, getPlatform, type Platform } from '$lib/platform';
   import Icon from '../Icon.svelte';
-  import { install, promptInstall, installDeviceOs } from '$lib/state/install.svelte';
+  import {
+    install,
+    promptInstall,
+    installDeviceOs,
+    type InstallDeviceOs,
+  } from '$lib/state/install.svelte';
 
   let installing = $state(false);
 
@@ -14,13 +19,16 @@
     }
   }
 
-  // `open` flips true when the Parent Center modal opens; we re-run platform/OS
-  // detection then so the instructions match the current device and install state.
-  let { open = false } = $props();
+  interface Props {
+    // `open` flips true when the Parent Center modal opens; we re-run platform/OS
+    // detection then so the instructions match the current device and install state.
+    open?: boolean;
+  }
+  let { open = false }: Props = $props();
 
-  // 'ios' | 'android' | 'desktop' — which OS's manual steps fit this device,
-  // from the install module's shared detection (never re-sniffed here).
-  let deviceOs = $state('desktop');
+  // Which OS's manual steps fit this device, from the install module's shared
+  // detection (never re-sniffed here).
+  let deviceOs = $state<InstallDeviceOs>('desktop');
   // True when Guided Access (iOS) / App Pinning (Android) is currently engaged. Native
   // only — the web can't observe either, so it stays false there. Re-checked on open.
   let deviceLocked = $state(false);
@@ -28,8 +36,8 @@
   // so we drop the PWA install step and only show the device-lock setup for the
   // platform we're actually running on.
   let native = $state(false);
-  // 'web' | 'ios' | 'android' — the platform we're running on.
-  let platform = $state('web');
+  // The platform we're running on.
+  let platform = $state<Platform>('web');
 
   // Which OS setup sections to render. On native we know the exact platform, so
   // we show just that one; on the web we show both, detected OS first.

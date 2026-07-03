@@ -11,14 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Maintainability & architecture
 
-- [ ] **[Types] String-union state typed only in comments; untyped props; duplicated `Platform` union** — File(s): `web/src/lib/components/parent/AiKeyManager.svelte` (18, 22, 26), `web/src/lib/components/parent/SetupInstructions.svelte` (9, 11, 21), `web/src/lib/notchBand.ts` (39)
-  `let keyStatus = $state('idle'); // 'idle' | 'checking' | 'error' | 'success'` should be
-  `$state<'idle' | 'checking' | 'error' | 'success'>('idle')` (same for `platform` and
-  `installOs`) — the comment drifts silently and typos in comparisons type-check today. Give
-  both components a `Props` interface like the rest of the tree, and `import type { Platform }`
-  from `$lib/platform` instead of the hand-copied union in `notchBand.ts` (type-only imports
-  are erased, so the file's no-plugin-import purity is preserved). Zero runtime change.
-
 - [ ] **[Polish] Deduplicate repeated UI patterns** — File(s): `web/src/lib/components/admin/AdminConsole.svelte`, `web/src/routes/dev/ai-timer/+page.svelte`, `web/src/lib/components/parent/SettingsToggles.svelte`, `parent/AiKeyManager.svelte`, `parent/AboutTab.svelte`, `web/src/lib/components/ParentCenter.svelte`, `web/src/routes/dev/engine/+page.ts`, `web/src/routes/dev/ai-timer/+page.ts`
   Four small verbatim duplications worth one consolidation sweep: (a) the breadcrumb
   markup + full style block (including the 6-function icon-tint filter) is copy-pasted between

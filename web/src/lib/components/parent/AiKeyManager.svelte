@@ -11,19 +11,22 @@
     setAiUserApiKey,
   } from '$lib/state/settings.svelte';
   import { apiUrl } from '$lib/api';
-  import { getPlatform } from '$lib/platform';
+  import { getPlatform, type Platform } from '$lib/platform';
 
-  // `open` flips true when the Parent Center modal opens; we use it to clear the
-  // input and any stale feedback, and to re-read the current platform.
-  let { open = false } = $props();
+  interface Props {
+    // `open` flips true when the Parent Center modal opens; we use it to clear
+    // the input and any stale feedback, and to re-read the current platform.
+    open?: boolean;
+  }
+  let { open = false }: Props = $props();
 
-  // 'web' | 'ios' | 'android' — drives the copy that tells the parent exactly
-  // where their API key is kept on this platform.
-  let platform = $state('web');
+  // Drives the copy that tells the parent exactly where their API key is kept on
+  // this platform.
+  let platform = $state<Platform>('web');
   // The single AI field accepts either a Gemini API key (BYOK) or a secret
   // access code. AI unlocks when the parent has provided either one.
   let keyInput = $state('');
-  let keyStatus = $state('idle'); // 'idle' | 'checking' | 'error' | 'success'
+  let keyStatus = $state<'idle' | 'checking' | 'error' | 'success'>('idle');
   let keyMessage = $state('');
   let hasApiKey = $derived(!!settings.aiUserApiKey);
   let hasAccessCode = $derived(!!settings.aiAccessToken);
