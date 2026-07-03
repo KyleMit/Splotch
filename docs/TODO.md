@@ -11,15 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Maintainability & architecture
 
-- [ ] **[Arch] TabPager tab registration has no teardown** — File(s): `web/src/lib/components/TabPager.svelte` (101–116, 143–152), `web/src/lib/components/TabPagerTab.svelte` (16–18), `web/src/lib/components/tabPagerContext.ts`
-  `TabPagerTab` registers via `$effect(() => pager.registerTab(...))` with no cleanup return, so
-  a conditionally-rendered tab (the BACKLOG's "remove install-instructions tab on native"
-  direction makes this imminent) leaves a ghost entry and rendered panel behind, and `activeTab`
-  can point at it. Return a teardown from the effect that splices the tab out and re-clamps
-  `activeTab`/`scrollProgress`; mutate the `$state` array in place instead of reassigning.
-  Also rename the `TabPagerTab` interface in `tabPagerContext.ts` (it collides with the
-  component name) to something like `TabDescriptor`.
-
 - [ ] **[Maint] JSON-body parsing and 429 shaping copy-pasted across every endpoint, with three divergent 429 contracts** — File(s): `web/src/routes/api/verify-access-code/+server.ts`, `verify-key/+server.ts`, `admin/login/+server.ts`, `admin/tokens/+server.ts`, `generate-image/+server.ts`, `web/src/hooks.server.ts`, `web/src/app.d.ts`
   Five copies of the identical `try { await request.json() } catch { throw error(400, …) }`
   block across four endpoints — verify-access-code, verify-key, admin/login, and admin/tokens

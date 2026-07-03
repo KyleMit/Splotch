@@ -16,6 +16,14 @@
   $effect(() => {
     pager.registerTab({ id, label, icon });
   });
+
+  // Teardown lives in its own effect so a label/icon change re-runs only the
+  // registration (updating the tab in place) instead of unregistering and
+  // re-appending it at the end of the tab order.
+  $effect(() => {
+    const registeredId = id;
+    return () => pager.unregisterTab(registeredId);
+  });
 </script>
 
 <button
