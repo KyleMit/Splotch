@@ -75,7 +75,7 @@ test('admin API requires a valid bearer session', async ({ request }) => {
   expect(
     (
       await request.get('/api/admin/tokens', {
-        headers: { Authorization: 'Bearer not-a-session' }
+        headers: { Authorization: 'Bearer not-a-session' },
       })
     ).status()
   ).toBe(401);
@@ -96,7 +96,7 @@ test('admin API requires a valid bearer session', async ({ request }) => {
   expect(addedBody.tokens).toContain(token);
   expect(addedBody.invites).toContainEqual({
     token,
-    url: expect.stringContaining(`/?ai_access_token=${token}`)
+    url: expect.stringContaining(`/?ai_access_token=${token}`),
   });
 
   const removed = await request.delete('/api/admin/tokens', { headers, data: { token } });

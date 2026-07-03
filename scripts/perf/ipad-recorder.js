@@ -262,7 +262,13 @@
           `${ui} UI-targeted pointer events · ${actions.length} actions · ` +
           `${(now() / 1000).toFixed(1)}s`
       );
-      return { events: events.length, pointerdowns: pd, moves, uiPointer: ui, actions: actions.length };
+      return {
+        events: events.length,
+        pointerdowns: pd,
+        moves,
+        uiPointer: ui,
+        actions: actions.length,
+      };
     },
     // Scan for dropped-input signatures: contact moves (buttons ≠ 0) for a
     // pointerId with no live pointerdown ANYWHERE — i.e. WebKit merged a

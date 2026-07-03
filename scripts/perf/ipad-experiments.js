@@ -165,7 +165,9 @@
       this.status();
     },
     status() {
-      console.log(active.length ? `active: ${active.join(', ')}` : 'all effects restored (baseline)');
+      console.log(
+        active.length ? `active: ${active.join(', ')}` : 'all effects restored (baseline)'
+      );
       return active.slice();
     },
   };

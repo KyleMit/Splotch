@@ -77,7 +77,10 @@ test('selecting a palette color activates it and paints in that color', async ({
   }).toPass({ timeout: 10_000 });
 
   await page.waitForTimeout(150); // clear the post-color-change draw debounce
-  await draw(page, [{ x: 120, y: 120 }, { x: 260, y: 120 }]);
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 120 },
+  ]);
 
   const px = await firstOpaquePixel(page);
   expect(px).not.toBeNull();
@@ -262,7 +265,10 @@ test('the undo button enables on a stroke and reverts it', async ({ page }) => {
   const undo = page.locator('#undoButton');
   await expect(undo).toBeDisabled();
 
-  await draw(page, [{ x: 120, y: 120 }, { x: 260, y: 200 }]);
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+  ]);
   await expect(undo).toBeEnabled();
 
   await undo.click();
@@ -278,7 +284,10 @@ test('the screenshot button is gated on the canvas being non-empty', async ({ pa
   const shot = page.locator('#screenshotButton');
   await expect(shot).toBeDisabled();
 
-  await draw(page, [{ x: 140, y: 140 }, { x: 240, y: 200 }]);
+  await draw(page, [
+    { x: 140, y: 140 },
+    { x: 240, y: 200 },
+  ]);
   await expect(shot).toBeEnabled();
 
   // Undo back to empty re-disables it.
@@ -288,7 +297,9 @@ test('the screenshot button is gated on the canvas being non-empty', async ({ pa
 
 // ── tool/stroke state + persistence ─────────────────────────────────────────
 
-test('pen and eraser keep independent stroke sizes that persist across reload', async ({ page }) => {
+test('pen and eraser keep independent stroke sizes that persist across reload', async ({
+  page,
+}) => {
   await gotoApp(page);
   await openDrawer(page);
 
@@ -327,7 +338,7 @@ test('the drawer open state persists across a reload', async ({ page }) => {
 });
 
 test('parent center panels can be changed by tab buttons and native scrolling', async ({
-  page
+  page,
 }) => {
   await gotoApp(page);
 
@@ -382,9 +393,7 @@ test('parent center panels can be changed by tab buttons and native scrolling', 
 
 test('the AI button posts the drawing and reveals the generated result', async ({ page }) => {
   // Skip the style picker so the button generates directly.
-  await page.addInitScript(() =>
-    localStorage.setItem('splotch-ai-customization-enabled', 'false')
-  );
+  await page.addInitScript(() => localStorage.setItem('splotch-ai-customization-enabled', 'false'));
 
   const png = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
@@ -400,7 +409,10 @@ test('the AI button posts the drawing and reveals the generated result', async (
   // The access-code param unlocks the AI feature (captured + persisted on mount).
   await gotoApp(page, '/?ai_access_token=test-token');
   await openDrawer(page);
-  await draw(page, [{ x: 120, y: 120 }, { x: 260, y: 200 }]);
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+  ]);
 
   const ai = page.locator('#aiImageButton');
   await expect(ai).toBeVisible();
@@ -425,7 +437,10 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
 
   // Farm ships on web and mobile; open it and pick its first page.
   await dialog.getByRole('button', { name: /Farm coloring book/i }).click();
-  await dialog.getByRole('button', { name: /Farm coloring page/i }).first().click();
+  await dialog
+    .getByRole('button', { name: /Farm coloring page/i })
+    .first()
+    .click();
 
   await expect(dialog).toBeHidden();
   const overlay = page.locator('#coloringOverlay');

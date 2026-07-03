@@ -18,7 +18,7 @@ export default async function globalSetup(config: FullConfig) {
   const routes: [string, () => boolean][] = [
     ['/', () => !!document.getElementById('drawingCanvas')],
     ['/dev/engine', () => window.__engineReady === true],
-    ['/dev/ai-timer', () => document.querySelectorAll('button').length > 0]
+    ['/dev/ai-timer', () => document.querySelectorAll('button').length > 0],
   ];
   const deadline = Date.now() + 180_000;
 
@@ -30,7 +30,9 @@ export default async function globalSetup(config: FullConfig) {
         // polling (not re-loading) is what lets us ride Vite's auto-reload to a
         // settled page instead of perpetually interrupting it.
         if (Date.now() - lastNav > 15_000) {
-          await page.goto(baseURL + route, { waitUntil: 'commit', timeout: 60_000 }).catch(() => {});
+          await page
+            .goto(baseURL + route, { waitUntil: 'commit', timeout: 60_000 })
+            .catch(() => {});
           lastNav = Date.now();
         }
         const ok = await page.evaluate(ready).catch(() => false);
@@ -44,13 +46,17 @@ export default async function globalSetup(config: FullConfig) {
     // fully quiesced, so the first worker wave still catches one last reload.
     // Require the heaviest route to hold ready continuously (any reload resets
     // the streak) so workers only start once optimization has truly stopped.
-    await page.goto(baseURL + '/dev/engine', { waitUntil: 'commit', timeout: 60_000 }).catch(() => {});
+    await page
+      .goto(baseURL + '/dev/engine', { waitUntil: 'commit', timeout: 60_000 })
+      .catch(() => {});
     let streakStart = Date.now();
     for (;;) {
       const ready = await page.evaluate(() => window.__engineReady === true).catch(() => false);
       if (!ready) {
         streakStart = Date.now(); // a reload broke the streak — start over
-        await page.goto(baseURL + '/dev/engine', { waitUntil: 'commit', timeout: 60_000 }).catch(() => {});
+        await page
+          .goto(baseURL + '/dev/engine', { waitUntil: 'commit', timeout: 60_000 })
+          .catch(() => {});
       } else if (Date.now() - streakStart >= 3_000) {
         break;
       }

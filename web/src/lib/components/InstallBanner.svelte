@@ -81,11 +81,7 @@
 </script>
 
 {#if visible || parting}
-  <div
-    class="install-banner"
-    in:fly={{ y: 120, duration: 420, easing: backOut }}
-    out:bannerExit
-  >
+  <div class="install-banner" in:fly={{ y: 120, duration: 420, easing: backOut }} out:bannerExit>
     {#if parting}
       <div class="install-parting" in:fade={{ duration: 200 }}>
         <span class="install-mascot" aria-hidden="true">
@@ -126,8 +122,8 @@
         <div class="install-hint" transition:fade={{ duration: 160 }}>
           {#if install.mode === 'ios'}
             <p>
-              Tap <Icon name="share-ios" class="install-inline-icon" aria-label="Share" /> Share at
-              the bottom of the screen, then choose
+              Tap <Icon name="share-ios" class="install-inline-icon" aria-label="Share" /> Share at the
+              bottom of the screen, then choose
               <Icon name="add-homescreen" class="install-inline-icon" aria-hidden="true" />
               <strong>"Add to Home Screen"</strong>. If you don't see it, tap
               <Icon name="chevron-down" class="install-inline-icon" aria-hidden="true" />

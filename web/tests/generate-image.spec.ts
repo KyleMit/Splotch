@@ -1,7 +1,11 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 
 // A multipart field value as accepted by Playwright's request.post({ multipart }).
-type MultipartField = string | number | boolean | { name: string; mimeType: string; buffer: Buffer };
+type MultipartField =
+  | string
+  | number
+  | boolean
+  | { name: string; mimeType: string; buffer: Buffer };
 
 // Server-side guards on /api/generate-image. These hit the endpoint directly
 // (no page) because the size/type caps are pure request validation. Passing an
@@ -18,7 +22,7 @@ const TINY_PNG = Buffer.from(
 function form(buffer: Buffer, mimeType: string, fileName = 'drawing.png') {
   return {
     apiKey: 'byok-test-key', // BYOK path → skips the token allowlist
-    image: { name: fileName, mimeType, buffer }
+    image: { name: fileName, mimeType, buffer },
   };
 }
 
@@ -28,7 +32,7 @@ function form(buffer: Buffer, mimeType: string, fileName = 'drawing.png') {
 function managedForm(buffer: Buffer, mimeType: string, token: string, fileName = 'drawing.png') {
   return {
     token,
-    image: { name: fileName, mimeType, buffer }
+    image: { name: fileName, mimeType, buffer },
   };
 }
 
@@ -47,7 +51,7 @@ function postImage(
 ) {
   return request.post('/api/generate-image', {
     multipart,
-    headers: { origin: baseURL ?? '' }
+    headers: { origin: baseURL ?? '' },
   });
 }
 
@@ -79,7 +83,11 @@ test('throttles a managed token hammered in a burst', async ({ request, baseURL 
   const token = 'daycare-club';
   const statuses: number[] = [];
   for (let i = 0; i < GENERATE_LIMIT + 1; i++) {
-    const res = await postImage(request, baseURL, managedForm(TINY_PNG, 'image/gif', token, 'drawing.gif'));
+    const res = await postImage(
+      request,
+      baseURL,
+      managedForm(TINY_PNG, 'image/gif', token, 'drawing.gif')
+    );
     statuses.push(res.status());
   }
 
@@ -90,7 +98,11 @@ test('throttles a managed token hammered in a burst', async ({ request, baseURL 
   // to .env so the test server has the token available.
   expect(statuses[0], 'token rejected (403) — copy .env.example to .env').not.toBe(403);
   expect(statuses.slice(0, GENERATE_LIMIT)).not.toContain(429);
-  const res = await postImage(request, baseURL, managedForm(TINY_PNG, 'image/gif', token, 'drawing.gif'));
+  const res = await postImage(
+    request,
+    baseURL,
+    managedForm(TINY_PNG, 'image/gif', token, 'drawing.gif')
+  );
   expect(res.status()).toBe(429);
   expect(res.headers()['retry-after']).toBeTruthy();
 });

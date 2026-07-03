@@ -11,13 +11,13 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify('1.0.0-test'),
     __BUILD_TIME__: JSON.stringify('2026-01-01T00:00:00Z'),
-    __NATIVE_API_BASE__: JSON.stringify('')
+    __NATIVE_API_BASE__: JSON.stringify(''),
   },
   test: {
     environment: 'happy-dom',
     setupFiles: ['./vitest-setup.ts'],
     include: ['src/**/*.{test,spec}.{js,ts}'],
     // The Playwright specs live under tests/ and must not be picked up here.
-    exclude: ['tests/**', 'node_modules/**', '.svelte-kit/**']
-  }
+    exclude: ['tests/**', 'node_modules/**', '.svelte-kit/**'],
+  },
 });

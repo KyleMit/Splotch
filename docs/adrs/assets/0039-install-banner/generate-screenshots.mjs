@@ -31,64 +31,64 @@ const UA = {
   ipadSafari:
     'Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
   iphoneChrome:
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/125.0.6422.80 Mobile/15E148 Safari/604.1'
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/125.0.6422.80 Mobile/15E148 Safari/604.1',
 };
 
 const scenarios = [
   {
     out: 'desktop-chrome-one-tap.png',
     viewport: { width: 1280, height: 800 },
-    oneTap: true
+    oneTap: true,
   },
   {
     out: 'android-phone-one-tap.png',
     userAgent: UA.androidChrome,
     viewport: { width: 412, height: 915 },
     mobile: true,
-    oneTap: true
+    oneTap: true,
   },
   {
     out: 'android-phone-menu-hint.png',
     userAgent: UA.androidChrome,
     viewport: { width: 412, height: 915 },
     mobile: true,
-    expandHint: true
+    expandHint: true,
   },
   {
     out: 'ios-phone-safari-share-hint.png',
     userAgent: UA.iphoneSafari,
     viewport: { width: 390, height: 844 },
     mobile: true,
-    expandHint: true
+    expandHint: true,
   },
   {
     out: 'ios-tablet-safari-share-hint.png',
     userAgent: UA.ipadSafari,
     viewport: { width: 1180, height: 820 },
     mobile: true,
-    expandHint: true
+    expandHint: true,
   },
   {
     out: 'ios-phone-chrome-no-banner.png',
     userAgent: UA.iphoneChrome,
     viewport: { width: 390, height: 844 },
     mobile: true,
-    expectAbsent: true
-  }
+    expectAbsent: true,
+  },
 ];
 
 const { values } = parseArgs({
   options: {
     url: { type: 'string' },
-    port: { type: 'string', default: '5199' }
-  }
+    port: { type: 'string', default: '5199' },
+  },
 });
 
 let server;
 async function startServer(port) {
   server = spawn('npx', ['vite', 'dev', '--port', String(port), '--strictPort'], {
     cwd: resolve(repoRoot, 'web'),
-    stdio: ['ignore', 'pipe', 'inherit']
+    stdio: ['ignore', 'pipe', 'inherit'],
   });
   server.stdout.on('data', (d) => process.stderr.write(d));
   const baseURL = `http://localhost:${port}`;
@@ -134,7 +134,7 @@ async function drawThreeStrokes(page) {
   for (const [x1, y1, x2, y2] of [
     [cx - r, cy - r * 0.6, cx + r, cy - r * 0.2],
     [cx - r * 0.8, cy, cx + r * 0.7, cy + r * 0.4],
-    [cx - r * 0.5, cy + r * 0.5, cx + r * 0.9, cy - r * 0.5]
+    [cx - r * 0.5, cy + r * 0.5, cx + r * 0.9, cy - r * 0.5],
   ]) {
     await page.mouse.move(x1, y1);
     await page.mouse.down();
@@ -154,7 +154,7 @@ async function run() {
       userAgent: s.userAgent,
       deviceScaleFactor: 2,
       isMobile: !!s.mobile,
-      hasTouch: !!s.mobile
+      hasTouch: !!s.mobile,
     });
     const page = await context.newPage();
     await waitForCanvas(page, baseURL + '/');

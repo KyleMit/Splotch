@@ -578,7 +578,9 @@ test('undoing an eraser stroke replays the erased pixels back', async ({ page })
   expect(s.canUndo).toBe(true); // the pen stroke remains undoable
 });
 
-test('a moderate stroke stays replayable ops (no keyframe) and undoes cleanly', async ({ page }) => {
+test('a moderate stroke stays replayable ops (no keyframe) and undoes cleanly', async ({
+  page,
+}) => {
   // Below the keyframe budget a command keeps replayable ops (simplified at
   // commit in the live curve family, see ADR-0036), so a rebuild re-strokes
   // them. It must not keyframe and must undo as one unit. strokeSync gives a

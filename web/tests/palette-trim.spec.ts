@@ -17,7 +17,7 @@ const C = {
   // bonus colors — hidden by default, revealed only on a tall landscape
   teal: '#4FC4C0',
   brown: '#B5835A',
-  pink: '#F47CB0'
+  pink: '#F47CB0',
 };
 const CORE = [C.purple, C.blue, C.green, C.yellow, C.orange, C.red, C.black];
 
@@ -27,9 +27,7 @@ async function visibleSwatches(page: Page) {
   return page
     .locator('.color-palette .color-swatch:not(.gradient-swatch)')
     .evaluateAll((els: HTMLElement[]) =>
-      els
-        .filter((el) => getComputedStyle(el).display !== 'none')
-        .map((el) => el.dataset.color)
+      els.filter((el) => getComputedStyle(el).display !== 'none').map((el) => el.dataset.color)
     );
 }
 
@@ -56,7 +54,7 @@ const PORTRAIT = [
   { w: 300, visible: [C.purple, C.blue, C.black] }, // − yellow
   { w: 250, visible: [C.purple, C.black] }, // − blue
   { w: 180, visible: [C.black] }, // − purple
-  { w: 130, visible: [] } // − black (only the custom swatch remains)
+  { w: 130, visible: [] }, // − black (only the custom swatch remains)
 ];
 
 for (const { w, visible } of PORTRAIT) {
@@ -75,7 +73,7 @@ const LANDSCAPE = [
   { h: 700, visible: [...CORE, C.pink] }, // only pink revealed
   { h: 620, visible: CORE }, // no bonus, no trim
   { h: 550, visible: [C.purple, C.blue, C.green, C.yellow, C.orange, C.black] }, // − red
-  { h: 480, visible: [C.purple, C.blue, C.green, C.yellow, C.black] } // − red,orange
+  { h: 480, visible: [C.purple, C.blue, C.green, C.yellow, C.black] }, // − red,orange
 ];
 
 for (const { h, visible } of LANDSCAPE) {
