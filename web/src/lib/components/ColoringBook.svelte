@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
   import { ui, closeColoringBook } from '$lib/state/ui.svelte';
   import {
@@ -9,8 +8,9 @@
     clearOverlay,
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
-  import { pageImage, type Book, type BookOrientation, type ColoringPage } from '$lib/state/books';
+  import { pageImage, type Book, type ColoringPage } from '$lib/state/books';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import { layout } from '$lib/state/layout.svelte';
 
   // Only show books licensed for this platform. Native builds also strip the
   // web-only books' assets at build time (scripts/strip-native-assets.mjs), so
@@ -18,34 +18,13 @@
   const books = booksForPlatform(isNative() ? 'mobile' : 'web');
 
   let activeBook = $state<Book | null>(null);
-  let orientation = $state<BookOrientation>('landscape');
+  const orientation = $derived(layout.orientation);
 
-  function readOrientation(): BookOrientation {
-    if (typeof window === 'undefined') return 'landscape';
-    return window.matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape';
-  }
-
-  function syncOrientation() {
-    orientation = readOrientation();
+  // Rotating swaps the active overlay to that page's portrait/landscape art.
+  $effect(() => {
     if (coloringBookState.overlayPage) {
       setOverlayPage(coloringBookState.overlayPage, orientation);
     }
-  }
-
-  onMount(() => {
-    const media = window.matchMedia('(orientation: portrait)');
-    syncOrientation();
-    const onChange = () => syncOrientation();
-
-    media.addEventListener('change', onChange);
-    window.addEventListener('resize', onChange);
-    window.screen.orientation?.addEventListener?.('change', onChange);
-
-    return () => {
-      media.removeEventListener('change', onChange);
-      window.removeEventListener('resize', onChange);
-      window.screen.orientation?.removeEventListener?.('change', onChange);
-    };
   });
 
   function pickPage(page: ColoringPage) {

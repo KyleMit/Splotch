@@ -1,48 +1,23 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { isNative, getPlatform } from '$lib/platform';
-  import { computeNotchBandState, type Orientation } from '$lib/notchBand';
-  import { measureSafeAreaInsets } from '$lib/safeArea';
+  import { computeNotchBandState } from '$lib/notchBand';
+  import { layout } from '$lib/state/layout.svelte';
 
   // Measured env(safe-area-inset-*), in CSS px — we need the number (not just
   // the CSS value) to tell a real notch from a bezel. The top and both sides
-  // are tracked so the band can follow the hole-punch as it rotates from the
-  // top (portrait) to a side (landscape).
-  let insetTop = $state(0);
-  let insetLeft = $state(0);
-  let insetRight = $state(0);
-  let orientation = $state<Orientation>('portrait');
-
-  function measure() {
-    if (typeof document === 'undefined') return;
-    const insets = measureSafeAreaInsets();
-    insetTop = insets.top;
-    insetLeft = insets.left;
-    insetRight = insets.right;
-    orientation = window.matchMedia('(orientation: landscape)').matches ? 'landscape' : 'portrait';
-  }
-
-  onMount(() => {
-    measure();
-    const onChange = () => measure();
-    window.addEventListener('resize', onChange);
-    window.addEventListener('orientationchange', onChange);
-    return () => {
-      window.removeEventListener('resize', onChange);
-      window.removeEventListener('orientationchange', onChange);
-    };
-  });
-
+  // matter so the band can follow the hole-punch as it rotates from the top
+  // (portrait) to a side (landscape); the shared layout module re-measures
+  // them on every resize/orientationchange.
   const band = $derived(
     computeNotchBandState({
       platform: getPlatform(),
       native: isNative(),
-      orientation,
-      insetTop,
-      insetLeft,
-      insetRight,
+      orientation: layout.orientation,
+      insetTop: layout.safeArea.top,
+      insetLeft: layout.safeArea.left,
+      insetRight: layout.safeArea.right,
       activeColor: colors.activeColor,
       eraser: toolState.eraser,
     })

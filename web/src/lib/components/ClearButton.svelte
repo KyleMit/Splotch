@@ -4,6 +4,7 @@
   import { clearCanvas } from '$lib/drawing/engine';
   import { saveDrawingIfEnabled } from '$lib/drawing/saveOnDelete';
   import { dragToClear } from '$lib/actions/dragToClear';
+  import { layout } from '$lib/state/layout.svelte';
 
   let containerEl: HTMLDivElement;
   let buttonEl: HTMLButtonElement;
@@ -19,11 +20,6 @@
   let isDragging = false;
 
   let tutorialDismissTimer: ReturnType<typeof setTimeout> | null = null;
-  let lastOrientation: boolean | null = null;
-
-  function isPortrait() {
-    return window.matchMedia('(orientation: portrait)').matches;
-  }
 
   function getAcceptRadius() {
     return Math.min(window.innerWidth, window.innerHeight) * 0.4;
@@ -85,21 +81,15 @@
     containerEl.style.transform = '';
   }
 
-  function onResize() {
-    const currentOrientation = isPortrait();
-    if (currentOrientation !== lastOrientation) {
-      lastOrientation = currentOrientation;
-      resetButtonPosition();
-    }
-  }
+  // Send the button home when the orientation flips (its docked corner moved);
+  // plain same-orientation resizes leave a mid-drag or settled position alone.
+  $effect(() => {
+    layout.orientation;
+    resetButtonPosition();
+  });
 
   onMount(() => {
-    lastOrientation = isPortrait();
-    window.addEventListener('orientationchange', resetButtonPosition);
-    window.addEventListener('resize', onResize);
     return () => {
-      window.removeEventListener('orientationchange', resetButtonPosition);
-      window.removeEventListener('resize', onResize);
       if (tutorialDismissTimer) clearTimeout(tutorialDismissTimer);
     };
   });

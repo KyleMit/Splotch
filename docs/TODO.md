@@ -11,20 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Maintainability & architecture
 
-- [ ] **[Maint] Five components independently re-implement orientation/viewport tracking** — File(s): `web/src/lib/components/ActionsPanel.svelte`, `ColoringBook.svelte`, `ClearButton.svelte`, `NotchBand.svelte`, `DrawingCanvas.svelte`, `web/src/lib/state/layout.svelte.ts`, `web/src/lib/safeArea.ts`
-  Each component wires its own `resize` + `orientationchange` listeners (ColoringBook adds a
-  redundant `screen.orientation` listener and a `matchMedia` change listener on top).
-  ActionsPanel, ColoringBook, and NotchBand each keep private `isPortrait`/`orientation` state
-  and re-create `window.matchMedia(...)` inside resize callbacks; ClearButton calls a plain
-  `isPortrait()` helper to reset its position, and DrawingCanvas only re-pushes safe-area
-  insets — so the consolidation is state for the first three, listener dedup for all five.
-  Extend the existing rune-module precedent (`layout.svelte.ts`) with
-  orientation + safe-area-inset fields updated by one listener pair installed once; components
-  `$derived` off it. While there, collapse `measureSafeAreaInsets()` from four separate DOM
-  probes (append + force-layout + remove, ×2 callers per resize event) to a single fixed
-  probe positioned by all four `env(safe-area-inset-*)` values and one rect read. Verify
-  NotchBand still measures insets after rotation settles.
-
 - [ ] **[Arch] TabPager tab registration has no teardown** — File(s): `web/src/lib/components/TabPager.svelte` (101–116, 143–152), `web/src/lib/components/TabPagerTab.svelte` (16–18), `web/src/lib/components/tabPagerContext.ts`
   `TabPagerTab` registers via `$effect(() => pager.registerTab(...))` with no cleanup return, so
   a conditionally-rendered tab (the BACKLOG's "remove install-instructions tab on native"

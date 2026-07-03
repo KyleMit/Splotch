@@ -8,7 +8,7 @@
     setSafeAreaInsets,
     getCanvasRect,
   } from '$lib/drawing/engine';
-  import { measureSafeAreaInsets } from '$lib/safeArea';
+  import { layout } from '$lib/state/layout.svelte';
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
@@ -62,14 +62,6 @@
 
     setStrokeWidth(getStrokeWidthPx(activeStrokeSize()));
 
-    // Tell the engine where the OS gesture/navbar zones are so it can ignore
-    // edge-swipes that summon the system bars (see engine EDGE_SWIPE_BAND_PX).
-    // The insets move between edges on rotation, so re-measure on resize.
-    const pushInsets = () => setSafeAreaInsets(measureSafeAreaInsets());
-    pushInsets();
-    window.addEventListener('resize', pushInsets);
-    window.addEventListener('orientationchange', pushInsets);
-
     // Apple Pencil double-tap → toggle eraser (iOS native only). Subscription is async, so
     // hold the cleanup behind a ref the teardown can call once it resolves. The literal
     // __IS_CAPACITOR__ keeps the wrapper (and @capacitor/core) out of the web bundle;
@@ -83,10 +75,16 @@
 
     return () => {
       engine.teardown();
-      window.removeEventListener('resize', pushInsets);
-      window.removeEventListener('orientationchange', pushInsets);
       pencilCleanup?.();
     };
+  });
+
+  // Tell the engine where the OS gesture/navbar zones are so it can ignore
+  // edge-swipes that summon the system bars (see engine EDGE_SWIPE_BAND_PX).
+  // The insets move between edges on rotation; the shared layout module
+  // re-measures them, and this re-pushes whenever a value actually changes.
+  $effect(() => {
+    setSafeAreaInsets({ ...layout.safeArea });
   });
 
   // Warm up the pencil-sound assets as soon as sound is on (at mount, or when
