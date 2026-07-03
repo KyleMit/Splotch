@@ -98,6 +98,7 @@ interface InitOptions {
   onDrawStop?: (() => void) | null;
   onUndoStateChange?: ((canUndo: boolean) => void) | null;
   onCanvasEmptyChange?: ((empty: boolean) => void) | null;
+  onStrokeEnd?: (() => void) | null;
   initialColor?: string;
 }
 
@@ -163,6 +164,7 @@ let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
 
 let canvasEmpty = true;
 let onCanvasEmptyChange: ((empty: boolean) => void) | null = null;
+let onStrokeEnd: (() => void) | null = null;
 
 // Pointer speed (which drives the drawing sound) is averaged over the most
 // recent slice of the stroke so the audio cue tracks gesture speed without
@@ -909,6 +911,9 @@ function commitActiveCommand() {
   if (PERF_MARKS) performance.mark('engine.commit:start');
   pushCommand(activeCommand);
   activeCommand = null;
+  // Fired at stroke end, not start, so reactive consumers (e.g. mounting the
+  // install banner) never do DOM work while a finger is mid-stroke.
+  if (onStrokeEnd) onStrokeEnd();
   if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
 }
 
@@ -1029,6 +1034,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   onDrawStopCallback = options.onDrawStop || null;
   onUndoStateChange = options.onUndoStateChange || null;
   onCanvasEmptyChange = options.onCanvasEmptyChange || null;
+  onStrokeEnd = options.onStrokeEnd || null;
   currentColor = options.initialColor || '#AB71E1';
 
   renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);

@@ -67,7 +67,7 @@ function startServer() {
   // /api/* functions (use `npm run dev:netlify` by hand if you need those).
   // PUBLIC_ENABLE_DEV_HARNESS unlocks the /dev/* harness routes (404 otherwise).
   server = spawn('npx', ['vite', 'dev', '--port', String(port), '--strictPort'], {
-    cwd: repoRoot,
+    cwd: resolve(repoRoot, 'web'),
     env: { ...process.env, PUBLIC_ENABLE_DEV_HARNESS: 'true' },
     stdio: ['ignore', 'pipe', 'inherit']
   });

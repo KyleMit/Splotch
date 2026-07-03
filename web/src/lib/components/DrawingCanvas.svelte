@@ -59,6 +59,9 @@
       onCanvasEmptyChange: (empty) => {
         canvasState.canvasEmpty = empty;
       },
+      onStrokeEnd: () => {
+        canvasState.strokeCount++;
+      },
     });
 
     setStrokeWidth(getStrokeWidthPx(activeStrokeSize()));
