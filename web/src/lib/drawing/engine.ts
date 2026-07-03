@@ -617,6 +617,7 @@ export function releaseAllPointers() {
   activePointers.clear();
   groupHasDrawn = false;
   commitActiveCommand();
+  if (onDrawStopCallback) onDrawStopCallback();
 
   activePointerIds.forEach((pointerId) => {
     try {
@@ -895,9 +896,8 @@ function stopDrawing(e?: PointerEvent) {
   if (activePointers.size === 0) {
     groupHasDrawn = false;
     commitActiveCommand();
+    if (onDrawStopCallback) onDrawStopCallback();
   }
-
-  if (onDrawStopCallback) onDrawStopCallback();
 
   try {
     canvas.releasePointerCapture(e.pointerId);

@@ -9,17 +9,6 @@
 Findings from a full-repo audit pass, ordered by impact. Bugs and correctness first,
 then performance, then maintainability/architecture sweeps.
 
-### Bugs & correctness
-
-- [ ] **[Bug] `stopDrawing` fires `onDrawStop` while other fingers are still drawing** — File(s): `web/src/lib/drawing/engine.ts` (lines 871–903)
-  The callback runs unconditionally on every `pointerup`/`pointerout`/`pointercancel` — even
-  when `activePointers.size > 0` — so during a two-finger scribble the first lift kills the
-  draw sound mid-stroke and the surviving finger's next move rebuilds a fresh source ramping
-  from zero (audible stutter + timbre switch). Move the callback inside the existing
-  `if (activePointers.size === 0)` block alongside `commitActiveCommand()`. This is the mirror
-  image of the tracked BACKLOG bug (`releaseAllPointers` never fires the callback) — one fires
-  too rarely, this too eagerly; fix both together.
-
 ### Performance
 
 - [ ] **[Perf] ColorPicker drag scans ~81 hexagons with `getBoundingClientRect` per pointermove** — File(s): `web/src/lib/components/ColorPicker.svelte` (lines 153–205)
