@@ -19,10 +19,6 @@ pages last.
 
 ### Toddler-facing drawing UI (highest priority — native touch app)
 
-- [ ] **[Bug] Guard AiImagePrompt style-option hover** — File(s): `src/lib/components/AiImagePrompt.svelte`
-  `.ai-style-option:hover:not(:disabled) .ai-style-thumb` and `… .ai-style-label`
-  leave the last-tapped art-style option looking selected. Wrap in `@media (hover: hover)`.
-
 - [ ] **[Bug] Guard AiImageResult download hover** — File(s): `src/lib/components/AiImageResult.svelte`
   `.ai-result-download:hover` changes background; sticks after tap on native. Wrap in `@media (hover: hover)`.
 

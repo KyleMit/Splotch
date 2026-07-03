@@ -151,13 +151,15 @@
     user-select: none;
   }
 
-  .ai-style-option:hover:not(:disabled) .ai-style-thumb {
-    border-color: var(--brand);
-    transform: translateY(-2px);
-  }
+  @media (hover: hover) {
+    .ai-style-option:hover:not(:disabled) .ai-style-thumb {
+      border-color: var(--brand);
+      transform: translateY(-2px);
+    }
 
-  .ai-style-option:hover:not(:disabled) .ai-style-label {
-    color: var(--brand);
+    .ai-style-option:hover:not(:disabled) .ai-style-label {
+      color: var(--brand);
+    }
   }
 
   .ai-style-option:active:not(:disabled) .ai-style-thumb {
