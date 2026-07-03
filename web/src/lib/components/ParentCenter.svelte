@@ -37,9 +37,13 @@
   })}
 >
   <div class="parent-help-content">
-    <button class="parent-help-close modal-close-btn" aria-label="Close" onclick={closeParentCenter}
-      >×</button
+    <button
+      class="parent-help-close modal-close-btn"
+      aria-label="Close"
+      onclick={closeParentCenter}
     >
+      <Icon name="close" class="modal-close-icon" />
+    </button>
     <h2>Parent Center</h2>
 
     <TabPager initialTab="settings" resetKey={ui.parentCenterOpen} ariaLabel="Parent Center panels">
@@ -128,21 +132,26 @@
     font-weight: 600;
   }
 
+  /* Shared setting-card tokens for the tab bodies. The tabs only ever render
+     inside this modal, so scoping the :global reach to .parent-help-content
+     keeps these rules in one place instead of copied into each tab component. */
+  .parent-help-content :global(.setting-group) {
+    margin-bottom: 24px;
+  }
+
+  .parent-help-content :global(.setting-group:last-child) {
+    margin-bottom: 0;
+  }
+
+  .parent-help-content :global(.setting) {
+    padding: 12px 16px;
+    background: #f8f8f8;
+    border-radius: 8px;
+  }
+
   @media (max-width: 480px) {
     .parent-help-content {
       padding: 24px 20px;
     }
-  }
-
-  .parent-help-close {
-    padding: 0;
-    font-size: 32px;
-    line-height: 32px;
-    color: #999;
-    transition: color 0.2s ease;
-  }
-
-  .parent-help-close:hover {
-    color: #666;
   }
 </style>

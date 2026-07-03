@@ -289,20 +289,6 @@
 </section>
 
 <style>
-  .setting-group {
-    margin-bottom: 24px;
-  }
-
-  .setting-group:last-child {
-    margin-bottom: 0;
-  }
-
-  .setting {
-    padding: 12px 16px;
-    background: #f8f8f8;
-    border-radius: 8px;
-  }
-
   /* AI feature toggles — spaced off from the key/code panel above them. */
   .ai-controls {
     margin-top: 24px;

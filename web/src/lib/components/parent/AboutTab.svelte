@@ -91,14 +91,6 @@
 </section>
 
 <style>
-  .setting-group {
-    margin-bottom: 24px;
-  }
-
-  .setting-group:last-child {
-    margin-bottom: 0;
-  }
-
   /* About tab branding */
   .about-brand {
     display: flex;

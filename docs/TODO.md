@@ -4,27 +4,6 @@
 > After each fix: remove the completed item and run relevant type checks or tests.
 > In manual mode, do **not** `git add` or `git commit` — the user reviews the diff first. Auto mode commits to its own branch/PR.
 
-## Code audit (2026-07)
-
-Findings from a full-repo audit pass, ordered by impact. Bugs and correctness first,
-then performance, then maintainability/architecture sweeps.
-
-### Maintainability & architecture
-
-- [ ] **[Polish] Deduplicate repeated UI patterns** — File(s): `web/src/lib/components/admin/AdminConsole.svelte`, `web/src/routes/dev/ai-timer/+page.svelte`, `web/src/lib/components/parent/SettingsToggles.svelte`, `parent/AiKeyManager.svelte`, `parent/AboutTab.svelte`, `web/src/lib/components/ParentCenter.svelte`, `web/src/routes/dev/engine/+page.ts`, `web/src/routes/dev/ai-timer/+page.ts`
-  Four small verbatim duplications worth one consolidation sweep: (a) the breadcrumb
-  markup + full style block (including the 6-function icon-tint filter) is copy-pasted between
-  AdminConsole and the ai-timer harness — extract a `Breadcrumb.svelte`; (b) the
-  `.setting-group` rules are repeated across all three Parent Center tabs and the `.setting`
-  card style across two (SettingsToggles + AiKeyManager; AboutTab has only `.setting-group`) —
-  hoist into ParentCenter's style block with tightly-scoped `:global`, or a small wrapper
-  component; (c) ParentCenter's close button has the shared `.modal-close-btn` class but uses
-  a bespoke `×` glyph with its own typographic styles instead of the
-  `<Icon name="close" class="modal-close-icon">` every other modal wraps, so the shared
-  `.modal-close-icon` hover styling silently misses it; (d) both dev routes carry an
-  identical `prerender = false` + `PUBLIC_ENABLE_DEV_HARNESS` 404-gate `load` — extract a
-  shared `requireDevHarness()` since it's a security-relevant gate with two implementations.
-
 ## Sticky `:hover` on touch devices
 
 iOS WebKit (and most touch browsers) apply `:hover` on tap and keep it stuck until
