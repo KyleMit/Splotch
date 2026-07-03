@@ -11,16 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Maintainability & architecture
 
-- [ ] **[Correctness] Netlify Blobs read-modify-write races lose updates** — File(s): `web/src/lib/server/usage.ts` (44–51), `web/src/lib/server/tokens.ts` (122–128)
-  `recordTokenUsage` is a bare `get` → `setJSON`, so two overlapping generations for the same
-  token (two devices sharing an invite — exactly the abuse the tally exists to detect) both
-  read `N` and both write `N+1`: the counter undercounts precisely under abuse. The installed
-  `@netlify/blobs` supports etag CAS — use `getWithMetadata` + `setJSON({ onlyIfMatch })` with
-  a couple of retries, still best-effort/never-throwing. Also guard `removeToken` with
-  `if (next.length !== list.length)` before `persist` — a no-op remove on a stale replica read
-  currently rewrites the whole blob and can clobber a token another admin just added. Add a
-  colocated `usage.test.ts` (the only `lib/server` module without one).
-
 - [ ] **[Maint] scripts/ duplicates process glue; `api-smoke` breaks on Windows and both smoke runners orphan the vite grandchild** — File(s): `scripts/api-smoke.mjs`, `scripts/redteam-run.mjs`, `scripts/blobs-smoke.mjs`, `scripts/android-emulator-smoke.mjs`, `scripts/ios-simulator-smoke.mjs`, `scripts/perf/preview.mjs`, `scripts/lib/`
   `api-smoke.mjs` spawns `npx` without a shell — ENOENT on Windows (`npx` is `npx.cmd`),
   violating ADR-0017; the sibling `redteam-run.mjs` already handles it, so the two have
