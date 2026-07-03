@@ -11,16 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Bugs & correctness
 
-- [ ] **[Bug] BYOK branch of `generate-image` is unauthenticated and unthrottled** — File(s): `web/src/routes/api/generate-image/+server.ts` (lines 83–117)
-  Any non-empty `apiKey` skips both the allowlist check and the rate limiter, so a caller with a
-  junk key gets free, unthrottled requests that each parse a ≤15 MB multipart body and trigger
-  an outbound Gemini call — and the 502-vs-200 distinction is a key-validity oracle that
-  bypasses `/api/verify-key`'s limiter, violating `.claude/rules/server-api.md` (every
-  unauthenticated oracle must be rate-limited per IP). ADR-0014's "BYOK is intentionally not
-  throttled" rationale only covers valid keys spending their own quota. Fix: add a per-IP
-  `rateLimit(\`generate-image-byok:${getClientAddress()}\`, …)` with a generous limit in the
-  BYOK branch, and update ADR-0014's wording in the same change.
-
 - [ ] **[Bug] `blobs-smoke.mjs` failure cleanup is dead code — failed runs leave probe tokens in the production Blobs store** — File(s): `scripts/blobs-smoke.mjs` (lines 90–165)
   The FATAL catch does `if (ctx?.session && ctx?.probe) { …DELETE… }`, but `ctx` is only
   assigned when `run()` *resolves*, and `run()` only returns after its own DELETE already

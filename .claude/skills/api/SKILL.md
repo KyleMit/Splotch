@@ -30,8 +30,10 @@ ADR-0014). Throttled responses are `429` with a `Retry-After` header.
 
 Generates a stylized image from a drawing. `multipart/form-data` with the
 PNG, style prompt, and either an allow-listed access token or a BYO Gemini
-key. Token-gated and rate-limited; see `web/src/routes/api/generate-image` and
-ADR-0006.
+key. Managed tokens are rate-limited per token (15/min); BYOK requests are
+rate-limited per IP with a deliberately generous limit (30/min), because the
+branch is otherwise unauthenticated and its 502-vs-200 result is a key-validity
+oracle. See `web/src/routes/api/generate-image` and ADR-0006 / ADR-0014.
 
 On success returns the image bytes. Failure modes are split so the client can
 guide the child correctly (ADR-0023): a **`422`** means Gemini refused the

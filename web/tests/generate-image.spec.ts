@@ -12,6 +12,11 @@ type MultipartField =
 // `apiKey` flips the handler into BYOK mode, which skips the token allowlist and
 // lets us reach the guards without a real access token. A bad payload is
 // rejected *before* any Gemini call, so a throwaway key is fine here.
+//
+// Every BYOK request from this file shares one per-IP limiter bucket, so the
+// tests must run in declaration order (burst test last) — opt this file out of
+// the suite's fullyParallel mode.
+test.describe.configure({ mode: 'default' });
 
 // 1x1 transparent PNG — a legitimate, tiny, allowed upload.
 const TINY_PNG = Buffer.from(
@@ -36,8 +41,9 @@ function managedForm(buffer: Buffer, mimeType: string, token: string, fileName =
   };
 }
 
-// Mirror of GENERATE_LIMIT in src/routes/api/generate-image/+server.js.
+// Mirrors of GENERATE_LIMIT / BYOK_LIMIT in src/routes/api/generate-image/+server.ts.
 const GENERATE_LIMIT = 15;
+const BYOK_LIMIT = 30;
 
 // The e2e suite runs against the production build, where SvelteKit's CSRF guard
 // is active (it's skipped only in `vite dev`). A multipart POST is a form
@@ -78,8 +84,7 @@ test('lets a normal-sized, allowed upload past the guards', async ({ request, ba
 test('throttles a managed token hammered in a burst', async ({ request, baseURL }) => {
   // Use a deliberately unsupported type (gif → 415) so each request is rejected
   // *before* the Gemini call — the per-token rate limiter counts the hit first,
-  // so we exhaust the window without spending any real quota. BYOK requests are
-  // intentionally not throttled, so this only fires on the managed-token path.
+  // so we exhaust the window without spending any real quota.
   const token = 'daycare-club';
   const statuses: number[] = [];
   for (let i = 0; i < GENERATE_LIMIT + 1; i++) {
@@ -103,6 +108,23 @@ test('throttles a managed token hammered in a burst', async ({ request, baseURL 
     baseURL,
     managedForm(TINY_PNG, 'image/gif', token, 'drawing.gif')
   );
+  expect(res.status()).toBe(429);
+  expect(res.headers()['retry-after']).toBeTruthy();
+});
+
+test('throttles BYOK requests per IP after a generous burst', async ({ request, baseURL }) => {
+  // Same gif trick as above: the per-IP limiter counts the hit before the type
+  // guard rejects, so no Gemini call is spent. Earlier tests in this file used
+  // a few BYOK hits from this IP, so the 429 can arrive slightly before the
+  // full BYOK_LIMIT — the assertion only requires it within the limit + 1.
+  const statuses: number[] = [];
+  while (statuses.length < BYOK_LIMIT + 1 && !statuses.includes(429)) {
+    const res = await postImage(request, baseURL, form(TINY_PNG, 'image/gif', 'drawing.gif'));
+    statuses.push(res.status());
+  }
+  expect(statuses).toContain(429);
+
+  const res = await postImage(request, baseURL, form(TINY_PNG, 'image/gif', 'drawing.gif'));
   expect(res.status()).toBe(429);
   expect(res.headers()['retry-after']).toBeTruthy();
 });

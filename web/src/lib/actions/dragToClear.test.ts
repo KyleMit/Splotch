@@ -16,8 +16,7 @@ function pointerEvent(type: string, pointerId: number, clientX = 0, clientY = 0)
 }
 
 const acceptRadius = () => Math.min(window.innerWidth, window.innerHeight) * 0.4;
-const clearProgress = () =>
-  document.documentElement.style.getPropertyValue('--clear-progress');
+const clearProgress = () => document.documentElement.style.getPropertyValue('--clear-progress');
 
 function setup() {
   const node = document.createElement('button');
