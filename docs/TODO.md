@@ -19,10 +19,6 @@ pages last.
 
 ### Toddler-facing drawing UI (highest priority — native touch app)
 
-- [ ] **[Bug] Guard modal-close-btn hover** — File(s): `src/app.css`
-  `.modal-close-btn:not(:disabled):hover .modal-close-icon` — global rule for the
-  modal close button shown across native dialogs. Wrap in `@media (hover: hover)`.
-
 ### Parent Center (medium — reachable on-device)
 
 - [ ] **[Bug] Guard ParentCenter hover rules** — File(s): `src/lib/components/ParentCenter.svelte`
