@@ -230,8 +230,12 @@
       background 0.15s ease,
       transform 0.1s ease;
   }
-  button:hover {
-    background: #9559cd;
+  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
+     keep it stuck until the next tap elsewhere. */
+  @media (hover: hover) {
+    button:hover {
+      background: #9559cd;
+    }
   }
   button:active {
     transform: scale(0.96);

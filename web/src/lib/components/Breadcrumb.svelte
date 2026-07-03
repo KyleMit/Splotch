@@ -38,8 +38,12 @@
     transition: background 0.15s ease;
   }
 
-  a.crumb:hover {
-    background: #f0e9fb;
+  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
+     keep it stuck until the next tap elsewhere. */
+  @media (hover: hover) {
+    a.crumb:hover {
+      background: #f0e9fb;
+    }
   }
 
   :global(.crumb .crumb-icon) {

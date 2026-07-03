@@ -590,8 +590,12 @@
     flex-shrink: 0;
   }
 
-  .btn-primary:hover {
-    background: var(--brand-hover);
+  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
+     keep it stuck until the next tap elsewhere. */
+  @media (hover: hover) {
+    .btn-primary:hover {
+      background: var(--brand-hover);
+    }
   }
 
   .btn-ghost {
@@ -600,8 +604,10 @@
     background: #f5f0fc;
   }
 
-  .btn-ghost:hover {
-    background: #ece0fb;
+  @media (hover: hover) {
+    .btn-ghost:hover {
+      background: #ece0fb;
+    }
   }
 
   .btn-ghost.copied {
@@ -615,8 +621,10 @@
     background: #fef2f2;
   }
 
-  .btn-danger:hover {
-    background: #fbe0de;
+  @media (hover: hover) {
+    .btn-danger:hover {
+      background: #fbe0de;
+    }
   }
 
   /* Square icon-only button (the "⋯" more control). */
@@ -631,8 +639,10 @@
     background: transparent;
   }
 
-  .btn-icon:hover {
-    background: #f0f0f0;
+  @media (hover: hover) {
+    .btn-icon:hover {
+      background: #f0f0f0;
+    }
   }
 
   :global(.btn-icon .more-icon) {
@@ -766,16 +776,20 @@
     border-bottom: none;
   }
 
-  .more-menu-item:hover {
-    background: #faf7ff;
+  @media (hover: hover) {
+    .more-menu-item:hover {
+      background: #faf7ff;
+    }
   }
 
   .more-menu-item-danger {
     color: #d92d20;
   }
 
-  .more-menu-item-danger:hover {
-    background: #fff5f5;
+  @media (hover: hover) {
+    .more-menu-item-danger:hover {
+      background: #fff5f5;
+    }
   }
 
   .more-menu-item:disabled {
