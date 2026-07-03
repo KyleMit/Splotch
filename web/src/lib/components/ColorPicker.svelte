@@ -437,16 +437,29 @@
       filter 0.1s ease;
   }
 
-  .hexagon:hover,
+  /* The .hover class is JS-driven (hoveredHex) so it works on the touch/pen drag
+     path; the :hover pseudo is guarded behind a real pointer because touch
+     browsers apply :hover on tap and leave the last-tapped swatch stuck enlarged. */
   .hexagon.hover {
     z-index: 1;
     background-color: black;
   }
 
-  .hexagon:hover::after,
   .hexagon.hover::after {
     inset: 2px;
     filter: brightness(1.2);
+  }
+
+  @media (hover: hover) {
+    .hexagon:hover {
+      z-index: 1;
+      background-color: black;
+    }
+
+    .hexagon:hover::after {
+      inset: 2px;
+      filter: brightness(1.2);
+    }
   }
 
   .hexagon.border {

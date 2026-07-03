@@ -19,12 +19,6 @@ pages last.
 
 ### Toddler-facing drawing UI (highest priority — native touch app)
 
-- [ ] **[Bug] Guard ColorPicker hexagon hover** — File(s): `src/lib/components/ColorPicker.svelte`
-  `.hexagon:hover` and `.hexagon:hover::after` highlight the hovered swatch. On touch
-  the last-tapped color stays enlarged/highlighted. Note this component also has a
-  JS-driven `class:hover={hoveredHex === hex}` path (line ~119) — verify the desired
-  active state comes from the class, then guard the CSS `:hover` with `@media (hover: hover)`.
-
 - [ ] **[Bug] Guard AiImagePrompt style-option hover** — File(s): `src/lib/components/AiImagePrompt.svelte`
   `.ai-style-option:hover:not(:disabled) .ai-style-thumb` and `… .ai-style-label`
   leave the last-tapped art-style option looking selected. Wrap in `@media (hover: hover)`.
