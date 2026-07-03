@@ -1,4 +1,7 @@
-# Fix Next TODO
+# Fix Next TODO (Manual)
+
+Interactive mode — one item per invocation; the user reviews the diff and commits. For the
+autonomous branch-and-PR variant that works through the whole file, use `/fix-next-todo-auto`.
 
 Read `docs/TODO.md` and implement the **first listed item** in full. Then:
 

@@ -15,12 +15,12 @@ Skip anything already tracked in an open issue or obviously intentional (e.g. a 
 
 ## Output format
 
-Write (or append) `docs/TODO.md` using this exact structure so that `/fix-next-todo` can work through it item by item:
+Write (or append) `docs/TODO.md` using this exact structure so that `/fix-next-todo-manual` and `/fix-next-todo-auto` can work through it item by item:
 
 ```markdown
 # TODO
 
-> Work through these items one at a time using `/fix-next-todo`.
+> Work through these items one at a time with `/fix-next-todo-manual`, or clear the whole list autonomously with `/fix-next-todo-auto`.
 > After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
 > Do **not** `git add` or `git commit` — the user reviews the diff first.
 

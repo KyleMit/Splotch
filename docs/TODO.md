@@ -1,8 +1,8 @@
 # TODO
 
-> Work through these items one at a time using `/fix-next-todo`.
-> After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
-> Do **not** `git add` or `git commit` — the user reviews the diff first.
+> Work through these items one at a time with `/fix-next-todo-manual`, or clear the whole list autonomously with `/fix-next-todo-auto`.
+> After each fix: remove the completed item and run relevant type checks or tests.
+> In manual mode, do **not** `git add` or `git commit` — the user reviews the diff first. Auto mode commits to its own branch/PR.
 
 ## Code audit (2026-07)
 
