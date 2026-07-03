@@ -21,13 +21,6 @@ pages last.
 
 ### Parent Center (medium — reachable on-device)
 
-- [ ] **[Bug] Guard parent settings control hovers** — File(s): `src/lib/components/parent/ToggleRow.svelte`, `src/lib/components/parent/SetupInstructions.svelte`, `src/lib/components/parent/AiKeyManager.svelte`, `src/lib/components/parent/AboutTab.svelte`, `src/lib/components/TabPager.svelte`
-  ToggleRow `.toggle-switch:hover` / `.toggle-switch.active:hover` / `.toggle-switch:disabled:hover`;
-  SetupInstructions `.help-section summary:hover`; AiKeyManager `.access-code-submit:hover`
-  and `.access-code-submit.forget:hover`; AboutTab link hovers; TabPager `:global(.tab-button:hover)`.
-  Wrap each in `@media (hover: hover)`. (Link/`:disabled` hovers are low-risk but
-  worth doing in the same sweep for consistency.)
-
 ### Web-only (lowest — desktop/mouse, not in native bundle)
 
 - [ ] **[Polish] Guard admin/dev/static hover rules** — File(s): `src/lib/components/admin/AdminConsole.svelte`, `src/routes/privacy/+page.svelte`, `src/routes/dev/ai-timer/+page.svelte`

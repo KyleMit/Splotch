@@ -337,8 +337,10 @@
     flex-shrink: 0;
   }
 
-  .access-code-submit:hover {
-    background: var(--brand-hover);
+  @media (hover: hover) {
+    .access-code-submit:hover {
+      background: var(--brand-hover);
+    }
   }
 
   .access-code-submit:disabled {
@@ -458,8 +460,10 @@
     color: #b04a4a;
   }
 
-  .access-code-submit.forget:hover {
-    background: #e2e2e2;
+  @media (hover: hover) {
+    .access-code-submit.forget:hover {
+      background: #e2e2e2;
+    }
   }
 
   .byok-message {

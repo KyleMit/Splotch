@@ -195,9 +195,11 @@
     opacity: 1;
   }
 
-  :global(.tab-button:hover) {
-    color: #666;
-    background: #f5f5f5;
+  @media (hover: hover) {
+    :global(.tab-button:hover) {
+      color: #666;
+      background: #f5f5f5;
+    }
   }
 
   :global(.tab-button.active) {

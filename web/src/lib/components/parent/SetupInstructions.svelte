@@ -228,8 +228,10 @@
     text-align: left;
   }
 
-  .help-section summary:hover {
-    background: #f0f0f0;
+  @media (hover: hover) {
+    .help-section summary:hover {
+      background: #f0f0f0;
+    }
   }
 
   .help-section summary::-webkit-details-marker {
