@@ -81,13 +81,23 @@ test('lets a normal-sized, allowed upload past the guards', async ({ request, ba
   expect(res.status()).not.toBe(415);
 });
 
-test('throttles a managed token hammered in a burst', async ({ request, baseURL }) => {
+test('throttles a managed token hammered in a burst', async ({ request, baseURL }, testInfo) => {
   // Use a deliberately unsupported type (gif → 415) so each request is rejected
   // *before* the Gemini call — the per-token rate limiter counts the hit first,
   // so we exhaust the window without spending any real quota.
-  const token = 'daycare-club';
+  //
+  // The limiter window is per token, lasts 60s, and rejected hits don't extend
+  // it — so a full window doesn't clear until 60s after the burst. A CI retry
+  // (retries: 2) starts inside that still-full window, so it would see the very
+  // first request 429 and fail deterministically. Give each attempt its own
+  // token (the retry ones are allowlisted alongside daycare-club in test.yml) so
+  // every attempt gets a fresh window. Local runs never retry, so testInfo.retry
+  // is always 0 there — they only ever need daycare-club.
+  const tokens = ['daycare-club', 'daycare-club-retry1', 'daycare-club-retry2'];
+  const token = tokens[testInfo.retry] ?? tokens[tokens.length - 1];
+
   const statuses: number[] = [];
-  for (let i = 0; i < GENERATE_LIMIT + 1; i++) {
+  for (let i = 0; i < GENERATE_LIMIT; i++) {
     const res = await postImage(
       request,
       baseURL,
@@ -96,13 +106,14 @@ test('throttles a managed token hammered in a burst', async ({ request, baseURL 
     statuses.push(res.status());
   }
 
-  // Requests within the limit clear the throttle (rejected only by the type
-  // guard); the one that tips over the limit gets a 429 with a Retry-After.
+  // Requests within the limit clear the throttle (rejected only by the type guard).
   //
   // A 403 here means the token is not in ALLOWED_TOKENS_LIST — copy .env.example
   // to .env so the test server has the token available.
   expect(statuses[0], 'token rejected (403) — copy .env.example to .env').not.toBe(403);
-  expect(statuses.slice(0, GENERATE_LIMIT)).not.toContain(429);
+  expect(statuses).not.toContain(429);
+
+  // The next request tips over the limit → 429 with a Retry-After.
   const res = await postImage(
     request,
     baseURL,

@@ -11,18 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Maintainability & architecture
 
-- [ ] **[Maint] Lint/format gates skip the E2E specs and web config files; Playwright harness has real drift** — File(s): `package.json` (lint/format globs), `eslint.config.js`, `web/tests/global-setup.ts`, `web/tests/generate-image.spec.ts`, `web/playwright.config.ts`
-  (a) `web/tests/**` (8 spec files + global-setup) and `web/*.{ts,js}` configs sit outside both
-  the ESLint and Prettier CI gates, so ADR-0031's quality gates don't cover the test layer;
-  add them to the `lint`/`format`/`format:check` targets and expect a one-time autofix commit.
-  (b) global-setup's dep-optimizer warm-up (browser launch + 3-route warm + 3 s settle streak,
-  ~6–8 s per run) only matters under `DEV_SERVER=1`, yet runs on every CI `vite preview` run —
-  early-return when `!process.env.DEV_SERVER` and fix the stale comments in `engine.spec.ts` /
-  `multitouch.spec.ts`. (c) The generate-image burst spec fills the 60 s limiter window for the
-  single allowlisted token, so a CI retry (`retries: 2`) starts inside a still-full window and
-  fails deterministically — pick a token by `testInfo.retry` (allowlist several in `test.yml`)
-  or wait out `retry-after` before the burst; also drop the redundant 17th request.
-
 - [ ] **[Types] String-union state typed only in comments; untyped props; duplicated `Platform` union** — File(s): `web/src/lib/components/parent/AiKeyManager.svelte` (18, 22, 26), `web/src/lib/components/parent/SetupInstructions.svelte` (9, 11, 21), `web/src/lib/notchBand.ts` (39)
   `let keyStatus = $state('idle'); // 'idle' | 'checking' | 'error' | 'success'` should be
   `$state<'idle' | 'checking' | 'error' | 'success'>('idle')` (same for `platform` and
