@@ -241,6 +241,162 @@ test('a pen pointer bypasses the color-change debounce', async ({ page }) => {
   expect(painted).toBeGreaterThan(0);
 });
 
+// iOS/WebKit can merge a fast pen tap on a UI control (a sidebar color swatch)
+// with the stroke that follows into ONE pointer stream: the intervening
+// pointerup + pointerdown are dropped, and — pens getting no implicit capture —
+// the surviving pointermoves hit-test onto the canvas with no pointerdown ever
+// delivered there. Before the recovery in draw(), the whole first stroke after
+// picking a color with an Apple Pencil was silently dropped.
+test('a pen contact stream whose pointerdown was merged away still paints', async ({ page }) => {
+  const painted = await page.evaluate(() => {
+    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    const fire = (type: string, x: number, y: number, buttons: number) =>
+      canvas.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: 1,
+          pointerType: 'pen',
+          buttons,
+          clientX: rect.left + x,
+          clientY: rect.top + y,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    fire('pointermove', 60, 60, 1);
+    fire('pointermove', 140, 90, 1);
+    fire('pointermove', 220, 120, 1);
+    fire('pointerup', 220, 120, 0);
+    return window.__engine.nonTransparentCount();
+  });
+  expect(painted).toBeGreaterThan(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(false);
+  expect(s.canUndo).toBe(true);
+});
+
+test('pen hover moves (tip not touching) never paint', async ({ page }) => {
+  // Apple Pencil hover (M2+) streams pointermoves with buttons === 0. The
+  // merged-stream recovery must not mistake hovering for a lost stroke.
+  const painted = await page.evaluate(() => {
+    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    for (const [x, y] of [
+      [60, 60],
+      [140, 90],
+      [220, 120],
+    ]) {
+      canvas.dispatchEvent(
+        new PointerEvent('pointermove', {
+          pointerId: 1,
+          pointerType: 'pen',
+          buttons: 0,
+          clientX: rect.left + x,
+          clientY: rect.top + y,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    }
+    return window.__engine.nonTransparentCount();
+  });
+  expect(painted).toBe(0);
+  expect((await state(page)).canvasEmpty).toBe(true);
+});
+
+// The other flavor of the merge: WebKit keeps delivering the down-less stream
+// to the control the merged tap started on (the swatch), so the canvas's own
+// listeners never fire. The engine's window-level adoption must catch a pen
+// contact move whose tip is physically over the canvas regardless of the
+// event's target; from there capture retargets the stream to the canvas
+// (simulated here by dispatching the rest on the canvas).
+test('a merged pen stream still targeted at a UI control paints once over the canvas', async ({
+  page,
+}) => {
+  const painted = await page.evaluate(() => {
+    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    const fire = (target: EventTarget, type: string, x: number, y: number, buttons: number) =>
+      target.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: 1,
+          pointerType: 'pen',
+          buttons,
+          clientX: rect.left + x,
+          clientY: rect.top + y,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    fire(document.body, 'pointermove', 60, 60, 1);
+    fire(canvas, 'pointermove', 140, 90, 1);
+    fire(canvas, 'pointermove', 220, 120, 1);
+    fire(canvas, 'pointerup', 220, 120, 0);
+    return window.__engine.nonTransparentCount();
+  });
+  expect(painted).toBeGreaterThan(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(false);
+  expect(s.canUndo).toBe(true);
+});
+
+// Adoption must only fire for streams whose pointerdown was genuinely dropped.
+// A pen gesture that BEGAN on a UI control with a delivered pointerdown
+// (drag-to-clear, a picker drag, a slide off a swatch) crossing the canvas
+// looks identical move-by-move — the live down is the discriminator.
+test('a pen drag that started with a delivered pointerdown on UI never paints', async ({
+  page,
+}) => {
+  const painted = await page.evaluate(() => {
+    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    const fire = (target: EventTarget, type: string, x: number, y: number, buttons: number) =>
+      target.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: 1,
+          pointerType: 'pen',
+          buttons,
+          clientX: rect.left + x,
+          clientY: rect.top + y,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    fire(document.body, 'pointerdown', 350, 350, 1);
+    fire(canvas, 'pointermove', 60, 60, 1);
+    fire(canvas, 'pointermove', 140, 90, 1);
+    fire(document.body, 'pointerup', 350, 350, 0);
+    return window.__engine.nonTransparentCount();
+  });
+  expect(painted).toBe(0);
+  expect((await state(page)).canvasEmpty).toBe(true);
+});
+
+// iPadOS Scribble claims an Apple Pencil stroke that starts within ~450ms of a
+// pen tap: the pointer events still arrive and the engine paints, but the
+// system never presents those frames — the ink is invisible and never pops in.
+// Cancelling the parallel TOUCH stream is the only thing that makes Scribble
+// let go (pointer-event preventDefault does not; confirmed on-device).
+test('the canvas cancels its touch stream so iPadOS Scribble releases pen strokes', async ({
+  page,
+}) => {
+  const prevented = await page.evaluate(() => {
+    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    return ['touchstart', 'touchmove'].map((type) => {
+      const touch = new Touch({ identifier: 1, target: canvas, clientX: 50, clientY: 50 });
+      const e = new TouchEvent(type, {
+        touches: [touch],
+        changedTouches: [touch],
+        cancelable: true,
+        bubbles: true,
+      });
+      canvas.dispatchEvent(e);
+      return e.defaultPrevented;
+    });
+  });
+  expect(prevented).toEqual([true, true]);
+});
+
 // The harness canvas is 300×300 at the viewport origin (renderScale 1) — a
 // square is treated as portrait (width ≤ height), so the bottom band
 // (EDGE_SWIPE_BAND_PX = 24) is y ≥ 276. Portrait guards the bottom from

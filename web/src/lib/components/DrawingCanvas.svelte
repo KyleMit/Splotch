@@ -131,7 +131,6 @@
     bind:this={canvasEl}
     id="drawingCanvas"
     class:erasing={toolState.eraser}
-    tabindex="0"
     onpointerdown={updateEraserCursor}
     onpointermove={updateEraserCursor}
     onpointerenter={updateEraserCursor}
@@ -167,7 +166,6 @@
     background-color: #fcfbf8;
     background-image: url('/icons/handmade-paper.webp');
     background-repeat: repeat;
-    outline: none; /* Remove focus outline */
   }
 
   #drawingCanvas.erasing {
