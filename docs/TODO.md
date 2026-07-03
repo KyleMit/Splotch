@@ -11,18 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Bugs & correctness
 
-- [ ] **[Bug] `dragToClear` ignores pointerId — a second finger can hijack the drag and wipe the canvas** — File(s): `web/src/lib/actions/dragToClear.ts`
-  `onPointerDown` sets a bare `isDragging = true`, and the document-level `onPointerMove`/`onPointerUp`
-  filter only on `isDragging`, never on `e.pointerId`. While finger A holds the trash button,
-  finger B drawing on the canvas bubbles pointer events to `document` (the engine's `draw()`
-  calls `preventDefault` but not `stopPropagation`): the trash transform and `--clear-progress`
-  track finger B measured from finger A's start, and finger B's `pointerup` commits `onClear()` —
-  wiping the drawing — whenever it lands ≥ the accept radius from finger A's start. Two-handed
-  toddler input makes this a realistic accidental-wipe path. Fix: record `e.pointerId` on
-  pointerdown and early-return in move/up for any other id; ideally `setPointerCapture` on the
-  node and move the move/up listeners off `document`, which also removes two always-on
-  document-wide listeners from the drawing hot path.
-
 - [ ] **[Bug] Rate limiter's `Retry-After` can never unblock a compliant client** — File(s): `web/src/lib/server/rateLimit.ts` (lines 29–45)
   Rejected attempts are recorded as hits (`hits.push(now)` runs before the limit check), but
   `retryAfter` is computed as "when the oldest hit ages out" — while limited, each retry adds a
