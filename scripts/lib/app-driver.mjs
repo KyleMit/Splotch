@@ -2,9 +2,8 @@
 // (store-shots.mjs, gen-large-image.mjs): dev-server lifecycle, page setup,
 // and the UI gestures (pick a color, set stroke size, draw) the app needs.
 
-import { spawn } from 'node:child_process';
-import { join } from 'node:path';
-import { ROOT, sleep } from './utils.mjs';
+import { waitForUrl } from './utils.mjs';
+import { spawnViteServer } from './vite-server.mjs';
 
 const isUp = async (url) => {
   try {
@@ -15,8 +14,7 @@ const isUp = async (url) => {
 };
 
 // Reuse a dev server already listening on the port, or start one (killed via
-// the returned stop(), and on process exit as a backstop). Spawns vite's bin
-// directly with node — no shell — so stop() reliably kills it on Windows too.
+// the returned stop(), and on process exit as a backstop).
 export async function ensureDevServer(port, timeout = 90_000) {
   const base = `http://localhost:${port}/`;
   if (await isUp(base)) {
@@ -25,29 +23,13 @@ export async function ensureDevServer(port, timeout = 90_000) {
   }
 
   console.log('Starting dev server…');
-  const vite = join(ROOT, 'node_modules', 'vite', 'bin', 'vite.js');
-  const server = spawn(process.execPath, [vite, 'dev', '--port', String(port), '--strictPort'], {
-    cwd: join(ROOT, 'web'),
-    stdio: 'ignore',
-  });
-  const stop = () => {
-    try {
-      server.kill();
-    } catch {}
-  };
-  process.on('exit', stop);
-  process.on('SIGINT', () => {
-    stop();
-    process.exit(1);
-  });
+  const { stop } = spawnViteServer(port);
 
-  const deadline = Date.now() + timeout;
-  while (!(await isUp(base))) {
-    if (Date.now() > deadline) {
-      stop();
-      throw new Error(`Dev server at ${base} did not become ready within ${timeout}ms`);
-    }
-    await sleep(500);
+  try {
+    await waitForUrl(base, timeout);
+  } catch (err) {
+    stop();
+    throw err;
   }
   console.log('Server ready.');
   return { base, stop };

@@ -8,27 +8,15 @@
 //
 // Requires macOS with full Xcode (simulators ship with it) and Maestro.
 
-import { spawn, execFile } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
-import { ROOT, fail, maestroPath } from './lib/utils.mjs';
+import { ROOT, fail, sh, maestroPath } from './lib/utils.mjs';
 
 const execFileAsync = promisify(execFile);
 
 const simctl = async (...args) =>
   (await execFileAsync('xcrun', ['simctl', ...args], { maxBuffer: 16 * 1024 * 1024 })).stdout;
-
-// Run a command through the shell with live (inherited) output; reject on
-// failure. Async (not lib/utils run(), which exits the process on failure) so
-// a failed build still reaches the finally block that shuts the simulator down.
-const sh = (command, cwd = ROOT) =>
-  new Promise((resolve, reject) => {
-    const child = spawn(command, { cwd, stdio: 'inherit', shell: true });
-    child.on('error', reject);
-    child.on('exit', (code) =>
-      code === 0 ? resolve() : reject(new Error(`exited ${code}: ${command}`))
-    );
-  });
 
 // 1. Preflight: macOS with full Xcode (Command Line Tools alone has no simctl).
 if (process.platform !== 'darwin')

@@ -23,6 +23,8 @@
 // https).
 
 import { randomUUID } from 'node:crypto';
+import { sleep } from './lib/utils.mjs';
+import { check, fatal, summarize, json } from './lib/smoke.mjs';
 
 const BASE = (process.argv[2] ?? process.env.BLOBS_SMOKE_URL ?? '').replace(/\/$/, '');
 const ADMIN_SECRET = process.env.ADMIN_ACCESS_TOKEN ?? '';
@@ -38,21 +40,6 @@ if (!BASE || !ADMIN_SECRET) {
   );
   process.exit(2);
 }
-
-let passed = 0;
-let failed = 0;
-function check(name, ok, detail = '') {
-  if (ok) {
-    passed++;
-    console.log(`  ✓ ${name}`);
-  } else {
-    failed++;
-    console.error(`  ✗ ${name}${detail ? ` — ${detail}` : ''}`);
-  }
-}
-
-const json = (res) => res.json().catch(() => null);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function post(path, headers, body) {
   return fetch(`${BASE}${path}`, {
@@ -152,8 +139,7 @@ console.log(`[blobs-smoke] target: ${BASE}\n`);
 try {
   await run();
 } catch (err) {
-  failed++;
-  console.error(`\nFATAL: ${err.message}`);
+  fatal(err);
 } finally {
   // Best-effort cleanup if we got far enough to add the probe (idempotent, so
   // a re-delete after the in-run cleanup is harmless).
@@ -164,5 +150,4 @@ try {
   }
 }
 
-console.log(`\n${passed} passed, ${failed} failed`);
-process.exit(failed === 0 ? 0 : 1);
+summarize();

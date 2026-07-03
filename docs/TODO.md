@@ -11,16 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Maintainability & architecture
 
-- [ ] **[Maint] scripts/ duplicates process glue; `api-smoke` breaks on Windows and both smoke runners orphan the vite grandchild** — File(s): `scripts/api-smoke.mjs`, `scripts/redteam-run.mjs`, `scripts/blobs-smoke.mjs`, `scripts/android-emulator-smoke.mjs`, `scripts/ios-simulator-smoke.mjs`, `scripts/perf/preview.mjs`, `scripts/lib/`
-  `api-smoke.mjs` spawns `npx` without a shell — ENOENT on Windows (`npx` is `npx.cmd`),
-  violating ADR-0017; the sibling `redteam-run.mjs` already handles it, so the two have
-  drifted. Both also `server.kill('SIGTERM')` the npx wrapper, orphaning the vite grandchild —
-  the exact port-leak failure `scripts/perf/preview.mjs` documents and solves with a detached
-  process group + `taskkill /T`. Meanwhile `sh()`, the smoke-test `check()` reporter, and five
-  variants of "poll a URL until up" are duplicated verbatim across the scripts. Extract
-  `spawnViteServer(port, env)`, `sh()`, `check()`, and `waitForUrl(url, timeoutMs)` into
-  `scripts/lib/` (per `scripts/CLAUDE.md`) and use them everywhere.
-
 - [ ] **[Maint] Lint/format gates skip the E2E specs and web config files; Playwright harness has real drift** — File(s): `package.json` (lint/format globs), `eslint.config.js`, `web/tests/global-setup.ts`, `web/tests/generate-image.spec.ts`, `web/playwright.config.ts`
   (a) `web/tests/**` (8 spec files + global-setup) and `web/*.{ts,js}` configs sit outside both
   the ESLint and Prettier CI gates, so ADR-0031's quality gates don't cover the test layer;
