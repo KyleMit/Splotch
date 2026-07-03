@@ -19,10 +19,6 @@ pages last.
 
 ### Toddler-facing drawing UI (highest priority — native touch app)
 
-- [ ] **[Bug] Guard remaining ActionsPanel hover rules** — File(s): `src/lib/components/ActionsPanel.svelte`
-  `.drawer-toggle:hover` (and its `:global(.drawer-toggle-icon)` variant) is still
-  unguarded — same panel we just partly fixed. Wrap in `@media (hover: hover)`.
-
 - [ ] **[Bug] Guard ColoringBook hover rules** — File(s): `src/lib/components/ColoringBook.svelte`
   `.coloring-back-button:hover` (+ icon variant) and `.coloring-tile:hover` change
   highlight state; a tapped coloring tile or the back button stays visually

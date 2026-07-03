@@ -311,8 +311,10 @@
     flex-shrink: 0;
   }
 
-  .drawer-toggle:hover {
-    opacity: 0.7;
+  @media (hover: hover) {
+    .drawer-toggle:hover {
+      opacity: 0.7;
+    }
   }
 
   .drawer-toggle:active {
@@ -327,8 +329,10 @@
     transition: filter 0.2s ease;
   }
 
-  .drawer-toggle:hover :global(.drawer-toggle-icon) {
-    filter: invert(40%) grayscale(100%);
+  @media (hover: hover) {
+    .drawer-toggle:hover :global(.drawer-toggle-icon) {
+      filter: invert(40%) grayscale(100%);
+    }
   }
 
   .drawer-toggle:active :global(.drawer-toggle-icon) {
