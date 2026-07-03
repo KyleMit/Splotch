@@ -37,6 +37,22 @@ describe('rateLimit', () => {
     expect(rateLimit(key, { limit: 3, windowMs: 1000 }).limited).toBe(false);
   });
 
+  it('unblocks a client that retries after retryAfter, even if it retried while limited', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    const key = 'honors-retry-after';
+    for (let i = 0; i < 3; i++) rateLimit(key, { limit: 3, windowMs: 10_000 });
+
+    // Rejected attempts must not extend the window.
+    vi.advanceTimersByTime(2000);
+    const rejected = rateLimit(key, { limit: 3, windowMs: 10_000 });
+    expect(rejected.limited).toBe(true);
+    expect(rejected.retryAfter).toBe(8);
+
+    vi.advanceTimersByTime(rejected.retryAfter * 1000);
+    expect(rateLimit(key, { limit: 3, windowMs: 10_000 }).limited).toBe(false);
+  });
+
   it('tracks each key independently', () => {
     expect(rateLimit('key-a', { limit: 1 }).limited).toBe(false);
     expect(rateLimit('key-a', { limit: 1 }).limited).toBe(true);

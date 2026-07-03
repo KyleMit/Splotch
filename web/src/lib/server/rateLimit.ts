@@ -13,8 +13,10 @@ export interface RateLimitResult {
 }
 
 /**
- * Sliding-window limiter. Records a hit for `key` and reports whether the caller
- * has now exceeded `limit` hits within the trailing `windowMs`.
+ * Sliding-window limiter. Reports whether `key` has already used its `limit`
+ * hits within the trailing `windowMs`, and records a hit only when allowed —
+ * rejected attempts don't extend the window, so a client that waits out
+ * `retryAfter` is genuinely unblocked.
  *
  * Returns `{ limited, retryAfter }` — `retryAfter` is seconds until the oldest
  * hit in the window ages out (only meaningful when `limited` is true).
@@ -27,8 +29,6 @@ export function rateLimit(
   const cutoff = now - windowMs;
 
   const hits = (buckets.get(key) || []).filter((t) => t > cutoff);
-  hits.push(now);
-  buckets.set(key, hits);
 
   // Opportunistic sweep so the Map can't grow unbounded across many distinct
   // IPs; only runs once the map is already large.
@@ -38,9 +38,13 @@ export function rateLimit(
     }
   }
 
-  if (hits.length > limit) {
+  if (hits.length >= limit) {
+    buckets.set(key, hits);
     const retryAfter = Math.max(Math.ceil((hits[0] + windowMs - now) / 1000), 1);
     return { limited: true, retryAfter };
   }
+
+  hits.push(now);
+  buckets.set(key, hits);
   return { limited: false, retryAfter: 0 };
 }

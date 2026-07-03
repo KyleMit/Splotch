@@ -11,16 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Bugs & correctness
 
-- [ ] **[Bug] Rate limiter's `Retry-After` can never unblock a compliant client** — File(s): `web/src/lib/server/rateLimit.ts` (lines 29–45)
-  Rejected attempts are recorded as hits (`hits.push(now)` runs before the limit check), but
-  `retryAfter` is computed as "when the oldest hit ages out" — while limited, each retry adds a
-  hit, so a client that honors `Retry-After` exactly stays limited forever (with a misleading
-  ~1s `retryAfter`) until it goes silent for a full window. Fix: check `hits.length >= limit`
-  *before* pushing so rejected attempts don't count, which makes `retryAfter` from `hits[0]`
-  honest. Affects all five call sites (admin login ×2, verify-access-code, verify-key,
-  generate-image). `rateLimit.test.ts` doesn't pin the current behavior, so the change is safe;
-  add a test that a client retrying after `retryAfter` succeeds.
-
 - [ ] **[Bug] BYOK branch of `generate-image` is unauthenticated and unthrottled** — File(s): `web/src/routes/api/generate-image/+server.ts` (lines 83–117)
   Any non-empty `apiKey` skips both the allowlist check and the rate limiter, so a caller with a
   junk key gets free, unthrottled requests that each parse a ≤15 MB multipart body and trigger
