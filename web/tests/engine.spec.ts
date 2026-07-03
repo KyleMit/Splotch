@@ -505,8 +505,8 @@ test('in tablet landscape a reported bottom inset additionally guards the long b
 }) => {
   // A tablet keeps its home indicator on the long bottom in landscape; the OS
   // reports an inset there, so an upward swipe from that edge is discarded.
-  const dropped = await page.evaluate(() => {
-    window.__engine.resizeTo(400, 300);
+  const dropped = await page.evaluate(async () => {
+    await window.__engine.resizeTo(400, 300);
     window.__engine.setSafeAreaInsets({ top: 0, right: 0, bottom: 30, left: 0 });
     window.__engine.strokeSync(
       [

@@ -11,16 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Performance
 
-- [ ] **[Perf] `resizeCanvas` does an unthrottled wipe + command replay on every resize event** — File(s): `web/src/lib/drawing/engine.ts` (lines 282–319, listener ~1037)
-  A desktop window-edge drag fires resize continuously; each event runs backing-store
-  reassignment (which wipes the canvas), possible `growCanvas` reallocation + copy, and
-  `rebuildFromBaseline()` replaying the command log (bounded — `paintStateThrough` blits from
-  the most recent keyframe when one exists and the log is op-simplified and capped — but still
-  a full redraw per event). Coalesce with rAF or a short
-  trailing debounce: run `refreshCanvasRect()` immediately so pointer mapping stays correct,
-  defer the backing-store rebuild to the settled size. Keep the mid-stroke `activeCommand`
-  replay working for the final rebuild. Web target only (mobile rotation is a single event).
-
 - [ ] **[Perf] Web bundle ships and SW-precaches native-only Capacitor chunks (~16 KB measured in one build)** — File(s): `web/src/lib/orientation.ts`, `web/src/lib/haptics.ts`, `web/src/lib/storage.ts`, `web/src/lib/secureStorage.ts`, `web/src/lib/state/network.svelte.ts`, `web/src/lib/drawing/screenshot.ts`, `web/src/lib/components/DrawingCanvas.svelte` (via `$lib/plugins/pencilEraser`), `web/src/lib/components/NotchBand.svelte`, `web/src/lib/platform.ts`
   Chunks for `@capacitor/core`, status-bar, haptics, screen-orientation, preferences, network,
   community media, pencilEraser, and DeviceLock ship in the web output and `sw.js` precaches
