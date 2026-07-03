@@ -108,3 +108,21 @@ one-tap path harder to verify locally (needs a production build / preview).
 `commitActiveCommand()`, consistent with the existing callbacks-out pattern
 (ADR-0004), but it is one more wire between the imperative engine and reactive
 state.
+
+## Appearance by context
+
+Point-in-time screenshots (2026-07) of the banner in each context it can run,
+captured from emulated devices. They are **not** kept in sync automatically —
+if the banner changes enough that these mislead, regenerate them with
+[`assets/0038-install-banner/generate-screenshots.mjs`](assets/0038-install-banner/generate-screenshots.mjs)
+(it emulates each UA/viewport, draws the three qualifying strokes, and
+synthesizes `beforeinstallprompt` for the one-tap shots).
+
+| Context | Mode | Screenshot |
+|---|---|---|
+| Desktop Chrome/Edge | `oneTap` — Install button fires the native dialog | ![Desktop Chrome one-tap banner](assets/0038-install-banner/desktop-chrome-one-tap.png) |
+| Android phone, Chrome (install criteria met) | `oneTap` | ![Android phone one-tap banner](assets/0038-install-banner/android-phone-one-tap.png) |
+| Android phone, no live prompt (Firefox, criteria unmet, declined) | `android` — "How?" expands the ⋮-menu hint | ![Android phone menu hint expanded](assets/0038-install-banner/android-phone-menu-hint.png) |
+| iPhone, Safari | `ios` — "How?" expands the Share-sheet hint | ![iPhone Safari share hint expanded](assets/0038-install-banner/ios-phone-safari-share-hint.png) |
+| iPad (tablet), Safari | `ios` | ![iPad Safari share hint expanded](assets/0038-install-banner/ios-tablet-safari-share-hint.png) |
+| iPhone, Chrome (CriOS in-app WebKit) | `none` — no banner; Add-to-Home-Screen doesn't exist there | ![iPhone Chrome shows no banner](assets/0038-install-banner/ios-phone-chrome-no-banner.png) |

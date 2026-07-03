@@ -39,13 +39,6 @@
 
 {#if visible}
   <div class="install-banner" transition:fly={{ y: 120, duration: 420, easing: backOut }}>
-    <button
-      class="install-dismiss"
-      aria-label="Not now"
-      onclick={() => dismissInstall()}
-      type="button">×</button
-    >
-
     <div class="install-main">
       <span class="install-mascot" aria-hidden="true">
         <Icon name="splotchy" class="install-mascot-icon" />
@@ -56,12 +49,18 @@
       </div>
       <button class="install-cta" onclick={onPrimary} disabled={busy} type="button">
         {#if install.mode === 'oneTap'}
-          <Icon name="home" class="install-cta-icon" />
+          <Icon name="install-homescreen" class="install-cta-icon" />
           Install
         {:else}
           How?
         {/if}
       </button>
+      <button
+        class="install-dismiss"
+        aria-label="Not now"
+        onclick={() => dismissInstall()}
+        type="button">×</button
+      >
     </div>
 
     {#if showHint && install.mode !== 'oneTap'}
@@ -69,7 +68,11 @@
         {#if install.mode === 'ios'}
           <p>
             Tap <Icon name="share-ios" class="install-inline-icon" aria-label="Share" /> Share at the
-            bottom of the screen, then choose <strong>"Add to Home Screen"</strong>.
+            bottom of the screen, then choose
+            <Icon name="add-homescreen" class="install-inline-icon" aria-hidden="true" />
+            <strong>"Add to Home Screen"</strong>. If you don't see it, tap
+            <Icon name="chevron-down" class="install-inline-icon" aria-hidden="true" />
+            <strong>"View More"</strong> first.
           </p>
         {:else}
           <p>
@@ -100,9 +103,7 @@
   }
 
   .install-dismiss {
-    position: absolute;
-    top: 4px;
-    right: 8px;
+    flex-shrink: 0;
     width: 28px;
     height: 28px;
     padding: 0;
