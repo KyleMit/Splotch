@@ -30,6 +30,15 @@ the start of every cloud session: `npm install` + `svelte-kit sync`, guarded by
 branch, every cloud session starts with deps installed — `npm run check` and the
 unit tests (`npm run test:unit`) work out of the box.
 
+**npm-version note:** `package-lock.json` is authored by npm 11 (local dev), but
+the container image ships npm 10, and the two majors rewrite lockfile metadata
+in incompatible dialects (they disagree on optional-peer entries, so no lockfile
+shape satisfies both — `--no-save` doesn't prevent the rewrite either). Two
+layers keep sessions clean: the setup script pins `npm@11` globally so the churn
+never happens, and the hook discards any lockfile diff its install produces
+(only when the lockfile was clean beforehand, so real in-session lockfile edits
+survive a resume).
+
 ### Recommended setup script (environment config)
 
 The hook covers deps, but the Playwright **E2E** tier needs a browser binary the
