@@ -3,14 +3,16 @@
 ## TODO
 
 * [ ] ipad landscape bottom row can sit flush. top status bar should have notch band
+* [ ] returned AI preview should be much bigger and allow pinch to zoom
 * [ ] include GHA versions in update-dependencies skill
 * [ ] Possibly add "Check for updates" button on about parent center tab
 * [ ] inefficent layout on iphone at tops and bottom
 * [ ] Figure out what to do with existing drawing on orientation change
-* [ ] Get rid of two row color palette
+* [ ] Get rid of two row color palette on mobile landscape view
 * [ ] Add sound effects when deleting
-* [ ] Add even more color for tall landscape view
-* [ ] Generate more fun store screenshot generation
+* [ ] Add even more color for extra tall landscape view
+* [ ] Generate more fun store screenshots
+* [ ] AI instruction for tiny marginal improvement (leave overlaid?)
 * [ ] Efficiently layout broad range of colors on small devices in advanced color picker
 * [ ] Parent center window should not bounce around in height so much when the height of content changes.  set min height.
 * Icons

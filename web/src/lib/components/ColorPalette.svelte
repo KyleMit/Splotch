@@ -8,6 +8,7 @@
     selectCustomSwatch,
   } from '$lib/state/colors.svelte';
   import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine';
+  import { scribbleGuard } from '$lib/actions/scribbleGuard';
   import { openColorPicker, buttonCenter } from '$lib/state/ui.svelte';
   import { toolState, selectPen } from '$lib/state/tool.svelte';
   import { layout } from '$lib/state/layout.svelte';
@@ -96,6 +97,7 @@
 <div
   class="color-palette"
   bind:this={paletteEl}
+  use:scribbleGuard
   onpointerdown={handlePaletteDown}
   onpointerup={handlePaletteUp}
 >

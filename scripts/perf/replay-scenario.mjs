@@ -181,6 +181,7 @@ function replayInPage({ events, recCanvas, sizePx, turbo }) {
   };
 
   const fire = (e) => {
+    const lifted = e.type === 'pointerup' || e.type === 'pointercancel';
     canvas.dispatchEvent(
       new PointerEvent(e.type, {
         pointerId: e.id,
@@ -188,6 +189,11 @@ function replayInPage({ events, recCanvas, sizePx, turbo }) {
         isPrimary: e.id === 1,
         clientX: r.left + e.x * sx,
         clientY: r.top + e.y * sy,
+        // Schema-2 recordings carry real buttons/pressure — needed to reproduce
+        // e.g. a pen contact stream whose pointerdown WebKit merged away. Older
+        // recordings synthesize the obvious values.
+        buttons: e.b ?? (lifted ? 0 : 1),
+        pressure: e.p ?? (lifted ? 0 : 0.5),
         bubbles: true,
         cancelable: true,
       })
@@ -202,6 +208,10 @@ function replayInPage({ events, recCanvas, sizePx, turbo }) {
         prevT = e.t;
       }
       if (e.kind === 'pointer') {
+        // Schema-2 recordings capture every pointer event on the page; `on` marks
+        // the ones a UI element (not the canvas) received. Those are diagnostics —
+        // replaying them on the canvas would invent strokes that never happened.
+        if (e.on) continue;
         if (e.type === 'pointerdown') strokes++;
         fire(e);
         if (e.type === 'pointerup' || e.type === 'pointercancel') snapPeak();

@@ -749,8 +749,53 @@ function startDrawing(e: PointerEvent) {
   } catch {}
 }
 
+// Every pointerdown actually delivered anywhere in the document, until its
+// up/cancel arrives. A pen contact stream whose id is missing here never got a
+// pointerdown at all — the WebKit merged-stream signature — which is what
+// licenses adoption below without stealing pointers that legitimately began on
+// a UI control (drag-to-clear's uncaptured drag, the color picker's captured
+// drag, a slide off a swatch).
+const liveDownIds = new Set<number>();
+const trackPointerDown = (e: PointerEvent) => liveDownIds.add(e.pointerId);
+const trackPointerLift = (e: PointerEvent) => liveDownIds.delete(e.pointerId);
+
+const cancelTouch = (e: TouchEvent) => e.preventDefault();
+
+// The WebKit merge quirk of POINTER_RESUME_GAP_MS, for a stream that began on a
+// UI control: a fast pen tap on e.g. a color swatch merged with the following
+// stroke drops the intervening pointerup + pointerdown, so the stroke arrives
+// as bare pointermoves — a down-less contact stream. Hover moves (buttons ===
+// 0) never match, and touch keeps its 100ms color-change debounce precisely to
+// absorb this kind of tap fallout.
+function isOrphanPenContact(e: PointerEvent) {
+  return e.pointerType === 'pen' && e.buttons !== 0 && !liveDownIds.has(e.pointerId);
+}
+
+// Pens get no implicit capture, so an orphaned stream's moves usually hit-test
+// onto the canvas (draw() adopts those directly) — but WebKit can also keep
+// delivering them to the control the merged stream started on. This
+// window-level listener catches that flavor: an orphaned pen contact move
+// physically over exposed canvas (elementFromPoint, so an open picker or a
+// floating control still wins) becomes the stroke start, and startDrawing's
+// setPointerCapture retargets the rest of the stream to the canvas.
+function adoptStrayPenStream(e: PointerEvent) {
+  if (e.target === canvas || activePointers.has(e.pointerId)) return;
+  if (!isOrphanPenContact(e)) return;
+  if (document.elementFromPoint(e.clientX, e.clientY) !== canvas) return;
+  startDrawing(e);
+}
+
 function draw(e: PointerEvent) {
   const pointerState = activePointers.get(e.pointerId);
+
+  // Canvas-targeted flavor of the merged-stream quirk (see adoptStrayPenStream):
+  // adopt the down-less stream as the stroke start instead of dropping the
+  // whole first stroke after a color pick.
+  if (!pointerState && isOrphanPenContact(e)) {
+    startDrawing(e);
+    return;
+  }
+
   if (!pointerState || !pointerState.isDrawing) return;
 
   if (PERF_MARKS) performance.mark('engine.draw:start');
@@ -1000,6 +1045,20 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   canvas.addEventListener('pointerup', stopDrawing);
   canvas.addEventListener('pointerout', stopDrawing);
   canvas.addEventListener('pointercancel', stopDrawing);
+  // iPadOS Scribble claims an Apple Pencil stroke that starts within ~450ms of
+  // a pen tap: pointer events still arrive and the engine paints, but the
+  // system never presents those frames — the ink is invisible and never shows.
+  // Cancelling the parallel TOUCH stream is the only thing that makes Scribble
+  // let go; preventDefault on the pointer events (draw() already does it) is
+  // documented and confirmed on-device NOT to help. Non-passive on purpose.
+  // The palette needs the same guard for the tap that precedes a stroke — see
+  // the scribbleGuard action.
+  canvas.addEventListener('touchstart', cancelTouch, { passive: false });
+  canvas.addEventListener('touchmove', cancelTouch, { passive: false });
+  window.addEventListener('pointerdown', trackPointerDown, true);
+  window.addEventListener('pointerup', trackPointerLift, true);
+  window.addEventListener('pointercancel', trackPointerLift, true);
+  window.addEventListener('pointermove', adoptStrayPenStream, true);
 
   // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
   // first export. Safari lacks requestIdleCallback.
@@ -1020,6 +1079,12 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
       canvas.removeEventListener('pointerup', stopDrawing);
       canvas.removeEventListener('pointerout', stopDrawing);
       canvas.removeEventListener('pointercancel', stopDrawing);
+      canvas.removeEventListener('touchstart', cancelTouch);
+      canvas.removeEventListener('touchmove', cancelTouch);
+      window.removeEventListener('pointerdown', trackPointerDown, true);
+      window.removeEventListener('pointerup', trackPointerLift, true);
+      window.removeEventListener('pointercancel', trackPointerLift, true);
+      window.removeEventListener('pointermove', adoptStrayPenStream, true);
     },
   };
 }

@@ -81,6 +81,7 @@ baseline**, and every remaining below-floor risk is already feature-detected and
 | `navigator.clipboard.writeText` | `lib/components/admin/AdminConsole.svelte:122` | Safari 13.1 | admin-only (not kid-facing) | n/a |
 | File System Access (`showDirectoryPicker` + writable handles) | `lib/drawing/folderSave.ts` | desktop Chromium 86+ only; never Firefox / Safari / mobile | ✅ `folderSaveSupported()` | folder row hidden in Parent Center; web saves stay plain downloads |
 | `createImageBitmap` | `routes/dev/engine/+page.svelte` | dev harness only | excluded from prod build | n/a |
+| `Touch.touchType` (`'stylus'`) | `lib/actions/scribbleGuard.ts` | Safari/iOS only | ✅ strict `=== 'stylus'`; undefined elsewhere → no-op | guard inert — exactly right, Scribble only exists on iPadOS |
 
 ## Polyfills & workarounds
 
@@ -95,6 +96,11 @@ Chrome 111 / Safari 16.4. The deliberate non-polyfill choices:
   cost nothing and protect the few users between iOS 15.4 and 16.4 on the web.
 - **Native-shell capabilities** (haptics, orientation lock, secure storage, filesystem, media) go
   through Capacitor plugins on device, so the web-API versions only need to work on the web floor.
+- **iPadOS Scribble** silently claims an Apple Pencil stroke that starts within ~450ms of a pen tap
+  (the events still arrive and the canvas paints, but the frames are never presented). The engine
+  cancels the canvas's touch stream and `scribbleGuard` cancels stylus taps on the palette —
+  non-passive `touchstart`/`touchmove` `preventDefault()` is the only working counter-measure;
+  cancelling the pointer events does nothing. Don't "simplify" these listeners away.
 
 ## Maintaining this
 
