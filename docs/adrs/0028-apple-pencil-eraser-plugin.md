@@ -58,8 +58,8 @@ and the first to attach a **UIKit interaction to the web view**:
   `Package.swift` edit (SPM, ADR-0020).
 - **No Android** — out of scope (see above).
 - **JS** — `web/src/lib/plugins/pencilEraser.ts`, a typed `registerPlugin('PencilEraser', …)`
-  facade with an inert `web` fallback, loaded through `lazyPluginModule()` so
-  `@capacitor/core` stays out of the SSR/prerender graph. It also exports
+  facade with an inert `web` fallback, loaded through an `__IS_CAPACITOR__`-gated lazy
+  `import()` so `@capacitor/core` stays out of the SSR/prerender graph and the web bundle. It also exports
   `initPencilEraser()`, which (only when `isNative()` and the platform is `ios`) subscribes to
   `doubleTap` and returns a cleanup that detaches the listener — synchronous-return even
   though the subscription resolves asynchronously. `DrawingCanvas.svelte`'s `onMount`

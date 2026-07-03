@@ -3,11 +3,8 @@
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { isNative, getPlatform } from '$lib/platform';
-  import { lazyPluginModule } from '$lib/nativePlugin';
   import { computeNotchBandState, type Orientation } from '$lib/notchBand';
   import { measureSafeAreaInsets } from '$lib/safeArea';
-
-  const loadStatusBar = lazyPluginModule(() => import('@capacitor/status-bar'));
 
   // Measured env(safe-area-inset-*), in CSS px — we need the number (not just
   // the CSS value) to tell a real notch from a bezel. The top and both sides
@@ -59,22 +56,27 @@
   });
 
   // Native: flip the system clock/battery icons light or dark for contrast.
+  // The literal __IS_CAPACITOR__ (here and below) keeps the status-bar plugin
+  // out of the web bundle; the inline import() resolves to the module
+  // namespace, never the plugin proxy, and repeat calls share one module.
   $effect(() => {
     const style = band.statusBarStyle;
-    if (!isNative() || !style) return;
-    loadStatusBar().then(({ StatusBar, Style }) => {
-      StatusBar.setStyle({ style: style === 'DARK' ? Style.Dark : Style.Light }).catch(() => {});
-    });
+    if (__IS_CAPACITOR__ && isNative() && style) {
+      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+        StatusBar.setStyle({ style: style === 'DARK' ? Style.Dark : Style.Light }).catch(() => {});
+      });
+    }
   });
 
   // Android native: hide the status bar in landscape to reclaim the long top
   // edge as canvas; show it again in portrait. null elsewhere = leave it alone.
   $effect(() => {
     const hidden = band.statusBarHidden;
-    if (!isNative() || hidden === null) return;
-    loadStatusBar().then(({ StatusBar }) => {
-      (hidden ? StatusBar.hide() : StatusBar.show()).catch(() => {});
-    });
+    if (__IS_CAPACITOR__ && isNative() && hidden !== null) {
+      import('@capacitor/status-bar').then(({ StatusBar }) => {
+        (hidden ? StatusBar.hide() : StatusBar.show()).catch(() => {});
+      });
+    }
   });
 </script>
 

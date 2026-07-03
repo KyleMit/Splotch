@@ -9,22 +9,6 @@
 Findings from a full-repo audit pass, ordered by impact. Bugs and correctness first,
 then performance, then maintainability/architecture sweeps.
 
-### Performance
-
-- [ ] **[Perf] Web bundle ships and SW-precaches native-only Capacitor chunks (~16 KB measured in one build)** — File(s): `web/src/lib/orientation.ts`, `web/src/lib/haptics.ts`, `web/src/lib/storage.ts`, `web/src/lib/secureStorage.ts`, `web/src/lib/state/network.svelte.ts`, `web/src/lib/drawing/screenshot.ts`, `web/src/lib/components/DrawingCanvas.svelte` (via `$lib/plugins/pencilEraser`), `web/src/lib/components/NotchBand.svelte`, `web/src/lib/platform.ts`
-  Chunks for `@capacitor/core`, status-bar, haptics, screen-orientation, preferences, network,
-  community media, pencilEraser, and DeviceLock ship in the web output and `sw.js` precaches
-  all of them, though every call site is gated on `isNative()` — always false on web (the
-  ~16 KB figure came from one `npm run build`; re-measure, since the plugin wrappers in
-  `web/src/lib/plugins/` also statically pull `@capacitor/core`). Use the literal
-  `__IS_CAPACITOR__` at each branch/thunk site so Vite's define substitution lets Rollup drop
-  the dynamic imports (`isNative()` is a runtime `globalThis.Capacitor` check that can't
-  tree-shake across modules) — this is the CLAUDE.md single-signal rule. Note
-  `+page.svelte`'s `isNative()` gate imports no plugin, so it needs no change.
-  Caveats: add `__IS_CAPACITOR__` to `web/vitest.config.ts` defines (or keep `typeof` guards);
-  iOS-vs-Android `getPlatform()` checks must stay runtime (one native bundle). Touch one gate
-  at a time and re-verify the native build still loads plugins.
-
 ### Maintainability & architecture
 
 - [ ] **[Maint] Five components independently re-implement orientation/viewport tracking** — File(s): `web/src/lib/components/ActionsPanel.svelte`, `ColoringBook.svelte`, `ClearButton.svelte`, `NotchBand.svelte`, `DrawingCanvas.svelte`, `web/src/lib/state/layout.svelte.ts`, `web/src/lib/safeArea.ts`

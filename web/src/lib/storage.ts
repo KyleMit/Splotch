@@ -43,15 +43,26 @@ function safeLocalStorage(op: () => void) {
 
 // Load the durable store lazily. Returns the module namespace, not the
 // Preferences proxy — see lazyPluginModule for why that distinction matters.
-const getPrefs = lazyPluginModule(() => import('@capacitor/preferences'));
+// The __IS_CAPACITOR__ ternary keeps the import() itself out of the web bundle
+// (Rollup retains the thunk even when every caller is dead code); the reject arm
+// is unreachable because every call site is gated on __IS_CAPACITOR__ too.
+const getPrefs = lazyPluginModule(() =>
+  __IS_CAPACITOR__
+    ? import('@capacitor/preferences')
+    : Promise.reject(new Error('native-only plugin'))
+);
 
 // Fire-and-forget durable mirror. Never throws into the caller — a failed
-// durable write just means we fall back to the localStorage copy.
+// durable write just means we fall back to the localStorage copy. The literal
+// __IS_CAPACITOR__ guards (here and below) make the Preferences paths
+// compile-time dead on web so Rollup drops the plugin chunk; isNative() alone
+// is a runtime check it can't tree-shake.
 function mirror(key: string, value: string) {
-  if (!isNative()) return;
-  getPrefs()
-    .then(({ Preferences }) => Preferences.set({ key, value: String(value) }))
-    .catch(() => {});
+  if (__IS_CAPACITOR__ && isNative()) {
+    getPrefs()
+      .then(({ Preferences }) => Preferences.set({ key, value: String(value) }))
+      .catch(() => {});
+  }
 }
 
 export function readBool(key: string, fallback: boolean): boolean {
@@ -91,7 +102,7 @@ export function removeKey(key: string) {
   track(key);
   if (!browser) return;
   safeLocalStorage(() => localStorage.removeItem(key));
-  if (isNative()) {
+  if (__IS_CAPACITOR__ && isNative()) {
     getPrefs()
       .then(({ Preferences }) => Preferences.remove({ key }))
       .catch(() => {});
@@ -122,28 +133,29 @@ export function writeInt(key: string, value: number) {
  * Returns true if localStorage was changed, so callers can reload their stores.
  */
 export async function hydrateDurableStorage() {
-  if (!isNative()) return false;
   let restored = false;
-  try {
-    const { Preferences } = await getPrefs();
-    // Fire every durable get concurrently rather than one serial bridge
-    // round-trip per key — ~15 keys on the cold-start critical path.
-    const keys = [...managedKeys];
-    const durable = await Promise.all(keys.map((key) => Preferences.get({ key })));
-    const backups: Promise<unknown>[] = [];
-    keys.forEach((key, i) => {
-      const local = localStorage.getItem(key);
-      const { value } = durable[i];
-      if (local === null && value !== null) {
-        localStorage.setItem(key, value); // WebView lost it — recover from durable store
-        restored = true;
-      } else if (local !== null && value === null) {
-        backups.push(Preferences.set({ key, value: local })); // back up the existing value
-      }
-    });
-    await Promise.all(backups);
-  } catch {
-    // If the durable layer is unavailable we simply keep the localStorage copy.
+  if (__IS_CAPACITOR__ && isNative()) {
+    try {
+      const { Preferences } = await getPrefs();
+      // Fire every durable get concurrently rather than one serial bridge
+      // round-trip per key — ~15 keys on the cold-start critical path.
+      const keys = [...managedKeys];
+      const durable = await Promise.all(keys.map((key) => Preferences.get({ key })));
+      const backups: Promise<unknown>[] = [];
+      keys.forEach((key, i) => {
+        const local = localStorage.getItem(key);
+        const { value } = durable[i];
+        if (local === null && value !== null) {
+          localStorage.setItem(key, value); // WebView lost it — recover from durable store
+          restored = true;
+        } else if (local !== null && value === null) {
+          backups.push(Preferences.set({ key, value: local })); // back up the existing value
+        }
+      });
+      await Promise.all(backups);
+    } catch {
+      // If the durable layer is unavailable we simply keep the localStorage copy.
+    }
   }
   return restored;
 }

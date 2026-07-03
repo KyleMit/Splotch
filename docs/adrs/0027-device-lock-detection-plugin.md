@@ -53,8 +53,9 @@ Add a minimal local Capacitor plugin, **`DeviceLock`**, with a single method
   `registerPlugin(DeviceLockPlugin.class)` **before** `super.onCreate` in `MainActivity`.
 - **JS** — `web/src/lib/plugins/deviceLock.ts`, a typed `registerPlugin('DeviceLock', …)`
   facade whose `web` fallback always resolves `{ locked: false }` (the web genuinely can't
-  observe either state). Loaded through `lazyPluginModule()` so `@capacitor/core` stays out
-  of the SSR/prerender graph (the same convention `NotchBand.svelte` uses).
+  observe either state). Loaded through an `__IS_CAPACITOR__`-gated lazy `import()` so
+  `@capacitor/core` stays out of the SSR/prerender graph and the web bundle (the same
+  convention `NotchBand.svelte` uses).
 
 `SetupInstructions.svelte` re-checks **on Parent Center open only** — reusing its existing
 `$effect(open)` re-detect pattern with a `cancelled` guard — rather than subscribing to a
@@ -69,7 +70,8 @@ surface to one method, symmetric across platforms.
 - **+** Establishes the repo's pattern for custom native plugins (iOS: `@objc` `CAPPlugin`
   + `CAPBridgedPlugin` Swift class **explicitly registered** in a `CAPBridgeViewController`
   subclass's `capacitorDidLoad()`; Android: `@CapacitorPlugin` + `registerPlugin`; JS: a
-  typed `registerPlugin` facade with a web fallback loaded via `lazyPluginModule`) —
+  typed `registerPlugin` facade with a web fallback loaded via an `__IS_CAPACITOR__`-gated
+  lazy `import()`) —
   documented in the `mobile` skill, including the iOS no-auto-discovery trap.
 - **−** First hand-written native code beyond the activity/delegate overrides: three native
   files (two Swift on iOS — the plugin + the VC subclass — plus Java on Android), the iOS

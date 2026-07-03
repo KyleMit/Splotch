@@ -22,10 +22,6 @@
   import { settings } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
   import { isNative } from '$lib/platform';
-  import { lazyPluginModule } from '$lib/nativePlugin';
-
-  // Loaded lazily and only on native so @capacitor/core never enters the web/SSR graph.
-  const loadPencilEraser = lazyPluginModule(() => import('$lib/plugins/pencilEraser'));
 
   let canvasEl: HTMLCanvasElement;
 
@@ -75,10 +71,12 @@
     window.addEventListener('orientationchange', pushInsets);
 
     // Apple Pencil double-tap → toggle eraser (iOS native only). Subscription is async, so
-    // hold the cleanup behind a ref the teardown can call once it resolves.
+    // hold the cleanup behind a ref the teardown can call once it resolves. The literal
+    // __IS_CAPACITOR__ keeps the wrapper (and @capacitor/core) out of the web bundle;
+    // the inline import() resolves to the module namespace, never the plugin proxy.
     let pencilCleanup: (() => void) | undefined;
-    if (isNative()) {
-      loadPencilEraser().then(({ initPencilEraser }) => {
+    if (__IS_CAPACITOR__ && isNative()) {
+      import('$lib/plugins/pencilEraser').then(({ initPencilEraser }) => {
         pencilCleanup = initPencilEraser();
       });
     }

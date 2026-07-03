@@ -40,8 +40,8 @@ where it's the one that reaches the strip:
   Android. A CSS `background-color` transition gives the animate-in for free.
 - **`<meta name="theme-color">`** — kept in sync because it is the *only* thing
   that tints the Android web status bar; a harmless no-op elsewhere.
-- **`@capacitor/status-bar` `setStyle`** (native only, lazy-loaded via
-  `lazyPluginModule`) — flips the system clock/battery icons light or dark for
+- **`@capacitor/status-bar` `setStyle`** (native only, lazy-loaded via an
+  `__IS_CAPACITOR__`-gated `import()` so the plugin stays out of the web bundle) — flips the system clock/battery icons light or dark for
   contrast against the band, by luminance (`isLightColor`, shared with
   `getRingColor` in `colorRing.ts`). We use `setStyle` **only** — never
   `setBackgroundColor` — so the CSS band remains the single source of the color.

@@ -19,7 +19,9 @@ export function initNetwork() {
   window.addEventListener('online', () => (network.online = true));
   window.addEventListener('offline', () => (network.online = false));
 
-  if (isNative()) {
+  // __IS_CAPACITOR__ makes the branch compile-time dead on web so Rollup drops
+  // the plugin chunk (isNative() alone can't tree-shake across modules).
+  if (__IS_CAPACITOR__ && isNative()) {
     import('@capacitor/network')
       .then(({ Network }) => {
         Network.getStatus().then((status) => (network.online = status.connected));

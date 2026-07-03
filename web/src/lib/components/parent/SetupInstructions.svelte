@@ -1,6 +1,5 @@
 <script lang="ts">
   import { isNative, getPlatform } from '$lib/platform';
-  import { lazyPluginModule } from '$lib/nativePlugin';
   import Icon from '../Icon.svelte';
   import { install, promptInstall, installDeviceOs } from '$lib/state/install.svelte';
 
@@ -14,8 +13,6 @@
       installing = false;
     }
   }
-
-  const loadDeviceLock = lazyPluginModule(() => import('$lib/plugins/deviceLock'));
 
   // `open` flips true when the Parent Center modal opens; we re-run platform/OS
   // detection then so the instructions match the current device and install state.
@@ -57,21 +54,25 @@
 
     // Lock state is a native-only async query, so reset and re-detect each open. The
     // `cancelled` guard drops a stale result if the modal closes/reopens mid-flight.
+    // The literal __IS_CAPACITOR__ keeps the DeviceLock wrapper (and @capacitor/core)
+    // out of the web bundle; the inline import() resolves to the module namespace,
+    // never the plugin proxy.
     deviceLocked = false;
-    if (!native) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { DeviceLock } = await loadDeviceLock();
-        const { locked } = await DeviceLock.isLocked();
-        if (!cancelled) deviceLocked = locked;
-      } catch {
-        // Plugin missing/unavailable — treat as unlocked (show the enable steps).
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    if (__IS_CAPACITOR__ && native) {
+      let cancelled = false;
+      (async () => {
+        try {
+          const { DeviceLock } = await import('$lib/plugins/deviceLock');
+          const { locked } = await DeviceLock.isLocked();
+          if (!cancelled) deviceLocked = locked;
+        } catch {
+          // Plugin missing/unavailable — treat as unlocked (show the enable steps).
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
   });
 </script>
 
