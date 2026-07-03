@@ -176,6 +176,66 @@ test('the palette leaves finger touch taps uncancelled (Scribble guard scope)', 
   expect(fingerPrevented).toBe(false);
 });
 
+// Chromium cannot construct a Touch with touchType (Safari-only), so these
+// stub changedTouches exactly like scribbleGuard.test.ts. The guard's
+// discrimination logic is unit-tested; what e2e pins down is that the guard is
+// ATTACHED to each surface a pen taps right before drawing — the gap that
+// shipped the picker unguarded. The real Scribble swallowing needs trusted
+// on-device input (ADR-0038), so guard attachment is the automatable proxy.
+function stylusTouchStartPrevented(page: Page, selector: string): Promise<boolean> {
+  return page.evaluate((sel) => {
+    const target = document.querySelector(sel) as HTMLElement;
+    const e = new Event('touchstart', { cancelable: true, bubbles: true });
+    Object.defineProperty(e, 'changedTouches', { value: [{ touchType: 'stylus' }] });
+    target.dispatchEvent(e);
+    return e.defaultPrevented;
+  }, selector);
+}
+
+test('a stylus tap on a color-picker hexagon has its touch stream cancelled (Scribble guard)', async ({
+  page,
+}) => {
+  await gotoApp(page);
+
+  const customSwatch = page.locator('button.color-swatch[data-color="custom"]');
+  await expect(async () => {
+    await customSwatch.click({ timeout: 1000 });
+    await expect(page.locator('#color-picker')).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
+
+  expect(await stylusTouchStartPrevented(page, '#color-picker .hexagon')).toBe(true);
+});
+
+test('a stylus tap on an action button has its touch stream cancelled (Scribble guard)', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  expect(await stylusTouchStartPrevented(page, '#eraserButton')).toBe(true);
+});
+
+// On iPadOS the guard's cancelled touchstart suppresses the tap's synthesized
+// click, so a stylus tap reaches a button only as pointerdown+pointerup. The
+// buttons must activate from that alone (scribbleTap) — click-driven buttons
+// would sit dead under the pen.
+test('action buttons activate on a pointer press alone, without a synthesized click (Scribble guard)', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const eraser = page.locator('#eraserButton');
+  await expect(eraser).toHaveAttribute('aria-pressed', 'false');
+  await page.evaluate(() => {
+    const btn = document.getElementById('eraserButton')!;
+    const opts = { pointerId: 42, pointerType: 'pen', bubbles: true, cancelable: true };
+    btn.dispatchEvent(new PointerEvent('pointerdown', opts));
+    btn.dispatchEvent(new PointerEvent('pointerup', opts));
+  });
+  await expect(eraser).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('picking a color exits eraser mode', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
