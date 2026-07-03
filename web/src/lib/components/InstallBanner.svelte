@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fly, fade } from 'svelte/transition';
-  import { backOut } from 'svelte/easing';
+  import { backOut, cubicIn } from 'svelte/easing';
   import Icon from './Icon.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { install, promptInstall, dismissInstall } from '$lib/state/install.svelte';
@@ -9,10 +9,19 @@
   // and never competes with the very first finger-on-screen moment.
   const STROKES_BEFORE_PROMPT = 3;
 
+  // The banner sits above the corner controls (actions toggle, Parent Help), so
+  // it must not linger: once the child has kept drawing past it, clear it and
+  // hand off to the Parent Center setup guide with a short parting message.
+  const STROKES_BEFORE_AUTO_CLEAR = 5;
+  const PARTING_MESSAGE_MS = 4000;
+
   // iOS / Android manual flows have no one-tap API, so the button expands an
   // inline how-to instead of firing a dialog.
   let showHint = $state(false);
   let busy = $state(false);
+  let parting = $state(false);
+  let shownAtStroke: number | null = null;
+  let exitIntoParentButton = false;
 
   const visible = $derived(
     !install.installed &&
@@ -20,6 +29,40 @@
       install.mode !== 'none' &&
       canvasState.strokeCount >= STROKES_BEFORE_PROMPT
   );
+
+  $effect(() => {
+    if (!visible || parting) return;
+    shownAtStroke ??= canvasState.strokeCount;
+    // A parent mid-interaction (reading the expanded hint, native dialog up)
+    // outranks the countdown — only auto-clear an ignored banner.
+    if (showHint || busy) return;
+    if (canvasState.strokeCount < shownAtStroke + STROKES_BEFORE_AUTO_CLEAR) return;
+    parting = true;
+    dismissInstall();
+    setTimeout(() => {
+      exitIntoParentButton = true;
+      parting = false;
+    }, PARTING_MESSAGE_MS);
+  });
+
+  // Auto-clear exit: shrink the pill into the Parent Help button so the parting
+  // message's "it lives in the Parent Center" lands visually too. Manual
+  // dismiss / completed install keep the plain fly-down.
+  function bannerExit(node: HTMLElement) {
+    if (!exitIntoParentButton) return fly(node, { y: 120, duration: 300 });
+    const target = document.getElementById('parentHelpButton')?.getBoundingClientRect();
+    const from = node.getBoundingClientRect();
+    const dx = target ? target.left + target.width / 2 - (from.left + from.width / 2) : 0;
+    const dy = target ? target.top + target.height / 2 - (from.top + from.height / 2) : 120;
+    return {
+      duration: 550,
+      easing: cubicIn,
+      css: (t: number, u: number) =>
+        // The resting position already carries translateX(-50%) — restate it so
+        // the transition's transform doesn't clobber the centering.
+        `transform: translateX(calc(-50% + ${u * dx}px)) translateY(${u * dy}px) scale(${t}); opacity: ${t}`,
+    };
+  }
 
   async function onPrimary() {
     if (install.mode === 'oneTap') {
@@ -37,50 +80,67 @@
   }
 </script>
 
-{#if visible}
-  <div class="install-banner" transition:fly={{ y: 120, duration: 420, easing: backOut }}>
-    <div class="install-main">
-      <span class="install-mascot" aria-hidden="true">
-        <Icon name="splotchy" class="install-mascot-icon" />
-      </span>
-      <div class="install-copy">
-        <strong>Add Splotch to your home screen</strong>
-        <span class="install-sub">Opens full-screen, just like a real app</span>
+{#if visible || parting}
+  <div
+    class="install-banner"
+    in:fly={{ y: 120, duration: 420, easing: backOut }}
+    out:bannerExit
+  >
+    {#if parting}
+      <div class="install-parting" in:fade={{ duration: 200 }}>
+        <span class="install-mascot" aria-hidden="true">
+          <Icon name="splotchy" class="install-mascot-icon" />
+        </span>
+        <p>
+          No rush — these steps are always in the
+          <Icon name="parent" class="install-inline-icon" aria-hidden="true" />
+          <strong>Parent Center</strong>.
+        </p>
       </div>
-      <button class="install-cta" onclick={onPrimary} disabled={busy} type="button">
-        {#if install.mode === 'oneTap'}
-          <Icon name="install-homescreen" class="install-cta-icon" />
-          Install
-        {:else}
-          How?
-        {/if}
-      </button>
-      <button
-        class="install-dismiss"
-        aria-label="Not now"
-        onclick={() => dismissInstall()}
-        type="button">×</button
-      >
-    </div>
+    {:else}
+      <div class="install-main">
+        <span class="install-mascot" aria-hidden="true">
+          <Icon name="splotchy" class="install-mascot-icon" />
+        </span>
+        <div class="install-copy">
+          <strong>Add Splotch to your home screen</strong>
+          <span class="install-sub">Opens full-screen, just like a real app</span>
+        </div>
+        <button class="install-cta" onclick={onPrimary} disabled={busy} type="button">
+          {#if install.mode === 'oneTap'}
+            <Icon name="install-homescreen" class="install-cta-icon" />
+            Install
+          {:else}
+            How?
+          {/if}
+        </button>
+        <button
+          class="install-dismiss"
+          aria-label="Not now"
+          onclick={() => dismissInstall()}
+          type="button">×</button
+        >
+      </div>
 
-    {#if showHint && install.mode !== 'oneTap'}
-      <div class="install-hint" transition:fade={{ duration: 160 }}>
-        {#if install.mode === 'ios'}
-          <p>
-            Tap <Icon name="share-ios" class="install-inline-icon" aria-label="Share" /> Share at the
-            bottom of the screen, then choose
-            <Icon name="add-homescreen" class="install-inline-icon" aria-hidden="true" />
-            <strong>"Add to Home Screen"</strong>. If you don't see it, tap
-            <Icon name="chevron-down" class="install-inline-icon" aria-hidden="true" />
-            <strong>"View More"</strong> first.
-          </p>
-        {:else}
-          <p>
-            Open the <strong>⋮</strong> menu, then tap
-            <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.
-          </p>
-        {/if}
-      </div>
+      {#if showHint && install.mode !== 'oneTap'}
+        <div class="install-hint" transition:fade={{ duration: 160 }}>
+          {#if install.mode === 'ios'}
+            <p>
+              Tap <Icon name="share-ios" class="install-inline-icon" aria-label="Share" /> Share at
+              the bottom of the screen, then choose
+              <Icon name="add-homescreen" class="install-inline-icon" aria-hidden="true" />
+              <strong>"Add to Home Screen"</strong>. If you don't see it, tap
+              <Icon name="chevron-down" class="install-inline-icon" aria-hidden="true" />
+              <strong>"View More"</strong> first.
+            </p>
+          {:else}
+            <p>
+              Open the <strong>⋮</strong> menu, then tap
+              <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.
+            </p>
+          {/if}
+        </div>
+      {/if}
     {/if}
   </div>
 {/if}
@@ -91,7 +151,9 @@
     left: 50%;
     bottom: calc(16px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
-    z-index: 850;
+    /* Above the corner controls (actions toggle 901, Parent Help 900): on phones
+       the banner overlaps them, and the auto-clear keeps that takeover short. */
+    z-index: 950;
     width: min(92vw, 420px);
     box-sizing: border-box;
     padding: 14px 16px;
@@ -124,6 +186,20 @@
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+
+  .install-parting {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .install-parting p {
+    margin: 0;
+    color: #6a6258;
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: left;
   }
 
   .install-mascot {

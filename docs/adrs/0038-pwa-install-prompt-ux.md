@@ -68,6 +68,19 @@ Two surfaces consume the state:
    mounts between strokes — never while a finger is mid-stroke. On `oneTap` its
    button fires the native dialog; on `ios`/`android` it expands an inline
    how-to. It is dismissible, and the dismissal is remembered.
+
+   On phones the banner is wider than the gap between the bottom-corner
+   controls (actions toggle, Parent Help button), and shrinking it to fit would
+   cram the parent-facing copy into ~260px. Instead it stacks **above** those
+   controls (`z-index` over their 900/901), and the takeover is kept short: five
+   strokes after it appears — proof the child kept drawing and no parent is
+   engaging (the countdown pauses while the how-to is expanded or the native
+   dialog is up) — it auto-dismisses. The auto-clear persists the same
+   `dismissed` flag as the × button, briefly swaps the pill to a parting message
+   ("these steps are always in the Parent Center"), then animates the pill into
+   the Parent Help button so the message lands spatially too. Lifting the banner
+   above the corner controls instead was rejected: with the actions panel
+   expanded the required lift would push the banner toward mid-canvas.
 2. **Parent Center → Setup tab** — the existing step list, upgraded to show the
    one-tap button above the per-OS manual steps when available (the prompt is
    browser-wide — Android *or* desktop Chromium — so it belongs to no single OS
