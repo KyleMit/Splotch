@@ -87,11 +87,14 @@ async function login() {
   throw new Error('login kept hitting the rate limiter');
 }
 
+let session;
+let probe;
+
 async function run() {
-  const session = await login();
+  session = await login();
   check('admin login → session', /^[a-f0-9]{64}$/.test(session ?? ''), `got ${session}`);
   const auth = { Authorization: `Bearer ${session}` };
-  const probe = `blobs-smoke-${randomUUID()}`;
+  probe = `blobs-smoke-${randomUUID()}`;
 
   // The core assertion: a deployed function with a working Blobs context reports
   // persistent:true. V1-function regression (no NETLIFY_BLOBS_CONTEXT) → false.
@@ -143,23 +146,22 @@ async function run() {
     removed.status === 200 && !removedBody?.tokens?.includes(probe),
     `got ${removed.status}`
   );
-
-  return { session, probe };
 }
 
 console.log(`[blobs-smoke] target: ${BASE}\n`);
-let ctx;
 try {
-  ctx = await run();
+  await run();
 } catch (err) {
   failed++;
   console.error(`\nFATAL: ${err.message}`);
-  // Best-effort cleanup if we got far enough to add the probe.
-  if (ctx?.session && ctx?.probe) {
+} finally {
+  // Best-effort cleanup if we got far enough to add the probe (idempotent, so
+  // a re-delete after the in-run cleanup is harmless).
+  if (session && probe) {
     await del(
       '/api/admin/tokens',
-      { Authorization: `Bearer ${ctx.session}` },
-      { token: ctx.probe }
+      { Authorization: `Bearer ${session}` },
+      { token: probe }
     ).catch(() => {});
   }
 }

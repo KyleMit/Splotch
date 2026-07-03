@@ -11,14 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Bugs & correctness
 
-- [ ] **[Bug] `blobs-smoke.mjs` failure cleanup is dead code — failed runs leave probe tokens in the production Blobs store** — File(s): `scripts/blobs-smoke.mjs` (lines 90–165)
-  The FATAL catch does `if (ctx?.session && ctx?.probe) { …DELETE… }`, but `ctx` is only
-  assigned when `run()` *resolves*, and `run()` only returns after its own DELETE already
-  succeeded — so on any throw mid-run the cleanup never fires and the `blobs-smoke-<uuid>`
-  token stays in the live site-wide allowlist (this runs on every deploy via `blobs-smoke.yml`).
-  Fix: hoist `session`/`probe` to module scope, assign them as they're created, and do the
-  DELETE in a `finally`.
-
 - [ ] **[Bug] PWA update module: non-idempotent init, redirect-loop risk, debug leftovers** — File(s): `web/src/lib/pwa/updates.ts`, caller `web/src/routes/+page.svelte`
   (a) `/privacy` is client-side navigable from the About tab, so returning to `/` remounts
   `+page.svelte` and re-runs `initPWAUpdates()`: the `visibilitychange`/`focus` listeners
