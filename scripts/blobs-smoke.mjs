@@ -158,11 +158,9 @@ try {
   // Best-effort cleanup if we got far enough to add the probe (idempotent, so
   // a re-delete after the in-run cleanup is harmless).
   if (session && probe) {
-    await del(
-      '/api/admin/tokens',
-      { Authorization: `Bearer ${session}` },
-      { token: probe }
-    ).catch(() => {});
+    await del('/api/admin/tokens', { Authorization: `Bearer ${session}` }, { token: probe }).catch(
+      () => {}
+    );
   }
 }
 

@@ -11,15 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Performance
 
-- [ ] **[Perf] ColorPicker drag scans ~81 hexagons with `getBoundingClientRect` per pointermove** — File(s): `web/src/lib/components/ColorPicker.svelte` (lines 153–205)
-  While dragging, pointer positions in clip-path gaps (the common Apple Pencil case this code
-  exists for) fall through to `findNearestHexagon`, which runs `querySelectorAll('.hexagon')`
-  plus a rect read per hexagon per move — and each move's `hoveredHex` class flip invalidates
-  layout, so the next move's reads force a fresh reflow (~81 forced-layout reads per pointer
-  event). The grid is static while the dialog is open: snapshot `{ hex, cx, cy }` centers once
-  on pointerdown or dialog open (invalidate on resize) and do nearest-neighbor math against the
-  cached array; `document.elementFromPoint` can be dropped once centers are cached.
-
 - [ ] **[Perf] `resizeCanvas` does an unthrottled wipe + command replay on every resize event** — File(s): `web/src/lib/drawing/engine.ts` (lines 282–319, listener ~1037)
   A desktop window-edge drag fires resize continuously; each event runs backing-store
   reassignment (which wipes the canvas), possible `growCanvas` reallocation + copy, and
