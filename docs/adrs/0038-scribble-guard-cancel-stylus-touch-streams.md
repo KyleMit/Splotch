@@ -41,29 +41,36 @@ Two guards, scoped by what each surface can afford:
 - **Canvas** (`web/src/lib/drawing/engine.ts`, `initDrawingCanvas`): non-passive
   `touchstart`/`touchmove` → `preventDefault()` for **all** touches. The canvas needs no click
   synthesis and already has `touch-action: none`, so cancelling everything is free.
-- **Color palette** (`web/src/lib/actions/scribbleGuard.ts`, applied via `use:scribbleGuard` in
-  `ColorPalette.svelte`): non-passive `touchstart`/`touchmove`/`touchend` → `preventDefault()` only
+- **Every tappable control near the canvas** (`web/src/lib/actions/scribbleGuard.ts`, applied via
+  `use:scribbleGuard` in `ColorPalette.svelte`, `ColorPicker.svelte` — where the `<dialog>` guard
+  also covers backdrop taps, since backdrop events target the dialog element — and
+  `ActionsPanel.svelte`): non-passive `touchstart`/`touchmove`/`touchend` → `preventDefault()` only
   when every changed touch has `touchType === 'stylus'` (a Safari-only `Touch` field — see the
   `docs/COMPATIBILITY.md` risk register). Cancelling `touchstart` suppresses the synthesized
-  `click`, so finger touches must pass through untouched: the palette itself is pointerup-driven,
-  but assistive tech and any future click wiring stay safe, and on non-iOS browsers `touchType` is
-  `undefined` so the guard is inert.
+  `click`, so finger touches must pass through untouched: on non-iOS browsers `touchType` is
+  `undefined` and the guard is inert.
+
+Suppressing the stylus click synthesis means a guarded surface cannot rely on `click`. The palette
+and picker were already pointerup-driven; ActionsPanel's buttons were click-driven and now activate
+through the companion action `scribbleTap` (same file): pointerup gated on a matching pointerdown
+on the same control (so an uncaptured drag that merely ends on a button doesn't fire it), with
+`click` kept solely for keyboard/assistive-tech activation (`detail === 0`) and a real pointer's
+trailing click ignored so nothing double-fires where the guard is inert. Any future control a pen
+can tap right before drawing gets `use:scribbleGuard` on its surface and `use:scribbleTap` instead
+of `onclick`.
 
 Invariant: these listeners are **not** redundant with the pointer-event `preventDefault()` calls
 next to them and must not be "simplified" away — cancelling pointer events does nothing to
 Scribble. Non-passive registration is load-bearing.
-
-Known gap, accepted for now: click-driven controls (ActionsPanel's undo/eraser/etc.) are unguarded,
-so a pen tap there followed by an instant stroke can still be swallowed. Guarding them means
-converting them off `click` (cancelling their touchstart would break finger taps). Extend
-`scribbleGuard` to them if that flow shows up in practice.
 
 ## Consequences
 
 - + The reported bug — first Pencil stroke after a color pick never renders — is fixed with Scribble
   left enabled, on the web app and (same WebKit) the iOS shell.
 - + `scribbleGuard` is a reusable action: any pointer-driven control a pen taps right before drawing
-  can adopt it with one `use:`.
+  can adopt it with one `use:`; click-driven controls pair it with `scribbleTap`.
+- - Pen taps on guarded controls lose iOS's tap-synthesized `:active` press feedback (the cancelled
+  touchstart never arms it) — cosmetic, pen-only.
 - + The diagnosis toolchain this produced (schema-3 recorder with pixel probes + engine marks,
   `ipad-experiments.js` toggles) is reusable for future device-only input bugs.
 - - Scribble handwriting-to-text into the app is impossible on guarded surfaces — irrelevant here
@@ -71,6 +78,7 @@ converting them off `click` (cancelling their touchstart would break finger taps
 - - The stylus/finger split rests on Safari-only `Touch.touchType`; if WebKit ever drops or changes
   it, the palette guard silently stops working (the canvas guard, which carries most of the fix,
   does not depend on it).
-- - Playwright/Chromium cannot construct stylus touches, so the discrimination logic is unit-tested
-  (`scribbleGuard.test.ts`) while e2e covers only the canvas guard and the finger pass-through;
-  full verification remains a manual on-device check.
+- - Playwright/Chromium cannot construct stylus touches, so the discrimination logic and the
+  `scribbleTap` activation/dedup rules are unit-tested (`scribbleGuard.test.ts`) while e2e covers
+  only the canvas guard and the finger pass-through; full verification remains a manual on-device
+  check.

@@ -45,6 +45,7 @@
   * [ ] Export/import
 * Bugs
   * [ ] Sometimes it doesn't register clicks on color changes
+  * [ ] Drawing sound keeps playing when a mid-stroke swatch tap ends the stroke — `releaseAllPointers()` (engine.ts) clears the pointers but never fires `onDrawStopCallback`, unlike `stopDrawing()`
 * Controls
   * [ ] Brush type (blend mode with previous drawing)
 

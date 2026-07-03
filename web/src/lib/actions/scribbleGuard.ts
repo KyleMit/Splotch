@@ -33,3 +33,48 @@ export function scribbleGuard(node: HTMLElement) {
     },
   };
 }
+
+// Companion for click-driven controls under scribbleGuard: cancelling a stylus
+// tap's touchstart also suppresses its synthesized click, so activation moves
+// to pointerup. The press must have started on the same control with the same
+// pointer (pen gets no implicit capture, so a drag that merely ends on the
+// control sees no matching pointerdown and never fires it; sliding off clears
+// the press via pointerleave). click stays wired for keyboard/assistive-tech
+// activation — those clicks have detail 0, no pointer press — while a real
+// pointer's trailing click (detail ≥ 1) is ignored, so the control never
+// double-fires where the guard is inert (finger, mouse, stylus outside iPadOS).
+export function scribbleTap(node: HTMLElement, activate: () => void) {
+  let current = activate;
+  let pressedId: number | null = null;
+  const down = (e: PointerEvent) => {
+    pressedId = e.pointerId;
+  };
+  const clearPress = () => {
+    pressedId = null;
+  };
+  const up = (e: PointerEvent) => {
+    if (e.pointerId !== pressedId) return;
+    pressedId = null;
+    current();
+  };
+  const click = (e: MouseEvent) => {
+    if (e.detail === 0) current();
+  };
+  node.addEventListener('pointerdown', down);
+  node.addEventListener('pointerup', up);
+  node.addEventListener('pointercancel', clearPress);
+  node.addEventListener('pointerleave', clearPress);
+  node.addEventListener('click', click);
+  return {
+    update(next: () => void) {
+      current = next;
+    },
+    destroy() {
+      node.removeEventListener('pointerdown', down);
+      node.removeEventListener('pointerup', up);
+      node.removeEventListener('pointercancel', clearPress);
+      node.removeEventListener('pointerleave', clearPress);
+      node.removeEventListener('click', click);
+    },
+  };
+}

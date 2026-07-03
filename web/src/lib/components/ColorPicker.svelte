@@ -4,6 +4,7 @@
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { layout } from '$lib/state/layout.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import { scribbleGuard } from '$lib/actions/scribbleGuard';
 
   // Static palette grid. The original kept it in HTML; here it's a data-driven
   // {#each} so the template stays declarative and rows can be lazily hidden via
@@ -235,9 +236,15 @@
   }
 </script>
 
+<!-- scribbleGuard covers the hexagons AND the backdrop (backdrop events target
+     the <dialog> itself): a pen tap that picks a color or dismisses the picker
+     must not arm Scribble against the stroke that follows. Selection is
+     pointerup-driven and backdrop dismissal is pointerdown-driven, so
+     suppressing the stylus click synthesis costs nothing here. -->
 <dialog
   id="color-picker"
   class="color-picker modal-dialog modal-fly-in"
+  use:scribbleGuard
   use:modalDialog={() => ({
     open: ui.colorPickerOpen,
     origin: ui.colorPickerOrigin,
