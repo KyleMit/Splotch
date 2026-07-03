@@ -19,9 +19,6 @@ pages last.
 
 ### Toddler-facing drawing UI (highest priority — native touch app)
 
-- [ ] **[Bug] Guard AiImageResult download hover** — File(s): `src/lib/components/AiImageResult.svelte`
-  `.ai-result-download:hover` changes background; sticks after tap on native. Wrap in `@media (hover: hover)`.
-
 - [ ] **[Bug] Guard modal-close-btn hover** — File(s): `src/app.css`
   `.modal-close-btn:not(:disabled):hover .modal-close-icon` — global rule for the
   modal close button shown across native dialogs. Wrap in `@media (hover: hover)`.
