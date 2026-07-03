@@ -171,12 +171,26 @@ Recording uses the **real app at the root** (`/`), not `/dev/engine`.
 2. **[Mac]** Attach Web Inspector (Develop → [iPad] → the page) and paste the whole
    of [`scripts/perf/ipad-recorder.js`](../../../scripts/perf/ipad-recorder.js)
    into the **Console**. It starts recording immediately.
-3. **[iPad]** Draw, change colors, erase, undo — with your fingers, however a real
-   session goes. The recorder captures every pointer event on the canvas plus the
-   UI actions it recognizes (color / size / eraser / undo / clear).
+3. **[iPad]** Draw, change colors, erase, undo — with your fingers or the Apple
+   Pencil, however a real session goes. The recorder captures **every pointer
+   event on the page** (canvas strokes and UI-targeted events alike, each with
+   its target element, `buttons`, and pen pressure), pointer-capture
+   transitions, and the UI actions it recognizes (color / size / eraser / undo /
+   clear).
 4. **[Mac]** When done, in the console: `__rec.stop()` then **`copy(__rec.json())`**
    (Safari's `copy()` puts it on the **Mac** clipboard). Paste into a file, e.g.
    `perf-profiles/recordings/my-session.json`.
+
+> **Input-bug diagnosis, not just perf.** Because the recording shows exactly
+> what WebKit delivered and to which element, it doubles as the ground truth for
+> dropped-input bugs. `__rec.diagnose()` (also run automatically by
+> `__rec.stop()`) scans for the known WebKit merged-stream signature — contact
+> `pointermove`s with **no** preceding `pointerdown` anywhere (e.g. the first
+> Apple Pencil stroke after a color-swatch tap) — and reports which element(s)
+> received them: WebKit sometimes hit-tests the down-less moves onto the canvas
+> and sometimes keeps delivering them to the control the merged tap started on.
+> Only the canvas-targeted events are replayed by `perf:replay`; the
+> UI-targeted ones (`on` field present) are kept purely as diagnostics.
 
 ### C3. Replay under the profiler — **[Mac]**
 

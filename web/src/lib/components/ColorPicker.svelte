@@ -1,9 +1,10 @@
 <script lang="ts">
   import { ui, closeColorPicker } from '$lib/state/ui.svelte';
   import { pickCustomColor, colors } from '$lib/state/colors.svelte';
-  import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine';
+  import { releaseAllPointers } from '$lib/drawing/engine';
   import { layout } from '$lib/state/layout.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import { scribbleGuard } from '$lib/actions/scribbleGuard';
 
   // Static palette grid. The original kept it in HTML; here it's a data-driven
   // {#each} so the template stays declarative and rows can be lazily hidden via
@@ -144,7 +145,6 @@
   function selectColor(hex: string) {
     pickCustomColor(hex);
     releaseAllPointers();
-    focusCanvas();
     closeColorPicker();
     hoveredHex = null;
     isTrackingDrag = false;
@@ -155,14 +155,46 @@
     if (!hex) return;
     isTrackingDrag = true;
     hoveredHex = hex.dataset.color ?? null;
+    // Capture so the terminating pointerup always reaches handlePickerUp, even
+    // when the drag wanders off the picker. Without capture that up is lost
+    // (pen/mouse get no implicit capture), leaving isTrackingDrag/hoveredHex
+    // stale — and a later tap in a hexagon gap would commit the old color.
+    try {
+      pickerEl.setPointerCapture(e.pointerId);
+    } catch {}
     e.preventDefault();
     e.stopPropagation();
   }
 
+  // A pointed Apple Pencil tip often lands in the clip-path gap between
+  // hexagons, where elementFromPoint sees only the picker background. Snap to
+  // the nearest hexagon within this radius (px) so gap hits still resolve —
+  // for the hover highlight while dragging and the committed color alike.
+  const HEX_SNAP_RADIUS = 40;
+
   function findHexagonInPicker(x: number, y: number, pickerEl: HTMLElement): string | null {
     const element = document.elementFromPoint(x, y);
     const hex = element?.closest?.('.hexagon') as HTMLElement | null;
-    return hex && pickerEl.contains(hex) ? (hex.dataset.color ?? null) : null;
+    if (hex && pickerEl.contains(hex)) return hex.dataset.color ?? null;
+    return findNearestHexagon(x, y, pickerEl);
+  }
+
+  function findNearestHexagon(x: number, y: number, pickerEl: HTMLElement): string | null {
+    let nearest: HTMLElement | null = null;
+    let nearestDistance = HEX_SNAP_RADIUS;
+    for (const hex of pickerEl.querySelectorAll<HTMLElement>('.hexagon')) {
+      const rect = hex.getBoundingClientRect();
+      if (rect.width === 0) continue;
+      const distance = Math.hypot(
+        x - (rect.left + rect.width / 2),
+        y - (rect.top + rect.height / 2)
+      );
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = hex;
+      }
+    }
+    return nearest?.dataset.color ?? null;
   }
 
   function handlePickerMove(e: PointerEvent) {
@@ -175,11 +207,11 @@
   function handlePickerUp(e: PointerEvent) {
     if (!isTrackingDrag) return;
     isTrackingDrag = false;
-    const color = findHexagonInPicker(e.clientX, e.clientY, pickerEl);
+    // Even when the up-point is beyond the snap radius, a swatch still
+    // highlighted from this gesture is what the user sees — commit it.
+    const color = findHexagonInPicker(e.clientX, e.clientY, pickerEl) ?? hoveredHex;
     if (color) {
       selectColor(color);
-    } else {
-      hoveredHex = null;
     }
     e.preventDefault();
     e.stopPropagation();
@@ -204,9 +236,15 @@
   }
 </script>
 
+<!-- scribbleGuard covers the hexagons AND the backdrop (backdrop events target
+     the <dialog> itself): a pen tap that picks a color or dismisses the picker
+     must not arm Scribble against the stroke that follows. Selection is
+     pointerup-driven and backdrop dismissal is pointerdown-driven, so
+     suppressing the stylus click synthesis costs nothing here. -->
 <dialog
   id="color-picker"
   class="color-picker modal-dialog modal-fly-in"
+  use:scribbleGuard
   use:modalDialog={() => ({
     open: ui.colorPickerOpen,
     origin: ui.colorPickerOrigin,

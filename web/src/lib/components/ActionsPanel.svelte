@@ -18,6 +18,7 @@
   import { undo } from '$lib/drawing/engine';
   import { saveScreenshot } from '$lib/drawing/screenshot';
   import { generateAiImage } from '$lib/drawing/aiImage';
+  import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
 
   let strokeWrapperEl: HTMLDivElement | undefined = $state();
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
@@ -145,7 +146,11 @@
   }
 </script>
 
-<div class="actions-panel" style:left={leftOffset}>
+<!-- scribbleGuard cancels a stylus tap's touch stream so it can't arm iPadOS
+     Scribble against the next stroke (ADR-0038); that also suppresses the tap's
+     synthesized click, so every button here activates via use:scribbleTap
+     (pointerup for pointers, click only for keyboard/AT) instead of onclick. -->
+<div class="actions-panel" style:left={leftOffset} use:scribbleGuard>
   {#if drawerExpanded}
     <div class="actions-drawer" transition:slide={{ axis: isPortrait ? 'y' : 'x', duration: 280 }}>
       <div
@@ -158,7 +163,7 @@
           id="strokeWidthButton"
           aria-label="Stroke width"
           aria-expanded={strokeState.menuOpen}
-          onclick={handleStrokeBtnClick}
+          use:scribbleTap={handleStrokeBtnClick}
           style:color={colors.activeColor}
         >
           <Icon
@@ -173,7 +178,7 @@
               class:active={activeStrokeSize() === size}
               aria-label="Size {size}"
               aria-pressed={activeStrokeSize() === size}
-              onclick={() => handleStrokeSizeClick(size)}
+              use:scribbleTap={() => handleStrokeSizeClick(size)}
             >
               <Icon name={`size-${size}` as import('./icon-names').IconName} class="action-icon" />
             </button>
@@ -188,7 +193,7 @@
         aria-label="Eraser"
         aria-pressed={toolState.eraser}
         hidden={!settings.eraserEnabled}
-        onclick={handleEraserClick}
+        use:scribbleTap={handleEraserClick}
       >
         <Icon name="eraser" class="action-icon" />
       </button>
@@ -198,7 +203,7 @@
         id="coloringBookButton"
         aria-label="Coloring books"
         hidden={!settings.coloringBookEnabled}
-        onclick={handleColoringBookClick}
+        use:scribbleTap={handleColoringBookClick}
         bind:this={coloringBtnEl}
       >
         <Icon name="shapes" class="action-icon" />
@@ -211,7 +216,7 @@
         aria-label="Save screenshot"
         disabled={canvasState.canvasEmpty}
         hidden={!settings.screenshotEnabled}
-        onclick={handleScreenshotClick}
+        use:scribbleTap={handleScreenshotClick}
       >
         <Icon name="camera" class="action-icon" />
       </button>
@@ -225,7 +230,7 @@
         aria-busy={ui.aiGenerating}
         disabled={canvasState.canvasEmpty || ui.aiGenerating}
         hidden={!settings.aiAccessToken || !settings.aiImageEnabled || !network.online}
-        onclick={handleAiImageClick}
+        use:scribbleTap={handleAiImageClick}
         bind:this={aiBtnEl}
       >
         <Icon name={ui.aiGenerating ? 'loading' : 'wand-stars'} class="action-icon" />
@@ -238,7 +243,7 @@
         aria-label="Undo"
         disabled={!canvasState.canUndo}
         hidden={!settings.undoButtonEnabled}
-        onclick={handleUndoClick}
+        use:scribbleTap={handleUndoClick}
       >
         <Icon name="undo" class="action-icon" />
       </button>
@@ -250,7 +255,7 @@
       class="drawer-toggle"
       aria-label={settings.drawerOpen ? 'Collapse controls' : 'Expand controls'}
       aria-expanded={settings.drawerOpen}
-      onclick={toggleDrawer}
+      use:scribbleTap={toggleDrawer}
     >
       <Icon name={chevronIcon} class="drawer-toggle-icon" />
     </button>

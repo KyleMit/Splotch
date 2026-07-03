@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// One-off generator for the ADR-0038 install-banner screenshots that live in
+// One-off generator for the ADR-0039 install-banner screenshots that live in
 // this folder. Not wired into npm scripts and not kept in sync automatically —
 // re-run it by hand if the banner changes enough that the ADR images mislead:
 //
-//   node docs/adrs/assets/0038-install-banner/generate-screenshots.mjs [--url http://localhost:5173]
+//   node docs/adrs/assets/0039-install-banner/generate-screenshots.mjs [--url http://localhost:5173]
 //
 // Each scenario gets a fresh Playwright browser context (clean localStorage)
 // with an emulated user agent + viewport, draws the three strokes that earn

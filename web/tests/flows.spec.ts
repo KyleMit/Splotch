@@ -85,6 +85,157 @@ test('selecting a palette color activates it and paints in that color', async ({
   expect(px![2]).toBeGreaterThan(px![0]);
 });
 
+// Recorded on-device (perf-profiles/recordings/pencil-color-tap.json): an Apple
+// Pencil tap on a sidebar swatch followed ~440ms later by a stroke lost the
+// whole stroke, while identical strokes ~900ms+ after the tap painted fine. The
+// recording shows WebKit delivered every event of the lost stroke to the canvas
+// (pointerdown + gotpointercapture + moves + up), so the eater is app logic —
+// this replays the recorded anatomy with the recorded timings.
+test('a pen stroke shortly after a pen tap on a swatch still paints', async ({ page }) => {
+  await gotoApp(page);
+
+  const painted = await page.evaluate(async () => {
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const swatch = document.querySelector(
+      'button.color-swatch[data-color="#62A2E9"]'
+    ) as HTMLElement;
+    const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    const fire = (target: Element, type: string, x: number, y: number, buttons: number) =>
+      target.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: 99,
+          pointerType: 'pen',
+          buttons,
+          pressure: buttons ? 0.1 : 0,
+          clientX: x,
+          clientY: y,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+
+    const s = swatch.getBoundingClientRect();
+    const sx = s.left + s.width / 2;
+    const sy = s.top + s.height / 2;
+    fire(swatch, 'pointerdown', sx, sy, 1);
+    await sleep(45);
+    fire(swatch, 'pointerup', sx, sy, 0);
+    swatch.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true, clientX: sx, clientY: sy })
+    );
+
+    await sleep(440);
+
+    fire(canvas, 'pointerdown', rect.left + 112, rect.top + 221, 1);
+    for (let i = 1; i <= 10; i++) {
+      await sleep(36);
+      fire(canvas, 'pointermove', rect.left + 112 + i * 35, rect.top + 221 + i * 5, 1);
+    }
+    fire(canvas, 'pointerup', rect.left + 462, rect.top + 271, 0);
+    await new Promise(requestAnimationFrame);
+
+    const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
+    }
+    return null;
+  });
+
+  expect(painted).not.toBeNull();
+  // #62A2E9 is blue-dominant — the stroke painted in the just-picked color.
+  expect(painted![2]).toBeGreaterThan(painted![0]);
+});
+
+// A pen TAP on a swatch arms iPadOS Scribble: the pen stroke started within
+// ~450ms after it paints into the canvas but is never presented on screen. The
+// palette cancels the tap's parallel touch stream for STYLUS touches (which
+// releases the following stroke) — Touch.touchType is Safari-only, so that
+// side lives in scribbleGuard.test.ts. What Chromium can verify: finger taps
+// pass through uncancelled, so click synthesis survives for touch users.
+test('the palette leaves finger touch taps uncancelled (Scribble guard scope)', async ({
+  page,
+}) => {
+  await gotoApp(page);
+
+  const fingerPrevented = await page.evaluate(() => {
+    const swatch = document.querySelector(
+      'button.color-swatch[data-color="#62A2E9"]'
+    ) as HTMLElement;
+    const touch = new Touch({ identifier: 1, target: swatch, clientX: 10, clientY: 10 });
+    const e = new TouchEvent('touchstart', {
+      touches: [touch],
+      changedTouches: [touch],
+      cancelable: true,
+      bubbles: true,
+    });
+    swatch.dispatchEvent(e);
+    return e.defaultPrevented;
+  });
+
+  expect(fingerPrevented).toBe(false);
+});
+
+// Chromium cannot construct a Touch with touchType (Safari-only), so these
+// stub changedTouches exactly like scribbleGuard.test.ts. The guard's
+// discrimination logic is unit-tested; what e2e pins down is that the guard is
+// ATTACHED to each surface a pen taps right before drawing — the gap that
+// shipped the picker unguarded. The real Scribble swallowing needs trusted
+// on-device input (ADR-0038), so guard attachment is the automatable proxy.
+function stylusTouchStartPrevented(page: Page, selector: string): Promise<boolean> {
+  return page.evaluate((sel) => {
+    const target = document.querySelector(sel) as HTMLElement;
+    const e = new Event('touchstart', { cancelable: true, bubbles: true });
+    Object.defineProperty(e, 'changedTouches', { value: [{ touchType: 'stylus' }] });
+    target.dispatchEvent(e);
+    return e.defaultPrevented;
+  }, selector);
+}
+
+test('a stylus tap on a color-picker hexagon has its touch stream cancelled (Scribble guard)', async ({
+  page,
+}) => {
+  await gotoApp(page);
+
+  const customSwatch = page.locator('button.color-swatch[data-color="custom"]');
+  await expect(async () => {
+    await customSwatch.click({ timeout: 1000 });
+    await expect(page.locator('#color-picker')).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
+
+  expect(await stylusTouchStartPrevented(page, '#color-picker .hexagon')).toBe(true);
+});
+
+test('a stylus tap on an action button has its touch stream cancelled (Scribble guard)', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  expect(await stylusTouchStartPrevented(page, '#eraserButton')).toBe(true);
+});
+
+// On iPadOS the guard's cancelled touchstart suppresses the tap's synthesized
+// click, so a stylus tap reaches a button only as pointerdown+pointerup. The
+// buttons must activate from that alone (scribbleTap) — click-driven buttons
+// would sit dead under the pen.
+test('action buttons activate on a pointer press alone, without a synthesized click (Scribble guard)', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const eraser = page.locator('#eraserButton');
+  await expect(eraser).toHaveAttribute('aria-pressed', 'false');
+  await page.evaluate(() => {
+    const btn = document.getElementById('eraserButton')!;
+    const opts = { pointerId: 42, pointerType: 'pen', bubbles: true, cancelable: true };
+    btn.dispatchEvent(new PointerEvent('pointerdown', opts));
+    btn.dispatchEvent(new PointerEvent('pointerup', opts));
+  });
+  await expect(eraser).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('picking a color exits eraser mode', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
