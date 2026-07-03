@@ -19,11 +19,6 @@ pages last.
 
 ### Toddler-facing drawing UI (highest priority — native touch app)
 
-- [ ] **[Bug] Guard ColoringBook hover rules** — File(s): `src/lib/components/ColoringBook.svelte`
-  `.coloring-back-button:hover` (+ icon variant) and `.coloring-tile:hover` change
-  highlight state; a tapped coloring tile or the back button stays visually
-  highlighted after selection. Wrap each in `@media (hover: hover)`.
-
 - [ ] **[Bug] Guard ColorPicker hexagon hover** — File(s): `src/lib/components/ColorPicker.svelte`
   `.hexagon:hover` and `.hexagon:hover::after` highlight the hovered swatch. On touch
   the last-tapped color stays enlarged/highlighted. Note this component also has a

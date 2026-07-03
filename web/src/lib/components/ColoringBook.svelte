@@ -178,12 +178,14 @@
     transition: filter 0.2s ease;
   }
 
-  .coloring-back-button:hover {
-    background: #ede7f6;
-  }
+  @media (hover: hover) {
+    .coloring-back-button:hover {
+      background: #ede7f6;
+    }
 
-  .coloring-back-button:hover :global(.coloring-back-icon) {
-    filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
+    .coloring-back-button:hover :global(.coloring-back-icon) {
+      filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
+    }
   }
 
   .coloring-grid {
@@ -220,11 +222,13 @@
     touch-action: manipulation;
   }
 
-  .coloring-tile:hover {
-    border-color: var(--brand);
-    background: #f5f0ff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(171, 113, 225, 0.25);
+  @media (hover: hover) {
+    .coloring-tile:hover {
+      border-color: var(--brand);
+      background: #f5f0ff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(171, 113, 225, 0.25);
+    }
   }
 
   .coloring-tile:active {
