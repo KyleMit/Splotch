@@ -21,10 +21,6 @@ pages last.
 
 ### Parent Center (medium — reachable on-device)
 
-- [ ] **[Bug] Guard ParentCenter hover rules** — File(s): `src/lib/components/ParentCenter.svelte`
-  `.parent-help-button:hover` (+ icon variant) and `.parent-help-close:hover`.
-  Wrap in `@media (hover: hover)`.
-
 - [ ] **[Bug] Guard parent settings control hovers** — File(s): `src/lib/components/parent/ToggleRow.svelte`, `src/lib/components/parent/SetupInstructions.svelte`, `src/lib/components/parent/AiKeyManager.svelte`, `src/lib/components/parent/AboutTab.svelte`, `src/lib/components/TabPager.svelte`
   ToggleRow `.toggle-switch:hover` / `.toggle-switch.active:hover` / `.toggle-switch:disabled:hover`;
   SetupInstructions `.help-section summary:hover`; AiKeyManager `.access-code-submit:hover`

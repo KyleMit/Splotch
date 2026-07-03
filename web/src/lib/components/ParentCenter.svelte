@@ -88,8 +88,10 @@
     touch-action: manipulation;
   }
 
-  .parent-help-button:hover {
-    opacity: 0.7;
+  @media (hover: hover) {
+    .parent-help-button:hover {
+      opacity: 0.7;
+    }
   }
 
   .parent-help-button:active {
@@ -102,8 +104,10 @@
     filter: invert(60%) grayscale(100%);
   }
 
-  .parent-help-button:hover :global(.parent-help-icon) {
-    filter: invert(40%) grayscale(100%);
+  @media (hover: hover) {
+    .parent-help-button:hover :global(.parent-help-icon) {
+      filter: invert(40%) grayscale(100%);
+    }
   }
 
   .parent-help-button:active :global(.parent-help-icon) {
