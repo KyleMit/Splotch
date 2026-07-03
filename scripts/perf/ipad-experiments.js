@@ -29,7 +29,6 @@
 //   noRing           .color-swatch::before ring-expand animation (0.45s)
 //   noTransitions    swatch transition:all 0.2s + :active scale bounce
 //   noSelectionRing  the persistent selection-ring box-shadow (inline style)
-//   noFocus          focusCanvas()'s canvas.focus() after a color tap
 //   noPreventDefault the app's e.preventDefault() on pen taps in the palette:
 //                    the REAL event is intercepted (stopImmediatePropagation)
 //                    and a synthetic clone is re-dispatched so the app handlers
@@ -51,7 +50,10 @@
 //                    event preventDefault (which the engine already does) is
 //                    known NOT to help.
 //
-// Ruled out on-device already: noRing/noTransitions/noSelectionRing/noFocus,
+// Ruled out on-device already: noRing/noTransitions/noSelectionRing/noFocus
+// (noFocus disabled focusCanvas()'s canvas.focus() after a color tap; that call
+// was a Jan-2026 fix attempt for this very bug and has since been deleted from
+// the app as dead code, so the toggle is gone too),
 // noPreventDefault, nudgeCanvas (bug reproduces with each; finger is immune;
 // ANY pen tap — even on the canvas itself — poisons a stroke started ≤~450ms
 // later, and the lost ink never appears).
@@ -64,7 +66,6 @@
     return;
   }
   const canvas = document.getElementById('drawingCanvas');
-  const realFocus = canvas ? canvas.focus.bind(canvas) : null;
 
   const CSS = {
     noRing: `.color-swatch::before { animation: none !important; }`,
@@ -147,13 +148,7 @@
     canvas.addEventListener('touchmove', onTouch, { passive: false });
   }
 
-  const VALID = [
-    ...Object.keys(CSS),
-    'noFocus',
-    'noPreventDefault',
-    'nudgeCanvas',
-    'touchmovePrevent',
-  ];
+  const VALID = [...Object.keys(CSS), 'noPreventDefault', 'nudgeCanvas', 'touchmovePrevent'];
   window.__exp = {
     set(...toggles) {
       const bad = toggles.filter((t) => !VALID.includes(t));
@@ -166,7 +161,6 @@
         .filter((t) => t in CSS)
         .map((t) => CSS[t])
         .join('\n');
-      if (canvas) canvas.focus = toggles.includes('noFocus') ? () => {} : realFocus;
       if (!toggles.includes('nudgeCanvas') && canvas) canvas.style.opacity = '';
       this.status();
     },

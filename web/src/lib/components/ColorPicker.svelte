@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ui, closeColorPicker } from '$lib/state/ui.svelte';
   import { pickCustomColor, colors } from '$lib/state/colors.svelte';
-  import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine';
+  import { releaseAllPointers } from '$lib/drawing/engine';
   import { layout } from '$lib/state/layout.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
 
@@ -144,7 +144,6 @@
   function selectColor(hex: string) {
     pickCustomColor(hex);
     releaseAllPointers();
-    focusCanvas();
     closeColorPicker();
     hoveredHex = null;
     isTrackingDrag = false;

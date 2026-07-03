@@ -1235,10 +1235,6 @@ export async function exportCanvasBlob(
   return await new Promise((resolve) => out.toBlob(resolve, 'image/png'));
 }
 
-export function focusCanvas() {
-  if (canvas) canvas.focus();
-}
-
 export function getActiveCanvas(): HTMLCanvasElement {
   return canvas;
 }

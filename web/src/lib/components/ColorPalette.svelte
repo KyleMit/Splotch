@@ -7,7 +7,7 @@
     selectPaletteColor,
     selectCustomSwatch,
   } from '$lib/state/colors.svelte';
-  import { releaseAllPointers, focusCanvas } from '$lib/drawing/engine';
+  import { releaseAllPointers } from '$lib/drawing/engine';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
   import { openColorPicker, buttonCenter } from '$lib/state/ui.svelte';
   import { toolState, selectPen } from '$lib/state/tool.svelte';
@@ -54,7 +54,6 @@
     selectPaletteColor(hex);
     ringAnimateKey = hex + ':' + Date.now();
     releaseAllPointers();
-    focusCanvas();
     e.preventDefault();
     e.stopPropagation();
   }
@@ -64,7 +63,6 @@
     selectCustomSwatch();
     openColorPicker(swatchEls[CUSTOM_SWATCH] ? buttonCenter(swatchEls[CUSTOM_SWATCH]) : null);
     releaseAllPointers();
-    focusCanvas();
     e.preventDefault();
     e.stopPropagation();
   }
