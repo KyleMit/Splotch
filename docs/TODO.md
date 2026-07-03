@@ -11,18 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Bugs & correctness
 
-- [ ] **[Bug] PWA update module: non-idempotent init, redirect-loop risk, debug leftovers** — File(s): `web/src/lib/pwa/updates.ts`, caller `web/src/routes/+page.svelte`
-  (a) `/privacy` is client-side navigable from the About tab, so returning to `/` remounts
-  `+page.svelte` and re-runs `initPWAUpdates()`: the `visibilitychange`/`focus` listeners
-  duplicate and the previous hourly interval leaks (only the last one is ever cleared). Add a
-  module-level `initialized` guard or return a teardown called from mount cleanup.
-  (b) `initPWAUpdates` strips the `?v=` cache-bust param *before* `checkVersionMismatch()` runs,
-  discarding the "already tried cache-busting" signal — a persistent mismatch (stale CDN edge)
-  becomes a tight `location.replace` reload loop. Pass the stripped value through and skip the
-  redirect when the fetched version equals it (one attempt per deployed version).
-  (c) Remove the `updatefound` console-log block, the no-op `beforeunload` interval clear, and
-  the catch-block `console.log`. All unit-testable in the existing `updates.test.ts`.
-
 - [ ] **[Bug] `stopDrawing` fires `onDrawStop` while other fingers are still drawing** — File(s): `web/src/lib/drawing/engine.ts` (lines 871–903)
   The callback runs unconditionally on every `pointerup`/`pointerout`/`pointercancel` — even
   when `activePointers.size > 0` — so during a two-finger scribble the first lift kills the
