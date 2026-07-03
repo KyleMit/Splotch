@@ -1,6 +1,7 @@
 import { error, json } from '@sveltejs/kit';
 import { verifySessionToken, buildInvites } from '$lib/server/admin';
 import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
+import { readJsonBody } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 // JSON twin of the /admin console's token management, for clients that can't
@@ -53,13 +54,7 @@ export const GET: RequestHandler = async ({ request, url }) => {
 export const POST: RequestHandler = async ({ request, url }) => {
   requireSession(request);
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    throw error(400, 'Expected a JSON body');
-  }
-
+  const body = await readJsonBody(request);
   const result = await addToken(typeof body?.token === 'string' ? body.token : '');
   if (!result.ok) return json({ ok: false, error: result.error }, { status: 400 });
   return snapshot(url.origin, result.tokens);
@@ -69,13 +64,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
 export const DELETE: RequestHandler = async ({ request, url }) => {
   requireSession(request);
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    throw error(400, 'Expected a JSON body');
-  }
-
+  const body = await readJsonBody(request);
   const result = await removeToken(typeof body?.token === 'string' ? body.token : '');
   return snapshot(url.origin, result.tokens);
 };

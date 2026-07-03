@@ -6,6 +6,7 @@ import { buildPromptForStyle } from '$lib/ai/prompt';
 import { isAllowedToken } from '$lib/server/tokens';
 import { recordTokenUsage } from '$lib/server/usage';
 import { rateLimit } from '$lib/server/rateLimit';
+import { throttled } from '$lib/server/http';
 import { classifyGeminiResponse, isSafetyError } from '$lib/server/aiSafety';
 import type { RequestHandler } from './$types';
 
@@ -93,12 +94,7 @@ export const POST: RequestHandler = async ({ request, platform, getClientAddress
         limit: GENERATE_LIMIT,
         windowMs: GENERATE_WINDOW_MS,
       });
-  if (limited) {
-    return new Response('Too many requests. Please wait a moment.', {
-      status: 429,
-      headers: { 'Retry-After': String(retryAfter) },
-    });
-  }
+  if (limited) return throttled(retryAfter);
   if (!(imageFile instanceof Blob)) {
     throw error(400, 'Missing image');
   }
@@ -130,14 +126,12 @@ export const POST: RequestHandler = async ({ request, platform, getClientAddress
       style: typeof style === 'string' ? style : null,
       prompt: finalPrompt,
     });
-    const ctx = (
-      platform as { context?: { waitUntil?: (p: Promise<unknown>) => void } } | undefined
-    )?.context;
-    if (ctx?.waitUntil) ctx.waitUntil(usage);
+    platform?.context?.waitUntil?.(usage);
   }
 
-  const inputBytes = new Uint8Array(await imageFile.arrayBuffer());
-  const inputBase64 = Buffer.from(inputBytes).toString('base64');
+  // Buffer.from(ArrayBuffer) wraps without copying (unlike the TypedArray
+  // overload), so the ≤15 MB upload is only held in memory once.
+  const inputBase64 = Buffer.from(await imageFile.arrayBuffer()).toString('base64');
 
   const ai = new GoogleGenAI({ apiKey: effectiveKey });
   let response;

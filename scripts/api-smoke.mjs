@@ -146,6 +146,28 @@ async function run() {
     code.status === 200 && typeof codeBody?.ok === 'boolean',
     `got ${code.status}`
   );
+
+  // --- standard 429 contract (throttled() in src/lib/server/http.ts) ---
+  // The per-IP limit is 10/min; burst past it and assert the shared shape:
+  // JSON {ok:false, error} plus a Retry-After header.
+  let limited = null;
+  for (let i = 0; i < 12 && !limited; i++) {
+    const res = await fetch(`${BASE}/api/verify-access-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: 'burst-to-the-limit' }),
+    });
+    if (res.status === 429) limited = res;
+  }
+  const limitedBody = limited ? await json(limited) : null;
+  check(
+    'throttled → 429 {ok:false, error} with Retry-After',
+    limited !== null &&
+      limitedBody?.ok === false &&
+      typeof limitedBody?.error === 'string' &&
+      Boolean(limited.headers.get('retry-after')),
+    limited ? `body ${JSON.stringify(limitedBody)}` : 'never saw a 429'
+  );
 }
 
 let server;

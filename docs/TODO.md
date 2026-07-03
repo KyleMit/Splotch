@@ -11,20 +11,6 @@ then performance, then maintainability/architecture sweeps.
 
 ### Maintainability & architecture
 
-- [ ] **[Maint] JSON-body parsing and 429 shaping copy-pasted across every endpoint, with three divergent 429 contracts** — File(s): `web/src/routes/api/verify-access-code/+server.ts`, `verify-key/+server.ts`, `admin/login/+server.ts`, `admin/tokens/+server.ts`, `generate-image/+server.ts`, `web/src/hooks.server.ts`, `web/src/app.d.ts`
-  Five copies of the identical `try { await request.json() } catch { throw error(400, …) }`
-  block across four endpoints — verify-access-code, verify-key, admin/login, and admin/tokens
-  (which has two: POST and DELETE); generate-image parses `formData()` and has no such block —
-  and three different 429 body shapes (two JSON variants + one text/plain). Extract
-  `readJsonBody(request)` and a `throttled(retryAfter)` helper into `web/src/lib/server/`,
-  standardize on the JSON 429 shape, and document it in `.claude/skills/api/SKILL.md`. While
-  sweeping the endpoints: add `'Access-Control-Max-Age': '86400'` to `corsHeaders()` (native
-  clients currently pay a full OPTIONS round trip on every JSON request); replace
-  generate-image's double image copy with `Buffer.from(await imageFile.arrayBuffer()).toString('base64')`
-  (`Buffer.from(TypedArray)` copies, `Buffer.from(ArrayBuffer)` wraps — currently an extra
-  ≤15 MB allocation per request); and declare `App.Platform` (`context.waitUntil`) in
-  `app.d.ts`, dropping generate-image's inline cast. Run `npm run test:api:smoke` after.
-
 - [ ] **[Correctness] Netlify Blobs read-modify-write races lose updates** — File(s): `web/src/lib/server/usage.ts` (44–51), `web/src/lib/server/tokens.ts` (122–128)
   `recordTokenUsage` is a bare `get` → `setJSON`, so two overlapping generations for the same
   token (two devices sharing an invite — exactly the abuse the tally exists to detect) both
