@@ -60,6 +60,18 @@ it under ~5 min so the cache builds. **Skip the Android/iOS/Capacitor toolchains
 there's no emulator, Xcode, or USB device in a cloud container, so the `android:*` /
 `ios:*` / `test:android` scripts can't run there.
 
+> **Chromium revision must match `@playwright/test`.** The setup script derives the
+> browser version from `package.json` for exactly this reason: Playwright pins a
+> specific Chromium *revision* (e.g. `@playwright/test@1.61.x` → Chromium 1228), and a
+> hard-coded install version (or a stale env snapshot) leaves that revision absent —
+> every E2E run and `run-splotch` screenshot then dies with `Executable doesn't
+> exist … chromium-<rev>`. As a backstop, `playwright.config.ts` and
+> `.claude/skills/run-splotch/driver.mjs` self-heal: if the pinned binary is missing
+> they fall back to any Chromium under `PLAYWRIGHT_BROWSERS_PATH` (default
+> `/opt/pw-browsers`), overridable with `PLAYWRIGHT_CHROMIUM`. **Never** run
+> `npx playwright install` in a session — it's forbidden here and fetches the wrong
+> revision anyway.
+
 ### Committing the environment config
 
 There is **no** official as-code or CLI provisioning for these environments — the

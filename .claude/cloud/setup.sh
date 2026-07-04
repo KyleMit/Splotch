@@ -22,9 +22,16 @@ set -uo pipefail
 npx -y npm@11 install -g npm@11 \
   || echo "npm 11 pin skipped — sessions may see package-lock.json churn (the SessionStart hook discards it)"
 
-# Chromium-only Playwright browser for the E2E tier, pinned to the repo's @playwright/test
-# version. Needs cdn.playwright.dev + playwright.download.prss.microsoft.com on the allowlist.
-npx --yes playwright@1.60.0 install --with-deps chromium \
+# Chromium-only Playwright browser for the E2E tier. Derive the version from the repo's
+# @playwright/test (package.json) so the installed Chromium revision matches what
+# playwright-core resolves at test time. A hard-coded version drifts silently — e.g.
+# pinning 1.60.0 (Chromium 1223) while the repo resolves 1.61.x (Chromium 1228) leaves
+# the pinned revision absent, the #1 cloud-session E2E failure. driver.mjs and
+# playwright.config.ts self-heal past a stale snapshot, but keeping this in sync avoids
+# needing the fallback at all.
+# Needs cdn.playwright.dev + playwright.download.prss.microsoft.com on the allowlist.
+PW_VERSION="$(node -p "require('./package.json').devDependencies['@playwright/test'].replace(/^[^0-9]*/, '')" 2>/dev/null || true)"
+npx --yes "playwright@${PW_VERSION:-1.61.1}" install --with-deps chromium \
   || echo "playwright browser install skipped — allowlist cdn.playwright.dev?"
 
 # Phone-preview reverse-tunnel client (ADR-0021). Cached into the snapshot at a persisted
