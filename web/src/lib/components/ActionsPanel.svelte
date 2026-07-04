@@ -350,12 +350,15 @@
     filter: invert(0%) grayscale(100%);
   }
 
+  /* Sized to roughly match the Color Swatch touch target (60px landscape /
+     55px portrait) so the action buttons feel like equal-weight tap targets
+     for small hands. */
   .action-button {
-    width: 48px;
-    height: 48px;
+    width: 60px;
+    height: 60px;
     background: white;
     border: 2px solid #ddd;
-    border-radius: 12px;
+    border-radius: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -363,7 +366,15 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     transition: all 0.2s ease;
     touch-action: manipulation;
-    padding: 8px;
+    padding: 10px;
+  }
+
+  @media (orientation: portrait) {
+    .action-button {
+      width: 55px;
+      height: 55px;
+      padding: 9px;
+    }
   }
 
   /* Author display:flex above outranks the UA [hidden] rule, so restore it. */
@@ -486,11 +497,11 @@
   }
 
   .stroke-size-button {
-    width: 53px;
-    height: 53px;
+    width: 60px;
+    height: 60px;
     background: white;
     border: 2px solid #ddd;
-    border-radius: 12px;
+    border-radius: 14px;
     cursor: pointer;
     /* Inherit the menu's color so the line icons (currentColor) pick up the
        active pen/eraser color — buttons don't inherit color by default. */
