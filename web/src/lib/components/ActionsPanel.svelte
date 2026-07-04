@@ -57,17 +57,23 @@
   // Never during erasing — the eraser icon carries its own (pink) coloring.
   const whiteStroke = $derived(!toolState.eraser && isWhite(colors.activeColor));
 
-  // Chevron points the way the drawer will move: forward (out) to open,
-  // back (toward the corner it tucks into) to close. Landscape slides
-  // left/right, portrait slides up/down.
-  const chevronIcon = $derived(
+  // Chevron points the way the drawer will move: forward (out) to open, back
+  // (toward the corner it tucks into) to close. Landscape slides left/right,
+  // portrait slides up/down. We render one chevron (pointing right at 0°) and
+  // rotate it to face the right way rather than swapping between four icon
+  // SVGs. That keeps the {@html} icon body identical on server and client, so
+  // the direction rides on a transform — a plain attribute Svelte reconciles
+  // during hydration — instead of stale markup {@html} won't repaint. The
+  // prerendered page assumes landscape (no viewport), and the transform simply
+  // corrects itself once the client knows its real orientation.
+  const chevronRotation = $derived(
     isPortrait
       ? settings.drawerOpen
-        ? 'chevron-down'
-        : 'chevron-up'
+        ? 90 // down
+        : -90 // up
       : settings.drawerOpen
-        ? 'chevron-left'
-        : 'chevron-right'
+        ? 180 // left
+        : 0 // right
   );
 
   function toggleDrawer() {
@@ -258,7 +264,11 @@
       aria-expanded={settings.drawerOpen}
       use:scribbleTap={toggleDrawer}
     >
-      <Icon name={chevronIcon} class="drawer-toggle-icon" />
+      <Icon
+        name="chevron-right"
+        class="drawer-toggle-icon"
+        style="transform: rotate({chevronRotation}deg)"
+      />
     </button>
   {/if}
 </div>
