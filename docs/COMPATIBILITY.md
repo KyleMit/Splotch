@@ -73,7 +73,7 @@ baseline**, and every remaining below-floor risk is already feature-detected and
 | `crypto.subtle` (AES-GCM) | `lib/secureStorage.ts` | Chrome 37 / Safari 11 | secure-context only | within floor |
 | `navigator.storage.persist` | `lib/secureStorage.ts:154` | Chrome 55 / Safari 15.2 | ✅ `?.` + web-only | best-effort persistence skipped |
 | Wake Lock | `routes/+page.svelte:56` | Chrome 84 / Safari 16.4 | ✅ feature-detected | screen may sleep mid-draw |
-| `Element.requestFullscreen` (immersive) | `lib/fullscreen.ts` | Chrome 71 / Safari 16.4 (macOS); no element fullscreen on iOS Safari | ✅ `document.fullscreenEnabled` + Android-only | no-op; URL bar stays (iOS Safari; desktop deliberately skipped) |
+| `Element.requestFullscreen` (immersive) | `lib/state/fullscreen.svelte.ts` | Chrome 71 / Safari 16.4 (macOS); no element fullscreen on iOS Safari | ✅ `document.fullscreenEnabled` + Android-only | Fullscreen Toggle hidden; URL bar stays (iOS Safari, desktop deliberately excluded) |
 | Screen Orientation lock | `lib/orientation.ts:48` | varies | ✅ `?.` (native uses Capacitor plugin) | no orientation lock |
 | `navigator.vibrate` | `lib/haptics.ts:24` | Android only | ✅ `?.` (native uses Capacitor Haptics) | no haptic feedback |
 | Web Audio `AudioContext` | `lib/audio/drawingSound.ts` | Chrome 35 / Safari 14.1 | ✅ null-returns | silent draw sound |

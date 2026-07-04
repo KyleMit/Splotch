@@ -25,7 +25,7 @@
   import { initNetwork } from '$lib/state/network.svelte';
   import { isNative } from '$lib/platform';
   import { applyDeviceOrientationPreference } from '$lib/orientation';
-  import { requestImmersiveFullscreen } from '$lib/fullscreen';
+  import { initFullscreen } from '$lib/state/fullscreen.svelte';
 
   $effect(() => {
     settings.lockRotationEnabled;
@@ -77,12 +77,9 @@
     document.addEventListener('pointerdown', onFirstPointerDown, { once: true });
     document.addEventListener('visibilitychange', onVisibilityChange);
 
-    // Reclaim the mobile URL bar (Android browsers only; a no-op elsewhere) that
-    // a non-scrolling canvas can never scroll away. Requested on the first finger
-    // *lift*, not press: a touch `pointerdown` doesn't grant the transient
-    // activation `requestFullscreen()` needs, but `pointerup` does.
-    const onFirstPointerUp = () => requestImmersiveFullscreen();
-    document.addEventListener('pointerup', onFirstPointerUp, { once: true });
+    // Seed the opt-in Fullscreen Toggle (Android web only; inert elsewhere) that
+    // dismisses the mobile URL bar a non-scrolling canvas can never scroll away.
+    initFullscreen();
 
     // The service worker only exists in the web build; the native apps bundle
     // their shell on-device, so there's nothing to update-check there. The
@@ -96,7 +93,6 @@
     return () => {
       document.removeEventListener('contextmenu', blockContextMenu);
       document.removeEventListener('pointerdown', onFirstPointerDown);
-      document.removeEventListener('pointerup', onFirstPointerUp);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       teardownPWAUpdates?.();
     };
