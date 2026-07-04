@@ -125,4 +125,4 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 * **Parent Help Button** - Floating button that opens the Parent Center
   * **Parent Center** - Modal with platform install guides and app settings
     * **Install Guide** - iOS / Android tabs with step-by-step PWA setup, plus the one-tap install button when the browser supports it (Setup tab)
-    * **Settings** - Tab for app preferences (Drawing Sounds, Save on Delete, Screenshot Button, Stroke Width Control, Coloring Books)
+    * **Settings** - Tab for app preferences (Drawing Sounds, Save on Delete, Screenshot Button, Stroke Width Control, Coloring Books). Under Advanced Controls, a **Button Size** slider rescales the Actions Panel buttons; dragging it hides the rest of the Parent Center so the buttons resize in full view.

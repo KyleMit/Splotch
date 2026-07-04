@@ -11,6 +11,9 @@ interface UiState {
   coloringBookOrigin: Origin | null;
   parentCenterOpen: boolean;
   parentCenterOrigin: Origin | null;
+  // True while the parent is dragging the button-size slider. The Parent Center
+  // hides everything but the slider so the live-resizing action buttons show.
+  resizingActionButtons: boolean;
   clearTutorialVisible: boolean;
   aiPromptOpen: boolean;
   aiPromptOrigin: Origin | null;
@@ -35,6 +38,7 @@ export const ui: UiState = $state({
   coloringBookOrigin: null,
   parentCenterOpen: false,
   parentCenterOrigin: null,
+  resizingActionButtons: false,
   clearTutorialVisible: false,
   aiPromptOpen: false,
   aiPromptOrigin: null,
@@ -77,6 +81,10 @@ export function openParentCenter(origin: Origin | null) {
 
 export function closeParentCenter() {
   ui.parentCenterOpen = false;
+}
+
+export function setResizingActionButtons(active: boolean) {
+  ui.resizingActionButtons = active;
 }
 
 export function openAiPrompt(origin: Origin | null) {
