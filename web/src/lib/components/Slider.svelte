@@ -50,6 +50,8 @@
   let active = false;
 
   const fillPercent = $derived(((value - min) / (max - min)) * 100);
+  // Position of the snap detent along the track, so we can mark it with a tick.
+  const snapPercent = $derived(snap == null ? null : ((snap - min) / (max - min)) * 100);
 
   function clamp(v: number) {
     return Math.round(Math.min(max, Math.max(min, v)));
@@ -158,6 +160,9 @@
 >
   <div class="slider-track" bind:this={trackEl}>
     <div class="slider-fill" style:width="{fillPercent}%"></div>
+    {#if snapPercent != null}
+      <div class="slider-notch" style:left="{snapPercent}%"></div>
+    {/if}
   </div>
 </div>
 
@@ -194,5 +199,19 @@
     height: 100%;
     border-radius: 999px;
     background: var(--brand);
+  }
+
+  /* Center tick marking the snap detent, so the "sticky" default reads as
+     intentional. Sits above the fill; a soft dark line stays legible over both
+     the purple fill and the grey track. */
+  .slider-notch {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    transform: translateX(-50%);
+    border-radius: 1px;
+    background: rgba(0, 0, 0, 0.22);
+    pointer-events: none;
   }
 </style>
