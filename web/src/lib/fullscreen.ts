@@ -22,9 +22,13 @@ function canRequestImmersiveFullscreen(): boolean {
   return /android/i.test(navigator.userAgent || '');
 }
 
-// MUST be called from within a user gesture (the first pointerdown) — browsers
-// reject a fullscreen request without one. Failures are swallowed: an
-// unsupported or refused request just leaves the URL bar where it was.
+// MUST be called from within a user gesture that carries *transient activation*
+// — and on a touchscreen that is NOT `pointerdown`. Per the HTML activation
+// rules a touch `pointerdown` is not an activation-triggering event (the browser
+// can't yet tell a tap from the start of a scroll), so a fullscreen request from
+// it is silently rejected; the first event that does activate is `pointerup` /
+// `touchend`. Callers must hook the finger *lift*, not the press. Failures are
+// swallowed: an unsupported or refused request just leaves the URL bar where it was.
 export async function requestImmersiveFullscreen(): Promise<void> {
   if (!canRequestImmersiveFullscreen()) return;
   try {

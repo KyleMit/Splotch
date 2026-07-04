@@ -68,13 +68,7 @@
         }
       } catch {}
     }
-    // The same first-draw gesture is our one shot at requesting immersive
-    // fullscreen (Android browsers only; a no-op elsewhere) to dismiss the
-    // URL bar that a non-scrolling canvas can never scroll away.
-    const onFirstPointerDown = () => {
-      requestWakeLock();
-      requestImmersiveFullscreen();
-    };
+    const onFirstPointerDown = () => requestWakeLock();
     const onVisibilityChange = () => {
       if (wakeLock !== null && document.visibilityState === 'visible') {
         requestWakeLock();
@@ -82,6 +76,13 @@
     };
     document.addEventListener('pointerdown', onFirstPointerDown, { once: true });
     document.addEventListener('visibilitychange', onVisibilityChange);
+
+    // Reclaim the mobile URL bar (Android browsers only; a no-op elsewhere) that
+    // a non-scrolling canvas can never scroll away. Requested on the first finger
+    // *lift*, not press: a touch `pointerdown` doesn't grant the transient
+    // activation `requestFullscreen()` needs, but `pointerup` does.
+    const onFirstPointerUp = () => requestImmersiveFullscreen();
+    document.addEventListener('pointerup', onFirstPointerUp, { once: true });
 
     // The service worker only exists in the web build; the native apps bundle
     // their shell on-device, so there's nothing to update-check there. The
@@ -95,6 +96,7 @@
     return () => {
       document.removeEventListener('contextmenu', blockContextMenu);
       document.removeEventListener('pointerdown', onFirstPointerDown);
+      document.removeEventListener('pointerup', onFirstPointerUp);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       teardownPWAUpdates?.();
     };
