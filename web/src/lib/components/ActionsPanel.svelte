@@ -463,11 +463,14 @@
     }
   }
 
-  /* On very narrow portrait screens the horizontal flyout runs off the right
-     edge, so stack the sizes vertically. It stays anchored to the right of the
-     button (bottom-aligned) so it runs up alongside the other action buttons
-     instead of over the top of them. */
-  @media (orientation: portrait) and (max-width: 376px) {
+  /* On phone-width portrait screens the horizontal flyout runs under the
+     bottom-right Parent Center button (and, when narrower, off the right edge):
+     a tap on the rightmost size closes the menu, and the trailing click falls
+     through to the parent button and opens its modal. Stack the sizes
+     vertically instead so the flyout runs up alongside the other action buttons
+     and clears the parent button. The row layout stays for tablet-width portrait,
+     where there's room to the right of the palette. */
+  @media (orientation: portrait) and (max-width: 480px) {
     .stroke-width-menu {
       flex-direction: column;
     }

@@ -327,6 +327,35 @@ test('pen and eraser keep independent stroke sizes that persist across reload', 
   await expect(page.locator('button[aria-label="Size 1"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
+// On a phone-width portrait screen the stroke-width flyout used to open as a
+// horizontal row that ran under the bottom-right Parent Center button. Tapping
+// the rightmost size closed the menu on pointerup, and the trailing click then
+// fell through to the now-unobscured Parent Center button and launched its
+// modal. The flyout must clear that button so a size tap can't open it.
+test('the stroke flyout clears the Parent Center button on a small phone', async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 });
+  await gotoApp(page);
+  await openDrawer(page);
+  await openStrokeMenu(page);
+
+  const parentModal = page.locator('#parentHelpModal');
+  await expect(parentModal).toBeHidden();
+
+  const parent = (await page.locator('#parentHelpButton').boundingBox())!;
+  const size5 = (await page.locator('button[aria-label="Size 5"]').boundingBox())!;
+  const overlaps =
+    size5.x < parent.x + parent.width &&
+    size5.x + size5.width > parent.x &&
+    size5.y < parent.y + parent.height &&
+    size5.y + size5.height > parent.y;
+  expect(overlaps, 'stroke flyout overlaps the Parent Center button').toBe(false);
+
+  // Tapping the rightmost size selects it and leaves the Parent Center closed.
+  await page.locator('button[aria-label="Size 5"]').click();
+  await expect(page.locator('button[aria-label="Size 5"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(parentModal).toBeHidden();
+});
+
 test('the drawer open state persists across a reload', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
