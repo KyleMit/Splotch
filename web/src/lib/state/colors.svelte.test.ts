@@ -7,7 +7,7 @@ import {
   selectPaletteColor,
   selectCustomSwatch,
   pickCustomColor,
-  isNearWhite,
+  isWhite,
 } from './colors.svelte';
 
 beforeEach(() => {
@@ -64,27 +64,24 @@ describe('selectCustomSwatch', () => {
   });
 });
 
-describe('isNearWhite', () => {
-  it('flags pure white (needs a dark outline to stay visible)', () => {
-    expect(isNearWhite('#ffffff')).toBe(true);
-    expect(isNearWhite('#FFFFFF')).toBe(true);
+describe('isWhite', () => {
+  it('matches white in any casing or shorthand it could arrive as', () => {
+    expect(isWhite('#ffffff')).toBe(true);
+    expect(isWhite('#FFFFFF')).toBe(true);
+    expect(isWhite('#fff')).toBe(true);
+    expect(isWhite('white')).toBe(true);
   });
 
-  it('leaves the palette colors — including pale yellow — un-outlined', () => {
+  it('leaves every palette color — including pale yellow — un-outlined', () => {
     for (const { hex } of PALETTE_COLORS) {
-      expect(isNearWhite(hex)).toBe(false);
+      expect(isWhite(hex)).toBe(false);
     }
-    expect(isNearWhite('#F9D24F')).toBe(false); // Yellow: light, but not near-white
-  });
-
-  it('flags the lightest grey but not the next step down', () => {
-    expect(isNearWhite('#ffffff')).toBe(true);
-    expect(isNearWhite('#90A4AE')).toBe(false);
+    expect(isWhite('#F9D24F')).toBe(false); // Yellow: light, but not white
+    expect(isWhite('#90A4AE')).toBe(false); // Lightest non-white grey in the picker
   });
 
   it('returns false for malformed input', () => {
-    expect(isNearWhite('')).toBe(false);
-    expect(isNearWhite('white')).toBe(false);
-    expect(isNearWhite('#fff')).toBe(false);
+    expect(isWhite('')).toBe(false);
+    expect(isWhite('#fffffe')).toBe(false);
   });
 });
