@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { ROOT, fail } from './lib/utils.mjs';
+import { pixelate } from './lib/pixelate.mjs';
 import { STYLE_SUFFIXES, STYLE_NAMES } from '../web/src/lib/ai/styles.ts';
 import { buildPromptForStyle } from '../web/src/lib/ai/prompt.ts';
 import { classifyGeminiResponse } from '../web/src/lib/server/aiSafety.ts';
@@ -23,20 +24,9 @@ const STYLES_DIR = join(ROOT, 'web', 'static', 'styles');
 const SOURCE_SVG = join(STYLES_DIR, 'source.svg');
 const THUMB_SIZE = 448;
 const WEBP_QUALITY = 75;
-// gemini-2.5-flash-image can't reliably render a whole scene as clean pixel art,
-// so the Pixel cover renders a plain illustration and pixelates it here instead:
-// average-downsample to a coarse grid, then nearest-upsample back for hard blocks.
-// PIXEL_GRID divides THUMB_SIZE evenly so every block is the same size.
-const PIXEL_GRID = 32;
+// The Pixel cover renders a plain illustration and pixelates that (lib/pixelate.mjs)
+// because the model can't reliably render a whole scene as clean pixel art.
 const PIXEL_BASE_STYLE = 'Default';
-
-async function pixelate(imageBuffer) {
-  const small = await sharp(imageBuffer)
-    .resize(PIXEL_GRID, PIXEL_GRID, { fit: 'fill' })
-    .png()
-    .toBuffer();
-  return sharp(small).resize(THUMB_SIZE, THUMB_SIZE, { kernel: sharp.kernel.nearest });
-}
 
 // Generate one styled render of a drawing. Returns raw image bytes + mime type,
 // or throws with the refusal/empty reason. Kept free of file/CLI concerns so it
@@ -106,7 +96,7 @@ for (const style of styles) {
       temperature,
     });
     let pipeline = sharp(bytes).resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover' });
-    if (isPixel) pipeline = await pixelate(await pipeline.png().toBuffer());
+    if (isPixel) pipeline = await pixelate(await pipeline.png().toBuffer(), THUMB_SIZE);
     await pipeline.webp({ quality: WEBP_QUALITY }).toFile(out);
     console.log(`saved ${out}`);
   } catch (err) {
