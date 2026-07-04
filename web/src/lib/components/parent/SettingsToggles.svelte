@@ -1,12 +1,15 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
+  import Slider from '../Slider.svelte';
   import Icon from '../Icon.svelte';
   import {
     settings,
     setSound,
     setSoundVolume,
+    setActionButtonScale,
+    ACTION_BUTTON_SCALE_MIN,
+    ACTION_BUTTON_SCALE_MAX,
     setSaveOnDelete,
     setScreenshot,
     setUndoButton,
@@ -20,6 +23,7 @@
     changeSaveFolder,
     forgetSaveFolder,
   } from '$lib/state/settings.svelte';
+  import { setResizingActionButtons } from '$lib/state/ui.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { supportsOrientationLock } from '$lib/platform';
   import { folderSaveSupported } from '$lib/drawing/folderSave';
@@ -36,22 +40,6 @@
   const PREVIEW_SPEED = 0.45;
   let previewingVolume = false;
 
-  let volumeTrack: HTMLDivElement;
-  let dragPointerId: number | null = null;
-  let dragStartX = 0;
-  let dragStartValue = 0;
-
-  function clampVolume(value: number) {
-    return Math.round(Math.min(100, Math.max(0, value)));
-  }
-
-  function applyVolume(next: number) {
-    const clamped = clampVolume(next);
-    if (clamped === settings.soundVolume) return;
-    setSoundVolume(clamped);
-    previewVolume();
-  }
-
   // Side-effect on top of the persisted setting: disabling the coloring book
   // should also clear any active overlay page.
   function toggleColoringBook() {
@@ -60,89 +48,29 @@
     if (!next) clearOverlay();
   }
 
+  // While the volume slider is being adjusted, loop the pencil-scratch sound so
+  // the parent hears the level they're setting.
   function previewVolume() {
     if (!settings.soundEnabled || !previewingVolume) return;
     playDrawSound({ speed: PREVIEW_SPEED });
   }
 
-  function startVolumePreview() {
-    previewingVolume = true;
+  function onVolumeActive(active: boolean) {
+    previewingVolume = active;
+    if (active) previewVolume();
+    else stopDrawSound();
+  }
+
+  function onVolumeInput(value: number) {
+    setSoundVolume(value);
     previewVolume();
   }
 
-  function stopVolumePreview() {
-    previewingVolume = false;
-    stopDrawSound();
-  }
-
-  // Relative drag: grabbing anywhere on the bar and sliding moves the value by
-  // the distance travelled, rather than jumping to the finger like a native range.
-  // Move/up are tracked on window so the drag keeps following the finger even when
-  // it leaves the bar (more reliable than setPointerCapture).
-  function onVolumePointerDown(event: PointerEvent) {
-    if (!event.isPrimary) return;
-    dragPointerId = event.pointerId;
-    dragStartX = event.clientX;
-    dragStartValue = settings.soundVolume;
-    window.addEventListener('pointermove', onVolumePointerMove);
-    window.addEventListener('pointerup', onVolumePointerUp);
-    window.addEventListener('pointercancel', onVolumePointerUp);
-    startVolumePreview();
-    event.preventDefault();
-  }
-
-  function onVolumePointerMove(event: PointerEvent) {
-    if (dragPointerId !== event.pointerId) return;
-    const width = volumeTrack?.clientWidth || 1;
-    const deltaValue = ((event.clientX - dragStartX) / width) * 100;
-    applyVolume(dragStartValue + deltaValue);
-    event.preventDefault();
-  }
-
-  function onVolumePointerUp(event: PointerEvent) {
-    if (dragPointerId !== event.pointerId) return;
-    dragPointerId = null;
-    window.removeEventListener('pointermove', onVolumePointerMove);
-    window.removeEventListener('pointerup', onVolumePointerUp);
-    window.removeEventListener('pointercancel', onVolumePointerUp);
-    stopVolumePreview();
-  }
-
-  onDestroy(() => {
-    window.removeEventListener('pointermove', onVolumePointerMove);
-    window.removeEventListener('pointerup', onVolumePointerUp);
-    window.removeEventListener('pointercancel', onVolumePointerUp);
-  });
-
-  function onVolumeKeyDown(event: KeyboardEvent) {
-    let next = settings.soundVolume;
-    switch (event.key) {
-      case 'ArrowLeft':
-      case 'ArrowDown':
-        next -= 1;
-        break;
-      case 'ArrowRight':
-      case 'ArrowUp':
-        next += 1;
-        break;
-      case 'PageDown':
-        next -= 10;
-        break;
-      case 'PageUp':
-        next += 10;
-        break;
-      case 'Home':
-        next = 0;
-        break;
-      case 'End':
-        next = 100;
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-    startVolumePreview();
-    applyVolume(next);
+  // While the button-size slider is dragged, the Parent Center melts away to just
+  // the slider (see ParentCenter) so the parent can watch the action buttons
+  // resize live behind it.
+  function onScaleActive(active: boolean) {
+    setResizingActionButtons(active);
   }
 </script>
 
@@ -158,29 +86,20 @@
       onToggle={setSound}
     />
     {#if settings.soundEnabled}
-      <div class="volume-setting" transition:slide={{ duration: 220 }}>
-        <div class="volume-label" id="soundVolumeLabel">
+      <div class="slider-setting" transition:slide={{ duration: 220 }}>
+        <div class="slider-label" id="soundVolumeLabel">
           <span>Volume</span>
           <span>{settings.soundVolume}%</span>
         </div>
-        <div
-          class="volume-slider"
-          role="slider"
-          tabindex="0"
-          aria-labelledby="soundVolumeLabel"
-          aria-valuemin="0"
-          aria-valuemax="100"
-          aria-valuenow={settings.soundVolume}
-          aria-valuetext="{settings.soundVolume}%"
-          onpointerdown={onVolumePointerDown}
-          onkeydown={onVolumeKeyDown}
-          onkeyup={stopVolumePreview}
-          onblur={stopVolumePreview}
-        >
-          <div class="volume-track" bind:this={volumeTrack}>
-            <div class="volume-fill" style:width="{settings.soundVolume}%"></div>
-          </div>
-        </div>
+        <Slider
+          value={settings.soundVolume}
+          min={0}
+          max={100}
+          labelId="soundVolumeLabel"
+          valueText="{settings.soundVolume}%"
+          onInput={onVolumeInput}
+          onActiveChange={onVolumeActive}
+        />
       </div>
     {/if}
   </div>
@@ -282,6 +201,25 @@
   </div>
 
   {#if settings.advancedControlsEnabled}
+    <div class="setting slider-setting button-size-setting" transition:slide={{ duration: 220 }}>
+      <div class="slider-label" id="actionButtonScaleLabel">
+        <span class="slider-label-name">
+          <Icon name="customize" class="setting-icon" />
+          Button Size
+        </span>
+        <span>{settings.actionButtonScale}%</span>
+      </div>
+      <Slider
+        value={settings.actionButtonScale}
+        min={ACTION_BUTTON_SCALE_MIN}
+        max={ACTION_BUTTON_SCALE_MAX}
+        labelId="actionButtonScaleLabel"
+        valueText="{settings.actionButtonScale}%"
+        onInput={setActionButtonScale}
+        onActiveChange={onScaleActive}
+      />
+    </div>
+
     <div class="setting" transition:slide={{ duration: 220 }}>
       <ToggleRow
         icon="line-weight"
@@ -437,11 +375,17 @@
     height: 13px;
   }
 
-  .volume-setting {
+  /* Volume sits indented under its toggle; the button-size slider is a full
+     setting card of its own. Both share the label + Slider layout. */
+  .slider-setting {
     margin: 12px 0 2px 30px;
   }
 
-  .volume-label {
+  .button-size-setting {
+    margin: 0;
+  }
+
+  .slider-label {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -452,37 +396,12 @@
     color: #666;
   }
 
-  .volume-slider {
-    width: 100%;
-    cursor: pointer;
-    touch-action: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .volume-slider:focus-visible {
-    outline: none;
-  }
-
-  .volume-slider:focus-visible .volume-track {
-    outline: 3px solid var(--brand);
-    outline-offset: 2px;
-  }
-
-  .volume-track {
-    position: relative;
-    width: 100%;
-    height: 28px;
-    border-radius: 999px;
-    background: #e9e9e9;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
-    overflow: hidden;
-  }
-
-  .volume-fill {
-    position: absolute;
-    inset: 0 auto 0 0;
-    height: 100%;
-    border-radius: 999px;
-    background: var(--brand);
+  .slider-label-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
   }
 </style>

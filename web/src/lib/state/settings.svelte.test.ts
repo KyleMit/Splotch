@@ -3,6 +3,10 @@ import {
   settings,
   setSound,
   setSoundVolume,
+  setActionButtonScale,
+  ACTION_BUTTON_SCALE_MIN,
+  ACTION_BUTTON_SCALE_MAX,
+  ACTION_BUTTON_SCALE_DEFAULT,
   setEraser,
   setDrawerOpen,
   setAiAccessToken,
@@ -11,6 +15,7 @@ import {
 
 const SOUND_KEY = 'splotch-sound-enabled';
 const SOUND_VOLUME_KEY = 'splotch-sound-volume';
+const ACTION_BUTTON_SCALE_KEY = 'splotch-action-button-scale';
 const ERASER_KEY = 'splotch-eraser-enabled';
 const DRAWER_OPEN_KEY = 'splotch-drawer-open';
 const AI_ACCESS_TOKEN_KEY = 'splotch-ai-access-token';
@@ -62,6 +67,30 @@ describe('setSoundVolume', () => {
   });
 });
 
+describe('setActionButtonScale', () => {
+  it('updates the live store and persists the scale percentage', () => {
+    setActionButtonScale(120);
+    expect(settings.actionButtonScale).toBe(120);
+    expect(localStorage.getItem(ACTION_BUTTON_SCALE_KEY)).toBe('120');
+  });
+
+  it('clamps stored scale to the allowed range', () => {
+    setActionButtonScale(999);
+    expect(settings.actionButtonScale).toBe(ACTION_BUTTON_SCALE_MAX);
+    expect(localStorage.getItem(ACTION_BUTTON_SCALE_KEY)).toBe(String(ACTION_BUTTON_SCALE_MAX));
+
+    setActionButtonScale(0);
+    expect(settings.actionButtonScale).toBe(ACTION_BUTTON_SCALE_MIN);
+    expect(localStorage.getItem(ACTION_BUTTON_SCALE_KEY)).toBe(String(ACTION_BUTTON_SCALE_MIN));
+  });
+
+  it('falls back to the default scale for invalid values', () => {
+    setActionButtonScale(NaN);
+    expect(settings.actionButtonScale).toBe(ACTION_BUTTON_SCALE_DEFAULT);
+    expect(localStorage.getItem(ACTION_BUTTON_SCALE_KEY)).toBe(String(ACTION_BUTTON_SCALE_DEFAULT));
+  });
+});
+
 describe('setAiAccessToken', () => {
   it('persists the token verbatim as a string', () => {
     setAiAccessToken('abc123');
@@ -78,6 +107,7 @@ describe('reloadSettings', () => {
     setDrawerOpen(false);
     localStorage.setItem(SOUND_KEY, 'false');
     localStorage.setItem(SOUND_VOLUME_KEY, '35');
+    localStorage.setItem(ACTION_BUTTON_SCALE_KEY, '130');
     localStorage.setItem(DRAWER_OPEN_KEY, 'true');
     localStorage.setItem(AI_ACCESS_TOKEN_KEY, 'recovered-token');
 
@@ -85,6 +115,7 @@ describe('reloadSettings', () => {
 
     expect(settings.soundEnabled).toBe(false);
     expect(settings.soundVolume).toBe(35);
+    expect(settings.actionButtonScale).toBe(130);
     expect(settings.drawerOpen).toBe(true);
     expect(settings.aiAccessToken).toBe('recovered-token');
   });

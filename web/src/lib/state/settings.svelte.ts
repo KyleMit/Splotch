@@ -18,6 +18,7 @@ import {
 
 const SOUND_KEY = 'splotch-sound-enabled';
 const SOUND_VOLUME_KEY = 'splotch-sound-volume';
+const ACTION_BUTTON_SCALE_KEY = 'splotch-action-button-scale';
 const SAVE_ON_DELETE_KEY = 'splotch-save-on-delete';
 const SCREENSHOT_KEY = 'splotch-screenshot-enabled';
 const UNDO_KEY = 'splotch-undo-button-enabled';
@@ -108,9 +109,23 @@ function clampVolume(v: number) {
   return Math.max(0, Math.min(100, Math.round(v)));
 }
 
+// Action-center button size, expressed as a percentage of the authored size
+// (100 = the default 60px/55px buttons). The range is symmetric around the
+// default so the slider sits half-filled at 100%.
+export const ACTION_BUTTON_SCALE_MIN = 60;
+export const ACTION_BUTTON_SCALE_MAX = 140;
+export const ACTION_BUTTON_SCALE_DEFAULT = 100;
+
+function clampButtonScale(v: number) {
+  if (!Number.isFinite(v)) return ACTION_BUTTON_SCALE_DEFAULT;
+  return Math.max(ACTION_BUTTON_SCALE_MIN, Math.min(ACTION_BUTTON_SCALE_MAX, Math.round(v)));
+}
+
 interface Settings extends Record<BoolSettingKey, boolean> {
   // Drawing sound volume percentage. 50 is the normal authored volume, 100 is 2x.
   soundVolume: number;
+  // Action-center button size percentage (see ACTION_BUTTON_SCALE_* above).
+  actionButtonScale: number;
   // String setting (special case): the managed-access token, persisted verbatim.
   aiAccessToken: string;
   // Parent-supplied Gemini API key (BYOK). Held in memory only; hydrated from
@@ -129,6 +144,9 @@ export const settings: Settings = $state({
     Object.entries(BOOL_SETTINGS).map(([prop, [key, def]]) => [prop, readBool(key, def)])
   ) as Record<BoolSettingKey, boolean>),
   soundVolume: clampVolume(readInt(SOUND_VOLUME_KEY, 50)),
+  actionButtonScale: clampButtonScale(
+    readInt(ACTION_BUTTON_SCALE_KEY, ACTION_BUTTON_SCALE_DEFAULT)
+  ),
   aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
   aiUserApiKey: '',
   saveFolderName: null,
@@ -167,6 +185,12 @@ export function setSoundVolume(v: number) {
   writeInt(SOUND_VOLUME_KEY, next);
 }
 
+export function setActionButtonScale(v: number) {
+  const next = clampButtonScale(v);
+  settings.actionButtonScale = next;
+  writeInt(ACTION_BUTTON_SCALE_KEY, next);
+}
+
 export function setAiAccessToken(v: string) {
   settings.aiAccessToken = v;
   writeString(AI_ACCESS_TOKEN_KEY, v);
@@ -189,6 +213,9 @@ export function reloadSettings() {
     settings[prop] = readBool(key, settings[prop]);
   }
   settings.soundVolume = clampVolume(readInt(SOUND_VOLUME_KEY, settings.soundVolume));
+  settings.actionButtonScale = clampButtonScale(
+    readInt(ACTION_BUTTON_SCALE_KEY, settings.actionButtonScale)
+  );
   settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);
 }
 

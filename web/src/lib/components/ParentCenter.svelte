@@ -29,6 +29,7 @@
 
 <dialog
   class="parent-help-modal modal-dialog modal-fly-in modal-shell"
+  class:resizing={ui.resizingActionButtons}
   id="parentHelpModal"
   use:modalDialog={() => ({
     open: ui.parentCenterOpen,
@@ -120,6 +121,34 @@
     width: 90%;
     max-height: 80vh;
     overflow: hidden;
+  }
+
+  /* While the parent drags the Button Size slider, the modal melts away to just
+     that slider so the action buttons resize in full view behind it. The slider
+     keeps its on-screen position (it stays under the finger); everything else in
+     the card — heading, tabs, other settings — is hidden, and the card surface
+     and backdrop go transparent so the canvas and buttons show through. The
+     slider still occupies its normal slot in the (now invisible) layout, so no
+     repositioning gymnastics are needed. */
+  .parent-help-modal.resizing {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .parent-help-modal.resizing::backdrop {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .parent-help-modal.resizing .parent-help-content {
+    visibility: hidden;
+  }
+
+  .parent-help-modal.resizing :global(.button-size-setting) {
+    visibility: visible;
+    background: #fff;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
   }
 
   .parent-help-content {

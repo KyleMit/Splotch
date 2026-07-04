@@ -45,8 +45,16 @@
 
   // When advanced controls are disabled the drawer and its chevron are removed
   // entirely, simplifying the UI. When enabled, the chevron shows and the
-  // drawer expands per its remembered open state.
-  const drawerExpanded = $derived(settings.advancedControlsEnabled && settings.drawerOpen);
+  // drawer expands per its remembered open state. Dragging the button-size
+  // slider force-opens the drawer (without persisting) so the parent can watch
+  // the buttons resize live.
+  const drawerExpanded = $derived(
+    (settings.advancedControlsEnabled && settings.drawerOpen) || ui.resizingActionButtons
+  );
+
+  // Live button scale, published as a CSS custom property the button rules
+  // multiply into their fixed sizes. 100% → 1 (the authored 60px/55px).
+  const buttonScale = $derived(settings.actionButtonScale / 100);
 
   // The stroke-size lines preview what you'll lay down: the pen color, or the
   // eraser's pink while erasing. Inherited by the icons via currentColor.
@@ -151,7 +159,12 @@
      Scribble against the next stroke (ADR-0038); that also suppresses the tap's
      synthesized click, so every button here activates via use:scribbleTap
      (pointerup for pointers, click only for keyboard/AT) instead of onclick. -->
-<div class="actions-panel" style:left={leftOffset} use:scribbleGuard>
+<div
+  class="actions-panel"
+  style:left={leftOffset}
+  style:--action-btn-scale={buttonScale}
+  use:scribbleGuard
+>
   {#if drawerExpanded}
     <div class="actions-drawer" transition:slide={{ axis: isPortrait ? 'y' : 'x', duration: 280 }}>
       <div
@@ -362,10 +375,11 @@
 
   /* Sized to roughly match the Color Swatch touch target (60px landscape /
      55px portrait) so the action buttons feel like equal-weight tap targets
-     for small hands. */
+     for small hands. The parent can rescale them from the Parent Center via
+     --action-btn-scale (defaults to 1 when unset). */
   .action-button {
-    width: 60px;
-    height: 60px;
+    width: calc(60px * var(--action-btn-scale, 1));
+    height: calc(60px * var(--action-btn-scale, 1));
     background: white;
     border: 2px solid #ddd;
     border-radius: 14px;
@@ -376,14 +390,14 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     transition: all 0.2s ease;
     touch-action: manipulation;
-    padding: 10px;
+    padding: calc(10px * var(--action-btn-scale, 1));
   }
 
   @media (orientation: portrait) {
     .action-button {
-      width: 55px;
-      height: 55px;
-      padding: 9px;
+      width: calc(55px * var(--action-btn-scale, 1));
+      height: calc(55px * var(--action-btn-scale, 1));
+      padding: calc(9px * var(--action-btn-scale, 1));
     }
   }
 
@@ -513,8 +527,8 @@
   }
 
   .stroke-size-button {
-    width: 60px;
-    height: 60px;
+    width: calc(60px * var(--action-btn-scale, 1));
+    height: calc(60px * var(--action-btn-scale, 1));
     background: white;
     border: 2px solid #ddd;
     border-radius: 14px;
@@ -525,7 +539,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 7px;
+    padding: calc(7px * var(--action-btn-scale, 1));
     transition: all 0.15s ease;
     touch-action: manipulation;
   }
