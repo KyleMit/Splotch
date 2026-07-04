@@ -14,6 +14,8 @@ export type IconName =
   | 'download'
   | 'eraser'
   | 'folder'
+  | 'fullscreen'
+  | 'fullscreen-exit'
   | 'github'
   | 'home'
   | 'install-homescreen'

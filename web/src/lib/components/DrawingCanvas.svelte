@@ -22,6 +22,7 @@
   import { settings } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
   import { isNative } from '$lib/platform';
+  import FullscreenToggle from './FullscreenToggle.svelte';
 
   let canvasEl: HTMLCanvasElement;
 
@@ -143,6 +144,7 @@
       style:height="{eraserSizePx}px"
     ></div>
   {/if}
+  <FullscreenToggle />
 </div>
 
 <style>

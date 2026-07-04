@@ -54,6 +54,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `state/tool.svelte.ts` | Active tool (pen vs. eraser). |
 | `state/settings.svelte.ts` | User-configurable toggles (sounds, save-on-delete, screenshot button, coloring books, etc.), persisted via `storage.ts`. |
 | `state/layout.svelte.ts` | Viewport and orientation state. |
+| `state/fullscreen.svelte.ts` | Immersive-fullscreen support + active state and the toggle action, backing the Fullscreen Toggle button. Android web only; dismisses the mobile URL bar. |
 | `state/network.svelte.ts` | Online/offline state via `@capacitor/network`. Controls AI button visibility on native. |
 | `state/install.svelte.ts` | PWA install state (ADR-0039). Captures Chromium's `beforeinstallprompt` for one-tap install, falls back to iOS/Android guided hints; drives the Install Banner and the Parent Center Setup tab. Web-only; inert in the native shell. |
 | `state/coloringBook.svelte.ts` | Selected coloring book and page. |
@@ -103,6 +104,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
   * **Hexagon Grid** - Honeycomb pattern of color tiles in the color picker
   * **Color Hexagon** - Individual hexagon-shaped color tile; drag across to explore, lift to select
 * **Drawing Canvas** - Main touch-responsive drawing surface
+* **Fullscreen Toggle** - Subtle top-left button that enters/exits immersive fullscreen to dismiss the mobile URL bar a non-scrolling canvas can never scroll away; the icon flips between expand and minimize. Opt-in only (never auto-triggered, so the chrome flicker is user-initiated) and shown on Android web browsers only — iOS Safari has no element fullscreen and the native shell is already fullscreen. See `docs/COMPATIBILITY.md`.
 * **Notch Band** - Thin strip filling the device's top safe-area inset (the notch / hole-punch area behind the system clock), painted with the active drawing color and cleared to paper-white on the eraser. Hidden on devices without a real cutout (bezel iPads). See ADR-0026.
 * **Clear Button** - Floating trash button for clearing the canvas
   * **Clear Preview Line** - Torn paper edge visual indicator showing where canvas will be cleared during drag
