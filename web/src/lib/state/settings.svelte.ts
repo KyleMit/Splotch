@@ -104,8 +104,11 @@ const BOOL_SETTINGS = {
 
 type BoolSettingKey = keyof typeof BOOL_SETTINGS;
 
+// 50 is the normal authored volume (the slider's midpoint and its snap detent).
+export const SOUND_VOLUME_DEFAULT = 50;
+
 function clampVolume(v: number) {
-  if (!Number.isFinite(v)) return 50;
+  if (!Number.isFinite(v)) return SOUND_VOLUME_DEFAULT;
   return Math.max(0, Math.min(100, Math.round(v)));
 }
 
@@ -143,7 +146,7 @@ export const settings: Settings = $state({
   ...(Object.fromEntries(
     Object.entries(BOOL_SETTINGS).map(([prop, [key, def]]) => [prop, readBool(key, def)])
   ) as Record<BoolSettingKey, boolean>),
-  soundVolume: clampVolume(readInt(SOUND_VOLUME_KEY, 50)),
+  soundVolume: clampVolume(readInt(SOUND_VOLUME_KEY, SOUND_VOLUME_DEFAULT)),
   actionButtonScale: clampButtonScale(
     readInt(ACTION_BUTTON_SCALE_KEY, ACTION_BUTTON_SCALE_DEFAULT)
   ),

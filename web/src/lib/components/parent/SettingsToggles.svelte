@@ -7,9 +7,11 @@
     settings,
     setSound,
     setSoundVolume,
+    SOUND_VOLUME_DEFAULT,
     setActionButtonScale,
     ACTION_BUTTON_SCALE_MIN,
     ACTION_BUTTON_SCALE_MAX,
+    ACTION_BUTTON_SCALE_DEFAULT,
     setSaveOnDelete,
     setScreenshot,
     setUndoButton,
@@ -95,6 +97,7 @@
           value={settings.soundVolume}
           min={0}
           max={100}
+          snap={SOUND_VOLUME_DEFAULT}
           labelId="soundVolumeLabel"
           valueText="{settings.soundVolume}%"
           onInput={onVolumeInput}
@@ -213,6 +216,7 @@
         value={settings.actionButtonScale}
         min={ACTION_BUTTON_SCALE_MIN}
         max={ACTION_BUTTON_SCALE_MAX}
+        snap={ACTION_BUTTON_SCALE_DEFAULT}
         labelId="actionButtonScaleLabel"
         valueText="{settings.actionButtonScale}%"
         onInput={setActionButtonScale}

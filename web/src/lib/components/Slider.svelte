@@ -17,6 +17,9 @@
     labelId: string;
     // Human-readable value for aria-valuetext (e.g. "50%").
     valueText: string;
+    // Optional magnetic detent: while dragging, values within a small band of
+    // this one stick to it, so the parent can land on the default without fuss.
+    snap?: number;
     onInput: (value: number) => void;
     // Fired when a pointer drag or key adjustment begins/ends, so the caller can
     // run side effects for the duration (preview a sound, reveal the target, …).
@@ -31,9 +34,14 @@
     pageStep = 10,
     labelId,
     valueText,
+    snap,
     onInput,
     onActiveChange,
   }: Props = $props();
+
+  // Half-width of the snap band, in value units: ~4.5% of the track, so the
+  // detent feels the same size on any range (0–100 volume or 70–130 size).
+  const snapBand = $derived((max - min) * 0.045);
 
   let trackEl: HTMLDivElement;
   let dragPointerId: number | null = null;
@@ -75,7 +83,11 @@
     if (dragPointerId !== event.pointerId) return;
     const width = trackEl?.clientWidth || 1;
     const deltaValue = ((event.clientX - dragStartX) / width) * (max - min);
-    apply(dragStartValue + deltaValue);
+    let next = dragStartValue + deltaValue;
+    // Detent only on pointer drag — keyboard stepping must never get stuck at
+    // the snap point (a single arrow key could otherwise be swallowed).
+    if (snap != null && Math.abs(next - snap) <= snapBand) next = snap;
+    apply(next);
     event.preventDefault();
   }
 
