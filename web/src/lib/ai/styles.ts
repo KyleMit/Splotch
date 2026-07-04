@@ -9,10 +9,10 @@ export const STYLE_SUFFIXES: Record<string, string> = {
   Watercolor:
     'Render the final image as a soft watercolor painting with gentle washes and bleeding edges.',
   Paper:
-    'Render the final image as a 3D pop-up storybook page and layered paper cutout collage with depth shadows and textured edges.',
+    'Render the final image as a handmade layered paper-craft collage photographed from above: cut each element from thick, textured construction paper with soft rounded edges and lay it on a warm off-white textured-paper background, with soft natural drop shadows between the layers for a tactile, three-dimensional feel. Use no drawn outlines; the shapes are defined only by the paper color and the gentle shadows where the layers overlap. Fill the whole frame edge to edge, with no surrounding border or matte.',
   Felt: 'Render the final image as a handmade felt craft scene, with fuzzy 3D fabric textures and stitched details.',
   Sticker:
-    'Render the final image as a bold sticker illustration with thick outlines, solid colors, and cutout white borders.',
+    'Render the final image as a bold sticker illustration with thick outlines, solid colors, and a white die-cut border, sitting on a plain white background with a soft drop shadow beneath it so it looks like a sticker peeling off the page.',
   Cartoon:
     'Render the final image as a clean digital cartoon and comic book illustration with bold lines, smooth shading, and crisp edges.',
   Pixel:

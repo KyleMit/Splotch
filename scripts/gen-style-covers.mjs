@@ -23,6 +23,20 @@ const STYLES_DIR = join(ROOT, 'web', 'static', 'styles');
 const SOURCE_SVG = join(STYLES_DIR, 'source.svg');
 const THUMB_SIZE = 448;
 const WEBP_QUALITY = 75;
+// gemini-2.5-flash-image can't reliably render a whole scene as clean pixel art,
+// so the Pixel cover renders a plain illustration and pixelates it here instead:
+// average-downsample to a coarse grid, then nearest-upsample back for hard blocks.
+// PIXEL_GRID divides THUMB_SIZE evenly so every block is the same size.
+const PIXEL_GRID = 32;
+const PIXEL_BASE_STYLE = 'Default';
+
+async function pixelate(imageBuffer) {
+  const small = await sharp(imageBuffer)
+    .resize(PIXEL_GRID, PIXEL_GRID, { fit: 'fill' })
+    .png()
+    .toBuffer();
+  return sharp(small).resize(THUMB_SIZE, THUMB_SIZE, { kernel: sharp.kernel.nearest });
+}
 
 // Generate one styled render of a drawing. Returns raw image bytes + mime type,
 // or throws with the refusal/empty reason. Kept free of file/CLI concerns so it
@@ -84,16 +98,16 @@ for (const style of styles) {
   const out = join(STYLES_DIR, `${style.toLowerCase()}.webp`);
   process.stdout.write(`${style} ... `);
   try {
+    const isPixel = style === 'Pixel';
     const { bytes } = await generateStyledImage(ai, {
       imageBytes: sourcePng,
       mimeType: 'image/png',
-      style,
+      style: isPixel ? PIXEL_BASE_STYLE : style,
       temperature,
     });
-    await sharp(bytes)
-      .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover' })
-      .webp({ quality: WEBP_QUALITY })
-      .toFile(out);
+    let pipeline = sharp(bytes).resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover' });
+    if (isPixel) pipeline = await pixelate(await pipeline.png().toBuffer());
+    await pipeline.webp({ quality: WEBP_QUALITY }).toFile(out);
     console.log(`saved ${out}`);
   } catch (err) {
     failures++;
