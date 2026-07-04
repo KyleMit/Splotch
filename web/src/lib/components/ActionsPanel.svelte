@@ -461,12 +461,17 @@
     display: none;
   }
 
+  /* Landscape (the base rule; portrait overrides below). The action panel sits
+     along the bottom with little height to spare, so the flyout pops up as a
+     horizontal row — one button tall — instead of a vertical column that would
+     run off the top of a short landscape screen. There's ample width to spread
+     the sizes rightward. */
   .stroke-width-menu {
     position: absolute;
     left: 0;
     bottom: calc(100% + 8px);
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 6px;
     padding: 6px;
     background: white;
@@ -484,11 +489,20 @@
     }
   }
 
-  /* On very narrow portrait screens the horizontal flyout runs off the right
-     edge, so stack the sizes vertically. It stays anchored to the right of the
-     button (bottom-aligned) so it runs up alongside the other action buttons
-     instead of over the top of them. */
-  @media (orientation: portrait) and (max-width: 376px) {
+  /* On phone-width portrait screens the horizontal flyout runs under the
+     bottom-right Parent Center button (and, when narrower, off the right edge):
+     a tap on the rightmost size closes the menu, and the trailing click falls
+     through to the parent button and opens its modal. Stack the sizes
+     vertically instead so the flyout runs up alongside the other action buttons
+     and clears the parent button. The row layout stays for tablet-width portrait,
+     where there's room to the right of the palette.
+
+     Breakpoint: the row's right edge is fixed (~411px with the 60px size
+     buttons — panel inset + stroke button + five buttons); the parent button
+     occupies the rightmost ~56px, so they collide below ~467px of viewport
+     width. Stay in the column up to 540px for headroom (button sizes have grown
+     before) while keeping the row for tablet-width portrait (≥600px devices). */
+  @media (orientation: portrait) and (max-width: 540px) {
     .stroke-width-menu {
       flex-direction: column;
     }

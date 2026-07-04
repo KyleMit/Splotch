@@ -327,6 +327,56 @@ test('pen and eraser keep independent stroke sizes that persist across reload', 
   await expect(page.locator('button[aria-label="Size 1"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
+// On a phone-width portrait screen the stroke-width flyout used to open as a
+// horizontal row that ran under the bottom-right Parent Center button. Tapping
+// the rightmost size closed the menu on pointerup, and the trailing click then
+// fell through to the now-unobscured Parent Center button and launched its
+// modal. The flyout must clear that button so a size tap can't open it. 460px
+// sits in the range where the row would still reach the parent button, so it
+// pins the column breakpoint high enough for the current button sizes.
+test('the stroke flyout clears the Parent Center button on a phone', async ({ page }) => {
+  await page.setViewportSize({ width: 460, height: 852 });
+  await gotoApp(page);
+  await openDrawer(page);
+  await openStrokeMenu(page);
+
+  const parentModal = page.locator('#parentHelpModal');
+  await expect(parentModal).toBeHidden();
+
+  const parent = (await page.locator('#parentHelpButton').boundingBox())!;
+  const size5 = (await page.locator('button[aria-label="Size 5"]').boundingBox())!;
+  const overlaps =
+    size5.x < parent.x + parent.width &&
+    size5.x + size5.width > parent.x &&
+    size5.y < parent.y + parent.height &&
+    size5.y + size5.height > parent.y;
+  expect(overlaps, 'stroke flyout overlaps the Parent Center button').toBe(false);
+
+  // Tapping the rightmost size selects it and leaves the Parent Center closed.
+  await page.locator('button[aria-label="Size 5"]').click();
+  await expect(page.locator('button[aria-label="Size 5"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(parentModal).toBeHidden();
+});
+
+// Landscape counterpart: the action panel hugs the bottom with little height to
+// spare, so the flyout popping up as a tall vertical column ran off the top of a
+// short landscape screen. It must pop up as a short horizontal row that fits —
+// checked after a real rotation so the orientation switch is exercised too.
+test('the stroke flyout stays on-screen after rotating to landscape', async ({ page }) => {
+  await page.setViewportSize({ width: 400, height: 740 });
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await page.setViewportSize({ width: 740, height: 360 });
+  await openStrokeMenu(page);
+
+  const menu = (await page.locator('.stroke-width-menu').boundingBox())!;
+  expect(menu.y, 'stroke flyout runs off the top of the screen').toBeGreaterThanOrEqual(0);
+  expect(menu.y + menu.height).toBeLessThanOrEqual(360);
+  // A short horizontal row, not the tall column that overflowed.
+  expect(menu.height).toBeLessThan(120);
+});
+
 test('the drawer open state persists across a reload', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
