@@ -28,6 +28,7 @@ export type IconName =
   | 'more-horiz'
   | 'palette'
   | 'parent'
+  | 'photo-size-select-small'
   | 'pin'
   | 'plus'
   | 'remove-page'

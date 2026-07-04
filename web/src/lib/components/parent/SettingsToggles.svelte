@@ -204,7 +204,7 @@
     <div class="setting slider-setting button-size-setting" transition:slide={{ duration: 220 }}>
       <div class="slider-label" id="actionButtonScaleLabel">
         <span class="slider-label-name">
-          <Icon name="customize" class="setting-icon" />
+          <Icon name="photo-size-select-small" class="setting-icon" />
           Button Size
         </span>
         <span>{settings.actionButtonScale}%</span>

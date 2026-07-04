@@ -112,8 +112,8 @@ function clampVolume(v: number) {
 // Action-center button size, expressed as a percentage of the authored size
 // (100 = the default 60px/55px buttons). The range is symmetric around the
 // default so the slider sits half-filled at 100%.
-export const ACTION_BUTTON_SCALE_MIN = 60;
-export const ACTION_BUTTON_SCALE_MAX = 140;
+export const ACTION_BUTTON_SCALE_MIN = 70;
+export const ACTION_BUTTON_SCALE_MAX = 130;
 export const ACTION_BUTTON_SCALE_DEFAULT = 100;
 
 function clampButtonScale(v: number) {

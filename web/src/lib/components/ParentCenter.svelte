@@ -148,7 +148,10 @@
   .parent-help-modal.resizing :global(.button-size-setting) {
     visibility: visible;
     background: #fff;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+    border-radius: 16px;
+    /* A tight, even lift that hugs the rounded card — not the heavy, downward
+       shadow that bled into a rectangular band below the control. */
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.16);
   }
 
   .parent-help-content {
