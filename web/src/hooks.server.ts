@@ -33,5 +33,8 @@ function corsHeaders() {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    // Let native clients cache the preflight for a day instead of paying an
+    // extra OPTIONS round trip on every cross-origin JSON request.
+    'Access-Control-Max-Age': '86400',
   };
 }

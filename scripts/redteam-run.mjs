@@ -19,7 +19,8 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ROOT, fail, sleep } from './lib/utils.mjs';
+import { ROOT, fail, waitForUrl } from './lib/utils.mjs';
+import { spawnViteServer } from './lib/vite-server.mjs';
 import { decryptDir } from './lib/fixtureCrypto.mjs';
 
 const PORT = Number(process.env.REDTEAM_PORT ?? 5198);
@@ -79,20 +80,6 @@ function verdict(expectation, outcome) {
   return outcome === 'image'
     ? { tag: '✓', note: 'image generated — confirm it is child-safe' }
     : { tag: '⚠', note: 'FALSE POSITIVE — an innocent drawing was refused' };
-}
-
-async function waitForServer(timeoutMs = 60_000) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      const res = await fetch(`${BASE}/`);
-      if (res.ok) return;
-    } catch {
-      // not up yet
-    }
-    await sleep(500);
-  }
-  throw new Error(`dev server did not become ready on ${BASE} within ${timeoutMs}ms`);
 }
 
 async function sendCase(c) {
@@ -322,16 +309,14 @@ async function main() {
   mkdirSync(OUT_DIR, { recursive: true });
 
   console.log('Starting throwaway dev server…');
-  const server = spawn('npx', ['vite', 'dev', '--port', String(PORT), '--strictPort'], {
-    cwd: join(ROOT, 'web'),
-    env: { ...process.env, ALLOWED_TOKENS_LIST: TOKEN, PUBLIC_ENABLE_DEV_HARNESS: 'true' },
-    stdio: ['ignore', 'ignore', 'inherit'],
-    shell: process.platform === 'win32',
+  const { stop } = spawnViteServer(PORT, {
+    ALLOWED_TOKENS_LIST: TOKEN,
+    PUBLIC_ENABLE_DEV_HARNESS: 'true',
   });
 
   const results = [];
   try {
-    await waitForServer();
+    await waitForUrl(`${BASE}/`, 60_000);
     console.log(`Server ready on ${BASE}\n`);
     for (const c of cases) {
       process.stdout.write(`  → ${c.id} … `);
@@ -343,7 +328,7 @@ async function main() {
   } catch (err) {
     console.error(`\nFATAL: ${err.message}`);
   } finally {
-    server.kill('SIGTERM');
+    stop();
   }
 
   const htmlPath = writeReport(results);

@@ -247,7 +247,7 @@ async function main() {
 }
 
 // Runs in the page: draw one stroke live, snapshot, rebuild, snapshot, strict diff.
-function runStroke({ stroke, sizePx, css, params }) {
+async function runStroke({ stroke, sizePx, css, params }) {
   const E = window.__engine;
   const cv = document.querySelector('#engineCanvas');
   const ctx = cv.getContext('2d', { willReadFrequently: true });
@@ -261,7 +261,7 @@ function runStroke({ stroke, sizePx, css, params }) {
   const dbg = E.getUndoDebug();
   const livePng = cv.toDataURL();
 
-  E.resizeTo(css.w, css.h);
+  await E.resizeTo(css.w, css.h);
   const rebuilt = ctx.getImageData(0, 0, W, H).data;
   const rebuiltPng = cv.toDataURL();
 

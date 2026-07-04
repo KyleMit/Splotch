@@ -79,8 +79,9 @@
     // The service worker only exists in the web build; the native apps bundle
     // their shell on-device, so there's nothing to update-check there. The
     // install prompt is likewise web-only (the native app is already installed).
+    let teardownPWAUpdates: (() => void) | undefined;
     if (!isNative()) {
-      initPWAUpdates();
+      teardownPWAUpdates = initPWAUpdates();
       initInstallPrompt();
     }
 
@@ -88,6 +89,7 @@
       document.removeEventListener('contextmenu', blockContextMenu);
       document.removeEventListener('pointerdown', onFirstPointerDown);
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      teardownPWAUpdates?.();
     };
   });
 </script>

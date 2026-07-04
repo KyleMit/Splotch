@@ -320,8 +320,12 @@
     animation: downloadPop 0.4s backwards 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .ai-result-download:hover {
-    background: #9559cd;
+  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
+     keep it sticky, leaving the button's background stuck after a tap. */
+  @media (hover: hover) {
+    .ai-result-download:hover {
+      background: #9559cd;
+    }
   }
   .ai-result-download:active {
     transform: scale(0.95);

@@ -22,13 +22,20 @@ function maskToken(token: unknown) {
   return t.length <= 4 ? '****' : `…${t.slice(-4)}`;
 }
 
+const CAS_ATTEMPTS = 3;
+
 /**
  * Record that a token generated an image, so we can spot a token going rogue.
  * Logs to the Netlify function log (real-time, synchronous) and keeps a durable
  * per-token tally in Blobs that the /admin console reads and we use to decide
- * which token to pull. Best-effort: a Blobs failure (e.g. plain `vite dev` with
- * no Blobs wired up) is logged, not thrown — usage tracking must never fail the
- * generation request.
+ * which token to pull. Two devices sharing a token — exactly the abuse this
+ * tally exists to detect — can generate concurrently, so a bare get → setJSON
+ * would let both read N and write N+1, undercounting precisely under abuse.
+ * The write is an etag compare-and-set (`onlyIfMatch` / `onlyIfNew`) with a
+ * few retries so concurrent increments serialize instead of overwriting.
+ * Best-effort: a Blobs failure (e.g. plain `vite dev` with no Blobs wired up)
+ * or exhausted retries are logged, not thrown — usage tracking must never fail
+ * the generation request.
  */
 export async function recordTokenUsage(
   token: string,
@@ -41,14 +48,23 @@ export async function recordTokenUsage(
 
   try {
     const store = getStore(STORE_NAME);
-    const prev = ((await store.get(token, { type: 'json' })) as Partial<TokenUsage> | null) || {};
-    await store.setJSON(token, {
-      count: (prev.count || 0) + 1,
-      firstUsed: prev.firstUsed || now,
-      lastUsed: now,
-      lastStyle: style || null,
-      lastPrompt: prompt,
-    } satisfies TokenUsage);
+    for (let attempt = 1; attempt <= CAS_ATTEMPTS; attempt++) {
+      const existing = await store.getWithMetadata(token, { type: 'json' });
+      const prev = (existing?.data as Partial<TokenUsage> | null) || {};
+      const next: TokenUsage = {
+        count: (prev.count || 0) + 1,
+        firstUsed: prev.firstUsed || now,
+        lastUsed: now,
+        lastStyle: style || null,
+        lastPrompt: prompt,
+      };
+      const condition = existing ? { onlyIfMatch: existing.etag } : { onlyIfNew: true };
+      const { modified } = await store.setJSON(token, next, condition);
+      if (modified) return;
+    }
+    console.warn(
+      `[ai-usage] token=${maskToken(token)} usage write conceded after ${CAS_ATTEMPTS} conflicting attempts`
+    );
   } catch (err) {
     console.warn(
       '[ai-usage] failed to persist usage to Netlify Blobs:',

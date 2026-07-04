@@ -30,6 +30,7 @@
 
 <script lang="ts">
   import Icon from '../Icon.svelte';
+  import Breadcrumb from '../Breadcrumb.svelte';
 
   let {
     authed,
@@ -151,14 +152,7 @@
 
 <div class="admin-page">
   <main class="admin">
-    <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="/" class="crumb">
-        <Icon name="home" class="crumb-icon" />
-        <span>Home</span>
-      </a>
-      <span class="crumb-sep" aria-hidden="true">/</span>
-      <span class="crumb crumb-current" aria-current="page">Admin</span>
-    </nav>
+    <Breadcrumb current="Admin" />
 
     <header class="admin-header">
       <span class="admin-badge"><Icon name="lock" class="badge-icon" /></span>
@@ -392,46 +386,6 @@
     color: #333;
   }
 
-  /* Breadcrumb back to the drawing app */
-  .breadcrumb {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 20px;
-    font-size: 14px;
-    font-weight: 600;
-  }
-
-  .crumb {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: #7c4dcf;
-    text-decoration: none;
-    padding: 4px 8px;
-    border-radius: 8px;
-    transition: background 0.15s ease;
-  }
-
-  a.crumb:hover {
-    background: #f0e9fb;
-  }
-
-  :global(.crumb .crumb-icon) {
-    width: 16px;
-    height: 16px;
-    filter: invert(33%) sepia(58%) saturate(1093%) hue-rotate(238deg) brightness(88%) contrast(89%);
-  }
-
-  .crumb-sep {
-    color: #ccc;
-  }
-
-  .crumb-current {
-    color: #999;
-    cursor: default;
-  }
-
   .admin-header {
     display: flex;
     align-items: center;
@@ -636,8 +590,12 @@
     flex-shrink: 0;
   }
 
-  .btn-primary:hover {
-    background: var(--brand-hover);
+  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
+     keep it stuck until the next tap elsewhere. */
+  @media (hover: hover) {
+    .btn-primary:hover {
+      background: var(--brand-hover);
+    }
   }
 
   .btn-ghost {
@@ -646,8 +604,10 @@
     background: #f5f0fc;
   }
 
-  .btn-ghost:hover {
-    background: #ece0fb;
+  @media (hover: hover) {
+    .btn-ghost:hover {
+      background: #ece0fb;
+    }
   }
 
   .btn-ghost.copied {
@@ -661,8 +621,10 @@
     background: #fef2f2;
   }
 
-  .btn-danger:hover {
-    background: #fbe0de;
+  @media (hover: hover) {
+    .btn-danger:hover {
+      background: #fbe0de;
+    }
   }
 
   /* Square icon-only button (the "⋯" more control). */
@@ -677,8 +639,10 @@
     background: transparent;
   }
 
-  .btn-icon:hover {
-    background: #f0f0f0;
+  @media (hover: hover) {
+    .btn-icon:hover {
+      background: #f0f0f0;
+    }
   }
 
   :global(.btn-icon .more-icon) {
@@ -812,16 +776,20 @@
     border-bottom: none;
   }
 
-  .more-menu-item:hover {
-    background: #faf7ff;
+  @media (hover: hover) {
+    .more-menu-item:hover {
+      background: #faf7ff;
+    }
   }
 
   .more-menu-item-danger {
     color: #d92d20;
   }
 
-  .more-menu-item-danger:hover {
-    background: #fff5f5;
+  @media (hover: hover) {
+    .more-menu-item-danger:hover {
+      background: #fff5f5;
+    }
   }
 
   .more-menu-item:disabled {

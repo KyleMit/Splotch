@@ -11,19 +11,22 @@
     setAiUserApiKey,
   } from '$lib/state/settings.svelte';
   import { apiUrl } from '$lib/api';
-  import { getPlatform } from '$lib/platform';
+  import { getPlatform, type Platform } from '$lib/platform';
 
-  // `open` flips true when the Parent Center modal opens; we use it to clear the
-  // input and any stale feedback, and to re-read the current platform.
-  let { open = false } = $props();
+  interface Props {
+    // `open` flips true when the Parent Center modal opens; we use it to clear
+    // the input and any stale feedback, and to re-read the current platform.
+    open?: boolean;
+  }
+  let { open = false }: Props = $props();
 
-  // 'web' | 'ios' | 'android' — drives the copy that tells the parent exactly
-  // where their API key is kept on this platform.
-  let platform = $state('web');
+  // Drives the copy that tells the parent exactly where their API key is kept on
+  // this platform.
+  let platform = $state<Platform>('web');
   // The single AI field accepts either a Gemini API key (BYOK) or a secret
   // access code. AI unlocks when the parent has provided either one.
   let keyInput = $state('');
-  let keyStatus = $state('idle'); // 'idle' | 'checking' | 'error' | 'success'
+  let keyStatus = $state<'idle' | 'checking' | 'error' | 'success'>('idle');
   let keyMessage = $state('');
   let hasApiKey = $derived(!!settings.aiUserApiKey);
   let hasAccessCode = $derived(!!settings.aiAccessToken);
@@ -286,20 +289,6 @@
 </section>
 
 <style>
-  .setting-group {
-    margin-bottom: 24px;
-  }
-
-  .setting-group:last-child {
-    margin-bottom: 0;
-  }
-
-  .setting {
-    padding: 12px 16px;
-    background: #f8f8f8;
-    border-radius: 8px;
-  }
-
   /* AI feature toggles — spaced off from the key/code panel above them. */
   .ai-controls {
     margin-top: 24px;
@@ -348,8 +337,10 @@
     flex-shrink: 0;
   }
 
-  .access-code-submit:hover {
-    background: var(--brand-hover);
+  @media (hover: hover) {
+    .access-code-submit:hover {
+      background: var(--brand-hover);
+    }
   }
 
   .access-code-submit:disabled {
@@ -469,8 +460,10 @@
     color: #b04a4a;
   }
 
-  .access-code-submit.forget:hover {
-    background: #e2e2e2;
+  @media (hover: hover) {
+    .access-code-submit.forget:hover {
+      background: #e2e2e2;
+    }
   }
 
   .byok-message {

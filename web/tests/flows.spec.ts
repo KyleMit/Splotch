@@ -447,3 +447,29 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await expect(overlay).toBeVisible();
   expect(await overlay.getAttribute('src')).toMatch(/\/coloring\/farm\/.+-(wide|tall)\.webp$/);
 });
+
+test('rotating the viewport swaps the coloring overlay to the matching art', async ({ page }) => {
+  // Rotation reaches the overlay through the shared layout module (one
+  // resize/orientationchange listener pair feeding every component), so this
+  // also guards that viewport tracking stays live after rotation settles.
+  await page.setViewportSize({ width: 900, height: 600 });
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await page.locator('#coloringBookButton').click();
+  const dialog = page.locator('#coloring-book-dialog');
+  await dialog.getByRole('button', { name: /Farm coloring book/i }).click();
+  await dialog
+    .getByRole('button', { name: /Farm coloring page/i })
+    .first()
+    .click();
+
+  const overlay = page.locator('#coloringOverlay');
+  await expect(overlay).toHaveAttribute('src', /-wide\.webp$/);
+
+  await page.setViewportSize({ width: 600, height: 900 });
+  await expect(overlay).toHaveAttribute('src', /-tall\.webp$/);
+
+  await page.setViewportSize({ width: 900, height: 600 });
+  await expect(overlay).toHaveAttribute('src', /-wide\.webp$/);
+});

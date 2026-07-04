@@ -55,12 +55,25 @@ device is offline the AI button is **hidden** automatically
 
 ### Loading native plugins (read before adding one)
 
-Always lazy-load a Capacitor plugin through **`lazyPluginModule()`**
-(`web/src/lib/nativePlugin.ts`) and destructure the plugin out of the returned
-module *after* awaiting:
+Two rules, both load-bearing:
+
+**1. Gate every plugin code path on the literal `__IS_CAPACITOR__`** (usually
+`__IS_CAPACITOR__ && isNative()`). `isNative()` alone is a runtime check Rollup
+can't tree-shake across modules, so without the compile-time literal the plugin
+chunks ship in the web bundle and get precached by the service worker. In a
+component (function scope), inline the `import()` inside the gated branch; in a
+shared `.ts` module, use `lazyPluginModule()` with the ternary below — Rollup
+retains a module-level thunk even when every caller is dead code, so the
+`import()` itself must sit behind the literal.
+
+**2. Destructure the plugin out of the module namespace *after* awaiting:**
 
 ```ts
-const getPrefs = lazyPluginModule(() => import('@capacitor/preferences'));
+const getPrefs = lazyPluginModule(() =>
+  __IS_CAPACITOR__
+    ? import('@capacitor/preferences')
+    : Promise.reject(new Error('native-only plugin'))
+);
 const { Preferences } = await getPrefs();
 ```
 
@@ -72,7 +85,9 @@ native-method call, so it's "thenable": promise assimilation invokes
 ("not implemented"), and it **never settles**. The awaiting promise hangs
 forever. This silently blanked `/admin/native` (its render gated on
 `await loadAdminSession()`) until the loaders were funnelled through
-`lazyPluginModule`.
+`lazyPluginModule`. A gated inline `import('…').then(({ Plugin }) => …)` in a
+component is equally safe — it resolves to the module namespace, never the
+proxy.
 
 ### Custom native plugins
 

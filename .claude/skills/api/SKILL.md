@@ -14,13 +14,26 @@ static export with no server) call the hosted endpoints cross-origin via
 **CORS:** `hooks.server.ts` answers preflights and adds
 `Access-Control-Allow-Origin: *` to every `/api/*` response, with
 `GET, POST, DELETE, OPTIONS` and the `Content-Type` / `Authorization`
-headers allowed. The wildcard is safe because every endpoint is gated by a
+headers allowed, plus `Access-Control-Max-Age: 86400` so native clients
+cache the preflight instead of paying an OPTIONS round trip per request.
+The wildcard is safe because every endpoint is gated by a
 credential the caller must already hold (access token, Gemini key, or admin
 session) and nothing under `/api` uses cookies. See ADR-0007.
 
 **Rate limiting:** unauthenticated oracles are throttled per IP with a
 sliding window (default 10 hits/min, `web/src/lib/server/rateLimit.ts`,
-ADR-0014). Throttled responses are `429` with a `Retry-After` header.
+ADR-0014). Every throttled response uses one standard shape, built by
+`throttled(retryAfter)` in `web/src/lib/server/http.ts` — a `429` with a
+`Retry-After` header and the JSON body:
+
+```json
+{ "ok": false, "error": "Too many attempts. Please wait 12s." }
+```
+
+The `error` field is user-facing (clients surface it directly). The same
+module's `readJsonBody(request)` is the shared JSON-body parser — a
+malformed body is a uniform `400 "Expected a JSON body"`. Use both helpers
+in any new endpoint instead of hand-rolling the parse or the 429.
 
 ---
 
@@ -30,8 +43,10 @@ ADR-0014). Throttled responses are `429` with a `Retry-After` header.
 
 Generates a stylized image from a drawing. `multipart/form-data` with the
 PNG, style prompt, and either an allow-listed access token or a BYO Gemini
-key. Token-gated and rate-limited; see `web/src/routes/api/generate-image` and
-ADR-0006.
+key. Managed tokens are rate-limited per token (15/min); BYOK requests are
+rate-limited per IP with a deliberately generous limit (30/min), because the
+branch is otherwise unauthenticated and its 502-vs-200 result is a key-validity
+oracle. See `web/src/routes/api/generate-image` and ADR-0006 / ADR-0014.
 
 On success returns the image bytes. Failure modes are split so the client can
 guide the child correctly (ADR-0023): a **`422`** means Gemini refused the

@@ -1,51 +1,23 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { isNative, getPlatform } from '$lib/platform';
-  import { lazyPluginModule } from '$lib/nativePlugin';
-  import { computeNotchBandState, type Orientation } from '$lib/notchBand';
-  import { measureSafeAreaInsets } from '$lib/safeArea';
-
-  const loadStatusBar = lazyPluginModule(() => import('@capacitor/status-bar'));
+  import { computeNotchBandState } from '$lib/notchBand';
+  import { layout } from '$lib/state/layout.svelte';
 
   // Measured env(safe-area-inset-*), in CSS px — we need the number (not just
   // the CSS value) to tell a real notch from a bezel. The top and both sides
-  // are tracked so the band can follow the hole-punch as it rotates from the
-  // top (portrait) to a side (landscape).
-  let insetTop = $state(0);
-  let insetLeft = $state(0);
-  let insetRight = $state(0);
-  let orientation = $state<Orientation>('portrait');
-
-  function measure() {
-    if (typeof document === 'undefined') return;
-    const insets = measureSafeAreaInsets();
-    insetTop = insets.top;
-    insetLeft = insets.left;
-    insetRight = insets.right;
-    orientation = window.matchMedia('(orientation: landscape)').matches ? 'landscape' : 'portrait';
-  }
-
-  onMount(() => {
-    measure();
-    const onChange = () => measure();
-    window.addEventListener('resize', onChange);
-    window.addEventListener('orientationchange', onChange);
-    return () => {
-      window.removeEventListener('resize', onChange);
-      window.removeEventListener('orientationchange', onChange);
-    };
-  });
-
+  // matter so the band can follow the hole-punch as it rotates from the top
+  // (portrait) to a side (landscape); the shared layout module re-measures
+  // them on every resize/orientationchange.
   const band = $derived(
     computeNotchBandState({
       platform: getPlatform(),
       native: isNative(),
-      orientation,
-      insetTop,
-      insetLeft,
-      insetRight,
+      orientation: layout.orientation,
+      insetTop: layout.safeArea.top,
+      insetLeft: layout.safeArea.left,
+      insetRight: layout.safeArea.right,
       activeColor: colors.activeColor,
       eraser: toolState.eraser,
     })
@@ -59,22 +31,27 @@
   });
 
   // Native: flip the system clock/battery icons light or dark for contrast.
+  // The literal __IS_CAPACITOR__ (here and below) keeps the status-bar plugin
+  // out of the web bundle; the inline import() resolves to the module
+  // namespace, never the plugin proxy, and repeat calls share one module.
   $effect(() => {
     const style = band.statusBarStyle;
-    if (!isNative() || !style) return;
-    loadStatusBar().then(({ StatusBar, Style }) => {
-      StatusBar.setStyle({ style: style === 'DARK' ? Style.Dark : Style.Light }).catch(() => {});
-    });
+    if (__IS_CAPACITOR__ && isNative() && style) {
+      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+        StatusBar.setStyle({ style: style === 'DARK' ? Style.Dark : Style.Light }).catch(() => {});
+      });
+    }
   });
 
   // Android native: hide the status bar in landscape to reclaim the long top
   // edge as canvas; show it again in portrait. null elsewhere = leave it alone.
   $effect(() => {
     const hidden = band.statusBarHidden;
-    if (!isNative() || hidden === null) return;
-    loadStatusBar().then(({ StatusBar }) => {
-      (hidden ? StatusBar.hide() : StatusBar.show()).catch(() => {});
-    });
+    if (__IS_CAPACITOR__ && isNative() && hidden !== null) {
+      import('@capacitor/status-bar').then(({ StatusBar }) => {
+        (hidden ? StatusBar.hide() : StatusBar.show()).catch(() => {});
+      });
+    }
   });
 </script>
 

@@ -12,25 +12,13 @@
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
-import { ROOT, isWindows, sleep, maestroPath } from './lib/utils.mjs';
+import { ROOT, isWindows, sleep, sh, maestroPath } from './lib/utils.mjs';
 import { ADB, EMULATOR, AVD_NAME } from './lib/android.mjs';
 
 const execFileAsync = promisify(execFile);
 
 // Capture adb output (direct executable call, no shell needed).
 const adb = async (...args) => (await execFileAsync(ADB, args)).stdout.trim();
-
-// Run a command through the shell with live (inherited) output; reject on
-// failure. Async (not lib/utils run(), which exits the process on failure) so
-// a failed build still reaches the finally block that kills the emulator.
-const sh = (command, cwd = ROOT) =>
-  new Promise((resolve, reject) => {
-    const child = spawn(command, { cwd, stdio: 'inherit', shell: true });
-    child.on('error', reject);
-    child.on('exit', (code) =>
-      code === 0 ? resolve() : reject(new Error(`exited ${code}: ${command}`))
-    );
-  });
 
 // 1. Check hardware acceleration before trying to boot (diagnoses 0xC0000005 crashes).
 console.log('Checking emulator hardware acceleration...');

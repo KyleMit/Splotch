@@ -41,8 +41,9 @@ const SAMPLES = [
 ];
 
 test.beforeEach(async ({ page }) => {
-  // Navigate once, then poll for readiness — same cold-Vite handling as the
-  // engine spec (a first-load dep-optimize reload would break a re-goto loop).
+  // Navigate once, then poll for readiness — same handling as the engine spec.
+  // Settles immediately under `vite preview`; under DEV_SERVER=1 (`vite dev`) a
+  // first-load dep-optimize reload would break a re-goto loop, so we poll.
   await page.goto('/dev/engine', { waitUntil: 'commit' });
   await expect(async () => {
     const ready = await page.evaluate(() => window.__engineReady === true).catch(() => false);

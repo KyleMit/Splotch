@@ -1,6 +1,7 @@
-import { error, json } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 import { GoogleGenAI } from '@google/genai';
 import { rateLimit } from '$lib/server/rateLimit';
+import { readJsonBody, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 // A cheap text model is enough to prove the key authenticates with Gemini —
@@ -18,20 +19,9 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   // Same throttle as verify-access-code: a live Gemini call per request makes
   // this worth guarding against rapid repeated probes from one client.
   const { limited, retryAfter } = rateLimit(`verify-key:${getClientAddress()}`);
-  if (limited) {
-    return json(
-      { ok: false, error: 'Too many attempts. Please wait a moment.' },
-      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
-    );
-  }
+  if (limited) return throttled(retryAfter);
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    throw error(400, 'Expected a JSON body');
-  }
-
+  const body = await readJsonBody(request);
   const apiKey = typeof body?.apiKey === 'string' ? body.apiKey.trim() : '';
   if (!apiKey) return json({ ok: false, error: 'No API key provided' });
 

@@ -6,6 +6,7 @@ import { buildPromptForStyle } from '$lib/ai/prompt';
 import { isAllowedToken } from '$lib/server/tokens';
 import { recordTokenUsage } from '$lib/server/usage';
 import { rateLimit } from '$lib/server/rateLimit';
+import { throttled } from '$lib/server/http';
 import { classifyGeminiResponse, isSafetyError } from '$lib/server/aiSafety';
 import type { RequestHandler } from './$types';
 
@@ -23,10 +24,16 @@ const MODEL = 'gemini-2.5-flash-image';
 // A real generation takes several seconds, so back-to-back human use stays well
 // under this; the cap only blunts a leaked token being hammered in a tight loop
 // before we notice the usage tally and pull it. Per-instance like the verify
-// limiters (resets on cold start) — a cost guardrail, not a hard boundary. BYOK
-// requests bill the parent's own key and are intentionally not throttled.
+// limiters (resets on cold start) — a cost guardrail, not a hard boundary.
 const GENERATE_LIMIT = 15;
 const GENERATE_WINDOW_MS = 60_000;
+// BYOK bills the parent's own Gemini quota, but any non-empty string flips the
+// handler into this branch — unauthenticated, and 502-vs-200 leaks whether a
+// key is valid, sidestepping /api/verify-key's limiter. Per the server-api rule
+// that every unauthenticated oracle is rate-limited per IP, throttle it — just
+// generously (double the managed cap, roomy for several families behind one
+// NAT) so a valid key's use of its own quota is never the binding constraint.
+const BYOK_LIMIT = 30;
 // A drawing screenshot is well under a megabyte; cap the upload so a valid-token
 // holder can't push us into a memory/DoS situation by base64-ing a huge blob.
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
@@ -61,7 +68,7 @@ const SAFETY_SETTINGS = [
   HarmCategory.HARM_CATEGORY_HARASSMENT,
 ].map((category) => ({ category, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE }));
 
-export const POST: RequestHandler = async ({ request, platform }) => {
+export const POST: RequestHandler = async ({ request, platform, getClientAddress }) => {
   const form = await request.formData();
   const token = form.get('token');
   const apiKey = form.get('apiKey');
@@ -77,19 +84,17 @@ export const POST: RequestHandler = async ({ request, platform }) => {
     throw error(403, 'Invalid access token');
   }
   // Throttle valid managed tokens per token (so a leaked one can't be hammered
-  // from many IPs to burn our quota). BYOK runs on the parent's own key, so skip.
-  if (!usingByok) {
-    const { limited, retryAfter } = rateLimit(`generate-image:${token}`, {
-      limit: GENERATE_LIMIT,
-      windowMs: GENERATE_WINDOW_MS,
-    });
-    if (limited) {
-      return new Response('Too many requests. Please wait a moment.', {
-        status: 429,
-        headers: { 'Retry-After': String(retryAfter) },
+  // from many IPs to burn our quota) and BYOK per IP (see BYOK_LIMIT).
+  const { limited, retryAfter } = usingByok
+    ? rateLimit(`generate-image-byok:${getClientAddress()}`, {
+        limit: BYOK_LIMIT,
+        windowMs: GENERATE_WINDOW_MS,
+      })
+    : rateLimit(`generate-image:${token}`, {
+        limit: GENERATE_LIMIT,
+        windowMs: GENERATE_WINDOW_MS,
       });
-    }
-  }
+  if (limited) return throttled(retryAfter);
   if (!(imageFile instanceof Blob)) {
     throw error(400, 'Missing image');
   }
@@ -121,14 +126,12 @@ export const POST: RequestHandler = async ({ request, platform }) => {
       style: typeof style === 'string' ? style : null,
       prompt: finalPrompt,
     });
-    const ctx = (
-      platform as { context?: { waitUntil?: (p: Promise<unknown>) => void } } | undefined
-    )?.context;
-    if (ctx?.waitUntil) ctx.waitUntil(usage);
+    platform?.context?.waitUntil?.(usage);
   }
 
-  const inputBytes = new Uint8Array(await imageFile.arrayBuffer());
-  const inputBase64 = Buffer.from(inputBytes).toString('base64');
+  // Buffer.from(ArrayBuffer) wraps without copying (unlike the TypedArray
+  // overload), so the ≤15 MB upload is only held in memory once.
+  const inputBase64 = Buffer.from(await imageFile.arrayBuffer()).toString('base64');
 
   const ai = new GoogleGenAI({ apiKey: effectiveKey });
   let response;

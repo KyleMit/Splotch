@@ -7,58 +7,61 @@
 // network and compare it with __APP_VERSION__ (compiled in at build time). If
 // they differ the running SW is serving old HTML, so we navigate to
 // ?v=<deployed-version>. The SW's NetworkFirst navigation handler sees the
-// unfamiliar URL, fetches fresh HTML from the origin, and we're unstuck.
+// unfamiliar URL, fetches fresh HTML from the origin, and we're unstuck. A
+// ?v= already in the URL means we just tried that version, so we never
+// redirect to it again — one attempt per deployed version, no reload loop.
 
 import { canvasState } from '$lib/state/canvas.svelte';
 
-let updateCheckInterval: ReturnType<typeof setInterval> | null = null;
+let initialized = false;
 
-export function initPWAUpdates() {
+export function initPWAUpdates(): (() => void) | undefined {
   if (import.meta.env.DEV) return;
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+  if (initialized) return;
+  initialized = true;
 
-  // Remove any cache-bust param left in the URL from a previous redirect.
   const url = new URL(window.location.href);
-  if (url.searchParams.has('v')) {
+  const attemptedVersion = url.searchParams.get('v');
+  if (attemptedVersion !== null) {
     url.searchParams.delete('v');
     history.replaceState(null, '', url.toString());
   }
 
-  navigator.serviceWorker.ready.then((registration) => {
-    registration.addEventListener('updatefound', () => {
-      console.log('Update found, installing...');
-    });
-  });
-
   checkForUpdates();
-  checkVersionMismatch();
+  checkVersionMismatch(attemptedVersion);
 
-  updateCheckInterval = setInterval(
+  const updateCheckInterval = setInterval(
     () => {
       checkForUpdates();
     },
     60 * 60 * 1000
   );
 
-  document.addEventListener('visibilitychange', () => {
+  const onVisibilityChange = () => {
     if (document.visibilityState === 'visible') checkForUpdates();
-  });
-
-  window.addEventListener('focus', () => {
+  };
+  const onFocus = () => {
     checkForUpdates();
-  });
+  };
 
-  window.addEventListener('beforeunload', () => {
-    if (updateCheckInterval) clearInterval(updateCheckInterval);
-  });
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  window.addEventListener('focus', onFocus);
+
+  return () => {
+    clearInterval(updateCheckInterval);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    window.removeEventListener('focus', onFocus);
+    initialized = false;
+  };
 }
 
-export async function checkVersionMismatch() {
+export async function checkVersionMismatch(attemptedVersion: string | null = null) {
   try {
     const resp = await fetch('/version.json', { cache: 'no-store' });
     if (!resp.ok) return;
     const { version } = await resp.json();
-    if (version !== __APP_VERSION__) {
+    if (version !== __APP_VERSION__ && version !== attemptedVersion) {
       const next = new URL(window.location.href);
       next.searchParams.set('v', version);
       window.location.replace(next.toString());
@@ -97,7 +100,7 @@ export async function checkForUpdates() {
         }
       });
     }
-  } catch (error) {
-    console.log('Update check failed:', error instanceof Error ? error.message : error);
+  } catch {
+    // registration lookup or update failed (e.g. offline) — try again later
   }
 }

@@ -23,7 +23,10 @@
   let strokeWrapperEl: HTMLDivElement | undefined = $state();
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
   let aiBtnEl: HTMLButtonElement | undefined = $state();
-  let isPortrait = $state(false);
+
+  // Orientation drives the chevron direction and drawer-slide axis; the shared
+  // layout module owns the listeners.
+  const isPortrait = $derived(layout.orientation === 'portrait');
 
   // Landscape: sit just past the color palette so we clear it. Portrait: pin to
   // the bottom-left corner. paletteWidth is published by ColorPalette (0 until
@@ -69,18 +72,7 @@
     if (!next) strokeState.menuOpen = false;
   }
 
-  // Track orientation so the chevron direction and drawer-slide axis match the
-  // layout. The panel's left offset follows layout.paletteWidth reactively, so
-  // there's nothing to measure here.
-  function updateOrientation() {
-    isPortrait = window.matchMedia('(orientation: portrait)').matches;
-  }
-
   onMount(() => {
-    updateOrientation();
-    window.addEventListener('resize', updateOrientation);
-    window.addEventListener('orientationchange', updateOrientation);
-
     // Click outside closes stroke menu
     const onDocPointerDown = (e: PointerEvent) => {
       if (strokeState.menuOpen && strokeWrapperEl && !strokeWrapperEl.contains(e.target as Node)) {
@@ -98,8 +90,6 @@
     window.addEventListener('keydown', onKeyDown);
 
     return () => {
-      window.removeEventListener('resize', updateOrientation);
-      window.removeEventListener('orientationchange', updateOrientation);
       document.removeEventListener('pointerdown', onDocPointerDown);
       window.removeEventListener('keydown', onKeyDown);
     };
@@ -321,8 +311,10 @@
     flex-shrink: 0;
   }
 
-  .drawer-toggle:hover {
-    opacity: 0.7;
+  @media (hover: hover) {
+    .drawer-toggle:hover {
+      opacity: 0.7;
+    }
   }
 
   .drawer-toggle:active {
@@ -337,8 +329,10 @@
     transition: filter 0.2s ease;
   }
 
-  .drawer-toggle:hover :global(.drawer-toggle-icon) {
-    filter: invert(40%) grayscale(100%);
+  @media (hover: hover) {
+    .drawer-toggle:hover :global(.drawer-toggle-icon) {
+      filter: invert(40%) grayscale(100%);
+    }
   }
 
   .drawer-toggle:active :global(.drawer-toggle-icon) {

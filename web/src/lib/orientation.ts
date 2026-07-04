@@ -30,7 +30,9 @@ export async function applyDeviceOrientationPreference() {
   // Native: lock at the Activity level via @capacitor/screen-orientation. Unlike
   // the Web Screen Orientation API, this overrides the OS Auto-Rotate setting, so
   // the parent's choice is honored even when the device has rotation turned off.
-  if (isNative()) {
+  // The literal __IS_CAPACITOR__ lets Rollup drop the plugin import from the web
+  // bundle; isNative() alone is a runtime check it can't tree-shake.
+  if (__IS_CAPACITOR__ && isNative()) {
     try {
       const { ScreenOrientation } = await import('@capacitor/screen-orientation');
       if (target === 'unlocked') await ScreenOrientation.unlock();

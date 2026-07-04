@@ -1,6 +1,7 @@
-import { error, json } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 import { sessionToken, verifyAdminSecret } from '$lib/server/admin';
 import { rateLimit } from '$lib/server/rateLimit';
+import { readJsonBody, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 /**
@@ -18,20 +19,9 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   // limiter (and bucket) as the /admin page's login action, so attackers can't
   // double their budget by alternating between the two doors.
   const { limited, retryAfter } = rateLimit(`admin-login:${getClientAddress()}`);
-  if (limited) {
-    return json(
-      { ok: false, error: `Too many attempts. Please wait ${retryAfter}s.` },
-      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
-    );
-  }
+  if (limited) return throttled(retryAfter);
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    throw error(400, 'Expected a JSON body');
-  }
-
+  const body = await readJsonBody(request);
   const key = typeof body?.key === 'string' ? body.key : '';
   if (!verifyAdminSecret(key)) {
     return json({ ok: false, error: 'Incorrect access key.' }, { status: 403 });

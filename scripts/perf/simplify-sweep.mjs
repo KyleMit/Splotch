@@ -143,7 +143,7 @@ function drawLive({ params, strokes, sizePx }) {
 
 // Runs in the page: force a full rebuild from the stored (simplified) ops and
 // diff it against the stashed live pixels, per non-overlapping cell.
-function rebuildAndDiff({ strokes, canvas, tolPx }) {
+async function rebuildAndDiff({ strokes, canvas, tolPx }) {
   const E = window.__engine;
   const cv = document.querySelector('#engineCanvas');
   const ctx = cv.getContext('2d', { willReadFrequently: true });
@@ -153,7 +153,7 @@ function rebuildAndDiff({ strokes, canvas, tolPx }) {
   const live = window.__sweepLive;
 
   performance.clearMeasures();
-  E.resizeTo(canvas.w, canvas.h);
+  await E.resizeTo(canvas.w, canvas.h);
   const rebuilt = ctx.getImageData(0, 0, W, H).data;
   const resizeMeasure = performance.getEntriesByName('engine.resize').pop();
   const resizeMs = resizeMeasure ? resizeMeasure.duration : null;

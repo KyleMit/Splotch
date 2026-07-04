@@ -1,7 +1,13 @@
 <script lang="ts">
   import { setContext } from 'svelte';
   import type { Snippet } from 'svelte';
-  import { tabPagerContextKey, type TabPagerContext, type TabPagerTab } from './tabPagerContext';
+  import {
+    removeTab,
+    tabPagerContextKey,
+    upsertTab,
+    type TabDescriptor,
+    type TabPagerContext,
+  } from './tabPagerContext';
 
   interface Props {
     initialTab?: string;
@@ -34,6 +40,7 @@
   const context: TabPagerContext = {
     state: pagerState,
     registerTab,
+    unregisterTab,
     setActiveTab,
   };
   setContext(tabPagerContextKey, context);
@@ -98,21 +105,17 @@
     scrollToIndex(indexOfTab(id), prefersReducedMotion() ? 'auto' : 'smooth');
   }
 
-  function registerTab(tab: TabPagerTab) {
-    const index = pagerState.tabs.findIndex((candidate) => candidate.id === tab.id);
-    if (index === -1) {
-      pagerState.tabs = [...pagerState.tabs, tab];
-      return;
-    }
+  function registerTab(tab: TabDescriptor) {
+    upsertTab(pagerState.tabs, tab);
+  }
 
-    const existing = pagerState.tabs[index];
-    if (existing.label === tab.label && existing.icon === tab.icon) {
-      return;
-    }
-
-    pagerState.tabs = pagerState.tabs.map((candidate) =>
-      candidate.id === tab.id ? tab : candidate
-    );
+  function unregisterTab(id: string) {
+    const nextActiveTab = removeTab(pagerState.tabs, id, pagerState.activeTab);
+    if (nextActiveTab === null) return;
+    pagerState.activeTab = nextActiveTab;
+    const index = indexOfTab(nextActiveTab);
+    scrollProgress = index;
+    requestAnimationFrame(() => scrollToIndex(index, 'auto'));
   }
 
   function onPanelsScroll() {
@@ -192,9 +195,11 @@
     opacity: 1;
   }
 
-  :global(.tab-button:hover) {
-    color: #666;
-    background: #f5f5f5;
+  @media (hover: hover) {
+    :global(.tab-button:hover) {
+      color: #666;
+      background: #f5f5f5;
+    }
   }
 
   :global(.tab-button.active) {

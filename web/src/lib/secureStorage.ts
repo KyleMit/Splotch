@@ -32,7 +32,14 @@ const MASTER_KEY_ROW = 'master-key'; // the non-extractable AES-GCM CryptoKey
 // Native plugin, loaded lazily so it's never pulled in on the web or during SSR.
 // Returns the module namespace, not the SecureStorage proxy — see
 // lazyPluginModule for why that distinction is load-bearing.
-const getPlugin = lazyPluginModule(() => import('@aparajita/capacitor-secure-storage'));
+// The __IS_CAPACITOR__ ternary keeps the import() itself out of the web bundle
+// (Rollup retains the thunk even when every caller is dead code); the reject arm
+// is unreachable because every call site is gated on __IS_CAPACITOR__ too.
+const getPlugin = lazyPluginModule(() =>
+  __IS_CAPACITOR__
+    ? import('@aparajita/capacitor-secure-storage')
+    : Promise.reject(new Error('native-only plugin'))
+);
 
 // --- web: IndexedDB via idb (also lazy) ---
 const getDb = lazyIdbDatabase(DB_NAME, STORE, DB_VERSION);
@@ -84,9 +91,12 @@ async function webClear(name: string) {
 }
 
 /** Persist a named secret to the platform's secure store. */
+// The literal __IS_CAPACITOR__ guards (here and below) make the native paths
+// compile-time dead on web so Rollup drops the secure-storage plugin chunk;
+// isNative() alone is a runtime check it can't tree-shake.
 async function saveSecret(name: string, value: string) {
   if (!browser || !value) return;
-  if (isNative()) {
+  if (__IS_CAPACITOR__ && isNative()) {
     const { SecureStorage } = await getPlugin();
     await SecureStorage.set(name, value);
   } else {
@@ -98,7 +108,7 @@ async function saveSecret(name: string, value: string) {
 async function loadSecret(name: string) {
   if (!browser) return null;
   try {
-    if (isNative()) {
+    if (__IS_CAPACITOR__ && isNative()) {
       const { SecureStorage } = await getPlugin();
       const value = await SecureStorage.get(name);
       return typeof value === 'string' ? value : null;
@@ -113,7 +123,7 @@ async function loadSecret(name: string) {
 async function clearSecret(name: string) {
   if (!browser) return;
   try {
-    if (isNative()) {
+    if (__IS_CAPACITOR__ && isNative()) {
       const { SecureStorage } = await getPlugin();
       await SecureStorage.remove(name);
     } else {

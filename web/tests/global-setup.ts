@@ -9,7 +9,12 @@ import { chromium, type FullConfig } from '@playwright/test';
 // interactions can't ride it out (e.g. the ai-timer click-retry). Loading each
 // route here — sequentially, polling through the auto-reload until it actually
 // settles — means every worker afterwards gets an already-optimized server.
+//
+// The optimizer only exists under `vite dev` (DEV_SERVER=1). The default/CI run
+// serves the production build via `vite preview`, which has no optimizer and no
+// reload storm — so the ~6-8s warm-up is pure overhead there. Skip it.
 export default async function globalSetup(config: FullConfig) {
+  if (!process.env.DEV_SERVER) return;
   const baseURL = config.projects[0].use.baseURL ?? '';
   const browser = await chromium.launch();
   const page = await browser.newPage();
