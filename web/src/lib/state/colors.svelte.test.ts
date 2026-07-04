@@ -7,6 +7,7 @@ import {
   selectPaletteColor,
   selectCustomSwatch,
   pickCustomColor,
+  isNearWhite,
 } from './colors.svelte';
 
 beforeEach(() => {
@@ -60,5 +61,30 @@ describe('selectCustomSwatch', () => {
     expect(colors.activeSwatch).toBe(CUSTOM_SWATCH);
     // No custom color chosen, so the active drawing color stays put.
     expect(colors.activeColor).toBe('#8CC864');
+  });
+});
+
+describe('isNearWhite', () => {
+  it('flags pure white (needs a dark outline to stay visible)', () => {
+    expect(isNearWhite('#ffffff')).toBe(true);
+    expect(isNearWhite('#FFFFFF')).toBe(true);
+  });
+
+  it('leaves the palette colors — including pale yellow — un-outlined', () => {
+    for (const { hex } of PALETTE_COLORS) {
+      expect(isNearWhite(hex)).toBe(false);
+    }
+    expect(isNearWhite('#F9D24F')).toBe(false); // Yellow: light, but not near-white
+  });
+
+  it('flags the lightest grey but not the next step down', () => {
+    expect(isNearWhite('#ffffff')).toBe(true);
+    expect(isNearWhite('#90A4AE')).toBe(false);
+  });
+
+  it('returns false for malformed input', () => {
+    expect(isNearWhite('')).toBe(false);
+    expect(isNearWhite('white')).toBe(false);
+    expect(isNearWhite('#fff')).toBe(false);
   });
 });

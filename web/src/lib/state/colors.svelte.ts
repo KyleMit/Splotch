@@ -67,3 +67,18 @@ export function pickCustomColor(hex: string) {
   colors.activeSwatch = CUSTOM_SWATCH;
   colors.activeColor = hex;
 }
+
+// A near-white color is indistinguishable from the paper background, so the
+// stroke-width icons (which paint their brush lines in the active color) need a
+// dark outline to stay visible. Threshold sits high enough to catch only the
+// white end of the greys ramp, not pale yellows.
+export function isNearWhite(hex: string): boolean {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return false;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8) & 0xff;
+  const b = n & 0xff;
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return luminance >= 0.92;
+}
