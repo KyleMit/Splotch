@@ -331,9 +331,11 @@ test('pen and eraser keep independent stroke sizes that persist across reload', 
 // horizontal row that ran under the bottom-right Parent Center button. Tapping
 // the rightmost size closed the menu on pointerup, and the trailing click then
 // fell through to the now-unobscured Parent Center button and launched its
-// modal. The flyout must clear that button so a size tap can't open it.
-test('the stroke flyout clears the Parent Center button on a small phone', async ({ page }) => {
-  await page.setViewportSize({ width: 393, height: 852 });
+// modal. The flyout must clear that button so a size tap can't open it. 460px
+// sits in the range where the row would still reach the parent button, so it
+// pins the column breakpoint high enough for the current button sizes.
+test('the stroke flyout clears the Parent Center button on a phone', async ({ page }) => {
+  await page.setViewportSize({ width: 460, height: 852 });
   await gotoApp(page);
   await openDrawer(page);
   await openStrokeMenu(page);

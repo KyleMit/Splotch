@@ -485,8 +485,14 @@
      through to the parent button and opens its modal. Stack the sizes
      vertically instead so the flyout runs up alongside the other action buttons
      and clears the parent button. The row layout stays for tablet-width portrait,
-     where there's room to the right of the palette. */
-  @media (orientation: portrait) and (max-width: 480px) {
+     where there's room to the right of the palette.
+
+     Breakpoint: the row's right edge is fixed (~411px with the 60px size
+     buttons — panel inset + stroke button + five buttons); the parent button
+     occupies the rightmost ~56px, so they collide below ~467px of viewport
+     width. Stay in the column up to 540px for headroom (button sizes have grown
+     before) while keeping the row for tablet-width portrait (≥600px devices). */
+  @media (orientation: portrait) and (max-width: 540px) {
     .stroke-width-menu {
       flex-direction: column;
     }
