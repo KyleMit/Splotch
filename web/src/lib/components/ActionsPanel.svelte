@@ -440,12 +440,17 @@
     display: none;
   }
 
+  /* Landscape (the base rule; portrait overrides below). The action panel sits
+     along the bottom with little height to spare, so the flyout pops up as a
+     horizontal row — one button tall — instead of a vertical column that would
+     run off the top of a short landscape screen. There's ample width to spread
+     the sizes rightward. */
   .stroke-width-menu {
     position: absolute;
     left: 0;
     bottom: calc(100% + 8px);
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 6px;
     padding: 6px;
     background: white;
