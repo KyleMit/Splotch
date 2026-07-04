@@ -25,6 +25,7 @@
   import { initNetwork } from '$lib/state/network.svelte';
   import { isNative } from '$lib/platform';
   import { applyDeviceOrientationPreference } from '$lib/orientation';
+  import { requestImmersiveFullscreen } from '$lib/fullscreen';
 
   $effect(() => {
     settings.lockRotationEnabled;
@@ -67,7 +68,13 @@
         }
       } catch {}
     }
-    const onFirstPointerDown = () => requestWakeLock();
+    // The same first-draw gesture is our one shot at requesting immersive
+    // fullscreen (Android browsers only; a no-op elsewhere) to dismiss the
+    // URL bar that a non-scrolling canvas can never scroll away.
+    const onFirstPointerDown = () => {
+      requestWakeLock();
+      requestImmersiveFullscreen();
+    };
     const onVisibilityChange = () => {
       if (wakeLock !== null && document.visibilityState === 'visible') {
         requestWakeLock();
