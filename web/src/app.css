@@ -24,6 +24,12 @@
 body {
   width: 100vw;
   height: 100vh;
+  /* dvh tracks the *visible* viewport as the mobile browser's URL bar shows/hides;
+     plain vh reports the large (URL-bar-hidden) height, which is taller than what's
+     on screen. In landscape the palette centers its swatches within .app-container's
+     height (inherited from body via height: 100%), so an over-tall body pushed them
+     up off-center in the browser while the chrome-less PWA looked fine. */
+  height: 100dvh;
   overflow: hidden;
   font-family:
     'Quicksand Variable',
