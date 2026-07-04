@@ -24,6 +24,14 @@
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
   let aiBtnEl: HTMLButtonElement | undefined = $state();
 
+  // The prerendered page has no viewport, so SSR renders the landscape chevron;
+  // the real orientation is only known on the client. Icon draws with {@html},
+  // which Svelte doesn't reconcile against the server markup during hydration —
+  // so once orientation is corrected the stale chevron would stay put until the
+  // drawer is first toggled. Flipping this on mount re-keys the icon, forcing a
+  // fresh client render in the correct orientation.
+  let mounted = $state(false);
+
   // Orientation drives the chevron direction and drawer-slide axis; the shared
   // layout module owns the listeners.
   const isPortrait = $derived(layout.orientation === 'portrait');
@@ -78,6 +86,8 @@
   }
 
   onMount(() => {
+    mounted = true;
+
     // Click outside closes stroke menu
     const onDocPointerDown = (e: PointerEvent) => {
       if (strokeState.menuOpen && strokeWrapperEl && !strokeWrapperEl.contains(e.target as Node)) {
@@ -258,7 +268,9 @@
       aria-expanded={settings.drawerOpen}
       use:scribbleTap={toggleDrawer}
     >
-      <Icon name={chevronIcon} class="drawer-toggle-icon" />
+      {#key mounted}
+        <Icon name={chevronIcon} class="drawer-toggle-icon" />
+      {/key}
     </button>
   {/if}
 </div>
