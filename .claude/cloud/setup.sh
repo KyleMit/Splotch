@@ -11,6 +11,17 @@
 # never block session startup, so each step swallows its own failure.
 set -uo pipefail
 
+# Match the npm major that authors package-lock.json (local dev runs npm 11; the
+# container image ships npm 10, whose install rewrites lockfile metadata in its
+# own dialect and dirties the working tree every session — the two majors
+# disagree on optional-peer entries, so no lockfile shape satisfies both).
+# The SessionStart hook also discards such churn as a fallback if this pin is
+# ever missing.
+# Via npx so the installer isn't the npm being replaced — npm 10 updating itself
+# in place dies halfway (MODULE_NOT_FOUND on its own half-overwritten files).
+npx -y npm@11 install -g npm@11 \
+  || echo "npm 11 pin skipped — sessions may see package-lock.json churn (the SessionStart hook discards it)"
+
 # Chromium-only Playwright browser for the E2E tier, pinned to the repo's @playwright/test
 # version. Needs cdn.playwright.dev + playwright.download.prss.microsoft.com on the allowlist.
 npx --yes playwright@1.60.0 install --with-deps chromium \
