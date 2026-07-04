@@ -25,6 +25,12 @@
 //                   still swallowed; Esc is preventDefault'd).
 //   blockBackdropAt (x, y) => boolean positional veto for backdrop dismissal only:
 //                   return true to swallow a tap in that region without dismissing.
+//
+// On each open the action also arms a short-lived launch dead zone around
+// `origin` (see launchGuard) so a toddler's repeat taps on the just-vacated
+// button spot are swallowed instead of dismissing the modal they just opened.
+import { guardLaunchZone, isPointInLaunchZone, clearLaunchZones } from './launchGuard';
+
 interface ModalOptions {
   open: boolean;
   onRequestClose?: () => void;
@@ -49,6 +55,9 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
     e.preventDefault();
     e.stopPropagation();
     const o = getOptions();
+    // Within the launch window, a tap where the opening button sat is a stray
+    // toddler repeat — swallow it without dismissing.
+    if (isPointInLaunchZone(e.clientX, e.clientY)) return;
     if (o.blockBackdropAt?.(e.clientX, e.clientY)) return;
     if (o.allowDismiss && o.allowDismiss() === false) return;
     o.onRequestClose?.();
@@ -62,6 +71,9 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
   }
 
   function onClose() {
+    // A closed dialog has no backdrop to protect; drop the zone so it can't
+    // bleed into whatever modal opens next.
+    clearLaunchZones();
     const o = getOptions();
     o.onClose?.();
     // Closed via Esc while the flag is still set — re-sync it.
@@ -80,6 +92,7 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
           node.style.setProperty('--origin-x', `${o.origin.x - window.innerWidth / 2}px`);
           node.style.setProperty('--origin-y', `${o.origin.y - window.innerHeight / 2}px`);
         }
+        guardLaunchZone(o.origin ?? null);
         o.onOpen?.();
         node.showModal();
       }
