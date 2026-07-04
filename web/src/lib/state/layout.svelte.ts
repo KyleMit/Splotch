@@ -10,7 +10,6 @@ export type Orientation = 'portrait' | 'landscape';
 // value reactively here removes both.
 interface LayoutState {
   paletteWidth: number;
-  gradientSwatchEl: HTMLElement | null;
   orientation: Orientation;
   safeArea: SafeAreaInsets;
 }
@@ -20,10 +19,6 @@ export const layout: LayoutState = $state({
   // (paletteWidth + gap) in landscape so it clears the palette. 0 until the
   // palette has measured itself, so dependents settle once it lays out.
   paletteWidth: 0,
-
-  // The custom-color (gradient) swatch button. ColorPicker reads its live
-  // bounding rect to carve out a mis-tap block zone around it on the backdrop.
-  gradientSwatchEl: null,
 
   // Viewport orientation and the measured env(safe-area-inset-*) values, kept
   // fresh by the single resize/orientationchange listener pair below so

@@ -448,6 +448,37 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   expect(await overlay.getAttribute('src')).toMatch(/\/coloring\/farm\/.+-(wide|tall)\.webp$/);
 });
 
+// A toddler mashes a launch button several times before noticing the modal
+// opened; the follow-up taps land on the fresh backdrop right where the button
+// was and would dismiss it. modalDialog arms a short-lived dead zone around the
+// launching button (launchGuard) that swallows those taps without dismissing,
+// while a tap elsewhere on the backdrop still closes as usual.
+test('a repeat tap where the launch button sat does not dismiss the just-opened modal', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const btn = page.locator('#coloringBookButton');
+  const box = (await btn.boundingBox())!;
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+
+  await btn.click();
+  const dialog = page.locator('#coloring-book-dialog');
+  await expect(dialog).toBeVisible();
+
+  // Repeat tap on the vacated button spot (now backdrop) — swallowed, stays open.
+  await page.mouse.click(cx, cy);
+  await expect(dialog).toBeVisible();
+
+  // A backdrop tap away from the launch point still dismisses; only the
+  // button's own region is guarded.
+  const vp = page.viewportSize()!;
+  await page.mouse.click(vp.width - 10, 10);
+  await expect(dialog).toBeHidden();
+});
+
 test('rotating the viewport swaps the coloring overlay to the matching art', async ({ page }) => {
   // Rotation reaches the overlay through the shared layout module (one
   // resize/orientationchange listener pair feeding every component), so this
