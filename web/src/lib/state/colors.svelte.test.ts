@@ -7,6 +7,7 @@ import {
   selectPaletteColor,
   selectCustomSwatch,
   pickCustomColor,
+  isWhite,
 } from './colors.svelte';
 
 beforeEach(() => {
@@ -60,5 +61,27 @@ describe('selectCustomSwatch', () => {
     expect(colors.activeSwatch).toBe(CUSTOM_SWATCH);
     // No custom color chosen, so the active drawing color stays put.
     expect(colors.activeColor).toBe('#8CC864');
+  });
+});
+
+describe('isWhite', () => {
+  it('matches white in any casing or shorthand it could arrive as', () => {
+    expect(isWhite('#ffffff')).toBe(true);
+    expect(isWhite('#FFFFFF')).toBe(true);
+    expect(isWhite('#fff')).toBe(true);
+    expect(isWhite('white')).toBe(true);
+  });
+
+  it('leaves every palette color — including pale yellow — un-outlined', () => {
+    for (const { hex } of PALETTE_COLORS) {
+      expect(isWhite(hex)).toBe(false);
+    }
+    expect(isWhite('#F9D24F')).toBe(false); // Yellow: light, but not white
+    expect(isWhite('#90A4AE')).toBe(false); // Lightest non-white grey in the picker
+  });
+
+  it('returns false for malformed input', () => {
+    expect(isWhite('')).toBe(false);
+    expect(isWhite('#fffffe')).toBe(false);
   });
 });

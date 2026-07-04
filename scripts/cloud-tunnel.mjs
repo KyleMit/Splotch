@@ -11,7 +11,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT } from './lib/utils.mjs';
+import { ROOT, waitForUrl } from './lib/utils.mjs';
 
 const TUNNEL_HOST = process.env.TUNNEL_HOST || 'splotch-tunnel-kyle.fly.dev';
 const TUNNEL_AUTH = process.env.TUNNEL_AUTH;
@@ -37,15 +37,6 @@ function resolveChisel() {
     if (existsSync(candidate)) return candidate;
   }
   return 'chisel'; // assume on PATH
-}
-
-async function waitFor(label, probe, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (await probe()) return;
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`${label} did not become ready within ${timeoutMs}ms`);
 }
 
 const children = [];
@@ -77,17 +68,7 @@ try {
       stdio: ['ignore', 'inherit', 'inherit'],
     })
   );
-  await waitFor(
-    'vite',
-    async () => {
-      try {
-        return (await fetch(`http://localhost:${PORT}/`)).ok;
-      } catch {
-        return false;
-      }
-    },
-    60_000
-  );
+  await waitForUrl(`http://localhost:${PORT}/`, 60_000);
   console.log(`✓ vite ready on http://localhost:${PORT}\n`);
 
   const chisel = resolveChisel();
@@ -108,17 +89,7 @@ try {
       { stdio: ['ignore', 'inherit', 'inherit'] }
     )
   );
-  await waitFor(
-    'public URL',
-    async () => {
-      try {
-        return (await fetch(`${PUBLIC_URL}/`)).status === 200;
-      } catch {
-        return false;
-      }
-    },
-    60_000
-  );
+  await waitForUrl(`${PUBLIC_URL}/`, 60_000, (res) => res.status === 200);
 
   console.log(`\n  ➜  Live:  ${PUBLIC_URL}\n`);
   console.log('Tunnel is up. Open the URL on your phone. Ctrl-C to stop.\n');

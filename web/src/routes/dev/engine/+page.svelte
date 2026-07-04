@@ -12,6 +12,7 @@
     exportCanvasBlob,
     getUndoDebug,
     setSimplifyParams,
+    RESIZE_SETTLE_MS,
   } from '$lib/drawing/engine';
 
   let canvasEl: HTMLCanvasElement;
@@ -119,11 +120,13 @@
 
       // Resize the canvas box and fire the resize event the engine listens for,
       // so the spec can verify the drawing (rebuilt from the baseline + command
-      // log) survives a resize.
+      // log) survives a resize. The engine debounces the rebuild until the size
+      // settles, so resolve only after that window has passed.
       resizeTo(w: number, h: number) {
         wrapperEl.style.width = `${w}px`;
         wrapperEl.style.height = `${h}px`;
         window.dispatchEvent(new Event('resize'));
+        return new Promise<void>((resolve) => setTimeout(resolve, RESIZE_SETTLE_MS + 50));
       },
 
       // Synchronous synthetic stroke — used only by the color-change debounce

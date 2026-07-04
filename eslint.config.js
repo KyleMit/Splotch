@@ -57,6 +57,12 @@ export default tseslint.config(
     },
   },
   {
+    // Browser-console paste snippets, not Node scripts — the blanket eslint-disable at the
+    // top of each file is intentional even when currently redundant.
+    files: ['scripts/perf/ipad-*.js'],
+    linterOptions: { reportUnusedDisableDirectives: 'off' },
+  },
+  {
     // Project conventions (CLAUDE.md, ADR-0002): Svelte 5 runes only — no legacy stores.
     files: ['web/src/**/*.{ts,svelte}'],
     rules: {

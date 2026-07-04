@@ -105,6 +105,28 @@ describe('checkVersionMismatch', () => {
 
     expect(globalThis.fetch).toHaveBeenCalledWith('/version.json', { cache: 'no-store' });
   });
+
+  it('skips the redirect when the mismatched version was already attempted', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ version: '1.0.1' }),
+    } as Response);
+
+    await checkVersionMismatch('1.0.1');
+
+    expect(window.location.replace).not.toHaveBeenCalled();
+  });
+
+  it('still redirects when a newer version differs from the attempted one', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ version: '1.0.2' }),
+    } as Response);
+
+    await checkVersionMismatch('1.0.1');
+
+    expect(window.location.replace).toHaveBeenCalledWith(expect.stringContaining('?v=1.0.2'));
+  });
 });
 
 // --- checkForUpdates: canvas-empty guard ---
@@ -161,11 +183,24 @@ describe('checkForUpdates — canvas-empty guard', () => {
   });
 });
 
-// --- initPWAUpdates: URL cleanup ---
+// --- initPWAUpdates: URL cleanup, cache-bust loop guard, lifecycle ---
 
-describe('initPWAUpdates — ?v= URL cleanup', () => {
+describe('initPWAUpdates', () => {
   let replaceStateSpy: ReturnType<typeof vi.spyOn>;
   let originalFetch: typeof fetch;
+  let teardown: (() => void) | undefined;
+
+  function stubLocation(href: string) {
+    const replace = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { href, replace },
+      writable: true,
+      configurable: true,
+    });
+    return replace;
+  }
+
+  const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
@@ -178,35 +213,87 @@ describe('initPWAUpdates — ?v= URL cleanup', () => {
     } as Response);
     // initPWAUpdates guards on DEV; override it for these tests
     (import.meta.env as Record<string, unknown>).DEV = false;
+    teardown = undefined;
   });
 
   afterEach(() => {
+    teardown?.();
     globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
     (import.meta.env as Record<string, unknown>).DEV = true;
   });
 
   it('strips ?v= from the URL and calls replaceState', () => {
-    Object.defineProperty(window, 'location', {
-      value: { href: 'https://splotch.art/?v=1.0.1' },
-      writable: true,
-      configurable: true,
-    });
+    stubLocation('https://splotch.art/?v=1.0.1');
 
-    initPWAUpdates();
+    teardown = initPWAUpdates();
 
     expect(replaceStateSpy).toHaveBeenCalledWith(null, '', expect.not.stringContaining('?v='));
   });
 
   it('does not call replaceState when no ?v= param is present', () => {
-    Object.defineProperty(window, 'location', {
-      value: { href: 'https://splotch.art/' },
-      writable: true,
-      configurable: true,
-    });
+    stubLocation('https://splotch.art/');
 
-    initPWAUpdates();
+    teardown = initPWAUpdates();
 
     expect(replaceStateSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not redirect again when the deployed version was already cache-busted', async () => {
+    const replace = stubLocation('https://splotch.art/?v=1.0.1');
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ version: '1.0.1' }),
+    } as Response);
+
+    teardown = initPWAUpdates();
+    await flushAsync();
+
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('redirects when the deployed version differs from the attempted cache-bust', async () => {
+    const replace = stubLocation('https://splotch.art/?v=1.0.1');
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ version: '1.0.2' }),
+    } as Response);
+
+    teardown = initPWAUpdates();
+    await flushAsync();
+
+    expect(replace).toHaveBeenCalledWith(expect.stringContaining('?v=1.0.2'));
+  });
+
+  it('is idempotent: a second call registers no additional listeners or intervals', () => {
+    stubLocation('https://splotch.art/');
+    const docListenerSpy = vi.spyOn(document, 'addEventListener');
+    const winListenerSpy = vi.spyOn(window, 'addEventListener');
+    const setIntervalSpy = vi.spyOn(globalThis, 'setInterval');
+
+    teardown = initPWAUpdates();
+    const second = initPWAUpdates();
+
+    expect(second).toBeUndefined();
+    expect(docListenerSpy).toHaveBeenCalledTimes(1);
+    expect(winListenerSpy).toHaveBeenCalledTimes(1);
+    expect(setIntervalSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('teardown removes listeners, clears the interval, and allows re-init', () => {
+    stubLocation('https://splotch.art/');
+    const docRemoveSpy = vi.spyOn(document, 'removeEventListener');
+    const winRemoveSpy = vi.spyOn(window, 'removeEventListener');
+    const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval');
+
+    const first = initPWAUpdates();
+    first?.();
+
+    expect(docRemoveSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
+    expect(winRemoveSpy).toHaveBeenCalledWith('focus', expect.any(Function));
+    expect(clearIntervalSpy).toHaveBeenCalledTimes(1);
+
+    teardown = initPWAUpdates();
+    expect(teardown).toBeDefined();
   });
 });

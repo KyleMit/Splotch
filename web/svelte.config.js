@@ -33,8 +33,8 @@ const config = {
     // iOS: capacitor://localhost). Safe here: the AI route is token-gated, and
     // /admin's only cookie is SameSite=strict, so it's never sent on the
     // cross-site requests these trusted origins make.
-    csrf: { trustedOrigins: ['https://localhost', 'capacitor://localhost'] }
-  }
+    csrf: { trustedOrigins: ['https://localhost', 'capacitor://localhost'] },
+  },
 };
 
 export default config;

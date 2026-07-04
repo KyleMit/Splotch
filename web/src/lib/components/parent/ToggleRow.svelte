@@ -88,16 +88,20 @@
     flex-shrink: 0;
   }
 
-  .toggle-switch:hover {
-    background: #ccc;
+  @media (hover: hover) {
+    .toggle-switch:hover {
+      background: #ccc;
+    }
   }
 
   .toggle-switch.active {
     background: var(--brand);
   }
 
-  .toggle-switch.active:hover {
-    background: var(--brand-hover);
+  @media (hover: hover) {
+    .toggle-switch.active:hover {
+      background: var(--brand-hover);
+    }
   }
 
   .toggle-switch-thumb {
@@ -121,7 +125,9 @@
     opacity: 0.5;
   }
 
-  .toggle-switch:disabled:hover {
-    background: #ddd;
+  @media (hover: hover) {
+    .toggle-switch:disabled:hover {
+      background: #ddd;
+    }
   }
 </style>

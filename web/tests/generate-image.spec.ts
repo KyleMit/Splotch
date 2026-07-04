@@ -1,13 +1,22 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 
 // A multipart field value as accepted by Playwright's request.post({ multipart }).
-type MultipartField = string | number | boolean | { name: string; mimeType: string; buffer: Buffer };
+type MultipartField =
+  | string
+  | number
+  | boolean
+  | { name: string; mimeType: string; buffer: Buffer };
 
 // Server-side guards on /api/generate-image. These hit the endpoint directly
 // (no page) because the size/type caps are pure request validation. Passing an
 // `apiKey` flips the handler into BYOK mode, which skips the token allowlist and
 // lets us reach the guards without a real access token. A bad payload is
 // rejected *before* any Gemini call, so a throwaway key is fine here.
+//
+// Every BYOK request from this file shares one per-IP limiter bucket, so the
+// tests must run in declaration order (burst test last) — opt this file out of
+// the suite's fullyParallel mode.
+test.describe.configure({ mode: 'default' });
 
 // 1x1 transparent PNG — a legitimate, tiny, allowed upload.
 const TINY_PNG = Buffer.from(
@@ -18,7 +27,7 @@ const TINY_PNG = Buffer.from(
 function form(buffer: Buffer, mimeType: string, fileName = 'drawing.png') {
   return {
     apiKey: 'byok-test-key', // BYOK path → skips the token allowlist
-    image: { name: fileName, mimeType, buffer }
+    image: { name: fileName, mimeType, buffer },
   };
 }
 
@@ -28,12 +37,13 @@ function form(buffer: Buffer, mimeType: string, fileName = 'drawing.png') {
 function managedForm(buffer: Buffer, mimeType: string, token: string, fileName = 'drawing.png') {
   return {
     token,
-    image: { name: fileName, mimeType, buffer }
+    image: { name: fileName, mimeType, buffer },
   };
 }
 
-// Mirror of GENERATE_LIMIT in src/routes/api/generate-image/+server.js.
+// Mirrors of GENERATE_LIMIT / BYOK_LIMIT in src/routes/api/generate-image/+server.ts.
 const GENERATE_LIMIT = 15;
+const BYOK_LIMIT = 30;
 
 // The e2e suite runs against the production build, where SvelteKit's CSRF guard
 // is active (it's skipped only in `vite dev`). A multipart POST is a form
@@ -47,7 +57,7 @@ function postImage(
 ) {
   return request.post('/api/generate-image', {
     multipart,
-    headers: { origin: baseURL ?? '' }
+    headers: { origin: baseURL ?? '' },
   });
 }
 
@@ -71,26 +81,61 @@ test('lets a normal-sized, allowed upload past the guards', async ({ request, ba
   expect(res.status()).not.toBe(415);
 });
 
-test('throttles a managed token hammered in a burst', async ({ request, baseURL }) => {
+test('throttles a managed token hammered in a burst', async ({ request, baseURL }, testInfo) => {
   // Use a deliberately unsupported type (gif → 415) so each request is rejected
   // *before* the Gemini call — the per-token rate limiter counts the hit first,
-  // so we exhaust the window without spending any real quota. BYOK requests are
-  // intentionally not throttled, so this only fires on the managed-token path.
-  const token = 'daycare-club';
+  // so we exhaust the window without spending any real quota.
+  //
+  // The limiter window is per token, lasts 60s, and rejected hits don't extend
+  // it — so a full window doesn't clear until 60s after the burst. A CI retry
+  // (retries: 2) starts inside that still-full window, so it would see the very
+  // first request 429 and fail deterministically. Give each attempt its own
+  // token (the retry ones are allowlisted alongside daycare-club in test.yml) so
+  // every attempt gets a fresh window. Local runs never retry, so testInfo.retry
+  // is always 0 there — they only ever need daycare-club.
+  const tokens = ['daycare-club', 'daycare-club-retry1', 'daycare-club-retry2'];
+  const token = tokens[testInfo.retry] ?? tokens[tokens.length - 1];
+
   const statuses: number[] = [];
-  for (let i = 0; i < GENERATE_LIMIT + 1; i++) {
-    const res = await postImage(request, baseURL, managedForm(TINY_PNG, 'image/gif', token, 'drawing.gif'));
+  for (let i = 0; i < GENERATE_LIMIT; i++) {
+    const res = await postImage(
+      request,
+      baseURL,
+      managedForm(TINY_PNG, 'image/gif', token, 'drawing.gif')
+    );
     statuses.push(res.status());
   }
 
-  // Requests within the limit clear the throttle (rejected only by the type
-  // guard); the one that tips over the limit gets a 429 with a Retry-After.
+  // Requests within the limit clear the throttle (rejected only by the type guard).
   //
   // A 403 here means the token is not in ALLOWED_TOKENS_LIST — copy .env.example
   // to .env so the test server has the token available.
   expect(statuses[0], 'token rejected (403) — copy .env.example to .env').not.toBe(403);
-  expect(statuses.slice(0, GENERATE_LIMIT)).not.toContain(429);
-  const res = await postImage(request, baseURL, managedForm(TINY_PNG, 'image/gif', token, 'drawing.gif'));
+  expect(statuses).not.toContain(429);
+
+  // The next request tips over the limit → 429 with a Retry-After.
+  const res = await postImage(
+    request,
+    baseURL,
+    managedForm(TINY_PNG, 'image/gif', token, 'drawing.gif')
+  );
+  expect(res.status()).toBe(429);
+  expect(res.headers()['retry-after']).toBeTruthy();
+});
+
+test('throttles BYOK requests per IP after a generous burst', async ({ request, baseURL }) => {
+  // Same gif trick as above: the per-IP limiter counts the hit before the type
+  // guard rejects, so no Gemini call is spent. Earlier tests in this file used
+  // a few BYOK hits from this IP, so the 429 can arrive slightly before the
+  // full BYOK_LIMIT — the assertion only requires it within the limit + 1.
+  const statuses: number[] = [];
+  while (statuses.length < BYOK_LIMIT + 1 && !statuses.includes(429)) {
+    const res = await postImage(request, baseURL, form(TINY_PNG, 'image/gif', 'drawing.gif'));
+    statuses.push(res.status());
+  }
+  expect(statuses).toContain(429);
+
+  const res = await postImage(request, baseURL, form(TINY_PNG, 'image/gif', 'drawing.gif'));
   expect(res.status()).toBe(429);
   expect(res.headers()['retry-after']).toBeTruthy();
 });

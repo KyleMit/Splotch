@@ -45,7 +45,6 @@
   * [ ] Export/import
 * Bugs
   * [ ] Sometimes it doesn't register clicks on color changes
-  * [ ] Drawing sound keeps playing when a mid-stroke swatch tap ends the stroke — `releaseAllPointers()` (engine.ts) clears the pointers but never fires `onDrawStopCallback`, unlike `stopDrawing()`
 * Controls
   * [ ] Brush type (blend mode with previous drawing)
 
@@ -53,6 +52,7 @@
 ## DONE
 
 
+* [x] Drawing sound keeps playing when a mid-stroke swatch tap ends the stroke — `releaseAllPointers()` now fires `onDrawStopCallback`
 * [x] Toddler Usability
   * [x] Multi-tapping on color picker should not immediately dismiss modal
 * [x] Screenshots?  Screenshot on wipe?
@@ -146,7 +146,7 @@
 * [x] Figure out if I need to log into netlify from CLI - document in pre dev step if so
 * [x] Fix admin center persistence
 * [x] iPad does not respect force landscape setting
-* [x] flash of unstyled content on booting app in iOS where circle and trash can buttons start square and then become rounded 
+* [x] flash of unstyled content on booting app in iOS where circle and trash can buttons start square and then become rounded
 * [x] volume slider doesn't work with swipe between tabs on iOS
 * [x] fix admin center not rendering on mobile
 * [x] Add haptics for trashcan when in the clear accept zone

@@ -3,7 +3,7 @@
   import { slide } from 'svelte/transition';
   import Icon from './Icon.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
-  import { colors } from '$lib/state/colors.svelte';
+  import { colors, isWhite } from '$lib/state/colors.svelte';
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
   import {
     strokeState,
@@ -23,7 +23,10 @@
   let strokeWrapperEl: HTMLDivElement | undefined = $state();
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
   let aiBtnEl: HTMLButtonElement | undefined = $state();
-  let isPortrait = $state(false);
+
+  // Orientation drives the chevron direction and drawer-slide axis; the shared
+  // layout module owns the listeners.
+  const isPortrait = $derived(layout.orientation === 'portrait');
 
   // Landscape: sit just past the color palette so we clear it. Portrait: pin to
   // the bottom-left corner. paletteWidth is published by ColorPalette (0 until
@@ -49,6 +52,11 @@
   // eraser's pink while erasing. Inherited by the icons via currentColor.
   const strokeMenuColor = $derived(toolState.eraser ? '#fb3675' : colors.activeColor);
 
+  // A white brush color vanishes against the white icon buttons, so the brush
+  // icon and stroke-weight lines get a black outline while white is active.
+  // Never during erasing — the eraser icon carries its own (pink) coloring.
+  const whiteStroke = $derived(!toolState.eraser && isWhite(colors.activeColor));
+
   // Chevron points the way the drawer will move: forward (out) to open,
   // back (toward the corner it tucks into) to close. Landscape slides
   // left/right, portrait slides up/down.
@@ -69,18 +77,7 @@
     if (!next) strokeState.menuOpen = false;
   }
 
-  // Track orientation so the chevron direction and drawer-slide axis match the
-  // layout. The panel's left offset follows layout.paletteWidth reactively, so
-  // there's nothing to measure here.
-  function updateOrientation() {
-    isPortrait = window.matchMedia('(orientation: portrait)').matches;
-  }
-
   onMount(() => {
-    updateOrientation();
-    window.addEventListener('resize', updateOrientation);
-    window.addEventListener('orientationchange', updateOrientation);
-
     // Click outside closes stroke menu
     const onDocPointerDown = (e: PointerEvent) => {
       if (strokeState.menuOpen && strokeWrapperEl && !strokeWrapperEl.contains(e.target as Node)) {
@@ -98,8 +95,6 @@
     window.addEventListener('keydown', onKeyDown);
 
     return () => {
-      window.removeEventListener('resize', updateOrientation);
-      window.removeEventListener('orientationchange', updateOrientation);
       document.removeEventListener('pointerdown', onDocPointerDown);
       window.removeEventListener('keydown', onKeyDown);
     };
@@ -160,6 +155,7 @@
       >
         <button
           class="action-button"
+          class:white-stroke={whiteStroke}
           id="strokeWidthButton"
           aria-label="Stroke width"
           aria-expanded={strokeState.menuOpen}
@@ -171,7 +167,12 @@
             class="action-icon"
           />
         </button>
-        <div class="stroke-width-menu" hidden={!strokeState.menuOpen} style:color={strokeMenuColor}>
+        <div
+          class="stroke-width-menu"
+          class:white-stroke={whiteStroke}
+          hidden={!strokeState.menuOpen}
+          style:color={strokeMenuColor}
+        >
           {#each STROKE_SIZES as size (size)}
             <button
               class="stroke-size-button"
@@ -321,8 +322,10 @@
     flex-shrink: 0;
   }
 
-  .drawer-toggle:hover {
-    opacity: 0.7;
+  @media (hover: hover) {
+    .drawer-toggle:hover {
+      opacity: 0.7;
+    }
   }
 
   .drawer-toggle:active {
@@ -337,20 +340,25 @@
     transition: filter 0.2s ease;
   }
 
-  .drawer-toggle:hover :global(.drawer-toggle-icon) {
-    filter: invert(40%) grayscale(100%);
+  @media (hover: hover) {
+    .drawer-toggle:hover :global(.drawer-toggle-icon) {
+      filter: invert(40%) grayscale(100%);
+    }
   }
 
   .drawer-toggle:active :global(.drawer-toggle-icon) {
     filter: invert(0%) grayscale(100%);
   }
 
+  /* Sized to roughly match the Color Swatch touch target (60px landscape /
+     55px portrait) so the action buttons feel like equal-weight tap targets
+     for small hands. */
   .action-button {
-    width: 48px;
-    height: 48px;
+    width: 60px;
+    height: 60px;
     background: white;
     border: 2px solid #ddd;
-    border-radius: 12px;
+    border-radius: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -358,7 +366,15 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     transition: all 0.2s ease;
     touch-action: manipulation;
-    padding: 8px;
+    padding: 10px;
+  }
+
+  @media (orientation: portrait) {
+    .action-button {
+      width: 55px;
+      height: 55px;
+      padding: 9px;
+    }
   }
 
   /* Author display:flex above outranks the UA [hidden] rule, so restore it. */
@@ -473,11 +489,11 @@
   }
 
   .stroke-size-button {
-    width: 53px;
-    height: 53px;
+    width: 60px;
+    height: 60px;
     background: white;
     border: 2px solid #ddd;
-    border-radius: 12px;
+    border-radius: 14px;
     cursor: pointer;
     /* Inherit the menu's color so the line icons (currentColor) pick up the
        active pen/eraser color — buttons don't inherit color by default. */
@@ -511,5 +527,20 @@
      the current color (currentColor), so only tint non-color icons here. */
   .stroke-size-button.active :global(.action-icon:not(.icon-color)) {
     filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
+  }
+
+  /* White brush color is invisible on the white buttons, so ring the brush
+     lines with a solid black edge while white is active. paint-order draws the
+     stroke behind the white fill (so only an outer keyline shows), and
+     non-scaling-stroke pins it to 2 screen px on both icons despite their very
+     different viewBoxes (brush 409-wide, size lines 960). In the brush icon we
+     stroke only the currentColor lines, leaving the colored pencils untouched;
+     the size menu holds a single currentColor path, so plain `path` suffices. */
+  .action-button.white-stroke :global(svg path[fill='currentColor']),
+  .stroke-width-menu.white-stroke :global(svg path) {
+    stroke: #000;
+    stroke-width: 2px;
+    paint-order: stroke;
+    vector-effect: non-scaling-stroke;
   }
 </style>

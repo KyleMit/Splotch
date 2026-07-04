@@ -30,19 +30,20 @@ const STROKES = [
   horizontalStroke(2, 90, 40, 260),
   horizontalStroke(3, 130, 40, 260),
   horizontalStroke(4, 190, 150, 40), // spread: moves left
-  horizontalStroke(5, 230, 150, 260) // spread: moves right
+  horizontalStroke(5, 230, 150, 260), // spread: moves right
 ];
 const SAMPLES = [
   { x: 150, y: 50 },
   { x: 150, y: 90 },
   { x: 150, y: 130 },
   { x: 90, y: 190 }, // on pointer 4's leftward path
-  { x: 200, y: 230 } // on pointer 5's rightward path
+  { x: 200, y: 230 }, // on pointer 5's rightward path
 ];
 
 test.beforeEach(async ({ page }) => {
-  // Navigate once, then poll for readiness — same cold-Vite handling as the
-  // engine spec (a first-load dep-optimize reload would break a re-goto loop).
+  // Navigate once, then poll for readiness — same handling as the engine spec.
+  // Settles immediately under `vite preview`; under DEV_SERVER=1 (`vite dev`) a
+  // first-load dep-optimize reload would break a re-goto loop, so we poll.
   await page.goto('/dev/engine', { waitUntil: 'commit' });
   await expect(async () => {
     const ready = await page.evaluate(() => window.__engineReady === true).catch(() => false);
@@ -91,7 +92,7 @@ test('a pinch/spread across five pointers does not zoom or scale the canvas', as
   const viewportBefore = await page.evaluate(() => ({
     scale: window.visualViewport?.scale ?? 1,
     width: window.innerWidth,
-    height: window.innerHeight
+    height: window.innerHeight,
   }));
 
   await page.evaluate((strokes) => window.__engine.multiStrokeSync(strokes), STROKES);
@@ -100,7 +101,7 @@ test('a pinch/spread across five pointers does not zoom or scale the canvas', as
   const viewportAfter = await page.evaluate(() => ({
     scale: window.visualViewport?.scale ?? 1,
     width: window.innerWidth,
-    height: window.innerHeight
+    height: window.innerHeight,
   }));
 
   // The page never pinch-zoomed.

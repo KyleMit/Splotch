@@ -5,7 +5,14 @@ declare global {
     // interface Locals {}
     // interface PageData {}
     // interface PageState {}
-    // interface Platform {}
+
+    // The Netlify adapter exposes the function invocation context here.
+    // `waitUntil` keeps the function alive past the response for background
+    // work (see generate-image's usage write); both are optional because
+    // local dev (`vite dev`) has no Netlify context at all.
+    interface Platform {
+      context?: { waitUntil?: (promise: Promise<unknown>) => void };
+    }
   }
 
   // Compile-time constants injected by `define` in vite.config.js. Code guards

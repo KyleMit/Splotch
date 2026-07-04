@@ -136,8 +136,12 @@
     font-weight: 600;
   }
 
-  .back:hover {
-    text-decoration: underline;
+  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
+     keep it stuck until the next tap elsewhere. */
+  @media (hover: hover) {
+    .back:hover {
+      text-decoration: underline;
+    }
   }
 
   h1 {

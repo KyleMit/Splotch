@@ -1,18 +1,13 @@
-import { dev } from '$app/environment';
-import { env } from '$env/dynamic/public';
-import { error } from '@sveltejs/kit';
+import { requireDevHarness } from '$lib/devHarness';
 import type { PageLoad } from './$types';
 
 // Dev-only test harness for the imperative drawing engine. It mounts a real
 // canvas through the real initDrawingCanvas() seam and exposes the engine's
 // public API on window so the Playwright engine spec can drive it and read
-// pixels back. Must never ship to real users: available in `vite dev`, and in a
-// production `vite preview` build only when PUBLIC_ENABLE_DEV_HARNESS=true (the
-// e2e webServer sets it so Playwright can drive the real build). The Netlify
-// deploy never sets it, so the route 404s in production.
+// pixels back. Gated by requireDevHarness() so it never ships to real users.
 export const prerender = false;
 
 export const load: PageLoad = () => {
-  if (!dev && env.PUBLIC_ENABLE_DEV_HARNESS !== 'true') throw error(404, 'Not found');
+  requireDevHarness();
   return {};
 };

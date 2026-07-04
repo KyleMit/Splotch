@@ -16,14 +16,14 @@ export default defineConfig({
     trace: 'on-first-retry',
     // Slow each action down when SLOWMO is set (ms), e.g. `SLOWMO=500 npm run test:e2e:headed`
     launchOptions: {
-      slowMo: Number(process.env.SLOWMO) || 0
-    }
+      slowMo: Number(process.env.SLOWMO) || 0,
+    },
   },
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] }
-    }
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
   webServer: {
     // Exercise the production artifact (service worker, adapter output,
@@ -40,6 +40,6 @@ export default defineConfig({
     // ADMIN_ACCESS_TOKEN is the known secret tests/admin.spec.ts signs in with.
     // Token mutations land in the in-memory fallback (no Netlify Blobs here),
     // so they reset with the server and never touch real data.
-    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true', ADMIN_ACCESS_TOKEN: 'test-admin-secret' }
-  }
+    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true', ADMIN_ACCESS_TOKEN: 'test-admin-secret' },
+  },
 });

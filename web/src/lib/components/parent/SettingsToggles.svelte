@@ -335,14 +335,6 @@
 </section>
 
 <style>
-  .setting-group {
-    margin-bottom: 24px;
-  }
-
-  .setting-group:last-child {
-    margin-bottom: 0;
-  }
-
   .setting-group .setting + .setting {
     margin-top: 6px;
   }
@@ -354,12 +346,6 @@
     color: #888;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-  }
-
-  .setting {
-    padding: 12px 16px;
-    background: #f8f8f8;
-    border-radius: 8px;
   }
 
   .folder-location {

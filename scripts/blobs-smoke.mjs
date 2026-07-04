@@ -23,6 +23,8 @@
 // https).
 
 import { randomUUID } from 'node:crypto';
+import { sleep } from './lib/utils.mjs';
+import { check, fatal, summarize, json } from './lib/smoke.mjs';
 
 const BASE = (process.argv[2] ?? process.env.BLOBS_SMOKE_URL ?? '').replace(/\/$/, '');
 const ADMIN_SECRET = process.env.ADMIN_ACCESS_TOKEN ?? '';
@@ -38,21 +40,6 @@ if (!BASE || !ADMIN_SECRET) {
   );
   process.exit(2);
 }
-
-let passed = 0;
-let failed = 0;
-function check(name, ok, detail = '') {
-  if (ok) {
-    passed++;
-    console.log(`  ✓ ${name}`);
-  } else {
-    failed++;
-    console.error(`  ✗ ${name}${detail ? ` — ${detail}` : ''}`);
-  }
-}
-
-const json = (res) => res.json().catch(() => null);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function post(path, headers, body) {
   return fetch(`${BASE}${path}`, {
@@ -87,11 +74,14 @@ async function login() {
   throw new Error('login kept hitting the rate limiter');
 }
 
+let session;
+let probe;
+
 async function run() {
-  const session = await login();
+  session = await login();
   check('admin login → session', /^[a-f0-9]{64}$/.test(session ?? ''), `got ${session}`);
   const auth = { Authorization: `Bearer ${session}` };
-  const probe = `blobs-smoke-${randomUUID()}`;
+  probe = `blobs-smoke-${randomUUID()}`;
 
   // The core assertion: a deployed function with a working Blobs context reports
   // persistent:true. V1-function regression (no NETLIFY_BLOBS_CONTEXT) → false.
@@ -143,26 +133,21 @@ async function run() {
     removed.status === 200 && !removedBody?.tokens?.includes(probe),
     `got ${removed.status}`
   );
-
-  return { session, probe };
 }
 
 console.log(`[blobs-smoke] target: ${BASE}\n`);
-let ctx;
 try {
-  ctx = await run();
+  await run();
 } catch (err) {
-  failed++;
-  console.error(`\nFATAL: ${err.message}`);
-  // Best-effort cleanup if we got far enough to add the probe.
-  if (ctx?.session && ctx?.probe) {
-    await del(
-      '/api/admin/tokens',
-      { Authorization: `Bearer ${ctx.session}` },
-      { token: ctx.probe }
-    ).catch(() => {});
+  fatal(err);
+} finally {
+  // Best-effort cleanup if we got far enough to add the probe (idempotent, so
+  // a re-delete after the in-run cleanup is harmless).
+  if (session && probe) {
+    await del('/api/admin/tokens', { Authorization: `Bearer ${session}` }, { token: probe }).catch(
+      () => {}
+    );
   }
 }
 
-console.log(`\n${passed} passed, ${failed} failed`);
-process.exit(failed === 0 ? 0 : 1);
+summarize();

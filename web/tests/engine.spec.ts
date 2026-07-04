@@ -26,11 +26,12 @@ const count = (page: Page) => page.evaluate(() => window.__engine.nonTransparent
 
 test.beforeEach(async ({ page }) => {
   // Navigate ONCE, then poll for readiness. The harness sets window.__engineReady
-  // in onMount; on a cold Vite server the first load triggers a dep-optimize
-  // full-reload, so we ride through it by polling (swallowing the brief
-  // "execution context destroyed" while the reload is in flight). We must NOT
-  // re-navigate while polling — a fresh goto each retry keeps interrupting the
-  // reload before onMount can finish, which never converges.
+  // in onMount. Against the default `vite preview` build this settles on the
+  // first poll; under DEV_SERVER=1 (`vite dev`) the first load can trigger a
+  // dep-optimize full-reload, so we ride through it by polling (swallowing the
+  // brief "execution context destroyed" while the reload is in flight). We must
+  // NOT re-navigate while polling — a fresh goto each retry keeps interrupting
+  // the reload before onMount can finish, which never converges.
   await page.goto('/dev/engine', { waitUntil: 'commit' });
   await expect(async () => {
     const ready = await page.evaluate(() => window.__engineReady === true).catch(() => false);
@@ -505,8 +506,8 @@ test('in tablet landscape a reported bottom inset additionally guards the long b
 }) => {
   // A tablet keeps its home indicator on the long bottom in landscape; the OS
   // reports an inset there, so an upward swipe from that edge is discarded.
-  const dropped = await page.evaluate(() => {
-    window.__engine.resizeTo(400, 300);
+  const dropped = await page.evaluate(async () => {
+    await window.__engine.resizeTo(400, 300);
     window.__engine.setSafeAreaInsets({ top: 0, right: 0, bottom: 30, left: 0 });
     window.__engine.strokeSync(
       [
@@ -578,7 +579,9 @@ test('undoing an eraser stroke replays the erased pixels back', async ({ page })
   expect(s.canUndo).toBe(true); // the pen stroke remains undoable
 });
 
-test('a moderate stroke stays replayable ops (no keyframe) and undoes cleanly', async ({ page }) => {
+test('a moderate stroke stays replayable ops (no keyframe) and undoes cleanly', async ({
+  page,
+}) => {
   // Below the keyframe budget a command keeps replayable ops (simplified at
   // commit in the live curve family, see ADR-0036), so a rebuild re-strokes
   // them. It must not keyframe and must undo as one unit. strokeSync gives a

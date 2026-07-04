@@ -134,8 +134,10 @@ body {
   transition: filter 0.2s ease;
 }
 
-.modal-close-btn:not(:disabled):hover .modal-close-icon {
-  filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
+@media (hover: hover) {
+  .modal-close-btn:not(:disabled):hover .modal-close-icon {
+    filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
+  }
 }
 
 /* Spin animation reused by any "AI thinking" icon. */

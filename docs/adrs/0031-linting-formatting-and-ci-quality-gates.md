@@ -1,7 +1,7 @@
 # ADR-0031: Linting, Formatting, and CI Quality Gates
 
 **Status:** Active
-**Date:** 2026-06
+**Date:** 2026-06 (amended 2026-07: ignore-based file selection)
 
 ## Context
 
@@ -36,6 +36,18 @@ these deliberate choices:
   `trailingComma: es5`). Adopting it meant a one-time reformat of `web/src` and
   `scripts`; it is scoped to source — Markdown (ADRs) and `package.json` (whose
   `scripts-info` order is meaningful, ADR-0019) are left alone.
+- **File selection is ignore-based, not allowlist-based** (amended 2026-07). The
+  scripts are just `eslint .` and `prettier --check .`; what to skip lives in the
+  `ignores` block of `eslint.config.js` and in `.prettierignore` (Prettier 3 also
+  respects `.gitignore`). The original inline package.json globs were an
+  allowlist, and its failure mode is silent: `web/tests/`, the `web/` root
+  configs, and `web/src/app.html` sat unchecked until an unrelated CI failure
+  exposed them. With inversion, a new directory or file type is covered by
+  default and an unwanted one fails loudly until ignored — the right default for
+  an AI-assisted codebase. The source-only scope survives as explicit
+  `*.md` / `*.json` / `*.yml` / `*.yaml` / `*.webmanifest` lines in
+  `.prettierignore`, marked as deliberate and removable when docs/config
+  formatting is brought into scope.
 - **Enforcement is CI-only — no pre-commit hook.** No husky/lint-staged: it
   avoids an extra install step and an `install`-time `prepare` script, and keeps
   the local loop friction-free. The `quality` job is the gate.
@@ -68,3 +80,6 @@ audit on every push/PR, parallel to the existing `test` job.
 - − No pre-commit hook means a contributor can commit lint/format violations
   locally; CI catches them, at the cost of a round-trip. Run `npm run lint` and
   `npm run format` (or `lint:fix`) before pushing.
+- − The eslint `ignores` block and `.prettierignore` are near-duplicate lists
+  that must be kept in sync by hand; neither tool can read the other's format,
+  and a generation step wasn't worth the machinery for ~10 lines.

@@ -1,15 +1,34 @@
 <script lang="ts">
-  import { isNative, getPlatform } from '$lib/platform';
-  import { lazyPluginModule } from '$lib/nativePlugin';
+  import { isNative, getPlatform, type Platform } from '$lib/platform';
+  import Icon from '../Icon.svelte';
+  import {
+    install,
+    promptInstall,
+    installDeviceOs,
+    type InstallDeviceOs,
+  } from '$lib/state/install.svelte';
 
-  const loadDeviceLock = lazyPluginModule(() => import('$lib/plugins/deviceLock'));
+  let installing = $state(false);
 
-  // `open` flips true when the Parent Center modal opens; we re-run platform/OS
-  // detection then so the instructions match the current device and install state.
-  let { open = false } = $props();
+  async function oneTapInstall() {
+    installing = true;
+    try {
+      await promptInstall();
+    } finally {
+      installing = false;
+    }
+  }
 
-  let installOs = $state('ios');
-  let pwaInstalled = $state(false);
+  interface Props {
+    // `open` flips true when the Parent Center modal opens; we re-run platform/OS
+    // detection then so the instructions match the current device and install state.
+    open?: boolean;
+  }
+  let { open = false }: Props = $props();
+
+  // Which OS's manual steps fit this device, from the install module's shared
+  // detection (never re-sniffed here).
+  let deviceOs = $state<InstallDeviceOs>('desktop');
   // True when Guided Access (iOS) / App Pinning (Android) is currently engaged. Native
   // only — the web can't observe either, so it stays false there. Re-checked on open.
   let deviceLocked = $state(false);
@@ -17,15 +36,15 @@
   // so we drop the PWA install step and only show the device-lock setup for the
   // platform we're actually running on.
   let native = $state(false);
-  // 'web' | 'ios' | 'android' — the platform we're running on.
-  let platform = $state('web');
+  // The platform we're running on.
+  let platform = $state<Platform>('web');
 
   // Which OS setup sections to render. On native we know the exact platform, so
   // we show just that one; on the web we show both, detected OS first.
   let setupOsList = $derived(
     native
       ? [platform === 'android' ? 'android' : 'ios']
-      : installOs === 'android'
+      : deviceOs === 'android'
         ? ['android', 'ios']
         : ['ios', 'android']
   );
@@ -35,48 +54,33 @@
     return os === 'ios' ? 'Enable Guided Access' : 'Enable App Pinning';
   }
 
-  function detectOS() {
-    if (typeof navigator === 'undefined') return 'ios';
-    const ua = navigator.userAgent || navigator.vendor || '';
-    if (/iPad|iPhone|iPod/.test(ua) && !(window as { MSStream?: unknown }).MSStream) return 'ios';
-    if (/android/i.test(ua)) return 'android';
-    return 'ios';
-  }
-
-  function isPWAInstalled() {
-    if (typeof window === 'undefined') return false;
-    return (
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.matchMedia('(display-mode: fullscreen)').matches ||
-      window.matchMedia('(display-mode: minimal-ui)').matches ||
-      (window.navigator as { standalone?: boolean }).standalone === true
-    );
-  }
-
   $effect(() => {
     if (!open) return;
-    installOs = detectOS();
-    pwaInstalled = isPWAInstalled();
+    deviceOs = installDeviceOs();
     platform = getPlatform();
     native = isNative();
 
     // Lock state is a native-only async query, so reset and re-detect each open. The
     // `cancelled` guard drops a stale result if the modal closes/reopens mid-flight.
+    // The literal __IS_CAPACITOR__ keeps the DeviceLock wrapper (and @capacitor/core)
+    // out of the web bundle; the inline import() resolves to the module namespace,
+    // never the plugin proxy.
     deviceLocked = false;
-    if (!native) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { DeviceLock } = await loadDeviceLock();
-        const { locked } = await DeviceLock.isLocked();
-        if (!cancelled) deviceLocked = locked;
-      } catch {
-        // Plugin missing/unavailable — treat as unlocked (show the enable steps).
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    if (__IS_CAPACITOR__ && native) {
+      let cancelled = false;
+      (async () => {
+        try {
+          const { DeviceLock } = await import('$lib/plugins/deviceLock');
+          const { locked } = await DeviceLock.isLocked();
+          if (!cancelled) deviceLocked = locked;
+        } catch {
+          // Plugin missing/unavailable — treat as unlocked (show the enable steps).
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
   });
 </script>
 
@@ -85,7 +89,10 @@
 {#snippet installSteps(os: string)}
   {#if os === 'ios'}
     <ol class="steps">
-      <li>Tap the <strong>Share</strong> button (square with arrow)</li>
+      <li>
+        Tap the <Icon name="share-ios" class="step-icon" aria-label="Share" />
+        <strong>Share</strong> button at the bottom
+      </li>
       <li>Scroll and tap <strong>"Add to Home Screen"</strong></li>
       <li>Tap <strong>"Add"</strong> in the top right</li>
       <li>Launch from your home screen for fullscreen mode</li>
@@ -140,6 +147,19 @@
   {/if}
 {/snippet}
 
+<!-- Chromium hands us a real one-tap install dialog (Android and desktop alike),
+     so offer it above the per-OS manual steps rather than inside one section —
+     the OS lists below stay as the fallback. Never true on native. -->
+{#if install.mode === 'oneTap'}
+  <div class="one-tap">
+    <button class="one-tap-btn" onclick={oneTapInstall} disabled={installing} type="button">
+      <Icon name="home" class="one-tap-icon" />
+      Install Splotch
+    </button>
+    <p class="one-tap-hint">One tap — your browser will do the rest.</p>
+  </div>
+{/if}
+
 {#each setupOsList as os (os)}
   {#if native}
     <!-- Native builds have a single setup step, so the lock-setup title stands
@@ -163,7 +183,7 @@
         <summary>
           <span class="summary-text">
             <span class="section-number">1.</span> Install as App
-            {#if pwaInstalled}<span class="install-check">✓</span>{/if}
+            {#if install.installed}<span class="install-check">✓</span>{/if}
           </span>
         </summary>
         {@render installSteps(os)}
@@ -208,8 +228,10 @@
     text-align: left;
   }
 
-  .help-section summary:hover {
-    background: #f0f0f0;
+  @media (hover: hover) {
+    .help-section summary:hover {
+      background: #f0f0f0;
+    }
   }
 
   .help-section summary::-webkit-details-marker {
@@ -266,6 +288,54 @@
     font-weight: bold;
     margin-left: 8px;
     font-size: 20px;
+  }
+
+  .one-tap {
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .one-tap-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    border: none;
+    border-radius: 14px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .one-tap-btn:active {
+    transform: scale(0.97);
+  }
+
+  .one-tap-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  :global(.one-tap-icon) {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+  }
+
+  .one-tap-hint {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: #999;
+  }
+
+  :global(.step-icon) {
+    display: inline-flex;
+    width: 17px;
+    height: 17px;
+    vertical-align: -3px;
   }
 
   .steps {

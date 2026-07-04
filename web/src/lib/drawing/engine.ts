@@ -98,6 +98,7 @@ interface InitOptions {
   onDrawStop?: (() => void) | null;
   onUndoStateChange?: ((canUndo: boolean) => void) | null;
   onCanvasEmptyChange?: ((empty: boolean) => void) | null;
+  onStrokeEnd?: (() => void) | null;
   initialColor?: string;
 }
 
@@ -163,6 +164,7 @@ let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
 
 let canvasEmpty = true;
 let onCanvasEmptyChange: ((empty: boolean) => void) | null = null;
+let onStrokeEnd: (() => void) | null = null;
 
 // Pointer speed (which drives the drawing sound) is averaged over the most
 // recent slice of the stroke so the audio cue tracks gesture speed without
@@ -327,6 +329,29 @@ function refreshCanvasRect() {
   canvasRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
   rectScaleX = rect.width ? canvas.width / rect.width : 1;
   rectScaleY = rect.height ? canvas.height / rect.height : 1;
+}
+
+// A desktop window-edge drag fires resize continuously, and every backing-store
+// reassignment in resizeCanvas() wipes the canvas and forces a full replay. The
+// resize listener refreshes the cached rect immediately (so pointer mapping
+// tracks the moving layout) but defers the wipe + rebuild until the size
+// settles. Native skips the debounce: rotation is a single resize event, and
+// delaying its rebuild would only prolong the stretched frame. Exported so the
+// dev harness's resizeTo() can wait out the settle window.
+export const RESIZE_SETTLE_MS = 150;
+let resizeSettleTimer: ReturnType<typeof setTimeout> | null = null;
+
+function handleResize() {
+  refreshCanvasRect();
+  if (__IS_CAPACITOR__) {
+    resizeCanvas();
+    return;
+  }
+  if (resizeSettleTimer !== null) clearTimeout(resizeSettleTimer);
+  resizeSettleTimer = setTimeout(() => {
+    resizeSettleTimer = null;
+    resizeCanvas();
+  }, RESIZE_SETTLE_MS);
 }
 
 function pointerToCanvas(e: PointerEvent) {
@@ -615,6 +640,7 @@ export function releaseAllPointers() {
   activePointers.clear();
   groupHasDrawn = false;
   commitActiveCommand();
+  if (onDrawStopCallback) onDrawStopCallback();
 
   activePointerIds.forEach((pointerId) => {
     try {
@@ -893,9 +919,8 @@ function stopDrawing(e?: PointerEvent) {
   if (activePointers.size === 0) {
     groupHasDrawn = false;
     commitActiveCommand();
+    if (onDrawStopCallback) onDrawStopCallback();
   }
-
-  if (onDrawStopCallback) onDrawStopCallback();
 
   try {
     canvas.releasePointerCapture(e.pointerId);
@@ -909,6 +934,9 @@ function commitActiveCommand() {
   if (PERF_MARKS) performance.mark('engine.commit:start');
   pushCommand(activeCommand);
   activeCommand = null;
+  // Fired at stroke end, not start, so reactive consumers (e.g. mounting the
+  // install banner) never do DOM work while a finger is mid-stroke.
+  if (onStrokeEnd) onStrokeEnd();
   if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
 }
 
@@ -1029,12 +1057,13 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   onDrawStopCallback = options.onDrawStop || null;
   onUndoStateChange = options.onUndoStateChange || null;
   onCanvasEmptyChange = options.onCanvasEmptyChange || null;
+  onStrokeEnd = options.onStrokeEnd || null;
   currentColor = options.initialColor || '#AB71E1';
 
   renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
 
   resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('resize', handleResize);
   // Scroll/orientation move the canvas in the viewport without resizing it, so
   // refresh the cached rect (left/top) without the full backing-store rebuild.
   window.addEventListener('scroll', refreshCanvasRect, true);
@@ -1071,7 +1100,11 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
 
   return {
     teardown() {
-      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('resize', handleResize);
+      if (resizeSettleTimer !== null) {
+        clearTimeout(resizeSettleTimer);
+        resizeSettleTimer = null;
+      }
       window.removeEventListener('scroll', refreshCanvasRect, true);
       window.removeEventListener('orientationchange', refreshCanvasRect);
       canvas.removeEventListener('pointerdown', startDrawing);

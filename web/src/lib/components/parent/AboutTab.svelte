@@ -91,14 +91,6 @@
 </section>
 
 <style>
-  .setting-group {
-    margin-bottom: 24px;
-  }
-
-  .setting-group:last-child {
-    margin-bottom: 0;
-  }
-
   /* About tab branding */
   .about-brand {
     display: flex;
@@ -186,8 +178,10 @@
     font-weight: 600;
   }
 
-  .all-releases a:hover {
-    text-decoration: underline;
+  @media (hover: hover) {
+    .all-releases a:hover {
+      text-decoration: underline;
+    }
   }
 
   .parent-help-footer {
@@ -208,8 +202,10 @@
     font-weight: 500;
   }
 
-  .parent-help-footer a:hover {
-    text-decoration: underline;
+  @media (hover: hover) {
+    .parent-help-footer a:hover {
+      text-decoration: underline;
+    }
   }
 
   .github-link {
@@ -225,9 +221,11 @@
     transition: color 0.2s ease;
   }
 
-  .github-link a:hover {
-    color: #333;
-    text-decoration: none;
+  @media (hover: hover) {
+    .github-link a:hover {
+      color: #333;
+      text-decoration: none;
+    }
   }
 
   :global(.github-icon) {
@@ -237,8 +235,10 @@
     transition: opacity 0.2s ease;
   }
 
-  .github-link a:hover :global(.github-icon) {
-    opacity: 1;
+  @media (hover: hover) {
+    .github-link a:hover :global(.github-icon) {
+      opacity: 1;
+    }
   }
 
   .version-text {

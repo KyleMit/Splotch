@@ -71,7 +71,9 @@ export async function saveImageBlob(
   opts?: { allowPrompt?: boolean }
 ) {
   if (!blob) return;
-  if (isNative()) {
+  // __IS_CAPACITOR__ makes the gallery path compile-time dead on web so Rollup
+  // drops the media plugin chunk (isNative() alone can't tree-shake across modules).
+  if (__IS_CAPACITOR__ && isNative()) {
     try {
       await saveToGallery(blob, baseName);
     } catch (err) {

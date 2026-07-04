@@ -18,6 +18,9 @@
 // four deployment targets and the color math are unit-testable without a DOM.
 
 import { isLightColor } from './colorRing';
+// Type-only import — erased at build time, so this file keeps its no-runtime-
+// plugin-import purity (no @capacitor/core reaches the pure layer).
+import type { Platform } from './platform';
 
 // Shown in the band (and as the theme color) while the eraser is active. The
 // notch sits over white paper, so paper-white reads as "no color".
@@ -35,8 +38,6 @@ export const NOTCH_INSET_THRESHOLD_PX = 30;
 // no plugin import): 'DARK' = light icons (for a dark band), 'LIGHT' = dark
 // icons (for a light band).
 export type StatusBarStyle = 'DARK' | 'LIGHT';
-
-export type Platform = 'web' | 'android' | 'ios';
 
 export type Orientation = 'portrait' | 'landscape';
 

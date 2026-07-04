@@ -22,4 +22,4 @@ Read `docs/TODO.md` and the current codebase, then validate each item against th
    - **Kept / enriched** — one line each, noting what insight you added (if any)
    - **Removed** — one line each, with the reason
 
-Do not implement any of the changes — this is a review pass only. Implementation happens via `/fix-next-todo`.
+Do not implement any of the changes — this is a review pass only. Implementation happens via `/fix-next-todo-manual` or `/fix-next-todo-auto`.

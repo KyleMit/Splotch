@@ -15,14 +15,14 @@ export default defineConfig({
   projects: [
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] }
-    }
+      use: { ...devices['Desktop Safari'] },
+    },
   ],
   webServer: {
     command: `npx vite build && npx vite preview --port ${PORT}`,
     url: baseURL,
     reuseExistingServer: true,
     timeout: 180_000,
-    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true', ADMIN_ACCESS_TOKEN: 'test-admin-secret' }
-  }
+    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true', ADMIN_ACCESS_TOKEN: 'test-admin-secret' },
+  },
 });

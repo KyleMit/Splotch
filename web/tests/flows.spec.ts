@@ -77,7 +77,10 @@ test('selecting a palette color activates it and paints in that color', async ({
   }).toPass({ timeout: 10_000 });
 
   await page.waitForTimeout(150); // clear the post-color-change draw debounce
-  await draw(page, [{ x: 120, y: 120 }, { x: 260, y: 120 }]);
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 120 },
+  ]);
 
   const px = await firstOpaquePixel(page);
   expect(px).not.toBeNull();
@@ -262,7 +265,10 @@ test('the undo button enables on a stroke and reverts it', async ({ page }) => {
   const undo = page.locator('#undoButton');
   await expect(undo).toBeDisabled();
 
-  await draw(page, [{ x: 120, y: 120 }, { x: 260, y: 200 }]);
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+  ]);
   await expect(undo).toBeEnabled();
 
   await undo.click();
@@ -278,7 +284,10 @@ test('the screenshot button is gated on the canvas being non-empty', async ({ pa
   const shot = page.locator('#screenshotButton');
   await expect(shot).toBeDisabled();
 
-  await draw(page, [{ x: 140, y: 140 }, { x: 240, y: 200 }]);
+  await draw(page, [
+    { x: 140, y: 140 },
+    { x: 240, y: 200 },
+  ]);
   await expect(shot).toBeEnabled();
 
   // Undo back to empty re-disables it.
@@ -288,7 +297,9 @@ test('the screenshot button is gated on the canvas being non-empty', async ({ pa
 
 // ── tool/stroke state + persistence ─────────────────────────────────────────
 
-test('pen and eraser keep independent stroke sizes that persist across reload', async ({ page }) => {
+test('pen and eraser keep independent stroke sizes that persist across reload', async ({
+  page,
+}) => {
   await gotoApp(page);
   await openDrawer(page);
 
@@ -327,7 +338,7 @@ test('the drawer open state persists across a reload', async ({ page }) => {
 });
 
 test('parent center panels can be changed by tab buttons and native scrolling', async ({
-  page
+  page,
 }) => {
   await gotoApp(page);
 
@@ -382,9 +393,7 @@ test('parent center panels can be changed by tab buttons and native scrolling', 
 
 test('the AI button posts the drawing and reveals the generated result', async ({ page }) => {
   // Skip the style picker so the button generates directly.
-  await page.addInitScript(() =>
-    localStorage.setItem('splotch-ai-customization-enabled', 'false')
-  );
+  await page.addInitScript(() => localStorage.setItem('splotch-ai-customization-enabled', 'false'));
 
   const png = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
@@ -400,7 +409,10 @@ test('the AI button posts the drawing and reveals the generated result', async (
   // The access-code param unlocks the AI feature (captured + persisted on mount).
   await gotoApp(page, '/?ai_access_token=test-token');
   await openDrawer(page);
-  await draw(page, [{ x: 120, y: 120 }, { x: 260, y: 200 }]);
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+  ]);
 
   const ai = page.locator('#aiImageButton');
   await expect(ai).toBeVisible();
@@ -425,10 +437,70 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
 
   // Farm ships on web and mobile; open it and pick its first page.
   await dialog.getByRole('button', { name: /Farm coloring book/i }).click();
-  await dialog.getByRole('button', { name: /Farm coloring page/i }).first().click();
+  await dialog
+    .getByRole('button', { name: /Farm coloring page/i })
+    .first()
+    .click();
 
   await expect(dialog).toBeHidden();
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toBeVisible();
   expect(await overlay.getAttribute('src')).toMatch(/\/coloring\/farm\/.+-(wide|tall)\.webp$/);
+});
+
+// A toddler mashes a launch button several times before noticing the modal
+// opened; the follow-up taps land on the fresh backdrop right where the button
+// was and would dismiss it. modalDialog arms a short-lived dead zone around the
+// launching button (launchGuard) that swallows those taps without dismissing,
+// while a tap elsewhere on the backdrop still closes as usual.
+test('a repeat tap where the launch button sat does not dismiss the just-opened modal', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const btn = page.locator('#coloringBookButton');
+  const box = (await btn.boundingBox())!;
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+
+  await btn.click();
+  const dialog = page.locator('#coloring-book-dialog');
+  await expect(dialog).toBeVisible();
+
+  // Repeat tap on the vacated button spot (now backdrop) — swallowed, stays open.
+  await page.mouse.click(cx, cy);
+  await expect(dialog).toBeVisible();
+
+  // A backdrop tap away from the launch point still dismisses; only the
+  // button's own region is guarded.
+  const vp = page.viewportSize()!;
+  await page.mouse.click(vp.width - 10, 10);
+  await expect(dialog).toBeHidden();
+});
+
+test('rotating the viewport swaps the coloring overlay to the matching art', async ({ page }) => {
+  // Rotation reaches the overlay through the shared layout module (one
+  // resize/orientationchange listener pair feeding every component), so this
+  // also guards that viewport tracking stays live after rotation settles.
+  await page.setViewportSize({ width: 900, height: 600 });
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await page.locator('#coloringBookButton').click();
+  const dialog = page.locator('#coloring-book-dialog');
+  await dialog.getByRole('button', { name: /Farm coloring book/i }).click();
+  await dialog
+    .getByRole('button', { name: /Farm coloring page/i })
+    .first()
+    .click();
+
+  const overlay = page.locator('#coloringOverlay');
+  await expect(overlay).toHaveAttribute('src', /-wide\.webp$/);
+
+  await page.setViewportSize({ width: 600, height: 900 });
+  await expect(overlay).toHaveAttribute('src', /-tall\.webp$/);
+
+  await page.setViewportSize({ width: 900, height: 600 });
+  await expect(overlay).toHaveAttribute('src', /-wide\.webp$/);
 });

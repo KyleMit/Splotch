@@ -22,7 +22,7 @@ Prefer Grep/Glob/Read and a read-only exploration subagent for the file/transcri
 
 Use `AskUserQuestion` to confirm alignment before writing the report or changing config. Good things to confirm:
 - Which priorities rank highest right now (tokens, permissions, autonomy, review quality).
-- Which manual gates are intentional and must be preserved (e.g. `git commit`/`git push` should keep prompting; the `/fix-next-todo` manual-commit step).
+- Which manual gates are intentional and must be preserved (e.g. `git commit`/`git push` should keep prompting; the `/fix-next-todo-manual` manual-commit step).
 - Appetite for new machinery (subagents, hooks, MCP) vs. keeping it lean.
 
 ## Applying changes

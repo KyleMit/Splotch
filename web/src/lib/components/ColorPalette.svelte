@@ -19,12 +19,10 @@
   let paletteEl: HTMLDivElement;
   let swatchEls = $state<Record<string, HTMLButtonElement>>({});
 
-  // Publish layout values siblings need (ActionsPanel offsets past our width;
-  // ColorPicker block-zones around the gradient swatch) so they don't have to
-  // reach in via querySelector. A ResizeObserver keeps the width current as the
-  // palette trims swatches at breakpoints.
+  // Publish our rendered width so ActionsPanel can offset past it in landscape
+  // without reaching in via querySelector. A ResizeObserver keeps it current as
+  // the palette trims swatches at breakpoints.
   onMount(() => {
-    layout.gradientSwatchEl = swatchEls[CUSTOM_SWATCH];
     const ro = new ResizeObserver(() => {
       layout.paletteWidth = paletteEl.getBoundingClientRect().width;
     });
@@ -32,7 +30,6 @@
     return () => {
       ro.disconnect();
       layout.paletteWidth = 0;
-      layout.gradientSwatchEl = null;
     };
   });
 

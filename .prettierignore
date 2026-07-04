@@ -9,3 +9,10 @@ web/src/lib/components/icon-names.d.ts
 web/src/lib/releases.json
 web/tests/**/*-snapshots/
 *.svg
+
+# Deliberately out of Prettier scope for now — remove these to bring docs/configs into the check
+*.md
+*.json
+*.yml
+*.yaml
+*.webmanifest

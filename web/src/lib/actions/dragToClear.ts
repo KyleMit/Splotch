@@ -24,6 +24,7 @@ export interface DragToClearOptions {
 
 export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToClearOptions) {
   let isDragging = false;
+  let activePointerId: number | null = null;
   let startPointerX = 0;
   let startPointerY = 0;
   let homeButtonCenter = { x: 0, y: 0 };
@@ -50,6 +51,8 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   }
 
   function onPointerDown(e: PointerEvent) {
+    if (isDragging) return;
+
     const o = getOptions();
     const now = Date.now();
     if (now - lastClickTime < MULTI_CLICK_WINDOW) {
@@ -71,6 +74,10 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     holdTimer = setTimeout(o.onTutorialShow, HOLD_DURATION);
 
     isDragging = true;
+    activePointerId = e.pointerId;
+    try {
+      node.setPointerCapture(e.pointerId);
+    } catch {}
     startPointerX = clientX;
     startPointerY = clientY;
     clearReady = false;
@@ -102,7 +109,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   }
 
   function onPointerMove(e: PointerEvent) {
-    if (!isDragging) return;
+    if (!isDragging || e.pointerId !== activePointerId) return;
 
     const o = getOptions();
     const clientX = e.clientX;
@@ -152,7 +159,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   }
 
   function onPointerUp(e: PointerEvent) {
-    if (!isDragging) return;
+    if (!isDragging || e.pointerId !== activePointerId) return;
 
     const o = getOptions();
 
@@ -161,6 +168,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       holdTimer = null;
     }
     isDragging = false;
+    activePointerId = null;
 
     const clientX = e.clientX;
     const clientY = e.clientY;
@@ -225,16 +233,16 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   }
 
   node.addEventListener('pointerdown', onPointerDown);
-  document.addEventListener('pointermove', onPointerMove);
-  document.addEventListener('pointerup', onPointerUp);
-  document.addEventListener('pointercancel', onPointerUp);
+  node.addEventListener('pointermove', onPointerMove);
+  node.addEventListener('pointerup', onPointerUp);
+  node.addEventListener('pointercancel', onPointerUp);
 
   return {
     destroy() {
       node.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('pointermove', onPointerMove);
-      document.removeEventListener('pointerup', onPointerUp);
-      document.removeEventListener('pointercancel', onPointerUp);
+      node.removeEventListener('pointermove', onPointerMove);
+      node.removeEventListener('pointerup', onPointerUp);
+      node.removeEventListener('pointercancel', onPointerUp);
       if (holdTimer) clearTimeout(holdTimer);
       for (const id of resetTimers) clearTimeout(id);
       resetTimers.clear();

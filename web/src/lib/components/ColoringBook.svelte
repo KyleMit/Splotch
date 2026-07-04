@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
   import { ui, closeColoringBook } from '$lib/state/ui.svelte';
   import {
@@ -9,8 +8,9 @@
     clearOverlay,
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
-  import { pageImage, type Book, type BookOrientation, type ColoringPage } from '$lib/state/books';
+  import { pageImage, type Book, type ColoringPage } from '$lib/state/books';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import { layout } from '$lib/state/layout.svelte';
 
   // Only show books licensed for this platform. Native builds also strip the
   // web-only books' assets at build time (scripts/strip-native-assets.mjs), so
@@ -18,34 +18,13 @@
   const books = booksForPlatform(isNative() ? 'mobile' : 'web');
 
   let activeBook = $state<Book | null>(null);
-  let orientation = $state<BookOrientation>('landscape');
+  const orientation = $derived(layout.orientation);
 
-  function readOrientation(): BookOrientation {
-    if (typeof window === 'undefined') return 'landscape';
-    return window.matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape';
-  }
-
-  function syncOrientation() {
-    orientation = readOrientation();
+  // Rotating swaps the active overlay to that page's portrait/landscape art.
+  $effect(() => {
     if (coloringBookState.overlayPage) {
       setOverlayPage(coloringBookState.overlayPage, orientation);
     }
-  }
-
-  onMount(() => {
-    const media = window.matchMedia('(orientation: portrait)');
-    syncOrientation();
-    const onChange = () => syncOrientation();
-
-    media.addEventListener('change', onChange);
-    window.addEventListener('resize', onChange);
-    window.screen.orientation?.addEventListener?.('change', onChange);
-
-    return () => {
-      media.removeEventListener('change', onChange);
-      window.removeEventListener('resize', onChange);
-      window.screen.orientation?.removeEventListener?.('change', onChange);
-    };
   });
 
   function pickPage(page: ColoringPage) {
@@ -199,12 +178,14 @@
     transition: filter 0.2s ease;
   }
 
-  .coloring-back-button:hover {
-    background: #ede7f6;
-  }
+  @media (hover: hover) {
+    .coloring-back-button:hover {
+      background: #ede7f6;
+    }
 
-  .coloring-back-button:hover :global(.coloring-back-icon) {
-    filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
+    .coloring-back-button:hover :global(.coloring-back-icon) {
+      filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
+    }
   }
 
   .coloring-grid {
@@ -241,11 +222,13 @@
     touch-action: manipulation;
   }
 
-  .coloring-tile:hover {
-    border-color: var(--brand);
-    background: #f5f0ff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(171, 113, 225, 0.25);
+  @media (hover: hover) {
+    .coloring-tile:hover {
+      border-color: var(--brand);
+      background: #f5f0ff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(171, 113, 225, 0.25);
+    }
   }
 
   .coloring-tile:active {

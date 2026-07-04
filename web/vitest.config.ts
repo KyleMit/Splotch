@@ -11,13 +11,17 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify('1.0.0-test'),
     __BUILD_TIME__: JSON.stringify('2026-01-01T00:00:00Z'),
-    __NATIVE_API_BASE__: JSON.stringify('')
+    __NATIVE_API_BASE__: JSON.stringify(''),
+    // `true` keeps the native branches compiled in (they're guarded as
+    // `__IS_CAPACITOR__ && isNative()`), so tests stay in control of the
+    // web/native split through their runtime isNative() mocks.
+    __IS_CAPACITOR__: JSON.stringify(true),
   },
   test: {
     environment: 'happy-dom',
     setupFiles: ['./vitest-setup.ts'],
     include: ['src/**/*.{test,spec}.{js,ts}'],
     // The Playwright specs live under tests/ and must not be picked up here.
-    exclude: ['tests/**', 'node_modules/**', '.svelte-kit/**']
-  }
+    exclude: ['tests/**', 'node_modules/**', '.svelte-kit/**'],
+  },
 });

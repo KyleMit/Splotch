@@ -35,8 +35,8 @@ const { values } = parseArgs({
     headed: { type: 'boolean', default: false },
     keep: { type: 'boolean', default: false },
     port: { type: 'string', default: '5199' },
-    url: { type: 'string' }
-  }
+    url: { type: 'string' },
+  },
 });
 
 const route = values.route;
@@ -57,7 +57,7 @@ const ready = {
     const c = document.getElementById('drawingCanvas');
     return !!c && c.width > 300;
   },
-  '/dev/engine': () => window.__engineReady === true
+  '/dev/engine': () => window.__engineReady === true,
 };
 const isReady = ready[route] ?? (() => document.readyState === 'complete');
 
@@ -67,9 +67,9 @@ function startServer() {
   // /api/* functions (use `npm run dev:netlify` by hand if you need those).
   // PUBLIC_ENABLE_DEV_HARNESS unlocks the /dev/* harness routes (404 otherwise).
   server = spawn('npx', ['vite', 'dev', '--port', String(port), '--strictPort'], {
-    cwd: repoRoot,
+    cwd: resolve(repoRoot, 'web'),
     env: { ...process.env, PUBLIC_ENABLE_DEV_HARNESS: 'true' },
-    stdio: ['ignore', 'pipe', 'inherit']
+    stdio: ['ignore', 'pipe', 'inherit'],
   });
   server.stdout.on('data', (d) => process.stderr.write(d)); // surface vite logs on stderr
 }
@@ -119,7 +119,12 @@ async function main() {
       const cy = box.y + box.height / 2;
       await page.mouse.move(cx - 200, cy - 80);
       await page.mouse.down();
-      for (const [dx, dy] of [[-100, 80], [40, -120], [160, 100], [240, -40]]) {
+      for (const [dx, dy] of [
+        [-100, 80],
+        [40, -120],
+        [160, 100],
+        [240, -40],
+      ]) {
         await page.mouse.move(cx + dx, cy + dy, { steps: 12 });
       }
       await page.mouse.up();
@@ -134,7 +139,9 @@ async function main() {
 
   await browser.close();
   if (keep && !externalUrl) {
-    console.log(`server left running: ${baseURL} (pid ${server.pid}) — kill with: npx kill-port ${port}`);
+    console.log(
+      `server left running: ${baseURL} (pid ${server.pid}) — kill with: npx kill-port ${port}`
+    );
   } else if (server) {
     server.kill('SIGTERM');
   }

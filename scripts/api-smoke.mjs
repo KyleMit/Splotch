@@ -5,51 +5,15 @@
 // No Gemini key or Netlify Blobs needed — generate-image and verify-key (which make
 // live model calls) are intentionally out of scope.
 
-import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
-import { ROOT } from './lib/utils.mjs';
+import { spawnViteServer } from './lib/vite-server.mjs';
+import { waitForUrl } from './lib/utils.mjs';
+import { check, fatal, summarize, json } from './lib/smoke.mjs';
 
 const PORT = Number(process.env.SMOKE_PORT ?? 5199);
 const BASE = `http://localhost:${PORT}`;
 const ADMIN_SECRET = randomUUID();
 const SEED_TOKENS = 'alpha,beta';
-
-let passed = 0;
-let failed = 0;
-
-function check(name, ok, detail = '') {
-  if (ok) {
-    passed++;
-    console.log(`  ✓ ${name}`);
-  } else {
-    failed++;
-    console.error(`  ✗ ${name}${detail ? ` — ${detail}` : ''}`);
-  }
-}
-
-async function json(res) {
-  try {
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
-
-async function waitForServer(timeoutMs = 45_000) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      // Unauthenticated GET should answer 401 once routes are live.
-      const res = await fetch(`${BASE}/api/admin/tokens`);
-      if (res.status === 401) return;
-    } catch {
-      // server not up yet
-    }
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`dev server did not become ready on ${BASE} within ${timeoutMs}ms`);
-}
 
 async function run() {
   // --- admin/login ---
@@ -146,26 +110,45 @@ async function run() {
     code.status === 200 && typeof codeBody?.ok === 'boolean',
     `got ${code.status}`
   );
+
+  // --- standard 429 contract (throttled() in src/lib/server/http.ts) ---
+  // The per-IP limit is 10/min; burst past it and assert the shared shape:
+  // JSON {ok:false, error} plus a Retry-After header.
+  let limited = null;
+  for (let i = 0; i < 12 && !limited; i++) {
+    const res = await fetch(`${BASE}/api/verify-access-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: 'burst-to-the-limit' }),
+    });
+    if (res.status === 429) limited = res;
+  }
+  const limitedBody = limited ? await json(limited) : null;
+  check(
+    'throttled → 429 {ok:false, error} with Retry-After',
+    limited !== null &&
+      limitedBody?.ok === false &&
+      typeof limitedBody?.error === 'string' &&
+      Boolean(limited.headers.get('retry-after')),
+    limited ? `body ${JSON.stringify(limitedBody)}` : 'never saw a 429'
+  );
 }
 
-let server;
+let stop;
 try {
   console.log('Starting test dev server…');
-  server = spawn('npx', ['vite', 'dev', '--port', String(PORT), '--strictPort'], {
-    cwd: join(ROOT, 'web'),
-    env: { ...process.env, ADMIN_ACCESS_TOKEN: ADMIN_SECRET, ALLOWED_TOKENS_LIST: SEED_TOKENS },
-    stdio: ['ignore', 'ignore', 'inherit'],
-  });
+  ({ stop } = spawnViteServer(PORT, {
+    ADMIN_ACCESS_TOKEN: ADMIN_SECRET,
+    ALLOWED_TOKENS_LIST: SEED_TOKENS,
+  }));
 
-  await waitForServer();
+  await waitForUrl(`${BASE}/api/admin/tokens`, 45_000, (res) => res.status === 401);
   console.log(`Server ready on ${BASE}\n`);
   await run();
 } catch (err) {
-  failed++;
-  console.error(`\nFATAL: ${err.message}`);
+  fatal(err);
 } finally {
-  if (server) server.kill('SIGTERM');
+  if (stop) stop();
 }
 
-console.log(`\n${passed} passed, ${failed} failed`);
-process.exit(failed === 0 ? 0 : 1);
+summarize();

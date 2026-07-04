@@ -123,6 +123,9 @@ export async function removeToken(token: unknown) {
   const t = String(token ?? '').trim();
   const { store, list } = await readStore();
   const next = list.filter((x: string) => x !== t);
-  await persist(store, next);
+  // A no-op remove must not rewrite the blob: under eventual consistency the
+  // list may be a stale replica read, and persisting it would clobber a token
+  // another admin just added.
+  if (next.length !== list.length) await persist(store, next);
   return { ok: true, tokens: next };
 }

@@ -2,7 +2,7 @@
 // the script that owns it; Android tooling paths live in lib/android.mjs and
 // Playwright app drivers in lib/app-driver.mjs.
 
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -36,6 +36,34 @@ export function run(cmd, args = [], { input, cwd = ROOT, echo = true } = {}) {
     stdio: input === undefined ? 'inherit' : ['pipe', 'inherit', 'inherit'],
   });
   if (result.status !== 0) process.exit(result.status ?? 1);
+}
+
+// Run a command line through the shell with live output. Unlike run(), it
+// rejects instead of exiting the process, so a caller's finally block (e.g.
+// emulator/simulator teardown) still executes after a failure.
+export function sh(command, cwd = ROOT) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, { cwd, stdio: 'inherit', shell: true });
+    child.on('error', reject);
+    child.on('exit', (code) =>
+      code === 0 ? resolve() : reject(new Error(`exited ${code}: ${command}`))
+    );
+  });
+}
+
+// Poll a URL until `ready(res)` (plain HTTP reachability by default) or throw
+// at the deadline.
+export async function waitForUrl(url, timeoutMs, ready = (res) => res.ok) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      if (ready(await fetch(url))) return;
+    } catch {
+      // not up yet
+    }
+    await sleep(500);
+  }
+  throw new Error(`${url} did not become ready within ${timeoutMs}ms`);
 }
 
 // Run a command and return its stdout; exits the script if it fails.
