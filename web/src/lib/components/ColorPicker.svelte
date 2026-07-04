@@ -2,7 +2,6 @@
   import { ui, closeColorPicker } from '$lib/state/ui.svelte';
   import { pickCustomColor, colors } from '$lib/state/colors.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
-  import { layout } from '$lib/state/layout.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
 
@@ -223,24 +222,6 @@
     e.preventDefault();
     e.stopPropagation();
   }
-
-  // Block-out zone around the gradient swatch so toddler mis-taps don't dismiss.
-  function isPointInGradientBlockZone(x: number, y: number) {
-    const gradientSwatch = layout.gradientSwatchEl;
-    if (!gradientSwatch) return false;
-    const rect = gradientSwatch.getBoundingClientRect();
-    if (rect.width === 0 && rect.height === 0) return false;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const padding = 20;
-    const swatchCx = (rect.left + rect.right) / 2;
-    const swatchCy = (rect.top + rect.bottom) / 2;
-    const left = swatchCx < vw / 2 ? 0 : rect.left - padding;
-    const right = swatchCx < vw / 2 ? rect.right + padding : vw;
-    const top = swatchCy < vh / 2 ? 0 : rect.top - padding;
-    const bottom = swatchCy < vh / 2 ? rect.bottom + padding : vh;
-    return x >= left && x <= right && y >= top && y <= bottom;
-  }
 </script>
 
 <svelte:window onresize={() => (hexCenters = null)} />
@@ -258,7 +239,6 @@
     open: ui.colorPickerOpen,
     origin: ui.colorPickerOrigin,
     onRequestClose: closeColorPicker,
-    blockBackdropAt: isPointInGradientBlockZone,
     onClose: () => {
       hoveredHex = null;
       isTrackingDrag = false;
