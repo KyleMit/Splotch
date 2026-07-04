@@ -20,12 +20,40 @@
 
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
+import { existsSync, readdirSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
 const repoRoot = resolve(fileURLToPath(import.meta.url), '../../../..');
+
+// Cloud sessions cache Chromium under PLAYWRIGHT_BROWSERS_PATH, but the pinned
+// revision can drift from what playwright-core resolves (e.g. the env installed
+// 1223 while this version wants 1228), so `chromium.launch()` fails with
+// "Executable doesn't exist". If the resolved binary is missing, fall back to
+// any Chromium present under the browsers path so a screenshot still works.
+// `PLAYWRIGHT_CHROMIUM` overrides; returning undefined lets Playwright use its
+// own (correct) binary.
+function chromiumExecutablePath() {
+  if (process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
+  try {
+    if (existsSync(chromium.executablePath())) return undefined; // pinned build present
+  } catch {}
+  const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
+  try {
+    const builds = readdirSync(base)
+      .filter((d) => /^chromium-\d+$/.test(d))
+      .sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)));
+    for (const build of builds) {
+      for (const sub of ['chrome-linux', 'chrome-linux64']) {
+        const p = `${base}/${build}/${sub}/chrome`;
+        if (existsSync(p)) return p;
+      }
+    }
+  } catch {}
+  return undefined;
+}
 
 const { values } = parseArgs({
   options: {
@@ -93,7 +121,11 @@ async function main() {
     await waitForServer(baseURL);
   }
 
-  const browser = await chromium.launch({ headless: !headed });
+  const executablePath = chromiumExecutablePath();
+  if (executablePath) {
+    process.stderr.write(`playwright's pinned Chromium is missing; using ${executablePath}\n`);
+  }
+  const browser = await chromium.launch({ headless: !headed, executablePath });
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 
   // Cold `vite dev` re-optimizes deps on first hit, briefly 504-ing modules and

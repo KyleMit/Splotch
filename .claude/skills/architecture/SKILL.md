@@ -74,7 +74,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `server/tokens.ts` | Server-only: validates and manages AI access tokens (stored in Netlify Blobs). |
 | `server/admin.ts` | Server-only: admin auth core (secret check, derived session token, invite building) shared by the `/admin` page actions and the `/api/admin/*` endpoints. |
 | `server/rateLimit.ts` | Server-only: per-token rate limiting for the image generation endpoint. |
-| `icons/` | SVG icon assets. `npm run gen:icons` generates `components/icon-names.d.ts` from them — the typed `IconName` union used by `<Icon>`. |
+| `icons/` | SVG icon assets. `npm run gen:icons` generates `components/icon-names.d.ts` from them — the typed `IconName` union used by `<Icon>`. `<Icon>` inlines the raw SVG via `{@html}` (so the icon name lives only in a `data-icon` attribute, not the SVG), which means dynamic icons carry a hydration caveat — see `.claude/rules/svelte.md`. |
 | `releases.json` | Auto-generated from `releases/*.md` by `npm run gen:releases`; consumed by the About tab in Parent Center. |
 
 ### `web/src/routes/`
@@ -96,7 +96,12 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 
 ## UI Elements
 
-* **Color Palette** - Container bar holding all color swatches
+> **Layout notes (read before positioning a new control):**
+> * The **Color Palette** is orientation-asymmetric (`ColorPalette.svelte`): a full-width **row along the top edge** in portrait, a **column down the left edge** in landscape (single- or two-column depending on height). So a "top-left corner" is *not* free space — it's under the first swatch in one orientation.
+> * **Float canvas-overlay controls inside `.canvas-container`** (`DrawingCanvas.svelte`, `position: relative`), using `position: absolute`, rather than a fixed viewport corner — that container already tracks the drawing area across orientations. The **Fullscreen Toggle** (`top: 8px; left: 8px; z-index: 4`) is the reference example.
+> * **Bottom edge is contested**: the **Parent Help Button** (`#parentHelpButton`, `z-index: 900`, bottom-right, `ParentCenter.svelte`) and the **Actions Panel** flyouts (`z-index: 901`, bottom-left, `ActionsPanel.svelte`) share it and collide on small viewports — a bug that's invisible from either file alone. Check both when changing sizes or breakpoints down there.
+
+* **Color Palette** - Container bar holding all color swatches. **Top-edge row in portrait, left-edge column in landscape** (`ColorPalette.svelte`) — see Layout notes above.
   * **Color Swatch** - Individual circular color selection button
     * **Selection Ring** - Colored ring indicator around the active color swatch
 * **Gradient Swatch** - Last color button with rainbow gradient and + symbol; opens custom color picker

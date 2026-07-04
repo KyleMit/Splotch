@@ -76,6 +76,21 @@ drawing engine, the responsive palette, and the full UI flows.
 These run on real Chromium but **cannot catch native or WebView boot failures** —
 that's what the Android smoke test is for.
 
+### Cloud session gotchas
+
+- **`Executable doesn't exist … chromium-<rev>`** — the env's cached Chromium
+  revision drifted from the one this Playwright version wants. `playwright.config.ts`
+  and the `run-splotch` driver now self-heal: if the pinned binary is missing they
+  fall back to any Chromium under `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`).
+  Override the pick with `PLAYWRIGHT_CHROMIUM=/path/to/chrome`. **Never** run
+  `npx playwright install` in a cloud session. The permanent fix is keeping
+  `.claude/cloud/setup.sh`'s browser install pinned to this package's `@playwright/test`
+  version (it now derives it from `package.json`). See `docs/CLOUD.md`.
+- **`DEV_SERVER=1` is unreliable in cloud** — global-setup has hit
+  `window is not defined` (SSR) / `/dev/engine never became ready` there. Use the
+  default production-build path (just `npm run test:e2e`); it's slower per run but
+  works.
+
 ---
 
 ## Native deployment smoke test — Maestro (Android + iOS)

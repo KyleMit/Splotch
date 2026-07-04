@@ -98,7 +98,8 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
 
 | Symptom | Fix |
 | --- | --- |
-| `Executable doesn't exist … playwright` | `npm run test:e2e:install` |
+| `Executable doesn't exist … playwright` (local) | `npm run test:e2e:install` |
+| `Executable doesn't exist … playwright` (cloud session) | The env's cached Chromium revision drifted from the one this Playwright version wants. `driver.mjs` now self-heals — it falls back to any Chromium under `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`). Override with `PLAYWRIGHT_CHROMIUM=/path/to/chrome`. Never run `npx playwright install` in cloud. See `docs/CLOUD.md`. |
 | `server never came up at http://localhost:5199` | Port in use — pass `--port <n>` or `npx kill-port 5199` |
 | `<route> never became interactive` | Route 404s or crashes — check it loads at `npm run dev` first |
 | Blank canvas in the `--draw` screenshot | Drawing engine regressed; reproduce at `npm run dev` |
