@@ -3,7 +3,7 @@
   import { slide } from 'svelte/transition';
   import Icon from './Icon.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
-  import { colors } from '$lib/state/colors.svelte';
+  import { colors, isWhite } from '$lib/state/colors.svelte';
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
   import {
     strokeState,
@@ -51,6 +51,11 @@
   // The stroke-size lines preview what you'll lay down: the pen color, or the
   // eraser's pink while erasing. Inherited by the icons via currentColor.
   const strokeMenuColor = $derived(toolState.eraser ? '#fb3675' : colors.activeColor);
+
+  // A white brush color vanishes against the white icon buttons, so the brush
+  // icon and stroke-weight lines get a black outline while white is active.
+  // Never during erasing — the eraser icon carries its own (pink) coloring.
+  const whiteStroke = $derived(!toolState.eraser && isWhite(colors.activeColor));
 
   // Chevron points the way the drawer will move: forward (out) to open,
   // back (toward the corner it tucks into) to close. Landscape slides
@@ -150,6 +155,7 @@
       >
         <button
           class="action-button"
+          class:white-stroke={whiteStroke}
           id="strokeWidthButton"
           aria-label="Stroke width"
           aria-expanded={strokeState.menuOpen}
@@ -161,7 +167,12 @@
             class="action-icon"
           />
         </button>
-        <div class="stroke-width-menu" hidden={!strokeState.menuOpen} style:color={strokeMenuColor}>
+        <div
+          class="stroke-width-menu"
+          class:white-stroke={whiteStroke}
+          hidden={!strokeState.menuOpen}
+          style:color={strokeMenuColor}
+        >
           {#each STROKE_SIZES as size (size)}
             <button
               class="stroke-size-button"
@@ -505,5 +516,20 @@
      the current color (currentColor), so only tint non-color icons here. */
   .stroke-size-button.active :global(.action-icon:not(.icon-color)) {
     filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
+  }
+
+  /* White brush color is invisible on the white buttons, so ring the brush
+     lines with a solid black edge while white is active. paint-order draws the
+     stroke behind the white fill (so only an outer keyline shows), and
+     non-scaling-stroke pins it to 2 screen px on both icons despite their very
+     different viewBoxes (brush 409-wide, size lines 960). In the brush icon we
+     stroke only the currentColor lines, leaving the colored pencils untouched;
+     the size menu holds a single currentColor path, so plain `path` suffices. */
+  .action-button.white-stroke :global(svg path[fill='currentColor']),
+  .stroke-width-menu.white-stroke :global(svg path) {
+    stroke: #000;
+    stroke-width: 2px;
+    paint-order: stroke;
+    vector-effect: non-scaling-stroke;
   }
 </style>

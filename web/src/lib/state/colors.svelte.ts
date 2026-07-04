@@ -67,3 +67,11 @@ export function pickCustomColor(hex: string) {
   colors.activeSwatch = CUSTOM_SWATCH;
   colors.activeColor = hex;
 }
+
+// White is the one selectable color that vanishes against the white icon
+// buttons and paper (it's only reachable via the picker's greys ramp — the
+// palette has none), so the stroke-width icons get a dark outline just for it.
+export function isWhite(hex: string): boolean {
+  const v = hex.trim().toLowerCase();
+  return v === '#ffffff' || v === '#fff' || v === 'white';
+}
