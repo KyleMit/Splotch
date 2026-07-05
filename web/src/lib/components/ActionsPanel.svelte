@@ -24,8 +24,10 @@
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
   let aiBtnEl: HTMLButtonElement | undefined = $state();
 
-  // Orientation drives the chevron direction and drawer-slide axis; the shared
-  // layout module owns the listeners.
+  // Orientation drives the drawer-slide transition axis and the landscape
+  // palette-clearing offset below; both need the value in JS. The chevron
+  // direction is CSS-driven (see drawerOpenRotation). The shared layout module
+  // owns the listeners.
   const isPortrait = $derived(layout.orientation === 'portrait');
 
   // Landscape: sit just past the color palette so we clear it. Portrait: pin to
@@ -53,8 +55,14 @@
   );
 
   // Live button scale, published as a CSS custom property the button rules
-  // multiply into their fixed sizes. 100% → 1 (the authored 60px/55px).
+  // multiply into their fixed sizes. 100% → 1 (the authored 60px/55px). Set on
+  // <html> (not this panel) so the inline head script in app.html can seed the
+  // same property from localStorage before first paint, and so the SSR markup
+  // carries no competing default — the two agree on one target.
   const buttonScale = $derived(settings.actionButtonScale / 100);
+  $effect(() => {
+    document.documentElement.style.setProperty('--action-btn-scale', String(buttonScale));
+  });
 
   // The stroke-size lines preview what you'll lay down: the pen color, or the
   // eraser's pink while erasing. Inherited by the icons via currentColor.
@@ -66,23 +74,21 @@
   const whiteStroke = $derived(!toolState.eraser && isWhite(colors.activeColor));
 
   // Chevron points the way the drawer will move: forward (out) to open, back
-  // (toward the corner it tucks into) to close. Landscape slides left/right,
-  // portrait slides up/down. We render one chevron (pointing right at 0°) and
-  // rotate it to face the right way rather than swapping between four icon
-  // SVGs. That keeps the {@html} icon body identical on server and client, so
-  // the direction rides on a transform — a plain attribute Svelte reconciles
-  // during hydration — instead of stale markup {@html} won't repaint. The
-  // prerendered page assumes landscape (no viewport), and the transform simply
-  // corrects itself once the client knows its real orientation.
-  const chevronRotation = $derived(
-    isPortrait
-      ? settings.drawerOpen
-        ? 90 // down
-        : -90 // up
-      : settings.drawerOpen
-        ? 180 // left
-        : 0 // right
-  );
+  // (toward the corner it tucks into) to close. We render one chevron (pointing
+  // right at 0°) and rotate it rather than swapping between four icon SVGs —
+  // that keeps the {@html} icon body identical on server and client (see the
+  // hydration caveat in .claude/rules/svelte.md). The rotation has two
+  // independent inputs, split by which side knows the value at first paint:
+  //   • open/close is persisted app state → a 0°/180° flip we drive from JS as
+  //     the --drawer-open-rot custom property (a plain attribute Svelte
+  //     reconciles during hydration).
+  //   • portrait vs landscape is viewport state the prerendered page can't know
+  //     → the −90° axis rotation is supplied by a CSS media query on
+  //     .drawer-toggle-icon, so it's already correct on the static page's first
+  //     paint. This removes the flash the old JS-computed rotation caused, where
+  //     a portrait phone painted the chevron along the landscape axis until
+  //     hydration read the real orientation.
+  const drawerOpenRotation = $derived(settings.drawerOpen ? 180 : 0);
 
   function toggleDrawer() {
     const next = !settings.drawerOpen;
@@ -162,7 +168,6 @@
 <div
   class="actions-panel"
   style:left={leftOffset}
-  style:--action-btn-scale={buttonScale}
   use:scribbleGuard
 >
   {#if drawerExpanded}
@@ -280,7 +285,7 @@
       <Icon
         name="chevron-right"
         class="drawer-toggle-icon"
-        style="transform: rotate({chevronRotation}deg)"
+        style="--drawer-open-rot: {drawerOpenRotation}deg"
       />
     </button>
   {/if}
@@ -355,12 +360,27 @@
     opacity: 1;
   }
 
+  /* Chevron rotation is composed from two custom properties (see
+     drawerOpenRotation in the script): --drawer-axis-rot is the orientation axis,
+     set here per media query so it's correct on the prerendered page's first
+     paint; --drawer-open-rot is the 0°/180° open/close flip, set inline from JS.
+     Landscape base points the chevron right (0°); portrait rotates the axis −90°.
+       landscape closed 0  · open 180 (left)
+       portrait  closed −90 (up) · open 90 (down) */
   :global(.drawer-toggle-icon) {
     width: 100%;
     height: 100%;
     pointer-events: none;
     filter: invert(60%) grayscale(100%);
     transition: filter 0.2s ease;
+    --drawer-axis-rot: 0deg;
+    transform: rotate(calc(var(--drawer-axis-rot) + var(--drawer-open-rot, 0deg)));
+  }
+
+  @media (orientation: portrait) {
+    :global(.drawer-toggle-icon) {
+      --drawer-axis-rot: -90deg;
+    }
   }
 
   @media (hover: hover) {

@@ -43,4 +43,5 @@ This directory records significant architectural decisions made in the Splotch p
 | [0037](0037-photo-save-targets-per-platform.md) | Photo Save Targets per Platform (Native Gallery, Web Folder Save, Download Fallback) | Active |
 | [0038](0038-scribble-guard-cancel-stylus-touch-streams.md) | Cancel Stylus Touch Streams to Stop iPadOS Scribble Swallowing Quick Pen Strokes | Active |
 | [0039](0039-pwa-install-prompt-ux.md) | Friendly PWA Install Prompt — Capture `beforeinstallprompt`, Fall Back to Guided Hints | Active |
+| [0040](0040-per-route-render-modes-and-ssg-home.md) | Per-Route Render Modes — the Home Route Stays Prerendered (SSG), Not Per-Request SSR | Active |
 

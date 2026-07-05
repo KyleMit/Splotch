@@ -34,6 +34,35 @@
     <meta name="apple-mobile-web-app-title" content="Splotch" />
     <link rel="manifest" href="%sveltekit.assets%/site.webmanifest" />
 
+    <!-- Pre-hydration state stamp. The home page is prerendered (ADR-0040), so its
+         static HTML can't know the visitor's viewport or stored preferences; this
+         runs synchronously before first paint to seed the two pieces of first-paint
+         state that would otherwise flash from a default before hydration:
+           • data-orientation — the boot orientation, read by lib/state/layout.svelte.ts
+             and available as an [data-orientation] CSS/test hook (CSS media queries
+             stay the primary mechanism for orientation-driven layout).
+           • --action-btn-scale — the parent's Action-center button size preference.
+         Keep the key and clamp in sync with ACTION_BUTTON_SCALE_* in
+         lib/state/settings.svelte.ts (the source of truth: min 70, max 130, default 100). -->
+    <script>
+      (function () {
+        try {
+          var el = document.documentElement;
+          el.setAttribute(
+            'data-orientation',
+            window.matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape'
+          );
+          var raw = localStorage.getItem('splotch-action-button-scale');
+          var pct = raw == null ? 100 : parseInt(raw, 10);
+          if (isNaN(pct)) pct = 100;
+          pct = Math.max(70, Math.min(130, pct));
+          el.style.setProperty('--action-btn-scale', String(pct / 100));
+        } catch (e) {
+          /* private-mode / disabled storage — fall back to CSS defaults */
+        }
+      })();
+    </script>
+
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">
