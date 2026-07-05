@@ -82,7 +82,16 @@ async function pairs() {
 const list = await pairs();
 if (!list.length) fail('No *.color.webp twins found. Run gen:coloring-fills first.');
 
-const uri = async (p) => `data:image/webp;base64,${(await readFile(p)).toString('base64')}`;
+// Embed a review-size copy (not the full 1536px asset) so a whole-book sheet
+// stays a few MB instead of tens — still plenty of detail to check the overlap.
+const REVIEW_PX = 640;
+const uri = async (p) => {
+  const buf = await sharp(p)
+    .resize(REVIEW_PX, REVIEW_PX, { fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: 78 })
+    .toBuffer();
+  return `data:image/webp;base64,${buf.toString('base64')}`;
+};
 
 // Group cards by category (top-level dir under coloring/).
 const groups = new Map();
