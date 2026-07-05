@@ -11,10 +11,15 @@
 //   npm run gen:coloring-fills -- farm/dog-wide --samples 5    5 candidates
 //   npm run gen:coloring-fills -- farm/dog-wide -t 1.2         hotter retry
 //
-// One page at a time, each candidate is scored against its source by overlaying
-// the two black-outline masks (see outlineMatch): `keep` is the fraction of the
-// original outline that survives, `added` the fraction of new dark pixels the
-// model invented. A good fill keeps ~all of the outline and adds almost none.
+// Each candidate is post-processed and scored before it's kept:
+//   1. alignToSource undoes the few-pixel nudge the model tends to add, so the
+//      colored outlines re-register onto the source pixel-for-pixel.
+//   2. outlineMatch reports `keep` — the fraction of the original outline the
+//      fill still covers (want ~1) — by overlaying the two outline masks.
+//   3. whiteFraction reports how much of the page is left pure white; big blank
+//      areas would look uncolored under the child's brush, so they're rejected.
+// A candidate that fails either gate is retried (temperature nudged up); the best
+// attempt is kept if none fully pass.
 import { parseArgs } from 'node:util';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
@@ -44,10 +49,14 @@ ABSOLUTE RULES — the colored image must line up perfectly on top of the origin
 COLORING STYLE:
 - Fill each region with one solid, flat, even color. No gradients, no shading, no highlights, no shadows, no extra outlines around the fills, no crayon or paint texture.
 - Choose simple, cheerful, natural colors that suit each part of the picture.
-- Keep any area that is meant to read as white (or the paper background) plain white.
 - Stay inside the lines; every fill should butt right up against the black outline without covering it.
 
-The result must look like the identical line drawing, simply colored in with clean flat colors.`;
+FILL EVERYTHING — no blank white:
+- Every enclosed region must be filled with a color, including the whole background and sky. No area may be left as plain white paper, because a blank area would look uncolored.
+- Things that are normally white must still get a soft tint instead of pure white: color clouds, snow, the moon, teeth, white fur or white clothing a pale cream or very light pastel; color a plain background a light color (for example a soft sky blue behind an outdoor scene, or a gentle cream/pastel behind a single object).
+- The ONLY places allowed to stay pure white are tiny highlights, such as a small glint in an eye or a little shine dot.
+
+The result must look like the identical line drawing, fully colored in with clean flat colors and no blank white gaps.`;
 
 // Generate one flat-colored version of a coloring page. Returns raw image bytes
 // + mime type, or throws with the refusal/empty reason. Kept free of file/CLI
@@ -153,6 +162,107 @@ export async function outlineMatch(sourceBuf, filledBuf) {
   return { keep, drift, overlay };
 }
 
+// The model sometimes returns the fill nudged a few pixels (usually rightward)
+// even though it otherwise lines up perfectly. alignToSource detects that global
+// translation and shifts the colored image back into registration.
+//
+// It correlates edge maps rather than dark masks: the source's black lines and
+// the colored image's outlines are both strong edges, while flat fills are not —
+// so a solid dark fill can't pull the match off the outlines (which a plain
+// dark-pixel overlap would). The winning offset is the colored image's
+// displacement; the correction is its negation.
+const ALIGN_MAX = 12; // search radius (px) for the registration nudge
+const ALIGN_W = 1000; // work resolution for the correlation
+
+async function grayRaw(buf, w, h) {
+  const { data } = await sharp(buf)
+    .grayscale()
+    .resize(w, h, { fit: 'fill' })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  return data;
+}
+
+function edgeMap(g, w, h) {
+  const e = new Float32Array(w * h);
+  for (let y = 0; y < h - 1; y++) {
+    for (let x = 0; x < w - 1; x++) {
+      const i = y * w + x;
+      e[i] = Math.abs(g[i] - g[i + 1]) + Math.abs(g[i] - g[i + w]);
+    }
+  }
+  return e;
+}
+
+export async function alignToSource(coloredBuf, sourceBuf, width, height) {
+  const w = Math.min(width, ALIGN_W);
+  const h = Math.round((height * w) / width);
+  const srcE = edgeMap(await grayRaw(sourceBuf, w, h), w, h);
+  const colE = edgeMap(await grayRaw(coloredBuf, w, h), w, h);
+  const idx = [];
+  const wt = [];
+  for (let i = 0; i < srcE.length; i++) {
+    if (srcE[i] > 60) {
+      idx.push(i);
+      wt.push(srcE[i]);
+    }
+  }
+  let best = { dx: 0, dy: 0, score: -1 };
+  for (let dy = -ALIGN_MAX; dy <= ALIGN_MAX; dy++) {
+    for (let dx = -ALIGN_MAX; dx <= ALIGN_MAX; dx++) {
+      let s = 0;
+      for (let k = 0; k < idx.length; k++) {
+        const i = idx[k];
+        const x = (i % w) + dx;
+        const y = ((i / w) | 0) + dy;
+        if (x < 0 || x >= w || y < 0 || y >= h) continue;
+        s += wt[k] * colE[y * w + x];
+      }
+      if (s > best.score) best = { dx, dy, score: s };
+    }
+  }
+  // Scale the detected displacement back to native pixels; the correction is its
+  // negation (undo the shift the model applied).
+  const scale = width / w;
+  const cdx = Math.round(-best.dx * scale);
+  const cdy = Math.round(-best.dy * scale);
+  if (cdx === 0 && cdy === 0) return { buffer: coloredBuf, dx: 0, dy: 0 };
+  const pad = Math.ceil(ALIGN_MAX * scale) + 1;
+  // Materialize the padded canvas first; chaining extend+extract in one pipeline
+  // lets sharp reorder them and mis-computes the window.
+  const extended = await sharp(coloredBuf)
+    .extend({ top: pad, bottom: pad, left: pad, right: pad, extendWith: 'copy' })
+    .toBuffer();
+  const clamp = (v, hi) => Math.max(0, Math.min(v, hi));
+  const buffer = await sharp(extended)
+    .extract({
+      left: clamp(pad - cdx, 2 * pad),
+      top: clamp(pad - cdy, 2 * pad),
+      width,
+      height,
+    })
+    .toBuffer();
+  return { buffer, dx: cdx, dy: cdy };
+}
+
+// Fraction of the image that is essentially pure white — a large value means big
+// blank areas the child's coloring would leave looking untouched. Tiny highlights
+// (eye glints, shine) stay well under the reject threshold.
+const WHITE_LEVEL = 248;
+async function whiteFraction(buf) {
+  const { data, info } = await sharp(buf)
+    .resize(360, 360, { fit: 'fill' })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const ch = info.channels;
+  const n = info.width * info.height;
+  let white = 0;
+  for (let i = 0; i < data.length; i += ch) {
+    if (data[i] >= WHITE_LEVEL && data[i + 1] >= WHITE_LEVEL && data[i + 2] >= WHITE_LEVEL) white++;
+  }
+  return white / n;
+}
+
 // Colorable pages under a subdirectory: every *-tall / *-wide page, skipping the
 // category covers. `sub` = '' means the whole coloring tree.
 async function pagesUnder(sub = '') {
@@ -201,10 +311,12 @@ const sampleMode = samples > 1;
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // A candidate is only usable if it preserves this much of the original outline
-// (within the ±TOL tolerance). Below it, the model redrew the scene and the fill
-// no longer lines up with its black-and-white twin — reject and retry.
+// (within the ±TOL tolerance) AND leaves no big blank-white area. Below either
+// bar the twin either drifted off its outline or reads as half-uncolored — reject
+// and retry.
 const KEEP_THRESHOLD = 0.92;
-const MAX_ATTEMPTS = 4;
+const WHITE_THRESHOLD = 0.05; // >5% pure white ⇒ blank areas left uncolored
+const MAX_ATTEMPTS = 5;
 
 // Colouring variety comes from sampling; the hard constraint is fidelity. Spread
 // the per-slot temperature just enough for different palettes, and nudge it on a
@@ -214,9 +326,15 @@ function baseTempForSlot(i) {
   return samples === 1 ? 0.55 : 0.55 + i * 0.12;
 }
 
-// Generate, size-match, and score one candidate; retry until it clears
-// KEEP_THRESHOLD, keeping the best attempt if none do. Returns the winning
-// colored bytes, its score, and its overlay.
+// A candidate clears if it holds the outline and isn't mostly blank white.
+const passes = (c) => c.keep >= KEEP_THRESHOLD && c.white <= WHITE_THRESHOLD;
+// Rank for keeping the best of several imperfect attempts: fidelity is the hard
+// constraint, then prefer less leftover white.
+const rank = (c) => (c.keep >= KEEP_THRESHOLD ? 1000 : 0) + (1 - c.white) * 100 + c.keep;
+
+// Generate, size-match, re-register onto the source outline, and score one
+// candidate; retry until it passes both gates, keeping the best attempt if none
+// fully do. Returns the winning colored bytes, its scores, and its overlay.
 async function renderClean(source, width, height, slot) {
   let best = null;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -226,15 +344,19 @@ async function renderClean(source, width, height, slot) {
       mimeType: 'image/webp',
       temperature,
     });
-    // Force the colored twin back to the source's exact pixel dimensions so a
-    // later brush tool can sample it 1:1 against the outline page.
-    const colored = await sharp(bytes)
-      .resize(width, height, { fit: 'fill' })
-      .webp({ quality: WEBP_QUALITY })
-      .toBuffer();
-    const { keep, drift, overlay } = await outlineMatch(source, colored);
-    if (!best || keep > best.keep) best = { colored, keep, drift, overlay, attempt };
-    if (keep >= KEEP_THRESHOLD) break;
+    // Force the colored twin back to the source's exact pixel dimensions, then
+    // undo any few-pixel nudge so it registers 1:1 against the outline page.
+    const resized = await sharp(bytes).resize(width, height, { fit: 'fill' }).png().toBuffer();
+    const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
+    const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
+
+    const [{ keep, drift, overlay }, white] = await Promise.all([
+      outlineMatch(source, colored),
+      whiteFraction(colored),
+    ]);
+    const cand = { colored, keep, drift, overlay, white, shift: { dx, dy }, attempt };
+    if (!best || rank(cand) > rank(best)) best = cand;
+    if (passes(cand)) break;
   }
   return best;
 }
@@ -249,15 +371,15 @@ for (const page of pages) {
     const label = sampleMode ? `${rel}  sample ${i + 1}/${samples}` : rel;
     process.stdout.write(`${label} ... `);
     try {
-      const { colored, keep, drift, overlay, attempt } = await renderClean(
-        source,
-        width,
-        height,
-        i
-      );
+      const cand = await renderClean(source, width, height, i);
+      const { colored, keep, overlay, white, shift, attempt } = cand;
       const tries = attempt > 0 ? `  (${attempt + 1} tries)` : '';
-      const flag = keep >= KEEP_THRESHOLD ? '' : '  ⚠ still drifting';
-      const score = `outline keep ${(keep * 100).toFixed(1)}%  drift ${(drift * 100).toFixed(1)}%`;
+      const nudge = shift.dx || shift.dy ? `  shift ${shift.dx},${shift.dy}` : '';
+      const warn = [];
+      if (keep < KEEP_THRESHOLD) warn.push('drifting');
+      if (white > WHITE_THRESHOLD) warn.push('white');
+      const flag = warn.length ? `  ⚠ ${warn.join(' + ')}` : '';
+      const score = `keep ${(keep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%${nudge}`;
 
       let out;
       if (sampleMode) {
