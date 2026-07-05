@@ -34,6 +34,60 @@
     <meta name="apple-mobile-web-app-title" content="Splotch" />
     <link rel="manifest" href="%sveltekit.assets%/site.webmanifest" />
 
+    <!-- Pre-hydration state stamp. The home page is prerendered (ADR-0040), so its
+         static HTML can't know the visitor's viewport or stored preferences; this
+         runs synchronously before first paint to seed the first-paint state that
+         would otherwise flash from a default before hydration. The Action-center
+         panel keeps these live (ActionsPanel.svelte's publish effect) and its CSS
+         reads them, so render / hydration / live-update all agree.
+
+         An attribute is stamped only when the value DEVIATES from the default, so
+         the raw prerendered HTML (this script never having run) already renders the
+         defaults correctly — the script is a pure optimization for returning users
+         with customized settings, never load-bearing for a new/default visitor.
+           • data-orientation — boot orientation (media queries stay primary for
+             layout; also read by lib/state/layout.svelte.ts).
+           • --action-btn-scale — button size; only set when ≠ 100% (the CSS
+             var()'s fallback is the default, so an unset value is already correct).
+           • data-drawer-open — present only when the drawer is open (default: closed).
+           • data-off-adv / data-off-<control> — present only when advanced controls
+             or that Parent-Center control is switched OFF (default: on/shown).
+         The keys, defaults, and the 70/130/100 scale clamp mirror settings.svelte.ts
+         (ACTION_BUTTON_SCALE_* and BOOL_SETTINGS) — keep them in sync. -->
+    <script>
+      (function () {
+        try {
+          var el = document.documentElement;
+          var on = function (key, def) {
+            var raw = localStorage.getItem(key);
+            return raw == null ? def : raw === 'true';
+          };
+
+          el.setAttribute(
+            'data-orientation',
+            window.matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape'
+          );
+
+          var scaleRaw = localStorage.getItem('splotch-action-button-scale');
+          var pct = scaleRaw == null ? 100 : parseInt(scaleRaw, 10);
+          if (isNaN(pct)) pct = 100;
+          pct = Math.max(70, Math.min(130, pct));
+          if (pct !== 100) el.style.setProperty('--action-btn-scale', String(pct / 100));
+
+          var adv = on('splotch-advanced-controls', true);
+          el.toggleAttribute('data-off-adv', !adv);
+          el.toggleAttribute('data-drawer-open', adv && on('splotch-drawer-open', false));
+          el.toggleAttribute('data-off-stroke', !on('splotch-stroke-width-control', true));
+          el.toggleAttribute('data-off-eraser', !on('splotch-eraser-enabled', true));
+          el.toggleAttribute('data-off-coloring', !on('splotch-coloring-book-enabled', true));
+          el.toggleAttribute('data-off-screenshot', !on('splotch-screenshot-enabled', true));
+          el.toggleAttribute('data-off-undo', !on('splotch-undo-button-enabled', true));
+        } catch (e) {
+          /* private-mode / disabled storage — fall back to CSS defaults */
+        }
+      })();
+    </script>
+
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

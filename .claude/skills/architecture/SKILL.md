@@ -79,18 +79,27 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 
 ### `web/src/routes/`
 
-| Route | Description |
-|---|---|
-| `/` | Main app (drawing canvas, palette, controls). Server-rendered layout, SPA client. |
-| `/api/generate-image` | Serverless function (Netlify). Accepts a base64 PNG + style prompt, calls Gemini, returns the generated image. Token-gated + rate-limited. Not bundled for native. |
-| `/api/verify-access-code` | Validates an invite token string. |
-| `/api/verify-key` | Validates a user-supplied Gemini API key (BYO Key flow). |
-| `/api/admin/*` | JSON twin of the `/admin` console for the native apps (bearer-session auth). See the `api` skill. Not bundled for native — the apps call the hosted endpoints. |
-| `/admin` | Token management console (server-rendered, cookie-authenticated). Not bundled for native. |
-| `/admin/native` | Static, prerendered variant of the console for the native apps; manages the same tokens through `/api/admin/*`. |
-| `/privacy` | Static privacy policy page. |
-| `/dev/engine` | Drawing engine test harness — blank canvas with debug controls. Unlocked by `PUBLIC_ENABLE_DEV_HARNESS=true`. |
-| `/dev/ai-timer` | AI generation timer — exercises the full round-trip with timing display. Used by Playwright E2E specs. Unlocked by `PUBLIC_ENABLE_DEV_HARNESS=true`. |
+Rendering mode is set per route via `prerender`/`ssr` page options; the site-wide
+default is `prerender = true` in `+layout.ts`, and specific routes opt out. **Render**
+below: **SSG** = prerendered to static HTML at build time (served from the CDN / baked
+into the native bundle; the SSR function never runs for it); **SSR** = rendered per
+request by the `sveltekit-render` Netlify function. See **ADR-0040** for the split and
+why `/` deliberately stays SSG (it has no per-request personalization — user
+preferences hydrate client-side from `localStorage`, orientation from CSS media
+queries + the head-script stamp in `app.html`).
+
+| Route | Render | Description |
+|---|---|---|
+| `/` | SSG | Main app (drawing canvas, palette, controls). Prerendered shell, SPA client — all user state hydrates client-side. |
+| `/api/generate-image` | SSR | Serverless function (Netlify). Accepts a base64 PNG + style prompt, calls Gemini, returns the generated image. Token-gated + rate-limited. Not bundled for native. |
+| `/api/verify-access-code` | SSR | Validates an invite token string. |
+| `/api/verify-key` | SSR | Validates a user-supplied Gemini API key (BYO Key flow). |
+| `/api/admin/*` | SSR | JSON twin of the `/admin` console for the native apps (bearer-session auth). See the `api` skill. Not bundled for native — the apps call the hosted endpoints. |
+| `/admin` | SSR | Token management console (`prerender = false` — cookie-authenticated form actions). Not bundled for native. |
+| `/admin/native` | SSG | Static, prerendered variant of the console for the native apps; manages the same tokens through `/api/admin/*`. |
+| `/privacy` | SSG | Static privacy policy page. |
+| `/dev/engine` | SSR | Drawing engine test harness — blank canvas with debug controls. `prerender = false`; unlocked by `PUBLIC_ENABLE_DEV_HARNESS=true`. |
+| `/dev/ai-timer` | SSR | AI generation timer — exercises the full round-trip with timing display. `prerender = false`; used by Playwright E2E specs. Unlocked by `PUBLIC_ENABLE_DEV_HARNESS=true`. |
 
 ---
 

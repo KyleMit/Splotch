@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { slide } from 'svelte/transition';
   import Icon from './Icon.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colors, isWhite } from '$lib/state/colors.svelte';
@@ -24,8 +23,10 @@
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
   let aiBtnEl: HTMLButtonElement | undefined = $state();
 
-  // Orientation drives the chevron direction and drawer-slide axis; the shared
-  // layout module owns the listeners.
+  // Orientation drives the landscape palette-clearing offset below, which needs
+  // the measured palette width in JS. Everything else orientation-dependent here
+  // (drawer collapse axis, chevron direction) is CSS. The shared layout module
+  // owns the listeners.
   const isPortrait = $derived(layout.orientation === 'portrait');
 
   // Landscape: sit just past the color palette so we clear it. Portrait: pin to
@@ -43,8 +44,8 @@
       : `calc(${layout.paletteWidth + 8}px + env(safe-area-inset-left))`
   );
 
-  // When advanced controls are disabled the drawer and its chevron are removed
-  // entirely, simplifying the UI. When enabled, the chevron shows and the
+  // When advanced controls are disabled the chevron is hidden and the drawer
+  // can't expand, simplifying the UI. When enabled, the chevron shows and the
   // drawer expands per its remembered open state. Dragging the button-size
   // slider force-opens the drawer (without persisting) so the parent can watch
   // the buttons resize live.
@@ -52,9 +53,34 @@
     (settings.advancedControlsEnabled && settings.drawerOpen) || ui.resizingActionButtons
   );
 
-  // Live button scale, published as a CSS custom property the button rules
-  // multiply into their fixed sizes. 100% → 1 (the authored 60px/55px).
   const buttonScale = $derived(settings.actionButtonScale / 100);
+
+  // Publish the panel's persisted UI state to <html> so CSS can drive it. The
+  // page is prerendered (ADR-0040), so its static HTML can't reflect a returning
+  // user's stored settings — the buttons are always in the DOM and shown/hidden
+  // purely by CSS keyed off these attributes. The inline head script in app.html
+  // seeds the same attributes before first paint (so a returning user's drawer and
+  // control toggles render with no flash) and this effect keeps them live through
+  // hydration and every change.
+  //
+  // Polarity: an attribute marks a DEVIATION from the default, so the raw
+  // prerendered HTML (no attributes) already shows the defaults — drawer closed,
+  // advanced controls + every control on. `data-drawer-open` is present when open
+  // (default closed); `data-off-*` is present when that control is switched off
+  // (default on). Keep the keys/defaults in app.html in sync with BOOL_SETTINGS in
+  // settings.svelte.ts. --action-btn-scale rides here too (a CSS var, default via
+  // the var() fallback, so it's only meaningful when scaled).
+  $effect(() => {
+    const el = document.documentElement;
+    el.style.setProperty('--action-btn-scale', String(buttonScale));
+    el.toggleAttribute('data-drawer-open', drawerExpanded);
+    el.toggleAttribute('data-off-adv', !settings.advancedControlsEnabled);
+    el.toggleAttribute('data-off-stroke', !settings.strokeWidthControlEnabled);
+    el.toggleAttribute('data-off-eraser', !settings.eraserEnabled);
+    el.toggleAttribute('data-off-coloring', !settings.coloringBookEnabled);
+    el.toggleAttribute('data-off-screenshot', !settings.screenshotEnabled);
+    el.toggleAttribute('data-off-undo', !settings.undoButtonEnabled);
+  });
 
   // The stroke-size lines preview what you'll lay down: the pen color, or the
   // eraser's pink while erasing. Inherited by the icons via currentColor.
@@ -64,25 +90,6 @@
   // icon and stroke-weight lines get a black outline while white is active.
   // Never during erasing — the eraser icon carries its own (pink) coloring.
   const whiteStroke = $derived(!toolState.eraser && isWhite(colors.activeColor));
-
-  // Chevron points the way the drawer will move: forward (out) to open, back
-  // (toward the corner it tucks into) to close. Landscape slides left/right,
-  // portrait slides up/down. We render one chevron (pointing right at 0°) and
-  // rotate it to face the right way rather than swapping between four icon
-  // SVGs. That keeps the {@html} icon body identical on server and client, so
-  // the direction rides on a transform — a plain attribute Svelte reconciles
-  // during hydration — instead of stale markup {@html} won't repaint. The
-  // prerendered page assumes landscape (no viewport), and the transform simply
-  // corrects itself once the client knows its real orientation.
-  const chevronRotation = $derived(
-    isPortrait
-      ? settings.drawerOpen
-        ? 90 // down
-        : -90 // up
-      : settings.drawerOpen
-        ? 180 // left
-        : 0 // right
-  );
 
   function toggleDrawer() {
     const next = !settings.drawerOpen;
@@ -162,16 +169,15 @@
 <div
   class="actions-panel"
   style:left={leftOffset}
-  style:--action-btn-scale={buttonScale}
   use:scribbleGuard
 >
-  {#if drawerExpanded}
-    <div class="actions-drawer" transition:slide={{ axis: isPortrait ? 'y' : 'x', duration: 280 }}>
-      <div
-        class="stroke-width-wrapper"
-        bind:this={strokeWrapperEl}
-        hidden={!settings.strokeWidthControlEnabled}
-      >
+  <!-- Always rendered; the drawer's open/closed state and each control's Parent
+       Center on/off toggle are driven purely by CSS keyed off <html> attributes
+       (see the publish effect above and app.html), so a returning user's stored
+       state is correct at first paint of the prerendered page. -->
+  <div class="actions-drawer">
+    <div class="actions-drawer-inner">
+      <div class="stroke-width-wrapper" bind:this={strokeWrapperEl}>
         <button
           class="action-button"
           class:white-stroke={whiteStroke}
@@ -212,7 +218,6 @@
         id="eraserButton"
         aria-label="Eraser"
         aria-pressed={toolState.eraser}
-        hidden={!settings.eraserEnabled}
         use:scribbleTap={handleEraserClick}
       >
         <Icon name="eraser" class="action-icon" />
@@ -222,7 +227,6 @@
         class="action-button"
         id="coloringBookButton"
         aria-label="Coloring books"
-        hidden={!settings.coloringBookEnabled}
         use:scribbleTap={handleColoringBookClick}
         bind:this={coloringBtnEl}
       >
@@ -235,12 +239,15 @@
         id="screenshotButton"
         aria-label="Save screenshot"
         disabled={canvasState.canvasEmpty}
-        hidden={!settings.screenshotEnabled}
         use:scribbleTap={handleScreenshotClick}
       >
         <Icon name="camera" class="action-icon" />
       </button>
 
+      <!-- AI button keeps its reactive `hidden`: its visibility also depends on a
+           runtime, non-persisted signal (network.online) the head script can't
+           know pre-paint, and it defaults hidden (no access token) so there's no
+           first-paint flash to seed away. -->
       <button
         class="action-button"
         class:disabled={canvasState.canvasEmpty || ui.aiGenerating}
@@ -262,28 +269,21 @@
         id="undoButton"
         aria-label="Undo"
         disabled={!canvasState.canUndo}
-        hidden={!settings.undoButtonEnabled}
         use:scribbleTap={handleUndoClick}
       >
         <Icon name="undo" class="action-icon" />
       </button>
     </div>
-  {/if}
+  </div>
 
-  {#if settings.advancedControlsEnabled}
-    <button
-      class="drawer-toggle"
-      aria-label={settings.drawerOpen ? 'Collapse controls' : 'Expand controls'}
-      aria-expanded={settings.drawerOpen}
-      use:scribbleTap={toggleDrawer}
-    >
-      <Icon
-        name="chevron-right"
-        class="drawer-toggle-icon"
-        style="transform: rotate({chevronRotation}deg)"
-      />
-    </button>
-  {/if}
+  <button
+    class="drawer-toggle"
+    aria-label={settings.drawerOpen ? 'Collapse controls' : 'Expand controls'}
+    aria-expanded={settings.drawerOpen}
+    use:scribbleTap={toggleDrawer}
+  >
+    <Icon name="chevron-right" class="drawer-toggle-icon" />
+  </button>
 </div>
 
 <style>
@@ -306,25 +306,112 @@
     }
   }
 
-  /* Collapsible drawer holding the action buttons. The buttons grow from the
-     corner; the toggle rides along at the far end (right in landscape, top in
-     portrait). The spacing toward the toggle lives on the drawer as a margin
-     (not a flex gap) so the slide transition collapses it too — the toggle
-     glides to the corner instead of snapping the last few pixels. */
+  /* Collapsible drawer holding the action buttons. Always in the DOM; open/closed
+     is driven by the [data-drawer-open] attribute on <html> (seeded pre-paint by
+     app.html, kept live by the publish effect) so a returning user's state is
+     correct at first paint — replacing the old {#if} + Svelte slide, which could
+     only ever render closed on the prerendered page.
+
+     The collapse is a grid accordion: the outer grid animates one track between
+     1fr (open) and 0fr (closed) — width in landscape, height in portrait, matching
+     the old slide axis — while the inner clips its overflowing content. The margin
+     toward the toggle collapses too, so the toggle glides to the corner. */
   .actions-drawer {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: center;
+    margin-right: 8px;
+    transition:
+      grid-template-columns 0.28s ease,
+      grid-template-rows 0.28s ease,
+      opacity 0.2s ease,
+      margin 0.28s ease;
+  }
+
+  .actions-drawer-inner {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 8px;
-    margin-right: 8px;
+    min-width: 0;
+    min-height: 0;
+    /* Clip the buttons to the collapsing track. Flipped to visible once open so
+       the absolutely-positioned stroke-width flyout (which pops outside the
+       drawer box) isn't clipped — it can only be opened while the drawer is open
+       and settled, so the closed/animating clip still holds. */
+    overflow: hidden;
+  }
+
+  :global(html[data-drawer-open]) .actions-drawer-inner {
+    overflow: visible;
+  }
+
+  :global(html:not([data-drawer-open])) .actions-drawer {
+    grid-template-columns: 0fr;
+    opacity: 0;
+    margin-right: 0;
+    pointer-events: none;
+    /* Inert when closed: out of hit-testing, the a11y tree, and tab order (unlike
+       opacity alone). visibility flips to hidden only after the collapse finishes
+       (0.28s transition-delay) so the close still animates; opening restores it
+       instantly because the base rule doesn't transition visibility. */
+    visibility: hidden;
+    transition:
+      grid-template-columns 0.28s ease,
+      grid-template-rows 0.28s ease,
+      opacity 0.2s ease,
+      margin 0.28s ease,
+      visibility 0s 0.28s;
   }
 
   @media (orientation: portrait) {
     .actions-drawer {
-      flex-direction: column-reverse;
+      grid-template-columns: none;
+      grid-template-rows: 1fr;
       margin-right: 0;
       margin-top: 8px;
     }
+
+    .actions-drawer-inner {
+      flex-direction: column-reverse;
+    }
+
+    :global(html:not([data-drawer-open])) .actions-drawer {
+      grid-template-columns: none;
+      grid-template-rows: 0fr;
+      margin-top: 0;
+      margin-right: 0;
+    }
+  }
+
+  /* Individual controls sit behind Parent Center on/off toggles. They stay in the
+     DOM and are shown/hidden purely by CSS keyed off <html> attributes (seeded
+     pre-paint + kept live, same as the drawer) so their toggle state is correct at
+     render, hydration, and live. Controls default ON, so a `data-off-*` attribute
+     (present only when the parent switched it off) hides it — which means the raw
+     prerendered HTML, before the head script runs, already shows the defaults.
+     (The AI button is the exception — see its markup comment.) */
+  :global(html[data-off-stroke]) .stroke-width-wrapper {
+    display: none;
+  }
+  :global(html[data-off-eraser]) #eraserButton {
+    display: none;
+  }
+  :global(html[data-off-coloring]) #coloringBookButton {
+    display: none;
+  }
+  :global(html[data-off-screenshot]) #screenshotButton {
+    display: none;
+  }
+  :global(html[data-off-undo]) #undoButton {
+    display: none;
+  }
+
+  /* Chevron toggle is hidden (and the drawer can't open) when advanced controls
+     are off — the same gate the old {#if advancedControlsEnabled} enforced.
+     Default on, so `data-off-adv` (present only when off) hides it. */
+  :global(html[data-off-adv]) .drawer-toggle {
+    display: none;
   }
 
   /* Drawer open/close toggle. Deliberately low-key (no background, muted grey)
@@ -355,12 +442,34 @@
     opacity: 1;
   }
 
+  /* Chevron rotation is fully CSS, composed from two custom properties so each
+     input is correct at first paint of the prerendered page:
+       • --drawer-axis-rot — orientation axis, from a media query (landscape base
+         points right at 0°; portrait rotates the axis −90°).
+       • --drawer-open-rot — the 0°/180° open/close flip, from the [data-drawer-open]
+         attribute on <html> (seeded pre-paint, kept live) rather than JS markup.
+     Composed:
+       landscape closed 0 · open 180 (left)
+       portrait  closed −90 (up) · open 90 (down) */
   :global(.drawer-toggle-icon) {
     width: 100%;
     height: 100%;
     pointer-events: none;
     filter: invert(60%) grayscale(100%);
     transition: filter 0.2s ease;
+    --drawer-axis-rot: 0deg;
+    --drawer-open-rot: 0deg;
+    transform: rotate(calc(var(--drawer-axis-rot) + var(--drawer-open-rot)));
+  }
+
+  :global(html[data-drawer-open] .drawer-toggle-icon) {
+    --drawer-open-rot: 180deg;
+  }
+
+  @media (orientation: portrait) {
+    :global(.drawer-toggle-icon) {
+      --drawer-axis-rot: -90deg;
+    }
   }
 
   @media (hover: hover) {
@@ -466,13 +575,10 @@
     animation: aiSpin 1s linear infinite;
   }
 
-  /* Stroke width: trigger button wrapper + flyout menu */
+  /* Stroke width: trigger button wrapper + flyout menu. Visibility is gated by
+     the [data-off-stroke] rule above (the Parent Center toggle). */
   .stroke-width-wrapper {
     position: relative;
-  }
-
-  .stroke-width-wrapper[hidden] {
-    display: none;
   }
 
   /* Landscape (the base rule; portrait overrides below). The action panel sits
