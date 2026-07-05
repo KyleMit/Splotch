@@ -60,11 +60,3 @@ production table above as the real baseline. Repeat visits are excellent (Perf
   `$effect` bridges) off the first-paint path. Deferring the sound preload (first item)
   moves part of this already.
 
-- [ ] **[Accessibility] Reconsider or document `user-scalable=no` in the viewport meta** — File(s): `web/src/app.html`
-  The only accessibility deduction (92, not 100) on both form factors is
-  `[user-scalable="no"]` in `app.html`
-  (`content="…, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"`), which blocks
-  pinch-zoom. For a toddler drawing app this is almost certainly deliberate — pinch
-  gestures would fight the drawing surface — but it's currently undocumented. Either
-  add a code comment (and an ADR) recording it as an intentional tradeoff, or scope the
-  zoom lock to the canvas element so the rest of the UI stays zoomable.

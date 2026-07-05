@@ -2,6 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- user-scalable=no / maximum-scale=1.0 intentionally lock pinch-zoom (ADR-0041):
+         this is a toddler drawing app, so pinch/spread mid-stroke would zoom the page
+         instead of drawing and fight the canvas, and an accidental multi-finger zoom
+         would leave the drawing surface misaligned and disorient a 2-year-old. This
+         costs one Lighthouse a11y point (92, not 100); accepted as a deliberate tradeoff. -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
