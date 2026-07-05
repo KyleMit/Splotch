@@ -44,6 +44,7 @@ On-demand **skills** (invoke when the topic comes up — don't guess from memory
 | `mobile` | touching anything Android/iOS/Capacitor, or store-release work |
 | `testing` | writing/running tests beyond the basics, or debugging CI failures |
 | `profiling` | measuring drawing/canvas performance, investigating jank, or checking for perf regressions (`npm run perf:*`) |
+| `lighthouse-audit` | auditing page-load performance / Core Web Vitals on a throttled device (Lighthouse, first vs repeat visit) |
 | `adrs` | proposing or discussing any architectural approach |
 | `pr-screenshots` | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow |
 

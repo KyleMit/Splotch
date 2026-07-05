@@ -9,6 +9,9 @@
 # Performance profiling captures (npm run perf:web) — local artifacts.
 /perf-profiles/
 
+# Lighthouse audit reports (.claude/skills/lighthouse-audit) — attach to the PR, don't commit.
+/lighthouse-reports/
+
 # Logs
 logs
 *.log
