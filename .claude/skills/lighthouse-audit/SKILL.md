@@ -129,25 +129,14 @@ already exists there, merge into it — do not clobber it:**
 
 ### 3. Self-heal this skill
 
-If anything surprising surfaced that a future caller would want to know — a new
-gotcha, a false-positive audit, a shifted baseline, sharper attribution — fold it
-into this `SKILL.md` (known findings / caveats below) as part of the same task.
-That's what keeps this section current instead of stale.
+If anything surprising surfaced that a future caller would want to know — a durable
+**method** gotcha (a false-positive audit, a proxy quirk, an interpretation trap) —
+fold it into this `SKILL.md` as part of the same task. **Do not** record the specific
+findings/opportunities here: those live in `docs/TODO.md` and are removed from there as
+they're fixed, so a copy in the skill would only go stale. The skill carries *how to
+audit and how to read the numbers*; `docs/TODO.md` carries *what's currently wrong*.
 
-## Known findings & caveats
-
-As of the last audit (2026-07-05 re-run) the standing opportunities were:
-
-- **Defer the pencil-sound preload** (`drawingSound.ts` / `DrawingCanvas.svelte`) —
-  357 KB of mp3 warmed at mount is ~half the first-visit transfer; top first-visit win.
-- **Longer cache lifetime for immutable media** (`netlify.toml`) — `/sounds`,
-  `/styles`, `/icons` are served `max-age=0,must-revalidate`, so repeat visits pay
-  a 304 round-trip each; a long `max-age` or content-hashing skips it.
-- **Main-thread work / TBT** on first visit (Script Evaluation ~936 ms dominates the
-  breakdown); **DOM size** (~1,288 elements — the worst offender is **inline SVG**, the
-  `splotchy.svg` logo alone is 255 vector nodes / the report's 150-child `<g>`, not just
-  the palettes); **`user-scalable=no`** viewport (the one a11y deduction, likely
-  intentional).
+## Interpretation caveats
 
 **False positive — don't file a TODO for it:** the `lcp-discovery-insight` audit flags
 *"`fetchpriority=high` should be applied: false"* on first visit. Splotch's LCP element
