@@ -64,7 +64,13 @@
             onclick={() => handleSelectStyle(s)}
             disabled={!previewUrl}
           >
-            <img class="ai-style-thumb" src="/styles/{s.toLowerCase()}.webp" alt="" />
+            <img
+              class="ai-style-thumb"
+              src="/styles/{s.toLowerCase()}.webp"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
             <span class="ai-style-label">{s}</span>
           </button>
         {/each}

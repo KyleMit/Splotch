@@ -39,14 +39,6 @@ bottleneck, not the app — a preview artifact, not a production problem). Treat
 production table above as the real baseline. Repeat visits are excellent (Perf
 99–100) because all static subresources come from cache.
 
-- [ ] **[Performance] Lazy-load the offscreen brush-style thumbnails** — File(s): `web/src/lib/components/AiImagePrompt.svelte`
-  Eight `/styles/*.webp` texture thumbnails (~83 KB total) are fetched on initial load
-  but are offscreen — they only appear inside the AI-image style picker
-  (`<img class="ai-style-thumb" src="/styles/{s}.webp">`). Add `loading="lazy"` to the
-  `<img>` tags (and/or only render them once the picker opens) so they don't compete with
-  the canvas on first visit. (Minor on production — it didn't surface as a scored
-  opportunity there — but it's free first-visit bandwidth.)
-
 - [ ] **[Performance] Shrink the load-time main-thread work (TBT / input readiness)** — File(s): `web/src/lib/components/DrawingCanvas.svelte`, `web/src/lib/state/*.svelte.ts`
   Even on production, phone first-visit **Total Blocking Time is 360 ms** and
   max-potential-FID is 280 ms (tablet: 140 ms / 250 ms) — the main thread is busy while
