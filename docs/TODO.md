@@ -40,6 +40,19 @@ production table above as the real baseline. Repeat visits are excellent (Perf
 99–100) because all static subresources come from cache.
 
 - [ ] **[Performance] Shrink the load-time main-thread work (TBT / input readiness)** — File(s): `web/src/lib/components/DrawingCanvas.svelte`, `web/src/lib/state/*.svelte.ts`
+  **⏸ Pending decision:** the web TBT this item measures cannot be moved from within the
+  named files. Auto mode audited `DrawingCanvas.svelte` + `state/*.svelte.ts` and deferred
+  the one remaining safe candidate — the `pencilEraser` plugin init — but that only helps
+  **native iOS**: `pencilEraser` is gated behind `__IS_CAPACITOR__` and tree-shaken out of
+  the web bundle entirely, so it does **not** touch the phone/tablet web TBT above. Every
+  other candidate in-scope is already deferred (sound preload → idle; paper-texture warm →
+  idle in `engine.ts`) or is genuinely first-stroke-critical (the color/stroke/eraser
+  `$effect` bridges must be correct on the opening stroke). The real web-TBT lever is
+  `web/src/routes/+page.svelte`'s `onMount` — `initPWAUpdates()`, `initInstallPrompt()`,
+  and `hydrateApiKey()` (WebCrypto / secure storage) — which is **outside this item's named
+  scope**. Decide whether to expand scope to `+page.svelte` and run a real `npm run
+  perf:web --device=phone` mount profile there before deferring anything (guessing risks
+  breaking PWA-update or install-prompt behavior).
   Even on production, phone first-visit **Total Blocking Time is 360 ms** and
   max-potential-FID is 280 ms (tablet: 140 ms / 250 ms) — the main thread is busy while
   the canvas comes up. Profile mount with `npm run perf:web --device=phone` and move
