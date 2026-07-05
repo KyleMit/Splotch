@@ -60,13 +60,6 @@ production table above as the real baseline. Repeat visits are excellent (Perf
   `$effect` bridges) off the first-paint path. Deferring the sound preload (first item)
   moves part of this already.
 
-- [ ] **[Performance] Trim unused CSS shipped in the initial bundle** — File(s): `web/src/lib/components/ErrorScreen.svelte`
-  The preview run flagged ~11 KB of unused CSS at load, dominated by the `.error-screen`
-  rules from `ErrorScreen.svelte`, which is styled up-front but rarely rendered. (Didn't
-  surface as a scored opportunity on production, so low priority.) Confirm the error UI is
-  lazily imported (dynamic `import()` behind the error boundary) so its styles don't ship
-  in the critical CSS for the happy path.
-
 - [ ] **[Accessibility] Reconsider or document `user-scalable=no` in the viewport meta** — File(s): `web/src/app.html`
   The only accessibility deduction (92, not 100) on both form factors is
   `[user-scalable="no"]` in `app.html`
