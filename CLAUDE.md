@@ -45,6 +45,7 @@ On-demand **skills** (invoke when the topic comes up — don't guess from memory
 | `testing` | writing/running tests beyond the basics, or debugging CI failures |
 | `profiling` | measuring drawing/canvas performance, investigating jank, or checking for perf regressions (`npm run perf:*`) |
 | `adrs` | proposing or discussing any architectural approach |
+| `pr-screenshots` | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow |
 
 Path-scoped **rules** in `.claude/rules/` (load automatically): `svelte.md`, `server-api.md`, `testing.md`. Nested CLAUDE.md files in `web/src/`, `android/`, and `scripts/` cover those areas.
 
