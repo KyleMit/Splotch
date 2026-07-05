@@ -6,6 +6,7 @@
 //
 // Requires GEMINI_API_KEY. Run via npm so the .ts imports resolve:
 //   npm run gen:coloring-fills                                 all pages
+//   npm run gen:coloring-fills -- creatures dinosaur           whole categories
 //   npm run gen:coloring-fills -- farm/dog-wide                one page
 //   npm run gen:coloring-fills -- farm/dog-wide --samples 5    5 candidates
 //   npm run gen:coloring-fills -- farm/dog-wide -t 1.2         hotter retry
@@ -18,6 +19,7 @@ import { parseArgs } from 'node:util';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
 import { glob } from 'node:fs/promises';
+import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { ROOT, fail } from './lib/utils.mjs';
@@ -151,19 +153,27 @@ export async function outlineMatch(sourceBuf, filledBuf) {
   return { keep, drift, overlay };
 }
 
-// Resolve a page argument ("farm/dog-wide", with or without .webp) to its file.
-function resolvePage(arg) {
-  const rel = arg.endsWith('.webp') ? arg : `${arg}.webp`;
-  return join(COLORING_DIR, rel);
-}
-
-// All colorable pages: every *-tall / *-wide page, skipping the category covers.
-async function allPages() {
+// Colorable pages under a subdirectory: every *-tall / *-wide page, skipping the
+// category covers. `sub` = '' means the whole coloring tree.
+async function pagesUnder(sub = '') {
   const out = [];
-  for await (const entry of glob('**/*-{tall,wide}.webp', { cwd: COLORING_DIR })) {
-    out.push(join(COLORING_DIR, entry));
+  const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
+  for await (const entry of glob('**/*-{tall,wide}.webp', { cwd })) {
+    out.push(join(cwd, entry));
   }
   return out.sort();
+}
+
+// Resolve one CLI argument to a list of source pages. An argument is either a
+// single page ("farm/dog-wide", with or without .webp) or a category directory
+// ("creatures") that expands to every page inside it.
+async function resolveArg(arg) {
+  if (arg.endsWith('.webp')) return [join(COLORING_DIR, arg)];
+  const asFile = join(COLORING_DIR, `${arg}.webp`);
+  if (existsSync(asFile)) return [asFile];
+  const asDir = join(COLORING_DIR, arg);
+  if (existsSync(asDir) && statSync(asDir).isDirectory()) return pagesUnder(arg);
+  return [asFile]; // let the later readFile surface a clear ENOENT
 }
 
 const { values, positionals } = parseArgs({
@@ -184,7 +194,9 @@ if (baseTemp !== undefined && !(baseTemp >= 0 && baseTemp <= 2)) {
 }
 if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
 
-const pages = positionals.length ? positionals.map(resolvePage) : await allPages();
+const pages = positionals.length
+  ? (await Promise.all(positionals.map(resolveArg))).flat()
+  : await pagesUnder();
 const sampleMode = samples > 1;
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
