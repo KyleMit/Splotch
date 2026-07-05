@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Magic paintbrush: a tilted brush with rainbow bristles laying down color,
+       plus sparkles for the "magic". Deliberately a brush (not the AI wand-stars)
+       so the two read as different tools. Flat fills to match the toddler style. -->
+  <g transform="rotate(38 256 256)">
+    <!-- Handle -->
+    <rect x="226" y="60" width="60" height="250" rx="30" fill="#8A5CD8" />
+    <rect x="238" y="74" width="14" height="150" rx="7" fill="#B98AE4" />
+    <!-- Ferrule (metal band) -->
+    <rect x="212" y="296" width="88" height="52" rx="14" fill="#C7CBD6" />
+    <rect x="212" y="330" width="88" height="18" rx="9" fill="#A9AEBD" />
+    <!-- Rainbow bristles -->
+    <path d="M212 344 L235 344 L235 402 Q223 420 212 404 Z" fill="#EC534E" />
+    <path d="M235 344 L258 344 L258 430 Q246 448 235 428 Z" fill="#F9D24F" />
+    <path d="M258 344 L281 344 L281 430 Q269 448 258 428 Z" fill="#8CC864" />
+    <path d="M281 344 L300 344 L300 404 Q289 420 281 402 Z" fill="#62A2E9" />
+  </g>
+  <!-- Sparkles (magic), kept upright in the empty corner away from the handle -->
+  <path
+    d="M138 120 Q150 158 188 170 Q150 182 138 220 Q126 182 88 170 Q126 158 138 120 Z"
+    fill="#F9D24F"
+  />
+  <path
+    d="M96 236 Q103 258 126 265 Q103 272 96 294 Q89 272 66 265 Q89 258 96 236 Z"
+    fill="#F89C45"
+  />
+</svg>
