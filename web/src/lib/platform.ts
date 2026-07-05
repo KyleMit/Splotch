@@ -10,6 +10,26 @@ export function isNative(): boolean {
   return browser && globalThis.Capacitor?.isNativePlatform?.() === true;
 }
 
+/**
+ * True when the web app is running as an installed PWA — any app-like display
+ * mode, where the browser chrome (URL bar) is already gone. iOS Safari reports
+ * this through the legacy `navigator.standalone` flag rather than the
+ * `display-mode` media queries.
+ *
+ * This is a pure display-mode read and is independent of `isNative()`: the
+ * native Capacitor shell runs chrome-free too, so callers that care about "is
+ * there any browser chrome to reclaim" should also check `isNative()`.
+ */
+export function isStandalone(): boolean {
+  if (!browser) return false;
+  return !!(
+    window.matchMedia?.('(display-mode: standalone)').matches ||
+    window.matchMedia?.('(display-mode: fullscreen)').matches ||
+    window.matchMedia?.('(display-mode: minimal-ui)').matches ||
+    (window.navigator as { standalone?: boolean }).standalone === true
+  );
+}
+
 export type Platform = 'android' | 'ios' | 'web';
 
 export function getPlatform(): Platform {

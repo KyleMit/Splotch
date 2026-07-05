@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { isNative } from '$lib/platform';
+import { isNative, isStandalone } from '$lib/platform';
 
 // Splotch fills the screen with a non-scrolling canvas, so a mobile browser's
 // URL bar never gets the downward scroll that would normally minimize it and
@@ -19,8 +19,11 @@ import { isNative } from '$lib/platform';
 //   • Desktop is excluded: the URL-bar squeeze only matters on phones, and the
 //     browser's own F11 already covers desktop.
 //   • The native shell already runs fullscreen, so isNative() opts out.
+//   • An installed PWA (standalone/fullscreen display mode) has no URL bar to
+//     reclaim, so isStandalone() opts out — the toggle only earns its place in a
+//     plain browser tab.
 function fullscreenSupported(): boolean {
-  if (!browser || isNative()) return false;
+  if (!browser || isNative() || isStandalone()) return false;
   if (!document.fullscreenEnabled) return false;
   return /android/i.test(navigator.userAgent || '');
 }
