@@ -394,43 +394,27 @@ export function getCanvasRect(): CanvasRect {
 // revealed pixel lines up with the line art on screen. A no-repeat CanvasPattern
 // of that sheet is the brush's paint.
 //
-// magicFillMode is a dev/profiling seam (like setSimplifyParams) that swaps the
-// reveal technique so the three candidates can be measured against each other
-// (ADR-0043):
-//   'pattern' (SHIPPING) — a magic op strokes the sheet pattern straight onto the
-//                          target. One cached pattern, one draw per op.
-//   'mask'               — a magic op strokes an opaque shape into a scratch, then
-//                          reveals the sheet through it (source-in) and blits that
-//                          — the "mask the colored layer" technique, per op.
-//   'sample'             — no magic ops at all: at record time each op samples the
-//                          sheet color under the pointer and stores a normal solid
-//                          stroke. Cheapest + free undo, but flat (loses the twin's
-//                          own shading/outlines).
-// 'pattern' and 'mask' produce identical pixels; 'sample' is the flat variant.
-type MagicFillMode = 'pattern' | 'mask' | 'sample';
-let magicFillMode: MagicFillMode = 'pattern';
-
+// A magic op strokes that pattern straight onto the target — chosen over a per-op
+// mask composite and a flat colour-sample after measuring all three (ADR-0043).
 let colorSheetImage: HTMLImageElement | null = null;
 let colorSheetUrl: string | null = null;
 let sheetCanvas: HTMLCanvasElement | null = null;
 let sheetCtx: CanvasRenderingContext2D | null = null;
-let sheetData: Uint8ClampedArray | null = null;
 let sheetReady = false;
 // Per-target-context pattern cache. Reset (new map) on every rasterize so a
 // resized sheet can't hand back a stale pattern; a WeakMap can't be cleared.
 let sheetPatternCache = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
 
 // Rasterize the decoded twin into a canvas-sized sheet (contain-fit, device px),
-// matching where the overlay <img> paints, and refresh the pattern/sample caches.
-// Re-run on load and on every resize (the canvas backing store changed).
+// matching where the overlay <img> paints, and refresh the pattern cache. Re-run
+// on load and on every resize (the canvas backing store changed).
 function rasterizeSheet() {
   sheetReady = false;
   sheetPatternCache = new WeakMap();
-  sheetData = null;
   if (!colorSheetImage || !colorSheetImage.naturalWidth || !canvas) return;
   if (!sheetCanvas) {
     sheetCanvas = document.createElement('canvas');
-    sheetCtx = sheetCanvas.getContext('2d', { willReadFrequently: true });
+    sheetCtx = sheetCanvas.getContext('2d');
   }
   if (!sheetCtx) return;
   sheetCanvas.width = canvas.width;
@@ -447,16 +431,6 @@ function rasterizeSheet() {
   sheetReady = true;
 }
 
-// The sheet's pixels, read back lazily — only 'sample' mode needs them, so the
-// shipping 'pattern'/'mask' paths never pay the (large) getImageData readback on
-// load/resize. Invalidated (null) whenever the sheet is re-rasterized.
-function ensureSheetData(): Uint8ClampedArray | null {
-  if (sheetData) return sheetData;
-  if (!sheetReady || !sheetCtx || !sheetCanvas) return null;
-  sheetData = sheetCtx.getImageData(0, 0, sheetCanvas.width, sheetCanvas.height).data;
-  return sheetData;
-}
-
 // A no-repeat pattern of the sheet, cached per target context (the visible ctx
 // almost always; baseline/keyframe contexts on replay). Positioned from each
 // target's origin (0,0) — the same origin op coordinates use — so it aligns on
@@ -470,46 +444,9 @@ function sheetPatternFor(target: CanvasRenderingContext2D): CanvasPattern | null
   return pattern;
 }
 
-// The sheet color under a device-px point, as an rgb() string, for 'sample' mode.
-// Falls back to the current pen color where the sheet is missing or transparent.
-function sampleSheetColor(x: number, y: number): string {
-  const data = ensureSheetData();
-  if (!data || !sheetCanvas) return currentColor;
-  const px = Math.round(x);
-  const py = Math.round(y);
-  if (px < 0 || py < 0 || px >= sheetCanvas.width || py >= sheetCanvas.height) return currentColor;
-  const i = (py * sheetCanvas.width + px) * 4;
-  if (data[i + 3] === 0) return currentColor;
-  return `rgb(${data[i]}, ${data[i + 1]}, ${data[i + 2]})`;
-}
-
-// Reusable full-target scratch for 'mask' mode, so we don't allocate a canvas
-// per op. Sized to the target on demand.
-let magicScratch: HTMLCanvasElement | null = null;
-let magicScratchCtx: CanvasRenderingContext2D | null = null;
-function magicScratchFor(w: number, h: number): CanvasRenderingContext2D | null {
-  if (!magicScratch) {
-    magicScratch = document.createElement('canvas');
-    magicScratchCtx = magicScratch.getContext('2d');
-    if (magicScratchCtx) {
-      magicScratchCtx.lineCap = 'round';
-      magicScratchCtx.lineJoin = 'round';
-    }
-  }
-  if (magicScratch.width !== w || magicScratch.height !== h) {
-    magicScratch.width = w;
-    magicScratch.height = h;
-    if (magicScratchCtx) {
-      magicScratchCtx.lineCap = 'round';
-      magicScratchCtx.lineJoin = 'round';
-    }
-  }
-  return magicScratchCtx;
-}
-
 // Stroke or dot the op's bare geometry onto a target using `paint` as the
-// fill/stroke style. Shared by every render technique (solid color, sheet
-// pattern, or the mask scratch).
+// fill/stroke style — a solid colour for a normal op, the sheet pattern for a
+// magic one.
 function paintOpShape(
   target: CanvasRenderingContext2D,
   op: Extract<StrokeOp, { kind: 'dot' | 'path' }>,
@@ -533,42 +470,21 @@ function paintOpShape(
   }
 }
 
-// Reveal the sheet through a magic op onto a target (source-over). 'pattern'
-// strokes the sheet pattern directly; 'mask' strokes an opaque shape into the
-// scratch, keeps only the sheet inside it (source-in), and blits that.
-function renderMagicOp(
-  target: CanvasRenderingContext2D,
-  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
-) {
-  if (!sheetReady || !sheetCanvas) return;
-  if (magicFillMode === 'mask') {
-    const sctx = magicScratchFor(target.canvas.width, target.canvas.height);
-    if (!sctx) return;
-    sctx.globalCompositeOperation = 'source-over';
-    sctx.clearRect(0, 0, target.canvas.width, target.canvas.height);
-    paintOpShape(sctx, op, '#000');
-    sctx.globalCompositeOperation = 'source-in';
-    sctx.drawImage(sheetCanvas, 0, 0);
-    sctx.globalCompositeOperation = 'source-over';
-    target.drawImage(sctx.canvas, 0, 0);
-    return;
-  }
-  const pattern = sheetPatternFor(target);
-  if (pattern) paintOpShape(target, op, pattern);
-}
-
 // Paint one recorded op onto a target context. Used both live (target = the
 // visible ctx) and during undo/resize replay (target = the visible or baseline
 // surface). Erasing composites destination-out; a magic op reveals the color
-// sheet; everything else lays down its solid color source-over.
+// sheet (source-over, its shape filled with the sheet pattern) and paints
+// nothing until the sheet has decoded; everything else lays down its solid color.
 function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   if (op.kind === 'clear') {
     target.clearRect(0, 0, target.canvas.width, target.canvas.height);
     return;
   }
   if (op.magic) {
+    const pattern = sheetPatternFor(target);
+    if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
-    renderMagicOp(target, op);
+    paintOpShape(target, op, pattern);
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
@@ -797,17 +713,16 @@ function commandSegmentCount(cmd: StrokeGroupCommand): number {
 // boundary) so undo replay reproduces identical pixels and anti-aliasing.
 function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
   if (points.length === 0) return;
-  const sampled = ps.magic && magicFillMode === 'sample';
   const op: StrokeOp = {
     kind: 'path',
     pid: ps.id,
     startX: ps.midX,
     startY: ps.midY,
     segs: [],
-    color: sampled ? sampleSheetColor(ps.midX, ps.midY) : ps.color,
+    color: ps.color,
     lineWidth: ps.lineWidth,
     erase: ps.erase,
-    magic: ps.magic && !sampled,
+    magic: ps.magic,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -859,18 +774,17 @@ function renderStrokeStart(ps: PointerState) {
   beginRender();
 
   // Erasing clears pixels via destination-out; the stroke color is irrelevant
-  // there, only its (opaque) alpha matters. A magic op reveals the sheet instead
-  // of `color` — except in 'sample' mode, where it bakes the sampled sheet color
-  // into an ordinary solid op (see magicFillMode).
-  const sampled = ps.magic && magicFillMode === 'sample';
+  // there, only its (opaque) alpha matters. A magic op ignores `color` too — it
+  // reveals the sheet — but carries it so a mid-stroke tool flip keeps a stable
+  // style key for simplification.
   const dot: StrokeOp = {
     kind: 'dot',
     x: ps.x,
     y: ps.y,
     radius: ps.lineWidth / 2,
-    color: sampled ? sampleSheetColor(ps.x, ps.y) : ps.color,
+    color: ps.color,
     erase: ps.erase,
-    magic: ps.magic && !sampled,
+    magic: ps.magic,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -1347,7 +1261,6 @@ export function setColorSheet(url: string | null) {
   colorSheetUrl = url;
   colorSheetImage = null;
   sheetReady = false;
-  sheetData = null;
   sheetPatternCache = new WeakMap();
   if (!url) return;
   const img = new Image();
@@ -1360,23 +1273,6 @@ export function setColorSheet(url: string | null) {
   };
   img.onerror = () => {};
   img.src = url;
-}
-
-// Dev/profiling seam (ADR-0043): swap the reveal technique so the three
-// candidates can be measured against each other. Production stays on 'pattern';
-// only the /dev/engine harness (PUBLIC_ENABLE_DEV_HARNESS) calls this.
-export function setMagicFillMode(mode: 'pattern' | 'mask' | 'sample') {
-  magicFillMode = mode;
-}
-
-export function getMagicFillMode(): 'pattern' | 'mask' | 'sample' {
-  return magicFillMode;
-}
-
-// Test/profiling seam: whether the color sheet has decoded and rasterized, so a
-// harness can wait before driving magic strokes.
-export function isColorSheetReady(): boolean {
-  return sheetReady;
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

@@ -50,15 +50,18 @@ requirement falls out of machinery that already exists:
 - **Simplification** (ADR-0036) thins them like any path op; `magic` joins the
   per-run style key so magic and solid runs don't merge.
 
-The sheet's pixels are read back **lazily** (only the rejected `sample` technique
-below needs them), so the shipping path never pays a `getImageData` on load/resize.
+The pattern samples the sheet canvas directly, so the shipping path never reads
+the sheet's pixels back — no `getImageData` on load or resize. (An early cut did,
+for the rejected `sample` technique below, and it dominated the resize rebuild
+cost — dropping it took that rebuild from ~127 ms to ~17 ms.)
 
 ### Empirically chosen over two alternatives
 
-All three techniques were built behind a dev-only `setMagicFillMode` seam
-(mirroring the `setSimplifyParams` seam from ADR-0036) and measured with a new
-`npm run perf:magic` harness driving the same stroke battery over a sheet through
-`/dev/engine` (2× DPR, keyframing disabled to isolate replay cost):
+All three techniques were prototyped behind a throwaway `setMagicFillMode` seam
+and measured with a `perf:magic` harness driving the same stroke battery over a
+sheet through `/dev/engine` (2× DPR, keyframing disabled to isolate replay cost).
+The numbers below are that comparison; once it settled the decision, the two
+rejected paths and the seam/harness were removed — this ADR is their record:
 
 | technique | draw avg (ms/move) | draw max | full rebuild | undo all | segments |
 |---|---|---|---|---|---|
@@ -83,9 +86,6 @@ All three techniques were built behind a dev-only `setMagicFillMode` seam
   **flat**, losing the twin's shading and its own outlines. Rejected on fidelity
   (and log bloat).
 
-The `mask` and `sample` code stay behind the `setMagicFillMode` dev seam (like the
-`setSimplifyParams` modes) so the comparison is re-runnable, not lost.
-
 ## Consequences
 
 - **+** Zero new undo/eraser/ordering machinery — the feature rides the command
@@ -93,9 +93,9 @@ The `mask` and `sample` code stay behind the `setMagicFillMode` dev seam (like t
   parallel mask system that would have to re-derive them.
 - **+** No measurable live-draw regression vs. the plain pen; undo stays ~1 ms.
 - **+** Pixel-perfect reveal aligned to the line art, including the twin's shading.
-- **+** `perf:magic` makes the technique choice reproducible; the seam keeps the
-  alternatives measurable if the tradeoffs ever change (e.g. a device where
-  pattern raster is the bottleneck).
+- **−** The rejected alternatives are gone from the code, so re-opening the choice
+  (e.g. on a device where pattern raster is the bottleneck) means re-deriving them
+  from the numbers above rather than flipping a seam.
 - **−** A one-off sheet re-rasterize on resize/rotation (~17 ms in the synthetic
   worst case); acceptable since rotation already forces a full rebuild (ADR-0034).
 - **−** Painting in the `contain` letterbox (outside the picture) reveals nothing —
