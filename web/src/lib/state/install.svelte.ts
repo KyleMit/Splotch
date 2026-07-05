@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { isNative } from '$lib/platform';
+import { isNative, isStandalone } from '$lib/platform';
 import { readBool, writeBool } from '$lib/storage';
 
 // "Add to Home Screen" / PWA install, surfaced as a friendly parent-facing prompt.
@@ -44,15 +44,6 @@ export const install = $state({
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 let initialized = false;
-
-function isStandalone() {
-  return (
-    window.matchMedia?.('(display-mode: standalone)').matches ||
-    window.matchMedia?.('(display-mode: fullscreen)').matches ||
-    window.matchMedia?.('(display-mode: minimal-ui)').matches ||
-    (window.navigator as { standalone?: boolean }).standalone === true
-  );
-}
 
 function isIosDevice() {
   return (
