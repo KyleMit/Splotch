@@ -39,21 +39,6 @@ bottleneck, not the app — a preview artifact, not a production problem). Treat
 production table above as the real baseline. Repeat visits are excellent (Perf
 99–100) because all static subresources come from cache.
 
-- [ ] **[Performance] Give immutable static media a real cache lifetime (skip the revalidation round-trip)** — File(s): `netlify.toml`, `web/src/lib/audio/drawingSound.ts`, `web/src/lib/components/AiImagePrompt.svelte`
-  Production serves `/sounds/*.mp3`, `/styles/*.webp`, and `/icons/*.webp` with
-  `cache-control: public,max-age=0,must-revalidate` + an ETag (confirmed live: a
-  conditional GET returns `304, 0 bytes`). So repeat visits don't re-download these
-  bodies, but they **do** send a conditional request per asset and pay a round-trip for
-  each 304 — on Slow 4G that's real latency for content that never changes. `netlify.toml`
-  only grants long `immutable` caching to `/*.js` and `/*.css`; these media paths fall
-  through to the `max-age=0` default. Fix by either (a) adding `[[headers]]` rules giving
-  `/sounds/*`, `/styles/*`, `/icons/*` a long `max-age` (e.g. `604800`), or (b) better,
-  content-hashing their filenames so they can be served `immutable` like `/_app/immutable/*`
-  and swaps bust the cache automatically. (Lighthouse doesn't flag this — its cache audit
-  treats `must-revalidate` as intentional — so it's an optimization, not a defect.)
-  *Note: this corrects the earlier draft's "assets ship with no Cache-Control", which was
-  a `vite preview` artifact — preview emits no headers; production does.*
-
 - [ ] **[Performance] Lazy-load the offscreen brush-style thumbnails** — File(s): `web/src/lib/components/AiImagePrompt.svelte`
   Eight `/styles/*.webp` texture thumbnails (~83 KB total) are fetched on initial load
   but are offscreen — they only appear inside the AI-image style picker
