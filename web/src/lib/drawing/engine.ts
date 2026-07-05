@@ -59,7 +59,15 @@ interface PointerState {
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
 type StrokeOp =
-  | { kind: 'dot'; x: number; y: number; radius: number; color: string; erase: boolean; magic?: boolean }
+  | {
+      kind: 'dot';
+      x: number;
+      y: number;
+      radius: number;
+      color: string;
+      erase: boolean;
+      magic?: boolean;
+    }
   | {
       kind: 'path';
       // Which pointer drew this op, so commit-time simplification (ADR-0036) can

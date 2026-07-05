@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { toolState, selectPen, selectEraser, toggleEraser } from './tool.svelte';
+import {
+  toolState,
+  selectPen,
+  selectEraser,
+  selectMagic,
+  toggleEraser,
+  toggleMagic,
+} from './tool.svelte';
 
 describe('tool state', () => {
   beforeEach(() => selectPen());
@@ -16,6 +23,43 @@ describe('tool state', () => {
     toggleEraser();
     expect(toolState.eraser).toBe(true);
     toggleEraser();
+    expect(toolState.eraser).toBe(false);
+  });
+
+  it('eraser and magic are mutually exclusive', () => {
+    selectEraser();
+    expect(toolState.eraser).toBe(true);
+    expect(toolState.magic).toBe(false);
+
+    selectMagic();
+    expect(toolState.magic).toBe(true);
+    expect(toolState.eraser).toBe(false);
+
+    selectEraser();
+    expect(toolState.eraser).toBe(true);
+    expect(toolState.magic).toBe(false);
+  });
+
+  it('toggleMagic flips between pen and magic, and always leaves magic for the pen', () => {
+    expect(toolState.magic).toBe(false);
+    toggleMagic();
+    expect(toolState.magic).toBe(true);
+    toggleMagic();
+    expect(toolState.magic).toBe(false);
+    expect(toolState.eraser).toBe(false);
+  });
+
+  it('toggleEraser from magic lands on the eraser (not back to magic)', () => {
+    selectMagic();
+    toggleEraser();
+    expect(toolState.eraser).toBe(true);
+    expect(toolState.magic).toBe(false);
+  });
+
+  it('selectPen clears both modifiers', () => {
+    selectMagic();
+    selectPen();
+    expect(toolState.magic).toBe(false);
     expect(toolState.eraser).toBe(false);
   });
 });

@@ -20,11 +20,14 @@ import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, sleep } from '../lib/utils.mjs';
+import { buildAndPreview } from './preview.mjs';
+import { buildBattery, batteryExtent } from './lib/strokes.mjs';
 
 // The pre-installed browsers in this environment may not match the exact build
 // @playwright/test wants, so fall back to whatever chrome binary is present.
 function resolveChromium() {
-  if (process.env.PW_CHROMIUM && existsSync(process.env.PW_CHROMIUM)) return process.env.PW_CHROMIUM;
+  if (process.env.PW_CHROMIUM && existsSync(process.env.PW_CHROMIUM))
+    return process.env.PW_CHROMIUM;
   const candidates = [
     '/opt/pw-browsers/chromium-1223/chrome-linux64/chrome',
     '/opt/pw-browsers/chromium-1223/chrome-linux/chrome',
@@ -32,8 +35,6 @@ function resolveChromium() {
   ];
   return candidates.find((p) => existsSync(p));
 }
-import { buildAndPreview } from './preview.mjs';
-import { buildBattery, batteryExtent } from './lib/strokes.mjs';
 
 const args = process.argv.slice(2);
 const build = !args.includes('--no-build');
@@ -76,8 +77,13 @@ async function main() {
       });
 
       if (mode !== 'baseline') {
-        await page.evaluate((url) => window.__engine.setColorSheet(url), `${base.replace(/\/$/, '')}${SHEET_URL}`);
-        await page.waitForFunction(() => window.__engine.isColorSheetReady() === true, { timeout: 15_000 });
+        await page.evaluate(
+          (url) => window.__engine.setColorSheet(url),
+          `${base.replace(/\/$/, '')}${SHEET_URL}`
+        );
+        await page.waitForFunction(() => window.__engine.isColorSheetReady() === true, {
+          timeout: 15_000,
+        });
       }
       await sleep(120);
 
@@ -99,7 +105,10 @@ async function main() {
   }
 
   const report = renderReport(rows);
-  writeFileSync(join(outDir, 'magic-brush.json'), JSON.stringify({ sheet: SHEET_URL, rows }, null, 2));
+  writeFileSync(
+    join(outDir, 'magic-brush.json'),
+    JSON.stringify({ sheet: SHEET_URL, rows }, null, 2)
+  );
   writeFileSync(join(outDir, 'magic-brush.md'), report);
   console.log(`\n${report}\nArtifacts: ${outDir}`);
 }
@@ -175,7 +184,9 @@ function renderReport(rows) {
       'to undo every command. `baseline` is the plain pen (no sheet), the ' +
       'pre-feature reference.\n'
   );
-  out.push('| technique | draw avg (ms) | draw max (ms) | draw moves | rebuild (ms) | undo all (ms) | commands | segments |');
+  out.push(
+    '| technique | draw avg (ms) | draw max (ms) | draw moves | rebuild (ms) | undo all (ms) | commands | segments |'
+  );
   out.push('|---|---|---|---|---|---|---|---|');
   for (const r of rows) {
     out.push(
@@ -190,7 +201,7 @@ function renderReport(rows) {
     out.push('\n## Regression vs. plain pen\n');
     out.push(
       `The shipping technique (**pattern**) draws at ${pat.draw.avg.toFixed(3)}ms/move vs. the ` +
-        `plain pen's ${base.draw.avg.toFixed(3)}ms — a ${(pat.draw.avg - base.draw.avg >= 0 ? '+' : '')}` +
+        `plain pen's ${base.draw.avg.toFixed(3)}ms — a ${pat.draw.avg - base.draw.avg >= 0 ? '+' : ''}` +
         `${(pat.draw.avg - base.draw.avg).toFixed(3)}ms delta. Rebuild ${pat.rebuildMs?.toFixed(1)}ms ` +
         `vs ${base.rebuildMs?.toFixed(1)}ms. Command/segment counts match across modes (identical ` +
         `geometry), so only the reveal technique differs.`

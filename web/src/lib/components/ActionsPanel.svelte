@@ -175,11 +175,7 @@
      Scribble against the next stroke (ADR-0038); that also suppresses the tap's
      synthesized click, so every button here activates via use:scribbleTap
      (pointerup for pointers, click only for keyboard/AT) instead of onclick. -->
-<div
-  class="actions-panel"
-  style:left={leftOffset}
-  use:scribbleGuard
->
+<div class="actions-panel" style:left={leftOffset} use:scribbleGuard>
   <!-- Always rendered; the drawer's open/closed state and each control's Parent
        Center on/off toggle are driven purely by CSS keyed off <html> attributes
        (see the publish effect above and app.html), so a returning user's stored
