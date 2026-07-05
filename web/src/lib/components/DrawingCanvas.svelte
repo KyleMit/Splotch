@@ -63,19 +63,35 @@
 
     setStrokeWidth(getStrokeWidthPx(activeStrokeSize()));
 
-    // Apple Pencil double-tap → toggle eraser (iOS native only). Subscription is async, so
-    // hold the cleanup behind a ref the teardown can call once it resolves. The literal
-    // __IS_CAPACITOR__ keeps the wrapper (and @capacitor/core) out of the web bundle;
-    // the inline import() resolves to the module namespace, never the plugin proxy.
+    // Apple Pencil double-tap → toggle eraser (iOS native only). Not needed for the
+    // first paint or first stroke (a toddler draws with a finger, and even a pencil
+    // user won't double-tap in the opening frames), so its chunk load + native bridge
+    // subscription is deferred to idle time to keep it off the mount/first-paint path.
+    // Subscription is async, so hold the cleanup behind a ref the teardown can call
+    // once it resolves. The literal __IS_CAPACITOR__ keeps the wrapper (and
+    // @capacitor/core) out of the web bundle; the inline import() resolves to the
+    // module namespace, never the plugin proxy. iOS WebView lacks requestIdleCallback,
+    // so fall back to a short timeout that still lands after first paint.
     let pencilCleanup: (() => void) | undefined;
+    let pencilIdle: number | undefined;
+    const pencilIdleSupported = typeof requestIdleCallback === 'function';
     if (__IS_CAPACITOR__ && isNative()) {
-      import('$lib/plugins/pencilEraser').then(({ initPencilEraser }) => {
-        pencilCleanup = initPencilEraser();
-      });
+      const initPencil = () => {
+        import('$lib/plugins/pencilEraser').then(({ initPencilEraser }) => {
+          pencilCleanup = initPencilEraser();
+        });
+      };
+      pencilIdle = pencilIdleSupported
+        ? requestIdleCallback(initPencil)
+        : (setTimeout(initPencil, 200) as unknown as number);
     }
 
     return () => {
       engine.teardown();
+      if (pencilIdle !== undefined) {
+        if (pencilIdleSupported) cancelIdleCallback(pencilIdle);
+        else clearTimeout(pencilIdle);
+      }
       pencilCleanup?.();
     };
   });
@@ -88,11 +104,20 @@
     setSafeAreaInsets({ ...layout.safeArea });
   });
 
-  // Warm up the pencil-sound assets as soon as sound is on (at mount, or when
-  // toggled on later) so the first stroke isn't silent for a few seconds while
-  // they fetch/decode. Skipped while sound is off to avoid the wasted download.
+  // Warm up the pencil-sound assets (357 KB — half the first-visit transfer) so
+  // the first stroke isn't silent while they fetch/decode. Deferred to idle time
+  // so they don't compete with the canvas for first-visit bandwidth; if the kid
+  // draws first, `playDrawSound` triggers the same preload on pointerdown, so the
+  // audible-first-stroke guarantee holds either way. Skipped while sound is off.
   $effect(() => {
-    if (settings.soundEnabled) preloadDrawSounds();
+    if (!settings.soundEnabled) return;
+    // requestIdleCallback is unsupported on Safari/iOS (below the floor), so fall
+    // back to a short timeout that still lands after first paint.
+    const idle = typeof requestIdleCallback === 'function';
+    const handle: number = idle
+      ? requestIdleCallback(() => preloadDrawSounds())
+      : (setTimeout(preloadDrawSounds, 200) as unknown as number);
+    return () => (idle ? cancelIdleCallback(handle) : clearTimeout(handle));
   });
 
   // Reactive bridges: when the store changes, push into the imperative engine.
