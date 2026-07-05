@@ -1,0 +1,32 @@
+#!/bin/bash
+set -euo pipefail
+
+# Cloud (Claude Code on the web) only — a local session already runs on a branch
+# the developer chose, and has no Netlify branch preview to point at. On a cloud
+# session, SessionStart stdout is injected into Claude's context, so this prints
+# the per-session branching + preview-URL convention. See docs/CLOUD.md.
+if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
+  exit 0
+fi
+
+cat <<'EOF'
+Cloud-session workflow (Claude Code on the web) — follow this for every session:
+
+1. One feature, one `feat/` branch off main. After the user's first substantive
+   request, and before writing any code, fork a fresh branch from the latest
+   origin/main named `feat/<feature>`, where <feature> is a short kebab-case
+   summary of the request (e.g. "add an undo button" -> feat/undo-button). Do
+   this even if the session opened on a different auto-generated branch:
+     git fetch origin main && git checkout -B feat/<feature> origin/main
+   Commit all work there and push it:
+     git push -u origin feat/<feature>
+
+2. Hand back the Netlify branch preview URL. Branch previews are enabled on the
+   "splotchy" Netlify site, so every pushed branch auto-deploys to
+   https://<slug>--splotchy.netlify.app, where <slug> is the branch name with
+   every non-alphanumeric character replaced by "-" (feat/undo-button ->
+   feat-undo-button--splotchy.netlify.app). As soon as you have pushed, give the
+   user that URL so they can click through and watch the committed work in
+   progress. The deploy takes a minute or two to go live after each push; the URL
+   is stable for the branch, so the same link tracks every later push.
+EOF

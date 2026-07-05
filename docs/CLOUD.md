@@ -20,6 +20,25 @@ The constraint that matters here is **networking**:
   laptop, so the LAN (`dev:host`) and USB (`adb:reverse`) flows in the mobile
   guide do **not** apply in a cloud session.
 
+## Per-session branch + Netlify preview
+
+Cloud sessions follow a fixed branching convention, injected into every session
+by `.claude/hooks/cloud-branch-preview.sh` (registered in `.claude/settings.json`,
+guarded by `CLAUDE_CODE_REMOTE` so it's a no-op locally; SessionStart stdout
+becomes context):
+
+* **One feature, one `feat/` branch off `main`.** After the first substantive
+  request, Claude forks a fresh branch from the latest `origin/main` named
+  `feat/<feature>` (a short kebab-case summary of the ask) and does all work
+  there — even if the session opened on a different auto-generated branch.
+* **Return the branch preview URL.** Branch previews are enabled on the
+  `splotchy` Netlify site, so every pushed branch auto-deploys to
+  `https://<slug>--splotchy.netlify.app` (the branch name with each
+  non-alphanumeric character replaced by `-`, e.g. `feat/undo-button` →
+  `feat-undo-button--splotchy.netlify.app`). Claude hands that link back after
+  pushing so you can watch the committed work in progress; the URL is stable for
+  the branch, so it tracks every later push (each deploy takes a minute or two).
+
 ## Getting dependencies ready
 
 ### Automatic: the SessionStart hook
