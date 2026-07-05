@@ -12,20 +12,24 @@ reports are attached to the PR, not committed.
 
 **Production (`https://splotch.art`, real Netlify serving)** — the authoritative
 numbers, captured first-visit (cold cache) and repeat-visit (warm cache primed by a
-prior load):
+prior load). Two audits so far (baseline, and a **2026-07-05 re-run** that confirmed
+every finding still stands); columns below show the range across both where they
+differ, illustrating `simulate`-mode variance:
 
-| Run | Visit | Perf | FCP | LCP | TBT | Speed Index | Transfer |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Phone portrait | first | 91 | 1.1 s | 1.9 s | 360 ms | 1.9 s | 713 KB |
-| Phone portrait | repeat | **100** | 1.0 s | 1.0 s | 80 ms | 1.0 s | ~1 KB |
-| Tablet landscape | first | 98 | 1.1 s | 1.5 s | 140 ms | 1.5 s | 713 KB |
-| Tablet landscape | repeat | 99 | 1.1 s | 1.1 s | 100 ms | 1.1 s | ~68 KB* |
+| Run | Visit | Perf | FCP | LCP | TBT | Transfer |
+| --- | --- | --- | --- | --- | --- | --- |
+| Phone portrait | first | 84–91 | 1.1–1.3 s | 1.9–2.3 s | 360–560 ms | 713 KB |
+| Phone portrait | repeat | 99–**100** | 1.0–1.2 s | 1.0–1.2 s | 80–120 ms | ~1–76 KB |
+| Tablet landscape | first | 98–99 | 1.1 s | 1.5–1.8 s | 110–140 ms | 713 KB |
+| Tablet landscape | repeat | 99–100 | 1.1 s | 1.1 s | 90–100 ms | ~68 KB* |
 
 \* the only repeat-visit byte cost is the HTML document itself (`max-age=0,
 must-revalidate`), which Chrome sometimes serves from cache and sometimes
 re-downloads; every subresource is served from cache at 0 bytes on repeat.
 Accessibility is device- and cache-independent (92 — see the viewport item below);
-Best-Practices and SEO are 100 on production.
+Best-Practices and SEO are 100 on production. The phone-first swing (Perf 84↔91,
+TBT 360↔560 ms) is within the documented ±15-point `simulate` variance — a second
+data point, not a regression.
 
 The **LCP element is `<canvas#drawingCanvas>`** on every run. On real Netlify
 (HTTP/2 + CDN) first-visit LCP is a healthy 1.9 s / 1.5 s — **much better than the
@@ -77,11 +81,16 @@ production table above as the real baseline. Repeat visits are excellent (Perf
   `$effect` bridges) off the first-paint path. Deferring the sound preload (first item)
   moves part of this already.
 
-- [ ] **[Performance] Reduce the initial DOM size** — File(s): `web/src/lib/components/ColorPalette.svelte`, `web/src/lib/components/ActionsPanel.svelte`
-  The page mounts **~1,288 DOM elements** (the color/tool palettes are the likely
-  culprits), which Lighthouse flags (score 50) and which lengthens Style & Layout. Check
-  whether every swatch/tool node needs to exist at load or whether offscreen/secondary
-  palettes can render on demand, and whether wrapper nesting can be flattened.
+- [ ] **[Performance] Reduce the initial DOM size** — File(s): `web/src/lib/icons/splotchy.svg`, `web/src/lib/components/ColorPalette.svelte`, `web/src/lib/components/ActionsPanel.svelte`
+  The page mounts **~1,288 DOM elements** (score 0), which lengthens Style & Layout. The
+  2026-07-05 re-run pinned the two biggest structural culprits from the report's DOM node
+  details: **inline SVG icons** dominate — the `splotchy.svg` logo alone is **255 vector
+  nodes**, and the report's "Maximum Child Elements: 150" node is a single `<g stroke-width>`
+  group (the logo). The color/tool palettes add the rest. Options: simplify/optimize
+  `splotchy.svg` (run it through SVGO — 255 nodes is far more than a logo needs), reference
+  the logo via `<img>`/`<use>` instead of inlining the full vector, and render
+  offscreen/secondary palette swatches on demand rather than at mount. Also check whether
+  wrapper nesting can be flattened.
 
 - [ ] **[Performance] Trim unused CSS shipped in the initial bundle** — File(s): `web/src/lib/components/ErrorScreen.svelte`
   The preview run flagged ~11 KB of unused CSS at load, dominated by the `.error-screen`

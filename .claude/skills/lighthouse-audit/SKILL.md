@@ -96,23 +96,59 @@ network from the request graph + byte sizes, so the proxy path and TLS version d
 **not** skew FCP/LCP/transfer numbers. Off-sandbox (a normal laptop) the driver
 adds none of this and runs a plain Lighthouse.
 
-## Reading the results & known findings
+## After every run — do this every time (not optional)
+
+These three steps are part of *running* the skill, so a caller can just invoke it
+and get them for free. Do them in order.
+
+### 1. Read the results
 
 `--out` holds `<device>-<visit>.report.{json,html}`. Open the HTML for the full
-report; the console summary covers the headline scores. Turn opportunities into
-`docs/TODO.md` items in the `/code-audit` format (see `docs/TODO.md` for the
-established structure). As of the last audit the standing opportunities were:
+report; the console summary covers the headline scores. For attribution beyond the
+headline (which node blew up DOM size, LCP phase breakdown, main-thread cost by
+category) read the JSON — e.g.
+`node -e 'const a=require("./lighthouse-reports/phone-portrait-first.report.json").audits; …'`
+lets you pull `dom-size`, `largest-contentful-paint-element`,
+`mainthread-work-breakdown`, and `bootup-time` `details.items` without opening the
+464 KB HTML.
 
-- **Defer the pencil-sound preload** (`drawingSound.ts` / `DrawingCanvas.svelte`) —
-  357 KB of mp3 warmed at mount is ~half the first-visit transfer; top first-visit win.
-- **Longer cache lifetime for immutable media** (`netlify.toml`) — `/sounds`,
-  `/styles`, `/icons` are served `max-age=0,must-revalidate`, so repeat visits pay
-  a 304 round-trip each; a long `max-age` or content-hashing skips it.
-- **Main-thread work / TBT** on first visit; **DOM size** (~1,288 elements);
-  **`user-scalable=no`** viewport (the one a11y deduction, likely intentional).
+### 2. Merge findings into `docs/TODO.md` — combine, don't overwrite
+
+Turn opportunities into `docs/TODO.md` items in the `/code-audit` format (see
+`docs/TODO.md` for the established structure). **If a Lighthouse audit section
+already exists there, merge into it — do not clobber it:**
+
+- **An existing item still stands** → keep it; *enrich* it with any sharper
+  attribution this run gave you (e.g. a specific file/node the report now points at),
+  and refresh its numbers.
+- **The score table** → update it to reflect this run. Prefer showing a *range* across
+  runs over replacing the single number, and note the audit date — that preserves the
+  variance picture instead of erasing the prior data point.
+- **A genuinely new opportunity** → add it as a new `- [ ]` item.
+- **An item that's since been fixed** → remove it (confirm against the report first).
+
+### 3. Self-heal this skill
+
+If anything surprising surfaced that a future caller would want to know — a durable
+**method** gotcha (a false-positive audit, a proxy quirk, an interpretation trap) —
+fold it into this `SKILL.md` as part of the same task. **Do not** record the specific
+findings/opportunities here: those live in `docs/TODO.md` and are removed from there as
+they're fixed, so a copy in the skill would only go stale. The skill carries *how to
+audit and how to read the numbers*; `docs/TODO.md` carries *what's currently wrong*.
+
+## Interpretation caveats
+
+**False positive — don't file a TODO for it:** the `lcp-discovery-insight` audit flags
+*"`fetchpriority=high` should be applied: false"* on first visit. Splotch's LCP element
+is `<canvas#drawingCanvas>` — a *painted* surface, not a fetched resource — so
+`fetchpriority`/`preload`/lazy-loading hints don't apply to it. The insight is written
+for image LCPs; ignore it here. (The canvas's LCP "Load Delay" ~830 ms is really
+main-thread/bundle-eval time before first paint — that's the TBT item above, not a
+discovery problem.)
 
 **Variance:** `simulate` mode is not deterministic — Perf can swing ±15 points and
-TBT can double between identical runs. Judge trends and medians across a few runs,
+TBT can double between identical runs (observed: phone-first Perf 84↔91, TBT
+360↔560 ms across two production audits). Judge trends and medians across a few runs,
 not a single number; don't treat a one-off swing as a regression.
 
 Reports are large; the output dir is gitignored. **Do not commit them** — attach
