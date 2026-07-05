@@ -67,14 +67,19 @@ paint, prefer mechanisms that are already correct in the prerendered HTML:
    Action-center panel's CSS reads those stamps so the state is correct at render. The
    same values are kept live through hydration and every change by a publish `$effect` in
    `ActionsPanel.svelte` (one shared target, so there's no competing default), giving
-   correctness at **render + hydration + live update**. Stamps:
+   correctness at **render + hydration + live update**.
+
+   **An attribute marks a *deviation* from the default**, so the raw prerendered HTML —
+   the head script never having run — already renders the defaults, and the script is a
+   pure optimization for returning users with customized settings, never load-bearing for
+   a new/default visitor (see the perf note below for why this polarity matters):
    - `data-orientation` — boot orientation, also read by `lib/state/layout.svelte.ts` as
      its initial value (CSS media queries remain primary for layout).
-   - `--action-btn-scale` — the parent's button-size preference (keep the key/clamp in
-     sync with `ACTION_BUTTON_SCALE_*` in `settings.svelte.ts`).
-   - `data-drawer-open` / `data-adv` — the Action drawer's open state and the
-     advanced-controls master switch.
-   - `data-ctl-*` — each Parent-Center control on/off toggle; absent = hidden.
+   - `--action-btn-scale` — button size; set only when ≠ 100% (the CSS `var()` fallback
+     is the default). Keep the key/clamp in sync with `ACTION_BUTTON_SCALE_*`.
+   - `data-drawer-open` — present only when the drawer is open (default: closed).
+   - `data-off-adv` / `data-off-<control>` — present only when advanced controls, or that
+     Parent-Center control, is switched **off** (default: on/shown).
 
    This is what lets the drawer be **always rendered** (in the DOM) yet shown/hidden and
    the individual controls gated **purely by CSS** — so a returning user who left the
@@ -90,15 +95,33 @@ non-persisted signal (`network.online`) the head script can't know, and which de
 hidden (no access token) — so it keeps its reactive binding and needs no stamp. Fully
 non-persisted state (the active color always boots to Purple) needs no treatment either.
 
+### Performance
+
+The head script was measured (prod build, real browser): **~0.1 ms cold** (the one-time,
+parser-blocking cost) / ~10 µs warm; ~9 `localStorage` reads + a `matchMedia` + a few
+`<html>` attribute writes, no reflow (the `<body>` isn't rendered yet). FCP impact is
+within noise. It pays for itself easily: under a 6× CPU throttle (representative of the
+low-end Android floor) a returning-open drawer without the stamp rendered **closed from
+FCP (~260 ms) until hydration corrected it at ~930 ms** — a ~670 ms wrong-state window,
+then the open animation — versus open-from-first-paint with the stamp. The
+deviation-only polarity is what keeps that a pure win: because the raw prerendered HTML
+already carries the defaults, the ~99% of visits that *are* default pay the ~0.1 ms for
+nothing visible but risk nothing if the script is skipped, while only customized returning
+visits actually consume the benefit.
+
 ## Consequences
 
 - **+** The home route stays a static, CDN-served, offline-capable page that is
   identical across web and the native static export — no serverless cost, no
   web/native divergence.
 - **+** First-paint orientation is correct without JS (media queries), and every other
-  first-paint variable (boot orientation, button scale, drawer open state, each control
-  toggle) is seeded before paint by the head script — no flash-of-default-then-correct,
-  including for a returning user who left the drawer open or switched a control off.
+  first-paint variable (button scale, drawer open state, each control toggle) is seeded
+  before paint by the head script — no flash-of-default-then-correct, including for a
+  returning user who left the drawer open or switched a control off.
+- **+** Because attributes mark only deviations from the default, the raw prerendered HTML
+  renders the default UI on its own — the head script is a pure optimization, not
+  load-bearing, so a default visitor is correct at first paint even if it never runs (JS
+  disabled, or `localStorage` throwing in a locked-down WebView).
 - **+** The prerender/SSR boundary is now documented (this ADR + the render column in the
   `architecture` skill's route table), so a new `prerender = false` (or a stray
   personalization attempt on `/`) is a deliberate, reviewable choice.
@@ -110,8 +133,8 @@ non-persisted state (the active color always boots to Purple) needs no treatment
   the button-scale clamp from `settings.svelte.ts` (it runs in `<head>` before `<body>`
   exists, so it can only stamp `<html>` — it can't import the source of truth or touch the
   buttons directly). Both files call this out; a mismatch would silently mis-seed until
-  hydration corrects it. The `data-drawer-open`/`data-adv`/`data-ctl-*` publish path is
-  covered by an E2E test (`flows.spec.ts`, "persisted-open drawer … at first paint").
+  hydration corrects it. The `data-drawer-open`/`data-off-*` publish path is covered by an
+  E2E test (`flows.spec.ts`, "persisted-open drawer … at first paint").
 - **−** The drawer moved from a Svelte `{#if}` + `slide` to always-rendered markup gated
   by CSS (grid accordion + delayed `visibility`). More CSS mechanism, and the buttons are
   always in the DOM — but inert when closed, so no a11y/interaction cost.

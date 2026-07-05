@@ -58,22 +58,28 @@
   // Publish the panel's persisted UI state to <html> so CSS can drive it. The
   // page is prerendered (ADR-0040), so its static HTML can't reflect a returning
   // user's stored settings — the buttons are always in the DOM and shown/hidden
-  // purely by CSS keyed off these attributes. The same values are seeded before
-  // first paint by the inline head script in app.html (so the drawer and each
-  // Parent-Center control toggle render correctly with no flash), and this effect
-  // keeps them live through hydration and every change. Keep the keys/defaults in
-  // app.html in sync with BOOL_SETTINGS in settings.svelte.ts. --action-btn-scale
-  // rides here too (a CSS var rather than an attribute).
+  // purely by CSS keyed off these attributes. The inline head script in app.html
+  // seeds the same attributes before first paint (so a returning user's drawer and
+  // control toggles render with no flash) and this effect keeps them live through
+  // hydration and every change.
+  //
+  // Polarity: an attribute marks a DEVIATION from the default, so the raw
+  // prerendered HTML (no attributes) already shows the defaults — drawer closed,
+  // advanced controls + every control on. `data-drawer-open` is present when open
+  // (default closed); `data-off-*` is present when that control is switched off
+  // (default on). Keep the keys/defaults in app.html in sync with BOOL_SETTINGS in
+  // settings.svelte.ts. --action-btn-scale rides here too (a CSS var, default via
+  // the var() fallback, so it's only meaningful when scaled).
   $effect(() => {
     const el = document.documentElement;
     el.style.setProperty('--action-btn-scale', String(buttonScale));
-    el.toggleAttribute('data-adv', settings.advancedControlsEnabled);
     el.toggleAttribute('data-drawer-open', drawerExpanded);
-    el.toggleAttribute('data-ctl-stroke', settings.strokeWidthControlEnabled);
-    el.toggleAttribute('data-ctl-eraser', settings.eraserEnabled);
-    el.toggleAttribute('data-ctl-coloring', settings.coloringBookEnabled);
-    el.toggleAttribute('data-ctl-screenshot', settings.screenshotEnabled);
-    el.toggleAttribute('data-ctl-undo', settings.undoButtonEnabled);
+    el.toggleAttribute('data-off-adv', !settings.advancedControlsEnabled);
+    el.toggleAttribute('data-off-stroke', !settings.strokeWidthControlEnabled);
+    el.toggleAttribute('data-off-eraser', !settings.eraserEnabled);
+    el.toggleAttribute('data-off-coloring', !settings.coloringBookEnabled);
+    el.toggleAttribute('data-off-screenshot', !settings.screenshotEnabled);
+    el.toggleAttribute('data-off-undo', !settings.undoButtonEnabled);
   });
 
   // The stroke-size lines preview what you'll lay down: the pen color, or the
@@ -381,27 +387,30 @@
   /* Individual controls sit behind Parent Center on/off toggles. They stay in the
      DOM and are shown/hidden purely by CSS keyed off <html> attributes (seeded
      pre-paint + kept live, same as the drawer) so their toggle state is correct at
-     render, hydration, and live. Absent attribute = disabled = hidden. (The AI
-     button is the exception — see its markup comment.) */
-  :global(html:not([data-ctl-stroke])) .stroke-width-wrapper {
+     render, hydration, and live. Controls default ON, so a `data-off-*` attribute
+     (present only when the parent switched it off) hides it — which means the raw
+     prerendered HTML, before the head script runs, already shows the defaults.
+     (The AI button is the exception — see its markup comment.) */
+  :global(html[data-off-stroke]) .stroke-width-wrapper {
     display: none;
   }
-  :global(html:not([data-ctl-eraser])) #eraserButton {
+  :global(html[data-off-eraser]) #eraserButton {
     display: none;
   }
-  :global(html:not([data-ctl-coloring])) #coloringBookButton {
+  :global(html[data-off-coloring]) #coloringBookButton {
     display: none;
   }
-  :global(html:not([data-ctl-screenshot])) #screenshotButton {
+  :global(html[data-off-screenshot]) #screenshotButton {
     display: none;
   }
-  :global(html:not([data-ctl-undo])) #undoButton {
+  :global(html[data-off-undo]) #undoButton {
     display: none;
   }
 
   /* Chevron toggle is hidden (and the drawer can't open) when advanced controls
-     are off — the same gate the old {#if advancedControlsEnabled} enforced. */
-  :global(html:not([data-adv])) .drawer-toggle {
+     are off — the same gate the old {#if advancedControlsEnabled} enforced.
+     Default on, so `data-off-adv` (present only when off) hides it. */
+  :global(html[data-off-adv]) .drawer-toggle {
     display: none;
   }
 
@@ -567,7 +576,7 @@
   }
 
   /* Stroke width: trigger button wrapper + flyout menu. Visibility is gated by
-     the [data-ctl-stroke] rule above (the Parent Center toggle). */
+     the [data-off-stroke] rule above (the Parent Center toggle). */
   .stroke-width-wrapper {
     position: relative;
   }
