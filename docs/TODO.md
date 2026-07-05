@@ -39,17 +39,6 @@ bottleneck, not the app — a preview artifact, not a production problem). Treat
 production table above as the real baseline. Repeat visits are excellent (Perf
 99–100) because all static subresources come from cache.
 
-- [ ] **[Performance] Defer the pencil-sound preload off the load critical path** — File(s): `web/src/lib/components/DrawingCanvas.svelte`, `web/src/lib/audio/drawingSound.ts`
-  The three `/sounds/pencil-*.mp3` files (119 KB each, **357 KB — half of the entire
-  713 KB first-visit transfer**) are the largest resources fetched, warmed at mount via
-  `$effect(() => { if (settings.soundEnabled) preloadDrawSounds(); })` in
-  `DrawingCanvas.svelte`. They're not needed until the first stroke, yet they compete
-  with the canvas for bandwidth on the initial load (first-visit only — on repeat visits
-  they're cached). Defer `preloadDrawSounds()` until after first paint — e.g.
-  `requestIdleCallback` (with a `setTimeout` fallback), or trigger it on the first
-  `pointerdown` — keeping the audible-first-stroke guarantee without spending first-visit
-  bandwidth on 357 KB before the canvas is up. Highest-value first-visit win.
-
 - [ ] **[Performance] Give immutable static media a real cache lifetime (skip the revalidation round-trip)** — File(s): `netlify.toml`, `web/src/lib/audio/drawingSound.ts`, `web/src/lib/components/AiImagePrompt.svelte`
   Production serves `/sounds/*.mp3`, `/styles/*.webp`, and `/icons/*.webp` with
   `cache-control: public,max-age=0,must-revalidate` + an ETag (confirmed live: a

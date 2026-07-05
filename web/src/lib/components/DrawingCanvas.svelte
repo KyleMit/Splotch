@@ -88,11 +88,20 @@
     setSafeAreaInsets({ ...layout.safeArea });
   });
 
-  // Warm up the pencil-sound assets as soon as sound is on (at mount, or when
-  // toggled on later) so the first stroke isn't silent for a few seconds while
-  // they fetch/decode. Skipped while sound is off to avoid the wasted download.
+  // Warm up the pencil-sound assets (357 KB — half the first-visit transfer) so
+  // the first stroke isn't silent while they fetch/decode. Deferred to idle time
+  // so they don't compete with the canvas for first-visit bandwidth; if the kid
+  // draws first, `playDrawSound` triggers the same preload on pointerdown, so the
+  // audible-first-stroke guarantee holds either way. Skipped while sound is off.
   $effect(() => {
-    if (settings.soundEnabled) preloadDrawSounds();
+    if (!settings.soundEnabled) return;
+    // requestIdleCallback is unsupported on Safari/iOS (below the floor), so fall
+    // back to a short timeout that still lands after first paint.
+    const idle = typeof requestIdleCallback === 'function';
+    const handle: number = idle
+      ? requestIdleCallback(() => preloadDrawSounds())
+      : (setTimeout(preloadDrawSounds, 200) as unknown as number);
+    return () => (idle ? cancelIdleCallback(handle) : clearTimeout(handle));
   });
 
   // Reactive bridges: when the store changes, push into the imperative engine.
