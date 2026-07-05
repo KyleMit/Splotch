@@ -39,6 +39,33 @@ becomes context):
   pushing so you can watch the committed work in progress; the URL is stable for
   the branch, so it tracks every later push (each deploy takes a minute or two).
 
+### The branch deploy is real production serving — use it to test what dev can't
+
+The branch deploy is served by **real Netlify** — the same CDN, HTTP/2, edge
+compression, `netlify.toml` headers, redirects, SSR function, and generated PWA
+service worker that `splotch.art` gets. That makes it the *only* place in a cloud
+session to verify behavior that exists **solely in production serving** and is
+absent from `npm run dev` / `vite preview` / `netlify dev` (which emit no CDN
+headers and no built service worker):
+
+* **Response headers** — `Cache-Control` on `/sounds/*`, `/styles/*`, `/icons/*`,
+  `/*.js`, `/*.css` (`netlify.toml`), security headers, content types. The egress
+  proxy reaches `*.netlify.app`, so `curl -sSI <branch-url>/styles/pixel.webp`
+  from the sandbox shows exactly what a browser receives.
+* **The service-worker precache** — `curl -s <branch-url>/sw.js` returns the
+  Workbox-generated SW with its inlined precache manifest (`{url,revision}`
+  entries). The `revision` is the md5 of the file's built content, so you can read
+  the deployed invalidation state directly and diff it across pushes.
+* **Cache invalidation end-to-end** — because each push produces a fresh deploy,
+  you can prove how a static-asset change propagates: change an asset, push, poll
+  `<branch-url>/sw.js` until that asset's `revision` flips (and its `ETag` /
+  `Content-Length` change), push a second change to confirm updates keep flowing,
+  then revert. This is exactly how the strategy in
+  [ADR-0042](adrs/0042-static-media-cache-invalidation.md) was verified — see it
+  for the mechanism and the recorded run.
+
+Deploys take a minute or two after each push, so poll rather than checking once.
+
 ## Getting dependencies ready
 
 ### Automatic: the SessionStart hook

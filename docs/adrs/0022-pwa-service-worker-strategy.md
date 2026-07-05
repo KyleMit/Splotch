@@ -62,7 +62,7 @@ A `emit-version-json` Vite plugin emits `version.json` into the build output on 
 
 ## Consequences
 
-**+** Workbox precache manifest injection is handled automatically; content-hash busting of all static assets works without a separate build script.
+**+** Workbox precache manifest injection is handled automatically; content-hash busting of all static assets works without a separate build script. How that content-hash busting actually invalidates the stable-filename static media (`/sounds`, `/styles`, `/icons`), and how it interacts with their HTTP `Cache-Control`, is documented in [ADR-0042](0042-static-media-cache-invalidation.md).
 
 **+** The canvas-empty guard is reliably enforced: the new SW cannot activate itself (no `skipWaiting: true`), and vite-plugin-pwa's auto-reload injection is disabled (`registerType: 'prompt'`), so `updates.ts` is the only code path that can trigger a reload.
 
