@@ -60,17 +60,6 @@ production table above as the real baseline. Repeat visits are excellent (Perf
   `$effect` bridges) off the first-paint path. Deferring the sound preload (first item)
   moves part of this already.
 
-- [ ] **[Performance] Reduce the initial DOM size** — File(s): `web/src/lib/icons/splotchy.svg`, `web/src/lib/components/ColorPalette.svelte`, `web/src/lib/components/ActionsPanel.svelte`
-  The page mounts **~1,288 DOM elements** (score 0), which lengthens Style & Layout. The
-  2026-07-05 re-run pinned the two biggest structural culprits from the report's DOM node
-  details: **inline SVG icons** dominate — the `splotchy.svg` logo alone is **255 vector
-  nodes**, and the report's "Maximum Child Elements: 150" node is a single `<g stroke-width>`
-  group (the logo). The color/tool palettes add the rest. Options: simplify/optimize
-  `splotchy.svg` (run it through SVGO — 255 nodes is far more than a logo needs), reference
-  the logo via `<img>`/`<use>` instead of inlining the full vector, and render
-  offscreen/secondary palette swatches on demand rather than at mount. Also check whether
-  wrapper nesting can be flattened.
-
 - [ ] **[Performance] Trim unused CSS shipped in the initial bundle** — File(s): `web/src/lib/components/ErrorScreen.svelte`
   The preview run flagged ~11 KB of unused CSS at load, dominated by the `.error-screen`
   rules from `ErrorScreen.svelte`, which is styled up-front but rarely rendered. (Didn't
