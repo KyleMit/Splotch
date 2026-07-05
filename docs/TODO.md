@@ -7,8 +7,8 @@
 ## Source: Lighthouse page-load audit (slow device + slow internet)
 
 Captured against the production build (`npm run build` → `vite preview`) under
-Lighthouse's simulated **Slow 4G + 4× CPU** throttle on two form factors. Raw
-reports live in `docs/lighthouse/`.
+Lighthouse's simulated **Slow 4G + 4× CPU** throttle on two form factors. The raw
+HTML reports are attached to the pull request rather than committed to the repo.
 
 | Run | Screen | Perf | A11y | Best-Practices | SEO | FCP | LCP | TBT | CLS |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
