@@ -54,38 +54,51 @@ paint, prefer mechanisms that are already correct in the prerendered HTML:
    mechanism; the color palette, actions panel, canvas, and clear button all branch
    layout this way. The Action-center drawer chevron was the last orientation-driven
    piece still computed in JS markup (which flashed the landscape axis on portrait
-   phones until hydration); it now composes a CSS-media-query axis rotation
-   (`--drawer-axis-rot`) with a JS-driven open/close flip (`--drawer-open-rot`), so the
-   axis is correct at first paint. Orientation that *can't* be pure CSS stays in JS
-   (`lib/state/layout.svelte.ts`): the notch-band edge (combines orientation with
-   *measured* insets and native status-bar calls), the coloring-book art (portrait vs
-   landscape *image assets*), the clear-button home-corner reset (imperative geometry),
-   and the actions-panel palette-clearing offset (needs the *measured* palette width).
-2. **Pre-paint head-script stamp** (`web/src/app.html`). A tiny synchronous inline
-   script runs before first paint and seeds the two pieces of first-paint state a
-   prerendered document can't otherwise know:
-   - `data-orientation` on `<html>` — the boot orientation, read by
-     `lib/state/layout.svelte.ts` as its initial value and available as an
-     `[data-orientation]` hook (CSS media queries remain primary).
-   - `--action-btn-scale` on `<html>` — the parent's button-size preference from
-     `localStorage`, so the CSS variable is correct before hydration. It lives on
-     `<html>` (not the panel) so the head script and the live `$effect` in
-     `ActionsPanel.svelte` write one shared target and the SSR markup carries no
-     competing default. Keep the key/clamp in sync with `ACTION_BUTTON_SCALE_*` in
-     `lib/state/settings.svelte.ts`.
+   phones until hydration); its rotation is now fully CSS, composing a media-query axis
+   (`--drawer-axis-rot`) with an open/close flip (`--drawer-open-rot`) keyed off the
+   `[data-drawer-open]` attribute (see mechanism 2). Orientation that *can't* be pure CSS
+   stays in JS (`lib/state/layout.svelte.ts`): the notch-band edge (combines orientation
+   with *measured* insets and native status-bar calls), the coloring-book art (portrait
+   vs landscape *image assets*), the clear-button home-corner reset (imperative
+   geometry), and the actions-panel palette-clearing offset (needs the *measured* palette
+   width).
+2. **Pre-paint head-script stamp** (`web/src/app.html`) + CSS. A tiny synchronous inline
+   script runs before first paint and stamps `<html>` from `localStorage`, and the
+   Action-center panel's CSS reads those stamps so the state is correct at render. The
+   same values are kept live through hydration and every change by a publish `$effect` in
+   `ActionsPanel.svelte` (one shared target, so there's no competing default), giving
+   correctness at **render + hydration + live update**. Stamps:
+   - `data-orientation` — boot orientation, also read by `lib/state/layout.svelte.ts` as
+     its initial value (CSS media queries remain primary for layout).
+   - `--action-btn-scale` — the parent's button-size preference (keep the key/clamp in
+     sync with `ACTION_BUTTON_SCALE_*` in `settings.svelte.ts`).
+   - `data-drawer-open` / `data-adv` — the Action drawer's open state and the
+     advanced-controls master switch.
+   - `data-ctl-*` — each Parent-Center control on/off toggle; absent = hidden.
 
-Preferences that only appear behind a gesture (the drawer defaults closed, so the action
-buttons aren't mounted at first paint) and non-persisted state (the active color always
-boots to Purple) need neither treatment — there's nothing to flash.
+   This is what lets the drawer be **always rendered** (in the DOM) yet shown/hidden and
+   the individual controls gated **purely by CSS** — so a returning user who left the
+   drawer open, or turned a control off, sees it correctly at first paint instead of the
+   drawer flashing open (or a disabled control flashing visible) after hydration. The
+   old `{#if}` gates could only ever render the SSG default (drawer closed, all controls
+   on). The collapse animates via a grid `0fr↔1fr` accordion (the CSS equal of the old
+   Svelte `slide`); closed state is `visibility: hidden` (delayed past the collapse) so
+   the buttons are truly inert — out of hit-testing, the a11y tree, and tab order.
+
+The one exception is the AI button, whose visibility also depends on a *runtime*,
+non-persisted signal (`network.online`) the head script can't know, and which defaults
+hidden (no access token) — so it keeps its reactive binding and needs no stamp. Fully
+non-persisted state (the active color always boots to Purple) needs no treatment either.
 
 ## Consequences
 
 - **+** The home route stays a static, CDN-served, offline-capable page that is
   identical across web and the native static export — no serverless cost, no
   web/native divergence.
-- **+** First-paint orientation is correct without JS (media queries), and the two
-  remaining first-paint variables (boot orientation, button scale) are seeded before
-  paint by the head script — no flash-of-default-then-correct.
+- **+** First-paint orientation is correct without JS (media queries), and every other
+  first-paint variable (boot orientation, button scale, drawer open state, each control
+  toggle) is seeded before paint by the head script — no flash-of-default-then-correct,
+  including for a returning user who left the drawer open or switched a control off.
 - **+** The prerender/SSR boundary is now documented (this ADR + the render column in the
   `architecture` skill's route table), so a new `prerender = false` (or a stray
   personalization attempt on `/`) is a deliberate, reviewable choice.
@@ -93,9 +106,15 @@ boots to Purple) need neither treatment — there's nothing to flash.
   means dropping `prerender` for `/`, moving the relevant prefs to a cookie, and adding a
   `+layout.server.ts`/`+page.server.ts` load — with the serverless-cost, native-divergence,
   and PWA-cache trade-offs listed above. Orientation would still need the client.
-- **−** The head script duplicates one `localStorage` key and the button-scale clamp from
-  `settings.svelte.ts`. This is called out in both files; a mismatch would silently
-  mis-seed the value until hydration corrects it.
+- **−** The head script duplicates a handful of `localStorage` keys, their defaults, and
+  the button-scale clamp from `settings.svelte.ts` (it runs in `<head>` before `<body>`
+  exists, so it can only stamp `<html>` — it can't import the source of truth or touch the
+  buttons directly). Both files call this out; a mismatch would silently mis-seed until
+  hydration corrects it. The `data-drawer-open`/`data-adv`/`data-ctl-*` publish path is
+  covered by an E2E test (`flows.spec.ts`, "persisted-open drawer … at first paint").
+- **−** The drawer moved from a Svelte `{#if}` + `slide` to always-rendered markup gated
+  by CSS (grid accordion + delayed `visibility`). More CSS mechanism, and the buttons are
+  always in the DOM — but inert when closed, so no a11y/interaction cost.
 - **−** `--action-btn-scale` is now written to `document.documentElement` from a
   component `$effect`, a small reach outside the component's own subtree — justified
   because the value must be seedable from `<head>` before the component exists.

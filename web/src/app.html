@@ -36,27 +36,45 @@
 
     <!-- Pre-hydration state stamp. The home page is prerendered (ADR-0040), so its
          static HTML can't know the visitor's viewport or stored preferences; this
-         runs synchronously before first paint to seed the two pieces of first-paint
-         state that would otherwise flash from a default before hydration:
-           • data-orientation — the boot orientation, read by lib/state/layout.svelte.ts
-             and available as an [data-orientation] CSS/test hook (CSS media queries
-             stay the primary mechanism for orientation-driven layout).
-           • --action-btn-scale — the parent's Action-center button size preference.
-         Keep the key and clamp in sync with ACTION_BUTTON_SCALE_* in
-         lib/state/settings.svelte.ts (the source of truth: min 70, max 130, default 100). -->
+         runs synchronously before first paint to seed the first-paint state that
+         would otherwise flash from a default before hydration. The Action-center
+         panel keeps these live (ActionsPanel.svelte's publish effect) and its CSS
+         reads them, so render / hydration / live-update all agree.
+           • data-orientation — boot orientation, read by lib/state/layout.svelte.ts
+             and an [data-orientation] CSS/test hook (media queries stay primary).
+           • --action-btn-scale — the parent's Action-center button size.
+           • data-adv / data-drawer-open — advanced-controls + drawer open state.
+           • data-ctl-* — each Parent-Center control on/off toggle; absent = hidden.
+         The keys, defaults, and the 70/130/100 scale clamp mirror settings.svelte.ts
+         (ACTION_BUTTON_SCALE_* and BOOL_SETTINGS) — keep them in sync. -->
     <script>
       (function () {
         try {
           var el = document.documentElement;
+          var on = function (key, def) {
+            var raw = localStorage.getItem(key);
+            return raw == null ? def : raw === 'true';
+          };
+
           el.setAttribute(
             'data-orientation',
             window.matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape'
           );
-          var raw = localStorage.getItem('splotch-action-button-scale');
-          var pct = raw == null ? 100 : parseInt(raw, 10);
+
+          var scaleRaw = localStorage.getItem('splotch-action-button-scale');
+          var pct = scaleRaw == null ? 100 : parseInt(scaleRaw, 10);
           if (isNaN(pct)) pct = 100;
           pct = Math.max(70, Math.min(130, pct));
           el.style.setProperty('--action-btn-scale', String(pct / 100));
+
+          var adv = on('splotch-advanced-controls', true);
+          el.toggleAttribute('data-adv', adv);
+          el.toggleAttribute('data-drawer-open', adv && on('splotch-drawer-open', false));
+          el.toggleAttribute('data-ctl-stroke', on('splotch-stroke-width-control', true));
+          el.toggleAttribute('data-ctl-eraser', on('splotch-eraser-enabled', true));
+          el.toggleAttribute('data-ctl-coloring', on('splotch-coloring-book-enabled', true));
+          el.toggleAttribute('data-ctl-screenshot', on('splotch-screenshot-enabled', true));
+          el.toggleAttribute('data-ctl-undo', on('splotch-undo-button-enabled', true));
         } catch (e) {
           /* private-mode / disabled storage — fall back to CSS defaults */
         }

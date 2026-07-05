@@ -327,6 +327,31 @@ test('pen and eraser keep independent stroke sizes that persist across reload', 
   await expect(page.locator('button[aria-label="Size 1"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
+// The home route is prerendered (ADR-0040), so its static HTML renders from
+// default settings. A returning user who left the drawer open — and turned a
+// control off — must still see that reflected at first paint: the inline head
+// script in app.html stamps <html> before paint and the drawer/controls are
+// shown/hidden purely by CSS, no chevron tap. This asserts that first-paint
+// state directly (note: no openDrawer()).
+test('a persisted-open drawer, with a control toggled off, is correct at first paint', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('splotch-drawer-open', 'true');
+    localStorage.setItem('splotch-eraser-enabled', 'false');
+  });
+  await gotoApp(page);
+
+  // The <html> stamp the CSS keys off is present before hydration.
+  await expect(page.locator('html')).toHaveAttribute('data-drawer-open', '');
+  // Drawer open: its buttons are visible without tapping the chevron.
+  await expect(page.locator('#undoButton')).toBeVisible();
+  await expect(page.locator('#coloringBookButton')).toBeVisible();
+  // The control the parent switched off is fully hidden (display:none), even
+  // though it's in the DOM, and not focusable.
+  await expect(page.locator('#eraserButton')).toBeHidden();
+});
+
 // On a phone-width portrait screen the stroke-width flyout used to open as a
 // horizontal row that ran under the bottom-right Parent Center button. Tapping
 // the rightmost size closed the menu on pointerup, and the trailing click then
