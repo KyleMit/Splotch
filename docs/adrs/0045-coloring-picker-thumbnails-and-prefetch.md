@@ -75,7 +75,8 @@ the original slowness, just earlier.
   count.
 - **+** The overlay stays full-res — no quality loss where it's shown large.
 - **+** Prefetch turns each hop (open → book → apply) from first-fetch latency
-  into a cache hit on the common path.
+  into a cache hit on the common path — measured at 14–137× faster first open
+  and 1.5–44× faster page-apply (see **Measured impact** below).
 - **+** One derivation point (`thumbPath` + `bookAssetPaths`) keeps the catalog,
   the asset check, and the native strip in agreement automatically.
 - **−** ~100 new committed binary files and roughly a doubling of the coloring
@@ -90,3 +91,45 @@ the original slowness, just earlier.
 If more than two sizes are ever needed (e.g. a distinct 2-up vs. 3-up grid
 density), move to a `srcset`/`<picture>` responsive-image approach rather than
 adding more hand-named suffixes.
+
+## Measured impact (prefetch A/B, 2026-07)
+
+The two decisions are separable, so the prefetch was validated **independently
+of the thumbnail size win**. The production build was driven headless
+(Playwright + CDP network throttling) with the prefetch ON (this code) vs. OFF
+(`prefetchImages` neutered) — **thumbnails stayed on in both arms**, so the
+numbers below are the prefetch's *marginal* contribution on top of the smaller
+tiles, not a re-count of the byte savings. 4 cold-context trials per cell; two
+network profiles (slow-4g ≈ 400 kbps/400 ms RTT, fast-4g ≈ 4 Mbps/40 ms).
+
+**First open of the picker — all 8 covers decoded:**
+
+| Network | ON | OFF | Prefetch saves |
+| --- | --- | --- | --- |
+| slow-4g | 27 ms | 3,632 ms | −3.6 s (137×) |
+| fast-4g | 27 ms | 378 ms | −351 ms (14×) |
+
+ON warmed 8/8 covers on idle → **0 bytes** fetched on the open click; OFF fetched
+154 KB on the click. This is the unconditional headline win — the idle warm gets
+seconds of lead, so the first open is effectively instant on any network.
+
+**Pick a page → full-res art on the canvas (121 KB overlay):**
+
+| Network | Interaction | ON | OFF | Prefetch saves |
+| --- | --- | --- | --- | --- |
+| slow-4g | tap (~120 ms lead) | 6,200 ms | 9,372 ms | −3.2 s (1.5×) |
+| slow-4g | hover (~600 ms lead) | 5,717 ms | 8,915 ms | −3.2 s (1.6×) |
+| fast-4g | tap (~120 ms lead) | 523 ms | 837 ms | −314 ms (1.6×) |
+| fast-4g | hover (~600 ms lead) | 10 ms | 452 ms | −442 ms (44×) |
+
+Transferred bytes were identical (120,996 B) in every cell — the prefetch changes
+*when* bytes move (jumping the overlay request ahead of the click-time
+color-sheet fetch, ADR-0043), not how many.
+
+**Caveat — the overlay warm is dwell-dependent.** It becomes a true instant
+cache-hit only when the pointer lingers long enough to finish the 121 KB download
+before the click (fast-4g hover: 10 ms, 44×). On a **touch tap** — the primary
+tablet path, which has no hover — the lead is only the pointerdown→click gap
+(~120 ms), so it still saves 0.3–3.2 s from the queue-jump but is not instant on a
+weak link. The cover-grid idle warm has no such caveat: its lead is seconds, so it
+lands for touch and pointer alike.
