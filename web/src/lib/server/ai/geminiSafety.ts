@@ -1,8 +1,11 @@
 import type { GenerateContentResponse } from '@google/genai';
 
-// Classifies a Gemini image-generation response so /api/generate-image can tell
-// a *safety refusal* (the child should draw something else) apart from a genuine
-// upstream/empty failure (try again). See ADR-0023.
+// Classifies a Gemini image-generation response so the adapter (gemini.ts) can
+// tell a *safety refusal* (the child should draw something else) apart from a
+// genuine upstream/empty failure (try again). See ADR-0023. Kept as its own
+// dependency-free module (only a type import) because the asset scripts
+// (scripts/gen-style-covers.mjs, gen-coloring-fills.mjs) import it directly via
+// --experimental-strip-types.
 
 export type SafetyClassification =
   | { kind: 'image'; data: string; mimeType: string }

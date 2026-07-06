@@ -52,16 +52,20 @@ On success returns the image bytes. Failure modes are split so the client can
 guide the child correctly (ADR-0023): a **`422`** means Gemini refused the
 drawing on **safety** grounds — the child should draw something *different* (the
 app shows "let's try drawing something else!"); a **`502`** is a genuine
-upstream/empty failure (retryable). The safety vs. empty/error split is decided
-by `classifyGeminiResponse` / `isSafetyError` in `web/src/lib/server/aiSafety.ts`,
-and probed by the manual red-team suite (`npm run redteam`, `tests/redteam/`).
+upstream/empty failure (retryable). The route talks to the model through the
+provider-agnostic `AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`,
+ADR-0047) — the vendor SDK never appears in route code. The safety vs.
+empty/error split is decided by `classifyGeminiResponse` / `isSafetyError` in
+`web/src/lib/server/ai/geminiSafety.ts`, and probed by the manual red-team
+suite (`npm run redteam`, `tests/redteam/`).
 
 The Gemini call is hardened to *increase* those refusals (the audience is
 toddlers): a `systemInstruction` tells the model to decline unsafe drawings in
 plain text rather than "beautify" them, and `safetySettings` set every
-configurable harm category (including the `HARM_CATEGORY_IMAGE_*` output
-categories) to `BLOCK_LOW_AND_ABOVE`. Both live in
-`web/src/routes/api/generate-image/+server.ts`.
+configurable harm category to `BLOCK_LOW_AND_ABOVE` (the `HARM_CATEGORY_IMAGE_*`
+output categories are deliberately omitted — the image model's endpoint rejects
+them with a 400). Both live in the Gemini adapter,
+`web/src/lib/server/ai/gemini.ts`.
 
 ### `POST /api/verify-access-code`
 
