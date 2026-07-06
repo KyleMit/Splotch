@@ -1,4 +1,4 @@
-# ADR-0043: Coloring-Picker Thumbnails + Prefetch (Two Resolutions per Page)
+# ADR-0045: Coloring-Picker Thumbnails + Prefetch (Two Resolutions per Page)
 
 **Status:** Active
 **Date:** 2026-07
@@ -34,8 +34,8 @@ path**.
 write a `{name}-thumb.webp` beside every full-res source — longest edge 400 px
 (covers a 2× DPR ~200 px tile), quality 80. A thumbnail is ~15 KB vs. the source's
 ~84–120 KB, so regenerating the whole set saves ~9 MB. The colored `.color.webp`
-twins (ADR-adjacent, ADR-none — see `gen-coloring-fills.mjs`) are skipped; they're
-never shown in the picker.
+twins (the magic brush's reveal layer, ADR-0043) are skipped; they're never shown
+in the picker, so they get no thumbnail.
 
 - **Grid tiles** (`ColoringBook.svelte`) use `thumbPath(src)`.
 - **The canvas overlay** (`#coloringOverlay` in `DrawingCanvas.svelte`) keeps the

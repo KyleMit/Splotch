@@ -23,6 +23,7 @@ export type IconName =
   | 'line-weight-eraser'
   | 'loading'
   | 'lock'
+  | 'magic-brush'
   | 'mobile-landscape'
   | 'mobile-lock'
   | 'mobile-portrait'

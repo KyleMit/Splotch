@@ -5,12 +5,14 @@
     setColor,
     setStrokeWidth,
     setEraserMode,
+    setMagicMode,
+    setColorSheet,
     setSafeAreaInsets,
     getCanvasRect,
   } from '$lib/drawing/engine';
   import { layout } from '$lib/state/layout.svelte';
   import { colors } from '$lib/state/colors.svelte';
-  import { toolState } from '$lib/state/tool.svelte';
+  import { toolState, selectPen } from '$lib/state/tool.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import {
     strokeState,
@@ -134,6 +136,23 @@
   $effect(() => {
     setEraserMode(toolState.eraser);
     if (!toolState.eraser) hideEraserCursor();
+  });
+
+  // The magic brush reveals the active page's colored twin (ADR-0043). Keep the
+  // engine's sheet in lockstep with the applied page, and its mode with the tool.
+  $effect(() => {
+    setColorSheet(coloringBookState.colorSheetUrl);
+  });
+
+  $effect(() => {
+    setMagicMode(toolState.magic);
+  });
+
+  // The magic brush only makes sense over a coloring page — its button is hidden
+  // when none is applied, so clearing the page mid-magic would strand the tool
+  // with nothing to reveal. Fall back to the pen.
+  $effect(() => {
+    if (toolState.magic && !coloringBookState.overlayUrl) selectPen();
   });
 
   // Body class tracks whether an overlay is active — paper texture moves

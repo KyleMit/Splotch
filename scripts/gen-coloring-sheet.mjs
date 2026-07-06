@@ -215,4 +215,6 @@ const html = `<title>Coloring twins — tap to verify overlap</title>
 
 await mkdir(OUT_DIR, { recursive: true });
 await writeFile(OUT, html);
-console.log(`Wrote ${relative(ROOT, OUT)} (${(html.length / 1024 / 1024).toFixed(1)} MB, ${list.length} pages).`);
+console.log(
+  `Wrote ${relative(ROOT, OUT)} (${(html.length / 1024 / 1024).toFixed(1)} MB, ${list.length} pages).`
+);

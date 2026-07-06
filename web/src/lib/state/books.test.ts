@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOOKS, bookAssetPaths, pageImage, thumbPath } from './books';
+import { BOOKS, bookAssetPaths, pageColorImage, pageImage, thumbPath } from './books';
 
 describe('thumbPath', () => {
   it('inserts -thumb before the .webp extension', () => {
@@ -11,23 +11,36 @@ describe('thumbPath', () => {
 describe('bookAssetPaths', () => {
   const farm = BOOKS.find((book) => book.id === 'farm')!;
 
-  it('lists the full-res cover and both orientations of every page', () => {
+  it('lists the cover, both orientations of every page, and the colored twins', () => {
     const paths = bookAssetPaths(farm);
     expect(paths).toContain(farm.cover);
     for (const page of farm.pages) {
       expect(paths).toContain(pageImage(page, 'portrait'));
       expect(paths).toContain(pageImage(page, 'landscape'));
+      expect(paths).toContain(pageColorImage(page, 'portrait'));
+      expect(paths).toContain(pageColorImage(page, 'landscape'));
     }
   });
 
-  it('pairs every full-res asset with its thumbnail twin', () => {
+  it('gives every picker-facing line-art image a thumbnail twin', () => {
     const paths = bookAssetPaths(farm);
-    const fullRes = paths.filter((p) => !p.endsWith('-thumb.webp'));
-    expect(fullRes.length).toBeGreaterThan(0);
-    for (const src of fullRes) {
+    const lineArt = [
+      farm.cover,
+      ...farm.pages.flatMap((page) => [pageImage(page, 'portrait'), pageImage(page, 'landscape')]),
+    ];
+    for (const src of lineArt) {
       expect(paths).toContain(thumbPath(src));
     }
-    // full-res + thumbs, nothing else
-    expect(paths.length).toBe(fullRes.length * 2);
+  });
+
+  it('does not thumbnail the colored twins (they never appear in the grid)', () => {
+    const paths = bookAssetPaths(farm);
+    for (const page of farm.pages) {
+      expect(paths).not.toContain(thumbPath(pageColorImage(page, 'portrait')));
+      expect(paths).not.toContain(thumbPath(pageColorImage(page, 'landscape')));
+    }
+    // Exactly the line-art images (cover + 2 orientations/page) get a -thumb.
+    const thumbs = paths.filter((p) => p.endsWith('-thumb.webp'));
+    expect(thumbs.length).toBe(1 + farm.pages.length * 2);
   });
 });

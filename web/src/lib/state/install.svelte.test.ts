@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({ native: false }));
 vi.mock('$app/environment', () => ({ browser: true }));
-vi.mock('$lib/platform', () => ({ isNative: () => mocks.native }));
+// Keep the real isStandalone (it reads the window.matchMedia stub that
+// setStandalone() controls); only isNative needs to be driven per-test.
+vi.mock('$lib/platform', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/platform')>()),
+  isNative: () => mocks.native,
+}));
 
 const DISMISSED_KEY = 'splotch-install-dismissed';
 const INSTALLED_KEY = 'splotch-install-completed';

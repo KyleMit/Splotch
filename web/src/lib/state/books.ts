@@ -4,16 +4,21 @@
 // (see scripts/strip-native-assets.mjs).
 //
 // Image storage format:
-//   static/coloring/{book}/cover.webp             full-res, 1:1
-//   static/coloring/{book}/{page}-tall.webp       portrait, 2:3, full-res
-//   static/coloring/{book}/{page}-wide.webp       landscape, 3:2, full-res
-//   static/coloring/{book}/{name}-thumb.webp      grid thumbnail of the above
+//   static/coloring/{book}/cover.webp               cover line art, 1:1
+//   static/coloring/{book}/{page}-tall.webp         portrait line art, 2:3
+//   static/coloring/{book}/{page}-wide.webp         landscape line art, 3:2
+//   static/coloring/{book}/{name}-thumb.webp        grid thumbnail of the line art
+//   static/coloring/{book}/{page}-tall.color.webp   portrait colored twin
+//   static/coloring/{book}/{page}-wide.color.webp   landscape colored twin
 //
-// Every full-res image has a `-thumb.webp` twin (scripts/gen-coloring-thumbs.mjs).
-// The picker grid shows the thumbnail; the full-screen canvas overlay uses the
-// full-res source. `thumbPath()` maps one to the other, and `bookAssetPaths()`
-// lists both so check-assets validates and strip-native-assets removes them
-// together.
+// Each picker-facing line-art image (cover + pages) has a `-thumb.webp` twin
+// (scripts/gen-coloring-thumbs.mjs): the picker grid shows the thumbnail, the
+// full-screen canvas overlay uses the full-res source. `thumbPath()` maps one to
+// the other. The colored `.color.webp` twin is a flat-colored, pixel-aligned
+// version of the line-art page (scripts/gen-coloring-fills.mjs) that the magic
+// brush reveals where the child paints (ADR-0043); it never appears in the grid,
+// so it has no thumbnail. `bookAssetPaths()` lists them all so check-assets
+// validates and strip-native-assets removes them together. Thumbnails: ADR-0045.
 //
 // `platforms` controls distribution per book:
 //   ['web']            -> web only          (hidden + assets stripped on native)
@@ -30,6 +35,8 @@ export interface ColoringPage {
   id: string;
   name: string;
   images: Record<BookOrientation, string>;
+  /** Flat-colored twin per orientation, revealed by the magic brush (ADR-0043). */
+  colorImages: Record<BookOrientation, string>;
 }
 
 export interface Book {
@@ -49,6 +56,10 @@ function page(book: string, id: string, name: string): ColoringPage {
     images: {
       portrait: `/coloring/${book}/${id}-tall.webp`,
       landscape: `/coloring/${book}/${id}-wide.webp`,
+    },
+    colorImages: {
+      portrait: `/coloring/${book}/${id}-tall.color.webp`,
+      landscape: `/coloring/${book}/${id}-wide.color.webp`,
     },
   };
 }
@@ -175,15 +186,27 @@ export function pageImage(page: ColoringPage, orientation: BookOrientation): str
   return page.images[orientation];
 }
 
-/** Grid-thumbnail path for a full-res coloring image (`x.webp` -> `x-thumb.webp`). */
+export function pageColorImage(page: ColoringPage, orientation: BookOrientation): string {
+  return page.colorImages[orientation];
+}
+
+/** Grid-thumbnail path for a picker-facing line-art image (`x.webp` -> `x-thumb.webp`). */
 export function thumbPath(src: string): string {
   return src.replace(/\.webp$/, '-thumb.webp');
 }
 
 export function bookAssetPaths(book: Book): string[] {
-  const fullRes = [
+  // Line art shown in the picker (cover + both orientations of each page) — the
+  // only images that get a grid thumbnail.
+  const lineArt = [
     book.cover,
     ...book.pages.flatMap((page) => [page.images.portrait, page.images.landscape]),
   ];
-  return [...fullRes, ...fullRes.map(thumbPath)];
+  // Colored twins are revealed by the magic brush, never shown in the grid, so
+  // they have no thumbnail.
+  const colorTwins = book.pages.flatMap((page) => [
+    page.colorImages.portrait,
+    page.colorImages.landscape,
+  ]);
+  return [...lineArt, ...colorTwins, ...lineArt.map(thumbPath)];
 }

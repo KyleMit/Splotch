@@ -47,7 +47,7 @@ console.log(`Chrome : ${chromePath ?? '(auto-detected by lighthouse)'}`);
 console.log(
   sandboxFlags.length
     ? `Sandbox: proxy + TLS-1.2 workaround ACTIVE (${sandboxFlags.length} extra flags)`
-    : `Sandbox: none (direct network)`,
+    : `Sandbox: none (direct network)`
 );
 console.log('');
 
@@ -163,8 +163,11 @@ function spkiAllowlist(caBundle, url) {
       if (!der) continue;
       const hash = spawnSync(
         'sh',
-        ['-c', 'openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64'],
-        { input: der, encoding: 'utf8' },
+        [
+          '-c',
+          'openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64',
+        ],
+        { input: der, encoding: 'utf8' }
       ).stdout?.trim();
       if (hash) hashes.push(hash);
     }
@@ -183,7 +186,8 @@ function opensslText(subArgs, input) {
 }
 
 function resolveChrome() {
-  if (process.env.CHROME_PATH && existsSync(process.env.CHROME_PATH)) return process.env.CHROME_PATH;
+  if (process.env.CHROME_PATH && existsSync(process.env.CHROME_PATH))
+    return process.env.CHROME_PATH;
   const root = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
   if (existsSync(root)) {
     const dirs = readdirSync(root)
@@ -230,7 +234,9 @@ function printSummary() {
   const fmt = (r) => r.map((c, i) => String(c).padEnd(widths[i])).join('  ');
   console.log('  ' + fmt(head));
   for (const r of rows) console.log('  ' + fmt(r));
-  console.log(`\nReports written to ${OUT} (JSON + HTML). Do not commit them — attach to the PR instead.`);
+  console.log(
+    `\nReports written to ${OUT} (JSON + HTML). Do not commit them — attach to the PR instead.`
+  );
 }
 
 function parseArgs(argv) {
