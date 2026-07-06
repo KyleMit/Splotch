@@ -65,7 +65,8 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `ai/styles.ts` | AI style presets (names, prompts, icons) for the image-generation picker. |
 | `api.ts` | Single helper (`apiUrl`) that prefixes paths with `__NATIVE_API_BASE__` on native, or leaves them relative on web. |
 | `audio/drawingSound.ts` | Plays pencil-scratch audio while drawing via Web Audio: MP3s are decoded once into `AudioBuffer`s, each stroke plays a looping `AudioBufferSourceNode` through a `GainNode`, and pointer speed modulates the gain (ramped to avoid clicks). |
-| `colorRing.ts` | Computes the selection-ring color for palette swatches (slightly darker than the swatch, or lighter for very dark colors). The honeycomb layout itself is pure CSS in `ColorPicker.svelte`. |
+| `colorRing.ts` | Computes the selection-ring color for palette swatches (slightly darker than the swatch, or lighter for very dark colors). |
+| `hexPickerLayout.ts` | The color picker's 9×9 palette (9 hue families × 9 shades) and its two static honeycomb arrangements — portrait (families as rows) and the landscape transpose (families as columns). `ColorPicker.svelte` renders both grids; CSS media queries pick one per orientation and trim positionally so the constrained axis drops shades, never hues (ADR-0048). |
 | `platform.ts` | `isNative()` and `getPlatform()` — reads the Capacitor global without importing `@capacitor/core`, so the module is safe to evaluate during SSR. |
 | `storage.ts` | Dual-layer storage: synchronous reads from `localStorage` (fast, no async flash); on native, every write is also mirrored to Capacitor Preferences for durability. `hydrateDurableStorage()` restores settings on app launch. |
 | `secureStorage.ts` | Named client-held secrets (BYO Gemini key, admin session token): Keychain/Keystore via `@aparajita/capacitor-secure-storage` on native, AES-GCM-encrypted IndexedDB on web. |
