@@ -1,4 +1,4 @@
-# ADR-0048: Idle-Mount the Boot-Hidden Overlays (Parent Center on First Open)
+# ADR-0049: Idle-Mount the Boot-Hidden Overlays (Parent Center on First Open)
 
 **Status:** Active
 **Date:** 2026-07
