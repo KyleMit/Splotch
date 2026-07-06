@@ -64,7 +64,10 @@ async function clearViaGesture(page: Page) {
   await page.mouse.move(cx, cy);
   await page.mouse.down();
   for (let i = 1; i <= 12; i++) {
-    await page.mouse.move(cx + ((vp.width / 2 - cx) * i) / 12, cy + ((vp.height / 2 - cy) * i) / 12);
+    await page.mouse.move(
+      cx + ((vp.width / 2 - cx) * i) / 12,
+      cy + ((vp.height / 2 - cy) * i) / 12
+    );
   }
   await page.mouse.up();
 }
