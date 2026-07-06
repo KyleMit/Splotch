@@ -57,7 +57,53 @@ Options (see the header of `driver.mjs`):
 | `--url <baseURL>` | Drive an already-running server instead of launching one |
 | `--port <n>` | Dev server port (default `5199`) |
 
-Output (`screenshots/`) is gitignored.
+Output (`screenshots/`) is gitignored. **Write your shots there** (or another
+gitignored dir) — a PNG dropped elsewhere in the repo shows up as an untracked file
+and trips the stop-hook git check.
+
+## Capturing a specific tool / state (beyond a default stroke)
+
+`--draw` only drags one **default-pen** stroke. There is no flag to select a tool
+(magic brush, eraser), apply a coloring page, or draw a custom path — so to
+screenshot any other state you drive it with your own short Playwright script.
+Don't reinvent the driver's setup; **reuse its server** and copy its three
+non-obvious pieces:
+
+```bash
+# 1. Leave the driver's dev server running and note the URL it prints.
+node .claude/skills/run-splotch/driver.mjs --route / --keep
+```
+
+```js
+// 2. Your own script: connect to that server and drive the UI.
+import { chromium } from 'playwright';
+const browser = await chromium.launch({
+  // Cloud Chromium can drift from Playwright's pinned build — copy
+  // driver.mjs's chromiumExecutablePath() fallback, or set PLAYWRIGHT_CHROMIUM.
+  executablePath: process.env.PLAYWRIGHT_CHROMIUM,
+});
+const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+await page.goto('http://localhost:5199/', { waitUntil: 'commit' });
+
+// Readiness: the canvas is in the DOM before it's wired — poll for the engine
+// resizing the backing store off its 300×150 default (see the Gotchas below).
+await page.waitForFunction(() => {
+  const c = document.getElementById('drawingCanvas');
+  return !!c && c.width > 300;
+});
+
+// The tool buttons live in the COLLAPSED action drawer — expand it first.
+await page.locator('button[aria-label="Expand controls"]').click();
+await page.locator('#undoButton').waitFor({ state: 'visible' });
+
+// Tools toggle, so select idempotently rather than clicking blindly.
+const magic = page.locator('#magicBrushButton');
+if ((await magic.getAttribute('aria-pressed')) !== 'true') await magic.click();
+```
+
+To apply a coloring page: click `#coloringBookButton`, then in the `dialog` pick a
+book and a page, and wait for `#coloringOverlay` to be visible. A full worked
+example (all these steps) lives in the magic-brush E2E test, `web/tests/flows.spec.ts`.
 
 ## Run (human path)
 
@@ -93,6 +139,18 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
 - **`--port` defaults to 5199**, not the usual 5173, to avoid clashing with a dev
   server you already have running. Pass `--port 5173` to reuse one, or `--keep`
   to leave the driver's own server up.
+- **The action drawer is collapsed by default**, so the tool buttons (magic brush,
+  eraser, undo, coloring, screenshot) aren't in the DOM until you click
+  `button[aria-label="Expand controls"]`. A custom script that goes straight for
+  `#magicBrushButton` fails with "element is not visible" — expand first (the E2E
+  suite's `openDrawer` helper does the same).
+- **Clearing the canvas is a drag gesture, not a click.** `#clearButton` is wired
+  to `dragToClear` — you have to press on it and drag past its accept threshold
+  (`0.4 × min(innerWidth, innerHeight)`) toward the screen center, then release. A
+  plain `.click()` does nothing.
+- **`window.__engine` exists only on `/dev/engine`**, not on `/`. That harness
+  (imperative `clearCanvas`, `undo`, pixel readers) is the easy way to manipulate
+  and assert engine state — but on the main app you must drive the real UI instead.
 
 ## Troubleshooting
 
