@@ -523,6 +523,125 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   expect(await overlay.getAttribute('src')).toMatch(/\/coloring\/farm\/.+-(wide|tall)\.webp$/);
 });
 
+// Apply the first Farm page and wait for its overlay + colored twin to be ready.
+async function applyFarmPage(page: Page) {
+  await page.locator('#coloringBookButton').click();
+  const dialog = page.locator('#coloring-book-dialog');
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: /Farm coloring book/i }).click();
+  await dialog
+    .getByRole('button', { name: /Farm coloring page/i })
+    .first()
+    .click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('#coloringOverlay')).toBeVisible();
+}
+
+// Distinct strongly-opaque canvas colors, quantized to `bits` per channel. A
+// solid stroke yields ~one bucket; a magic reveal spanning several fill regions
+// yields many — the signal that the brush painted the sheet, not a flat color.
+function distinctOpaqueColors(page: Page, bits = 4): Promise<number> {
+  return page.evaluate((b) => {
+    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+    const shift = 8 - b;
+    const seen = new Set<number>();
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] < 200) continue;
+      const key =
+        ((data[i] >> shift) << (2 * b)) | ((data[i + 1] >> shift) << b) | (data[i + 2] >> shift);
+      seen.add(key);
+    }
+    return seen.size;
+  }, bits);
+}
+
+test('the magic brush appears only with a coloring page, and paints the page colors', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const magic = page.locator('#magicBrushButton');
+  await expect(magic).toBeHidden(); // no page applied yet
+
+  await applyFarmPage(page);
+  await expect(magic).toBeVisible();
+
+  await magic.click();
+  await expect(magic).toHaveAttribute('aria-pressed', 'true');
+
+  // Paint across the picture: the reveal should show many of the twin's fill
+  // colors, not one flat pen color.
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+    { x: 400, y: 140 },
+    { x: 520, y: 260 },
+  ]);
+  await expect.poll(() => distinctOpaqueColors(page), { timeout: 4000 }).toBeGreaterThan(4);
+
+  // Undo reverts the magic stroke.
+  await page.locator('#undoButton').click();
+  await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
+});
+
+// Count of strongly-opaque canvas pixels.
+function opaqueCount(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+    let n = 0;
+    for (let i = 3; i < data.length; i += 4) if (data[i] > 200) n++;
+    return n;
+  });
+}
+
+test('the eraser removes magic-brush strokes and later colors override them', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await applyFarmPage(page);
+
+  await page.locator('#magicBrushButton').click();
+  // A diagonal that crosses several fill regions, so the reveal is real ink.
+  const line = [
+    { x: 120, y: 120 },
+    { x: 300, y: 240 },
+    { x: 500, y: 160 },
+  ];
+  await draw(page, line);
+  const revealed = await opaqueCount(page);
+  expect(revealed).toBeGreaterThan(0);
+
+  // Eraser wipes magic pixels like any other — dragging back along the stroke
+  // removes most of it.
+  await page.locator('#eraserButton').click();
+  await draw(page, line);
+  await expect.poll(() => opaqueCount(page)).toBeLessThan(revealed / 2);
+
+  // A solid color drawn afterward overrides the reveal: paint magic, then a
+  // single palette color on top, and confirm that flat color is present.
+  await page.locator('#magicBrushButton').click(); // re-select magic (clears eraser)
+  await draw(page, line);
+  const red = page.locator('.color-swatch[data-color="#EC534E"]');
+  await red.click();
+  await page.waitForTimeout(150); // color-change debounce
+  // Crosses the magic diagonal (~x=300, y=240), so it paints on top of it.
+  await draw(page, [
+    { x: 200, y: 240 },
+    { x: 400, y: 240 },
+  ]);
+  const hasRed = await page.evaluate(() => {
+    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] > 200 && data[i] > 200 && data[i + 1] < 120 && data[i + 2] < 120) return true;
+    }
+    return false;
+  });
+  expect(hasRed).toBe(true);
+});
+
 // A toddler mashes a launch button several times before noticing the modal
 // opened; the follow-up taps land on the fresh backdrop right where the button
 // was and would dismiss it. modalDialog arms a short-lived dead zone around the

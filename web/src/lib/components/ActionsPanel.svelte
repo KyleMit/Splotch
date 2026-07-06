@@ -10,7 +10,8 @@
     setStrokeSize,
     activeStrokeSize,
   } from '$lib/state/strokeWidth.svelte';
-  import { toolState, selectEraser, selectPen } from '$lib/state/tool.svelte';
+  import { toolState, selectEraser, selectPen, toggleMagic } from '$lib/state/tool.svelte';
+  import { coloringBookState } from '$lib/state/coloringBook.svelte';
   import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { network } from '$lib/state/network.svelte';
   import { layout } from '$lib/state/layout.svelte';
@@ -150,6 +151,14 @@
     openColoringBook(buttonCenter(coloringBtnEl));
   }
 
+  function handleMagicClick() {
+    toggleMagic();
+  }
+
+  // Only meaningful with a coloring page applied — there's nothing to reveal
+  // otherwise, so the button is hidden until one is picked.
+  const coloringPageActive = $derived(!!coloringBookState.overlayUrl);
+
   async function handleAiImageClick() {
     if (ui.aiGenerating || canvasState.canvasEmpty || !aiBtnEl) return;
 
@@ -166,11 +175,7 @@
      Scribble against the next stroke (ADR-0038); that also suppresses the tap's
      synthesized click, so every button here activates via use:scribbleTap
      (pointerup for pointers, click only for keyboard/AT) instead of onclick. -->
-<div
-  class="actions-panel"
-  style:left={leftOffset}
-  use:scribbleGuard
->
+<div class="actions-panel" style:left={leftOffset} use:scribbleGuard>
   <!-- Always rendered; the drawer's open/closed state and each control's Parent
        Center on/off toggle are driven purely by CSS keyed off <html> attributes
        (see the publish effect above and app.html), so a returning user's stored
@@ -231,6 +236,23 @@
         bind:this={coloringBtnEl}
       >
         <Icon name="shapes" class="action-icon" />
+      </button>
+
+      <!-- Magic brush: reveals the applied page's colors as the child paints
+           (ADR-0043). Reactive `hidden` (like the AI button) because it depends
+           on a client-only signal the prerendered page can't know — the applied
+           coloring page — and it defaults hidden (no page), so no first-paint
+           flash to seed away. -->
+      <button
+        class="action-button"
+        class:active={toolState.magic}
+        id="magicBrushButton"
+        aria-label="Magic brush"
+        aria-pressed={toolState.magic}
+        hidden={!coloringPageActive}
+        use:scribbleTap={handleMagicClick}
+      >
+        <Icon name="magic-brush" class="action-icon" />
       </button>
 
       <button
