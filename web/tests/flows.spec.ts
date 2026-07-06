@@ -539,7 +539,8 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await expect(dialog).toBeHidden();
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toBeVisible();
-  expect(await overlay.getAttribute('src')).toMatch(/\/coloring\/farm\/.+-(wide|tall)\.webp$/);
+  // The src lands once the art has decoded (the ready-gated swap), so retry.
+  await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.webp$/);
 });
 
 // Apply the first Farm page and wait for its overlay + colored twin to be ready.
@@ -553,8 +554,54 @@ async function applyFarmPage(page: Page) {
     .first()
     .click();
   await expect(dialog).toBeHidden();
-  await expect(page.locator('#coloringOverlay')).toBeVisible();
+  // Wait for the art itself, not just the element: the src lands only once the
+  // image has decoded (the ready-gated swap in DrawingCanvas).
+  await expect(page.locator('#coloringOverlay')).toHaveAttribute('src', /\.webp$/);
 }
+
+// A device rotation with ink on the canvas must NOT swap the page's tall/wide
+// art out from under the child's coloring (the two variants are different
+// compositions — no mapping exists): the engine locks the paper (ADR-0050) and
+// the same art stays applied, presented through the paper-view wrapper. Once
+// the canvas is blank again the paper re-adopts and the art swaps normally.
+// Rotation is emulated via CDP: new viewport dimensions + a changed Screen
+// Orientation angle (a plain resize keeps angle 0 and wouldn't rotate).
+test('rotating with ink keeps the same coloring page art until the canvas is blank', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await applyFarmPage(page);
+
+  const overlay = page.locator('#coloringOverlay');
+  await expect(overlay).toHaveAttribute('src', /-wide\.webp$/); // landscape viewport → wide art
+  const srcBefore = await overlay.getAttribute('src');
+
+  await draw(page, [
+    { x: 200, y: 200 },
+    { x: 400, y: 260 },
+  ]);
+
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: 720,
+    height: 1280,
+    deviceScaleFactor: 1,
+    mobile: true,
+    screenOrientation: { type: 'portraitPrimary', angle: 90 },
+  });
+
+  // The ink locks the paper: the wide art stays applied, lifted into the
+  // letterboxed paper sheet instead of being swapped for the tall variant.
+  await expect(page.locator('.paper-sheet.paper-lifted')).toBeVisible();
+  await expect(overlay).toHaveAttribute('src', srcBefore!);
+
+  // Undo the only stroke → blank canvas → the paper re-adopts the portrait
+  // viewport and the art swaps to the tall variant.
+  await page.locator('#undoButton').click();
+  await expect(overlay).toHaveAttribute('src', /-tall\.webp$/);
+  await expect(page.locator('.paper-sheet.paper-lifted')).toHaveCount(0);
+});
 
 // Distinct strongly-opaque canvas colors, quantized to `bits` per channel. A
 // solid stroke yields ~one bucket; a magic reveal spanning several fill regions

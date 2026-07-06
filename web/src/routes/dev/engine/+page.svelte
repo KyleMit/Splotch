@@ -12,6 +12,8 @@
     exportCanvasBlob,
     getUndoDebug,
     setSimplifyParams,
+    setScreenAngleOverride,
+    getViewState,
     RESIZE_SETTLE_MS,
   } from '$lib/drawing/engine';
 
@@ -59,6 +61,11 @@
       exportCanvasBlob,
       getUndoDebug,
       setSimplifyParams,
+      // Rotation seam: pins the screen angle the engine reads, so a spec can
+      // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
+      // and inspect the resulting paper view (ADR-0050).
+      setScreenAngleOverride,
+      getViewState,
 
       // Decode an exported blob and count its stroke pixels. The harness draws
       // in pure red; the paper background never is, so a red count > 0 means

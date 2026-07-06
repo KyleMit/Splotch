@@ -53,4 +53,5 @@ This directory records significant architectural decisions made in the Splotch p
 | [0047](0047-provider-agnostic-ai-adapter.md) | Provider-Agnostic AI Image Adapter (`AiImageProvider` Seam) | Active |
 | [0048](0048-hex-picker-trims-shades-before-hues.md) | Hex Color Picker Trims Shades Before Hues, Transposing in Landscape | Active |
 | [0049](0049-idle-mount-boot-hidden-overlays.md) | Idle-Mount the Boot-Hidden Overlays (Parent Center on First Open) | Active |
+| [0050](0050-locked-paper-view-on-rotation.md) | Lock the "Paper" on Rotation and Present It Upright Through a Contain-Fit View | Active |
 

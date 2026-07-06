@@ -9,7 +9,9 @@
     setColorSheet,
     setSafeAreaInsets,
     getCanvasRect,
+    type EngineViewState,
   } from '$lib/drawing/engine';
+  import { viewMatrix } from '$lib/drawing/paperView';
   import { layout } from '$lib/state/layout.svelte';
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
@@ -31,7 +33,34 @@
   // Bubble that previews the eraser footprint at the pointer while erasing.
   let eraserCursor = $state({ visible: false, x: 0, y: 0 });
 
-  const eraserSizePx = $derived(getEraserWidthPx(strokeState.eraserSize));
+  // The engine's paper view (ADR-0050): identity in normal use; after a device
+  // rotation with ink on the canvas it presents the locked paper upright,
+  // contain-fit and centered (scaled down when it doesn't fit). The overlay
+  // wrapper below is positioned with the exact same transform the canvas paints
+  // through, so page art and strokes stay aligned.
+  let paperView = $state<EngineViewState>({
+    active: false,
+    scale: 1,
+    rotate: 0,
+    tx: 0,
+    ty: 0,
+    paperCssWidth: 0,
+    paperCssHeight: 0,
+    paperOrientation: 'portrait',
+  });
+
+  const paperTransform = $derived(
+    `matrix(${viewMatrix({
+      scale: paperView.scale,
+      rotate: paperView.rotate,
+      tx: paperView.tx,
+      ty: paperView.ty,
+    }).join(', ')})`
+  );
+
+  const eraserSizePx = $derived(
+    getEraserWidthPx(strokeState.eraserSize) * (paperView.active ? paperView.scale : 1)
+  );
 
   function updateEraserCursor(e: PointerEvent) {
     if (!toolState.eraser) return;
@@ -60,6 +89,10 @@
       },
       onStrokeEnd: () => {
         canvasState.strokeCount++;
+      },
+      onViewChange: (view) => {
+        Object.assign(paperView, view);
+        canvasState.paperOrientation = view.paperOrientation;
       },
     });
 
@@ -150,22 +183,73 @@
     setMagicMode(toolState.magic);
   });
 
-  // Body class tracks whether an overlay is active — paper texture moves
-  // from the canvas to the container so the overlay can sit beneath strokes.
+  // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
+  // and swaps the page art to the other tall/wide variant — a different
+  // composition. Pointing the <img> straight at the new URL shows the old art
+  // mis-fit in the new layout, then pops the new one in whenever it decodes.
+  // Instead: hide the art the moment the target changes, decode the new file
+  // off-DOM, and fade it in only once it's ready. Applying a page from the
+  // picker flows through the same gate.
+  let displayedOverlayUrl = $state<string | null>(null);
   $effect(() => {
-    if (typeof document === 'undefined') return;
-    document.body.classList.toggle('has-coloring-overlay', !!coloringBookState.overlayUrl);
+    const url = coloringBookState.overlayUrl;
+    displayedOverlayUrl = null;
+    if (!url) return;
+    let stale = false;
+    const img = new Image();
+    img.src = url;
+    // Show on decode failure too — the <img> then surfaces the same broken
+    // state a direct src assignment would have.
+    const show = () => {
+      if (!stale) displayedOverlayUrl = url;
+    };
+    img.decode().then(show, show);
+    return () => {
+      stale = true;
+    };
   });
+
+  // The sheet/wrapper track the engine's paper; before the engine mounts and
+  // reports a size, fall back to filling the container so the SSR'd shell shows
+  // the full-bleed paper texture with no flash.
+  const paperCssWidth = $derived(paperView.paperCssWidth ? `${paperView.paperCssWidth}px` : '100%');
+  const paperCssHeight = $derived(
+    paperView.paperCssHeight ? `${paperView.paperCssHeight}px` : '100%'
+  );
 </script>
 
 <div class="canvas-container">
-  <img
-    class="coloring-overlay"
-    id="coloringOverlay"
-    src={coloringBookState.overlayUrl ?? ''}
-    alt=""
+  <!-- The paper sheet: the off-white textured page the child draws on, sitting
+       beneath the (transparent) canvas. Full-container in normal use; after a
+       rotation locks the paper (ADR-0050) it carries the same transform the
+       canvas paints through, so the page reads as a distinct sheet over the
+       container's plain lighter margins — no border needed. -->
+  <div
+    class="paper-sheet"
+    class:paper-lifted={paperView.active}
+    style:width={paperCssWidth}
+    style:height={paperCssHeight}
+    style:transform={paperTransform}
+  ></div>
+  <!-- The coloring page overlay, positioned against the same paper so the art
+       contain-fits exactly where the magic sheet's math puts its colors, and
+       page + strokes move as one sheet across rotations. -->
+  <div
+    class="paper-view"
+    style:width={paperCssWidth}
+    style:height={paperCssHeight}
+    style:transform={paperTransform}
     hidden={!coloringBookState.overlayUrl}
-  />
+  >
+    <img
+      class="coloring-overlay"
+      class:overlay-ready={!!displayedOverlayUrl}
+      id="coloringOverlay"
+      src={displayedOverlayUrl ?? ''}
+      alt=""
+      hidden={!coloringBookState.overlayUrl}
+    />
+  </div>
   <canvas
     bind:this={canvasEl}
     id="drawingCanvas"
@@ -195,6 +279,26 @@
     position: relative;
     width: 100%;
     overflow: hidden;
+    /* Only visible around the lifted paper sheet while a rotation has the paper
+       locked: a flat, slightly greyer tone than the sheet's off-white so the
+       original page reads as distinct without any border line. */
+    background-color: #f1efeb;
+  }
+
+  .paper-sheet {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    z-index: 0;
+    pointer-events: none;
+    background-color: #fcfbf8;
+    background-image: url('/icons/handmade-paper.webp');
+    background-repeat: repeat;
+  }
+
+  .paper-sheet.paper-lifted {
+    box-shadow: 0 2px 14px rgba(93, 84, 68, 0.18);
   }
 
   #drawingCanvas {
@@ -203,9 +307,8 @@
     touch-action: none;
     width: 100%;
     height: 100%;
-    background-color: #fcfbf8;
-    background-image: url('/icons/handmade-paper.webp');
-    background-repeat: repeat;
+    position: relative;
+    z-index: 1;
   }
 
   #drawingCanvas.erasing {
@@ -225,15 +328,36 @@
     z-index: 3;
   }
 
-  .coloring-overlay {
+  /* The multiply blend lives on the wrapper (not the img): the transform makes
+     the wrapper a stacking context, which would confine an inner mix-blend-mode
+     to the wrapper's own (transparent) backdrop instead of the canvas below. */
+  .paper-view {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
     pointer-events: none;
     z-index: 2;
     mix-blend-mode: multiply;
+  }
+
+  .paper-view[hidden] {
+    display: none;
+  }
+
+  /* Hidden instantly while the next art variant decodes (no transition on the
+     way out), then faded in once it's ready — see displayedOverlayUrl. */
+  .coloring-overlay {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+  }
+
+  .coloring-overlay.overlay-ready {
+    opacity: 1;
+    transition: opacity 0.18s ease;
   }
 
   .coloring-overlay[hidden] {

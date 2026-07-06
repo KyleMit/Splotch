@@ -75,6 +75,7 @@ baseline**, and every remaining below-floor risk is already feature-detected and
 | Wake Lock | `routes/+page.svelte:56` | Chrome 84 / Safari 16.4 | ✅ feature-detected | screen may sleep mid-draw |
 | `Element.requestFullscreen` (immersive) | `lib/state/fullscreen.svelte.ts` | Chrome 71 / Safari 16.4 (macOS); no element fullscreen on iOS Safari | ✅ `document.fullscreenEnabled` + Android-only | Fullscreen Toggle hidden; URL bar stays (iOS Safari, desktop deliberately excluded) |
 | Screen Orientation lock | `lib/orientation.ts:48` | varies | ✅ `?.` (native uses Capacitor plugin) | no orientation lock |
+| `screen.orientation.angle` (+ `change` event) | `lib/drawing/engine.ts` (paper view, ADR-0050) | Chrome 38 / Safari 16.4 | ✅ `?.` falls back to angle 0 | rotation treated as a plain resize — drawing anchors top-left as before the feature |
 | `navigator.vibrate` | `lib/haptics.ts:24` | Android only | ✅ `?.` (native uses Capacitor Haptics) | no haptic feedback |
 | Web Audio `AudioContext` | `lib/audio/drawingSound.ts` | Chrome 35 / Safari 14.1 | ✅ null-returns | silent draw sound |
 | `ResizeObserver` | `lib/components/ColorPalette.svelte:27` | Safari 13.1 | within floor | n/a |

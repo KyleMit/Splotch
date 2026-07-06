@@ -153,21 +153,6 @@ body {
   }
 }
 
-/* Coloring-book mode: when a page is overlaid, paper texture moves from the
-   canvas to its container so the overlay sits beneath strokes. The body
-   class is toggled imperatively from DrawingCanvas. */
-body.has-coloring-overlay .canvas-container {
-  background-color: #fcfbf8;
-  background-image: url('/icons/handmade-paper.webp');
-  background-repeat: repeat;
-}
-
-body.has-coloring-overlay #drawingCanvas {
-  background: transparent;
-  position: relative;
-  z-index: 1;
-}
-
 /* Polaroid screenshot animation. The overlay/frame/img elements are created
    imperatively in src/lib/drawing/screenshot.js and appended to <body>, so
    these styles must be global. */

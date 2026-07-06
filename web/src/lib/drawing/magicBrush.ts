@@ -19,9 +19,11 @@
 //
 // The engine drives this module: it rasterizes the sheet on resize, asks for the
 // sheet pattern per magic op, and calls the source setters from its tool/overlay
-// wiring. The offscreen sheet is a canvas the exact size of the main canvas; a
-// no-repeat CanvasPattern of it is the brush's paint (chosen over a per-op mask
-// composite and a flat colour-sample after measuring all three — see ADR-0043).
+// wiring. The offscreen sheet is a canvas the exact size of the engine's PAPER —
+// the space ops are recorded in, which tracks the main canvas until a rotation
+// locks it (ADR-0050); a no-repeat CanvasPattern of it is the brush's paint
+// (chosen over a per-op mask composite and a flat colour-sample after measuring
+// all three — see ADR-0043).
 
 export const MAGIC_GRADIENT_COUNT = 10;
 
@@ -42,10 +44,12 @@ export interface RainbowGradient {
   stops: GradientStop[];
 }
 
-// The engine hands the module a live view of its canvas (reassigned on resize) and
-// a repaint hook so an async twin load can refresh already-recorded magic ops.
+// The engine hands the module a live view of its paper — the coordinate space
+// ops (and therefore the sheet) live in, which a rotation may lock while the
+// viewport changes (ADR-0050) — and a repaint hook so an async twin load can
+// refresh already-recorded magic ops.
 interface MagicBrushHost {
-  canvas: () => HTMLCanvasElement | null;
+  paperSize: () => { width: number; height: number } | null;
   repaint: () => void;
 }
 
@@ -126,15 +130,16 @@ function paintGradient(g: CanvasRenderingContext2D, w: number, h: number, spec: 
   g.fillRect(0, 0, w, h);
 }
 
-// Rasterize the active source into a canvas-sized sheet and refresh the pattern
-// cache. The twin is drawn contain-fit (matching where the overlay <img> paints);
-// the gradient fills the whole sheet. Re-run on load and on every resize (the
-// canvas backing store changed).
+// Rasterize the active source into a paper-sized sheet and refresh the pattern
+// cache. The twin is drawn contain-fit within the paper (matching where the
+// overlay <img> paints — the overlay is positioned against the same paper); the
+// gradient fills the whole sheet. Re-run on load and on every resize (the paper
+// may have been re-adopted).
 export function rasterizeSheet() {
   sheetReady = false;
   patternCache = new WeakMap();
-  const canvas = host?.canvas();
-  if (!canvas) return;
+  const paper = host?.paperSize();
+  if (!paper) return;
   const source = activeSource();
   if (!source) return;
   if (!sheetCanvas) {
@@ -142,8 +147,8 @@ export function rasterizeSheet() {
     sheetCtx = sheetCanvas.getContext('2d');
   }
   if (!sheetCtx || !sheetCanvas) return;
-  sheetCanvas.width = canvas.width;
-  sheetCanvas.height = canvas.height;
+  sheetCanvas.width = paper.width;
+  sheetCanvas.height = paper.height;
   sheetCtx.clearRect(0, 0, sheetCanvas.width, sheetCanvas.height);
   if (source === 'twin') {
     // Prefer the fills-only twin (outlines masked out); fall back to the raw twin
@@ -151,11 +156,11 @@ export function rasterizeSheet() {
     const drawable: CanvasImageSource = fillsCanvas ?? twinImage!;
     const iw = fillsCanvas ? fillsCanvas.width : twinImage!.naturalWidth;
     const ih = fillsCanvas ? fillsCanvas.height : twinImage!.naturalHeight;
-    const scale = Math.min(canvas.width / iw, canvas.height / ih);
+    const scale = Math.min(paper.width / iw, paper.height / ih);
     const dw = iw * scale;
     const dh = ih * scale;
-    const ox = (canvas.width - dw) / 2;
-    const oy = (canvas.height - dh) / 2;
+    const ox = (paper.width - dw) / 2;
+    const oy = (paper.height - dh) / 2;
     sheetCtx.drawImage(drawable, ox, oy, dw, dh);
   } else {
     paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, activeGradient!);
