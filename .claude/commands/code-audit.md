@@ -22,6 +22,23 @@ skip trivial style nits unless they appear broadly.
 
 After writing, print a one-paragraph summary of the top themes you found.
 
+## Method notes
+
+Learned from prior runs:
+
+- The repo (~27k source lines) is too big for one context to read thoroughly. Fan out
+  parallel subagents, one per area — drawing engine (`lib/drawing/`), toddler UI
+  components, Parent Center + admin, state/storage/PWA, server + `/api` routes,
+  scripts + build config/CI — each applying the four lenses to every file in its area
+  and returning findings with line numbers and quoted evidence.
+- Agents over-produce (expect ~40+ raw findings against the 5–15 cap). Synthesize by
+  merging same-concept findings across files into one actionable item (e.g. several
+  platform-detection drifts → one item) and dropping low-impact ones — don't truncate.
+- Before filing, re-verify the top-ranked claims yourself against the cited lines
+  (agents occasionally misread control flow); the ordering is only as good as the
+  claims are true.
+- Check open GitHub issues first so already-tracked work is excluded.
+
 ## Shared audit conventions
 
 This is an audit skill. Follow the shared conventions in
