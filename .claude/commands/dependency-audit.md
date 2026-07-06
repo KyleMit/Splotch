@@ -114,11 +114,11 @@ or bisected on its own.
 
 ## Shared audit conventions
 
-This is an audit skill. It doesn't write to `docs/audit.md` (its findings land as one
+This is an audit skill. It doesn't write to `docs/AUDIT.md` (its findings land as one
 commit per package), but the run-tracking conventions in
 [`.claude/audit-conventions.md`](../audit-conventions.md) still apply:
 
-- **Log the run** (§2) — add a row to `docs/audit-log.md` summarizing what was upgraded,
+- **Log the run** (§2) — add a row to `docs/AUDIT-LOG.md` summarizing what was upgraded,
   deferred, or reverted.
 - **Self-heal** (§3) — if a package surfaced a durable upgrade landmine (a patch that
   broke, a coordinated family, a codemod gotcha), fold it into this file's landmine list.

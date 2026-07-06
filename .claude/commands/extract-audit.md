@@ -20,7 +20,7 @@ Common patterns worth flagging:
 
 ## Output
 
-Write findings to `docs/audit.md` under a `## Source: Extract audit` section, using the
+Write findings to `docs/AUDIT.md` under a `## Source: Extract audit` section, using the
 canonical item format. For each, name the proposed function and include its signature
 and where it should live:
 
@@ -40,8 +40,8 @@ After writing, print a one-paragraph summary of the patterns you found most ofte
 This is an audit skill. Follow the shared conventions in
 [`.claude/audit-conventions.md`](../audit-conventions.md):
 
-- **Merge into `docs/audit.md`, don't overwrite** (§1) — the file header lives there;
+- **Merge into `docs/AUDIT.md`, don't overwrite** (§1) — the file header lives there;
   enrich existing items, add new ones, drop fixed ones.
-- **Log the run** (§2) — add a row to `docs/audit-log.md`.
+- **Log the run** (§2) — add a row to `docs/AUDIT-LOG.md`.
 - **Self-heal** (§3) — if this run surfaced a durable method learning, fold it into
   this file.

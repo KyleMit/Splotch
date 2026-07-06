@@ -57,8 +57,8 @@ Remaining `docs/`:
 | `docs/COMPATIBILITY.md` | The supported browser/device floor, how it's enforced, and the per-API risk register — read before raising the floor, adding a modern web API, or changing a native min-OS target |
 | `docs/CONTRIBUTING.md` | Human onboarding doc — keep in sync when conventions change |
 | `docs/BACKLOG.md` | When asked what to work on next |
-| `docs/audit.md` | Findings from the audit skills (`/code-audit`, `/extract-audit`, `lighthouse-audit`); consumed by `/fix-next-audit` and `/review-audit`. See `.claude/audit-conventions.md` for the audit-skill inventory and shared conventions |
-| `docs/audit-log.md` | Committable history of every audit-skill run (date · audit · one-line summary) |
+| `docs/AUDIT.md` | Findings from the audit skills (`/code-audit`, `/extract-audit`, `lighthouse-audit`); consumed by `/fix-next-audit` and `/review-audit`. See `.claude/audit-conventions.md` for the audit-skill inventory and shared conventions |
+| `docs/AUDIT-LOG.md` | Committable history of every audit-skill run (date · audit · one-line summary) |
 | `docs/PROMPTS.md` | Reusable AI art prompts for assets |
 | `docs/CLOUD.md` | Running/previewing the app in a Claude Code on the web cloud session, and its network constraints |
 

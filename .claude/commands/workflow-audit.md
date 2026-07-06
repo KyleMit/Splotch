@@ -77,10 +77,10 @@ End by printing a short summary of what changed and what's left as optional foll
 ## Shared audit conventions
 
 This is an audit skill. Its findings go in the dated `docs/claude-workflow-review-YYYY-MM-DD.md`
-report rather than `docs/audit.md`, but the run-tracking conventions in
+report rather than `docs/AUDIT.md`, but the run-tracking conventions in
 [`.claude/audit-conventions.md`](../audit-conventions.md) still apply:
 
-- **Log the run** (§2) — add a row to `docs/audit-log.md` linking the dated report and
+- **Log the run** (§2) — add a row to `docs/AUDIT-LOG.md` linking the dated report and
   summarizing the headline findings in one line.
 - **Self-heal** (§3) — if the review surfaced a durable method learning (a transcript
   metric worth pulling, a benchmark source, an analysis trap), fold it into this file.

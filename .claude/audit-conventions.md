@@ -9,13 +9,13 @@ skills point at this file on purpose.
 
 | Audit | Invoke | What it finds | Writes to |
 | --- | --- | --- | --- |
-| **code-audit** | `/code-audit` | Prioritized perf / readability / maintainability / architecture improvements across the repo | `docs/audit.md` |
-| **extract-audit** | `/extract-audit` | Inline code blocks worth extracting into standalone, named, testable functions | `docs/audit.md` |
-| **lighthouse-audit** | skill (`lighthouse-audit`) | Page-load / Core Web Vitals opportunities on a throttled device | `docs/audit.md` |
+| **code-audit** | `/code-audit` | Prioritized perf / readability / maintainability / architecture improvements across the repo | `docs/AUDIT.md` |
+| **extract-audit** | `/extract-audit` | Inline code blocks worth extracting into standalone, named, testable functions | `docs/AUDIT.md` |
+| **lighthouse-audit** | skill (`lighthouse-audit`) | Page-load / Core Web Vitals opportunities on a throttled device | `docs/AUDIT.md` |
 | **dependency-audit** | `/dependency-audit` | Out-of-date dependencies, upgraded one at a time with a migration guide | one commit per package |
 | **workflow-audit** | `/workflow-audit` | Claude Code config + session-history review vs. current best practice | dated `docs/claude-workflow-review-YYYY-MM-DD.md` |
 
-**Consumers** of `docs/audit.md` (not audits themselves): `/fix-next-audit` clears the
+**Consumers** of `docs/AUDIT.md` (not audits themselves): `/fix-next-audit` clears the
 whole list autonomously on its own branch + PR; `/review-audit` validates the list
 against the current code and prunes stale items.
 
@@ -24,9 +24,9 @@ against the current code and prunes stale items.
 Every audit skill follows these. The inventory's **Writes to** column says which of
 §1 applies to it; **§2 and §3 apply to all audits.**
 
-### 1. Merge into `docs/audit.md` — combine, never overwrite
+### 1. Merge into `docs/AUDIT.md` — combine, never overwrite
 
-Audits that produce a findings list write to the shared `docs/audit.md`. Multiple
+Audits that produce a findings list write to the shared `docs/AUDIT.md`. Multiple
 audits (and repeat runs of the same audit) share that file, so **merge**:
 
 - Keep the file's header block; append under a `## Source: <audit name>` section so
@@ -45,7 +45,7 @@ at a time):
   What to change and why — specific enough that an AI can act on it without re-reading the audit.
 ```
 
-The `docs/audit.md` header (create it if the file doesn't exist yet):
+The `docs/AUDIT.md` header (create it if the file doesn't exist yet):
 
 ```markdown
 # Audit
@@ -57,9 +57,9 @@ The `docs/audit.md` header (create it if the file doesn't exist yet):
 
 Order items within a section by impact: highest-value or lowest-risk first.
 
-### 2. Log every run in `docs/audit-log.md`
+### 2. Log every run in `docs/AUDIT-LOG.md`
 
-After a run, add one row to `docs/audit-log.md` (most recent first) so there's a
+After a run, add one row to `docs/AUDIT-LOG.md` (most recent first) so there's a
 committable, scannable history of what each audit found and when. See that file's
 header for the exact format. Keep the summary to one line.
 
@@ -72,4 +72,4 @@ the same task — so the next caller gets it for free.
 
 Record only durable **method** knowledge in the skill (how to audit, how to read the
 output, gotchas to avoid). Do **not** record specific findings there — those live in
-`docs/audit.md` and go stale as they're fixed.
+`docs/AUDIT.md` and go stale as they're fixed.

@@ -1,6 +1,6 @@
 # Fix Next Audit
 
-Work through **every** item in `docs/audit.md` autonomously on a dedicated branch with a
+Work through **every** item in `docs/AUDIT.md` autonomously on a dedicated branch with a
 draft PR — one commit + one PR comment per item — without stopping to ask the user
 anything. Review happens on the PR.
 
@@ -31,15 +31,15 @@ Process items **top to bottom** (they're ordered by impact). For each item:
 2. **On Fixed:**
    - Verify the tree has changes and the reported checks passed (re-run `npm run check` if the
      report is ambiguous).
-   - Remove the item from `docs/audit.md` (bullet + body; keep the header block and any section
+   - Remove the item from `docs/AUDIT.md` (bullet + body; keep the header block and any section
      intro text intact; delete a `## Source:` section header once its last item is gone).
-   - Commit the fix **and** the `docs/audit.md` edit together as one commit with a descriptive
+   - Commit the fix **and** the `docs/AUDIT.md` edit together as one commit with a descriptive
      message, then push.
    - Post a PR comment (`gh pr comment`) containing: the item title, the commit SHA, the
      subagent's summary, test/check results, and any caveats worth a reviewer's attention.
 3. **On Skip:**
    - Confirm the working tree is clean again (revert it yourself if the subagent didn't).
-   - Edit the item in place in `docs/audit.md`: prepend a line
+   - Edit the item in place in `docs/AUDIT.md`: prepend a line
      `**⏸ Pending decision:** <what the user must decide, and why the sweep couldn't proceed>`
      to the item body. Commit that edit and push.
    - Post a PR comment flagging the skipped item and the pending decision.
@@ -50,7 +50,7 @@ Process items **top to bottom** (they're ordered by impact). For each item:
 
 When every item is either fixed or marked pending:
 
-1. If **no items remain**, delete `docs/audit.md` and commit. If pending items remain, leave
+1. If **no items remain**, delete `docs/AUDIT.md` and commit. If pending items remain, leave
    the file containing only the header and the pending items.
 2. Update the PR description (`gh pr edit --body`): a one-line summary per change (linking each
    commit), plus — if any — a **"Needs your decision"** section listing each remaining item and

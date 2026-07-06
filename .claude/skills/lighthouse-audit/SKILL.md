@@ -112,11 +112,11 @@ lets you pull `dom-size`, `largest-contentful-paint-element`,
 `mainthread-work-breakdown`, and `bootup-time` `details.items` without opening the
 464 KB HTML.
 
-### 2. Merge findings into `docs/audit.md` — combine, don't overwrite
+### 2. Merge findings into `docs/AUDIT.md` — combine, don't overwrite
 
 This is an audit skill; it follows the shared conventions in
 [`.claude/audit-conventions.md`](../../audit-conventions.md). Turn opportunities into
-`docs/audit.md` items under a `## Source: Lighthouse page-load audit` section, using
+`docs/AUDIT.md` items under a `## Source: Lighthouse page-load audit` section, using
 the canonical item format documented there. **Merge into that section — do not clobber
 it (§1):**
 
@@ -131,7 +131,7 @@ it (§1):**
 
 ### 3. Log the run
 
-Add a row to `docs/audit-log.md` (§2 of the shared conventions) — today's date,
+Add a row to `docs/AUDIT-LOG.md` (§2 of the shared conventions) — today's date,
 `lighthouse-audit`, and a one-line summary (headline scores + the standout lever).
 
 ### 4. Self-heal this skill
@@ -140,9 +140,9 @@ If anything surprising surfaced that a future caller would want to know — a du
 **method** gotcha (a false-positive audit, a proxy quirk, an interpretation trap) —
 fold it into this `SKILL.md` as part of the same task (§3 of the shared conventions).
 **Do not** record the specific findings/opportunities here: those live in
-`docs/audit.md` and are removed from there as they're fixed, so a copy in the skill
+`docs/AUDIT.md` and are removed from there as they're fixed, so a copy in the skill
 would only go stale. The skill carries *how to audit and how to read the numbers*;
-`docs/audit.md` carries *what's currently wrong*.
+`docs/AUDIT.md` carries *what's currently wrong*.
 
 ## Interpretation caveats
 
