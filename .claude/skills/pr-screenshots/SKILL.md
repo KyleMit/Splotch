@@ -19,7 +19,9 @@ than silently omitting visuals.
 
 Markdown image syntax needs a **hosted URL** — GitHub renders `![](…)` by fetching
 that URL, it does not read files out of the PR. The obvious ways to host an image
-are **not available to an agent**, so don't waste a turn on them:
+are **not available to a token-only agent**, so don't waste a turn on them
+(the full rationale, sources, and rejected options are in
+[ADR-0046](../../docs/adrs/0046-pr-screenshot-hosting-via-orphan-branch.md)):
 
 * **There is no GitHub API to upload an attachment.** The web UI's drag-and-drop
   (`github.com/user-attachments/assets/…`) posts to an undocumented endpoint
@@ -29,49 +31,56 @@ are **not available to an agent**, so don't waste a turn on them:
   extensions like `gh-image` work only because they replay a logged-in browser
   session, which a token-only remote session does not have.
 
-**The elegant path that _is_ fully automatable: a `pr-assets` orphan branch.**
-Splotch is a **public** repo, so `raw.githubusercontent.com` URLs render inline in
-a PR body with no auth, forever. Commit the PNGs/GIFs to a dedicated branch that is
-**never merged into `main`**, so `main`'s history and working tree stay clean while
-the images stay hosted for as long as the branch lives.
+**The path that _is_ fully automatable: a `pr-assets` orphan branch.** Splotch is a
+**public** repo, so `raw.githubusercontent.com` URLs render inline in a PR body with
+no auth. Commit the PNGs/GIFs to a dedicated branch that shares **no history with
+`main` and is never merged**, so `main`'s log and working tree stay clean while the
+images stay hosted for as long as the branch lives. Verified end-to-end — see the
+ADR's Verification table.
 
-1. Put the captured files on the `pr-assets` branch under a per-PR folder, without
-   disturbing your feature branch. First run only, create the branch empty:
-
-   ```sh
-   git switch --orphan pr-assets && git commit --allow-empty -m "init pr-assets" \
-     && git push -u origin pr-assets && git switch -   # back to your feature branch
-   ```
-
-   Then, for each PR, add its shots (a `git worktree` keeps your feature branch
-   checkout untouched):
+1. Put the captured files on `pr-assets` under a per-PR folder, from a **detached
+   worktree** so your feature-branch checkout is never touched. This same block
+   works whether or not the branch already exists:
 
    ```sh
-   git fetch origin pr-assets
-   git worktree add ../pr-assets pr-assets
-   mkdir -p ../pr-assets/<pr-slug> && cp shots/*.png ../pr-assets/<pr-slug>/
-   git -C ../pr-assets add . && git -C ../pr-assets commit -m "shots: <pr-slug>"
-   git -C ../pr-assets push && git worktree remove ../pr-assets
+   git worktree add --detach ../pr-assets-wt
+   cd ../pr-assets-wt
+   # first time only — create the orphan branch with no main history:
+   git checkout --orphan pr-assets && git rm -rf . >/dev/null 2>&1
+   # thereafter — reuse the existing branch instead of the two lines above:
+   #   git fetch origin pr-assets && git checkout pr-assets
+   mkdir -p <pr-slug>
+   cp /path/to/before.png /path/to/after.png <pr-slug>/
+   git add -A && git commit -m "pr-assets: shots for <pr-slug>"
+   git push -u origin pr-assets
+   cd - && git worktree remove ../pr-assets-wt --force
    ```
 
    No local git? The GitHub MCP `push_files` tool commits the same files straight to
-   the `pr-assets` branch (base it on `main` once via `create_branch` if missing).
+   the `pr-assets` branch (create it once via `create_branch` if missing — note that
+   only makes a normal branch off `main`, not a true orphan, but it still never
+   merges so `main` stays clean).
 
-2. Reference them in the PR body by raw URL:
+2. Reference them in the PR body by raw URL — GitHub resolves it **server-side**, so
+   it renders regardless of the agent's outbound proxy:
 
    ```markdown
-   ![before](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/<pr-slug>/before.png)
+   | Before | After |
+   | --- | --- |
+   | ![before](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/<pr-slug>/before.png) | ![after](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/<pr-slug>/after.png) |
    ```
 
-Use `<pr-slug>` = the feature branch's kebab summary (e.g. `magic-brush`). GitHub
-resolves the raw URL server-side, so it renders regardless of the agent's proxy.
+   Use `<pr-slug>` = the feature branch's kebab summary (e.g. `magic-brush`). Sanity-
+   check a URL before posting: `curl -sI <raw-url>` should return `200` and
+   `content-type: image/png`.
 
 > Two escape hatches, neither better here: committing shots into the **feature
 > branch** (`docs/pr/…`) is simplest but drags binaries into `main` on merge — the
 > thing the orphan branch avoids. **Release assets** (`--prerelease` tagged by PR #)
 > is the token-authenticated route that also works for _private_ repos, but it needs
-> a raw `uploads.github.com` call and clutters the releases list; only reach for it
-> if Splotch ever goes private.
+> a raw `uploads.github.com` call and clutters the releases list — the documented
+> escalation only **if Splotch ever goes private** (raw URLs stop rendering for
+> unauthenticated viewers then). See ADR-0046.
 
 ## Which visual to include
 
