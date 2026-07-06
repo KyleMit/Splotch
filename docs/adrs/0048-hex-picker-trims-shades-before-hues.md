@@ -1,4 +1,4 @@
-# ADR-0047: Hex Color Picker Trims Shades Before Hues, Transposing in Landscape
+# ADR-0048: Hex Color Picker Trims Shades Before Hues, Transposing in Landscape
 
 **Status:** Active
 **Date:** 2026-07
