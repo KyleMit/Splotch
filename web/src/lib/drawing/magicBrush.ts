@@ -5,7 +5,12 @@
 //
 //   1. A coloring page's flat-colored twin (`{page}.color.webp`), when a page is
 //      applied — the original ADR-0043 behaviour: a revealed pixel lands under
-//      the line art it belongs to.
+//      the line art it belongs to. The twin keeps the page's own black outlines,
+//      but the overlay <img> already draws those exact lines on top (multiply),
+//      so revealing the twin's copy doubles them: any sub-pixel or per-twin
+//      registration drift shows as ghosting / duplicate lines. So the twin's
+//      outlines are masked out (using the line art as the mask) and the reveal
+//      carries flat fills only — the overlay stays the single source of line work.
 //   2. A generated rainbow gradient, when no page is applied. The brush works
 //      everywhere, so with a blank canvas it reveals one of MAGIC_GRADIENT_COUNT
 //      pre-generated random rainbows. One is chosen the first time the brush is
@@ -19,6 +24,12 @@
 // composite and a flat colour-sample after measuring all three — see ADR-0043).
 
 export const MAGIC_GRADIENT_COUNT = 10;
+
+// A source line-art pixel this dark (0–255 luma) is treated as outline and punched
+// out of the twin so it can't double the overlay's line work. Above it the pixel
+// is a fill and kept — including legitimately dark fills (a ladybug's black spots,
+// a navy sky) that sit away from the outline.
+const OUTLINE_LUMA_THRESHOLD = 150;
 
 interface GradientStop {
   offset: number;
@@ -40,9 +51,15 @@ interface MagicBrushHost {
 
 let host: MagicBrushHost | null = null;
 
-// Source 1: the coloring page's colored twin.
+// Source 1: the coloring page's colored twin, plus its line art. The line art is
+// loaded only to mask the twin's own outlines out of the reveal (buildFillsSheet);
+// `fillsCanvas` is the resulting fills-only twin, drawn into the sheet in place of
+// the raw twin once both images have decoded.
 let twinImage: HTMLImageElement | null = null;
 let twinUrl: string | null = null;
+let lineArtImage: HTMLImageElement | null = null;
+let lineArtUrl: string | null = null;
+let fillsCanvas: HTMLCanvasElement | null = null;
 
 // Source 2: the generated rainbow. The pool is built lazily and reused; the active
 // gradient is the one currently revealed, held until the canvas is cleared.
@@ -129,15 +146,17 @@ export function rasterizeSheet() {
   sheetCanvas.height = canvas.height;
   sheetCtx.clearRect(0, 0, sheetCanvas.width, sheetCanvas.height);
   if (source === 'twin') {
-    const img = twinImage!;
-    const iw = img.naturalWidth;
-    const ih = img.naturalHeight;
+    // Prefer the fills-only twin (outlines masked out); fall back to the raw twin
+    // until the mask is built, or when no line art was supplied to build it.
+    const drawable: CanvasImageSource = fillsCanvas ?? twinImage!;
+    const iw = fillsCanvas ? fillsCanvas.width : twinImage!.naturalWidth;
+    const ih = fillsCanvas ? fillsCanvas.height : twinImage!.naturalHeight;
     const scale = Math.min(canvas.width / iw, canvas.height / ih);
     const dw = iw * scale;
     const dh = ih * scale;
     const ox = (canvas.width - dw) / 2;
     const oy = (canvas.height - dh) / 2;
-    sheetCtx.drawImage(img, ox, oy, dw, dh);
+    sheetCtx.drawImage(drawable, ox, oy, dw, dh);
   } else {
     paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, activeGradient!);
   }
@@ -157,14 +176,82 @@ export function sheetPatternFor(target: CanvasRenderingContext2D): CanvasPattern
   return pattern;
 }
 
-// Point the magic brush at a coloring page's colored twin (or null to detach and
-// fall back to the gradient source). The image decodes async; magic ops recorded
-// before it's ready reveal nothing until the load handler rasterizes and repaints.
-export function setColorSheet(url: string | null) {
-  if (url === twinUrl) return;
-  twinUrl = url;
+// Build the fills-only twin: punch the twin's own outlines out using the source
+// line art as a mask, so the magic reveal carries flat fills and the overlay <img>
+// stays the single source of line work (no doubled/ghosted lines). One readback of
+// the line art at the twin's resolution — done once per applied page, never on the
+// draw or resize path — so ADR-0043's hot-path and resize costs are untouched.
+// A no-op (leaving fillsCanvas null → the raw twin is revealed) until both images
+// have decoded, or when no line art was supplied to mask with.
+function buildFillsSheet() {
+  fillsCanvas = null;
+  if (!twinImage || !twinImage.naturalWidth) return;
+  if (!lineArtUrl || !lineArtImage || !lineArtImage.naturalWidth) return;
+  const w = twinImage.naturalWidth;
+  const h = twinImage.naturalHeight;
+  const fc = document.createElement('canvas');
+  fc.width = w;
+  fc.height = h;
+  const fctx = fc.getContext('2d');
+  if (!fctx) return;
+  fctx.drawImage(twinImage, 0, 0, w, h);
+
+  // Turn the line art's dark (outline) pixels into an opaque alpha mask — light
+  // fill/background pixels transparent — scaled to the twin's resolution.
+  const mask = document.createElement('canvas');
+  mask.width = w;
+  mask.height = h;
+  const mctx = mask.getContext('2d', { willReadFrequently: true });
+  if (!mctx) return;
+  mctx.drawImage(lineArtImage, 0, 0, w, h);
+  const px = mctx.getImageData(0, 0, w, h);
+  const d = px.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const luma = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    d[i + 3] = luma < OUTLINE_LUMA_THRESHOLD ? 255 : 0;
+  }
+  mctx.putImageData(px, 0, 0);
+
+  // Erase the masked outline pixels from the twin, leaving fills only.
+  fctx.globalCompositeOperation = 'destination-out';
+  fctx.drawImage(mask, 0, 0);
+  fctx.globalCompositeOperation = 'source-over';
+  fillsCanvas = fc;
+}
+
+// Load one of the twin/line-art source images, guarding against a page change that
+// happened while it decoded. On success stash it, rebuild the fills-only sheet (a
+// no-op until both are present), then re-rasterize and repaint so already-recorded
+// magic ops pick up the colours.
+function loadSheetImage(url: string, assign: (img: HTMLImageElement) => void) {
+  const forTwinUrl = twinUrl;
+  const forLineArtUrl = lineArtUrl;
+  const img = new Image();
+  img.onload = () => {
+    // A newer page may have been requested while this one decoded — drop stale.
+    if (twinUrl !== forTwinUrl || lineArtUrl !== forLineArtUrl) return;
+    assign(img);
+    buildFillsSheet();
+    rasterizeSheet();
+    host?.repaint();
+  };
+  img.onerror = () => {};
+  img.src = url;
+}
+
+// Point the magic brush at a coloring page's colored twin, with its line art (or
+// null to detach and fall back to the gradient source). The twin supplies the fill
+// colours; the line art is used only to mask the twin's redundant outlines out of
+// the reveal (buildFillsSheet). Both decode async and in parallel; magic ops
+// recorded before they're ready reveal nothing until a load handler repaints.
+export function setColorSheet(colorUrl: string | null, lineArtSrc: string | null = null) {
+  if (colorUrl === twinUrl && lineArtSrc === lineArtUrl) return;
+  twinUrl = colorUrl;
+  lineArtUrl = lineArtSrc;
   twinImage = null;
-  if (!url) {
+  lineArtImage = null;
+  fillsCanvas = null;
+  if (!colorUrl) {
     // Page removed — the sheet reverts to the gradient source if one exists.
     rasterizeSheet();
     host?.repaint();
@@ -172,16 +259,14 @@ export function setColorSheet(url: string | null) {
   }
   sheetReady = false;
   patternCache = new WeakMap();
-  const img = new Image();
-  img.onload = () => {
-    // A newer sheet may have been requested while this one decoded — drop stale.
-    if (twinUrl !== url) return;
+  loadSheetImage(colorUrl, (img) => {
     twinImage = img;
-    rasterizeSheet();
-    host?.repaint();
-  };
-  img.onerror = () => {};
-  img.src = url;
+  });
+  if (lineArtSrc) {
+    loadSheetImage(lineArtSrc, (img) => {
+      lineArtImage = img;
+    });
+  }
 }
 
 // Ensure the brush has something to reveal when it's selected. A coloring page's

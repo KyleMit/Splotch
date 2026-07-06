@@ -64,7 +64,10 @@ async function clearViaGesture(page: Page) {
   await page.mouse.move(cx, cy);
   await page.mouse.down();
   for (let i = 1; i <= 12; i++) {
-    await page.mouse.move(cx + ((vp.width / 2 - cx) * i) / 12, cy + ((vp.height / 2 - cy) * i) / 12);
+    await page.mouse.move(
+      cx + ((vp.width / 2 - cx) * i) / 12,
+      cy + ((vp.height / 2 - cy) * i) / 12
+    );
   }
   await page.mouse.up();
 }
@@ -600,6 +603,51 @@ test('the magic brush is always available and paints the coloring page colors', 
   // Undo reverts the magic stroke.
   await page.locator('#undoButton').click();
   await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
+});
+
+// Fraction of opaque canvas pixels that are near-black — the twin's own outlines,
+// which the reveal must NOT paint. The overlay <img> (a separate element, not on
+// the canvas) is the only source of line work; revealing the twin's copy on the
+// canvas would double every line under the overlay and ghost on any drift
+// (ADR-0043). So the fills-only reveal leaves the canvas essentially black-free.
+function revealedNearBlackFraction(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+    let opaque = 0;
+    let nearBlack = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] < 200) continue;
+      opaque++;
+      if (data[i] < 40 && data[i + 1] < 40 && data[i + 2] < 40) nearBlack++;
+    }
+    return opaque === 0 ? 0 : nearBlack / opaque;
+  });
+}
+
+test('the magic brush reveals fills only, never the twin outlines (no double lines)', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await applyFarmPage(page);
+  await page.locator('#magicBrushButton').click();
+
+  // Sweep across the picture, crossing many black outlines (clouds, cattails,
+  // duck, water). Before the outline-masking fix the reveal painted the twin's
+  // own black lines onto the canvas here (~2.8% of opaque pixels); the overlay
+  // then drew those same lines again, so any drift doubled them. Now the reveal
+  // is flat fills, so the canvas stays effectively black-free.
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+    { x: 400, y: 140 },
+    { x: 520, y: 260 },
+    { x: 200, y: 320 },
+    { x: 480, y: 360 },
+  ]);
+  await expect.poll(() => distinctOpaqueColors(page), { timeout: 4000 }).toBeGreaterThan(4);
+  expect(await revealedNearBlackFraction(page)).toBeLessThan(0.005);
 });
 
 test('the magic brush reveals a rainbow gradient when no coloring page is applied', async ({
