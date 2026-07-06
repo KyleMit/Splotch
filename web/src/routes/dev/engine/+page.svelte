@@ -63,7 +63,7 @@
       setSimplifyParams,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
-      // and inspect the resulting paper view (ADR-0048).
+      // and inspect the resulting paper view (ADR-0050).
       setScreenAngleOverride,
       getViewState,
 

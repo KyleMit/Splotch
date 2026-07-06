@@ -794,7 +794,7 @@ test('the drawing survives a canvas resize (virtual-canvas preservation)', async
   expect(alpha).toBeGreaterThan(0);
 });
 
-// ── device rotation / the paper view (ADR-0048) ─────────────────────────────
+// ── device rotation / the paper view (ADR-0050) ─────────────────────────────
 // A resize with a changed Screen Orientation angle is a rotation. With ink on
 // the canvas the engine locks the paper (the space ops live in) and presents it
 // UPRIGHT, contain-fit and centered — scaled down when it must — instead of

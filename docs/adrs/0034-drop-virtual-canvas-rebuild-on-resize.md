@@ -76,7 +76,7 @@ resize.
 Supersedes the virtual-canvas composite buffer described in **ADR-0004**; updates
 the surviving-surfaces note in **ADR-0015** (the live backing store + baseline are
 now the only 4×-DPR surfaces) and the `engine.resize` / `drawImage` rows in the
-ADR-0032 profiling notes. Builds directly on **ADR-0033**. **ADR-0048** later
+ADR-0032 profiling notes. Builds directly on **ADR-0033**. **ADR-0050** later
 amends the "rotation coordinate handling is unchanged" note above: a rotation
 with ink on the canvas now locks the op coordinate space (the "paper") and
 presents it through a view transform instead of clipping off-viewport content;

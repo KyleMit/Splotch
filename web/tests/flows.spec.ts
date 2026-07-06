@@ -561,7 +561,7 @@ async function applyFarmPage(page: Page) {
 
 // A device rotation with ink on the canvas must NOT swap the page's tall/wide
 // art out from under the child's coloring (the two variants are different
-// compositions — no mapping exists): the engine locks the paper (ADR-0048) and
+// compositions — no mapping exists): the engine locks the paper (ADR-0050) and
 // the same art stays applied, presented through the paper-view wrapper. Once
 // the canvas is blank again the paper re-adopts and the art swaps normally.
 // Rotation is emulated via CDP: new viewport dimensions + a changed Screen

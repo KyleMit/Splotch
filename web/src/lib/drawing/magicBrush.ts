@@ -21,7 +21,7 @@
 // sheet pattern per magic op, and calls the source setters from its tool/overlay
 // wiring. The offscreen sheet is a canvas the exact size of the engine's PAPER —
 // the space ops are recorded in, which tracks the main canvas until a rotation
-// locks it (ADR-0048); a no-repeat CanvasPattern of it is the brush's paint
+// locks it (ADR-0050); a no-repeat CanvasPattern of it is the brush's paint
 // (chosen over a per-op mask composite and a flat colour-sample after measuring
 // all three — see ADR-0043).
 
@@ -46,7 +46,7 @@ export interface RainbowGradient {
 
 // The engine hands the module a live view of its paper — the coordinate space
 // ops (and therefore the sheet) live in, which a rotation may lock while the
-// viewport changes (ADR-0048) — and a repaint hook so an async twin load can
+// viewport changes (ADR-0050) — and a repaint hook so an async twin load can
 // refresh already-recorded magic ops.
 interface MagicBrushHost {
   paperSize: () => { width: number; height: number } | null;

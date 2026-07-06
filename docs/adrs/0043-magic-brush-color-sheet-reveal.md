@@ -167,7 +167,7 @@ fix that sweep painted ~2.8% near-black pixels — the duplicate lines.
 
 ## Follow-up: the sheet is sized to the paper, not the visible canvas
 
-**ADR-0048** introduced the locked "paper" (the coordinate space ops live in,
+**ADR-0050** introduced the locked "paper" (the coordinate space ops live in,
 which a rotation may hold fixed while the viewport changes). The sheet is that
 space's twin surface, so `rasterizeSheet` now sizes and contain-fits against the
 engine's paper dimensions (host `paperSize()`) instead of the canvas backing

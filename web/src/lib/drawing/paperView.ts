@@ -1,12 +1,12 @@
 // Pure geometry for presenting the drawing's "paper" inside a viewport that has
-// rotated since the paper was adopted (ADR-0048). While ink is on the canvas the
+// rotated since the paper was adopted (ADR-0050). While ink is on the canvas the
 // engine locks the paper — the coordinate space every recorded op, the baseline,
 // the keyframes, and the magic sheet live in — and a device rotation is handled
 // by *presenting* that space through the view computed here instead of remapping
 // any content. Production always presents UPRIGHT (rotation 0: the picture
 // rotates with the device and contain-fits, centered); the quarter-turn cases
 // are kept because the math is one unit and they document the rejected
-// counter-rotate alternative (see ADR-0048). engine.ts owns all state;
+// counter-rotate alternative (see ADR-0050). engine.ts owns all state;
 // everything here is a pure function so the mapping math is unit-testable.
 
 export type ViewRotation = 0 | 90 | 180 | 270;
@@ -40,7 +40,7 @@ export function isIdentityView(view: PaperView): boolean {
 // now. The engine uses it as the rotation DETECTOR (delta ≠ 0 means the device
 // actually rotated, as opposed to a plain viewport resize); it is also the
 // counter-rotation a glued-to-the-glass presentation would need, were that
-// alternative ever revisited (ADR-0048).
+// alternative ever revisited (ADR-0050).
 export function rotationDelta(paperAngle: number, currentAngle: number): ViewRotation {
   return ((((paperAngle - currentAngle) % 360) + 360) % 360) as ViewRotation;
 }

@@ -33,7 +33,7 @@
   // Bubble that previews the eraser footprint at the pointer while erasing.
   let eraserCursor = $state({ visible: false, x: 0, y: 0 });
 
-  // The engine's paper view (ADR-0048): identity in normal use; after a device
+  // The engine's paper view (ADR-0050): identity in normal use; after a device
   // rotation with ink on the canvas it presents the locked paper upright,
   // contain-fit and centered (scaled down when it doesn't fit). The overlay
   // wrapper below is positioned with the exact same transform the canvas paints
@@ -221,7 +221,7 @@
 <div class="canvas-container">
   <!-- The paper sheet: the off-white textured page the child draws on, sitting
        beneath the (transparent) canvas. Full-container in normal use; after a
-       rotation locks the paper (ADR-0048) it carries the same transform the
+       rotation locks the paper (ADR-0050) it carries the same transform the
        canvas paints through, so the page reads as a distinct sheet over the
        container's plain lighter margins — no border needed. -->
   <div

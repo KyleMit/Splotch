@@ -21,7 +21,7 @@
 
   let activeBook = $state<Book | null>(null);
   // The tall/wide art variant follows the engine's PAPER, not the live viewport:
-  // after a rotation with ink on the canvas the paper stays locked (ADR-0048),
+  // after a rotation with ink on the canvas the paper stays locked (ADR-0050),
   // so the variant the child colored on must stay applied — and any page picked
   // mid-lock must match that same locked space. The viewport-driven
   // layout.orientation is only a fallback until the engine mounts.

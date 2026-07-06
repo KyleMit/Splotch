@@ -1,4 +1,4 @@
-# ADR-0048: Lock the "Paper" on Rotation and Present It Upright Through a Contain-Fit View
+# ADR-0050: Lock the "Paper" on Rotation and Present It Upright Through a Contain-Fit View
 
 **Status:** Active
 **Date:** 2026-07

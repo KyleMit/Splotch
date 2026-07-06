@@ -3,7 +3,7 @@
 // Playwright app drivers in lib/app-driver.mjs.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -71,6 +71,34 @@ export function capture(cmd, args = [], { cwd = ROOT } = {}) {
   const result = spawnSync(shellJoin(cmd, args), { shell: true, cwd, encoding: 'utf8' });
   if (result.status !== 0) fail(`${cmd} failed (exit ${result.status})\n${result.stderr ?? ''}`);
   return result.stdout ?? '';
+}
+
+// Cloud sessions cache Chromium under PLAYWRIGHT_BROWSERS_PATH, but the pinned
+// revision can drift from what playwright-core resolves (e.g. the env installed
+// 1223 while this Playwright wants 1228), so `chromium.launch()` fails with
+// "Executable doesn't exist". Mirror the self-heal in web/playwright.config.ts:
+// if the resolved binary is missing, fall back to any Chromium under the
+// browsers path. `PLAYWRIGHT_CHROMIUM` overrides; returning undefined lets
+// Playwright use its own (correct) binary. Pass the `chromium` browser type in
+// so this module doesn't import @playwright/test for scripts that never use it.
+export function chromiumExecutablePath(chromium) {
+  if (process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
+  try {
+    if (existsSync(chromium.executablePath())) return undefined;
+  } catch {}
+  const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
+  try {
+    const builds = readdirSync(base)
+      .filter((d) => /^chromium-\d+$/.test(d))
+      .sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)));
+    for (const build of builds) {
+      for (const sub of ['chrome-linux', 'chrome-linux64']) {
+        const p = join(base, build, sub, 'chrome');
+        if (existsSync(p)) return p;
+      }
+    }
+  } catch {}
+  return undefined;
 }
 
 export const hasCommand = (cmd) =>

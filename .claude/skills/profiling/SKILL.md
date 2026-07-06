@@ -18,6 +18,7 @@ One command per platform; the analyzer is pure and re-runnable on any saved trac
 | --- | --- | --- |
 | `npm run perf:web` | Production preview in headless Chromium, phone viewport, **4× CPU throttle** | full CDP Chrome trace |
 | `npm run perf:web:raw` | …no throttle | full CDP trace |
+| `npm run perf:mount` | **page load / mount** (the Lighthouse-TBT window) — every other web command starts tracing *after* the page is loaded, so use this one for boot/startup questions; phone viewport, 4× throttle **+ Slow-4G network emulation** | CDP trace across the navigation **+** load-phase long tasks, paint timings, and any user-timing measures (`mount-summary.json`) |
 | `npm run perf:android` | the **real Capacitor WebView** on a connected device/emulator, no throttle | full CDP trace |
 | `npm run perf:ios` | Playwright **WebKit** (the iOS WKWebView engine), production preview | engine marks + FPS (no CDP trace) |
 | `npm run perf:undo` | the **undo/keyframe** question specifically — drives `/dev/engine` (so it can read `getUndoDebug()`) through 3 shaped sessions: 12 long squiggles, 12 short dot/dash marks, a mix; tablet viewport, 4× throttle | CDP trace **+** per-scenario keyframe/op counts, draw-vs-undo timing, and analytic raster memory |
@@ -41,6 +42,15 @@ keyframe-vs-snapshot comparison.
 
 ## How capture works (so the numbers make sense)
 
+- **Session commands trace an already-loaded page.** `scenario.mjs` (and every
+  other driver) navigates first and starts the CDP trace afterwards, so nothing
+  in `perf:web`/`perf:android`/`perf:undo` can see boot cost. `perf:mount` is
+  the exception: it arms a buffered `longtask` observer via `addInitScript`,
+  starts tracing, *then* navigates — and keeps recording ~5 s past load so
+  idle-deferred boot work (overlay mounts, sound preload, texture warm) shows
+  up instead of hiding as "moved off the load path" wins that just relocated a
+  long task. Its `mount-summary.json` long-task list is the TBT signal; feed
+  its `trace.json` to `perf:analyze` for the breakdown.
 - **Engine marks** are the clean signal. `PERF_MARKS=true` at build time turns on
   `performance.mark/measure` around the engine's hot paths (engine.ts:
   `draw`, `commit`, `foldBaseline`, `scanCanvasIsEmpty`, `resizeCanvas`, `undo`). The

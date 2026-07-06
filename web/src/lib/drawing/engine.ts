@@ -181,7 +181,7 @@ let rectScaleX = 1;
 let rectScaleY = 1;
 
 // The paper: the coordinate space every recorded op, the baseline, the
-// keyframes, and the magic sheet live in (ADR-0048). It tracks the viewport
+// keyframes, and the magic sheet live in (ADR-0050). It tracks the viewport
 // while the canvas is empty or the screen angle is unchanged (today's
 // semantics), but a device rotation with ink on the canvas LOCKS it: the
 // drawing keeps its space — and its tall/wide coloring page — and is instead
@@ -390,7 +390,7 @@ function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
   const angle = currentScreenAngle();
 
-  // Adopt vs lock (ADR-0048): an empty canvas — or a same-angle resize (desktop
+  // Adopt vs lock (ADR-0050): an empty canvas — or a same-angle resize (desktop
   // window drag, mobile URL bar) — re-adopts the paper as the live viewport,
   // exactly the pre-lock semantics. Only a rotation with ink on the canvas keeps
   // the paper (and its angle) so the drawing can be presented instead of remapped.
@@ -438,7 +438,7 @@ function resizeCanvas() {
   // the transform untouched), persisting until the next backing-store reset
   // above. The paper is presented UPRIGHT (view rotation 0): the picture rotates
   // with the device and contain-fits — scaled down when it must — rather than
-  // counter-rotating to stay fixed on the glass (rejected in ADR-0048). A 180°
+  // counter-rotating to stay fixed on the glass (rejected in ADR-0050). A 180°
   // flip on an unchanged viewport therefore computes an identity view.
   //
   // The margins around the fitted paper stay DRAWABLE (no clip): a child mid-
@@ -448,7 +448,7 @@ function resizeCanvas() {
   // from rebuilds once folded/keyframed past the paper-square rasters. Rasters
   // covering the mapped margins would cost tens of MB at 2× DPR (the fit maps a
   // phone viewport to ~2× the paper's long side), so that corner is accepted —
-  // see ADR-0048.
+  // see ADR-0050.
   paperView = lockPaper
     ? computePaperView(
         { width: paper.pxW, height: paper.pxH },
@@ -516,7 +516,7 @@ function pointerToScreen(e: PointerEvent) {
 }
 
 // Paper coordinates — the space ops are recorded and rendered in. Identity
-// unless a rotation has locked the paper (see resizeCanvas / ADR-0048).
+// unless a rotation has locked the paper (see resizeCanvas / ADR-0050).
 function screenToPaper(pt: { x: number; y: number }): { x: number; y: number } {
   return isIdentityView(paperView) ? pt : viewToPaper(paperView, pt.x, pt.y);
 }
