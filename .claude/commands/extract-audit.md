@@ -18,23 +18,30 @@ Common patterns worth flagging:
 - DOM operations or canvas work that forms a coherent sub-operation
 - Repeated structurally-similar blocks that differ only in inputs
 
-## Output format
+## Output
 
-Write (or append) to `TODO.md` using this exact structure so `/fix-next-todo-manual` and `/fix-next-todo-auto` can work through it:
+Write findings to `docs/AUDIT.md` under a `## Source: Extract audit` section, using the
+canonical item format. For each, name the proposed function and include its signature
+and where it should live:
 
 ```markdown
-# TODO
-
-> Work through these items one at a time with `/fix-next-todo-manual`, or clear the whole list autonomously with `/fix-next-todo-auto`.
-> After each fix: remove the completed item and run relevant type checks or tests.
-> In manual mode, do **not** `git add` or `git commit` — the user reviews the diff first. Auto mode commits to its own branch/PR.
-
 - [ ] **[Extract] suggestedFunctionName** — File: `path/to/file.ts`, ~line N
-  What the block currently does and why extraction helps. Include the proposed signature:
+  What the block currently does and why extraction helps.
   `function suggestedFunctionName(param: Type): ReturnType`
-  Note where the extracted function should live (same file, nearby util, etc.).
+  Where the extracted function should live (same file, nearby util, etc.).
 ```
 
 Order by value: prefer extractions that most improve readability at the call site. Aim for 5–15 items; skip trivial one-liners unless the name would genuinely clarify intent.
 
-After writing `TODO.md`, print a one-paragraph summary of the patterns you found most often.
+After writing, print a one-paragraph summary of the patterns you found most often.
+
+## Shared audit conventions
+
+This is an audit skill. Follow the shared conventions in
+[`.claude/audit-conventions.md`](../audit-conventions.md):
+
+- **Merge into `docs/AUDIT.md`, don't overwrite** (§1) — the file header lives there;
+  enrich existing items, add new ones, drop fixed ones.
+- **Log the run** (§2) — add a row to `docs/AUDIT-LOG.md`.
+- **Self-heal** (§3) — if this run surfaced a durable method learning, fold it into
+  this file.

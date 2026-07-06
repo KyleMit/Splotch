@@ -1,6 +1,6 @@
 ---
 name: lighthouse-audit
-description: Run a Lighthouse page-load audit of the Splotch web app emulated on a slow device + slow internet (phone portrait + tablet landscape), capturing first-visit and repeat-visit runs, and turn the results into TODO opportunities. Use when asked to audit page-load/Lighthouse performance, measure load on a throttled device/network, check Core Web Vitals (FCP/LCP/TBT/CLS), or compare first vs repeat visit. For drawing/canvas interaction performance use the `profiling` skill instead.
+description: Run a Lighthouse page-load audit of the Splotch web app emulated on a slow device + slow internet (phone portrait + tablet landscape), capturing first-visit and repeat-visit runs, and turn the results into audit opportunities. Use when asked to audit page-load/Lighthouse performance, measure load on a throttled device/network, check Core Web Vitals (FCP/LCP/TBT/CLS), or compare first vs repeat visit. For drawing/canvas interaction performance use the `profiling` skill instead.
 ---
 
 # Splotch — Lighthouse page-load audit
@@ -98,7 +98,7 @@ adds none of this and runs a plain Lighthouse.
 
 ## After every run — do this every time (not optional)
 
-These three steps are part of *running* the skill, so a caller can just invoke it
+These steps are part of *running* the skill, so a caller can just invoke it
 and get them for free. Do them in order.
 
 ### 1. Read the results
@@ -112,11 +112,13 @@ lets you pull `dom-size`, `largest-contentful-paint-element`,
 `mainthread-work-breakdown`, and `bootup-time` `details.items` without opening the
 464 KB HTML.
 
-### 2. Merge findings into `docs/TODO.md` — combine, don't overwrite
+### 2. Merge findings into `docs/AUDIT.md` — combine, don't overwrite
 
-Turn opportunities into `docs/TODO.md` items in the `/code-audit` format (see
-`docs/TODO.md` for the established structure). **If a Lighthouse audit section
-already exists there, merge into it — do not clobber it:**
+This is an audit skill; it follows the shared conventions in
+[`.claude/audit-conventions.md`](../../audit-conventions.md). Turn opportunities into
+`docs/AUDIT.md` items under a `## Source: Lighthouse page-load audit` section, using
+the canonical item format documented there. **Merge into that section — do not clobber
+it (§1):**
 
 - **An existing item still stands** → keep it; *enrich* it with any sharper
   attribution this run gave you (e.g. a specific file/node the report now points at),
@@ -127,18 +129,24 @@ already exists there, merge into it — do not clobber it:**
 - **A genuinely new opportunity** → add it as a new `- [ ]` item.
 - **An item that's since been fixed** → remove it (confirm against the report first).
 
-### 3. Self-heal this skill
+### 3. Log the run
+
+Add a row to `docs/AUDIT-LOG.md` (§2 of the shared conventions) — today's date,
+`lighthouse-audit`, and a one-line summary (headline scores + the standout lever).
+
+### 4. Self-heal this skill
 
 If anything surprising surfaced that a future caller would want to know — a durable
 **method** gotcha (a false-positive audit, a proxy quirk, an interpretation trap) —
-fold it into this `SKILL.md` as part of the same task. **Do not** record the specific
-findings/opportunities here: those live in `docs/TODO.md` and are removed from there as
-they're fixed, so a copy in the skill would only go stale. The skill carries *how to
-audit and how to read the numbers*; `docs/TODO.md` carries *what's currently wrong*.
+fold it into this `SKILL.md` as part of the same task (§3 of the shared conventions).
+**Do not** record the specific findings/opportunities here: those live in
+`docs/AUDIT.md` and are removed from there as they're fixed, so a copy in the skill
+would only go stale. The skill carries *how to audit and how to read the numbers*;
+`docs/AUDIT.md` carries *what's currently wrong*.
 
 ## Interpretation caveats
 
-**False positive — don't file a TODO for it:** the `lcp-discovery-insight` audit flags
+**False positive — don't file an audit item for it:** the `lcp-discovery-insight` audit flags
 *"`fetchpriority=high` should be applied: false"* on first visit. Splotch's LCP element
 is `<canvas#drawingCanvas>` — a *painted* surface, not a fetched resource — so
 `fetchpriority`/`preload`/lazy-loading hints don't apply to it. The insight is written

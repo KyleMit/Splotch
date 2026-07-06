@@ -22,7 +22,7 @@ Prefer Grep/Glob/Read and a read-only exploration subagent for the file/transcri
 
 Use `AskUserQuestion` to confirm alignment before writing the report or changing config. Good things to confirm:
 - Which priorities rank highest right now (tokens, permissions, autonomy, review quality).
-- Which manual gates are intentional and must be preserved (e.g. `git commit`/`git push` should keep prompting; the `/fix-next-todo-manual` manual-commit step).
+- Which manual gates are intentional and must be preserved (e.g. `git commit`/`git push` should keep prompting).
 - Appetite for new machinery (subagents, hooks, MCP) vs. keeping it lean.
 
 ## Applying changes
@@ -73,3 +73,14 @@ Links from the web search.
 ```
 
 End by printing a short summary of what changed and what's left as optional follow-up.
+
+## Shared audit conventions
+
+This is an audit skill. Its findings go in the dated `docs/claude-workflow-review-YYYY-MM-DD.md`
+report rather than `docs/AUDIT.md`, but the run-tracking conventions in
+[`.claude/audit-conventions.md`](../audit-conventions.md) still apply:
+
+- **Log the run** (§2) — add a row to `docs/AUDIT-LOG.md` linking the dated report and
+  summarizing the headline findings in one line.
+- **Self-heal** (§3) — if the review surfaced a durable method learning (a transcript
+  metric worth pulling, a benchmark source, an analysis trap), fold it into this file.

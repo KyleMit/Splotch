@@ -1,0 +1,19 @@
+# Audit Log
+
+A committable history of every audit-skill run. Each audit appends **one row here
+when it runs** (see `.claude/audit-conventions.md` §2). Most recent first.
+
+Format — `| YYYY-MM-DD | audit-name | one-line summary of what it found |`. Keep the
+summary to a single line; the findings themselves live in `docs/AUDIT.md` (or the
+audit's own report), not here. Rows dated before 2026-07-06 were reconstructed from
+the git history of `docs/AUDIT.md` (formerly `docs/TODO.md`) and its inferred source.
+
+| Date | Audit | Summary |
+| --- | --- | --- |
+| 2026-07-05 | lighthouse-audit | Re-ran the production matrix (first + repeat, phone + tablet); every finding still stood — phone-first TBT 360–560 ms is the remaining lever, repeat visits Perf 99–100. |
+| 2026-07-05 | lighthouse-audit | First production audit (real Netlify serving) corrected the local-preview numbers (LCP 5.4 s → 1.9 s); filed TBT / main-thread page-load opportunities in `docs/AUDIT.md`. |
+| 2026-07-05 | lighthouse-audit | Initial slow-network page-load audit (PR #57); the seed numbers came from a local `vite preview` (Perf 73 / LCP 5.4 s) and were later corrected on production — the preview's HTTP/1.1 no-CDN serving was the whole gap. |
+| 2026-07-03 | review-audit | Adversarial review of the code-audit items: corrected the JSON-parse dedup target, the Capacitor-bundle file list + ~16 KB estimate, and the orientation-tracking scope (5 → 3 reactive components). |
+| 2026-07-03 | code-audit | Full-repo pass (PR #38) → prioritized perf / readability / maintainability / architecture findings in `docs/AUDIT.md`; themes: duplicated CSS/helpers, canvas resize/replay cost, unauthenticated BYOK path, Blobs read-modify-write races. |
+| 2026-06-25 | dependency-audit | Surveyed `npm outdated`; flagged the coordinated Capacitor and Svelte/Vite families as landmines, upgraded the safe leaf/dev packages one commit at a time. |
+| 2026-06-25 | code-audit | First audit list: swept every sticky `:hover` rule that stays stuck after tap on touch devices, ordered toddler-UI → Parent Center → web-only, each to be guarded with `@media (hover: hover)`. |
