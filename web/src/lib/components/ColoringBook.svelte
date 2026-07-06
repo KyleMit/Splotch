@@ -8,9 +8,10 @@
     clearOverlay,
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
-  import { pageImage, type Book, type ColoringPage } from '$lib/state/books';
+  import { pageImage, thumbPath, type Book, type ColoringPage } from '$lib/state/books';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { layout } from '$lib/state/layout.svelte';
+  import { prefetchImages } from '$lib/imagePrefetch';
 
   // Only show books licensed for this platform. Native builds also strip the
   // web-only books' assets at build time (scripts/strip-native-assets.mjs), so
@@ -19,6 +20,28 @@
 
   let activeBook = $state<Book | null>(null);
   const orientation = $derived(layout.orientation);
+
+  // Warm the cover thumbnails once at idle so the very first open of the picker
+  // paints instantly instead of fetching eight full covers on demand. iOS lacks
+  // requestIdleCallback (below the floor), so fall back to a short timeout.
+  $effect(() => {
+    const warm = () => prefetchImages(books.map((book) => thumbPath(book.cover)));
+    const idle = typeof requestIdleCallback === 'function';
+    const handle: number = idle
+      ? requestIdleCallback(warm)
+      : (setTimeout(warm, 200) as unknown as number);
+    return () => (idle ? cancelIdleCallback(handle) : clearTimeout(handle));
+  });
+
+  // Pressing/hovering a book tile warms that book's page thumbs before the
+  // sub-grid renders; hovering a page tile warms its full-res overlay so applying
+  // it to the canvas is immediate.
+  function prefetchBookPages(book: Book) {
+    prefetchImages(book.pages.map((page) => thumbPath(pageImage(page, orientation))));
+  }
+  function prefetchPageOverlay(page: ColoringPage) {
+    prefetchImages([pageImage(page, orientation)]);
+  }
 
   // Rotating swaps the active overlay to that page's portrait/landscape art.
   $effect(() => {
@@ -81,8 +104,10 @@
               type="button"
               aria-label="{book.name} coloring book"
               onclick={() => (activeBook = book)}
+              onpointerenter={() => prefetchBookPages(book)}
+              onpointerdown={() => prefetchBookPages(book)}
             >
-              <img src={book.cover} alt="" loading="lazy" />
+              <img src={thumbPath(book.cover)} alt="" loading="lazy" />
               <span class="coloring-book-label">{book.name}</span>
             </button>
           {/each}
@@ -110,8 +135,10 @@
               type="button"
               aria-label="{activeBook.name} coloring page"
               onclick={() => pickPage(page)}
+              onpointerenter={() => prefetchPageOverlay(page)}
+              onpointerdown={() => prefetchPageOverlay(page)}
             >
-              <img src={pageImage(page, orientation)} alt="" loading="lazy" />
+              <img src={thumbPath(pageImage(page, orientation))} alt="" loading="lazy" />
             </button>
           {/each}
         </div>
