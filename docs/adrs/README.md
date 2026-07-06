@@ -49,4 +49,5 @@ This directory records significant architectural decisions made in the Splotch p
 | [0043](0043-magic-brush-color-sheet-reveal.md) | Magic Brush Reveals the Coloring Page's Colored Twin via Pattern-Fill Ops | Active |
 | [0044](0044-svg-optimization-audit.md) | SVG Optimization as a Re-runnable Audit, Not a One-Off Pass | Active |
 | [0045](0045-coloring-picker-thumbnails-and-prefetch.md) | Coloring-Picker Thumbnails + Prefetch (Two Resolutions per Page) | Active |
+| [0046](0046-pr-screenshot-hosting-via-orphan-branch.md) | Host PR Screenshots on a `pr-assets` Orphan Branch | Active |
 
