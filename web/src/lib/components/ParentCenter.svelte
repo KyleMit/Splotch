@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { ui, openParentCenter, closeParentCenter, buttonCenter } from '$lib/state/ui.svelte';
+  import { ui, closeParentCenter } from '$lib/state/ui.svelte';
   import SettingsToggles from './parent/SettingsToggles.svelte';
   import AiKeyManager from './parent/AiKeyManager.svelte';
   import SetupInstructions from './parent/SetupInstructions.svelte';
@@ -8,24 +8,7 @@
   import TabPager from './TabPager.svelte';
   import TabPagerTab from './TabPagerTab.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
-
-  let buttonEl: HTMLButtonElement;
-
-  function openModal() {
-    if (!buttonEl) return;
-    openParentCenter(buttonCenter(buttonEl));
-  }
 </script>
-
-<button
-  class="parent-help-button"
-  id="parentHelpButton"
-  aria-label="Parent Center"
-  bind:this={buttonEl}
-  onclick={openModal}
->
-  <Icon name="parent" class="parent-help-icon" aria-label="Parent Center" role="img" />
-</button>
 
 <dialog
   class="parent-help-modal modal-dialog modal-fly-in modal-shell"
@@ -71,51 +54,6 @@
 </dialog>
 
 <style>
-  /* Trigger button (floats in the bottom-right corner) */
-  .parent-help-button {
-    position: fixed;
-    bottom: calc(8px + env(safe-area-inset-bottom));
-    right: calc(8px + env(safe-area-inset-right));
-    width: 48px;
-    height: 48px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    color: #999;
-    opacity: 0.4;
-    transition: opacity 0.2s ease;
-    z-index: 900;
-    padding: 8px;
-    touch-action: manipulation;
-  }
-
-  @media (hover: hover) {
-    .parent-help-button:hover {
-      opacity: 0.7;
-    }
-  }
-
-  .parent-help-button:active {
-    opacity: 1;
-  }
-
-  :global(.parent-help-icon) {
-    width: 100%;
-    height: 100%;
-    filter: invert(60%) grayscale(100%);
-  }
-
-  @media (hover: hover) {
-    .parent-help-button:hover :global(.parent-help-icon) {
-      filter: invert(40%) grayscale(100%);
-    }
-  }
-
-  .parent-help-button:active :global(.parent-help-icon) {
-    filter: invert(0%) grayscale(100%);
-  }
-
-  /* Modal dialog */
   .parent-help-modal {
     max-width: 500px;
     width: 90%;
