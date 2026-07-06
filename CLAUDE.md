@@ -54,6 +54,7 @@ Remaining `docs/`:
 
 | File | When to read it |
 | --- | --- |
+| `docs/REQUIREMENTS.md` | The full technology-agnostic product spec — user stories with acceptance criteria for every feature, edge case, and NFR. Read when questioning what the product must do (vs. how it's built); update the affected stories when shipped behavior changes |
 | `docs/COMPATIBILITY.md` | The supported browser/device floor, how it's enforced, and the per-API risk register — read before raising the floor, adding a modern web API, or changing a native min-OS target |
 | `docs/CONTRIBUTING.md` | Human onboarding doc — keep in sync when conventions change |
 | `docs/BACKLOG.md` | When asked what to work on next |
