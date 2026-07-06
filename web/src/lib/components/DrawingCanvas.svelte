@@ -183,6 +183,32 @@
     setMagicMode(toolState.magic);
   });
 
+  // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
+  // and swaps the page art to the other tall/wide variant — a different
+  // composition. Pointing the <img> straight at the new URL shows the old art
+  // mis-fit in the new layout, then pops the new one in whenever it decodes.
+  // Instead: hide the art the moment the target changes, decode the new file
+  // off-DOM, and fade it in only once it's ready. Applying a page from the
+  // picker flows through the same gate.
+  let displayedOverlayUrl = $state<string | null>(null);
+  $effect(() => {
+    const url = coloringBookState.overlayUrl;
+    displayedOverlayUrl = null;
+    if (!url) return;
+    let stale = false;
+    const img = new Image();
+    img.src = url;
+    // Show on decode failure too — the <img> then surfaces the same broken
+    // state a direct src assignment would have.
+    const show = () => {
+      if (!stale) displayedOverlayUrl = url;
+    };
+    img.decode().then(show, show);
+    return () => {
+      stale = true;
+    };
+  });
+
   // The sheet/wrapper track the engine's paper; before the engine mounts and
   // reports a size, fall back to filling the container so the SSR'd shell shows
   // the full-bleed paper texture with no flash.
@@ -217,8 +243,9 @@
   >
     <img
       class="coloring-overlay"
+      class:overlay-ready={!!displayedOverlayUrl}
       id="coloringOverlay"
-      src={coloringBookState.overlayUrl ?? ''}
+      src={displayedOverlayUrl ?? ''}
       alt=""
       hidden={!coloringBookState.overlayUrl}
     />
@@ -318,11 +345,19 @@
     display: none;
   }
 
+  /* Hidden instantly while the next art variant decodes (no transition on the
+     way out), then faded in once it's ready — see displayedOverlayUrl. */
   .coloring-overlay {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
+    opacity: 0;
+  }
+
+  .coloring-overlay.overlay-ready {
+    opacity: 1;
+    transition: opacity 0.18s ease;
   }
 
   .coloring-overlay[hidden] {

@@ -539,7 +539,8 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await expect(dialog).toBeHidden();
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toBeVisible();
-  expect(await overlay.getAttribute('src')).toMatch(/\/coloring\/farm\/.+-(wide|tall)\.webp$/);
+  // The src lands once the art has decoded (the ready-gated swap), so retry.
+  await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.webp$/);
 });
 
 // Apply the first Farm page and wait for its overlay + colored twin to be ready.
@@ -553,7 +554,9 @@ async function applyFarmPage(page: Page) {
     .first()
     .click();
   await expect(dialog).toBeHidden();
-  await expect(page.locator('#coloringOverlay')).toBeVisible();
+  // Wait for the art itself, not just the element: the src lands only once the
+  // image has decoded (the ready-gated swap in DrawingCanvas).
+  await expect(page.locator('#coloringOverlay')).toHaveAttribute('src', /\.webp$/);
 }
 
 // A device rotation with ink on the canvas must NOT swap the page's tall/wide
@@ -571,8 +574,8 @@ test('rotating with ink keeps the same coloring page art until the canvas is bla
   await applyFarmPage(page);
 
   const overlay = page.locator('#coloringOverlay');
+  await expect(overlay).toHaveAttribute('src', /-wide\.webp$/); // landscape viewport → wide art
   const srcBefore = await overlay.getAttribute('src');
-  expect(srcBefore).toMatch(/-wide\.webp$/); // landscape viewport → wide art
 
   await draw(page, [
     { x: 200, y: 200 },

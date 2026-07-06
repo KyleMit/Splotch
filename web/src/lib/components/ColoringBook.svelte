@@ -58,6 +58,15 @@
     }
   });
 
+  // The other orientation's art is what a blank-canvas rotation will swap to;
+  // warm it as soon as a page is applied so that swap is a cache hit and the
+  // ready-gated fade-in (DrawingCanvas) is near-instant.
+  $effect(() => {
+    if (!coloringBookState.overlayPage) return;
+    const other = orientation === 'portrait' ? 'landscape' : 'portrait';
+    prefetchImages([pageImage(coloringBookState.overlayPage, other)]);
+  });
+
   function pickPage(page: ColoringPage) {
     setOverlayPage(page, orientation);
     closeColoringBook();
