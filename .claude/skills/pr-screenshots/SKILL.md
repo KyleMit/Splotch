@@ -1,6 +1,6 @@
 ---
 name: pr-screenshots
-description: Custom Splotch conventions for visuals in a pull request body — always include screenshots, before/after tables for changes, all states for multi-state components, and gifs/video for animations. Use whenever a pull request that touches the UI is opened, updated, or amended. This includes PRs you did not open yourself (one created by the Claude Code web-session "Create PR" button, or by a teammate) and every time you push further UI-affecting commits to a branch: after such a push, check whether an open PR exists for the branch and make sure its body has up-to-date screenshots describing the current changeset. Do not wait to be the one who opens the PR — the trigger is UI changes reaching a branch that has (or is about to have) an open PR, not you invoking the create-PR step.
+description: Custom Splotch conventions for visuals in a pull request body — always include screenshots, before/after tables for changes, all states for multi-state components, and gifs/video for animations. Use in addition to the built-in PR flow whenever opening, creating, or updating a pull request that touches anything visible in the UI.
 ---
 
 # Screenshots in a Pull Request
@@ -14,36 +14,6 @@ mockup. For web use the [`run-splotch`](../run-splotch/SKILL.md) skill's driver 
 take screenshots; for native (Android/iOS) use the [`mobile`](../mobile/SKILL.md)
 skill. If a change genuinely has no visible surface, say so in the PR body rather
 than silently omitting visuals.
-
-## A PR can be opened without you — don't rely on catching it at create time
-
-The trigger for this skill is **UI changes landing on a branch that has an open
-PR**, not you running the create-PR step. A PR here is often opened *out of band* —
-by the Claude Code **web-session "Create PR" button**, or by a teammate — so there
-may be no create-PR call in your turn to hang these conventions on. If you only act
-when you open the PR yourself, an out-of-band PR ships with a bare, screenshot-less
-body (the gap that motivated this section).
-
-So make it part of pushing UI work, every time:
-
-1. **After pushing UI-affecting commits to a branch, check for an open PR** for that
-   branch — GitHub MCP `list_pull_requests` / `search_pull_requests` filtered to the
-   head branch (`head:<branch>` or the `head` param). Also treat it as opened if the
-   user mentions or links a PR for your branch.
-2. **If an open PR exists, make its body carry current visuals** for the change,
-   following the table below. Update the PR body (`update_pull_request`) — don't wait
-   to be asked, and don't settle for having delivered the shots only in chat.
-3. **If no PR exists yet**, capture the shots anyway (they're cheap and you'll want
-   them when one is opened) and note them, so the first person to open the PR — you
-   or the web button — has them ready.
-
-### Keep the visuals current as the changeset grows
-
-A PR body is **living**: the screenshots must describe the **whole current
-changeset**, not just the first push. Every time you amend the branch with more
-UI-affecting commits (a follow-up fix, a review change, a new state), **refresh the
-shots and any before/after** and update the PR body so the visuals always match the
-current diff. Replace stale images rather than appending a newer set beside them.
 
 ## Which visual to include
 
