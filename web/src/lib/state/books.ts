@@ -4,9 +4,16 @@
 // (see scripts/strip-native-assets.mjs).
 //
 // Image storage format:
-//   static/coloring/{book}/cover.webp
-//   static/coloring/{book}/{page}-tall.webp   portrait, 2:3
-//   static/coloring/{book}/{page}-wide.webp   landscape, 3:2
+//   static/coloring/{book}/cover.webp             full-res, 1:1
+//   static/coloring/{book}/{page}-tall.webp       portrait, 2:3, full-res
+//   static/coloring/{book}/{page}-wide.webp       landscape, 3:2, full-res
+//   static/coloring/{book}/{name}-thumb.webp      grid thumbnail of the above
+//
+// Every full-res image has a `-thumb.webp` twin (scripts/gen-coloring-thumbs.mjs).
+// The picker grid shows the thumbnail; the full-screen canvas overlay uses the
+// full-res source. `thumbPath()` maps one to the other, and `bookAssetPaths()`
+// lists both so check-assets validates and strip-native-assets removes them
+// together.
 //
 // `platforms` controls distribution per book:
 //   ['web']            -> web only          (hidden + assets stripped on native)
@@ -168,9 +175,15 @@ export function pageImage(page: ColoringPage, orientation: BookOrientation): str
   return page.images[orientation];
 }
 
+/** Grid-thumbnail path for a full-res coloring image (`x.webp` -> `x-thumb.webp`). */
+export function thumbPath(src: string): string {
+  return src.replace(/\.webp$/, '-thumb.webp');
+}
+
 export function bookAssetPaths(book: Book): string[] {
-  return [
+  const fullRes = [
     book.cover,
     ...book.pages.flatMap((page) => [page.images.portrait, page.images.landscape]),
   ];
+  return [...fullRes, ...fullRes.map(thumbPath)];
 }
