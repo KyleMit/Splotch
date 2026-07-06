@@ -54,7 +54,7 @@ Invariants:
   updated in its SKILL.md as part of the same change — the `server-api.md`
   rule encodes this for endpoints.
 * `docs/` retains only human-process artifacts: `adrs/`, `CONTRIBUTING.md`,
-  `BACKLOG.md`, `PROMPTS.md`, and the generated `TODO.md`.
+  `BACKLOG.md`, `PROMPTS.md`, and the generated `audit.md` / `audit-log.md`.
 
 ## Consequences
 

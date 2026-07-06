@@ -1,8 +1,8 @@
-# TODO
+# Audit
 
-> Work through these items one at a time with `/fix-next-todo-manual`, or clear the whole list autonomously with `/fix-next-todo-auto`.
-> After each fix: remove the completed item, run relevant type checks or tests, and suggest a commit message.
-> Do **not** `git add` or `git commit` — the user reviews the diff first.
+> Findings from Splotch's audit skills (`.claude/audit-conventions.md`).
+> Clear the whole list autonomously with `/fix-next-audit`; validate it with `/review-audit`.
+> Skills **merge** into this file — they never overwrite each other's sections.
 
 ## Source: Lighthouse page-load audit (slow device + slow internet)
 

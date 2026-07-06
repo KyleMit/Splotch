@@ -1,6 +1,6 @@
-# Review TODOs
+# Review Audit
 
-Read `docs/TODO.md` and the current codebase, then validate each item against the actual code.
+Read `docs/audit.md` and the current codebase, then validate each item against the actual code.
 
 ## For each item, decide: keep, enrich, or remove
 
@@ -17,9 +17,9 @@ Read `docs/TODO.md` and the current codebase, then validate each item against th
 
 ## Output
 
-1. Edit `docs/TODO.md` in place — remove the items that don't hold up, enrich the ones that do
+1. Edit `docs/audit.md` in place — remove the items that don't hold up, enrich the ones that do. Preserve each `## Source:` section and the file header.
 2. In your response, print two short lists:
    - **Kept / enriched** — one line each, noting what insight you added (if any)
    - **Removed** — one line each, with the reason
 
-Do not implement any of the changes — this is a review pass only. Implementation happens via `/fix-next-todo-manual` or `/fix-next-todo-auto`.
+Do not implement any of the changes — this is a review pass only. Implementation happens via `/fix-next-audit`.
