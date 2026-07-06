@@ -16,54 +16,73 @@ wants.
 
 Alternatives considered:
 
-* **Keep media queries, reorder which rows drop** — can't fix landscape: as
-  long as families are rows, any height trim removes whole hues.
-* **CSS-only transposition** (grid placement per hex, orientation-swapped
-  `grid-row`/`grid-column`) — hiding a shade level would leave an empty grid
-  track, and the honeycomb's interlocking offset needs *visible-index* parity,
-  which CSS can't express once arbitrary cells are hidden. `:nth-child(even)`
-  counts `display:none` rows, so non-contiguous hiding flattens the offset and
-  makes hex points collide.
+* **Keep one grid, reorder which rows drop** — can't fix landscape: as long as
+  families are rows, any height trim removes whole hues.
+* **Compute the visible rows in JS** from `svelte:window`'s viewport bindings
+  (tried first — a pure `buildPickerRows(vw, vh)` function). It works and only
+  renders the hexes that fit, but it mirrors the hex geometry in TS, is blank
+  of layout until hydration, and diverges from the project's established
+  pattern: `ColorPalette.svelte` deliberately trims via CSS media queries so
+  the prerendered first paint is correct with no JS measurement or resize
+  flash (ADR-0040 keeps the home route SSG).
+* **CSS grid transposition in one DOM** (orientation-swapped
+  `grid-row`/`grid-column` per hex) — hiding a shade level would leave an
+  empty grid track, so tracks would need per-breakpoint remapping anyway.
 * **Shrink hexes under pressure** — violates the 60px toddler touch-target
   floor.
 
 ## Decision
 
-Layout is computed in JS from the viewport (`web/src/lib/hexPickerLayout.ts`,
-pure and unit-tested; `ColorPicker.svelte` renders whatever it returns via
-`svelte:window bind:innerWidth/innerHeight`). Three rules:
+Pure CSS, dual grid (`web/src/lib/components/ColorPicker.svelte`;
+`web/src/lib/hexPickerLayout.ts` holds the palette data and the two static
+arrangements). Three rules:
 
-1. **The constrained axis trims shades, never hues.** In portrait, families
-   are rows and a narrow viewport trims shades per row. In landscape the grid
-   *transposes* — families become columns, shade levels become rows — so a
-   short viewport trims shade rows while every family stays. Families only
-   start dropping when the *long* axis runs out too.
-2. **Even-spread selection.** When only N of 9 shades (or families) fit, the
-   survivors are evenly spaced indices with endpoints kept (5 of 9 → 1st, 3rd,
-   5th, 7th, 9th), so a trimmed ramp still spans lightest→darkest and a
-   trimmed family list still sweeps rainbow endpoints — no priority lists to
-   maintain.
-3. **Only visible rows exist in the DOM.** No `display:none` trimming, so the
-   `.row:nth-child(even)` honeycomb offset always alternates and no trim
-   combination can produce jagged edges or overlapping hex points.
+1. **The constrained axis trims shades, never hues.** Both arrangements are
+   rendered: portrait (families as rows) and its transpose for landscape
+   (families as columns, shade levels as rows). An `orientation` media query
+   displays exactly one, so the short viewport axis always trims shade levels
+   and the long axis trims families — and families only start dropping when
+   the long axis is genuinely out of room.
+2. **Positional spread trimming, shared by both grids.** Rows and hexes carry
+   position classes (`r1`–`r9`, `c1`–`c9`), and the drop ladders hide
+   positions `2, 4, 6, 8, 3, 7 (, 5)` — never the endpoints — so survivors
+   stay evenly spread: a trimmed shade ramp still spans lightest→darkest, a
+   trimmed family list still sweeps the rainbow. Because the trimming is
+   positional, one set of `max-height`/`max-width` rules serves both grids
+   (only one is displayed); orientation queries exist *only* for the grid
+   toggle.
+3. **Each height step restates the honeycomb offset.** Hidden rows still
+   count for `:nth-child`, and spread-trimming hides non-adjacent rows, so an
+   `:nth-child(even)` offset would flatten and let hex points collide.
+   Instead every `max-height` step re-declares which rows carry the 31px
+   offset so it alternates by *visible* position — that's what keeps every
+   trimmed layout interlocking instead of jagged.
 
-Gotcha: the module hard-codes the hex geometry (60px column pitch, 51px row
-pitch, chrome margins, the dialog's 90vw/90vh cap) mirrored from
-`ColorPicker.svelte`'s styles — change them together.
+Thresholds derive from the hex geometry and the dialog's 90vw/90vh cap:
+`r` rows fit while `90vh ≥ 51r + 50`, `c` columns while `90vw ≥ 60c + 63`
+(the ladder comments in the component show the math). The trim ladders are
+pinned by E2E tests (`web/tests/picker-trim.spec.ts`, same pattern as
+`palette-trim.spec.ts`), including an offset-alternation walk over every
+height rung — that's the coverage for the restatement rules, which are the
+easiest thing to break when editing the ladder.
 
 ## Consequences
 
 + Landscape phones now show the full rainbow (every family) with a few shades
   each, instead of every shade of a few families.
++ Correct on the prerendered first paint, no JS measurement or resize flash —
+  consistent with how `ColorPalette.svelte` trims.
 + Trimmed layouts are always well-formed honeycombs; the light→dark gradient
   reads top-to-bottom (landscape) or left-to-right (portrait) at every size.
-+ Layout logic is a pure function with unit tests (`hexPickerLayout.test.ts`)
-  instead of 13 interlocking media queries with hand-computed thresholds.
+- Both grids live in the DOM (162 hexes, one grid always `display:none`).
+  Harmless today — hidden hexes aren't focusable and the pointer snap logic
+  already skips zero-width rects — but anything iterating `.hexagon` must
+  tolerate the hidden copy.
+- The offset-restatement blocks are hand-derived from the drop ladder; editing
+  the ladder without re-deriving them silently breaks the interlock (the E2E
+  offset walk exists to catch exactly this).
+- A geometry change (hex size, padding, overlap) invalidates every threshold;
+  the ladder comments carry the formulas to re-derive them.
 - Desktop/landscape users see families as columns while portrait shows them as
   rows — the full grid is the same 81 colors, but its orientation flips with
   the viewport.
-- Geometry constants are duplicated between the TS module and the component's
-  CSS; a size tweak in one without the other overflows or under-fills the
-  dialog (the dialog clips overflow, so the failure is silent).
-- SSR renders the full grid (no viewport); harmless today because the dialog
-  only opens post-hydration.

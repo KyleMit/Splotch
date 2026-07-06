@@ -4,16 +4,18 @@
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
-  import { buildPickerRows } from '$lib/hexPickerLayout';
+  import { PORTRAIT_ROWS, LANDSCAPE_ROWS } from '$lib/hexPickerLayout';
 
-  // The grid is computed from the viewport (see hexPickerLayout.ts): the
-  // constrained axis trims shades while every hue family stays represented,
-  // and only the rows/hexes that fit are rendered — so the honeycomb's
-  // alternating offset stays intact at every size. SSR has no viewport; the
-  // fallback renders the full grid, and the dialog only opens post-hydration.
-  let viewportWidth = $state<number | undefined>();
-  let viewportHeight = $state<number | undefined>();
-  const rows = $derived(buildPickerRows(viewportWidth ?? 1280, viewportHeight ?? 800));
+  // Both grid arrangements are rendered; CSS media queries pick one per
+  // orientation and progressively trim it (see the trim ladders in the style
+  // block). Everything is static markup + CSS — like ColorPalette's trim
+  // rules, the layout is correct on the prerendered first paint with no JS
+  // measurement or resize flash. Landscape first: E2E helpers grab the first
+  // `.hexagon`, and the Playwright default viewport is landscape.
+  const GRIDS = [
+    { name: 'landscape', rows: LANDSCAPE_ROWS },
+    { name: 'portrait', rows: PORTRAIT_ROWS },
+  ];
 
   let pickerEl: HTMLDivElement;
   let hoveredHex = $state<string | null>(null);
@@ -102,11 +104,7 @@
   }
 </script>
 
-<svelte:window
-  bind:innerWidth={viewportWidth}
-  bind:innerHeight={viewportHeight}
-  onresize={() => (hexCenters = null)}
-/>
+<svelte:window onresize={() => (hexCenters = null)} />
 
 <!-- scribbleGuard covers the hexagons AND the backdrop (backdrop events target
      the <dialog> itself): a pen tap that picks a color or dismisses the picker
@@ -142,18 +140,22 @@
       if (!isTrackingDrag) hoveredHex = null;
     }}
   >
-    {#each rows as row (row.key)}
-      <div class="row">
-        {#each row.colors as hex (hex)}
-          <button
-            class="hexagon"
-            class:hover={hoveredHex === hex}
-            class:border={hex === '#ffffff'}
-            class:selected={colors.customColor.toLowerCase() === hex.toLowerCase()}
-            style="--color: {hex};"
-            data-color={hex}
-            aria-label={hex}
-          ></button>
+    {#each GRIDS as grid (grid.name)}
+      <div class="grid {grid.name}">
+        {#each grid.rows as row, r (row.key)}
+          <div class="row r{r + 1}">
+            {#each row.colors as hex, c (hex)}
+              <button
+                class="hexagon c{c + 1}"
+                class:hover={hoveredHex === hex}
+                class:border={hex === '#ffffff'}
+                class:selected={colors.customColor.toLowerCase() === hex.toLowerCase()}
+                style="--color: {hex};"
+                data-color={hex}
+                aria-label={hex}
+              ></button>
+            {/each}
+          </div>
         {/each}
       </div>
     {/each}
@@ -181,9 +183,13 @@
 
   .picker {
     display: inline-flex;
-    flex-direction: column;
     padding: 16px;
     margin-top: 15px;
+  }
+
+  .grid {
+    display: flex;
+    flex-direction: column;
   }
 
   .row {
@@ -191,14 +197,170 @@
     margin-top: -15px;
   }
 
-  /* Which hexes exist at a given viewport size is decided in
-     hexPickerLayout.ts, which mirrors the geometry below — keep them in sync. */
-  .row:nth-child(even) {
+  .row:not(:first-child) {
+    margin-top: -18px;
+  }
+
+  /* ── Responsive trimming (ADR-0048) ──────────────────────────────────────
+     Two grids are rendered — portrait (families as rows) and landscape (the
+     transpose: families as columns, shade levels as rows) — and orientation
+     picks one, so the SHORT viewport axis always trims shade levels and the
+     long axis trims families. All trim rules below are positional (r2/c2 =
+     2nd row/column from the light/red end) and shared by both grids: the
+     drop order r2,r4,r6,r8,r3,r7(,c5) keeps an even spread across whichever
+     ramp that axis holds — shades stay light→dark, families stay a rainbow —
+     and never drops r1/c1/r9/c9, the endpoints. */
+  @media (orientation: landscape) {
+    .grid.portrait {
+      display: none;
+    }
+  }
+  @media (orientation: portrait) {
+    .grid.landscape {
+      display: none;
+    }
+  }
+
+  /* HEIGHT — r rows fit while 90vh ≥ 51·r + 50 (69px first row + 51px row
+     pitch + 32px padding; measured 509px at 9 rows), so the ladder steps at
+     ≈ (51r + 50) / 0.9 with a few px of buffer. Hidden rows still count for
+     :nth-child, so the base even-row rule can't drive the honeycomb offset;
+     instead every step restates which rows carry the 31px offset so it
+     alternates by VISIBLE position — that's what keeps a trimmed grid
+     interlocking instead of jagged. */
+  .r2,
+  .r4,
+  .r6,
+  .r8 {
     margin-left: 31px;
   }
 
-  .row:not(:first-child) {
-    margin-top: -18px;
+  @media (max-height: 564.98px) {
+    /* 8 rows: 1,3,4,5,6,7,8,9 */
+    .r2 {
+      display: none;
+    }
+    .r3,
+    .r5,
+    .r7,
+    .r9 {
+      margin-left: 31px;
+    }
+    .r4,
+    .r6,
+    .r8 {
+      margin-left: 0;
+    }
+  }
+  @media (max-height: 508.98px) {
+    /* 7 rows: 1,3,5,6,7,8,9 */
+    .r4 {
+      display: none;
+    }
+    .r3,
+    .r6,
+    .r8 {
+      margin-left: 31px;
+    }
+    .r5,
+    .r7,
+    .r9 {
+      margin-left: 0;
+    }
+  }
+  @media (max-height: 452.98px) {
+    /* 6 rows: 1,3,5,7,8,9 */
+    .r6 {
+      display: none;
+    }
+    .r3,
+    .r7,
+    .r9 {
+      margin-left: 31px;
+    }
+    .r5,
+    .r8 {
+      margin-left: 0;
+    }
+  }
+  @media (max-height: 395.98px) {
+    /* 5 rows: 1,3,5,7,9 */
+    .r8 {
+      display: none;
+    }
+    .r3,
+    .r7 {
+      margin-left: 31px;
+    }
+    .r5,
+    .r9 {
+      margin-left: 0;
+    }
+  }
+  @media (max-height: 338.98px) {
+    /* 4 rows: 1,5,7,9 */
+    .r3 {
+      display: none;
+    }
+    .r5,
+    .r9 {
+      margin-left: 31px;
+    }
+    .r7 {
+      margin-left: 0;
+    }
+  }
+  @media (max-height: 282.98px) {
+    /* 3 rows: 1,5,9 — the floor */
+    .r7 {
+      display: none;
+    }
+    .r5 {
+      margin-left: 31px;
+    }
+    .r9 {
+      margin-left: 0;
+    }
+  }
+
+  /* WIDTH — c columns fit while 90vw ≥ 60·c + 63 (60px column pitch + 31px
+     row offset + 32px padding; measured 603px at 9 columns), stepping at
+     ≈ (60c + 63) / 0.9 + buffer. Every row loses the same positions, so
+     column trims never need offset bookkeeping. Floor: 2 columns (c1 + c9). */
+  @media (max-width: 674.98px) {
+    .c2 {
+      display: none;
+    }
+  }
+  @media (max-width: 609.98px) {
+    .c4 {
+      display: none;
+    }
+  }
+  @media (max-width: 544.98px) {
+    .c6 {
+      display: none;
+    }
+  }
+  @media (max-width: 474.98px) {
+    .c8 {
+      display: none;
+    }
+  }
+  @media (max-width: 409.98px) {
+    .c3 {
+      display: none;
+    }
+  }
+  @media (max-width: 339.98px) {
+    .c7 {
+      display: none;
+    }
+  }
+  @media (max-width: 274.98px) {
+    .c5 {
+      display: none;
+    }
   }
 
   .hexagon {
