@@ -18,7 +18,7 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, sleep } from '../lib/utils.mjs';
+import { ROOT, chromiumExecutablePath, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import {
   startTrace,
@@ -226,7 +226,10 @@ async function main() {
   mkdirSync(outDir, { recursive: true });
 
   const { base, stop } = await buildAndPreview(port, { build });
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    executablePath: chromiumExecutablePath(chromium),
+  });
   const t0 = Date.now();
   try {
     const ctx = await browser.newContext({

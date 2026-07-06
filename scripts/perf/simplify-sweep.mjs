@@ -14,7 +14,7 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, sleep } from '../lib/utils.mjs';
+import { ROOT, chromiumExecutablePath, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { buildBattery, batteryExtent } from './lib/strokes.mjs';
 
@@ -44,7 +44,10 @@ mkdirSync(outDir, { recursive: true });
 async function main() {
   process.env.PUBLIC_ENABLE_DEV_HARNESS = 'true';
   const { base, stop } = await buildAndPreview(port, { build });
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    executablePath: chromiumExecutablePath(chromium),
+  });
   const rows = [];
   try {
     for (const scale of SCALES) {

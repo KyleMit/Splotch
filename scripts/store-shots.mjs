@@ -12,7 +12,7 @@
 import { chromium } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, sleep } from './lib/utils.mjs';
+import { ROOT, chromiumExecutablePath, sleep } from './lib/utils.mjs';
 import {
   ensureDevServer,
   openAppPage,
@@ -119,7 +119,7 @@ async function colorInLines(page, box) {
 
 const { base, stop } = await ensureDevServer(PORT);
 try {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   const targets = [
     { name: 'phone', device: PHONE, dir: 'screenshots/phone' },
     { name: 'tablet', device: TABLET, dir: 'screenshots/tablet10' },
