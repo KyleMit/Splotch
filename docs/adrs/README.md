@@ -52,4 +52,5 @@ This directory records significant architectural decisions made in the Splotch p
 | [0046](0046-pr-screenshot-hosting-via-orphan-branch.md) | Host PR Screenshots on a `pr-assets` Orphan Branch | Active |
 | [0047](0047-provider-agnostic-ai-adapter.md) | Provider-Agnostic AI Image Adapter (`AiImageProvider` Seam) | Active |
 | [0048](0048-hex-picker-trims-shades-before-hues.md) | Hex Color Picker Trims Shades Before Hues, Transposing in Landscape | Active |
+| [0049](0049-idle-mount-boot-hidden-overlays.md) | Idle-Mount the Boot-Hidden Overlays (Parent Center on First Open) | Active |
 

@@ -10,7 +10,7 @@ the git history of `docs/AUDIT.md` (formerly `docs/TODO.md`) and its inferred so
 
 | Date | Audit | Summary |
 | --- | --- | --- |
-| 2026-07-05 | lighthouse-audit | Re-ran the production matrix (first + repeat, phone + tablet); every finding still stood — phone-first TBT 360–560 ms is the remaining lever, repeat visits Perf 99–100. |
+| 2026-07-06 | fix-next-audit | Resolved the last item (load-time TBT): a new `perf:mount` profile showed the suspected `+page.svelte` onMount work is only ~18 ms of the ~470 ms hydration long task; the real lever was hydrating the six boot-hidden overlays — now idle-mounted (Parent Center dialog on first open), cutting the load long task to ~256–325 ms with no idle long tasks. `docs/AUDIT.md` is empty and deleted. |
 | 2026-07-05 | lighthouse-audit | First production audit (real Netlify serving) corrected the local-preview numbers (LCP 5.4 s → 1.9 s); filed TBT / main-thread page-load opportunities in `docs/AUDIT.md`. |
 | 2026-07-05 | lighthouse-audit | Initial slow-network page-load audit (PR #57); the seed numbers came from a local `vite preview` (Perf 73 / LCP 5.4 s) and were later corrected on production — the preview's HTTP/1.1 no-CDN serving was the whole gap. |
 | 2026-07-03 | review-audit | Adversarial review of the code-audit items: corrected the JSON-parse dedup target, the Capacitor-bundle file list + ~16 KB estimate, and the orientation-tracking scope (5 → 3 reactive components). |

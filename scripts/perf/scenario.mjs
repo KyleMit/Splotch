@@ -10,7 +10,7 @@
 
 import { chromium } from '@playwright/test';
 import { join } from 'node:path';
-import { ROOT, sleep } from '../lib/utils.mjs';
+import { ROOT, chromiumExecutablePath, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 import { driveSession } from './session.mjs';
 
@@ -43,7 +43,10 @@ async function main() {
   const outDir = join(ROOT, 'perf-profiles', `${stamp}-web-${deviceName}-${throttleTag}`);
 
   const { base, stop } = await buildAndPreview(port, { build });
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    executablePath: chromiumExecutablePath(chromium),
+  });
   try {
     const ctx = await browser.newContext({
       viewport: { width: device.width, height: device.height },

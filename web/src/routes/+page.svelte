@@ -1,16 +1,12 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, type Component } from 'svelte';
   import DrawingCanvas from '$lib/components/DrawingCanvas.svelte';
   import ColorPalette from '$lib/components/ColorPalette.svelte';
-  import ColorPicker from '$lib/components/ColorPicker.svelte';
   import ActionsPanel from '$lib/components/ActionsPanel.svelte';
   import ClearButton from '$lib/components/ClearButton.svelte';
-  import ColoringBook from '$lib/components/ColoringBook.svelte';
-  import ParentCenter from '$lib/components/ParentCenter.svelte';
   import NotchBand from '$lib/components/NotchBand.svelte';
-  import AiImagePrompt from '$lib/components/AiImagePrompt.svelte';
-  import AiImageResult from '$lib/components/AiImageResult.svelte';
-  import InstallBanner from '$lib/components/InstallBanner.svelte';
+  import ParentHelpButton from '$lib/components/ParentHelpButton.svelte';
+  import { ui } from '$lib/state/ui.svelte';
   import { initPWAUpdates } from '$lib/pwa/updates';
   import { initInstallPrompt } from '$lib/state/install.svelte';
   import {
@@ -31,6 +27,52 @@
     settings.lockRotationEnabled;
     settings.forceLandscapeOrientation;
     applyDeviceOrientationPreference();
+  });
+
+  // The boot-hidden overlays (see bootHiddenOverlays.ts) load and mount at idle
+  // so the ~470 ms first-load hydration long task doesn't pay for subtrees that
+  // are invisible until a tap or a few strokes later. One overlay per idle
+  // callback: mounting them all at once just relocates a long task to idle,
+  // where it would jank a stroke already in progress. iOS lacks
+  // requestIdleCallback (below the floor), so fall back to a short timeout.
+  let overlays = $state<Component[]>([]);
+
+  // The Parent Center dialog is the one overlay too heavy even for an idle
+  // slice (~200 ms mounted under a 4× throttle), so it waits for its first
+  // open — the tap that flips ui.parentCenterOpen latches the mount, and the
+  // dialog's modalDialog $effect shows it as soon as it lands. The corner
+  // button that opens it (ParentHelpButton) stays eagerly mounted above.
+  let ParentCenter = $state<Component | null>(null);
+  let parentCenterWanted = $state(false);
+  $effect(() => {
+    if (ui.parentCenterOpen) parentCenterWanted = true;
+  });
+
+  onMount(() => {
+    let stopped = false;
+    const schedule = (fn: () => void) => {
+      if (typeof requestIdleCallback === 'function') requestIdleCallback(fn);
+      else setTimeout(fn, 200);
+    };
+    schedule(() => {
+      import('$lib/components/bootHiddenOverlays').then((module) => {
+        ParentCenter = module.ParentCenter;
+        const queue = [
+          module.ColorPicker,
+          module.ColoringBook,
+          module.AiImagePrompt,
+          module.AiImageResult,
+          module.InstallBanner,
+        ];
+        const mountNext = () => {
+          if (stopped) return;
+          overlays = [...overlays, queue[overlays.length]];
+          if (overlays.length < queue.length) schedule(mountNext);
+        };
+        mountNext();
+      });
+    });
+    return () => (stopped = true);
   });
 
   onMount(() => {
@@ -108,9 +150,10 @@
 
 <ClearButton />
 <ActionsPanel />
-<ColorPicker />
-<ColoringBook />
-<ParentCenter />
-<AiImagePrompt />
-<AiImageResult />
-<InstallBanner />
+<ParentHelpButton />
+{#each overlays as Overlay (Overlay)}
+  <Overlay />
+{/each}
+{#if ParentCenter && parentCenterWanted}
+  <ParentCenter />
+{/if}

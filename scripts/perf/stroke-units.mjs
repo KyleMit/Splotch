@@ -12,7 +12,7 @@
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, sleep } from '../lib/utils.mjs';
+import { ROOT, chromiumExecutablePath, sleep } from '../lib/utils.mjs';
 import { buildAndPreview } from './preview.mjs';
 
 const args = process.argv.slice(2);
@@ -170,7 +170,10 @@ async function main() {
   if (filter) corpus = corpus.filter((s) => s.name.includes(filter));
 
   const { base, stop } = await buildAndPreview(4173, { build });
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    executablePath: chromiumExecutablePath(chromium),
+  });
   const rows = [];
   try {
     for (const stroke of corpus) {

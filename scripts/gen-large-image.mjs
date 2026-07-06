@@ -8,7 +8,7 @@
 import { chromium } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT } from './lib/utils.mjs';
+import { ROOT, chromiumExecutablePath } from './lib/utils.mjs';
 import {
   ensureDevServer,
   openAppPage,
@@ -99,7 +99,7 @@ console.log(`Parsed ${svgStrokes.length} drawing elements.`);
 
 const { base, stop } = await ensureDevServer(PORT);
 try {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   const { ctx, page } = await openAppPage(browser, base, DEVICE);
   await expandDrawer(page);
 
