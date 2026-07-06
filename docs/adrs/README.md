@@ -51,5 +51,5 @@ This directory records significant architectural decisions made in the Splotch p
 | [0045](0045-coloring-picker-thumbnails-and-prefetch.md) | Coloring-Picker Thumbnails + Prefetch (Two Resolutions per Page) | Active |
 | [0046](0046-pr-screenshot-hosting-via-orphan-branch.md) | Host PR Screenshots on a `pr-assets` Orphan Branch | Active |
 | [0047](0047-provider-agnostic-ai-adapter.md) | Provider-Agnostic AI Image Adapter (`AiImageProvider` Seam) | Active |
-| [0048](0048-locked-paper-view-on-rotation.md) | Lock the "Paper" on Rotation and Present It Through a Counter-Rotate + Fit View | Active |
+| [0048](0048-locked-paper-view-on-rotation.md) | Lock the "Paper" on Rotation and Present It Upright Through a Contain-Fit View | Active |
 

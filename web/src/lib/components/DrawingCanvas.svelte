@@ -34,9 +34,10 @@
   let eraserCursor = $state({ visible: false, x: 0, y: 0 });
 
   // The engine's paper view (ADR-0048): identity in normal use; after a device
-  // rotation with ink on the canvas it presents the locked paper counter-rotated
-  // and contain-fit. The overlay wrapper below is positioned with the exact same
-  // transform the canvas paints through, so page art and strokes stay aligned.
+  // rotation with ink on the canvas it presents the locked paper upright,
+  // contain-fit and centered (scaled down when it doesn't fit). The overlay
+  // wrapper below is positioned with the exact same transform the canvas paints
+  // through, so page art and strokes stay aligned.
   let paperView = $state<EngineViewState>({
     active: false,
     scale: 1,
@@ -191,7 +192,7 @@
 </script>
 
 <div class="canvas-container">
-  <!-- Tracks the engine's paper: full-container in normal use, counter-rotated +
+  <!-- Tracks the engine's paper: full-container in normal use, upright
        contain-fit while a rotation has the paper locked (ADR-0048). The overlay
        art contain-fits within it, mirroring the magic sheet's math, so the page
        and the strokes move as one sheet. The lifted outline marks the page edge

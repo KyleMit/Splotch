@@ -185,8 +185,9 @@ let rectScaleY = 1;
 // while the canvas is empty or the screen angle is unchanged (today's
 // semantics), but a device rotation with ink on the canvas LOCKS it: the
 // drawing keeps its space — and its tall/wide coloring page — and is instead
-// *presented* through `paperView` (counter-rotate + contain-fit + center), so
-// nothing rotates off-screen and rotating back restores the exact layout.
+// *presented* through `paperView` (upright contain-fit + center, scaled down
+// when the paper doesn't fit the rotated viewport), so nothing rotates
+// off-screen and rotating back restores the exact layout.
 let paper = { pxW: 0, pxH: 0, cssW: 0, cssH: 0 };
 // Screen Orientation angle when the paper was adopted, so a later resize can
 // tell an actual rotation (angle delta ≠ 0) from a plain viewport resize.
@@ -393,8 +394,7 @@ function resizeCanvas() {
   // window drag, mobile URL bar) — re-adopts the paper as the live viewport,
   // exactly the pre-lock semantics. Only a rotation with ink on the canvas keeps
   // the paper (and its angle) so the drawing can be presented instead of remapped.
-  const rotate = rotationDelta(paperAngle, angle);
-  const lockPaper = !canvasEmpty && rotate !== 0;
+  const lockPaper = !canvasEmpty && rotationDelta(paperAngle, angle) !== 0;
   if (!lockPaper) {
     paper = {
       pxW: Math.round(rect.width * renderScale),
@@ -438,11 +438,15 @@ function resizeCanvas() {
   // the transform untouched), and the letterbox outside the paper is clipped
   // dead so nothing can be drawn there that a rotation back would strand
   // off-screen. Both persist until the next backing-store reset above.
+  // The paper is presented UPRIGHT (view rotation 0): the picture rotates with
+  // the device and contain-fits — scaled down when it must — rather than
+  // counter-rotating to stay fixed on the glass (rejected in ADR-0048). A 180°
+  // flip on an unchanged viewport therefore computes an identity view.
   paperView = lockPaper
     ? computePaperView(
         { width: paper.pxW, height: paper.pxH },
         { width: canvas.width, height: canvas.height },
-        rotate
+        0
       )
     : IDENTITY_PAPER_VIEW;
   if (!isIdentityView(paperView)) {

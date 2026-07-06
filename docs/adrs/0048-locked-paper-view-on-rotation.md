@@ -1,4 +1,4 @@
-# ADR-0048: Lock the "Paper" on Rotation and Present It Through a Counter-Rotate + Fit View
+# ADR-0048: Lock the "Paper" on Rotation and Present It Upright Through a Contain-Fit View
 
 **Status:** Active
 **Date:** 2026-07
@@ -30,6 +30,14 @@ Alternatives considered:
   rotation). Loses information on every round trip (repeated resampling), makes
   historical stroke widths diverge from new ones, and — decisive — still can't
   reconcile strokes with a *swapped* page composition.
+- **Counter-rotate the paper to stay "glued to the glass"** (the drawing keeps
+  its physical position on the screen and the controls re-layout around it).
+  Was built first — the view machinery supports it, and it usually fits at
+  scale ≈ 1 — but rejected as the product behavior: the drawing reads as
+  *sideways* in the new orientation rather than as a picture that rotated with
+  the device, and its correctness depends on the platform's Screen Orientation
+  angle sign convention. The upright presentation was preferred even though it
+  scales the drawing down further.
 - **Fit the whole baseline square** into the new viewport. Shows everything but
   wastes most of the screen: the square is the union of both orientations, and
   the actually-used region is only ever the adopted viewport's rect.
@@ -41,27 +49,32 @@ Alternatives considered:
 
 Introduce the **paper**: the coordinate space the drawing lives in, adopted from
 the viewport and **locked while there is ink on the canvas**. A rotation never
-remaps content; it changes only how the locked paper is *presented*.
+remaps content; it changes only how the locked paper is *presented*: **upright,
+contain-fit, centered** — the picture rotates with the device and is scaled down
+(uniformly) when the old orientation's paper doesn't fit the new one.
 
 - `engine.ts` keeps `paper` (px + CSS dims) and `paperAngle` (the
   `screen.orientation.angle` at adoption). `resizeCanvas()` decides **adopt vs
   lock**: an empty canvas, or a resize at an unchanged angle (desktop window
   drag, mobile URL bar), re-adopts the paper as the live viewport — exactly the
-  old semantics. Only a resize whose angle differs (a real rotation) with a
-  non-empty canvas keeps the paper and computes a **paper view**.
-- The view (`lib/drawing/paperView.ts`, pure + unit-tested) is
-  counter-rotate(`rotationDelta(paperAngle, angle)`) ∘ uniform contain-fit ∘
-  center. It is applied **once per resize as the visible ctx's persistent
+  old semantics. Only a resize whose angle differs (a real rotation,
+  `rotationDelta ≠ 0`) with a non-empty canvas keeps the paper and computes a
+  **paper view**.
+- The view (`lib/drawing/paperView.ts`, pure + unit-tested) is a uniform
+  contain-fit + center (`computePaperView(paper, viewport, 0)` — the rotation
+  parameter exists for the rejected glued-to-glass alternative and stays 0 in
+  production, so a 180° flip on an unchanged viewport computes an identity
+  view). It is applied **once per resize as the visible ctx's persistent
   transform plus a clip to the paper rect** — every existing paint path (live
   ops, undo/resize replay, keyframe blits, the magic-brush pattern) flows
   through it untouched, because they all paint in paper coordinates already.
   Pointer input is inverse-mapped (`screenToPaper`); the edge-swipe guard stays
   in screen space (OS gesture bands are physical edges), so `PointerState.
   startX/startY/pendingPoints` are screen-space by contract.
-- **Uniform scale, never per-op rescale**: relative stroke weights inside the
-  drawing stay exact; while letterboxed the whole page just reads slightly
-  smaller, and new strokes record in paper space so rotating back restores the
-  original layout pixel-for-pixel.
+- **Uniform view scale, never per-op rescale**: relative stroke weights inside
+  the drawing stay exact; while letterboxed the whole page just reads smaller,
+  and new strokes record in paper space so rotating back restores the original
+  layout pixel-for-pixel.
 - The **clip makes the letterbox dead space** — a stroke there would otherwise
   be stranded off-screen (or lost past the baseline square) on rotating back.
 - The **coloring page follows the paper, not the viewport**: the overlay `<img>`
@@ -84,11 +97,9 @@ Gotchas encoded in the code:
 - `clearAllOf()` replaces canvas-sized `clearRect`s: under the view the visible
   ctx's user space is paper coordinates, where a canvas-sized rect may not cover
   the paper.
-- The rotation *direction* comes from `rotationDelta` = adoption angle − current
-  angle, matching the Screen Orientation convention that `angle` is how far
-  content was rotated to compensate the device. If a platform is ever observed
-  180°-off, the fix is localized to `rotationDelta`; alignment and visibility do
-  not depend on the sign, only the "glued to the glass" fidelity does.
+- Because the view has no rotation component, nothing depends on the Screen
+  Orientation angle's sign or physical direction — the angle is used purely as
+  a **rotation detector** (`rotationDelta(paperAngle, angle) !== 0`).
 - The engine also funnels `screen.orientation` `change` events into the
   debounced resize handler, in case an angle update lands after the resize
   event. `setScreenAngleOverride()` is the dev-harness seam that lets Playwright
@@ -102,16 +113,16 @@ Gotchas encoded in the code:
   alignment through any number of rotations, and a plain drawing is always fully
   visible (contain-fit) instead of half-clipped.
 - **+** Rotating back is a perfect restore — the paper never changed, only the
-  view did. The metaphor is physical: the paper is glued to the glass and the
-  controls re-layout around it.
+  view did.
 - **+** No new rendering machinery: undo (ADR-0033), rebuild (ADR-0034),
   keyframes (ADR-0035), simplification (ADR-0036), and the magic brush
   (ADR-0043) are untouched replay-wise; the view is one `setTransform` + `clip`
   at resize time, off the hot path.
-- **−** While rotated, the drawing is letterboxed and new strokes render
-  proportionally smaller than the picker circle implies (the paper is "further
-  away"); the eraser preview bubble is scaled to match. Near-square viewports
-  (tablets) barely shrink; a phone letterboxes more.
+- **−** While rotated, the drawing is letterboxed at roughly the aspect-ratio
+  ratio of the two orientations (a phone shows a portrait drawing at ~half size
+  in landscape; near-square tablets shrink far less), and new strokes render
+  proportionally smaller than the picker circle implies; the eraser preview
+  bubble is scaled to match.
 - **−** The child cannot draw in the letterbox margins (by design — such strokes
   could never survive a rotation back). Clearing the canvas reclaims the full
   new orientation.
@@ -119,10 +130,6 @@ Gotchas encoded in the code:
   clear after rotating) replays old-space ops into the new space — the pre-ADR
   behavior (possible partial off-screen), accepted for that corner rather than
   keeping stale locks on a blank canvas.
-- **−** The glued-to-glass rotation direction is derived from the Screen
-  Orientation angle convention and is verified in emulation but not yet on
-  physical iOS/Android hardware; a wrong sign would show the paper turned 180°
-  from the physical expectation (still aligned and fully visible).
 
 Amends the "rotation coordinate handling is unchanged" note in **ADR-0034** (the
 baseline square remains the preservation mechanism; presentation is new) and the

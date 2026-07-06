@@ -2,9 +2,12 @@
 // rotated since the paper was adopted (ADR-0048). While ink is on the canvas the
 // engine locks the paper — the coordinate space every recorded op, the baseline,
 // the keyframes, and the magic sheet live in — and a device rotation is handled
-// by *presenting* that space through the view computed here (counter-rotate +
-// contain-fit + center) instead of remapping any content. engine.ts owns all
-// state; everything here is a pure function so the mapping math is unit-testable.
+// by *presenting* that space through the view computed here instead of remapping
+// any content. Production always presents UPRIGHT (rotation 0: the picture
+// rotates with the device and contain-fits, centered); the quarter-turn cases
+// are kept because the math is one unit and they document the rejected
+// counter-rotate alternative (see ADR-0048). engine.ts owns all state;
+// everything here is a pure function so the mapping math is unit-testable.
 
 export type ViewRotation = 0 | 90 | 180 | 270;
 
@@ -33,11 +36,11 @@ export function isIdentityView(view: PaperView): boolean {
   return view.scale === 1 && view.rotate === 0 && view.tx === 0 && view.ty === 0;
 }
 
-// How far the paper must be counter-rotated to stay physically fixed on the
-// glass: the screen angle when the paper was adopted minus the current angle.
-// Screen Orientation angles are multiples of 90 measuring how far the rendered
-// content has been rotated to compensate the device's physical rotation, so the
-// paper (glued to the glass) rotates by the opposite of the content's delta.
+// The normalized angle between the screen orientation at paper adoption and
+// now. The engine uses it as the rotation DETECTOR (delta ≠ 0 means the device
+// actually rotated, as opposed to a plain viewport resize); it is also the
+// counter-rotation a glued-to-the-glass presentation would need, were that
+// alternative ever revisited (ADR-0048).
 export function rotationDelta(paperAngle: number, currentAngle: number): ViewRotation {
   return ((((paperAngle - currentAngle) % 360) + 360) % 360) as ViewRotation;
 }
