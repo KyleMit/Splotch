@@ -75,7 +75,8 @@ message). The run prints a `file://` link and opens the report in the default
 browser. It **always exits 0** and never asserts pass/fail — the verdict is the
 human review.
 
-**Safety classification** (`src/lib/server/aiSafety.ts`):
+**Safety classification** (`src/lib/server/ai/geminiSafety.ts`, part of the
+Gemini adapter behind the `AiImageProvider` seam — ADR-0047):
 - `classifyGeminiResponse()` → `image` | `safety` | `empty`, treating
   `promptFeedback.blockReason` and policy `finishReason`s (`SAFETY`,
   `IMAGE_SAFETY`, `PROHIBITED_CONTENT`, `RECITATION`, `BLOCKLIST`, `SPII`) as
@@ -102,16 +103,17 @@ the `generateContent` call is configured to lean hard toward refusal:
   drawing, and to never "beautify" them — that prose reply is exactly what the
   classifier now turns into a `422`.
 - **`safetySettings`** set every configurable harm category to
-  `BLOCK_LOW_AND_ABOVE`, including the image-output categories
-  (`HARM_CATEGORY_IMAGE_DANGEROUS_CONTENT`/`_SEXUALLY_EXPLICIT`/`_HATE`/
-  `_HARASSMENT`). This only tightens the *configurable* filters (the always-on
-  child-safety filter is separate), but it raises refusals of borderline drawings.
+  `BLOCK_LOW_AND_ABOVE`. (The image-output categories
+  `HARM_CATEGORY_IMAGE_*` were originally included but later dropped — the
+  image model's v1beta endpoint rejects them with a 400.) This only tightens
+  the *configurable* filters (the always-on child-safety filter is separate),
+  but it raises refusals of borderline drawings.
 
 These are a best-effort, in-band mitigation, not a guarantee — a dedicated
 pre-generation moderation pass was considered and deferred unless the red-team
 shows the in-band controls still leak.
 
-The classifier is pure and **unit-tested in CI** (`aiSafety.test.ts`) — the only
+The classifier is pure and **unit-tested in CI** (`geminiSafety.test.ts`) — the only
 part of this work that runs unattended; everything token/Gemini-dependent stays
 manual.
 

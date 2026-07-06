@@ -28,7 +28,7 @@ import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { ROOT, fail } from './lib/utils.mjs';
-import { classifyGeminiResponse } from '../web/src/lib/server/aiSafety.ts';
+import { classifyGeminiResponse } from '../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-2.5-flash-image';
 const COLORING_DIR = join(ROOT, 'web', 'static', 'coloring');

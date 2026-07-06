@@ -1,13 +1,12 @@
 import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import { STYLE_SUFFIXES } from '$lib/ai/styles';
 import { buildPromptForStyle } from '$lib/ai/prompt';
 import { isAllowedToken } from '$lib/server/tokens';
 import { recordTokenUsage } from '$lib/server/usage';
 import { rateLimit } from '$lib/server/rateLimit';
 import { throttled } from '$lib/server/http';
-import { classifyGeminiResponse, isSafetyError } from '$lib/server/aiSafety';
+import { aiProvider } from '$lib/server/ai/provider';
 import type { RequestHandler } from './$types';
 
 // A safety refusal is the model declining the drawing on policy grounds — the
@@ -19,8 +18,7 @@ function safetyRefusal(reason: string): never {
   throw error(SAFETY_STATUS, `Drawing was blocked for safety: ${reason}`);
 }
 
-const MODEL = 'gemini-2.5-flash-image';
-// Burst guardrail for managed (non-BYOK) tokens, which spend *our* Gemini quota.
+// Burst guardrail for managed (non-BYOK) tokens, which spend *our* model quota.
 // A real generation takes several seconds, so back-to-back human use stays well
 // under this; the cap only blunts a leaked token being hammered in a tight loop
 // before we notice the usage tally and pull it. Per-instance like the verify
@@ -38,35 +36,6 @@ const BYOK_LIMIT = 30;
 // holder can't push us into a memory/DoS situation by base64-ing a huge blob.
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
-
-// The audience is toddlers (2+), so the model must REFUSE unsafe drawings rather
-// than do what it does by default — quietly "beautify" a gun into a gilded gun or
-// anatomy into a tower. We tell it to decline in plain text instead of drawing;
-// that text-only reply is classified as a safety refusal (→ 422) by aiSafety.ts.
-// See ADR-0023.
-const SAFETY_SYSTEM_INSTRUCTION = `You turn a young child's drawing into a polished, whimsical illustration for Splotch, a drawing app for toddlers aged 2 and up. The result must be appropriate for a 2-year-old.
-
-If the drawing depicts or implies ANY of the following, do NOT generate an image:
-- a realistic weapon or one used to harm (a real-looking gun, a knife used as a weapon), real violence, blood, gore, or self-harm;
-- nudity, genitalia, or sexual content;
-- a hate symbol, extremist imagery, slurs, or offensive text;
-- drugs, alcohol, or other adult or dangerous content.
-
-Ordinary toddler pretend-play IS welcome — render it as cheerful, obviously make-believe cartoon art. A toy, foam, cartoon, knight's, or pirate's sword, a magic wand, a toy / water / bubble blaster, costume or superhero props, and friendly dragons or monsters are all fine.
-
-When you must refuse, respond with a single short sentence declining, e.g. "I can't turn that drawing into a picture — let's draw something else!". Never sanitize, beautify, or partially transform genuinely unsafe content into a "nicer" version — refuse it entirely. When a drawing is clearly playful and non-graphic, generate the image.`;
-
-// Tighten every configurable harm category to its most aggressive setting. These
-// only affect the configurable categories — the always-on child-safety filter is
-// separate — but lowering them increases refusals of borderline drawings. The
-// SDK also exports `HARM_CATEGORY_IMAGE_*` enums, but the gemini-2.5-flash-image
-// v1beta endpoint rejects them with a 400, so only the standard categories here.
-const SAFETY_SETTINGS = [
-  HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-  HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-  HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-  HarmCategory.HARM_CATEGORY_HARASSMENT,
-].map((category) => ({ category, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE }));
 
 export const POST: RequestHandler = async ({ request, platform, getClientAddress }) => {
   const form = await request.formData();
@@ -133,44 +102,18 @@ export const POST: RequestHandler = async ({ request, platform, getClientAddress
   // overload), so the ≤15 MB upload is only held in memory once.
   const inputBase64 = Buffer.from(await imageFile.arrayBuffer()).toString('base64');
 
-  const ai = new GoogleGenAI({ apiKey: effectiveKey });
-  let response;
-  try {
-    response = await ai.models.generateContent({
-      model: MODEL,
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { inlineData: { mimeType: imageFile.type || 'image/png', data: inputBase64 } },
-            { text: finalPrompt },
-          ],
-        },
-      ],
-      config: {
-        abortSignal: AbortSignal.timeout(120_000),
-        systemInstruction: SAFETY_SYSTEM_INSTRUCTION,
-        safetySettings: SAFETY_SETTINGS,
-      },
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    const status = (err as { status?: number }).status;
-    console.error(`Gemini call failed (${status ?? 'unknown'}): ${msg.split('\n')[0]}`);
-    // The SDK can throw on blocked content — route that to the safety path too.
-    if (isSafetyError(err)) safetyRefusal(msg.split('\n')[0]);
-    throw error(502, `Gemini request failed: ${msg}`);
-  }
+  const result = await aiProvider.generateImage({
+    apiKey: effectiveKey,
+    image: { base64: inputBase64, mimeType: imageFile.type || 'image/png' },
+    prompt: finalPrompt,
+  });
+  if (result.kind === 'refusal') safetyRefusal(result.reason);
+  if (result.kind === 'error') throw error(502, result.reason);
 
-  const classified = classifyGeminiResponse(response);
-  if (classified.kind === 'safety') safetyRefusal(classified.reason);
-  if (classified.kind === 'empty')
-    throw error(502, `Model did not return an image: ${classified.reason}`);
-
-  const outBytes = Buffer.from(classified.data, 'base64');
+  const outBytes = Buffer.from(result.data, 'base64');
   return new Response(outBytes, {
     headers: {
-      'Content-Type': classified.mimeType,
+      'Content-Type': result.mimeType,
       'Cache-Control': 'no-store',
     },
   });

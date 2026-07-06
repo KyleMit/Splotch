@@ -21,7 +21,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 - **`@aparajita/capacitor-secure-storage`** — stores the user's BYO Gemini API key securely on-device.
 
 ### AI
-- **[`@google/genai`](https://ai.google.dev/)** — Gemini API client. Image generation runs server-side (Netlify function `/api/generate-image`) and is token-gated. Native apps call the hosted endpoint via `__NATIVE_API_BASE__`.
+- **[`@google/genai`](https://ai.google.dev/)** — Gemini API client. Image generation runs server-side (Netlify function `/api/generate-image`) and is token-gated. Native apps call the hosted endpoint via `__NATIVE_API_BASE__`. The SDK is confined to the Gemini adapter behind the provider-agnostic `AiImageProvider` seam in `lib/server/ai/` (ADR-0047) — routes never import it.
 
 ### Build & PWA
 - **[vite-plugin-pwa](https://vite-pwa-org.netlify.app/)** — service worker and offline support. Web-only; skipped entirely when `CAPACITOR=true` (the native shell provides equivalent offline capability).
@@ -71,6 +71,9 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `secureStorage.ts` | Named client-held secrets (BYO Gemini key, admin session token): Keychain/Keystore via `@aparajita/capacitor-secure-storage` on native, AES-GCM-encrypted IndexedDB on web. |
 | `orientation.ts` | Device orientation detection utilities. |
 | `pwa/updates.ts` | Checks for PWA service worker updates and auto-applies them (with a reload) only while the canvas is blank; otherwise the update activates on next launch. |
+| `server/ai/provider.ts` | Server-only: the provider-agnostic AI seam (ADR-0047) — the `AiImageProvider` interface (prompt + drawing in; image \| refusal \| error out) and the active-provider export. The only AI module routes may import. |
+| `server/ai/gemini.ts` | Server-only: the Gemini `AiImageProvider` adapter — the sole runtime importer of `@google/genai`. Owns the model ids, the toddler-safety `systemInstruction` + `safetySettings`, and the call itself. |
+| `server/ai/geminiSafety.ts` | Server-only: pure classifier splitting a Gemini response/error into image vs safety refusal vs empty (ADR-0023). Standalone dependency-free module because the asset scripts import it via `--experimental-strip-types`. |
 | `server/tokens.ts` | Server-only: validates and manages AI access tokens (stored in Netlify Blobs). |
 | `server/admin.ts` | Server-only: admin auth core (secret check, derived session token, invite building) shared by the `/admin` page actions and the `/api/admin/*` endpoints. |
 | `server/rateLimit.ts` | Server-only: per-token rate limiting for the image generation endpoint. |
