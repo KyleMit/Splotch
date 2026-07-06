@@ -556,6 +556,50 @@ async function applyFarmPage(page: Page) {
   await expect(page.locator('#coloringOverlay')).toBeVisible();
 }
 
+// A device rotation with ink on the canvas must NOT swap the page's tall/wide
+// art out from under the child's coloring (the two variants are different
+// compositions — no mapping exists): the engine locks the paper (ADR-0048) and
+// the same art stays applied, presented through the paper-view wrapper. Once
+// the canvas is blank again the paper re-adopts and the art swaps normally.
+// Rotation is emulated via CDP: new viewport dimensions + a changed Screen
+// Orientation angle (a plain resize keeps angle 0 and wouldn't rotate).
+test('rotating with ink keeps the same coloring page art until the canvas is blank', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await applyFarmPage(page);
+
+  const overlay = page.locator('#coloringOverlay');
+  const srcBefore = await overlay.getAttribute('src');
+  expect(srcBefore).toMatch(/-wide\.webp$/); // landscape viewport → wide art
+
+  await draw(page, [
+    { x: 200, y: 200 },
+    { x: 400, y: 260 },
+  ]);
+
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: 720,
+    height: 1280,
+    deviceScaleFactor: 1,
+    mobile: true,
+    screenOrientation: { type: 'portraitPrimary', angle: 90 },
+  });
+
+  // The ink locks the paper: the wide art stays applied, lifted into the
+  // letterboxed paper view instead of being swapped for the tall variant.
+  await expect(page.locator('.paper-view.paper-lifted')).toBeVisible();
+  await expect(overlay).toHaveAttribute('src', srcBefore!);
+
+  // Undo the only stroke → blank canvas → the paper re-adopts the portrait
+  // viewport and the art swaps to the tall variant.
+  await page.locator('#undoButton').click();
+  await expect(overlay).toHaveAttribute('src', /-tall\.webp$/);
+  await expect(page.locator('.paper-view.paper-lifted')).toHaveCount(0);
+});
+
 // Distinct strongly-opaque canvas colors, quantized to `bits` per channel. A
 // solid stroke yields ~one bucket; a magic reveal spanning several fill regions
 // yields many — the signal that the brush painted the sheet, not a flat color.

@@ -9,7 +9,9 @@
     setColorSheet,
     setSafeAreaInsets,
     getCanvasRect,
+    type EngineViewState,
   } from '$lib/drawing/engine';
+  import { viewMatrix } from '$lib/drawing/paperView';
   import { layout } from '$lib/state/layout.svelte';
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
@@ -31,7 +33,33 @@
   // Bubble that previews the eraser footprint at the pointer while erasing.
   let eraserCursor = $state({ visible: false, x: 0, y: 0 });
 
-  const eraserSizePx = $derived(getEraserWidthPx(strokeState.eraserSize));
+  // The engine's paper view (ADR-0048): identity in normal use; after a device
+  // rotation with ink on the canvas it presents the locked paper counter-rotated
+  // and contain-fit. The overlay wrapper below is positioned with the exact same
+  // transform the canvas paints through, so page art and strokes stay aligned.
+  let paperView = $state<EngineViewState>({
+    active: false,
+    scale: 1,
+    rotate: 0,
+    tx: 0,
+    ty: 0,
+    paperCssWidth: 0,
+    paperCssHeight: 0,
+    paperOrientation: 'portrait',
+  });
+
+  const paperTransform = $derived(
+    `matrix(${viewMatrix({
+      scale: paperView.scale,
+      rotate: paperView.rotate,
+      tx: paperView.tx,
+      ty: paperView.ty,
+    }).join(', ')})`
+  );
+
+  const eraserSizePx = $derived(
+    getEraserWidthPx(strokeState.eraserSize) * (paperView.active ? paperView.scale : 1)
+  );
 
   function updateEraserCursor(e: PointerEvent) {
     if (!toolState.eraser) return;
@@ -60,6 +88,10 @@
       },
       onStrokeEnd: () => {
         canvasState.strokeCount++;
+      },
+      onViewChange: (view) => {
+        Object.assign(paperView, view);
+        canvasState.paperOrientation = view.paperOrientation;
       },
     });
 
@@ -159,13 +191,27 @@
 </script>
 
 <div class="canvas-container">
-  <img
-    class="coloring-overlay"
-    id="coloringOverlay"
-    src={coloringBookState.overlayUrl ?? ''}
-    alt=""
-    hidden={!coloringBookState.overlayUrl}
-  />
+  <!-- Tracks the engine's paper: full-container in normal use, counter-rotated +
+       contain-fit while a rotation has the paper locked (ADR-0048). The overlay
+       art contain-fits within it, mirroring the magic sheet's math, so the page
+       and the strokes move as one sheet. The lifted outline marks the page edge
+       when the paper is letterboxed. -->
+  <div
+    class="paper-view"
+    class:paper-lifted={paperView.active}
+    style:width="{paperView.paperCssWidth}px"
+    style:height="{paperView.paperCssHeight}px"
+    style:transform={paperTransform}
+    hidden={!coloringBookState.overlayUrl && !paperView.active}
+  >
+    <img
+      class="coloring-overlay"
+      id="coloringOverlay"
+      src={coloringBookState.overlayUrl ?? ''}
+      alt=""
+      hidden={!coloringBookState.overlayUrl}
+    />
+  </div>
   <canvas
     bind:this={canvasEl}
     id="drawingCanvas"
@@ -225,15 +271,35 @@
     z-index: 3;
   }
 
-  .coloring-overlay {
+  /* The multiply blend lives on the wrapper (not the img): the transform makes
+     the wrapper a stacking context, which would confine an inner mix-blend-mode
+     to the wrapper's own (transparent) backdrop instead of the canvas below. */
+  .paper-view {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
     pointer-events: none;
     z-index: 2;
     mix-blend-mode: multiply;
+  }
+
+  .paper-view[hidden] {
+    display: none;
+  }
+
+  /* Page-edge affordance while the paper is letterboxed: a soft frame that
+     multiplies into a slightly darker line, reading as the sheet's edge. */
+  .paper-lifted {
+    outline: 2px solid #e6e0d6;
+    border-radius: 3px;
+  }
+
+  .coloring-overlay {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }
 
   .coloring-overlay[hidden] {

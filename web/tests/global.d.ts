@@ -35,6 +35,17 @@ declare global {
         reduce?: boolean;
         split?: 'none' | 'corner';
       }): void;
+      setScreenAngleOverride(angle: number | null): void;
+      getViewState(): {
+        active: boolean;
+        scale: number;
+        rotate: 0 | 90 | 180 | 270;
+        tx: number;
+        ty: number;
+        paperCssWidth: number;
+        paperCssHeight: number;
+        paperOrientation: 'portrait' | 'landscape';
+      };
       inkBounds(): { minX: number; minY: number; maxX: number; maxY: number } | null;
       exportCanvasBlob(
         overlayImage?: HTMLImageElement | null,

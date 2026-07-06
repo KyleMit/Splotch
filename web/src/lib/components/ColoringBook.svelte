@@ -11,6 +11,7 @@
   import { pageImage, thumbPath, type Book, type ColoringPage } from '$lib/state/books';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { layout } from '$lib/state/layout.svelte';
+  import { canvasState } from '$lib/state/canvas.svelte';
   import { prefetchImages } from '$lib/imagePrefetch';
 
   // Only show books licensed for this platform. Native builds also strip the
@@ -19,7 +20,12 @@
   const books = booksForPlatform(isNative() ? 'mobile' : 'web');
 
   let activeBook = $state<Book | null>(null);
-  const orientation = $derived(layout.orientation);
+  // The tall/wide art variant follows the engine's PAPER, not the live viewport:
+  // after a rotation with ink on the canvas the paper stays locked (ADR-0048),
+  // so the variant the child colored on must stay applied — and any page picked
+  // mid-lock must match that same locked space. The viewport-driven
+  // layout.orientation is only a fallback until the engine mounts.
+  const orientation = $derived(canvasState.paperOrientation ?? layout.orientation);
 
   // Warm the cover thumbnails once at idle so the very first open of the picker
   // paints instantly instead of fetching eight full covers on demand. iOS lacks
@@ -43,7 +49,9 @@
     prefetchImages([pageImage(page, orientation)]);
   }
 
-  // Rotating swaps the active overlay to that page's portrait/landscape art.
+  // Swap the active overlay to the paper's portrait/landscape art when the
+  // paper re-adopts the viewport — i.e. only on rotations with a blank canvas;
+  // a locked paper keeps `orientation` (and so the art) unchanged.
   $effect(() => {
     if (coloringBookState.overlayPage) {
       setOverlayPage(coloringBookState.overlayPage, orientation);

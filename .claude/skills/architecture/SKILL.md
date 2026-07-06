@@ -45,6 +45,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `drawing/engine.ts` | Imperative canvas engine. Owns the `<canvas>`, the undo baseline + command log (ADR-0033/0034), and all pointer tracking. Components connect via callbacks (`onDrawSound`, `onUndoStateChange`, etc.) and direct calls (`setColor`, `setStrokeWidth`, `clearCanvas`). |
 | `drawing/strokeMath.ts` | Pure gesture math (edge-swipe guards, pointer-resume detection, stroke speed) factored out of the engine for unit testing. |
 | `drawing/strokeSimplify.ts` | Pure stroke-simplification geometry (ADR-0036): RDP, corner/bulge analysis, and the sample/spline reconstruction pipelines the engine runs at commit. Unit-tested; the engine owns the tunables. |
+| `drawing/paperView.ts` | Pure paper-view geometry (ADR-0048): the counter-rotate + contain-fit + center transform (matrix/inverse forms) that presents the rotation-locked "paper" — the space ops are recorded in — inside a rotated viewport. The engine owns the paper state and applies the view; `DrawingCanvas.svelte` reuses `viewMatrix` to position the overlay wrapper. |
 | `drawing/overlay.ts` | Manages the coloring-book overlay image rendered behind the drawing layer. |
 | `drawing/saveOnDelete.ts` | Saves the current drawing to the gallery before clearing, when the setting is enabled. |
 | `drawing/screenshot.ts` | Persists canvas PNGs (exported via `engine.exportCanvasBlob`): on native, saves to the photo library; on web, triggers a download. `saveScreenshot` also plays the polaroid animation. |
@@ -138,7 +139,7 @@ queries + the head-script stamp in `app.html`).
   * **Coloring Book Tile** - Individual book cover button; tap to open that book's pages
   * **Coloring Page Grid** - Second menu showing the 6 selectable coloring pages in a book
   * **Coloring Page Tile** - Individual coloring page; tap to apply it as the canvas overlay
-  * **Coloring Page Overlay** - Selected page rendered behind the drawing canvas with multiply blend, so white areas blend into the paper background and the line art stays visible
+  * **Coloring Page Overlay** - Selected page rendered behind the drawing canvas with multiply blend, so white areas blend into the paper background and the line art stays visible. Lives inside the **Paper View** wrapper (`.paper-view`, `DrawingCanvas.svelte`): full-container normally, but after a device rotation with ink on the canvas it counter-rotates + contain-fits the locked paper (ADR-0048) so the page and strokes move as one sheet — the tall/wide art variant is keyed off `canvasState.paperOrientation`, not the live viewport
 * **Install Banner** - Friendly bottom-center pill prompting "Add Splotch to your home screen", shown on web after the child has drawn a few strokes. One-tap native install on Chromium/Android; guided Share-sheet hint on iOS. Dismissible and remembered. See ADR-0039.
 * **Parent Help Button** - Floating button that opens the Parent Center
   * **Parent Center** - Modal with platform install guides and app settings

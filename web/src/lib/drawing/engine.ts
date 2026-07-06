@@ -14,6 +14,15 @@ import {
 } from './strokeMath';
 import { sampleReducedSpans, splineReducedSpans, type PathSeg } from './strokeSimplify';
 import {
+  computePaperView,
+  isIdentityView,
+  IDENTITY_PAPER_VIEW,
+  rotationDelta,
+  viewMatrix,
+  viewToPaper,
+  type PaperView,
+} from './paperView';
+import {
   initMagicBrush,
   rasterizeSheet,
   sheetPatternFor,
@@ -34,6 +43,10 @@ interface DrawSoundData {
   speed: number;
 }
 
+// x/y/midX/midY are PAPER coordinates (the space ops are recorded in).
+// startX/startY and pendingPoints are SCREEN (backing-store) coordinates: they
+// exist only for the edge-swipe guard, whose geometry is physical — see
+// pointerToScreen(). A committed candidate maps its buffered points to paper.
 interface PointerState {
   id: number;
   x: number;
@@ -124,6 +137,7 @@ interface InitOptions {
   onUndoStateChange?: ((canUndo: boolean) => void) | null;
   onCanvasEmptyChange?: ((empty: boolean) => void) | null;
   onStrokeEnd?: (() => void) | null;
+  onViewChange?: ((view: EngineViewState) => void) | null;
   initialColor?: string;
 }
 
@@ -165,6 +179,65 @@ let renderScale = 1;
 let canvasRect: CanvasRect = { left: 0, top: 0, width: 0, height: 0 };
 let rectScaleX = 1;
 let rectScaleY = 1;
+
+// The paper: the coordinate space every recorded op, the baseline, the
+// keyframes, and the magic sheet live in (ADR-0048). It tracks the viewport
+// while the canvas is empty or the screen angle is unchanged (today's
+// semantics), but a device rotation with ink on the canvas LOCKS it: the
+// drawing keeps its space — and its tall/wide coloring page — and is instead
+// *presented* through `paperView` (counter-rotate + contain-fit + center), so
+// nothing rotates off-screen and rotating back restores the exact layout.
+let paper = { pxW: 0, pxH: 0, cssW: 0, cssH: 0 };
+// Screen Orientation angle when the paper was adopted, so a later resize can
+// tell an actual rotation (angle delta ≠ 0) from a plain viewport resize.
+let paperAngle = 0;
+let paperView: PaperView = IDENTITY_PAPER_VIEW;
+let onViewChange: ((view: EngineViewState) => void) | null = null;
+
+// Dev/test seam (mirrors setSimplifyParams): pin the screen angle the engine
+// reads so the /dev/engine harness can simulate a device rotation without a
+// device. Production never calls the setter.
+let screenAngleOverride: number | null = null;
+export function setScreenAngleOverride(angle: number | null) {
+  screenAngleOverride = angle;
+}
+
+function currentScreenAngle(): number {
+  if (screenAngleOverride !== null) return screenAngleOverride;
+  const angle = window.screen?.orientation?.angle;
+  return typeof angle === 'number' ? angle : 0;
+}
+
+// The paper view published to components (CSS px), so the coloring-page overlay
+// can be positioned with the same transform the canvas paints through, and the
+// picker can keep offering the locked paper's tall/wide art variant.
+export interface EngineViewState {
+  active: boolean;
+  scale: number;
+  rotate: PaperView['rotate'];
+  tx: number;
+  ty: number;
+  paperCssWidth: number;
+  paperCssHeight: number;
+  paperOrientation: 'portrait' | 'landscape';
+}
+
+export function getViewState(): EngineViewState {
+  return {
+    active: !isIdentityView(paperView),
+    scale: paperView.scale,
+    rotate: paperView.rotate,
+    tx: paperView.tx / renderScale,
+    ty: paperView.ty / renderScale,
+    paperCssWidth: paper.cssW,
+    paperCssHeight: paper.cssH,
+    paperOrientation: paper.pxW > paper.pxH ? 'landscape' : 'portrait',
+  };
+}
+
+function notifyViewChange() {
+  if (onViewChange) onViewChange(getViewState());
+}
 
 // The retained command log; commands older than this fold into the baseline.
 const commandLog: StrokeGroupCommand[] = [];
@@ -241,6 +314,10 @@ function setCanvasEmptyState(empty: boolean) {
   if (canvasEmpty === empty) return;
   canvasEmpty = empty;
   if (onCanvasEmptyChange) onCanvasEmptyChange(empty);
+  // A blank canvas frees the locked paper to match the live viewport again
+  // (clear, undo-to-blank, erase-to-blank): re-adopt right away instead of
+  // leaving the child a letterboxed blank page until the next rotation.
+  if (empty && activePointers.size === 0 && !isIdentityView(paperView)) resizeCanvas();
 }
 
 // Emptiness is scanned on a small CPU-side scratch canvas instead of the main
@@ -310,13 +387,30 @@ function growCanvas(
 function resizeCanvas() {
   if (PERF_MARKS) performance.mark('engine.resize:start');
   const rect = canvas.getBoundingClientRect();
+  const angle = currentScreenAngle();
 
-  // The baseline is a max(w,h) square so it covers both orientations and
-  // rotation never loses pixels; anything larger (e.g. a resized desktop window)
-  // goes through the grow path. Replayed ops use its coordinates, and content
-  // off the current (rotated) viewport survives here even though the visible
-  // canvas clips it.
-  const squareSide = Math.ceil(Math.max(rect.width, rect.height) * renderScale);
+  // Adopt vs lock (ADR-0048): an empty canvas — or a same-angle resize (desktop
+  // window drag, mobile URL bar) — re-adopts the paper as the live viewport,
+  // exactly the pre-lock semantics. Only a rotation with ink on the canvas keeps
+  // the paper (and its angle) so the drawing can be presented instead of remapped.
+  const rotate = rotationDelta(paperAngle, angle);
+  const lockPaper = !canvasEmpty && rotate !== 0;
+  if (!lockPaper) {
+    paper = {
+      pxW: Math.round(rect.width * renderScale),
+      pxH: Math.round(rect.height * renderScale),
+      cssW: rect.width,
+      cssH: rect.height,
+    };
+    paperAngle = angle;
+  }
+
+  // The baseline is a max(w,h) square of the paper so it covers both
+  // orientations and rotation never loses pixels; anything larger (e.g. a
+  // resized desktop window) goes through the grow path. Replayed ops use its
+  // coordinates, and content off the current viewport survives here even though
+  // the visible canvas clips it.
+  const squareSide = Math.ceil(Math.max(paper.pxW, paper.pxH));
   if (!baselineCanvas) {
     baselineCanvas = document.createElement('canvas');
     baselineCanvas.width = squareSide;
@@ -339,12 +433,32 @@ function resizeCanvas() {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  // The sheet is sized to the backing store, so re-rasterize before replaying any
+  // Present the locked paper through the view: the visible ctx keeps painting in
+  // paper coordinates (live ops, replay, and the sheet pattern all map through
+  // the transform untouched), and the letterbox outside the paper is clipped
+  // dead so nothing can be drawn there that a rotation back would strand
+  // off-screen. Both persist until the next backing-store reset above.
+  paperView = lockPaper
+    ? computePaperView(
+        { width: paper.pxW, height: paper.pxH },
+        { width: canvas.width, height: canvas.height },
+        rotate
+      )
+    : IDENTITY_PAPER_VIEW;
+  if (!isIdentityView(paperView)) {
+    ctx.setTransform(...viewMatrix(paperView));
+    ctx.beginPath();
+    ctx.rect(0, 0, paper.pxW, paper.pxH);
+    ctx.clip();
+  }
+
+  // The sheet is sized to the paper, so re-rasterize before replaying any
   // magic ops against it.
   rasterizeSheet();
   rebuildFromBaseline();
 
   refreshCanvasRect();
+  notifyViewChange();
 
   if (PERF_MARKS) performance.measure('engine.resize', 'engine.resize:start');
 }
@@ -383,11 +497,20 @@ function handleResize() {
   }, RESIZE_SETTLE_MS);
 }
 
-function pointerToCanvas(e: PointerEvent) {
+// Backing-store (screen) coordinates of a pointer event — the physical space
+// the edge-swipe gesture geometry runs in (OS gesture bands sit at device
+// edges, which a locked paper's rotation would otherwise move).
+function pointerToScreen(e: PointerEvent) {
   return {
     x: (e.clientX - canvasRect.left) * rectScaleX,
     y: (e.clientY - canvasRect.top) * rectScaleY,
   };
+}
+
+// Paper coordinates — the space ops are recorded and rendered in. Identity
+// unless a rotation has locked the paper (see resizeCanvas / ADR-0048).
+function screenToPaper(pt: { x: number; y: number }): { x: number; y: number } {
+  return isIdentityView(paperView) ? pt : viewToPaper(paperView, pt.x, pt.y);
 }
 
 // The cached canvas client rect, so components can position pointer-following
@@ -432,9 +555,23 @@ function paintOpShape(
 // surface). Erasing composites destination-out; a magic op reveals the color
 // sheet (source-over, its shape filled with the sheet pattern) and paints
 // nothing until the sheet has decoded; everything else lays down its solid color.
+// Clear everything a target could be showing. The visible ctx's user space is
+// PAPER coordinates whenever the paper view is active, so a canvas-sized rect
+// doesn't necessarily cover the paper (a rotated viewport can be shorter than
+// the paper is tall) — take the larger of the two spaces. Identity targets
+// (baseline, keyframes, exports) are unaffected: their canvas is ≥ the paper.
+function clearAllOf(target: CanvasRenderingContext2D) {
+  target.clearRect(
+    0,
+    0,
+    Math.max(target.canvas.width, paper.pxW),
+    Math.max(target.canvas.height, paper.pxH)
+  );
+}
+
 function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   if (op.kind === 'clear') {
-    target.clearRect(0, 0, target.canvas.width, target.canvas.height);
+    clearAllOf(target);
     return;
   }
   if (op.magic) {
@@ -759,7 +896,7 @@ function commitEdgeSwipe(ps: PointerState) {
   ps.edgeSwipeGuard = null;
   renderStrokeStart(ps);
   if (ps.pendingPoints.length > 0) {
-    strokeSmoothSegments(ps, ps.pendingPoints);
+    strokeSmoothSegments(ps, ps.pendingPoints.map(screenToPaper));
     ps.pendingPoints = [];
   }
   // Restart speed sampling from the commit point so the buffered span doesn't
@@ -785,7 +922,8 @@ function startDrawing(e: PointerEvent) {
   const requiredDelay = e.pointerType === 'pen' ? 0 : COLOR_CHANGE_DEBOUNCE_MS;
   if (timeSinceColorChange < requiredDelay) return;
 
-  const { x, y } = pointerToCanvas(e);
+  const screen = pointerToScreen(e);
+  const { x, y } = screenToPaper(screen);
 
   // The eraser runs a bit larger than the pen at the same stroke level. Stroke
   // widths are authored in CSS pixels, so they scale to backing-store pixels.
@@ -794,7 +932,7 @@ function startDrawing(e: PointerEvent) {
 
   const edgeSwipeGuard =
     e.pointerType === 'touch'
-      ? guardedEdgeAt(x, y, {
+      ? guardedEdgeAt(screen.x, screen.y, {
           width: canvas.width,
           height: canvas.height,
           renderScale,
@@ -809,8 +947,8 @@ function startDrawing(e: PointerEvent) {
     y,
     midX: x,
     midY: y,
-    startX: x,
-    startY: y,
+    startX: screen.x,
+    startY: screen.y,
     isDrawing: true,
     color: currentColor,
     lineWidth,
@@ -899,14 +1037,17 @@ function draw(e: PointerEvent) {
   // back to the event itself.
   const coalesced = e.getCoalescedEvents?.() ?? [];
   const events = coalesced.length > 0 ? coalesced : [e];
-  const points = events.map(pointerToCanvas);
+  const screenPoints = events.map(pointerToScreen);
 
   const now = Date.now();
 
   // Edge-gesture candidate: withhold rendering until the direction is decided.
+  // The buffered points and the direction test stay in screen space (physical
+  // edges); commitEdgeSwipe maps them to paper coordinates when they turn out
+  // to be a real stroke.
   if (pointerState.edgeSwipeGuard) {
-    pointerState.pendingPoints.push(...points);
-    const last = points[points.length - 1];
+    pointerState.pendingPoints.push(...screenPoints);
+    const last = screenPoints[screenPoints.length - 1];
     const dx = last.x - pointerState.startX;
     const dy = last.y - pointerState.startY;
     if (!edgeSwipeDirectionDecided(Math.hypot(dx, dy), renderScale)) return;
@@ -921,6 +1062,8 @@ function draw(e: PointerEvent) {
     return;
   }
 
+  const points = screenPoints.map(screenToPaper);
+
   // A resumed pointer (see POINTER_RESUME_GAP_MS) reappears far from where it
   // left off after an idle gap, with no coalesced samples bridging the two.
   // Restart the path there so the next segment doesn't span the gap.
@@ -928,7 +1071,7 @@ function draw(e: PointerEvent) {
   const resumeDeltaX = resume.x - pointerState.x;
   const resumeDeltaY = resume.y - pointerState.y;
   const jump = Math.sqrt(resumeDeltaX * resumeDeltaX + resumeDeltaY * resumeDeltaY);
-  if (pointerWasResumed(now - pointerState.lastTime, jump, Math.min(canvas.width, canvas.height))) {
+  if (pointerWasResumed(now - pointerState.lastTime, jump, Math.min(paper.pxW, paper.pxH))) {
     pointerState.x = resume.x;
     pointerState.y = resume.y;
     pointerState.midX = resume.x;
@@ -1072,7 +1215,7 @@ function paintStateThrough(target: CanvasRenderingContext2D, upToIndex: number) 
       break;
     }
   }
-  target.clearRect(0, 0, target.canvas.width, target.canvas.height);
+  clearAllOf(target);
   let begin: number;
   if (start >= 0) {
     target.drawImage(commandLog[start].keyframe!, 0, 0);
@@ -1118,10 +1261,11 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   canvas = canvasElement;
   ctx = canvas.getContext('2d')!;
 
-  // The magic brush's color sheet reads the live canvas and repaints recorded
-  // magic ops once an async twin finishes decoding (ADR-0043).
+  // The magic brush's color sheet lives in paper coordinates (like every op) and
+  // repaints recorded magic ops once an async twin finishes decoding (ADR-0043).
   initMagicBrush({
-    canvas: () => canvas,
+    paperSize: () =>
+      paper.pxW > 0 && paper.pxH > 0 ? { width: paper.pxW, height: paper.pxH } : null,
     repaint: () => {
       if (ctx) rebuildFromBaseline();
     },
@@ -1132,6 +1276,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   onUndoStateChange = options.onUndoStateChange || null;
   onCanvasEmptyChange = options.onCanvasEmptyChange || null;
   onStrokeEnd = options.onStrokeEnd || null;
+  onViewChange = options.onViewChange || null;
   currentColor = options.initialColor || '#AB71E1';
 
   renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
@@ -1142,6 +1287,12 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   // refresh the cached rect (left/top) without the full backing-store rebuild.
   window.addEventListener('scroll', refreshCanvasRect, true);
   window.addEventListener('orientationchange', refreshCanvasRect);
+  // The paper view keys off the Screen Orientation angle (resizeCanvas). The
+  // resize event usually lands after the angle updates, but ordering isn't
+  // guaranteed everywhere — also funnel the orientation change itself through
+  // the debounced resize so a late angle still recomputes the view.
+  const screenOrientation = window.screen?.orientation;
+  screenOrientation?.addEventListener?.('change', handleResize);
 
   canvas.addEventListener('pointerdown', startDrawing);
   canvas.addEventListener('pointermove', draw);
@@ -1181,6 +1332,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
       }
       window.removeEventListener('scroll', refreshCanvasRect, true);
       window.removeEventListener('orientationchange', refreshCanvasRect);
+      screenOrientation?.removeEventListener?.('change', handleResize);
       canvas.removeEventListener('pointerdown', startDrawing);
       canvas.removeEventListener('pointermove', draw);
       canvas.removeEventListener('pointerup', stopDrawing);
@@ -1238,7 +1390,7 @@ export function clearCanvas() {
   // The clear is its own undo command: replaying it wipes the surface, and
   // undoing it replays the strokes that preceded it back from the baseline.
   pushCommand({ ops: [{ kind: 'clear' }], wasEmpty: canvasEmpty });
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  clearAllOf(ctx);
   setCanvasEmptyState(true);
   // A cleared canvas releases the held rainbow so the next magic use picks a fresh
   // one; if the brush is still selected, lock the new one in right away.
@@ -1299,16 +1451,25 @@ export async function exportCanvasBlob(
   options: ExportOptions = {}
 ): Promise<Blob | null> {
   const { includePaperTexture = true } = options;
-  if (!canvas || canvas.width === 0 || canvas.height === 0) return null;
+  if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
 
   // Snapshot the strokes before any await: save-on-delete fire-and-forgets the
-  // export and then clears the live canvas synchronously, so reading `canvas`
-  // after the paper-texture await (even a cache hit yields a microtask) would
-  // export a blank page.
+  // export and then clears the live canvas synchronously, so snapshotting after
+  // the paper-texture await (even a cache hit yields a microtask) would export a
+  // blank page. The snapshot is rebuilt in PAPER space (baseline + log + any
+  // in-flight stroke) rather than copied from the visible canvas: under a
+  // rotation-locked view the visible canvas is the letterboxed presentation,
+  // and the export should be the full upright page.
   const snapshot = document.createElement('canvas');
-  snapshot.width = canvas.width;
-  snapshot.height = canvas.height;
-  snapshot.getContext('2d')!.drawImage(canvas, 0, 0);
+  snapshot.width = paper.pxW;
+  snapshot.height = paper.pxH;
+  const snapshotCtx = snapshot.getContext('2d')!;
+  snapshotCtx.lineCap = 'round';
+  snapshotCtx.lineJoin = 'round';
+  paintStateThrough(snapshotCtx, commandLog.length - 1);
+  if (activeCommand) {
+    for (const op of activeCommand.ops) renderOp(snapshotCtx, op);
+  }
 
   // Compose in CSS-pixel coordinates at an export scale of at least 2×, so the
   // paper texture and overlay keep their on-screen proportions while the
