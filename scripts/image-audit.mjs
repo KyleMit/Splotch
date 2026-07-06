@@ -3,7 +3,7 @@
 // The logo and icon set are inlined into the DOM via {@html} in Icon.svelte, so
 // every vector node is a real mount-time element and every byte is shipped. A
 // one-off SVGO pass drifts the moment a new icon lands un-optimized (that's how
-// splotchy.svg was handled originally — ADR-0043). This audit re-establishes the
+// splotchy.svg was handled originally — ADR-0044). This audit re-establishes the
 // invariant on demand and in CI instead.
 //
 // Idempotent by construction: SVGO's output for a given input + config is stable

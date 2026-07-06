@@ -129,6 +129,7 @@ queries + the head-script stamp in `app.html`).
   * **Screenshot Button** - Saves the current drawing as a PNG (toggle in Parent Center)
   * **Stroke Width Button** - Opens a flyout for selecting line thickness (toggle in Parent Center)
   * **Coloring Book Button** - Opens the Coloring Book Picker (toggle in Parent Center)
+  * **Magic Brush Button** (`#magicBrushButton`) - Toggles the magic brush; shown only while a coloring page is applied. Painting reveals that page's colored twin (`.color.webp`) where the child strokes — a `magic`-flagged op in the command log whose paint is a `CanvasPattern` of the twin, so undo/eraser/override are free (ADR-0043).
 * **Coloring Book Picker** - Modal dialog for choosing a coloring page to use as a canvas overlay
   * **Coloring Book Grid** - First menu showing each coloring book by its cover image
   * **Coloring Book Tile** - Individual book cover button; tap to open that book's pages

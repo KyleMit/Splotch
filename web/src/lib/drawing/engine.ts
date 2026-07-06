@@ -36,6 +36,7 @@ interface PointerState {
   color: string;
   lineWidth: number;
   erase: boolean;
+  magic: boolean;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -52,8 +53,21 @@ interface PointerState {
 // bit-identical to its op; the stored ops are then simplified once at commit
 // (ADR-0036) so replay re-strokes far fewer segments without a visible change. A
 // 'clear' op wipes the target. See ADR-0033.
+// `magic`, when true, means the op reveals the coloring page's colored twin
+// instead of laying down `color` — its shape samples the pre-rendered color sheet
+// (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
+// undo, eraser (destination-out clears revealed pixels too), and later solid
+// strokes overriding them all fall out of the existing replay for free.
 type StrokeOp =
-  | { kind: 'dot'; x: number; y: number; radius: number; color: string; erase: boolean }
+  | {
+      kind: 'dot';
+      x: number;
+      y: number;
+      radius: number;
+      color: string;
+      erase: boolean;
+      magic?: boolean;
+    }
   | {
       kind: 'path';
       // Which pointer drew this op, so commit-time simplification (ADR-0036) can
@@ -70,6 +84,7 @@ type StrokeOp =
       color: string;
       lineWidth: number;
       erase: boolean;
+      magic?: boolean;
     }
   | { kind: 'clear' };
 
@@ -112,6 +127,7 @@ let ctx!: CanvasRenderingContext2D;
 let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
+let magicActive = false;
 let lastColorChangeTime = 0;
 const activePointerIds = new Set<number>();
 const activePointers = new Map<number, PointerState>();
@@ -313,6 +329,9 @@ function resizeCanvas() {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
+  // The sheet is sized to the backing store, so re-rasterize before replaying any
+  // magic ops against it.
+  rasterizeSheet();
   rebuildFromBaseline();
 
   refreshCanvasRect();
@@ -367,22 +386,79 @@ export function getCanvasRect(): CanvasRect {
   return canvasRect;
 }
 
-// Paint one recorded op onto a target context. Used both live (target = the
-// visible ctx) and during undo/resize replay (target = the visible or baseline
-// surface). Erasing composites destination-out; everything else source-over.
-function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
-  if (op.kind === 'clear') {
-    target.clearRect(0, 0, target.canvas.width, target.canvas.height);
-    return;
+// --- Magic brush: color-sheet reveal (ADR-0043) ---
+// The magic brush paints the active coloring page's pre-rendered colored twin
+// (its `.color.webp`) wherever the child strokes. The twin is decoded once, then
+// rasterized into an offscreen "sheet" canvas the exact size of the main canvas,
+// positioned with the same object-fit:contain math the overlay <img> uses, so a
+// revealed pixel lines up with the line art on screen. A no-repeat CanvasPattern
+// of that sheet is the brush's paint.
+//
+// A magic op strokes that pattern straight onto the target — chosen over a per-op
+// mask composite and a flat colour-sample after measuring all three (ADR-0043).
+let colorSheetImage: HTMLImageElement | null = null;
+let colorSheetUrl: string | null = null;
+let sheetCanvas: HTMLCanvasElement | null = null;
+let sheetCtx: CanvasRenderingContext2D | null = null;
+let sheetReady = false;
+// Per-target-context pattern cache. Reset (new map) on every rasterize so a
+// resized sheet can't hand back a stale pattern; a WeakMap can't be cleared.
+let sheetPatternCache = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
+
+// Rasterize the decoded twin into a canvas-sized sheet (contain-fit, device px),
+// matching where the overlay <img> paints, and refresh the pattern cache. Re-run
+// on load and on every resize (the canvas backing store changed).
+function rasterizeSheet() {
+  sheetReady = false;
+  sheetPatternCache = new WeakMap();
+  if (!colorSheetImage || !colorSheetImage.naturalWidth || !canvas) return;
+  if (!sheetCanvas) {
+    sheetCanvas = document.createElement('canvas');
+    sheetCtx = sheetCanvas.getContext('2d');
   }
-  target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
+  if (!sheetCtx) return;
+  sheetCanvas.width = canvas.width;
+  sheetCanvas.height = canvas.height;
+  const iw = colorSheetImage.naturalWidth;
+  const ih = colorSheetImage.naturalHeight;
+  const scale = Math.min(canvas.width / iw, canvas.height / ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  const ox = (canvas.width - dw) / 2;
+  const oy = (canvas.height - dh) / 2;
+  sheetCtx.clearRect(0, 0, sheetCanvas.width, sheetCanvas.height);
+  sheetCtx.drawImage(colorSheetImage, ox, oy, dw, dh);
+  sheetReady = true;
+}
+
+// A no-repeat pattern of the sheet, cached per target context (the visible ctx
+// almost always; baseline/keyframe contexts on replay). Positioned from each
+// target's origin (0,0) — the same origin op coordinates use — so it aligns on
+// the visible canvas and the larger square baseline alike.
+function sheetPatternFor(target: CanvasRenderingContext2D): CanvasPattern | null {
+  if (!sheetCanvas || !sheetReady) return null;
+  const cached = sheetPatternCache.get(target);
+  if (cached) return cached;
+  const pattern = target.createPattern(sheetCanvas, 'no-repeat');
+  if (pattern) sheetPatternCache.set(target, pattern);
+  return pattern;
+}
+
+// Stroke or dot the op's bare geometry onto a target using `paint` as the
+// fill/stroke style — a solid colour for a normal op, the sheet pattern for a
+// magic one.
+function paintOpShape(
+  target: CanvasRenderingContext2D,
+  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>,
+  paint: string | CanvasPattern
+) {
   if (op.kind === 'dot') {
-    target.fillStyle = op.color;
+    target.fillStyle = paint;
     target.beginPath();
     target.arc(op.x, op.y, op.radius, 0, Math.PI * 2);
     target.fill();
   } else {
-    target.strokeStyle = op.color;
+    target.strokeStyle = paint;
     target.lineWidth = op.lineWidth;
     target.beginPath();
     target.moveTo(op.startX, op.startY);
@@ -392,6 +468,27 @@ function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     }
     target.stroke();
   }
+}
+
+// Paint one recorded op onto a target context. Used both live (target = the
+// visible ctx) and during undo/resize replay (target = the visible or baseline
+// surface). Erasing composites destination-out; a magic op reveals the color
+// sheet (source-over, its shape filled with the sheet pattern) and paints
+// nothing until the sheet has decoded; everything else lays down its solid color.
+function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
+  if (op.kind === 'clear') {
+    target.clearRect(0, 0, target.canvas.width, target.canvas.height);
+    return;
+  }
+  if (op.magic) {
+    const pattern = sheetPatternFor(target);
+    if (!pattern) return;
+    target.globalCompositeOperation = 'source-over';
+    paintOpShape(target, op, pattern);
+    return;
+  }
+  target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
+  paintOpShape(target, op, op.color);
   target.globalCompositeOperation = 'source-over';
 }
 
@@ -504,7 +601,12 @@ let simplifySplit: 'none' | 'corner' = 'corner';
 let simplifyEnabled = true;
 
 function pathStyleMatches(a: PathOp, b: PathOp): boolean {
-  return a.color === b.color && a.lineWidth === b.lineWidth && a.erase === b.erase;
+  return (
+    a.color === b.color &&
+    a.lineWidth === b.lineWidth &&
+    a.erase === b.erase &&
+    !!a.magic === !!b.magic
+  );
 }
 
 // Reduce one continuous, same-style run of a single finger's path ops through
@@ -536,6 +638,7 @@ function reducePathRun(run: PathOp[]): PathOp[] {
     color: first.color,
     lineWidth: first.lineWidth,
     erase: first.erase,
+    magic: first.magic,
   }));
 }
 
@@ -619,6 +722,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     color: ps.color,
     lineWidth: ps.lineWidth,
     erase: ps.erase,
+    magic: ps.magic,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -670,7 +774,9 @@ function renderStrokeStart(ps: PointerState) {
   beginRender();
 
   // Erasing clears pixels via destination-out; the stroke color is irrelevant
-  // there, only its (opaque) alpha matters.
+  // there, only its (opaque) alpha matters. A magic op ignores `color` too — it
+  // reveals the sheet — but carries it so a mid-stroke tool flip keeps a stable
+  // style key for simplification.
   const dot: StrokeOp = {
     kind: 'dot',
     x: ps.x,
@@ -678,6 +784,7 @@ function renderStrokeStart(ps: PointerState) {
     radius: ps.lineWidth / 2,
     color: ps.color,
     erase: ps.erase,
+    magic: ps.magic,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -751,6 +858,7 @@ function startDrawing(e: PointerEvent) {
     color: currentColor,
     lineWidth,
     erase: eraserActive,
+    magic: magicActive,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -1137,6 +1245,34 @@ export function setStrokeWidth(widthPx: number) {
 
 export function setEraserMode(active: boolean) {
   eraserActive = active;
+}
+
+// Magic brush on/off (ADR-0043). Mutually exclusive with the eraser at the UI
+// level; the engine just tracks the flag and stamps it onto each op.
+export function setMagicMode(active: boolean) {
+  magicActive = active;
+}
+
+// Point the magic brush at a coloring page's colored twin (or null to detach).
+// The image decodes async; magic ops recorded before it's ready reveal nothing
+// until the load handler rasterizes it and repaints.
+export function setColorSheet(url: string | null) {
+  if (url === colorSheetUrl) return;
+  colorSheetUrl = url;
+  colorSheetImage = null;
+  sheetReady = false;
+  sheetPatternCache = new WeakMap();
+  if (!url) return;
+  const img = new Image();
+  img.onload = () => {
+    // A newer sheet may have been requested while this one decoded — drop stale.
+    if (colorSheetUrl !== url) return;
+    colorSheetImage = img;
+    rasterizeSheet();
+    if (ctx) rebuildFromBaseline();
+  };
+  img.onerror = () => {};
+  img.src = url;
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

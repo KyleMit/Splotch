@@ -46,5 +46,6 @@ This directory records significant architectural decisions made in the Splotch p
 | [0040](0040-per-route-render-modes-and-ssg-home.md) | Per-Route Render Modes — the Home Route Stays Prerendered (SSG), Not Per-Request SSR | Active |
 | [0041](0041-lock-viewport-zoom-for-toddlers.md) | Lock Viewport Pinch-Zoom (`user-scalable=no`) for a Toddler Drawing App | Active |
 | [0042](0042-static-media-cache-invalidation.md) | Cache Invalidation for Stable-Filename Static Media | Active |
-| [0043](0043-svg-optimization-audit.md) | SVG Optimization as a Re-runnable Audit, Not a One-Off Pass | Active |
+| [0043](0043-magic-brush-color-sheet-reveal.md) | Magic Brush Reveals the Coloring Page's Colored Twin via Pattern-Fill Ops | Active |
+| [0044](0044-svg-optimization-audit.md) | SVG Optimization as a Re-runnable Audit, Not a One-Off Pass | Active |
 

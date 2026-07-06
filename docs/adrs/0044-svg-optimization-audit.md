@@ -1,4 +1,4 @@
-# ADR-0043: SVG Optimization as a Re-runnable Audit, Not a One-Off Pass
+# ADR-0044: SVG Optimization as a Re-runnable Audit, Not a One-Off Pass
 
 **Status:** Active
 **Date:** 2026-07
