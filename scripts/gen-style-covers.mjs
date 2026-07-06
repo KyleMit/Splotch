@@ -17,7 +17,7 @@ import { ROOT, fail } from './lib/utils.mjs';
 import { pixelate } from './lib/pixelate.mjs';
 import { STYLE_SUFFIXES, STYLE_NAMES } from '../web/src/lib/ai/styles.ts';
 import { buildPromptForStyle } from '../web/src/lib/ai/prompt.ts';
-import { classifyGeminiResponse } from '../web/src/lib/server/aiSafety.ts';
+import { classifyGeminiResponse } from '../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-2.5-flash-image';
 const STYLES_DIR = join(ROOT, 'web', 'static', 'styles');

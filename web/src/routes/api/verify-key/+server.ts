@@ -1,14 +1,8 @@
 import { json } from '@sveltejs/kit';
-import { GoogleGenAI } from '@google/genai';
 import { rateLimit } from '$lib/server/rateLimit';
 import { readJsonBody, throttled } from '$lib/server/http';
+import { aiProvider } from '$lib/server/ai/provider';
 import type { RequestHandler } from './$types';
-
-// A cheap text model is enough to prove the key authenticates with Gemini —
-// we only care that the request isn't rejected for bad credentials. (The image
-// model used for generation lives on the same key, so a successful auth here
-// means the key is good to go.)
-const TEST_MODEL = 'gemini-2.5-flash';
 
 /**
  * Confirm a parent-supplied Gemini API key actually works by making a tiny
@@ -16,7 +10,7 @@ const TEST_MODEL = 'gemini-2.5-flash';
  * { ok: false, error } when the key can't authenticate.
  */
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-  // Same throttle as verify-access-code: a live Gemini call per request makes
+  // Same throttle as verify-access-code: a live model call per request makes
   // this worth guarding against rapid repeated probes from one client.
   const { limited, retryAfter } = rateLimit(`verify-key:${getClientAddress()}`);
   if (limited) return throttled(retryAfter);
@@ -25,17 +19,9 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   const apiKey = typeof body?.apiKey === 'string' ? body.apiKey.trim() : '';
   if (!apiKey) return json({ ok: false, error: 'No API key provided' });
 
-  const ai = new GoogleGenAI({ apiKey });
-  try {
-    await ai.models.generateContent({
-      model: TEST_MODEL,
-      contents: 'ping',
-      // Keep the probe as small as possible — no thinking, one output token.
-      config: { thinkingConfig: { thinkingBudget: 0 }, maxOutputTokens: 1 },
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.warn('[verify-key] key rejected by Gemini:', msg);
+  const check = await aiProvider.verifyKey(apiKey);
+  if (!check.ok) {
+    console.warn('[verify-key] key rejected:', check.reason);
     return json({ ok: false, error: 'That key could not authenticate with Gemini.' });
   }
 

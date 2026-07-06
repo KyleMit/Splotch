@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { GenerateContentResponse } from '@google/genai';
-import { classifyGeminiResponse, isSafetyError } from './aiSafety';
+import { classifyGeminiResponse, isSafetyError } from './geminiSafety';
 
 // Minimal synthetic responses — we only care about the few fields the classifier
 // reads, so cast through `unknown` rather than building full SDK objects.
