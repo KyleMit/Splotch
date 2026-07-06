@@ -13,6 +13,16 @@ import {
   type GuardEdge,
 } from './strokeMath';
 import { sampleReducedSpans, splineReducedSpans, type PathSeg } from './strokeSimplify';
+import {
+  initMagicBrush,
+  rasterizeSheet,
+  sheetPatternFor,
+  ensureMagicSheet,
+  clearMagicGradient,
+  setColorSheet,
+} from './magicBrush';
+
+export { setColorSheet };
 
 // Build-flag-gated user-timing marks on the drawing hot paths, read by the
 // profiling harness (scripts/perf/). __PERF_MARKS__ is a compile-time literal
@@ -386,63 +396,10 @@ export function getCanvasRect(): CanvasRect {
   return canvasRect;
 }
 
-// --- Magic brush: color-sheet reveal (ADR-0043) ---
-// The magic brush paints the active coloring page's pre-rendered colored twin
-// (its `.color.webp`) wherever the child strokes. The twin is decoded once, then
-// rasterized into an offscreen "sheet" canvas the exact size of the main canvas,
-// positioned with the same object-fit:contain math the overlay <img> uses, so a
-// revealed pixel lines up with the line art on screen. A no-repeat CanvasPattern
-// of that sheet is the brush's paint.
-//
-// A magic op strokes that pattern straight onto the target — chosen over a per-op
-// mask composite and a flat colour-sample after measuring all three (ADR-0043).
-let colorSheetImage: HTMLImageElement | null = null;
-let colorSheetUrl: string | null = null;
-let sheetCanvas: HTMLCanvasElement | null = null;
-let sheetCtx: CanvasRenderingContext2D | null = null;
-let sheetReady = false;
-// Per-target-context pattern cache. Reset (new map) on every rasterize so a
-// resized sheet can't hand back a stale pattern; a WeakMap can't be cleared.
-let sheetPatternCache = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
-
-// Rasterize the decoded twin into a canvas-sized sheet (contain-fit, device px),
-// matching where the overlay <img> paints, and refresh the pattern cache. Re-run
-// on load and on every resize (the canvas backing store changed).
-function rasterizeSheet() {
-  sheetReady = false;
-  sheetPatternCache = new WeakMap();
-  if (!colorSheetImage || !colorSheetImage.naturalWidth || !canvas) return;
-  if (!sheetCanvas) {
-    sheetCanvas = document.createElement('canvas');
-    sheetCtx = sheetCanvas.getContext('2d');
-  }
-  if (!sheetCtx) return;
-  sheetCanvas.width = canvas.width;
-  sheetCanvas.height = canvas.height;
-  const iw = colorSheetImage.naturalWidth;
-  const ih = colorSheetImage.naturalHeight;
-  const scale = Math.min(canvas.width / iw, canvas.height / ih);
-  const dw = iw * scale;
-  const dh = ih * scale;
-  const ox = (canvas.width - dw) / 2;
-  const oy = (canvas.height - dh) / 2;
-  sheetCtx.clearRect(0, 0, sheetCanvas.width, sheetCanvas.height);
-  sheetCtx.drawImage(colorSheetImage, ox, oy, dw, dh);
-  sheetReady = true;
-}
-
-// A no-repeat pattern of the sheet, cached per target context (the visible ctx
-// almost always; baseline/keyframe contexts on replay). Positioned from each
-// target's origin (0,0) — the same origin op coordinates use — so it aligns on
-// the visible canvas and the larger square baseline alike.
-function sheetPatternFor(target: CanvasRenderingContext2D): CanvasPattern | null {
-  if (!sheetCanvas || !sheetReady) return null;
-  const cached = sheetPatternCache.get(target);
-  if (cached) return cached;
-  const pattern = target.createPattern(sheetCanvas, 'no-repeat');
-  if (pattern) sheetPatternCache.set(target, pattern);
-  return pattern;
-}
+// The magic brush's color sheet, its rasterization, and the pattern the brush
+// paints with all live in ./magicBrush — including the rainbow-gradient source
+// used when no coloring page is applied. The engine drives it (rasterize on
+// resize, ask for the pattern per magic op, set the sources) but owns none of it.
 
 // Stroke or dot the op's bare geometry onto a target using `paint` as the
 // fill/stroke style — a solid colour for a normal op, the sheet pattern for a
@@ -1161,6 +1118,15 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   canvas = canvasElement;
   ctx = canvas.getContext('2d')!;
 
+  // The magic brush's color sheet reads the live canvas and repaints recorded
+  // magic ops once an async twin finishes decoding (ADR-0043).
+  initMagicBrush({
+    canvas: () => canvas,
+    repaint: () => {
+      if (ctx) rebuildFromBaseline();
+    },
+  });
+
   onDrawSoundCallback = options.onDrawSound || null;
   onDrawStopCallback = options.onDrawStop || null;
   onUndoStateChange = options.onUndoStateChange || null;
@@ -1248,31 +1214,12 @@ export function setEraserMode(active: boolean) {
 }
 
 // Magic brush on/off (ADR-0043). Mutually exclusive with the eraser at the UI
-// level; the engine just tracks the flag and stamps it onto each op.
+// level; the engine just tracks the flag and stamps it onto each op. Selecting the
+// brush over a blank canvas locks in a random rainbow to reveal (a no-op when a
+// coloring page is applied, or when a rainbow is already held from before).
 export function setMagicMode(active: boolean) {
   magicActive = active;
-}
-
-// Point the magic brush at a coloring page's colored twin (or null to detach).
-// The image decodes async; magic ops recorded before it's ready reveal nothing
-// until the load handler rasterizes it and repaints.
-export function setColorSheet(url: string | null) {
-  if (url === colorSheetUrl) return;
-  colorSheetUrl = url;
-  colorSheetImage = null;
-  sheetReady = false;
-  sheetPatternCache = new WeakMap();
-  if (!url) return;
-  const img = new Image();
-  img.onload = () => {
-    // A newer sheet may have been requested while this one decoded — drop stale.
-    if (colorSheetUrl !== url) return;
-    colorSheetImage = img;
-    rasterizeSheet();
-    if (ctx) rebuildFromBaseline();
-  };
-  img.onerror = () => {};
-  img.src = url;
+  if (active) ensureMagicSheet();
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system
@@ -1293,6 +1240,10 @@ export function clearCanvas() {
   pushCommand({ ops: [{ kind: 'clear' }], wasEmpty: canvasEmpty });
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   setCanvasEmptyState(true);
+  // A cleared canvas releases the held rainbow so the next magic use picks a fresh
+  // one; if the brush is still selected, lock the new one in right away.
+  clearMagicGradient();
+  if (magicActive) ensureMagicSheet();
 }
 
 export function isCanvasEmpty(): boolean {

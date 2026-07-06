@@ -53,6 +53,22 @@ async function draw(page: Page, points: { x: number; y: number }[]) {
   await page.mouse.up();
 }
 
+/** Perform the drag-to-clear gesture: pull the clear button past its accept
+ *  threshold (0.4 × min viewport) toward the screen center and release. */
+async function clearViaGesture(page: Page) {
+  const box = await page.locator('#clearButton').boundingBox();
+  const vp = page.viewportSize();
+  if (!box || !vp) throw new Error('missing clear button box or viewport');
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  for (let i = 1; i <= 12; i++) {
+    await page.mouse.move(cx + ((vp.width / 2 - cx) * i) / 12, cy + ((vp.height / 2 - cy) * i) / 12);
+  }
+  await page.mouse.up();
+}
+
 /** First non-transparent pixel on the canvas as [r,g,b,a], or null if blank. */
 function firstOpaquePixel(page: Page): Promise<number[] | null> {
   return page.evaluate(() => {
@@ -556,14 +572,14 @@ function distinctOpaqueColors(page: Page, bits = 4): Promise<number> {
   }, bits);
 }
 
-test('the magic brush appears only with a coloring page, and paints the page colors', async ({
+test('the magic brush is always available and paints the coloring page colors', async ({
   page,
 }) => {
   await gotoApp(page);
   await openDrawer(page);
 
   const magic = page.locator('#magicBrushButton');
-  await expect(magic).toBeHidden(); // no page applied yet
+  await expect(magic).toBeVisible(); // available even before a page is applied
 
   await applyFarmPage(page);
   await expect(magic).toBeVisible();
@@ -584,6 +600,39 @@ test('the magic brush appears only with a coloring page, and paints the page col
   // Undo reverts the magic stroke.
   await page.locator('#undoButton').click();
   await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
+});
+
+test('the magic brush reveals a rainbow gradient when no coloring page is applied', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const magic = page.locator('#magicBrushButton');
+  await expect(magic).toBeVisible();
+  await magic.click();
+  await expect(magic).toHaveAttribute('aria-pressed', 'true');
+
+  // Drawing across the blank canvas reveals the pre-generated rainbow — a long
+  // stroke crosses many hues, so it lays down many distinct colors, not one.
+  await draw(page, [
+    { x: 100, y: 140 },
+    { x: 260, y: 240 },
+    { x: 420, y: 160 },
+    { x: 560, y: 280 },
+  ]);
+  await expect.poll(() => distinctOpaqueColors(page), { timeout: 4000 }).toBeGreaterThan(4);
+
+  // Clearing releases the rainbow; the brush stays selected and a fresh stroke
+  // still reveals colors (a newly picked gradient).
+  await clearViaGesture(page);
+  await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
+  await draw(page, [
+    { x: 120, y: 160 },
+    { x: 300, y: 260 },
+    { x: 500, y: 180 },
+  ]);
+  await expect.poll(() => distinctOpaqueColors(page), { timeout: 4000 }).toBeGreaterThan(4);
 });
 
 // Count of strongly-opaque canvas pixels.

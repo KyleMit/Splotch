@@ -104,3 +104,28 @@ rejected paths and the seam/harness were removed — this ADR is their record:
   matching orientation, so this is a thin edge.
 - **−** The twin must exist for every page (`bookAssetPaths` now lists the
   `.color.webp` twins so `check-assets` enforces it and native keeps them).
+
+## Follow-up: rainbow-gradient source for the blank canvas
+
+The brush was originally gated to a coloring page (its button hidden otherwise),
+since the twin was its only color source. It now works on any canvas: with **no
+page applied**, the sheet's source is a **generated rainbow gradient** instead of a
+twin, so a stroke across the blank canvas reveals colors sampled along the rainbow
+at each point — the same pattern-fill machinery, a different sheet source.
+
+- Ten random rainbows are pre-generated (hue sweep across a random angle, with
+  randomized span/saturation/lightness); one is chosen at random the first time the
+  brush is selected on a blank canvas.
+- The chosen rainbow is **held until the canvas is cleared** — toggling pen↔magic
+  keeps it, so a child's strokes stay in one palette. Clearing releases it; the next
+  magic use picks a fresh one.
+- The twin still takes priority: when a page is applied the reveal is its colors,
+  unchanged. `activeSource()` picks twin-if-loaded, else the held gradient, else
+  nothing (so a pending twin still reveals nothing until it decodes).
+
+The sheet management — both sources, rasterization, and the cached pattern — was
+**extracted from `engine.ts` into `lib/drawing/magicBrush.ts`**. The engine keeps
+only the generic op machinery (`renderOp`/`paintOpShape`) and drives the module:
+`rasterizeSheet` on resize, `sheetPatternFor` per magic op, `setColorSheet` from the
+overlay wiring, and `ensureMagicSheet`/`clearMagicGradient` from the tool and clear
+paths. The gradient's pure generation (`createRainbowGradient`) is unit-tested.
