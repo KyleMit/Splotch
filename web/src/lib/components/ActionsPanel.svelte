@@ -11,7 +11,6 @@
     activeStrokeSize,
   } from '$lib/state/strokeWidth.svelte';
   import { toolState, selectEraser, selectPen, toggleMagic } from '$lib/state/tool.svelte';
-  import { coloringBookState } from '$lib/state/coloringBook.svelte';
   import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { network } from '$lib/state/network.svelte';
   import { layout } from '$lib/state/layout.svelte';
@@ -155,10 +154,6 @@
     toggleMagic();
   }
 
-  // Only meaningful with a coloring page applied — there's nothing to reveal
-  // otherwise, so the button is hidden until one is picked.
-  const coloringPageActive = $derived(!!coloringBookState.overlayUrl);
-
   async function handleAiImageClick() {
     if (ui.aiGenerating || canvasState.canvasEmpty || !aiBtnEl) return;
 
@@ -238,18 +233,15 @@
         <Icon name="shapes" class="action-icon" />
       </button>
 
-      <!-- Magic brush: reveals the applied page's colors as the child paints
-           (ADR-0043). Reactive `hidden` (like the AI button) because it depends
-           on a client-only signal the prerendered page can't know — the applied
-           coloring page — and it defaults hidden (no page), so no first-paint
-           flash to seed away. -->
+      <!-- Magic brush: reveals colors as the child paints (ADR-0043) — the applied
+           coloring page's colors when one is set, otherwise a random rainbow. Works
+           on any canvas, so it's always shown. -->
       <button
         class="action-button"
         class:active={toolState.magic}
         id="magicBrushButton"
         aria-label="Magic brush"
         aria-pressed={toolState.magic}
-        hidden={!coloringPageActive}
         use:scribbleTap={handleMagicClick}
       >
         <Icon name="magic-brush" class="action-icon" />

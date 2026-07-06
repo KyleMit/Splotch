@@ -1,7 +1,8 @@
 // Active drawing tool: pen (default), eraser, or magic brush. The eraser shares
 // the stroke-width setting but removes pixels instead of laying down color. The
-// magic brush (ADR-0043) reveals the active coloring page's colored twin where
-// the child paints; it's only usable while a coloring page is applied.
+// magic brush (ADR-0043) reveals colors where the child paints — the active
+// coloring page's colored twin when one is applied, otherwise a random rainbow —
+// so it works on any canvas.
 //
 // `eraser` and `magic` are mutually exclusive modifiers on top of the pen — at
 // most one is ever true. Pen is the state where both are false.
