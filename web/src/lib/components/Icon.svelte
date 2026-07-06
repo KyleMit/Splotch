@@ -21,6 +21,7 @@
     'eraser',
     'line-weight',
     'line-weight-eraser',
+    'magic-brush',
     'palette',
     'shapes',
     'splotchy',
