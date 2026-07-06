@@ -75,8 +75,22 @@ contain-fit, centered** — the picture rotates with the device and is scaled do
   the drawing stay exact; while letterboxed the whole page just reads smaller,
   and new strokes record in paper space so rotating back restores the original
   layout pixel-for-pixel.
-- The **clip makes the letterbox dead space** — a stroke there would otherwise
-  be stranded off-screen (or lost past the baseline square) on rotating back.
+- The **margins around the fitted paper stay drawable** (no clip — a child
+  mid-scribble must not hit dead zones). Margin ink records at out-of-paper
+  coordinates: it renders and replays normally while its command is retained,
+  is **cropped by design on rotating back** (and from exports — the paper is
+  the artifact), and reappears when rotating forward again while its ops
+  survive. Once a margin command folds/keyframes into the paper-square rasters,
+  the parts outside the square are dropped from later rebuilds — rasters
+  covering the mapped margins were rejected because the contain-fit maps a
+  phone viewport to ~2× the paper's long side (~25 MB per 4×-DPR surface),
+  reintroducing exactly the memory class ADR-0033 removed.
+- Visually the paper reads as a **distinct sheet, not a framed box**: the
+  off-white `handmade-paper` texture lives on a `.paper-sheet` element beneath
+  the (now always transparent) canvas, carrying the same view transform, over
+  the container's flat, slightly greyer margins plus a soft shadow — no border
+  line. This also retired the `has-coloring-overlay` body-class texture swap:
+  the texture is simply always below the ink.
 - The **coloring page follows the paper, not the viewport**: the overlay `<img>`
   sits in a `.paper-view` wrapper (`DrawingCanvas.svelte`) positioned with the
   same matrix (`viewMatrix`, shared by `ctx.setTransform` and CSS `matrix()`),
@@ -94,9 +108,9 @@ contain-fit, centered** — the picture rotates with the device and is scaled do
 
 Gotchas encoded in the code:
 
-- `clearAllOf()` replaces canvas-sized `clearRect`s: under the view the visible
-  ctx's user space is paper coordinates, where a canvas-sized rect may not cover
-  the paper.
+- `clearAllOf()` replaces bare `clearRect`s: under the view the visible ctx's
+  user space is paper coordinates, where margin ink sits at negative
+  coordinates a rect from (0,0) would miss — so it clears in device space.
 - Because the view has no rotation component, nothing depends on the Screen
   Orientation angle's sign or physical direction — the angle is used purely as
   a **rotation detector** (`rotationDelta(paperAngle, angle) !== 0`).
@@ -123,9 +137,12 @@ Gotchas encoded in the code:
   in landscape; near-square tablets shrink far less), and new strokes render
   proportionally smaller than the picker circle implies; the eraser preview
   bubble is scaled to match.
-- **−** The child cannot draw in the letterbox margins (by design — such strokes
-  could never survive a rotation back). Clearing the canvas reclaims the full
-  new orientation.
+- **−** Margin ink is second-class: cropped on rotate-back and from exports
+  (accepted product behavior — the paper is the artifact), and dropped from
+  rebuilds once its command folds/keyframes beyond the paper-square rasters, so
+  an undo pressed while rotated can also remove margin ink older than the
+  10-command retention window. Clearing the canvas reclaims the full new
+  orientation as fresh paper.
 - **−** Undoing *back into* content after the paper re-adopted (e.g. undoing a
   clear after rotating) replays old-space ops into the new space — the pre-ADR
   behavior (possible partial off-screen), accepted for that corner rather than

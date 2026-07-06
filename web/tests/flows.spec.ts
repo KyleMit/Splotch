@@ -589,15 +589,15 @@ test('rotating with ink keeps the same coloring page art until the canvas is bla
   });
 
   // The ink locks the paper: the wide art stays applied, lifted into the
-  // letterboxed paper view instead of being swapped for the tall variant.
-  await expect(page.locator('.paper-view.paper-lifted')).toBeVisible();
+  // letterboxed paper sheet instead of being swapped for the tall variant.
+  await expect(page.locator('.paper-sheet.paper-lifted')).toBeVisible();
   await expect(overlay).toHaveAttribute('src', srcBefore!);
 
   // Undo the only stroke → blank canvas → the paper re-adopts the portrait
   // viewport and the art swaps to the tall variant.
   await page.locator('#undoButton').click();
   await expect(overlay).toHaveAttribute('src', /-tall\.webp$/);
-  await expect(page.locator('.paper-view.paper-lifted')).toHaveCount(0);
+  await expect(page.locator('.paper-sheet.paper-lifted')).toHaveCount(0);
 });
 
 // Distinct strongly-opaque canvas colors, quantized to `bits` per channel. A

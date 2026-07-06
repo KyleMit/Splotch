@@ -435,13 +435,20 @@ function resizeCanvas() {
 
   // Present the locked paper through the view: the visible ctx keeps painting in
   // paper coordinates (live ops, replay, and the sheet pattern all map through
-  // the transform untouched), and the letterbox outside the paper is clipped
-  // dead so nothing can be drawn there that a rotation back would strand
-  // off-screen. Both persist until the next backing-store reset above.
-  // The paper is presented UPRIGHT (view rotation 0): the picture rotates with
-  // the device and contain-fits — scaled down when it must — rather than
+  // the transform untouched), persisting until the next backing-store reset
+  // above. The paper is presented UPRIGHT (view rotation 0): the picture rotates
+  // with the device and contain-fits — scaled down when it must — rather than
   // counter-rotating to stay fixed on the glass (rejected in ADR-0048). A 180°
   // flip on an unchanged viewport therefore computes an identity view.
+  //
+  // The margins around the fitted paper stay DRAWABLE (no clip): a child mid-
+  // scribble shouldn't hit dead zones. Margin ink records at out-of-paper
+  // coordinates — it renders and replays normally while its command is retained,
+  // is cropped by design when rotating back (and from exports), and may drop
+  // from rebuilds once folded/keyframed past the paper-square rasters. Rasters
+  // covering the mapped margins would cost tens of MB at 2× DPR (the fit maps a
+  // phone viewport to ~2× the paper's long side), so that corner is accepted —
+  // see ADR-0048.
   paperView = lockPaper
     ? computePaperView(
         { width: paper.pxW, height: paper.pxH },
@@ -451,9 +458,6 @@ function resizeCanvas() {
     : IDENTITY_PAPER_VIEW;
   if (!isIdentityView(paperView)) {
     ctx.setTransform(...viewMatrix(paperView));
-    ctx.beginPath();
-    ctx.rect(0, 0, paper.pxW, paper.pxH);
-    ctx.clip();
   }
 
   // The sheet is sized to the paper, so re-rasterize before replaying any
@@ -560,17 +564,15 @@ function paintOpShape(
 // sheet (source-over, its shape filled with the sheet pattern) and paints
 // nothing until the sheet has decoded; everything else lays down its solid color.
 // Clear everything a target could be showing. The visible ctx's user space is
-// PAPER coordinates whenever the paper view is active, so a canvas-sized rect
-// doesn't necessarily cover the paper (a rotated viewport can be shorter than
-// the paper is tall) — take the larger of the two spaces. Identity targets
-// (baseline, keyframes, exports) are unaffected: their canvas is ≥ the paper.
+// PAPER coordinates whenever the paper view is active — and with the margins
+// drawable, ink can sit at negative paper coordinates that a rect from (0,0)
+// would miss — so clear in device space. Identity targets (baseline, keyframes,
+// exports) are unaffected: device space is their own space.
 function clearAllOf(target: CanvasRenderingContext2D) {
-  target.clearRect(
-    0,
-    0,
-    Math.max(target.canvas.width, paper.pxW),
-    Math.max(target.canvas.height, paper.pxH)
-  );
+  target.save();
+  target.setTransform(1, 0, 0, 1, 0, 0);
+  target.clearRect(0, 0, target.canvas.width, target.canvas.height);
+  target.restore();
 }
 
 function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {

@@ -925,7 +925,9 @@ test('strokes drawn while rotated land on the paper and survive rotating back', 
   expect(await page.evaluate(() => window.__engine.pixelAt(200, 150)[3])).toBeGreaterThan(0);
 });
 
-test('the letterbox outside the rotated paper is dead space', async ({ page }) => {
+test('the margins around the rotated paper are drawable, and crop on rotating back', async ({
+  page,
+}) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
   await drawStroke(page, box, [
@@ -935,18 +937,57 @@ test('the letterbox outside the rotated paper is dead space', async ({ page }) =
   await rotateTo(page, 90, 400, 300);
   const before = await count(page);
 
-  // A stroke entirely inside the left margin (x < 50) maps outside the paper —
-  // it must paint nothing (it would be stranded off-screen on rotating back).
+  // A stroke entirely inside the left margin (x < 50 maps left of the paper,
+  // negative paper coordinates) still paints — no dead zones mid-scribble.
   await page.evaluate(() => {
     window.__engine.strokeSync(
       [
         { x: 20, y: 150 },
-        { x: 35, y: 150 },
+        { x: 40, y: 150 },
       ],
       'mouse'
     );
   });
-  expect(await count(page)).toBe(before);
+  expect(await count(page)).toBeGreaterThan(before);
+  expect(await page.evaluate(() => window.__engine.pixelAt(25, 150)[3])).toBeGreaterThan(0);
+
+  // Rotating back crops the margin ink (the paper never contained it): the
+  // original stroke is restored and nothing renders left of it.
+  await rotateTo(page, 0, 300, 300);
+  expect(await page.evaluate(() => window.__engine.pixelAt(120, 60)[3])).toBeGreaterThan(0);
+  const bounds = await page.evaluate(() => window.__engine.inkBounds());
+  if (!bounds) throw new Error('rotation lost the drawing');
+  expect(bounds.minX).toBeGreaterThanOrEqual(30);
+
+  // The margin ops are retained, so rotating forward again brings the ink back.
+  await rotateTo(page, 90, 400, 300);
+  expect(await page.evaluate(() => window.__engine.pixelAt(25, 150)[3])).toBeGreaterThan(0);
+});
+
+test('clearing while rotated wipes margin ink too', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+
+  await drawStroke(page, box, [
+    { x: 40, y: 60 },
+    { x: 200, y: 60 },
+  ]);
+  await rotateTo(page, 90, 400, 300);
+  await page.evaluate(() => {
+    window.__engine.strokeSync(
+      [
+        { x: 20, y: 150 },
+        { x: 40, y: 150 },
+      ],
+      'mouse'
+    );
+  });
+  expect(await count(page)).toBeGreaterThan(0);
+
+  // Clear must cover the margins (negative paper coordinates) as well as the
+  // paper — and the blank canvas re-adopts the viewport, dropping the view.
+  await page.evaluate(() => window.__engine.clearCanvas());
+  expect(await count(page)).toBe(0);
+  expect((await page.evaluate(() => window.__engine.getViewState())).active).toBe(false);
 });
 
 test('undo still works while rotated, and emptying the canvas re-adopts the viewport', async ({

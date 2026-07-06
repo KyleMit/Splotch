@@ -183,27 +183,37 @@
     setMagicMode(toolState.magic);
   });
 
-  // Body class tracks whether an overlay is active — paper texture moves
-  // from the canvas to the container so the overlay can sit beneath strokes.
-  $effect(() => {
-    if (typeof document === 'undefined') return;
-    document.body.classList.toggle('has-coloring-overlay', !!coloringBookState.overlayUrl);
-  });
+  // The sheet/wrapper track the engine's paper; before the engine mounts and
+  // reports a size, fall back to filling the container so the SSR'd shell shows
+  // the full-bleed paper texture with no flash.
+  const paperCssWidth = $derived(paperView.paperCssWidth ? `${paperView.paperCssWidth}px` : '100%');
+  const paperCssHeight = $derived(
+    paperView.paperCssHeight ? `${paperView.paperCssHeight}px` : '100%'
+  );
 </script>
 
 <div class="canvas-container">
-  <!-- Tracks the engine's paper: full-container in normal use, upright
-       contain-fit while a rotation has the paper locked (ADR-0048). The overlay
-       art contain-fits within it, mirroring the magic sheet's math, so the page
-       and the strokes move as one sheet. The lifted outline marks the page edge
-       when the paper is letterboxed. -->
+  <!-- The paper sheet: the off-white textured page the child draws on, sitting
+       beneath the (transparent) canvas. Full-container in normal use; after a
+       rotation locks the paper (ADR-0048) it carries the same transform the
+       canvas paints through, so the page reads as a distinct sheet over the
+       container's plain lighter margins — no border needed. -->
+  <div
+    class="paper-sheet"
+    class:paper-lifted={paperView.active}
+    style:width={paperCssWidth}
+    style:height={paperCssHeight}
+    style:transform={paperTransform}
+  ></div>
+  <!-- The coloring page overlay, positioned against the same paper so the art
+       contain-fits exactly where the magic sheet's math puts its colors, and
+       page + strokes move as one sheet across rotations. -->
   <div
     class="paper-view"
-    class:paper-lifted={paperView.active}
-    style:width="{paperView.paperCssWidth}px"
-    style:height="{paperView.paperCssHeight}px"
+    style:width={paperCssWidth}
+    style:height={paperCssHeight}
     style:transform={paperTransform}
-    hidden={!coloringBookState.overlayUrl && !paperView.active}
+    hidden={!coloringBookState.overlayUrl}
   >
     <img
       class="coloring-overlay"
@@ -242,6 +252,26 @@
     position: relative;
     width: 100%;
     overflow: hidden;
+    /* Only visible around the lifted paper sheet while a rotation has the paper
+       locked: a flat, slightly greyer tone than the sheet's off-white so the
+       original page reads as distinct without any border line. */
+    background-color: #f1efeb;
+  }
+
+  .paper-sheet {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    z-index: 0;
+    pointer-events: none;
+    background-color: #fcfbf8;
+    background-image: url('/icons/handmade-paper.webp');
+    background-repeat: repeat;
+  }
+
+  .paper-sheet.paper-lifted {
+    box-shadow: 0 2px 14px rgba(93, 84, 68, 0.18);
   }
 
   #drawingCanvas {
@@ -250,9 +280,8 @@
     touch-action: none;
     width: 100%;
     height: 100%;
-    background-color: #fcfbf8;
-    background-image: url('/icons/handmade-paper.webp');
-    background-repeat: repeat;
+    position: relative;
+    z-index: 1;
   }
 
   #drawingCanvas.erasing {
@@ -287,13 +316,6 @@
 
   .paper-view[hidden] {
     display: none;
-  }
-
-  /* Page-edge affordance while the paper is letterboxed: a soft frame that
-     multiplies into a slightly darker line, reading as the sheet's edge. */
-  .paper-lifted {
-    outline: 2px solid #e6e0d6;
-    border-radius: 3px;
   }
 
   .coloring-overlay {
