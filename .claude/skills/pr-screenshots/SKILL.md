@@ -39,16 +39,19 @@ images stay hosted for as long as the branch lives. Verified end-to-end — see 
 ADR's Verification table.
 
 1. Put the captured files on `pr-assets` under a per-PR folder, from a **detached
-   worktree** so your feature-branch checkout is never touched. This same block
-   works whether or not the branch already exists:
+   worktree** so your feature-branch checkout is never touched. This block is
+   idempotent — it reuses the remote branch if it exists (the common case after the
+   first PR) and creates the orphan only when it doesn't, so you never have to know
+   which case you're in:
 
    ```sh
    git worktree add --detach ../pr-assets-wt
    cd ../pr-assets-wt
-   # first time only — create the orphan branch with no main history:
-   git checkout --orphan pr-assets && git rm -rf . >/dev/null 2>&1
-   # thereafter — reuse the existing branch instead of the two lines above:
-   #   git fetch origin pr-assets && git checkout pr-assets
+   # Reuse the branch if it already exists on the remote; else create the orphan
+   # (no main history). An unconditional `checkout --orphan` would make a fresh
+   # empty branch that then FAILS to push over the existing remote history.
+   git fetch origin pr-assets && git checkout pr-assets \
+     || { git checkout --orphan pr-assets && git rm -rf . >/dev/null 2>&1; }
    mkdir -p <pr-slug>
    cp /path/to/before.png /path/to/after.png <pr-slug>/
    git add -A && git commit -m "pr-assets: shots for <pr-slug>"
