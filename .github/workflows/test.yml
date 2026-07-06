@@ -30,6 +30,11 @@ jobs:
       - name: Format check
         run: npm run format:check
 
+      # Drift guard: fails if any shipped SVG under web/ isn't SVGO-optimized
+      # (a new icon landed un-optimized). Fix with `npm run img:audit`.
+      - name: SVG audit
+        run: npm run img:audit:check
+
       # Build-time/transitive advisories are mostly unfixable; CI only
       # hard-fails on critical severities so the gate stays meaningful, not noisy.
       - name: Audit dependencies
