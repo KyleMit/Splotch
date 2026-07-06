@@ -9,3 +9,10 @@
 • Faster first load and quicker startup.
 • Bigger, easier-to-tap buttons and color swatches.
 • Sliders now snap to their default value.
+
+🛠 Fixed
+• Apple Pencil strokes and quick taps no longer get dropped.
+• White strokes are now easy to see while drawing.
+• The color palette stays centered in landscape.
+• Menus no longer overlap on small phones.
+• Double-tapping a button no longer opens things twice.
