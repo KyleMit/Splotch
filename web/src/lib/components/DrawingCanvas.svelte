@@ -140,8 +140,10 @@
 
   // The magic brush reveals the active page's colored twin (ADR-0043). Keep the
   // engine's sheet in lockstep with the applied page, and its mode with the tool.
+  // The line art (overlayUrl) is passed too so the twin's own outlines can be
+  // masked out of the reveal — the overlay stays the single source of line work.
   $effect(() => {
-    setColorSheet(coloringBookState.colorSheetUrl);
+    setColorSheet(coloringBookState.colorSheetUrl, coloringBookState.overlayUrl);
   });
 
   $effect(() => {
