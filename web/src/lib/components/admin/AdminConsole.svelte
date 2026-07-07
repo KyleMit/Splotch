@@ -62,15 +62,26 @@
   // Guard against double-submits while a request is in flight.
   let busy = $state(false);
 
+  // Callbacks that reject (e.g. a fetch failing offline) would otherwise be
+  // unhandled rejections with no UI feedback, so catch here and surface a
+  // generic message in whichever branch (login card or console) is visible.
+  let runError = $state<string | null>(null);
+
   async function run(fn: () => Promise<void>) {
     if (busy) return;
     busy = true;
+    runError = null;
     try {
       await fn();
+    } catch {
+      runError = 'Something went wrong. Check your connection and try again.';
     } finally {
       busy = false;
     }
   }
+
+  let shownLoginError = $derived(runError ?? loginError);
+  let shownFlash = $derived<Flash | null>(runError ? { kind: 'error', text: runError } : flash);
 
   function handleLogin(event: SubmitEvent) {
     event.preventDefault();
@@ -175,8 +186,8 @@
     {#if !authed}
       <section class="card">
         <h2>Sign in</h2>
-        {#if loginError}
-          <div class="flash flash-error" role="alert">{loginError}</div>
+        {#if shownLoginError}
+          <div class="flash flash-error" role="alert">{shownLoginError}</div>
         {/if}
         <form onsubmit={handleLogin} class="add-form">
           <input
@@ -201,14 +212,14 @@
         </div>
       {/if}
 
-      {#if flash}
+      {#if shownFlash}
         <div
           class="flash"
-          class:flash-error={flash.kind === 'error'}
-          class:flash-success={flash.kind === 'success'}
-          role={flash.kind === 'error' ? 'alert' : 'status'}
+          class:flash-error={shownFlash.kind === 'error'}
+          class:flash-success={shownFlash.kind === 'success'}
+          role={shownFlash.kind === 'error' ? 'alert' : 'status'}
         >
-          {flash.text}
+          {shownFlash.text}
         </div>
       {/if}
 

@@ -50,7 +50,11 @@
     }
     const data = await response.json().catch(() => null);
     if (!response.ok || !data?.ok) {
-      flash = { kind: 'error', text: data?.error ?? 'Something went wrong. Please try again.' };
+      const text = data?.error ?? 'Something went wrong. Please try again.';
+      // The console renders `flash` only when authed; before then (the stored-
+      // session check and the post-login snapshot) only `loginError` is visible.
+      if (authed) flash = { kind: 'error', text };
+      else loginError = text;
       return false;
     }
     invites = data.invites;
@@ -78,26 +82,27 @@
 
   async function login(key: string) {
     loginError = null;
-    let response: Response;
     try {
-      response = await fetch(apiUrl('/api/admin/login'), {
+      const response = await fetch(apiUrl('/api/admin/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key }),
       });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.ok || typeof data?.session !== 'string') {
+        loginError = data?.error ?? 'Sign in failed.';
+        return false;
+      }
+      session = data.session;
+      await saveAdminSession(session);
+      setAdminLinkVisible(true);
+      // The session is already saved by this point, so a snapshot failure must
+      // still tell the user something (a reload recovers via onMount).
+      return await applySnapshot(await authedFetch('GET'));
     } catch {
       loginError = 'Could not reach the server. Check your connection.';
       return false;
     }
-    const data = await response.json().catch(() => null);
-    if (!response.ok || !data?.ok || typeof data?.session !== 'string') {
-      loginError = data?.error ?? 'Sign in failed.';
-      return false;
-    }
-    session = data.session;
-    await saveAdminSession(session);
-    setAdminLinkVisible(true);
-    return applySnapshot(await authedFetch('GET'));
   }
 
   async function mutate(method: 'POST' | 'DELETE', token: string, message: string) {

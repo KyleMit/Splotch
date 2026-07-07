@@ -70,6 +70,36 @@ test('native console /admin/native signs in via the API and manages tokens', asy
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
 });
 
+test('web /admin surfaces a network failure instead of failing silently', async ({ page }) => {
+  await signIn(page, '/admin');
+  await page.route(
+    (url) => url.pathname === '/admin' && url.search === '?/add',
+    (route) => route.abort()
+  );
+  await page.getByPlaceholder('Add a code…').fill(`e2e-offline-${Date.now()}`);
+  await page.getByRole('button', { name: 'Add code' }).click();
+  // The preview server's Blobs-fallback warning is also role="alert", so pick
+  // out the error flash by its text.
+  await expect(page.getByRole('alert').filter({ hasText: 'Something went wrong' })).toBeVisible();
+});
+
+test('native console reports a failed post-login snapshot and recovers on reload', async ({
+  page,
+}) => {
+  await page.goto('/admin/native');
+  // Let the login POST through but kill the follow-up tokens GET: the session
+  // is already saved by then, so the login card must say what went wrong…
+  await page.route('**/api/admin/tokens', (route) => route.abort());
+  await page.getByPlaceholder('Admin access key').fill(ADMIN_KEY);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.getByRole('alert')).toContainText('Could not reach the server');
+
+  // …and once the network is back, a reload signs in from the stored session.
+  await page.unroute('**/api/admin/tokens');
+  await page.reload();
+  await expect(page.getByPlaceholder('Add a code…')).toBeVisible();
+});
+
 test('admin API requires a valid bearer session', async ({ request }) => {
   expect((await request.get('/api/admin/tokens')).status()).toBe(401);
   expect(
