@@ -35,9 +35,11 @@ ADR-0033 baseline + command log instead of mirroring it on every stroke.
   `releaseAllPointers` no longer copy the canvas; an erase stroke still re-scans
   emptiness off the visible canvas as before.
 - `resizeCanvas()` sizes/grows the baseline directly, rebuilds the backing store,
-  and calls `rebuildFromBaseline()` (baseline `drawImage` + replay the log) to
+  and calls `replayAll()` (baseline `drawImage` + replay the log; named
+  `rebuildFromBaseline()` before the history logic moved to `undoHistory.ts`) to
   repaint — replacing the old `drawImage(virtualCanvas)`.
-- `rebuildFromBaseline()` paints onto the visible canvas only, and additionally
+- `replayAll(target)` paints onto the given surface (the visible canvas on
+  resize/undo; export snapshots reuse it), and additionally
   replays the uncommitted `activeCommand` last. This covers a **mid-stroke
   resize**: an in-flight stroke's ops are recorded in `activeCommand` but not yet
   in the log, so a pure baseline+log rebuild would drop the live stroke (the old

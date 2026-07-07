@@ -1,7 +1,21 @@
-// Imperative drawing engine. Owns the <canvas>, the undo baseline + command
-// log, and the pointer tracking. Svelte components mount this on
-// onMount and adapt reactive state (active color, stroke width) by calling
-// setColor() / setStrokeWidth() from $effect.
+// Imperative drawing engine (ADR-0004). Svelte components mount it via
+// initDrawingCanvas() and adapt reactive state (active color, stroke width) by
+// calling setColor() / setStrokeWidth() from $effect; the engine reports back
+// through the callbacks passed at init (onDrawSound, onUndoStateChange, …).
+//
+// The engine is the conductor over focused modules — it owns the <canvas>, the
+// paper coordinate space, all pointer tracking, and the public API, and
+// delegates the rest:
+//
+//   strokeOps.ts        the op vocabulary + the one renderer every surface shares
+//   undoHistory.ts      undo baseline + command log + keyframes (ADR-0033/0035)
+//   commandSimplify.ts  commit-time stroke simplification (ADR-0036)
+//   strokeMath.ts       pure gesture math (edge swipes, resume detection, speed)
+//   strokeSimplify.ts   pure reduction geometry (RDP, span reconstruction)
+//   paperView.ts        pure rotation-lock view geometry (ADR-0050)
+//   magicBrush.ts       the magic brush's color sheet + paint pattern (ADR-0043)
+//   emptyScan.ts        cheap blank-canvas detection
+//   exportDrawing.ts    PNG composition for save/share
 
 import { ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte';
 import {
@@ -12,7 +26,6 @@ import {
   pointerWasResumed,
   type GuardEdge,
 } from './strokeMath';
-import { sampleReducedSpans, splineReducedSpans, type PathSeg } from './strokeSimplify';
 import {
   computePaperView,
   isIdentityView,
@@ -25,110 +38,35 @@ import {
 import {
   initMagicBrush,
   rasterizeSheet,
-  sheetPatternFor,
   ensureMagicSheet,
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
+import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import {
+  beginCommand,
+  commandCount,
+  commitActiveCommand,
+  ensureBaselineCovers,
+  getHistoryDebug,
+  popCommand,
+  pushCommand,
+  recordOp,
+  replayAll,
+  resetActiveCommandForClear,
+  setKeyframeSegmentThreshold,
+} from './undoHistory';
+import { getSimplifyCounters, setSimplifyOptions, type SimplifyOptions } from './commandSimplify';
+import { scanCanvasIsEmpty } from './emptyScan';
+import { exportDrawing, warmPaperTextureWhenIdle, type ExportOptions } from './exportDrawing';
+import { PERF_MARKS } from './perf';
 
 export { setColorSheet };
 
-// Build-flag-gated user-timing marks on the drawing hot paths, read by the
-// profiling harness (scripts/perf/). __PERF_MARKS__ is a compile-time literal
-// (false unless built with PERF_MARKS=true), so every `if (PERF_MARKS)` block —
-// including its mark/measure name strings — dead-code-eliminates in production.
-const PERF_MARKS = typeof __PERF_MARKS__ !== 'undefined' && __PERF_MARKS__;
+// --- Canvas, tool, and callback state -------------------------------------
 
 interface DrawSoundData {
   speed: number;
-}
-
-// x/y/midX/midY are PAPER coordinates (the space ops are recorded in).
-// startX/startY and pendingPoints are SCREEN (backing-store) coordinates: they
-// exist only for the edge-swipe guard, whose geometry is physical — see
-// pointerToScreen(). A committed candidate maps its buffered points to paper.
-interface PointerState {
-  id: number;
-  x: number;
-  y: number;
-  midX: number;
-  midY: number;
-  startX: number;
-  startY: number;
-  isDrawing: boolean;
-  color: string;
-  lineWidth: number;
-  erase: boolean;
-  magic: boolean;
-  lastTime: number;
-  speedSamples: { t: number; distance: number }[];
-  // Non-null while a touch that began in a guarded edge's gesture band hasn't
-  // decided its direction yet: render nothing and buffer its points until it
-  // either commits (any non-inward movement, or a stationary tap on lift) or is
-  // discarded as an OS edge-swipe (an inward flick). See EDGE_SWIPE_* below.
-  edgeSwipeGuard: GuardEdge | null;
-  pendingPoints: { x: number; y: number }[];
-}
-
-// Undo history is a log of replayable draw ops, not pixel snapshots. Each op is
-// captured at the exact granularity it was rendered (one path op per
-// strokeSmoothSegments call, one dot op per stroke start). Live rendering is
-// bit-identical to its op; the stored ops are then simplified once at commit
-// (ADR-0036) so replay re-strokes far fewer segments without a visible change. A
-// 'clear' op wipes the target. See ADR-0033.
-// `magic`, when true, means the op reveals the coloring page's colored twin
-// instead of laying down `color` — its shape samples the pre-rendered color sheet
-// (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
-// undo, eraser (destination-out clears revealed pixels too), and later solid
-// strokes overriding them all fall out of the existing replay for free.
-type StrokeOp =
-  | {
-      kind: 'dot';
-      x: number;
-      y: number;
-      radius: number;
-      color: string;
-      erase: boolean;
-      magic?: boolean;
-    }
-  | {
-      kind: 'path';
-      // Which pointer drew this op, so commit-time simplification (ADR-0036) can
-      // regroup a multi-touch command's interleaved per-frame ops back into one
-      // run per finger before reducing them. Not used at render time.
-      pid: number;
-      startX: number;
-      startY: number;
-      // Live ops carry midpoint-smoothed quadratic segments (cx/cy = control,
-      // x/y = endpoint); commit-time simplification (ADR-0036) rewrites them to
-      // fewer segments — quadratics in 'samples' mode, cubics (c2x/c2y set) in
-      // the diagnostic 'spline' mode. See strokeSimplify.ts.
-      segs: PathSeg[];
-      color: string;
-      lineWidth: number;
-      erase: boolean;
-      magic?: boolean;
-    }
-  | { kind: 'clear' };
-
-// One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is
-// the canvas-empty state before the group drew, so undo can restore the flag
-// without re-scanning. `keyframe`, when set, is a cumulative square raster of
-// the whole drawing *through this command* (replacing its now-dropped `ops`):
-// any command whose op list grew past OP_KEYFRAME_THRESHOLD is collapsed to a
-// keyframe so rebuilds blit it instead of re-stroking thousands of ops. See
-// ADR-0035.
-interface StrokeGroupCommand {
-  ops: StrokeOp[];
-  wasEmpty: boolean;
-  keyframe?: HTMLCanvasElement | null;
-}
-
-interface CanvasRect {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
 }
 
 interface InitOptions {
@@ -141,10 +79,6 @@ interface InitOptions {
   initialColor?: string;
 }
 
-interface ExportOptions {
-  includePaperTexture?: boolean;
-}
-
 // Set in initDrawingCanvas() before any handler runs (definite-assignment `!`).
 let canvas!: HTMLCanvasElement;
 let ctx!: CanvasRenderingContext2D;
@@ -153,17 +87,13 @@ let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
 let lastColorChangeTime = 0;
-const activePointerIds = new Set<number>();
-const activePointers = new Map<number, PointerState>();
+
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
 let onDrawStopCallback: (() => void) | null = null;
-
-// The undo baseline: one offscreen raster (a max(w,h) square) holding
-// the state from before the oldest retained command. Undo = redraw this, then
-// replay the surviving command log on top. A single raster replaces the old
-// stack of MAX_UNDO_STACK_SIZE full-canvas snapshots (ADR-0033).
-let baselineCanvas: HTMLCanvasElement | null = null;
-let baselineCtx: CanvasRenderingContext2D | null = null;
+let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
+let onCanvasEmptyChange: ((empty: boolean) => void) | null = null;
+let onStrokeEnd: (() => void) | null = null;
+let onViewChange: ((view: EngineViewState) => void) | null = null;
 
 // Strokes rasterize at the device pixel ratio so they stay crisp on mobile
 // screens, capped at 2× — DPR-3 panels would cost 9× the pixels for detail a
@@ -173,12 +103,26 @@ let baselineCtx: CanvasRenderingContext2D | null = null;
 const MAX_RENDER_SCALE = 2;
 let renderScale = 1;
 
-// Cached canvas geometry so the pointer hot path never calls
-// getBoundingClientRect() (each call forces a synchronous reflow). Recomputed
-// only on resize/scroll/orientation change — see refreshCanvasRect().
-let canvasRect: CanvasRect = { left: 0, top: 0, width: 0, height: 0 };
-let rectScaleX = 1;
-let rectScaleY = 1;
+let canUndo = false;
+
+function setCanUndo(value: boolean) {
+  canUndo = value;
+  if (onUndoStateChange) onUndoStateChange(value);
+}
+
+let canvasEmpty = true;
+
+function setCanvasEmptyState(empty: boolean) {
+  if (canvasEmpty === empty) return;
+  canvasEmpty = empty;
+  if (onCanvasEmptyChange) onCanvasEmptyChange(empty);
+  // A blank canvas frees the locked paper to match the live viewport again
+  // (clear, undo-to-blank, erase-to-blank): re-adopt right away instead of
+  // leaving the child a letterboxed blank page until the next rotation.
+  if (empty && activePointers.size === 0 && !isIdentityView(paperView)) resizeCanvas();
+}
+
+// --- Paper space and the rotation-lock view (ADR-0050) --------------------
 
 // The paper: the coordinate space every recorded op, the baseline, the
 // keyframes, and the magic sheet live in (ADR-0050). It tracks the viewport
@@ -193,7 +137,6 @@ let paper = { pxW: 0, pxH: 0, cssW: 0, cssH: 0 };
 // tell an actual rotation (angle delta ≠ 0) from a plain viewport resize.
 let paperAngle = 0;
 let paperView: PaperView = IDENTITY_PAPER_VIEW;
-let onViewChange: ((view: EngineViewState) => void) | null = null;
 
 // Dev/test seam (mirrors setSimplifyParams): pin the screen angle the engine
 // reads so the /dev/engine harness can simulate a device rotation without a
@@ -240,167 +183,64 @@ function notifyViewChange() {
   if (onViewChange) onViewChange(getViewState());
 }
 
-// The retained command log; commands older than this fold into the baseline.
-// Drawing state — this log, the baseline/keyframe rasters, canUndo,
-// canvasEmpty — deliberately outlives teardown()/initDrawingCanvas() cycles:
-// client-side navigation (`/` → `/privacy` → `/`) must not wipe the child's
-// drawing, so remount replays the retained log onto the fresh canvas
-// (resizeCanvas → rebuildFromBaseline). The cost — the rasters stay resident
-// while no canvas is mounted — is accepted (ADR-0004). teardown() resets only
-// pointer-input state, which must never leak across mounts.
-const commandLog: StrokeGroupCommand[] = [];
-const MAX_UNDO_STACK_SIZE = 10;
+// --- Pointer → paper coordinate mapping ------------------------------------
 
-// Keyframe safety net (ADR-0035, now downstream of ADR-0036 simplification).
-// Simplification already collapses a normal long scribble to tens of segments,
-// so the common case stays cheap replayable ops. A pathological high-detail
-// gesture (a finger held down for a minute, every frame a real direction change)
-// can still leave more segments than we want to re-stroke on every undo, so a
-// command whose *simplified* segment total passes this bound is baked into a
-// cumulative raster keyframe (once, at commit, off the draw frame) and its ops
-// dropped — keeping worst-case undo at one drawImage blit. Set well above the
-// segment counts real drawing produces (peak ~140 in profiled sessions) so it
-// fires only for genuine outliers. Mutable so the profiling harness can raise it
-// to Infinity to isolate pure-simplification fidelity (see setSimplifyParams).
-let keyframeSegmentThreshold = 384;
-// The stroke group currently being drawn (set on first paint, pushed to the log
-// when the last finger lifts), so a multi-touch gesture undoes as a single unit.
-let activeCommand: StrokeGroupCommand | null = null;
-let canUndo = false;
-let onUndoStateChange: ((canUndo: boolean) => void) | null = null;
-
-let canvasEmpty = true;
-let onCanvasEmptyChange: ((empty: boolean) => void) | null = null;
-let onStrokeEnd: (() => void) | null = null;
-
-// Pointer speed (which drives the drawing sound) is averaged over the most
-// recent slice of the stroke so the audio cue tracks gesture speed without
-// reacting to every per-frame jitter.
-const SPEED_WINDOW_MS = 100;
-
-// After a color/tool change, ignore touch/mouse pointerdowns for a short window
-// so the tap that picked the color doesn't immediately start a stray stroke.
-// Pen input is precise enough to skip the debounce.
-const COLOR_CHANGE_DEBOUNCE_MS = 100;
-
-// iOS/WebKit can silently merge a fast tap-then-drag into one pointer stream: it
-// drops the intervening pointerup + pointerdown and resumes the SAME pointerId
-// at the new spot, with no coalesced samples bridging the gap. draw() then
-// curves from the old position to the resumed one — a stray straight line
-// joining what should be two separate strokes. A long idle gap AND a jump too
-// large for continuous contact together mean the finger really lifted, so the
-// stroke is restarted at the resumed point. The gap/jump thresholds and the
-// decision predicate live in ./strokeMath (pointerWasResumed).
-
-// The iPad/Android system gesture for the home/menu bar is a swipe inward from
-// the device's physical-bottom edge, so a touch starting in that edge's gesture
-// band is probably not a stroke. Such a touch is buffered, not drawn, until it
-// has travelled EDGE_SWIPE_DECISION_PX: a swipe inward (perpendicular to the
-// edge, within ~45°) is the system gesture and is discarded; any other
-// direction — or a stationary tap — commits as a normal stroke. Which edges to
-// guard is driven by orientation (always available, so this works even where
-// the OS exposes no safe-area insets): the bottom in portrait, and both short
-// side edges in landscape — a phone's physical bottom rotates to a short edge.
-// A tablet instead keeps its home indicator on the long bottom in landscape, so
-// that edge is additionally guarded, but only when the OS reports an inset there
-// (so we don't suppress ordinary strokes along a phone's long bottom). The top
-// edge is never guarded. Only touch input is affected; pen and mouse never
-// trigger the gesture. Children who want to draw at a guarded edge draw away.
-// The band/decision/inset thresholds and the geometry live in ./strokeMath.
-
-// OS safe-area insets in CSS px, pushed from the canvas's owner component. Used
-// only to additionally guard a tablet's long bottom edge in landscape (above).
-let safeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
-
-// One undo snapshot + one empty-state flip per stroke group (all fingers down
-// together). Set the first time the group paints a pixel — deferred so a
-// buffered edge-swipe candidate that's later discarded never pollutes the undo
-// stack or the empty flag. Reset when the last finger lifts.
-let groupHasDrawn = false;
-
-function setCanvasEmptyState(empty: boolean) {
-  if (canvasEmpty === empty) return;
-  canvasEmpty = empty;
-  if (onCanvasEmptyChange) onCanvasEmptyChange(empty);
-  // A blank canvas frees the locked paper to match the live viewport again
-  // (clear, undo-to-blank, erase-to-blank): re-adopt right away instead of
-  // leaving the child a letterboxed blank page until the next rotation.
-  if (empty && activePointers.size === 0 && !isIdentityView(paperView)) resizeCanvas();
+interface CanvasRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
 }
 
-// Emptiness is scanned on a small CPU-side scratch canvas instead of the main
-// canvas: reading the (GPU-backed) main canvas directly would either force a
-// slow readback or require willReadFrequently, which de-accelerates every
-// stroke. Downscaling shrinks the pixel loop ~16× and the drawImage stays
-// GPU→GPU until the tiny scratch readback.
-const EMPTY_SCAN_SCALE = 0.25;
-// Downscale rounding can smear residue to near-zero alpha; anything below this
-// counts as empty.
-const EMPTY_SCAN_ALPHA_THRESHOLD = 4;
-let emptyScanCanvas: HTMLCanvasElement | null = null;
-let emptyScanCtx: CanvasRenderingContext2D | null = null;
+// Cached canvas geometry so the pointer hot path never calls
+// getBoundingClientRect() (each call forces a synchronous reflow). Recomputed
+// only on resize/scroll/orientation change — see refreshCanvasRect().
+let canvasRect: CanvasRect = { left: 0, top: 0, width: 0, height: 0 };
+let rectScaleX = 1;
+let rectScaleY = 1;
 
-function scanCanvasIsEmpty(): boolean {
-  if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) return true;
-  if (PERF_MARKS) performance.mark('engine.scanEmpty:start');
-  if (!emptyScanCanvas) {
-    emptyScanCanvas = document.createElement('canvas');
-    emptyScanCtx = emptyScanCanvas.getContext('2d', { willReadFrequently: true });
-  }
-  if (!emptyScanCtx) return true;
-  // Scan relative to CSS pixels so the readback loop stays the same size
-  // regardless of renderScale.
-  const w = Math.max(1, Math.ceil((canvas.width * EMPTY_SCAN_SCALE) / renderScale));
-  const h = Math.max(1, Math.ceil((canvas.height * EMPTY_SCAN_SCALE) / renderScale));
-  if (emptyScanCanvas.width !== w || emptyScanCanvas.height !== h) {
-    emptyScanCanvas.width = w;
-    emptyScanCanvas.height = h;
-  } else {
-    emptyScanCtx.clearRect(0, 0, w, h);
-  }
-  emptyScanCtx.drawImage(canvas, 0, 0, w, h);
-  const { data } = emptyScanCtx.getImageData(0, 0, w, h);
-  let empty = true;
-  for (let i = 3; i < data.length; i += 4) {
-    if (data[i] >= EMPTY_SCAN_ALPHA_THRESHOLD) {
-      empty = false;
-      break;
-    }
-  }
-  if (PERF_MARKS) performance.measure('engine.scanEmpty', 'engine.scanEmpty:start');
-  return empty;
-}
-
-// The undo baseline grew beyond its current size (e.g. a desktop window
-// stretched larger). Grow it and copy existing
-// pixels so no drawing is lost. The fold path strokes onto the baseline, so the
-// fresh context inherits the round line cap/join.
-function growCanvas(
-  existing: HTMLCanvasElement,
-  newW: number,
-  newH: number
-): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D | null } {
-  const grown = document.createElement('canvas');
-  grown.width = newW;
-  grown.height = newH;
-  const grownCtx = grown.getContext('2d');
-  if (grownCtx) {
-    grownCtx.lineCap = 'round';
-    grownCtx.lineJoin = 'round';
-    grownCtx.drawImage(existing, 0, 0);
-  }
-  return { canvas: grown, ctx: grownCtx };
-}
-
-function resizeCanvas() {
-  if (PERF_MARKS) performance.mark('engine.resize:start');
+// Snapshot the canvas's client rect and the backing-pixel scale factors. Called
+// only off the hot path (resize/scroll/orientation), so the per-pointermove
+// pointerToScreen() can stay reflow-free.
+function refreshCanvasRect() {
+  if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
-  const angle = currentScreenAngle();
+  canvasRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+  rectScaleX = rect.width ? canvas.width / rect.width : 1;
+  rectScaleY = rect.height ? canvas.height / rect.height : 1;
+}
 
-  // Adopt vs lock (ADR-0050): an empty canvas — or a same-angle resize (desktop
-  // window drag, mobile URL bar) — re-adopts the paper as the live viewport,
-  // exactly the pre-lock semantics. Only a rotation with ink on the canvas keeps
-  // the paper (and its angle) so the drawing can be presented instead of remapped.
+// Backing-store (screen) coordinates of a pointer event — the physical space
+// the edge-swipe gesture geometry runs in (OS gesture bands sit at device
+// edges, which a locked paper's rotation would otherwise move).
+function pointerToScreen(e: PointerEvent) {
+  return {
+    x: (e.clientX - canvasRect.left) * rectScaleX,
+    y: (e.clientY - canvasRect.top) * rectScaleY,
+  };
+}
+
+// Paper coordinates — the space ops are recorded and rendered in. Identity
+// unless a rotation has locked the paper (see resizeCanvas / ADR-0050).
+function screenToPaper(pt: { x: number; y: number }): { x: number; y: number } {
+  return isIdentityView(paperView) ? pt : viewToPaper(paperView, pt.x, pt.y);
+}
+
+// The cached canvas client rect, so components can position pointer-following
+// UI (e.g. the eraser cursor) without their own per-move getBoundingClientRect.
+export function getCanvasRect(): CanvasRect {
+  return canvasRect;
+}
+
+// --- Resize and rotation ----------------------------------------------------
+
+// Adopt vs lock (ADR-0050): an empty canvas — or a same-angle resize (desktop
+// window drag, mobile URL bar) — re-adopts the paper as the live viewport,
+// exactly the pre-lock semantics. Only a rotation with ink on the canvas keeps
+// the paper (and its angle) so the drawing can be presented instead of
+// remapped. Returns whether the paper is locked.
+function adoptPaperUnlessLocked(rect: DOMRect): boolean {
+  const angle = currentScreenAngle();
   const lockPaper = !canvasEmpty && rotationDelta(paperAngle, angle) !== 0;
   if (!lockPaper) {
     paper = {
@@ -411,51 +251,26 @@ function resizeCanvas() {
     };
     paperAngle = angle;
   }
+  return lockPaper;
+}
 
-  // The baseline is a max(w,h) square of the paper so it covers both
-  // orientations and rotation never loses pixels; anything larger (e.g. a
-  // resized desktop window) goes through the grow path. Replayed ops use its
-  // coordinates, and content off the current viewport survives here even though
-  // the visible canvas clips it.
-  const squareSide = Math.ceil(Math.max(paper.pxW, paper.pxH));
-  if (!baselineCanvas) {
-    baselineCanvas = document.createElement('canvas');
-    baselineCanvas.width = squareSide;
-    baselineCanvas.height = squareSide;
-    baselineCtx = baselineCanvas.getContext('2d');
-    if (baselineCtx) {
-      baselineCtx.lineCap = 'round';
-      baselineCtx.lineJoin = 'round';
-    }
-  } else if (squareSide > baselineCanvas.width || squareSide > baselineCanvas.height) {
-    const newW = Math.max(squareSide, baselineCanvas.width);
-    const newH = Math.max(squareSide, baselineCanvas.height);
-    ({ canvas: baselineCanvas, ctx: baselineCtx } = growCanvas(baselineCanvas, newW, newH));
-  }
-
-  // Resizing the backing store wipes the visible canvas and resets its context
-  // state, so re-arm the round caps and repaint from the baseline + command log.
-  canvas.width = Math.round(rect.width * renderScale);
-  canvas.height = Math.round(rect.height * renderScale);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  // Present the locked paper through the view: the visible ctx keeps painting in
-  // paper coordinates (live ops, replay, and the sheet pattern all map through
-  // the transform untouched), persisting until the next backing-store reset
-  // above. The paper is presented UPRIGHT (view rotation 0): the picture rotates
-  // with the device and contain-fits — scaled down when it must — rather than
-  // counter-rotating to stay fixed on the glass (rejected in ADR-0050). A 180°
-  // flip on an unchanged viewport therefore computes an identity view.
-  //
-  // The margins around the fitted paper stay DRAWABLE (no clip): a child mid-
-  // scribble shouldn't hit dead zones. Margin ink records at out-of-paper
-  // coordinates — it renders and replays normally while its command is retained,
-  // is cropped by design when rotating back (and from exports), and may drop
-  // from rebuilds once folded/keyframed past the paper-square rasters. Rasters
-  // covering the mapped margins would cost tens of MB at 2× DPR (the fit maps a
-  // phone viewport to ~2× the paper's long side), so that corner is accepted —
-  // see ADR-0050.
+// Present the locked paper through the view: the visible ctx keeps painting in
+// paper coordinates (live ops, replay, and the sheet pattern all map through
+// the transform untouched), persisting until the next backing-store reset. The
+// paper is presented UPRIGHT (view rotation 0): the picture rotates with the
+// device and contain-fits — scaled down when it must — rather than
+// counter-rotating to stay fixed on the glass (rejected in ADR-0050). A 180°
+// flip on an unchanged viewport therefore computes an identity view.
+//
+// The margins around the fitted paper stay DRAWABLE (no clip): a child mid-
+// scribble shouldn't hit dead zones. Margin ink records at out-of-paper
+// coordinates — it renders and replays normally while its command is retained,
+// is cropped by design when rotating back (and from exports), and may drop
+// from rebuilds once folded/keyframed past the paper-square rasters. Rasters
+// covering the mapped margins would cost tens of MB at 2× DPR (the fit maps a
+// phone viewport to ~2× the paper's long side), so that corner is accepted —
+// see ADR-0050.
+function applyPaperView(lockPaper: boolean) {
   paperView = lockPaper
     ? computePaperView(
         { width: paper.pxW, height: paper.pxH },
@@ -466,27 +281,35 @@ function resizeCanvas() {
   if (!isIdentityView(paperView)) {
     ctx.setTransform(...viewMatrix(paperView));
   }
+}
 
-  // The sheet is sized to the paper, so re-rasterize before replaying any
+function resizeCanvas() {
+  if (PERF_MARKS) performance.mark('engine.resize:start');
+  const rect = canvas.getBoundingClientRect();
+  const lockPaper = adoptPaperUnlessLocked(rect);
+
+  // The undo baseline is a max(w,h) square of the paper so it covers both
+  // orientations and rotation never loses pixels; anything larger (e.g. a
+  // resized desktop window) goes through the grow path.
+  ensureBaselineCovers(Math.ceil(Math.max(paper.pxW, paper.pxH)));
+
+  // Resizing the backing store wipes the visible canvas and resets its context
+  // state, so re-arm the round caps and repaint from the baseline + command log.
+  canvas.width = Math.round(rect.width * renderScale);
+  canvas.height = Math.round(rect.height * renderScale);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  applyPaperView(lockPaper);
+
+  // The magic sheet is sized to the paper, so re-rasterize before replaying any
   // magic ops against it.
   rasterizeSheet();
-  rebuildFromBaseline();
+  replayAll(ctx);
 
   refreshCanvasRect();
   notifyViewChange();
 
   if (PERF_MARKS) performance.measure('engine.resize', 'engine.resize:start');
-}
-
-// Snapshot the canvas's client rect and the backing-pixel scale factors. Called
-// only off the hot path (resize/scroll/orientation), so the per-pointermove
-// pointerToCanvas() can stay reflow-free.
-function refreshCanvasRect() {
-  if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
-  canvasRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
-  rectScaleX = rect.width ? canvas.width / rect.width : 1;
-  rectScaleY = rect.height ? canvas.height / rect.height : 1;
 }
 
 // A desktop window-edge drag fires resize continuously, and every backing-store
@@ -512,305 +335,47 @@ function handleResize() {
   }, RESIZE_SETTLE_MS);
 }
 
-// Backing-store (screen) coordinates of a pointer event — the physical space
-// the edge-swipe gesture geometry runs in (OS gesture bands sit at device
-// edges, which a locked paper's rotation would otherwise move).
-function pointerToScreen(e: PointerEvent) {
-  return {
-    x: (e.clientX - canvasRect.left) * rectScaleX,
-    y: (e.clientY - canvasRect.top) * rectScaleY,
+// --- Stroke rendering -------------------------------------------------------
+
+// One undo command + one empty-state flip per stroke group (all fingers down
+// together). Opened the first time the group paints a pixel — deferred so a
+// buffered edge-swipe candidate that's later discarded never pollutes the undo
+// stack or the empty flag. Reset when the last finger lifts.
+let groupHasDrawn = false;
+
+function beginStrokeGroup() {
+  if (groupHasDrawn) return;
+  beginCommand(canvasEmpty);
+  setCanvasEmptyState(false);
+  groupHasDrawn = true;
+}
+
+// Paint the round dot that anchors a stroke at its start point, and kick the
+// drawing sound. Used both for a normal pointerdown and when a deferred
+// edge-swipe candidate commits.
+function renderStrokeStart(ps: PointerState) {
+  beginStrokeGroup();
+
+  // Erasing clears pixels via destination-out; the stroke color is irrelevant
+  // there, only its (opaque) alpha matters. A magic op ignores `color` too — it
+  // reveals the sheet — but carries it so a mid-stroke tool flip keeps a stable
+  // style key for simplification.
+  const dot: StrokeOp = {
+    kind: 'dot',
+    x: ps.x,
+    y: ps.y,
+    radius: ps.lineWidth / 2,
+    color: ps.color,
+    erase: ps.erase,
+    magic: ps.magic,
   };
-}
+  renderOp(ctx, dot);
+  recordOp(dot);
 
-// Paper coordinates — the space ops are recorded and rendered in. Identity
-// unless a rotation has locked the paper (see resizeCanvas / ADR-0050).
-function screenToPaper(pt: { x: number; y: number }): { x: number; y: number } {
-  return isIdentityView(paperView) ? pt : viewToPaper(paperView, pt.x, pt.y);
-}
+  ctx.beginPath();
+  ctx.moveTo(ps.x, ps.y);
 
-// The cached canvas client rect, so components can position pointer-following
-// UI (e.g. the eraser cursor) without their own per-move getBoundingClientRect.
-export function getCanvasRect(): CanvasRect {
-  return canvasRect;
-}
-
-// The magic brush's color sheet, its rasterization, and the pattern the brush
-// paints with all live in ./magicBrush — including the rainbow-gradient source
-// used when no coloring page is applied. The engine drives it (rasterize on
-// resize, ask for the pattern per magic op, set the sources) but owns none of it.
-
-// Stroke or dot the op's bare geometry onto a target using `paint` as the
-// fill/stroke style — a solid colour for a normal op, the sheet pattern for a
-// magic one.
-function paintOpShape(
-  target: CanvasRenderingContext2D,
-  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>,
-  paint: string | CanvasPattern
-) {
-  if (op.kind === 'dot') {
-    target.fillStyle = paint;
-    target.beginPath();
-    target.arc(op.x, op.y, op.radius, 0, Math.PI * 2);
-    target.fill();
-  } else {
-    target.strokeStyle = paint;
-    target.lineWidth = op.lineWidth;
-    target.beginPath();
-    target.moveTo(op.startX, op.startY);
-    for (const s of op.segs) {
-      if (s.c2x !== undefined) target.bezierCurveTo(s.cx, s.cy, s.c2x, s.c2y!, s.x, s.y);
-      else target.quadraticCurveTo(s.cx, s.cy, s.x, s.y);
-    }
-    target.stroke();
-  }
-}
-
-// Paint one recorded op onto a target context. Used both live (target = the
-// visible ctx) and during undo/resize replay (target = the visible or baseline
-// surface). Erasing composites destination-out; a magic op reveals the color
-// sheet (source-over, its shape filled with the sheet pattern) and paints
-// nothing until the sheet has decoded; everything else lays down its solid color.
-// Clear everything a target could be showing. The visible ctx's user space is
-// PAPER coordinates whenever the paper view is active — and with the margins
-// drawable, ink can sit at negative paper coordinates that a rect from (0,0)
-// would miss — so clear in device space. Identity targets (baseline, keyframes,
-// exports) are unaffected: device space is their own space.
-function clearAllOf(target: CanvasRenderingContext2D) {
-  target.save();
-  target.setTransform(1, 0, 0, 1, 0, 0);
-  target.clearRect(0, 0, target.canvas.width, target.canvas.height);
-  target.restore();
-}
-
-function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
-  if (op.kind === 'clear') {
-    clearAllOf(target);
-    return;
-  }
-  if (op.magic) {
-    const pattern = sheetPatternFor(target);
-    if (!pattern) return;
-    target.globalCompositeOperation = 'source-over';
-    paintOpShape(target, op, pattern);
-    return;
-  }
-  target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
-  target.globalCompositeOperation = 'source-over';
-}
-
-// Append an op to the active stroke-group command so it can be replayed for
-// undo. No-op between groups (activeCommand is null).
-function recordOp(op: StrokeOp) {
-  if (activeCommand) activeCommand.ops.push(op);
-}
-
-// --- Stroke simplification (ADR-0036) ---
-// A finger drawing records one path op per frame, so a single stroke can hold
-// hundreds of near-collinear samples that undo/resize re-stroke segment by
-// segment. At commit each command's ops are reduced once: per finger, the run of
-// path ops is rebuilt into its raw point list and thinned with
-// Ramer–Douglas–Peucker — a point is dropped when it lies within an
-// epsilon-tolerance of the chord between its surviving neighbours, so only real
-// direction changes remain. The rendered curve already approximates rather than
-// interpolates its points, so thinning them shifts only antialiased stroke
-// edges (<1px), not the stroke's shape or position.
-//
-// The tolerance scales with stroke width: a wiggle far smaller than the round
-// brush's radius can't be seen, so a thick stroke tolerates a coarser polyline
-// than a thin one. Clamped so even the thinnest stroke drops sub-pixel jitter and
-// the thickest doesn't cut visible corners. All in device px — stored coordinates
-// already include renderScale.
-// Mutable so the dev profiling harness can sweep them at runtime
-// (setSimplifyParams, exposed only on the dev/engine page behind
-// PUBLIC_ENABLE_DEV_HARNESS). Production never calls the setter, so these keep
-// their tuned defaults.
-let simplifyEpsilonFraction = 0.03;
-let simplifyEpsilonMinPx = 1;
-let simplifyEpsilonMaxPx = 6;
-function simplifyEpsilonFor(lineWidth: number): number {
-  return Math.min(
-    simplifyEpsilonMaxPx,
-    Math.max(simplifyEpsilonMinPx, lineWidth * simplifyEpsilonFraction)
-  );
-}
-
-// Lifetime counters (raw samples seen vs. points kept after simplification),
-// surfaced through getUndoDebug for the profiling harness and the engine spec.
-let simplifyRawPoints = 0;
-let simplifyKeptPoints = 0;
-
-// Dev profiling seam (ADR-0036 tuning): override the simplification tolerance
-// and the keyframe safety-net bound so a single build can sweep every setting.
-// Wired onto window.__engine only on the /dev/engine page (PUBLIC_ENABLE_DEV_HARNESS);
-// production never calls it. Resets the lifetime counters so each sweep point
-// reads a clean raw/kept ratio.
-export function setSimplifyParams(params: {
-  fraction?: number;
-  min?: number;
-  max?: number;
-  keyframeThreshold?: number;
-  cornerAngleDeg?: number;
-  mode?: 'midpoint' | 'spline' | 'samples';
-  reduce?: boolean;
-  enabled?: boolean;
-  split?: 'none' | 'corner';
-}) {
-  if (params.fraction !== undefined) simplifyEpsilonFraction = params.fraction;
-  if (params.min !== undefined) simplifyEpsilonMinPx = params.min;
-  if (params.max !== undefined) simplifyEpsilonMaxPx = params.max;
-  if (params.keyframeThreshold !== undefined) keyframeSegmentThreshold = params.keyframeThreshold;
-  if (params.cornerAngleDeg !== undefined)
-    simplifyCornerCos = Math.cos((params.cornerAngleDeg * Math.PI) / 180);
-  if (params.mode !== undefined) simplifyMode = params.mode;
-  if (params.reduce !== undefined) simplifyReduce = params.reduce;
-  if (params.enabled !== undefined) simplifyEnabled = params.enabled;
-  if (params.split !== undefined) simplifySplit = params.split;
-  simplifyRawPoints = 0;
-  simplifyKeptPoints = 0;
-}
-
-type PathOp = Extract<StrokeOp, { kind: 'path' }>;
-
-// Turn threshold shared by the corner pinning/splitting in strokeSimplify.ts
-// (cos of the corner angle; sharper turns than this are corners).
-let simplifyCornerCos = Math.cos((40 * Math.PI) / 180);
-// Rebuild renderer. 'samples' (the default) thins the recovered RAW finger
-// samples and re-applies the live midpoint-quadratic construction over them
-// (sampleReducedSpans, strokeSimplify.ts) — the SAME curve family as the live
-// render, so turns, tips,
-// and hold-still corners rebuild exactly and the whole-battery worst shift is
-// ~1.5 CSS px (vs 2.5 for 'spline'). 'spline' interpolates derived ON-CURVE
-// points (rawPointsOf) with a corner-aware centripetal Catmull-Rom — kept for
-// comparison sweeps; it reduces more (~4.3× vs ~2.7×) at visibly lower corner/
-// tip fidelity. 'midpoint' is a legacy/diagnostic mode that re-applies midpoint
-// smoothing to ON-CURVE points; it HALVES them and is wrong for reconstruction
-// (kept only for the profiling seam). Tunable via setSimplifyParams.
-let simplifyMode: 'midpoint' | 'spline' | 'samples' = 'samples';
-// When false, keep every raw point (no RDP) — for measuring the renderer floor.
-let simplifyReduce = true;
-// 'corner' splits a reduced run into one stroke op per span between sharp corners,
-// so each kept corner is a stroke boundary and gets a round CAP (a full disc) just
-// like the live per-frame draw — eliminating the merged-path round-JOIN shift at
-// sharp turns. 'none' emits one merged op per run (round joins at every vertex).
-let simplifySplit: 'none' | 'corner' = 'corner';
-// SHIPPING DEFAULT: true. simplifyCommand reduces a committed command's per-frame
-// ops to a few thinned sub-strokes (ADR-0036, 'samples' mode above). Verified on
-// perf:units: every stroke in the synthetic + real battery rebuilds within
-// ≤1.5 CSS px of the live render (max; the bulk far under), at ~2.7x fewer
-// points. The key is staying in the live render's own curve family — thin the
-// recovered raw samples, pin turn/tip/duplicate neighbourhoods so their local
-// geometry is exact, and re-apply midpoint smoothing — instead of fitting a
-// different spline through derived points (the retired 'spline' mode, which
-// reduced more but shifted corners and scribble tips by up to 2.5 px: the jump
-// users saw on undo). Long all-corners commands that RDP can't thin are still
-// bounded by ADR-0035 keyframing.
-let simplifyEnabled = true;
-
-function pathStyleMatches(a: PathOp, b: PathOp): boolean {
-  return (
-    a.color === b.color &&
-    a.lineWidth === b.lineWidth &&
-    a.erase === b.erase &&
-    !!a.magic === !!b.magic
-  );
-}
-
-// Reduce one continuous, same-style run of a single finger's path ops through
-// the geometry pipeline for the active mode (strokeSimplify.ts), re-attach the
-// run's style to each returned span, and track the lifetime raw/kept counters.
-function reducePathRun(run: PathOp[]): PathOp[] {
-  const first = run[0];
-  const opts = {
-    epsilon: simplifyEpsilonFor(first.lineWidth),
-    cornerCos: simplifyCornerCos,
-    reduce: simplifyReduce,
-  };
-  const { spans, rawCount, keptCount } =
-    simplifyMode === 'samples'
-      ? sampleReducedSpans(run, opts)
-      : splineReducedSpans(run, {
-          ...opts,
-          midpoint: simplifyMode === 'midpoint',
-          split: simplifySplit,
-        });
-  simplifyRawPoints += rawCount;
-  simplifyKeptPoints += keptCount;
-  return spans.map((span) => ({
-    kind: 'path' as const,
-    pid: first.pid,
-    startX: span.startX,
-    startY: span.startY,
-    segs: span.segs,
-    color: first.color,
-    lineWidth: first.lineWidth,
-    erase: first.erase,
-    magic: first.magic,
-  }));
-}
-
-// Simplify a committed command's per-frame path ops in place. A multi-touch
-// command interleaves several fingers' ops, so they're first regrouped by pointer
-// id, then each finger's ops are split into spatially continuous, same-style
-// sub-runs (a pointer-resume jump or a mid-stroke style/eraser change breaks
-// continuity, so no stray line bridges the gap) before reduction. Each finger's
-// reduced ops are emitted at the position of its first op; dots and clears pass
-// through in place, preserving compositing order for the single-finger case.
-function simplifyCommand(cmd: StrokeGroupCommand) {
-  if (!simplifyEnabled || cmd.ops.length === 0) return;
-  if (PERF_MARKS) performance.mark('engine.simplify:start');
-
-  const byPid = new Map<number, PathOp[]>();
-  for (const op of cmd.ops) {
-    if (op.kind !== 'path') continue;
-    const list = byPid.get(op.pid);
-    if (list) list.push(op);
-    else byPid.set(op.pid, [op]);
-  }
-
-  const reducedByPid = new Map<number, PathOp[]>();
-  for (const [pid, ops] of byPid) {
-    const reduced: PathOp[] = [];
-    let run: PathOp[] = [];
-    const flush = () => {
-      if (run.length > 0) reduced.push(...reducePathRun(run));
-      run = [];
-    };
-    for (const op of ops) {
-      if (run.length > 0) {
-        const prev = run[run.length - 1];
-        const prevAnchor = prev.segs[prev.segs.length - 1];
-        const continuous = op.startX === prevAnchor.x && op.startY === prevAnchor.y;
-        if (!continuous || !pathStyleMatches(prev, op)) flush();
-      }
-      run.push(op);
-    }
-    flush();
-    reducedByPid.set(pid, reduced);
-  }
-
-  const out: StrokeOp[] = [];
-  const emitted = new Set<number>();
-  for (const op of cmd.ops) {
-    if (op.kind !== 'path') {
-      out.push(op);
-      continue;
-    }
-    if (!emitted.has(op.pid)) {
-      out.push(...reducedByPid.get(op.pid)!);
-      emitted.add(op.pid);
-    }
-  }
-  cmd.ops = out;
-  if (PERF_MARKS) performance.measure('engine.simplify', 'engine.simplify:start');
-}
-
-// Total quadratic segments a command will re-stroke on replay — the keyframe
-// safety net's trigger, measured after simplification.
-function commandSegmentCount(cmd: StrokeGroupCommand): number {
-  let n = 0;
-  for (const op of cmd.ops) if (op.kind === 'path') n += op.segs.length;
-  return n;
+  if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0 });
 }
 
 // One quadratic segment per input point: the path runs midpoint-to-midpoint
@@ -844,92 +409,81 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
   recordOp(op);
 }
 
-export function releaseAllPointers() {
-  if (!ctx) return;
-  ctx.beginPath();
-
-  activePointers.clear();
-  groupHasDrawn = false;
-  commitActiveCommand();
-  if (onDrawStopCallback) onDrawStopCallback();
-
-  activePointerIds.forEach((pointerId) => {
-    try {
-      if (canvas.hasPointerCapture && canvas.hasPointerCapture(pointerId)) {
-        canvas.releasePointerCapture(pointerId);
-      }
-    } catch {}
-  });
-
-  activePointerIds.clear();
+// Push the finished stroke group onto the undo log (once per group, when the
+// last finger lifts) and tell reactive consumers. onStrokeEnd fires at stroke
+// end, not start, so consumers (e.g. mounting the install banner) never do DOM
+// work while a finger is mid-stroke.
+function commitStrokeGroup() {
+  if (PERF_MARKS) performance.mark('engine.commit:start');
+  if (!commitActiveCommand()) return;
+  setCanUndo(true);
+  if (onStrokeEnd) onStrokeEnd();
+  if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
 }
 
-// First paint of a stroke group: open a new undo command and flip the empty
-// flag, once. A multi-touch gesture undoes as a single unit, so later fingers
-// record into the same command. `wasEmpty` is captured before the flag flips.
-function beginRender() {
-  if (groupHasDrawn) return;
-  activeCommand = { ops: [], wasEmpty: canvasEmpty };
-  setCanvasEmptyState(false);
-  groupHasDrawn = true;
+// --- Pointer tracking -------------------------------------------------------
+
+// x/y/midX/midY are PAPER coordinates (the space ops are recorded in).
+// startX/startY and pendingPoints are SCREEN (backing-store) coordinates: they
+// exist only for the edge-swipe guard, whose geometry is physical — see
+// pointerToScreen(). A committed candidate maps its buffered points to paper.
+interface PointerState {
+  id: number;
+  x: number;
+  y: number;
+  midX: number;
+  midY: number;
+  startX: number;
+  startY: number;
+  isDrawing: boolean;
+  color: string;
+  lineWidth: number;
+  erase: boolean;
+  magic: boolean;
+  lastTime: number;
+  speedSamples: { t: number; distance: number }[];
+  // Non-null while a touch that began in a guarded edge's gesture band hasn't
+  // decided its direction yet: render nothing and buffer its points until it
+  // either commits (any non-inward movement, or a stationary tap on lift) or is
+  // discarded as an OS edge-swipe (an inward flick). See the edge-swipe notes
+  // at startDrawing().
+  edgeSwipeGuard: GuardEdge | null;
+  pendingPoints: { x: number; y: number }[];
 }
 
-// Paint the round dot that anchors a stroke at its start point, and kick the
-// drawing sound. Used both for a normal pointerdown and when a deferred
-// edge-swipe candidate commits.
-function renderStrokeStart(ps: PointerState) {
-  beginRender();
+const activePointerIds = new Set<number>();
+const activePointers = new Map<number, PointerState>();
 
-  // Erasing clears pixels via destination-out; the stroke color is irrelevant
-  // there, only its (opaque) alpha matters. A magic op ignores `color` too — it
-  // reveals the sheet — but carries it so a mid-stroke tool flip keeps a stable
-  // style key for simplification.
-  const dot: StrokeOp = {
-    kind: 'dot',
-    x: ps.x,
-    y: ps.y,
-    radius: ps.lineWidth / 2,
-    color: ps.color,
-    erase: ps.erase,
-    magic: ps.magic,
-  };
-  renderOp(ctx, dot);
-  recordOp(dot);
+// Pointer speed (which drives the drawing sound) is averaged over the most
+// recent slice of the stroke so the audio cue tracks gesture speed without
+// reacting to every per-frame jitter.
+const SPEED_WINDOW_MS = 100;
 
-  ctx.beginPath();
-  ctx.moveTo(ps.x, ps.y);
+// After a color/tool change, ignore touch/mouse pointerdowns for a short window
+// so the tap that picked the color doesn't immediately start a stray stroke.
+// Pen input is precise enough to skip the debounce.
+const COLOR_CHANGE_DEBOUNCE_MS = 100;
 
-  if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0 });
-}
+// OS safe-area insets in CSS px, pushed from the canvas's owner component. Used
+// only to additionally guard a tablet's long bottom edge in landscape (see the
+// edge-swipe notes at startDrawing).
+let safeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 
-// A buffered edge-swipe candidate turned out to be a real stroke: render its
-// start dot and flush every point withheld while the direction was undecided,
-// then let it draw normally from here on.
-function commitEdgeSwipe(ps: PointerState) {
-  ps.edgeSwipeGuard = null;
-  renderStrokeStart(ps);
-  if (ps.pendingPoints.length > 0) {
-    strokeSmoothSegments(ps, ps.pendingPoints.map(screenToPaper));
-    ps.pendingPoints = [];
-  }
-  // Restart speed sampling from the commit point so the buffered span doesn't
-  // register as one giant first chord.
-  const now = Date.now();
-  ps.speedSamples = [{ t: now, distance: 0 }];
-  ps.lastTime = now;
-}
-
-// Drop a pointer without rendering anything (an OS edge-swipe). Nothing was
-// painted, so undo/empty state and the group flag are left untouched.
-function discardPointer(e: PointerEvent) {
-  activePointers.delete(e.pointerId);
-  activePointerIds.delete(e.pointerId);
-  ctx.beginPath();
-  try {
-    canvas.releasePointerCapture(e.pointerId);
-  } catch {}
-}
-
+// The iPad/Android system gesture for the home/menu bar is a swipe inward from
+// the device's physical-bottom edge, so a touch starting in that edge's gesture
+// band is probably not a stroke. Such a touch is buffered, not drawn, until it
+// has travelled the decision distance: a swipe inward (perpendicular to the
+// edge, within ~45°) is the system gesture and is discarded; any other
+// direction — or a stationary tap — commits as a normal stroke. Which edges to
+// guard is driven by orientation (always available, so this works even where
+// the OS exposes no safe-area insets): the bottom in portrait, and both short
+// side edges in landscape — a phone's physical bottom rotates to a short edge.
+// A tablet instead keeps its home indicator on the long bottom in landscape, so
+// that edge is additionally guarded, but only when the OS reports an inset there
+// (so we don't suppress ordinary strokes along a phone's long bottom). The top
+// edge is never guarded. Only touch input is affected; pen and mouse never
+// trigger the gesture. Children who want to draw at a guarded edge draw away.
+// The band/decision/inset thresholds and the geometry live in ./strokeMath.
 function startDrawing(e: PointerEvent) {
   const timeSinceColorChange = Date.now() - lastColorChangeTime;
   const requiredDelay = e.pointerType === 'pen' ? 0 : COLOR_CHANGE_DEBOUNCE_MS;
@@ -991,40 +545,86 @@ function startDrawing(e: PointerEvent) {
   } catch {}
 }
 
-// Every pointerdown actually delivered anywhere in the document, until its
-// up/cancel arrives. A pen contact stream whose id is missing here never got a
-// pointerdown at all — the WebKit merged-stream signature — which is what
-// licenses adoption below without stealing pointers that legitimately began on
-// a UI control (drag-to-clear's uncaptured drag, the color picker's captured
-// drag, a slide off a swatch).
-const liveDownIds = new Set<number>();
-const trackPointerDown = (e: PointerEvent) => liveDownIds.add(e.pointerId);
-const trackPointerLift = (e: PointerEvent) => liveDownIds.delete(e.pointerId);
-
-const cancelTouch = (e: TouchEvent) => e.preventDefault();
-
-// The WebKit merge quirk of POINTER_RESUME_GAP_MS, for a stream that began on a
-// UI control: a fast pen tap on e.g. a color swatch merged with the following
-// stroke drops the intervening pointerup + pointerdown, so the stroke arrives
-// as bare pointermoves — a down-less contact stream. Hover moves (buttons ===
-// 0) never match, and touch keeps its 100ms color-change debounce precisely to
-// absorb this kind of tap fallout.
-function isOrphanPenContact(e: PointerEvent) {
-  return e.pointerType === 'pen' && e.buttons !== 0 && !liveDownIds.has(e.pointerId);
+// A buffered edge-swipe candidate turned out to be a real stroke: render its
+// start dot and flush every point withheld while the direction was undecided,
+// then let it draw normally from here on.
+function commitEdgeSwipe(ps: PointerState) {
+  ps.edgeSwipeGuard = null;
+  renderStrokeStart(ps);
+  if (ps.pendingPoints.length > 0) {
+    strokeSmoothSegments(ps, ps.pendingPoints.map(screenToPaper));
+    ps.pendingPoints = [];
+  }
+  // Restart speed sampling from the commit point so the buffered span doesn't
+  // register as one giant first chord.
+  const now = Date.now();
+  ps.speedSamples = [{ t: now, distance: 0 }];
+  ps.lastTime = now;
 }
 
-// Pens get no implicit capture, so an orphaned stream's moves usually hit-test
-// onto the canvas (draw() adopts those directly) — but WebKit can also keep
-// delivering them to the control the merged stream started on. This
-// window-level listener catches that flavor: an orphaned pen contact move
-// physically over exposed canvas (elementFromPoint, so an open picker or a
-// floating control still wins) becomes the stroke start, and startDrawing's
-// setPointerCapture retargets the rest of the stream to the canvas.
-function adoptStrayPenStream(e: PointerEvent) {
-  if (e.target === canvas || activePointers.has(e.pointerId)) return;
-  if (!isOrphanPenContact(e)) return;
-  if (document.elementFromPoint(e.clientX, e.clientY) !== canvas) return;
-  startDrawing(e);
+// Drop a pointer without rendering anything (an OS edge-swipe). Nothing was
+// painted, so undo/empty state and the group flag are left untouched.
+function discardPointer(e: PointerEvent) {
+  activePointers.delete(e.pointerId);
+  activePointerIds.delete(e.pointerId);
+  ctx.beginPath();
+  try {
+    canvas.releasePointerCapture(e.pointerId);
+  } catch {}
+}
+
+// Edge-gesture candidate: withhold rendering until the direction is decided.
+// The buffered points and the direction test stay in screen space (physical
+// edges); commitEdgeSwipe maps them to paper coordinates when they turn out
+// to be a real stroke.
+function advanceEdgeSwipeCandidate(
+  ps: PointerState,
+  screenPoints: { x: number; y: number }[],
+  e: PointerEvent
+) {
+  ps.pendingPoints.push(...screenPoints);
+  const last = screenPoints[screenPoints.length - 1];
+  const dx = last.x - ps.startX;
+  const dy = last.y - ps.startY;
+  if (!edgeSwipeDirectionDecided(Math.hypot(dx, dy), renderScale)) return;
+  // Decided. A mostly-inward flick (within ~45° of perpendicular, toward the
+  // canvas centre) is the OS gesture — discard the whole stroke. Anything else
+  // is a real stroke; commit it and let the next pointermove draw normally.
+  if (edgeSwipeIsOsGesture(ps.edgeSwipeGuard!, dx, dy)) {
+    discardPointer(e);
+  } else {
+    commitEdgeSwipe(ps);
+  }
+}
+
+// iOS/WebKit can silently merge a fast tap-then-drag into one pointer stream: it
+// drops the intervening pointerup + pointerdown and resumes the SAME pointerId
+// at the new spot, with no coalesced samples bridging the gap. draw() would then
+// curve from the old position to the resumed one — a stray straight line
+// joining what should be two separate strokes. A long idle gap AND a jump too
+// large for continuous contact together mean the finger really lifted, so the
+// stroke is restarted at the resumed point. The gap/jump thresholds and the
+// decision predicate live in ./strokeMath (pointerWasResumed).
+function restartStrokeIfResumed(ps: PointerState, resume: { x: number; y: number }, now: number) {
+  const deltaX = resume.x - ps.x;
+  const deltaY = resume.y - ps.y;
+  const jump = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  if (!pointerWasResumed(now - ps.lastTime, jump, Math.min(paper.pxW, paper.pxH))) return;
+  ps.x = resume.x;
+  ps.y = resume.y;
+  ps.midX = resume.x;
+  ps.midY = resume.y;
+  ps.speedSamples = [{ t: now, distance: 0 }];
+  ctx.beginPath();
+}
+
+// Speed is sampled from the final event only: one chord per pointermove,
+// matching the cadence the sliding window was tuned for.
+function strokeSpeed(ps: PointerState, last: { x: number; y: number }, now: number): number {
+  const deltaX = last.x - ps.x;
+  const deltaY = last.y - ps.y;
+  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  return calculateStrokeSpeed(ps.speedSamples, { t: now, distance }, SPEED_WINDOW_MS);
 }
 
 function draw(e: PointerEvent) {
@@ -1054,57 +654,14 @@ function draw(e: PointerEvent) {
 
   const now = Date.now();
 
-  // Edge-gesture candidate: withhold rendering until the direction is decided.
-  // The buffered points and the direction test stay in screen space (physical
-  // edges); commitEdgeSwipe maps them to paper coordinates when they turn out
-  // to be a real stroke.
   if (pointerState.edgeSwipeGuard) {
-    pointerState.pendingPoints.push(...screenPoints);
-    const last = screenPoints[screenPoints.length - 1];
-    const dx = last.x - pointerState.startX;
-    const dy = last.y - pointerState.startY;
-    if (!edgeSwipeDirectionDecided(Math.hypot(dx, dy), renderScale)) return;
-    // Decided. A mostly-inward flick (within ~45° of perpendicular, toward the
-    // canvas centre) is the OS gesture — discard the whole stroke. Anything else
-    // is a real stroke; commit it and let the next pointermove draw normally.
-    if (edgeSwipeIsOsGesture(pointerState.edgeSwipeGuard, dx, dy)) {
-      discardPointer(e);
-    } else {
-      commitEdgeSwipe(pointerState);
-    }
+    advanceEdgeSwipeCandidate(pointerState, screenPoints, e);
     return;
   }
 
   const points = screenPoints.map(screenToPaper);
-
-  // A resumed pointer (see POINTER_RESUME_GAP_MS) reappears far from where it
-  // left off after an idle gap, with no coalesced samples bridging the two.
-  // Restart the path there so the next segment doesn't span the gap.
-  const resume = points[0];
-  const resumeDeltaX = resume.x - pointerState.x;
-  const resumeDeltaY = resume.y - pointerState.y;
-  const jump = Math.sqrt(resumeDeltaX * resumeDeltaX + resumeDeltaY * resumeDeltaY);
-  if (pointerWasResumed(now - pointerState.lastTime, jump, Math.min(paper.pxW, paper.pxH))) {
-    pointerState.x = resume.x;
-    pointerState.y = resume.y;
-    pointerState.midX = resume.x;
-    pointerState.midY = resume.y;
-    pointerState.speedSamples = [{ t: now, distance: 0 }];
-    ctx.beginPath();
-  }
-
-  // Speed is sampled from the final event only: one chord per pointermove,
-  // matching the cadence the sliding window was tuned for.
-  const last = points[points.length - 1];
-  const deltaX = last.x - pointerState.x;
-  const deltaY = last.y - pointerState.y;
-  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-  const speed = calculateStrokeSpeed(
-    pointerState.speedSamples,
-    { t: now, distance },
-    SPEED_WINDOW_MS
-  );
+  restartStrokeIfResumed(pointerState, points[0], now);
+  const speed = strokeSpeed(pointerState, points[points.length - 1], now);
 
   strokeSmoothSegments(pointerState, points);
 
@@ -1134,12 +691,12 @@ function stopDrawing(e?: PointerEvent) {
   ctx.beginPath();
 
   if (pointerState && !pointerState.edgeSwipeGuard && pointerState.erase) {
-    setCanvasEmptyState(scanCanvasIsEmpty());
+    setCanvasEmptyState(scanCanvasIsEmpty(canvas, renderScale));
   }
 
   if (activePointers.size === 0) {
     groupHasDrawn = false;
-    commitActiveCommand();
+    commitStrokeGroup();
     if (onDrawStopCallback) onDrawStopCallback();
   }
 
@@ -1148,127 +705,127 @@ function stopDrawing(e?: PointerEvent) {
   } catch {}
 }
 
-// Finalize the stroke group built up since beginRender() and push it onto the
-// undo log. Called once per group, when the last finger lifts.
-function commitActiveCommand() {
-  if (!activeCommand) return;
-  if (PERF_MARKS) performance.mark('engine.commit:start');
-  pushCommand(activeCommand);
-  activeCommand = null;
-  // Fired at stroke end, not start, so reactive consumers (e.g. mounting the
-  // install banner) never do DOM work while a finger is mid-stroke.
-  if (onStrokeEnd) onStrokeEnd();
-  if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
+export function releaseAllPointers() {
+  if (!ctx) return;
+  ctx.beginPath();
+
+  activePointers.clear();
+  groupHasDrawn = false;
+  commitStrokeGroup();
+  if (onDrawStopCallback) onDrawStopCallback();
+
+  activePointerIds.forEach((pointerId) => {
+    try {
+      if (canvas.hasPointerCapture && canvas.hasPointerCapture(pointerId)) {
+        canvas.releasePointerCapture(pointerId);
+      }
+    } catch {}
+  });
+
+  activePointerIds.clear();
 }
 
-function pushCommand(cmd: StrokeGroupCommand) {
-  commandLog.push(cmd);
-  simplifyCommand(cmd);
-  if (commandLog.length > MAX_UNDO_STACK_SIZE) foldOldestIntoBaseline();
-  maybeKeyframe(cmd);
+// --- WebKit merged-stream pen quirks ---------------------------------------
 
-  canUndo = true;
-  if (onUndoStateChange) onUndoStateChange(canUndo);
+// Every pointerdown actually delivered anywhere in the document, until its
+// up/cancel arrives. A pen contact stream whose id is missing here never got a
+// pointerdown at all — the WebKit merged-stream signature — which is what
+// licenses adoption below without stealing pointers that legitimately began on
+// a UI control (drag-to-clear's uncaptured drag, the color picker's captured
+// drag, a slide off a swatch).
+const liveDownIds = new Set<number>();
+const trackPointerDown = (e: PointerEvent) => liveDownIds.add(e.pointerId);
+const trackPointerLift = (e: PointerEvent) => liveDownIds.delete(e.pointerId);
+
+// The WebKit merge quirk of POINTER_RESUME_GAP_MS, for a stream that began on a
+// UI control: a fast pen tap on e.g. a color swatch merged with the following
+// stroke drops the intervening pointerup + pointerdown, so the stroke arrives
+// as bare pointermoves — a down-less contact stream. Hover moves (buttons ===
+// 0) never match, and touch keeps its 100ms color-change debounce precisely to
+// absorb this kind of tap fallout.
+function isOrphanPenContact(e: PointerEvent) {
+  return e.pointerType === 'pen' && e.buttons !== 0 && !liveDownIds.has(e.pointerId);
 }
 
-// Safety net: a command whose *simplified* segment total is still large enough
-// to make undo/resize replay expensive is collapsed once, at commit (off the
-// draw frame), into a cumulative square keyframe of the whole drawing through it,
-// then its ops are dropped so rebuilds blit the keyframe instead. Built before
-// the ops are cleared, so paintStateThrough still sees them. See ADR-0035 (the
-// trigger now measures post-simplification segments, ADR-0036).
-function maybeKeyframe(cmd: StrokeGroupCommand) {
-  if (commandSegmentCount(cmd) <= keyframeSegmentThreshold || !baselineCanvas) return;
-  const index = commandLog.indexOf(cmd);
-  if (index < 0) return;
-  const kf = document.createElement('canvas');
-  kf.width = baselineCanvas.width;
-  kf.height = baselineCanvas.height;
-  const kfCtx = kf.getContext('2d');
-  if (!kfCtx) return;
-  kfCtx.lineCap = 'round';
-  kfCtx.lineJoin = 'round';
-  if (PERF_MARKS) performance.mark('engine.keyframe:start');
-  paintStateThrough(kfCtx, index);
-  cmd.keyframe = kf;
-  cmd.ops = [];
-  if (PERF_MARKS) performance.measure('engine.keyframe', 'engine.keyframe:start');
+// Pens get no implicit capture, so an orphaned stream's moves usually hit-test
+// onto the canvas (draw() adopts those directly) — but WebKit can also keep
+// delivering them to the control the merged stream started on. This
+// window-level listener catches that flavor: an orphaned pen contact move
+// physically over exposed canvas (elementFromPoint, so an open picker or a
+// floating control still wins) becomes the stroke start, and startDrawing's
+// setPointerCapture retargets the rest of the stream to the canvas.
+function adoptStrayPenStream(e: PointerEvent) {
+  if (e.target === canvas || activePointers.has(e.pointerId)) return;
+  if (!isOrphanPenContact(e)) return;
+  if (document.elementFromPoint(e.clientX, e.clientY) !== canvas) return;
+  startDrawing(e);
 }
 
-// History past the cap can no longer be undone, so bake the oldest command into
-// the baseline raster and drop it. A keyframed command already holds the
-// cumulative state through itself, so it becomes the new baseline wholesale;
-// otherwise replay its ops in order (keeping eraser destination-out ops hitting
-// exactly the pixels they originally did).
-function foldOldestIntoBaseline() {
-  const oldest = commandLog.shift();
-  if (!oldest || !baselineCtx || !baselineCanvas) return;
-  if (PERF_MARKS) performance.mark('engine.foldBaseline:start');
-  if (oldest.keyframe) {
-    baselineCtx.clearRect(0, 0, baselineCanvas.width, baselineCanvas.height);
-    baselineCtx.drawImage(oldest.keyframe, 0, 0);
-  } else {
-    for (const op of oldest.ops) renderOp(baselineCtx, op);
-  }
-  if (PERF_MARKS) performance.measure('engine.foldBaseline', 'engine.foldBaseline:start');
-}
+const cancelTouch = (e: TouchEvent) => e.preventDefault();
 
-// Paint the drawing state through commandLog[upToIndex] (inclusive) onto a
-// target context. Starts from the most recent cumulative keyframe at or below
-// that index (a keyframe is the whole drawing through its command, so blitting
-// it replaces the baseline + every command up to it) and replays only the ops
-// after it. With no keyframe in range it falls back to the baseline + a full
-// replay. The baseline/keyframes are square (max(w,h)), so painting onto a
-// resized or rotated visible canvas restores content that was off-screen.
-function paintStateThrough(target: CanvasRenderingContext2D, upToIndex: number) {
-  let start = -1;
-  for (let i = upToIndex; i >= 0; i--) {
-    if (commandLog[i].keyframe) {
-      start = i;
-      break;
-    }
-  }
-  clearAllOf(target);
-  let begin: number;
-  if (start >= 0) {
-    target.drawImage(commandLog[start].keyframe!, 0, 0);
-    begin = start + 1;
-  } else {
-    if (baselineCanvas) target.drawImage(baselineCanvas, 0, 0);
-    begin = 0;
-  }
-  for (let i = begin; i <= upToIndex; i++) {
-    for (const op of commandLog[i].ops) renderOp(target, op);
-  }
-}
-
-// Reconstruct the visible canvas from the baseline + command log (via the most
-// recent keyframe). A mid-stroke resize still has an uncommitted activeCommand
-// (its ops are recorded but not yet in the log, and it is never keyframed until
-// commit), so replay it last to keep the in-flight stroke; between strokes
-// activeCommand is null and this is a no-op.
-function rebuildFromBaseline() {
-  paintStateThrough(ctx, commandLog.length - 1);
-  if (activeCommand) {
-    for (const op of activeCommand.ops) renderOp(ctx, op);
-  }
-}
+// --- Undo, clear, and canvas-empty API --------------------------------------
 
 export function undo() {
-  if (!canUndo || commandLog.length === 0 || !canvas || !ctx) return;
+  if (!canUndo || !canvas || !ctx) return;
 
   if (PERF_MARKS) performance.mark('engine.undo:start');
 
-  const undone = commandLog.pop();
+  const undone = popCommand();
   if (!undone) return;
-  rebuildFromBaseline();
+  replayAll(ctx);
   setCanvasEmptyState(undone.wasEmpty);
 
-  canUndo = commandLog.length > 0;
-  if (onUndoStateChange) onUndoStateChange(canUndo);
+  setCanUndo(commandCount() > 0);
 
   if (PERF_MARKS) performance.measure('engine.undo', 'engine.undo:start');
 }
+
+export function clearCanvas() {
+  // The clear is its own undo command: replaying it wipes the surface, and
+  // undoing it replays the strokes that preceded it back from the baseline.
+  pushCommand({ ops: [{ kind: 'clear' }], wasEmpty: canvasEmpty });
+  setCanUndo(true);
+  clearAllOf(ctx);
+  // A stroke can straddle the clear (e.g. a second finger drawing while
+  // drag-to-clear completes) — see resetActiveCommandForClear. The continuing
+  // stroke counts as content (same as beginStrokeGroup), so the empty flag only
+  // flips when no stroke is live.
+  const strokeStillLive = resetActiveCommandForClear();
+  setCanvasEmptyState(!strokeStillLive);
+  // A cleared canvas releases the held rainbow so the next magic use picks a fresh
+  // one; if the brush is still selected, lock the new one in right away.
+  clearMagicGradient();
+  if (magicActive) ensureMagicSheet();
+}
+
+export function isCanvasEmpty(): boolean {
+  return canvasEmpty;
+}
+
+// Test/profiling seam: how the undo history is currently stored (see
+// undoHistory.getHistoryDebug) plus the lifetime simplification counters.
+export function getUndoDebug(): {
+  commands: number;
+  keyframes: number;
+  maxOps: number;
+  maxSegments: number;
+  totalSegments: number;
+  rawPoints: number;
+  keptPoints: number;
+} {
+  return { ...getHistoryDebug(), ...getSimplifyCounters() };
+}
+
+// Dev profiling seam (ADR-0036 tuning): override the simplification tolerances
+// and the keyframe safety-net bound so a single build can sweep every setting.
+// Wired onto window.__engine only on the /dev/engine page
+// (PUBLIC_ENABLE_DEV_HARNESS); production never calls it.
+export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?: number }) {
+  if (params.keyframeThreshold !== undefined) setKeyframeSegmentThreshold(params.keyframeThreshold);
+  setSimplifyOptions(params);
+}
+
+// --- Mount / unmount ---------------------------------------------------------
 
 export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
   canvas = canvasElement;
@@ -1280,7 +837,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
     paperSize: () =>
       paper.pxW > 0 && paper.pxH > 0 ? { width: paper.pxW, height: paper.pxH } : null,
     repaint: () => {
-      if (ctx) rebuildFromBaseline();
+      if (ctx) replayAll(ctx);
     },
   });
 
@@ -1295,23 +852,39 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
 
   resizeCanvas();
-  window.addEventListener('resize', handleResize);
+
+  // Every listener registered through here is removed symmetrically in
+  // teardown(), so the add/remove lists can't drift apart.
+  const removers: (() => void)[] = [];
+  function listen<K extends keyof WindowEventMap>(
+    target: EventTarget,
+    type: K | string,
+    handler: (e: never) => void,
+    options?: AddEventListenerOptions | boolean
+  ) {
+    target.addEventListener(type, handler as EventListener, options);
+    removers.push(() => target.removeEventListener(type, handler as EventListener, options));
+  }
+
+  listen(window, 'resize', handleResize);
   // Scroll/orientation move the canvas in the viewport without resizing it, so
   // refresh the cached rect (left/top) without the full backing-store rebuild.
-  window.addEventListener('scroll', refreshCanvasRect, true);
-  window.addEventListener('orientationchange', refreshCanvasRect);
+  listen(window, 'scroll', refreshCanvasRect, true);
+  listen(window, 'orientationchange', refreshCanvasRect);
   // The paper view keys off the Screen Orientation angle (resizeCanvas). The
   // resize event usually lands after the angle updates, but ordering isn't
   // guaranteed everywhere — also funnel the orientation change itself through
-  // the debounced resize so a late angle still recomputes the view.
+  // the debounced resize so a late angle still recomputes the view. Guarded:
+  // older WebViews can expose screen.orientation without the listener API.
   const screenOrientation = window.screen?.orientation;
-  screenOrientation?.addEventListener?.('change', handleResize);
+  if (typeof screenOrientation?.addEventListener === 'function')
+    listen(screenOrientation, 'change', handleResize);
 
-  canvas.addEventListener('pointerdown', startDrawing);
-  canvas.addEventListener('pointermove', draw);
-  canvas.addEventListener('pointerup', stopDrawing);
-  canvas.addEventListener('pointerout', stopDrawing);
-  canvas.addEventListener('pointercancel', stopDrawing);
+  listen(canvas, 'pointerdown', startDrawing);
+  listen(canvas, 'pointermove', draw);
+  listen(canvas, 'pointerup', stopDrawing);
+  listen(canvas, 'pointerout', stopDrawing);
+  listen(canvas, 'pointercancel', stopDrawing);
   // iPadOS Scribble claims an Apple Pencil stroke that starts within ~450ms of
   // a pen tap: pointer events still arrive and the engine paints, but the
   // system never presents those frames — the ink is invisible and never shows.
@@ -1320,54 +893,38 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   // documented and confirmed on-device NOT to help. Non-passive on purpose.
   // The palette needs the same guard for the tap that precedes a stroke — see
   // the scribbleGuard action.
-  canvas.addEventListener('touchstart', cancelTouch, { passive: false });
-  canvas.addEventListener('touchmove', cancelTouch, { passive: false });
-  window.addEventListener('pointerdown', trackPointerDown, true);
-  window.addEventListener('pointerup', trackPointerLift, true);
-  window.addEventListener('pointercancel', trackPointerLift, true);
-  window.addEventListener('pointermove', adoptStrayPenStream, true);
+  listen(canvas, 'touchstart', cancelTouch, { passive: false });
+  listen(canvas, 'touchmove', cancelTouch, { passive: false });
+  listen(window, 'pointerdown', trackPointerDown, true);
+  listen(window, 'pointerup', trackPointerLift, true);
+  listen(window, 'pointercancel', trackPointerLift, true);
+  listen(window, 'pointermove', adoptStrayPenStream, true);
 
   // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
-  // first export. Safari lacks requestIdleCallback.
-  const warmTexture = () => void loadPaperTexture();
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(warmTexture);
-  } else {
-    setTimeout(warmTexture, 0);
-  }
+  // first export.
+  warmPaperTextureWhenIdle();
 
   return {
     teardown() {
-      window.removeEventListener('resize', handleResize);
+      for (const remove of removers) remove();
       if (resizeSettleTimer !== null) {
         clearTimeout(resizeSettleTimer);
         resizeSettleTimer = null;
       }
-      window.removeEventListener('scroll', refreshCanvasRect, true);
-      window.removeEventListener('orientationchange', refreshCanvasRect);
-      screenOrientation?.removeEventListener?.('change', handleResize);
-      canvas.removeEventListener('pointerdown', startDrawing);
-      canvas.removeEventListener('pointermove', draw);
-      canvas.removeEventListener('pointerup', stopDrawing);
-      canvas.removeEventListener('pointerout', stopDrawing);
-      canvas.removeEventListener('pointercancel', stopDrawing);
-      canvas.removeEventListener('touchstart', cancelTouch);
-      canvas.removeEventListener('touchmove', cancelTouch);
-      window.removeEventListener('pointerdown', trackPointerDown, true);
-      window.removeEventListener('pointerup', trackPointerLift, true);
-      window.removeEventListener('pointercancel', trackPointerLift, true);
-      window.removeEventListener('pointermove', adoptStrayPenStream, true);
       // Pointer-input state must not outlive the mount, unlike the drawing
-      // state (see the persistence note at commandLog): a stale activePointers
-      // entry still marked isDrawing would let hover moves paint after a
-      // remount reuses its pointerId, and liveDownIds loses its self-healing
-      // window trackers above. releaseAllPointers also commits any mid-flight
-      // stroke into the log, so navigating away mid-stroke keeps the ink.
+      // state (see the persistence note in undoHistory.ts): a stale
+      // activePointers entry still marked isDrawing would let hover moves paint
+      // after a remount reuses its pointerId, and liveDownIds loses its
+      // self-healing window trackers above. releaseAllPointers also commits any
+      // mid-flight stroke into the log, so navigating away mid-stroke keeps
+      // the ink.
       releaseAllPointers();
       liveDownIds.clear();
     },
   };
 }
+
+// --- Tool state pushed in by components --------------------------------------
 
 export function setColor(color: string) {
   // Only a genuine change arms the debounce. The reactive bridge in
@@ -1396,8 +953,8 @@ export function setMagicMode(active: boolean) {
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system
-// gesture zone (see EDGE_SWIPE_BAND_PX). Pushed by the canvas's owner component
-// on mount and whenever orientation/inset changes.
+// gesture zone (see the edge-swipe notes at startDrawing). Pushed by the
+// canvas's owner component on mount and whenever orientation/inset changes.
 export function setSafeAreaInsets(insets: {
   top: number;
   right: number;
@@ -1407,145 +964,18 @@ export function setSafeAreaInsets(insets: {
   safeInsets = insets;
 }
 
-export function clearCanvas() {
-  // The clear is its own undo command: replaying it wipes the surface, and
-  // undoing it replays the strokes that preceded it back from the baseline.
-  pushCommand({ ops: [{ kind: 'clear' }], wasEmpty: canvasEmpty });
-  clearAllOf(ctx);
-  // A stroke can straddle the clear (e.g. a second finger drawing while
-  // drag-to-clear completes). Its command commits *after* the clear command on
-  // lift, so its pre-clear ops must be dropped here or every rebuild would
-  // replay them on top of the clear, resurrecting wiped ink. Don't commit the
-  // command instead: commitActiveCommand fires onStrokeEnd, which promises
-  // consumers no mid-stroke DOM work. The continuing stroke counts as content
-  // (same as beginRender), so the empty flag only flips when no stroke is live.
-  if (activeCommand) {
-    activeCommand.ops.length = 0;
-    activeCommand.wasEmpty = true;
-  }
-  setCanvasEmptyState(activeCommand === null);
-  // A cleared canvas releases the held rainbow so the next magic use picks a fresh
-  // one; if the brush is still selected, lock the new one in right away.
-  clearMagicGradient();
-  if (magicActive) ensureMagicSheet();
-}
-
-export function isCanvasEmpty(): boolean {
-  return canvasEmpty;
-}
-
-// Test/profiling seam: how the undo history is currently stored. `keyframes`
-// counts commands collapsed to a cumulative raster (ADR-0035) vs. ones still held
-// as replayable ops; `maxSegments` is the heaviest retained command's replay cost
-// (post-simplification, ADR-0036); `rawPoints`/`keptPoints` are the lifetime
-// simplification totals. `maxOps` is retained for the profiling harness.
-export function getUndoDebug(): {
-  commands: number;
-  keyframes: number;
-  maxOps: number;
-  maxSegments: number;
-  totalSegments: number;
-  rawPoints: number;
-  keptPoints: number;
-} {
-  return {
-    commands: commandLog.length,
-    keyframes: commandLog.filter((c) => c.keyframe != null).length,
-    maxOps: commandLog.reduce((m, c) => Math.max(m, c.ops.length), 0),
-    maxSegments: commandLog.reduce((m, c) => Math.max(m, commandSegmentCount(c)), 0),
-    // Segments re-stroked on a full rebuild (every retained command's ops) — the
-    // perf proxy the sweep plots against fidelity.
-    totalSegments: commandLog.reduce((m, c) => m + commandSegmentCount(c), 0),
-    rawPoints: simplifyRawPoints,
-    keptPoints: simplifyKeptPoints,
-  };
-}
-
-let paperTextureImage: HTMLImageElement | null = null;
-let paperTexturePromise: Promise<HTMLImageElement | null> | null = null;
-function loadPaperTexture(): Promise<HTMLImageElement | null> {
-  if (paperTextureImage) return Promise.resolve(paperTextureImage);
-  if (paperTexturePromise) return paperTexturePromise;
-  paperTexturePromise = new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      paperTextureImage = img;
-      resolve(img);
-    };
-    img.onerror = () => resolve(null);
-    img.src = '/icons/handmade-paper.webp';
-  });
-  return paperTexturePromise;
-}
+// --- Export -------------------------------------------------------------------
 
 export async function exportCanvasBlob(
   overlayImage: HTMLImageElement | null = null,
   options: ExportOptions = {}
 ): Promise<Blob | null> {
-  const { includePaperTexture = true } = options;
-  if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
-
-  // Snapshot the strokes before any await: save-on-delete fire-and-forgets the
-  // export and then clears the live canvas synchronously, so snapshotting after
-  // the paper-texture await (even a cache hit yields a microtask) would export a
-  // blank page. The snapshot is rebuilt in PAPER space (baseline + log + any
-  // in-flight stroke) rather than copied from the visible canvas: under a
-  // rotation-locked view the visible canvas is the letterboxed presentation,
-  // and the export should be the full upright page.
-  const snapshot = document.createElement('canvas');
-  snapshot.width = paper.pxW;
-  snapshot.height = paper.pxH;
-  const snapshotCtx = snapshot.getContext('2d')!;
-  snapshotCtx.lineCap = 'round';
-  snapshotCtx.lineJoin = 'round';
-  paintStateThrough(snapshotCtx, commandLog.length - 1);
-  if (activeCommand) {
-    for (const op of activeCommand.ops) renderOp(snapshotCtx, op);
-  }
-
-  // Compose in CSS-pixel coordinates at an export scale of at least 2×, so the
-  // paper texture and overlay keep their on-screen proportions while the
-  // already-high-res strokes pass through with minimal resampling.
-  const exportScale = Math.max(window.devicePixelRatio || 1, 2);
-  const w = snapshot.width / renderScale;
-  const h = snapshot.height / renderScale;
-
-  const out = document.createElement('canvas');
-  out.width = Math.round(w * exportScale);
-  out.height = Math.round(h * exportScale);
-  const outCtx = out.getContext('2d')!;
-  outCtx.imageSmoothingEnabled = true;
-  outCtx.imageSmoothingQuality = 'high';
-  outCtx.scale(exportScale, exportScale);
-
-  outCtx.fillStyle = '#fcfbf8';
-  outCtx.fillRect(0, 0, w, h);
-
-  if (includePaperTexture) {
-    const paper = await loadPaperTexture();
-    if (paper) {
-      const pattern = outCtx.createPattern(paper, 'repeat');
-      if (pattern) {
-        outCtx.fillStyle = pattern;
-        outCtx.fillRect(0, 0, w, h);
-      }
-    }
-  }
-
-  outCtx.drawImage(snapshot, 0, 0, w, h);
-
-  if (overlayImage && overlayImage.naturalWidth > 0 && overlayImage.naturalHeight > 0) {
-    const scale = Math.min(w / overlayImage.naturalWidth, h / overlayImage.naturalHeight);
-    const drawnW = overlayImage.naturalWidth * scale;
-    const drawnH = overlayImage.naturalHeight * scale;
-    const offsetX = (w - drawnW) / 2;
-    const offsetY = (h - drawnH) / 2;
-    outCtx.globalCompositeOperation = 'multiply';
-    outCtx.drawImage(overlayImage, offsetX, offsetY, drawnW, drawnH);
-    outCtx.globalCompositeOperation = 'source-over';
-  }
-
-  return await new Promise((resolve) => out.toBlob(resolve, 'image/png'));
+  if (!canvas) return null;
+  return exportDrawing(
+    { paperPxWidth: paper.pxW, paperPxHeight: paper.pxH, renderScale },
+    overlayImage,
+    options
+  );
 }
 
 export function getActiveCanvas(): HTMLCanvasElement {

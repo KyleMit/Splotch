@@ -42,9 +42,14 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 
 | Path | Purpose |
 |---|---|
-| `drawing/engine.ts` | Imperative canvas engine. Owns the `<canvas>`, the undo baseline + command log (ADR-0033/0034), and all pointer tracking. Components connect via callbacks (`onDrawSound`, `onUndoStateChange`, etc.) and direct calls (`setColor`, `setStrokeWidth`, `clearCanvas`). |
+| `drawing/engine.ts` | Imperative canvas engine — the facade and orchestrator (ADR-0004). Owns the `<canvas>`, the paper coordinate space, all pointer tracking (with the WebKit pen quirks and edge-swipe guards), and the whole public API; delegates ops/undo/simplification/export to the sibling modules below. Components connect via callbacks (`onDrawSound`, `onUndoStateChange`, etc.) and direct calls (`setColor`, `setStrokeWidth`, `clearCanvas`). |
+| `drawing/strokeOps.ts` | The engine's op vocabulary (`StrokeOp`, `StrokeGroupCommand`) and the single `renderOp()` renderer every surface shares, so live drawing and undo/resize/export replay are bit-identical (ADR-0033). |
+| `drawing/undoHistory.ts` | Undo history: the baseline raster + bounded command log + cumulative keyframes (ADR-0033/0035). Deliberately module-level so the drawing survives the engine's teardown/init across client-side navigation (ADR-0004). |
+| `drawing/commandSimplify.ts` | Commit-time simplification orchestration (ADR-0036): regroups a multi-touch command's interleaved ops per finger, splits continuous same-style runs, and reduces each through `strokeSimplify.ts`. Owns the tunables + the dev-sweep seam. Unit-tested. |
+| `drawing/emptyScan.ts` | Cheap blank-canvas detection on a small CPU-side scratch canvas (keeps `willReadFrequently` off the main canvas). |
+| `drawing/exportDrawing.ts` | Composes the shareable PNG (paper white + texture + strokes rebuilt from history + coloring-page overlay) and owns the paper-texture loader. |
 | `drawing/strokeMath.ts` | Pure gesture math (edge-swipe guards, pointer-resume detection, stroke speed) factored out of the engine for unit testing. |
-| `drawing/strokeSimplify.ts` | Pure stroke-simplification geometry (ADR-0036): RDP, corner/bulge analysis, and the sample/spline reconstruction pipelines the engine runs at commit. Unit-tested; the engine owns the tunables. |
+| `drawing/strokeSimplify.ts` | Pure stroke-simplification geometry (ADR-0036): RDP, corner/bulge analysis, and the sample/spline reconstruction pipelines run at commit. Unit-tested; `commandSimplify.ts` owns the tunables. |
 | `drawing/paperView.ts` | Pure paper-view geometry (ADR-0050): the upright contain-fit + center transform (matrix/inverse forms) that presents the rotation-locked "paper" — the space ops are recorded in — inside a rotated viewport. The engine owns the paper state and applies the view; `DrawingCanvas.svelte` reuses `viewMatrix` to position the overlay wrapper. |
 | `drawing/overlay.ts` | Manages the coloring-book overlay image rendered behind the drawing layer. |
 | `drawing/saveOnDelete.ts` | Saves the current drawing to the gallery before clearing, when the setting is enabled. |
