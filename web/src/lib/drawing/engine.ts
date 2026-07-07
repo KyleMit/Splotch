@@ -226,6 +226,36 @@ function screenToPaper(pt: { x: number; y: number }): { x: number; y: number } {
   return isIdentityView(paperView) ? pt : viewToPaper(paperView, pt.x, pt.y);
 }
 
+// The paper-coordinate rectangle that the whole visible canvas maps to — the
+// region the magic sheet must cover so a stroke anywhere on screen samples colour.
+// Identity view: exactly the paper (canvas == paper). Under a rotation lock the
+// paper is contain-fit into the viewport, so the visible area spills into the
+// letterbox margins around it — the mapped viewport corners give that larger
+// rect (unioned with the paper for safety). Ops in those margins record at these
+// out-of-paper coordinates, so the sheet is extended there too (ADR-0043/0050).
+function sheetBoundsPaper(): { x: number; y: number; width: number; height: number } {
+  if (isIdentityView(paperView)) return { x: 0, y: 0, width: paper.pxW, height: paper.pxH };
+  let minX = 0;
+  let minY = 0;
+  let maxX = paper.pxW;
+  let maxY = paper.pxH;
+  for (const [x, y] of [
+    [0, 0],
+    [canvas.width, 0],
+    [0, canvas.height],
+    [canvas.width, canvas.height],
+  ]) {
+    const p = viewToPaper(paperView, x, y);
+    minX = Math.min(minX, p.x);
+    minY = Math.min(minY, p.y);
+    maxX = Math.max(maxX, p.x);
+    maxY = Math.max(maxY, p.y);
+  }
+  const x = Math.floor(minX);
+  const y = Math.floor(minY);
+  return { x, y, width: Math.ceil(maxX) - x, height: Math.ceil(maxY) - y };
+}
+
 // The cached canvas client rect, so components can position pointer-following
 // UI (e.g. the eraser cursor) without their own per-move getBoundingClientRect.
 export function getCanvasRect(): CanvasRect {
@@ -842,6 +872,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   initMagicBrush({
     paperSize: () =>
       paper.pxW > 0 && paper.pxH > 0 ? { width: paper.pxW, height: paper.pxH } : null,
+    sheetBounds: () => (paper.pxW > 0 && paper.pxH > 0 ? sheetBoundsPaper() : null),
     repaint: () => {
       if (ctx) replayAll(ctx);
     },

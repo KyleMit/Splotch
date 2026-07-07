@@ -50,6 +50,11 @@ export interface RainbowGradient {
 // refresh already-recorded magic ops.
 interface MagicBrushHost {
   paperSize: () => { width: number; height: number } | null;
+  // The paper-coordinate rectangle the whole visible canvas maps to. Equal to the
+  // paper in normal use; under a rotation lock it's the larger mapped-viewport rect
+  // (its origin can be negative), so the sheet also covers the letterbox margins
+  // around the fitted paper and the brush can paint them (ADR-0043/0050).
+  sheetBounds: () => { x: number; y: number; width: number; height: number } | null;
   repaint: () => void;
 }
 
@@ -76,6 +81,11 @@ let activeGradient: RainbowGradient | null = null;
 let sheetCanvas: HTMLCanvasElement | null = null;
 let sheetCtx: CanvasRenderingContext2D | null = null;
 let sheetReady = false;
+// The sheet's origin in paper coordinates (non-zero only when a rotation lock makes
+// the sheet cover margins around the fitted paper). The pattern is offset by it so
+// sheet pixel (0,0) maps to this paper coordinate.
+let sheetOriginX = 0;
+let sheetOriginY = 0;
 let patternCache = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
 
 export function initMagicBrush(h: MagicBrushHost) {
@@ -130,16 +140,121 @@ function paintGradient(g: CanvasRenderingContext2D, w: number, h: number, spec: 
   g.fillRect(0, 0, w, h);
 }
 
-// Rasterize the active source into a paper-sized sheet and refresh the pattern
-// cache. The twin is drawn contain-fit within the paper (matching where the
-// overlay <img> paints — the overlay is positioned against the same paper); the
-// gradient fills the whole sheet. Re-run on load and on every resize (the paper
-// may have been re-adopted).
+// The picture (twin) is drawn at box (ox,oy,bw,bh) inside a W×H sheet and can leave
+// transparent letterbox margins on any side — top/bottom or left/right where the
+// twin is contain-fit in the paper, AND (under a rotation lock) the other axis where
+// the paper itself is contain-fit in the larger sheet, so all four sides plus corners
+// can be empty. `edgeMargins` returns the ordered blits that extend the picture's edge
+// colours outward to fill them, as pure geometry so the math is unit-testable without
+// a real canvas.
+//
+// Two ordered passes so corners fall out for free:
+//   1. Vertical — stretch the box's top/bottom rows across the box width into the
+//      top/bottom bands. Now the box's full column span is coloured top-to-bottom.
+//   2. Horizontal — stretch a FULL-HEIGHT column just inside each side edge into the
+//      side bands; because it's full height it also paints the corners the vertical
+//      pass filled. (Pass 2 samples what pass 1 drew, so the order matters.)
+//
+// Each source is taken a hair INSIDE the picture (`inset`), not on the literal border:
+// a coloring page can carry an outline right at its edge, and sampling the 1px border
+// would smear that black line across the margin. One row/column in lands on the flat
+// fill behind the outline, so the margin extends the picture's colour (sky stays blue)
+// with no line streak. Stretching a row/column (not a flat per-edge average) preserves
+// along-edge variation — a landscape scene keeps sky-at-top / grass-at-bottom.
+export interface EdgeFill {
+  /** Source rect in the sheet to sample (a 1px-thin edge strip). */
+  sx: number;
+  sy: number;
+  sw: number;
+  sh: number;
+  /** Destination rect in the sheet to stretch that strip across. */
+  dx: number;
+  dy: number;
+  dw: number;
+  dh: number;
+}
+
+export function edgeMargins(
+  W: number,
+  H: number,
+  ox: number,
+  oy: number,
+  bw: number,
+  bh: number
+): EdgeFill[] {
+  const top = Math.round(oy);
+  const left = Math.round(ox);
+  const bottom = Math.round(oy + bh);
+  const right = Math.round(ox + bw);
+  const bottomMargin = H - bottom;
+  const rightMargin = W - right;
+  const inset = Math.max(1, Math.round(Math.min(bw, bh) * 0.02));
+  const fills: EdgeFill[] = [];
+  // Pass 1 — vertical: box top/bottom rows stretched across the box width.
+  if (top > 0)
+    fills.push({ sx: ox, sy: oy + inset, sw: bw, sh: 1, dx: ox, dy: 0, dw: bw, dh: top });
+  if (bottomMargin > 0)
+    fills.push({
+      sx: ox,
+      sy: bottom - 1 - inset,
+      sw: bw,
+      sh: 1,
+      dx: ox,
+      dy: bottom,
+      dw: bw,
+      dh: bottomMargin,
+    });
+  // Pass 2 — horizontal: full-height columns just inside each side edge, stretched
+  // outward (also covers the corners pass 1 filled).
+  if (left > 0) fills.push({ sx: ox + inset, sy: 0, sw: 1, sh: H, dx: 0, dy: 0, dw: left, dh: H });
+  if (rightMargin > 0)
+    fills.push({
+      sx: right - 1 - inset,
+      sy: 0,
+      sw: 1,
+      sh: H,
+      dx: right,
+      dy: 0,
+      dw: rightMargin,
+      dh: H,
+    });
+  return fills;
+}
+
+// Fill the transparent letterbox margins of the drawn picture by extending its edge
+// colours outward, so a stroke in the margin reveals the colour of the nearest
+// picture edge instead of nothing — the child paints across the whole canvas with no
+// hard seam (fixes ADR-0043's "painting in the letterbox reveals nothing" edge, and
+// the rotation-lock margins around the fitted paper).
+function extendSheetEdges(
+  g: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  ox: number,
+  oy: number,
+  bw: number,
+  bh: number
+) {
+  if (!sheetCanvas) return;
+  for (const f of edgeMargins(W, H, ox, oy, bw, bh)) {
+    g.drawImage(sheetCanvas, f.sx, f.sy, f.sw, f.sh, f.dx, f.dy, f.dw, f.dh);
+  }
+}
+
+// Rasterize the active source into the sheet and refresh the pattern cache. The
+// sheet covers the whole visible canvas in paper coordinates (host `sheetBounds`):
+// the paper itself normally, or the larger mapped-viewport rect under a rotation
+// lock, whose origin can be negative — `sheetOrigin{X,Y}` offsets everything so the
+// pattern still aligns. The twin is drawn contain-fit within the PAPER (matching
+// where the overlay <img> paints), then its edge colours are extended outward to
+// fill every letterbox margin (the twin's own, and the rotation-lock margins around
+// the paper); the gradient fills the whole sheet. Re-run on load and every resize.
 export function rasterizeSheet() {
   sheetReady = false;
   patternCache = new WeakMap();
   const paper = host?.paperSize();
-  if (!paper) return;
+  const bounds = host?.sheetBounds();
+  if (!paper || !bounds || bounds.width <= 0 || bounds.height <= 0) return;
   const source = activeSource();
   if (!source) return;
   if (!sheetCanvas) {
@@ -147,8 +262,10 @@ export function rasterizeSheet() {
     sheetCtx = sheetCanvas.getContext('2d');
   }
   if (!sheetCtx || !sheetCanvas) return;
-  sheetCanvas.width = paper.width;
-  sheetCanvas.height = paper.height;
+  sheetCanvas.width = bounds.width;
+  sheetCanvas.height = bounds.height;
+  sheetOriginX = bounds.x;
+  sheetOriginY = bounds.y;
   sheetCtx.clearRect(0, 0, sheetCanvas.width, sheetCanvas.height);
   if (source === 'twin') {
     // Prefer the fills-only twin (outlines masked out); fall back to the raw twin
@@ -159,9 +276,11 @@ export function rasterizeSheet() {
     const scale = Math.min(paper.width / iw, paper.height / ih);
     const dw = iw * scale;
     const dh = ih * scale;
-    const ox = (paper.width - dw) / 2;
-    const oy = (paper.height - dh) / 2;
+    // Contain-fit box in paper coords, shifted into the (possibly offset) sheet.
+    const ox = (paper.width - dw) / 2 - sheetOriginX;
+    const oy = (paper.height - dh) / 2 - sheetOriginY;
     sheetCtx.drawImage(drawable, ox, oy, dw, dh);
+    extendSheetEdges(sheetCtx, sheetCanvas.width, sheetCanvas.height, ox, oy, dw, dh);
   } else {
     paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, activeGradient!);
   }
@@ -169,15 +288,21 @@ export function rasterizeSheet() {
 }
 
 // A no-repeat pattern of the sheet, cached per target context (the visible ctx
-// almost always; baseline/keyframe contexts on replay). Positioned from each
-// target's origin (0,0) — the same origin op coordinates use — so it aligns on the
-// visible canvas and the larger square baseline alike.
+// almost always; baseline/keyframe contexts on replay). The pattern is offset by the
+// sheet's paper-coordinate origin so sheet pixel (0,0) lands at that paper coord —
+// identity in normal use, a translation under a rotation lock — keeping it aligned on
+// the visible canvas and the larger square baseline alike, all of which draw ops in
+// paper coordinates.
 export function sheetPatternFor(target: CanvasRenderingContext2D): CanvasPattern | null {
   if (!sheetCanvas || !sheetReady) return null;
   const cached = patternCache.get(target);
   if (cached) return cached;
   const pattern = target.createPattern(sheetCanvas, 'no-repeat');
-  if (pattern) patternCache.set(target, pattern);
+  if (!pattern) return null;
+  if ((sheetOriginX !== 0 || sheetOriginY !== 0) && typeof DOMMatrix !== 'undefined') {
+    pattern.setTransform(new DOMMatrix([1, 0, 0, 1, sheetOriginX, sheetOriginY]));
+  }
+  patternCache.set(target, pattern);
   return pattern;
 }
 

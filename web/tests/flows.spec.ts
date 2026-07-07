@@ -697,6 +697,91 @@ test('the magic brush reveals fills only, never the twin outlines (no double lin
   expect(await revealedNearBlackFraction(page)).toBeLessThan(0.005);
 });
 
+// Opaque pixel count within a thin band at one canvas edge — the letterbox margin.
+function opaquePixelsInLeftBand(page: Page, frac = 0.04): Promise<number> {
+  return page.evaluate((f) => {
+    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const bandW = Math.max(1, Math.round(c.width * f));
+    const { data } = c.getContext('2d')!.getImageData(0, 0, bandW, c.height);
+    let opaque = 0;
+    for (let i = 3; i < data.length; i += 4) if (data[i] > 200) opaque++;
+    return opaque;
+  }, frac);
+}
+
+// A coloring page is contain-fit, so a differently-proportioned viewport letterboxes
+// it (left/right in this landscape default). The twin's edge colours are extended
+// into those margins so the brush paints the whole canvas with no hard seam — before
+// the fix a stroke in the margin revealed nothing (transparent sheet). ADR-0043.
+test('the magic brush paints the letterbox margin by extending the edge colour', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await applyFarmPage(page);
+  await page.locator('#magicBrushButton').click();
+
+  // Hug the far-left edge, well inside the letterbox band, sweeping top to bottom.
+  await draw(page, [
+    { x: 3, y: 40 },
+    { x: 3, y: 200 },
+    { x: 3, y: 360 },
+    { x: 3, y: 520 },
+  ]);
+  // The margin now reveals the extended edge colour instead of staying transparent.
+  await expect.poll(() => opaquePixelsInLeftBand(page), { timeout: 4000 }).toBeGreaterThan(500);
+});
+
+// Opaque pixel count within a thin band at the TOP canvas edge.
+function opaquePixelsInTopBand(page: Page, frac = 0.05): Promise<number> {
+  return page.evaluate((f) => {
+    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const bandH = Math.max(1, Math.round(c.height * f));
+    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, bandH);
+    let opaque = 0;
+    for (let i = 3; i < data.length; i += 4) if (data[i] > 200) opaque++;
+    return opaque;
+  }, frac);
+}
+
+// The case the user hit: after a rotation-with-ink the paper LOCKS (ADR-0050) and is
+// contain-fit into the new viewport, leaving letterbox margins around the whole page
+// (not just inside it). The magic sheet now covers the mapped viewport, so the brush
+// paints those margins too — before, they revealed nothing even though a pen could
+// draw there. Rotation is emulated via CDP (new metrics + a changed orientation angle).
+test('the magic brush paints the rotation-lock letterbox margin', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await applyFarmPage(page); // landscape viewport → wide art
+
+  // Ink locks the paper on rotation (a blank canvas would just re-adopt).
+  await draw(page, [
+    { x: 200, y: 200 },
+    { x: 400, y: 260 },
+  ]);
+
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: 720,
+    height: 1280,
+    deviceScaleFactor: 1,
+    mobile: true,
+    screenOrientation: { type: 'portraitPrimary', angle: 90 },
+  });
+  // The wide paper stays, lifted into the letterboxed sheet with top/bottom margins.
+  await expect(page.locator('.paper-sheet.paper-lifted')).toBeVisible();
+
+  await page.locator('#magicBrushButton').click();
+  // Sweep along the very top of the canvas — inside the rotation-lock top margin.
+  await draw(page, [
+    { x: 40, y: 6 },
+    { x: 240, y: 6 },
+    { x: 440, y: 6 },
+    { x: 660, y: 6 },
+  ]);
+  await expect.poll(() => opaquePixelsInTopBand(page), { timeout: 4000 }).toBeGreaterThan(500);
+});
+
 test('the magic brush reveals a rainbow gradient when no coloring page is applied', async ({
   page,
 }) => {

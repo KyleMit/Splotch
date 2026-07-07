@@ -101,7 +101,8 @@ rejected paths and the seam/harness were removed — this ADR is their record:
 - **−** Painting in the `contain` letterbox (outside the picture) reveals nothing —
   the pattern is transparent there. Correct (there are no colors to reveal), but a
   stroke in the margin is invisible. The picture dominates the canvas in the
-  matching orientation, so this is a thin edge.
+  matching orientation, so this is a thin edge. *(Resolved — see the edge-extension
+  follow-up below.)*
 - **−** The twin must exist for every page (`bookAssetPaths` now lists the
   `.color.webp` twins so `check-assets` enforces it and native keeps them).
 
@@ -173,3 +174,78 @@ space's twin surface, so `rasterizeSheet` now sizes and contain-fits against the
 engine's paper dimensions (host `paperSize()`) instead of the canvas backing
 store. In normal use the two are identical; under a rotation lock this is what
 keeps the reveal aligned with the (also paper-anchored) overlay art.
+
+## Follow-up: extend the twin's edge colours into the letterbox margins
+
+A coloring page ships as a 2:3 (`-tall`) or 3:2 (`-wide`) image; a phone's viewport
+is almost never that aspect, so the twin is `contain`-fit with letterbox margins on
+one axis — top/bottom in portrait, left/right in landscape. The consequence flagged
+above was that painting those margins revealed nothing (transparent sheet), leaving a
+**hard colour seam** at the picture edge where the child couldn't paint any further —
+the sky simply stopped part-way up the screen. This is the always-present case (every
+page, every phone), independent of the rotation lock.
+
+Fix: after `rasterizeSheet` draws the twin into its `contain` box, it **extends the
+picture's edge colours outward** to fill the margins, so a stroke in the margin
+reveals the colour of the nearest picture edge and the brush covers the whole canvas
+with no seam. `edgeMargins()` (pure, unit-tested) returns, per non-empty margin, a
+1px-thin edge strip to sample and the margin rect to stretch it across;
+`extendSheetEdges` blits them with `drawImage`.
+
+Empirically chosen (prototyped behind a temporary `setEdgeExtendMode` seam, driven by
+a Playwright sweep that flood-painted the whole canvas and screenshotted each in both
+orientations; mean cost is a full sheet re-rasterize, off the draw hot path, once per
+resize):
+
+| technique | rasterize (ms) | visual |
+|---|---|---|
+| none (before) | 0.006 | hard seam at the picture edge; margins unpaintable |
+| **edge-clamp, inset (shipped)** | **~2.0** | seamless; preserves along-edge colour variation; a border line can't streak |
+| edge-clamp, literal border | ~1.9 | seamless, but an outline touching the edge smears across the margin |
+| per-edge average (flat) | ~3.2 | seamless but flattens variation (landscape sky→grass edge becomes one colour) and costs a downscale pass |
+
+- **Stretch the edge row/column, not a flat average** — a landscape scene's left edge
+  is sky at the top and grass at the bottom; stretching that *column* keeps the
+  gradient, while one averaged colour per edge would smear them together.
+- **Sample a hair INSIDE the picture (2% inset), not the literal border** — pages can
+  carry an outline right at the edge; the 1px border would smear that black line
+  across the whole margin, so the sample is taken one strip in, on the flat fill
+  behind the outline (this is the case the user called out).
+- **Runtime, not a precomputed asset.** The extension is derived from the twin at
+  rasterize time, so it needs no build-time edge-strip image/SVG and can never drift
+  out of sync with the twin. A precomputed representation would bake the same clamp
+  result but add an asset pipeline, storage, `strip-native` handling, and a sync
+  burden for no visual gain — the ~2 ms runtime cost (off the hot path) doesn't
+  justify precomputing.
+The extension runs as two ordered passes (vertical rows, then full-height columns) so
+corners are covered for free — see `edgeMargins`. The blank-canvas rainbow gradient
+already fills the whole sheet, so it needs no edge extension.
+
+### Also covers the rotation-lock margins around the whole paper
+
+There are two nested letterboxes, and the fix now covers both:
+
+1. The twin `contain`-fit **inside the paper** (above) — always present.
+2. Under a rotation lock (ADR-0050) the paper is itself `contain`-fit into the
+   viewport, leaving margins **around the whole page**. A pen can draw there, so the
+   magic brush must too — this was the reported gap.
+
+The sheet is therefore sized to the whole **visible viewport in paper coordinates**
+(engine `sheetBounds()`), not just the paper: identity in normal use, the larger
+mapped-viewport rect under a lock (its origin can be negative, so the pattern is
+offset by `sheetOrigin` to stay aligned — `sheetPatternFor` sets a translate transform).
+The twin is drawn at its paper `contain`-fit position within that larger sheet and its
+edges are extended to every sheet border, so a stroke anywhere on screen reveals the
+nearest edge colour. Because both letterboxes can be active at once, the picture can be
+inset on all four sides — which is why the extension is the two-pass, corner-covering
+form rather than the single-axis one.
+
+- **Cost.** Under a lock the sheet grows to the mapped viewport (~2–4× the visible
+  canvas, e.g. ~23 MB at 2× DPR for a phone 90° rotation), a one-off transient rebuilt
+  on resize. ADR-0050 rejected mapped-margin rasters for the **undo baseline** (one per
+  keyframe, persistent, replayed); this is a **single** transient sheet, freed when the
+  paper re-adopts, so the objection there doesn't carry — the win (no dead zone for the
+  brush) is worth one larger canvas while rotated.
+- Margin ink still crops on rotating back and may drop once keyframed past the
+  paper-square baseline, exactly as pen ink in the margins already does (ADR-0050) — the
+  reveal follows the same rules as every other op.
