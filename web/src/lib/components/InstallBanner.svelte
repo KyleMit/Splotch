@@ -162,20 +162,36 @@
 
   .install-dismiss {
     flex-shrink: 0;
-    width: 28px;
-    height: 28px;
+    width: 40px;
+    height: 40px;
     padding: 0;
-    border: none;
-    background: transparent;
-    color: #b0a8a0;
+    border: 2px solid #e0d9cf;
+    border-radius: 50%;
+    background: white;
+    color: #8a827a;
     font-size: 22px;
-    line-height: 28px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     touch-action: manipulation;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease,
+      transform 0.15s ease;
   }
 
-  .install-dismiss:hover {
-    color: #777;
+  .install-dismiss:active {
+    transform: scale(0.92);
+  }
+
+  @media (hover: hover) {
+    .install-dismiss:hover {
+      color: #555;
+      background: #f4f0ea;
+      border-color: #c4bbad;
+    }
   }
 
   .install-main {
