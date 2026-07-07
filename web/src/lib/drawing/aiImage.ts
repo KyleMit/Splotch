@@ -87,6 +87,16 @@ export async function generateAiImage({
         failAiGeneration("Let's try drawing something else!", 'safety');
         return;
       }
+      // 429 = rate-limited, so the same drawing will work in a moment. The
+      // body's error text is parent-facing copy — never show it to the child;
+      // the 'retry' kind's standard "try again" treatment covers it.
+      if (res.status === 429) {
+        failAiGeneration(undefined, 'retry');
+        console.error(
+          `AI image request throttled (retry after ${res.headers.get('Retry-After')}s): ${msg}`
+        );
+        return;
+      }
       throw new Error(`AI image request failed (${res.status}): ${msg}`);
     }
     const outBlob = await res.blob();

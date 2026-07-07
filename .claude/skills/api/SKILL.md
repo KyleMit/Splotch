@@ -86,7 +86,7 @@ Rate-limited per IP.
 // request
 { "code": "sunny-meadow" }
 // response
-{ "ok": true, "accessCode": "sunny-meadow" }   // or { "ok": false }
+{ "ok": true, "accessCode": "sunny-meadow" }   // or { "ok": false, "error": "..." }
 ```
 
 ### `POST /api/verify-key`

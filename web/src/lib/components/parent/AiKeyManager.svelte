@@ -118,8 +118,8 @@
           body: { code: value },
           persist: (data) => setAiAccessToken(data.accessCode || value),
           successMessage: 'Access granted! You have special access — no API key needed.',
-          failureMessage: () =>
-            "That doesn't look like a valid key or access code. Please try again.",
+          failureMessage: (data) =>
+            data.error || "That doesn't look like a valid key or access code. Please try again.",
         });
       }
     } catch {

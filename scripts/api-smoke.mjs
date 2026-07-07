@@ -99,7 +99,7 @@ async function run() {
     `got ${del.status}`
   );
 
-  // --- public oracle: shape only (no allowlist config required) ---
+  // --- public oracle: verify-access-code against the seeded allowlist ---
   const code = await fetch(`${BASE}/api/verify-access-code`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -107,9 +107,21 @@ async function run() {
   });
   const codeBody = await json(code);
   check(
-    'verify-access-code → 200 {ok:boolean}',
-    code.status === 200 && typeof codeBody?.ok === 'boolean',
-    `got ${code.status}`
+    'verify-access-code invalid → 200 {ok:false, error}',
+    code.status === 200 && codeBody?.ok === false && typeof codeBody?.error === 'string',
+    `got ${code.status} ${JSON.stringify(codeBody)}`
+  );
+
+  const goodCode = await fetch(`${BASE}/api/verify-access-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: 'alpha' }),
+  });
+  const goodCodeBody = await json(goodCode);
+  check(
+    'verify-access-code valid → 200 {ok:true, accessCode}',
+    goodCode.status === 200 && goodCodeBody?.ok === true && goodCodeBody?.accessCode === 'alpha',
+    `got ${goodCode.status} ${JSON.stringify(goodCodeBody)}`
   );
 
   // --- generate-image auth gate (every case rejected before the model call) ---
