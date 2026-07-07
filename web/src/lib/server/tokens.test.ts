@@ -1,24 +1,79 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-// These tests exercise the in-memory fallback path: when Netlify Blobs is
-// unavailable (as in `vite dev`), getStore throws, the list is seeded from
-// ALLOWED_TOKENS_LIST, and mutations live in a per-instance variable. We mock
-// Blobs to always throw and re-import the module per test so its module-level
-// fallback state starts fresh each time.
-vi.mock('@netlify/blobs', () => ({
-  getStore: () => {
-    throw new Error('MissingBlobsEnvironment');
-  },
-}));
+// Two backing modes per test: `blobsState.stores = null` makes getStore throw
+// (the in-memory fallback path, as in `vite dev`); a Map of fake stores
+// emulates Netlify Blobs with real etag compare-and-set semantics so the
+// concurrent-mutation retry loop can be exercised. Modules are re-imported per
+// test so their module-level state starts fresh each time.
+const { envState, blobsState, storeFor } = vi.hoisted(() => {
+  function fakeBlobStore() {
+    const blobs = new Map<string, { json: string; etag: string }>();
+    let etagCounter = 0;
+    return {
+      blobs,
+      async get(key: string, _opts?: unknown) {
+        const entry = blobs.get(key);
+        return entry ? JSON.parse(entry.json) : null;
+      },
+      async getWithMetadata(key: string, _opts?: unknown) {
+        const entry = blobs.get(key);
+        return entry ? { data: JSON.parse(entry.json), etag: entry.etag, metadata: {} } : null;
+      },
+      async setJSON(
+        key: string,
+        data: unknown,
+        condition?: { onlyIfNew?: boolean; onlyIfMatch?: string }
+      ) {
+        const entry = blobs.get(key);
+        if (condition?.onlyIfNew && entry) return { modified: false };
+        if (condition?.onlyIfMatch !== undefined && entry?.etag !== condition.onlyIfMatch) {
+          return { modified: false };
+        }
+        const etag = `etag-${++etagCounter}`;
+        blobs.set(key, { json: JSON.stringify(data), etag });
+        return { modified: true, etag };
+      },
+      async delete(key: string) {
+        blobs.delete(key);
+      },
+    };
+  }
+  const blobsState = {
+    stores: null as Map<string, ReturnType<typeof fakeBlobStore>> | null,
+  };
+  function storeFor(name: string) {
+    if (!blobsState.stores) throw new Error('MissingBlobsEnvironment');
+    let store = blobsState.stores.get(name);
+    if (!store) {
+      store = fakeBlobStore();
+      blobsState.stores.set(name, store);
+    }
+    return store;
+  }
+  return {
+    envState: {} as Record<string, string | undefined>,
+    blobsState,
+    storeFor,
+  };
+});
 
-const { envState } = vi.hoisted(() => ({
-  envState: {} as Record<string, string | undefined>,
+vi.mock('@netlify/blobs', () => ({
+  getStore: (name: string) => storeFor(name),
 }));
 vi.mock('$env/dynamic/private', () => ({ env: envState }));
 
 async function freshTokens(seed = '') {
   vi.resetModules();
   envState.ALLOWED_TOKENS_LIST = seed;
+  blobsState.stores = null;
+  return import('./tokens');
+}
+
+async function freshTokensWithBlobs(list: string[]) {
+  vi.resetModules();
+  envState.ALLOWED_TOKENS_LIST = '';
+  blobsState.stores = new Map();
+  await storeFor('access-tokens').setJSON('list', list);
   return import('./tokens');
 }
 
@@ -84,5 +139,87 @@ describe('removeToken', () => {
   it('is a no-op for an unknown token', async () => {
     const { removeToken } = await freshTokens('a,b');
     expect(await removeToken('missing')).toEqual({ ok: true, tokens: ['a', 'b'] });
+  });
+});
+
+describe('concurrent mutations against Blobs', () => {
+  function raceOnce(competingList: string[]) {
+    const store = storeFor('access-tokens');
+    const read = store.getWithMetadata.bind(store);
+    let raced = false;
+    store.getWithMetadata = async (key: string) => {
+      const result = await read(key);
+      if (!raced) {
+        raced = true;
+        await store.setJSON('list', competingList);
+      }
+      return result;
+    };
+  }
+
+  function raceAlways() {
+    const store = storeFor('access-tokens');
+    const read = store.getWithMetadata.bind(store);
+    store.getWithMetadata = async (key: string) => {
+      const result = await read(key);
+      await store.setJSON('list', ['winner']);
+      return result;
+    };
+  }
+
+  it('persists an add through Blobs and reports persistent: true', async () => {
+    const { addToken, getTokensStatus } = await freshTokensWithBlobs(['a']);
+    expect(await addToken('b')).toEqual({ ok: true, tokens: ['a', 'b'] });
+    expect(await getTokensStatus()).toEqual({ tokens: ['a', 'b'], persistent: true });
+  });
+
+  it('retries an add against the winning list when a concurrent write lands mid-mutation', async () => {
+    const { addToken } = await freshTokensWithBlobs(['a']);
+    raceOnce(['a', 'other-admin']);
+    expect(await addToken('mine')).toEqual({ ok: true, tokens: ['a', 'other-admin', 'mine'] });
+  });
+
+  it('retries a remove without resurrecting the concurrent add it raced with', async () => {
+    const { removeToken } = await freshTokensWithBlobs(['a', 'b']);
+    raceOnce(['a', 'b', 'other-admin']);
+    expect(await removeToken('b')).toEqual({ ok: true, tokens: ['a', 'other-admin'] });
+  });
+
+  it('surfaces an error instead of clobbering once retries exhaust', async () => {
+    const { addToken, removeToken, TOKEN_CONFLICT_ERROR } = await freshTokensWithBlobs(['a']);
+    raceAlways();
+    expect(await addToken('mine')).toEqual({ ok: false, error: TOKEN_CONFLICT_ERROR });
+    expect(await removeToken('winner')).toEqual({ ok: false, error: TOKEN_CONFLICT_ERROR });
+  });
+});
+
+describe('usage cleanup on remove', () => {
+  it('deletes the revoked token’s usage blob', async () => {
+    const { removeToken } = await freshTokensWithBlobs(['a', 'revoked']);
+    const usage = storeFor('ai-usage');
+    await usage.setJSON('revoked', { count: 3 });
+    await usage.setJSON('a', { count: 1 });
+    expect(await removeToken('revoked')).toEqual({ ok: true, tokens: ['a'] });
+    expect(usage.blobs.has('revoked')).toBe(false);
+    expect(usage.blobs.has('a')).toBe(true);
+  });
+
+  it('still removes the token when usage cleanup fails', async () => {
+    const { removeToken, getTokens } = await freshTokensWithBlobs(['a', 'revoked']);
+    const usage = storeFor('ai-usage');
+    await usage.setJSON('revoked', { count: 3 });
+    usage.delete = async () => {
+      throw new Error('blobs outage');
+    };
+    expect(await removeToken('revoked')).toEqual({ ok: true, tokens: ['a'] });
+    expect(await getTokens()).toEqual(['a']);
+  });
+
+  it('does not touch usage for a no-op remove', async () => {
+    const { removeToken } = await freshTokensWithBlobs(['a']);
+    const usage = storeFor('ai-usage');
+    await usage.setJSON('missing', { count: 2 });
+    expect(await removeToken('missing')).toEqual({ ok: true, tokens: ['a'] });
+    expect(usage.blobs.has('missing')).toBe(true);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { rateLimit } from './rateLimit';
+import { peekRateLimit, rateLimit } from './rateLimit';
 
 // The limiter keeps state in a module-level Map keyed by the caller-supplied
 // string, so each test uses a distinct key to stay independent of the others.
@@ -58,5 +58,34 @@ describe('rateLimit', () => {
     expect(rateLimit('key-a', { limit: 1 }).limited).toBe(true);
     // A different key has its own budget and is unaffected.
     expect(rateLimit('key-b', { limit: 1 }).limited).toBe(false);
+  });
+});
+
+describe('peekRateLimit', () => {
+  it('never consumes budget, no matter how often it is called', () => {
+    const key = 'peek-free';
+    for (let i = 0; i < 10; i++) {
+      expect(peekRateLimit(key, { limit: 1 }).limited).toBe(false);
+    }
+    expect(rateLimit(key, { limit: 1 }).limited).toBe(false);
+  });
+
+  it('reports the limited state recorded by rateLimit, with a retryAfter', () => {
+    const key = 'peek-sees-hits';
+    rateLimit(key, { limit: 1 });
+    const peeked = peekRateLimit(key, { limit: 1 });
+    expect(peeked.limited).toBe(true);
+    expect(peeked.retryAfter).toBeGreaterThanOrEqual(1);
+  });
+
+  it('reports unlimited again once the window slides past', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    const key = 'peek-sliding-window';
+    rateLimit(key, { limit: 1, windowMs: 1000 });
+    expect(peekRateLimit(key, { limit: 1, windowMs: 1000 }).limited).toBe(true);
+
+    vi.advanceTimersByTime(1001);
+    expect(peekRateLimit(key, { limit: 1, windowMs: 1000 }).limited).toBe(false);
   });
 });

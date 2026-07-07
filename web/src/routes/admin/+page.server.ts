@@ -119,7 +119,8 @@ export const actions: Actions = {
     requireAdmin(cookies);
     const form = await request.formData();
     const token = String(form.get('token') ?? '').trim();
-    await removeToken(token);
+    const result = await removeToken(token);
+    if (!result.ok) return fail(400, { error: result.error });
     return { success: true, message: `Removed “${token}”` };
   },
 };

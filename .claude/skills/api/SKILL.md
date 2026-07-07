@@ -35,6 +35,12 @@ module's `readJsonBody(request)` is the shared JSON-body parser — a
 malformed body is a uniform `400 "Expected a JSON body"`. Use both helpers
 in any new endpoint instead of hand-rolling the parse or the 429.
 
+An endpoint that is only an oracle on its *failure* path (generate-image's
+managed-token check, where valid traffic is deliberately keyed per token, not
+per IP) throttles just that path: `peekRateLimit` (read-only) runs before the
+credential check so a limited IP gets a blind 429, and `rateLimit` records the
+hit only when the check fails — legitimate callers never consume the budget.
+
 ---
 
 ## AI generation
@@ -46,7 +52,11 @@ PNG, style prompt, and either an allow-listed access token or a BYO Gemini
 key. Managed tokens are rate-limited per token (15/min); BYOK requests are
 rate-limited per IP with a deliberately generous limit (30/min), because the
 branch is otherwise unauthenticated and its 502-vs-200 result is a key-validity
-oracle. See `web/src/routes/api/generate-image` and ADR-0006 / ADR-0014.
+oracle. Invalid managed tokens are an access-code oracle, so failed guesses
+share `/api/verify-access-code`'s per-IP budget: a limited IP gets the standard
+429 before the token is even checked (no allowlist read), while valid tokens
+never touch that bucket. See `web/src/routes/api/generate-image` and
+ADR-0006 / ADR-0014.
 
 On success returns the image bytes. Failure modes are split so the client can
 guide the child correctly (ADR-0023): a **`422`** means Gemini refused the
@@ -157,7 +167,12 @@ without the Blobs context; see ADR-0025). `scripts/blobs-smoke.mjs` asserts it i
 |---|---|---|
 | `GET` | — | List tokens + invite URLs |
 | `POST` | `{ "token": "name" }` | Add a token. `400 { ok: false, error }` when empty or duplicate. |
-| `DELETE` | `{ "token": "name" }` | Remove a token (idempotent). |
+| `DELETE` | `{ "token": "name" }` | Remove a token (idempotent). Also clears the token's usage tally. |
+
+Mutations are etag compare-and-set writes with a few retries; if concurrent
+admin mutations keep colliding (possible under Blobs eventual consistency,
+ADR-0025), `POST`/`DELETE` return `409 { ok: false, error }` — safe to retry
+as-is.
 
 Invite URLs are built from the request origin, so they point at the host
 that served the API.
@@ -180,9 +195,12 @@ curl -s https://splotch.art/api/admin/tokens \
 Run `npm run test:api:smoke` to check the live `/api/*` contract end-to-end. It's
 self-contained — it boots a throwaway `vite dev` with a test `ADMIN_ACCESS_TOKEN`,
 exercises the admin auth flow (login success/failure, the bearer gate, and a
-token add/remove round-trip) plus the `verify-access-code` shape, then tears the
-server down. No Gemini key or Netlify Blobs needed; `generate-image` and
-`verify-key` (which make live model calls) are out of scope. Use it to sanity-check
+token add/remove round-trip), the `verify-access-code` shape, and
+`generate-image`'s auth gate (invalid token → 403, then the shared per-IP 429
+once the verify budget is burned; valid token minus image → 400 — every case is
+rejected before the model call), then tears the server down. No Gemini key or
+Netlify Blobs needed; successful generation and `verify-key` (which make live
+model calls) are out of scope. Use it to sanity-check
 the contract after changing any endpoint — it's the cheap counterpart to the
 Playwright admin E2E in `tests/admin.spec.ts`.
 

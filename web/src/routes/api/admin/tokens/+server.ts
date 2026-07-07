@@ -1,6 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { verifySessionToken, buildInvites } from '$lib/server/admin';
-import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
+import { getTokensStatus, addToken, removeToken, TOKEN_CONFLICT_ERROR } from '$lib/server/tokens';
 import { readJsonBody } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
@@ -44,6 +44,16 @@ async function snapshot(origin: string, tokens?: string[]) {
   return json({ ok: true, tokens: list, invites: buildInvites(list, origin), persistent });
 }
 
+// Validation failures (empty/duplicate) are the caller's fault → 400; a CAS
+// conflict (concurrent admin mutations kept colliding, see $lib/server/tokens)
+// is transient and worth retrying as-is → 409.
+function mutationError(message: string) {
+  return json(
+    { ok: false, error: message },
+    { status: message === TOKEN_CONFLICT_ERROR ? 409 : 400 }
+  );
+}
+
 /** List access tokens and their prebuilt invite URLs. */
 export const GET: RequestHandler = async ({ request, url }) => {
   requireSession(request);
@@ -56,7 +66,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
 
   const body = await readJsonBody(request);
   const result = await addToken(typeof body?.token === 'string' ? body.token : '');
-  if (!result.ok) return json({ ok: false, error: result.error }, { status: 400 });
+  if (!result.ok) return mutationError(result.error);
   return snapshot(url.origin, result.tokens);
 };
 
@@ -66,5 +76,6 @@ export const DELETE: RequestHandler = async ({ request, url }) => {
 
   const body = await readJsonBody(request);
   const result = await removeToken(typeof body?.token === 'string' ? body.token : '');
+  if (!result.ok) return mutationError(result.error);
   return snapshot(url.origin, result.tokens);
 };

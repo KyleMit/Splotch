@@ -4,7 +4,7 @@ import { STYLE_SUFFIXES } from '$lib/ai/styles';
 import { buildPromptForStyle } from '$lib/ai/prompt';
 import { isAllowedToken } from '$lib/server/tokens';
 import { recordTokenUsage } from '$lib/server/usage';
-import { rateLimit } from '$lib/server/rateLimit';
+import { peekRateLimit, rateLimit } from '$lib/server/rateLimit';
 import { throttled } from '$lib/server/http';
 import { aiProvider } from '$lib/server/ai/provider';
 import type { RequestHandler } from './$types';
@@ -49,8 +49,19 @@ export const POST: RequestHandler = async ({ request, platform, getClientAddress
   const userKey = typeof apiKey === 'string' ? apiKey.trim() : '';
   const usingByok = userKey.length > 0;
 
-  if (!usingByok && (typeof token !== 'string' || !(await isAllowedToken(token)))) {
-    throw error(403, 'Invalid access token');
+  // Invalid managed tokens make this endpoint the same access-code oracle as
+  // /api/verify-access-code, so failed guesses draw on that endpoint's per-IP
+  // budget (ADR-0014). Peek before the allowlist read — a limited IP gets a
+  // blind 429 with no token check — and record a hit only on failure, so valid
+  // traffic stays keyed per token (many families can share one NAT).
+  if (!usingByok) {
+    const guessKey = `verify-access-code:${getClientAddress()}`;
+    const guess = peekRateLimit(guessKey);
+    if (guess.limited) return throttled(guess.retryAfter);
+    if (typeof token !== 'string' || !(await isAllowedToken(token))) {
+      rateLimit(guessKey);
+      throw error(403, 'Invalid access token');
+    }
   }
   // Throttle valid managed tokens per token (so a leaked one can't be hammered
   // from many IPs to burn our quota) and BYOK per IP (see BYOK_LIMIT).

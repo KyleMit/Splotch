@@ -22,10 +22,13 @@ Undo was originally a stack of up to `MAX_UNDO_STACK_SIZE = 10` full-canvas `HTM
 
 `getBoundingClientRect()` is cached in a `canvasRect` variable and refreshed only on resize/scroll/orientation change — avoiding a forced reflow on every pointer event in the hot path.
 
+**Lifecycle across mounts (2026-07):** being a module singleton, the engine's drawing state (command log, baseline raster, keyframes, `canUndo`/`canvasEmpty`) intentionally survives component unmount. The `teardown()` returned by `initDrawingCanvas()` removes event listeners and resets live pointer-input state only (`releaseAllPointers()` — which also commits a mid-flight stroke into the log — plus the merged-stream `liveDownIds` tracker, whose self-healing window listeners are gone after teardown); a later `initDrawingCanvas()` rewires the new canvas and rebuilds the drawing from the retained baseline + log. Client-side navigation (`/` → `/privacy` → `/`) therefore never destroys the child's drawing — a parent checking another page must not wipe the kid's work.
+
 ## Consequences
 
 - **+** Pointer handling is isolated from Svelte's render cycle; no performance cliff from reactive updates on every frame.
 - **+** The engine module can be imported and driven from Playwright tests through a dev-harness route (`/dev/engine`) without involving any Svelte lifecycle.
 - **-** The engine is a module singleton, so the canvas state is global — only one drawing canvas can exist at a time in a page.
+- **-** Drawing persistence keeps the baseline/keyframe rasters (~30 MB at 2× DPR on a large screen) resident while the user sits on a non-drawing route. Accepted: freeing them on unmount would either wipe the drawing or add a drop-and-rebuild pipeline for a transient state a toddler-app session rarely stays in.
 - **-** Callback wiring (`onUndoStateChange`, etc.) is manual; a missed callback means reactive UI doesn't update to reflect engine state.
 - **-** ~~Undo snapshots consume memory in proportion to canvas size × stack depth (10 frames at full viewport resolution).~~ Resolved by ADR-0033: one baseline raster + a small command log.

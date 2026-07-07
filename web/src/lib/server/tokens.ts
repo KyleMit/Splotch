@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { getStore } from '@netlify/blobs';
+import { deleteUsage } from './usage';
 
 // Access tokens used to be a static comma-separated env var (ALLOWED_TOKENS_LIST).
 // They now live in Netlify Blobs so they can be added/removed at runtime from the
@@ -42,9 +43,13 @@ function openStore(): TokenStore | null {
 
 /**
  * Resolve the current token list and the backing store (if available).
- * Returns `{ store, list }` where `store` is null when Blobs is unavailable.
+ * Returns `{ store, list, etag }` where `store` is null when Blobs is
+ * unavailable. `etag` identifies the exact blob version the list came from so
+ * mutations can compare-and-set against it; read-only callers ignore it. An
+ * undefined etag with a live store means the key didn't exist at read time
+ * (persist then uses `onlyIfNew`).
  */
-async function readStore(): Promise<{ store: TokenStore | null; list: string[] }> {
+async function readStore(): Promise<{ store: TokenStore | null; list: string[]; etag?: string }> {
   const store = openStore();
   if (store) {
     try {
@@ -53,14 +58,16 @@ async function readStore(): Promise<{ store: TokenStore | null; list: string[] }
       // replica lagging the latest write can report the key as absent and trip
       // the seed-on-empty branch below — which the `onlyIfNew` write makes atomic
       // so it can never clobber an existing list.
-      const list = await store.get(KEY, { type: 'json' });
-      if (Array.isArray(list)) return { store, list };
+      const existing = await store.getWithMetadata(KEY, { type: 'json' });
+      if (existing && Array.isArray(existing.data)) {
+        return { store, list: existing.data, etag: existing.etag };
+      }
       // First run against Blobs (or a stale-empty read): seed from the env var,
       // but only if the key truly doesn't exist yet, so a lagging replica can't
       // overwrite tokens the admin already saved.
       const seeded = seedFromEnv();
-      await store.setJSON(KEY, seeded, { onlyIfNew: true });
-      return { store, list: seeded };
+      const { etag } = await store.setJSON(KEY, seeded, { onlyIfNew: true });
+      return { store, list: seeded, etag };
     } catch (err) {
       // Transient Blobs error: degrade to memory for THIS request only. Do not
       // latch blobsUnavailable, or one blip would make the warm instance
@@ -73,12 +80,19 @@ async function readStore(): Promise<{ store: TokenStore | null; list: string[] }
   return { store: null, list: memoryTokens };
 }
 
-async function persist(store: TokenStore | null, list: string[]) {
-  if (store) {
-    await store.setJSON(KEY, list);
-  } else {
+// Compare-and-set write, same pattern as usage.ts's recordTokenUsage: two
+// concurrent mutations (web /admin form action + native /api/admin/tokens, or
+// two admins) must serialize instead of one silently clobbering the other.
+// Returns whether the write landed; a `modified: false` result means the blob
+// changed since our read and the caller must re-run its read-modify cycle.
+async function persist(store: TokenStore | null, list: string[], etag: string | undefined) {
+  if (!store) {
     memoryTokens = list;
+    return true;
   }
+  const condition = etag ? { onlyIfMatch: etag } : { onlyIfNew: true as const };
+  const { modified } = await store.setJSON(KEY, list, condition);
+  return modified;
 }
 
 /** All currently allowed access tokens. */
@@ -107,25 +121,45 @@ export async function isAllowedToken(token: unknown) {
   return list.includes(token);
 }
 
-/** Add a token. Returns `{ ok, error?, tokens? }`. */
-export async function addToken(token: unknown) {
+// Each attempt re-runs the whole read-modify cycle (dup-check/filter included)
+// so a lost CAS race retries against the winner's list, not the stale one.
+// Unlike usage.ts we do NOT concede after the retries: under eventual
+// consistency (ADR-0025) they can exhaust, and an admin mutation that quietly
+// did nothing is as bad as the clobber the CAS prevents — so it surfaces as
+// `{ ok: false, error }` for the /admin form action and /api/admin/tokens to
+// report.
+const MUTATION_ATTEMPTS = 3;
+export const TOKEN_CONFLICT_ERROR = 'The token list changed while saving — please try again';
+
+type MutationResult = { ok: true; tokens: string[] } | { ok: false; error: string };
+
+/** Add a token. Returns `{ ok, tokens }` or `{ ok: false, error }`. */
+export async function addToken(token: unknown): Promise<MutationResult> {
   const t = String(token ?? '').trim();
   if (!t) return { ok: false, error: 'Token cannot be empty' };
-  const { store, list } = await readStore();
-  if (list.includes(t)) return { ok: false, error: 'Token already exists' };
-  const next = [...list, t];
-  await persist(store, next);
-  return { ok: true, tokens: next };
+  for (let attempt = 1; attempt <= MUTATION_ATTEMPTS; attempt++) {
+    const { store, list, etag } = await readStore();
+    if (list.includes(t)) return { ok: false, error: 'Token already exists' };
+    const next = [...list, t];
+    if (await persist(store, next, etag)) return { ok: true, tokens: next };
+  }
+  return { ok: false, error: TOKEN_CONFLICT_ERROR };
 }
 
-/** Remove a token. Returns `{ ok, tokens }`. */
-export async function removeToken(token: unknown) {
+/** Remove a token. Returns `{ ok, tokens }` or `{ ok: false, error }`. */
+export async function removeToken(token: unknown): Promise<MutationResult> {
   const t = String(token ?? '').trim();
-  const { store, list } = await readStore();
-  const next = list.filter((x: string) => x !== t);
-  // A no-op remove must not rewrite the blob: under eventual consistency the
-  // list may be a stale replica read, and persisting it would clobber a token
-  // another admin just added.
-  if (next.length !== list.length) await persist(store, next);
-  return { ok: true, tokens: next };
+  for (let attempt = 1; attempt <= MUTATION_ATTEMPTS; attempt++) {
+    const { store, list, etag } = await readStore();
+    const next = list.filter((x: string) => x !== t);
+    // A no-op remove must not rewrite the blob: under eventual consistency the
+    // list may be a stale replica read, and persisting it would clobber a token
+    // another admin just added.
+    if (next.length === list.length) return { ok: true, tokens: next };
+    if (await persist(store, next, etag)) {
+      await deleteUsage(t);
+      return { ok: true, tokens: next };
+    }
+  }
+  return { ok: false, error: TOKEN_CONFLICT_ERROR };
 }

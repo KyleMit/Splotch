@@ -32,7 +32,7 @@
   // Mirrors how the app wires the engine (see DrawingCanvas.svelte), but routes
   // the undo/empty callbacks into a window object the Playwright spec inspects,
   // instead of into the Svelte stores.
-  onMount(() => {
+  function wireEngine() {
     engine = initDrawingCanvas(canvasEl, {
       initialColor: '#ff0000',
       onUndoStateChange: (canUndo) => {
@@ -43,6 +43,10 @@
       },
     });
     setStrokeWidth(8);
+  }
+
+  onMount(() => {
+    wireEngine();
 
     win.__engineState = { canUndo: false, canvasEmpty: true };
 
@@ -66,6 +70,14 @@
       // and inspect the resulting paper view (ADR-0050).
       setScreenAngleOverride,
       getViewState,
+
+      // Teardown + re-init on the same canvas — the client-side-navigation
+      // lifecycle (`/` → `/privacy` → `/`, ADR-0004). Drawing state persists
+      // across the cycle by design; pointer-input state must not.
+      remount() {
+        engine?.teardown();
+        wireEngine();
+      },
 
       // Decode an exported blob and count its stroke pixels. The harness draws
       // in pure red; the paper background never is, so a red count > 0 means
