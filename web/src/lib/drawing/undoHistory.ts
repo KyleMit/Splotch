@@ -25,6 +25,12 @@ import { PERF_MARKS } from './perf';
 
 // The retained command log; commands older than this fold into the baseline.
 const MAX_UNDO_STACK_SIZE = 10;
+// Each keyframe is a full baseline-sized raster (a max(w,h) square at up to 2×
+// DPR ≈ 30 MB on an iPad), so the ≤ MAX_UNDO_STACK_SIZE retained commands could
+// otherwise pin hundreds of MB — enough to get a WKWebView killed on older
+// iPads. Cap how many coexist: creating a new keyframe folds older keyframed
+// history into the baseline (see capKeyframeMemory).
+const MAX_KEYFRAMES = 1;
 const commandLog: StrokeGroupCommand[] = [];
 
 let baselineCanvas: HTMLCanvasElement | null = null;
@@ -165,6 +171,26 @@ function maybeKeyframe(cmd: StrokeGroupCommand) {
   cmd.keyframe = kf;
   cmd.ops = [];
   if (PERF_MARKS) performance.measure('engine.keyframe', 'engine.keyframe:start');
+  capKeyframeMemory();
+}
+
+// Bound retained keyframe rasters to MAX_KEYFRAMES. A newly created keyframe is
+// the only thing that can push the count over, so fold the oldest commands into
+// the baseline until the cap holds again. foldOldestIntoBaseline blits a
+// keyframed command wholesale, so the older raster's pixels survive in the
+// baseline (undo popping the newer keyframe then repaints from there) — we trade
+// undo depth past the folded keyframe for a hard memory ceiling. Keyframes fire
+// only for pathological outliers, so real sessions never reach this.
+function capKeyframeMemory() {
+  while (keyframeCount() > MAX_KEYFRAMES && commandLog.length > 0) {
+    foldOldestIntoBaseline();
+  }
+}
+
+function keyframeCount(): number {
+  let n = 0;
+  for (const cmd of commandLog) if (cmd.keyframe) n++;
+  return n;
 }
 
 // History past the cap can no longer be undone, so bake the oldest command into
@@ -241,7 +267,7 @@ export function getHistoryDebug(): {
 } {
   return {
     commands: commandLog.length,
-    keyframes: commandLog.filter((c) => c.keyframe != null).length,
+    keyframes: keyframeCount(),
     maxOps: commandLog.reduce((m, c) => Math.max(m, c.ops.length), 0),
     maxSegments: commandLog.reduce((m, c) => Math.max(m, commandSegmentCount(c)), 0),
     totalSegments: commandLog.reduce((m, c) => m + commandSegmentCount(c), 0),
