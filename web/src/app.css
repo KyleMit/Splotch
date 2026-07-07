@@ -25,9 +25,8 @@
 
   /* Theme tokens (light values). Dark mode swaps these — and only these — in
      the two dark blocks below, so themed chrome must reference colors through
-     them. Deliberately NOT themed: the controls floating on the paper (action
-     buttons, clear button, corner buttons) keep their literal light chrome —
-     they read as objects sitting on the page in either theme. */
+     them. The one deliberately unthemed control is the Clear Button — its red
+     danger chrome reads the same on light or dark paper. */
   --app-bg: #f5f5f5;
   --surface: #ffffff; /* modal cards, palette bar */
   --surface-2: #f8f8f8; /* setting cards, inset panels */
@@ -66,6 +65,14 @@
      inverts them to white lines and screens them over the dark paper. */
   --lineart-filter: none;
   --lineart-blend: multiply;
+  /* Cards floating over the paper (action buttons, stroke flyout). In dark
+     mode a step lighter than --paper so they still read as raised cards. */
+  --float-surface: #ffffff;
+  --float-surface-hover: #f5f5f5;
+  /* Keyline ringing near-black currentColor ink on the float cards — the dark
+     twin of the white-ink black keyline (ActionsPanel .white-stroke). Inert in
+     light mode, where dark ink already reads on the light cards. */
+  --dark-ink-keyline: transparent;
 }
 
 /* Dark theme tokens. Applied two ways: an explicit parent choice stamps
@@ -107,6 +114,9 @@
   --paper-margin: #1a1922;
   --lineart-filter: invert(1);
   --lineart-blend: screen;
+  --float-surface: #2e2c38;
+  --float-surface-hover: #393744;
+  --dark-ink-keyline: #e9e7f0;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -143,6 +153,9 @@
     --paper-margin: #1a1922;
     --lineart-filter: invert(1);
     --lineart-blend: screen;
+    --float-surface: #2e2c38;
+    --float-surface-hover: #393744;
+    --dark-ink-keyline: #e9e7f0;
   }
 }
 
@@ -325,10 +338,16 @@ body {
   touch-action: manipulation;
 }
 
+/* Tinted via `fill` (not the old invert() chains) so the gray steps track the
+   theme tokens; the light values match the old filter outputs. */
 .corner-button-icon {
   width: 100%;
   height: 100%;
-  filter: invert(60%) grayscale(100%);
+}
+
+.corner-button-icon svg {
+  fill: var(--text-faint);
+  transition: fill 0.2s ease;
 }
 
 @media (hover: hover) {
@@ -336,8 +355,8 @@ body {
     opacity: 0.7;
   }
 
-  .corner-button:hover .corner-button-icon {
-    filter: invert(40%) grayscale(100%);
+  .corner-button:hover .corner-button-icon svg {
+    fill: var(--text-mid);
   }
 }
 
@@ -345,8 +364,8 @@ body {
   opacity: 1;
 }
 
-.corner-button:active .corner-button-icon {
-  filter: invert(0%) grayscale(100%);
+.corner-button:active .corner-button-icon svg {
+  fill: var(--icon-ink);
 }
 
 /* Spin animation reused by any "AI thinking" icon. */

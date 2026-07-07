@@ -53,8 +53,16 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
   sits under the unchanged low-alpha texture (`DrawingCanvas.svelte`); `--paper-margin` is the
   flat tone behind the rotation-locked sheet. The clear gesture's paper washes and page-turn
   ripple (`ClearButton.svelte`) follow `--paper` via `color-mix` (rgba fallbacks precede each,
-  per `docs/COMPATIBILITY.md`). Controls floating on the paper (Actions Panel, Clear Button,
-  corner buttons) keep their light chrome — they read as objects on the page.
+  per `docs/COMPATIBILITY.md`).
+- **Controls on the paper darken too.** The Actions Panel cards and stroke flyout use
+  `--float-surface` (dark: a step *lighter* than `--paper`, since their drop shadows vanish on
+  a dark ground); corner buttons (drawer toggle, Fullscreen Toggle, Parent Help) swapped their
+  hand-tuned `invert()` icon chains for theme-token `fill`s — the old active state inverted to
+  black, invisible on dark paper. Near-black `currentColor` ink on the cards gets a light
+  keyline via `.dark-stroke` + `--dark-ink-keyline` (`isDarkInk` in `colors.svelte.ts`) — the
+  exact mirror of the existing white-ink `.white-stroke` black keyline; the token is
+  transparent in light mode so the class is inert there. The **Clear Button** is the one
+  deliberately unthemed control — its red danger chrome reads the same on either paper.
 - **JS consumers of the resolved theme.** `PAPER_COLORS` in `theme.ts` mirrors `--paper`
   (keep in sync); `lib/state/appearance.svelte.ts` exposes a reactive `resolvedTheme()`
   (setting + live OS preference). Used by the **Notch Band** (the eraser now clears the band

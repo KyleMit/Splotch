@@ -1,3 +1,5 @@
+import { relativeLuminance } from '../colorRing';
+
 // Display order, top-to-bottom (landscape) / left-to-right (portrait). The three
 // `bonus` colors are extras that only appear on a tall landscape (see the trim
 // rules in ColorPalette.svelte); when hidden, the remaining seven collapse back
@@ -74,4 +76,12 @@ export function pickCustomColor(hex: string) {
 export function isWhite(hex: string): boolean {
   const v = hex.trim().toLowerCase();
   return v === '#ffffff' || v === '#fff' || v === 'white';
+}
+
+// The dark-mode mirror of isWhite: near-black ink vanishes against the dark
+// action-button cards, so those colors get a light outline there. Applied as a
+// class in every theme — the keyline color token (--dark-ink-keyline) is
+// transparent in light mode, so only dark mode ever shows it.
+export function isDarkInk(hex: string): boolean {
+  return relativeLuminance(hex) < 0.15;
 }
