@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Self-contained smoke test for the /api/* HTTP contract (see the `api` skill).
-// Boots a throwaway `vite dev` with test env, exercises the admin auth flow and a
-// public oracle against the documented shapes, then tears the server down.
-// No Gemini key or Netlify Blobs needed — generate-image and verify-key (which make
-// live model calls) are intentionally out of scope.
+// Boots a throwaway `vite dev` with test env, exercises the admin auth flow, the
+// public oracles, and generate-image's auth gate against the documented shapes,
+// then tears the server down. No Gemini key or Netlify Blobs needed — every
+// generate-image case here is rejected before the model call; successful
+// generation and verify-key (which make live model calls) are out of scope.
 
 import { randomUUID } from 'node:crypto';
 import { spawnViteServer } from './lib/vite-server.mjs';
@@ -111,6 +112,27 @@ async function run() {
     `got ${code.status}`
   );
 
+  // --- generate-image auth gate (every case rejected before the model call) ---
+  const genRequest = (fields) => {
+    const form = new FormData();
+    for (const [key, value] of Object.entries(fields)) form.set(key, value);
+    return fetch(`${BASE}/api/generate-image`, { method: 'POST', body: form });
+  };
+
+  const badToken = await genRequest({ token: 'not-a-real-token' });
+  check(
+    'generate-image with invalid token → 403',
+    badToken.status === 403,
+    `got ${badToken.status}`
+  );
+
+  const noImage = await genRequest({ token: 'alpha' });
+  check(
+    'generate-image with valid token but no image → 400',
+    noImage.status === 400,
+    `got ${noImage.status}`
+  );
+
   // --- standard 429 contract (throttled() in src/lib/server/http.ts) ---
   // The per-IP limit is 10/min; burst past it and assert the shared shape:
   // JSON {ok:false, error} plus a Retry-After header.
@@ -131,6 +153,18 @@ async function run() {
       typeof limitedBody?.error === 'string' &&
       Boolean(limited.headers.get('retry-after')),
     limited ? `body ${JSON.stringify(limitedBody)}` : 'never saw a 429'
+  );
+
+  // Invalid-token guesses at generate-image draw on the same per-IP bucket the
+  // burst above just exhausted, so the token oracle must answer 429, not 403.
+  const throttledGuess = await genRequest({ token: 'another-bad-guess' });
+  const throttledGuessBody = await json(throttledGuess);
+  check(
+    'generate-image invalid token while limited → shared 429',
+    throttledGuess.status === 429 &&
+      throttledGuessBody?.ok === false &&
+      Boolean(throttledGuess.headers.get('retry-after')),
+    `got ${throttledGuess.status}`
   );
 }
 

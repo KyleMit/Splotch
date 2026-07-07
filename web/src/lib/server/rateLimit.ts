@@ -48,3 +48,21 @@ export function rateLimit(
   buckets.set(key, hits);
   return { limited: false, retryAfter: 0 };
 }
+
+/**
+ * Read-only check: reports whether `key` is currently limited without
+ * recording a hit. For endpoints that throttle only their failure path —
+ * peek before the credential check (a limited caller gets a blind 429 with
+ * no oracle answer), then call `rateLimit` to record a hit only when the
+ * check fails, so legitimate callers never consume the budget.
+ */
+export function peekRateLimit(
+  key: string,
+  { limit = 10, windowMs = 60_000 }: { limit?: number; windowMs?: number } = {}
+): RateLimitResult {
+  const now = Date.now();
+  const hits = (buckets.get(key) || []).filter((t) => t > now - windowMs);
+  if (hits.length < limit) return { limited: false, retryAfter: 0 };
+  const retryAfter = Math.max(Math.ceil((hits[0] + windowMs - now) / 1000), 1);
+  return { limited: true, retryAfter };
+}
