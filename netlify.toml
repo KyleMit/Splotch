@@ -22,7 +22,11 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
+    # SAMEORIGIN (not DENY) because /components embeds /components/frame/* in
+    # same-origin <iframe>s for its resizable demos; cross-origin embedding is
+    # still blocked. Netlify can't cleanly override a header per-path (multiple
+    # matching rules stack the values), so the relaxation is site-wide.
+    X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer"
 

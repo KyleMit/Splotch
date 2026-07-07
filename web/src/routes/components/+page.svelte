@@ -18,7 +18,6 @@
   import TabPager from '$lib/components/TabPager.svelte';
   import TabPagerTab from '$lib/components/TabPagerTab.svelte';
   import ToggleRow from '$lib/components/parent/ToggleRow.svelte';
-  import AdminConsole from '$lib/components/admin/AdminConsole.svelte';
   import Icon, { ICON_NAMES, COLOR_ICONS } from '$lib/components/Icon.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { ui, buttonCenter } from '$lib/state/ui.svelte';
@@ -38,9 +37,23 @@
   // Banner waits for an installable browser plus a few strokes.
   onMount(() => {
     fullscreen.supported = true;
-    if (install.mode === 'none') install.mode = 'ios';
     canvasState.strokeCount = Math.max(canvasState.strokeCount, 3);
+    if (install.mode !== 'none') installDemoMode = install.mode;
+    setInstallDemo(installDemoMode);
   });
+
+  // The banner branches on install.mode (ADR-0039): 'oneTap' when Chromium
+  // fired beforeinstallprompt, or the 'ios'/'android' manual-steps hints. The
+  // radios drive the real state so every branch is inspectable regardless of
+  // what browser is viewing this page; re-picking also clears an in-memory
+  // dismissal so the banner comes back after trying the × button.
+  let installDemoMode = $state<'oneTap' | 'ios' | 'android'>('ios');
+  function setInstallDemo(mode: 'oneTap' | 'ios' | 'android') {
+    installDemoMode = mode;
+    install.mode = mode;
+    install.installed = false;
+    install.dismissed = false;
+  }
 
   // Some demos' buttons call the app's real open* setters (Parent Help Button,
   // the Actions Panel's coloring-book button, the palette's gradient swatch),
@@ -104,23 +117,6 @@
   let sliderValue = $state(50);
   let toggleOn = $state(true);
   let toggleOff = $state(false);
-
-  const demoInvites = [
-    {
-      token: 'grandma',
-      url: 'https://splotch.art/?token=grandma',
-      usage: {
-        count: 12,
-        firstUsed: '2026-05-14T09:30:00Z',
-        lastUsed: '2026-07-05T16:20:00Z',
-        lastStyle: 'Crayon',
-        lastPrompt: 'A happy dinosaur eating spaghetti',
-      },
-    },
-    { token: 'preschool-pals', url: 'https://splotch.art/?token=preschool-pals', usage: null },
-  ];
-  const demoNoop = async () => {};
-  const demoAccept = async () => true;
 </script>
 
 <svelte:head>
@@ -343,10 +339,42 @@
       </div>
       <p>
         Bottom-center pill prompting "Add Splotch to your home screen", shown on web after a few
-        strokes (both conditions are seeded for this demo). One-tap install on Chromium; guided hint
-        elsewhere — "How?" expands the manual steps. Dismissing it here is remembered, exactly like
-        in the app.
+        strokes. Which call-to-action it offers branches on the device setup (ADR-0039) — pick one
+        to preview it: Chromium's captured install prompt shows a one-tap <em>Install</em> button,
+        while iOS Safari and other Android browsers get a <em>How?</em> button that expands that
+        platform's manual steps. (There's no real captured prompt on this page, so tapping
+        <em>Install</em> falls back the same way a stale prompt does in the app; dismissing with × is
+        remembered like in the app — re-pick a setup to bring the banner back.)
       </p>
+      <div class="demo-controls" role="radiogroup" aria-label="Install Banner device setup">
+        <label>
+          <input
+            type="radio"
+            name="install-demo-mode"
+            checked={installDemoMode === 'oneTap'}
+            onchange={() => setInstallDemo('oneTap')}
+          />
+          One-tap prompt (Chromium)
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="install-demo-mode"
+            checked={installDemoMode === 'ios'}
+            onchange={() => setInstallDemo('ios')}
+          />
+          iOS Safari
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="install-demo-mode"
+            checked={installDemoMode === 'android'}
+            onchange={() => setInstallDemo('android')}
+          />
+          Android browser
+        </label>
+      </div>
       <div class="stage stage-banner">
         <InstallBanner />
       </div>
@@ -586,53 +614,6 @@
             <code>{name}</code>
           </div>
         {/each}
-      </div>
-    </section>
-
-    <h2 id="admin">Admin</h2>
-
-    <section class="demo">
-      <div class="demo-head">
-        <h3>Admin Console — signed out</h3>
-        <code>admin/AdminConsole.svelte</code>
-      </div>
-      <p>
-        Presentational shell shared by <code>/admin</code> (cookie session) and
-        <code>/admin/native</code> (bearer session). Signed-out state shows the login card. Demo callbacks
-        accept anything — nothing is submitted.
-      </p>
-      <div class="stage stage-admin stage-admin-short">
-        <AdminConsole
-          authed={false}
-          invites={[]}
-          onlogin={demoAccept}
-          onlogout={demoNoop}
-          onadd={demoAccept}
-          onremove={demoNoop}
-        />
-      </div>
-    </section>
-
-    <section class="demo">
-      <div class="demo-head">
-        <h3>Admin Console — signed in</h3>
-        <code>admin/AdminConsole.svelte</code>
-      </div>
-      <p>
-        Authenticated state with sample data: a used code (with its usage tally), a never-used code,
-        a success flash, and the non-persistent Blobs warning.
-      </p>
-      <div class="stage stage-admin">
-        <AdminConsole
-          authed={true}
-          invites={demoInvites}
-          persistent={false}
-          flash={{ kind: 'success', text: 'Added "preschool-pals".' }}
-          onlogin={demoAccept}
-          onlogout={demoNoop}
-          onadd={demoAccept}
-          onremove={demoNoop}
-        />
       </div>
     </section>
   </main>
@@ -946,14 +927,6 @@
 
   .stage-error {
     min-height: 320px;
-  }
-
-  .stage-admin {
-    height: 640px;
-  }
-
-  .stage-admin-short {
-    height: 420px;
   }
 
   .open-modal-button {
