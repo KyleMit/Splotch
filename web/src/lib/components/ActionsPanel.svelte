@@ -475,13 +475,15 @@
     width: calc(60px * var(--action-btn-scale, 1));
     height: calc(60px * var(--action-btn-scale, 1));
     background: white;
-    border: 2px solid #ddd;
-    border-radius: 14px;
+    border: 2px solid transparent;
+    border-radius: 18px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow:
+      0 2px 6px rgba(93, 84, 68, 0.14),
+      0 6px 16px rgba(93, 84, 68, 0.1);
     transition: all 0.2s ease;
     touch-action: manipulation;
     padding: calc(10px * var(--action-btn-scale, 1));
@@ -535,7 +537,6 @@
     opacity: 0.3;
     cursor: not-allowed;
     background: #f5f5f5;
-    border-color: #e0e0e0;
   }
 
   :global(.action-icon) {
@@ -582,9 +583,9 @@
     gap: 6px;
     padding: 6px;
     background: white;
-    border: 2px solid #ddd;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(93, 84, 68, 0.2);
     z-index: 901;
   }
 
@@ -623,7 +624,7 @@
     width: calc(60px * var(--action-btn-scale, 1));
     height: calc(60px * var(--action-btn-scale, 1));
     background: white;
-    border: 2px solid #ddd;
+    border: 2px solid transparent;
     border-radius: 14px;
     cursor: pointer;
     /* Inherit the menu's color so the line icons (currentColor) pick up the
