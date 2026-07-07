@@ -85,6 +85,7 @@ baseline**, and every remaining below-floor risk is already feature-detected and
 | File System Access (`showDirectoryPicker` + writable handles) | `lib/drawing/folderSave.ts` | desktop Chromium 86+ only; never Firefox / Safari / mobile | ✅ `folderSaveSupported()` | folder row hidden in Parent Center; web saves stay plain downloads |
 | `createImageBitmap` | `routes/dev/engine/+page.svelte` | dev harness only | excluded from prod build | n/a |
 | `Touch.touchType` (`'stylus'`) | `lib/actions/scribbleGuard.ts` | Safari/iOS only | ✅ strict `=== 'stylus'`; undefined elsewhere → no-op | guard inert — exactly right, Scribble only exists on iPadOS |
+| `getContext('2d', { desynchronized })` | `lib/drawing/engine.ts` (ADR-0051) | Chromium-only low-latency hint | ✅ unknown-key hint, silently ignored | no latency hint; identical rendering (Firefox/Safari) — a progressive enhancement, never a hard dependency |
 
 ## Polyfills & workarounds
 
