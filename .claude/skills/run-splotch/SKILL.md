@@ -105,6 +105,24 @@ To apply a coloring page: click `#coloringBookButton`, then in the `dialog` pick
 book and a page, and wait for `#coloringOverlay` to be visible. A full worked
 example (all these steps) lives in the magic-brush E2E test, `web/tests/flows.spec.ts`.
 
+> **Never hand-roll the dev server in a throwaway script.** `spawn('npx', ['vite',
+> 'dev', …])` + `server.kill('SIGTERM')` does **not** work: `npx` exits but the real
+> `vite` keeps running, and because its stdout is piped to your script the Node event
+> loop never drains — the script hangs on exit and leaves an **orphaned `vite dev`
+> holding the port for hours**. Instead, pick one:
+> - **Reuse the driver's server** (preferred): `driver.mjs … --keep`, connect your own
+>   Playwright script with `--url`/`page.goto`, and when done free the port with
+>   `npx kill-port <n>` (default 5199). Your script should only manage the *browser*,
+>   never the server.
+> - **If you truly must spawn one**, use `spawnViteServer(port, env)` from
+>   `scripts/lib/vite-server.mjs` — it launches vite in a **detached process group** and
+>   its `stop()` kills the whole group (`process.kill(-pid)` / `taskkill /T`), so nothing
+>   is orphaned. `freePort(port)` clears a stale listener first.
+>
+> Either way, **reap what you spawned before ending**: kill the script/browser, run
+> `npx kill-port <n>`, and confirm with `ps`/`ss -ltnp` that no `vite dev` or headless
+> Chromium is left behind. A leaked server reads as a "task running for hours".
+
 ## Run (human path)
 
 ```bash
