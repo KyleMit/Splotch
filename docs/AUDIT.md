@@ -1,15 +1,35 @@
 # Audit
 
 > Findings from Splotch's audit skills (`.claude/audit-conventions.md`).
-> Clear the whole list autonomously with `/fix-next-audit`; validate it with `/review-audit`.
+> Clear the whole list autonomously with `/fix-audits`; validate it with `/vet-audits`.
 > Skills **merge** into this file — they never overwrite each other's sections.
 
 ## Source: Code audit
 
-- [ ] **[Performance] Undo keyframe rasters are bounded only by the 10-command stack cap — worst case ~300 MB retained** — File(s): `web/src/lib/drawing/undoHistory.ts` (`maybeKeyframe`, `foldOldestIntoBaseline`, `paintStateThrough`; formerly in `engine.ts`)
-  **⏸ Pending decision:** Excluded from the 2026-07-07 sweep by user request while the drawing engine was being refactored; that refactor (engine module split) has since landed on main. Re-run `/fix-next-audit` to pick this up.
-  `maybeKeyframe` allocates a keyframe canvas at `baselineCanvas` size — a `max(w,h)` square at up to 2× DPR (a 1024×1366 iPad → 2732² × 4 B ≈ 30 MB). The comments bound *when* a keyframe fires (outlier commands past 384 post-simplification segments) but nothing bounds *how many* of the ≤ `MAX_UNDO_STACK_SIZE = 10` retained commands hold one: 10 pathological scribbles (the exact "finger held down for a minute" case the comment cites) retain ≈ 300 MB on top of the baseline + visible canvas + magic sheet — enough to get a WKWebView killed on older iPads. Real sessions peak ~140 segments per the comments, so this is worst-case hardening, not a common-path leak. Cheap cap: when creating a new keyframe while an older one exists, fold history *through* the older keyframed command into the baseline — repeatedly shift via `foldOldestIntoBaseline` (which already blits a keyframed command wholesale) until that command is folded. Don't just drop the older raster: it isn't dead — undo can pop the newer keyframed command, after which `paintStateThrough` would start from the older one. Folding trades undo depth for bounded memory, which is the accepted cost.
+### [Performance] Undo keyframe rasters are bounded only by the 10-command stack cap — worst case ~300 MB retained
 
-- [ ] **[Maintainability] The requestIdleCallback-with-setTimeout-fallback pattern is hand-rolled five times (three exact copies, two loose variants)** — File(s): `web/src/lib/components/DrawingCanvas.svelte` (112–129, 147–156), `web/src/lib/components/ColoringBook.svelte` (33–40), `web/src/routes/+page.svelte` (52–56), `web/src/lib/drawing/exportDrawing.ts` (`warmPaperTextureWhenIdle`; formerly in `engine.ts`)
-  **⏸ Pending decision:** Excluded from the 2026-07-07 sweep by user request while the drawing engine was being refactored; that refactor (engine module split) has since landed on main. Re-run `/fix-next-audit` to pick this up.
-  Three sites are identical copies of `typeof requestIdleCallback === 'function' ? requestIdleCallback(fn) : setTimeout(fn, 200)` with the `as unknown as number` cast, cancel bookkeeping, and the same iOS-lacks-requestIdleCallback WHY comment (DrawingCanvas ×2 with different cancel plumbing, ColoringBook ×1); two more are loose variants that are already drifting: `+page.svelte`'s `schedule` stores no handle and relies on a `stopped` flag, and `exportDrawing.ts` uses `'requestIdleCallback' in window` with a **0 ms** fallback. Extract a `scheduleIdle(fn): () => void` helper (e.g. `web/src/lib/idle.ts`) returning a cancel function — it drops in cleanly for the three exact copies. Adoption caveats for the variants: `+page.svelte`'s `stopped` flag also guards an async `import().then` continuation a cancel function can't reach, so that flag stays even after adoption; and moving `exportDrawing.ts` to a shared 200 ms fallback is a small behavior change (paper-texture warm delayed on Safari) — accept it deliberately or parameterize the delay. No site passes an `options`/`{timeout}` arg, so the signature can stay minimal.
+**File(s):** `web/src/lib/drawing/undoHistory.ts` (`maybeKeyframe`, `foldOldestIntoBaseline`, `paintStateThrough`; formerly in `engine.ts`)
+
+**⏸ Pending decision:** Excluded from the 2026-07-07 sweep by user request while the drawing engine was being refactored; that refactor (engine module split) has since landed on main. Re-run `/fix-audits` to pick this up.
+
+#### Problem
+
+`maybeKeyframe` allocates a keyframe canvas at `baselineCanvas` size — a `max(w,h)` square at up to 2× DPR (a 1024×1366 iPad → 2732² × 4 B ≈ 30 MB). The comments bound *when* a keyframe fires (outlier commands past 384 post-simplification segments) but nothing bounds *how many* of the ≤ `MAX_UNDO_STACK_SIZE = 10` retained commands hold one: 10 pathological scribbles (the exact "finger held down for a minute" case the comment cites) retain ≈ 300 MB on top of the baseline + visible canvas + magic sheet — enough to get a WKWebView killed on older iPads. Real sessions peak ~140 segments per the comments, so this is worst-case hardening, not a common-path leak.
+
+#### Proposed solution
+
+Cheap cap: when creating a new keyframe while an older one exists, fold history *through* the older keyframed command into the baseline — repeatedly shift via `foldOldestIntoBaseline` (which already blits a keyframed command wholesale) until that command is folded. Don't just drop the older raster: it isn't dead — undo can pop the newer keyframed command, after which `paintStateThrough` would start from the older one. Folding trades undo depth for bounded memory, which is the accepted cost.
+
+### [Maintainability] The requestIdleCallback-with-setTimeout-fallback pattern is hand-rolled five times (three exact copies, two loose variants)
+
+**File(s):** `web/src/lib/components/DrawingCanvas.svelte` (112–129, 147–156), `web/src/lib/components/ColoringBook.svelte` (33–40), `web/src/routes/+page.svelte` (52–56), `web/src/lib/drawing/exportDrawing.ts` (`warmPaperTextureWhenIdle`; formerly in `engine.ts`)
+
+**⏸ Pending decision:** Excluded from the 2026-07-07 sweep by user request while the drawing engine was being refactored; that refactor (engine module split) has since landed on main. Re-run `/fix-audits` to pick this up.
+
+#### Problem
+
+Three sites are identical copies of `typeof requestIdleCallback === 'function' ? requestIdleCallback(fn) : setTimeout(fn, 200)` with the `as unknown as number` cast, cancel bookkeeping, and the same iOS-lacks-requestIdleCallback WHY comment (DrawingCanvas ×2 with different cancel plumbing, ColoringBook ×1); two more are loose variants that are already drifting: `+page.svelte`'s `schedule` stores no handle and relies on a `stopped` flag, and `exportDrawing.ts` uses `'requestIdleCallback' in window` with a **0 ms** fallback.
+
+#### Proposed solution
+
+Extract a `scheduleIdle(fn): () => void` helper (e.g. `web/src/lib/idle.ts`) returning a cancel function — it drops in cleanly for the three exact copies. Adoption caveats for the variants: `+page.svelte`'s `stopped` flag also guards an async `import().then` continuation a cancel function can't reach, so that flag stays even after adoption; and moving `exportDrawing.ts` to a shared 200 ms fallback is a small behavior change (paper-texture warm delayed on Safari) — accept it deliberately or parameterize the delay. No site passes an `options`/`{timeout}` arg, so the signature can stay minimal.

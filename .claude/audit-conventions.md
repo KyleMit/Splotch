@@ -15,8 +15,8 @@ skills point at this file on purpose.
 | **dependency-audit** | `/dependency-audit` | Out-of-date dependencies, upgraded one at a time with a migration guide | one commit per package |
 | **workflow-audit** | `/workflow-audit` | Claude Code config + session-history review vs. current best practice | dated `docs/claude-workflow-review-YYYY-MM-DD.md` |
 
-**Consumers** of `docs/AUDIT.md` (not audits themselves): `/fix-next-audit` clears the
-whole list autonomously on its own branch + PR; `/review-audit` validates the list
+**Consumers** of `docs/AUDIT.md` (not audits themselves): `/fix-audits` clears the
+whole list autonomously on its own branch + PR; `/vet-audits` validates the list
 against the current code and prunes stale items.
 
 ## Shared conventions
@@ -24,26 +24,59 @@ against the current code and prunes stale items.
 Every audit skill follows these. The inventory's **Writes to** column says which of
 §1 applies to it; **§2 and §3 apply to all audits.**
 
-### 1. Merge into `docs/AUDIT.md` — combine, never overwrite
+### 1. Structure & merge — `docs/AUDIT.md` combines, never overwrites
 
 Audits that produce a findings list write to the shared `docs/AUDIT.md`. Multiple
-audits (and repeat runs of the same audit) share that file, so **merge**:
+audits (and repeat runs of the same audit) share that file, so **merge**; never clobber
+another audit's section or replace the file wholesale.
 
-- Keep the file's header block; append under a `## Source: <audit name>` section so
-  each audit's findings stay grouped and attributable.
-- **An existing item still stands** → keep it; *enrich* it with sharper attribution
-  or fresher numbers from this run.
-- **A genuinely new finding** → add it as a new `- [ ]` item.
-- **An item that's since been fixed** → remove it (confirm against the code first).
-- Never clobber another audit's section or replace the file wholesale.
+**The header hierarchy is fixed — every producer and consumer relies on it:**
 
-Canonical item format (so `/fix-next-audit` and `/review-audit` can work items one
-at a time):
+| Level | Holds | Rule |
+| --- | --- | --- |
+| `#` | The file title + blockquote | One per file (the header block below). |
+| `## Source: <audit name>` | One section per audit that contributed findings | Append yours; never touch another audit's. Delete the section once its last finding is gone. |
+| `### [Category] Short title` | One finding | The unit `/fix-audits` and `/vet-audits` act on — added, enriched, or removed whole. |
+| `#### Problem` / `#### Proposed solution` / `#### Verification` | The three parts of a finding | See the canonical format below. |
+
+When merging within your own `## Source:` section:
+
+- **An existing finding still stands** → keep its `###` block; *enrich* it with sharper
+  attribution, fresher numbers, or a better `#### Verification`.
+- **A genuinely new finding** → add a new `###` block.
+- **A finding that's since been fixed** → remove its whole `###` block (confirm against
+  the code first).
+
+Canonical finding format — a third-level header per finding with fourth-level parts
+inside, so each finding can carry full Markdown (prose, code fences, tables) for the fix
+agent instead of a cramped one-liner:
 
 ```markdown
-- [ ] **[Category] Short title** — File(s): `path/to/file.ts`
-  What to change and why — specific enough that an AI can act on it without re-reading the audit.
+### [Category] Short, action-oriented title
+
+**File(s):** `path/to/file.ts` (`functionName`, lines N–M)
+
+#### Problem
+
+What's wrong and why it's worth fixing — enough prose, quoted code, and evidence that the
+fix agent grasps it without re-deriving it. Use fenced code blocks and cite measurements.
+
+#### Proposed solution
+
+A suggested approach — a *starting point*, not a mandate; the fix agent weighs it against
+alternatives. Note tradeoffs or gotchas you already see. (For an extraction, put the
+proposed signature and target location here.)
+
+#### Verification
+
+How to prove the problem is real and confirm a fix resolves it: repro steps, a command or
+script to paste, a profile to capture, the test that should fail before and pass after.
 ```
+
+`#### Problem` and `#### Proposed solution` are required. `#### Verification` is optional
+at creation and is what `/vet-audits` fills in — so the fix agent can reproduce the
+problem empirically rather than trusting the write-up. Order findings within a section by
+impact: highest-value or lowest-risk first.
 
 The `docs/AUDIT.md` header (create it if the file doesn't exist yet):
 
@@ -51,11 +84,9 @@ The `docs/AUDIT.md` header (create it if the file doesn't exist yet):
 # Audit
 
 > Findings from Splotch's audit skills (`.claude/audit-conventions.md`).
-> Clear the whole list autonomously with `/fix-next-audit`; validate it with `/review-audit`.
+> Clear the whole list autonomously with `/fix-audits`; validate it with `/vet-audits`.
 > Skills **merge** into this file — they never overwrite each other's sections.
 ```
-
-Order items within a section by impact: highest-value or lowest-risk first.
 
 ### 2. Log every run in `docs/AUDIT-LOG.md`
 
