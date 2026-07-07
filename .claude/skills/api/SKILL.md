@@ -167,7 +167,12 @@ without the Blobs context; see ADR-0025). `scripts/blobs-smoke.mjs` asserts it i
 |---|---|---|
 | `GET` | — | List tokens + invite URLs |
 | `POST` | `{ "token": "name" }` | Add a token. `400 { ok: false, error }` when empty or duplicate. |
-| `DELETE` | `{ "token": "name" }` | Remove a token (idempotent). |
+| `DELETE` | `{ "token": "name" }` | Remove a token (idempotent). Also clears the token's usage tally. |
+
+Mutations are etag compare-and-set writes with a few retries; if concurrent
+admin mutations keep colliding (possible under Blobs eventual consistency,
+ADR-0025), `POST`/`DELETE` return `409 { ok: false, error }` — safe to retry
+as-is.
 
 Invite URLs are built from the request origin, so they point at the host
 that served the API.

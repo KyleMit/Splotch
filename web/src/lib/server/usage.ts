@@ -74,6 +74,23 @@ export async function recordTokenUsage(
 }
 
 /**
+ * Delete a token's usage blob when the token is revoked. Without this the
+ * tally — keyed by the raw secret — lingers forever, and re-adding the same
+ * token would inherit the stale count. Best-effort: a Blobs failure is logged,
+ * never thrown, so cleanup can never fail the token removal itself.
+ */
+export async function deleteUsage(token: string) {
+  try {
+    await getStore(STORE_NAME).delete(token);
+  } catch (err) {
+    console.warn(
+      `[ai-usage] token=${maskToken(token)} failed to delete usage:`,
+      err instanceof Error ? err.message : err
+    );
+  }
+}
+
+/**
  * Read the usage tally for each token, as a map keyed by token. Tokens with no
  * recorded usage are omitted (so the caller can distinguish "never used" from a
  * Blobs outage). Eventual consistency (the default) is sufficient — slightly-stale
