@@ -47,6 +47,13 @@
   * [ ] Sometimes it doesn't register clicks on color changes
 * Controls
   * [ ] Brush type (blend mode with previous drawing)
+* Feature ideas
+  * [ ] Chalkboard/night canvas — dark background with chalk-textured or neon-glow strokes; cheap variety, great for bedtime wind-down use, and makes the bright palette pop
+  * [ ] Stamps — third tool alongside pen/eraser: tap to plop a shape (stars, hearts, animals, dinosaurs) with a satisfying sound and a little scale-bounce animation; stamps recorded as ops in the command log so undo works automatically; unlocks the youngest users who can tap long before they can draw
+  * [ ] Tap-to-fill (paint bucket) — flood fill enclosed areas, especially coloring book pages; gives the "I colored the whole elephant!" payoff when coloring inside the lines is still motorically hard, and works on the child's own color choices (unlike the magic brush's pre-colored twin)
+  * [ ] Photo → coloring page — parent snaps a photo (the family dog, the kid's bike) and the existing Gemini pipeline turns it into line art that drops straight into the coloring book overlay slot; personalization families will tell other families about, and sidesteps the coloring-book IP problem on iOS
+  * [ ] In-app gallery ("the fridge door") — revisit saved masterpieces inside the app (big thumbnails, tap for full screen, maybe a slideshow mode) instead of only the photo library/downloads; adds pride-of-ownership and a reason to come back, and pairs naturally with save-on-delete which already captures the art
+  * [ ] Left-handed layout flip — Parent Center setting that mirrors the landscape layout so the palette column moves to the right edge (a lefty's arm covers it on the left)
 
 
 ## DONE
