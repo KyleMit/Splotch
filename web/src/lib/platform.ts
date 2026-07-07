@@ -30,6 +30,24 @@ export function isStandalone(): boolean {
   );
 }
 
+/**
+ * UA-based iOS device sniff, for web code deciding which OS's instructions
+ * apply. iPadOS 13+ masquerades as desktop Safari, so a touch-capable "Mac"
+ * counts as an iPad.
+ */
+export function isIosDevice(): boolean {
+  if (!browser) return false;
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
+
+/** UA-based Android sniff, for web code deciding which OS's instructions apply. */
+export function isAndroidBrowser(): boolean {
+  return browser && /android/i.test(navigator.userAgent || '');
+}
+
 export type Platform = 'android' | 'ios' | 'web';
 
 export function getPlatform(): Platform {

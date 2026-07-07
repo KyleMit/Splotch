@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { isNative, isStandalone } from '$lib/platform';
+import { isAndroidBrowser, isIosDevice, isNative, isStandalone } from '$lib/platform';
 import { readBool, writeBool } from '$lib/storage';
 
 // "Add to Home Screen" / PWA install, surfaced as a friendly parent-facing prompt.
@@ -45,14 +45,6 @@ export const install = $state({
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 let initialized = false;
 
-function isIosDevice() {
-  return (
-    /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
-    // iPadOS 13+ masquerades as desktop Safari; a touch-capable "Mac" is an iPad.
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  );
-}
-
 function isIosSafari() {
   if (!isIosDevice()) return false;
   // Add-to-Home-Screen only exists in real Safari, not the in-app Chrome/Firefox/Edge
@@ -65,14 +57,14 @@ function isIosSafari() {
 // Parent Center setup guide) must not re-sniff the UA themselves.
 export function installDeviceOs(): InstallDeviceOs {
   if (isIosDevice()) return 'ios';
-  if (/android/i.test(navigator.userAgent || '')) return 'android';
+  if (isAndroidBrowser()) return 'android';
   return 'desktop';
 }
 
 // The fallback hint to show when there's no live one-tap prompt for this device.
 function manualMode(): InstallMode {
   if (isIosSafari()) return 'ios';
-  if (/android/i.test(navigator.userAgent || '')) return 'android';
+  if (isAndroidBrowser()) return 'android';
   return 'none';
 }
 

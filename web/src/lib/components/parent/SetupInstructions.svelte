@@ -20,7 +20,7 @@
   }
 
   interface Props {
-    // `open` flips true when the Parent Center modal opens; we re-run platform/OS
+    // `open` flips true when the Parent Center modal opens; we re-run device/OS
     // detection then so the instructions match the current device and install state.
     open?: boolean;
   }
@@ -32,11 +32,14 @@
   // True when Guided Access (iOS) / App Pinning (Android) is currently engaged. Native
   // only — the web can't observe either, so it stays false there. Re-checked on open.
   let deviceLocked = $state(false);
-  // True inside a native Capacitor shell. Native builds are already "installed",
-  // so we drop the PWA install step and only show the device-lock setup for the
-  // platform we're actually running on.
-  let native = $state(false);
-  // The platform we're running on.
+  // True inside a native Capacitor shell — a build-time fact, so the compile-time
+  // flag leads and the isNative() factor exists for unit tests (which define
+  // __IS_CAPACITOR__ as true and steer via runtime isNative() mocks). Native builds
+  // are already "installed", so we drop the PWA install step and only show the
+  // device-lock setup for the platform we're actually running on.
+  const native = __IS_CAPACITOR__ && isNative();
+  // ios-vs-android stays a runtime read: one CAPACITOR=true bundle ships in both
+  // the iPhone and Android binaries, so it's a per-device fact.
   let platform = $state<Platform>('web');
 
   // Which OS setup sections to render. On native we know the exact platform, so
@@ -58,7 +61,6 @@
     if (!open) return;
     deviceOs = installDeviceOs();
     platform = getPlatform();
-    native = isNative();
 
     // Lock state is a native-only async query, so reset and re-detect each open. The
     // `cancelled` guard drops a stale result if the modal closes/reopens mid-flight.
