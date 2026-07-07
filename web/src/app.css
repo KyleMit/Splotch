@@ -12,6 +12,14 @@
      reference these directly via var(). */
   --brand: #ab71e1;
   --brand-hover: #9961d1;
+  /* Filter chain that renders a black icon in --brand. Filters can't reference
+     a color directly, so this hand-tuned chain re-encodes #ab71e1 — keep the
+     two in sync if the brand color ever changes. Brand-tinted shadows are
+     derived instead via color-mix(in srgb, var(--brand) N%, transparent),
+     each preceded by a plain-rgba fallback declaration for pre-color-mix
+     engines (see docs/COMPATIBILITY.md). */
+  --brand-tint-filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%)
+    contrast(88%);
 }
 
 * {
@@ -144,6 +152,44 @@ body {
   .modal-close-btn:not(:disabled):hover .modal-close-icon {
     filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
   }
+}
+
+/* Muted corner-button chrome shared by the drawer toggle, Fullscreen Toggle,
+   and Parent Help Button: a transparent button whose whole-button opacity and
+   gray icon tint both step up idle → hover → pressed. Positioning, size, and
+   z-index stay in each component. */
+.corner-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+  touch-action: manipulation;
+}
+
+.corner-button-icon {
+  width: 100%;
+  height: 100%;
+  filter: invert(60%) grayscale(100%);
+}
+
+@media (hover: hover) {
+  .corner-button:hover {
+    opacity: 0.7;
+  }
+
+  .corner-button:hover .corner-button-icon {
+    filter: invert(40%) grayscale(100%);
+  }
+}
+
+.corner-button:active {
+  opacity: 1;
+}
+
+.corner-button:active .corner-button-icon {
+  filter: invert(0%) grayscale(100%);
 }
 
 /* Spin animation reused by any "AI thinking" icon. */

@@ -228,7 +228,7 @@
     }
 
     .coloring-back-button:hover :global(.coloring-back-icon) {
-      filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
+      filter: var(--brand-tint-filter);
     }
   }
 
@@ -272,6 +272,7 @@
       background: #f5f0ff;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(171, 113, 225, 0.25);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 25%, transparent);
     }
   }
 

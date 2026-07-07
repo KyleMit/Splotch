@@ -179,6 +179,7 @@
   .ai-style-option:focus-visible .ai-style-thumb {
     border-color: var(--brand);
     box-shadow: 0 0 0 3px rgba(171, 113, 225, 0.35);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 35%, transparent);
   }
 
   .ai-style-option:disabled {

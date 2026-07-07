@@ -291,12 +291,12 @@
   </div>
 
   <button
-    class="drawer-toggle"
+    class="drawer-toggle corner-button"
     aria-label={settings.drawerOpen ? 'Collapse controls' : 'Expand controls'}
     aria-expanded={settings.drawerOpen}
     use:scribbleTap={toggleDrawer}
   >
-    <Icon name="chevron-right" class="drawer-toggle-icon" />
+    <Icon name="chevron-right" class="drawer-toggle-icon corner-button-icon" />
   </button>
 </div>
 
@@ -428,32 +428,16 @@
     display: none;
   }
 
-  /* Drawer open/close toggle. Deliberately low-key (no background, muted grey)
-     so it mirrors the Parent Center button and doesn't compete with the tools. */
+  /* Drawer open/close toggle. Deliberately low-key (chrome from .corner-button
+     in app.css, shared with the Parent Center button) so it doesn't compete
+     with the tools. */
   .drawer-toggle {
     width: 48px;
     height: 48px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0.4;
-    transition: opacity 0.2s ease;
-    touch-action: manipulation;
     flex-shrink: 0;
-  }
-
-  @media (hover: hover) {
-    .drawer-toggle:hover {
-      opacity: 0.7;
-    }
-  }
-
-  .drawer-toggle:active {
-    opacity: 1;
   }
 
   /* Chevron rotation is fully CSS, composed from two custom properties so each
@@ -466,10 +450,7 @@
        landscape closed 0 · open 180 (left)
        portrait  closed −90 (up) · open 90 (down) */
   :global(.drawer-toggle-icon) {
-    width: 100%;
-    height: 100%;
     pointer-events: none;
-    filter: invert(60%) grayscale(100%);
     transition: filter 0.2s ease;
     --drawer-axis-rot: 0deg;
     --drawer-open-rot: 0deg;
@@ -484,16 +465,6 @@
     :global(.drawer-toggle-icon) {
       --drawer-axis-rot: -90deg;
     }
-  }
-
-  @media (hover: hover) {
-    .drawer-toggle:hover :global(.drawer-toggle-icon) {
-      filter: invert(40%) grayscale(100%);
-    }
-  }
-
-  .drawer-toggle:active :global(.drawer-toggle-icon) {
-    filter: invert(0%) grayscale(100%);
   }
 
   /* Sized to roughly match the Color Swatch touch target (60px landscape /
@@ -537,6 +508,7 @@
       background: #f5f5f5;
       border-color: var(--brand);
       box-shadow: 0 4px 12px rgba(171, 113, 225, 0.3);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 30%, transparent);
     }
   }
 
@@ -551,10 +523,11 @@
     border-color: var(--brand);
     background: #ede7f6;
     box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent);
   }
 
   .action-button.active :global(.action-icon:not(.icon-color)) {
-    filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
+    filter: var(--brand-tint-filter);
   }
 
   .action-button:disabled,
@@ -679,12 +652,13 @@
     border-color: var(--brand);
     background: #ede7f6;
     box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent);
   }
 
   /* The selected size reads from the button's purple ring/fill; its line keeps
      the current color (currentColor), so only tint non-color icons here. */
   .stroke-size-button.active :global(.action-icon:not(.icon-color)) {
-    filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%);
+    filter: var(--brand-tint-filter);
   }
 
   /* White brush color is invisible on the white buttons, so ring the brush
