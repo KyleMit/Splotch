@@ -80,6 +80,7 @@ baseline**, and every remaining below-floor risk is already feature-detected and
 | `navigator.vibrate` | `lib/haptics.ts:24` | Android only | ✅ `?.` (native uses Capacitor Haptics) | no haptic feedback |
 | Web Audio `AudioContext` | `lib/audio/drawingSound.ts` | Chrome 35 / Safari 14.1 | ✅ null-returns | silent draw sound |
 | `ResizeObserver` | `lib/components/ColorPalette.svelte:27` | Safari 13.1 | within floor | n/a |
+| Container queries (`container: … / size`, `@container`) | `app.css` (`.app-container`) + `lib/components/ColorPalette.svelte` trim ladders; resizable demos in `routes/components/` | Chrome 105 / Safari 16 / Firefox 110 | within floor | below floor every `@container` rule drops: palette stays in its base 2-column landscape layout with no trims — usable, just untrimmed |
 | Service Worker / PWA | `lib/pwa/updates.ts` | broad; web-only | ✅ `'serviceWorker' in navigator` | no offline cache / update prompt |
 | `navigator.clipboard.writeText` | `lib/components/admin/AdminConsole.svelte:122` | Safari 13.1 | admin-only (not kid-facing) | n/a |
 | File System Access (`showDirectoryPicker` + writable handles) | `lib/drawing/folderSave.ts` | desktop Chromium 86+ only; never Firefox / Safari / mobile | ✅ `folderSaveSupported()` | folder row hidden in Parent Center; web saves stay plain downloads |

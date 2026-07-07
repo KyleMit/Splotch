@@ -59,6 +59,11 @@ body {
   width: 100%;
   height: 100%;
   gap: 0;
+  /* Named size container queried by ColorPalette's trim ladders — the
+     palette's room is this box (viewport minus the safe-area padding below),
+     and the /components catalog stands up a resizable stage with the same
+     container name. See docs/COMPATIBILITY.md for the API entry. */
+  container: splotch-app / size;
   /* viewport-fit=cover lets content reach under the notch/home-indicator, so we
      inset the flow content (palette + canvas) back out of the cutout. The Notch
      Band fills the top inset; the bottom edge stays full-bleed for more canvas

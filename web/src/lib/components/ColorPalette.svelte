@@ -81,10 +81,12 @@
 
   // Each swatch is tagged with its trim rank (0 = first to be hidden) so the
   // style block can drop swatches by priority at each breakpoint. Hiding is
-  // done entirely in CSS media queries — no JS measurement — so the layout is
-  // correct on the prerendered first paint with no resize flash. The palette
-  // always spans the full relevant viewport dimension (height in landscape,
-  // width in portrait), so viewport breakpoints map directly onto its room.
+  // done entirely in CSS container queries against the `splotch-app` container
+  // — no JS measurement — so the layout is correct on the prerendered first
+  // paint with no resize flash. In the app that container is `.app-container`
+  // (the palette's real room: the viewport minus safe-area insets); the
+  // /components catalog stands up a resizable stage with the same container
+  // name, which is why these aren't media queries.
   const trimRank = new Map(TRIM_ORDER.map((hex, i) => [hex, i]));
 </script>
 
@@ -239,13 +241,13 @@
      Below 444px a 3rd swatch would have to go, so we fall back to the roomier
      2-column grid (the default layout) — which fits all 8 again, then trims in
      pairs. */
-  @media (orientation: landscape) and (min-height: 444px) {
+  @container splotch-app (orientation: landscape) and (min-height: 444px) {
     .color-palette {
       grid-template-columns: 1fr;
     }
   }
 
-  @media (orientation: portrait) {
+  @container splotch-app (orientation: portrait) {
     .color-palette {
       display: flex;
       flex-direction: row;
@@ -283,43 +285,43 @@
      padding) plus the always-present gradient. k core swatches + gradient fit
      when width ≥ 63·(k+1) + 12. Bonus colors never appear here (default-hidden,
      and only landscape reveals them). */
-  @media (orientation: portrait) and (max-width: 515.98px) {
+  @container splotch-app (orientation: portrait) and (max-width: 515.98px) {
     /* rank 3: Red    */
     .color-swatch[data-trim-rank='3'] {
       display: none;
     }
   }
-  @media (orientation: portrait) and (max-width: 452.98px) {
+  @container splotch-app (orientation: portrait) and (max-width: 452.98px) {
     /* rank 4: Orange */
     .color-swatch[data-trim-rank='4'] {
       display: none;
     }
   }
-  @media (orientation: portrait) and (max-width: 389.98px) {
+  @container splotch-app (orientation: portrait) and (max-width: 389.98px) {
     /* rank 5: Green  */
     .color-swatch[data-trim-rank='5'] {
       display: none;
     }
   }
-  @media (orientation: portrait) and (max-width: 326.98px) {
+  @container splotch-app (orientation: portrait) and (max-width: 326.98px) {
     /* rank 6: Yellow */
     .color-swatch[data-trim-rank='6'] {
       display: none;
     }
   }
-  @media (orientation: portrait) and (max-width: 263.98px) {
+  @container splotch-app (orientation: portrait) and (max-width: 263.98px) {
     /* rank 7: Blue   */
     .color-swatch[data-trim-rank='7'] {
       display: none;
     }
   }
-  @media (orientation: portrait) and (max-width: 200.98px) {
+  @container splotch-app (orientation: portrait) and (max-width: 200.98px) {
     /* rank 8: Purple */
     .color-swatch[data-trim-rank='8'] {
       display: none;
     }
   }
-  @media (orientation: portrait) and (max-width: 137.98px) {
+  @container splotch-app (orientation: portrait) and (max-width: 137.98px) {
     /* rank 9: Black  */
     .color-swatch[data-trim-rank='9'] {
       display: none;
@@ -330,17 +332,17 @@
      them one at a time as extra vertical room opens up. A single column holds N
      swatches at height ≥ 72·N + 12, and the core fills 8 slots at 588px, so the
      9th/10th/11th slots open at 660/732/804px. */
-  @media (orientation: landscape) and (min-height: 660px) {
+  @container splotch-app (orientation: landscape) and (min-height: 660px) {
     .color-swatch.bonus[data-trim-rank='2'] {
       display: block;
     } /* Pink  */
   }
-  @media (orientation: landscape) and (min-height: 732px) {
+  @container splotch-app (orientation: landscape) and (min-height: 732px) {
     .color-swatch.bonus[data-trim-rank='1'] {
       display: block;
     } /* Teal  */
   }
-  @media (orientation: landscape) and (min-height: 804px) {
+  @container splotch-app (orientation: landscape) and (min-height: 804px) {
     .color-swatch.bonus[data-trim-rank='0'] {
       display: block;
     } /* Brown */
@@ -349,12 +351,12 @@
   /* LANDSCAPE, single column (1 bar) — trim core swatches one at a time by
      priority. Bounded with min-height: 444px so these never fire in the 2-column
      range below (where Red/Orange are visible again at 300–444px). */
-  @media (orientation: landscape) and (min-height: 444px) and (max-height: 587.98px) {
+  @container splotch-app (orientation: landscape) and (min-height: 444px) and (max-height: 587.98px) {
     .color-swatch[data-trim-rank='3'] {
       display: none;
     } /* Red:    < 588px → 7 fit */
   }
-  @media (orientation: landscape) and (min-height: 444px) and (max-height: 515.98px) {
+  @container splotch-app (orientation: landscape) and (min-height: 444px) and (max-height: 515.98px) {
     .color-swatch[data-trim-rank='4'] {
       display: none;
     } /* Orange: < 516px → 6 fit */
@@ -365,28 +367,28 @@
      (= 4 rows × 72 + 12, where all 8 core first overflow two columns), so they
      never touch the single-column range above. n rows fit at height ≥ 72·n + 12.
      Bonus colors stay hidden here (default-hidden, never revealed below 660px). */
-  @media (orientation: landscape) and (max-height: 299.98px) {
+  @container splotch-app (orientation: landscape) and (max-height: 299.98px) {
     /* 4→3 rows: Red, Orange */
     .color-swatch[data-trim-rank='3'],
     .color-swatch[data-trim-rank='4'] {
       display: none;
     }
   }
-  @media (orientation: landscape) and (max-height: 227.98px) {
+  @container splotch-app (orientation: landscape) and (max-height: 227.98px) {
     /* 3→2 rows: Green, Yellow */
     .color-swatch[data-trim-rank='5'],
     .color-swatch[data-trim-rank='6'] {
       display: none;
     }
   }
-  @media (orientation: landscape) and (max-height: 155.98px) {
+  @container splotch-app (orientation: landscape) and (max-height: 155.98px) {
     /* 2→1 rows: Blue, Purple */
     .color-swatch[data-trim-rank='7'],
     .color-swatch[data-trim-rank='8'] {
       display: none;
     }
   }
-  @media (orientation: landscape) and (max-height: 83.98px) {
+  @container splotch-app (orientation: landscape) and (max-height: 83.98px) {
     /* 1→0 rows: Black */
     .color-swatch[data-trim-rank='9'] {
       display: none;
