@@ -30,7 +30,7 @@ Two alternatives were considered when simplifying:
 ## Decision
 
 All automation scripts in `scripts/` are Node `.mjs` files that must run on
-both Windows and macOS. Shared boilerplate lives in three modules under
+Windows, macOS, and Linux. Shared boilerplate lives in three modules under
 `scripts/lib/`, and each script reads imperatively top-to-bottom with only its
 own domain logic inline:
 
@@ -40,9 +40,9 @@ own domain logic inline:
   `hasCommand` (`which`/`where`), `parseFrontmatter`, `writeFileDeep`,
   `compareSemverDesc`, `webOnlyBooks`.
 - `scripts/lib/android.mjs` — per-platform Android SDK resolution:
-  `ANDROID_HOME` (env override, else `%LOCALAPPDATA%\Android\Sdk` /
-  `~/Library/Android/sdk`), `ADB`/`EMULATOR` binary paths, `AVD_NAME`, and the
-  Maestro location.
+  `ANDROID_HOME` (env override — `ANDROID_HOME` or `ANDROID_SDK_ROOT` — else
+  `%LOCALAPPDATA%\Android\Sdk` / `~/Library/Android/sdk` / `~/Android/Sdk`),
+  `ADB`/`EMULATOR` binary paths, `AVD_NAME`, and the Maestro location.
 - `scripts/lib/app-driver.mjs` — Playwright helpers for scripts that drive the
   live app (`store-shots.mjs`, `gen-large-image.mjs`): `ensureDevServer`
   (reuses an already-running server on the port, else spawns
@@ -65,7 +65,7 @@ Non-obvious invariants:
 
 - + Each script now contains only its own job; the ~100-line scripts dropped
   by a third or more, and the two Playwright scripts share one driver.
-- + `android-setup` and `test:android` work on both Windows and macOS, with
+- + `android-setup` and `test:android` work on Windows, macOS, and Linux, with
   per-platform fix instructions when tools are missing.
 - + New scripts get cross-platform process handling for free instead of
   re-discovering the `.cmd`-shim and quoting pitfalls.

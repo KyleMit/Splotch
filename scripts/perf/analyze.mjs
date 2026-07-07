@@ -11,6 +11,7 @@
 
 import { readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const US_PER_MS = 1000;
 
@@ -422,4 +423,4 @@ function main() {
   console.log(`\nWrote ${join(dir, 'summary.json')} and ${join(dir, 'report.md')}`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();

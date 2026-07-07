@@ -109,6 +109,24 @@ describe('resilience to a throwing localStorage', () => {
     }
   });
 
+  it('returns the fallback when getItem throws instead of letting the throw escape', () => {
+    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError');
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      expect(readBool('k', true)).toBe(true);
+      expect(readBool('k', false)).toBe(false);
+      expect(readString('s', 'fallback')).toBe('fallback');
+      expect(readString('s', null)).toBeNull();
+      expect(readInt('n', 7)).toBe(7);
+      expect(readInt('n', 3, [1, 2, 3])).toBe(3);
+    } finally {
+      spy.mockRestore();
+      warn.mockRestore();
+    }
+  });
+
   it('does not let a removeItem throw escape into the caller', () => {
     const spy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
       throw new DOMException('denied', 'SecurityError');

@@ -5,21 +5,21 @@
 
 {#if fullscreen.supported}
   <button
-    class="fullscreen-toggle"
+    class="fullscreen-toggle corner-button"
     aria-label={fullscreen.active ? 'Exit fullscreen' : 'Enter fullscreen'}
     aria-pressed={fullscreen.active}
     onclick={toggleFullscreen}
   >
     <Icon
       name={fullscreen.active ? 'fullscreen-exit' : 'fullscreen'}
-      class="fullscreen-toggle-icon"
+      class="corner-button-icon"
       role="img"
     />
   </button>
 {/if}
 
 <style>
-  /* Subtle, low-opacity gray control in the Parent Help Button idiom. Anchored
+  /* Corner-button chrome comes from .corner-button in app.css. Anchored
      to the top-left of the drawing area (its parent .canvas-container), so it
      clears the Color Palette in both orientations without knowing its size —
      the palette sits above the canvas in portrait and beside it in landscape.
@@ -30,39 +30,6 @@
     left: 8px;
     width: 44px;
     height: 44px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    opacity: 0.4;
-    transition: opacity 0.2s ease;
     z-index: 4;
-    padding: 8px;
-    touch-action: manipulation;
-  }
-
-  @media (hover: hover) {
-    .fullscreen-toggle:hover {
-      opacity: 0.7;
-    }
-  }
-
-  .fullscreen-toggle:active {
-    opacity: 1;
-  }
-
-  :global(.fullscreen-toggle-icon) {
-    width: 100%;
-    height: 100%;
-    filter: invert(60%) grayscale(100%);
-  }
-
-  @media (hover: hover) {
-    .fullscreen-toggle:hover :global(.fullscreen-toggle-icon) {
-      filter: invert(40%) grayscale(100%);
-    }
-  }
-
-  .fullscreen-toggle:active :global(.fullscreen-toggle-icon) {
-    filter: invert(0%) grayscale(100%);
   }
 </style>

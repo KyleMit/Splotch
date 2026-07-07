@@ -553,6 +553,7 @@
     outline: none;
     border-color: var(--brand);
     box-shadow: 0 0 0 3px rgba(171, 113, 225, 0.18);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);
   }
 
   /* The add button shows its "Add code" label by default and collapses to the

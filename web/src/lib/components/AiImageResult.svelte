@@ -314,6 +314,7 @@
     font-size: 15px;
     font-weight: 700;
     box-shadow: 0 4px 12px rgba(171, 113, 225, 0.4);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent);
     transition:
       transform 0.15s ease,
       background 0.2s ease;

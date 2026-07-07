@@ -64,14 +64,15 @@ baseline**, and every remaining below-floor risk is already feature-detected and
 | API / feature | Where | Baseline | Guarded? | Behavior below floor |
 | --- | --- | --- | --- | --- |
 | `PointerEvent` + `setPointerCapture` | `lib/drawing/engine.ts` | Chrome 55 / Safari 13 | core | within floor — core to drawing |
-| `getCoalescedEvents()` | `lib/drawing/engine.ts:455` | not in iOS Safari at all | ✅ `?.() ?? [e]` | one sample per move; fast scribbles a touch less smooth |
-| `color-mix(in srgb …)` | `lib/components/ColorPicker.svelte:415` | Chrome 111 / Safari 16.2 | ❌ none | **within floor**; below it the selected-swatch darken is dropped (cascades to plain bg) |
+| `getCoalescedEvents()` | `lib/drawing/engine.ts:651` | not in iOS Safari at all | ✅ `?.() ?? [e]` | one sample per move; fast scribbles a touch less smooth |
+| `color-mix(in srgb …)` | `lib/components/ColorPicker.svelte:427`; brand-tinted `box-shadow`s in ActionsPanel, ColoringBook, AiImagePrompt, AiImageResult, AdminConsole | Chrome 111 / Safari 16.2 | shadows ✅ plain-rgba declaration precedes each; picker ❌ none | **within floor**; below it shadows fall back to the rgba line, and the selected-swatch darken is dropped (cascades to plain bg) |
 | `100dvh` unit | `app.css:61` | Safari 15.4 | ✅ `100vh` precedes it | falls back to `100vh` |
 | `backdrop-filter` | `app.css:88` | Safari 9 (`-webkit-`) | ✅ prefixed | no blur; dim still applies |
 | `aspect-ratio` | `app.css:221` | Safari 15 | within floor | n/a |
 | `env(safe-area-inset-*)` | `app.css:52` | Safari 11 | within floor | resolves to 0 |
 | `crypto.subtle` (AES-GCM) | `lib/secureStorage.ts` | Chrome 37 / Safari 11 | secure-context only | within floor |
 | `navigator.storage.persist` | `lib/secureStorage.ts:154` | Chrome 55 / Safari 15.2 | ✅ `?.` + web-only | best-effort persistence skipped |
+| `localStorage` | `lib/storage.ts`; `app.html:62` boot script | universal, but *accessing the global* throws under "block all cookies" / sandboxed iframes / locked-down WebViews | ✅ try/catch on every read & write | settings neither load nor persist — defaults every visit; app still boots |
 | Wake Lock | `routes/+page.svelte:56` | Chrome 84 / Safari 16.4 | ✅ feature-detected | screen may sleep mid-draw |
 | `Element.requestFullscreen` (immersive) | `lib/state/fullscreen.svelte.ts` | Chrome 71 / Safari 16.4 (macOS); no element fullscreen on iOS Safari | ✅ `document.fullscreenEnabled` + Android-only | Fullscreen Toggle hidden; URL bar stays (iOS Safari, desktop deliberately excluded) |
 | Screen Orientation lock | `lib/orientation.ts:48` | varies | ✅ `?.` (native uses Capacitor plugin) | no orientation lock |

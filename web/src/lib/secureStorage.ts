@@ -47,15 +47,39 @@ const getDb = lazyIdbDatabase(DB_NAME, STORE, DB_VERSION);
 // Get (or lazily create) the persistent, non-extractable master key. Because it
 // can never be exported, code that reads IndexedDB can't lift the raw bytes out —
 // it can only ask the browser to decrypt, within this origin.
-async function getMasterKey(db: import('idb').IDBPDatabase): Promise<CryptoKey> {
+//
+// Creation must never lose a race: a second writer overwriting the row with a
+// different key would make anything encrypted with the first key permanently
+// undecryptable. In-tab, the memoized promise makes concurrent callers share
+// one key (cleared on rejection so a transient IDB failure doesn't poison
+// future calls). Cross-tab, the re-check-then-put runs inside one readwrite
+// transaction, so a tab that loses the race adopts the winner's key.
+let masterKeyPromise: Promise<CryptoKey> | null = null;
+
+function getMasterKey(db: import('idb').IDBPDatabase): Promise<CryptoKey> {
+  masterKeyPromise ??= loadOrCreateMasterKey(db).catch((err) => {
+    masterKeyPromise = null;
+    throw err;
+  });
+  return masterKeyPromise;
+}
+
+async function loadOrCreateMasterKey(db: import('idb').IDBPDatabase): Promise<CryptoKey> {
   const existing = await db.get(STORE, MASTER_KEY_ROW);
   if (existing) return existing;
-  const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, [
+  // Generated *before* the transaction: an IDB transaction auto-commits once
+  // control returns to the event loop with no pending requests, so awaiting
+  // crypto.subtle.generateKey inside it would leave the transaction closed by
+  // the time the put runs.
+  const fresh = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, [
     'encrypt',
     'decrypt',
   ]);
-  await db.put(STORE, key, MASTER_KEY_ROW);
-  return key;
+  const tx = db.transaction(STORE, 'readwrite');
+  const winner = await tx.store.get(MASTER_KEY_ROW);
+  if (!winner) await tx.store.put(fresh, MASTER_KEY_ROW);
+  await tx.done;
+  return winner ?? fresh;
 }
 
 async function webSave(name: string, value: string) {

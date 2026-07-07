@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { isNative, isStandalone } from '$lib/platform';
+import { isAndroidBrowser, isNative, isStandalone } from '$lib/platform';
 
 // Splotch fills the screen with a non-scrolling canvas, so a mobile browser's
 // URL bar never gets the downward scroll that would normally minimize it and
@@ -25,7 +25,7 @@ import { isNative, isStandalone } from '$lib/platform';
 function fullscreenSupported(): boolean {
   if (!browser || isNative() || isStandalone()) return false;
   if (!document.fullscreenEnabled) return false;
-  return /android/i.test(navigator.userAgent || '');
+  return isAndroidBrowser();
 }
 
 export const fullscreen = $state({
