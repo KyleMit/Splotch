@@ -140,9 +140,12 @@ finger recordings) showed why:
 **Simplify each command's stored ops once, at commit (off the draw frame), with
 Ramer–Douglas–Peucker — and keep ADR-0035 keyframing only as a bounded safety
 net.** Live rendering is untouched (the user still sees every sample); only the
-replay copy is thinned. In `web/src/lib/drawing/engine.ts`:
+replay copy is thinned. In `web/src/lib/drawing/commandSimplify.ts` (the
+command-level orchestration, extracted from `engine.ts`; the per-run geometry
+stays in `strokeSimplify.ts`):
 
-- `simplifyCommand(cmd)` runs in `pushCommand`, *before* `maybeKeyframe`. It
+- `simplifyCommandOps(ops)` runs in `undoHistory.pushCommand`, *before*
+  `maybeKeyframe`. It
   regroups the command's interleaved per-frame path ops **by pointer id** (a
   multi-touch command's fingers interleave in the op list), then splits each
   finger's ops into spatially-continuous, same-style sub-runs — a pointer-resume

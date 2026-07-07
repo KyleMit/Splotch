@@ -14,7 +14,7 @@ Options considered:
 
 ## Decision
 
-The drawing engine (`src/lib/drawing/engine.ts`) is a **module-singleton** of mutable imperative state. Components call `initDrawingCanvas(canvas, options)` on mount, then imperatively call `setColor()`, `setStrokeWidth()`, `undo()`, `clearCanvas()`, and `exportCanvas()`. The engine signals state changes back to Svelte via typed callbacks (`onDrawSound`, `onUndoStateChange`, `onCanvasEmptyChange`). These callbacks are wired into thin `$state` bridging objects in `state/canvas.svelte.ts`.
+The drawing engine (`src/lib/drawing/engine.ts`) is a **module-singleton** of mutable imperative state. Components call `initDrawingCanvas(canvas, options)` on mount, then imperatively call `setColor()`, `setStrokeWidth()`, `undo()`, `clearCanvas()`, and `exportCanvasBlob()`. The engine signals state changes back to Svelte via typed callbacks (`onDrawSound`, `onUndoStateChange`, `onCanvasEmptyChange`). These callbacks are wired into thin `$state` bridging objects in `state/canvas.svelte.ts`. (The engine has since been split into focused sibling modules — `undoHistory.ts`, `strokeOps.ts`, `commandSimplify.ts`, `exportDrawing.ts` — that are module-singletons in the same way; `engine.ts` remains the facade components import, and this decision is unaffected.)
 
 The virtual canvas (a second off-screen canvas, 2× the viewport dimension) was used as a composite buffer so that drawing content survives viewport resize and orientation change without loss. **Superseded by ADR-0034:** the virtual canvas is removed — the ADR-0033 baseline + command log already retain off-screen content, so resize now rebuilds the visible canvas by replaying them instead of mirroring every stroke into a second surface.
 
