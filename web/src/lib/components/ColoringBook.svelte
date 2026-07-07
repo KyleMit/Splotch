@@ -234,7 +234,7 @@
 
   .coloring-grid {
     display: grid;
-    gap: 12px;
+    gap: 16px;
   }
 
   .coloring-books-grid {
@@ -251,9 +251,10 @@
 
   .coloring-tile {
     position: relative;
-    background: #f8f8f8;
-    border: 2px solid #e0e0e0;
-    border-radius: 12px;
+    background: #fffdf8;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    box-shadow: 0 2px 10px rgba(93, 84, 68, 0.14);
     cursor: pointer;
     overflow: hidden;
     padding: 0;
@@ -331,11 +332,11 @@
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 6px 8px;
-    background: rgba(255, 255, 255, 0.92);
-    font-size: 14px;
-    font-weight: 600;
-    color: #555;
+    padding: 7px 8px;
+    background: rgba(255, 253, 248, 0.94);
+    font-size: 15px;
+    font-weight: 700;
+    color: #4d4457;
     text-align: center;
   }
 </style>
