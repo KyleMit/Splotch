@@ -92,12 +92,18 @@ baseline path required (ADR-0034).
   rebuild is bounded to the ops *after* the most recent keyframe (≤ a few short
   commands), not the whole session.
 - **+** Memory stays at ADR-0033 levels for the common case (no keyframes); only
-  long commands allocate a square raster, bounded by the ≤10 retained commands —
-  strictly better than the old snapshot-every-command stack.
+  long commands allocate a square raster, and concurrent keyframe rasters are
+  hard-capped at `MAX_KEYFRAMES` (1) — creating a new keyframe folds any older
+  keyframed history through the baseline (`capKeyframeMemory` →
+  `foldOldestIntoBaseline`), so worst-case retained keyframe memory is one square
+  raster, not the ≤10 (~300 MB tablet) a full pathological stack would pin.
 - **−** A long command pays a one-time keyframe build (a replay onto a square) at
   commit, off the draw frame, instrumented via the new `engine.keyframe` mark.
 - **−** One more conditional 4×-DPR surface per long command for as long as it is
-  retained (dropped when it folds into the baseline).
+  retained (dropped when it folds into the baseline). The `MAX_KEYFRAMES` cap
+  trades undo depth past a folded keyframe for that memory ceiling — an
+  all-pathological stream collapses to ~one undoable command, accepted because
+  keyframes fire only for genuine outliers so real sessions never fold.
 
 Amends the `undo()` cost model and the deferred-keyframe note in **ADR-0033**;
 builds on the baseline + rebuild-on-resize machinery of **ADR-0033**/**ADR-0034**

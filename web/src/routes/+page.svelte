@@ -22,6 +22,7 @@
   import { isNative } from '$lib/platform';
   import { applyDeviceOrientationPreference } from '$lib/orientation';
   import { initFullscreen } from '$lib/state/fullscreen.svelte';
+  import { scheduleIdle } from '$lib/idle';
 
   $effect(() => {
     settings.lockRotationEnabled;
@@ -33,8 +34,7 @@
   // so the ~470 ms first-load hydration long task doesn't pay for subtrees that
   // are invisible until a tap or a few strokes later. One overlay per idle
   // callback: mounting them all at once just relocates a long task to idle,
-  // where it would jank a stroke already in progress. iOS lacks
-  // requestIdleCallback (below the floor), so fall back to a short timeout.
+  // where it would jank a stroke already in progress.
   let overlays = $state<Component[]>([]);
 
   // The Parent Center dialog is the one overlay too heavy even for an idle
@@ -49,12 +49,11 @@
   });
 
   onMount(() => {
+    // The cancel handle scheduleIdle returns can't reach the async import().then
+    // continuation below, so a `stopped` flag guards the recursive mount from
+    // running after unmount.
     let stopped = false;
-    const schedule = (fn: () => void) => {
-      if (typeof requestIdleCallback === 'function') requestIdleCallback(fn);
-      else setTimeout(fn, 200);
-    };
-    schedule(() => {
+    scheduleIdle(() => {
       import('$lib/components/bootHiddenOverlays').then((module) => {
         ParentCenter = module.ParentCenter;
         const queue = [
@@ -67,7 +66,7 @@
         const mountNext = () => {
           if (stopped) return;
           overlays = [...overlays, queue[overlays.length]];
-          if (overlays.length < queue.length) schedule(mountNext);
+          if (overlays.length < queue.length) scheduleIdle(mountNext);
         };
         mountNext();
       });

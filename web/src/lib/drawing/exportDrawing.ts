@@ -3,6 +3,7 @@
 // coloring-page overlay on top — the same stack the child sees on screen.
 
 import { replayAll } from './undoHistory';
+import { scheduleIdle } from '../idle';
 
 export interface ExportOptions {
   includePaperTexture?: boolean;
@@ -35,14 +36,9 @@ function loadPaperTexture(): Promise<HTMLImageElement | null> {
 }
 
 // Warm the paper texture off the critical path so the fetch + decode (~226ms)
-// doesn't stall the first export. Safari lacks requestIdleCallback.
+// doesn't stall the first export.
 export function warmPaperTextureWhenIdle() {
-  const warm = () => void loadPaperTexture();
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(warm);
-  } else {
-    setTimeout(warm, 0);
-  }
+  scheduleIdle(() => void loadPaperTexture());
 }
 
 // Rebuild the strokes in PAPER space (baseline + log + any in-flight stroke)
