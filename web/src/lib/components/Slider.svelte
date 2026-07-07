@@ -101,6 +101,8 @@
   }
 
   function removeWindowListeners() {
+    // onDestroy also runs after server-side rendering, where there's no window.
+    if (typeof window === 'undefined') return;
     window.removeEventListener('pointermove', onPointerMove);
     window.removeEventListener('pointerup', onPointerUp);
     window.removeEventListener('pointercancel', onPointerUp);

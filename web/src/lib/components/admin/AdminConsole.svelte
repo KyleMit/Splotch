@@ -328,6 +328,13 @@
         {/if}
       </section>
     {/if}
+
+    <footer class="admin-footer">
+      <a href="/components">
+        <Icon name="dashboard-customize" class="footer-icon" />
+        Component catalog
+      </a>
+    </footer>
   </main>
 
   <dialog
@@ -807,6 +814,40 @@
   .more-menu-item:disabled {
     opacity: 0.6;
     cursor: default;
+  }
+
+  /* Developer link to the /components catalog route. */
+  .admin-footer {
+    margin-top: 32px;
+    text-align: center;
+  }
+
+  .admin-footer a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    color: #999;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  @media (hover: hover) {
+    .admin-footer a:hover {
+      color: #7c4dcf;
+      background: #f0e9fb;
+    }
+  }
+
+  :global(.admin-footer .footer-icon) {
+    width: 16px;
+    height: 16px;
+    filter: invert(63%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(95%) contrast(85%);
   }
 
   /* Empty state */

@@ -108,6 +108,7 @@ queries + the head-script stamp in `app.html`).
 | `/admin` | SSR | Token management console (`prerender = false` — cookie-authenticated form actions). Not bundled for native. |
 | `/admin/native` | SSG | Static, prerendered variant of the console for the native apps; manages the same tokens through `/api/admin/*`. |
 | `/privacy` | SSG | Static privacy policy page. |
+| `/components` | SSG | Developer catalog of every UI component (linked from the `/admin` footer): live demos following the UI Elements glossary below, the full icon set split into spot-color vs monochrome, and generated Drawing Canvas screenshots (`npm run gen:component-shots`). |
 | `/dev/engine` | SSR | Drawing engine test harness — blank canvas with debug controls. `prerender = false`; unlocked by `PUBLIC_ENABLE_DEV_HARNESS=true`. |
 | `/dev/ai-timer` | SSR | AI generation timer — exercises the full round-trip with timing display. `prerender = false`; used by Playwright E2E specs. Unlocked by `PUBLIC_ENABLE_DEV_HARNESS=true`. |
 
