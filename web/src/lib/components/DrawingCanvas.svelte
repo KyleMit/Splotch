@@ -27,7 +27,6 @@
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
   import { isNative } from '$lib/platform';
   import FullscreenToggle from './FullscreenToggle.svelte';
-  import Icon from './Icon.svelte';
 
   let canvasEl: HTMLCanvasElement;
 
@@ -217,11 +216,6 @@
   const paperCssHeight = $derived(
     paperView.paperCssHeight ? `${paperView.paperCssHeight}px` : '100%'
   );
-
-  // A blank page can read as "nothing here" to a toddler; Splotchy bobbing in
-  // the middle of the paper is the invitation to draw. Fades out on the first
-  // stroke and stays out while a coloring page occupies the paper.
-  const inviteVisible = $derived(canvasState.canvasEmpty && !coloringBookState.overlayUrl);
 </script>
 
 <div class="canvas-container">
@@ -255,9 +249,6 @@
       alt=""
       hidden={!coloringBookState.overlayUrl}
     />
-  </div>
-  <div class="draw-invite" class:invite-hidden={!inviteVisible} aria-hidden="true">
-    <Icon name="splotchy" class="draw-invite-icon" />
   </div>
   <canvas
     bind:this={canvasEl}
@@ -308,46 +299,6 @@
 
   .paper-sheet.paper-lifted {
     box-shadow: 0 2px 14px rgba(93, 84, 68, 0.18);
-  }
-
-  /* Sits between the paper sheet (z 0) and the transparent canvas (z 1), so
-     strokes always paint over it — though it's already fading by then. */
-  .draw-invite {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.4;
-    transition: opacity 0.5s ease;
-  }
-
-  .draw-invite.invite-hidden {
-    opacity: 0;
-  }
-
-  :global(.draw-invite-icon) {
-    width: clamp(90px, 16vmin, 150px);
-    height: clamp(90px, 16vmin, 150px);
-    animation: inviteBob 3.5s ease-in-out infinite;
-  }
-
-  @keyframes inviteBob {
-    0%,
-    100% {
-      transform: translateY(0) rotate(-4deg);
-    }
-    50% {
-      transform: translateY(-8px) rotate(4deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    :global(.draw-invite-icon) {
-      animation: none;
-    }
   }
 
   #drawingCanvas {
