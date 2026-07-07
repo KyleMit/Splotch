@@ -829,14 +829,13 @@ export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?
 
 export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
   canvas = canvasElement;
-  // desynchronized decouples this canvas from the compositor's frame cadence — a
-  // Chromium-only low-latency hint (ignored elsewhere as an unknown option) that
-  // cuts finger-to-ink lag on Android, the platform where it's most visible
-  // (ADR-0051). Safe here because the two paths that read pixels back never touch
-  // this GPU canvas directly: exports rebuild from the undo log (exportDrawing),
-  // and the post-erase blank check draws onto a separate scratch canvas before
-  // reading (emptyScan) — that drawImage still resolves the latest ink.
-  ctx = canvas.getContext('2d', { desynchronized: true })!;
+  // NB: no `desynchronized: true` here. It was tried for lower Android ink
+  // latency and rejected — a desynchronized 2D canvas is promoted to a hardware
+  // overlay that does not alpha-composite with content below it, so this
+  // deliberately transparent canvas (the paper sheet + coloring overlay render
+  // beneath it, ADR-0050) rendered as opaque black on the Android WebView. See
+  // ADR-0051.
+  ctx = canvas.getContext('2d')!;
 
   // The magic brush's color sheet lives in paper coordinates (like every op) and
   // repaints recorded magic ops once an async twin finishes decoding (ADR-0043).
