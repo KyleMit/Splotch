@@ -15,8 +15,8 @@ skills point at this file on purpose.
 | **dependency-audit** | `/dependency-audit` | Out-of-date dependencies, upgraded one at a time with a migration guide | one commit per package |
 | **workflow-audit** | `/workflow-audit` | Claude Code config + session-history review vs. current best practice | dated `docs/claude-workflow-review-YYYY-MM-DD.md` |
 
-**Consumers** of `docs/AUDIT.md` (not audits themselves): `/fix-next-audit` clears the
-whole list autonomously on its own branch + PR; `/review-audit` validates the list
+**Consumers** of `docs/AUDIT.md` (not audits themselves): `/fix-audits` clears the
+whole list autonomously on its own branch + PR; `/vet-audits` validates the list
 against the current code and prunes stale items.
 
 ## Shared conventions
@@ -37,7 +37,7 @@ audits (and repeat runs of the same audit) share that file, so **merge**:
 - **An item that's since been fixed** → remove it (confirm against the code first).
 - Never clobber another audit's section or replace the file wholesale.
 
-Canonical item format (so `/fix-next-audit` and `/review-audit` can work items one
+Canonical item format (so `/fix-audits` and `/vet-audits` can work items one
 at a time):
 
 ```markdown
@@ -51,7 +51,7 @@ The `docs/AUDIT.md` header (create it if the file doesn't exist yet):
 # Audit
 
 > Findings from Splotch's audit skills (`.claude/audit-conventions.md`).
-> Clear the whole list autonomously with `/fix-next-audit`; validate it with `/review-audit`.
+> Clear the whole list autonomously with `/fix-audits`; validate it with `/vet-audits`.
 > Skills **merge** into this file — they never overwrite each other's sections.
 ```
 
