@@ -70,6 +70,29 @@
     closeColoringBook();
   }
 
+  // A tile that merely *appears* under a stationary pointer/finger — on open, or
+  // when the grid swaps as a book is picked/backed out of — must not read as
+  // selected. `:hover` alone fires the moment the tile renders beneath the
+  // pointer (and sticks after a tap on hover-capable touch/hybrid devices), so
+  // we gate the hover chrome behind a real mouse move: freshly shown views start
+  // unarmed, and only a `mouse` pointermove arms them.
+  let hoverArmed = $state(false);
+  function armHoverOnMouseMove(node: HTMLElement) {
+    function onMove(e: PointerEvent) {
+      if (e.pointerType === 'mouse') hoverArmed = true;
+    }
+    node.addEventListener('pointermove', onMove);
+    return { destroy: () => node.removeEventListener('pointermove', onMove) };
+  }
+  function selectBook(book: Book) {
+    activeBook = book;
+    hoverArmed = false;
+  }
+  function goToBooks() {
+    activeBook = null;
+    hoverArmed = false;
+  }
+
   const overlayActive = $derived(!!coloringBookState.overlayUrl);
 </script>
 
@@ -80,11 +103,11 @@
     open: ui.coloringBookOpen,
     origin: ui.coloringBookOrigin,
     onRequestClose: closeColoringBook,
-    onOpen: () => (activeBook = null),
-    onClose: () => (activeBook = null),
+    onOpen: goToBooks,
+    onClose: goToBooks,
   })}
 >
-  <div class="coloring-book-content">
+  <div class="coloring-book-content" class:hover-armed={hoverArmed} use:armHoverOnMouseMove>
     <button
       class="coloring-book-close modal-close-btn"
       aria-label="Close"
@@ -113,7 +136,7 @@
               class="coloring-tile coloring-book-tile"
               type="button"
               aria-label="{book.name} coloring book"
-              onclick={() => (activeBook = book)}
+              onclick={() => selectBook(book)}
               onpointerenter={() => prefetchBookPages(book)}
               onpointerdown={() => prefetchBookPages(book)}
             >
@@ -126,11 +149,7 @@
     {:else}
       <div class="coloring-book-view">
         <div class="coloring-book-header">
-          <button
-            class="coloring-back-button"
-            aria-label="Back"
-            onclick={() => (activeBook = null)}
-          >
+          <button class="coloring-back-button" aria-label="Back" onclick={goToBooks}>
             <Icon name="chevron-left" class="coloring-back-icon" />
           </button>
           <h2>{activeBook.name}</h2>
@@ -216,11 +235,11 @@
   }
 
   @media (hover: hover) {
-    .coloring-back-button:hover {
+    .hover-armed .coloring-back-button:hover {
       background: #ede7f6;
     }
 
-    .coloring-back-button:hover :global(.coloring-back-icon) {
+    .hover-armed .coloring-back-button:hover :global(.coloring-back-icon) {
       filter: var(--brand-tint-filter);
     }
   }
@@ -260,7 +279,7 @@
   }
 
   @media (hover: hover) {
-    .coloring-tile:hover {
+    .hover-armed .coloring-tile:hover {
       border-color: var(--brand);
       background: #f5f0ff;
       transform: translateY(-2px);
