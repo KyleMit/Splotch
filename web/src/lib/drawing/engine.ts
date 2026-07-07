@@ -1397,7 +1397,18 @@ export function clearCanvas() {
   // undoing it replays the strokes that preceded it back from the baseline.
   pushCommand({ ops: [{ kind: 'clear' }], wasEmpty: canvasEmpty });
   clearAllOf(ctx);
-  setCanvasEmptyState(true);
+  // A stroke can straddle the clear (e.g. a second finger drawing while
+  // drag-to-clear completes). Its command commits *after* the clear command on
+  // lift, so its pre-clear ops must be dropped here or every rebuild would
+  // replay them on top of the clear, resurrecting wiped ink. Don't commit the
+  // command instead: commitActiveCommand fires onStrokeEnd, which promises
+  // consumers no mid-stroke DOM work. The continuing stroke counts as content
+  // (same as beginRender), so the empty flag only flips when no stroke is live.
+  if (activeCommand) {
+    activeCommand.ops.length = 0;
+    activeCommand.wasEmpty = true;
+  }
+  setCanvasEmptyState(activeCommand === null);
   // A cleared canvas releases the held rainbow so the next magic use picks a fresh
   // one; if the brush is still selected, lock the new one in right away.
   clearMagicGradient();

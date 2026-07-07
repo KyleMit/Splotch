@@ -119,6 +119,51 @@ test('clearing the canvas is itself undoable', async ({ page }) => {
   expect((await state(page)).canvasEmpty).toBe(false);
 });
 
+test('a clear during an in-flight stroke does not resurrect the wiped ink on rebuild', async ({
+  page,
+}) => {
+  // Reachable in the app: drag-to-clear releases pointers at drag *start* but
+  // fires onClear at drag *end*, so a second finger can be mid-stroke when the
+  // clear lands. The stroke's pre-clear ops must not survive into the command
+  // that commits after the clear, or every rebuild (undo/resize/export) would
+  // replay clear-then-stroke and repaint ink the user saw erased.
+  const box = await page.locator('#engineCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+
+  // Stroke along the top edge, held down...
+  await page.mouse.move(box.x + 40, box.y + 40);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 120, box.y + 40);
+
+  // ...clear fires mid-gesture and wipes it...
+  await page.evaluate(() => window.__engine.clearCanvas());
+  expect(await count(page)).toBe(0);
+
+  // ...and the same stroke continues elsewhere before lifting.
+  await page.mouse.move(box.x + 200, box.y + 200);
+  await page.mouse.move(box.x + 260, box.y + 200);
+  await page.mouse.up();
+
+  expect(await count(page)).toBeGreaterThan(0);
+  expect((await state(page)).canvasEmpty).toBe(false); // post-clear ink counts as content
+
+  // Undoing a later stroke replays clear + the straddling stroke from the log.
+  await drawStroke(page, box, [
+    { x: 200, y: 260 },
+    { x: 260, y: 260 },
+  ]);
+  await page.evaluate(() => window.__engine.undo());
+
+  const preClearPixel = await page.evaluate(() => window.__engine.pixelAt(60, 40));
+  expect(preClearPixel[3]).toBe(0); // the wiped top-edge ink stayed gone
+  expect(await count(page)).toBeGreaterThan(0); // the post-clear segment survived
+
+  // Undoing the straddling stroke lands back on the cleared (empty) canvas.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+  expect((await state(page)).canvasEmpty).toBe(true);
+});
+
 test('the eraser removes pixels and re-scans empty on stroke end', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
