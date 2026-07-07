@@ -130,11 +130,104 @@ function paintGradient(g: CanvasRenderingContext2D, w: number, h: number, spec: 
   g.fillRect(0, 0, w, h);
 }
 
+// A contain-fit twin drawn at box (ox,oy,dw,dh) inside a W×H sheet leaves
+// transparent letterbox margins on ONE axis only (the fitted dimension fills), so
+// at most one opposite pair of margins is non-empty and corners never need filling.
+// `edgeMargins` returns, per non-empty margin, the source row/column to sample and
+// the destination rectangle to fill it into — everything `extendSheetEdges` needs,
+// as pure geometry so the letterbox math is unit-testable without a real canvas.
+//
+// Each source is taken a hair INSIDE the picture (`inset`), not on the literal
+// border: a coloring page can carry an outline right at its edge, and sampling the
+// 1px border would smear that black line across the whole margin. One row/column
+// inside lands on the flat fill behind the outline, so the margin extends the
+// picture's colour (sky stays blue) with no line streak.
+export interface EdgeFill {
+  /** Source rect in the sheet to sample (a 1px-thin edge strip). */
+  sx: number;
+  sy: number;
+  sw: number;
+  sh: number;
+  /** Destination rect in the sheet to stretch that strip across. */
+  dx: number;
+  dy: number;
+  dw: number;
+  dh: number;
+}
+
+export function edgeMargins(
+  W: number,
+  H: number,
+  ox: number,
+  oy: number,
+  bw: number,
+  bh: number
+): EdgeFill[] {
+  const top = Math.round(oy);
+  const left = Math.round(ox);
+  const bottom = Math.round(oy + bh);
+  const right = Math.round(ox + bw);
+  const bottomMargin = H - bottom;
+  const rightMargin = W - right;
+  const inset = Math.max(1, Math.round(Math.min(bw, bh) * 0.02));
+  const fills: EdgeFill[] = [];
+  // Stretch a single edge row/column outward, preserving along-edge colour
+  // variation (in landscape the left edge is sky at top, grass at bottom, and the
+  // stretched column keeps that gradient — a flat per-edge average would not).
+  if (top > 0)
+    fills.push({ sx: ox, sy: oy + inset, sw: bw, sh: 1, dx: ox, dy: 0, dw: bw, dh: top });
+  if (bottomMargin > 0)
+    fills.push({
+      sx: ox,
+      sy: bottom - 1 - inset,
+      sw: bw,
+      sh: 1,
+      dx: ox,
+      dy: bottom,
+      dw: bw,
+      dh: bottomMargin,
+    });
+  if (left > 0)
+    fills.push({ sx: ox + inset, sy: oy, sw: 1, sh: bh, dx: 0, dy: oy, dw: left, dh: bh });
+  if (rightMargin > 0)
+    fills.push({
+      sx: right - 1 - inset,
+      sy: oy,
+      sw: 1,
+      sh: bh,
+      dx: right,
+      dy: oy,
+      dw: rightMargin,
+      dh: bh,
+    });
+  return fills;
+}
+
+// Fill the transparent letterbox margins of a contain-fit twin by extending its
+// edge colours outward, so a stroke in the margin reveals the colour of the nearest
+// picture edge instead of nothing — the child paints across the whole canvas with no
+// hard seam (fixes ADR-0043's "painting in the letterbox reveals nothing" edge).
+function extendSheetEdges(
+  g: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  ox: number,
+  oy: number,
+  bw: number,
+  bh: number
+) {
+  if (!sheetCanvas) return;
+  for (const f of edgeMargins(W, H, ox, oy, bw, bh)) {
+    g.drawImage(sheetCanvas, f.sx, f.sy, f.sw, f.sh, f.dx, f.dy, f.dw, f.dh);
+  }
+}
+
 // Rasterize the active source into a paper-sized sheet and refresh the pattern
 // cache. The twin is drawn contain-fit within the paper (matching where the
-// overlay <img> paints — the overlay is positioned against the same paper); the
-// gradient fills the whole sheet. Re-run on load and on every resize (the paper
-// may have been re-adopted).
+// overlay <img> paints — the overlay is positioned against the same paper), then
+// its edge colours are extended into the letterbox margins so the brush can paint
+// the whole canvas; the gradient fills the whole sheet. Re-run on load and on
+// every resize (the paper may have been re-adopted).
 export function rasterizeSheet() {
   sheetReady = false;
   patternCache = new WeakMap();
@@ -162,6 +255,7 @@ export function rasterizeSheet() {
     const ox = (paper.width - dw) / 2;
     const oy = (paper.height - dh) / 2;
     sheetCtx.drawImage(drawable, ox, oy, dw, dh);
+    extendSheetEdges(sheetCtx, sheetCanvas.width, sheetCanvas.height, ox, oy, dw, dh);
   } else {
     paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, activeGradient!);
   }
