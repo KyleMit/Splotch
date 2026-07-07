@@ -52,8 +52,9 @@ keyframe-vs-snapshot comparison.
   long task. Its `mount-summary.json` long-task list is the TBT signal; feed
   its `trace.json` to `perf:analyze` for the breakdown.
 - **Engine marks** are the clean signal. `PERF_MARKS=true` at build time turns on
-  `performance.mark/measure` around the engine's hot paths (engine.ts:
-  `draw`, `commit`, `foldBaseline`, `scanCanvasIsEmpty`, `resizeCanvas`, `undo`). The
+  `performance.mark/measure` around the engine's hot paths (`lib/drawing/` —
+  `draw`, `commit`, `foldBaseline`, `scanCanvasIsEmpty`, `resizeCanvas`, `undo`;
+  gated by the shared `perf.ts` flag across `engine.ts` and its sibling modules). The
   `npm run perf:*` scripts set it; normal builds strip the marks entirely. If the
   report says "_No engine.* marks_", the build wasn't a `PERF_MARKS` build.
 - **Headless + CPU throttle approximates a phone** — good for finding hotspots and
@@ -78,7 +79,7 @@ Read in this order:
    | --- | --- | --- |
    | `engine.draw` high **Avg/Max** | per-pointermove stroking (coalesced replay + quadratic segments) | `strokeSmoothSegments` / `draw` in `web/src/lib/drawing/engine.ts`. A high *Max* (vs Avg) = a few heavy frames, often the first move after a resize. |
    | `engine.commit` high | finalizing a stroke group into the undo log (push, fold check, keyframe check) | should be cheap — recording ops, not copying pixels (ADR-0033). |
-   | `engine.keyframe` high | collapsing a long command into a cumulative raster (`paintStateThrough`) at commit | fires only for a scribble past `OP_KEYFRAME_THRESHOLD`; a one-off replay at stroke end, off the draw frame (ADR-0035). Stops `engine.undo`/`engine.resize` from replaying thousands of ops. |
+   | `engine.keyframe` high | collapsing a long command into a cumulative raster (`paintStateThrough`) at commit | fires only for a scribble past `keyframeSegmentThreshold` (`undoHistory.ts`); a one-off replay at stroke end, off the draw frame (ADR-0035). Stops `engine.undo`/`engine.resize` from replaying thousands of ops. |
    | `engine.foldBaseline` high | folding the oldest command into the baseline once the log passes the cap | a keyframed command blits onto the baseline; otherwise one stroke render per commit past `MAX_UNDO_STACK_SIZE`; runs at stroke end, off the draw frame. |
    | `engine.scanEmpty` high | `getImageData` readback after an **eraser** stroke | `scanCanvasIsEmpty`; already downscaled 0.25×. Costlier on real devices (GPU→CPU readback). |
    | `engine.resize` high/frequent | backing-store rebuild + baseline/command-log replay, blitting keyframes (ADR-0034/0035) | should fire only on resize/rotation — if it fires mid-draw, that's the bug. |

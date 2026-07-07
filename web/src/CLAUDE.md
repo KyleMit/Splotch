@@ -2,7 +2,7 @@
 
 Where things live (full file-by-file map: `architecture` skill):
 
-* `lib/drawing/` — imperative canvas engine. `engine.ts` owns the canvas, undo stack, and pointer tracking; callbacks out, direct function calls in (ADR-0004).
+* `lib/drawing/` — imperative canvas engine. `engine.ts` is the facade + orchestrator (canvas, pointer tracking, public API; callbacks out, direct function calls in — ADR-0004); ops/undo/simplification/export live in sibling modules (`strokeOps`, `undoHistory`, `commandSimplify`, `exportDrawing` — map in the `architecture` skill).
 * `lib/state/` — all shared state, as Svelte 5 rune modules (`*.svelte.ts`).
 * `lib/components/` — UI components with scoped styles.
 * `lib/actions/` — Svelte actions for gestures and dialog wiring.
