@@ -24,8 +24,9 @@ Process items **top to bottom** (they're ordered by impact). For each item:
    work in this order:
 
    1. **Validate the problem first — empirically where possible.** Before changing anything,
-      confirm the finding is real against the *current* code: reproduce it (a failing test, a
-      profile capture, a log line, a query — whatever the item's category admits) rather than
+      confirm the finding is real against the *current* code: run the finding's
+      `#### Verification` steps if it has them, otherwise reproduce it yourself (a failing test,
+      a profile capture, a log line, a query — whatever the item's category admits) rather than
       trusting the write-up. If the problem no longer holds, is intentional, or can't be
       reproduced, that's a **Skip** carrying the evidence.
    2. **Brainstorm the fix — the item's recommendation is a starting point, not gospel.** The
@@ -50,17 +51,17 @@ Process items **top to bottom** (they're ordered by impact). For each item:
 2. **On Fixed:**
    - Verify the tree has changes and the reported checks passed (re-run `npm run check` if the
      report is ambiguous).
-   - Remove the item from `docs/AUDIT.md` (bullet + body; keep the header block and any section
-     intro text intact; delete a `## Source:` section header once its last item is gone).
+   - Remove the finding's whole `###` block from `docs/AUDIT.md` (keep the file header and other
+     sections intact; delete the `## Source:` section once its last finding is gone).
    - Commit the fix **and** the `docs/AUDIT.md` edit together as one commit with a descriptive
      message, then push.
    - Post a PR comment (`gh pr comment`) containing: the item title, the commit SHA, the
      subagent's summary, test/check results, and any caveats worth a reviewer's attention.
 3. **On Skip:**
    - Confirm the working tree is clean again (revert it yourself if the subagent didn't).
-   - Edit the item in place in `docs/AUDIT.md`: prepend a line
+   - Edit the finding in place in `docs/AUDIT.md`: add a
      `**⏸ Pending decision:** <what the user must decide, and why the sweep couldn't proceed>`
-     to the item body. Commit that edit and push.
+     line right under its `###` header (above `#### Problem`). Commit that edit and push.
    - Post a PR comment flagging the skipped item and the pending decision.
 4. Move to the next item. Do not stop between items, do not ask the user anything mid-run —
    a decision point is handled by step 3, not by pausing.

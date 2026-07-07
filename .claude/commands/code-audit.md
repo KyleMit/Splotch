@@ -16,7 +16,7 @@ Skip anything already tracked in an open issue or obviously intentional (e.g. a 
 ## Output
 
 Write findings to `docs/AUDIT.md` under a `## Source: Code audit` section, using the
-canonical item format. Order items by impact: highest-value or lowest-risk changes
+canonical finding format. Order findings by impact: highest-value or lowest-risk changes
 first. Group related items together when the order doesn't matter. Aim for 5–15 items;
 skip trivial style nits unless they appear broadly.
 

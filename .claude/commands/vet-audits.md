@@ -1,26 +1,27 @@
 # Vet Audits
 
-Read `docs/AUDIT.md` and the current codebase, then validate each item against the actual code.
+Read `docs/AUDIT.md` and the current codebase, then **adversarially** validate each finding against the actual code — is the problem real, is it *worth solving*, and does the fix agent have what it needs to act on it.
 
-## For each item, decide: keep, enrich, or remove
+## For each finding, decide: keep, enrich, or remove
 
-**Keep and enrich** if the suggestion has genuine value — it improves performance, readability, maintainability, or architecture in a way that outweighs the cost of the change. For these items:
-- Confirm the problem still exists in the current code (cite file + line)
-- Add a concise implementation note if the fix is non-obvious or has a gotcha
-- Adjust the priority/order if you find a dependency or sequencing issue
+**Keep and enrich** if the finding is real *and worth acting on* — it improves performance, readability, maintainability, or architecture by enough to outweigh the cost and risk of the change. For these findings:
+- Confirm the problem still exists in the current code (cite file + line in `#### Problem`).
+- Sharpen `#### Proposed solution` if the sketch is wrong, harmful, or has a gotcha (see the verification angles below).
+- **Fill in `#### Verification`** — the concrete way the fix agent will prove the problem is real and confirm the fix resolves it: repro steps, a command or script to paste, a profile to capture, the test that should fail before and pass after. This is the highest-value thing you add here; leave no kept finding without it whenever a verification is feasible.
+- Adjust the priority/order if you find a dependency or sequencing issue.
 
-**Remove** if the item is:
-- Already fixed in the current code
-- A false positive (the "problem" is intentional or harmless in context)
-- Too speculative, risky, or low-value to be worth an AI acting on it
-- Superseded by another item on the list
+**Remove** if the finding is:
+- Already fixed in the current code.
+- A false positive (the "problem" is intentional or harmless in context).
+- Superseded by another finding on the list.
+- **Not worth solving.** This is an adversarial pass, so judge the payoff, not just the truth of the claim. If the problem is an unlikely edge case, or the smallest reasonable fix is disproportionate to the harm it prevents — enough that acting on it would create more work or risk than the problem warrants — cut it. Weigh likelihood × impact against the realistic fix scope; when it doesn't clear that bar, remove it rather than leave the fix agent to burn a cycle rediscovering the same thing.
 
 ## Output
 
-1. Edit `docs/AUDIT.md` in place — remove the items that don't hold up, enrich the ones that do. Preserve each `## Source:` section and the file header.
+1. Edit `docs/AUDIT.md` in place — remove the findings that don't hold up, enrich the ones that do. Each finding is a `### [Category] …` block with `#### Problem` / `#### Proposed solution` / `#### Verification` inside (see `.claude/audit-conventions.md`); preserve each `## Source:` section and the file header.
 2. In your response, print two short lists:
-   - **Kept / enriched** — one line each, noting what insight you added (if any)
-   - **Removed** — one line each, with the reason
+   - **Kept / enriched** — one line each, noting what you sharpened or the verification you added.
+   - **Removed** — one line each, with the reason (fixed / false positive / superseded / not worth it).
 
 Do not implement any of the changes — this is a review pass only. Implementation happens via `/fix-audits`.
 

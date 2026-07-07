@@ -21,15 +21,11 @@ Common patterns worth flagging:
 ## Output
 
 Write findings to `docs/AUDIT.md` under a `## Source: Extract audit` section, using the
-canonical item format. For each, name the proposed function and include its signature
-and where it should live:
-
-```markdown
-- [ ] **[Extract] suggestedFunctionName** — File: `path/to/file.ts`, ~line N
-  What the block currently does and why extraction helps.
-  `function suggestedFunctionName(param: Type): ReturnType`
-  Where the extracted function should live (same file, nearby util, etc.).
-```
+canonical finding format from the shared conventions — `### [Extract] proposedFunctionName`
+with `#### Problem` / `#### Proposed solution` / `#### Verification` inside. Extract-specific:
+name the proposed function in the title, and put its **signature** and **target location**
+(same file, nearby util, etc.) in `#### Proposed solution`, e.g.
+`function suggestedFunctionName(param: Type): ReturnType`.
 
 Order by value: prefer extractions that most improve readability at the call site. Aim for 5–15 items; skip trivial one-liners unless the name would genuinely clarify intent.
 

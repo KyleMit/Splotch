@@ -116,8 +116,8 @@ lets you pull `dom-size`, `largest-contentful-paint-element`,
 
 This is an audit skill; it follows the shared conventions in
 [`.claude/audit-conventions.md`](../../audit-conventions.md). Turn opportunities into
-`docs/AUDIT.md` items under a `## Source: Lighthouse page-load audit` section, using
-the canonical item format documented there. **Merge into that section — do not clobber
+`docs/AUDIT.md` findings under a `## Source: Lighthouse page-load audit` section, using
+the canonical finding format documented there. **Merge into that section — do not clobber
 it (§1):**
 
 - **An existing item still stands** → keep it; *enrich* it with any sharper
@@ -126,8 +126,8 @@ it (§1):**
 - **The score table** → update it to reflect this run. Prefer showing a *range* across
   runs over replacing the single number, and note the audit date — that preserves the
   variance picture instead of erasing the prior data point.
-- **A genuinely new opportunity** → add it as a new `- [ ]` item.
-- **An item that's since been fixed** → remove it (confirm against the report first).
+- **A genuinely new opportunity** → add it as a new `###` finding (canonical format).
+- **An item that's since been fixed** → remove its whole `###` block (confirm against the report first).
 
 ### 3. Log the run
 
