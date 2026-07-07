@@ -19,17 +19,3 @@
 #### Proposed solution
 
 Cheap cap: when creating a new keyframe while an older one exists, fold history *through* the older keyframed command into the baseline — repeatedly shift via `foldOldestIntoBaseline` (which already blits a keyframed command wholesale) until that command is folded. Don't just drop the older raster: it isn't dead — undo can pop the newer keyframed command, after which `paintStateThrough` would start from the older one. Folding trades undo depth for bounded memory, which is the accepted cost.
-
-### [Maintainability] The requestIdleCallback-with-setTimeout-fallback pattern is hand-rolled five times (three exact copies, two loose variants)
-
-**File(s):** `web/src/lib/components/DrawingCanvas.svelte` (112–129, 147–156), `web/src/lib/components/ColoringBook.svelte` (33–40), `web/src/routes/+page.svelte` (52–56), `web/src/lib/drawing/exportDrawing.ts` (`warmPaperTextureWhenIdle`; formerly in `engine.ts`)
-
-**⏸ Pending decision:** Excluded from the 2026-07-07 sweep by user request while the drawing engine was being refactored; that refactor (engine module split) has since landed on main. Re-run `/fix-audits` to pick this up.
-
-#### Problem
-
-Three sites are identical copies of `typeof requestIdleCallback === 'function' ? requestIdleCallback(fn) : setTimeout(fn, 200)` with the `as unknown as number` cast, cancel bookkeeping, and the same iOS-lacks-requestIdleCallback WHY comment (DrawingCanvas ×2 with different cancel plumbing, ColoringBook ×1); two more are loose variants that are already drifting: `+page.svelte`'s `schedule` stores no handle and relies on a `stopped` flag, and `exportDrawing.ts` uses `'requestIdleCallback' in window` with a **0 ms** fallback.
-
-#### Proposed solution
-
-Extract a `scheduleIdle(fn): () => void` helper (e.g. `web/src/lib/idle.ts`) returning a cancel function — it drops in cleanly for the three exact copies. Adoption caveats for the variants: `+page.svelte`'s `stopped` flag also guards an async `import().then` continuation a cancel function can't reach, so that flag stays even after adoption; and moving `exportDrawing.ts` to a shared 200 ms fallback is a small behavior change (paper-texture warm delayed on Safari) — accept it deliberately or parameterize the delay. No site passes an `options`/`{timeout}` arg, so the signature can stay minimal.

@@ -13,6 +13,7 @@
   import { layout } from '$lib/state/layout.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { prefetchImages } from '$lib/imagePrefetch';
+  import { scheduleIdle } from '$lib/idle';
 
   // Only show books licensed for this platform. Native builds also strip the
   // web-only books' assets at build time (scripts/strip-native-assets.mjs), so
@@ -28,16 +29,8 @@
   const orientation = $derived(canvasState.paperOrientation ?? layout.orientation);
 
   // Warm the cover thumbnails once at idle so the very first open of the picker
-  // paints instantly instead of fetching eight full covers on demand. iOS lacks
-  // requestIdleCallback (below the floor), so fall back to a short timeout.
-  $effect(() => {
-    const warm = () => prefetchImages(books.map((book) => thumbPath(book.cover)));
-    const idle = typeof requestIdleCallback === 'function';
-    const handle: number = idle
-      ? requestIdleCallback(warm)
-      : (setTimeout(warm, 200) as unknown as number);
-    return () => (idle ? cancelIdleCallback(handle) : clearTimeout(handle));
-  });
+  // paints instantly instead of fetching eight full covers on demand.
+  $effect(() => scheduleIdle(() => prefetchImages(books.map((book) => thumbPath(book.cover)))));
 
   // Pressing/hovering a book tile warms that book's page thumbs before the
   // sub-grid renders; hovering a page tile warms its full-res overlay so applying

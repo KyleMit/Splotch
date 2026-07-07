@@ -26,6 +26,7 @@
   import { settings } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
   import { isNative } from '$lib/platform';
+  import { scheduleIdle } from '$lib/idle';
   import FullscreenToggle from './FullscreenToggle.svelte';
 
   let canvasEl: HTMLCanvasElement;
@@ -105,28 +106,21 @@
     // Subscription is async, so hold the cleanup behind a ref the teardown can call
     // once it resolves. The literal __IS_CAPACITOR__ keeps the wrapper (and
     // @capacitor/core) out of the web bundle; the inline import() resolves to the
-    // module namespace, never the plugin proxy. iOS WebView lacks requestIdleCallback,
-    // so fall back to a short timeout that still lands after first paint.
+    // module namespace, never the plugin proxy.
     let pencilCleanup: (() => void) | undefined;
-    let pencilIdle: number | undefined;
-    const pencilIdleSupported = typeof requestIdleCallback === 'function';
+    let cancelPencilIdle: (() => void) | undefined;
     if (__IS_CAPACITOR__ && isNative()) {
       const initPencil = () => {
         import('$lib/plugins/pencilEraser').then(({ initPencilEraser }) => {
           pencilCleanup = initPencilEraser();
         });
       };
-      pencilIdle = pencilIdleSupported
-        ? requestIdleCallback(initPencil)
-        : (setTimeout(initPencil, 200) as unknown as number);
+      cancelPencilIdle = scheduleIdle(initPencil);
     }
 
     return () => {
       engine.teardown();
-      if (pencilIdle !== undefined) {
-        if (pencilIdleSupported) cancelIdleCallback(pencilIdle);
-        else clearTimeout(pencilIdle);
-      }
+      cancelPencilIdle?.();
       pencilCleanup?.();
     };
   });
@@ -146,13 +140,7 @@
   // audible-first-stroke guarantee holds either way. Skipped while sound is off.
   $effect(() => {
     if (!settings.soundEnabled) return;
-    // requestIdleCallback is unsupported on Safari/iOS (below the floor), so fall
-    // back to a short timeout that still lands after first paint.
-    const idle = typeof requestIdleCallback === 'function';
-    const handle: number = idle
-      ? requestIdleCallback(() => preloadDrawSounds())
-      : (setTimeout(preloadDrawSounds, 200) as unknown as number);
-    return () => (idle ? cancelIdleCallback(handle) : clearTimeout(handle));
+    return scheduleIdle(() => preloadDrawSounds());
   });
 
   // Reactive bridges: when the store changes, push into the imperative engine.
