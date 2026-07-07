@@ -829,6 +829,12 @@ export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?
 
 export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
   canvas = canvasElement;
+  // NB: no `desynchronized: true` here. It was tried for lower Android ink
+  // latency and rejected — a desynchronized 2D canvas is promoted to a hardware
+  // overlay that does not alpha-composite with content below it, so this
+  // deliberately transparent canvas (the paper sheet + coloring overlay render
+  // beneath it, ADR-0050) rendered as opaque black on the Android WebView. See
+  // ADR-0051.
   ctx = canvas.getContext('2d')!;
 
   // The magic brush's color sheet lives in paper coordinates (like every op) and
