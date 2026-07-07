@@ -41,6 +41,23 @@ function safeLocalStorage(op: () => void) {
   }
 }
 
+// Reads can throw too — merely touching the `localStorage` global raises
+// SecurityError when storage is disabled (Chrome "block all cookies", sandboxed
+// iframes, private-mode WebViews). Reads run at module init inside $state
+// initializers, so an escaping throw would kill hydration; return the caller's
+// fallback instead — the same degrade model as the app.html boot script.
+function safeRead<T>(read: () => T, fallback: T): T {
+  try {
+    return read();
+  } catch (err) {
+    if (!storageWarned) {
+      storageWarned = true;
+      console.warn('localStorage read failed; using fallback', err);
+    }
+    return fallback;
+  }
+}
+
 // Load the durable store lazily. Returns the module namespace, not the
 // Preferences proxy — see lazyPluginModule for why that distinction matters.
 // The __IS_CAPACITOR__ ternary keeps the import() itself out of the web bundle
@@ -68,9 +85,11 @@ function mirror(key: string, value: string) {
 export function readBool(key: string, fallback: boolean): boolean {
   track(key);
   if (!browser) return fallback;
-  const raw = localStorage.getItem(key);
-  if (raw === null) return fallback;
-  return raw === 'true';
+  return safeRead(() => {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return fallback;
+    return raw === 'true';
+  }, fallback);
 }
 
 export function writeBool(key: string, value: boolean) {
@@ -84,8 +103,10 @@ export function writeBool(key: string, value: boolean) {
 export function readString<T extends string | null>(key: string, fallback: T): string | T {
   track(key);
   if (!browser) return fallback;
-  const raw = localStorage.getItem(key);
-  return raw === null ? fallback : raw;
+  return safeRead(() => {
+    const raw = localStorage.getItem(key);
+    return raw === null ? fallback : raw;
+  }, fallback);
 }
 
 export function writeString(key: string, value: string) {
@@ -112,10 +133,12 @@ export function removeKey(key: string) {
 export function readInt(key: string, fallback: number, allowed: number[] | null = null): number {
   track(key);
   if (!browser) return fallback;
-  const raw = parseInt(localStorage.getItem(key) ?? '', 10);
-  if (Number.isNaN(raw)) return fallback;
-  if (allowed && !allowed.includes(raw)) return fallback;
-  return raw;
+  return safeRead(() => {
+    const raw = parseInt(localStorage.getItem(key) ?? '', 10);
+    if (Number.isNaN(raw)) return fallback;
+    if (allowed && !allowed.includes(raw)) return fallback;
+    return raw;
+  }, fallback);
 }
 
 export function writeInt(key: string, value: number) {

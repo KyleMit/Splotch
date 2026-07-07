@@ -72,6 +72,7 @@ baseline**, and every remaining below-floor risk is already feature-detected and
 | `env(safe-area-inset-*)` | `app.css:52` | Safari 11 | within floor | resolves to 0 |
 | `crypto.subtle` (AES-GCM) | `lib/secureStorage.ts` | Chrome 37 / Safari 11 | secure-context only | within floor |
 | `navigator.storage.persist` | `lib/secureStorage.ts:154` | Chrome 55 / Safari 15.2 | ✅ `?.` + web-only | best-effort persistence skipped |
+| `localStorage` | `lib/storage.ts`; `app.html:62` boot script | universal, but *accessing the global* throws under "block all cookies" / sandboxed iframes / locked-down WebViews | ✅ try/catch on every read & write | settings neither load nor persist — defaults every visit; app still boots |
 | Wake Lock | `routes/+page.svelte:56` | Chrome 84 / Safari 16.4 | ✅ feature-detected | screen may sleep mid-draw |
 | `Element.requestFullscreen` (immersive) | `lib/state/fullscreen.svelte.ts` | Chrome 71 / Safari 16.4 (macOS); no element fullscreen on iOS Safari | ✅ `document.fullscreenEnabled` + Android-only | Fullscreen Toggle hidden; URL bar stays (iOS Safari, desktop deliberately excluded) |
 | Screen Orientation lock | `lib/orientation.ts:48` | varies | ✅ `?.` (native uses Capacitor plugin) | no orientation lock |
