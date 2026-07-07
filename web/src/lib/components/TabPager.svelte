@@ -161,7 +161,7 @@
     display: flex;
     gap: var(--tab-gap);
     margin-bottom: 24px;
-    border-bottom: 2px solid #e0e0e0;
+    border-bottom: 2px solid var(--border);
     position: relative;
   }
 
@@ -171,7 +171,7 @@
     background: transparent;
     border: none;
     border-bottom: 3px solid transparent;
-    color: #999;
+    color: var(--text-faint);
     font-size: 16px;
     font-weight: 500;
     cursor: pointer;
@@ -197,8 +197,8 @@
 
   @media (hover: hover) {
     :global(.tab-button:hover) {
-      color: #666;
-      background: #f5f5f5;
+      color: var(--text-mid);
+      background: var(--surface-hover);
     }
   }
 

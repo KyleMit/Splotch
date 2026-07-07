@@ -8,6 +8,7 @@ import {
   removeKey,
 } from '../storage';
 import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage';
+import { applyTheme, isThemePreference, THEME_DEFAULT, type ThemePreference } from '../theme';
 import {
   folderSaveSupported,
   chooseSaveFolder,
@@ -45,6 +46,7 @@ const LOCK_ROTATION_KEY = 'splotch-lock-rotation';
 const FORCE_LANDSCAPE_KEY = 'splotch-force-landscape';
 const PENCIL_ERASER_KEY = 'splotch-pencil-eraser-enabled';
 const APPLE_PENCIL_SEEN_KEY = 'splotch-apple-pencil-seen';
+const THEME_KEY = 'splotch-theme';
 
 function defaultForceLandscapeOrientation() {
   if (typeof window === 'undefined') return true;
@@ -124,7 +126,14 @@ function clampButtonScale(v: number) {
   return Math.max(ACTION_BUTTON_SCALE_MIN, Math.min(ACTION_BUTTON_SCALE_MAX, Math.round(v)));
 }
 
+function readTheme(fallback: ThemePreference): ThemePreference {
+  const raw = readString(THEME_KEY, fallback);
+  return isThemePreference(raw) ? raw : fallback;
+}
+
 interface Settings extends Record<BoolSettingKey, boolean> {
+  // Appearance: explicit light/dark, or 'system' to follow the OS setting.
+  theme: ThemePreference;
   // Drawing sound volume percentage. 50 is the normal authored volume, 100 is 2x.
   soundVolume: number;
   // Action-center button size percentage (see ACTION_BUTTON_SCALE_* above).
@@ -146,6 +155,7 @@ export const settings: Settings = $state({
   ...(Object.fromEntries(
     Object.entries(BOOL_SETTINGS).map(([prop, [key, def]]) => [prop, readBool(key, def)])
   ) as Record<BoolSettingKey, boolean>),
+  theme: readTheme(THEME_DEFAULT),
   soundVolume: clampVolume(readInt(SOUND_VOLUME_KEY, SOUND_VOLUME_DEFAULT)),
   actionButtonScale: clampButtonScale(
     readInt(ACTION_BUTTON_SCALE_KEY, ACTION_BUTTON_SCALE_DEFAULT)
@@ -181,6 +191,12 @@ export const setLockRotation = makeBoolSetter('lockRotationEnabled');
 export const setForceLandscapeOrientation = makeBoolSetter('forceLandscapeOrientation');
 export const setPencilEraserEnabled = makeBoolSetter('pencilEraserEnabled');
 export const setApplePencilSeen = makeBoolSetter('applePencilSeen');
+
+export function setTheme(v: ThemePreference) {
+  settings.theme = v;
+  writeString(THEME_KEY, v);
+  applyTheme(v);
+}
 
 export function setSoundVolume(v: number) {
   const next = clampVolume(v);
@@ -220,6 +236,8 @@ export function reloadSettings() {
     readInt(ACTION_BUTTON_SCALE_KEY, settings.actionButtonScale)
   );
   settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);
+  settings.theme = readTheme(settings.theme);
+  applyTheme(settings.theme);
 }
 
 // Pull the saved Gemini key out of secure storage into the live store on boot.

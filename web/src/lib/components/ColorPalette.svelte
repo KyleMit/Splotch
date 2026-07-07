@@ -139,7 +139,7 @@
     align-content: center;
     gap: 12px;
     padding: 12px;
-    background: white;
+    background: var(--surface);
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
     z-index: 1002; /* Above clear-accept-zone (1001) */
     flex-shrink: 0;

@@ -192,7 +192,7 @@
   .coloring-book-content h2 {
     margin: 0 0 20px 0;
     font-size: 24px;
-    color: #333;
+    color: var(--text-strong);
     font-weight: 600;
   }
 
@@ -215,7 +215,7 @@
   .coloring-back-button {
     width: 36px;
     height: 36px;
-    background: #f5f5f5;
+    background: var(--surface-hover);
     border: none;
     border-radius: 50%;
     cursor: pointer;
@@ -226,21 +226,26 @@
     transition: background 0.2s ease;
   }
 
+  /* Tinted via `fill` (not a filter chain) so the gray and the brand hover
+     both track the theme tokens. */
   :global(.coloring-back-icon) {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    filter: invert(35%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(85%);
-    transition: filter 0.2s ease;
+  }
+
+  :global(.coloring-back-icon svg) {
+    fill: var(--icon-muted);
+    transition: fill 0.2s ease;
   }
 
   @media (hover: hover) {
     .hover-armed .coloring-back-button:hover {
-      background: #ede7f6;
+      background: var(--brand-wash);
     }
 
-    .hover-armed .coloring-back-button:hover :global(.coloring-back-icon) {
-      filter: var(--brand-tint-filter);
+    .hover-armed .coloring-back-button:hover :global(.coloring-back-icon svg) {
+      fill: var(--brand);
     }
   }
 
@@ -261,6 +266,9 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  /* Tiles stay literal (light) in dark mode on purpose: the page art is black
+     line work composited with mix-blend-mode: multiply, so it only reads on a
+     paper-light background — each tile is a small piece of paper. */
   .coloring-tile {
     position: relative;
     background: #f8f8f8;

@@ -299,7 +299,7 @@
     display: block;
     font-size: 14px;
     font-weight: 500;
-    color: #555;
+    color: var(--text);
     margin-bottom: 4px;
   }
 
@@ -313,10 +313,10 @@
     min-width: 0;
     padding: 8px 12px;
     font-size: 14px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    background: #fff;
-    color: #333;
+    background: var(--surface);
+    color: var(--text-strong);
   }
 
   .access-code-input:focus {
@@ -344,7 +344,7 @@
   }
 
   .access-code-submit:disabled {
-    background: #ccc;
+    background: var(--control-track-hover);
     cursor: not-allowed;
   }
 
@@ -352,19 +352,19 @@
   .byok-intro {
     margin: 0 0 12px 0;
     font-size: 13px;
-    color: #555;
+    color: var(--text);
     line-height: 1.5;
   }
 
   .byok-active .byok-intro {
-    color: #666;
+    color: var(--text-mid);
   }
 
   .byok-howto {
     margin: 0 0 14px 0;
-    border: 1px solid #e6e6e6;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    background: #fff;
+    background: var(--surface);
     overflow: hidden;
   }
 
@@ -385,7 +385,7 @@
   .byok-howto summary::after {
     content: '›';
     float: right;
-    color: #bbb;
+    color: var(--text-faint);
     transition: transform 0.2s ease;
   }
 
@@ -396,7 +396,7 @@
   .byok-howto ol {
     margin: 0;
     padding: 0 16px 8px 32px;
-    color: #666;
+    color: var(--text-mid);
     font-size: 13px;
     line-height: 1.7;
   }
@@ -407,7 +407,7 @@
   }
 
   .byok-howto code {
-    background: #f0e9f8;
+    background: var(--brand-wash);
     border-radius: 4px;
     padding: 1px 5px;
     font-size: 12px;
@@ -417,13 +417,13 @@
     margin: 0;
     padding: 0 12px 12px;
     font-size: 12px;
-    color: #999;
+    color: var(--text-faint);
   }
 
   .byok-secret-hint {
     margin: 10px 0 0 0;
     font-size: 12px;
-    color: #aaa;
+    color: var(--text-faint);
   }
 
   /* "Here's where your key lives" reassurance line. */
@@ -434,7 +434,7 @@
     margin: 10px 0 0 0;
     font-size: 12px;
     line-height: 1.45;
-    color: #6b8e6b;
+    color: var(--success-text);
   }
 
   .byok-active .byok-storage-note {
@@ -448,21 +448,25 @@
     margin-top: 1px;
   }
 
+  :global(.byok-storage-icon svg) {
+    fill: currentColor;
+  }
+
   .access-code-input[readonly] {
-    background: #f0f0f0;
-    color: #777;
+    background: var(--surface-hover);
+    color: var(--text-muted);
     font-family: 'Courier New', monospace;
     letter-spacing: 0.5px;
   }
 
   .access-code-submit.forget {
-    background: #ededed;
-    color: #b04a4a;
+    background: var(--slider-track);
+    color: var(--danger-text);
   }
 
   @media (hover: hover) {
     .access-code-submit.forget:hover {
-      background: #e2e2e2;
+      background: var(--control-track);
     }
   }
 
@@ -475,12 +479,12 @@
   }
 
   .byok-message.success {
-    background: #e9f7ec;
-    color: #2e7d4f;
+    background: var(--success-wash);
+    color: var(--success-text);
   }
 
   .byok-message.error {
-    background: #fdecec;
-    color: #b04a4a;
+    background: var(--danger-wash);
+    color: var(--danger-text);
   }
 </style>

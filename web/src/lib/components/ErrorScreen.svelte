@@ -26,8 +26,8 @@
     gap: 16px;
     padding: 24px;
     text-align: center;
-    background: #fcfbf8;
-    color: #333;
+    background: var(--app-bg, #fcfbf8);
+    color: var(--text-strong, #333);
     font-family: 'Quicksand Variable', system-ui, sans-serif;
   }
 
@@ -48,7 +48,7 @@
   p {
     margin: 0;
     font-size: 16px;
-    color: #666;
+    color: var(--text-mid, #666);
     max-width: 320px;
   }
 
