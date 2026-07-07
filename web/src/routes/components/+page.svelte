@@ -113,6 +113,22 @@
   let exampleModalOpen = $state(false);
   let exampleModalBtn = $state<HTMLButtonElement>();
 
+  // Simulated viewports for the picker iframe (the same sizes picker-trim.spec
+  // pins), scaled down to whatever width the catalog column has — so the full
+  // 9×9 layout is inspectable even on a phone.
+  const PICKER_VIEWPORTS = [
+    { label: 'Desktop', w: 1280, h: 800 },
+    { label: 'Tablet portrait', w: 768, h: 1024 },
+    { label: 'Phone landscape', w: 844, h: 390 },
+    { label: 'Phone portrait', w: 390, h: 844 },
+    { label: 'Tiny phone', w: 320, h: 480 },
+  ];
+  // $state.raw: a deep $state proxy would break the identity check the radio
+  // chips use against the PICKER_VIEWPORTS entries.
+  let pickerViewport = $state.raw(PICKER_VIEWPORTS[0]);
+  let pickerStageWidth = $state(0);
+  const pickerScale = $derived(Math.min(1, (pickerStageWidth || 830) / pickerViewport.w));
+
   let dialProgress = $state(0.66);
   let sliderValue = $state(50);
   let toggleOn = $state(true);
@@ -303,17 +319,34 @@
         hue families × 9 shades of <strong>Color Hexagons</strong>; both the portrait and landscape
         arrangements are always rendered and CSS picks one per orientation, trimming shades on the
         short axis and families on the long one. Its room is the whole viewport, so this demo runs
-        in its own resizable <code>&lt;iframe&gt;</code> — drag the corner handle to walk the trim ladders
-        and flip orientations. The frame is an isolated instance: picks inside it don't change this page's
-        color.
+        in its own <code>&lt;iframe&gt;</code> simulating the viewports below (the same sizes the trim
+        E2E spec pins), scaled to fit this column — the full 9×9 stays inspectable even on a phone. The
+        frame is an isolated instance: picks inside it don't change this page's color.
       </p>
-      <div class="resize-stage picker-stage" title="Drag the bottom-right corner to resize">
-        <iframe src="/components/frame/picker" title="Color Picker at a custom viewport size"
+      <div class="chip-row" role="radiogroup" aria-label="Color Picker simulated viewport">
+        {#each PICKER_VIEWPORTS as vp (vp.label)}
+          <label class="chip">
+            <input
+              type="radio"
+              name="picker-viewport"
+              checked={pickerViewport === vp}
+              onchange={() => (pickerViewport = vp)}
+            />
+            {vp.label} <span class="chip-dim">{vp.w}×{vp.h}</span>
+          </label>
+        {/each}
+      </div>
+      <div
+        class="picker-stage"
+        bind:clientWidth={pickerStageWidth}
+        style="height: {Math.round(pickerViewport.h * pickerScale)}px;"
+      >
+        <iframe
+          src="/components/frame/picker"
+          title="Color Picker at a {pickerViewport.label} viewport"
+          style="width: {pickerViewport.w}px; height: {pickerViewport.h}px; transform: scale({pickerScale});"
         ></iframe>
       </div>
-      <p class="resize-hint">
-        Resizable with a mouse — drag the handle in the bottom-right corner.
-      </p>
     </section>
 
     <section class="demo">
@@ -346,8 +379,8 @@
         <em>Install</em> falls back the same way a stale prompt does in the app; dismissing with × is
         remembered like in the app — re-pick a setup to bring the banner back.)
       </p>
-      <div class="demo-controls" role="radiogroup" aria-label="Install Banner device setup">
-        <label>
+      <div class="chip-row" role="radiogroup" aria-label="Install Banner device setup">
+        <label class="chip">
           <input
             type="radio"
             name="install-demo-mode"
@@ -356,7 +389,7 @@
           />
           One-tap prompt (Chromium)
         </label>
-        <label>
+        <label class="chip">
           <input
             type="radio"
             name="install-demo-mode"
@@ -365,7 +398,7 @@
           />
           iOS Safari
         </label>
-        <label>
+        <label class="chip">
           <input
             type="radio"
             name="install-demo-mode"
@@ -770,6 +803,61 @@
     line-height: 1.55;
   }
 
+  /* Segmented pill radios shared by the Install Banner device toggle and the
+     picker viewport presets. The input stays in the DOM (hidden) for keyboard
+     and AT semantics; :has(:checked) paints the selected pill. */
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #f5f0fc;
+    color: #7c4dcf;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .chip input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .chip:has(input:checked) {
+    background: var(--brand);
+    color: #fff;
+  }
+
+  @media (hover: hover) {
+    .chip:not(:has(input:checked)):hover {
+      background: #ece0fb;
+    }
+  }
+
+  .chip:has(input:focus-visible) {
+    border-color: #7c4dcf;
+  }
+
+  .chip-dim {
+    font-weight: 500;
+    opacity: 0.65;
+    font-size: 12px;
+  }
+
   .demo-controls {
     display: flex;
     gap: 20px;
@@ -847,16 +935,20 @@
     background: #fcfbf8;
   }
 
+  /* The iframe keeps the simulated viewport's real pixel size (so its media
+     queries see that size) and is scaled down to fit the catalog column. */
   .picker-stage {
-    width: min(100%, 720px);
-    height: 420px;
+    position: relative;
+    margin-top: 12px;
+    border: 1px dashed #d8d0c2;
+    border-radius: 12px;
+    overflow: hidden;
   }
 
   .picker-stage iframe {
-    width: 100%;
-    height: 100%;
     border: 0;
     display: block;
+    transform-origin: 0 0;
   }
 
   .stage-corner {
@@ -881,8 +973,18 @@
     min-height: 220px;
   }
 
+  /* In flow (not corner-anchored) so the stage grows to fit the panel in
+     either orientation — the portrait column was taller than any fixed stage. */
   .stage-actions {
-    min-height: 200px;
+    min-height: 0;
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+    overflow: visible;
+  }
+
+  .stage-actions :global(.actions-panel) {
+    position: static !important;
   }
 
   /* Hold the drawer open and reveal the (normally token-gated) AI button so
@@ -903,8 +1005,18 @@
     display: flex !important;
   }
 
+  /* In flow with width capped to the stage — the app's fixed centering uses
+     92vw, which overflows a stage narrower than the viewport. */
   .stage-banner {
-    min-height: 220px;
+    min-height: 0;
+    padding: 20px 0;
+  }
+
+  .stage-banner :global(.install-banner) {
+    position: static !important;
+    transform: none !important;
+    width: min(92%, 420px);
+    margin: 0 auto;
   }
 
   .stage-ai {
