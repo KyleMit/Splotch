@@ -75,10 +75,8 @@ console.log(`Emulator booted: ${serial}`);
 // 4. Build + install, run the flow, and always tear the emulator down.
 try {
   await sh('npm run cap:sync');
-  await sh(
-    isWindows ? 'gradlew.bat :app:installDebug' : './gradlew :app:installDebug',
-    join(ROOT, 'android')
-  );
+  const gradlew = join(ROOT, 'android', isWindows ? 'gradlew.bat' : 'gradlew');
+  await sh(`"${gradlew}" :app:installDebug`, join(ROOT, 'android'));
   await sh(`"${maestroPath()}" test .maestro/smoke.yaml`);
 } finally {
   console.log(`Shutting down ${serial}`);
