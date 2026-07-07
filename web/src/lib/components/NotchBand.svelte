@@ -4,6 +4,8 @@
   import { isNative, getPlatform } from '$lib/platform';
   import { computeNotchBandState } from '$lib/notchBand';
   import { layout } from '$lib/state/layout.svelte';
+  import { resolvedTheme } from '$lib/state/appearance.svelte';
+  import { PAPER_COLORS } from '$lib/theme';
 
   // Measured env(safe-area-inset-*), in CSS px — we need the number (not just
   // the CSS value) to tell a real notch from a bezel. The top and both sides
@@ -20,6 +22,7 @@
       insetRight: layout.safeArea.right,
       activeColor: colors.activeColor,
       eraser: toolState.eraser,
+      paperColor: PAPER_COLORS[resolvedTheme()],
     })
   );
 

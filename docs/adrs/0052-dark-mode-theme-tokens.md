@@ -1,4 +1,4 @@
-# ADR-0052: Dark Mode via `data-theme` + CSS Custom-Property Tokens; the Paper Stays Light
+# ADR-0052: Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper with Inverted Line Art
 
 **Status:** Active
 **Date:** 2026-07
@@ -6,7 +6,8 @@
 ## Context
 
 Parents asked for a dark mode with three choices — Light, Dark, or System (follow the OS) —
-picked in the Parent Center. Three design questions had real alternatives:
+picked in the Parent Center, with the drawing paper itself going dark (not pure black, texture
+kept) and the coloring pages adapting. The design questions with real alternatives:
 
 1. **How the theme reaches CSS.** `light-dark()` would let every color declare both values
    inline, but it needs Chrome 123 / Safari 17.5 — above the supported floor
@@ -14,21 +15,28 @@ picked in the Parent Center. Three design questions had real alternatives:
    `light`/`dark` and listening for OS changes) makes the default "system" behavior depend on a
    runtime listener. A `data-theme` attribute that is **absent in system mode** lets plain
    `prefers-color-scheme` CSS handle the default with no JS at all.
-2. **What "dark" means in a drawing app.** Toddler drawings are made for white paper — dark
-   default stroke colors, coloring-page line art composited with `mix-blend-mode: multiply`,
-   exported PNGs on paper white. Darkening the canvas would change how every drawing looks
-   (and make black line art invisible), so "theme everything" was rejected.
-3. **First-paint correctness.** `/` is prerendered (ADR-0040), so the static HTML can't know a
+2. **How the paper darkens without a second texture.** The handmade-paper webp turns out to be
+   a **low-alpha grain layer** (alpha ≈ 0.07–0.29) composited over a CSS `background-color`,
+   so a pre-generated dark texture asset is unnecessary — swapping the color under the same
+   texture darkens the paper with the grain intact. The same holds in the export path, which
+   fills the paper color and then patterns the texture over it.
+3. **How coloring pages stay usable.** The line art is black-on-white, composited with
+   `mix-blend-mode: multiply` (white ≈ transparent over light paper). On dark paper that art
+   would be invisible. Pre-generating inverted page assets was on the table, but a pure
+   runtime treatment works: `filter: invert(1)` on the art plus `mix-blend-mode: screen`
+   (black ≈ transparent over dark paper) — white "chalk" lines, no new assets, no asset-sync
+   burden across ~100 page/thumb/cover files.
+4. **First-paint correctness.** `/` is prerendered (ADR-0040), so the static HTML can't know a
    returning user's stored choice; without a pre-paint stamp an explicit-dark user would flash
    light on every load.
 
 ## Decision
 
 **Attribute + tokens.** `<html>` carries `data-theme="light"` or `"dark"` only when the parent
-explicitly chose one; the default `system` leaves the attribute off. All themed chrome reads
-semantic custom properties (`--surface`, `--text`, `--border`, `--brand-wash`, …) defined in
-`web/src/app.css`: light values on `:root`, dark overrides in **two deliberately identical
-blocks** — `:root[data-theme='dark']` and
+explicitly chose one; the default `system` leaves the attribute off. All themed surfaces read
+semantic custom properties (`--surface`, `--text`, `--border`, `--paper`, `--lineart-*`, …)
+defined in `web/src/app.css`: light values on `:root`, dark overrides in **two deliberately
+identical blocks** — `:root[data-theme='dark']` and
 `@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) }`. CSS below the
 browser floor has no way to share one declaration block between an attribute selector and a
 media query, so the duplication is the accepted cost; keep the blocks in sync.
@@ -36,16 +44,31 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
 - Setting: `settings.theme` in `web/src/lib/state/settings.svelte.ts` (`splotch-theme`,
   covered by `reloadSettings()` / the native durable mirror). `web/src/lib/theme.ts` owns the
   runtime side: `applyTheme()` stamps the attribute, keeps `<meta name="theme-color">` on the
-  *resolved* theme, and watches OS switches while in system mode.
-- Pre-paint: the head script in `web/src/app.html` stamps `data-theme` before first paint,
-  following the existing "attribute only on deviation from default" convention.
+  *resolved* theme, and watches OS switches while in system mode. The pre-paint head script in
+  `web/src/app.html` stamps `data-theme` before first paint, following the existing
+  "attribute only on deviation from default" convention.
 - UI: the **Appearance Control** (Light / Dark / System segmented control) at the top of the
   Parent Center Settings tab (`SettingsToggles.svelte`).
-- **The paper stays light.** The canvas sheet, its rotation-lock margins, and every control
-  floating on the paper (Actions Panel, Clear Button, corner buttons, Notch Band) keep literal
-  colors and are *not* tokenized. Dark mode themes the chrome around the paper: app
-  background, palette bar, all modals, Install Banner, error screen. Coloring-book picker
-  tiles also stay light (multiply-blended line art needs a paper background).
+- **The paper darkens with the theme.** `--paper` (dark: a warm near-black, not pure black)
+  sits under the unchanged low-alpha texture (`DrawingCanvas.svelte`); `--paper-margin` is the
+  flat tone behind the rotation-locked sheet. The clear gesture's paper washes and page-turn
+  ripple (`ClearButton.svelte`) follow `--paper` via `color-mix` (rgba fallbacks precede each,
+  per `docs/COMPATIBILITY.md`). Controls floating on the paper (Actions Panel, Clear Button,
+  corner buttons) keep their light chrome — they read as objects on the page.
+- **JS consumers of the resolved theme.** `PAPER_COLORS` in `theme.ts` mirrors `--paper`
+  (keep in sync); `lib/state/appearance.svelte.ts` exposes a reactive `resolvedTheme()`
+  (setting + live OS preference). Used by the **Notch Band** (the eraser now clears the band
+  to the theme's paper color — `paperColor` input in `notchBand.ts`) and by the **export
+  path**: `exportDrawing.ts` fills the theme's paper color, patterns the same texture over
+  it, and in dark mode inverts the overlay via a `'difference'` fill with white
+  (`ctx.filter = 'invert(1)'` needs Safari 18, above the floor) composited with `'screen'` —
+  so the saved PNG matches what the child saw.
+- **Coloring pages invert at runtime.** `--lineart-filter` (`none` → `invert(1)`) +
+  `--lineart-blend` (`multiply` → `screen`) drive both the canvas overlay
+  (`DrawingCanvas.svelte`) and the picker tiles (`ColoringBook.svelte`) — white line art over
+  dark paper, no pre-generated assets. The **magic brush is deliberately untouched**: it
+  reveals the colored twin as-is (including its light background), which in dark mode reads
+  as wiping away the dark to expose the bright picture beneath.
 - **Icons.** Monochrome Material SVGs bake in `fill="#1f1f1f"`; the CSS `fill` property beats
   that presentation attribute, so one zero-specificity rule
   (`:where(.modal-shell) :where([data-icon]:not(.icon-color):not(.icon-tinted)) svg`) re-inks
@@ -56,14 +79,22 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
 
 ## Consequences
 
-- + System mode is pure CSS — an OS theme switch recolors the app live with no JS listener
-    (the only JS follower is the `theme-color` meta).
+- + System mode is pure CSS — an OS theme switch recolors the app (paper included) live with
+    no JS listener; the only JS followers are the `theme-color` meta and the Notch Band.
 - + Prerendered HTML with no attribute renders the system default correctly even if the head
     script never runs; explicit choices restore before first paint (no flash).
-- + Drawings, exports, and coloring pages look identical in both themes.
+- + One texture and one set of line-art assets serve both themes; exports match the theme the
+    drawing was saved in.
+- - Black/dark strokes are nearly invisible on the dark paper — the mirror image of white
+    crayon on light paper today. A drawing made in one theme can look different (or partly
+    vanish) when viewed in the other; the strokes themselves are never lost.
+- - Solid-black fills inside line art (e.g. pupils) invert to solid white — reads as chalk
+    style, but it is a change to the art's look, not a tunable.
+- - The magic reveal's light patches (the twin's background) are bright against dark paper;
+    acceptable as "revealing the picture," revisit with pre-generated dark twins if it jars.
 - - The dark token block is duplicated (attribute selector + media query) and the two copies
-    must be kept in sync by hand until the floor reaches `light-dark()`.
+    must be kept in sync by hand until the floor reaches `light-dark()`; `PAPER_COLORS` in
+    `theme.ts` is a third copy of `--paper`.
 - - Every new chrome surface must remember to use tokens; a literal hex sneaks in as
     light-only and only shows up when eyeballing dark mode.
-- - `/admin` and `/privacy` are deliberately out of scope (self-contained light pages), which
-    reads as an inconsistency if you navigate there from a dark app.
+- - `/admin` and `/privacy` are deliberately out of scope (self-contained light pages).

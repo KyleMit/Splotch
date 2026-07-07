@@ -22,6 +22,11 @@ export const THEME_DEFAULT: ThemePreference = 'system';
 const THEME_COLOR_LIGHT = '#ffffff';
 const THEME_COLOR_DARK = '#17171d';
 
+// The drawing paper per resolved theme, for the JS consumers that can't read
+// the CSS token (canvas export fill, Notch Band eraser color). Mirrors
+// --paper in app.css — keep the two in sync.
+export const PAPER_COLORS = { light: '#fcfbf8', dark: '#211f29' } as const;
+
 export function isThemePreference(value: unknown): value is ThemePreference {
   return value === 'light' || value === 'dark' || value === 'system';
 }

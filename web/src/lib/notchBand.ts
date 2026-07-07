@@ -1,6 +1,6 @@
 // Notch Band — paint the device's top safe-area inset (the notch / hole-punch
 // strip behind the system clock) with the active drawing color, clearing it to
-// paper-white when the eraser is selected.
+// the paper color when the eraser is selected.
 //
 // One reactive source of truth fans out to three rendering mechanisms, because
 // no single one reaches the notch on every deployment target:
@@ -21,10 +21,6 @@ import { isLightColor } from './colorRing';
 // Type-only import — erased at build time, so this file keeps its no-runtime-
 // plugin-import purity (no @capacitor/core reaches the pure layer).
 import type { Platform } from './platform';
-
-// Shown in the band (and as the theme color) while the eraser is active. The
-// notch sits over white paper, so paper-white reads as "no color".
-export const ERASER_BAND_COLOR = '#ffffff';
 
 // Minimum top safe-area inset (CSS px) we treat as a real display cutout. Above
 // it: iPhone notches / Dynamic Island (~44–59px) and Android hole-punches.
@@ -59,6 +55,12 @@ export interface NotchBandInput {
   /** Current drawing color, always a valid hex. */
   activeColor: string;
   eraser: boolean;
+  /**
+   * The theme-resolved paper color (PAPER_COLORS in lib/theme.ts). Shown while
+   * the eraser is active: the notch sits over the paper, so the paper's own
+   * tone reads as "no color" in light and dark alike.
+   */
+  paperColor: string;
 }
 
 export interface NotchBandState {
@@ -80,8 +82,8 @@ export interface NotchBandState {
   statusBarHidden: boolean | null;
 }
 
-export function bandColor(activeColor: string, eraser: boolean): string {
-  return eraser ? ERASER_BAND_COLOR : activeColor;
+export function bandColor(activeColor: string, eraser: boolean, paperColor: string): string {
+  return eraser ? paperColor : activeColor;
 }
 
 export function hasNotch(insetTop: number): boolean {
@@ -115,7 +117,7 @@ export function statusBarHiddenFor(input: NotchBandInput): boolean | null {
 }
 
 export function computeNotchBandState(input: NotchBandInput): NotchBandState {
-  const color = bandColor(input.activeColor, input.eraser);
+  const color = bandColor(input.activeColor, input.eraser, input.paperColor);
   const { edge, inset } = cutoutEdge(input);
   const show = hasNotch(inset);
   return {

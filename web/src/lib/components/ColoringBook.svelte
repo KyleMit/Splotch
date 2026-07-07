@@ -266,13 +266,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  /* Tiles stay literal (light) in dark mode on purpose: the page art is black
-     line work composited with mix-blend-mode: multiply, so it only reads on a
-     paper-light background — each tile is a small piece of paper. */
   .coloring-tile {
     position: relative;
-    background: #f8f8f8;
-    border: 2px solid #e0e0e0;
+    background: var(--surface-2);
+    border: 2px solid var(--border);
     border-radius: 12px;
     cursor: pointer;
     overflow: hidden;
@@ -289,7 +286,7 @@
   @media (hover: hover) {
     .hover-armed .coloring-tile:hover {
       border-color: var(--brand);
-      background: #f5f0ff;
+      background: var(--brand-wash);
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(171, 113, 225, 0.25);
       box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 25%, transparent);
@@ -300,21 +297,27 @@
     transform: scale(0.96);
   }
 
+  /* Same trick as the canvas overlay (--lineart-*): black lines multiply
+     over the light tile; dark mode inverts them to white and screens them
+     over the dark tile. */
   .coloring-tile img {
     width: 100%;
     height: 100%;
     object-fit: contain;
     padding: 8px;
     pointer-events: none;
-    mix-blend-mode: multiply;
+    mix-blend-mode: var(--lineart-blend);
+    filter: var(--lineart-filter);
   }
 
+    /* No --lineart-filter here: the modal's icon re-ink already flips this
+     monochrome icon's fill per theme, so only the blend needs to follow. */
   :global(.coloring-remove-icon) {
     width: 100%;
     height: 75%;
     padding: 8px;
     pointer-events: none;
-    mix-blend-mode: multiply;
+    mix-blend-mode: var(--lineart-blend);
   }
 
   .coloring-book-tile img {
@@ -353,10 +356,12 @@
     right: 0;
     bottom: 0;
     padding: 6px 8px;
+    /* rgba fallback precedes the color-mix (docs/COMPATIBILITY.md). */
     background: rgba(255, 255, 255, 0.92);
+    background: color-mix(in srgb, var(--surface-2) 92%, transparent);
     font-size: 14px;
     font-weight: 600;
-    color: #555;
+    color: var(--text);
     text-align: center;
   }
 </style>

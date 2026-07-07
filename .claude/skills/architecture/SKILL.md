@@ -58,7 +58,8 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `state/colors.svelte.ts` | Active color selection and the full palette. |
 | `state/strokeWidth.svelte.ts` | Stroke width levels and eraser size multiplier. |
 | `state/tool.svelte.ts` | Active tool (pen vs. eraser). |
-| `state/settings.svelte.ts` | User-configurable toggles (sounds, save-on-delete, screenshot button, coloring books, etc.), persisted via `storage.ts`. |
+| `state/settings.svelte.ts` | User-configurable toggles (sounds, save-on-delete, screenshot button, coloring books, etc.) plus the appearance setting (light/dark/system), persisted via `storage.ts`. |
+| `state/appearance.svelte.ts` | Reactive *resolved* theme ('light' \| 'dark'): the appearance setting combined with the live OS preference. For the few JS consumers of the resolved value (Notch Band paper color, export paper fill); CSS reads the `app.css` tokens instead. |
 | `state/layout.svelte.ts` | Viewport and orientation state. |
 | `state/fullscreen.svelte.ts` | Immersive-fullscreen support + active state and the toggle action, backing the Fullscreen Toggle button. Android web only; dismisses the mobile URL bar. |
 | `state/network.svelte.ts` | Online/offline state via `@capacitor/network`. Controls AI button visibility on native. |
@@ -152,4 +153,4 @@ queries + the head-script stamp in `app.html`).
   * **Parent Center** - Modal with platform install guides and app settings
     * **Install Guide** - iOS / Android tabs with step-by-step PWA setup, plus the one-tap install button when the browser supports it (Setup tab)
     * **Settings** - Tab for app preferences (Appearance, Drawing Sounds, Save on Delete, Screenshot Button, Stroke Width Control, Coloring Books). Under Advanced Controls, a **Button Size** slider rescales the Actions Panel buttons; dragging it hides the rest of the Parent Center so the buttons resize in full view.
-      * **Appearance Control** - Light / Dark / System segmented control at the top of the Settings tab. Dark mode themes the chrome (app background, palette bar, modals, Install Banner) via the tokens in `app.css`; the drawing paper and everything floating on it deliberately stay light. System (the default) follows the OS via `prefers-color-scheme` with no `data-theme` attribute stamped.
+      * **Appearance Control** - Light / Dark / System segmented control at the top of the Settings tab. Dark mode themes the chrome (app background, palette bar, modals, Install Banner) *and* the paper itself (a near-black warm tone under the same low-alpha texture; coloring-page line art inverts to white via `--lineart-filter`/`--lineart-blend`) via the tokens in `app.css`. Controls floating on the paper keep their light chrome. System (the default) follows the OS via `prefers-color-scheme` with no `data-theme` attribute stamped. See ADR-0052.

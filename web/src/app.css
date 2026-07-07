@@ -25,10 +25,9 @@
 
   /* Theme tokens (light values). Dark mode swaps these — and only these — in
      the two dark blocks below, so themed chrome must reference colors through
-     them. Deliberately NOT themed: the drawing paper and everything floating
-     on it (canvas sheet, action buttons, clear button, corner buttons) — the
-     paper stays paper-white in dark mode so drawings look the same, and its
-     controls keep their literal colors. */
+     them. Deliberately NOT themed: the controls floating on the paper (action
+     buttons, clear button, corner buttons) keep their literal light chrome —
+     they read as objects sitting on the page in either theme. */
   --app-bg: #f5f5f5;
   --surface: #ffffff; /* modal cards, palette bar */
   --surface-2: #f8f8f8; /* setting cards, inset panels */
@@ -56,6 +55,17 @@
   --success-text: #2e7d4f;
   --danger-wash: #fdecec;
   --danger-text: #b04a4a;
+  /* The drawing paper. The handmade-paper texture webp is a LOW-ALPHA grain
+     layer, so one texture serves both themes — only the color beneath it
+     changes. --paper is mirrored in PAPER_COLORS (web/src/lib/theme.ts) for
+     the canvas export path and the Notch Band — keep the three in sync.
+     --paper-margin is the flat tone behind the rotation-locked sheet. */
+  --paper: #fcfbf8;
+  --paper-margin: #f1efeb;
+  /* Coloring-page line art: black lines multiplied over light paper; dark mode
+     inverts them to white lines and screens them over the dark paper. */
+  --lineart-filter: none;
+  --lineart-blend: multiply;
 }
 
 /* Dark theme tokens. Applied two ways: an explicit parent choice stamps
@@ -93,6 +103,10 @@
   --success-text: #8bcfa4;
   --danger-wash: #422a2c;
   --danger-text: #e09393;
+  --paper: #211f29;
+  --paper-margin: #1a1922;
+  --lineart-filter: invert(1);
+  --lineart-blend: screen;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -125,6 +139,10 @@
     --success-text: #8bcfa4;
     --danger-wash: #422a2c;
     --danger-text: #e09393;
+    --paper: #211f29;
+    --paper-margin: #1a1922;
+    --lineart-filter: invert(1);
+    --lineart-blend: screen;
   }
 }
 

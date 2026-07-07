@@ -268,9 +268,9 @@
     width: 100%;
     overflow: hidden;
     /* Only visible around the lifted paper sheet while a rotation has the paper
-       locked: a flat, slightly greyer tone than the sheet's off-white so the
-       original page reads as distinct without any border line. */
-    background-color: #f1efeb;
+       locked: a flat tone slightly apart from the sheet's so the original page
+       reads as distinct without any border line. */
+    background-color: var(--paper-margin);
   }
 
   .paper-sheet {
@@ -280,7 +280,9 @@
     transform-origin: 0 0;
     z-index: 0;
     pointer-events: none;
-    background-color: #fcfbf8;
+    /* The texture is a low-alpha grain layer, so the theme only has to swap
+       the color beneath it — same webp in light and dark. */
+    background-color: var(--paper);
     background-image: url('/icons/handmade-paper.webp');
     background-repeat: repeat;
   }
@@ -316,9 +318,12 @@
     z-index: 3;
   }
 
-  /* The multiply blend lives on the wrapper (not the img): the transform makes
-     the wrapper a stacking context, which would confine an inner mix-blend-mode
-     to the wrapper's own (transparent) backdrop instead of the canvas below. */
+  /* The blend lives on the wrapper (not the img): the transform makes the
+     wrapper a stacking context, which would confine an inner mix-blend-mode to
+     the wrapper's own (transparent) backdrop instead of the canvas below.
+     Light: black lines multiply over the light paper. Dark: the img's
+     --lineart-filter inverts the art to white-on-black and screen makes the
+     black transparent-equivalent — white lines over the dark paper. */
   .paper-view {
     position: absolute;
     top: 0;
@@ -326,7 +331,7 @@
     transform-origin: 0 0;
     pointer-events: none;
     z-index: 2;
-    mix-blend-mode: multiply;
+    mix-blend-mode: var(--lineart-blend);
   }
 
   .paper-view[hidden] {
@@ -341,6 +346,7 @@
     height: 100%;
     object-fit: contain;
     opacity: 0;
+    filter: var(--lineart-filter);
   }
 
   .coloring-overlay.overlay-ready {
