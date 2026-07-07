@@ -23,3 +23,21 @@ Read `docs/AUDIT.md` and the current codebase, then validate each item against t
    - **Removed** — one line each, with the reason
 
 Do not implement any of the changes — this is a review pass only. Implementation happens via `/fix-next-audit`.
+
+## Verification angles that catch what a plain re-read misses
+
+Learned from past runs — check each, not just "does the cited code still look like that":
+
+- **Verify the proposed fix, not just the problem.** A finding can be real while its fix
+  sketch is wrong or harmful (e.g. a limiter placed where it would throttle legitimate
+  traffic, or a build-time flag that breaks the unit-test contract). Enrich the item with
+  the corrected fix rather than letting `/fix-next-audit` implement the flawed one.
+- **Verify the trigger scenario.** A race/bug can be real while the finding's named
+  reproduction path is implausible; hunt for the *credible* trigger and swap it in —
+  it changes both severity and where the fix belongs.
+- **Check ADRs and test configs for intentional design** before keeping an
+  architecture item: what reads as "missing cleanup" may be a documented singleton
+  (ADR), and what reads as "redundant runtime check" may be a deliberate test seam
+  (e.g. `vitest.config.ts` compile-time defines).
+- Findings' line numbers may cite the wrong span even when the claim is right
+  (state declarations vs the function body) — re-cite from the current code.
