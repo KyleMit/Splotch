@@ -64,7 +64,7 @@ baseline**, and every remaining below-floor risk is already feature-detected and
 | API / feature | Where | Baseline | Guarded? | Behavior below floor |
 | --- | --- | --- | --- | --- |
 | `PointerEvent` + `setPointerCapture` | `lib/drawing/engine.ts` | Chrome 55 / Safari 13 | core | within floor — core to drawing |
-| `getCoalescedEvents()` | `lib/drawing/engine.ts:455` | not in iOS Safari at all | ✅ `?.() ?? [e]` | one sample per move; fast scribbles a touch less smooth |
+| `getCoalescedEvents()` | `lib/drawing/engine.ts:651` | not in iOS Safari at all | ✅ `?.() ?? [e]` | one sample per move; fast scribbles a touch less smooth |
 | `color-mix(in srgb …)` | `lib/components/ColorPicker.svelte:427`; brand-tinted `box-shadow`s in ActionsPanel, ColoringBook, AiImagePrompt, AiImageResult, AdminConsole | Chrome 111 / Safari 16.2 | shadows ✅ plain-rgba declaration precedes each; picker ❌ none | **within floor**; below it shadows fall back to the rgba line, and the selected-swatch darken is dropped (cascades to plain bg) |
 | `100dvh` unit | `app.css:61` | Safari 15.4 | ✅ `100vh` precedes it | falls back to `100vh` |
 | `backdrop-filter` | `app.css:88` | Safari 9 (`-webkit-`) | ✅ prefixed | no blur; dim still applies |
