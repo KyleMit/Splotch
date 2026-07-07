@@ -241,6 +241,13 @@ function notifyViewChange() {
 }
 
 // The retained command log; commands older than this fold into the baseline.
+// Drawing state — this log, the baseline/keyframe rasters, canUndo,
+// canvasEmpty — deliberately outlives teardown()/initDrawingCanvas() cycles:
+// client-side navigation (`/` → `/privacy` → `/`) must not wipe the child's
+// drawing, so remount replays the retained log onto the fresh canvas
+// (resizeCanvas → rebuildFromBaseline). The cost — the rasters stay resident
+// while no canvas is mounted — is accepted (ADR-0004). teardown() resets only
+// pointer-input state, which must never leak across mounts.
 const commandLog: StrokeGroupCommand[] = [];
 const MAX_UNDO_STACK_SIZE = 10;
 
@@ -1350,6 +1357,14 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
       window.removeEventListener('pointerup', trackPointerLift, true);
       window.removeEventListener('pointercancel', trackPointerLift, true);
       window.removeEventListener('pointermove', adoptStrayPenStream, true);
+      // Pointer-input state must not outlive the mount, unlike the drawing
+      // state (see the persistence note at commandLog): a stale activePointers
+      // entry still marked isDrawing would let hover moves paint after a
+      // remount reuses its pointerId, and liveDownIds loses its self-healing
+      // window trackers above. releaseAllPointers also commits any mid-flight
+      // stroke into the log, so navigating away mid-stroke keeps the ink.
+      releaseAllPointers();
+      liveDownIds.clear();
     },
   };
 }

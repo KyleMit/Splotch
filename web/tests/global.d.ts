@@ -36,6 +36,7 @@ declare global {
         split?: 'none' | 'corner';
       }): void;
       setScreenAngleOverride(angle: number | null): void;
+      remount(): void;
       getViewState(): {
         active: boolean;
         scale: number;
