@@ -732,6 +732,56 @@ test('the magic brush paints the letterbox margin by extending the edge colour',
   await expect.poll(() => opaquePixelsInLeftBand(page), { timeout: 4000 }).toBeGreaterThan(500);
 });
 
+// Opaque pixel count within a thin band at the TOP canvas edge.
+function opaquePixelsInTopBand(page: Page, frac = 0.05): Promise<number> {
+  return page.evaluate((f) => {
+    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const bandH = Math.max(1, Math.round(c.height * f));
+    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, bandH);
+    let opaque = 0;
+    for (let i = 3; i < data.length; i += 4) if (data[i] > 200) opaque++;
+    return opaque;
+  }, frac);
+}
+
+// The case the user hit: after a rotation-with-ink the paper LOCKS (ADR-0050) and is
+// contain-fit into the new viewport, leaving letterbox margins around the whole page
+// (not just inside it). The magic sheet now covers the mapped viewport, so the brush
+// paints those margins too — before, they revealed nothing even though a pen could
+// draw there. Rotation is emulated via CDP (new metrics + a changed orientation angle).
+test('the magic brush paints the rotation-lock letterbox margin', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await applyFarmPage(page); // landscape viewport → wide art
+
+  // Ink locks the paper on rotation (a blank canvas would just re-adopt).
+  await draw(page, [
+    { x: 200, y: 200 },
+    { x: 400, y: 260 },
+  ]);
+
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: 720,
+    height: 1280,
+    deviceScaleFactor: 1,
+    mobile: true,
+    screenOrientation: { type: 'portraitPrimary', angle: 90 },
+  });
+  // The wide paper stays, lifted into the letterboxed sheet with top/bottom margins.
+  await expect(page.locator('.paper-sheet.paper-lifted')).toBeVisible();
+
+  await page.locator('#magicBrushButton').click();
+  // Sweep along the very top of the canvas — inside the rotation-lock top margin.
+  await draw(page, [
+    { x: 40, y: 6 },
+    { x: 240, y: 6 },
+    { x: 440, y: 6 },
+    { x: 660, y: 6 },
+  ]);
+  await expect.poll(() => opaquePixelsInTopBand(page), { timeout: 4000 }).toBeGreaterThan(500);
+});
+
 test('the magic brush reveals a rainbow gradient when no coloring page is applied', async ({
   page,
 }) => {

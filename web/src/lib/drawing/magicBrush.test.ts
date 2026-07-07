@@ -77,4 +77,27 @@ describe('letterbox edge extension geometry', () => {
   it('returns no fills when the picture already fills the sheet', () => {
     expect(edgeMargins(400, 600, 0, 0, 400, 600)).toEqual([]);
   });
+
+  // Under a rotation lock the sheet is larger than the paper on the other axis too,
+  // so a centered picture can be inset on all four sides (with corners). The
+  // horizontal pass samples the FULL sheet height so it also paints the corners the
+  // vertical pass filled.
+  it('fills all four sides and corners for a doubly-inset picture', () => {
+    const fills = edgeMargins(1000, 1000, 200, 300, 600, 400); // 200px L/R, 300px T/B
+    expect(fills).toHaveLength(4);
+    // Vertical pass first: top/bottom rows across the box width only.
+    const top = fills.find((f) => f.dy === 0 && f.dh === 300)!;
+    const bottom = fills.find((f) => f.dy === 700)!;
+    expect(top).toMatchObject({ dx: 200, dw: 600, sh: 1 });
+    expect(bottom).toMatchObject({ dx: 200, dw: 600, dh: 300, sh: 1 });
+    // Horizontal pass second: full-height columns → side bands spanning the whole
+    // sheet height, so the corners are covered.
+    const left = fills.find((f) => f.dx === 0)!;
+    const right = fills.find((f) => f.dx === 800)!;
+    expect(left).toMatchObject({ sy: 0, sh: 1000, dy: 0, dw: 200, dh: 1000 });
+    expect(right).toMatchObject({ sy: 0, sh: 1000, dy: 0, dw: 200, dh: 1000 });
+    // Order matters: both vertical fills come before both horizontal fills.
+    expect(fills.indexOf(top)).toBeLessThan(fills.indexOf(left));
+    expect(fills.indexOf(bottom)).toBeLessThan(fills.indexOf(right));
+  });
 });

@@ -217,13 +217,35 @@ resize):
   result but add an asset pipeline, storage, `strip-native` handling, and a sync
   burden for no visual gain — the ~2 ms runtime cost (off the hot path) doesn't
   justify precomputing.
-- A `contain`-fit leaves margin on **one axis only** (the fitted dimension fills the
-  sheet), so at most one opposite pair of margins is non-empty and corners never need
-  filling.
+The extension runs as two ordered passes (vertical rows, then full-height columns) so
+corners are covered for free — see `edgeMargins`. The blank-canvas rainbow gradient
+already fills the whole sheet, so it needs no edge extension.
 
-The blank-canvas rainbow gradient already fills the whole sheet, so it needs no edge
-extension. The margins that appear **around the whole paper** when a rotation locks it
-(ADR-0050) are a separate case — the page there is a floating sheet on deliberately
-plain container margins, and ADR-0050 rejected covering the mapped margins with a
-raster (tens of MB at 2× DPR) — so those stay as-is; only the picture's own letterbox
-inside the paper is extended.
+### Also covers the rotation-lock margins around the whole paper
+
+There are two nested letterboxes, and the fix now covers both:
+
+1. The twin `contain`-fit **inside the paper** (above) — always present.
+2. Under a rotation lock (ADR-0050) the paper is itself `contain`-fit into the
+   viewport, leaving margins **around the whole page**. A pen can draw there, so the
+   magic brush must too — this was the reported gap.
+
+The sheet is therefore sized to the whole **visible viewport in paper coordinates**
+(engine `sheetBounds()`), not just the paper: identity in normal use, the larger
+mapped-viewport rect under a lock (its origin can be negative, so the pattern is
+offset by `sheetOrigin` to stay aligned — `sheetPatternFor` sets a translate transform).
+The twin is drawn at its paper `contain`-fit position within that larger sheet and its
+edges are extended to every sheet border, so a stroke anywhere on screen reveals the
+nearest edge colour. Because both letterboxes can be active at once, the picture can be
+inset on all four sides — which is why the extension is the two-pass, corner-covering
+form rather than the single-axis one.
+
+- **Cost.** Under a lock the sheet grows to the mapped viewport (~2–4× the visible
+  canvas, e.g. ~23 MB at 2× DPR for a phone 90° rotation), a one-off transient rebuilt
+  on resize. ADR-0050 rejected mapped-margin rasters for the **undo baseline** (one per
+  keyframe, persistent, replayed); this is a **single** transient sheet, freed when the
+  paper re-adopts, so the objection there doesn't carry — the win (no dead zone for the
+  brush) is worth one larger canvas while rotated.
+- Margin ink still crops on rotating back and may drop once keyframed past the
+  paper-square baseline, exactly as pen ink in the margins already does (ADR-0050) — the
+  reveal follows the same rules as every other op.
