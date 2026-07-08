@@ -6,9 +6,14 @@ anything. Review happens on the PR.
 
 ## Setup (once per run)
 
-1. Ensure the working tree is clean; if not, stop and tell the user — never mix their
+1. **Check `docs/AUDIT.md` exists first.** It may be absent — this command deletes it once
+   the backlog is cleared, so a missing (or header-only) file is a normal, expected state,
+   not an error. If there's no `docs/AUDIT.md`, or it holds only the header with no `### `
+   findings, there's nothing to fix: report "no audit backlog to fix" and stop cleanly —
+   don't create a branch or PR.
+2. Ensure the working tree is clean; if not, stop and tell the user — never mix their
    uncommitted work into this run.
-2. If an open draft PR from a previous run exists (branch `claude/audit-sweep-*`), check
+3. If an open draft PR from a previous run exists (branch `claude/audit-sweep-*`), check
    out that branch and resume. Otherwise, from `main`, create `claude/audit-sweep-<YYYY-MM-DD>`,
    push it, and open a **draft PR** with `gh pr create --draft` titled "Audit sweep: <date>" and
    a body noting the run is in progress (final summary comes at the end).
