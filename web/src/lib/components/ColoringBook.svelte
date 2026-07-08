@@ -266,10 +266,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  /* Tiles stay light in both themes — they're thumbnails of coloring pages,
-     which live on light paper (see the light-sheet override in app.css), so a
-     black-on-white preview matches what applying the page actually gives. Little
-     paper cards inside the dark modal. */
+  /* Tiles stay light in both themes — little black-on-white paper cards inside
+     the modal that preview each page's line art. (The applied page inverts to
+     white-on-dark in dark mode per ADR-0052, but the picker keeps a consistent
+     light preview.) */
   .coloring-tile {
     position: relative;
     background: #f8f8f8;

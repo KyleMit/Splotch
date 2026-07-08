@@ -10,6 +10,8 @@
 //   static/coloring/{book}/{name}-thumb.webp        grid thumbnail of the line art
 //   static/coloring/{book}/{page}-tall.color.webp   portrait colored twin
 //   static/coloring/{book}/{page}-wide.color.webp   landscape colored twin
+//   static/coloring/{book}/{page}-tall.night.webp   portrait night twin (dark mode)
+//   static/coloring/{book}/{page}-wide.night.webp   landscape night twin (dark mode)
 //
 // Each picker-facing line-art image (cover + pages) has a `-thumb.webp` twin
 // (scripts/gen-coloring-thumbs.mjs): the picker grid shows the thumbnail, the
@@ -37,6 +39,10 @@ export interface ColoringPage {
   images: Record<BookOrientation, string>;
   /** Flat-colored twin per orientation, revealed by the magic brush (ADR-0043). */
   colorImages: Record<BookOrientation, string>;
+  /** Pre-colored "night" twin per orientation — the dark-mode magic-brush reveal
+      (ADR-0052 direction B). Only present for orientations whose night asset has
+      been generated; dark mode falls back to the light twin where it's absent. */
+  nightImages: Partial<Record<BookOrientation, string>>;
 }
 
 export interface Book {
@@ -49,7 +55,13 @@ export interface Book {
 
 export const PLATFORMS = { WEB: 'web', MOBILE: 'mobile' } as const;
 
-function page(book: string, id: string, name: string): ColoringPage {
+// `night` lists the orientations that have a generated `.night.webp` twin (empty
+// until a category is processed; portrait/landscape naming mirrors tall/wide).
+function page(book: string, id: string, name: string, night: BookOrientation[] = []): ColoringPage {
+  const nightImages: Partial<Record<BookOrientation, string>> = {};
+  if (night.includes('portrait')) nightImages.portrait = `/coloring/${book}/${id}-tall.night.webp`;
+  if (night.includes('landscape'))
+    nightImages.landscape = `/coloring/${book}/${id}-wide.night.webp`;
   return {
     id,
     name,
@@ -61,6 +73,7 @@ function page(book: string, id: string, name: string): ColoringPage {
       portrait: `/coloring/${book}/${id}-tall.color.webp`,
       landscape: `/coloring/${book}/${id}-wide.color.webp`,
     },
+    nightImages,
   };
 }
 
@@ -153,12 +166,14 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/space/cover.webp',
     pages: [
-      page('space', 'astronaut', 'Astronaut'),
-      page('space', 'meteor', 'Meteor'),
-      page('space', 'moon', 'Moon'),
-      page('space', 'rover', 'Rover'),
-      page('space', 'ship', 'Ship'),
-      page('space', 'station', 'Station'),
+      // Portrait night twins shipped (Phase 1 testbed, ADR-0052); landscape twins
+      // land in a later pass.
+      page('space', 'astronaut', 'Astronaut', ['portrait']),
+      page('space', 'meteor', 'Meteor', ['portrait']),
+      page('space', 'moon', 'Moon', ['portrait']),
+      page('space', 'rover', 'Rover', ['portrait']),
+      page('space', 'ship', 'Ship', ['portrait']),
+      page('space', 'station', 'Station', ['portrait']),
     ],
   },
   {
@@ -190,6 +205,11 @@ export function pageColorImage(page: ColoringPage, orientation: BookOrientation)
   return page.colorImages[orientation];
 }
 
+/** Night twin path for the orientation, or null when none is generated yet. */
+export function pageNightImage(page: ColoringPage, orientation: BookOrientation): string | null {
+  return page.nightImages[orientation] ?? null;
+}
+
 /** Grid-thumbnail path for a picker-facing line-art image (`x.webp` -> `x-thumb.webp`). */
 export function thumbPath(src: string): string {
   return src.replace(/\.webp$/, '-thumb.webp');
@@ -208,5 +228,12 @@ export function bookAssetPaths(book: Book): string[] {
     page.colorImages.portrait,
     page.colorImages.landscape,
   ]);
-  return [...lineArt, ...colorTwins, ...lineArt.map(thumbPath)];
+  // Night twins exist only for processed orientations (ADR-0052) — no thumbnail,
+  // same as the light twins.
+  const nightTwins = book.pages.flatMap((page) =>
+    (['portrait', 'landscape'] as BookOrientation[])
+      .map((o) => page.nightImages[o])
+      .filter((p): p is string => !!p)
+  );
+  return [...lineArt, ...colorTwins, ...nightTwins, ...lineArt.map(thumbPath)];
 }
