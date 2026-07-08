@@ -91,6 +91,11 @@ those in the gallery.
   creatures. Do NOT wash faces to a chalky/ghostly slate. Only genuinely colorless
   things (clouds, droplets, steam, star-glow) take a soft moonlit tint. (Was: bee /
   caterpillar / astronaut faces came out ghostly grey.)
+- **Eyes stay bright, never black-on-black.** In a dark recolor the model likes to fill
+  a whole eye with one dark color (navy-on-navy), so it reads as an empty socket. The
+  prompt now carves out eyes as an exception to the no-white-fills rule: keep a light
+  off-white sclera, a distinctly darker iris/pupil, and a catchlight glint. (Was:
+  Creatures' dragon-tall came back with dark voids for eyes.)
 - **Outlines stay WHITE, never dark.** The input is a white-line-on-dark drawing, and
   the model likes to "correct" it into a normal black-outline coloring page — re-inking
   every shape with dark strokes. Those dark lines then double against the app's white
