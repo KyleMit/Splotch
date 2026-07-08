@@ -119,7 +119,21 @@ don't hand-fix images.
    ```
    Then publish that file with the **Artifact tool** (it embeds images as data
    URIs, so it renders in the sandbox — do NOT hand-composite a PNG). Show the URL.
-   Also glance at a couple of images inline (Read tool) to sanity-check faces/mood.
+   The sheet has a **Light/Dark** toggle (defaults to Dark) and a per-tile
+   **Color / Outline / Combined** toggle. **Always judge on the Combined view** — it
+   reproduces the real canvas: the fills-only twin (its own outlines punched with the
+   line art as a mask, exactly like `magicBrush.buildFillsSheet`) under the themed
+   line-art layer over the paper. A twin that looks fine in isolation can break once
+   merged, so reviewing the raw twin alone is not enough. Also glance at a couple of
+   Combined tiles inline (Read tool) to sanity-check faces/eyes/mood.
+   - **Eyes gotcha (line-art driven, not the twin):** in dark mode the line art is
+     `invert(1)`-ed, so any SOLID-BLACK-filled feature in the base line art — most
+     often eyes drawn as filled black ovals — turns solid WHITE, and the fills-only
+     reveal punches that region out of the twin, so the twin can't fix it. Those pages
+     render as blank white eyes (Creatures' mermaid-wide). Pages whose eyes are drawn as
+     OUTLINES with a light interior (dragon) are fine — the twin fills a dark pupil that
+     survives. A blown-out eye is a base-line-art problem; regenerating the twin won't
+     change it (surface it instead of burning gens on regens).
 3. **Iterate**: regenerate any that look off (higher `-t`, or a prompt tweak). Kids'
    faces and the night background are the usual issues. For a page the `⚠ dark
    outlines` gate flags, the reliable fix is **more attempts against a stricter gate**
