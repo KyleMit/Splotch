@@ -110,7 +110,10 @@ don't hand-fix images.
    URIs, so it renders in the sandbox — do NOT hand-composite a PNG). Show the URL.
    Also glance at a couple of images inline (Read tool) to sanity-check faces/mood.
 3. **Iterate**: regenerate any that look off (higher `-t`, or a prompt tweak). Kids'
-   faces and the night background are the usual issues.
+   faces and the night background are the usual issues. For a page the `⚠ dark
+   outlines` gate keeps flagging, go the OTHER way — a LOW `-t` (≈0.25) keeps the
+   model faithful to the white-line input, where a high temperature tends to make it
+   re-ink dark. (Farm's duck-tall only came white at `-t 0.25`.)
 4. **On the user's approval**, ship:
    - Copy each twin from samples to the shipped path (strip the sample suffix, add
      `.night`):
