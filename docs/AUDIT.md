@@ -22,43 +22,6 @@ Not filed (already resolved / already documented, verified this pass):
 
 ---
 
-### [Tooling] `svelte.md` doesn't warn that `$state` deep-proxies break identity (`===`) comparison
-
-**File(s):** `.claude/rules/svelte.md`
-
-#### Problem
-
-Cost: **minor** but **invisible in code review** (needs an in-browser `evaluate` to spot) ·
-recurrence: medium (any selection-among-constants UI).
-
-`$state` deep-proxies objects and arrays, so a value stored in `$state` is **never** `===` the
-raw object it was created from. Identity checks against a plain constant list silently fail —
-e.g. radio chips driven by `checked={pickerViewport === vp}` never match because
-`$state(PICKER_VIEWPORTS[0])` is a proxy and `vp` is a raw array entry. The markup looks correct;
-the bug only shows as "nothing is ever selected." Fixed with `$state.raw(...)` or a key-field
-comparison. This is documented Svelte 5 behavior, not a Splotch quirk, so it recurs wherever
-selection state is compared by identity.
-
-#### Proposed solution
-
-Add a bullet to `.claude/rules/svelte.md`:
-
-```markdown
-* **`$state` deep-proxies objects and arrays** — a value stored in `$state` is never `===` the
-  raw object it was created from, so identity checks against a plain constant list silently fail
-  (e.g. `checked={selected === option}` never matches). For selection-among-constants state use
-  `$state.raw(...)`, or compare by a key field instead of by identity.
-```
-
-#### Verification
-
-In a scratch component, `let sel = $state(OPTIONS[0]); sel === OPTIONS[0]` evaluates `false`
-(inspect via the browser or a Vitest+happy-dom check); switching to `$state.raw(OPTIONS[0])`
-makes it `true`. A radio group bound with `checked={sel === opt}` visibly selects nothing under
-`$state` and selects correctly under `$state.raw`.
-
----
-
 ### [Tooling] No documented single-spec E2E run for ad-hoc cloud validation
 
 **File(s):** `.claude/skills/run-splotch/SKILL.md` (Troubleshooting table) or
