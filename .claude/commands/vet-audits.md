@@ -2,6 +2,8 @@
 
 Read `docs/AUDIT.md` and the current codebase, then **adversarially** validate each finding against the actual code — is the problem real, is it *worth solving*, and does the fix agent have what it needs to act on it.
 
+**First, check the file exists.** `docs/AUDIT.md` may be absent — `/fix-audits` deletes it once the backlog is cleared, so a missing (or header-only) file is a normal, expected state, not an error. If there's no `docs/AUDIT.md`, or it holds only the header with no `### ` findings, there's nothing to vet: report "no audit backlog to vet" and stop cleanly.
+
 ## For each finding, decide: keep, enrich, or remove
 
 **Keep and enrich** if the finding is real *and worth acting on* — it improves performance, readability, maintainability, or architecture by enough to outweigh the cost and risk of the change. For these findings:

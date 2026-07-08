@@ -88,6 +88,21 @@ The `docs/AUDIT.md` header (create it if the file doesn't exist yet):
 > Skills **merge** into this file — they never overwrite each other's sections.
 ```
 
+**`docs/AUDIT.md` may not exist.** An empty backlog is a real, expected state, not an
+error: `/fix-audits` **deletes** the file once it clears the last finding, so between
+audit runs there is often no `docs/AUDIT.md` at all. Every audit skill must handle its
+absence gracefully:
+
+- **Producers** (write findings): treat a missing file as an empty backlog and create it
+  with the header above — never assume it's already there, and never error out because
+  `cat`/read of it failed.
+- **Consumers** (`/fix-audits`, `/vet-audits`): a missing (or header-only) file means
+  there's nothing to do. Report "no audit backlog" and stop cleanly — do not treat the
+  missing file as a failure.
+
+Check for the file's existence before reading it, and read defensively (e.g.
+`test -f docs/AUDIT.md` first, or tolerate a non-zero exit from `cat`).
+
 ### 2. Log every run in `docs/AUDIT-LOG.md`
 
 After a run, add one row to `docs/AUDIT-LOG.md` (most recent first) so there's a
