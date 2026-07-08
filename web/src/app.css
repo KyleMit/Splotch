@@ -69,6 +69,13 @@
      mode a step lighter than --paper so they still read as raised cards. */
   --float-surface: #ffffff;
   --float-surface-hover: #f5f5f5;
+  /* Hairline edge + lift for the float cards. In light mode the edge is
+     transparent (the warm drop shadow does the separating); in dark mode a
+     faint light hairline plus a real drop shadow give the cards a visible edge
+     against the dark paper, where the warm shadow vanishes. */
+  --float-border: transparent;
+  --float-shadow: 0 2px 6px rgba(93, 84, 68, 0.14), 0 6px 16px rgba(93, 84, 68, 0.1);
+  --float-shadow-flyout: 0 6px 20px rgba(93, 84, 68, 0.2);
   /* Keyline ringing near-black currentColor ink on the float cards — the dark
      twin of the white-ink black keyline (ActionsPanel .white-stroke). Inert in
      light mode, where dark ink already reads on the light cards. */
@@ -116,6 +123,9 @@
   --lineart-blend: screen;
   --float-surface: #2e2c38;
   --float-surface-hover: #393744;
+  --float-border: rgba(255, 255, 255, 0.1);
+  --float-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 3px 10px rgba(0, 0, 0, 0.5);
+  --float-shadow-flyout: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 22px rgba(0, 0, 0, 0.6);
   --dark-ink-keyline: #e9e7f0;
 }
 
@@ -155,6 +165,9 @@
     --lineart-blend: screen;
     --float-surface: #2e2c38;
     --float-surface-hover: #393744;
+    --float-border: rgba(255, 255, 255, 0.1);
+    --float-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 3px 10px rgba(0, 0, 0, 0.5);
+    --float-shadow-flyout: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 22px rgba(0, 0, 0, 0.6);
     --dark-ink-keyline: #e9e7f0;
   }
 }

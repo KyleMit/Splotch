@@ -482,15 +482,13 @@
     width: calc(60px * var(--action-btn-scale, 1));
     height: calc(60px * var(--action-btn-scale, 1));
     background: var(--float-surface);
-    border: 2px solid transparent;
+    border: 2px solid var(--float-border);
     border-radius: 18px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow:
-      0 2px 6px rgba(93, 84, 68, 0.14),
-      0 6px 16px rgba(93, 84, 68, 0.1);
+    box-shadow: var(--float-shadow);
     transition: all 0.2s ease;
     touch-action: manipulation;
     padding: calc(10px * var(--action-btn-scale, 1));
@@ -594,7 +592,7 @@
     background: var(--float-surface);
     border: none;
     border-radius: 16px;
-    box-shadow: 0 6px 20px rgba(93, 84, 68, 0.2);
+    box-shadow: var(--float-shadow-flyout);
     z-index: 901;
   }
 
@@ -633,7 +631,7 @@
     width: calc(60px * var(--action-btn-scale, 1));
     height: calc(60px * var(--action-btn-scale, 1));
     background: var(--float-surface);
-    border: 2px solid transparent;
+    border: 2px solid var(--float-border);
     border-radius: 14px;
     cursor: pointer;
     /* Inherit the menu's color so the line icons (currentColor) pick up the
