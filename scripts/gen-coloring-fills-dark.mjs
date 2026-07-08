@@ -105,22 +105,26 @@ async function alignToSource(coloredBuf, sourceBuf, width, height) {
 const DRIFT_W = 512; // working width for the comparison
 const DRIFT_SRC_DARK = 110; // source pixel darker than this = a line
 const DRIFT_DILATE = 6; // px of slack around each source line (registration + glow)
+const DRIFT_THIN = 3; // white strokes up to ~2*this px wide are outline-like, not fills
 const DRIFT_LUMA_WHITE = 185; // twin pixel this bright...
 const DRIFT_CHROMA_MAX = 45; // ...and this desaturated = a white outline, not a fill
 // Above this share of invented white (relative to source outline mass) a render is
 // regenerated. Clean twins score 0; a stray invented shape lands well above this.
 const DRIFT_THRESHOLD_DEFAULT = 0.004;
 
-// Separable box dilation of a 0/1 mask.
-function dilateMask(mask, w, h, r) {
+// Separable box morphology of a 0/1 mask. dilate = a pixel is set if ANY neighbor
+// within r is set; erode = set only if ALL neighbors within r are set.
+function morph(mask, w, h, r, dilate) {
+  const hit = dilate ? 1 : 0; // dilate stops on the first set; erode stops on first unset
   const tmp = new Uint8Array(w * h);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      let on = 0;
+      let on = dilate ? 0 : 1;
       for (let dx = -r; dx <= r; dx++) {
         const xx = x + dx;
-        if (xx >= 0 && xx < w && mask[y * w + xx]) {
-          on = 1;
+        const v = xx < 0 || xx >= w ? 0 : mask[y * w + xx];
+        if (v === hit) {
+          on = hit;
           break;
         }
       }
@@ -130,11 +134,12 @@ function dilateMask(mask, w, h, r) {
   const out = new Uint8Array(w * h);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      let on = 0;
+      let on = dilate ? 0 : 1;
       for (let dy = -r; dy <= r; dy++) {
         const yy = y + dy;
-        if (yy >= 0 && yy < h && tmp[yy * w + x]) {
-          on = 1;
+        const v = yy < 0 || yy >= h ? 0 : tmp[yy * w + x];
+        if (v === hit) {
+          on = hit;
           break;
         }
       }
@@ -142,6 +147,76 @@ function dilateMask(mask, w, h, r) {
     }
   }
   return out;
+}
+const dilateMask = (mask, w, h, r) => morph(mask, w, h, r, true);
+const erodeMask = (mask, w, h, r) => morph(mask, w, h, r, false);
+
+// --- Night-ness detection -----------------------------------------------------
+// The model also drifts on MOOD — painting a bright daytime "sky blue" (or white)
+// background instead of a night sky. The TRUE background (the open area outside
+// every shape, flood-filled from the border through the source's white) must be a
+// deep evening tone. We report its MEDIAN luma — robust to a bright edge-touching
+// shape (ground, planet) leaking into the fill — so a genuinely dark night sky
+// stays low even then, while a daytime sky reads bright. Known-good night twins
+// sit at ~15-32; sky-blue daytime is ~150+.
+const NIGHT_W = 384;
+const NIGHT_SRC_LIGHT = 170; // source pixel brighter than this = background candidate
+const NIGHT_BG_LUMA_MAX_DEFAULT = 100; // median background luma above this = too bright / daytime
+const NIGHT_MIN_BG_FRAC = 0.04; // skip the check if there's barely any open background
+
+async function scoreNightness(twinBuf, sourceBuf) {
+  const s = await sharp(sourceBuf)
+    .resize(NIGHT_W, null, { fit: 'inside' })
+    .grayscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const t = await sharp(twinBuf)
+    .resize(NIGHT_W, null, { fit: 'inside' })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const w = s.info.width;
+  const h = s.info.height;
+  const n = w * h;
+  const bg = new Uint8Array(n);
+  const stack = [];
+  const push = (x, y) => {
+    if (x < 0 || x >= w || y < 0 || y >= h) return;
+    const i = y * w + x;
+    if (!bg[i] && s.data[i] > NIGHT_SRC_LIGHT) {
+      bg[i] = 1;
+      stack.push(i);
+    }
+  };
+  for (let x = 0; x < w; x++) {
+    push(x, 0);
+    push(x, h - 1);
+  }
+  for (let y = 0; y < h; y++) {
+    push(0, y);
+    push(w - 1, y);
+  }
+  while (stack.length) {
+    const i = stack.pop();
+    const x = i % w;
+    const y = (i / w) | 0;
+    push(x + 1, y);
+    push(x - 1, y);
+    push(x, y + 1);
+    push(x, y - 1);
+  }
+  const lumas = [];
+  for (let i = 0; i < n; i++) {
+    if (!bg[i]) continue;
+    const r = t.data[i * 3];
+    const g = t.data[i * 3 + 1];
+    const b = t.data[i * 3 + 2];
+    lumas.push(0.299 * r + 0.587 * g + 0.114 * b);
+  }
+  // Too little open background to judge (e.g. a full-bleed subject): treat as fine.
+  if (lumas.length < n * NIGHT_MIN_BG_FRAC) return { bgLuma: 0, bgFrac: lumas.length / n };
+  lumas.sort((a, b) => a - b);
+  return { bgLuma: lumas[lumas.length >> 1], bgFrac: lumas.length / n };
 }
 
 async function scoreDrift(twinBuf, sourceBuf) {
@@ -167,14 +242,26 @@ async function scoreDrift(twinBuf, sourceBuf) {
     }
   }
   const allowed = dilateMask(outline, w, h, DRIFT_DILATE);
-  let added = 0;
+
+  // Bright, desaturated pixels in the twin — outlines AND any pale/white fill
+  // (a moonlit face, a water droplet). We only want INVENTED OUTLINES, so keep the
+  // THIN white and drop the thick blobs: an erode-then-dilate (opening) preserves
+  // fill blobs; whatever the opening removes was a thin stroke. An invented shape's
+  // outline survives; a legit pale fill region does not, so pale-subject pages
+  // aren't false-flagged as drift.
+  const white = new Uint8Array(n);
   for (let i = 0; i < n; i++) {
     const r = t.data[i * 3];
     const g = t.data[i * 3 + 1];
     const b = t.data[i * 3 + 2];
     const luma = 0.299 * r + 0.587 * g + 0.114 * b;
     const chroma = Math.max(r, g, b) - Math.min(r, g, b);
-    if (luma > DRIFT_LUMA_WHITE && chroma < DRIFT_CHROMA_MAX && !allowed[i]) added++;
+    if (luma > DRIFT_LUMA_WHITE && chroma < DRIFT_CHROMA_MAX) white[i] = 1;
+  }
+  const blobs = dilateMask(erodeMask(white, w, h, DRIFT_THIN), w, h, DRIFT_THIN);
+  let added = 0;
+  for (let i = 0; i < n; i++) {
+    if (white[i] && !blobs[i] && !allowed[i]) added++; // thin white, far from a source line
   }
   return { ratio: srcCount ? added / srcCount : 0, added, srcCount };
 }
@@ -187,28 +274,28 @@ const WEBP_QUALITY = 90;
 // The input handed to the model is the inverted line art: WHITE outlines on a
 // near-black ground. The prompt asks it to keep those white lines and fill the
 // regions with colors that read on dark — the "answer key" for a dark theme.
-const DARK_FILL_PROMPT = `You are given a toddler coloring-book page drawn as WHITE outlines on a dark background. Color it in like a glowing night-time / neon coloring page.
+const DARK_FILL_PROMPT = `You are given a toddler coloring-book page drawn as WHITE outlines on a dark background. Color it in as a cozy NIGHT-TIME / EVENING scene — as if the whole picture is happening at dusk or after dark, softly lit by moonlight.
 
 ABSOLUTE RULES — the colored image must line up perfectly on top of the original:
 - Keep every WHITE outline exactly where it is. Do not move, redraw, thicken, thin, smooth, or erase a single line. The outlines must stay white and pixel-for-pixel identical to the original.
 - Do not add any new lines, outlines, stars, dots, details, decorations, patterns, textures, letters, or objects. Only add color to the regions that are already there.
 - Do not crop, zoom, rotate, shift, or resize the picture. Keep the exact same composition, framing, and margins.
 
-COLORING STYLE — made for a DARK theme:
+THIS IS A NIGHT / EVENING SCENE — the whole point:
+- The picture must clearly read as taking place at NIGHT or in the EVENING — dusk, twilight, moonlit, after dark — NOT in bright daylight. A daytime subject (a sunny leaf, a blue-sky day) must simply look like it is now night-time.
+- The BACKGROUND and every large open or empty area must be a DEEP EVENING-SKY tone: midnight blue, deep indigo, dark twilight purple, or deep navy. It does NOT have to be pitch black — a deep dusk is fine — but it must be DARK and DIM.
+- Do NOT paint the background a bright or light "SKY BLUE" / daytime blue, and do NOT make it white, grey, or any pale or bright color. When in doubt, go darker and deeper.
+
+COLORING STYLE — a dim, moonlit night palette:
 - Fill each region with one solid, flat, even color. No gradients, no shading, no highlights, no crayon or paint texture.
-- Use vivid, saturated, luminous colors that pop against a dark background (bright teal, electric blue, magenta, lime, warm gold, coral). Avoid dark muddy colors and avoid near-white fills that would wash out.
+- Use deep, rich, moonlit colors, with a few GLOWING accent colors (warm gold, amber, teal, magenta) as if lit by the moon, fireflies, or a lantern. Accents may glow, but the overall scene stays dim and evening-lit — cool and deep, not bright and sunny.
+- NEVER use pure or near-WHITE fills. Even a subject that is normally white or pale — a face, a belly, a water droplet, a cloud — must be given a COOL, DIM, MOONLIT tone (a soft dusky blue-grey, pale lavender, or muted slate) that is clearly darker than white. The ONLY white pixels allowed anywhere are the outlines themselves and tiny eye glints.
+- Avoid bright daytime colors (bright sky blue, bright grass green, bright white). Deepen and cool every color toward evening.
 - Keep the WHITE outlines fully visible — every fill should butt right up against the white outline without covering it.
 
-BACKGROUND — stays dark:
-- The background and any large empty area must be a DEEP DARK color (deep midnight navy or near-black), NOT white and NOT a bright color. It should read as night sky / dark paper so the bright fills glow.
-- Do not leave any region pure white except the outlines themselves and tiny eye glints.
+Convey the night mood with COLOR AND MOOD ONLY. Do NOT add a moon, stars, fireflies, lamps, or any new shapes or lines — only the outlines already present may be colored.
 
-NIGHT THEME & VIBE — this is the whole point:
-- Make the picture feel like a cozy NIGHT-TIME scene, not merely "colored on a dark background." Think moonlit, after-dark, dreamy, magical night.
-- Use a night palette: deep midnight-blue and dark-purple backgrounds, cool moonlit tones across the scene, with a few warm glowing accents (as if lit by moonlight, fireflies, a lantern, or a soft glow).
-- Convey the night mood with COLOR AND MOOD ONLY. Do NOT add a moon, stars, fireflies, lamps, or any new shapes or lines — only the outlines already present may be colored. A daytime subject should simply look like it's now at night.
-
-The result must look like the identical white-line drawing, recolored as a glowing, cozy night-time scene on a deep dark background.`;
+The result must look like the identical white-line drawing, recolored as a cozy, dim, moonlit NIGHT-TIME scene on a deep dark evening background — never a bright daytime picture.`;
 
 async function generateDarkPage(ai, { imageBytes, mimeType, temperature }) {
   const response = await ai.models.generateContent({
@@ -263,6 +350,7 @@ const { values, positionals } = parseArgs({
     tall: { type: 'boolean' },
     'max-attempts': { type: 'string' },
     'drift-threshold': { type: 'string' },
+    'night-luma-max': { type: 'string' },
   },
 });
 const samples = values.samples === undefined ? 1 : Number(values.samples);
@@ -276,14 +364,23 @@ const driftThreshold =
     ? DRIFT_THRESHOLD_DEFAULT
     : Number(values['drift-threshold']);
 if (!(driftThreshold >= 0)) fail(`--drift-threshold must be a non-negative number`);
+const nightLumaMax =
+  values['night-luma-max'] === undefined
+    ? NIGHT_BG_LUMA_MAX_DEFAULT
+    : Number(values['night-luma-max']);
+if (!(nightLumaMax >= 0)) fail(`--night-luma-max must be a non-negative number`);
 if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
 
-// Generate one take, register it to the source, and score its drift. Retry (with a
-// rising temperature to shake loose a different composition) until a take scores at
-// or below the threshold or the attempt budget runs out, then return the
-// least-drifted take seen — so even a stubborn page yields its cleanest render.
+// Generate one take, register it to the source, and score two ways: structural
+// DRIFT (invented outlines) and NIGHT-ness (background too bright / daytime). Retry
+// (with a rising temperature to shake loose a different composition) until a take
+// passes both gates or the attempt budget runs out. A take is "acceptable" when its
+// background reads as night; among acceptable takes we keep the least-drifted, and
+// stop early once one is also drift-clean. If none read as night we fall back to the
+// least-drifted take overall and flag it, so even a stubborn page yields a render.
 async function generateCleanTake({ darkInput, source, width, height, temp0 }) {
-  let best = null;
+  let best = null; // lowest drift overall (fallback)
+  let bestNight = null; // lowest drift among takes whose background reads as night
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const temperature = Math.min(2, temp0 + (attempt - 1) * 0.15);
     const { bytes } = await generateDarkPage(ai, {
@@ -296,10 +393,14 @@ async function generateCleanTake({ darkInput, source, width, height, temp0 }) {
     // black-line source to undo the model's few-pixel nudge.
     const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
     const drift = await scoreDrift(aligned, source);
-    if (!best || drift.ratio < best.drift.ratio) best = { aligned, dx, dy, drift, attempt };
-    if (drift.ratio <= driftThreshold) break;
+    const night = await scoreNightness(aligned, source);
+    const take = { aligned, dx, dy, drift, night, attempt };
+    if (!best || drift.ratio < best.drift.ratio) best = take;
+    if (night.bgLuma <= nightLumaMax && (!bestNight || drift.ratio < bestNight.drift.ratio))
+      bestNight = take;
+    if (drift.ratio <= driftThreshold && night.bgLuma <= nightLumaMax) break;
   }
-  return best;
+  return bestNight ?? best;
 }
 
 let pages = positionals.length
@@ -339,9 +440,11 @@ for (const page of pages) {
       if (i === 0) await sharp(darkInput).toFile(join(dir, `${base}.input.webp`));
       const nudge = take.dx || take.dy ? `  shift ${take.dx},${take.dy}` : '';
       const tries = take.attempt > 1 ? `  (${take.attempt} tries)` : '';
-      const drift = `  drift ${take.drift.ratio.toFixed(4)}`;
-      const warn = take.drift.ratio > driftThreshold ? '  ⚠ still drifting' : '';
-      console.log(`ok${nudge}${tries}${drift}${warn}  -> ${relative(ROOT, out)}`);
+      const stats = `  drift ${take.drift.ratio.toFixed(4)} bgLuma ${take.night.bgLuma.toFixed(0)}`;
+      const warn =
+        (take.drift.ratio > driftThreshold ? '  ⚠ still drifting' : '') +
+        (take.night.bgLuma > nightLumaMax ? '  ⚠ too bright/daytime' : '');
+      console.log(`ok${nudge}${tries}${stats}${warn}  -> ${relative(ROOT, out)}`);
     } catch (err) {
       failures++;
       console.log(`FAILED (${err instanceof Error ? err.message : err})`);
