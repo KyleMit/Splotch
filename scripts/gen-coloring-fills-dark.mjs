@@ -111,7 +111,12 @@ BACKGROUND — stays dark:
 - The background and any large empty area must be a DEEP DARK color (deep midnight navy or near-black), NOT white and NOT a bright color. It should read as night sky / dark paper so the bright fills glow.
 - Do not leave any region pure white except the outlines themselves and tiny eye glints.
 
-The result must look like the identical white-line drawing, filled with bright flat colors on a dark background.`;
+NIGHT THEME & VIBE — this is the whole point:
+- Make the picture feel like a cozy NIGHT-TIME scene, not merely "colored on a dark background." Think moonlit, after-dark, dreamy, magical night.
+- Use a night palette: deep midnight-blue and dark-purple backgrounds, cool moonlit tones across the scene, with a few warm glowing accents (as if lit by moonlight, fireflies, a lantern, or a soft glow).
+- Convey the night mood with COLOR AND MOOD ONLY. Do NOT add a moon, stars, fireflies, lamps, or any new shapes or lines — only the outlines already present may be colored. A daytime subject should simply look like it's now at night.
+
+The result must look like the identical white-line drawing, recolored as a glowing, cozy night-time scene on a deep dark background.`;
 
 async function generateDarkPage(ai, { imageBytes, mimeType, temperature }) {
   const response = await ai.models.generateContent({
