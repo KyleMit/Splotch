@@ -57,6 +57,9 @@
            • data-drawer-open — present only when the drawer is open (default: closed).
            • data-off-adv / data-off-<control> — present only when advanced controls
              or that Parent-Center control is switched OFF (default: on/shown).
+           • data-theme — present only when the parent explicitly chose light or dark
+             (default: system, where the prefers-color-scheme CSS drives the theme
+             with no attribute at all). Mirrors lib/theme.ts.
          The keys, defaults, and the 70/130/100 scale clamp mirror settings.svelte.ts
          (ACTION_BUTTON_SCALE_* and BOOL_SETTINGS) — keep them in sync. -->
     <script>
@@ -87,6 +90,9 @@
           el.toggleAttribute('data-off-coloring', !on('splotch-coloring-book-enabled', true));
           el.toggleAttribute('data-off-screenshot', !on('splotch-screenshot-enabled', true));
           el.toggleAttribute('data-off-undo', !on('splotch-undo-button-enabled', true));
+
+          var theme = localStorage.getItem('splotch-theme');
+          if (theme === 'light' || theme === 'dark') el.setAttribute('data-theme', theme);
         } catch (e) {
           /* private-mode / disabled storage — fall back to CSS defaults */
         }

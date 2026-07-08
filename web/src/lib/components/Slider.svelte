@@ -188,7 +188,7 @@
     width: 100%;
     height: 28px;
     border-radius: 999px;
-    background: #e9e9e9;
+    background: var(--slider-track);
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
     overflow: hidden;
   }
@@ -211,7 +211,7 @@
     width: 2px;
     transform: translateX(-50%);
     border-radius: 1px;
-    background: rgba(0, 0, 0, 0.22);
+    background: var(--slider-notch);
     pointer-events: none;
   }
 </style>

@@ -22,9 +22,12 @@
     setLockRotation,
     setForceLandscapeOrientation,
     setPencilEraserEnabled,
+    setTheme,
     changeSaveFolder,
     forgetSaveFolder,
   } from '$lib/state/settings.svelte';
+  import type { ThemePreference } from '$lib/theme';
+  import type { IconName } from '../icon-names';
   import { setResizingActionButtons } from '$lib/state/ui.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { supportsOrientationLock } from '$lib/platform';
@@ -38,6 +41,12 @@
   // The optional save folder is desktop-Chromium only (File System Access API).
   // On every other browser the row is hidden and saves stay as downloads.
   const showFolderSave = folderSaveSupported();
+
+  const themeOptions: { value: ThemePreference; label: string; icon: IconName }[] = [
+    { value: 'light', label: 'Light', icon: 'theme-light' },
+    { value: 'dark', label: 'Dark', icon: 'theme-dark' },
+    { value: 'system', label: 'System', icon: 'theme-auto' },
+  ];
 
   const PREVIEW_SPEED = 0.45;
   let previewingVolume = false;
@@ -78,6 +87,28 @@
 
 <section class="setting-group">
   <h3 class="setting-group-heading">Settings</h3>
+
+  <div class="setting">
+    <div class="appearance-label">
+      <Icon name="theme-auto" class="setting-icon" />
+      <span class="appearance-title">Appearance</span>
+    </div>
+    <div class="theme-picker" role="radiogroup" aria-label="Appearance">
+      {#each themeOptions as option (option.value)}
+        <button
+          class="theme-option"
+          class:active={settings.theme === option.value}
+          id="themeOption-{option.value}"
+          role="radio"
+          aria-checked={settings.theme === option.value}
+          onclick={() => setTheme(option.value)}
+        >
+          <Icon name={option.icon} class="theme-option-icon" />
+          <span>{option.label}</span>
+        </button>
+      {/each}
+    </div>
+  </div>
 
   <div class="setting">
     <ToggleRow
@@ -285,9 +316,70 @@
     margin: 0 0 10px 0;
     font-size: 13px;
     font-weight: 700;
-    color: #888;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.6px;
+  }
+
+  .appearance-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .appearance-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* iOS-style segmented control: the active segment reads as a raised card. */
+  .theme-picker {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--slider-track);
+    border-radius: 12px;
+  }
+
+  .theme-option {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 4px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-mid);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  @media (hover: hover) {
+    .theme-option:not(.active):hover {
+      color: var(--text-strong);
+    }
+  }
+
+  .theme-option.active {
+    background: var(--surface);
+    color: var(--text-strong);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  }
+
+  :global(.theme-option-icon) {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
   }
 
   .folder-location {
@@ -307,7 +399,7 @@
   .folder-title {
     font-size: 14px;
     font-weight: 500;
-    color: #555;
+    color: var(--text);
     white-space: nowrap;
   }
 
@@ -347,13 +439,13 @@
     padding: 7px 14px;
     font-size: 13px;
     font-weight: 600;
-    color: #7c50bb;
-    background: #efe6fa;
+    color: var(--brand-text);
+    background: var(--brand-wash);
     cursor: pointer;
   }
 
   .folder-pill:hover {
-    background: #e6d7f6;
+    background: var(--brand-wash-hover);
   }
 
   .folder-clear {
@@ -365,13 +457,13 @@
     height: 26px;
     border: none;
     border-radius: 50%;
-    color: #666;
-    background: #e9e9e9;
+    color: var(--text-mid);
+    background: var(--slider-track);
     cursor: pointer;
   }
 
   .folder-clear:hover {
-    background: #dcdcdc;
+    background: var(--control-track-hover);
   }
 
   :global(.folder-clear-icon) {
@@ -397,7 +489,7 @@
     margin-bottom: 8px;
     font-size: 13px;
     font-weight: 600;
-    color: #666;
+    color: var(--text-mid);
   }
 
   .slider-label-name {
@@ -406,6 +498,6 @@
     gap: 10px;
     font-size: 14px;
     font-weight: 500;
-    color: #555;
+    color: var(--text);
   }
 </style>

@@ -205,7 +205,7 @@
 <style>
   .help-section {
     margin-bottom: 16px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
   }
@@ -218,11 +218,11 @@
     padding: 16px;
     font-size: 18px;
     font-weight: 600;
-    color: #555;
+    color: var(--text);
     cursor: pointer;
     user-select: none;
     list-style: none;
-    background: #f8f8f8;
+    background: var(--surface-2);
     transition: background 0.2s ease;
     display: flex;
     justify-content: space-between;
@@ -232,7 +232,7 @@
 
   @media (hover: hover) {
     .help-section summary:hover {
-      background: #f0f0f0;
+      background: var(--surface-hover);
     }
   }
 
@@ -243,7 +243,7 @@
   .help-section summary::after {
     content: '›';
     font-size: 24px;
-    color: #999;
+    color: var(--text-faint);
     transition: transform 0.2s ease;
     flex-shrink: 0;
   }
@@ -260,7 +260,7 @@
     margin: 0 0 10px 0;
     font-size: 13px;
     font-weight: 700;
-    color: #888;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.6px;
   }
@@ -272,7 +272,7 @@
     padding: 16px 16px 0;
     font-size: 18px;
     font-weight: 600;
-    color: #555;
+    color: var(--text);
   }
 
   .summary-text {
@@ -330,7 +330,7 @@
   .one-tap-hint {
     margin: 8px 0 0;
     font-size: 13px;
-    color: #999;
+    color: var(--text-faint);
   }
 
   :global(.step-icon) {
@@ -343,7 +343,7 @@
   .steps {
     padding: 16px 24px 16px 40px;
     margin: 0;
-    color: #666;
+    color: var(--text-mid);
     line-height: 1.8;
   }
 

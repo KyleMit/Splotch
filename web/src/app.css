@@ -7,6 +7,8 @@
      - styles for DOM elements created imperatively (polaroid, body classes) */
 
 :root {
+  color-scheme: light;
+
   /* Brand accent used for active/hover chrome across parent + AI UI.
      Custom properties pierce Svelte's style scoping, so components
      reference these directly via var(). */
@@ -20,6 +22,164 @@
      engines (see docs/COMPATIBILITY.md). */
   --brand-tint-filter: invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%)
     contrast(88%);
+
+  /* Theme tokens (light values). Dark mode swaps these — and only these — in
+     the two dark blocks below, so themed chrome must reference colors through
+     them. The one deliberately unthemed control is the Clear Button — its red
+     danger chrome reads the same on light or dark paper. */
+  --app-bg: #f5f5f5;
+  --surface: #ffffff; /* modal cards, palette bar */
+  --surface-2: #f8f8f8; /* setting cards, inset panels */
+  --surface-hover: #f5f5f5;
+  --surface-warm-hover: #f4f0ea; /* beige hover on paper-toned buttons */
+  --border: #e0e0e0;
+  --border-warm: #ddd6cc;
+  --border-warm-strong: #c4bbad;
+  --control-track: #ddd; /* toggle-switch off state */
+  --control-track-hover: #ccc;
+  --slider-track: #e9e9e9;
+  --slider-notch: rgba(0, 0, 0, 0.22); /* snap-detent tick over track + fill */
+  --text-strong: #333;
+  --text: #555;
+  --text-mid: #666;
+  --text-muted: #888;
+  --text-faint: #999;
+  --icon-ink: #1f1f1f; /* monochrome icon fill (matches the SVGs' baked fill) */
+  --icon-muted: #737373;
+  --icon-muted-hover: #404040;
+  --brand-wash: #ede7f6; /* brand-tinted active/selected fills */
+  --brand-wash-hover: #e3d7f5; /* one step stronger, for hovering washed elements */
+  --brand-text: #7c50bb;
+  --success-wash: #e9f7ec; /* verification / feedback banners */
+  --success-text: #2e7d4f;
+  --danger-wash: #fdecec;
+  --danger-text: #b04a4a;
+  /* The drawing paper. The handmade-paper texture webp is a LOW-ALPHA grain
+     layer, so one texture serves both themes — only the color beneath it
+     changes. --paper is mirrored in PAPER_COLORS (web/src/lib/theme.ts) for
+     the canvas export path and the Notch Band — keep the three in sync.
+     --paper-margin is the flat tone behind the rotation-locked sheet. */
+  --paper: #fcfbf8;
+  --paper-margin: #f1efeb;
+  /* Cards floating over the paper (action buttons, stroke flyout). In dark
+     mode a step lighter than --paper so they still read as raised cards. */
+  --float-surface: #ffffff;
+  --float-surface-hover: #f5f5f5;
+  /* Hairline edge + lift for the float cards. In light mode the edge is
+     transparent (the warm drop shadow does the separating); in dark mode a
+     faint light hairline plus a real drop shadow give the cards a visible edge
+     against the dark paper, where the warm shadow vanishes. */
+  --float-border: transparent;
+  --float-shadow: 0 2px 6px rgba(93, 84, 68, 0.14), 0 6px 16px rgba(93, 84, 68, 0.1);
+  --float-shadow-flyout: 0 6px 20px rgba(93, 84, 68, 0.2);
+  /* Keyline ringing near-black currentColor ink on the float cards — the dark
+     twin of the white-ink black keyline (ActionsPanel .white-stroke). Inert in
+     light mode, where dark ink already reads on the light cards. */
+  --dark-ink-keyline: transparent;
+}
+
+/* Dark theme tokens. Applied two ways: an explicit parent choice stamps
+   data-theme="dark" on <html>, while the default "system" setting leaves the
+   attribute off and lets prefers-color-scheme decide (data-theme="light" opts
+   out of it). The two blocks below MUST stay identical — CSS has no way to
+   share a declaration block between an attribute selector and a media query
+   at this browser floor (light-dark() needs Chrome 123 / Safari 17.5). */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --app-bg: #17171d;
+  --surface: #23232b;
+  --surface-2: #2d2d37;
+  --surface-hover: #33333e;
+  --surface-warm-hover: #33333e;
+  --border: #3d3d49;
+  --border-warm: #3d3d49;
+  --border-warm-strong: #4d4d5b;
+  --control-track: #4a4a57;
+  --control-track-hover: #575765;
+  --slider-track: #3a3a45;
+  --slider-notch: rgba(255, 255, 255, 0.4);
+  --text-strong: #eceaf2;
+  --text: #c9c7d3;
+  --text-mid: #b3b1bf;
+  --text-muted: #918f9c;
+  --text-faint: #85838f;
+  --icon-ink: #dedce8;
+  --icon-muted: #a8a6b3;
+  --icon-muted-hover: #e8e6f0;
+  --brand-wash: #3b2f4f;
+  --brand-wash-hover: #46395c;
+  --brand-text: #c9a9f0;
+  --success-wash: #24382b;
+  --success-text: #8bcfa4;
+  --danger-wash: #422a2c;
+  --danger-text: #e09393;
+  --paper: #211f29;
+  --paper-margin: #1a1922;
+  --float-surface: #2e2c38;
+  --float-surface-hover: #393744;
+  --float-border: rgba(255, 255, 255, 0.1);
+  --float-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 3px 10px rgba(0, 0, 0, 0.5);
+  --float-shadow-flyout: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 22px rgba(0, 0, 0, 0.6);
+  --dark-ink-keyline: #e9e7f0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --app-bg: #17171d;
+    --surface: #23232b;
+    --surface-2: #2d2d37;
+    --surface-hover: #33333e;
+    --surface-warm-hover: #33333e;
+    --border: #3d3d49;
+    --border-warm: #3d3d49;
+    --border-warm-strong: #4d4d5b;
+    --control-track: #4a4a57;
+    --control-track-hover: #575765;
+    --slider-track: #3a3a45;
+    --slider-notch: rgba(255, 255, 255, 0.4);
+    --text-strong: #eceaf2;
+    --text: #c9c7d3;
+    --text-mid: #b3b1bf;
+    --text-muted: #918f9c;
+    --text-faint: #85838f;
+    --icon-ink: #dedce8;
+    --icon-muted: #a8a6b3;
+    --icon-muted-hover: #e8e6f0;
+    --brand-wash: #3b2f4f;
+    --brand-wash-hover: #46395c;
+    --brand-text: #c9a9f0;
+    --success-wash: #24382b;
+    --success-text: #8bcfa4;
+    --danger-wash: #422a2c;
+    --danger-text: #e09393;
+    --paper: #211f29;
+    --paper-margin: #1a1922;
+    --float-surface: #2e2c38;
+    --float-surface-hover: #393744;
+    --float-border: rgba(255, 255, 255, 0.1);
+    --float-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 3px 10px rgba(0, 0, 0, 0.5);
+    --float-shadow-flyout: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 22px rgba(0, 0, 0, 0.6);
+    --dark-ink-keyline: #e9e7f0;
+  }
+}
+
+/* A coloring page is authored for white paper — black lines, white regions to
+   fill in. So while one is applied (DrawingCanvas toggles data-coloring on
+   <html>), the drawing surface reverts to the LIGHT paper even in dark mode: a
+   bright coloring sheet spotlit on the dark desk, with the chrome/palette/
+   buttons still dark. Un-colored regions read as white "still to color", pen
+   strokes fill white space like real paper, and the magic-brush colored twin
+   (which has a light background) lands seamlessly instead of clashing with dark
+   paper. Only the two paper tokens flip; every chrome token stays. The overlay
+   line art always multiplies as black-on-light (DrawingCanvas hard-codes it,
+   since a page always means the light sheet now). Comes after both dark blocks
+   so it wins at equal specificity by source order; the export path and Notch
+   Band mirror this in JS (they key off the active overlay, see exportDrawing.ts
+   / NotchBand.svelte). */
+:root[data-coloring] {
+  --paper: #fcfbf8;
+  --paper-margin: #f1efeb;
 }
 
 * {
@@ -47,7 +207,7 @@ body {
     'Segoe UI',
     Roboto,
     sans-serif;
-  background: #f5f5f5;
+  background: var(--app-bg);
   touch-action: none; /* Prevent default touch behaviors */
   user-select: none;
   -webkit-user-select: none;
@@ -116,11 +276,21 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   margin: 0;
-  background: white;
+  background: var(--surface);
   border: none;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   padding: 0;
+}
+
+/* Re-ink monochrome icons on themed surfaces: the SVGs bake in a near-black
+   fill, and the CSS `fill` property beats that presentation attribute. Zero
+   specificity (:where) so any component rule — a spot tint, a filter chain's
+   .icon-tinted opt-out — can override it. Full-color icons (.icon-color) keep
+   their own palette. Icons on the paper (action buttons etc.) are untouched:
+   this only reaches inside modal shells. */
+:where(.modal-shell) :where([data-icon]:not(.icon-color):not(.icon-tinted)) svg {
+  fill: var(--icon-ink);
 }
 
 /* Absolute-positioned close button (top-right corner) and its icon, shared
@@ -133,8 +303,8 @@ body {
   right: 12px;
   width: 44px;
   height: 44px;
-  background: white;
-  border: 2px solid #ddd6cc;
+  background: var(--surface);
+  border: 2px solid var(--border-warm);
   border-radius: 50%;
   cursor: pointer;
   padding: 10px;
@@ -153,22 +323,27 @@ body {
   transform: scale(0.92);
 }
 
+/* Tinted via `fill` (not the old filter chain) so the gray tracks the theme
+   tokens instead of being derived from the baked-in near-black fill. */
 .modal-close-icon {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  filter: invert(45%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
-  transition: filter 0.2s ease;
+}
+
+.modal-close-icon svg {
+  fill: var(--icon-muted);
+  transition: fill 0.2s ease;
 }
 
 @media (hover: hover) {
   .modal-close-btn:not(:disabled):hover {
-    background: #f4f0ea;
-    border-color: #c4bbad;
+    background: var(--surface-warm-hover);
+    border-color: var(--border-warm-strong);
   }
 
-  .modal-close-btn:not(:disabled):hover .modal-close-icon {
-    filter: invert(25%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(95%);
+  .modal-close-btn:not(:disabled):hover .modal-close-icon svg {
+    fill: var(--icon-muted-hover);
   }
 }
 
@@ -186,10 +361,16 @@ body {
   touch-action: manipulation;
 }
 
+/* Tinted via `fill` (not the old invert() chains) so the gray steps track the
+   theme tokens; the light values match the old filter outputs. */
 .corner-button-icon {
   width: 100%;
   height: 100%;
-  filter: invert(60%) grayscale(100%);
+}
+
+.corner-button-icon svg {
+  fill: var(--text-faint);
+  transition: fill 0.2s ease;
 }
 
 @media (hover: hover) {
@@ -197,8 +378,8 @@ body {
     opacity: 0.7;
   }
 
-  .corner-button:hover .corner-button-icon {
-    filter: invert(40%) grayscale(100%);
+  .corner-button:hover .corner-button-icon svg {
+    fill: var(--text-mid);
   }
 }
 
@@ -206,8 +387,8 @@ body {
   opacity: 1;
 }
 
-.corner-button:active .corner-button-icon {
-  filter: invert(0%) grayscale(100%);
+.corner-button:active .corner-button-icon svg {
+  fill: var(--icon-ink);
 }
 
 /* Spin animation reused by any "AI thinking" icon. */

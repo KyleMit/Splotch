@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
-  import { colors, isWhite } from '$lib/state/colors.svelte';
+  import { colors, isWhite, isDarkInk } from '$lib/state/colors.svelte';
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
   import {
     strokeState,
@@ -86,10 +86,16 @@
   // eraser's pink while erasing. Inherited by the icons via currentColor.
   const strokeMenuColor = $derived(toolState.eraser ? '#fb3675' : colors.activeColor);
 
-  // A white brush color vanishes against the white icon buttons, so the brush
+  // A white brush color vanishes against the light icon buttons, so the brush
   // icon and stroke-weight lines get a black outline while white is active.
   // Never during erasing — the eraser icon carries its own (pink) coloring.
   const whiteStroke = $derived(!toolState.eraser && isWhite(colors.activeColor));
+
+  // The dark-mode mirror: near-black ink vanishes against the dark cards, so it
+  // gets a light outline there. The class applies in every theme; the keyline
+  // color (--dark-ink-keyline) is transparent in light, so it only ever shows
+  // in dark.
+  const darkStroke = $derived(!toolState.eraser && isDarkInk(colors.activeColor));
 
   function toggleDrawer() {
     const next = !settings.drawerOpen;
@@ -181,6 +187,7 @@
         <button
           class="action-button"
           class:white-stroke={whiteStroke}
+          class:dark-stroke={darkStroke}
           id="strokeWidthButton"
           aria-label="Stroke width"
           aria-expanded={strokeState.menuOpen}
@@ -195,6 +202,7 @@
         <div
           class="stroke-width-menu"
           class:white-stroke={whiteStroke}
+          class:dark-stroke={darkStroke}
           hidden={!strokeState.menuOpen}
           style:color={strokeMenuColor}
         >
@@ -451,7 +459,6 @@
        portrait  closed −90 (up) · open 90 (down) */
   :global(.drawer-toggle-icon) {
     pointer-events: none;
-    transition: filter 0.2s ease;
     --drawer-axis-rot: 0deg;
     --drawer-open-rot: 0deg;
     transform: rotate(calc(var(--drawer-axis-rot) + var(--drawer-open-rot)));
@@ -474,16 +481,14 @@
   .action-button {
     width: calc(60px * var(--action-btn-scale, 1));
     height: calc(60px * var(--action-btn-scale, 1));
-    background: white;
-    border: 2px solid transparent;
+    background: var(--float-surface);
+    border: 2px solid var(--float-border);
     border-radius: 18px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow:
-      0 2px 6px rgba(93, 84, 68, 0.14),
-      0 6px 16px rgba(93, 84, 68, 0.1);
+    box-shadow: var(--float-shadow);
     transition: all 0.2s ease;
     touch-action: manipulation;
     padding: calc(10px * var(--action-btn-scale, 1));
@@ -507,7 +512,7 @@
      looking active (purple border) after deselecting. */
   @media (hover: hover) {
     .action-button:hover:not(:disabled) {
-      background: #f5f5f5;
+      background: var(--float-surface-hover);
       border-color: var(--brand);
       box-shadow: 0 4px 12px rgba(171, 113, 225, 0.3);
       box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 30%, transparent);
@@ -516,27 +521,27 @@
 
   .action-button:active:not(:disabled) {
     transform: scale(0.95);
-    background: #ede7f6;
+    background: var(--brand-wash);
   }
 
   /* Selected tool (e.g. eraser): purple ring + tinted fill, matching the
      active stroke-size button. */
   .action-button.active {
     border-color: var(--brand);
-    background: #ede7f6;
+    background: var(--brand-wash);
     box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent);
   }
 
-  .action-button.active :global(.action-icon:not(.icon-color)) {
-    filter: var(--brand-tint-filter);
+  .action-button.active :global(.action-icon:not(.icon-color) svg) {
+    fill: var(--brand);
   }
 
   .action-button:disabled,
   .action-button.disabled {
     opacity: 0.3;
     cursor: not-allowed;
-    background: #f5f5f5;
+    background: var(--float-surface-hover);
   }
 
   :global(.action-icon) {
@@ -545,16 +550,18 @@
     pointer-events: none;
   }
 
-  /* Tint the monochrome icons to match the UI. Full-color spot icons (tagged
-     .icon-color in Icon.svelte) opt out so they show their own palette; the
-     button's opacity already conveys the disabled state for those. */
-  :global(.action-icon:not(.icon-color)) {
-    filter: invert(12%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
+  /* Tint the monochrome icons to match the UI — via `fill` (which beats the
+     SVGs' baked fill attribute) so the ink tracks the theme tokens. Full-color
+     spot icons (tagged .icon-color in Icon.svelte) opt out so they show their
+     own palette; the button's opacity already conveys the disabled state for
+     those. */
+  :global(.action-icon:not(.icon-color) svg) {
+    fill: var(--icon-ink);
   }
 
-  .action-button:disabled :global(.action-icon:not(.icon-color)),
-  .action-button.disabled :global(.action-icon:not(.icon-color)) {
-    filter: invert(80%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
+  .action-button:disabled :global(.action-icon:not(.icon-color) svg),
+  .action-button.disabled :global(.action-icon:not(.icon-color) svg) {
+    fill: var(--control-track-hover);
   }
 
   /* Spin the loading icon while AI generation is running.
@@ -582,10 +589,10 @@
     flex-direction: row;
     gap: 6px;
     padding: 6px;
-    background: white;
+    background: var(--float-surface);
     border: none;
     border-radius: 16px;
-    box-shadow: 0 6px 20px rgba(93, 84, 68, 0.2);
+    box-shadow: var(--float-shadow-flyout);
     z-index: 901;
   }
 
@@ -623,8 +630,8 @@
   .stroke-size-button {
     width: calc(60px * var(--action-btn-scale, 1));
     height: calc(60px * var(--action-btn-scale, 1));
-    background: white;
-    border: 2px solid transparent;
+    background: var(--float-surface);
+    border: 2px solid var(--float-border);
     border-radius: 14px;
     cursor: pointer;
     /* Inherit the menu's color so the line icons (currentColor) pick up the
@@ -641,7 +648,7 @@
   @media (hover: hover) {
     .stroke-size-button:hover {
       border-color: var(--brand);
-      background: #f5f0ff;
+      background: var(--brand-wash);
     }
   }
 
@@ -651,15 +658,15 @@
 
   .stroke-size-button.active {
     border-color: var(--brand);
-    background: #ede7f6;
+    background: var(--brand-wash);
     box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent);
   }
 
   /* The selected size reads from the button's purple ring/fill; its line keeps
      the current color (currentColor), so only tint non-color icons here. */
-  .stroke-size-button.active :global(.action-icon:not(.icon-color)) {
-    filter: var(--brand-tint-filter);
+  .stroke-size-button.active :global(.action-icon:not(.icon-color) svg) {
+    fill: var(--brand);
   }
 
   /* White brush color is invisible on the white buttons, so ring the brush
@@ -672,6 +679,17 @@
   .action-button.white-stroke :global(svg path[fill='currentColor']),
   .stroke-width-menu.white-stroke :global(svg path) {
     stroke: #000;
+    stroke-width: 2px;
+    paint-order: stroke;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* The dark-mode mirror: ring near-black ink with a light keyline so it reads
+     on the dark cards. Same paint-order trick; the keyline token is transparent
+     in light mode, so this rule is inert there. */
+  .action-button.dark-stroke :global(svg path[fill='currentColor']),
+  .stroke-width-menu.dark-stroke :global(svg path) {
+    stroke: var(--dark-ink-keyline);
     stroke-width: 2px;
     paint-order: stroke;
     vector-effect: non-scaling-stroke;

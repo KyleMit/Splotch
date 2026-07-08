@@ -267,10 +267,12 @@
   }
 
   /* Radial paper wash previewing the clear mid-drag. A paper-colored
-     (#fcfbf8) gradient anchored at the button's home corner (top-right) that
-     both grows and strengthens as --clear-progress climbs 0→1. Paper, not
+     gradient anchored at the button's home corner (top-right) that both grows
+     and strengthens as --clear-progress climbs 0→1. The theme's paper, not
      white, so it reads as "returning to blank canvas," and same origin as the
-     confirmation ripple below so the preview and the commit feel continuous. */
+     confirmation ripple below so the preview and the commit feel continuous.
+     Each color-mix is preceded by its light-paper rgba fallback for
+     pre-color-mix engines (docs/COMPATIBILITY.md). */
   .clear-preview {
     position: fixed;
     inset: 0;
@@ -281,6 +283,11 @@
       circle at 100% 0,
       rgba(252, 251, 248, 0.9),
       rgba(252, 251, 248, 0) calc(var(--clear-progress, 0) * 130%)
+    );
+    background: radial-gradient(
+      circle at 100% 0,
+      color-mix(in srgb, var(--paper) 90%, transparent),
+      color-mix(in srgb, var(--paper) 0%, transparent) calc(var(--clear-progress, 0) * 130%)
     );
     transition:
       opacity 0.12s linear,
@@ -296,12 +303,17 @@
       rgba(252, 251, 248, 0.95),
       rgba(252, 251, 248, 0.82) 140%
     );
+    background: radial-gradient(
+      circle at 100% 0,
+      color-mix(in srgb, var(--paper) 95%, transparent),
+      color-mix(in srgb, var(--paper) 82%, transparent) 140%
+    );
     transition:
       opacity 0.18s ease,
       background 0.18s ease;
   }
 
-  /* Clear-confirmation ripple: a single white circle anchored at the
+  /* Clear-confirmation ripple: a single paper-colored circle anchored at the
      top-right corner. It expands outward — the wave sweeps across the
      viewport toward the bottom-left — and fades. */
   .page-turn-overlay {
@@ -311,7 +323,7 @@
     width: 1px;
     height: 1px;
     border-radius: 50%;
-    background: white;
+    background: var(--paper, white);
     pointer-events: none;
     z-index: 500;
     transform: translate(-50%, -50%) scale(0);

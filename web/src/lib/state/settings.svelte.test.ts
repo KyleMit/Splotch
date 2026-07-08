@@ -27,6 +27,7 @@ import {
   setEraser,
   setDrawerOpen,
   setAiAccessToken,
+  setTheme,
   reloadSettings,
   hydrateApiKey,
 } from './settings.svelte';
@@ -38,6 +39,7 @@ const ERASER_KEY = 'splotch-eraser-enabled';
 const DRAWER_OPEN_KEY = 'splotch-drawer-open';
 const AI_ACCESS_TOKEN_KEY = 'splotch-ai-access-token';
 const LEGACY_AI_USER_API_KEY = 'splotch-ai-user-api-key';
+const THEME_KEY = 'splotch-theme';
 
 beforeEach(() => {
   localStorage.clear();
@@ -120,6 +122,26 @@ describe('setAiAccessToken', () => {
   });
 });
 
+describe('setTheme', () => {
+  it('persists the choice and stamps data-theme on <html>', () => {
+    setTheme('dark');
+    expect(settings.theme).toBe('dark');
+    expect(localStorage.getItem(THEME_KEY)).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+
+    setTheme('light');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+  });
+
+  it('system clears the attribute so the prefers-color-scheme CSS drives the theme', () => {
+    setTheme('dark');
+    setTheme('system');
+    expect(settings.theme).toBe('system');
+    expect(localStorage.getItem(THEME_KEY)).toBe('system');
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+  });
+});
+
 describe('reloadSettings', () => {
   it('re-reads every persisted setting into the live store (durable-recovery path)', () => {
     // Simulate values recovered into localStorage by the durable layer after a
@@ -131,6 +153,7 @@ describe('reloadSettings', () => {
     localStorage.setItem(ACTION_BUTTON_SCALE_KEY, '130');
     localStorage.setItem(DRAWER_OPEN_KEY, 'true');
     localStorage.setItem(AI_ACCESS_TOKEN_KEY, 'recovered-token');
+    localStorage.setItem(THEME_KEY, 'dark');
 
     reloadSettings();
 
@@ -139,6 +162,8 @@ describe('reloadSettings', () => {
     expect(settings.actionButtonScale).toBe(130);
     expect(settings.drawerOpen).toBe(true);
     expect(settings.aiAccessToken).toBe('recovered-token');
+    expect(settings.theme).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
 
   it('keeps the current value when a key is absent', () => {
@@ -146,6 +171,13 @@ describe('reloadSettings', () => {
     localStorage.removeItem(ERASER_KEY);
     reloadSettings();
     expect(settings.eraserEnabled).toBe(false);
+  });
+
+  it('keeps the current theme when the stored value is invalid', () => {
+    setTheme('dark');
+    localStorage.setItem(THEME_KEY, 'blorange');
+    reloadSettings();
+    expect(settings.theme).toBe('dark');
   });
 });
 

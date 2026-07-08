@@ -109,7 +109,7 @@
   .about-tagline {
     margin: 0;
     font-size: 14px;
-    color: #666;
+    color: var(--text-mid);
     line-height: 1.5;
     max-width: 320px;
   }
@@ -117,7 +117,7 @@
   .whats-new {
     margin-bottom: 24px;
     padding: 16px;
-    background: #f7f7f9;
+    background: var(--surface-2);
     border-radius: 12px;
   }
 
@@ -125,7 +125,7 @@
     margin: 0 0 10px 0;
     font-size: 15px;
     font-weight: 700;
-    color: #333;
+    color: var(--text-strong);
     display: flex;
     align-items: baseline;
     gap: 8px;
@@ -134,7 +134,7 @@
   .whats-new-version {
     font-size: 13px;
     font-weight: 600;
-    color: #999;
+    color: var(--text-faint);
   }
 
   /* Content is build-time-rendered Markdown, so style its tags globally. */
@@ -143,7 +143,7 @@
     margin: 12px 0 6px 0;
     font-size: 14px;
     font-weight: 700;
-    color: #444;
+    color: var(--text-strong);
   }
 
   .whats-new-body :global(h2:first-child),
@@ -158,13 +158,13 @@
 
   .whats-new-body :global(li) {
     font-size: 14px;
-    color: #555;
+    color: var(--text);
     line-height: 1.5;
     margin-bottom: 4px;
   }
 
   .whats-new-body :global(a) {
-    color: #6b5bd2;
+    color: var(--brand-text);
   }
 
   .all-releases {
@@ -173,7 +173,7 @@
   }
 
   .all-releases a {
-    color: #6b5bd2;
+    color: var(--brand-text);
     text-decoration: none;
     font-weight: 600;
   }
@@ -186,9 +186,9 @@
 
   .parent-help-footer {
     padding-top: 20px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid var(--border);
     text-align: center;
-    color: #999;
+    color: var(--text-faint);
     font-size: 14px;
   }
 
@@ -216,14 +216,14 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: #666;
+    color: var(--text-mid);
     font-size: 14px;
     transition: color 0.2s ease;
   }
 
   @media (hover: hover) {
     .github-link a:hover {
-      color: #333;
+      color: var(--text-strong);
       text-decoration: none;
     }
   }
@@ -253,7 +253,7 @@
     cursor: pointer;
     text-align: center;
     font-size: 12px;
-    color: #bbb;
+    color: var(--text-faint);
     font-family: 'Courier New', monospace;
     user-select: none;
   }

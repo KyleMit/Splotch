@@ -85,7 +85,7 @@
 
   .parent-help-modal.resizing :global(.button-size-setting) {
     visibility: visible;
-    background: #fff;
+    background: var(--surface);
     border-radius: 16px;
     /* A tight, even lift that hugs the rounded card — not the heavy, downward
        shadow that bled into a rectangular band below the control. */
@@ -102,7 +102,7 @@
   .parent-help-content h2 {
     margin: 0 0 20px 0;
     font-size: 24px;
-    color: #333;
+    color: var(--text-strong);
     font-weight: 600;
   }
 
@@ -119,7 +119,7 @@
 
   .parent-help-content :global(.setting) {
     padding: 12px 16px;
-    background: #f8f8f8;
+    background: var(--surface-2);
     border-radius: 8px;
   }
 

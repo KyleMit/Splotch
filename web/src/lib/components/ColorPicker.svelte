@@ -169,7 +169,7 @@
     left: 50%;
     transform: translate(-50%, -50%);
     margin: 0;
-    background: white;
+    background: var(--surface);
     border: none;
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -394,7 +394,7 @@
      browsers apply :hover on tap and leave the last-tapped swatch stuck enlarged. */
   .hexagon.hover {
     z-index: 1;
-    background-color: black;
+    background-color: var(--icon-ink);
   }
 
   .hexagon.hover::after {
@@ -405,7 +405,7 @@
   @media (hover: hover) {
     .hexagon:hover {
       z-index: 1;
-      background-color: black;
+      background-color: var(--icon-ink);
     }
 
     .hexagon:hover::after {
@@ -415,7 +415,7 @@
   }
 
   .hexagon.border {
-    background-color: black;
+    background-color: var(--icon-ink);
   }
 
   .hexagon.border::after {

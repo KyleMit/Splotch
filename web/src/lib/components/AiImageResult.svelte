@@ -272,7 +272,7 @@
     justify-content: center;
     gap: 12px;
     text-align: center;
-    color: #555;
+    color: var(--text);
   }
   .ai-result-error-emoji {
     font-size: 48px;
@@ -285,7 +285,7 @@
   .ai-result-error-sub {
     font-size: 14px !important;
     font-weight: 500 !important;
-    color: #888;
+    color: var(--text-muted);
     max-width: 280px;
   }
 
@@ -347,7 +347,12 @@
     width: 18px;
     height: 18px;
     pointer-events: none;
-    filter: invert(100%);
+  }
+
+  /* Solid white on the brand button in both themes (a filter over the themed
+     icon re-ink would drift dark in dark mode). */
+  :global(.ai-result-download-icon svg) {
+    fill: #fff;
   }
 
   /* ── Polaroid send-off: tapping download morphs the whole modal into a

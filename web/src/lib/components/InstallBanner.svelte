@@ -153,7 +153,7 @@
     width: min(92vw, 420px);
     box-sizing: border-box;
     padding: 14px 16px;
-    background: #fffdf9;
+    background: var(--surface);
     border: 2px solid var(--brand, #ab71e1);
     border-radius: 22px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
@@ -165,10 +165,10 @@
     width: 40px;
     height: 40px;
     padding: 0;
-    border: 2px solid #e0d9cf;
+    border: 2px solid var(--border-warm);
     border-radius: 50%;
-    background: white;
-    color: #8a827a;
+    background: var(--surface);
+    color: var(--text-muted);
     font-size: 22px;
     line-height: 1;
     display: flex;
@@ -188,9 +188,9 @@
 
   @media (hover: hover) {
     .install-dismiss:hover {
-      color: #555;
-      background: #f4f0ea;
-      border-color: #c4bbad;
+      color: var(--text);
+      background: var(--surface-warm-hover);
+      border-color: var(--border-warm-strong);
     }
   }
 
@@ -208,7 +208,7 @@
 
   .install-parting p {
     margin: 0;
-    color: #6a6258;
+    color: var(--text-mid);
     font-size: 14px;
     line-height: 1.5;
     text-align: left;
@@ -235,13 +235,13 @@
   }
 
   .install-copy strong {
-    color: #3a3a3a;
+    color: var(--text-strong);
     font-size: 15px;
     font-weight: 700;
   }
 
   .install-sub {
-    color: #8a8178;
+    color: var(--text-muted);
     font-size: 12px;
     margin-top: 2px;
   }
@@ -287,12 +287,12 @@
   .install-hint {
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid #efe9e0;
+    border-top: 1px solid var(--border-warm);
   }
 
   .install-hint p {
     margin: 0;
-    color: #6a6258;
+    color: var(--text-mid);
     font-size: 14px;
     line-height: 1.6;
   }
@@ -303,5 +303,11 @@
     height: 18px;
     vertical-align: -4px;
     margin: 0 1px;
+  }
+
+  /* The banner sits outside any .modal-shell, so re-ink its monochrome inline
+     icons for the themed surface here (same rule as app.css's modal version). */
+  .install-banner :global(:where([data-icon]:not(.icon-color):not(.icon-tinted)) svg) {
+    fill: var(--icon-ink);
   }
 </style>

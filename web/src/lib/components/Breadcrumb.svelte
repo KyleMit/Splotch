@@ -31,7 +31,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: #7c4dcf;
+    color: var(--brand-text);
     text-decoration: none;
     padding: 4px 8px;
     border-radius: 8px;
@@ -42,22 +42,26 @@
      keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
     a.crumb:hover {
-      background: #f0e9fb;
+      background: var(--brand-wash);
     }
   }
 
+  /* currentColor (not a filter chain) so the icon tracks the themed link color. */
   :global(.crumb .crumb-icon) {
     width: 16px;
     height: 16px;
-    filter: invert(33%) sepia(58%) saturate(1093%) hue-rotate(238deg) brightness(88%) contrast(89%);
+  }
+
+  :global(.crumb .crumb-icon svg) {
+    fill: currentColor;
   }
 
   .crumb-sep {
-    color: #ccc;
+    color: var(--text-faint);
   }
 
   .crumb-current {
-    color: #999;
+    color: var(--text-faint);
     cursor: default;
   }
 </style>

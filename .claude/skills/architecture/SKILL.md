@@ -58,7 +58,8 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `state/colors.svelte.ts` | Active color selection and the full palette. |
 | `state/strokeWidth.svelte.ts` | Stroke width levels and eraser size multiplier. |
 | `state/tool.svelte.ts` | Active tool (pen vs. eraser). |
-| `state/settings.svelte.ts` | User-configurable toggles (sounds, save-on-delete, screenshot button, coloring books, etc.), persisted via `storage.ts`. |
+| `state/settings.svelte.ts` | User-configurable toggles (sounds, save-on-delete, screenshot button, coloring books, etc.) plus the appearance setting (light/dark/system), persisted via `storage.ts`. |
+| `state/appearance.svelte.ts` | Reactive *resolved* theme ('light' \| 'dark'): the appearance setting combined with the live OS preference. For the few JS consumers of the resolved value (Notch Band paper color, export paper fill); CSS reads the `app.css` tokens instead. |
 | `state/layout.svelte.ts` | Viewport and orientation state. |
 | `state/fullscreen.svelte.ts` | Immersive-fullscreen support + active state and the toggle action, backing the Fullscreen Toggle button. Android web only; dismisses the mobile URL bar. |
 | `state/network.svelte.ts` | Online/offline state via `@capacitor/network`. Controls AI button visibility on native. |
@@ -74,6 +75,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `colorRing.ts` | Computes the selection-ring color for palette swatches (slightly darker than the swatch, or lighter for very dark colors). |
 | `hexPickerLayout.ts` | The color picker's 9×9 palette (9 hue families × 9 shades) and its two static honeycomb arrangements — portrait (families as rows) and the landscape transpose (families as columns). `ColorPicker.svelte` renders both grids; CSS media queries pick one per orientation and trim positionally so the constrained axis drops shades, never hues (ADR-0048). |
 | `platform.ts` | `isNative()` and `getPlatform()` — reads the Capacitor global without importing `@capacitor/core`, so the module is safe to evaluate during SSR. |
+| `theme.ts` | Light/dark/system appearance plumbing: stamps `data-theme` on `<html>` (absent = system, so the `prefers-color-scheme` CSS in `app.css` drives it), keeps the `theme-color` meta on the resolved theme, and watches OS switches in system mode. The setting itself lives in `state/settings.svelte.ts`; the pre-paint stamp in `app.html` mirrors this convention. |
 | `storage.ts` | Dual-layer storage: synchronous reads from `localStorage` (fast, no async flash); on native, every write is also mirrored to Capacitor Preferences for durability. `hydrateDurableStorage()` restores settings on app launch. |
 | `secureStorage.ts` | Named client-held secrets (BYO Gemini key, admin session token): Keychain/Keystore via `@aparajita/capacitor-secure-storage` on native, AES-GCM-encrypted IndexedDB on web. |
 | `orientation.ts` | Device orientation detection utilities. |
@@ -150,4 +152,5 @@ queries + the head-script stamp in `app.html`).
 * **Parent Help Button** - Floating button that opens the Parent Center
   * **Parent Center** - Modal with platform install guides and app settings
     * **Install Guide** - iOS / Android tabs with step-by-step PWA setup, plus the one-tap install button when the browser supports it (Setup tab)
-    * **Settings** - Tab for app preferences (Drawing Sounds, Save on Delete, Screenshot Button, Stroke Width Control, Coloring Books). Under Advanced Controls, a **Button Size** slider rescales the Actions Panel buttons; dragging it hides the rest of the Parent Center so the buttons resize in full view.
+    * **Settings** - Tab for app preferences (Appearance, Drawing Sounds, Save on Delete, Screenshot Button, Stroke Width Control, Coloring Books). Under Advanced Controls, a **Button Size** slider rescales the Actions Panel buttons; dragging it hides the rest of the Parent Center so the buttons resize in full view.
+      * **Appearance Control** - Light / Dark / System segmented control at the top of the Settings tab. Dark mode themes the chrome (app background, palette bar, modals, Install Banner), the free-draw paper (a near-black warm tone under the same low-alpha texture), and the paper-floating controls (Actions Panel/flyout on `--float-surface` with a `--float-border` edge; near-black ink gets a `--dark-ink-keyline` ring) via the tokens in `app.css`. **Coloring pages keep a light sheet even in dark mode** — while one is applied, `data-coloring` on `<html>` reverts `--paper` to light (a bright coloring sheet on the dark desk), so black line art, white fill regions, and the magic-brush twin all read naturally; the export and Notch Band mirror this. Only the Clear Button keeps its literal red chrome. System (the default) follows the OS via `prefers-color-scheme` with no `data-theme` attribute stamped. See ADR-0052.

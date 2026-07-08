@@ -6,11 +6,11 @@ import {
   cutoutEdge,
   statusBarHiddenFor,
   computeNotchBandState,
-  ERASER_BAND_COLOR,
   NOTCH_INSET_THRESHOLD_PX,
   type NotchBandInput,
 } from './notchBand';
 import { PALETTE_COLORS } from './state/colors.svelte';
+import { PAPER_COLORS } from './theme';
 
 // Representative insets: a clear notch vs. a bezel/status-bar device.
 const NOTCH_INSET = 47; // iPhone notch (portrait)
@@ -26,16 +26,17 @@ const NO_CUTOUT: NotchBandInput = {
   insetRight: 0,
   activeColor: '#AB71E1',
   eraser: false,
+  paperColor: PAPER_COLORS.light,
 };
 
 describe('bandColor', () => {
   it('uses the active color when drawing', () => {
-    expect(bandColor('#AB71E1', false)).toBe('#AB71E1');
+    expect(bandColor('#AB71E1', false, PAPER_COLORS.light)).toBe('#AB71E1');
   });
 
-  it('clears to paper-white when erasing', () => {
-    expect(bandColor('#AB71E1', true)).toBe(ERASER_BAND_COLOR);
-    expect(bandColor('#0a0b10', true)).toBe('#ffffff');
+  it('clears to the paper color when erasing', () => {
+    expect(bandColor('#AB71E1', true, PAPER_COLORS.light)).toBe(PAPER_COLORS.light);
+    expect(bandColor('#0a0b10', true, PAPER_COLORS.dark)).toBe(PAPER_COLORS.dark);
   });
 });
 
@@ -240,15 +241,28 @@ describe('computeNotchBandState — color follows the active tool', () => {
     expect(state.themeColor).toBe('#62A2E9');
   });
 
-  it('clears to paper-white (and dark icons) while erasing', () => {
+  it('clears to the light paper (and dark icons) while erasing in light mode', () => {
     const state = computeNotchBandState({
       ...NO_CUTOUT,
       insetTop: NOTCH_INSET,
       activeColor: '#62A2E9',
       eraser: true,
     });
-    expect(state.color).toBe(ERASER_BAND_COLOR);
-    expect(state.themeColor).toBe(ERASER_BAND_COLOR);
+    expect(state.color).toBe(PAPER_COLORS.light);
+    expect(state.themeColor).toBe(PAPER_COLORS.light);
     expect(state.statusBarStyle).toBe('LIGHT');
+  });
+
+  it('clears to the dark paper (and light icons) while erasing in dark mode', () => {
+    const state = computeNotchBandState({
+      ...NO_CUTOUT,
+      insetTop: NOTCH_INSET,
+      activeColor: '#62A2E9',
+      eraser: true,
+      paperColor: PAPER_COLORS.dark,
+    });
+    expect(state.color).toBe(PAPER_COLORS.dark);
+    expect(state.themeColor).toBe(PAPER_COLORS.dark);
+    expect(state.statusBarStyle).toBe('DARK');
   });
 });

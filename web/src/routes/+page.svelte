@@ -20,6 +20,7 @@
   import { hydrateDurableStorage } from '$lib/storage';
   import { initNetwork } from '$lib/state/network.svelte';
   import { isNative } from '$lib/platform';
+  import { applyTheme } from '$lib/theme';
   import { applyDeviceOrientationPreference } from '$lib/orientation';
   import { initFullscreen } from '$lib/state/fullscreen.svelte';
   import { scheduleIdle } from '$lib/idle';
@@ -76,6 +77,9 @@
 
   onMount(() => {
     captureAiAccessTokenFromUrl();
+    // The app.html head script already stamped data-theme before first paint;
+    // this pass syncs the theme-color meta and arms the OS dark-mode watcher.
+    applyTheme(settings.theme);
     // Load the BYOK Gemini key from secure storage into the live store (async,
     // transparent — the AI button is only used long after boot completes).
     hydrateApiKey();

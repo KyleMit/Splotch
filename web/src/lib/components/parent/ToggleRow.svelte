@@ -51,7 +51,7 @@
   .setting-help {
     margin: 6px 0 0 30px;
     font-size: 13px;
-    color: #777;
+    color: var(--text-muted);
     line-height: 1.4;
   }
 
@@ -71,14 +71,14 @@
   .setting-label {
     font-size: 14px;
     font-weight: 500;
-    color: #555;
+    color: var(--text);
   }
 
   /* iOS-style toggle switch (boolean settings) */
   .toggle-switch {
     width: 52px;
     height: 32px;
-    background: #ddd;
+    background: var(--control-track);
     border: none;
     border-radius: 999px;
     padding: 0;
@@ -90,7 +90,7 @@
 
   @media (hover: hover) {
     .toggle-switch:hover {
-      background: #ccc;
+      background: var(--control-track-hover);
     }
   }
 
@@ -127,7 +127,7 @@
 
   @media (hover: hover) {
     .toggle-switch:disabled:hover {
-      background: #ddd;
+      background: var(--control-track);
     }
   }
 </style>

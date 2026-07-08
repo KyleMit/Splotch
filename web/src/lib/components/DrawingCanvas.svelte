@@ -125,6 +125,14 @@
     };
   });
 
+  // A coloring page reverts the drawing surface to light paper even in dark
+  // mode (see app.css :root[data-coloring]). Publish the flag to <html> so the
+  // paper/line-art tokens flip; the chrome stays dark. Coloring state is
+  // transient (not persisted), so there's nothing to seed pre-paint.
+  $effect(() => {
+    document.documentElement.toggleAttribute('data-coloring', !!coloringBookState.overlayUrl);
+  });
+
   // Tell the engine where the OS gesture/navbar zones are so it can ignore
   // edge-swipes that summon the system bars (see engine EDGE_SWIPE_BAND_PX).
   // The insets move between edges on rotation; the shared layout module
@@ -268,9 +276,9 @@
     width: 100%;
     overflow: hidden;
     /* Only visible around the lifted paper sheet while a rotation has the paper
-       locked: a flat, slightly greyer tone than the sheet's off-white so the
-       original page reads as distinct without any border line. */
-    background-color: #f1efeb;
+       locked: a flat tone slightly apart from the sheet's so the original page
+       reads as distinct without any border line. */
+    background-color: var(--paper-margin);
   }
 
   .paper-sheet {
@@ -280,7 +288,9 @@
     transform-origin: 0 0;
     z-index: 0;
     pointer-events: none;
-    background-color: #fcfbf8;
+    /* The texture is a low-alpha grain layer, so the theme only has to swap
+       the color beneath it — same webp in light and dark. */
+    background-color: var(--paper);
     background-image: url('/icons/handmade-paper.webp');
     background-repeat: repeat;
   }
@@ -316,9 +326,12 @@
     z-index: 3;
   }
 
-  /* The multiply blend lives on the wrapper (not the img): the transform makes
-     the wrapper a stacking context, which would confine an inner mix-blend-mode
-     to the wrapper's own (transparent) backdrop instead of the canvas below. */
+  /* The blend lives on the wrapper (not the img): the transform makes the
+     wrapper a stacking context, which would confine an inner mix-blend-mode to
+     the wrapper's own (transparent) backdrop instead of the canvas below.
+     Black lines multiply over the paper — white areas of the art disappear,
+     lines stay. A coloring page always forces the light sheet (even in dark
+     mode, see app.css :root[data-coloring]), so this is always the light path. */
   .paper-view {
     position: absolute;
     top: 0;
