@@ -48,6 +48,7 @@ Learned from prior runs:
 
 - (seed) The friction worth filing is usually the friction you *didn't* notice while it was happening — trust the tool-call record over memory.
 - (seed) Section 3 of the old reflection prompt over-proposed new skills for one-off problems. The recurrence bar above exists to kill that; hold the line.
+- A clean run *is* the skill working — resist filing a sub-bar item just to prove it produced something. Litmus test that has held up: if none of the four tells (re-read, failed command, wrong guess, late detour) fired, a single quick lookup is not a finding, however real the underlying doc-gap. Report clean and note the candidate you passed on, so the judgment is visible without being filed.
 
 ## Shared audit conventions
 
