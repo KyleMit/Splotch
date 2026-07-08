@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
-
   // Relative-drag slider extracted from the Parent Center volume control so the
   // same touch/keyboard behaviour can back other settings (e.g. button size).
   // Grabbing anywhere on the bar and sliding moves the value by the distance
@@ -106,7 +104,9 @@
     window.removeEventListener('pointercancel', onPointerUp);
   }
 
-  onDestroy(removeWindowListeners);
+  // $effect teardown (never runs on the server) drops any listeners still live
+  // if the component unmounts mid-drag — onDestroy would touch window during SSR.
+  $effect(() => removeWindowListeners);
 
   function onKeyDown(event: KeyboardEvent) {
     let next = value;
