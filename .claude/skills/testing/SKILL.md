@@ -62,11 +62,21 @@ including the native dual-layer hydrate via a mocked `@capacitor/preferences`).
 ## E2E web tests — Playwright
 
 ```bash
-npm run test:e2e           # headless
+npm run test:e2e           # headless — whole suite
 npm run test:e2e:ui        # Playwright UI mode
 npm run test:e2e:headed    # headed, slowed down (SLOWMO=500)
 npm run test:e2e:debug     # inspector
+
+# one spec / one title, not the whole suite (trailing args pass through to Playwright):
+npm run test:e2e -- flows.spec.ts -g "the undo button enables on a stroke and reverts it"
 ```
+
+For ad-hoc validation of a single change, filter through the npm script — **not**
+raw `npx playwright test` from the repo root. The config + `baseURL` live in `web/`,
+so raw `npx` from the root navigates to an empty `baseURL` (`Cannot navigate to
+invalid URL`) and also loses the Chromium fallback (cryptic `chrome-headless-shell`
+error in cloud). `node scripts/web.mjs` sets the `web/` cwd and Chromium path for you,
+and forwards everything after `--` to Playwright.
 
 Configured in `web/playwright.config.ts`. By default it builds the production
 artifact and serves it with `vite preview` (set `DEV_SERVER=1` for fast

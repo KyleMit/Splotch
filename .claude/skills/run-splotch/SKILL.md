@@ -101,6 +101,16 @@ const magic = page.locator('#magicBrushButton');
 if ((await magic.getAttribute('aria-pressed')) !== 'true') await magic.click();
 ```
 
+> **Save the script file inside the repo, not the session scratchpad.** Node resolves
+> `import ... 'playwright'` by walking up from the script's own directory, so a `.mjs` under
+> the session scratchpad (per `CLAUDE.md`'s temp-file rule) dies with
+> `ERR_MODULE_NOT_FOUND: Cannot find package 'playwright'`. Put it in the gitignored
+> `screenshots/` dir — inside the tree so imports resolve, and gitignored so the file doesn't
+> trip the stop-hook git check (same dir your shots go in). Delete it when done.
+>
+> `NODE_PATH=…/node_modules` does **not** fix this for these scripts — `NODE_PATH` is a
+> CommonJS-only resolver hint and is ignored by the ESM `import` loader.
+
 To apply a coloring page: click `#coloringBookButton`, then in the `dialog` pick a
 book and a page, and wait for `#coloringOverlay` to be visible. A full worked
 example (all these steps) lives in the magic-brush E2E test, `web/tests/flows.spec.ts`.
@@ -179,3 +189,4 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
 | `server never came up at http://localhost:5199` | Port in use — pass `--port <n>` or `npx kill-port 5199` |
 | `<route> never became interactive` | Route 404s or crashes — check it loads at `npm run dev` first |
 | Blank canvas in the `--draw` screenshot | Drawing engine regressed; reproduce at `npm run dev` |
+| Want one E2E spec, not the whole suite / `Cannot navigate to invalid URL` from raw `npx playwright test` | The config + `baseURL` live in `web/`, and raw `npx` from the repo root also loses the Chromium fallback. Filter through the npm script instead: `npm run test:e2e -- flows.spec.ts -g "<title>"` — `scripts/web.mjs` sets the `web/` cwd and Chromium path and forwards the args to Playwright. See the `testing` skill. |

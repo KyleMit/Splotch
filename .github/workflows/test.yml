@@ -93,6 +93,12 @@ jobs:
           # (retries: 2) gets a fresh 60s limiter window — hence one per attempt.
           ALLOWED_TOKENS_LIST: daycare-club,daycare-club-retry1,daycare-club-retry2
 
+      # The gen:* generators drive the live app through scripts/lib/app-driver.mjs
+      # and never run elsewhere in CI, so this smoke keeps that module from rotting
+      # silently on selector/import changes. Reuses the chromium installed above.
+      - name: App-driver smoke
+        run: npm run test:driver:smoke
+
       - name: Upload report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7

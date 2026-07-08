@@ -60,6 +60,16 @@ keyframe-vs-snapshot comparison.
 - **Headless + CPU throttle approximates a phone** — good for finding hotspots and
   catching regressions, but absolute frame numbers want the Android path. Don't
   compare across targets/throttle without checking the Settings table.
+- **`perf:web` measures compute, not compositing/presentation.** It runs headless
+  with no real display, overlay planes, or GPU compositor, so it **cannot** surface
+  transparency/alpha bugs, overlay-promotion bugs, tearing, or finger-to-ink
+  presentation latency — a passing run is *not* validation that the change renders
+  correctly, and the E2E readback flows don't cover it either. Any change to a canvas
+  **context attribute** (`getContext('2d', { alpha, desynchronized, willReadFrequently })`)
+  or to GPU compositing **must be verified on a real Android device** (`perf:android`,
+  or the `mobile` skill's `chrome://inspect` flow) before it counts as validated.
+  (Learned the hard way: a `desynchronized` hint passed `perf:web` + E2E and rendered
+  the transparent canvas black on Android — ADR-0051.)
 - **The self-time table excludes harness symbols** (the rAF sampler, the
   user-timing API, Playwright's input plumbing) so it reflects app compute. In
   production (minified) builds non-engine names may still be short; the engine.*

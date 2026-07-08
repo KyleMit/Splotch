@@ -140,9 +140,12 @@ When every item is either fixed or marked pending:
      docs-only branch proves nothing; skip it unless a commit touched code.
 2. If **no items remain**, delete `docs/AUDIT.md` and commit. If pending items remain, leave
    the file containing only the header and the pending items.
-3. Update the PR description (`gh pr edit --body`): a one-line summary per change (linking each
+3. Add one row to `docs/AUDIT-LOG.md` for this run per `.claude/audit-conventions.md` §2
+   (date · `fix-audits` · one-line summary with the PR link), committed and pushed with the
+   completion changes.
+4. Update the PR description (`gh pr edit --body`): a one-line summary per change (linking each
    commit), plus — if any — a **"Needs your decision"** section listing each remaining item and
    its pending decision.
-4. Mark the PR ready for review: `gh pr ready`.
-5. In your final response: how many items were fixed, how many are pending decisions (and what
+5. Mark the PR ready for review: `gh pr ready`.
+6. In your final response: how many items were fixed, how many are pending decisions (and what
    those decisions are), and the PR URL.

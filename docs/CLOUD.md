@@ -106,6 +106,11 @@ it under ~5 min so the cache builds. **Skip the Android/iOS/Capacitor toolchains
 there's no emulator, Xcode, or USB device in a cloud container, so the `android:*` /
 `ios:*` / `test:android` scripts can't run there.
 
+Only Playwright's **Chromium** is installed in a cloud session (no WebKit/Firefox), so
+engine-divergent CSS (containment as a containing block, top-layer, `:has` edge cases)
+can't be tested here — check the `docs/COMPATIBILITY.md` risk register instead of
+assuming a local pass covers Safari.
+
 > **Chromium revision must match `@playwright/test`.** The setup script derives the
 > browser version from `package.json` for exactly this reason: Playwright pins a
 > specific Chromium *revision* (e.g. `@playwright/test@1.61.x` → Chromium 1228), and a
