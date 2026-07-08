@@ -52,12 +52,12 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning \
 - `farm/cat-tall` — a single page/orientation
 - `--samples N` — N takes per page (for manual comparison)
 - `--max-attempts N` (default 3), `--drift-threshold F` (default 0.004),
-  `--night-luma-max F` (default 100) — retry tuning
+  `--night-luma-max F` (default 100), `--line-white-min F` (default 145) — retry tuning
 
 It inverts each page to white-on-dark, prompts `gemini-2.5-flash-image` for a
 night recolor, registers the result back onto the original outline, and scores it.
 
-### Two automated quality gates (per take, with keep-best-of-N retry)
+### Three automated quality gates (per take, with keep-best-of-N retry)
 
 1. **Drift** (`scoreDrift`) — catches invented shapes. A twin's white pixels are
    outlines only; any *thin* white far from a source line is an invented outline.
@@ -66,10 +66,16 @@ night recolor, registers the result back onto the original outline, and scores i
 2. **Night-ness** (`scoreNightness`) — catches a bright/daytime background. Median
    luma of the true background (flood-filled from the border). Good night ≈ 15–50;
    a daytime "sky blue" reads ~150+. Reject > `--night-luma-max`.
+3. **Line color** (`scoreLineColor`) — catches DARK outlines. The twin's outlines
+   must stay WHITE (in dark mode they sit under the app's white "chalk" line art, so
+   dark re-inked outlines double against the chalk and read wrong). Per source-outline
+   pixel, take the brightest twin luma within 1px and report the median: white-lined
+   twins read ~150–250, dark-lined ~65–135. Reject < `--line-white-min` (default 145).
 
-Each page retries (rising temperature) until a take passes both gates, keeping the
-least-drifted take whose background reads as night; it warns (`⚠ still drifting` /
-`⚠ too bright/daytime`) if none do — eyeball those in the gallery.
+Each page retries (rising temperature) until a take passes all three gates, keeping the
+least-drifted take that reads as night AND keeps white outlines; it warns
+(`⚠ still drifting` / `⚠ too bright/daytime` / `⚠ dark outlines`) if none do — eyeball
+those in the gallery.
 
 ### Prompt lessons (already baked into `DARK_FILL_PROMPT`)
 
@@ -81,6 +87,12 @@ least-drifted take whose background reads as night; it warns (`⚠ still driftin
   creatures. Do NOT wash faces to a chalky/ghostly slate. Only genuinely colorless
   things (clouds, droplets, steam, star-glow) take a soft moonlit tint. (Was: bee /
   caterpillar / astronaut faces came out ghostly grey.)
+- **Outlines stay WHITE, never dark.** The input is a white-line-on-dark drawing, and
+  the model likes to "correct" it into a normal black-outline coloring page — re-inking
+  every shape with dark strokes. Those dark lines then double against the app's white
+  chalk line art in dark mode. The prompt hammers "the outlines are white and must stay
+  bright white"; the `scoreLineColor` gate rejects a take whose outlines came back dark.
+  (Was: half of Farm's first batch — cat/cow/dog/duck/horse/pig — had dark outlines.)
 
 If a category's renders drift from these, tweak `DARK_FILL_PROMPT` and regenerate —
 don't hand-fix images.
