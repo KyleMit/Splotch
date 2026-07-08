@@ -26,7 +26,7 @@ night twin in dark mode, else the light twin, else falls back to the light twin.
 | --- | --- | --- |
 | Space | astronaut, meteor, moon, rover, ship, station | ✅ shipped (both orientations) |
 | Nature | ant, bee, caterpillar, ladybug, snail, spider | ✅ shipped (both orientations) |
-| **Farm** | cat, cow, dog, duck, horse, pig | ⬜ TODO |
+| Farm | cat, cow, dog, duck, horse, pig | ✅ shipped (both orientations) |
 | **Dinosaurs** (`dinosaur`) | brachiosaurus, pterodactyl, stegosaurus, trex, triceratops, velociraptor | ⬜ TODO |
 | **Creatures** | dragon, fairy, mermaid, owl, pegasus, unicorn | ⬜ TODO |
 | **Objects** | apple, balloon, flower, house, teddy | ⬜ TODO |

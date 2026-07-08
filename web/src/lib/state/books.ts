@@ -84,12 +84,13 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/farm/cover.webp',
     pages: [
-      page('farm', 'cat', 'Cat'),
-      page('farm', 'cow', 'Cow'),
-      page('farm', 'dog', 'Dog'),
-      page('farm', 'duck', 'Duck'),
-      page('farm', 'horse', 'Horse'),
-      page('farm', 'pig', 'Pig'),
+      // Night twins shipped for both orientations (ADR-0052).
+      page('farm', 'cat', 'Cat', ['portrait', 'landscape']),
+      page('farm', 'cow', 'Cow', ['portrait', 'landscape']),
+      page('farm', 'dog', 'Dog', ['portrait', 'landscape']),
+      page('farm', 'duck', 'Duck', ['portrait', 'landscape']),
+      page('farm', 'horse', 'Horse', ['portrait', 'landscape']),
+      page('farm', 'pig', 'Pig', ['portrait', 'landscape']),
     ],
   },
   {
