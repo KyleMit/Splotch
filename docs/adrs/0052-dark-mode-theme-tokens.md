@@ -69,7 +69,10 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
   `--lineart-filter` (`none` → `invert(1)`) + `--lineart-blend` (`multiply` → `screen`) on the
   `DrawingCanvas` overlay — white lines on dark, no pre-generated inverted assets. The overlay
   only renders while a page is applied, so these tokens are effectively the dark+coloring
-  treatment. The magic brush then reveals a whole PARALLEL SET of pre-colored **night twins**
+  treatment. The coloring-book **picker tiles** (`ColoringBook.svelte`) carry the same
+  `--lineart-*` tokens, so covers and page thumbnails preview as white-on-dark in dark mode,
+  matching the chalkboard the page applies to. The magic brush then reveals a whole PARALLEL
+  SET of pre-colored **night twins**
   (`{page}-{orient}.night.webp`, `scripts/gen-coloring-fills-dark.mjs`): deep-navy backgrounds
   with glowing, cozy-night fills, registered to the original outline. `DrawingCanvas` picks the
   twin by `resolvedTheme()` — the light twin (`.color.webp`) in light mode, the night twin in

@@ -126,13 +126,13 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/nature/cover.webp',
     pages: [
-      // Portrait night twins shipped (ADR-0052); landscape twins land in a later pass.
-      page('nature', 'ant', 'Ant', ['portrait']),
-      page('nature', 'bee', 'Bee', ['portrait']),
-      page('nature', 'caterpillar', 'Caterpillar', ['portrait']),
-      page('nature', 'ladybug', 'Ladybug', ['portrait']),
-      page('nature', 'snail', 'Snail', ['portrait']),
-      page('nature', 'spider', 'Spider', ['portrait']),
+      // Night twins shipped for both orientations (ADR-0052).
+      page('nature', 'ant', 'Ant', ['portrait', 'landscape']),
+      page('nature', 'bee', 'Bee', ['portrait', 'landscape']),
+      page('nature', 'caterpillar', 'Caterpillar', ['portrait', 'landscape']),
+      page('nature', 'ladybug', 'Ladybug', ['portrait', 'landscape']),
+      page('nature', 'snail', 'Snail', ['portrait', 'landscape']),
+      page('nature', 'spider', 'Spider', ['portrait', 'landscape']),
     ],
   },
   {
@@ -167,14 +167,13 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/space/cover.webp',
     pages: [
-      // Portrait night twins shipped (Phase 1 testbed, ADR-0052); landscape twins
-      // land in a later pass.
-      page('space', 'astronaut', 'Astronaut', ['portrait']),
-      page('space', 'meteor', 'Meteor', ['portrait']),
-      page('space', 'moon', 'Moon', ['portrait']),
-      page('space', 'rover', 'Rover', ['portrait']),
-      page('space', 'ship', 'Ship', ['portrait']),
-      page('space', 'station', 'Station', ['portrait']),
+      // Night twins shipped for both orientations (ADR-0052).
+      page('space', 'astronaut', 'Astronaut', ['portrait', 'landscape']),
+      page('space', 'meteor', 'Meteor', ['portrait', 'landscape']),
+      page('space', 'moon', 'Moon', ['portrait', 'landscape']),
+      page('space', 'rover', 'Rover', ['portrait', 'landscape']),
+      page('space', 'ship', 'Ship', ['portrait', 'landscape']),
+      page('space', 'station', 'Station', ['portrait', 'landscape']),
     ],
   },
   {

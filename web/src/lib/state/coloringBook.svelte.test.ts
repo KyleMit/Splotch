@@ -37,15 +37,19 @@ describe('coloring book state', () => {
     expect(page.colorImages.landscape).toBe(page.images.landscape.replace('.webp', '.color.webp'));
   });
 
-  it('tracks the night twin only for orientations that have one', () => {
-    // Space ships portrait night twins (ADR-0052 direction B) but not landscape yet.
+  it('tracks the night twin for each orientation that has one', () => {
+    // Space ships night twins for both orientations (ADR-0052 direction B),
+    // derived from the line-art path.
     setOverlayPage(spacePage, 'portrait');
     expect(coloringBookState.nightSheetUrl).toBe(spacePage.nightImages.portrait);
     expect(coloringBookState.nightSheetUrl).toBe(
       spacePage.images.portrait.replace('.webp', '.night.webp')
     );
     setOverlayPage(spacePage, 'landscape');
-    expect(coloringBookState.nightSheetUrl).toBeNull();
+    expect(coloringBookState.nightSheetUrl).toBe(spacePage.nightImages.landscape);
+    expect(coloringBookState.nightSheetUrl).toBe(
+      spacePage.images.landscape.replace('.webp', '.night.webp')
+    );
   });
 
   it('pages without a night twin track a null night sheet', () => {
@@ -72,13 +76,15 @@ describe('book asset manifest', () => {
     }
   });
 
-  it('lists the shipped portrait night twins for Space and Nature', () => {
+  it('lists the shipped night twins (both orientations) for Space and Nature', () => {
     for (const id of ['space', 'nature']) {
       const book = BOOKS.find((b) => b.id === id)!;
       const paths = bookAssetPaths(book);
       for (const p of book.pages) {
         expect(p.nightImages.portrait).toBeTruthy();
+        expect(p.nightImages.landscape).toBeTruthy();
         expect(paths).toContain(p.nightImages.portrait);
+        expect(paths).toContain(p.nightImages.landscape);
       }
     }
   });

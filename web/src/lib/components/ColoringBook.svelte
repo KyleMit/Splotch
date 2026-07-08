@@ -266,14 +266,14 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  /* Tiles stay light in both themes — little black-on-white paper cards inside
-     the modal that preview each page's line art. (The applied page inverts to
-     white-on-dark in dark mode per ADR-0052, but the picker keeps a consistent
-     light preview.) */
+  /* Tiles are little paper cards that preview each page/cover's line art, and
+     they follow the theme so the preview matches the applied page (ADR-0052):
+     a light card with black lines in light mode, a dark card with white "chalk"
+     lines in dark mode (via the --lineart-* tokens on the img below). */
   .coloring-tile {
     position: relative;
-    background: #f8f8f8;
-    border: 2px solid #e0e0e0;
+    background: var(--surface-2);
+    border: 2px solid var(--border);
     border-radius: 12px;
     cursor: pointer;
     overflow: hidden;
@@ -290,7 +290,7 @@
   @media (hover: hover) {
     .hover-armed .coloring-tile:hover {
       border-color: var(--brand);
-      background: #f5f0ff;
+      background: var(--brand-wash);
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(171, 113, 225, 0.25);
       box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 25%, transparent);
@@ -301,24 +301,27 @@
     transform: scale(0.96);
   }
 
-  /* Black line art multiplied over the light tile — white areas blend into the
-     tile, the lines stay crisp. Always light (tiles never darken), so a plain
-     multiply, no theme token. */
+  /* Same treatment as the canvas overlay (--lineart-*): black lines multiply over
+     the light tile; dark mode inverts them to white and screens them over the dark
+     tile, so the picker preview matches the chalkboard the page applies to. */
   .coloring-tile img {
     width: 100%;
     height: 100%;
     object-fit: contain;
     padding: 8px;
     pointer-events: none;
-    mix-blend-mode: multiply;
+    mix-blend-mode: var(--lineart-blend);
+    filter: var(--lineart-filter);
   }
 
+  /* No --lineart-filter here: the modal's icon re-ink already flips this
+     monochrome icon's fill per theme, so only the blend needs to follow. */
   :global(.coloring-remove-icon) {
     width: 100%;
     height: 75%;
     padding: 8px;
     pointer-events: none;
-    mix-blend-mode: multiply;
+    mix-blend-mode: var(--lineart-blend);
   }
 
   .coloring-book-tile img {
@@ -357,12 +360,13 @@
     right: 0;
     bottom: 0;
     padding: 6px 8px;
-    /* The tile is a light paper card in both themes, so the label caption stays
-       light-on-dark-text too. */
+    /* rgba fallback precedes the color-mix (docs/COMPATIBILITY.md); both follow
+       the theme so the caption sits on the tile's own paper tone. */
     background: rgba(255, 255, 255, 0.92);
+    background: color-mix(in srgb, var(--surface-2) 92%, transparent);
     font-size: 14px;
     font-weight: 600;
-    color: #555;
+    color: var(--text);
     text-align: center;
   }
 </style>

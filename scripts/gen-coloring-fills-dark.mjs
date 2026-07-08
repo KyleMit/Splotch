@@ -16,6 +16,8 @@
 // review — it does NOT touch the shipped assets.
 //   node scripts/gen-coloring-fills-dark.mjs space               whole category
 //   node scripts/gen-coloring-fills-dark.mjs space/astronaut-tall one page
+//   node scripts/gen-coloring-fills-dark.mjs space --tall         portrait pages only
+//   node scripts/gen-coloring-fills-dark.mjs space --wide         landscape pages only
 //   node scripts/gen-coloring-fills-dark.mjs space --samples 2    2 takes each
 //   node scripts/gen-coloring-fills-dark.mjs space --max-attempts 4  retry harder
 import { parseArgs } from 'node:util';
@@ -348,6 +350,7 @@ const { values, positionals } = parseArgs({
     samples: { type: 'string', short: 'n' },
     temperature: { type: 'string', short: 't' },
     tall: { type: 'boolean' },
+    wide: { type: 'boolean' },
     'max-attempts': { type: 'string' },
     'drift-threshold': { type: 'string' },
     'night-luma-max': { type: 'string' },
@@ -406,8 +409,11 @@ async function generateCleanTake({ darkInput, source, width, height, temp0 }) {
 let pages = positionals.length
   ? (await Promise.all(positionals.map(resolveArg))).flat()
   : fail('give a category or page, e.g. "space"');
-// Default the experiment to portrait pages only (half the renders, same read).
+// Optionally restrict to one orientation (e.g. generate wide twins without
+// retouching already-good tall ones). --tall and --wide are mutually exclusive.
+if (values.tall && values.wide) fail('pass only one of --tall / --wide');
 if (values.tall) pages = pages.filter((p) => p.includes('-tall'));
+if (values.wide) pages = pages.filter((p) => p.includes('-wide'));
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
