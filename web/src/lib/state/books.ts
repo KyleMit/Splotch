@@ -99,12 +99,13 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/dinosaur/cover.webp',
     pages: [
-      page('dinosaur', 'brachiosaurus', 'Brachiosaurus'),
-      page('dinosaur', 'pterodactyl', 'Pterodactyl'),
-      page('dinosaur', 'stegosaurus', 'Stegosaurus'),
-      page('dinosaur', 'trex', 'T. Rex'),
-      page('dinosaur', 'triceratops', 'Triceratops'),
-      page('dinosaur', 'velociraptor', 'Velociraptor'),
+      // Night twins shipped for both orientations (ADR-0052).
+      page('dinosaur', 'brachiosaurus', 'Brachiosaurus', ['portrait', 'landscape']),
+      page('dinosaur', 'pterodactyl', 'Pterodactyl', ['portrait', 'landscape']),
+      page('dinosaur', 'stegosaurus', 'Stegosaurus', ['portrait', 'landscape']),
+      page('dinosaur', 'trex', 'T. Rex', ['portrait', 'landscape']),
+      page('dinosaur', 'triceratops', 'Triceratops', ['portrait', 'landscape']),
+      page('dinosaur', 'velociraptor', 'Velociraptor', ['portrait', 'landscape']),
     ],
   },
   {

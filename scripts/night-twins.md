@@ -27,13 +27,13 @@ night twin in dark mode, else the light twin, else falls back to the light twin.
 | Space | astronaut, meteor, moon, rover, ship, station | ✅ shipped (both orientations) |
 | Nature | ant, bee, caterpillar, ladybug, snail, spider | ✅ shipped (both orientations) |
 | Farm | cat, cow, dog, duck, horse, pig | ✅ shipped (both orientations) |
-| **Dinosaurs** (`dinosaur`) | brachiosaurus, pterodactyl, stegosaurus, trex, triceratops, velociraptor | ⬜ TODO |
+| Dinosaurs (`dinosaur`) | brachiosaurus, pterodactyl, stegosaurus, trex, triceratops, velociraptor | ✅ shipped (both orientations) |
 | **Creatures** | dragon, fairy, mermaid, owl, pegasus, unicorn | ⬜ TODO |
 | **Objects** | apple, balloon, flower, house, teddy | ⬜ TODO |
 | **Shapes** | circle, rectangle, square, star, triangle | ⬜ TODO |
 | **Vehicles** | excavator, fire, garbage, monster, police, train | ⬜ TODO |
 
-Remaining: 6 categories, 34 pages, 68 twins (~68 Gemini image gens + retries). Be
+Remaining: 4 categories, 22 pages, 44 twins (~44 Gemini image gens + retries). Be
 cost-aware; do **one category at a time** with a review gate.
 
 ## The generator
@@ -103,7 +103,9 @@ don't hand-fix images.
 
 ## Per-category workflow
 
-1. **Generate** to samples: `... gen-coloring-fills-dark.mjs <category>`.
+1. **Generate** to samples: `... gen-coloring-fills-dark.mjs <category> --max-attempts 4`
+   (give the retry loop room to reject dark-outline / daytime takes; the default 3 is
+   a touch tight now that three gates run).
 2. **Build a review gallery** and publish it as an Artifact for the user:
    ```bash
    node --experimental-strip-types --disable-warning=ExperimentalWarning \
@@ -115,9 +117,18 @@ don't hand-fix images.
    Also glance at a couple of images inline (Read tool) to sanity-check faces/mood.
 3. **Iterate**: regenerate any that look off (higher `-t`, or a prompt tweak). Kids'
    faces and the night background are the usual issues. For a page the `⚠ dark
-   outlines` gate keeps flagging, go the OTHER way — a LOW `-t` (≈0.25) keeps the
-   model faithful to the white-line input, where a high temperature tends to make it
-   re-ink dark. (Farm's duck-tall only came white at `-t 0.25`.)
+   outlines` gate flags, the reliable fix is **more attempts against a stricter gate**
+   so the retry loop keeps hunting for a genuinely-white take instead of settling at
+   the boundary:
+   ```bash
+   ... gen-coloring-fills-dark.mjs <cat>/<page>-wide --max-attempts 8 --line-white-min 175
+   ```
+   That fixed Farm's dog-wide (70→219) and Dinosaurs' velociraptor-wide (70→223) in
+   ≤6 tries each. If it still comes back dark, try the OPPOSITE lever — a LOW `-t`
+   (≈0.25) keeps the model faithful to the white-line input where a high temperature
+   makes it re-ink dark (Farm's duck-tall only came white at `-t 0.25`). Expect
+   roughly one flagged `-wide` page per category; budget for the extra pass.
+   Borderline-but-light pages (a dim moonlit rim, lineW ≈150) are fine to keep.
 4. **On the user's approval**, ship:
    - Copy each twin from samples to the shipped path (strip the sample suffix, add
      `.night`):
