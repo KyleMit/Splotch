@@ -85,6 +85,7 @@ baseline**, and every remaining below-floor risk is already feature-detected and
 | File System Access (`showDirectoryPicker` + writable handles) | `lib/drawing/folderSave.ts` | desktop Chromium 86+ only; never Firefox / Safari / mobile | ✅ `folderSaveSupported()` | folder row hidden in Parent Center; web saves stay plain downloads |
 | `createImageBitmap` | `routes/dev/engine/+page.svelte` | dev harness only | excluded from prod build | n/a |
 | `Touch.touchType` (`'stylus'`) | `lib/actions/scribbleGuard.ts` | Safari/iOS only | ✅ strict `=== 'stylus'`; undefined elsewhere → no-op | guard inert — exactly right, Scribble only exists on iPadOS |
+| CSS `contain` / `container-type` as a *fixed-position containing block* | avoid — no current usage | Chromium only; **WebKit never** treats containment as a containing block for `position: fixed` descendants (long-standing bug) | ⚠️ not testable in cloud (Chromium-only sandbox) | fixed descendants escape to the real viewport in Safari/iOS — never rely on `contain` to trap them; a transformed ancestor (`transform: translate(0)`) is the portable, all-engine mechanism |
 
 ## Polyfills & workarounds
 

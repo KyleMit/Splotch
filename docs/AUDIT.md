@@ -22,55 +22,6 @@ Not filed (already resolved / already documented, verified this pass):
 
 ---
 
-### [Docs] `contain` doesn't create a fixed-position containing block in WebKit — and only Chromium is testable in cloud sessions
-
-**File(s):** `docs/COMPATIBILITY.md` (API risk register); optionally `docs/CLOUD.md`
-
-#### Problem
-
-Cost: **slow** (shipped breakage + a full feedback round-trip) · recurrence: low–medium
-(engine-divergent CSS is untestable in the sandbox, so it slips through).
-
-A session used `contain: layout` to re-anchor `position: fixed` chrome into a bounded stage.
-Chromium honors it; **WebKit does not implement containment as a containing block for
-`position: fixed` descendants** (long-standing bug), so the fixed elements escaped to the real
-viewport for Safari/iOS users and the breakage shipped. The sandbox can't catch this: only
-Playwright's **Chromium** is installed in cloud sessions (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`,
-no WebKit/Firefox), and the risk register had no entry for it. The portable mechanism is a
-`transform` on the ancestor — any non-`none` transform creates a fixed-position containing block
-in **every** engine.
-
-The specific offending route (`/components`) is **not in this branch**, so there's no live
-`contain`-on-fixed usage to cite here — this is a durable platform gotcha + a testability gap,
-filed so the register catches the *next* use.
-
-#### Proposed solution
-
-Add a row to the API risk register in `docs/COMPATIBILITY.md` (no source-file citation, since
-there's no current usage — state the rule and the portable mechanism):
-
-```markdown
-| CSS `contain` / `container-type` as a *fixed-position containing block* | (avoid — use `transform` instead) | Chromium honors it; **WebKit does not** implement containment as a containing block for `position: fixed` descendants (long-standing bug) | ⚠️ not testable in cloud (Chromium-only sandbox) | never rely on `contain` to trap `position: fixed`; a transformed ancestor (`transform: translate(0)`) is the portable, all-engine mechanism |
-```
-
-Optionally add one line to the `docs/CLOUD.md` environment section:
-
-```markdown
-Only Playwright's **Chromium** is installed in a cloud session (no WebKit/Firefox), so
-engine-divergent CSS (containment as a containing block, top-layer, `:has` edge cases) can't be
-tested here — check the `docs/COMPATIBILITY.md` risk register instead of assuming a local pass
-covers Safari.
-```
-
-#### Verification
-
-The register row exists and names the portable `transform` mechanism. A future session reaching
-for `contain` to trap a fixed element finds the entry, uses `transform` instead, and — lacking
-WebKit in the sandbox — knows to flag it for on-Safari review rather than trusting a Chromium
-green.
-
----
-
 ### [Docs] Whether `/fix-audits` and `/vet-audits` log to `AUDIT-LOG.md` is contradictory and unstated in the skill files
 
 **File(s):** `.claude/audit-conventions.md` (§2 + the "Consumers" note), `.claude/commands/fix-audits.md` (Completion section), `.claude/commands/vet-audits.md` (Output section)
