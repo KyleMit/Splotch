@@ -61,10 +61,6 @@
      --paper-margin is the flat tone behind the rotation-locked sheet. */
   --paper: #fcfbf8;
   --paper-margin: #f1efeb;
-  /* Coloring-page line art: black lines multiplied over light paper; dark mode
-     inverts them to white lines and screens them over the dark paper. */
-  --lineart-filter: none;
-  --lineart-blend: multiply;
   /* Cards floating over the paper (action buttons, stroke flyout). In dark
      mode a step lighter than --paper so they still read as raised cards. */
   --float-surface: #ffffff;
@@ -119,8 +115,6 @@
   --danger-text: #e09393;
   --paper: #211f29;
   --paper-margin: #1a1922;
-  --lineart-filter: invert(1);
-  --lineart-blend: screen;
   --float-surface: #2e2c38;
   --float-surface-hover: #393744;
   --float-border: rgba(255, 255, 255, 0.1);
@@ -161,8 +155,6 @@
     --danger-text: #e09393;
     --paper: #211f29;
     --paper-margin: #1a1922;
-    --lineart-filter: invert(1);
-    --lineart-blend: screen;
     --float-surface: #2e2c38;
     --float-surface-hover: #393744;
     --float-border: rgba(255, 255, 255, 0.1);
@@ -170,6 +162,24 @@
     --float-shadow-flyout: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 22px rgba(0, 0, 0, 0.6);
     --dark-ink-keyline: #e9e7f0;
   }
+}
+
+/* A coloring page is authored for white paper — black lines, white regions to
+   fill in. So while one is applied (DrawingCanvas toggles data-coloring on
+   <html>), the drawing surface reverts to the LIGHT paper even in dark mode: a
+   bright coloring sheet spotlit on the dark desk, with the chrome/palette/
+   buttons still dark. Un-colored regions read as white "still to color", pen
+   strokes fill white space like real paper, and the magic-brush colored twin
+   (which has a light background) lands seamlessly instead of clashing with dark
+   paper. Only the two paper tokens flip; every chrome token stays. The overlay
+   line art always multiplies as black-on-light (DrawingCanvas hard-codes it,
+   since a page always means the light sheet now). Comes after both dark blocks
+   so it wins at equal specificity by source order; the export path and Notch
+   Band mirror this in JS (they key off the active overlay, see exportDrawing.ts
+   / NotchBand.svelte). */
+:root[data-coloring] {
+  --paper: #fcfbf8;
+  --paper-margin: #f1efeb;
 }
 
 * {

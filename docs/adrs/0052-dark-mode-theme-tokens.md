@@ -1,4 +1,4 @@
-# ADR-0052: Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper with Inverted Line Art
+# ADR-0052: Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Free-Draw Paper, Light Coloring Sheet
 
 **Status:** Active
 **Date:** 2026-07
@@ -34,7 +34,7 @@ kept) and the coloring pages adapting. The design questions with real alternativ
 
 **Attribute + tokens.** `<html>` carries `data-theme="light"` or `"dark"` only when the parent
 explicitly chose one; the default `system` leaves the attribute off. All themed surfaces read
-semantic custom properties (`--surface`, `--text`, `--border`, `--paper`, `--lineart-*`, …)
+semantic custom properties (`--surface`, `--text`, `--border`, `--paper`, `--float-*`, …)
 defined in `web/src/app.css`: light values on `:root`, dark overrides in **two deliberately
 identical blocks** — `:root[data-theme='dark']` and
 `@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) }`. CSS below the
@@ -63,20 +63,33 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
   exact mirror of the existing white-ink `.white-stroke` black keyline; the token is
   transparent in light mode so the class is inert there. The **Clear Button** is the one
   deliberately unthemed control — its red danger chrome reads the same on either paper.
-- **JS consumers of the resolved theme.** `PAPER_COLORS` in `theme.ts` mirrors `--paper`
-  (keep in sync); `lib/state/appearance.svelte.ts` exposes a reactive `resolvedTheme()`
-  (setting + live OS preference). Used by the **Notch Band** (the eraser now clears the band
-  to the theme's paper color — `paperColor` input in `notchBand.ts`) and by the **export
-  path**: `exportDrawing.ts` fills the theme's paper color, patterns the same texture over
-  it, and in dark mode inverts the overlay via a `'difference'` fill with white
-  (`ctx.filter = 'invert(1)'` needs Safari 18, above the floor) composited with `'screen'` —
-  so the saved PNG matches what the child saw.
-- **Coloring pages invert at runtime.** `--lineart-filter` (`none` → `invert(1)`) +
-  `--lineart-blend` (`multiply` → `screen`) drive both the canvas overlay
-  (`DrawingCanvas.svelte`) and the picker tiles (`ColoringBook.svelte`) — white line art over
-  dark paper, no pre-generated assets. The **magic brush is deliberately untouched**: it
-  reveals the colored twin as-is (including its light background), which in dark mode reads
-  as wiping away the dark to expose the bright picture beneath.
+- **Coloring pages keep a LIGHT sheet, even in dark mode.** A coloring page is authored for
+  white paper — black lines, white regions to fill — so forcing it onto dark paper broke the
+  metaphor (un-colored regions read as filled-dark, not "blank to color"; pen strokes floated
+  on charcoal; the magic-brush light twin clashed with the dark ground). Instead, while a page
+  is applied `DrawingCanvas.svelte` toggles `data-coloring` on `<html>`, and
+  `:root[data-coloring]` reverts `--paper`/`--paper-margin` to their light values (it comes
+  after both dark blocks, so it wins by source order at equal specificity). Result: a bright
+  coloring sheet spotlit on the dark desk — chrome, palette, and buttons stay dark. The overlay
+  line art always multiplies black-on-light (`DrawingCanvas` / picker tiles hard-code
+  `mix-blend-mode: multiply`; the picker tiles stay light in both themes since they preview
+  pages), and the magic-brush colored twin (light background) now lands seamlessly on the light
+  sheet. Free-hand drawing with no page keeps the dark paper. *(This supersedes an earlier
+  attempt to invert the line art to white on dark paper via `--lineart-filter`/`--lineart-blend`
+  tokens, now removed.)*
+- **JS consumers of the resolved theme.** `PAPER_COLORS` in `theme.ts` mirrors `--paper` (keep
+  in sync); `lib/state/appearance.svelte.ts` exposes a reactive `resolvedTheme()` (setting +
+  live OS preference). Both the **Notch Band** and the **export path** additionally treat an
+  active coloring page as light, mirroring `:root[data-coloring]`: the Notch Band's eraser
+  clears the band to the light paper (`NotchBand.svelte`), and `exportDrawing.ts` fills the
+  light paper + multiplies the black line art when an overlay image is present (its presence IS
+  the coloring-active signal), so a saved coloring page is always black-on-white. Free-draw
+  exports still follow the resolved theme (dark paper in dark mode).
+- **Prominence of the float cards in dark mode.** The action buttons' warm drop shadow vanishes
+  on dark paper, so `--float-border` (a faint light hairline) + `--float-shadow` /
+  `--float-shadow-flyout` give each card a visible edge and lift in dark mode; both are
+  byte-identical to the prior light styling in light mode (transparent border + the warm
+  shadow).
 - **Icons.** Monochrome Material SVGs bake in `fill="#1f1f1f"`; the CSS `fill` property beats
   that presentation attribute, so one zero-specificity rule
   (`:where(.modal-shell) :where([data-icon]:not(.icon-color):not(.icon-tinted)) svg`) re-inks
@@ -91,15 +104,16 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
     no JS listener; the only JS followers are the `theme-color` meta and the Notch Band.
 - + Prerendered HTML with no attribute renders the system default correctly even if the head
     script never runs; explicit choices restore before first paint (no flash).
-- + One texture and one set of line-art assets serve both themes; exports match the theme the
-    drawing was saved in.
-- - Black/dark strokes are nearly invisible on the dark paper — the mirror image of white
-    crayon on light paper today. A drawing made in one theme can look different (or partly
-    vanish) when viewed in the other; the strokes themselves are never lost.
-- - Solid-black fills inside line art (e.g. pupils) invert to solid white — reads as chalk
-    style, but it is a change to the art's look, not a tunable.
-- - The magic reveal's light patches (the twin's background) are bright against dark paper;
-    acceptable as "revealing the picture," revisit with pre-generated dark twins if it jars.
+- + One texture and one set of assets serve both themes; coloring pages behave like real paper
+    in either theme, and exports match what the child saw.
+- + Coloring pages sidestep the dark-paper tradeoffs entirely (they're always a light sheet),
+    so the magic-brush reveal blends and un-colored regions read as white.
+- - Black/dark strokes are nearly invisible on the dark FREE-DRAW paper — the mirror image of
+    white crayon on light paper today. A free-hand drawing made in one theme can look different
+    (or partly vanish) when viewed in the other; the strokes themselves are never lost.
+    (Coloring pages are unaffected — they stay light.)
+- - `data-coloring` flips the paper between two states; the transition when applying/clearing a
+    page in dark mode is a visible (deliberate) change, not a flash.
 - - The dark token block is duplicated (attribute selector + media query) and the two copies
     must be kept in sync by hand until the floor reaches `light-dark()`; `PAPER_COLORS` in
     `theme.ts` is a third copy of `--paper`.

@@ -266,10 +266,14 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  /* Tiles stay light in both themes — they're thumbnails of coloring pages,
+     which live on light paper (see the light-sheet override in app.css), so a
+     black-on-white preview matches what applying the page actually gives. Little
+     paper cards inside the dark modal. */
   .coloring-tile {
     position: relative;
-    background: var(--surface-2);
-    border: 2px solid var(--border);
+    background: #f8f8f8;
+    border: 2px solid #e0e0e0;
     border-radius: 12px;
     cursor: pointer;
     overflow: hidden;
@@ -286,7 +290,7 @@
   @media (hover: hover) {
     .hover-armed .coloring-tile:hover {
       border-color: var(--brand);
-      background: var(--brand-wash);
+      background: #f5f0ff;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(171, 113, 225, 0.25);
       box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 25%, transparent);
@@ -297,27 +301,24 @@
     transform: scale(0.96);
   }
 
-  /* Same trick as the canvas overlay (--lineart-*): black lines multiply
-     over the light tile; dark mode inverts them to white and screens them
-     over the dark tile. */
+  /* Black line art multiplied over the light tile — white areas blend into the
+     tile, the lines stay crisp. Always light (tiles never darken), so a plain
+     multiply, no theme token. */
   .coloring-tile img {
     width: 100%;
     height: 100%;
     object-fit: contain;
     padding: 8px;
     pointer-events: none;
-    mix-blend-mode: var(--lineart-blend);
-    filter: var(--lineart-filter);
+    mix-blend-mode: multiply;
   }
 
-    /* No --lineart-filter here: the modal's icon re-ink already flips this
-     monochrome icon's fill per theme, so only the blend needs to follow. */
   :global(.coloring-remove-icon) {
     width: 100%;
     height: 75%;
     padding: 8px;
     pointer-events: none;
-    mix-blend-mode: var(--lineart-blend);
+    mix-blend-mode: multiply;
   }
 
   .coloring-book-tile img {
@@ -356,12 +357,12 @@
     right: 0;
     bottom: 0;
     padding: 6px 8px;
-    /* rgba fallback precedes the color-mix (docs/COMPATIBILITY.md). */
+    /* The tile is a light paper card in both themes, so the label caption stays
+       light-on-dark-text too. */
     background: rgba(255, 255, 255, 0.92);
-    background: color-mix(in srgb, var(--surface-2) 92%, transparent);
     font-size: 14px;
     font-weight: 600;
-    color: var(--text);
+    color: #555;
     text-align: center;
   }
 </style>

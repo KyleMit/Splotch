@@ -126,8 +126,11 @@ export async function exportDrawing(
   if (source.paperPxWidth === 0 || source.paperPxHeight === 0) return null;
 
   // Resolve once up front so an OS theme switch mid-export can't mismatch the
-  // paper fill and the overlay treatment.
-  const theme = resolvedTheme();
+  // paper fill and the overlay treatment. A coloring page (overlayImage present)
+  // forces the light sheet even in dark mode — mirroring :root[data-coloring] on
+  // screen — so the exported page reads as black lines on white paper, not
+  // inverted white lines on charcoal.
+  const theme = overlayImage ? 'light' : resolvedTheme();
 
   // Snapshot the strokes before any await: save-on-delete fire-and-forgets the
   // export and then clears the live canvas synchronously, so snapshotting after
