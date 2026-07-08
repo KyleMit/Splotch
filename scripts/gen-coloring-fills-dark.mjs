@@ -12,6 +12,9 @@
 // those; a render above the threshold is regenerated (bumping temperature) up to
 // --max-attempts times, keeping the least-drifted take. Clean twins score ~0.
 //
+// Full workflow (generate → review gallery → ship → wire → verify), the prompt
+// lessons, and the remaining-category checklist: scripts/night-twins.md.
+//
 // Requires GEMINI_API_KEY. Writes candidates to .coloring-samples-dark/ for
 // review — it does NOT touch the shipped assets.
 //   node scripts/gen-coloring-fills-dark.mjs space               whole category
