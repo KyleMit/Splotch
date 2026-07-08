@@ -133,7 +133,36 @@ don't hand-fix images.
      render as blank white eyes (Creatures' mermaid-wide). Pages whose eyes are drawn as
      OUTLINES with a light interior (dragon) are fine — the twin fills a dark pupil that
      survives. A blown-out eye is a base-line-art problem; regenerating the twin won't
-     change it (surface it instead of burning gens on regens).
+     change it. The fix is to **retouch the line art** (see below), not to re-roll the twin.
+
+### Retouching the base line art (hard sections)
+
+When a "particularly hard section" of a page can't be rescued downstream — the eyes
+gotcha above is the canonical case — edit the base line art itself with
+`scripts/retouch-line-art.mjs` (Gemini image edit; writes candidates to
+`.coloring-samples-dark/retouch/`, never touches shipped assets):
+
+```bash
+node --experimental-strip-types --disable-warning=ExperimentalWarning \
+  scripts/retouch-line-art.mjs creatures/mermaid-tall creatures/mermaid-wide --samples 2
+```
+
+The default instruction opens solid-black eyes into outlined coloring-book eyes; pass
+`--instruction "..."` for anything else. **Call it out** — you are changing a shipped
+coloring page. Then regenerate the WHOLE related suite from the new outline and re-review
+in the contact sheet's Combined view in **both** light and dark (the eye lesson applies
+to light mode too):
+
+1. Copy the chosen candidate over `web/static/coloring/<cat>/<page>-<orient>.webp`.
+2. `node scripts/gen-coloring-thumbs.mjs <cat>` (picker thumbnail).
+3. `gen-coloring-fills.mjs <cat>/<page>-tall <cat>/<page>-wide` (light `.color.webp`).
+4. `gen-coloring-fills-dark.mjs <cat>/<page>-tall <cat>/<page>-wide --max-attempts 4`,
+   then copy the samples to `…/<page>-<orient>.night.webp`.
+5. Rebuild the gallery `--source shipped`, verify eyes read well in Combined light AND
+   dark, then `npm run check:assets && npm run check && npm run test:unit` and commit.
+
+(Fixed Creatures' mermaid tall+wide: solid-black eyes → open outlined eyes, whole
+light+dark+thumb suite regenerated.)
 3. **Iterate**: regenerate any that look off (higher `-t`, or a prompt tweak). Kids'
    faces and the night background are the usual issues. For a page the `⚠ dark
    outlines` gate flags, the reliable fix is **more attempts against a stricter gate**

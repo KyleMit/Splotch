@@ -27,10 +27,16 @@ const THUMB_QUALITY = 80;
 const THUMB_SUFFIX = '-thumb.webp';
 
 // Every shipped source image: covers and both orientations of each page, minus
-// the derived outputs (existing -thumb.webp) and the colored twins (.color.webp,
-// which are never shown in the picker).
+// the derived outputs (existing -thumb.webp) and the colored twins (.color.webp
+// light + .night.webp dark), which are magic-brush reveals, never shown in the
+// picker — so they get no thumbnail.
 function isSource(path) {
-  return path.endsWith('.webp') && !path.endsWith(THUMB_SUFFIX) && !path.endsWith('.color.webp');
+  return (
+    path.endsWith('.webp') &&
+    !path.endsWith(THUMB_SUFFIX) &&
+    !path.endsWith('.color.webp') &&
+    !path.endsWith('.night.webp')
+  );
 }
 
 const filter = process.argv.slice(2);
