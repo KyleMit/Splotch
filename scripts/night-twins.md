@@ -129,6 +129,19 @@ don't hand-fix images.
    makes it re-ink dark (Farm's duck-tall only came white at `-t 0.25`). Expect
    roughly one flagged `-wide` page per category; budget for the extra pass.
    Borderline-but-light pages (a dim moonlit rim, lineW ≈150) are fine to keep.
+
+   If a page still won't clear after both levers, the last resort is
+   **`--dilate-lines N`** — it thickens the WHITE input lines by N px (a separable
+   max filter) before the model ever sees them, so a pale subject (whose own light
+   fill tempts the model to re-ink thin outlines dark to define the body) gets a bold
+   white band that survives as white, and the gate has a wider white target to
+   sample. `--dilate-lines 2` fixed Creatures' unicorn-wide (a cream unicorn stuck at
+   lineW 138 through every temperature) in one pass → lineW 218. Pair it with a low
+   `-t` and the strict gate: `... unicorn-wide -t 0.3 --dilate-lines 2 --max-attempts 6
+   --line-white-min 175`. The twin's outlines come back a touch bolder than an
+   undilated page's — harmless, since they only ever sit (white) under the app's chalk
+   line art. Reach for it only for the stubborn pale outliers; the default 0 keeps the
+   input pixel-faithful.
 4. **On the user's approval**, ship:
    - Copy each twin from samples to the shipped path (strip the sample suffix, add
      `.night`):
