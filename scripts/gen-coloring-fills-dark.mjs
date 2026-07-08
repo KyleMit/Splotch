@@ -5,11 +5,19 @@
 // glow against the dark (a "night / neon" coloring), so dark mode can show a
 // whole separate set of renders rather than forcing a light sheet.
 //
+// The model sometimes DRIFTS — inventing a shape the line art doesn't have (an
+// extra star, a stray dot). Because a night twin's WHITE pixels are outlines only
+// (fills are saturated, background is deep navy), any white/low-chroma pixel that
+// lands far from a source outline is an invented outline. scoreDrift() counts
+// those; a render above the threshold is regenerated (bumping temperature) up to
+// --max-attempts times, keeping the least-drifted take. Clean twins score ~0.
+//
 // Requires GEMINI_API_KEY. Writes candidates to .coloring-samples-dark/ for
 // review — it does NOT touch the shipped assets.
 //   node scripts/gen-coloring-fills-dark.mjs space               whole category
 //   node scripts/gen-coloring-fills-dark.mjs space/astronaut-tall one page
 //   node scripts/gen-coloring-fills-dark.mjs space --samples 2    2 takes each
+//   node scripts/gen-coloring-fills-dark.mjs space --max-attempts 4  retry harder
 import { parseArgs } from 'node:util';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
@@ -85,6 +93,90 @@ async function alignToSource(coloredBuf, sourceBuf, width, height) {
     .extract({ left: clamp(pad - cdx, 2 * pad), top: clamp(pad - cdy, 2 * pad), width, height })
     .toBuffer();
   return { buffer, dx: cdx, dy: cdy };
+}
+
+// --- Drift detection ----------------------------------------------------------
+// A night twin's white pixels are outlines; the model has drifted when it draws a
+// white outline where the source line art has none. We rasterize both at a working
+// width, mark the source's outline pixels (dark in the black-on-white source),
+// dilate that mask to absorb registration slack + the twin's glow, then count
+// twin white/low-chroma pixels that fall outside it. Normalized by the source
+// outline mass so pages of different line density compare on one scale.
+const DRIFT_W = 512; // working width for the comparison
+const DRIFT_SRC_DARK = 110; // source pixel darker than this = a line
+const DRIFT_DILATE = 6; // px of slack around each source line (registration + glow)
+const DRIFT_LUMA_WHITE = 185; // twin pixel this bright...
+const DRIFT_CHROMA_MAX = 45; // ...and this desaturated = a white outline, not a fill
+// Above this share of invented white (relative to source outline mass) a render is
+// regenerated. Clean twins score 0; a stray invented shape lands well above this.
+const DRIFT_THRESHOLD_DEFAULT = 0.004;
+
+// Separable box dilation of a 0/1 mask.
+function dilateMask(mask, w, h, r) {
+  const tmp = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let on = 0;
+      for (let dx = -r; dx <= r; dx++) {
+        const xx = x + dx;
+        if (xx >= 0 && xx < w && mask[y * w + xx]) {
+          on = 1;
+          break;
+        }
+      }
+      tmp[y * w + x] = on;
+    }
+  }
+  const out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let on = 0;
+      for (let dy = -r; dy <= r; dy++) {
+        const yy = y + dy;
+        if (yy >= 0 && yy < h && tmp[yy * w + x]) {
+          on = 1;
+          break;
+        }
+      }
+      out[y * w + x] = on;
+    }
+  }
+  return out;
+}
+
+async function scoreDrift(twinBuf, sourceBuf) {
+  const s = await sharp(sourceBuf)
+    .resize(DRIFT_W, null, { fit: 'inside' })
+    .grayscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const t = await sharp(twinBuf)
+    .resize(DRIFT_W, null, { fit: 'inside' })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const w = s.info.width;
+  const h = s.info.height;
+  const n = w * h;
+  const outline = new Uint8Array(n);
+  let srcCount = 0;
+  for (let i = 0; i < n; i++) {
+    if (s.data[i] < DRIFT_SRC_DARK) {
+      outline[i] = 1;
+      srcCount++;
+    }
+  }
+  const allowed = dilateMask(outline, w, h, DRIFT_DILATE);
+  let added = 0;
+  for (let i = 0; i < n; i++) {
+    const r = t.data[i * 3];
+    const g = t.data[i * 3 + 1];
+    const b = t.data[i * 3 + 2];
+    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+    const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+    if (luma > DRIFT_LUMA_WHITE && chroma < DRIFT_CHROMA_MAX && !allowed[i]) added++;
+  }
+  return { ratio: srcCount ? added / srcCount : 0, added, srcCount };
 }
 
 const MODEL = 'gemini-2.5-flash-image';
@@ -169,12 +261,46 @@ const { values, positionals } = parseArgs({
     samples: { type: 'string', short: 'n' },
     temperature: { type: 'string', short: 't' },
     tall: { type: 'boolean' },
+    'max-attempts': { type: 'string' },
+    'drift-threshold': { type: 'string' },
   },
 });
 const samples = values.samples === undefined ? 1 : Number(values.samples);
 if (!(Number.isInteger(samples) && samples >= 1)) fail(`--samples must be a positive integer`);
 const baseTemp = values.temperature === undefined ? 0.6 : Number(values.temperature);
+const maxAttempts = values['max-attempts'] === undefined ? 3 : Number(values['max-attempts']);
+if (!(Number.isInteger(maxAttempts) && maxAttempts >= 1))
+  fail(`--max-attempts must be a positive integer`);
+const driftThreshold =
+  values['drift-threshold'] === undefined
+    ? DRIFT_THRESHOLD_DEFAULT
+    : Number(values['drift-threshold']);
+if (!(driftThreshold >= 0)) fail(`--drift-threshold must be a non-negative number`);
 if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
+
+// Generate one take, register it to the source, and score its drift. Retry (with a
+// rising temperature to shake loose a different composition) until a take scores at
+// or below the threshold or the attempt budget runs out, then return the
+// least-drifted take seen — so even a stubborn page yields its cleanest render.
+async function generateCleanTake({ darkInput, source, width, height, temp0 }) {
+  let best = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const temperature = Math.min(2, temp0 + (attempt - 1) * 0.15);
+    const { bytes } = await generateDarkPage(ai, {
+      imageBytes: darkInput,
+      mimeType: 'image/webp',
+      temperature,
+    });
+    const resized = await sharp(bytes).resize(width, height, { fit: 'fill' }).png().toBuffer();
+    // Edges are polarity-agnostic, so align the colored output to the ORIGINAL
+    // black-line source to undo the model's few-pixel nudge.
+    const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
+    const drift = await scoreDrift(aligned, source);
+    if (!best || drift.ratio < best.drift.ratio) best = { aligned, dx, dy, drift, attempt };
+    if (drift.ratio <= driftThreshold) break;
+  }
+  return best;
+}
 
 let pages = positionals.length
   ? (await Promise.all(positionals.map(resolveArg))).flat()
@@ -195,17 +321,14 @@ for (const page of pages) {
     const label = samples > 1 ? `${rel}  ${i + 1}/${samples}` : rel;
     process.stdout.write(`${label} ... `);
     try {
-      const temperature = Math.min(2, baseTemp + i * 0.12);
-      const { bytes } = await generateDarkPage(ai, {
-        imageBytes: darkInput,
-        mimeType: 'image/webp',
-        temperature,
+      const take = await generateCleanTake({
+        darkInput,
+        source,
+        width,
+        height,
+        temp0: baseTemp + i * 0.12,
       });
-      const resized = await sharp(bytes).resize(width, height, { fit: 'fill' }).png().toBuffer();
-      // Edges are polarity-agnostic, so align the colored output to the ORIGINAL
-      // black-line source to undo the model's few-pixel nudge.
-      const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
-      const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
+      const colored = await sharp(take.aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
       const dir = join(OUT_DIR, dirname(rel));
       await mkdir(dir, { recursive: true });
@@ -214,8 +337,11 @@ for (const page of pages) {
       await sharp(colored).toFile(out);
       // Also stash the dark input beside it once, for the review montage.
       if (i === 0) await sharp(darkInput).toFile(join(dir, `${base}.input.webp`));
-      const nudge = dx || dy ? `  shift ${dx},${dy}` : '';
-      console.log(`ok${nudge}  -> ${relative(ROOT, out)}`);
+      const nudge = take.dx || take.dy ? `  shift ${take.dx},${take.dy}` : '';
+      const tries = take.attempt > 1 ? `  (${take.attempt} tries)` : '';
+      const drift = `  drift ${take.drift.ratio.toFixed(4)}`;
+      const warn = take.drift.ratio > driftThreshold ? '  ⚠ still drifting' : '';
+      console.log(`ok${nudge}${tries}${drift}${warn}  -> ${relative(ROOT, out)}`);
     } catch (err) {
       failures++;
       console.log(`FAILED (${err instanceof Error ? err.message : err})`);
