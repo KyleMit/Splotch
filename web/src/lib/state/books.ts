@@ -114,12 +114,13 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/creatures/cover.webp',
     pages: [
-      page('creatures', 'dragon', 'Dragon'),
-      page('creatures', 'fairy', 'Fairy'),
-      page('creatures', 'mermaid', 'Mermaid'),
-      page('creatures', 'owl', 'Owl'),
-      page('creatures', 'pegasus', 'Pegasus'),
-      page('creatures', 'unicorn', 'Unicorn'),
+      // Night twins shipped for both orientations (ADR-0052).
+      page('creatures', 'dragon', 'Dragon', ['portrait', 'landscape']),
+      page('creatures', 'fairy', 'Fairy', ['portrait', 'landscape']),
+      page('creatures', 'mermaid', 'Mermaid', ['portrait', 'landscape']),
+      page('creatures', 'owl', 'Owl', ['portrait', 'landscape']),
+      page('creatures', 'pegasus', 'Pegasus', ['portrait', 'landscape']),
+      page('creatures', 'unicorn', 'Unicorn', ['portrait', 'landscape']),
     ],
   },
   {

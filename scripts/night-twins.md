@@ -28,12 +28,12 @@ night twin in dark mode, else the light twin, else falls back to the light twin.
 | Nature | ant, bee, caterpillar, ladybug, snail, spider | ✅ shipped (both orientations) |
 | Farm | cat, cow, dog, duck, horse, pig | ✅ shipped (both orientations) |
 | Dinosaurs (`dinosaur`) | brachiosaurus, pterodactyl, stegosaurus, trex, triceratops, velociraptor | ✅ shipped (both orientations) |
-| **Creatures** | dragon, fairy, mermaid, owl, pegasus, unicorn | ⬜ TODO |
+| Creatures | dragon, fairy, mermaid, owl, pegasus, unicorn | ✅ shipped (both orientations) |
 | **Objects** | apple, balloon, flower, house, teddy | ⬜ TODO |
 | **Shapes** | circle, rectangle, square, star, triangle | ⬜ TODO |
 | **Vehicles** | excavator, fire, garbage, monster, police, train | ⬜ TODO |
 
-Remaining: 4 categories, 22 pages, 44 twins (~44 Gemini image gens + retries). Be
+Remaining: 3 categories, 16 pages, 32 twins (~32 Gemini image gens + retries). Be
 cost-aware; do **one category at a time** with a review gate.
 
 ## The generator
