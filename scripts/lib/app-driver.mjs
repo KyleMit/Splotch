@@ -2,7 +2,7 @@
 // (store-shots.mjs, gen-large-image.mjs): dev-server lifecycle, page setup,
 // and the UI gestures (pick a color, set stroke size, draw) the app needs.
 
-import { waitForUrl } from './utils.mjs';
+import { sleep, waitForUrl } from './utils.mjs';
 import { spawnViteServer } from './vite-server.mjs';
 
 const isUp = async (url) => {
@@ -54,9 +54,11 @@ export async function openAppPage(browser, base, device) {
 export const canvasBox = (page) => page.locator('#drawingCanvas').boundingBox();
 
 // The action drawer (eraser / coloring book / camera / undo) starts collapsed.
+// Its buttons stay in the DOM always (ADR-0040) — open/closed is CSS-only, so
+// probe visibility (a closed drawer hides them) rather than presence.
 export async function expandDrawer(page) {
   const toggle = page.locator('.drawer-toggle');
-  if ((await toggle.count()) && (await page.locator('#coloringBookButton').count()) === 0) {
+  if ((await toggle.count()) && !(await page.locator('#coloringBookButton').isVisible())) {
     await toggle.click();
     await sleep(350);
   }
