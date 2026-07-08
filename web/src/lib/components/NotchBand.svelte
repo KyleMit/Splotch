@@ -5,13 +5,7 @@
   import { computeNotchBandState } from '$lib/notchBand';
   import { layout } from '$lib/state/layout.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { coloringBookState } from '$lib/state/coloringBook.svelte';
   import { PAPER_COLORS } from '$lib/theme';
-
-  // A coloring page forces the light sheet even in dark mode (see app.css
-  // :root[data-coloring]), so the eraser clears the notch band to the light
-  // paper to match.
-  const paperTheme = $derived(coloringBookState.overlayUrl ? 'light' : resolvedTheme());
 
   // Measured env(safe-area-inset-*), in CSS px — we need the number (not just
   // the CSS value) to tell a real notch from a bezel. The top and both sides
@@ -28,7 +22,7 @@
       insetRight: layout.safeArea.right,
       activeColor: colors.activeColor,
       eraser: toolState.eraser,
-      paperColor: PAPER_COLORS[paperTheme],
+      paperColor: PAPER_COLORS[resolvedTheme()],
     })
   );
 

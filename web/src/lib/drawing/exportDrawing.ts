@@ -126,11 +126,11 @@ export async function exportDrawing(
   if (source.paperPxWidth === 0 || source.paperPxHeight === 0) return null;
 
   // Resolve once up front so an OS theme switch mid-export can't mismatch the
-  // paper fill and the overlay treatment. A coloring page (overlayImage present)
-  // forces the light sheet even in dark mode — mirroring :root[data-coloring] on
-  // screen — so the exported page reads as black lines on white paper, not
-  // inverted white lines on charcoal.
-  const theme = overlayImage ? 'light' : resolvedTheme();
+  // paper fill and the overlay treatment. Coloring pages follow the resolved
+  // theme just like free-draw (ADR-0052 direction B): a dark-mode save is the
+  // night version — dark paper, inverted white "chalk" line art screened on top,
+  // and the night-twin reveals already baked into the replayed strokes.
+  const theme = resolvedTheme();
 
   // Snapshot the strokes before any await: save-on-delete fire-and-forgets the
   // export and then clears the live canvas synchronously, so snapshotting after

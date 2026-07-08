@@ -23,6 +23,7 @@
     getEraserWidthPx,
   } from '$lib/state/strokeWidth.svelte';
   import { coloringBookState } from '$lib/state/coloringBook.svelte';
+  import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound, preloadDrawSounds } from '$lib/audio/drawingSound';
   import { isNative } from '$lib/platform';
@@ -125,14 +126,6 @@
     };
   });
 
-  // A coloring page reverts the drawing surface to light paper even in dark
-  // mode (see app.css :root[data-coloring]). Publish the flag to <html> so the
-  // paper/line-art tokens flip; the chrome stays dark. Coloring state is
-  // transient (not persisted), so there's nothing to seed pre-paint.
-  $effect(() => {
-    document.documentElement.toggleAttribute('data-coloring', !!coloringBookState.overlayUrl);
-  });
-
   // Tell the engine where the OS gesture/navbar zones are so it can ignore
   // edge-swipes that summon the system bars (see engine EDGE_SWIPE_BAND_PX).
   // The insets move between edges on rotation; the shared layout module
@@ -167,12 +160,17 @@
     if (!toolState.eraser) hideEraserCursor();
   });
 
-  // The magic brush reveals the active page's colored twin (ADR-0043). Keep the
-  // engine's sheet in lockstep with the applied page, and its mode with the tool.
-  // The line art (overlayUrl) is passed too so the twin's own outlines can be
-  // masked out of the reveal — the overlay stays the single source of line work.
+  // The magic brush reveals the active page's colored twin (ADR-0043), theme-
+  // aware (ADR-0052 direction B): light mode reveals the light twin; dark mode
+  // reveals the pre-colored NIGHT twin where one exists, falling back to the
+  // light twin for pages/orientations whose night asset isn't generated yet.
+  // The line art (overlayUrl) is always the original black-on-white page, so the
+  // fills-only mask (magicBrush.buildFillsSheet) punches either twin's outlines
+  // with the same polarity — no per-twin flip needed. Reading resolvedTheme()
+  // re-runs this on a live theme switch, re-rasterizing the sheet.
   $effect(() => {
-    setColorSheet(coloringBookState.colorSheetUrl, coloringBookState.overlayUrl);
+    const nightUrl = resolvedTheme() === 'dark' ? coloringBookState.nightSheetUrl : null;
+    setColorSheet(nightUrl ?? coloringBookState.colorSheetUrl, coloringBookState.overlayUrl);
   });
 
   $effect(() => {
@@ -329,9 +327,10 @@
   /* The blend lives on the wrapper (not the img): the transform makes the
      wrapper a stacking context, which would confine an inner mix-blend-mode to
      the wrapper's own (transparent) backdrop instead of the canvas below.
-     Black lines multiply over the paper — white areas of the art disappear,
-     lines stay. A coloring page always forces the light sheet (even in dark
-     mode, see app.css :root[data-coloring]), so this is always the light path. */
+     Light: black lines multiply over the light paper. Dark: the img's
+     --lineart-filter inverts the art to white-on-black and screen makes the
+     black transparent-equivalent — white "chalk" lines over the dark paper
+     (ADR-0052 direction B). */
   .paper-view {
     position: absolute;
     top: 0;
@@ -339,7 +338,7 @@
     transform-origin: 0 0;
     pointer-events: none;
     z-index: 2;
-    mix-blend-mode: multiply;
+    mix-blend-mode: var(--lineart-blend);
   }
 
   .paper-view[hidden] {
@@ -354,6 +353,7 @@
     height: 100%;
     object-fit: contain;
     opacity: 0;
+    filter: var(--lineart-filter);
   }
 
   .coloring-overlay.overlay-ready {
