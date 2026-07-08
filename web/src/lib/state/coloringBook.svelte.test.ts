@@ -72,10 +72,14 @@ describe('book asset manifest', () => {
     }
   });
 
-  it('lists the shipped Space night twins', () => {
-    const paths = bookAssetPaths(spaceBook);
-    for (const p of spaceBook.pages) {
-      expect(paths).toContain(p.nightImages.portrait);
+  it('lists the shipped portrait night twins for Space and Nature', () => {
+    for (const id of ['space', 'nature']) {
+      const book = BOOKS.find((b) => b.id === id)!;
+      const paths = bookAssetPaths(book);
+      for (const p of book.pages) {
+        expect(p.nightImages.portrait).toBeTruthy();
+        expect(paths).toContain(p.nightImages.portrait);
+      }
     }
   });
 });

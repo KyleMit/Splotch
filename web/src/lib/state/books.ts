@@ -126,12 +126,13 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/nature/cover.webp',
     pages: [
-      page('nature', 'ant', 'Ant'),
-      page('nature', 'bee', 'Bee'),
-      page('nature', 'caterpillar', 'Caterpillar'),
-      page('nature', 'ladybug', 'Ladybug'),
-      page('nature', 'snail', 'Snail'),
-      page('nature', 'spider', 'Spider'),
+      // Portrait night twins shipped (ADR-0052); landscape twins land in a later pass.
+      page('nature', 'ant', 'Ant', ['portrait']),
+      page('nature', 'bee', 'Bee', ['portrait']),
+      page('nature', 'caterpillar', 'Caterpillar', ['portrait']),
+      page('nature', 'ladybug', 'Ladybug', ['portrait']),
+      page('nature', 'snail', 'Snail', ['portrait']),
+      page('nature', 'spider', 'Spider', ['portrait']),
     ],
   },
   {
