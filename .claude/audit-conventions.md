@@ -110,6 +110,11 @@ After a run, add one row to `docs/AUDIT-LOG.md` (most recent first) so there's a
 committable, scannable history of what each audit found and when. See that file's
 header for the exact format. Keep the summary to one line.
 
+This includes the **consumer** skills (`/fix-audits`, `/vet-audits`): log the run —
+branch/PR for fix-audits, prune summary for vet-audits — even though they don't write
+findings into `docs/AUDIT.md`. The Inventory's "not audits themselves" scopes §1 only
+(which only producers satisfy); §2 applies to every run.
+
 ### 3. Self-heal — fold learnings back into the skill
 
 After running, briefly consider: did this run surface a **novel pattern**, a

@@ -21,7 +21,8 @@ Read `docs/AUDIT.md` and the current codebase, then **adversarially** validate e
 ## Output
 
 1. Edit `docs/AUDIT.md` in place — remove the findings that don't hold up, enrich the ones that do. Each finding is a `### [Category] …` block with `#### Problem` / `#### Proposed solution` / `#### Verification` inside (see `.claude/audit-conventions.md`); preserve each `## Source:` section and the file header.
-2. In your response, print two short lists:
+2. Add one row to `docs/AUDIT-LOG.md` for this run per `.claude/audit-conventions.md` §2 (date · `vet-audits` · one-line prune summary — what you kept/enriched vs removed).
+3. In your response, print two short lists:
    - **Kept / enriched** — one line each, noting what you sharpened or the verification you added.
    - **Removed** — one line each, with the reason (fixed / false positive / superseded / not worth it).
 
