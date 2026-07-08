@@ -189,3 +189,4 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
 | `server never came up at http://localhost:5199` | Port in use — pass `--port <n>` or `npx kill-port 5199` |
 | `<route> never became interactive` | Route 404s or crashes — check it loads at `npm run dev` first |
 | Blank canvas in the `--draw` screenshot | Drawing engine regressed; reproduce at `npm run dev` |
+| Want one E2E spec, not the whole suite / `Cannot navigate to invalid URL` from raw `npx playwright test` | The config + `baseURL` live in `web/`, and raw `npx` from the repo root also loses the Chromium fallback. Filter through the npm script instead: `npm run test:e2e -- flows.spec.ts -g "<title>"` — `scripts/web.mjs` sets the `web/` cwd and Chromium path and forwards the args to Playwright. See the `testing` skill. |

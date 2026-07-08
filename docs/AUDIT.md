@@ -22,56 +22,6 @@ Not filed (already resolved / already documented, verified this pass):
 
 ---
 
-### [Tooling] No documented single-spec E2E run for ad-hoc cloud validation
-
-**File(s):** `.claude/skills/run-splotch/SKILL.md` (Troubleshooting table) or
-`.claude/skills/testing` — wherever the E2E run commands live
-
-#### Problem
-
-Cost: **minor** · recurrence: medium (targeted validation of one change is common in cloud
-sessions).
-
-Validating one change often means running a single E2E spec, but the skills only point at
-`npm run test:e2e`, which runs the **whole** suite. Reaching for the raw Playwright CLI from the
-repo root fails, because `playwright.config.ts` (with `baseURL`) lives in `web/`, not the repo
-root (verified: `web/playwright.config.ts:6,43`). A session hit:
-
-```
-Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
-  navigating to "/", waiting until "load"   (baseURL was empty)
-```
-
-Note the reconciliation between the two reports: Session 5 recovered with
-`cd web && npx playwright test <spec> -g "<title>"`, but Session 6 separately found that bare
-`npx playwright test` from the wrong cwd **also** loses the `scripts/web.mjs` Chromium fallback
-(cryptic `chrome-headless-shell` error in cloud). The robust, documented, cross-platform path is
-the existing npm script with an arg filter — `node scripts/web.mjs` already sets `cwd = web/`
-(config + baseURL) and the Chromium fallback. So the fix is to **document the single-spec filter
-through the npm script**, not to steer people to raw `npx` from `web/`.
-
-#### Proposed solution
-
-Confirm `test:e2e` forwards trailing args to Playwright (`test:e2e => node scripts/web.mjs
-playwright test`, so `npm run test:e2e -- <spec> -g "<title>"` should pass through), then
-document it. Add a Troubleshooting row to `run-splotch/SKILL.md` (or a line in the testing
-skill):
-
-```markdown
-| Want one spec, not the whole suite / `Cannot navigate to invalid URL` from raw `npx playwright test` | The config + `baseURL` live in `web/`, and raw `npx` from the repo root also loses the Chromium fallback. Filter through the npm script instead: `npm run test:e2e -- flows.spec.ts -g "<title>"` — `scripts/web.mjs` sets the `web/` cwd and Chromium path for you. |
-```
-
-If `test:e2e` turns out **not** to forward `--` args, that arg-passthrough is the small fix to
-make first (it's the reusable primitive), then document it.
-
-#### Verification
-
-`npm run test:e2e -- flows.spec.ts -g "<a real test title>"` runs exactly that one spec, green,
-from the repo root with no empty-`baseURL` navigation error and no `chrome-headless-shell`
-failure — first try, without `cd web` or raw `npx`.
-
----
-
 ### [Docs] `contain` doesn't create a fixed-position containing block in WebKit — and only Chromium is testable in cloud sessions
 
 **File(s):** `docs/COMPATIBILITY.md` (API risk register); optionally `docs/CLOUD.md`
