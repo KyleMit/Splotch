@@ -52,7 +52,7 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning \
 - `farm/cat-tall` — a single page/orientation
 - `--samples N` — N takes per page (for manual comparison)
 - `--max-attempts N` (default 3), `--drift-threshold F` (default 0.004),
-  `--night-luma-max F` (default 100), `--line-white-min F` (default 145) — retry tuning
+  `--night-luma-max F` (default 100), `--line-white-min F` (default 150) — retry tuning
 
 It inverts each page to white-on-dark, prompts `gemini-2.5-flash-image` for a
 night recolor, registers the result back onto the original outline, and scores it.
@@ -69,8 +69,12 @@ night recolor, registers the result back onto the original outline, and scores i
 3. **Line color** (`scoreLineColor`) — catches DARK outlines. The twin's outlines
    must stay WHITE (in dark mode they sit under the app's white "chalk" line art, so
    dark re-inked outlines double against the chalk and read wrong). Per source-outline
-   pixel, take the brightest twin luma within 1px and report the median: white-lined
-   twins read ~150–250, dark-lined ~65–135. Reject < `--line-white-min` (default 145).
+   pixel, take the brightest twin luma within 1px and report the median: fully
+   dark-lined twins read ~65–135, white-lined ~154–250. Reject < `--line-white-min`
+   (default 150 — the highest cut that still clears the good set's floor). A pale,
+   patchy subject (a mostly-white dog with a few dark contours) is the hard case: it
+   can land near the boundary, so a flagged page may need a targeted low-temp regen
+   (see step 3) to come back cleanly white — eyeball borderline pages in the gallery.
 
 Each page retries (rising temperature) until a take passes all three gates, keeping the
 least-drifted take that reads as night AND keeps white outlines; it warns

@@ -28,7 +28,7 @@
 //   node scripts/gen-coloring-fills-dark.mjs space --wide         landscape pages only
 //   node scripts/gen-coloring-fills-dark.mjs space --samples 2    2 takes each
 //   node scripts/gen-coloring-fills-dark.mjs space --max-attempts 4  retry harder
-//   node scripts/gen-coloring-fills-dark.mjs space --line-white-min 145  dark-outline gate
+//   node scripts/gen-coloring-fills-dark.mjs space --line-white-min 150  dark-outline gate
 import { parseArgs } from 'node:util';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
@@ -282,14 +282,18 @@ async function scoreDrift(twinBuf, sourceBuf) {
 // white "chalk" line art, so a twin whose outlines came back DARK (the model
 // re-inked every shape with a black/brown stroke instead of keeping them white)
 // doubles against the chalk and reads wrong. The source (black-on-white) says
-// exactly WHERE the outlines are; at each of those pixels a good twin shows a
-// bright WHITE line, a dark-lined twin shows only fill or dark ink. We take, per
-// source-outline pixel, the brightest twin luma within 1px (absorbing a pixel of
-// registration slack) and report the MEDIAN. White-lined twins read ~150-250;
-// dark-lined twins read ~65-135. Reject below --line-white-min.
+// exactly WHERE the outlines are; at each, a good twin has a bright WHITE line and
+// a dark-lined twin has only dark ink. Per source-outline pixel we take the
+// brightest twin luma within 1px (absorbing a pixel of registration slack) and
+// report the MEDIAN. Calibrated on a labeled Farm batch: fully dark-lined twins
+// read ~65-135, white-lined ~154-250. Reject below --line-white-min (default 150,
+// the highest cut that still clears the good set's floor). A pale, patchy subject
+// (a mostly-white dog with a few dark contours) is the hard case — it can land near
+// the boundary, so a flagged page may need a targeted low-temp regen to come back
+// cleanly white; eyeball borderline pages in the gallery.
 const LINE_W = 512;
 const LINE_SRC_DARK = 110; // source pixel darker than this = an outline
-const LINE_WHITE_MIN_DEFAULT = 145; // median outline brightness below this = dark outlines
+const LINE_WHITE_MIN_DEFAULT = 150; // median outline brightness below this = dark outlines
 
 async function scoreLineColor(twinBuf, sourceBuf) {
   const s = await sharp(sourceBuf)
