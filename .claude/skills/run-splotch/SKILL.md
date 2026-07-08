@@ -101,6 +101,16 @@ const magic = page.locator('#magicBrushButton');
 if ((await magic.getAttribute('aria-pressed')) !== 'true') await magic.click();
 ```
 
+> **Save the script file inside the repo, not the session scratchpad.** Node resolves
+> `import ... 'playwright'` by walking up from the script's own directory, so a `.mjs` under
+> the session scratchpad (per `CLAUDE.md`'s temp-file rule) dies with
+> `ERR_MODULE_NOT_FOUND: Cannot find package 'playwright'`. Put it in the gitignored
+> `screenshots/` dir — inside the tree so imports resolve, and gitignored so the file doesn't
+> trip the stop-hook git check (same dir your shots go in). Delete it when done.
+>
+> `NODE_PATH=…/node_modules` does **not** fix this for these scripts — `NODE_PATH` is a
+> CommonJS-only resolver hint and is ignored by the ESM `import` loader.
+
 To apply a coloring page: click `#coloringBookButton`, then in the `dialog` pick a
 book and a page, and wait for `#coloringOverlay` to be visible. A full worked
 example (all these steps) lives in the magic-brush E2E test, `web/tests/flows.spec.ts`.
