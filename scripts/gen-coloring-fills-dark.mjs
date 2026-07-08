@@ -290,9 +290,10 @@ THIS IS A NIGHT / EVENING SCENE — the whole point:
 
 COLORING STYLE — a dim, moonlit night palette:
 - Fill each region with one solid, flat, even color. No gradients, no shading, no highlights, no crayon or paint texture.
-- Use deep, rich, moonlit colors, with a few GLOWING accent colors (warm gold, amber, teal, magenta) as if lit by the moon, fireflies, or a lantern. Accents may glow, but the overall scene stays dim and evening-lit — cool and deep, not bright and sunny.
-- NEVER use pure or near-WHITE fills. Even a subject that is normally white or pale — a face, a belly, a water droplet, a cloud — must be given a COOL, DIM, MOONLIT tone (a soft dusky blue-grey, pale lavender, or muted slate) that is clearly darker than white. The ONLY white pixels allowed anywhere are the outlines themselves and tiny eye glints.
-- Avoid bright daytime colors (bright sky blue, bright grass green, bright white). Deepen and cool every color toward evening.
+- Colors stay deep and moonlit, but they are still the subject's OWN NATURAL colors — just dimmed and cooled by moonlight, not swapped out. A few GLOWING accent colors (warm gold, amber, teal, magenta) can pop as if lit by the moon, fireflies, or a lantern, while the overall scene stays dim and evening-lit — deep, not bright and sunny.
+- FACES, SKIN, and ANIMAL BODIES must keep a NATURAL, living color — never grey, ashen, ghostly, chalky, or washed-out slate. Give a person a real SKIN TONE (a warm tan, brown, peach, or golden-brown, only darkened for night); give an animal its real coloring (a green caterpillar, a yellow-and-black bee, a red ladybug), softened toward evening. A face must look like living skin or fur under moonlight, NOT like a pale ghost.
+- Only things that have no real color of their own — a cloud, a water droplet, a wisp of steam, a puff of smoke, the glow of a star — may take a soft, dim, moonlit off-white or pale tint. Everything else keeps its own (dimmed) color.
+- Do NOT use pure or bright WHITE fills, and avoid bright daytime colors (bright sky blue, bright grass green). Deepen and cool every color toward evening. The only pure-white pixels allowed are the outlines themselves and tiny eye glints.
 - Keep the WHITE outlines fully visible — every fill should butt right up against the white outline without covering it.
 
 Convey the night mood with COLOR AND MOOD ONLY. Do NOT add a moon, stars, fireflies, lamps, or any new shapes or lines — only the outlines already present may be colored.
