@@ -4,6 +4,27 @@ Work through **every** item in `docs/AUDIT.md` autonomously on a dedicated branc
 draft PR — one commit + one PR comment per item — without stopping to ask the user
 anything. Review happens on the PR.
 
+## Two kinds of finding — adapt the loop to each
+
+`docs/AUDIT.md` mixes two shapes of finding, and "validate → fix → verify" means something
+different for each. Read the finding's `## Source:` header and its `[Category]` tag to tell
+them apart before you delegate:
+
+- **Product-code findings** — from `/code-audit`, `/extract-audit`, `lighthouse-audit`. The fix
+  changes app source under `web/src/` (or a build / perf path). Validate empirically (a failing
+  test, a profile, a query) and verify with `npm run check` + the tests covering the touched
+  files, exactly as the per-item loop describes.
+- **Tooling findings** — from `/session-audit` (categories `[Traversal]` / `[Execution]` /
+  `[Docs]` / `[Tooling]`), and any finding whose fix is a change to Splotch's **Claude Code
+  tooling and cloud-session workflow** rather than to production code: a skill under
+  `.claude/skills/`, a path-scoped rule in `.claude/rules/`, a `CLAUDE.md` note, a `docs/*`
+  reference, an ADR, `.claude/cloud/*`, or a small helper script in `scripts/`. These usually
+  have **no product test to turn green** — a Markdown edit has nothing to typecheck. Validate and
+  verify against the *tooling itself* (see the per-item loop), and do **not** fabricate or report
+  a passing product suite as if it validated a change that never touched product code.
+
+The two classes can coexist in one sweep; decide per item, not per run.
+
 ## Setup (once per run)
 
 1. **Check `docs/AUDIT.md` exists first.** It may be absent — this command deletes it once
@@ -34,15 +55,46 @@ Process items **top to bottom** (they're ordered by impact). For each item:
       a profile capture, a log line, a query — whatever the item's category admits) rather than
       trusting the write-up. If the problem no longer holds, is intentional, or can't be
       reproduced, that's a **Skip** carrying the evidence.
+
+      For a **tooling finding**, "reproduce it" means confirming the gap against the *current*
+      tooling, not against product behaviour: the doc really is missing the note, the script
+      really throws, the rule really doesn't warn (grep the skill / rule / `CLAUDE.md`, run the
+      script, re-run the finding's `#### Verification`). If the tooling has since been fixed
+      — someone added the note, the import was already corrected — that's a **Skip** with the
+      grep/run that proves it.
    2. **Brainstorm the fix — the item's recommendation is a starting point, not gospel.** The
       suggested fix in `docs/AUDIT.md` was written by an earlier pass without implementation
       context, so treat it as one candidate among others. Weigh it against alternatives and
       choose the approach that is genuinely best for this codebase, even if that means diverging
       from or improving on the recommendation. Carefully consider the best way to proceed.
-   3. **Implement the chosen fix, then verify it.** Run `npm run check` and the tests covering
-      the touched files. Where the problem was reproduced empirically in step 1, re-run that
-      same reproduction to prove the fix actually resolves it — not merely that the suite stays
-      green.
+
+      **When a tooling fix calls for automation, keep it small and composable.** A cloud-session
+      or Claude-tooling fix that needs a script must be a **small, single-purpose, non-brittle
+      helper that many different sessions can reuse** — not a god script that grows flags and
+      branches to cover every case. Lots of small, focused commands handed to Claude beat one big
+      configurable command with a pile of args, *as long as each is documented*. So:
+
+      - Prefer several focused commands, each doing one thing, over one command switched by
+        arguments. If a finding's `#### Proposed solution` sketches a broad do-everything script,
+        decompose it — build the smallest reusable primitive, then let callers compose primitives.
+      - Reuse before you add: check `scripts/lib/` (`utils.mjs`, `vite-server.mjs`, `smoke.mjs`,
+        `android.mjs`) for glue that already exists rather than re-implementing it.
+      - Name and document every new script per ADR-0019: a `namespace:variant` npm script with a
+        matching one-line `scripts-info` entry, plus a `scripts/CLAUDE.md` bullet where it earns
+        one. An undocumented helper is **not** a finished fix — if `npm run info` and the skill /
+        rule that will invoke it don't point at the new command, a future session can't find it,
+        so discoverability is part of the fix, not an extra.
+   3. **Implement the chosen fix, then verify it — matched to what the fix touched.**
+      - If the fix changed **code or a script** (`.ts`, `.mjs`, config): run `npm run check` and
+        the tests covering the touched files, and where the problem was reproduced empirically in
+        step 1, re-run that same reproduction to prove the fix resolves it — not merely that the
+        suite stays green. A new helper script must actually run (invoke it, or its smoke).
+      - If the fix only changed **docs / skills / rules / `CLAUDE.md` / ADRs**, there is nothing
+        to typecheck — `npm run check` and `npm test` are irrelevant, so don't report a green run
+        you didn't need as if it validated the edit. Instead re-run the finding's
+        `#### Verification`, grep for the guidance you added to confirm it landed, and read the
+        surrounding section to be sure the new text is correct, self-consistent, and doesn't
+        contradict a sibling skill / rule / doc.
 
    The subagent must report back one of:
    - **Fixed** — with a summary of what changed and why, the approach chosen (and how/why it
@@ -75,10 +127,17 @@ Process items **top to bottom** (they're ordered by impact). For each item:
 
 When every item is either fixed or marked pending:
 
-1. **One final verification.** With all fixes now accumulated on the branch, run the full suite
-   yourself once more (`npm run check` and `npm test`) to confirm the fixes *compose* — that no
-   later fix silently undermined an earlier one and the branch is green as a whole, not just
-   item-by-item. If anything fails, resolve it (delegate if it's substantial) before proceeding.
+1. **One final verification — of whatever the sweep actually touched.** With all fixes now
+   accumulated on the branch, confirm they *compose* — that no later fix silently undermined an
+   earlier one and the branch is coherent as a whole, not just item-by-item.
+   - If any commit touched **code or a script**, run the full suite once more (`npm run check`
+     and `npm test`) and resolve anything that fails (delegate if it's substantial) before
+     proceeding.
+   - If the sweep only touched **Claude tooling** (docs / skills / rules / `CLAUDE.md` / ADRs),
+     the compose check is that the edited guidance is mutually consistent — no two skills or
+     rules now say contradictory things, and every new helper the sweep introduced is referenced
+     from the skill / rule / `scripts-info` that should invoke it. Running `npm test` on a
+     docs-only branch proves nothing; skip it unless a commit touched code.
 2. If **no items remain**, delete `docs/AUDIT.md` and commit. If pending items remain, leave
    the file containing only the header and the pending items.
 3. Update the PR description (`gh pr edit --body`): a one-line summary per change (linking each
