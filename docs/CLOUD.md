@@ -31,13 +31,50 @@ becomes context):
   request, Claude forks a fresh branch from the latest `origin/main` named
   `feat/<feature>` (a short kebab-case summary of the ask) and does all work
   there — even if the session opened on a different auto-generated branch.
-* **Return the branch preview URL.** Branch previews are enabled on the
-  `splotchy` Netlify site, so every pushed branch auto-deploys to
-  `https://<slug>--splotchy.netlify.app` (the branch name with each
-  non-alphanumeric character replaced by `-`, e.g. `feat/undo-button` →
+* **Return the branch preview URL.** When branch previews are enabled for the
+  branch (see the two modes below), the `splotchy` Netlify site auto-deploys the
+  pushed branch to `https://<slug>--splotchy.netlify.app` (the branch name with
+  each non-alphanumeric character replaced by `-`, e.g. `feat/undo-button` →
   `feat-undo-button--splotchy.netlify.app`). Claude hands that link back after
   pushing so you can watch the committed work in progress; the URL is stable for
   the branch, so it tracks every later push (each deploy takes a minute or two).
+
+### Two preview modes — check which one is active
+
+The `splotchy` site runs in one of two preview modes, toggled in the Netlify UI
+depending on how tight the build-minute budget is:
+
+* **Full preview mode.** Both deploy previews on pull requests **and** branch
+  previews on **every** branch are enabled — any pushed branch auto-deploys to
+  `https://<slug>--splotchy.netlify.app` as described above, and every PR gets its
+  own deploy preview.
+* **Restricted preview mode.** PR deploy previews are **disabled**, and branch
+  previews build **only** for branches whose name starts with `feature/`
+  (`feature/foo` → `feature-foo--splotchy.netlify.app`). Every other branch —
+  including the per-session `feat/<feature>` and `claude/*` branches — is pushed
+  and stored on GitHub but **not** deployed, so it has no preview URL. This mode
+  conserves build minutes.
+
+> **Current mode: restricted.** _(as of 2026-07-09)_ Assume a plain push produces
+> **no** live preview unless the branch is named `feature/*`. When the mode
+> changes, update this line.
+
+**Getting a live preview while restricted.** If a production preview is genuinely
+needed — Lighthouse profiling (see the `lighthouse-audit` skill), or the user
+asks to see the changes running live — branch off the current working branch to a
+`feature/*` branch, push it to `origin` to trigger the build, then switch back to
+the working branch to resume work:
+
+```bash
+git checkout -b feature/<feature>        # fork off the current working branch
+git push -u origin feature/<feature>     # triggers the branch deploy
+git checkout -                           # back to the working branch to keep going
+```
+
+Don't keep the `feature/*` branch mirrored to the working branch — only refresh it
+ad hoc when the user asks. When the user requested a live preview, hand back the
+branch preview URL using Netlify's slug convention (each non-alphanumeric
+character → `-`): `feature/undo-button` → `feature-undo-button--splotchy.netlify.app`.
 
 ### The branch deploy is real production serving — use it to test what dev can't
 
