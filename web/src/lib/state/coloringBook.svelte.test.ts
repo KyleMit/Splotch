@@ -5,6 +5,10 @@ import { BOOKS, bookAssetPaths, pageNightImage } from './books';
 const page = BOOKS[0].pages[0];
 const spaceBook = BOOKS.find((b) => b.id === 'space')!;
 const spacePage = spaceBook.pages[0];
+// A page with no night twin in any orientation. Synthetic rather than a catalog
+// page so the null-night-sheet test stays valid as more categories ship their
+// twins (eventually every catalog page has one).
+const pageWithoutNight = { ...page, nightImages: {} };
 
 describe('coloring book state', () => {
   beforeEach(() => clearOverlay());
@@ -53,9 +57,9 @@ describe('coloring book state', () => {
   });
 
   it('pages without a night twin track a null night sheet', () => {
-    setOverlayPage(page, 'portrait');
+    setOverlayPage(pageWithoutNight, 'portrait');
     expect(coloringBookState.nightSheetUrl).toBeNull();
-    expect(pageNightImage(page, 'portrait')).toBeNull();
+    expect(pageNightImage(pageWithoutNight, 'portrait')).toBeNull();
   });
 });
 

@@ -26,14 +26,14 @@ night twin in dark mode, else the light twin, else falls back to the light twin.
 | --- | --- | --- |
 | Space | astronaut, meteor, moon, rover, ship, station | ✅ shipped (both orientations) |
 | Nature | ant, bee, caterpillar, ladybug, snail, spider | ✅ shipped (both orientations) |
-| **Farm** | cat, cow, dog, duck, horse, pig | ⬜ TODO |
-| **Dinosaurs** (`dinosaur`) | brachiosaurus, pterodactyl, stegosaurus, trex, triceratops, velociraptor | ⬜ TODO |
-| **Creatures** | dragon, fairy, mermaid, owl, pegasus, unicorn | ⬜ TODO |
+| Farm | cat, cow, dog, duck, horse, pig | ✅ shipped (both orientations) |
+| Dinosaurs (`dinosaur`) | brachiosaurus, pterodactyl, stegosaurus, trex, triceratops, velociraptor | ✅ shipped (both orientations) |
+| Creatures | dragon, fairy, mermaid, owl, pegasus, unicorn | ✅ shipped (both orientations) |
 | **Objects** | apple, balloon, flower, house, teddy | ⬜ TODO |
 | **Shapes** | circle, rectangle, square, star, triangle | ⬜ TODO |
 | **Vehicles** | excavator, fire, garbage, monster, police, train | ⬜ TODO |
 
-Remaining: 6 categories, 34 pages, 68 twins (~68 Gemini image gens + retries). Be
+Remaining: 3 categories, 16 pages, 32 twins (~32 Gemini image gens + retries). Be
 cost-aware; do **one category at a time** with a review gate.
 
 ## The generator
@@ -52,12 +52,12 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning \
 - `farm/cat-tall` — a single page/orientation
 - `--samples N` — N takes per page (for manual comparison)
 - `--max-attempts N` (default 3), `--drift-threshold F` (default 0.004),
-  `--night-luma-max F` (default 100) — retry tuning
+  `--night-luma-max F` (default 100), `--line-white-min F` (default 150) — retry tuning
 
 It inverts each page to white-on-dark, prompts `gemini-2.5-flash-image` for a
 night recolor, registers the result back onto the original outline, and scores it.
 
-### Two automated quality gates (per take, with keep-best-of-N retry)
+### Three automated quality gates (per take, with keep-best-of-N retry)
 
 1. **Drift** (`scoreDrift`) — catches invented shapes. A twin's white pixels are
    outlines only; any *thin* white far from a source line is an invented outline.
@@ -66,10 +66,20 @@ night recolor, registers the result back onto the original outline, and scores i
 2. **Night-ness** (`scoreNightness`) — catches a bright/daytime background. Median
    luma of the true background (flood-filled from the border). Good night ≈ 15–50;
    a daytime "sky blue" reads ~150+. Reject > `--night-luma-max`.
+3. **Line color** (`scoreLineColor`) — catches DARK outlines. The twin's outlines
+   must stay WHITE (in dark mode they sit under the app's white "chalk" line art, so
+   dark re-inked outlines double against the chalk and read wrong). Per source-outline
+   pixel, take the brightest twin luma within 1px and report the median: fully
+   dark-lined twins read ~65–135, white-lined ~154–250. Reject < `--line-white-min`
+   (default 150 — the highest cut that still clears the good set's floor). A pale,
+   patchy subject (a mostly-white dog with a few dark contours) is the hard case: it
+   can land near the boundary, so a flagged page may need a targeted low-temp regen
+   (see step 3) to come back cleanly white — eyeball borderline pages in the gallery.
 
-Each page retries (rising temperature) until a take passes both gates, keeping the
-least-drifted take whose background reads as night; it warns (`⚠ still drifting` /
-`⚠ too bright/daytime`) if none do — eyeball those in the gallery.
+Each page retries (rising temperature) until a take passes all three gates, keeping the
+least-drifted take that reads as night AND keeps white outlines; it warns
+(`⚠ still drifting` / `⚠ too bright/daytime` / `⚠ dark outlines`) if none do — eyeball
+those in the gallery.
 
 ### Prompt lessons (already baked into `DARK_FILL_PROMPT`)
 
@@ -81,13 +91,43 @@ least-drifted take whose background reads as night; it warns (`⚠ still driftin
   creatures. Do NOT wash faces to a chalky/ghostly slate. Only genuinely colorless
   things (clouds, droplets, steam, star-glow) take a soft moonlit tint. (Was: bee /
   caterpillar / astronaut faces came out ghostly grey.)
+- **Eyes are LINE-ART-driven in dark mode — fix the outline, not the twin.** This is the
+  single most important eye lesson. In dark mode the reveal is fills-only, so the eye's
+  big dark pupil is *punched out* of the twin and the eye is rendered almost entirely by
+  the INVERTED line art. So the twin's eye colour barely matters — chasing it (a
+  "brighter iris" prompt, etc.) is a dead end. What matters is the eye's shape in the
+  base line art, run through `invert(1)`:
+  - **Canonical eye that inverts clean:** a bold SOLID dark pupil filling most of the eye,
+    a thin white sclera, **one** clear MEDIUM white catchlight/glare, and **no iris ring**.
+    The invert maps solid-pupil → white eyeball, glare → dark pupil, sclera crescent →
+    thin dark rim. Result: a lively white eye with a small dark pupil (this is why the
+    unicorn "just works").
+  - **The glare is load-bearing** — it becomes the pupil, so it must be present, single,
+    and big enough. A pin-dot glare → featureless white blob (mermaid's original bug); an
+    iris ring → a bright ring that muddies it; two glares → two pupils.
+  - **To fix a broken eye, retouch the LINE ART to the canonical form** with
+    `scripts/retouch-line-art.mjs` (its default instruction is exactly this recipe:
+    solid pupil + one clear glare, no iris — enlarge a too-small glare). Do NOT "open the
+    eye into an outlined iris" — that was tried on the mermaid and made it a dark socket.
+    After retouching the outline, regenerate the WHOLE related suite from it (light
+    `.color.webp` + night twin + thumbnails, both orientations) and re-check the gallery
+    **Combined** view in BOTH light and dark. Solid-pupil eyes are the normal cute eye in
+    light mode too, so the same fix serves both.
+- **Outlines stay WHITE, never dark.** The input is a white-line-on-dark drawing, and
+  the model likes to "correct" it into a normal black-outline coloring page — re-inking
+  every shape with dark strokes. Those dark lines then double against the app's white
+  chalk line art in dark mode. The prompt hammers "the outlines are white and must stay
+  bright white"; the `scoreLineColor` gate rejects a take whose outlines came back dark.
+  (Was: half of Farm's first batch — cat/cow/dog/duck/horse/pig — had dark outlines.)
 
 If a category's renders drift from these, tweak `DARK_FILL_PROMPT` and regenerate —
 don't hand-fix images.
 
 ## Per-category workflow
 
-1. **Generate** to samples: `... gen-coloring-fills-dark.mjs <category>`.
+1. **Generate** to samples: `... gen-coloring-fills-dark.mjs <category> --max-attempts 4`
+   (give the retry loop room to reject dark-outline / daytime takes; the default 3 is
+   a touch tight now that three gates run).
 2. **Build a review gallery** and publish it as an Artifact for the user:
    ```bash
    node --experimental-strip-types --disable-warning=ExperimentalWarning \
@@ -96,9 +136,81 @@ don't hand-fix images.
    ```
    Then publish that file with the **Artifact tool** (it embeds images as data
    URIs, so it renders in the sandbox — do NOT hand-composite a PNG). Show the URL.
-   Also glance at a couple of images inline (Read tool) to sanity-check faces/mood.
+   The sheet has a **Light/Dark** toggle (defaults to Dark) and a per-tile
+   **Color / Outline / Combined** toggle. **Always judge on the Combined view** — it
+   reproduces the real canvas: the fills-only twin (its own outlines punched with the
+   line art as a mask, exactly like `magicBrush.buildFillsSheet`) under the themed
+   line-art layer over the paper. A twin that looks fine in isolation can break once
+   merged, so reviewing the raw twin alone is not enough. Also glance at a couple of
+   Combined tiles inline (Read tool) to sanity-check faces/eyes/mood.
+   - **Eyes gotcha (line-art driven, not the twin):** in dark mode the eye is rendered by
+     the `invert(1)`-ed line art (the pupil is punched out of the fills-only reveal), so
+     the twin can't fix a bad eye — the base outline has to be right. The reliable eye is
+     the canonical **solid pupil + one clear glare, no iris** (see the "Eyes are LINE-ART-
+     driven" prompt lesson above): it inverts to a clean white eye with a small dark pupil.
+     Blank-white-blob eyes (mermaid's original, glare too small) and dark-socket eyes
+     (mermaid opened-up, near-black iris) are both base-line-art problems — **retouch the
+     line art** to the canonical form (see below), don't re-roll the twin.
+
+### Retouching the base line art (hard sections)
+
+When a "particularly hard section" of a page can't be rescued downstream — the eyes
+gotcha above is the canonical case — edit the base line art itself with
+`scripts/retouch-line-art.mjs` (Gemini image edit; writes candidates to
+`.coloring-samples-dark/retouch/`, never touches shipped assets):
+
+```bash
+node --experimental-strip-types --disable-warning=ExperimentalWarning \
+  scripts/retouch-line-art.mjs creatures/mermaid-tall creatures/mermaid-wide --samples 2
+```
+
+The default instruction normalizes eyes to the canonical **solid pupil + one clear
+glare, no iris** (enlarging a too-small glare) — the form that inverts to a clean eye in
+dark mode; pass `--instruction "..."` for a different hard section. **Call it out** — you
+are changing a shipped coloring page. Then regenerate the WHOLE related suite from the new
+outline and re-review in the contact sheet's Combined view in **both** light and dark (the
+eye lesson applies to light mode too):
+
+1. Copy the chosen candidate over `web/static/coloring/<cat>/<page>-<orient>.webp`.
+2. `node scripts/gen-coloring-thumbs.mjs <cat>` (picker thumbnail).
+3. `gen-coloring-fills.mjs <cat>/<page>-tall <cat>/<page>-wide` (light `.color.webp`).
+4. `gen-coloring-fills-dark.mjs <cat>/<page>-tall <cat>/<page>-wide --max-attempts 4`,
+   then copy the samples to `…/<page>-<orient>.night.webp`.
+5. Rebuild the gallery `--source shipped`, verify eyes read well in Combined light AND
+   dark, then `npm run check:assets && npm run check && npm run test:unit` and commit.
+
+(Fixed Creatures' mermaid tall+wide: the original solid-black eyes had a pin-dot glare
+→ blank white blobs in dark mode; opening them into an outlined iris then over-corrected
+to a dark socket. The fix that stuck was the canonical form — solid pupil + one enlarged
+glare, no iris — with the whole light+dark+thumb suite regenerated and verified in
+Combined light and dark.)
 3. **Iterate**: regenerate any that look off (higher `-t`, or a prompt tweak). Kids'
-   faces and the night background are the usual issues.
+   faces and the night background are the usual issues. For a page the `⚠ dark
+   outlines` gate flags, the reliable fix is **more attempts against a stricter gate**
+   so the retry loop keeps hunting for a genuinely-white take instead of settling at
+   the boundary:
+   ```bash
+   ... gen-coloring-fills-dark.mjs <cat>/<page>-wide --max-attempts 8 --line-white-min 175
+   ```
+   That fixed Farm's dog-wide (70→219) and Dinosaurs' velociraptor-wide (70→223) in
+   ≤6 tries each. If it still comes back dark, try the OPPOSITE lever — a LOW `-t`
+   (≈0.25) keeps the model faithful to the white-line input where a high temperature
+   makes it re-ink dark (Farm's duck-tall only came white at `-t 0.25`). Expect
+   roughly one flagged `-wide` page per category; budget for the extra pass.
+   Borderline-but-light pages (a dim moonlit rim, lineW ≈150) are fine to keep.
+
+   If a page still won't clear after both levers, the last resort is
+   **`--dilate-lines N`** — it thickens the WHITE input lines by N px (a separable
+   max filter) before the model ever sees them, so a pale subject (whose own light
+   fill tempts the model to re-ink thin outlines dark to define the body) gets a bold
+   white band that survives as white, and the gate has a wider white target to
+   sample. `--dilate-lines 2` fixed Creatures' unicorn-wide (a cream unicorn stuck at
+   lineW 138 through every temperature) in one pass → lineW 218. Pair it with a low
+   `-t` and the strict gate: `... unicorn-wide -t 0.3 --dilate-lines 2 --max-attempts 6
+   --line-white-min 175`. The twin's outlines come back a touch bolder than an
+   undilated page's — harmless, since they only ever sit (white) under the app's chalk
+   line art. Reach for it only for the stubborn pale outliers; the default 0 keeps the
+   input pixel-faithful.
 4. **On the user's approval**, ship:
    - Copy each twin from samples to the shipped path (strip the sample suffix, add
      `.night`):

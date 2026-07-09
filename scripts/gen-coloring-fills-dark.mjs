@@ -12,6 +12,11 @@
 // those; a render above the threshold is regenerated (bumping temperature) up to
 // --max-attempts times, keeping the least-drifted take. Clean twins score ~0.
 //
+// Three automated gates run per take, each with keep-best-of-N retry: scoreDrift()
+// (invented outlines), scoreNightness() (a bright/daytime background), and
+// scoreLineColor() (the model re-inked the white outlines DARK — they must stay
+// white so they sit under the app's white "chalk" line art in dark mode).
+//
 // Full workflow (generate → review gallery → ship → wire → verify), the prompt
 // lessons, and the remaining-category checklist: scripts/night-twins.md.
 //
@@ -23,6 +28,8 @@
 //   node scripts/gen-coloring-fills-dark.mjs space --wide         landscape pages only
 //   node scripts/gen-coloring-fills-dark.mjs space --samples 2    2 takes each
 //   node scripts/gen-coloring-fills-dark.mjs space --max-attempts 4  retry harder
+//   node scripts/gen-coloring-fills-dark.mjs space --line-white-min 150  dark-outline gate
+//   node scripts/gen-coloring-fills-dark.mjs space --dilate-lines 2  thicken white input lines
 import { parseArgs } from 'node:util';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
@@ -271,6 +278,59 @@ async function scoreDrift(twinBuf, sourceBuf) {
   return { ratio: srcCount ? added / srcCount : 0, added, srcCount };
 }
 
+// --- Line-color detection -----------------------------------------------------
+// The twin's outlines must stay WHITE — in dark mode they sit under the app's
+// white "chalk" line art, so a twin whose outlines came back DARK (the model
+// re-inked every shape with a black/brown stroke instead of keeping them white)
+// doubles against the chalk and reads wrong. The source (black-on-white) says
+// exactly WHERE the outlines are; at each, a good twin has a bright WHITE line and
+// a dark-lined twin has only dark ink. Per source-outline pixel we take the
+// brightest twin luma within 1px (absorbing a pixel of registration slack) and
+// report the MEDIAN. Calibrated on a labeled Farm batch: fully dark-lined twins
+// read ~65-135, white-lined ~154-250. Reject below --line-white-min (default 150,
+// the highest cut that still clears the good set's floor). A pale, patchy subject
+// (a mostly-white dog with a few dark contours) is the hard case — it can land near
+// the boundary, so a flagged page may need a targeted low-temp regen to come back
+// cleanly white; eyeball borderline pages in the gallery.
+const LINE_W = 512;
+const LINE_SRC_DARK = 110; // source pixel darker than this = an outline
+const LINE_WHITE_MIN_DEFAULT = 150; // median outline brightness below this = dark outlines
+
+async function scoreLineColor(twinBuf, sourceBuf) {
+  const s = await sharp(sourceBuf)
+    .resize(LINE_W, null, { fit: 'inside' })
+    .grayscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const t = await sharp(twinBuf)
+    .resize(LINE_W, null, { fit: 'inside' })
+    .grayscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const w = s.info.width;
+  const h = s.info.height;
+  const maxes = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (s.data[y * w + x] >= LINE_SRC_DARK) continue; // not a source outline pixel
+      let mx = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          const yy = y + dy;
+          if (xx < 0 || xx >= w || yy < 0 || yy >= h) continue;
+          const v = t.data[yy * w + xx];
+          if (v > mx) mx = v;
+        }
+      }
+      maxes.push(mx);
+    }
+  }
+  if (!maxes.length) return { lineWhite: 255 };
+  maxes.sort((a, b) => a - b);
+  return { lineWhite: maxes[maxes.length >> 1] };
+}
+
 const MODEL = 'gemini-2.5-flash-image';
 const COLORING_DIR = join(ROOT, 'web', 'static', 'coloring');
 const OUT_DIR = join(ROOT, '.coloring-samples-dark');
@@ -283,6 +343,7 @@ const DARK_FILL_PROMPT = `You are given a toddler coloring-book page drawn as WH
 
 ABSOLUTE RULES — the colored image must line up perfectly on top of the original:
 - Keep every WHITE outline exactly where it is. Do not move, redraw, thicken, thin, smooth, or erase a single line. The outlines must stay white and pixel-for-pixel identical to the original.
+- THE OUTLINES ARE WHITE AND MUST STAY BRIGHT WHITE. This is a white-line drawing on a dark ground, NOT a normal black-outline coloring page. NEVER turn the outlines black, dark, grey, brown, or any dark color. NEVER trace, re-ink, or redraw the shapes with dark or black lines. Every outline that is white in the input must still be a bright white line in your output. A picture with dark outlines is WRONG and unusable — the lines must glow white against the dark fills.
 - Do not add any new lines, outlines, stars, dots, details, decorations, patterns, textures, letters, or objects. Only add color to the regions that are already there.
 - Do not crop, zoom, rotate, shift, or resize the picture. Keep the exact same composition, framing, and margins.
 
@@ -296,7 +357,8 @@ COLORING STYLE — a dim, moonlit night palette:
 - Colors stay deep and moonlit, but they are still the subject's OWN NATURAL colors — just dimmed and cooled by moonlight, not swapped out. A few GLOWING accent colors (warm gold, amber, teal, magenta) can pop as if lit by the moon, fireflies, or a lantern, while the overall scene stays dim and evening-lit — deep, not bright and sunny.
 - FACES, SKIN, and ANIMAL BODIES must keep a NATURAL, living color — never grey, ashen, ghostly, chalky, or washed-out slate. Give a person a real SKIN TONE (a warm tan, brown, peach, or golden-brown, only darkened for night); give an animal its real coloring (a green caterpillar, a yellow-and-black bee, a red ladybug), softened toward evening. A face must look like living skin or fur under moonlight, NOT like a pale ghost.
 - Only things that have no real color of their own — a cloud, a water droplet, a wisp of steam, a puff of smoke, the glow of a star — may take a soft, dim, moonlit off-white or pale tint. Everything else keeps its own (dimmed) color.
-- Do NOT use pure or bright WHITE fills, and avoid bright daytime colors (bright sky blue, bright grass green). Deepen and cool every color toward evening. The only pure-white pixels allowed are the outlines themselves and tiny eye glints.
+- EYES: don't fight them. In the app the eye is drawn by the (inverted) line art, not by you — the pupil is punched out of your fills — so the pupil, glint, and shape come from the outline, and your job is only to keep the small eye area NATURAL and LIGHT. Keep the eye-white a light off-white, and NEVER fill an eye with a single dark colour (a dark-filled eye reads as an empty socket). Eye-whites and the catchlight may take a near-white tint. (A blown-out or socketed eye is a base-line-art problem fixed by retouching the outline, not by recolouring — see scripts/night-twins.md.)
+- Do NOT use pure or bright WHITE fills elsewhere, and avoid bright daytime colors (bright sky blue, bright grass green). Deepen and cool every color toward evening. The only pure-white pixels allowed are the outlines themselves, the eye-whites, and tiny eye glints.
 - Keep the WHITE outlines fully visible — every fill should butt right up against the white outline without covering it.
 
 Convey the night mood with COLOR AND MOOD ONLY. Do NOT add a moon, stars, fireflies, lamps, or any new shapes or lines — only the outlines already present may be colored.
@@ -325,11 +387,56 @@ async function generateDarkPage(ai, { imageBytes, mimeType, temperature }) {
   return { bytes: Buffer.from(classified.data, 'base64'), mimeType: classified.mimeType };
 }
 
+// Grow the WHITE lines by `radius` px with a separable max filter. A pale
+// subject (a cream unicorn, a white pegasus) tempts the model to re-ink the
+// thin outlines DARK to define the body against its own light fill; a bolder
+// white band in the input is far more likely to survive as white (and gives the
+// scoreLineColor gate a wider white target to sample). Runs on the negated
+// grayscale line art — lossless here, since the source is black on white.
+async function dilateWhiteLines(negatedBuf, radius) {
+  const { data, info } = await sharp(negatedBuf)
+    .grayscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const { width: w, height: h } = info;
+  const rowMax = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      let m = 0;
+      for (let dx = -radius; dx <= radius; dx++) {
+        const xx = x + dx;
+        if (xx < 0 || xx >= w) continue;
+        const v = data[row + xx];
+        if (v > m) m = v;
+      }
+      rowMax[row + x] = m;
+    }
+  }
+  const out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let m = 0;
+      for (let dy = -radius; dy <= radius; dy++) {
+        const yy = y + dy;
+        if (yy < 0 || yy >= h) continue;
+        const v = rowMax[yy * w + x];
+        if (v > m) m = v;
+      }
+      out[y * w + x] = m;
+    }
+  }
+  return sharp(Buffer.from(out), { raw: { width: w, height: h, channels: 1 } });
+}
+
 // Invert the black-on-white line art to white-on-dark. A plain negate yields
 // white lines on pure black; nudge the floor up a touch so it reads as deep
 // charcoal rather than absolute black (closer to the app's --paper dark).
+// With --dilate-lines N, thicken the white lines first (see dilateWhiteLines).
 async function toDarkInput(sourceBuf) {
-  return sharp(sourceBuf).negate({ alpha: false }).webp({ quality: WEBP_QUALITY }).toBuffer();
+  const negated = await sharp(sourceBuf).negate({ alpha: false }).toBuffer();
+  const grown = dilateLines > 0 ? await dilateWhiteLines(negated, dilateLines) : sharp(negated);
+  return grown.webp({ quality: WEBP_QUALITY }).toBuffer();
 }
 
 async function pagesUnder(sub = '') {
@@ -358,6 +465,8 @@ const { values, positionals } = parseArgs({
     'max-attempts': { type: 'string' },
     'drift-threshold': { type: 'string' },
     'night-luma-max': { type: 'string' },
+    'line-white-min': { type: 'string' },
+    'dilate-lines': { type: 'string' },
   },
 });
 const samples = values.samples === undefined ? 1 : Number(values.samples);
@@ -376,18 +485,27 @@ const nightLumaMax =
     ? NIGHT_BG_LUMA_MAX_DEFAULT
     : Number(values['night-luma-max']);
 if (!(nightLumaMax >= 0)) fail(`--night-luma-max must be a non-negative number`);
+const lineWhiteMin =
+  values['line-white-min'] === undefined
+    ? LINE_WHITE_MIN_DEFAULT
+    : Number(values['line-white-min']);
+if (!(lineWhiteMin >= 0)) fail(`--line-white-min must be a non-negative number`);
+const dilateLines = values['dilate-lines'] === undefined ? 0 : Number(values['dilate-lines']);
+if (!(Number.isInteger(dilateLines) && dilateLines >= 0))
+  fail(`--dilate-lines must be a non-negative integer`);
 if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
 
-// Generate one take, register it to the source, and score two ways: structural
-// DRIFT (invented outlines) and NIGHT-ness (background too bright / daytime). Retry
-// (with a rising temperature to shake loose a different composition) until a take
-// passes both gates or the attempt budget runs out. A take is "acceptable" when its
-// background reads as night; among acceptable takes we keep the least-drifted, and
-// stop early once one is also drift-clean. If none read as night we fall back to the
+// Generate one take, register it to the source, and score three ways: structural
+// DRIFT (invented outlines), NIGHT-ness (background too bright / daytime), and LINE
+// color (outlines re-inked dark instead of staying white). Retry (with a rising
+// temperature to shake loose a different composition) until a take passes all gates
+// or the attempt budget runs out. A take is "acceptable" when its background reads as
+// night AND its outlines stayed white; among acceptable takes we keep the least-drifted,
+// and stop early once one is also drift-clean. If none qualify we fall back to the
 // least-drifted take overall and flag it, so even a stubborn page yields a render.
 async function generateCleanTake({ darkInput, source, width, height, temp0 }) {
   let best = null; // lowest drift overall (fallback)
-  let bestNight = null; // lowest drift among takes whose background reads as night
+  let bestAccept = null; // lowest drift among takes that read as night AND keep white outlines
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const temperature = Math.min(2, temp0 + (attempt - 1) * 0.15);
     const { bytes } = await generateDarkPage(ai, {
@@ -401,13 +519,16 @@ async function generateCleanTake({ darkInput, source, width, height, temp0 }) {
     const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
     const drift = await scoreDrift(aligned, source);
     const night = await scoreNightness(aligned, source);
-    const take = { aligned, dx, dy, drift, night, attempt };
+    const line = await scoreLineColor(aligned, source);
+    const take = { aligned, dx, dy, drift, night, line, attempt };
     if (!best || drift.ratio < best.drift.ratio) best = take;
-    if (night.bgLuma <= nightLumaMax && (!bestNight || drift.ratio < bestNight.drift.ratio))
-      bestNight = take;
-    if (drift.ratio <= driftThreshold && night.bgLuma <= nightLumaMax) break;
+    const moodOk = night.bgLuma <= nightLumaMax;
+    const lineOk = line.lineWhite >= lineWhiteMin;
+    if (moodOk && lineOk && (!bestAccept || drift.ratio < bestAccept.drift.ratio))
+      bestAccept = take;
+    if (drift.ratio <= driftThreshold && moodOk && lineOk) break;
   }
-  return bestNight ?? best;
+  return bestAccept ?? best;
 }
 
 let pages = positionals.length
@@ -450,10 +571,11 @@ for (const page of pages) {
       if (i === 0) await sharp(darkInput).toFile(join(dir, `${base}.input.webp`));
       const nudge = take.dx || take.dy ? `  shift ${take.dx},${take.dy}` : '';
       const tries = take.attempt > 1 ? `  (${take.attempt} tries)` : '';
-      const stats = `  drift ${take.drift.ratio.toFixed(4)} bgLuma ${take.night.bgLuma.toFixed(0)}`;
+      const stats = `  drift ${take.drift.ratio.toFixed(4)} bgLuma ${take.night.bgLuma.toFixed(0)} lineW ${take.line.lineWhite.toFixed(0)}`;
       const warn =
         (take.drift.ratio > driftThreshold ? '  ⚠ still drifting' : '') +
-        (take.night.bgLuma > nightLumaMax ? '  ⚠ too bright/daytime' : '');
+        (take.night.bgLuma > nightLumaMax ? '  ⚠ too bright/daytime' : '') +
+        (take.line.lineWhite < lineWhiteMin ? '  ⚠ dark outlines' : '');
       console.log(`ok${nudge}${tries}${stats}${warn}  -> ${relative(ROOT, out)}`);
     } catch (err) {
       failures++;

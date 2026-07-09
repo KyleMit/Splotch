@@ -84,12 +84,13 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/farm/cover.webp',
     pages: [
-      page('farm', 'cat', 'Cat'),
-      page('farm', 'cow', 'Cow'),
-      page('farm', 'dog', 'Dog'),
-      page('farm', 'duck', 'Duck'),
-      page('farm', 'horse', 'Horse'),
-      page('farm', 'pig', 'Pig'),
+      // Night twins shipped for both orientations (ADR-0052).
+      page('farm', 'cat', 'Cat', ['portrait', 'landscape']),
+      page('farm', 'cow', 'Cow', ['portrait', 'landscape']),
+      page('farm', 'dog', 'Dog', ['portrait', 'landscape']),
+      page('farm', 'duck', 'Duck', ['portrait', 'landscape']),
+      page('farm', 'horse', 'Horse', ['portrait', 'landscape']),
+      page('farm', 'pig', 'Pig', ['portrait', 'landscape']),
     ],
   },
   {
@@ -98,12 +99,13 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/dinosaur/cover.webp',
     pages: [
-      page('dinosaur', 'brachiosaurus', 'Brachiosaurus'),
-      page('dinosaur', 'pterodactyl', 'Pterodactyl'),
-      page('dinosaur', 'stegosaurus', 'Stegosaurus'),
-      page('dinosaur', 'trex', 'T. Rex'),
-      page('dinosaur', 'triceratops', 'Triceratops'),
-      page('dinosaur', 'velociraptor', 'Velociraptor'),
+      // Night twins shipped for both orientations (ADR-0052).
+      page('dinosaur', 'brachiosaurus', 'Brachiosaurus', ['portrait', 'landscape']),
+      page('dinosaur', 'pterodactyl', 'Pterodactyl', ['portrait', 'landscape']),
+      page('dinosaur', 'stegosaurus', 'Stegosaurus', ['portrait', 'landscape']),
+      page('dinosaur', 'trex', 'T. Rex', ['portrait', 'landscape']),
+      page('dinosaur', 'triceratops', 'Triceratops', ['portrait', 'landscape']),
+      page('dinosaur', 'velociraptor', 'Velociraptor', ['portrait', 'landscape']),
     ],
   },
   {
@@ -112,12 +114,13 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/creatures/cover.webp',
     pages: [
-      page('creatures', 'dragon', 'Dragon'),
-      page('creatures', 'fairy', 'Fairy'),
-      page('creatures', 'mermaid', 'Mermaid'),
-      page('creatures', 'owl', 'Owl'),
-      page('creatures', 'pegasus', 'Pegasus'),
-      page('creatures', 'unicorn', 'Unicorn'),
+      // Night twins shipped for both orientations (ADR-0052).
+      page('creatures', 'dragon', 'Dragon', ['portrait', 'landscape']),
+      page('creatures', 'fairy', 'Fairy', ['portrait', 'landscape']),
+      page('creatures', 'mermaid', 'Mermaid', ['portrait', 'landscape']),
+      page('creatures', 'owl', 'Owl', ['portrait', 'landscape']),
+      page('creatures', 'pegasus', 'Pegasus', ['portrait', 'landscape']),
+      page('creatures', 'unicorn', 'Unicorn', ['portrait', 'landscape']),
     ],
   },
   {
