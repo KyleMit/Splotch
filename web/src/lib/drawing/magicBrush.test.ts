@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createRainbowGradient, MAGIC_GRADIENT_COUNT, edgeMargins, dilateMask } from './magicBrush';
+import { createRainbowGradient, MAGIC_GRADIENT_COUNT, edgeMargins } from './magicBrush';
 
 // A deterministic pseudo-random sequence so gradient generation is reproducible
 // in the test (the module defaults to Math.random in the app).
@@ -99,57 +99,5 @@ describe('letterbox edge extension geometry', () => {
     // Order matters: both vertical fills come before both horizontal fills.
     expect(fills.indexOf(top)).toBeLessThan(fills.indexOf(left));
     expect(fills.indexOf(bottom)).toBeLessThan(fills.indexOf(right));
-  });
-});
-
-describe('outline mask dilation', () => {
-  // Grid helpers: build a w×h binary mask from a row of strings, and count set cells.
-  const fromRows = (rows: string[]): { m: Uint8Array; w: number; h: number } => {
-    const h = rows.length;
-    const w = rows[0].length;
-    const m = new Uint8Array(w * h);
-    rows.forEach((r, y) => [...r].forEach((c, x) => (m[y * w + x] = c === '#' ? 1 : 0)));
-    return { m, w, h };
-  };
-  const count = (m: Uint8Array) => m.reduce((n, v) => n + v, 0);
-
-  it('is a no-op for radius 0 (returns the same buffer)', () => {
-    const { m, w, h } = fromRows(['.#.', '...']);
-    expect(dilateMask(m, w, h, 0)).toBe(m);
-  });
-
-  it('grows a single pixel into a (2r+1)² block', () => {
-    const { m, w, h } = fromRows(['.....', '.....', '..#..', '.....', '.....']);
-    const r1 = dilateMask(m, w, h, 1);
-    expect(count(r1)).toBe(9); // 3×3
-    expect(dilateMask(m, w, h, 2).reduce((n, v) => n + v, 0)).toBe(25); // 5×5
-    // The original pixel and its 8 neighbours are set; a pixel 2 away is not.
-    expect(r1[2 * w + 2]).toBe(1);
-    expect(r1[1 * w + 1]).toBe(1);
-    expect(r1[0 * w + 2]).toBe(0);
-  });
-
-  it('clamps at the edges instead of wrapping', () => {
-    const { m, w, h } = fromRows(['#...', '....', '....']);
-    const r1 = dilateMask(m, w, h, 1);
-    // Corner pixel dilates into a 2×2 block, not off-canvas.
-    expect(count(r1)).toBe(4);
-    expect(r1[0]).toBe(1);
-    expect(r1[1]).toBe(1);
-    expect(r1[w]).toBe(1);
-    expect(r1[w + 1]).toBe(1);
-    expect(r1[w - 1]).toBe(0); // did not wrap to the far edge of row 0
-  });
-
-  it('widens a 1px line to a 5px band at radius 2 (the twin-bloom punch)', () => {
-    const rows = Array.from({ length: 7 }, () => '...#...'); // vertical line at x=3
-    const { m, w, h } = fromRows(rows);
-    const r2 = dilateMask(m, w, h, 2);
-    // Every row now has columns 1..5 set (the line ±2), and columns 0 and 6 clear.
-    for (let y = 0; y < h; y++) {
-      for (let x = 1; x <= 5; x++) expect(r2[y * w + x]).toBe(1);
-      expect(r2[y * w + 0]).toBe(0);
-      expect(r2[y * w + 6]).toBe(0);
-    }
   });
 });

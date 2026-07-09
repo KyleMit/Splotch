@@ -42,9 +42,28 @@ From the **repo root** (the discoverable entry points — ADR-0019):
 ```bash
 npm run gen:style-covers        # AI style thumbnails  -> web/static/styles/
 npm run gen:coloring-fills      # light colored twins  -> web/static/coloring/**/*.color.webp
+npm run gen:coloring-fills:audit # drift-check shipped twins (no key/network)
 npm run gen:coloring-thumbs     # picker thumbnails     -> web/static/coloring/**/*-thumb.webp
 npm run gen:coloring-sheet      # light-twin review sheet (gitignored)
 ```
+
+### Twin outline drift & the audit
+
+A colored twin must register on its line art pixel-for-pixel — the magic brush
+(ADR-0043) reveals the twin's fills under the overlay's lines, so a drifted region
+shows the wrong colour outside the lines. `gen-coloring-fills` scores every
+candidate two ways (`lib/outline-match.mjs`): global outline coverage (`keep`) and
+the **worst grid tile** (`localKeep`). The local bar is the important one — a large
+aligned subject can hold a 93% global keep while one small feature (a flower) sits
+at 34%, which is exactly how `nature/ant-wide` shipped drifted. `alignToSource`
+only corrects a single global nudge, so a self-drifted feature can't be aligned
+away; a failing candidate is retried, and if none pass, regenerate.
+
+`gen:coloring-fills:audit` runs the same scoring over the **already-shipped**
+twins (it reads committed assets only — no key, no network) and prints the pages
+that fail, with a ready-to-run regenerate command. `--overlay` dumps a drift map
+per failing page (red = source outline the twin left uncovered) to
+`.coloring-samples/drift/`.
 
 Or, from **inside this folder**, the local aliases (same flags, resolve the same
 root `node_modules`):

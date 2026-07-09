@@ -156,25 +156,37 @@ of line work, so there is nothing to double and drift can't ghost.
   legitimately dark *fills* away from the outlines (a ladybug's black spots, a navy
   sky) are kept — only the outline pixels, which the overlay redraws anyway, are
   dropped.
-- The mask is **dilated a couple of pixels** (`OUTLINE_MASK_DILATION`, a pure
-  separable box dilation) before the punch. The `.color.webp` twins are lossy, and
-  their own black lines bloom a pixel or two *fatter* than the clean line-art mask —
-  so an exact-width punch left a thin dark rim of the twin's line sitting just
-  outside the crisp overlay line, which still read as a faint doubled line. Widening
-  the punch swallows that rim; the overlay redraws the line on top, so eating a
-  little fill under it is invisible.
 - This is the one place the module reads pixels back (`getImageData` on the line art),
   but it runs **once per applied page**, off the draw and resize paths — `rasterizeSheet`
   and per-op drawing stay pure, so the hot-path/resize costs above are unchanged. If the
   line art is missing or hasn't decoded yet, the raw twin is revealed (the pre-mask
   behaviour), so the brush never reveals nothing.
 
-Two Playwright guards (`flows.spec.ts`) sweep the magic brush across a page and assert
+A Playwright guard (`flows.spec.ts`) sweeps the magic brush across a page and asserts
 the canvas reveal is effectively black-free (the twin outlines are gone); before the
-fix that sweep painted ~2.8% near-black pixels — the duplicate lines. The first uses
-the Farm → Cat page (tightly-registered outlines); the second uses Nature → Ant, a
-**wide** twin whose lines bloom, which the exact-width punch left ghosting until the
-mask dilation above — the Cat sweep alone never exercised that case.
+fix that sweep painted ~2.8% near-black pixels — the duplicate lines.
+
+**This masks the twin's outline *copy*, not the twin's drift itself.** Where a twin's
+*fills* are geometrically drifted from the line art (the model redrew a feature shifted
+or scaled), the reveal still paints colour that misregisters with the overlay's lines —
+colour bleeding past the outline on one side, a white gap on the other. Fills-only
+removes the doubled lines but can't un-drift the fills; only a well-registered twin can.
+That is an **asset-quality** problem, fixed upstream at generation, not in the reveal —
+see the drift gate below. (A tempting reveal-time patch — dilating the outline mask so
+it eats the twin's line rim — was tried and rejected: it only carves a white halo around
+every line and does nothing for the drifted fills.)
+
+### The upstream fix: a worst-tile drift gate at generation
+
+`nature/ant-wide` was the reported case — its ant registers perfectly but its flowers
+drifted ~12 px. It shipped because `gen-coloring-fills.mjs` gated only on the **global**
+`keep` (93% here, over the 0.92 bar): a big aligned subject averages a small drifted
+feature away. The gate now also scores `localKeep` — the worst grid tile — which reads
+34% on that flower tile, so a drifted candidate is rejected and retried
+(`tools/asset-gen/lib/outline-match.mjs`, shared with the generator and the auditor).
+`npm run gen:coloring-fills:audit` runs the same scoring over the already-shipped twins
+and lists the ones to regenerate (ant-wide, police-wide, triangle-wide, fire-tall,
+dog-wide as of this writing).
 
 ## Follow-up: the sheet is sized to the paper, not the visible canvas
 
