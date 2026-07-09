@@ -90,6 +90,23 @@ API cost).
 
 Generate → review the scratch → copy the good outputs into `web/static/` → commit.
 
+### Viewing a review sheet
+
+Both sheets — the light-twin `gen:coloring-sheet` output and the
+`night-twins-gallery.mjs` gallery — are **self-contained HTML** (images inlined as
+base64 data URIs), built to render anywhere:
+
+- **In a cloud session, publish the sheet with the Artifact tool** instead of
+  hand-rolling a headless screenshot — same steps as the night-twins runbook
+  ([`night-twins.md`](./night-twins.md#per-category-workflow)). Show the URL.
+- For a **focused** pass, `night-twins-gallery.mjs` takes page/cell targets
+  (`nature/ant`, `nature/ant-wide`) and `--theme light` to open the light-twin
+  (magic-brush) view — not just a whole dark category.
+- If a raw PNG is genuinely needed, **don't launch Chromium directly** — the cloud
+  env's Chromium revision drifts from Playwright's pin. Reuse `run-splotch`'s
+  `chromiumExecutablePath()` fallback or set `PLAYWRIGHT_CHROMIUM`
+  (`.claude/skills/run-splotch/SKILL.md`, `docs/CLOUD.md`).
+
 ## Runbooks
 
 - **Dark-mode night twins** (generate → review → ship → wire): [`night-twins.md`](./night-twins.md).
