@@ -29,6 +29,7 @@
 //   node scripts/gen-coloring-fills-dark.mjs space --samples 2    2 takes each
 //   node scripts/gen-coloring-fills-dark.mjs space --max-attempts 4  retry harder
 //   node scripts/gen-coloring-fills-dark.mjs space --line-white-min 150  dark-outline gate
+//   node scripts/gen-coloring-fills-dark.mjs space --dilate-lines 2  thicken white input lines
 import { parseArgs } from 'node:util';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
@@ -356,7 +357,8 @@ COLORING STYLE — a dim, moonlit night palette:
 - Colors stay deep and moonlit, but they are still the subject's OWN NATURAL colors — just dimmed and cooled by moonlight, not swapped out. A few GLOWING accent colors (warm gold, amber, teal, magenta) can pop as if lit by the moon, fireflies, or a lantern, while the overall scene stays dim and evening-lit — deep, not bright and sunny.
 - FACES, SKIN, and ANIMAL BODIES must keep a NATURAL, living color — never grey, ashen, ghostly, chalky, or washed-out slate. Give a person a real SKIN TONE (a warm tan, brown, peach, or golden-brown, only darkened for night); give an animal its real coloring (a green caterpillar, a yellow-and-black bee, a red ladybug), softened toward evening. A face must look like living skin or fur under moonlight, NOT like a pale ghost.
 - Only things that have no real color of their own — a cloud, a water droplet, a wisp of steam, a puff of smoke, the glow of a star — may take a soft, dim, moonlit off-white or pale tint. Everything else keeps its own (dimmed) color.
-- Do NOT use pure or bright WHITE fills, and avoid bright daytime colors (bright sky blue, bright grass green). Deepen and cool every color toward evening. The only pure-white pixels allowed are the outlines themselves and tiny eye glints.
+- EYES: don't fight them. In the app the eye is drawn by the (inverted) line art, not by you — the pupil is punched out of your fills — so the pupil, glint, and shape come from the outline, and your job is only to keep the small eye area NATURAL and LIGHT. Keep the eye-white a light off-white, and NEVER fill an eye with a single dark colour (a dark-filled eye reads as an empty socket). Eye-whites and the catchlight may take a near-white tint. (A blown-out or socketed eye is a base-line-art problem fixed by retouching the outline, not by recolouring — see scripts/night-twins.md.)
+- Do NOT use pure or bright WHITE fills elsewhere, and avoid bright daytime colors (bright sky blue, bright grass green). Deepen and cool every color toward evening. The only pure-white pixels allowed are the outlines themselves, the eye-whites, and tiny eye glints.
 - Keep the WHITE outlines fully visible — every fill should butt right up against the white outline without covering it.
 
 Convey the night mood with COLOR AND MOOD ONLY. Do NOT add a moon, stars, fireflies, lamps, or any new shapes or lines — only the outlines already present may be colored.
@@ -385,11 +387,56 @@ async function generateDarkPage(ai, { imageBytes, mimeType, temperature }) {
   return { bytes: Buffer.from(classified.data, 'base64'), mimeType: classified.mimeType };
 }
 
+// Grow the WHITE lines by `radius` px with a separable max filter. A pale
+// subject (a cream unicorn, a white pegasus) tempts the model to re-ink the
+// thin outlines DARK to define the body against its own light fill; a bolder
+// white band in the input is far more likely to survive as white (and gives the
+// scoreLineColor gate a wider white target to sample). Runs on the negated
+// grayscale line art — lossless here, since the source is black on white.
+async function dilateWhiteLines(negatedBuf, radius) {
+  const { data, info } = await sharp(negatedBuf)
+    .grayscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const { width: w, height: h } = info;
+  const rowMax = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      let m = 0;
+      for (let dx = -radius; dx <= radius; dx++) {
+        const xx = x + dx;
+        if (xx < 0 || xx >= w) continue;
+        const v = data[row + xx];
+        if (v > m) m = v;
+      }
+      rowMax[row + x] = m;
+    }
+  }
+  const out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let m = 0;
+      for (let dy = -radius; dy <= radius; dy++) {
+        const yy = y + dy;
+        if (yy < 0 || yy >= h) continue;
+        const v = rowMax[yy * w + x];
+        if (v > m) m = v;
+      }
+      out[y * w + x] = m;
+    }
+  }
+  return sharp(Buffer.from(out), { raw: { width: w, height: h, channels: 1 } });
+}
+
 // Invert the black-on-white line art to white-on-dark. A plain negate yields
 // white lines on pure black; nudge the floor up a touch so it reads as deep
 // charcoal rather than absolute black (closer to the app's --paper dark).
+// With --dilate-lines N, thicken the white lines first (see dilateWhiteLines).
 async function toDarkInput(sourceBuf) {
-  return sharp(sourceBuf).negate({ alpha: false }).webp({ quality: WEBP_QUALITY }).toBuffer();
+  const negated = await sharp(sourceBuf).negate({ alpha: false }).toBuffer();
+  const grown = dilateLines > 0 ? await dilateWhiteLines(negated, dilateLines) : sharp(negated);
+  return grown.webp({ quality: WEBP_QUALITY }).toBuffer();
 }
 
 async function pagesUnder(sub = '') {
@@ -419,6 +466,7 @@ const { values, positionals } = parseArgs({
     'drift-threshold': { type: 'string' },
     'night-luma-max': { type: 'string' },
     'line-white-min': { type: 'string' },
+    'dilate-lines': { type: 'string' },
   },
 });
 const samples = values.samples === undefined ? 1 : Number(values.samples);
@@ -442,6 +490,9 @@ const lineWhiteMin =
     ? LINE_WHITE_MIN_DEFAULT
     : Number(values['line-white-min']);
 if (!(lineWhiteMin >= 0)) fail(`--line-white-min must be a non-negative number`);
+const dilateLines = values['dilate-lines'] === undefined ? 0 : Number(values['dilate-lines']);
+if (!(Number.isInteger(dilateLines) && dilateLines >= 0))
+  fail(`--dilate-lines must be a non-negative integer`);
 if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
 
 // Generate one take, register it to the source, and score three ways: structural
