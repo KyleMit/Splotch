@@ -9,9 +9,9 @@
 //     tools/asset-gen/gen-contact-sheet.mjs <target...> [--source samples|shipped]
 //       [--theme dark|light] [--out FILE]
 //
-//   <target>          a whole category ("nature") OR a single page/cell to focus
-//                     the sheet on: "nature/ant" (both orientations) or
-//                     "nature/ant-wide" (one cell). Mix freely.
+//   <target>          "all" (every book) OR a whole category ("nature") OR a
+//                     single page/cell to focus the sheet on: "nature/ant" (both
+//                     orientations) or "nature/ant-wide" (one cell). Mix freely.
 //   --source samples  (default) read fresh takes from .coloring-samples-dark/
 //   --source shipped  read the live assets from web/static/coloring/*.night.webp
 //   --theme dark      (default) open in dark; --theme light opens the light-twin
@@ -54,13 +54,17 @@ const source = values.source ?? 'samples';
 if (!['samples', 'shipped'].includes(source)) fail('--source must be samples or shipped');
 const theme = values.theme ?? 'dark';
 if (!['dark', 'light'].includes(theme)) fail('--theme must be dark or light');
-if (!positionals.length) fail('give one or more targets, e.g. "farm" or "nature/ant-wide"');
+if (!positionals.length) fail('give one or more targets, e.g. "all", "farm", or "nature/ant-wide"');
+
+// `all` is a whole-catalog shortcut so the common cross-session pass
+// (`gen:contact-sheet -- all --source shipped`) needn't enumerate every book.
+const targets = positionals.includes('all') ? BOOKS.map((b) => b.id) : positionals;
 
 // A target is a whole category ("nature") or a page/cell filter ("nature/ant",
 // "nature/ant-wide"). Split them: bare ids expand to the whole book, slashed ids
 // keep only the matching page (or page+orientation) of their category.
-const categories = new Set(positionals.filter((p) => !p.includes('/')));
-const pageFilters = positionals.filter((p) => p.includes('/'));
+const categories = new Set(targets.filter((p) => !p.includes('/')));
+const pageFilters = targets.filter((p) => p.includes('/'));
 const wantsCategory = (catId) =>
   categories.has(catId) || pageFilters.some((f) => f.startsWith(`${catId}/`));
 // Keep this (cat,id,orient) cell? Its category was named whole, or a filter names
@@ -92,7 +96,7 @@ function dataUri(p) {
 const cells = [];
 let counts = [];
 const catIds = BOOKS.map((b) => b.id).filter(wantsCategory);
-for (const named of positionals) {
+for (const named of targets) {
   const bare = named.includes('/') ? named.split('/')[0] : named;
   if (!BOOKS.some((b) => b.id === bare)) console.warn(`(skip) no book "${bare}"`);
 }

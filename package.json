@@ -158,7 +158,7 @@
     "gen:coloring-fills:audit": "Audit shipped .color.webp twins for outline drift vs their line art (global + worst-tile keep); flags any that need regenerating. No API key/network (-- page-or-category, --overlay to dump drift maps)",
     "gen:coloring-sheet": "Build .coloring-samples/review-sheet.html — a tap-to-flip B&W⇄colored review of the generated twins (-- category… to filter)",
     "gen:coloring-thumbs": "Regenerate the -thumb.webp grid thumbnails beside every coloring cover/page for the picker (-- category… to filter)",
-    "gen:contact-sheet": "Build a self-contained HTML contact sheet of the coloring twins (light + dark) to review/publish as an Artifact (-- page-or-category…, --source samples|shipped, --theme dark|light, --out FILE)",
+    "gen:contact-sheet": "Build a self-contained HTML contact sheet of the coloring twins (light + dark) to review/publish as an Artifact (-- all|page-or-category…, --source samples|shipped, --theme dark|light, --out FILE)",
     "gen:shots": "Regenerate the store screenshots + feature graphic for both stores into store-assets/ (Playwright)",
     "cap:sync": "build:cap + copy web assets & plugins into the native projects",
     "cap:android": "cap:sync + open the Android project in Android Studio",

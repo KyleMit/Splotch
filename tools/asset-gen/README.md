@@ -45,7 +45,7 @@ npm run gen:coloring-fills      # light colored twins  -> web/static/coloring/**
 npm run gen:coloring-fills:audit # drift-check shipped twins (no key/network)
 npm run gen:coloring-thumbs     # picker thumbnails     -> web/static/coloring/**/*-thumb.webp
 npm run gen:coloring-sheet      # light-twin review sheet (gitignored)
-npm run gen:contact-sheet       # HTML contact sheet of the twins (gitignored) — publish as an Artifact
+npm run gen:contact-sheet -- all # HTML contact sheet of every twin (gitignored) — publish as an Artifact
 ```
 
 **Whenever you touch an asset — generate, retouch, regenerate, or ship a
@@ -106,6 +106,11 @@ as base64 data URIs), built to render anywhere:
   sheet with the Artifact tool** instead of hand-rolling a headless screenshot —
   same steps as the night-twins runbook
   ([`night-twins.md`](./night-twins.md#per-category-workflow)). Show the URL.
+- For a **whole-catalog** pass (e.g. a cross-session review of everything
+  shipped), the `all` target expands to every book —
+  `gen:contact-sheet -- all --source shipped` — so you needn't enumerate the
+  eight categories. It reads only committed assets, so any session rebuilds the
+  identical sheet in a couple of seconds with no key or network.
 - For a **focused** pass, `gen-contact-sheet.mjs` takes page/cell targets
   (`nature/ant`, `nature/ant-wide`) and `--theme light` to open the light-twin
   (magic-brush) view — not just a whole dark category.
