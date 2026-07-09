@@ -21,12 +21,29 @@ Cloud-session workflow (Claude Code on the web) — follow this for every sessio
    Commit all work there and push it:
      git push -u origin feat/<feature>
 
-2. Hand back the Netlify branch preview URL. Branch previews are enabled on the
-   "splotchy" Netlify site, so every pushed branch auto-deploys to
-   https://<slug>--splotchy.netlify.app, where <slug> is the branch name with
-   every non-alphanumeric character replaced by "-" (feat/undo-button ->
-   feat-undo-button--splotchy.netlify.app). As soon as you have pushed, give the
-   user that URL so they can click through and watch the committed work in
-   progress. The deploy takes a minute or two to go live after each push; the URL
-   is stable for the branch, so the same link tracks every later push.
+2. Netlify preview mode. The "splotchy" site runs in one of two modes (see
+   docs/CLOUD.md "Two preview modes"):
+     - Full: PR deploy previews + branch previews on every branch.
+     - Restricted: PR previews off; branch previews build ONLY for feature/*
+       branches. Every other branch (including feat/* and claude/*) is pushed
+       but NOT deployed, so it has no preview URL.
+   CURRENT MODE: restricted (as of 2026-07-09). Assume a plain `feat/*` push
+   produces NO live preview.
+
+3. Hand back a preview URL only when one exists. A branch preview auto-deploys
+   to https://<slug>--splotchy.netlify.app, where <slug> is the branch name with
+   every non-alphanumeric character replaced by "-" (feature/undo-button ->
+   feature-undo-button--splotchy.netlify.app). The deploy takes a minute or two;
+   the URL is stable for the branch, so the same link tracks every later push.
+     - In restricted mode this URL only exists for feature/* branches, so a
+       normal feat/* session has no preview to hand back — don't invent one.
+     - If a live preview is genuinely needed (Lighthouse profiling, or the user
+       asks to see the changes running live), fork the current working branch to
+       a feature/* branch and push it to trigger the deploy, then switch back to
+       keep working:
+         git checkout -b feature/<feature>
+         git push -u origin feature/<feature>
+         git checkout -
+       Don't keep the feature/* branch mirrored — only refresh it when the user
+       asks. Then hand back its <slug>--splotchy.netlify.app URL.
 EOF
