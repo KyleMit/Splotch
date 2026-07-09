@@ -32,19 +32,24 @@ const WEBP_QUALITY = 92;
 const COLORING_DIR = join(ROOT, 'web', 'static', 'coloring');
 const OUT_DIR = join(ROOT, '.coloring-samples-dark', 'retouch');
 
-// Default edit: open solid-black eyes into outlined coloring-book eyes. Written to
-// change ONLY the eyes and keep the rest of the line art the same style/composition.
-const DEFAULT_INSTRUCTION = `This is a black-and-white children's COLORING PAGE — clean black outlines on a pure white background, meant to be colored in.
+// Default edit: normalize eyes to the canonical "solid pupil + one clear glare,
+// no iris" form. This is the eye shape that survives the dark-mode line-art invert
+// (ADR-0052): the solid pupil inverts to a white eyeball and the single glare
+// inverts to the pupil, so the eye reads correctly with NO reliance on the twin
+// (the pupil region is punched out of the reveal). The load-bearing element is the
+// GLARE — it becomes the pupil, so it must be present, single, and big enough; a
+// too-small glare gives a featureless white blob in dark mode (the mermaid bug).
+// See scripts/night-twins.md ("Eyes" recipe). Written to touch ONLY the eyes.
+const DEFAULT_INSTRUCTION = `This is a black-and-white children's COLORING PAGE — clean black outlines on a pure white background.
 
-Redraw ONLY the main character's EYES. Right now each eye is a SOLID BLACK filled oval, which is wrong for a coloring page. Change each eye into an OPEN, OUTLINED coloring-book eye that a child can color:
-- a clean thin BLACK outline around the whole eye shape,
-- a WHITE (empty) sclera inside,
-- a round IRIS drawn as a thin black outline (not filled),
-- a small solid black PUPIL in the centre,
-- a tiny white catchlight dot on the pupil.
-Keep the eyes the same size, position, spacing, and cute expression as now — just open and outline them instead of filling them solid black.
+Fix ONLY the main character's EYES so each reads as a simple, cute cartoon eye in this exact canonical form:
+- a bold SOLID BLACK pupil that fills most of the eye,
+- a thin white sclera around it,
+- NO separate iris ring or extra circles inside the eye,
+- exactly ONE clear, MEDIUM-SIZED white CATCHLIGHT/GLARE highlight in the upper part of each pupil.
+If an eye currently has a tiny or missing catchlight, ENLARGE or add a single clear one. If an eye is drawn "open"/outlined or has an iris ring, SIMPLIFY it back to a solid pupil with one glare. Both eyes must match, with the glare in the same spot on each.
 
-Do NOT change anything else: every other line, shape, character, and the whole composition and framing must stay the same, in the exact same clean black-line-on-white style. Output only clean black line art on a pure white background — no colour, no grey shading, no fills anywhere except the small pupils.`;
+Keep the eyes the same size, position, spacing, and happy expression. Change NOTHING else in the image — every other line, shape, character, and the whole composition and framing stay identical, in the exact same clean black-line-on-white style. Output only clean black line art on a pure white background — no colour, no grey shading.`;
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,

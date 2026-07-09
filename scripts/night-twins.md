@@ -91,16 +91,28 @@ those in the gallery.
   creatures. Do NOT wash faces to a chalky/ghostly slate. Only genuinely colorless
   things (clouds, droplets, steam, star-glow) take a soft moonlit tint. (Was: bee /
   caterpillar / astronaut faces came out ghostly grey.)
-- **Eyes stay bright and sparkly — the two failure modes.** Eyes are the hardest thing
-  to get right in a dark recolor, and they fail in opposite directions:
-  (a) too DARK — the model fills a whole eye with one dark color (navy-on-navy) and it
-  reads as an empty socket (dragon-tall's first take); (b) after opening the eye up, the
-  model paints a huge NEAR-BLACK iris that fills the big cartoon eye, so it's *still* a
-  dark hole (mermaid, "scary/sickly"). The prompt now spells out three tones brightest→
-  darkest — a generous light off-white sclera, a LUMINOUS jewel-tone iris that pops
-  against the night (not near-black, not the background tone), and only a small dark
-  pupil + catchlight — so big eyes sparkle instead of sinking. Always confirm eyes on the
-  gallery's **Combined** view, not the raw twin.
+- **Eyes are LINE-ART-driven in dark mode — fix the outline, not the twin.** This is the
+  single most important eye lesson. In dark mode the reveal is fills-only, so the eye's
+  big dark pupil is *punched out* of the twin and the eye is rendered almost entirely by
+  the INVERTED line art. So the twin's eye colour barely matters — chasing it (a
+  "brighter iris" prompt, etc.) is a dead end. What matters is the eye's shape in the
+  base line art, run through `invert(1)`:
+  - **Canonical eye that inverts clean:** a bold SOLID dark pupil filling most of the eye,
+    a thin white sclera, **one** clear MEDIUM white catchlight/glare, and **no iris ring**.
+    The invert maps solid-pupil → white eyeball, glare → dark pupil, sclera crescent →
+    thin dark rim. Result: a lively white eye with a small dark pupil (this is why the
+    unicorn "just works").
+  - **The glare is load-bearing** — it becomes the pupil, so it must be present, single,
+    and big enough. A pin-dot glare → featureless white blob (mermaid's original bug); an
+    iris ring → a bright ring that muddies it; two glares → two pupils.
+  - **To fix a broken eye, retouch the LINE ART to the canonical form** with
+    `scripts/retouch-line-art.mjs` (its default instruction is exactly this recipe:
+    solid pupil + one clear glare, no iris — enlarge a too-small glare). Do NOT "open the
+    eye into an outlined iris" — that was tried on the mermaid and made it a dark socket.
+    After retouching the outline, regenerate the WHOLE related suite from it (light
+    `.color.webp` + night twin + thumbnails, both orientations) and re-check the gallery
+    **Combined** view in BOTH light and dark. Solid-pupil eyes are the normal cute eye in
+    light mode too, so the same fix serves both.
 - **Outlines stay WHITE, never dark.** The input is a white-line-on-dark drawing, and
   the model likes to "correct" it into a normal black-outline coloring page — re-inking
   every shape with dark strokes. Those dark lines then double against the app's white
@@ -131,14 +143,14 @@ don't hand-fix images.
    line-art layer over the paper. A twin that looks fine in isolation can break once
    merged, so reviewing the raw twin alone is not enough. Also glance at a couple of
    Combined tiles inline (Read tool) to sanity-check faces/eyes/mood.
-   - **Eyes gotcha (line-art driven, not the twin):** in dark mode the line art is
-     `invert(1)`-ed, so any SOLID-BLACK-filled feature in the base line art — most
-     often eyes drawn as filled black ovals — turns solid WHITE, and the fills-only
-     reveal punches that region out of the twin, so the twin can't fix it. Those pages
-     render as blank white eyes (Creatures' mermaid-wide). Pages whose eyes are drawn as
-     OUTLINES with a light interior (dragon) are fine — the twin fills a dark pupil that
-     survives. A blown-out eye is a base-line-art problem; regenerating the twin won't
-     change it. The fix is to **retouch the line art** (see below), not to re-roll the twin.
+   - **Eyes gotcha (line-art driven, not the twin):** in dark mode the eye is rendered by
+     the `invert(1)`-ed line art (the pupil is punched out of the fills-only reveal), so
+     the twin can't fix a bad eye — the base outline has to be right. The reliable eye is
+     the canonical **solid pupil + one clear glare, no iris** (see the "Eyes are LINE-ART-
+     driven" prompt lesson above): it inverts to a clean white eye with a small dark pupil.
+     Blank-white-blob eyes (mermaid's original, glare too small) and dark-socket eyes
+     (mermaid opened-up, near-black iris) are both base-line-art problems — **retouch the
+     line art** to the canonical form (see below), don't re-roll the twin.
 
 ### Retouching the base line art (hard sections)
 
