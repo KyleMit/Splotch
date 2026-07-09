@@ -11,7 +11,7 @@
     "retouch-line-art": "node --experimental-strip-types --disable-warning=ExperimentalWarning retouch-line-art.mjs",
     "coloring-thumbs": "node gen-coloring-thumbs.mjs",
     "coloring-sheet": "node gen-coloring-sheet.mjs",
-    "night-twins-gallery": "node --experimental-strip-types --disable-warning=ExperimentalWarning night-twins-gallery.mjs",
+    "contact-sheet": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-contact-sheet.mjs",
     "png-to-webp": "node png-to-webp.mjs"
   }
 }
