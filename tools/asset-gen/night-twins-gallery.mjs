@@ -5,10 +5,16 @@
 // linking to local files.
 //
 //   node --experimental-strip-types --disable-warning=ExperimentalWarning \
-//     tools/asset-gen/night-twins-gallery.mjs <category...> [--source samples|shipped] [--out FILE]
+//     tools/asset-gen/night-twins-gallery.mjs <target...> [--source samples|shipped]
+//       [--theme dark|light] [--out FILE]
 //
+//   <target>          a whole category ("nature") OR a single page/cell to focus
+//                     the sheet on: "nature/ant" (both orientations) or
+//                     "nature/ant-wide" (one cell). Mix freely.
 //   --source samples  (default) read fresh takes from .coloring-samples-dark/
 //   --source shipped  read the live assets from web/static/coloring/*.night.webp
+//   --theme dark      (default) open in dark; --theme light opens the light-twin
+//                     review (the .color.webp under black lines — the magic-brush look)
 //   --out FILE        output path (default .coloring-samples-dark/night-gallery.html)
 //
 // Each cell embeds THREE layers so the sheet can reproduce what a child actually
@@ -39,12 +45,29 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
     source: { type: 'string' },
+    theme: { type: 'string' },
     out: { type: 'string' },
   },
 });
 const source = values.source ?? 'samples';
 if (!['samples', 'shipped'].includes(source)) fail('--source must be samples or shipped');
-if (!positionals.length) fail('give one or more category ids, e.g. "farm dinosaur"');
+const theme = values.theme ?? 'dark';
+if (!['dark', 'light'].includes(theme)) fail('--theme must be dark or light');
+if (!positionals.length) fail('give one or more targets, e.g. "farm" or "nature/ant-wide"');
+
+// A target is a whole category ("nature") or a page/cell filter ("nature/ant",
+// "nature/ant-wide"). Split them: bare ids expand to the whole book, slashed ids
+// keep only the matching page (or page+orientation) of their category.
+const categories = new Set(positionals.filter((p) => !p.includes('/')));
+const pageFilters = positionals.filter((p) => p.includes('/'));
+const wantsCategory = (catId) =>
+  categories.has(catId) || pageFilters.some((f) => f.startsWith(`${catId}/`));
+// Keep this (cat,id,orient) cell? Its category was named whole, or a filter names
+// exactly this page ("cat/id") or this cell ("cat/id-orient").
+const wantsCell = (catId, id, orient) =>
+  categories.has(catId) ||
+  pageFilters.includes(`${catId}/${id}`) ||
+  pageFilters.includes(`${catId}/${id}-${orient}`);
 
 const OUT = values.out ?? join(SAMPLES_DARK_DIR, 'night-gallery.html');
 
@@ -67,14 +90,19 @@ function dataUri(p) {
 
 const cells = [];
 let counts = [];
-for (const catId of positionals) {
+const catIds = BOOKS.map((b) => b.id).filter(wantsCategory);
+for (const named of positionals) {
+  const bare = named.includes('/') ? named.split('/')[0] : named;
+  if (!BOOKS.some((b) => b.id === bare)) console.warn(`(skip) no book "${bare}"`);
+}
+for (const catId of catIds) {
   const book = BOOKS.find((b) => b.id === catId);
-  if (!book) {
-    console.warn(`(skip) no book "${catId}"`);
-    continue;
-  }
+  if (!book) continue;
+  let n = 0;
   for (const p of book.pages) {
     for (const orient of ['tall', 'wide']) {
+      if (!wantsCell(catId, p.id, orient)) continue;
+      n++;
       cells.push({
         cat: catId,
         id: p.id,
@@ -86,7 +114,7 @@ for (const catId of positionals) {
       });
     }
   }
-  counts.push(`${book.name} (${book.pages.length})`);
+  if (n) counts.push(`${book.name} (${n})`);
 }
 
 const CELLS_JSON = JSON.stringify(cells);
@@ -131,8 +159,8 @@ const html = `<style>
     <div class="controls">
       <span class="seg-label">Theme</span>
       <div class="seg" id="themeSeg">
-        <button data-theme="dark" class="on">Dark</button>
-        <button data-theme="light">Light</button>
+        <button data-theme="dark"${theme === 'dark' ? ' class="on"' : ''}>Dark</button>
+        <button data-theme="light"${theme === 'light' ? ' class="on"' : ''}>Light</button>
       </div>
       <span class="seg-label">View</span>
       <div class="seg" id="viewSeg">
@@ -154,7 +182,7 @@ const BLEND = { dark:'screen', light:'multiply' };
 const INVERT = { dark:true, light:false };
 const VIEWS = ['color','outline','combined'];
 
-let gTheme = 'dark';
+let gTheme = ${JSON.stringify(theme)};
 let gView = 'combined';
 
 // Decode a data URI into an <img>, or null.
