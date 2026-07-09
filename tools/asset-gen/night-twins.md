@@ -74,12 +74,12 @@ night recolor, registers the result back onto the original outline, and scores i
    (default 150 — the highest cut that still clears the good set's floor). A pale,
    patchy subject (a mostly-white dog with a few dark contours) is the hard case: it
    can land near the boundary, so a flagged page may need a targeted low-temp regen
-   (see step 3) to come back cleanly white — eyeball borderline pages in the gallery.
+   (see step 3) to come back cleanly white — eyeball borderline pages in the contact sheet.
 
 Each page retries (rising temperature) until a take passes all three gates, keeping the
 least-drifted take that reads as night AND keeps white outlines; it warns
 (`⚠ still drifting` / `⚠ too bright/daytime` / `⚠ dark outlines`) if none do — eyeball
-those in the gallery.
+those in the contact sheet.
 
 ### Prompt lessons (already baked into `DARK_FILL_PROMPT`)
 
@@ -110,7 +110,7 @@ those in the gallery.
     solid pupil + one clear glare, no iris — enlarge a too-small glare). Do NOT "open the
     eye into an outlined iris" — that was tried on the mermaid and made it a dark socket.
     After retouching the outline, regenerate the WHOLE related suite from it (light
-    `.color.webp` + night twin + thumbnails, both orientations) and re-check the gallery
+    `.color.webp` + night twin + thumbnails, both orientations) and re-check the contact sheet
     **Combined** view in BOTH light and dark. Solid-pupil eyes are the normal cute eye in
     light mode too, so the same fix serves both.
 - **Outlines stay WHITE, never dark.** The input is a white-line-on-dark drawing, and
@@ -128,11 +128,11 @@ don't hand-fix images.
 1. **Generate** to samples: `... gen-coloring-fills-dark.mjs <category> --max-attempts 4`
    (give the retry loop room to reject dark-outline / daytime takes; the default 3 is
    a touch tight now that three gates run).
-2. **Build a review gallery** and publish it as an Artifact for the user:
+2. **Build the contact sheet** and publish it as an Artifact for the user (rebuild
+   it every time you touch an asset):
    ```bash
-   node --experimental-strip-types --disable-warning=ExperimentalWarning \
-     tools/asset-gen/night-twins-gallery.mjs <category> --source samples \
-     --out .coloring-samples-dark/<category>-gallery.html
+   npm run gen:contact-sheet -- <category> --source samples \
+     --out .coloring-samples-dark/<category>-contact-sheet.html
    ```
    Then publish that file with the **Artifact tool** (it embeds images as data
    URIs, so it renders in the sandbox — do NOT hand-composite a PNG). Show the URL.
@@ -176,7 +176,7 @@ eye lesson applies to light mode too):
 3. `gen-coloring-fills.mjs <cat>/<page>-tall <cat>/<page>-wide` (light `.color.webp`).
 4. `gen-coloring-fills-dark.mjs <cat>/<page>-tall <cat>/<page>-wide --max-attempts 4`,
    then copy the samples to `…/<page>-<orient>.night.webp`.
-5. Rebuild the gallery `--source shipped`, verify eyes read well in Combined light AND
+5. Rebuild the contact sheet `--source shipped`, verify eyes read well in Combined light AND
    dark, then `npm run check:assets && npm run check && npm run test:unit` and commit.
 
 (Fixed Creatures' mermaid tall+wide: the original solid-black eyes had a pin-dot glare

@@ -21,6 +21,13 @@ when working in this folder:
   gitignored `.coloring-samples*/`. Never commit the scratch dirs.
 - **Manual/on-demand only** — the Gemini generators need `GEMINI_API_KEY` and are
   never run in CI (real API cost). The app never runs any of this at build time.
+- **Always rebuild the contact sheet when you touch an asset.** Any time you
+  generate, retouch, regenerate, or ship a coloring twin, re-run
+  `gen-contact-sheet.mjs` (root: `npm run gen:contact-sheet`) for the affected
+  page/category and **publish the resulting HTML with the Artifact tool** so the
+  change is visible in the session — the sheet is self-contained (images inlined
+  as base64), so it renders in the sandbox; do NOT hand-composite a PNG. Judge on
+  the **Combined** view. See the "Viewing a review sheet" section of `README.md`.
 - **Dark-mode night twins** have their own detailed runbook in `night-twins.md`
-  (generate → review gallery → retouch line art if needed → ship → wire). Read it
-  before generating more.
+  (generate → review contact sheet → retouch line art if needed → ship → wire).
+  Read it before generating more.

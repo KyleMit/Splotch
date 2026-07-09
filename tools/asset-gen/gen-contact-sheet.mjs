@@ -1,11 +1,12 @@
-// Build a self-contained HTML contact sheet of night twins for one or more
-// coloring categories, so they can be reviewed in a browser / published as an
-// Artifact. Images are embedded as base64 data URIs (no external file refs), so
-// the page renders anywhere — including the Artifact sandbox, whose CSP blocks
-// linking to local files.
+// Build a self-contained HTML contact sheet of the coloring twins for one or
+// more categories, so they can be reviewed in a browser / published as an
+// Artifact. Covers both the dark "night" twins and the light `.color.webp`
+// twins (toggle in the sheet). Images are embedded as base64 data URIs (no
+// external file refs), so the page renders anywhere — including the Artifact
+// sandbox, whose CSP blocks linking to local files.
 //
 //   node --experimental-strip-types --disable-warning=ExperimentalWarning \
-//     tools/asset-gen/night-twins-gallery.mjs <target...> [--source samples|shipped]
+//     tools/asset-gen/gen-contact-sheet.mjs <target...> [--source samples|shipped]
 //       [--theme dark|light] [--out FILE]
 //
 //   <target>          a whole category ("nature") OR a single page/cell to focus
@@ -15,7 +16,7 @@
 //   --source shipped  read the live assets from web/static/coloring/*.night.webp
 //   --theme dark      (default) open in dark; --theme light opens the light-twin
 //                     review (the .color.webp under black lines — the magic-brush look)
-//   --out FILE        output path (default .coloring-samples-dark/night-gallery.html)
+//   --out FILE        output path (default .coloring-samples-dark/contact-sheet.html)
 //
 // Each cell embeds THREE layers so the sheet can reproduce what a child actually
 // sees, not just the raw generated twin:
@@ -69,7 +70,7 @@ const wantsCell = (catId, id, orient) =>
   pageFilters.includes(`${catId}/${id}`) ||
   pageFilters.includes(`${catId}/${id}-${orient}`);
 
-const OUT = values.out ?? join(SAMPLES_DARK_DIR, 'night-gallery.html');
+const OUT = values.out ?? join(SAMPLES_DARK_DIR, 'contact-sheet.html');
 
 const staticDir = COLORING_DIR;
 // The night twin: fresh sample takes, or the shipped .night.webp.
@@ -154,7 +155,7 @@ const html = `<style>
 </style>
 <div class="wrap">
   <header class="bar">
-    <h1>Night twins &mdash; <span class="accent">${source}</span> review</h1>
+    <h1>Coloring twins &mdash; <span class="accent">${source}</span> contact sheet</h1>
     <p class="sub">Categories: ${counts.join(' · ')}. <strong>Combined</strong> reproduces the real canvas: fills-only twin under the themed line-art layer over the paper (magicBrush.buildFillsSheet + DrawingCanvas compositing). Judge twins here — blown-out or black-on-black eyes only show once the layers merge. Tap any tile to cycle its own view.</p>
     <div class="controls">
       <span class="seg-label">Theme</span>

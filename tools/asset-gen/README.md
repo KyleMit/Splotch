@@ -33,7 +33,7 @@ dependency-free precisely so this stays clean):
 | `web/src/lib/ai/styles.ts` | `gen-style-covers` |
 | `web/src/lib/ai/prompt.ts` | `gen-style-covers` |
 | `web/src/lib/server/ai/geminiSafety.ts` | every Gemini generator |
-| `web/src/lib/state/books.ts` | `night-twins-gallery` |
+| `web/src/lib/state/books.ts` | `gen-contact-sheet` |
 
 ## Running
 
@@ -45,7 +45,13 @@ npm run gen:coloring-fills      # light colored twins  -> web/static/coloring/**
 npm run gen:coloring-fills:audit # drift-check shipped twins (no key/network)
 npm run gen:coloring-thumbs     # picker thumbnails     -> web/static/coloring/**/*-thumb.webp
 npm run gen:coloring-sheet      # light-twin review sheet (gitignored)
+npm run gen:contact-sheet       # HTML contact sheet of the twins (gitignored) — publish as an Artifact
 ```
+
+**Whenever you touch an asset — generate, retouch, regenerate, or ship a
+twin — rebuild the contact sheet for the affected page/category and publish it
+with the Artifact tool** so the change is visible in the session (see "Viewing a
+review sheet" below).
 
 ### Twin outline drift & the audit
 
@@ -71,7 +77,7 @@ root `node_modules`):
 ```bash
 npm run coloring-fills -- farm/dog-wide --samples 3
 npm run coloring-fills-dark -- space --max-attempts 4   # not exposed as a root gen:* script
-npm run night-twins-gallery -- space --source samples
+npm run contact-sheet -- space --source samples
 npm run retouch-line-art -- creatures/mermaid-tall
 npm run png-to-webp
 ```
@@ -93,13 +99,14 @@ Generate → review the scratch → copy the good outputs into `web/static/` →
 ### Viewing a review sheet
 
 Both sheets — the light-twin `gen:coloring-sheet` output and the
-`night-twins-gallery.mjs` gallery — are **self-contained HTML** (images inlined as
-base64 data URIs), built to render anywhere:
+`gen-contact-sheet.mjs` contact sheet — are **self-contained HTML** (images inlined
+as base64 data URIs), built to render anywhere:
 
-- **In a cloud session, publish the sheet with the Artifact tool** instead of
-  hand-rolling a headless screenshot — same steps as the night-twins runbook
+- **Rebuild the contact sheet every time you touch an asset**, then **publish the
+  sheet with the Artifact tool** instead of hand-rolling a headless screenshot —
+  same steps as the night-twins runbook
   ([`night-twins.md`](./night-twins.md#per-category-workflow)). Show the URL.
-- For a **focused** pass, `night-twins-gallery.mjs` takes page/cell targets
+- For a **focused** pass, `gen-contact-sheet.mjs` takes page/cell targets
   (`nature/ant`, `nature/ant-wide`) and `--theme light` to open the light-twin
   (magic-brush) view — not just a whole dark category.
 - If a raw PNG is genuinely needed, **don't launch Chromium directly** — the cloud

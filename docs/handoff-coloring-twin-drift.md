@@ -109,8 +109,7 @@ git fetch origin && git checkout claude/coloring-outline-ghosting-regression-4e2
 npm run gen:coloring-fills:audit            # confirm 0 flagged
 # regenerate any page:  npm run gen:coloring-fills -- <cat>/<page>   (GEMINI_API_KEY is in the env)
 # focused review sheet, light mode:
-node --experimental-strip-types tools/asset-gen/night-twins-gallery.mjs \
-  nature/ant-wide --source shipped --theme light --out /tmp/review.html
+npm run gen:contact-sheet -- nature/ant-wide --source shipped --theme light --out /tmp/review.html
 # then publish /tmp/review.html with the Artifact tool (don't headless-screenshot it)
 ```
 
