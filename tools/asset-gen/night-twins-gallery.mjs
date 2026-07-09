@@ -5,7 +5,7 @@
 // linking to local files.
 //
 //   node --experimental-strip-types --disable-warning=ExperimentalWarning \
-//     scripts/night-twins-gallery.mjs <category...> [--source samples|shipped] [--out FILE]
+//     tools/asset-gen/night-twins-gallery.mjs <category...> [--source samples|shipped] [--out FILE]
 //
 //   --source samples  (default) read fresh takes from .coloring-samples-dark/
 //   --source shipped  read the live assets from web/static/coloring/*.night.webp
@@ -32,8 +32,8 @@
 import { parseArgs } from 'node:util';
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { ROOT, fail } from './lib/utils.mjs';
-import { BOOKS } from '../web/src/lib/state/books.ts';
+import { COLORING_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
+import { BOOKS } from '../../web/src/lib/state/books.ts';
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -46,13 +46,13 @@ const source = values.source ?? 'samples';
 if (!['samples', 'shipped'].includes(source)) fail('--source must be samples or shipped');
 if (!positionals.length) fail('give one or more category ids, e.g. "farm dinosaur"');
 
-const OUT = values.out ?? join(ROOT, '.coloring-samples-dark', 'night-gallery.html');
+const OUT = values.out ?? join(SAMPLES_DARK_DIR, 'night-gallery.html');
 
-const staticDir = join(ROOT, 'web', 'static', 'coloring');
+const staticDir = COLORING_DIR;
 // The night twin: fresh sample takes, or the shipped .night.webp.
 function nightPath(cat, id, orient) {
   return source === 'samples'
-    ? join(ROOT, '.coloring-samples-dark', cat, `${id}-${orient}.webp`)
+    ? join(SAMPLES_DARK_DIR, cat, `${id}-${orient}.webp`)
     : join(staticDir, cat, `${id}-${orient}.night.webp`);
 }
 // The original black-on-white line art, and the light colored twin — both always

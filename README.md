@@ -48,7 +48,7 @@ npm run preview
 Convert unoptimized file formats before committing
 
 ```bash
-node scripts/png-to-webp.mjs
+node tools/asset-gen/png-to-webp.mjs
 ```
 
 ## Deployment

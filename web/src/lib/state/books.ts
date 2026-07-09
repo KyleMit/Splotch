@@ -14,10 +14,10 @@
 //   static/coloring/{book}/{page}-wide.night.webp   landscape night twin (dark mode)
 //
 // Each picker-facing line-art image (cover + pages) has a `-thumb.webp` twin
-// (scripts/gen-coloring-thumbs.mjs): the picker grid shows the thumbnail, the
+// (tools/asset-gen/gen-coloring-thumbs.mjs): the picker grid shows the thumbnail, the
 // full-screen canvas overlay uses the full-res source. `thumbPath()` maps one to
 // the other. The colored `.color.webp` twin is a flat-colored, pixel-aligned
-// version of the line-art page (scripts/gen-coloring-fills.mjs) that the magic
+// version of the line-art page (tools/asset-gen/gen-coloring-fills.mjs) that the magic
 // brush reveals where the child paints (ADR-0043); it never appears in the grid,
 // so it has no thumbnail. `bookAssetPaths()` lists them all so check-assets
 // validates and strip-native-assets removes them together. Thumbnails: ADR-0045.

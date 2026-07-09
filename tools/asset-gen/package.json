@@ -1,0 +1,17 @@
+{
+  "name": "@splotch/asset-gen",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AI/sharp asset-generation pipeline for Splotch. NOT a workspace and NOT separately installed — its dependencies (sharp, @google/genai) live in the repo-root package.json so the root node_modules stays flat for cap sync + patch-package (ADR-0029/0053). Run these via `npm run gen:*` from the repo root, or the aliases below from inside this folder; either way binaries resolve from the hoisted root node_modules. Do not `npm install` here.",
+  "scripts": {
+    "style-covers": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-style-covers.mjs",
+    "coloring-fills": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-coloring-fills.mjs",
+    "coloring-fills-dark": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-coloring-fills-dark.mjs",
+    "retouch-line-art": "node --experimental-strip-types --disable-warning=ExperimentalWarning retouch-line-art.mjs",
+    "coloring-thumbs": "node gen-coloring-thumbs.mjs",
+    "coloring-sheet": "node gen-coloring-sheet.mjs",
+    "night-twins-gallery": "node --experimental-strip-types --disable-warning=ExperimentalWarning night-twins-gallery.mjs",
+    "png-to-webp": "node png-to-webp.mjs"
+  }
+}

@@ -19,9 +19,8 @@ import { join } from 'node:path';
 import { globSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import sharp from 'sharp';
-import { ROOT, fail } from './lib/utils.mjs';
+import { COLORING_DIR, fail } from './lib/paths.mjs';
 
-const COLORING_DIR = join(ROOT, 'web', 'static', 'coloring');
 const THUMB_EDGE = 400; // longest-edge px — comfortably covers a 2x DPR ~200px tile
 const THUMB_QUALITY = 80;
 const THUMB_SUFFIX = '-thumb.webp';

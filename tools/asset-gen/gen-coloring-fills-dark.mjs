@@ -18,18 +18,18 @@
 // white so they sit under the app's white "chalk" line art in dark mode).
 //
 // Full workflow (generate → review gallery → ship → wire → verify), the prompt
-// lessons, and the remaining-category checklist: scripts/night-twins.md.
+// lessons, and the remaining-category checklist: tools/asset-gen/night-twins.md.
 //
 // Requires GEMINI_API_KEY. Writes candidates to .coloring-samples-dark/ for
 // review — it does NOT touch the shipped assets.
-//   node scripts/gen-coloring-fills-dark.mjs space               whole category
-//   node scripts/gen-coloring-fills-dark.mjs space/astronaut-tall one page
-//   node scripts/gen-coloring-fills-dark.mjs space --tall         portrait pages only
-//   node scripts/gen-coloring-fills-dark.mjs space --wide         landscape pages only
-//   node scripts/gen-coloring-fills-dark.mjs space --samples 2    2 takes each
-//   node scripts/gen-coloring-fills-dark.mjs space --max-attempts 4  retry harder
-//   node scripts/gen-coloring-fills-dark.mjs space --line-white-min 150  dark-outline gate
-//   node scripts/gen-coloring-fills-dark.mjs space --dilate-lines 2  thicken white input lines
+//   node tools/asset-gen/gen-coloring-fills-dark.mjs space               whole category
+//   node tools/asset-gen/gen-coloring-fills-dark.mjs space/astronaut-tall one page
+//   node tools/asset-gen/gen-coloring-fills-dark.mjs space --tall         portrait pages only
+//   node tools/asset-gen/gen-coloring-fills-dark.mjs space --wide         landscape pages only
+//   node tools/asset-gen/gen-coloring-fills-dark.mjs space --samples 2    2 takes each
+//   node tools/asset-gen/gen-coloring-fills-dark.mjs space --max-attempts 4  retry harder
+//   node tools/asset-gen/gen-coloring-fills-dark.mjs space --line-white-min 150  dark-outline gate
+//   node tools/asset-gen/gen-coloring-fills-dark.mjs space --dilate-lines 2  thicken white input lines
 import { parseArgs } from 'node:util';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
@@ -37,8 +37,8 @@ import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { ROOT, fail } from './lib/utils.mjs';
-import { classifyGeminiResponse } from '../web/src/lib/server/ai/geminiSafety.ts';
+import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
+import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
 // Registration nudge undo, copied from gen-coloring-fills.mjs rather than
 // imported — that module runs a CLI at top level, so importing it would re-run
@@ -332,8 +332,7 @@ async function scoreLineColor(twinBuf, sourceBuf) {
 }
 
 const MODEL = 'gemini-2.5-flash-image';
-const COLORING_DIR = join(ROOT, 'web', 'static', 'coloring');
-const OUT_DIR = join(ROOT, '.coloring-samples-dark');
+const OUT_DIR = SAMPLES_DARK_DIR;
 const WEBP_QUALITY = 90;
 
 // The input handed to the model is the inverted line art: WHITE outlines on a
@@ -357,7 +356,7 @@ COLORING STYLE — a dim, moonlit night palette:
 - Colors stay deep and moonlit, but they are still the subject's OWN NATURAL colors — just dimmed and cooled by moonlight, not swapped out. A few GLOWING accent colors (warm gold, amber, teal, magenta) can pop as if lit by the moon, fireflies, or a lantern, while the overall scene stays dim and evening-lit — deep, not bright and sunny.
 - FACES, SKIN, and ANIMAL BODIES must keep a NATURAL, living color — never grey, ashen, ghostly, chalky, or washed-out slate. Give a person a real SKIN TONE (a warm tan, brown, peach, or golden-brown, only darkened for night); give an animal its real coloring (a green caterpillar, a yellow-and-black bee, a red ladybug), softened toward evening. A face must look like living skin or fur under moonlight, NOT like a pale ghost.
 - Only things that have no real color of their own — a cloud, a water droplet, a wisp of steam, a puff of smoke, the glow of a star — may take a soft, dim, moonlit off-white or pale tint. Everything else keeps its own (dimmed) color.
-- EYES: don't fight them. In the app the eye is drawn by the (inverted) line art, not by you — the pupil is punched out of your fills — so the pupil, glint, and shape come from the outline, and your job is only to keep the small eye area NATURAL and LIGHT. Keep the eye-white a light off-white, and NEVER fill an eye with a single dark colour (a dark-filled eye reads as an empty socket). Eye-whites and the catchlight may take a near-white tint. (A blown-out or socketed eye is a base-line-art problem fixed by retouching the outline, not by recolouring — see scripts/night-twins.md.)
+- EYES: don't fight them. In the app the eye is drawn by the (inverted) line art, not by you — the pupil is punched out of your fills — so the pupil, glint, and shape come from the outline, and your job is only to keep the small eye area NATURAL and LIGHT. Keep the eye-white a light off-white, and NEVER fill an eye with a single dark colour (a dark-filled eye reads as an empty socket). Eye-whites and the catchlight may take a near-white tint. (A blown-out or socketed eye is a base-line-art problem fixed by retouching the outline, not by recolouring — see tools/asset-gen/night-twins.md.)
 - Do NOT use pure or bright WHITE fills elsewhere, and avoid bright daytime colors (bright sky blue, bright grass green). Deepen and cool every color toward evening. The only pure-white pixels allowed are the outlines themselves, the eye-whites, and tiny eye glints.
 - Keep the WHITE outlines fully visible — every fill should butt right up against the white outline without covering it.
 
@@ -576,7 +575,7 @@ for (const page of pages) {
         (take.drift.ratio > driftThreshold ? '  ⚠ still drifting' : '') +
         (take.night.bgLuma > nightLumaMax ? '  ⚠ too bright/daytime' : '') +
         (take.line.lineWhite < lineWhiteMin ? '  ⚠ dark outlines' : '');
-      console.log(`ok${nudge}${tries}${stats}${warn}  -> ${relative(ROOT, out)}`);
+      console.log(`ok${nudge}${tries}${stats}${warn}  -> ${relative(REPO_ROOT, out)}`);
     } catch (err) {
       failures++;
       console.log(`FAILED (${err instanceof Error ? err.message : err})`);

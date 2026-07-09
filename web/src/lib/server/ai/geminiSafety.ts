@@ -4,7 +4,7 @@ import type { GenerateContentResponse } from '@google/genai';
 // tell a *safety refusal* (the child should draw something else) apart from a
 // genuine upstream/empty failure (try again). See ADR-0023. Kept as its own
 // dependency-free module (only a type import) because the asset scripts
-// (scripts/gen-style-covers.mjs, gen-coloring-fills.mjs) import it directly via
+// (tools/asset-gen/gen-style-covers.mjs, gen-coloring-fills.mjs) import it directly via
 // --experimental-strip-types.
 
 export type SafetyClassification =

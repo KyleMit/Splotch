@@ -73,7 +73,7 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
   `--lineart-*` tokens, so covers and page thumbnails preview as white-on-dark in dark mode,
   matching the chalkboard the page applies to. The magic brush then reveals a whole PARALLEL
   SET of pre-colored **night twins**
-  (`{page}-{orient}.night.webp`, `scripts/gen-coloring-fills-dark.mjs`): deep-navy backgrounds
+  (`{page}-{orient}.night.webp`, `tools/asset-gen/gen-coloring-fills-dark.mjs`): deep-navy backgrounds
   with glowing, cozy-night fills, registered to the original outline. `DrawingCanvas` picks the
   twin by `resolvedTheme()` — the light twin (`.color.webp`) in light mode, the night twin in
   dark mode — reading it reactively so a live theme flip re-rasterizes the sheet. Where a night

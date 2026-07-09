@@ -13,14 +13,13 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { ROOT, fail } from './lib/utils.mjs';
+import { STYLES_DIR, fail } from './lib/paths.mjs';
 import { pixelate } from './lib/pixelate.mjs';
-import { STYLE_SUFFIXES, STYLE_NAMES } from '../web/src/lib/ai/styles.ts';
-import { buildPromptForStyle } from '../web/src/lib/ai/prompt.ts';
-import { classifyGeminiResponse } from '../web/src/lib/server/ai/geminiSafety.ts';
+import { STYLE_SUFFIXES, STYLE_NAMES } from '../../web/src/lib/ai/styles.ts';
+import { buildPromptForStyle } from '../../web/src/lib/ai/prompt.ts';
+import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-2.5-flash-image';
-const STYLES_DIR = join(ROOT, 'web', 'static', 'styles');
 const SOURCE_SVG = join(STYLES_DIR, 'source.svg');
 const THUMB_SIZE = 448;
 const WEBP_QUALITY = 75;

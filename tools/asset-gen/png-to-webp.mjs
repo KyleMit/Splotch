@@ -1,15 +1,19 @@
-// Convert all PNGs under static/ to WebP, written alongside the original.
-// Usage:  node scripts/png-to-webp.mjs            (lossy, quality 80)
-//         QUALITY=90 node scripts/png-to-webp.mjs (override quality)
-//         LOSSLESS=1 node scripts/png-to-webp.mjs (lossless — better for flat line art)
+// Convert all PNGs under web/static/ to WebP, written alongside the original.
+// Usage:  node tools/asset-gen/png-to-webp.mjs            (lossy, quality 80)
+//         QUALITY=90 node tools/asset-gen/png-to-webp.mjs (override quality)
+//         LOSSLESS=1 node tools/asset-gen/png-to-webp.mjs (lossless — better for flat line art)
 import { globSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
+import { join } from 'node:path';
 import sharp from 'sharp';
+import { WEB_STATIC } from './lib/paths.mjs';
 
 const quality = Number(process.env.QUALITY ?? 80);
 const lossless = process.env.LOSSLESS === '1';
 
-const files = globSync('web/static/**/*.png');
+// Forward-slash glob against a resolved cwd so it works regardless of the launch
+// directory and stays cross-platform (ADR-0017).
+const files = globSync('**/*.png', { cwd: WEB_STATIC }).map((f) => join(WEB_STATIC, f));
 if (files.length === 0) {
   console.log('No PNGs found under web/static/');
   process.exit(0);
