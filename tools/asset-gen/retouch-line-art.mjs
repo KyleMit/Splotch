@@ -12,10 +12,10 @@
 // over web/static/coloring/<cat>/<page>-<orient>.webp and regenerate the whole
 // related suite from it (light .color.webp via gen-coloring-fills, night twin via
 // gen-coloring-fills-dark, thumbnail via gen-coloring-thumbs), then re-review in the
-// contact sheet's Combined view in BOTH light and dark. See scripts/night-twins.md.
+// contact sheet's Combined view in BOTH light and dark. See tools/asset-gen/night-twins.md.
 //
 //   node --experimental-strip-types --disable-warning=ExperimentalWarning \
-//     scripts/retouch-line-art.mjs <cat/page-orient...> [--instruction "..."] [--samples N] [-t F]
+//     tools/asset-gen/retouch-line-art.mjs <cat/page-orient...> [--instruction "..."] [--samples N] [-t F]
 //
 //   creatures/mermaid-tall creatures/mermaid-wide   two pages
 //   --samples 3                                       3 candidates each (pick the best)
@@ -26,13 +26,12 @@ import { join, dirname } from 'node:path';
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { ROOT, fail } from './lib/utils.mjs';
-import { classifyGeminiResponse } from '../web/src/lib/server/ai/geminiSafety.ts';
+import { COLORING_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
+import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-2.5-flash-image';
 const WEBP_QUALITY = 92;
-const COLORING_DIR = join(ROOT, 'web', 'static', 'coloring');
-const OUT_DIR = join(ROOT, '.coloring-samples-dark', 'retouch');
+const OUT_DIR = join(SAMPLES_DARK_DIR, 'retouch');
 
 // Default edit: normalize eyes to the canonical "solid pupil + one clear glare,
 // no iris" form. This is the eye shape that survives the dark-mode line-art invert
@@ -41,7 +40,7 @@ const OUT_DIR = join(ROOT, '.coloring-samples-dark', 'retouch');
 // (the pupil region is punched out of the reveal). The load-bearing element is the
 // GLARE — it becomes the pupil, so it must be present, single, and big enough; a
 // too-small glare gives a featureless white blob in dark mode (the mermaid bug).
-// See scripts/night-twins.md ("Eyes" recipe). Written to touch ONLY the eyes.
+// See tools/asset-gen/night-twins.md ("Eyes" recipe). Written to touch ONLY the eyes.
 const DEFAULT_INSTRUCTION = `This is a black-and-white children's COLORING PAGE — clean black outlines on a pure white background.
 
 Fix ONLY the main character's EYES so each reads as a simple, cute cartoon eye in this exact canonical form:

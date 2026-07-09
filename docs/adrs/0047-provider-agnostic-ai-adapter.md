@@ -44,7 +44,7 @@ the vendor SDK behind it:
   `AiImageResult`. It is unit-tested with a mocked SDK (`gemini.test.ts`).
 - **`geminiSafety.ts`** (moved from `lib/server/aiSafety.ts`, ADR-0023) stays a
   standalone dependency-free module inside the adapter directory because the
-  asset scripts (`scripts/gen-style-covers.mjs`, `gen-coloring-fills.mjs`)
+  asset scripts (`tools/asset-gen/gen-style-covers.mjs`, `gen-coloring-fills.mjs`)
   import it directly via `--experimental-strip-types`.
 - Routes (`generate-image`, `verify-key`) keep everything HTTP-shaped — auth,
   rate limits, upload validation, usage tallies, status codes, response bodies —

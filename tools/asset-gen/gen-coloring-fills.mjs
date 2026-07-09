@@ -27,14 +27,10 @@ import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { ROOT, fail } from './lib/utils.mjs';
-import { classifyGeminiResponse } from '../web/src/lib/server/ai/geminiSafety.ts';
+import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
+import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-2.5-flash-image';
-const COLORING_DIR = join(ROOT, 'web', 'static', 'coloring');
-// Where candidates + overlays land while we're still dialing in the look. The
-// shipped colored twins (batch mode) sit next to their source instead.
-const SAMPLES_DIR = join(ROOT, '.coloring-samples');
 const WEBP_QUALITY = 90;
 
 // The single prompt used for every page — no per-page tailoring. It leans hard
@@ -392,7 +388,7 @@ for (const page of pages) {
         out = join(dirname(page), `${rel.split('/').pop()}.color.webp`);
         await sharp(colored).toFile(out);
       }
-      console.log(`${score}${tries}${flag}  -> ${relative(ROOT, out)}`);
+      console.log(`${score}${tries}${flag}  -> ${relative(REPO_ROOT, out)}`);
     } catch (err) {
       failures++;
       console.log(`FAILED (${err instanceof Error ? err.message : err})`);

@@ -11,12 +11,11 @@
 import { parseArgs } from 'node:util';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
-import { join, relative, dirname, basename } from 'node:path';
+import { join, relative, basename } from 'node:path';
 import sharp from 'sharp';
-import { ROOT, fail } from './lib/utils.mjs';
+import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
 
-const COLORING_DIR = join(ROOT, 'web', 'static', 'coloring');
-const OUT_DIR = join(ROOT, '.coloring-samples');
+const OUT_DIR = SAMPLES_DIR;
 const OUT = join(OUT_DIR, 'review-sheet.html');
 
 // Fraction of the source outline preserved in the twin, within ±TOL px — the
@@ -216,5 +215,5 @@ const html = `<title>Coloring twins — tap to verify overlap</title>
 await mkdir(OUT_DIR, { recursive: true });
 await writeFile(OUT, html);
 console.log(
-  `Wrote ${relative(ROOT, OUT)} (${(html.length / 1024 / 1024).toFixed(1)} MB, ${list.length} pages).`
+  `Wrote ${relative(REPO_ROOT, OUT)} (${(html.length / 1024 / 1024).toFixed(1)} MB, ${list.length} pages).`
 );

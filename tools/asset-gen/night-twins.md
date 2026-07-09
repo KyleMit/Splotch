@@ -2,7 +2,7 @@
 
 How to generate, review, and ship the dark-mode **night twins** for coloring
 pages. Architecture (why they exist, how they render) lives in **ADR-0052**; this
-is the operational playbook. Owner script: `scripts/gen-coloring-fills-dark.mjs`.
+is the operational playbook. Owner script: `tools/asset-gen/gen-coloring-fills-dark.mjs`.
 
 ## What a night twin is
 
@@ -43,7 +43,7 @@ Needs `GEMINI_API_KEY` (set in the cloud env). Writes to the gitignored
 
 ```bash
 node --experimental-strip-types --disable-warning=ExperimentalWarning \
-  scripts/gen-coloring-fills-dark.mjs <category|page> [flags]
+  tools/asset-gen/gen-coloring-fills-dark.mjs <category|page> [flags]
 ```
 
 - `farm` — whole category (both orientations)
@@ -106,7 +106,7 @@ those in the gallery.
     and big enough. A pin-dot glare → featureless white blob (mermaid's original bug); an
     iris ring → a bright ring that muddies it; two glares → two pupils.
   - **To fix a broken eye, retouch the LINE ART to the canonical form** with
-    `scripts/retouch-line-art.mjs` (its default instruction is exactly this recipe:
+    `tools/asset-gen/retouch-line-art.mjs` (its default instruction is exactly this recipe:
     solid pupil + one clear glare, no iris — enlarge a too-small glare). Do NOT "open the
     eye into an outlined iris" — that was tried on the mermaid and made it a dark socket.
     After retouching the outline, regenerate the WHOLE related suite from it (light
@@ -131,7 +131,7 @@ don't hand-fix images.
 2. **Build a review gallery** and publish it as an Artifact for the user:
    ```bash
    node --experimental-strip-types --disable-warning=ExperimentalWarning \
-     scripts/night-twins-gallery.mjs <category> --source samples \
+     tools/asset-gen/night-twins-gallery.mjs <category> --source samples \
      --out .coloring-samples-dark/<category>-gallery.html
    ```
    Then publish that file with the **Artifact tool** (it embeds images as data
@@ -156,12 +156,12 @@ don't hand-fix images.
 
 When a "particularly hard section" of a page can't be rescued downstream — the eyes
 gotcha above is the canonical case — edit the base line art itself with
-`scripts/retouch-line-art.mjs` (Gemini image edit; writes candidates to
+`tools/asset-gen/retouch-line-art.mjs` (Gemini image edit; writes candidates to
 `.coloring-samples-dark/retouch/`, never touches shipped assets):
 
 ```bash
 node --experimental-strip-types --disable-warning=ExperimentalWarning \
-  scripts/retouch-line-art.mjs creatures/mermaid-tall creatures/mermaid-wide --samples 2
+  tools/asset-gen/retouch-line-art.mjs creatures/mermaid-tall creatures/mermaid-wide --samples 2
 ```
 
 The default instruction normalizes eyes to the canonical **solid pupil + one clear
@@ -172,7 +172,7 @@ outline and re-review in the contact sheet's Combined view in **both** light and
 eye lesson applies to light mode too):
 
 1. Copy the chosen candidate over `web/static/coloring/<cat>/<page>-<orient>.webp`.
-2. `node scripts/gen-coloring-thumbs.mjs <cat>` (picker thumbnail).
+2. `node tools/asset-gen/gen-coloring-thumbs.mjs <cat>` (picker thumbnail).
 3. `gen-coloring-fills.mjs <cat>/<page>-tall <cat>/<page>-wide` (light `.color.webp`).
 4. `gen-coloring-fills-dark.mjs <cat>/<page>-tall <cat>/<page>-wide --max-attempts 4`,
    then copy the samples to `…/<page>-<orient>.night.webp`.
