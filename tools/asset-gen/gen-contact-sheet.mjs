@@ -120,7 +120,8 @@ for (const catId of catIds) {
 
 const CELLS_JSON = JSON.stringify(cells);
 
-const html = `<style>
+const html = `<title>Splotch contact sheet — ${source}${counts.length ? ` · ${counts.join(', ')}` : ''}</title>
+<style>
   :root{
     --render-max:520px;
     --ground:#131019;--panel:#1c1826;--border:#322b45;--text:#ece9f3;--muted:#9c96ac;--accent:#f0c674;
