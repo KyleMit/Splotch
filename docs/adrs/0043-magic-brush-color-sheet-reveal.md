@@ -156,15 +156,25 @@ of line work, so there is nothing to double and drift can't ghost.
   legitimately dark *fills* away from the outlines (a ladybug's black spots, a navy
   sky) are kept — only the outline pixels, which the overlay redraws anyway, are
   dropped.
+- The mask is **dilated a couple of pixels** (`OUTLINE_MASK_DILATION`, a pure
+  separable box dilation) before the punch. The `.color.webp` twins are lossy, and
+  their own black lines bloom a pixel or two *fatter* than the clean line-art mask —
+  so an exact-width punch left a thin dark rim of the twin's line sitting just
+  outside the crisp overlay line, which still read as a faint doubled line. Widening
+  the punch swallows that rim; the overlay redraws the line on top, so eating a
+  little fill under it is invisible.
 - This is the one place the module reads pixels back (`getImageData` on the line art),
   but it runs **once per applied page**, off the draw and resize paths — `rasterizeSheet`
   and per-op drawing stay pure, so the hot-path/resize costs above are unchanged. If the
   line art is missing or hasn't decoded yet, the raw twin is revealed (the pre-mask
   behaviour), so the brush never reveals nothing.
 
-A Playwright guard (`flows.spec.ts`) sweeps the magic brush across a page and asserts
+Two Playwright guards (`flows.spec.ts`) sweep the magic brush across a page and assert
 the canvas reveal is effectively black-free (the twin outlines are gone); before the
-fix that sweep painted ~2.8% near-black pixels — the duplicate lines.
+fix that sweep painted ~2.8% near-black pixels — the duplicate lines. The first uses
+the Farm → Cat page (tightly-registered outlines); the second uses Nature → Ant, a
+**wide** twin whose lines bloom, which the exact-width punch left ghosting until the
+mask dilation above — the Cat sweep alone never exercised that case.
 
 ## Follow-up: the sheet is sized to the paper, not the visible canvas
 

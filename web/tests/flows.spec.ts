@@ -543,20 +543,43 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.webp$/);
 });
 
-// Apply the first Farm page and wait for its overlay + colored twin to be ready.
-async function applyFarmPage(page: Page) {
+// Apply the page at `index` in the named book and wait for its overlay + colored
+// twin to be ready. Every page button in a book shares the "{Book} coloring page"
+// label, so index selects position (Farm[0]→Cat, Nature[0]→Ant, Nature[5]→Spider).
+async function applyBookPage(page: Page, book: string, index = 0) {
   await page.locator('#coloringBookButton').click();
   const dialog = page.locator('#coloring-book-dialog');
   await expect(dialog).toBeVisible();
-  await dialog.getByRole('button', { name: /Farm coloring book/i }).click();
+  await dialog.getByRole('button', { name: new RegExp(`${book} coloring book`, 'i') }).click();
   await dialog
-    .getByRole('button', { name: /Farm coloring page/i })
-    .first()
+    .getByRole('button', { name: new RegExp(`${book} coloring page`, 'i') })
+    .nth(index)
     .click();
   await expect(dialog).toBeHidden();
   // Wait for the art itself, not just the element: the src lands only once the
   // image has decoded (the ready-gated swap in DrawingCanvas).
   await expect(page.locator('#coloringOverlay')).toHaveAttribute('src', /\.webp$/);
+}
+
+async function applyFarmPage(page: Page) {
+  await applyBookPage(page, 'Farm');
+}
+
+// A dense boustrophedon stroke that floods the whole drawing canvas, so a magic
+// reveal covers the entire picture (and its letterbox margins). Sized from the live
+// canvas box so it needs no hard-coded coordinates.
+async function floodCanvas(page: Page) {
+  const box = await page.locator('#drawingCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+  const pts: { x: number; y: number }[] = [];
+  const m = 20;
+  let leftToRight = true;
+  for (let y = m; y <= box.height - m; y += 22) {
+    pts.push({ x: leftToRight ? m : box.width - m, y });
+    pts.push({ x: leftToRight ? box.width - m : m, y });
+    leftToRight = !leftToRight;
+  }
+  await draw(page, pts);
 }
 
 // A device rotation with ink on the canvas must NOT swap the page's tall/wide
@@ -694,6 +717,30 @@ test('the magic brush reveals fills only, never the twin outlines (no double lin
     { x: 480, y: 360 },
   ]);
   await expect.poll(() => distinctOpaqueColors(page), { timeout: 4000 }).toBeGreaterThan(4);
+  expect(await revealedNearBlackFraction(page)).toBeLessThan(0.005);
+});
+
+// The Cat page above has tightly-registered outlines, so its reveal was already
+// black-free. The wide twins tell a harder story: several (Ant, Ladybug, Spider,
+// Duck) are lossy crops whose own black lines bloom a pixel or two FATTER than the
+// line art, so an exact-width outline punch leaves a dark rim of the twin's line
+// beside the crisp overlay line — the ghosting the user reported on Nature → Ant.
+// The mask is dilated (OUTLINE_MASK_DILATION) to swallow that rim. This floods the
+// Spider page — same wide-twin bloom, but its fills are almost all light (no large
+// black regions like the Ant's eyes), so a whole-canvas reveal isolates the rim:
+// near-black here IS the ghosting. Before the dilation the flood painted ~0.9%
+// near-black; after it the reveal is essentially black-free. The Cat guard, on a
+// clean twin, never exercised this.
+test('the magic brush reveals fills only on wide twins whose lines bloom (Spider page)', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await applyBookPage(page, 'Nature', 5); // Spider — a wide twin whose lines bloom
+  await page.locator('#magicBrushButton').click();
+
+  await floodCanvas(page);
+  await expect.poll(() => distinctOpaqueColors(page), { timeout: 6000 }).toBeGreaterThan(4);
   expect(await revealedNearBlackFraction(page)).toBeLessThan(0.005);
 });
 

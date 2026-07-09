@@ -33,6 +33,17 @@ export const MAGIC_GRADIENT_COUNT = 10;
 // a navy sky) that sit away from the outline.
 const OUTLINE_LUMA_THRESHOLD = 150;
 
+// Grow the outline mask this many pixels before punching. The twin is a lossy
+// image whose own black lines bloom a pixel or two FATTER than this clean line-art
+// mask, so a mask at the exact line width leaves a thin dark rim of the twin's line
+// sitting just outside the crisp overlay line — the "ghosting" (a faint doubled
+// line) this whole fills-only reveal exists to kill. The `.color.webp` twins vary:
+// the tall crops register tightly, but several wide crops (ant, ladybug, spider,
+// duck) carry a rim the exact-width punch leaves behind. Dilating the mask a couple
+// of pixels swallows that rim. The overlay redraws the line on top anyway, so
+// widening the punch only eats fill that lives under the overlay's own line work.
+const OUTLINE_MASK_DILATION = 2;
+
 interface GradientStop {
   offset: number;
   color: string;
@@ -306,6 +317,47 @@ export function sheetPatternFor(target: CanvasRenderingContext2D): CanvasPattern
   return pattern;
 }
 
+// Grow a binary mask (1 = set) outward by `r` pixels — a separable box dilation
+// (a horizontal max pass then a vertical one), so an isolated pixel becomes a
+// (2r+1)² block. Used to widen the outline punch past the lossy twin's line bloom
+// (OUTLINE_MASK_DILATION). Pure and allocation-light; runs once per applied page,
+// off the draw and resize paths. Exported for unit testing.
+export function dilateMask(src: Uint8Array, w: number, h: number, r: number): Uint8Array {
+  if (r <= 0) return src;
+  const tmp = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      const lo = Math.max(0, x - r);
+      const hi = Math.min(w - 1, x + r);
+      let v = 0;
+      for (let nx = lo; nx <= hi; nx++) {
+        if (src[row + nx]) {
+          v = 1;
+          break;
+        }
+      }
+      tmp[row + x] = v;
+    }
+  }
+  const out = new Uint8Array(w * h);
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) {
+      const lo = Math.max(0, y - r);
+      const hi = Math.min(h - 1, y + r);
+      let v = 0;
+      for (let ny = lo; ny <= hi; ny++) {
+        if (tmp[ny * w + x]) {
+          v = 1;
+          break;
+        }
+      }
+      out[y * w + x] = v;
+    }
+  }
+  return out;
+}
+
 // Build the fills-only twin: punch the twin's own outlines out using the source
 // line art as a mask, so the magic reveal carries flat fills and the overlay <img>
 // stays the single source of line work (no doubled/ghosted lines). One readback of
@@ -327,7 +379,8 @@ function buildFillsSheet() {
   fctx.drawImage(twinImage, 0, 0, w, h);
 
   // Turn the line art's dark (outline) pixels into an opaque alpha mask — light
-  // fill/background pixels transparent — scaled to the twin's resolution.
+  // fill/background pixels transparent — scaled to the twin's resolution, then
+  // dilated so the punch clears the twin's fatter line bloom (OUTLINE_MASK_DILATION).
   const mask = document.createElement('canvas');
   mask.width = w;
   mask.height = h;
@@ -336,9 +389,14 @@ function buildFillsSheet() {
   mctx.drawImage(lineArtImage, 0, 0, w, h);
   const px = mctx.getImageData(0, 0, w, h);
   const d = px.data;
-  for (let i = 0; i < d.length; i += 4) {
+  const outline = new Uint8Array(w * h);
+  for (let p = 0, i = 0; p < w * h; p++, i += 4) {
     const luma = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-    d[i + 3] = luma < OUTLINE_LUMA_THRESHOLD ? 255 : 0;
+    outline[p] = luma < OUTLINE_LUMA_THRESHOLD ? 1 : 0;
+  }
+  const punch = dilateMask(outline, w, h, OUTLINE_MASK_DILATION);
+  for (let p = 0, i = 0; p < w * h; p++, i += 4) {
+    d[i + 3] = punch[p] ? 255 : 0;
   }
   mctx.putImageData(px, 0, 0);
 
