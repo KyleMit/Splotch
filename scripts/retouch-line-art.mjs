@@ -1,9 +1,11 @@
 // Retouch a coloring-page's BASE LINE ART with Gemini image editing, for a
 // "particularly hard section" that the color generators can't rescue downstream.
-// The motivating case (ADR-0052 / night twins): eyes drawn as SOLID-BLACK filled
-// ovals invert to solid white in dark mode, so they blow out no matter how the
-// twin is colored — the fix has to change the line art itself (open the eyes into
-// outlined coloring-book eyes so a twin can fill a dark pupil that survives).
+// The motivating case (ADR-0052 / night twins): in dark mode the line art is
+// inverted and the eye's pupil is punched out of the reveal, so the eye is drawn
+// by the outline, not the twin — a badly-shaped eye blows out (white blob) or
+// sockets (dark hole) no matter how it's colored. The fix is to normalize the eye
+// in the LINE ART to the canonical form that inverts cleanly: a solid pupil + one
+// clear glare + no iris (invert maps pupil→white eyeball, glare→pupil).
 //
 // Writes candidates to the gitignored .coloring-samples-dark/retouch/ for review;
 // it does NOT touch shipped assets. Once a retouched line art is approved, copy it

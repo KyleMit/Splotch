@@ -164,11 +164,12 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning \
   scripts/retouch-line-art.mjs creatures/mermaid-tall creatures/mermaid-wide --samples 2
 ```
 
-The default instruction opens solid-black eyes into outlined coloring-book eyes; pass
-`--instruction "..."` for anything else. **Call it out** — you are changing a shipped
-coloring page. Then regenerate the WHOLE related suite from the new outline and re-review
-in the contact sheet's Combined view in **both** light and dark (the eye lesson applies
-to light mode too):
+The default instruction normalizes eyes to the canonical **solid pupil + one clear
+glare, no iris** (enlarging a too-small glare) — the form that inverts to a clean eye in
+dark mode; pass `--instruction "..."` for a different hard section. **Call it out** — you
+are changing a shipped coloring page. Then regenerate the WHOLE related suite from the new
+outline and re-review in the contact sheet's Combined view in **both** light and dark (the
+eye lesson applies to light mode too):
 
 1. Copy the chosen candidate over `web/static/coloring/<cat>/<page>-<orient>.webp`.
 2. `node scripts/gen-coloring-thumbs.mjs <cat>` (picker thumbnail).
@@ -178,8 +179,11 @@ to light mode too):
 5. Rebuild the gallery `--source shipped`, verify eyes read well in Combined light AND
    dark, then `npm run check:assets && npm run check && npm run test:unit` and commit.
 
-(Fixed Creatures' mermaid tall+wide: solid-black eyes → open outlined eyes, whole
-light+dark+thumb suite regenerated.)
+(Fixed Creatures' mermaid tall+wide: the original solid-black eyes had a pin-dot glare
+→ blank white blobs in dark mode; opening them into an outlined iris then over-corrected
+to a dark socket. The fix that stuck was the canonical form — solid pupil + one enlarged
+glare, no iris — with the whole light+dark+thumb suite regenerated and verified in
+Combined light and dark.)
 3. **Iterate**: regenerate any that look off (higher `-t`, or a prompt tweak). Kids'
    faces and the night background are the usual issues. For a page the `⚠ dark
    outlines` gate flags, the reliable fix is **more attempts against a stricter gate**
