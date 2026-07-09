@@ -1,8 +1,12 @@
 # Fix Audits
 
-Work through **every** item in `docs/AUDIT.md` autonomously on a dedicated branch with a
-draft PR — one commit + one PR comment per item — without stopping to ask the user
-anything. Review happens on the PR.
+Work through **every** item in `docs/AUDIT.md` autonomously on a dedicated branch — one
+commit per item — without stopping to ask the user anything **mid-run**. The one exception
+is a single upfront question: whether to open a pull request. Some environments (Claude
+Code on the web / cloud sessions) can't silently open a PR — the harness only permits it
+when the user has explicitly asked, and `gh` may be unavailable — so resolve that **once,
+before any work**, then run the whole sweep without further prompts (see Setup). Review
+happens on the PR when there is one; otherwise in the final summary.
 
 ## Two kinds of finding — adapt the loop to each
 
@@ -34,10 +38,27 @@ The two classes can coexist in one sweep; decide per item, not per run.
    don't create a branch or PR.
 2. Ensure the working tree is clean; if not, stop and tell the user — never mix their
    uncommitted work into this run.
-3. If an open draft PR from a previous run exists (branch `claude/audit-sweep-*`), check
-   out that branch and resume. Otherwise, from `main`, create `claude/audit-sweep-<YYYY-MM-DD>`,
-   push it, and open a **draft PR** with `gh pr create --draft` titled "Audit sweep: <date>" and
-   a body noting the run is in progress (final summary comes at the end).
+3. **Resolve the PR question once, upfront — then never ask again.** This is the single
+   thing the run is allowed to pause on, and it comes *before* any fixing. Ask with
+   `AskUserQuestion` whether to open a pull request for the sweep, offering two modes:
+   - **Draft PR** — review happens on the PR; a per-item comment lands as each fix commits,
+     and the PR is readied at the end.
+   - **Branch only** — commit + push to the branch, deliver the full per-item summary in the
+     final response, open no PR.
+
+   If the environment can open a PR without an explicit ask (e.g. `gh` present and no
+   harness restriction), skip the question and default to **Draft PR**. Record the chosen
+   mode; every PR-touching step below (`gh pr comment`, `gh pr edit`, `gh pr ready`) runs
+   only in Draft-PR mode and is replaced by "carry it into the final summary" in Branch-only
+   mode.
+4. Set up the branch, and in **Draft-PR mode** the PR. If an open draft PR from a previous
+   run exists (branch `claude/audit-sweep-*`), check out that branch and resume. Otherwise,
+   from `main`, create `claude/audit-sweep-<YYYY-MM-DD>` (or reuse the session's designated
+   working branch if one is set), and push it with `git push -u origin <branch>`. Then, **in
+   Draft-PR mode only**, open a **draft PR** titled "Audit sweep: <date>" with a body noting
+   the run is in progress (final summary comes at the end). Create it with `gh pr create
+   --draft` where `gh` is available, otherwise the GitHub MCP `create_pull_request` tool with
+   `draft: true`.
 
 ## Per-item loop
 
@@ -112,14 +133,18 @@ Process items **top to bottom** (they're ordered by impact). For each item:
      sections intact; delete the `## Source:` section once its last finding is gone).
    - Commit the fix **and** the `docs/AUDIT.md` edit together as one commit with a descriptive
      message, then push.
-   - Post a PR comment (`gh pr comment`) containing: the item title, the commit SHA, the
-     subagent's summary, test/check results, and any caveats worth a reviewer's attention.
+   - Record — the item title, the commit SHA, the subagent's summary, test/check results, and
+     any caveats worth a reviewer's attention. **In Draft-PR mode**, post it as a PR comment
+     (`gh pr comment`, or the GitHub MCP `add_issue_comment` tool on the PR number). **In
+     Branch-only mode**, accumulate it for the final response instead.
 3. **On Skip:**
    - Confirm the working tree is clean again (revert it yourself if the subagent didn't).
    - Edit the finding in place in `docs/AUDIT.md`: add a
      `**⏸ Pending decision:** <what the user must decide, and why the sweep couldn't proceed>`
      line right under its `###` header (above `#### Problem`). Commit that edit and push.
-   - Post a PR comment flagging the skipped item and the pending decision.
+   - Flag the skipped item and its pending decision — as a PR comment in Draft-PR mode
+     (`gh pr comment`, or the GitHub MCP `add_issue_comment` tool), or in the final summary
+     in Branch-only mode.
 4. Move to the next item. Do not stop between items, do not ask the user anything mid-run —
    a decision point is handled by step 3, not by pausing.
 
@@ -141,11 +166,15 @@ When every item is either fixed or marked pending:
 2. If **no items remain**, delete `docs/AUDIT.md` and commit. If pending items remain, leave
    the file containing only the header and the pending items.
 3. Add one row to `docs/AUDIT-LOG.md` for this run per `.claude/audit-conventions.md` §2
-   (date · `fix-audits` · one-line summary with the PR link), committed and pushed with the
-   completion changes.
-4. Update the PR description (`gh pr edit --body`): a one-line summary per change (linking each
-   commit), plus — if any — a **"Needs your decision"** section listing each remaining item and
-   its pending decision.
-5. Mark the PR ready for review: `gh pr ready`.
+   (date · `fix-audits` · one-line summary with the PR link, or the branch name in
+   Branch-only mode), committed and pushed with the completion changes.
+4. **In Draft-PR mode**, update the PR description (`gh pr edit --body`, or the GitHub MCP
+   `update_pull_request` tool's `body`): a one-line summary per change (linking each commit),
+   plus — if any — a **"Needs your decision"** section listing each remaining item and its
+   pending decision. **In Branch-only mode** there is no PR description — this content goes in
+   the final response instead.
+5. **In Draft-PR mode**, mark the PR ready for review (`gh pr ready`, or the GitHub MCP
+   `update_pull_request` tool with `draft: false`). Branch-only mode has no PR to ready.
 6. In your final response: how many items were fixed, how many are pending decisions (and what
-   those decisions are), and the PR URL.
+   those decisions are), and — in Draft-PR mode — the PR URL, or in Branch-only mode the branch
+   name plus the per-item summaries accumulated above.
