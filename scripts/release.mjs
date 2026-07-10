@@ -1,6 +1,6 @@
 // Cuts a release from releases/<version>.md (which must already exist — the
 // /release slash command writes it). This is the deterministic, scriptable half
-// of the workflow; the AI-drafting + review half lives in .claude/commands/release.md.
+// of the workflow; the AI-drafting + review half lives in .claude/skills/release/SKILL.md.
 //
 //   node scripts/release.mjs 1.2.0              full: bump, generate, commit, tag, push, GitHub release
 //   node scripts/release.mjs 1.2.0 --no-publish bump, generate, commit, tag locally — no push, no gh

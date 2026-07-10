@@ -1,3 +1,8 @@
+---
+name: session-audit
+description: Retrospective on the current session that files durable, recurring friction (finding, understanding, running, or changing code) as audit findings in docs/AUDIT.md so the repo's Claude tooling gets sharper over time. Use near the end of a working session, before /clear, or when asked to reflect on session friction.
+---
+
 # Session Audit
 
 Reflect on the session I just had — the friction I hit finding, understanding, running, or changing code — and file the durable, recurring problems as audit findings, so the repo's Claude tooling (skills, rules, CLAUDE.md, ADRs) gets sharper over time.
@@ -57,7 +62,7 @@ Learned from prior runs:
 ## Shared audit conventions
 
 This is an audit skill. Follow the shared conventions in
-[`.claude/audit-conventions.md`](../audit-conventions.md):
+[`.claude/audit-conventions.md`](../../audit-conventions.md):
 
 - **Merge into `docs/AUDIT.md`, don't overwrite** (§1) — the finding format and the file
   header live there; enrich existing items, add new ones, drop items whose fix has landed.

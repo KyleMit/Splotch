@@ -1,3 +1,8 @@
+---
+name: extract-audit
+description: Scan the codebase for inline code blocks worth extracting into standalone, named, testable functions, and file them as findings in docs/AUDIT.md. Use when asked to find extraction/refactor-into-function candidates or to improve readability by naming inline logic.
+---
+
 # Extract Audit
 
 Scan the codebase for inline code blocks that are strong candidates for extraction into standalone, named functions.
@@ -34,7 +39,7 @@ After writing, print a one-paragraph summary of the patterns you found most ofte
 ## Shared audit conventions
 
 This is an audit skill. Follow the shared conventions in
-[`.claude/audit-conventions.md`](../audit-conventions.md):
+[`.claude/audit-conventions.md`](../../audit-conventions.md):
 
 - **Merge into `docs/AUDIT.md`, don't overwrite** (§1) — the file header lives there;
   enrich existing items, add new ones, drop fixed ones.

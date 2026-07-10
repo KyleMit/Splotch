@@ -1,3 +1,8 @@
+---
+name: code-audit
+description: Comprehensive repository pass that produces a prioritized list of performance, readability, maintainability, and architecture improvements in docs/AUDIT.md. Use when asked to audit the codebase, hunt for improvement opportunities, or do a broad code-quality sweep across the repo.
+---
+
 # Code Audit
 
 Do a comprehensive pass of the repository and produce a prioritized list of improvements in `docs/AUDIT.md`.
@@ -42,7 +47,7 @@ Learned from prior runs:
 ## Shared audit conventions
 
 This is an audit skill. Follow the shared conventions in
-[`.claude/audit-conventions.md`](../audit-conventions.md):
+[`.claude/audit-conventions.md`](../../audit-conventions.md):
 
 - **Merge into `docs/AUDIT.md`, don't overwrite** (§1) — the item format and the file
   header live there; enrich existing items, add new ones, drop fixed ones.

@@ -1,3 +1,8 @@
+---
+name: create-adr
+description: Document a new architectural decision as an ADR in docs/adrs/. Use when a significant decision was just made or confirmed — one that chose an approach over real alternatives, has non-obvious consequences, or encodes a constraint a future contributor would want to understand.
+---
+
 # Create ADR
 
 Document a new architectural decision as an ADR in `docs/adrs/`.

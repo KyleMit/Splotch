@@ -132,4 +132,4 @@ Set `PUBLIC_ENABLE_DEV_HARNESS=true` in `.env.local` to unlock:
 
 ## Release process
 
-See the `/release` slash command in `.claude/commands/release.md`. The short version: `npm run release` bumps the version, tags, and pushes; the `android-deploy.yml` CI workflow fires on the tag.
+See the `/release` slash command in `.claude/skills/release/SKILL.md`. The short version: `npm run release` bumps the version, tags, and pushes; the `android-deploy.yml` CI workflow fires on the tag.
