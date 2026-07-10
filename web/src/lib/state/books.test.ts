@@ -13,7 +13,7 @@ describe('thumbPath', () => {
 describe('bookAssetPaths', () => {
   const farm = BOOKS.find((book) => book.id === 'farm')!;
 
-  it('lists the cover, both orientations of every page, and the colored twins', () => {
+  it('lists the cover, both orientations of every page, and the colored fills', () => {
     const paths = bookAssetPaths(farm);
     expect(paths).toContain(farm.cover);
     for (const page of farm.pages) {
@@ -24,7 +24,7 @@ describe('bookAssetPaths', () => {
     }
   });
 
-  it('gives every picker-facing line-art image a thumbnail twin', () => {
+  it('gives every picker-facing line-art image a thumbnail sibling', () => {
     const paths = bookAssetPaths(farm);
     const lineArt = [
       farm.cover,
@@ -35,9 +35,9 @@ describe('bookAssetPaths', () => {
     }
   });
 
-  it('does not thumbnail the colored twins (they never appear in the grid)', () => {
+  it('does not thumbnail the colored fills (they never appear in the grid)', () => {
     const paths = bookAssetPaths(farm);
-    // thumbPath derives only from `.outline.webp` line art — a twin path is a no-op.
+    // thumbPath derives only from `.outline.webp` line art — a fill path is a no-op.
     for (const page of farm.pages) {
       expect(thumbPath(pageColorImage(page, 'portrait'))).toBe(pageColorImage(page, 'portrait'));
     }

@@ -1,32 +1,32 @@
-// Audit every committed RAW colored twin (`twin-src/**/*.light.raw.webp`) for
+// Audit every committed RAW colored fill (`fill-src/**/*.light.raw.webp`) for
 // outline drift against its source line art, using the SAME scoring the generation
 // gate applies (lib/outline-match.mjs). It scores the raws — not the shipped
-// `*.light.webp` — because shipping punches the twin's own outlines out
-// (punch-twin-outlines.mjs), leaving nothing for outlineMatch to register; the raw
-// keeps the lines, and the shipped twin is a pure derivation of it, so a clean raw
+// `*.light.webp` — because shipping punches the fill's own outlines out
+// (punch-fill-outlines.mjs), leaving nothing for outlineMatch to register; the raw
+// keeps the lines, and the shipped fill is a pure derivation of it, so a clean raw
 // means a clean reveal. It exists because the gate only ran at generation time and
-// only on a global average: twins generated before the worst-tile gate — most
+// only on a global average: fills generated before the worst-tile gate — most
 // notably nature/ant-wide — shipped with a badly drifted region (a flower) that the
 // child sees under the magic brush, while the global score stayed above the bar.
 //
-// This flags those already-committed twins so they can be regenerated
+// This flags those already-committed fills so they can be regenerated
 // (`npm run gen:coloring-fills -- <page>`), and re-run afterwards to confirm the
 // fix. It reads committed assets only — no network, no GEMINI_API_KEY — so it's
 // safe to run anytime.
 //
-//   npm run gen:coloring-fills:audit                 audit every twin
+//   npm run gen:coloring-fills:audit                 audit every fill
 //   npm run gen:coloring-fills:audit -- nature farm  only these categories
 //   npm run gen:coloring-fills:audit -- nature/ant-wide
 //   npm run gen:coloring-fills:audit -- --overlay    also write drift overlays
 //
-// Exits non-zero if any twin fails, so it doubles as a check.
+// Exits non-zero if any fill fails, so it doubles as a check.
 import { parseArgs } from 'node:util';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
-import { REPO_ROOT, COLORING_DIR, TWIN_SRC_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
 
 const { values, positionals } = parseArgs({
@@ -62,9 +62,9 @@ if (values.overlay) await mkdir(overlayDir, { recursive: true });
 const rows = [];
 for (const page of pages) {
   const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
-  const twin = join(TWIN_SRC_DIR, `${rel}.light.raw.webp`);
-  if (!existsSync(twin)) continue; // no twin generated for this page yet
-  const [source, filled] = await Promise.all([readFile(page), readFile(twin)]);
+  const fill = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
+  if (!existsSync(fill)) continue; // no fill generated for this page yet
+  const [source, filled] = await Promise.all([readFile(page), readFile(fill)]);
   const { keep, localKeep, worstTile, overlay } = await outlineMatch(source, filled);
   const failed = keep < KEEP_THRESHOLD || localKeep < LOCAL_KEEP_THRESHOLD;
   rows.push({ rel, keep, localKeep, worstTile, failed });
@@ -74,7 +74,7 @@ for (const page of pages) {
   }
 }
 
-if (!rows.length) fail('No colored twins found for the given pages.');
+if (!rows.length) fail('No colored fills found for the given pages.');
 
 // Worst first, so drift is at the top.
 rows.sort((a, b) => a.localKeep - b.localKeep);
@@ -88,7 +88,7 @@ for (const r of rows) {
 
 const bad = rows.filter((r) => r.failed);
 console.log(
-  `\n${rows.length} twin(s) audited · ${bad.length} flagged` +
+  `\n${rows.length} fill(s) audited · ${bad.length} flagged` +
     ` (keep < ${pct(KEEP_THRESHOLD).trim()} or worst tile < ${pct(LOCAL_KEEP_THRESHOLD).trim()}).`
 );
 if (values.overlay && bad.length) {

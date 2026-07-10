@@ -1,7 +1,7 @@
 # asset-gen — Splotch asset-generation pipeline
 
 The AI (`@google/genai`) and image-processing (`sharp`) tooling that **produces**
-Splotch's committed art: AI style covers, the light/dark coloring-page twins,
+Splotch's committed art: AI style covers, the light/dark coloring-page fills,
 picker thumbnails, and format/line-art utilities. It lives in its own folder so
 you can iterate on it in a small footprint — the app never runs any of this at
 build time; it just reads the committed outputs from `web/static/`.
@@ -18,21 +18,21 @@ into the root `node_modules`, so there is nothing to install in this folder —
 **do not run `npm install` here.**
 
 Path/tree resolution is centralized in `lib/paths.mjs` (`REPO_ROOT`,
-`COLORING_DIR`, `STYLES_DIR`, `TWIN_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`)
+`COLORING_DIR`, `STYLES_DIR`, `FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`)
 so the scripts never hardcode `../../..` walks or reach back into `scripts/lib/`.
 
-### Raw twins vs shipped twins
+### Raw fills vs shipped fills
 
-`twin-src/{book}/{page}-{orient}.{light,night}.raw.webp` (committed, in this
-folder, never shipped) holds the colored twins **with their outlines intact** —
+`fill-src/{book}/{page}-{orient}.{light,night}.raw.webp` (committed, in this
+folder, never shipped) holds the colored fills **with their outlines intact** —
 the raw model output. The shipped `web/static/coloring/**/*.{light,night}.webp`
-are the fills-only **punch** of those raws: `punch-twin-outlines.mjs` masks each
+are the fills-only **punch** of those raws: `punch-fill-outlines.mjs` masks each
 raw's own outline pixels out using the page's line art, because the app's overlay
-`<img>` already draws the line art on top and revealing the twin's copy would
+`<img>` already draws the line art on top and revealing the fill's copy would
 double every line (ADR-0043 "reveal fills only"). The punch is deterministic,
-offline `sharp` — no key, no network — so the shipped twins are always a pure,
+offline `sharp` — no key, no network — so the shipped fills are always a pure,
 reproducible derivation of the raws. Edit or regenerate a raw, then re-punch;
-never hand-edit a shipped twin.
+never hand-edit a shipped fill.
 
 ### The one coupling to the app
 
@@ -54,22 +54,22 @@ From the **repo root** (the discoverable entry points — ADR-0019):
 
 ```bash
 npm run gen:style-covers        # AI style thumbnails  -> web/static/styles/
-npm run gen:coloring-fills      # light colored twins  -> web/static/coloring/**/*.light.webp
-npm run gen:coloring-fills:audit # drift-check the raw twins in twin-src/ (no key/network)
-npm run gen:coloring-punch      # re-derive shipped fills-only twins from twin-src/ raws (no key/network)
+npm run gen:coloring-fills      # light colored fills  -> web/static/coloring/**/*.light.webp
+npm run gen:coloring-fills:audit # drift-check the raw fills in fill-src/ (no key/network)
+npm run gen:coloring-punch      # re-punch the shipped fills from fill-src/ raws (no key/network)
 npm run gen:coloring-thumbs     # picker thumbnails     -> web/static/coloring/**/*.thumb.webp
 npm run gen:contact-sheet -- nature # HTML contact sheet of ONE category (gitignored) — publish as an Artifact
 ```
 
 **Whenever you touch an asset — generate, retouch, regenerate, or ship a
-twin — rebuild the contact sheet for the affected page/category and publish it
+fill — rebuild the contact sheet for the affected page/category and publish it
 with the Artifact tool** so the change is visible in the session (see "Viewing a
 review sheet" below).
 
-### Twin outline drift & the audit
+### Fill outline drift & the audit
 
-A colored twin must register on its line art pixel-for-pixel — the magic brush
-(ADR-0043) reveals the twin's fills under the overlay's lines, so a drifted region
+A colored fill must register on its line art pixel-for-pixel — the magic brush
+(ADR-0043) reveals the fill's fills under the overlay's lines, so a drifted region
 shows the wrong colour outside the lines. `gen-coloring-fills` scores every
 candidate two ways (`lib/outline-match.mjs`): global outline coverage (`keep`) and
 the **worst grid tile** (`localKeep`). The local bar is the important one — a large
@@ -78,12 +78,12 @@ at 34%, which is exactly how `nature/ant-wide` shipped drifted. `alignToSource`
 only corrects a single global nudge, so a self-drifted feature can't be aligned
 away; a failing candidate is retried, and if none pass, regenerate.
 
-`gen:coloring-fills:audit` runs the same scoring over the **committed raw twins**
-in `twin-src/` (it reads committed assets only — no key, no network) and prints
+`gen:coloring-fills:audit` runs the same scoring over the **committed raw fills**
+in `fill-src/` (it reads committed assets only — no key, no network) and prints
 the pages that fail, with a ready-to-run regenerate command. It scores the raws
-rather than the shipped twins because the shipped ones are punched fills-only
+rather than the shipped fills because the shipped ones are punched fills-only
 (no outlines left to register); a clean raw guarantees a clean punch. `--overlay`
-dumps a drift map per failing page (red = source outline the twin left uncovered)
+dumps a drift map per failing page (red = source outline the fill left uncovered)
 to `.coloring-samples/drift/`.
 
 Or, from **inside this folder**, the local aliases (same flags, resolve the same
@@ -106,14 +106,14 @@ API cost).
 - **Inputs** (committed): `web/static/styles/source.svg`, the black-and-white
   `web/static/coloring/**/*-{tall,wide}.outline.webp` line-art pages.
 - **Shipped outputs** (committed, read by the app): `*.light.webp` / `*.night.webp`
-  twins, `*.thumb.webp` thumbnails, `web/static/styles/*.webp` covers.
+  fills, `*.thumb.webp` thumbnails, `web/static/styles/*.webp` covers.
 - **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/`.
 
 Generate → review the scratch → copy the good outputs into `web/static/` → commit.
 
 ### Viewing the contact sheet
 
-The contact sheet is the **single review surface** for the coloring twins —
+The contact sheet is the **single review surface** for the coloring fills —
 self-contained HTML (images inlined as base64 data URIs), built to render
 anywhere. Full reference — CLI, the side-by-side light/night layout, the three
 views, the outline-% badge, size constraints — lives in
@@ -122,20 +122,20 @@ views, the outline-% badge, size constraints — lives in
 
 - **Rebuild the sheet every time you touch an asset**, then **publish it with
   the Artifact tool** instead of hand-rolling a headless screenshot — same steps
-  as the night-twins runbook
-  ([`night-twins.md`](./night-twins.md#per-category-workflow)). Show the URL.
+  as the night-fills runbook
+  ([`night-fills.md`](./night-fills.md#per-category-workflow)). Show the URL.
 - **One category per sheet** (`gen:contact-sheet -- nature`); `all` is rejected
   because a whole-catalog sheet exceeds the Artifact tool's 16 MB upload cap.
   For a catalog-wide review, build and publish one sheet per category. The
   default `--source shipped` reads only committed assets, so any session
   rebuilds the identical sheet in seconds with no key or network;
-  `--source samples` reviews fresh, uncommitted night-twin takes from
+  `--source samples` reviews fresh, uncommitted night-fill takes from
   `.coloring-samples-dark/` — the human gate before committing.
 - For a **focused** pass, target a page or cell within the category
   (`nature/ant`, `nature/ant-wide`).
-- Every page shows its light and night twins **side by side**, each with an
+- Every page shows its light and night fills **side by side**, each with an
   Outline / Color / Combined toggle (default Combined — judge there), and the
-  light tile carries the outline-keep % badge scored from the `twin-src/` raw.
+  light tile carries the outline-keep % badge scored from the `fill-src/` raw.
 - If a raw PNG is genuinely needed, **don't launch Chromium directly** — the cloud
   env's Chromium revision drifts from Playwright's pin. Reuse `run-splotch`'s
   `chromiumExecutablePath()` fallback or set `PLAYWRIGHT_CHROMIUM`
@@ -143,7 +143,7 @@ views, the outline-% badge, size constraints — lives in
 
 ## Runbooks
 
-- **Dark-mode night twins** (generate → review → ship → wire): [`night-twins.md`](./night-twins.md).
+- **Dark-mode night fills** (generate → review → ship → wire): [`night-fills.md`](./night-fills.md).
 - **AI art prompts** for authoring new source drawings / icons: `docs/PROMPTS.md`.
 
 ## Not here

@@ -8,15 +8,15 @@
 //   static/coloring/{book}/{page}-tall.outline.webp   portrait line art, 2:3
 //   static/coloring/{book}/{page}-wide.outline.webp   landscape line art, 3:2
 //   static/coloring/{book}/{name}.thumb.webp          grid thumbnail of the line art
-//   static/coloring/{book}/{page}-tall.light.webp     portrait colored twin
-//   static/coloring/{book}/{page}-wide.light.webp     landscape colored twin
-//   static/coloring/{book}/{page}-tall.night.webp     portrait night twin (dark mode)
-//   static/coloring/{book}/{page}-wide.night.webp     landscape night twin (dark mode)
+//   static/coloring/{book}/{page}-tall.light.webp     portrait colored fill
+//   static/coloring/{book}/{page}-wide.light.webp     landscape colored fill
+//   static/coloring/{book}/{page}-tall.night.webp     portrait night fill (dark mode)
+//   static/coloring/{book}/{page}-wide.night.webp     landscape night fill (dark mode)
 //
-// Each picker-facing line-art image (cover + pages) has a `.thumb.webp` twin
+// Each picker-facing line-art image (cover + pages) has a `.thumb.webp` sibling
 // (tools/asset-gen/gen-coloring-thumbs.mjs): the picker grid shows the thumbnail, the
 // full-screen canvas overlay uses the full-res source. `thumbPath()` maps one to
-// the other. The colored `.light.webp` twin is a flat-colored, pixel-aligned
+// the other. The colored `.light.webp` fill is a flat-colored, pixel-aligned
 // version of the line-art page (tools/asset-gen/gen-coloring-fills.mjs) that the magic
 // brush reveals where the child paints (ADR-0043); it never appears in the grid,
 // so it has no thumbnail. `bookAssetPaths()` lists them all so check-assets
@@ -37,11 +37,11 @@ export interface ColoringPage {
   id: string;
   name: string;
   images: Record<BookOrientation, string>;
-  /** Flat-colored twin per orientation, revealed by the magic brush (ADR-0043). */
+  /** Flat-colored fill per orientation, revealed by the magic brush (ADR-0043). */
   colorImages: Record<BookOrientation, string>;
-  /** Pre-colored "night" twin per orientation — the dark-mode magic-brush reveal
+  /** Pre-colored "night" fill per orientation — the dark-mode magic-brush reveal
       (ADR-0052 direction B). Only present for orientations whose night asset has
-      been generated; dark mode falls back to the light twin where it's absent. */
+      been generated; dark mode falls back to the light fill where it's absent. */
   nightImages: Partial<Record<BookOrientation, string>>;
 }
 
@@ -55,7 +55,7 @@ export interface Book {
 
 export const PLATFORMS = { WEB: 'web', MOBILE: 'mobile' } as const;
 
-// `night` lists the orientations that have a generated `.night.webp` twin (empty
+// `night` lists the orientations that have a generated `.night.webp` fill (empty
 // until a category is processed; portrait/landscape naming mirrors tall/wide).
 function page(book: string, id: string, name: string, night: BookOrientation[] = []): ColoringPage {
   const nightImages: Partial<Record<BookOrientation, string>> = {};
@@ -84,7 +84,7 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/farm/cover.outline.webp',
     pages: [
-      // Night twins shipped for both orientations (ADR-0052).
+      // Night fills shipped for both orientations (ADR-0052).
       page('farm', 'cat', 'Cat', ['portrait', 'landscape']),
       page('farm', 'cow', 'Cow', ['portrait', 'landscape']),
       page('farm', 'dog', 'Dog', ['portrait', 'landscape']),
@@ -99,7 +99,7 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/dinosaur/cover.outline.webp',
     pages: [
-      // Night twins shipped for both orientations (ADR-0052).
+      // Night fills shipped for both orientations (ADR-0052).
       page('dinosaur', 'brachiosaurus', 'Brachiosaurus', ['portrait', 'landscape']),
       page('dinosaur', 'pterodactyl', 'Pterodactyl', ['portrait', 'landscape']),
       page('dinosaur', 'stegosaurus', 'Stegosaurus', ['portrait', 'landscape']),
@@ -114,7 +114,7 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/creatures/cover.outline.webp',
     pages: [
-      // Night twins shipped for both orientations (ADR-0052).
+      // Night fills shipped for both orientations (ADR-0052).
       page('creatures', 'dragon', 'Dragon', ['portrait', 'landscape']),
       page('creatures', 'fairy', 'Fairy', ['portrait', 'landscape']),
       page('creatures', 'mermaid', 'Mermaid', ['portrait', 'landscape']),
@@ -129,7 +129,7 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/nature/cover.outline.webp',
     pages: [
-      // Night twins shipped for both orientations (ADR-0052).
+      // Night fills shipped for both orientations (ADR-0052).
       page('nature', 'ant', 'Ant', ['portrait', 'landscape']),
       page('nature', 'bee', 'Bee', ['portrait', 'landscape']),
       page('nature', 'caterpillar', 'Caterpillar', ['portrait', 'landscape']),
@@ -170,7 +170,7 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/space/cover.outline.webp',
     pages: [
-      // Night twins shipped for both orientations (ADR-0052).
+      // Night fills shipped for both orientations (ADR-0052).
       page('space', 'astronaut', 'Astronaut', ['portrait', 'landscape']),
       page('space', 'meteor', 'Meteor', ['portrait', 'landscape']),
       page('space', 'moon', 'Moon', ['portrait', 'landscape']),
@@ -208,7 +208,7 @@ export function pageColorImage(page: ColoringPage, orientation: BookOrientation)
   return page.colorImages[orientation];
 }
 
-/** Night twin path for the orientation, or null when none is generated yet. */
+/** Night fill path for the orientation, or null when none is generated yet. */
 export function pageNightImage(page: ColoringPage, orientation: BookOrientation): string | null {
   return page.nightImages[orientation] ?? null;
 }
@@ -225,18 +225,18 @@ export function bookAssetPaths(book: Book): string[] {
     book.cover,
     ...book.pages.flatMap((page) => [page.images.portrait, page.images.landscape]),
   ];
-  // Colored twins are revealed by the magic brush, never shown in the grid, so
+  // Colored fills are revealed by the magic brush, never shown in the grid, so
   // they have no thumbnail.
-  const colorTwins = book.pages.flatMap((page) => [
+  const lightFills = book.pages.flatMap((page) => [
     page.colorImages.portrait,
     page.colorImages.landscape,
   ]);
-  // Night twins exist only for processed orientations (ADR-0052) — no thumbnail,
-  // same as the light twins.
-  const nightTwins = book.pages.flatMap((page) =>
+  // Night fills exist only for processed orientations (ADR-0052) — no thumbnail,
+  // same as the light fills.
+  const nightFills = book.pages.flatMap((page) =>
     (['portrait', 'landscape'] as BookOrientation[])
       .map((o) => page.nightImages[o])
       .filter((p): p is string => !!p)
   );
-  return [...lineArt, ...colorTwins, ...nightTwins, ...lineArt.map(thumbPath)];
+  return [...lineArt, ...lightFills, ...nightFills, ...lineArt.map(thumbPath)];
 }

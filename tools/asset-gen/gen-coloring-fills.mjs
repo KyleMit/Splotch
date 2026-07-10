@@ -2,13 +2,13 @@
 // web/static/coloring/ by asking Gemini to color inside the existing lines.
 // The colored version keeps the page's exact black outlines and only fills the
 // white regions with solid flat color, so the magic brush can pair each page
-// with its colored twin and reveal the prefilled colors as a child paints.
+// with its colored fill and reveal the prefilled colors as a child paints.
 //
-// Shipping is two files per twin: the raw (lined) result is committed to
-// tools/asset-gen/twin-src/ as the source of truth — the drift audit scores it —
+// Shipping is two files per fill: the raw (lined) result is committed to
+// tools/asset-gen/fill-src/ as the source of truth — the drift audit scores it —
 // and its fills-only punch (outlines masked out with the line art, so the app's
 // overlay is the single source of line work) is what lands in web/static/coloring/
-// as the shipped .light.webp (lib/punch-twin.mjs; ADR-0043 "reveal fills only").
+// as the shipped .light.webp (lib/punch-fill.mjs; ADR-0043 "reveal fills only").
 //
 // Requires GEMINI_API_KEY. Run via npm so the .ts imports resolve:
 //   npm run gen:coloring-fills                                 all pages
@@ -28,7 +28,7 @@
 //      areas would look uncolored under the child's brush, so they're rejected.
 // A candidate that fails any gate is retried (temperature nudged up); the best
 // attempt is kept if none fully pass. (See lib/outline-match.mjs; the same scoring
-// backs `npm run gen:coloring-fills:audit`, which flags already-shipped twins.)
+// backs `npm run gen:coloring-fills:audit`, which flags already-shipped fills.)
 import { parseArgs } from 'node:util';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
@@ -36,16 +36,16 @@ import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { REPO_ROOT, COLORING_DIR, TWIN_SRC_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
-import { punchTwin } from './lib/punch-twin.mjs';
+import { punchFill } from './lib/punch-fill.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-2.5-flash-image';
 const WEBP_QUALITY = 90;
 
 // The single prompt used for every page — no per-page tailoring. It leans hard
-// on "do not touch the lines" because the whole point is a pixel-faithful twin.
+// on "do not touch the lines" because the whole point is a pixel-faithful fill.
 const FILL_PROMPT = `You are given a black-and-white coloring-book page for a toddler. Color it in neatly, exactly like a completed page in a coloring book.
 
 ABSOLUTE RULES — the colored image must line up perfectly on top of the original:
@@ -241,7 +241,7 @@ const sampleMode = samples > 1;
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // A candidate is only usable if it holds the original outline — globally AND in
-// every region — and leaves no big blank-white area. Below any bar the twin either
+// every region — and leaves no big blank-white area. Below any bar the fill either
 // drifted off its outline or reads as half-uncolored, so reject and retry.
 //
 // KEEP is the global coverage; LOCAL_KEEP gates the WORST tile (both imported from
@@ -280,7 +280,7 @@ async function renderClean(source, width, height, slot) {
       mimeType: 'image/webp',
       temperature,
     });
-    // Force the colored twin back to the source's exact pixel dimensions, then
+    // Force the colored fill back to the source's exact pixel dimensions, then
     // undo any few-pixel nudge so it registers 1:1 against the outline page.
     const resized = await sharp(bytes).resize(width, height, { fit: 'fill' }).png().toBuffer();
     const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
@@ -336,12 +336,12 @@ for (const page of pages) {
         await sharp(colored).toFile(out);
         await sharp(overlay).toFile(join(dir, `sample-${i + 1}.overlay.png`));
       } else {
-        // Ship = the raw (lined) twin into twin-src/ as the committed source of
-        // truth, then its fills-only punch into web/static (lib/punch-twin.mjs).
-        const rawOut = join(TWIN_SRC_DIR, `${rel}.light.raw.webp`);
+        // Ship = the raw (lined) fill into fill-src/ as the committed source of
+        // truth, then its fills-only punch into web/static (lib/punch-fill.mjs).
+        const rawOut = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
         await mkdir(dirname(rawOut), { recursive: true });
         await writeFile(rawOut, colored);
-        ({ out } = await punchTwin(rawOut));
+        ({ out } = await punchFill(rawOut));
       }
       console.log(`${score}${tries}${flag}  -> ${relative(REPO_ROOT, out)}`);
     } catch (err) {

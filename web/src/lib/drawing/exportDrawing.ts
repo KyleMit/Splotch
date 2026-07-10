@@ -129,7 +129,7 @@ export async function exportDrawing(
   // paper fill and the overlay treatment. Coloring pages follow the resolved
   // theme just like free-draw (ADR-0052 direction B): a dark-mode save is the
   // night version — dark paper, inverted white "chalk" line art screened on top,
-  // and the night-twin reveals already baked into the replayed strokes.
+  // and the night-fill reveals already baked into the replayed strokes.
   const theme = resolvedTheme();
 
   // Snapshot the strokes before any await: save-on-delete fire-and-forgets the

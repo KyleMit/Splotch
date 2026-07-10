@@ -1,4 +1,4 @@
-// Builds the coloring-twin contact sheet for ONE category. Read
+// Builds the coloring-fill contact sheet for ONE category. Read
 // ./contact-sheet.md before changing this file or anything under contact-sheet/
 // — it holds the CLI contract, the layer/compositing model, and the size
 // constraints that shape this generator.
@@ -13,7 +13,7 @@ import { outlineMatch } from './lib/outline-match.mjs';
 import {
   ASSET_GEN_DIR,
   COLORING_DIR,
-  TWIN_SRC_DIR,
+  FILL_SRC_DIR,
   SAMPLES_DIR,
   SAMPLES_DARK_DIR,
   fail,
@@ -50,15 +50,15 @@ const wantsCell = (id, orient) =>
 
 const OUT = values.out ?? join(SAMPLES_DIR, 'contact-sheet.html');
 
-// The night twin: the shipped .night.webp (default), or a fresh ungated take from
+// The night fill: the shipped .night.webp (default), or a fresh ungated take from
 // .coloring-samples-dark/ (--source samples — the human review gate before commit).
 function nightPath(id, orient) {
   return source === 'samples'
     ? join(SAMPLES_DARK_DIR, catId, `${id}-${orient}.webp`)
     : join(COLORING_DIR, catId, `${id}-${orient}.night.webp`);
 }
-// The black-on-white line art and the light colored twin always come from
-// web/static — light twins ship straight from the fills generator's punch.
+// The black-on-white line art and the light colored fill always come from
+// web/static — light fills ship straight from the fills generator's punch.
 const lineArtPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.outline.webp`);
 const lightPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.light.webp`);
 
@@ -67,13 +67,13 @@ function dataUri(p) {
   return `data:image/webp;base64,${readFileSync(p).toString('base64')}`;
 }
 
-// Outline-keep % for a cell, scored on the lined raw twin in twin-src/ (the
-// shipped twin is punched fills-only, leaving no outline to register — same
+// Outline-keep % for a cell, scored on the lined raw fill in fill-src/ (the
+// shipped fill is punched fills-only, leaving no outline to register — same
 // reason check-coloring-drift.mjs scores the raws). Night raws have WHITE
 // outlines, which the dark-ink mask in lib/outline-match.mjs can't read, so only
 // the light half carries the badge.
 async function lightKeep(id, orient) {
-  const raw = join(TWIN_SRC_DIR, catId, `${id}-${orient}.light.raw.webp`);
+  const raw = join(FILL_SRC_DIR, catId, `${id}-${orient}.light.raw.webp`);
   const src = lineArtPath(id, orient);
   if (!existsSync(raw) || !existsSync(src)) return null;
   const { keep } = await outlineMatch(readFileSync(src), readFileSync(raw));
@@ -119,12 +119,12 @@ ${css}</style>
       <span style="background:var(--c-yellow)"></span><span style="background:var(--c-green)"></span>
       <span style="background:var(--c-blue)"></span><span style="background:var(--c-purple)"></span>
     </div>
-    <h1>Coloring twins &mdash; ${book.name} <span class="accent">${source}</span></h1>
+    <h1>Coloring fills &mdash; ${book.name} <span class="accent">${source}</span></h1>
     <p class="lede">Every page <b>light</b> and <b>night</b> side by side, each page&rsquo;s wide row
     followed by its tall row.
-    <b>Combined</b> reproduces the real canvas &mdash; the fills-only twin under the themed
-    line art over the paper &mdash; so judge twins there; a blown-out eye only shows once the
-    layers merge. <b>outline %</b> is how much of the line art the light raw twin preserves.</p>
+    <b>Combined</b> reproduces the real canvas &mdash; the fills-only fill under the themed
+    line art over the paper &mdash; so judge fills there; a blown-out eye only shows once the
+    layers merge. <b>outline %</b> is how much of the line art the light raw fill preserves.</p>
   </header>
   <nav class="controls">
     <span class="seg-label">View</span>

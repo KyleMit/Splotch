@@ -1,4 +1,4 @@
-# ADR-0052: Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper, White "Chalk" Line Art, Night Coloring Twins
+# ADR-0052: Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper, White "Chalk" Line Art, Night Coloring Fills
 
 **Status:** Active
 **Date:** 2026-07
@@ -63,7 +63,7 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
   exact mirror of the existing white-ink `.white-stroke` black keyline; the token is
   transparent in light mode so the class is inert there. The **Clear Button** is the one
   deliberately unthemed control — its red danger chrome reads the same on either paper.
-- **Coloring pages stay on the DARK paper — white "chalk" line art + pre-colored NIGHT twins
+- **Coloring pages stay on the DARK paper — white "chalk" line art + pre-colored NIGHT fills
   (direction B).** A coloring page keeps the same dark chalkboard paper as free-draw, not a
   light sheet. Its line art inverts to white and screens over the dark paper via
   `--lineart-filter` (`none` → `invert(1)`) + `--lineart-blend` (`multiply` → `screen`) on the
@@ -72,21 +72,21 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
   treatment. The coloring-book **picker tiles** (`ColoringBook.svelte`) carry the same
   `--lineart-*` tokens, so covers and page thumbnails preview as white-on-dark in dark mode,
   matching the chalkboard the page applies to. The magic brush then reveals a whole PARALLEL
-  SET of pre-colored **night twins**
+  SET of pre-colored **night fills**
   (`{page}-{orient}.night.webp`, `tools/asset-gen/gen-coloring-fills-dark.mjs`): deep-navy backgrounds
   with glowing, cozy-night fills, registered to the original outline. `DrawingCanvas` picks the
-  twin by `resolvedTheme()` — the light twin (`.light.webp`) in light mode, the night twin in
+  fill by `resolvedTheme()` — the light fill (`.light.webp`) in light mode, the night fill in
   dark mode — reading it reactively so a live theme flip re-rasterizes the sheet. Where a night
-  twin isn't generated yet (an orientation/page still pending), dark mode falls back to the
-  light twin. Both twins ship **fills-only** — asset-gen punches each one's outlines out at
+  fill isn't generated yet (an orientation/page still pending), dark mode falls back to the
+  light fill. Both fills ship **fills-only** — asset-gen punches each one's outlines out at
   build time against the **original** black-on-white line art (ADR-0043's build-time
-  follow-up), keyed off the line art's darkness so both twins punch with the same polarity —
-  no per-twin flip needed, and the overlay line art stays the single source of line work in
+  follow-up), keyed off the line art's darkness so both fills punch with the same polarity —
+  no per-fill flip needed, and the overlay line art stays the single source of line work in
   either theme. *(This supersedes two earlier attempts: inverting the
-  line art with the magic brush left untouched — the light twin's bright background jarred on
+  line art with the magic brush left untouched — the light fill's bright background jarred on
   dark — and the light-sheet approach that reverted the whole page to light paper via a
   now-removed `:root[data-coloring]` override.)*
-- **Pen coloring on the dark sheet** uses the same palette as dark free-draw (night twins power
+- **Pen coloring on the dark sheet** uses the same palette as dark free-draw (night fills power
   only the magic brush); dark palette colors on dark paper carry the same low-contrast tradeoff
   as free-hand dark drawing, accepted rather than adding a second palette.
 - **JS consumers of the resolved theme.** `PAPER_COLORS` in `theme.ts` mirrors `--paper` (keep
@@ -94,12 +94,12 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
   live OS preference). The **Notch Band** eraser clears the band to the resolved theme's paper
   (`NotchBand.svelte`), and the **export path** (`exportDrawing.ts`) follows the resolved theme
   for coloring pages too: a dark-mode save is the night version — dark paper, inverted white
-  line art screened on top, and the night-twin reveals already baked into the replayed strokes.
+  line art screened on top, and the night-fill reveals already baked into the replayed strokes.
 - **Catalog.** `books.ts` carries a `nightImages: Partial<Record<orientation, url>>` per page
-  (only the orientations that have a generated twin) with a `pageNightImage()` helper;
+  (only the orientations that have a generated fill) with a `pageNightImage()` helper;
   `coloringBook.svelte.ts` tracks `nightSheetUrl` alongside `colorSheetUrl`. `bookAssetPaths()`
-  lists the shipped night twins so `check-assets` validates them and `strip-native-assets`
-  removes them, exactly like the light `.light.webp` twins (no thumbnails — never in the grid).
+  lists the shipped night fills so `check-assets` validates them and `strip-native-assets`
+  removes them, exactly like the light `.light.webp` fills (no thumbnails — never in the grid).
 - **Prominence of the float cards in dark mode.** The action buttons' warm drop shadow vanishes
   on dark paper, so `--float-border` (a faint light hairline) + `--float-shadow` /
   `--float-shadow-flyout` give each card a visible edge and lift in dark mode; both are
@@ -122,15 +122,15 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
 - + One texture and one set of line-art assets serve both themes; coloring pages stay on the
     same dark chalkboard as free-draw (one coherent dark surface, no light sheet spotlit on a
     dark desk), and exports match what the child saw.
-- + The night twins turn dark mode into a distinct experience rather than a compromise — a
+- + The night fills turn dark mode into a distinct experience rather than a compromise — a
     parallel set of cozy-night pictures under the same brush — while light mode is untouched.
 - - Black/dark strokes are nearly invisible on the dark paper (free-draw AND pen-coloring) — the
     mirror image of white crayon on light paper today. A free-hand drawing made in one theme can
     look different (or partly vanish) when viewed in the other; the strokes themselves are never
-    lost. Magic-brush reveals are unaffected (they carry the twin's colors).
-- - Night twins are a second asset set to generate and ship (~8 categories × 6 pages × 2
+    lost. Magic-brush reveals are unaffected (they carry the fill's colors).
+- - Night fills are a second asset set to generate and ship (~8 categories × 6 pages × 2
     orientations), rolled out category by category; until an orientation/page has one, dark mode
-    falls back to revealing the light twin under the brush.
+    falls back to revealing the light fill under the brush.
 - - The dark token block is duplicated (attribute selector + media query) and the two copies
     must be kept in sync by hand until the floor reaches `light-dark()`; `PAPER_COLORS` in
     `theme.ts` is a third copy of `--paper`.

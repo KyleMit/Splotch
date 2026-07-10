@@ -160,11 +160,11 @@
     if (!toolState.eraser) hideEraserCursor();
   });
 
-  // The magic brush reveals the active page's colored twin (ADR-0043), theme-
-  // aware (ADR-0052 direction B): light mode reveals the light twin; dark mode
-  // reveals the pre-colored NIGHT twin where one exists, falling back to the
-  // light twin for pages/orientations whose night asset isn't generated yet.
-  // Both twins ship fills-only (outlines punched to transparency at build time),
+  // The magic brush reveals the active page's colored fill (ADR-0043), theme-
+  // aware (ADR-0052 direction B): light mode reveals the light fill; dark mode
+  // reveals the pre-colored NIGHT fill where one exists, falling back to the
+  // light fill for pages/orientations whose night asset isn't generated yet.
+  // Both fills ship fills-only (outlines punched to transparency at build time),
   // so the overlay <img> stays the single source of line work. Reading
   // resolvedTheme() re-runs this on a live theme switch, re-rasterizing the sheet.
   $effect(() => {
