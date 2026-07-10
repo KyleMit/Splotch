@@ -2,7 +2,23 @@
 
 ## TODO
 
-* [ ] Add new cover photo and throw it through the ringer again
+* Dark Mode
+  * [ ] Finish generating night time coloring variants - note large black sections don't translate well to white
+  * [ ] Nix twin naming convention
+  * [ ] In dark mode, default the black color to the white color
+  * [ ] In dark mode, the painters palette should have a dark background
+  * [ ] In dark mode, regenerate the AI images and test how generation performs
+  * [ ] In dark mode, make sure that dark canvas layer is passed to the AI image generation
+  * [ ] Come up with a fun toggle for light mode dark mode for kids to play with
+  * [ ] Consider dark mode specific pallette of colors
+* AI Art
+  * [ ] Default ai mode should be called magical
+  * [ ] Replace pixel mode with something else
+  * [ ] Add new cover photo and throw it through the ringer again
+* [ ] Make color palette resizable with button size
+* [ ] Allow dragging from a color selection straight onto the canvas
+* [ ] When drawing with a pen, also show the area of impact ring. The magic brush should have a rainbow gradient ring
+* [ ] If saving screenshots is disabled by browser, update the UI and warn the user and allow them to reset
 * [ ] ipad landscape bottom row can sit flush. top status bar should have notch band
 * [ ] returned AI preview should be much bigger and allow pinch to zoom
 * [ ] include GHA versions in update-dependencies skill
@@ -46,7 +62,6 @@
 * Controls
   * [ ] Brush type (blend mode with previous drawing)
 * Feature ideas
-  * [ ] Chalkboard/night canvas — dark background with chalk-textured or neon-glow strokes; cheap variety, great for bedtime wind-down use, and makes the bright palette pop
   * [ ] Stamps — third tool alongside pen/eraser: tap to plop a shape (stars, hearts, animals, dinosaurs) with a satisfying sound and a little scale-bounce animation; stamps recorded as ops in the command log so undo works automatically; unlocks the youngest users who can tap long before they can draw
   * [ ] Tap-to-fill (paint bucket) — flood fill enclosed areas, especially coloring book pages; gives the "I colored the whole elephant!" payoff when coloring inside the lines is still motorically hard, and works on the child's own color choices (unlike the magic brush's pre-colored twin)
   * [ ] Photo → coloring page — parent snaps a photo (the family dog, the kid's bike) and the existing Gemini pipeline turns it into line art that drops straight into the coloring book overlay slot; personalization families will tell other families about, and sidesteps the coloring-book IP problem on iOS
@@ -170,4 +185,5 @@
 * [x] Add branch previews and add to PR instruction
 * [x] Efficiently layout broad range of colors on small devices in advanced color picker
 * [x] Figure out what to do with existing drawing on orientation change
+* [x] Chalkboard/night canvas
 
