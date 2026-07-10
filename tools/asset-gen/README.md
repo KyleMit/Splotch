@@ -126,7 +126,13 @@ as base64 data URIs), built to render anywhere:
   shipped), the `all` target expands to every book —
   `gen:contact-sheet -- all --source shipped` — so you needn't enumerate the
   eight categories. It reads only committed assets, so any session rebuilds the
-  identical sheet in a couple of seconds with no key or network.
+  identical sheet in a couple of seconds with no key or network. **But the
+  Artifact tool caps uploads at 16 MB and the `all` sheet exceeds that** (~29 MB
+  today, and it grows as more twins ship — the generator warns when the file is
+  over the cap). To publish a catalog-wide review, build and publish it
+  **per-category** (or 2–3 categories per sheet, e.g.
+  `gen:contact-sheet -- nature farm creatures --source shipped`) so each Artifact
+  stays under 16 MB. Use `all` only to eyeball the sheet locally.
 - For a **focused** pass, `gen-contact-sheet.mjs` takes page/cell targets
   (`nature/ant`, `nature/ant-wide`) and `--theme light` to open the light-twin
   (magic-brush) view — not just a whole dark category.

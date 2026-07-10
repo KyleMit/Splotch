@@ -35,7 +35,11 @@ when working in this folder:
   resulting HTML with the Artifact tool** so the
   change is visible in the session — the sheet is self-contained (images inlined
   as base64), so it renders in the sandbox; do NOT hand-composite a PNG. Judge on
-  the **Combined** view. See the "Viewing a review sheet" section of `README.md`.
+  the **Combined** view. **The Artifact tool caps uploads at 16 MB, which the
+  whole-catalog `all` sheet now exceeds** (the generator warns when it does) —
+  for a catalog-wide review, publish **per-category** (or 2–3 categories per
+  sheet) rather than one `all` Artifact. See the "Viewing a review sheet" section
+  of `README.md`.
 - **Dark-mode night twins** have their own detailed runbook in `night-twins.md`
   (generate → review contact sheet → retouch line art if needed → ship → wire).
   Read it before generating more.

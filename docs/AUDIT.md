@@ -6,37 +6,6 @@
 
 ## Source: Session audit
 
-### [Docs] The prescribed whole-catalog contact-sheet pass exceeds the Artifact size cap
-
-**File(s):** `tools/asset-gen/CLAUDE.md` (contact-sheet rule, ~line 33), `tools/asset-gen/README.md` ("Viewing a review sheet"), `tools/asset-gen/gen-contact-sheet.mjs`
-
-#### Problem
-
-`tools/asset-gen/CLAUDE.md` prescribes `gen:contact-sheet -- all --source shipped` for the
-whole-catalog review pass and says to "publish the resulting HTML with the Artifact tool."
-This session followed that exactly and the publish failed: the whole-catalog sheet is
-**28.81 MB (92 cells)** and the Artifact tool caps uploads at **16 MB** (`too large: 29MB
-(max 16MB)`). The retry cost a second generator run with a hand-picked 3-category subset
-(12.38 MB). This recurs on every whole-catalog review — the doc-prescribed combo is the
-failing combo — and only gets worse as the remaining night-twin categories (objects,
-shapes, vehicles) ship and cell count grows. Cost: slow.
-
-#### Proposed solution
-
-Two-part fix. (1) Doc: in the `tools/asset-gen/CLAUDE.md` contact-sheet rule and the
-README's "Viewing a review sheet" section, note the 16 MB Artifact cap and prescribe
-publishing per-category (or 2–3 categories per sheet) for catalog-wide passes. (2)
-Optional tooling: `gen-contact-sheet.mjs` already prints its output size — make it warn
-when the file exceeds 16 MB ("too large for the Artifact tool — split by category"), or
-add a `--max-bytes` guard / smaller `--embed-px` for `all` runs so the whole catalog fits
-in one publishable sheet.
-
-#### Verification
-
-Run `npm run gen:contact-sheet -- all --source shipped` in a cloud session and follow the
-docs: either the docs route you to per-category sheets before you hit the cap, or the
-generator itself warns/right-sizes. No failed Artifact call in the transcript.
-
 ### [Docs] sharp `joinChannel` → webp silently drops the alpha plane
 
 **File(s):** `tools/asset-gen/CLAUDE.md` (folder rules), `tools/asset-gen/lib/punch-twin.mjs` (where the gotcha is currently documented)

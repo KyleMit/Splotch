@@ -162,6 +162,14 @@ ${clientJs}</script>`;
 
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, html);
+const bytes = Buffer.byteLength(html);
 console.log(
-  `wrote ${OUT}  (${(Buffer.byteLength(html) / 1024 / 1024).toFixed(2)} MB, source=${source}, ${cells.length} cells)`
+  `wrote ${OUT}  (${(bytes / 1024 / 1024).toFixed(2)} MB, source=${source}, ${cells.length} cells)`
 );
+// The Artifact tool rejects uploads over 16 MB, which a whole-catalog `all` sheet
+// now exceeds — split the pass into per-category (or 2–3-category) sheets to publish.
+if (bytes > 16 * 1024 * 1024) {
+  console.warn(
+    '⚠ exceeds the 16 MB Artifact cap — publish per-category (or 2–3 categories per sheet) instead of `all`.'
+  );
+}
