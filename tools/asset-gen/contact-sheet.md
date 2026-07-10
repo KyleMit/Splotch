@@ -14,8 +14,9 @@ renders anywhere — including the Artifact sandbox, whose CSP blocks linking to
 local files.
 
 The sheet has a light page background and shows every page as a **light + night
-pair, side by side** (light twin left, night twin right), wide pages before tall
-ones. The layout is a single centered column (`max-width` capped), so the images
+pair, side by side** (light twin left, night twin right). A page's orientations
+stay together — its wide row, then its tall row — so each page is judged as one
+unit. The layout is a single centered column (`max-width` capped), so the images
 simply grow with the viewport until they hit that cap.
 
 ## CLI

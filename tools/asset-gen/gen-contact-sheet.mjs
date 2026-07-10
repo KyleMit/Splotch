@@ -80,10 +80,11 @@ async function lightKeep(id, orient) {
   return Math.round(keep * 1000) / 10;
 }
 
-// Wide pages first, then tall — each cell renders as a light+night pair.
+// Each cell renders as a light+night pair; a page's orientations stay together
+// (wide row, then its tall row) so a page is judged as one unit.
 const cells = [];
-for (const orient of ['wide', 'tall']) {
-  for (const p of book.pages) {
+for (const p of book.pages) {
+  for (const orient of ['wide', 'tall']) {
     if (!wantsCell(p.id, orient)) continue;
     cells.push({
       id: p.id,
@@ -119,7 +120,8 @@ ${css}</style>
       <span style="background:var(--c-blue)"></span><span style="background:var(--c-purple)"></span>
     </div>
     <h1>Coloring twins &mdash; ${book.name} <span class="accent">${source}</span></h1>
-    <p class="lede">Every page <b>light</b> and <b>night</b> side by side, wide before tall.
+    <p class="lede">Every page <b>light</b> and <b>night</b> side by side, each page&rsquo;s wide row
+    followed by its tall row.
     <b>Combined</b> reproduces the real canvas &mdash; the fills-only twin under the themed
     line art over the paper &mdash; so judge twins there; a blown-out eye only shows once the
     layers merge. <b>outline %</b> is how much of the line art the light raw twin preserves.</p>
