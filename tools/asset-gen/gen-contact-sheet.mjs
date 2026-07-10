@@ -26,10 +26,13 @@
 //               "chalk" on dark paper in dark mode; black lines on light paper
 //               in light mode).
 //   • combined — the real canvas composite: the fills-only twin (its own
-//               outlines punched with the line art as a mask, exactly like
-//               magicBrush.buildFillsSheet) under the line-art layer, over the
-//               paper. This is the view to trust when judging a twin — a bug
-//               like blown-out eyes only shows once the layers are merged.
+//               outlines punched with the line art as a mask, the same punch
+//               asset-gen bakes into shipped twins — lib/punch-twin.mjs) under
+//               the line-art layer, over the paper. The punch is a no-op on
+//               shipped twins (already fills-only) and does the real work for
+//               `--source samples`, whose fresh takes still carry outlines. This
+//               is the view to trust when judging a twin — a bug like blown-out
+//               eyes only shows once the layers are merged.
 // A per-tile tap cycles color → outline → combined; a top toolbar sets the view
 // for every tile and toggles light/dark (defaulting to dark, the mode we debug).
 // The compositing mirrors DrawingCanvas.svelte + magicBrush.ts (ADR-0043/0052).
@@ -138,7 +141,7 @@ ${css}</style>
 <div class="wrap">
   <header class="bar">
     <h1>Coloring twins &mdash; <span class="accent">${source}</span> contact sheet</h1>
-    <p class="sub">Categories: ${counts.join(' · ')}. <strong>Combined</strong> reproduces the real canvas: fills-only twin under the themed line-art layer over the paper (magicBrush.buildFillsSheet + DrawingCanvas compositing). Judge twins here — blown-out or black-on-black eyes only show once the layers merge. Tap any tile to cycle its own view.</p>
+    <p class="sub">Categories: ${counts.join(' · ')}. <strong>Combined</strong> reproduces the real canvas: fills-only twin under the themed line-art layer over the paper (the asset-gen punch + DrawingCanvas compositing). Judge twins here — blown-out or black-on-black eyes only show once the layers merge. Tap any tile to cycle its own view.</p>
     <div class="controls">
       <span class="seg-label">Theme</span>
       <div class="seg" id="themeSeg">

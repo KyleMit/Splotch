@@ -139,8 +139,10 @@ don't hand-fix images.
    The sheet has a **Light/Dark** toggle (defaults to Dark) and a per-tile
    **Color / Outline / Combined** toggle. **Always judge on the Combined view** — it
    reproduces the real canvas: the fills-only twin (its own outlines punched with the
-   line art as a mask, exactly like `magicBrush.buildFillsSheet`) under the themed
-   line-art layer over the paper. A twin that looks fine in isolation can break once
+   line art as a mask — the same punch asset-gen bakes into shipped twins, see
+   `lib/punch-twin.mjs`) under the themed line-art layer over the paper. That punch is
+   what makes this `--source samples` review faithful, since fresh takes still carry
+   their own outlines. A twin that looks fine in isolation can break once
    merged, so reviewing the raw twin alone is not enough. Also glance at a couple of
    Combined tiles inline (Read tool) to sanity-check faces/eyes/mood.
    - **Eyes gotcha (line-art driven, not the twin):** in dark mode the eye is rendered by

@@ -297,8 +297,11 @@ a **build-time post-process** and the app ships the final image:
   lossless), which is real entropy the lined twin didn't pay. Measured on
   ant-tall.color (raw 71 KB): q90 108 KB, q85/effort6 88 KB — shipped at
   q85/effort6, ~13.5 MB total vs 12 MB before for all 154 twins.
-- **Next:** with fills-only twins shipped, the runtime `buildFillsSheet` /
-  `OUTLINE_LUMA_THRESHOLD` / line-art-loading path in `magicBrush.ts` and the
-  duplicated `buildFills` in the contact sheet become dead weight (the runtime
-  re-mask is a harmless no-op on already-punched pixels) and can be deleted —
-  the reveal becomes a plain image load.
+- **Done:** with fills-only twins shipped, the runtime masking in `magicBrush.ts`
+  (`buildFillsSheet`, `OUTLINE_LUMA_THRESHOLD`, the line-art load and its
+  `getImageData` readback) was deleted — the app always loads a shipped fills-only
+  twin, so the reveal is now a plain image load and `setColorSheet` takes just the
+  color URL. The contact sheet's `buildFills` **stays**: its Combined view still
+  reviews `--source samples`, whose fresh Gemini takes are raw lined twins that need
+  the punch to preview the shipped look (on already-punched shipped twins it's a
+  no-op).

@@ -8,9 +8,10 @@
 // any generation drift between the two copies shows as ghosting (ADR-0043 "reveal
 // fills only"). Punching at build time ships that final image directly.
 //
-// The mask math mirrors what magicBrush.buildFillsSheet did at runtime: a line-art
-// pixel with luma (0.299R + 0.587G + 0.114B) below OUTLINE_LUMA_THRESHOLD is
-// outline → punched transparent in the twin; anything lighter is a fill and kept —
+// The mask math is what the magic brush used to run per-page-load at runtime before
+// this moved to build time (ADR-0043): a line-art pixel with luma (0.299R + 0.587G
+// + 0.114B) below OUTLINE_LUMA_THRESHOLD is outline → punched transparent in the
+// twin; anything lighter is a fill and kept —
 // including legitimately dark fills (a ladybug's spots, a navy sky), because the
 // mask keys off the LINE ART's darkness, never the twin's.
 import { readFile } from 'node:fs/promises';
@@ -19,8 +20,8 @@ import { join, relative } from 'node:path';
 import sharp from 'sharp';
 import { COLORING_DIR, TWIN_SRC_DIR } from './paths.mjs';
 
-// Same bar as the runtime mask used (magicBrush's OUTLINE_LUMA_THRESHOLD): darker
-// than this is outline, lighter is fill.
+// Same bar the runtime mask used before the punch moved to build time (ADR-0043):
+// darker than this is outline, lighter is fill.
 const OUTLINE_LUMA_THRESHOLD = 150;
 // The punched twin inherently costs more than the raw did: the binary alpha plane
 // is the line art's shape, encoded losslessly (sharp default alphaQuality 100, kept
