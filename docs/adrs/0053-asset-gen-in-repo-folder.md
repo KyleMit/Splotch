@@ -55,9 +55,9 @@ dependencies (`sharp`, `@google/genai`) **remain in the repo-root
 installed — `node_modules` layout is unchanged.
 
 What moved: `gen-style-covers`, `gen-coloring-fills`, `gen-coloring-fills-dark`,
-`retouch-line-art`, `gen-coloring-thumbs`, `gen-coloring-sheet`,
-`gen-contact-sheet`, `png-to-webp`, `lib/pixelate.mjs`, and the `night-twins.md`
-runbook.
+`retouch-line-art`, `gen-coloring-thumbs`, `gen-coloring-sheet` (since retired —
+its review role folded into the contact sheet), `gen-contact-sheet`,
+`png-to-webp`, `lib/pixelate.mjs`, and the `night-twins.md` runbook.
 
 What stayed in `scripts/`: build-path codegen (`gen:icons`, `gen:releases`) and
 the app-driving Playwright generators (`gen:shots`/`store-shots.mjs`,

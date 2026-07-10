@@ -58,8 +58,7 @@ npm run gen:coloring-fills      # light colored twins  -> web/static/coloring/**
 npm run gen:coloring-fills:audit # drift-check the raw twins in twin-src/ (no key/network)
 npm run gen:coloring-punch      # re-derive shipped fills-only twins from twin-src/ raws (no key/network)
 npm run gen:coloring-thumbs     # picker thumbnails     -> web/static/coloring/**/*.thumb.webp
-npm run gen:coloring-sheet      # light-twin review sheet (gitignored)
-npm run gen:contact-sheet -- all # HTML contact sheet of every twin (gitignored) — publish as an Artifact
+npm run gen:contact-sheet -- nature # HTML contact sheet of ONE category (gitignored) — publish as an Artifact
 ```
 
 **Whenever you touch an asset — generate, retouch, regenerate, or ship a
@@ -112,36 +111,31 @@ API cost).
 
 Generate → review the scratch → copy the good outputs into `web/static/` → commit.
 
-### Viewing a review sheet
+### Viewing the contact sheet
 
-Both sheets — the light-twin `gen:coloring-sheet` output and the
-`gen-contact-sheet.mjs` contact sheet — are **self-contained HTML** (images inlined
-as base64 data URIs), built to render anywhere:
+The contact sheet is the **single review surface** for the coloring twins —
+self-contained HTML (images inlined as base64 data URIs), built to render
+anywhere. Full reference — CLI, the side-by-side light/night layout, the three
+views, the outline-% badge, size constraints — lives in
+[`contact-sheet.md`](./contact-sheet.md); **read it before modifying
+`gen-contact-sheet.mjs` or `contact-sheet/`**. The essentials:
 
-- **Rebuild the contact sheet every time you touch an asset**, then **publish the
-  sheet with the Artifact tool** instead of hand-rolling a headless screenshot —
-  same steps as the night-twins runbook
+- **Rebuild the sheet every time you touch an asset**, then **publish it with
+  the Artifact tool** instead of hand-rolling a headless screenshot — same steps
+  as the night-twins runbook
   ([`night-twins.md`](./night-twins.md#per-category-workflow)). Show the URL.
-- For a **whole-catalog** pass (e.g. a cross-session review of everything
-  shipped), the `all` target expands to every book —
-  `gen:contact-sheet -- all --source shipped` — so you needn't enumerate the
-  eight categories. It reads only committed assets, so any session rebuilds the
-  identical sheet in a couple of seconds with no key or network. **But the
-  Artifact tool caps uploads at 16 MB and the `all` sheet exceeds that** (~29 MB
-  today, and it grows as more twins ship — the generator warns when the file is
-  over the cap). To publish a catalog-wide review, build and publish it
-  **per-category** (or 2–3 categories per sheet, e.g.
-  `gen:contact-sheet -- nature farm creatures --source shipped`) so each Artifact
-  stays under 16 MB. Use `all` only to eyeball the sheet locally.
-- For a **focused** pass, `gen-contact-sheet.mjs` takes page/cell targets
-  (`nature/ant`, `nature/ant-wide`) and `--theme light` to open the light-twin
-  (magic-brush) view — not just a whole dark category.
-- **To change how the sheet looks or behaves**, edit the real files under
-  `contact-sheet/` — `contact-sheet.css` (styling) and `contact-sheet.client.js`
-  (the in-browser render/interaction runtime). `gen-contact-sheet.mjs` only
-  assembles the shell and injects the cell data + initial theme as a JSON global
-  (`window.__CONTACT_SHEET__`), so those two files carry the design surface with
-  full editor highlighting, Prettier, and ESLint.
+- **One category per sheet** (`gen:contact-sheet -- nature`); `all` is rejected
+  because a whole-catalog sheet exceeds the Artifact tool's 16 MB upload cap.
+  For a catalog-wide review, build and publish one sheet per category. The
+  default `--source shipped` reads only committed assets, so any session
+  rebuilds the identical sheet in seconds with no key or network;
+  `--source samples` reviews fresh, uncommitted night-twin takes from
+  `.coloring-samples-dark/` — the human gate before committing.
+- For a **focused** pass, target a page or cell within the category
+  (`nature/ant`, `nature/ant-wide`).
+- Every page shows its light and night twins **side by side**, each with an
+  Outline / Color / Combined toggle (default Combined — judge there), and the
+  light tile carries the outline-keep % badge scored from the `twin-src/` raw.
 - If a raw PNG is genuinely needed, **don't launch Chromium directly** — the cloud
   env's Chromium revision drifts from Playwright's pin. Reuse `run-splotch`'s
   `chromiumExecutablePath()` fallback or set `PLAYWRIGHT_CHROMIUM`

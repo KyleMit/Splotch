@@ -136,8 +136,9 @@ don't hand-fix images.
    ```
    Then publish that file with the **Artifact tool** (it embeds images as data
    URIs, so it renders in the sandbox — do NOT hand-composite a PNG). Show the URL.
-   The sheet has a **Light/Dark** toggle (defaults to Dark) and a per-tile
-   **Color / Outline / Combined** toggle. **Always judge on the Combined view** — it
+   The sheet shows each page's **light and night twins side by side** with an
+   **Outline / Color / Combined** toggle (defaults to Combined; tap a tile to cycle
+   it individually) — see `contact-sheet.md`. **Always judge on the Combined view** — it
    reproduces the real canvas: the fills-only twin (its own outlines punched with the
    line art as a mask — the same punch asset-gen bakes into shipped twins, see
    `lib/punch-twin.mjs`) under the themed line-art layer over the paper. That punch is

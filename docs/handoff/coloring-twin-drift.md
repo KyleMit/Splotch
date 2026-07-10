@@ -106,8 +106,8 @@ of publishing the sheet as an Artifact. Fix is a short cross-reference in
 git fetch origin && git checkout claude/coloring-outline-ghosting-regression-4e21rr
 npm run gen:coloring-fills:audit            # confirm 0 flagged
 # regenerate any page:  npm run gen:coloring-fills -- <cat>/<page>   (GEMINI_API_KEY is in the env)
-# focused review sheet, light mode:
-npm run gen:contact-sheet -- nature/ant-wide --source shipped --theme light --out /tmp/review.html
+# focused review sheet (light + night side by side):
+npm run gen:contact-sheet -- nature/ant-wide --source shipped --out /tmp/review.html
 # then publish /tmp/review.html with the Artifact tool (don't headless-screenshot it)
 ```
 

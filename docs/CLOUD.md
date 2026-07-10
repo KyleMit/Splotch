@@ -7,7 +7,8 @@ cloud session, and the network constraints that shape what's possible.
 
 A cloud session runs in an ephemeral, Anthropic-managed container: the repo is
 cloned fresh on start and the container is reclaimed after inactivity, so commit
-and push anything worth keeping. `npm install` + `npm run dev` work as usual.
+and push anything worth keeping. `npm install` + `npm run dev` work as usual —
+with one install-script caveat covered under "Getting dependencies ready" below.
 
 The constraint that matters here is **networking**:
 
@@ -124,10 +125,26 @@ Deploys take a minute or two after each push, so poll rather than checking once.
 ### Automatic: the SessionStart hook
 
 `.claude/hooks/session-start.sh` (registered in `.claude/settings.json`) runs at
-the start of every cloud session: `npm install` + `svelte-kit sync`, guarded by
-`CLAUDE_CODE_REMOTE` so it's a no-op on local machines. Once it's on the default
-branch, every cloud session starts with deps installed — `npm run check` and the
-unit tests (`npm run test:unit`) work out of the box.
+the start of every cloud session: `npm install` (with a fallback, below) +
+`svelte-kit sync` in `web/`, guarded by `CLAUDE_CODE_REMOTE` so it's a no-op on
+local machines. Once it's on the default branch, every cloud session starts with
+deps installed — `npm run check` and the unit tests (`npm run test:unit`) work
+out of the box.
+
+**Install-script note: lifecycle scripts can't download from arbitrary hosts.**
+`npm install` reaches `registry.npmjs.org` fine, but a dependency postinstall
+that fetches a binary from anywhere else gets `403 Forbidden` from the session's
+egress proxy. `@capacitor/assets` used to hit exactly this — it pins sharp 0.32,
+whose postinstall downloads libvips from GitHub releases — which killed the
+hook's install silently and left sessions with an **empty `node_modules`**. Two
+layers now prevent that: the `overrides` entry in `package.json` lifts the
+nested sharp to the root `sharp` (0.33+ ships its binaries as `@img/*` npm
+packages, no download step), and if any future dep reintroduces the pattern the
+hook falls back to `npm install --ignore-scripts && npx patch-package` — which
+reproduces the full working tree, since patch-package is the only lifecycle
+script the repo needs — printing a loud line into context instead of dying
+silently. Those same two commands are the manual recovery if `node_modules`
+ever turns up empty or half-installed.
 
 **npm-version note:** `package-lock.json` is authored by npm 11 (local dev), but
 the container image ships npm 10, and the two majors rewrite lockfile metadata
