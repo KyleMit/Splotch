@@ -25,20 +25,23 @@ import { COLORING_DIR, TWIN_SRC_DIR } from './paths.mjs';
 const OUTLINE_LUMA_THRESHOLD = 150;
 // The punched twin inherently costs more than the raw did: the binary alpha plane
 // is the line art's shape, encoded losslessly (sharp default alphaQuality 100, kept
-// so the holes can't fringe). Measured on ant-tall.color (raw 71KB): q90 108KB,
+// so the holes can't fringe). Measured on ant-tall.light (raw 71KB): q90 108KB,
 // q90/effort6 106KB, q85/effort6 88KB, q80/effort6 79KB. The content is flat fills
 // revealed under brush strokes, so q85 is visually free; effort 6 trades ~2.8s/file
 // of one-off script time for bytes shipped on every install.
 const WEBP_QUALITY = 85;
 const WEBP_EFFORT = 6;
 
-// Punch one raw twin (twin-src/{book}/{page}-{orient}.{color,night}.raw.webp) into
+// Punch one raw twin (twin-src/{book}/{page}-{orient}.{light,night}.raw.webp) into
 // its shipped path under web/static/coloring/: alpha = 0 where the line art is
 // outline-dark, 255 elsewhere. Throws if the page's line art is missing.
 export async function punchTwin(rawPath) {
   const rel = relative(TWIN_SRC_DIR, rawPath).replace(/\\/g, '/');
   const shippedRel = rel.replace(/\.raw\.webp$/, '.webp');
-  const lineArtPath = join(COLORING_DIR, shippedRel.replace(/\.(color|night)\.webp$/, '.webp'));
+  const lineArtPath = join(
+    COLORING_DIR,
+    shippedRel.replace(/\.(light|night)\.webp$/, '.outline.webp')
+  );
   if (!existsSync(lineArtPath)) throw new Error(`Missing line art for ${rel}: ${lineArtPath}`);
 
   const {

@@ -540,7 +540,7 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toBeVisible();
   // The src lands once the art has decoded (the ready-gated swap), so retry.
-  await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.outline\.webp$/);
 });
 
 // Apply the first Farm page and wait for its overlay + colored twin to be ready.
@@ -574,7 +574,7 @@ test('rotating with ink keeps the same coloring page art until the canvas is bla
   await applyFarmPage(page);
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute('src', /-wide\.webp$/); // landscape viewport → wide art
+  await expect(overlay).toHaveAttribute('src', /-wide\.outline\.webp$/); // landscape viewport → wide art
   const srcBefore = await overlay.getAttribute('src');
 
   await draw(page, [
@@ -599,7 +599,7 @@ test('rotating with ink keeps the same coloring page art until the canvas is bla
   // Undo the only stroke → blank canvas → the paper re-adopts the portrait
   // viewport and the art swaps to the tall variant.
   await page.locator('#undoButton').click();
-  await expect(overlay).toHaveAttribute('src', /-tall\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /-tall\.outline\.webp$/);
   await expect(page.locator('.paper-sheet.paper-lifted')).toHaveCount(0);
 });
 
@@ -919,11 +919,11 @@ test('rotating the viewport swaps the coloring overlay to the matching art', asy
     .click();
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute('src', /-wide\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /-wide\.outline\.webp$/);
 
   await page.setViewportSize({ width: 600, height: 900 });
-  await expect(overlay).toHaveAttribute('src', /-tall\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /-tall\.outline\.webp$/);
 
   await page.setViewportSize({ width: 900, height: 600 });
-  await expect(overlay).toHaveAttribute('src', /-wide\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /-wide\.outline\.webp$/);
 });

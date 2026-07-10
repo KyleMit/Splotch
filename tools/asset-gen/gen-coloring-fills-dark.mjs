@@ -441,13 +441,14 @@ async function toDarkInput(sourceBuf) {
 async function pagesUnder(sub = '') {
   const out = [];
   const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
-  for await (const entry of glob('**/*-{tall,wide}.webp', { cwd })) out.push(join(cwd, entry));
+  for await (const entry of glob('**/*-{tall,wide}.outline.webp', { cwd }))
+    out.push(join(cwd, entry));
   return out.sort();
 }
 
 async function resolveArg(arg) {
   if (arg.endsWith('.webp')) return [join(COLORING_DIR, arg)];
-  const asFile = join(COLORING_DIR, `${arg}.webp`);
+  const asFile = join(COLORING_DIR, `${arg}.outline.webp`);
   if (existsSync(asFile)) return [asFile];
   const asDir = join(COLORING_DIR, arg);
   if (existsSync(asDir) && statSync(asDir).isDirectory()) return pagesUnder(arg);
@@ -543,7 +544,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 let failures = 0;
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page).replace(/\.webp$/, '');
+  const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
   const source = await readFile(page);
   const { width, height } = await sharp(source).metadata();
   const darkInput = await toDarkInput(source);

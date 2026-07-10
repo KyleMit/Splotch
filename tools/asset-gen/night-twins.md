@@ -16,7 +16,7 @@ web/static/coloring/{book}/{page}-tall.night.webp    portrait
 web/static/coloring/{book}/{page}-wide.night.webp    landscape
 ```
 
-They parallel the light `.color.webp` twins. Catalog wiring lives in
+They parallel the light `.light.webp` twins. Catalog wiring lives in
 `web/src/lib/state/books.ts` (`nightImages` on each page); DrawingCanvas picks the
 night twin in dark mode, else the light twin, else falls back to the light twin.
 
@@ -110,7 +110,7 @@ those in the contact sheet.
     solid pupil + one clear glare, no iris — enlarge a too-small glare). Do NOT "open the
     eye into an outlined iris" — that was tried on the mermaid and made it a dark socket.
     After retouching the outline, regenerate the WHOLE related suite from it (light
-    `.color.webp` + night twin + thumbnails, both orientations) and re-check the contact sheet
+    `.light.webp` + night twin + thumbnails, both orientations) and re-check the contact sheet
     **Combined** view in BOTH light and dark. Solid-pupil eyes are the normal cute eye in
     light mode too, so the same fix serves both.
 - **Outlines stay WHITE, never dark.** The input is a white-line-on-dark drawing, and
@@ -136,8 +136,9 @@ don't hand-fix images.
    ```
    Then publish that file with the **Artifact tool** (it embeds images as data
    URIs, so it renders in the sandbox — do NOT hand-composite a PNG). Show the URL.
-   The sheet has a **Light/Dark** toggle (defaults to Dark) and a per-tile
-   **Color / Outline / Combined** toggle. **Always judge on the Combined view** — it
+   The sheet shows each page's **light and night twins side by side** with an
+   **Outline / Color / Combined** toggle (defaults to Combined; tap a tile to cycle
+   it individually) — see `contact-sheet.md`. **Always judge on the Combined view** — it
    reproduces the real canvas: the fills-only twin (its own outlines punched with the
    line art as a mask — the same punch asset-gen bakes into shipped twins, see
    `lib/punch-twin.mjs`) under the themed line-art layer over the paper. That punch is
@@ -173,9 +174,9 @@ are changing a shipped coloring page. Then regenerate the WHOLE related suite fr
 outline and re-review in the contact sheet's Combined view in **both** light and dark (the
 eye lesson applies to light mode too):
 
-1. Copy the chosen candidate over `web/static/coloring/<cat>/<page>-<orient>.webp`.
+1. Copy the chosen candidate over `web/static/coloring/<cat>/<page>-<orient>.outline.webp`.
 2. `node tools/asset-gen/gen-coloring-thumbs.mjs <cat>` (picker thumbnail).
-3. `gen-coloring-fills.mjs <cat>/<page>-tall <cat>/<page>-wide` (light `.color.webp`).
+3. `gen-coloring-fills.mjs <cat>/<page>-tall <cat>/<page>-wide` (light `.light.webp` twin).
 4. `gen-coloring-fills-dark.mjs <cat>/<page>-tall <cat>/<page>-wide --max-attempts 4`,
    then copy the samples to `twin-src/<cat>/<page>-<orient>.night.raw.webp` and
    `npm run gen:coloring-punch -- <cat>/<page>`.
@@ -249,7 +250,7 @@ npm run test:unit      # includes books/coloringBook night-twin tests
   punched `web/static/coloring/**/*.night.webp` derivations, and the `books.ts`
   wiring.
 - No thumbnails for night twins (they're never in the picker grid, like
-  `.color.webp`). `bookAssetPaths()` already lists them for check-assets.
+  `.light.webp`). `bookAssetPaths()` already lists them for check-assets.
 - Light mode must stay byte-identical throughout.
 - Gemini occasionally 503s ("high demand") — just re-run the failed page.
 - Git: develop on the feature branch, `git push -u origin <branch>`; commit

@@ -2,7 +2,7 @@
 // web/static/coloring/. The Coloring Book Picker shows these images in a grid at
 // ~140-300px, but the source art is 1024px+ (a cover is ~84KB, a page ~120KB) —
 // 5-8x more pixels than the tile ever paints. Each thumbnail is written beside
-// its source as `{name}-thumb.webp` (longest edge THUMB_EDGE, quality
+// its source as `{name}.thumb.webp` (longest edge THUMB_EDGE, quality
 // THUMB_QUALITY), roughly a tenth of the bytes, so the picker renders fast; the
 // full-res source stays for the full-screen canvas overlay.
 //
@@ -23,19 +23,15 @@ import { COLORING_DIR, fail } from './lib/paths.mjs';
 
 const THUMB_EDGE = 400; // longest-edge px — comfortably covers a 2x DPR ~200px tile
 const THUMB_QUALITY = 80;
-const THUMB_SUFFIX = '-thumb.webp';
+const SOURCE_SUFFIX = '.outline.webp';
+const THUMB_SUFFIX = '.thumb.webp';
 
-// Every shipped source image: covers and both orientations of each page, minus
-// the derived outputs (existing -thumb.webp) and the colored twins (.color.webp
-// light + .night.webp dark), which are magic-brush reveals, never shown in the
-// picker — so they get no thumbnail.
+// Every shipped source image: the `.outline.webp` line art (covers and both
+// orientations of each page). The colored twins (.light.webp light + .night.webp
+// dark) are magic-brush reveals, never shown in the picker — so they get no
+// thumbnail.
 function isSource(path) {
-  return (
-    path.endsWith('.webp') &&
-    !path.endsWith(THUMB_SUFFIX) &&
-    !path.endsWith('.color.webp') &&
-    !path.endsWith('.night.webp')
-  );
+  return path.endsWith(SOURCE_SUFFIX);
 }
 
 const filter = process.argv.slice(2);
@@ -55,7 +51,7 @@ if (sources.length === 0)
 let savedTotal = 0;
 await Promise.all(
   sources.map(async (src) => {
-    const out = src.replace(/\.webp$/, THUMB_SUFFIX);
+    const out = src.replace(/\.outline\.webp$/, THUMB_SUFFIX);
     const before = (await stat(src)).size;
     await sharp(src)
       .resize(THUMB_EDGE, THUMB_EDGE, { fit: 'inside', withoutEnlargement: true })

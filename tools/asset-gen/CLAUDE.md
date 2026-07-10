@@ -13,7 +13,7 @@ when working in this folder:
   — don't hardcode `../../..` walks or import from `scripts/lib/`.
 - **Raw twins are the source of truth; shipped twins are derived.** The lined
   colored twins live in `twin-src/` (committed, never shipped); the shipped
-  `web/static/coloring/**/*.{color,night}.webp` are their fills-only punch
+  `web/static/coloring/**/*.{light,night}.webp` are their fills-only punch
   (`punch-twin-outlines.mjs`, root: `npm run gen:coloring-punch` — offline,
   deterministic). Never hand-edit a shipped twin, and after changing any raw,
   re-punch it. The drift audit scores the raws.
@@ -33,19 +33,20 @@ when working in this folder:
   gitignored `.coloring-samples*/`. Never commit the scratch dirs.
 - **Manual/on-demand only** — the Gemini generators need `GEMINI_API_KEY` and are
   never run in CI (real API cost). The app never runs any of this at build time.
+- **The contact sheet is the single twin-review surface — read
+  `contact-sheet.md` before modifying `gen-contact-sheet.mjs` or anything under
+  `contact-sheet/`.** It holds the CLI contract, the layer/compositing model,
+  and the size constraints.
 - **Always rebuild the contact sheet when you touch an asset.** Any time you
   generate, retouch, regenerate, or ship a coloring twin, re-run
-  `gen-contact-sheet.mjs` (root: `npm run gen:contact-sheet`) for the affected
-  page/category — or `-- all --source shipped` for a whole-catalog pass, which
-  rebuilds from committed assets only (no key/network, ~3s) — and **publish the
-  resulting HTML with the Artifact tool** so the
-  change is visible in the session — the sheet is self-contained (images inlined
-  as base64), so it renders in the sandbox; do NOT hand-composite a PNG. Judge on
-  the **Combined** view. **The Artifact tool caps uploads at 16 MB, which the
-  whole-catalog `all` sheet now exceeds** (the generator warns when it does) —
-  for a catalog-wide review, publish **per-category** (or 2–3 categories per
-  sheet) rather than one `all` Artifact. See the "Viewing a review sheet" section
-  of `README.md`.
+  `gen-contact-sheet.mjs` (root: `npm run gen:contact-sheet -- <category>`) for
+  the affected category — **one category per sheet** (`all` is rejected: the
+  Artifact tool caps uploads at 16 MB and a whole-catalog sheet exceeds it). The
+  default `--source shipped` rebuilds from committed assets only (no
+  key/network, ~3s). Then **publish the resulting HTML with the Artifact tool**
+  so the change is visible in the session — the sheet is self-contained (images
+  inlined as base64), so it renders in the sandbox; do NOT hand-composite a PNG.
+  Judge on the **Combined** view.
 - **Dark-mode night twins** have their own detailed runbook in `night-twins.md`
   (generate → review contact sheet → retouch line art if needed → ship → wire).
   Read it before generating more.

@@ -37,8 +37,12 @@ describe('coloring book state', () => {
   });
 
   it('the colored twin is derived from the line-art path', () => {
-    expect(page.colorImages.portrait).toBe(page.images.portrait.replace('.webp', '.color.webp'));
-    expect(page.colorImages.landscape).toBe(page.images.landscape.replace('.webp', '.color.webp'));
+    expect(page.colorImages.portrait).toBe(
+      page.images.portrait.replace('.outline.webp', '.light.webp')
+    );
+    expect(page.colorImages.landscape).toBe(
+      page.images.landscape.replace('.outline.webp', '.light.webp')
+    );
   });
 
   it('tracks the night twin for each orientation that has one', () => {
@@ -47,12 +51,12 @@ describe('coloring book state', () => {
     setOverlayPage(spacePage, 'portrait');
     expect(coloringBookState.nightSheetUrl).toBe(spacePage.nightImages.portrait);
     expect(coloringBookState.nightSheetUrl).toBe(
-      spacePage.images.portrait.replace('.webp', '.night.webp')
+      spacePage.images.portrait.replace('.outline.webp', '.night.webp')
     );
     setOverlayPage(spacePage, 'landscape');
     expect(coloringBookState.nightSheetUrl).toBe(spacePage.nightImages.landscape);
     expect(coloringBookState.nightSheetUrl).toBe(
-      spacePage.images.landscape.replace('.webp', '.night.webp')
+      spacePage.images.landscape.replace('.outline.webp', '.night.webp')
     );
   });
 

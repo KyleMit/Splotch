@@ -57,4 +57,5 @@ This directory records significant architectural decisions made in the Splotch p
 | [0051](0051-desynchronized-canvas-low-latency.md) | `desynchronized` Canvas for Lower Ink Latency — Tried and Rejected | Rejected |
 | [0052](0052-dark-mode-theme-tokens.md) | Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper, White "Chalk" Line Art, Night Coloring Twins | Active |
 | [0053](0053-asset-gen-in-repo-folder.md) | Asset-Generation Pipeline in `tools/asset-gen/` (In-Repo Folder, Not a Workspace or Separate Repo) | Active |
+| [0054](0054-coloring-asset-variant-suffix-scheme.md) | Uniform Dot-Separated Variant Suffixes for Coloring Assets (`{name}.{variant}.webp`) | Active |
 

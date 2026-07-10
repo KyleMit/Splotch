@@ -76,7 +76,7 @@ worst-tile gate — so it likely has the same global-average blind spot for
 localized drift, in dark mode.
 
 - **Task:** either (a) point `check-coloring-drift.mjs` at the night twins too
-  (it currently reads `*.color.webp`; night twins are `*.night.webp` and are
+  (it currently reads the light `*.light.raw.webp` raws; night twins are `*.night.webp` and are
   white-line-on-dark, so the mask polarity differs — needs an inversion path), or
   (b) add a worst-tile check to the dark generator's gate. (a) is the cheaper first
   step to just *find out* whether any night twins drift locally.
@@ -106,8 +106,8 @@ of publishing the sheet as an Artifact. Fix is a short cross-reference in
 git fetch origin && git checkout claude/coloring-outline-ghosting-regression-4e21rr
 npm run gen:coloring-fills:audit            # confirm 0 flagged
 # regenerate any page:  npm run gen:coloring-fills -- <cat>/<page>   (GEMINI_API_KEY is in the env)
-# focused review sheet, light mode:
-npm run gen:contact-sheet -- nature/ant-wide --source shipped --theme light --out /tmp/review.html
+# focused review sheet (light + night side by side):
+npm run gen:contact-sheet -- nature/ant-wide --source shipped --out /tmp/review.html
 # then publish /tmp/review.html with the Artifact tool (don't headless-screenshot it)
 ```
 
