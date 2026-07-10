@@ -39,7 +39,7 @@
 import { parseArgs } from 'node:util';
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { COLORING_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
+import { ASSET_GEN_DIR, COLORING_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
 import { BOOKS } from '../../web/src/lib/state/books.ts';
 
 const { values, positionals } = parseArgs({
@@ -122,42 +122,19 @@ for (const catId of catIds) {
   if (n) counts.push(`${book.name} (${n})`);
 }
 
-const CELLS_JSON = JSON.stringify(cells);
+// The look (CSS) and interactive runtime (client JS) live in real files under
+// contact-sheet/ so they get editor highlighting, Prettier, and ESLint. The
+// generator only assembles the shell and injects the cell data + initial theme
+// as a JSON global — no build-time string interpolation reaches the runtime.
+const SHEET_DIR = join(ASSET_GEN_DIR, 'contact-sheet');
+const css = readFileSync(join(SHEET_DIR, 'contact-sheet.css'), 'utf8');
+const clientJs = readFileSync(join(SHEET_DIR, 'contact-sheet.client.js'), 'utf8');
+
+const bootData = JSON.stringify({ cells, theme });
 
 const html = `<title>Splotch contact sheet — ${source}${counts.length ? ` · ${counts.join(', ')}` : ''}</title>
 <style>
-  :root{
-    --render-max:520px;
-    --ground:#131019;--panel:#1c1826;--border:#322b45;--text:#ece9f3;--muted:#9c96ac;--accent:#f0c674;
-    --tileground:#0f0d15;
-  }
-  :root[data-ui="light"]{
-    --ground:#f4f2ee;--panel:#ffffff;--border:#e0dcd4;--text:#221f29;--muted:#6b6577;--accent:#b1780a;
-    --tileground:#eceae4;
-  }
-  *{box-sizing:border-box}body{margin:0}
-  .wrap{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--ground);color:var(--text);min-height:100vh;padding:0 clamp(16px,4vw,56px) 72px;line-height:1.5;transition:background .15s,color .15s}
-  header.bar{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--ground) 88%,transparent);backdrop-filter:blur(8px);padding:16px 0 12px;margin-bottom:8px;border-bottom:1px solid var(--border)}
-  h1{font-size:clamp(20px,3vw,28px);margin:0 0 4px;letter-spacing:-.01em}
-  .sub{color:var(--muted);margin:0 0 12px;max-width:74ch;font-size:13px}
-  .accent{color:var(--accent)}
-  .controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
-  .seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}
-  .seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;padding:6px 14px;cursor:pointer}
-  .seg button.on{background:var(--accent);color:#1a1206;font-weight:600}
-  .seg-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-right:2px}
-  h2{font-size:14px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:600;margin:36px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-  .cat-id{opacity:.5;font-weight:400;text-transform:none;letter-spacing:0}
-  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
-  figure.cell{margin:0;position:relative;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;cursor:pointer}
-  .frame{position:relative;border-radius:8px;overflow:hidden;background:var(--tileground)}
-  .cell canvas{width:100%;display:block}
-  .olabel{position:absolute;top:8px;left:8px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#ece9f3;background:rgba(10,8,14,.66);padding:2px 7px;border-radius:999px;pointer-events:none}
-  .vlabel{position:absolute;top:8px;right:8px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#1a1206;background:var(--accent);padding:2px 7px;border-radius:999px;pointer-events:none;font-weight:600}
-  figcaption{font-size:13px;color:var(--muted);margin-top:8px;text-align:center}
-  .missing{aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;text-align:center;color:#c98;border:1px dashed var(--border);border-radius:8px;font-size:12px}
-  .hint{font-size:11px;color:var(--muted);margin:2px 0 0}
-</style>
+${css}</style>
 <div class="wrap">
   <header class="bar">
     <h1>Coloring twins &mdash; <span class="accent">${source}</span> contact sheet</h1>
@@ -179,150 +156,9 @@ const html = `<title>Splotch contact sheet — ${source}${counts.length ? ` · $
   </header>
   <div id="sections"></div>
 </div>
+<script>window.__CONTACT_SHEET__ = ${bootData};</script>
 <script>
-const CELLS = ${CELLS_JSON};
-const RENDER_MAX = 520;
-const OUTLINE_LUMA = 150; // magicBrush.OUTLINE_LUMA_THRESHOLD
-const PAPER = { dark:'#211f29', light:'#fcfbf8' };
-const BLEND = { dark:'screen', light:'multiply' };
-const INVERT = { dark:true, light:false };
-const VIEWS = ['color','outline','combined'];
-
-let gTheme = ${JSON.stringify(theme)};
-let gView = 'combined';
-
-// Decode a data URI into an <img>, or null.
-function load(uri){
-  return new Promise((res)=>{
-    if(!uri){res(null);return;}
-    const im = new Image();
-    im.onload=()=>res(im); im.onerror=()=>res(null); im.src=uri;
-  });
-}
-
-// Fit long edge to RENDER_MAX, keep aspect.
-function fit(w,h){ const s=Math.min(1, RENDER_MAX/Math.max(w,h)); return [Math.round(w*s), Math.round(h*s)]; }
-
-// Fills-only twin: punch the twin's own outline pixels using the line art as a
-// mask (luma<OUTLINE_LUMA -> transparent) — mirrors magicBrush.buildFillsSheet.
-function buildFills(twin, lineArt, w, h){
-  const fc=document.createElement('canvas'); fc.width=w; fc.height=h;
-  const fx=fc.getContext('2d'); fx.drawImage(twin,0,0,w,h);
-  if(lineArt){
-    const mc=document.createElement('canvas'); mc.width=w; mc.height=h;
-    const mx=mc.getContext('2d',{willReadFrequently:true}); mx.drawImage(lineArt,0,0,w,h);
-    const px=mx.getImageData(0,0,w,h), d=px.data;
-    for(let i=0;i<d.length;i+=4){ const l=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]; d[i+3]= l<OUTLINE_LUMA?255:0; }
-    mx.putImageData(px,0,0);
-    fx.globalCompositeOperation='destination-out'; fx.drawImage(mc,0,0); fx.globalCompositeOperation='source-over';
-  }
-  return fc;
-}
-
-// Draw the line-art layer the way DrawingCanvas does: invert(1) in dark so black
-// lines become white, then blend (screen dark / multiply light) over the paper.
-function drawLineArt(ctx, lineArt, theme, w, h){
-  ctx.save();
-  ctx.globalCompositeOperation = BLEND[theme];
-  if(INVERT[theme]) ctx.filter = 'invert(1)';
-  ctx.drawImage(lineArt,0,0,w,h);
-  ctx.restore();
-}
-
-function render(tile){
-  const { canvas, imgs } = tile;
-  const theme = gTheme;
-  const view = tile.view || gView;
-  const twin = theme==='dark' ? imgs.night : imgs.light;
-  const ref = twin || imgs.lineArt || imgs.light || imgs.night;
-  if(!ref){ return; }
-  const [w,h] = fit(ref.naturalWidth, ref.naturalHeight);
-  canvas.width=w; canvas.height=h;
-  const ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,w,h);
-
-  if(view==='color'){
-    if(twin) ctx.drawImage(twin,0,0,w,h);
-    else { ctx.fillStyle=PAPER[theme]; ctx.fillRect(0,0,w,h); }
-    tile.vlabel.textContent='color';
-    return;
-  }
-
-  ctx.fillStyle=PAPER[theme]; ctx.fillRect(0,0,w,h);
-
-  if(view==='combined' && twin){
-    const key = theme;
-    if(!tile.fills) tile.fills={};
-    if(!tile.fills[key]) tile.fills[key]=buildFills(twin, imgs.lineArt, w, h);
-    ctx.drawImage(tile.fills[key],0,0,w,h);
-  }
-  if(imgs.lineArt) drawLineArt(ctx, imgs.lineArt, theme, w, h);
-  tile.vlabel.textContent=view;
-}
-
-const tiles=[];
-function renderAll(){ for(const t of tiles) render(t); }
-
-async function build(){
-  document.documentElement.dataset.ui = gTheme;
-  const secEl = document.getElementById('sections');
-  // Group cells by category, preserving order.
-  const groups=[];
-  for(const c of CELLS){
-    let g=groups.find(x=>x.cat===c.cat);
-    if(!g){ g={cat:c.cat, cells:[]}; groups.push(g); }
-    g.cells.push(c);
-  }
-  for(const g of groups){
-    const h2=document.createElement('h2');
-    h2.innerHTML = g.cat.charAt(0).toUpperCase()+g.cat.slice(1)+' <span class="cat-id">'+g.cat+'</span>';
-    secEl.appendChild(h2);
-    const grid=document.createElement('div'); grid.className='grid'; secEl.appendChild(grid);
-    for(const c of g.cells){
-      const fig=document.createElement('figure'); fig.className='cell';
-      const missing = !c.night && !c.light && !c.lineArt;
-      if(missing){
-        fig.innerHTML='<div class="missing">missing<br>'+c.id+'-'+c.orient+'</div><figcaption>'+c.name+'</figcaption>';
-        grid.appendChild(fig); continue;
-      }
-      const frame=document.createElement('div'); frame.className='frame';
-      const canvas=document.createElement('canvas');
-      const ol=document.createElement('span'); ol.className='olabel'; ol.textContent=c.orient;
-      const vl=document.createElement('span'); vl.className='vlabel'; vl.textContent=gView;
-      frame.appendChild(canvas); frame.appendChild(ol); frame.appendChild(vl);
-      const cap=document.createElement('figcaption'); cap.textContent=c.name + (c.night?'':' (no night twin)');
-      fig.appendChild(frame); fig.appendChild(cap);
-      grid.appendChild(fig);
-      const [night,lineArt,light]=await Promise.all([load(c.night),load(c.lineArt),load(c.light)]);
-      const tile={ canvas, vlabel:vl, imgs:{night,lineArt,light}, view:null, cat:c.cat };
-      tiles.push(tile);
-      fig.addEventListener('click',()=>{
-        const cur = tile.view || gView;
-        tile.view = VIEWS[(VIEWS.indexOf(cur)+1)%VIEWS.length];
-        render(tile);
-      });
-      render(tile);
-    }
-  }
-}
-
-document.getElementById('themeSeg').addEventListener('click',(e)=>{
-  const b=e.target.closest('button'); if(!b) return;
-  gTheme=b.dataset.theme;
-  for(const x of e.currentTarget.children) x.classList.toggle('on', x===b);
-  document.documentElement.dataset.ui=gTheme;
-  renderAll();
-});
-document.getElementById('viewSeg').addEventListener('click',(e)=>{
-  const b=e.target.closest('button'); if(!b) return;
-  gView=b.dataset.view;
-  for(const x of e.currentTarget.children) x.classList.toggle('on', x===b);
-  for(const t of tiles) t.view=null; // clear per-tile overrides
-  renderAll();
-});
-
-build();
-</script>`;
+${clientJs}</script>`;
 
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, html);

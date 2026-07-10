@@ -5,8 +5,9 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// tools/asset-gen/lib/ -> the repo root is three levels up.
-export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+// tools/asset-gen/lib/ -> the asset-gen dir is one level up, the repo root three.
+export const ASSET_GEN_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
+export const REPO_ROOT = join(ASSET_GEN_DIR, '..', '..');
 
 export const WEB_STATIC = join(REPO_ROOT, 'web', 'static');
 export const COLORING_DIR = join(WEB_STATIC, 'coloring');
