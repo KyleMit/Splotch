@@ -48,6 +48,8 @@ On-demand **skills** (invoke when the topic comes up — don't guess from memory
 | `adrs` | proposing or discussing any architectural approach |
 | `pr-screenshots` | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow |
 
+**Prefer skills over slash commands.** Every reusable Claude workflow in this repo lives as a skill in `.claude/skills/<name>/SKILL.md`, not as a command in `.claude/commands/`. A skill with a good `description` is both user-invocable (`/name`) *and* model-invocable, so Claude can reach for it on its own — a plain command can't. When authoring a new reusable workflow, create a skill: give it a `name` and a `description` that says both what it does and when to use it (add `disable-model-invocation: true` if it should stay user-only). If the user asks to create a *command*, ask whether they'd like a skill instead before making one.
+
 Path-scoped **rules** in `.claude/rules/` (load automatically): `svelte.md`, `server-api.md`, `testing.md`. Nested CLAUDE.md files in `web/src/`, `android/`, and `scripts/` cover those areas.
 
 Remaining `docs/`:
