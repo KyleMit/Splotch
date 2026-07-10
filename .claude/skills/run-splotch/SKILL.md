@@ -77,11 +77,35 @@ node .claude/skills/run-splotch/driver.mjs --route / --keep
 ```js
 // 2. Your own script: connect to that server and drive the UI.
 import { chromium } from 'playwright';
-const browser = await chromium.launch({
-  // Cloud Chromium can drift from Playwright's pinned build — copy
-  // driver.mjs's chromiumExecutablePath() fallback, or set PLAYWRIGHT_CHROMIUM.
-  executablePath: process.env.PLAYWRIGHT_CHROMIUM,
-});
+import { existsSync, readdirSync } from 'node:fs';
+
+// Cloud Chromium can drift from Playwright's pinned build, so a bare
+// chromium.launch() fails with "Executable doesn't exist". This is driver.mjs's
+// chromiumExecutablePath() inlined so the script runs verbatim: PLAYWRIGHT_CHROMIUM
+// wins; else the pinned build if present; else the newest chromium-<rev> under the
+// browsers path (the versioned dir — NOT the bare `chromium` entry). undefined =
+// let Playwright use its own pinned binary.
+function chromiumExecutablePath() {
+  if (process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
+  try {
+    if (existsSync(chromium.executablePath())) return undefined;
+  } catch {}
+  const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
+  try {
+    const builds = readdirSync(base)
+      .filter((d) => /^chromium-\d+$/.test(d))
+      .sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)));
+    for (const build of builds) {
+      for (const sub of ['chrome-linux', 'chrome-linux64']) {
+        const p = `${base}/${build}/${sub}/chrome`;
+        if (existsSync(p)) return p;
+      }
+    }
+  } catch {}
+  return undefined;
+}
+
+const browser = await chromium.launch({ executablePath: chromiumExecutablePath() });
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 await page.goto('http://localhost:5199/', { waitUntil: 'commit' });
 
