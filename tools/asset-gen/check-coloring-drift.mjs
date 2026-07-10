@@ -1,7 +1,7 @@
-// Audit every committed RAW colored twin (`twin-src/**/*.color.raw.webp`) for
+// Audit every committed RAW colored twin (`twin-src/**/*.light.raw.webp`) for
 // outline drift against its source line art, using the SAME scoring the generation
 // gate applies (lib/outline-match.mjs). It scores the raws — not the shipped
-// `*.color.webp` — because shipping punches the twin's own outlines out
+// `*.light.webp` — because shipping punches the twin's own outlines out
 // (punch-twin-outlines.mjs), leaving nothing for outlineMatch to register; the raw
 // keeps the lines, and the shipped twin is a pure derivation of it, so a clean raw
 // means a clean reveal. It exists because the gate only ran at generation time and
@@ -39,12 +39,13 @@ const { values, positionals } = parseArgs({
 async function pagesUnder(sub = '') {
   const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
   const out = [];
-  for await (const entry of glob('**/*-{tall,wide}.webp', { cwd })) out.push(join(cwd, entry));
+  for await (const entry of glob('**/*-{tall,wide}.outline.webp', { cwd }))
+    out.push(join(cwd, entry));
   return out;
 }
 async function resolveArg(arg) {
   if (arg.endsWith('.webp')) return [join(COLORING_DIR, arg)];
-  const asFile = join(COLORING_DIR, `${arg}.webp`);
+  const asFile = join(COLORING_DIR, `${arg}.outline.webp`);
   if (existsSync(asFile)) return [asFile];
   const asDir = join(COLORING_DIR, arg);
   if (existsSync(asDir) && statSync(asDir).isDirectory()) return pagesUnder(arg);
@@ -60,8 +61,8 @@ if (values.overlay) await mkdir(overlayDir, { recursive: true });
 
 const rows = [];
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page).replace(/\.webp$/, '');
-  const twin = join(TWIN_SRC_DIR, `${rel}.color.raw.webp`);
+  const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
+  const twin = join(TWIN_SRC_DIR, `${rel}.light.raw.webp`);
   if (!existsSync(twin)) continue; // no twin generated for this page yet
   const [source, filled] = await Promise.all([readFile(page), readFile(twin)]);
   const { keep, localKeep, worstTile, overlay } = await outlineMatch(source, filled);

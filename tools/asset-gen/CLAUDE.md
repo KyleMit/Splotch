@@ -13,7 +13,7 @@ when working in this folder:
   — don't hardcode `../../..` walks or import from `scripts/lib/`.
 - **Raw twins are the source of truth; shipped twins are derived.** The lined
   colored twins live in `twin-src/` (committed, never shipped); the shipped
-  `web/static/coloring/**/*.{color,night}.webp` are their fills-only punch
+  `web/static/coloring/**/*.{light,night}.webp` are their fills-only punch
   (`punch-twin-outlines.mjs`, root: `npm run gen:coloring-punch` — offline,
   deterministic). Never hand-edit a shipped twin, and after changing any raw,
   re-punch it. The drift audit scores the raws.

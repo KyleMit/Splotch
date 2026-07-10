@@ -9,8 +9,8 @@
 //
 // Writes candidates to the gitignored .coloring-samples-dark/retouch/ for review;
 // it does NOT touch shipped assets. Once a retouched line art is approved, copy it
-// over web/static/coloring/<cat>/<page>-<orient>.webp and regenerate the whole
-// related suite from it (light .color.webp via gen-coloring-fills, night twin via
+// over web/static/coloring/<cat>/<page>-<orient>.outline.webp and regenerate the whole
+// related suite from it (light twin .light.webp via gen-coloring-fills, night twin via
 // gen-coloring-fills-dark, thumbnail via gen-coloring-thumbs), then re-review in the
 // contact sheet's Combined view in BOTH light and dark. See tools/asset-gen/night-twins.md.
 //
@@ -110,7 +110,7 @@ async function normalize(buf, width, height) {
 }
 
 for (const arg of positionals) {
-  const src = join(COLORING_DIR, `${arg}.webp`);
+  const src = join(COLORING_DIR, `${arg}.outline.webp`);
   if (!existsSync(src)) {
     console.warn(`(skip) no line art at ${src}`);
     continue;

@@ -8,7 +8,7 @@
 // tools/asset-gen/twin-src/ as the source of truth — the drift audit scores it —
 // and its fills-only punch (outlines masked out with the line art, so the app's
 // overlay is the single source of line work) is what lands in web/static/coloring/
-// as the shipped .color.webp (lib/punch-twin.mjs; ADR-0043 "reveal fills only").
+// as the shipped .light.webp (lib/punch-twin.mjs; ADR-0043 "reveal fills only").
 //
 // Requires GEMINI_API_KEY. Run via npm so the .ts imports resolve:
 //   npm run gen:coloring-fills                                 all pages
@@ -198,18 +198,18 @@ async function whiteFraction(buf) {
 async function pagesUnder(sub = '') {
   const out = [];
   const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
-  for await (const entry of glob('**/*-{tall,wide}.webp', { cwd })) {
+  for await (const entry of glob('**/*-{tall,wide}.outline.webp', { cwd })) {
     out.push(join(cwd, entry));
   }
   return out.sort();
 }
 
 // Resolve one CLI argument to a list of source pages. An argument is either a
-// single page ("farm/dog-wide", with or without .webp) or a category directory
-// ("creatures") that expands to every page inside it.
+// single page ("farm/dog-wide", with or without .outline.webp) or a category
+// directory ("creatures") that expands to every page inside it.
 async function resolveArg(arg) {
   if (arg.endsWith('.webp')) return [join(COLORING_DIR, arg)];
-  const asFile = join(COLORING_DIR, `${arg}.webp`);
+  const asFile = join(COLORING_DIR, `${arg}.outline.webp`);
   if (existsSync(asFile)) return [asFile];
   const asDir = join(COLORING_DIR, arg);
   if (existsSync(asDir) && statSync(asDir).isDirectory()) return pagesUnder(arg);
@@ -309,7 +309,7 @@ async function renderClean(source, width, height, slot) {
 
 let failures = 0;
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page).replace(/\.webp$/, '');
+  const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
   const source = await readFile(page);
   const { width, height } = await sharp(source).metadata();
 
@@ -338,7 +338,7 @@ for (const page of pages) {
       } else {
         // Ship = the raw (lined) twin into twin-src/ as the committed source of
         // truth, then its fills-only punch into web/static (lib/punch-twin.mjs).
-        const rawOut = join(TWIN_SRC_DIR, `${rel}.color.raw.webp`);
+        const rawOut = join(TWIN_SRC_DIR, `${rel}.light.raw.webp`);
         await mkdir(dirname(rawOut), { recursive: true });
         await writeFile(rawOut, colored);
         ({ out } = await punchTwin(rawOut));

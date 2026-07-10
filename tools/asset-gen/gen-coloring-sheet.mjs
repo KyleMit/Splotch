@@ -71,11 +71,11 @@ async function pairs() {
   const found = [];
   for (const root of roots) {
     const cwd = root ? join(TWIN_SRC_DIR, root) : TWIN_SRC_DIR;
-    for await (const entry of glob('**/*.color.raw.webp', { cwd })) {
+    for await (const entry of glob('**/*.light.raw.webp', { cwd })) {
       const colored = join(cwd, entry);
       const source = join(
         COLORING_DIR,
-        relative(TWIN_SRC_DIR, colored).replace(/\.color\.raw\.webp$/, '.webp')
+        relative(TWIN_SRC_DIR, colored).replace(/\.light\.raw\.webp$/, '.outline.webp')
       );
       found.push({ colored, source });
     }
@@ -84,7 +84,7 @@ async function pairs() {
 }
 
 const list = await pairs();
-if (!list.length) fail('No *.color.raw.webp twins found. Run gen:coloring-fills first.');
+if (!list.length) fail('No *.light.raw.webp twins found. Run gen:coloring-fills first.');
 
 // Embed a review-size copy (not the full 1536px asset) so a whole-book sheet
 // stays a few MB instead of tens — still plenty of detail to check the overlap.
@@ -103,7 +103,7 @@ let lowest = 100;
 for (const { source, colored } of list) {
   const rel = relative(COLORING_DIR, source);
   const category = rel.split('/')[0];
-  const name = basename(source, '.webp');
+  const name = basename(source, '.outline.webp');
   const orient = name.endsWith('-tall') ? 'tall' : 'wide';
   const keep = await outlineKeep(await readFile(source), await readFile(colored));
   lowest = Math.min(lowest, keep);

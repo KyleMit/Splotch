@@ -4,19 +4,19 @@
 // (see scripts/strip-native-assets.mjs).
 //
 // Image storage format:
-//   static/coloring/{book}/cover.webp               cover line art, 1:1
-//   static/coloring/{book}/{page}-tall.webp         portrait line art, 2:3
-//   static/coloring/{book}/{page}-wide.webp         landscape line art, 3:2
-//   static/coloring/{book}/{name}-thumb.webp        grid thumbnail of the line art
-//   static/coloring/{book}/{page}-tall.color.webp   portrait colored twin
-//   static/coloring/{book}/{page}-wide.color.webp   landscape colored twin
-//   static/coloring/{book}/{page}-tall.night.webp   portrait night twin (dark mode)
-//   static/coloring/{book}/{page}-wide.night.webp   landscape night twin (dark mode)
+//   static/coloring/{book}/cover.outline.webp         cover line art, 1:1
+//   static/coloring/{book}/{page}-tall.outline.webp   portrait line art, 2:3
+//   static/coloring/{book}/{page}-wide.outline.webp   landscape line art, 3:2
+//   static/coloring/{book}/{name}.thumb.webp          grid thumbnail of the line art
+//   static/coloring/{book}/{page}-tall.light.webp     portrait colored twin
+//   static/coloring/{book}/{page}-wide.light.webp     landscape colored twin
+//   static/coloring/{book}/{page}-tall.night.webp     portrait night twin (dark mode)
+//   static/coloring/{book}/{page}-wide.night.webp     landscape night twin (dark mode)
 //
-// Each picker-facing line-art image (cover + pages) has a `-thumb.webp` twin
+// Each picker-facing line-art image (cover + pages) has a `.thumb.webp` twin
 // (tools/asset-gen/gen-coloring-thumbs.mjs): the picker grid shows the thumbnail, the
 // full-screen canvas overlay uses the full-res source. `thumbPath()` maps one to
-// the other. The colored `.color.webp` twin is a flat-colored, pixel-aligned
+// the other. The colored `.light.webp` twin is a flat-colored, pixel-aligned
 // version of the line-art page (tools/asset-gen/gen-coloring-fills.mjs) that the magic
 // brush reveals where the child paints (ADR-0043); it never appears in the grid,
 // so it has no thumbnail. `bookAssetPaths()` lists them all so check-assets
@@ -66,12 +66,12 @@ function page(book: string, id: string, name: string, night: BookOrientation[] =
     id,
     name,
     images: {
-      portrait: `/coloring/${book}/${id}-tall.webp`,
-      landscape: `/coloring/${book}/${id}-wide.webp`,
+      portrait: `/coloring/${book}/${id}-tall.outline.webp`,
+      landscape: `/coloring/${book}/${id}-wide.outline.webp`,
     },
     colorImages: {
-      portrait: `/coloring/${book}/${id}-tall.color.webp`,
-      landscape: `/coloring/${book}/${id}-wide.color.webp`,
+      portrait: `/coloring/${book}/${id}-tall.light.webp`,
+      landscape: `/coloring/${book}/${id}-wide.light.webp`,
     },
     nightImages,
   };
@@ -82,7 +82,7 @@ export const BOOKS: Book[] = [
     id: 'farm',
     name: 'Farm',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/farm/cover.webp',
+    cover: '/coloring/farm/cover.outline.webp',
     pages: [
       // Night twins shipped for both orientations (ADR-0052).
       page('farm', 'cat', 'Cat', ['portrait', 'landscape']),
@@ -97,7 +97,7 @@ export const BOOKS: Book[] = [
     id: 'dinosaur',
     name: 'Dinosaurs',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/dinosaur/cover.webp',
+    cover: '/coloring/dinosaur/cover.outline.webp',
     pages: [
       // Night twins shipped for both orientations (ADR-0052).
       page('dinosaur', 'brachiosaurus', 'Brachiosaurus', ['portrait', 'landscape']),
@@ -112,7 +112,7 @@ export const BOOKS: Book[] = [
     id: 'creatures',
     name: 'Creatures',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/creatures/cover.webp',
+    cover: '/coloring/creatures/cover.outline.webp',
     pages: [
       // Night twins shipped for both orientations (ADR-0052).
       page('creatures', 'dragon', 'Dragon', ['portrait', 'landscape']),
@@ -127,7 +127,7 @@ export const BOOKS: Book[] = [
     id: 'nature',
     name: 'Nature',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/nature/cover.webp',
+    cover: '/coloring/nature/cover.outline.webp',
     pages: [
       // Night twins shipped for both orientations (ADR-0052).
       page('nature', 'ant', 'Ant', ['portrait', 'landscape']),
@@ -142,7 +142,7 @@ export const BOOKS: Book[] = [
     id: 'objects',
     name: 'Objects',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/objects/cover.webp',
+    cover: '/coloring/objects/cover.outline.webp',
     pages: [
       page('objects', 'apple', 'Apple'),
       page('objects', 'balloon', 'Balloon'),
@@ -155,7 +155,7 @@ export const BOOKS: Book[] = [
     id: 'shapes',
     name: 'Shapes',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/shapes/cover.webp',
+    cover: '/coloring/shapes/cover.outline.webp',
     pages: [
       page('shapes', 'circle', 'Circle'),
       page('shapes', 'rectangle', 'Rectangle'),
@@ -168,7 +168,7 @@ export const BOOKS: Book[] = [
     id: 'space',
     name: 'Space',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/space/cover.webp',
+    cover: '/coloring/space/cover.outline.webp',
     pages: [
       // Night twins shipped for both orientations (ADR-0052).
       page('space', 'astronaut', 'Astronaut', ['portrait', 'landscape']),
@@ -183,7 +183,7 @@ export const BOOKS: Book[] = [
     id: 'vehicles',
     name: 'Vehicles',
     platforms: ['web', 'mobile'],
-    cover: '/coloring/vehicles/cover.webp',
+    cover: '/coloring/vehicles/cover.outline.webp',
     pages: [
       page('vehicles', 'excavator', 'Excavator'),
       page('vehicles', 'fire', 'Fire Truck'),
@@ -213,9 +213,9 @@ export function pageNightImage(page: ColoringPage, orientation: BookOrientation)
   return page.nightImages[orientation] ?? null;
 }
 
-/** Grid-thumbnail path for a picker-facing line-art image (`x.webp` -> `x-thumb.webp`). */
+/** Grid-thumbnail path for a picker-facing line-art image (`x.outline.webp` -> `x.thumb.webp`). */
 export function thumbPath(src: string): string {
-  return src.replace(/\.webp$/, '-thumb.webp');
+  return src.replace(/\.outline\.webp$/, '.thumb.webp');
 }
 
 export function bookAssetPaths(book: Book): string[] {

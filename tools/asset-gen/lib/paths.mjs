@@ -14,12 +14,12 @@ export const COLORING_DIR = join(WEB_STATIC, 'coloring');
 export const STYLES_DIR = join(WEB_STATIC, 'styles');
 
 // Committed source-of-truth for the colored twins WITH their outlines intact (the
-// raw model output). The shipped web/static/coloring/*.{color,night}.webp are the
+// raw model output). The shipped web/static/coloring/*.{light,night}.webp are the
 // fills-only *punch* of these — their own outlines masked out so the overlay's line
 // art isn't doubled when the magic brush reveals a twin (see punch-twin-outlines.mjs
 // and ADR-0043). The raws keep the lines so the drift auditor can still
 // score outline registration. Deliberately OUTSIDE web/static so they never ship to
-// web or native. Layout mirrors COLORING_DIR: {book}/{page}-{orient}.{color,night}.raw.webp
+// web or native. Layout mirrors COLORING_DIR: {book}/{page}-{orient}.{light,night}.raw.webp
 export const TWIN_SRC_DIR = join(ASSET_GEN_DIR, 'twin-src');
 
 // Gitignored review scratch — candidates, overlays, review sheets. Never shipped.

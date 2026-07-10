@@ -76,7 +76,7 @@ worst-tile gate — so it likely has the same global-average blind spot for
 localized drift, in dark mode.
 
 - **Task:** either (a) point `check-coloring-drift.mjs` at the night twins too
-  (it currently reads `*.color.webp`; night twins are `*.night.webp` and are
+  (it currently reads the light `*.light.raw.webp` raws; night twins are `*.night.webp` and are
   white-line-on-dark, so the mask polarity differs — needs an inversion path), or
   (b) add a worst-tile check to the dark generator's gate. (a) is the cheaper first
   step to just *find out* whether any night twins drift locally.

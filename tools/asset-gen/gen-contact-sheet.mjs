@@ -1,6 +1,6 @@
 // Build a self-contained HTML contact sheet of the coloring twins for one or
 // more categories, so they can be reviewed in a browser / published as an
-// Artifact. Covers both the dark "night" twins and the light `.color.webp`
+// Artifact. Covers both the dark "night" twins and the light `.light.webp`
 // twins (toggle in the sheet). Images are embedded as base64 data URIs (no
 // external file refs), so the page renders anywhere — including the Artifact
 // sandbox, whose CSP blocks linking to local files.
@@ -15,13 +15,13 @@
 //   --source samples  (default) read fresh takes from .coloring-samples-dark/
 //   --source shipped  read the live assets from web/static/coloring/*.night.webp
 //   --theme dark      (default) open in dark; --theme light opens the light-twin
-//                     review (the .color.webp under black lines — the magic-brush look)
+//                     review (the .light.webp under black lines — the magic-brush look)
 //   --out FILE        output path (default .coloring-samples-dark/contact-sheet.html)
 //
 // Each cell embeds THREE layers so the sheet can reproduce what a child actually
 // sees, not just the raw generated twin:
 //   • color   — the generated colored twin alone (night twin in dark, light
-//               `.color.webp` twin in light).
+//               `.light.webp` twin in light).
 //   • outline — the page line art rendered as the canvas renders it (white
 //               "chalk" on dark paper in dark mode; black lines on light paper
 //               in light mode).
@@ -88,8 +88,8 @@ function nightPath(cat, id, orient) {
 }
 // The original black-on-white line art, and the light colored twin — both always
 // live in web/static regardless of --source.
-const lineArtPath = (cat, id, orient) => join(staticDir, cat, `${id}-${orient}.webp`);
-const lightPath = (cat, id, orient) => join(staticDir, cat, `${id}-${orient}.color.webp`);
+const lineArtPath = (cat, id, orient) => join(staticDir, cat, `${id}-${orient}.outline.webp`);
+const lightPath = (cat, id, orient) => join(staticDir, cat, `${id}-${orient}.light.webp`);
 
 function dataUri(p) {
   if (!existsSync(p)) return null;
