@@ -164,13 +164,12 @@
   // aware (ADR-0052 direction B): light mode reveals the light twin; dark mode
   // reveals the pre-colored NIGHT twin where one exists, falling back to the
   // light twin for pages/orientations whose night asset isn't generated yet.
-  // The line art (overlayUrl) is always the original black-on-white page, so the
-  // fills-only mask (magicBrush.buildFillsSheet) punches either twin's outlines
-  // with the same polarity — no per-twin flip needed. Reading resolvedTheme()
-  // re-runs this on a live theme switch, re-rasterizing the sheet.
+  // Both twins ship fills-only (outlines punched to transparency at build time),
+  // so the overlay <img> stays the single source of line work. Reading
+  // resolvedTheme() re-runs this on a live theme switch, re-rasterizing the sheet.
   $effect(() => {
     const nightUrl = resolvedTheme() === 'dark' ? coloringBookState.nightSheetUrl : null;
-    setColorSheet(nightUrl ?? coloringBookState.colorSheetUrl, coloringBookState.overlayUrl);
+    setColorSheet(nightUrl ?? coloringBookState.colorSheetUrl);
   });
 
   $effect(() => {

@@ -4,7 +4,7 @@
 // plain, lintable JS that reads its inputs from that global.
 const { cells: CELLS, theme: INITIAL_THEME } = window.__CONTACT_SHEET__;
 const RENDER_MAX = 520;
-const OUTLINE_LUMA = 150; // magicBrush.OUTLINE_LUMA_THRESHOLD
+const OUTLINE_LUMA = 150; // asset-gen's punch threshold (lib/punch-twin.mjs)
 const PAPER = { dark: '#211f29', light: '#fcfbf8' };
 const BLEND = { dark: 'screen', light: 'multiply' };
 const INVERT = { dark: true, light: false };
@@ -34,7 +34,10 @@ function fit(w, h) {
 }
 
 // Fills-only twin: punch the twin's own outline pixels using the line art as a
-// mask (luma<OUTLINE_LUMA -> transparent) — mirrors magicBrush.buildFillsSheet.
+// mask (luma<OUTLINE_LUMA -> transparent) — the same punch asset-gen bakes into
+// the shipped twins (lib/punch-twin.mjs). Shipped twins arrive fills-only so this
+// is a no-op on them; it's what makes the Combined view faithful for `--source
+// samples`, whose fresh Gemini takes still carry their outlines.
 function buildFills(twin, lineArt, w, h) {
   const fc = document.createElement('canvas');
   fc.width = w;
