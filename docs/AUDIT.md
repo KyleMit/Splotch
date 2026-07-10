@@ -6,37 +6,6 @@
 
 ## Source: Session audit
 
-### [Docs] sharp `joinChannel` → webp silently drops the alpha plane
-
-**File(s):** `tools/asset-gen/CLAUDE.md` (folder rules), `tools/asset-gen/lib/punch-twin.mjs` (where the gotcha is currently documented)
-
-#### Problem
-
-Building the punched twins, the natural sharp idiom — `sharp(rgb).joinChannel(alphaBuf,
-{raw: …}).webp().toFile(…)` — **silently flattens the 4th band**: the output decodes as
-`channels: 3, hasAlpha: false` with no error or warning (joinChannel tags the band as a
-generic extra channel, not alpha, and the webp encoder drops it). This session's first
-full 154-file batch shipped with no alpha at all; it was caught only by an explicit
-post-hoc metadata check, then took an isolated repro to attribute, then a full re-encode.
-The failure mode is *silent output corruption* in the folder's core library, and asset-gen
-is sharp-heavy — any future transparency work (night-twin tooling, thumbnail alpha) can
-reach for the same idiom. The gotcha is now documented, but only in a code comment inside
-`lib/punch-twin.mjs` where the next fresh script won't see it. Cost: slow.
-
-#### Proposed solution
-
-Add one line to the `tools/asset-gen/CLAUDE.md` rules list: "**sharp gotcha:** never
-`joinChannel` an alpha plane and encode — the band isn't tagged as alpha and webp/png
-output silently flattens it. Build an explicit interleaved RGBA buffer and construct
-`sharp(rgba, {raw: {…, channels: 4}})` (see `lib/punch-twin.mjs`), and verify outputs
-with `sharp(out).metadata()` → `hasAlpha: true`."
-
-#### Verification
-
-The next session writing alpha-producing sharp code greps or reads the folder CLAUDE.md
-and uses the raw-RGBA construction first — no silent 3-channel batch followed by a
-re-encode in the transcript.
-
 ### [Docs] run-splotch's custom-script example isn't runnable as written
 
 **File(s):** `.claude/skills/run-splotch/SKILL.md` (custom Playwright script example, ~lines 78–90)

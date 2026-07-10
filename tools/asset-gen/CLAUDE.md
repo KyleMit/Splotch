@@ -22,6 +22,12 @@ when working in this folder:
   truth for prompts/safety/catalog. Don't reach into anything else under `web/src`.
 - **Cross-platform (ADR-0017):** plain Node `.mjs`, no bash-isms, forward-slash
   glob patterns with a resolved `cwd` (not `join`-built patterns).
+- **sharp alpha gotcha:** never `joinChannel` an alpha plane and encode — sharp
+  tags the 4th band as a generic extra channel, not alpha, so the webp/png encoder
+  *silently* flattens it (output decodes `channels: 3, hasAlpha: false`, no error).
+  Interleave an explicit RGBA buffer and construct `sharp(rgba, { raw: { width,
+  height, channels: 4 } })` instead (see `punchTwin` in `lib/punch-twin.mjs`), and
+  verify outputs with `sharp(out).metadata()` → `hasAlpha: true`.
 - **Outputs are committed artifacts**, reviewed by a human before shipping. The
   generators write shipped art into `web/static/` and review scratch into the
   gitignored `.coloring-samples*/`. Never commit the scratch dirs.
