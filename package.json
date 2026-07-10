@@ -238,6 +238,11 @@
     "@sveltejs/adapter-static": "^3.0.10",
     "idb": "^8.0.3"
   },
+  "overrides": {
+    "@capacitor/assets": {
+      "sharp": "$sharp"
+    }
+  },
   "browserslist": [
     "chrome >= 111",
     "edge >= 111",

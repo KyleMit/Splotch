@@ -20,10 +20,24 @@ cd "$CLAUDE_PROJECT_DIR"
 # Discard that churn, but never touch a lockfile that already had edits.
 lock_was_clean=false
 if git diff --quiet -- package-lock.json 2>/dev/null; then lock_was_clean=true; fi
-npm install
+
+# A dependency lifecycle script that fetches from outside the npm registry (old
+# sharp's libvips download from GitHub releases was one — see the sharp entry in
+# package.json `overrides`) 403s through the session's egress proxy, and under
+# `set -e` that used to kill this hook silently, leaving the session with no
+# deps at all. Fall back to skipping lifecycle scripts: patch-package is the
+# only one the repo needs, so re-running it by hand reproduces the working tree.
+if ! npm install; then
+  echo "session-start.sh: npm install failed — retrying with --ignore-scripts + patch-package (docs/CLOUD.md 'Getting dependencies ready')"
+  npm install --ignore-scripts
+  npx patch-package
+fi
+
 if [ "$lock_was_clean" = true ] && ! git diff --quiet -- package-lock.json; then
   git checkout -- package-lock.json
 fi
 
-# Generate .svelte-kit types so `npm run check` and `npm run dev` work immediately.
-npx svelte-kit sync
+# Generate web/.svelte-kit types so `npm run check` and `npm run dev` work
+# immediately (the SvelteKit app lives in web/, so sync must run there —
+# ADR-0024; scripts/web.mjs is the cwd shim).
+node scripts/web.mjs svelte-kit sync
