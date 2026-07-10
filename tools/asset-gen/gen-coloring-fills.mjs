@@ -1,8 +1,14 @@
 // Generates a flat-color "answer key" for each black-and-white coloring page in
 // web/static/coloring/ by asking Gemini to color inside the existing lines.
 // The colored version keeps the page's exact black outlines and only fills the
-// white regions with solid flat color, so a future brush tool can pair each
-// page with its colored twin and reveal the prefilled colors as a child paints.
+// white regions with solid flat color, so the magic brush can pair each page
+// with its colored twin and reveal the prefilled colors as a child paints.
+//
+// Shipping is two files per twin: the raw (lined) result is committed to
+// tools/asset-gen/twin-src/ as the source of truth — the drift audit scores it —
+// and its fills-only punch (outlines masked out with the line art, so the app's
+// overlay is the single source of line work) is what lands in web/static/coloring/
+// as the shipped .color.webp (lib/punch-twin.mjs; ADR-0043 "reveal fills only").
 //
 // Requires GEMINI_API_KEY. Run via npm so the .ts imports resolve:
 //   npm run gen:coloring-fills                                 all pages
@@ -24,14 +30,15 @@
 // attempt is kept if none fully pass. (See lib/outline-match.mjs; the same scoring
 // backs `npm run gen:coloring-fills:audit`, which flags already-shipped twins.)
 import { parseArgs } from 'node:util';
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
+import { REPO_ROOT, COLORING_DIR, TWIN_SRC_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
+import { punchTwin } from './lib/punch-twin.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-2.5-flash-image';
@@ -329,8 +336,12 @@ for (const page of pages) {
         await sharp(colored).toFile(out);
         await sharp(overlay).toFile(join(dir, `sample-${i + 1}.overlay.png`));
       } else {
-        out = join(dirname(page), `${rel.split('/').pop()}.color.webp`);
-        await sharp(colored).toFile(out);
+        // Ship = the raw (lined) twin into twin-src/ as the committed source of
+        // truth, then its fills-only punch into web/static (lib/punch-twin.mjs).
+        const rawOut = join(TWIN_SRC_DIR, `${rel}.color.raw.webp`);
+        await mkdir(dirname(rawOut), { recursive: true });
+        await writeFile(rawOut, colored);
+        ({ out } = await punchTwin(rawOut));
       }
       console.log(`${score}${tries}${flag}  -> ${relative(REPO_ROOT, out)}`);
     } catch (err) {

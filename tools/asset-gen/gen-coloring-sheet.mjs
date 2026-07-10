@@ -13,7 +13,7 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
 import { join, relative, basename } from 'node:path';
 import sharp from 'sharp';
-import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
+import { REPO_ROOT, COLORING_DIR, TWIN_SRC_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
 
 const OUT_DIR = SAMPLES_DIR;
 const OUT = join(OUT_DIR, 'review-sheet.html');
@@ -63,15 +63,20 @@ async function outlineKeep(sourceBuf, coloredBuf) {
 
 const { positionals } = parseArgs({ allowPositionals: true });
 
-// Find every X.color.webp, optionally limited to the given category dirs.
+// Find every raw (lined) twin in twin-src/, optionally limited to the given
+// category dirs. The raws — not the shipped punched twins — are what this sheet
+// reviews: the flip and the outline-keep score both need the twin's own lines.
 async function pairs() {
   const roots = positionals.length ? positionals : [''];
   const found = [];
   for (const root of roots) {
-    const cwd = root ? join(COLORING_DIR, root) : COLORING_DIR;
-    for await (const entry of glob('**/*.color.webp', { cwd })) {
+    const cwd = root ? join(TWIN_SRC_DIR, root) : TWIN_SRC_DIR;
+    for await (const entry of glob('**/*.color.raw.webp', { cwd })) {
       const colored = join(cwd, entry);
-      const source = colored.replace(/\.color\.webp$/, '.webp');
+      const source = join(
+        COLORING_DIR,
+        relative(TWIN_SRC_DIR, colored).replace(/\.color\.raw\.webp$/, '.webp')
+      );
       found.push({ colored, source });
     }
   }
@@ -79,7 +84,7 @@ async function pairs() {
 }
 
 const list = await pairs();
-if (!list.length) fail('No *.color.webp twins found. Run gen:coloring-fills first.');
+if (!list.length) fail('No *.color.raw.webp twins found. Run gen:coloring-fills first.');
 
 // Embed a review-size copy (not the full 1536px asset) so a whole-book sheet
 // stays a few MB instead of tens — still plenty of detail to check the overlap.

@@ -9,8 +9,14 @@ when working in this folder:
   `cap sync` + `patch-package` (ADR-0029). Never add a `dependencies` block here
   or `npm install` in this folder — binaries resolve upward from the root tree.
 - **Paths go through `lib/paths.mjs`.** Use its exported constants (`REPO_ROOT`,
-  `COLORING_DIR`, `STYLES_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) — don't hardcode
-  `../../..` walks or import from `scripts/lib/`.
+  `COLORING_DIR`, `STYLES_DIR`, `TWIN_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`)
+  — don't hardcode `../../..` walks or import from `scripts/lib/`.
+- **Raw twins are the source of truth; shipped twins are derived.** The lined
+  colored twins live in `twin-src/` (committed, never shipped); the shipped
+  `web/static/coloring/**/*.{color,night}.webp` are their fills-only punch
+  (`punch-twin-outlines.mjs`, root: `npm run gen:coloring-punch` — offline,
+  deterministic). Never hand-edit a shipped twin, and after changing any raw,
+  re-punch it. The drift audit scores the raws.
 - **The only sanctioned imports from `web/src`** are the four modules listed in
   `README.md` (styles, prompt, geminiSafety, books) — the app's single source of
   truth for prompts/safety/catalog. Don't reach into anything else under `web/src`.

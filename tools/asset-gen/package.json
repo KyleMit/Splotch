@@ -9,6 +9,7 @@
     "coloring-fills": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-coloring-fills.mjs",
     "coloring-fills-dark": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-coloring-fills-dark.mjs",
     "retouch-line-art": "node --experimental-strip-types --disable-warning=ExperimentalWarning retouch-line-art.mjs",
+    "coloring-punch": "node punch-twin-outlines.mjs",
     "coloring-thumbs": "node gen-coloring-thumbs.mjs",
     "coloring-sheet": "node gen-coloring-sheet.mjs",
     "contact-sheet": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-contact-sheet.mjs",

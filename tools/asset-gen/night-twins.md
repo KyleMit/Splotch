@@ -175,7 +175,8 @@ eye lesson applies to light mode too):
 2. `node tools/asset-gen/gen-coloring-thumbs.mjs <cat>` (picker thumbnail).
 3. `gen-coloring-fills.mjs <cat>/<page>-tall <cat>/<page>-wide` (light `.color.webp`).
 4. `gen-coloring-fills-dark.mjs <cat>/<page>-tall <cat>/<page>-wide --max-attempts 4`,
-   then copy the samples to `…/<page>-<orient>.night.webp`.
+   then copy the samples to `twin-src/<cat>/<page>-<orient>.night.raw.webp` and
+   `npm run gen:coloring-punch -- <cat>/<page>`.
 5. Rebuild the contact sheet `--source shipped`, verify eyes read well in Combined light AND
    dark, then `npm run check:assets && npm run check && npm run test:unit` and commit.
 
@@ -212,14 +213,17 @@ Combined light and dark.)
    line art. Reach for it only for the stubborn pale outliers; the default 0 keeps the
    input pixel-faithful.
 4. **On the user's approval**, ship:
-   - Copy each twin from samples to the shipped path (strip the sample suffix, add
-     `.night`):
+   - Copy each twin from samples to its RAW source path in `twin-src/` (strip the
+     sample suffix, add `.night.raw`), then punch the shipped fills-only twins:
      ```bash
      for p in cat cow dog duck horse pig; do
-       cp .coloring-samples-dark/farm/$p-tall.webp web/static/coloring/farm/$p-tall.night.webp
-       cp .coloring-samples-dark/farm/$p-wide.webp web/static/coloring/farm/$p-wide.night.webp
+       cp .coloring-samples-dark/farm/$p-tall.webp tools/asset-gen/twin-src/farm/$p-tall.night.raw.webp
+       cp .coloring-samples-dark/farm/$p-wide.webp tools/asset-gen/twin-src/farm/$p-wide.night.raw.webp
      done
+     npm run gen:coloring-punch -- farm
      ```
+     Never copy a lined twin straight into `web/static/coloring/` — the shipped
+     `.night.webp` must be the punched (fills-only) derivation of the raw.
    - Wire the catalog in `web/src/lib/state/books.ts` — add the night orientations to
      each page: `page('farm', 'cat', 'Cat', ['portrait', 'landscape'])`.
    - `npm run check:assets` (validates every listed twin exists; also gates
@@ -238,8 +242,10 @@ npm run test:unit      # includes books/coloringBook night-twin tests
 
 ## Notes
 
-- `.coloring-samples-dark/` is gitignored — never commit samples. Only the shipped
-  `web/static/coloring/**/*.night.webp` + the `books.ts` wiring get committed.
+- `.coloring-samples-dark/` is gitignored — never commit samples. What gets
+  committed: the raw twins in `tools/asset-gen/twin-src/**/*.night.raw.webp`, their
+  punched `web/static/coloring/**/*.night.webp` derivations, and the `books.ts`
+  wiring.
 - No thumbnails for night twins (they're never in the picker grid, like
   `.color.webp`). `bookAssetPaths()` already lists them for check-assets.
 - Light mode must stay byte-identical throughout.

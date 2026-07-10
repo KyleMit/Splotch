@@ -1,7 +1,11 @@
-// Audit every shipped colored twin (`*.color.webp`) for outline drift against its
-// source line art, using the SAME scoring the generation gate applies
-// (lib/outline-match.mjs). It exists because the gate only ran at generation time
-// and only on a global average: twins generated before the worst-tile gate — most
+// Audit every committed RAW colored twin (`twin-src/**/*.color.raw.webp`) for
+// outline drift against its source line art, using the SAME scoring the generation
+// gate applies (lib/outline-match.mjs). It scores the raws — not the shipped
+// `*.color.webp` — because shipping punches the twin's own outlines out
+// (punch-twin-outlines.mjs), leaving nothing for outlineMatch to register; the raw
+// keeps the lines, and the shipped twin is a pure derivation of it, so a clean raw
+// means a clean reveal. It exists because the gate only ran at generation time and
+// only on a global average: twins generated before the worst-tile gate — most
 // notably nature/ant-wide — shipped with a badly drifted region (a flower) that the
 // child sees under the magic brush, while the global score stayed above the bar.
 //
@@ -22,7 +26,7 @@ import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
-import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
+import { REPO_ROOT, COLORING_DIR, TWIN_SRC_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
 
 const { values, positionals } = parseArgs({
@@ -56,9 +60,9 @@ if (values.overlay) await mkdir(overlayDir, { recursive: true });
 
 const rows = [];
 for (const page of pages) {
-  const twin = page.replace(/\.webp$/, '.color.webp');
-  if (!existsSync(twin)) continue; // no twin generated for this page yet
   const rel = relative(COLORING_DIR, page).replace(/\.webp$/, '');
+  const twin = join(TWIN_SRC_DIR, `${rel}.color.raw.webp`);
+  if (!existsSync(twin)) continue; // no twin generated for this page yet
   const [source, filled] = await Promise.all([readFile(page), readFile(twin)]);
   const { keep, localKeep, worstTile, overlay } = await outlineMatch(source, filled);
   const failed = keep < KEEP_THRESHOLD || localKeep < LOCAL_KEEP_THRESHOLD;
