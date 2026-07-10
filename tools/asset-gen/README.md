@@ -114,6 +114,12 @@ as base64 data URIs), built to render anywhere:
 - For a **focused** pass, `gen-contact-sheet.mjs` takes page/cell targets
   (`nature/ant`, `nature/ant-wide`) and `--theme light` to open the light-twin
   (magic-brush) view — not just a whole dark category.
+- **To change how the sheet looks or behaves**, edit the real files under
+  `contact-sheet/` — `contact-sheet.css` (styling) and `contact-sheet.client.js`
+  (the in-browser render/interaction runtime). `gen-contact-sheet.mjs` only
+  assembles the shell and injects the cell data + initial theme as a JSON global
+  (`window.__CONTACT_SHEET__`), so those two files carry the design surface with
+  full editor highlighting, Prettier, and ESLint.
 - If a raw PNG is genuinely needed, **don't launch Chromium directly** — the cloud
   env's Chromium revision drifts from Playwright's pin. Reuse `run-splotch`'s
   `chromiumExecutablePath()` fallback or set `PLAYWRIGHT_CHROMIUM`
