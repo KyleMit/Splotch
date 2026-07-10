@@ -9,8 +9,8 @@ Handoffs are **transient**, not documentation. A durable decision belongs in an
 ADR (`/create-adr`); a durable TODO belongs in `docs/BACKLOG.md`; behavioural
 feedback belongs in `memory/`. A handoff is deleted the moment it's consumed.
 
-Write one with the `handoff` skill (`/handoff`); consume one with the
-`resume-handoff` skill (`/resume-handoff`).
+Write one with the `create-handoff` skill (`/create-handoff`); consume one with
+the `resume-handoff` skill (`/resume-handoff`).
 
 ## One file per handoff
 
@@ -56,7 +56,7 @@ re-explaining them.
 
 1. **Commit and push the handoff with its branch.** In a cloud session the
    container is reclaimed after inactivity; an uncommitted handoff (and the work
-   it describes) is lost. `handoff` commits the doc and pushes the branch.
+   it describes) is lost. `create-handoff` commits the doc and pushes the branch.
 2. **`resume-handoff` consumes then deletes it.** Its first job is to verify the
    packet against the repo (mark each item confirmed / stale / missing) — *then*
    proceed. It deletes the file immediately once absorbed and commits the

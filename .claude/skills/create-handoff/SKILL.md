@@ -1,5 +1,5 @@
 ---
-name: handoff
+name: create-handoff
 description: Write a session-to-session transfer packet to docs/handoff/ so another Claude session can pick up in-flight work without re-deriving it. Use when wrapping up before /clear, running low on context, or when the user says to "hand this off", "write a handoff", or pause work for later. To pick a handoff back up, use resume-handoff instead.
 ---
 

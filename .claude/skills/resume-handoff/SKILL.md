@@ -1,6 +1,6 @@
 ---
 name: resume-handoff
-description: Pick up in-flight work from a transfer packet in docs/handoff/. Verifies the packet against the current repo, reports what's stale/missing, deletes the consumed handoff, then continues the work. Use when the user says to "resume", "pick up the handoff", "continue where we left off", or names a handoff to resume. To write a handoff, use handoff instead.
+description: Pick up in-flight work from a transfer packet in docs/handoff/. Verifies the packet against the current repo, reports what's stale/missing, deletes the consumed handoff, then continues the work. Use when the user says to "resume", "pick up the handoff", "continue where we left off", or names a handoff to resume. To write a handoff, use create-handoff instead.
 ---
 
 # Resume handoff
@@ -45,7 +45,7 @@ then proceed. Read `docs/handoff/CLAUDE.md` for the folder conventions.
    git commit -m "Consume handoff for <topic>"
    ```
    The packet's content now lives in this session's context; if substantial work
-   remains when you stop, write a fresh handoff with `/handoff`.
+   remains when you stop, write a fresh handoff with `/create-handoff`.
 
 5. **Proceed** with the packet's **next 3 steps**, adjusted for anything you
    marked stale.
