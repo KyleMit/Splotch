@@ -271,3 +271,34 @@ form rather than the single-axis one.
 - Margin ink still crops on rotating back and may drop once keyframed past the
   paper-square baseline, exactly as pen ink in the margins already does (ADR-0050) — the
   reveal follows the same rules as every other op.
+
+## Follow-up: the punch moved to build time — shipped twins are fills-only
+
+The fills-only fix above ran at **runtime**: the app downloaded the lined twin and
+`buildFillsSheet` punched its outlines out on every page apply. But the lined twin
+was never shown — every consumer (the reveal, and the contact sheet's Combined
+view, which duplicated the same mask logic) punched it first. So the punch is now
+a **build-time post-process** and the app ships the final image:
+
+- The lined twins ("raws") moved out of `web/static` into
+  `tools/asset-gen/twin-src/{book}/{page}-{orient}.{color,night}.raw.webp` —
+  committed as the source of truth, never shipped to web or native.
+- `tools/asset-gen/lib/punch-twin.mjs` (`npm run gen:coloring-punch`) derives the
+  shipped `web/static/coloring/**/*.{color,night}.webp` from the raws with the
+  same mask math `buildFillsSheet` used (line-art luma < 150 → transparent).
+  Offline, deterministic `sharp` — the migration reprocessed the existing
+  committed raws with no regeneration. `gen-coloring-fills.mjs` ships through the
+  same helper (raw to `twin-src/`, punch to `web/static`), so a lined twin can't
+  reach the app by construction.
+- The **drift audit** (`gen:coloring-fills:audit`) now scores the raws — the
+  shipped twins have no outlines left to register. A clean raw guarantees a clean
+  punch, because the shipped twin is a pure derivation.
+- **Cost:** the shipped twin carries a binary alpha plane (the line art's shape,
+  lossless), which is real entropy the lined twin didn't pay. Measured on
+  ant-tall.color (raw 71 KB): q90 108 KB, q85/effort6 88 KB — shipped at
+  q85/effort6, ~13.5 MB total vs 12 MB before for all 154 twins.
+- **Next:** with fills-only twins shipped, the runtime `buildFillsSheet` /
+  `OUTLINE_LUMA_THRESHOLD` / line-art-loading path in `magicBrush.ts` and the
+  duplicated `buildFills` in the contact sheet become dead weight (the runtime
+  re-mask is a harmless no-op on already-punched pixels) and can be deleted —
+  the reveal becomes a plain image load.

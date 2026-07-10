@@ -18,8 +18,21 @@ into the root `node_modules`, so there is nothing to install in this folder —
 **do not run `npm install` here.**
 
 Path/tree resolution is centralized in `lib/paths.mjs` (`REPO_ROOT`,
-`COLORING_DIR`, `STYLES_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) so the scripts
-never hardcode `../../..` walks or reach back into `scripts/lib/`.
+`COLORING_DIR`, `STYLES_DIR`, `TWIN_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`)
+so the scripts never hardcode `../../..` walks or reach back into `scripts/lib/`.
+
+### Raw twins vs shipped twins
+
+`twin-src/{book}/{page}-{orient}.{color,night}.raw.webp` (committed, in this
+folder, never shipped) holds the colored twins **with their outlines intact** —
+the raw model output. The shipped `web/static/coloring/**/*.{color,night}.webp`
+are the fills-only **punch** of those raws: `punch-twin-outlines.mjs` masks each
+raw's own outline pixels out using the page's line art, because the app's overlay
+`<img>` already draws the line art on top and revealing the twin's copy would
+double every line (ADR-0043 "reveal fills only"). The punch is deterministic,
+offline `sharp` — no key, no network — so the shipped twins are always a pure,
+reproducible derivation of the raws. Edit or regenerate a raw, then re-punch;
+never hand-edit a shipped twin.
 
 ### The one coupling to the app
 
@@ -42,7 +55,8 @@ From the **repo root** (the discoverable entry points — ADR-0019):
 ```bash
 npm run gen:style-covers        # AI style thumbnails  -> web/static/styles/
 npm run gen:coloring-fills      # light colored twins  -> web/static/coloring/**/*.color.webp
-npm run gen:coloring-fills:audit # drift-check shipped twins (no key/network)
+npm run gen:coloring-fills:audit # drift-check the raw twins in twin-src/ (no key/network)
+npm run gen:coloring-punch      # re-derive shipped fills-only twins from twin-src/ raws (no key/network)
 npm run gen:coloring-thumbs     # picker thumbnails     -> web/static/coloring/**/*-thumb.webp
 npm run gen:coloring-sheet      # light-twin review sheet (gitignored)
 npm run gen:contact-sheet -- all # HTML contact sheet of every twin (gitignored) — publish as an Artifact
@@ -65,11 +79,13 @@ at 34%, which is exactly how `nature/ant-wide` shipped drifted. `alignToSource`
 only corrects a single global nudge, so a self-drifted feature can't be aligned
 away; a failing candidate is retried, and if none pass, regenerate.
 
-`gen:coloring-fills:audit` runs the same scoring over the **already-shipped**
-twins (it reads committed assets only — no key, no network) and prints the pages
-that fail, with a ready-to-run regenerate command. `--overlay` dumps a drift map
-per failing page (red = source outline the twin left uncovered) to
-`.coloring-samples/drift/`.
+`gen:coloring-fills:audit` runs the same scoring over the **committed raw twins**
+in `twin-src/` (it reads committed assets only — no key, no network) and prints
+the pages that fail, with a ready-to-run regenerate command. It scores the raws
+rather than the shipped twins because the shipped ones are punched fills-only
+(no outlines left to register); a clean raw guarantees a clean punch. `--overlay`
+dumps a drift map per failing page (red = source outline the twin left uncovered)
+to `.coloring-samples/drift/`.
 
 Or, from **inside this folder**, the local aliases (same flags, resolve the same
 root `node_modules`):
