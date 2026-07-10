@@ -543,7 +543,7 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.outline\.webp$/);
 });
 
-// Apply the first Farm page and wait for its overlay + colored twin to be ready.
+// Apply the first Farm page and wait for its overlay + colored fill to be ready.
 async function applyFarmPage(page: Page) {
   await page.locator('#coloringBookButton').click();
   const dialog = page.locator('#coloring-book-dialog');
@@ -637,7 +637,7 @@ test('the magic brush is always available and paints the coloring page colors', 
   await magic.click();
   await expect(magic).toHaveAttribute('aria-pressed', 'true');
 
-  // Paint across the picture: the reveal should show many of the twin's fill
+  // Paint across the picture: the reveal should show many of the fill's fill
   // colors, not one flat pen color.
   await draw(page, [
     { x: 120, y: 120 },
@@ -652,9 +652,9 @@ test('the magic brush is always available and paints the coloring page colors', 
   await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
 });
 
-// Fraction of opaque canvas pixels that are near-black — the twin's own outlines,
+// Fraction of opaque canvas pixels that are near-black — the fill's own outlines,
 // which the reveal must NOT paint. The overlay <img> (a separate element, not on
-// the canvas) is the only source of line work; revealing the twin's copy on the
+// the canvas) is the only source of line work; revealing the fill's copy on the
 // canvas would double every line under the overlay and ghost on any drift
 // (ADR-0043). So the fills-only reveal leaves the canvas essentially black-free.
 function revealedNearBlackFraction(page: Page): Promise<number> {
@@ -672,7 +672,7 @@ function revealedNearBlackFraction(page: Page): Promise<number> {
   });
 }
 
-test('the magic brush reveals fills only, never the twin outlines (no double lines)', async ({
+test('the magic brush reveals fills only, never the fill outlines (no double lines)', async ({
   page,
 }) => {
   await gotoApp(page);
@@ -681,7 +681,7 @@ test('the magic brush reveals fills only, never the twin outlines (no double lin
   await page.locator('#magicBrushButton').click();
 
   // Sweep across the picture, crossing many black outlines (clouds, cattails,
-  // duck, water). Before the outline-masking fix the reveal painted the twin's
+  // duck, water). Before the outline-masking fix the reveal painted the fill's
   // own black lines onto the canvas here (~2.8% of opaque pixels); the overlay
   // then drew those same lines again, so any drift doubled them. Now the reveal
   // is flat fills, so the canvas stays effectively black-free.
@@ -710,7 +710,7 @@ function opaquePixelsInLeftBand(page: Page, frac = 0.04): Promise<number> {
 }
 
 // A coloring page is contain-fit, so a differently-proportioned viewport letterboxes
-// it (left/right in this landscape default). The twin's edge colours are extended
+// it (left/right in this landscape default). The fill's edge colours are extended
 // into those margins so the brush paints the whole canvas with no hard seam — before
 // the fix a stroke in the margin revealed nothing (transparent sheet). ADR-0043.
 test('the magic brush paints the letterbox margin by extending the edge colour', async ({

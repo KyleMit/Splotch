@@ -6,11 +6,11 @@
 ## Context
 
 The AI (`@google/genai`) + image-processing (`sharp`) scripts that **produce**
-Splotch's committed art — AI style covers, light/dark coloring-page twins, picker
+Splotch's committed art — AI style covers, light/dark coloring-page fills, picker
 thumbnails, line-art retouching, format utilities — had grown large and
 technically distinct from serving the app. They carry bespoke `sharp` scoring
 pipelines (outline registration, drift/night/line-color gates), a multi-page
-runbook (`night-twins.md`), and their own retry/temperature machinery. Iterating
+runbook (`night-fills.md`), and their own retry/temperature machinery. Iterating
 on them meant scrolling past them in `scripts/`, which mixes them with
 build-path codegen and app-driving Playwright scripts.
 
@@ -57,7 +57,7 @@ installed — `node_modules` layout is unchanged.
 What moved: `gen-style-covers`, `gen-coloring-fills`, `gen-coloring-fills-dark`,
 `retouch-line-art`, `gen-coloring-thumbs`, `gen-coloring-sheet` (since retired —
 its review role folded into the contact sheet), `gen-contact-sheet`,
-`png-to-webp`, `lib/pixelate.mjs`, and the `night-twins.md` runbook.
+`png-to-webp`, `lib/pixelate.mjs`, and the `night-fills.md` runbook.
 
 What stayed in `scripts/`: build-path codegen (`gen:icons`, `gen:releases`) and
 the app-driving Playwright generators (`gen:shots`/`store-shots.mjs`,

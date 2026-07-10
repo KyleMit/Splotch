@@ -41,7 +41,7 @@ describe('rainbow gradient generation', () => {
 });
 
 describe('letterbox edge extension geometry', () => {
-  // A tall twin contain-fit into a taller viewport → top + bottom margins only.
+  // A tall fill contain-fit into a taller viewport → top + bottom margins only.
   it('fills top and bottom margins for a top/bottom letterbox', () => {
     const fills = edgeMargins(400, 1000, 0, 200, 400, 600); // box fills width, 200px bands
     expect(fills).toHaveLength(2);
@@ -57,7 +57,7 @@ describe('letterbox edge extension geometry', () => {
     expect(bottom.sy).toBeLessThan(800); // above the bottom edge (inset)
   });
 
-  // A wide twin contain-fit into a wider viewport → left + right margins only.
+  // A wide fill contain-fit into a wider viewport → left + right margins only.
   it('fills left and right margins for a left/right letterbox, preserving the edge column', () => {
     const fills = edgeMargins(1000, 400, 200, 0, 600, 400);
     expect(fills).toHaveLength(2);
@@ -73,7 +73,7 @@ describe('letterbox edge extension geometry', () => {
     expect(right.sx).toBeLessThan(800); // just inside the right edge
   });
 
-  // A twin whose aspect matches the sheet exactly fills it — no margins to extend.
+  // A fill whose aspect matches the sheet exactly fills it — no margins to extend.
   it('returns no fills when the picture already fills the sheet', () => {
     expect(edgeMargins(400, 600, 0, 0, 400, 600)).toEqual([]);
   });

@@ -1,20 +1,20 @@
 # The contact sheet — `gen-contact-sheet.mjs`
 
 **Read this before modifying `gen-contact-sheet.mjs` or anything under
-`contact-sheet/`.** It is the single review surface for the coloring twins —
+`contact-sheet/`.** It is the single review surface for the coloring fills —
 the review-sheet role previously split across `gen-coloring-sheet.mjs` lives
 here now.
 
 ## What it builds
 
-A **self-contained HTML contact sheet** of the coloring twins for **one
+A **self-contained HTML contact sheet** of the coloring fills for **one
 category**, so they can be reviewed in a browser and published as an Artifact.
 Images are embedded as base64 data URIs (no external file refs), so the page
 renders anywhere — including the Artifact sandbox, whose CSP blocks linking to
 local files.
 
 The sheet has a light page background and shows every page as a **light + night
-pair, side by side** (light twin left, night twin right). A page's orientations
+pair, side by side** (light fill left, night fill right). A page's orientations
 stay together — its wide row, then its tall row — so each page is judged as one
 unit. The layout is a single centered column (`max-width` capped), so the images
 simply grow with the viewport until they hit that cap.
@@ -30,8 +30,8 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning \
 | Argument | Meaning |
 | --- | --- |
 | `<category>` | Exactly **one** category per sheet (`nature`), optionally focused to a page (`nature/ant` — both orientations) or a single cell (`nature/ant-wide`). `all` is rejected: a whole-catalog sheet exceeds the 16 MB Artifact upload cap — build one sheet per category. |
-| `--source shipped` | (default) read the committed assets — the live `web/static/coloring/**/*.night.webp` night twins. |
-| `--source samples` | read fresh night-twin takes from the gitignored `.coloring-samples-dark/` instead — the human review gate before a take is punched and committed. Line art and light twins always come from `web/static` either way. |
+| `--source shipped` | (default) read the committed assets — the live `web/static/coloring/**/*.night.webp` night fills. |
+| `--source samples` | read fresh night-fill takes from the gitignored `.coloring-samples-dark/` instead — the human review gate before a take is punched and committed. Line art and light fills always come from `web/static` either way. |
 | `--out FILE` | output path (default `.coloring-samples/contact-sheet.html`, gitignored). |
 
 Page IDs come from the real catalog (`web/src/lib/state/books.ts` — one of the
@@ -44,18 +44,18 @@ A sticky toolbar (only the view toggle is sticky, not the whole header) sets the
 view for every tile: **Outline → Color → Combined**, defaulting to **Combined**.
 Tapping a tile cycles that tile on its own, in the same order. Each tile embeds
 the layers to reproduce what a child actually sees, not just the raw generated
-twin:
+fill:
 
 - **outline** — the page line art rendered as the canvas renders it: black lines
   on light paper in the light half, white "chalk" on dark paper in the night half.
-- **color** — the generated colored twin alone (`.light.webp` in the light half,
-  night twin in the dark half).
-- **combined** — the real canvas composite: the fills-only twin (its own
+- **color** — the generated colored fill alone (`.light.webp` in the light half,
+  night fill in the dark half).
+- **combined** — the real canvas composite: the fills-only fill (its own
   outlines punched with the line art as a mask — the same punch asset-gen bakes
-  into shipped twins, `lib/punch-twin.mjs`) under the themed line-art layer, over
-  the paper. The in-browser punch is a no-op on shipped twins (already
+  into shipped fills, `lib/punch-fill.mjs`) under the themed line-art layer, over
+  the paper. The in-browser punch is a no-op on shipped fills (already
   fills-only) and does the real work for `--source samples`, whose fresh takes
-  still carry outlines. **This is the view to trust when judging a twin** — a
+  still carry outlines. **This is the view to trust when judging a fill** — a
   bug like blown-out eyes only shows once the layers are merged.
 
 The compositing mirrors `DrawingCanvas.svelte` + `magicBrush.ts` (ADR-0043/0052).
@@ -63,9 +63,9 @@ The compositing mirrors `DrawingCanvas.svelte` + `magicBrush.ts` (ADR-0043/0052)
 ## The outline % badge
 
 Each **light** tile carries an outline-keep badge: the % of the source line art
-the twin preserves, scored by the shared `lib/outline-match.mjs` (the same
+the fill preserves, scored by the shared `lib/outline-match.mjs` (the same
 scorer as the `gen:coloring-fills:audit` drift audit). It is computed from the
-**lined raw twin** in `twin-src/` — the shipped twin is punched fills-only,
+**lined raw fill** in `fill-src/` — the shipped fill is punched fills-only,
 leaving nothing to register. Night tiles have no badge: night raws have *white*
 outlines, which the dark-ink mask can't read. Badge colors: green ≥ 99, yellow
 ≥ 96, red below.
@@ -86,7 +86,7 @@ Prettier, and ESLint) — never by interpolating strings in the generator.
 ## When to rebuild and how to view
 
 Rebuild the sheet **every time you touch an asset** (generate, retouch,
-regenerate, or ship a twin) and **publish it with the Artifact tool** — it is
+regenerate, or ship a fill) and **publish it with the Artifact tool** — it is
 self-contained, so it renders in the sandbox; do NOT hand-composite a PNG. Judge
 on the Combined view. The Artifact tool caps uploads at **16 MB**; one category
 per sheet stays comfortably under it (the generator warns if a sheet ever

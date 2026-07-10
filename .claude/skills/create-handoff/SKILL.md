@@ -31,7 +31,7 @@ decision, a backlog item, or behavioural feedback, route it to `/create-adr`,
      assumptions · Done & verified (the checks you ran and their result) · Risks
      & next 3 steps · Reread first (links to files/ADRs/skills).
    - Keep it a packet, not a recap. Prefer a `file:line` pointer over a paragraph
-     re-explaining the code. The `docs/handoff/coloring-twin-drift.md` handoff is
+     re-explaining the code. The `docs/handoff/coloring-fill-drift.md` handoff is
      a worked example of the right density.
 
 3. **Be honest about what's verified.** Anything you *believe* but did not run a

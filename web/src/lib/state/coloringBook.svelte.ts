@@ -13,11 +13,11 @@ export { BOOKS, PLATFORMS, booksForPlatform } from './books';
 
 interface ColoringBookState {
   overlayUrl: string | null;
-  // The flat-colored twin of the active page, revealed by the magic brush
+  // The flat-colored fill of the active page, revealed by the magic brush
   // (ADR-0043). Tracked alongside overlayUrl so it's always in lockstep with the
   // line art currently shown.
   colorSheetUrl: string | null;
-  // The pre-colored "night" twin for the active page/orientation (ADR-0052
+  // The pre-colored "night" fill for the active page/orientation (ADR-0052
   // direction B), or null when none is generated yet. Dark mode reveals this
   // instead of colorSheetUrl; DrawingCanvas falls back to colorSheetUrl if null.
   nightSheetUrl: string | null;

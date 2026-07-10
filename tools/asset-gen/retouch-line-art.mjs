@@ -1,8 +1,8 @@
 // Retouch a coloring-page's BASE LINE ART with Gemini image editing, for a
 // "particularly hard section" that the color generators can't rescue downstream.
-// The motivating case (ADR-0052 / night twins): in dark mode the line art is
+// The motivating case (ADR-0052 / night fills): in dark mode the line art is
 // inverted and the eye's pupil is punched out of the reveal, so the eye is drawn
-// by the outline, not the twin — a badly-shaped eye blows out (white blob) or
+// by the outline, not the fill — a badly-shaped eye blows out (white blob) or
 // sockets (dark hole) no matter how it's colored. The fix is to normalize the eye
 // in the LINE ART to the canonical form that inverts cleanly: a solid pupil + one
 // clear glare + no iris (invert maps pupil→white eyeball, glare→pupil).
@@ -10,9 +10,9 @@
 // Writes candidates to the gitignored .coloring-samples-dark/retouch/ for review;
 // it does NOT touch shipped assets. Once a retouched line art is approved, copy it
 // over web/static/coloring/<cat>/<page>-<orient>.outline.webp and regenerate the whole
-// related suite from it (light twin .light.webp via gen-coloring-fills, night twin via
+// related suite from it (light fill .light.webp via gen-coloring-fills, night fill via
 // gen-coloring-fills-dark, thumbnail via gen-coloring-thumbs), then re-review in the
-// contact sheet's Combined view in BOTH light and dark. See tools/asset-gen/night-twins.md.
+// contact sheet's Combined view in BOTH light and dark. See tools/asset-gen/night-fills.md.
 //
 //   node --experimental-strip-types --disable-warning=ExperimentalWarning \
 //     tools/asset-gen/retouch-line-art.mjs <cat/page-orient...> [--instruction "..."] [--samples N] [-t F]
@@ -36,11 +36,11 @@ const OUT_DIR = join(SAMPLES_DARK_DIR, 'retouch');
 // Default edit: normalize eyes to the canonical "solid pupil + one clear glare,
 // no iris" form. This is the eye shape that survives the dark-mode line-art invert
 // (ADR-0052): the solid pupil inverts to a white eyeball and the single glare
-// inverts to the pupil, so the eye reads correctly with NO reliance on the twin
+// inverts to the pupil, so the eye reads correctly with NO reliance on the fill
 // (the pupil region is punched out of the reveal). The load-bearing element is the
 // GLARE — it becomes the pupil, so it must be present, single, and big enough; a
 // too-small glare gives a featureless white blob in dark mode (the mermaid bug).
-// See tools/asset-gen/night-twins.md ("Eyes" recipe). Written to touch ONLY the eyes.
+// See tools/asset-gen/night-fills.md ("Eyes" recipe). Written to touch ONLY the eyes.
 const DEFAULT_INSTRUCTION = `This is a black-and-white children's COLORING PAGE — clean black outlines on a pure white background.
 
 Fix ONLY the main character's EYES so each reads as a simple, cute cartoon eye in this exact canonical form:
@@ -99,7 +99,7 @@ async function editLineArt(imageBytes, temperature) {
 // Normalize the model output back to a clean black-on-white coloring page at the
 // source resolution: grayscale, gentle contrast to whiten a faintly-grey ground
 // and deepen the lines, keep antialiasing (no hard threshold — that jaggies the
-// lines and would fail the twin generators' alignment).
+// lines and would fail the fill generators' alignment).
 async function normalize(buf, width, height) {
   return sharp(buf)
     .resize(width, height, { fit: 'fill' })

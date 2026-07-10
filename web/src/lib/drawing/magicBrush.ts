@@ -3,10 +3,10 @@
 // The magic brush reveals a hidden "color sheet" wherever the child strokes.
 // Two sources can feed that sheet, and this module owns both:
 //
-//   1. A coloring page's flat-colored twin (`{page}.light.webp`), when a page is
+//   1. A coloring page's flat-colored fill (`{page}.light.webp`), when a page is
 //      applied — a revealed pixel lands under the line art it belongs to. The
-//      shipped twin is fills-only: its own outline pixels are already punched to
-//      transparency at build time (asset-gen's `tools/asset-gen/lib/punch-twin.mjs`,
+//      shipped fill is fills-only: its own outline pixels are already punched to
+//      transparency at build time (asset-gen's `tools/asset-gen/lib/punch-fill.mjs`,
 //      luma < 150 → transparent), so revealing it can't double the overlay <img>'s
 //      line work — the overlay stays the single source of line work. This module
 //      just loads and draws it; the punch used to happen here at runtime (see
@@ -40,7 +40,7 @@ export interface RainbowGradient {
 
 // The engine hands the module a live view of its paper — the coordinate space
 // ops (and therefore the sheet) live in, which a rotation may lock while the
-// viewport changes (ADR-0050) — and a repaint hook so an async twin load can
+// viewport changes (ADR-0050) — and a repaint hook so an async fill load can
 // refresh already-recorded magic ops.
 interface MagicBrushHost {
   paperSize: () => { width: number; height: number } | null;
@@ -54,10 +54,10 @@ interface MagicBrushHost {
 
 let host: MagicBrushHost | null = null;
 
-// Source 1: the coloring page's colored twin — shipped fills-only (its outlines are
+// Source 1: the coloring page's colored fill — shipped fills-only (its outlines are
 // already transparent, punched at build time), so it's drawn into the sheet directly.
-let twinImage: HTMLImageElement | null = null;
-let twinUrl: string | null = null;
+let fillImage: HTMLImageElement | null = null;
+let fillUrl: string | null = null;
 
 // Source 2: the generated rainbow. The pool is built lazily and reused; the active
 // gradient is the one currently revealed, held until the canvas is cleared.
@@ -106,11 +106,11 @@ function buildGradientPool(): RainbowGradient[] {
   return Array.from({ length: MAGIC_GRADIENT_COUNT }, () => createRainbowGradient());
 }
 
-// Which source rasterizeSheet should draw. A pending twin (URL set but not yet
+// Which source rasterizeSheet should draw. A pending fill (URL set but not yet
 // decoded) yields null so the brush reveals nothing until it loads, matching the
 // original behaviour — it never falls back to the gradient mid-load.
-function activeSource(): 'twin' | 'gradient' | null {
-  if (twinUrl) return twinImage && twinImage.naturalWidth ? 'twin' : null;
+function activeSource(): 'fill' | 'gradient' | null {
+  if (fillUrl) return fillImage && fillImage.naturalWidth ? 'fill' : null;
   if (activeGradient) return 'gradient';
   return null;
 }
@@ -129,9 +129,9 @@ function paintGradient(g: CanvasRenderingContext2D, w: number, h: number, spec: 
   g.fillRect(0, 0, w, h);
 }
 
-// The picture (twin) is drawn at box (ox,oy,bw,bh) inside a W×H sheet and can leave
+// The picture (fill) is drawn at box (ox,oy,bw,bh) inside a W×H sheet and can leave
 // transparent letterbox margins on any side — top/bottom or left/right where the
-// twin is contain-fit in the paper, AND (under a rotation lock) the other axis where
+// fill is contain-fit in the paper, AND (under a rotation lock) the other axis where
 // the paper itself is contain-fit in the larger sheet, so all four sides plus corners
 // can be empty. `edgeMargins` returns the ordered blits that extend the picture's edge
 // colours outward to fill them, as pure geometry so the math is unit-testable without
@@ -234,9 +234,9 @@ function extendSheetEdges(
 // sheet covers the whole visible canvas in paper coordinates (host `sheetBounds`):
 // the paper itself normally, or the larger mapped-viewport rect under a rotation
 // lock, whose origin can be negative — `sheetOrigin{X,Y}` offsets everything so the
-// pattern still aligns. The twin is drawn contain-fit within the PAPER (matching
+// pattern still aligns. The fill is drawn contain-fit within the PAPER (matching
 // where the overlay <img> paints), then its edge colours are extended outward to
-// fill every letterbox margin (the twin's own, and the rotation-lock margins around
+// fill every letterbox margin (the fill's own, and the rotation-lock margins around
 // the paper); the gradient fills the whole sheet. Re-run on load and every resize.
 export function rasterizeSheet() {
   sheetReady = false;
@@ -256,16 +256,16 @@ export function rasterizeSheet() {
   sheetOriginX = bounds.x;
   sheetOriginY = bounds.y;
   sheetCtx.clearRect(0, 0, sheetCanvas.width, sheetCanvas.height);
-  if (source === 'twin') {
-    const iw = twinImage!.naturalWidth;
-    const ih = twinImage!.naturalHeight;
+  if (source === 'fill') {
+    const iw = fillImage!.naturalWidth;
+    const ih = fillImage!.naturalHeight;
     const scale = Math.min(paper.width / iw, paper.height / ih);
     const dw = iw * scale;
     const dh = ih * scale;
     // Contain-fit box in paper coords, shifted into the (possibly offset) sheet.
     const ox = (paper.width - dw) / 2 - sheetOriginX;
     const oy = (paper.height - dh) / 2 - sheetOriginY;
-    sheetCtx.drawImage(twinImage!, ox, oy, dw, dh);
+    sheetCtx.drawImage(fillImage!, ox, oy, dw, dh);
     extendSheetEdges(sheetCtx, sheetCanvas.width, sheetCanvas.height, ox, oy, dw, dh);
   } else {
     paintGradient(sheetCtx, sheetCanvas.width, sheetCanvas.height, activeGradient!);
@@ -292,16 +292,16 @@ export function sheetPatternFor(target: CanvasRenderingContext2D): CanvasPattern
   return pattern;
 }
 
-// Load the twin image, guarding against a page change that happened while it
+// Load the fill image, guarding against a page change that happened while it
 // decoded. On success stash it, then re-rasterize and repaint so already-recorded
 // magic ops pick up the colours.
 function loadSheetImage(url: string) {
-  const forTwinUrl = twinUrl;
+  const forFillUrl = fillUrl;
   const img = new Image();
   img.onload = () => {
     // A newer page may have been requested while this one decoded — drop stale.
-    if (twinUrl !== forTwinUrl) return;
-    twinImage = img;
+    if (fillUrl !== forFillUrl) return;
+    fillImage = img;
     rasterizeSheet();
     host?.repaint();
   };
@@ -309,14 +309,14 @@ function loadSheetImage(url: string) {
   img.src = url;
 }
 
-// Point the magic brush at a coloring page's colored twin (or null to detach and
-// fall back to the gradient source). The shipped twin is fills-only, so it's drawn
+// Point the magic brush at a coloring page's colored fill (or null to detach and
+// fall back to the gradient source). The shipped fill is fills-only, so it's drawn
 // straight into the sheet; it decodes async, and magic ops recorded before it's
 // ready reveal nothing until the load handler repaints.
 export function setColorSheet(colorUrl: string | null) {
-  if (colorUrl === twinUrl) return;
-  twinUrl = colorUrl;
-  twinImage = null;
+  if (colorUrl === fillUrl) return;
+  fillUrl = colorUrl;
+  fillImage = null;
   if (!colorUrl) {
     // Page removed — the sheet reverts to the gradient source if one exists.
     rasterizeSheet();
@@ -329,11 +329,11 @@ export function setColorSheet(colorUrl: string | null) {
 }
 
 // Ensure the brush has something to reveal when it's selected. A coloring page's
-// twin takes priority and needs nothing here; otherwise pick a random rainbow from
+// fill takes priority and needs nothing here; otherwise pick a random rainbow from
 // the pool and hold it. A no-op once a gradient is already active, so re-selecting
 // the brush (or toggling pen↔magic) keeps the same rainbow until the next clear.
 export function ensureMagicSheet() {
-  if (twinUrl) return;
+  if (fillUrl) return;
   if (activeGradient) return;
   if (!gradientPool) gradientPool = buildGradientPool();
   activeGradient = gradientPool[Math.floor(Math.random() * gradientPool.length)];
@@ -341,10 +341,10 @@ export function ensureMagicSheet() {
 }
 
 // Drop the held gradient so the next brush use picks a fresh one. Called when the
-// canvas is cleared. The twin (if a page is applied) is untouched.
+// canvas is cleared. The fill (if a page is applied) is untouched.
 export function clearMagicGradient() {
   activeGradient = null;
-  if (!twinUrl) {
+  if (!fillUrl) {
     sheetReady = false;
     patternCache = new WeakMap();
   }

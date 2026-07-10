@@ -28,13 +28,13 @@ Two independent problems:
 Ship **two resolutions of the same art** and **prefetch along the interaction
 path**.
 
-### 1. A `.thumb.webp` twin for every cover and page
+### 1. A `.thumb.webp` sibling for every cover and page
 
 `tools/asset-gen/gen-coloring-thumbs.mjs` (`npm run gen:coloring-thumbs`) uses `sharp` to
 write a `{name}.thumb.webp` beside every full-res source — longest edge 400 px
 (covers a 2× DPR ~200 px tile), quality 80. A thumbnail is ~15 KB vs. the source's
 ~84–120 KB, so regenerating the whole set saves ~9 MB. The colored `.light.webp`
-twins (the magic brush's reveal layer, ADR-0043) are skipped; they're never shown
+fills (the magic brush's reveal layer, ADR-0043) are skipped; they're never shown
 in the picker, so they get no thumbnail.
 
 - **Grid tiles** (`ColoringBook.svelte`) use `thumbPath(src)`.
@@ -42,7 +42,7 @@ in the picker, so they get no thumbnail.
   **full-res** source — it fills the screen, and the existing E2E assertion
   (`flows.spec.ts`, overlay `src` matches `/-(wide|tall)\.outline\.webp$/`) pins that.
 
-`books.ts` is the single mapping point: `thumbPath()` derives the twin path
+`books.ts` is the single mapping point: `thumbPath()` derives the thumb path
 (`x.outline.webp` → `x.thumb.webp`), and `bookAssetPaths()` returns **both** the full-res
 paths and their thumbs. That one change flows to both tools that consume it —
 `check-assets.mjs` now validates the thumbs exist (200 assets, up from 100), and

@@ -1,13 +1,13 @@
-# Handoff — coloring-twin outline drift (magic-brush ghosting)
+# Handoff — coloring-fill outline drift (magic-brush ghosting)
 
-> 2026-07-09 · branch `claude/coloring-outline-ghosting-regression-4e21rr` · PR [#104](https://github.com/KyleMit/Splotch/pull/104) · worst-tile drift gate shipped; open follow-ups on night-twins + threshold
+> 2026-07-09 · branch `claude/coloring-outline-ghosting-regression-4e21rr` · PR [#104](https://github.com/KyleMit/Splotch/pull/104) · worst-tile drift gate shipped; open follow-ups on night-fills + threshold
 
 ## What this was
 
 The magic brush revealed colors that didn't line up with a page's outlines
 (reported on **nature → ant, wide, light mode** — the flowers were visibly off).
 
-**Root cause:** it is *not* line bloom. The colored twin's **fills are
+**Root cause:** it is *not* line bloom. The colored fill's **fills are
 geometrically drifted** from the line art in a *localized* region — the ant body
 registers perfectly but its flowers were drawn ~12 px off. `alignToSource` only
 corrects a single **global** translation, so a self-drifted feature can't be
@@ -24,7 +24,7 @@ only carved a white halo around every line and did nothing for the drift. It was
 | Commit | What |
 | --- | --- |
 | `2328dfd` | Worst-tile drift gate + `gen:coloring-fills:audit`; reverted the dilation |
-| `33c68e4` | Regenerated the 5 drifted twins (all now 100 % global + 100 % worst-tile) |
+| `33c68e4` | Regenerated the 5 drifted fills (all now 100 % global + 100 % worst-tile) |
 | `f581521` | Gallery: page/cell targets + `--theme light` |
 | `1a58293` | Session-audit finding (review-sheet viewing gap) |
 
@@ -38,10 +38,10 @@ Key pieces:
   a drifted candidate is rejected and retried (police-wide + triangle-wide each
   needed 2 tries when regenerated — the safeguard working).
 - **`check-coloring-drift.mjs`** / `npm run gen:coloring-fills:audit` — runs the
-  same scoring over shipped twins (committed assets only, no key/network), prints
+  same scoring over shipped fills (committed assets only, no key/network), prints
   which to regenerate, exits non-zero. `--overlay` dumps drift maps.
 
-**Current audit state: 94 twins, 0 flagged.** Checks green: 352 unit tests, 0
+**Current audit state: 94 fills, 0 flagged.** Checks green: 352 unit tests, 0
 type errors, Prettier clean, all 6 magic-brush E2E pass.
 
 ## Open items (with recommendations)
@@ -68,24 +68,24 @@ where it does.
   ```
   Not required — purely opportunistic.
 
-### 2. Extend the drift gate to the night-twins pipeline (not yet covered)
+### 2. Extend the drift gate to the night-fills pipeline (not yet covered)
 
 `gen-coloring-fills-dark.mjs` (the `.night.webp` generator) has its **own**
 `alignToSource` + `scoreDrift()` and does **not** use `lib/outline-match.mjs`'s
 worst-tile gate — so it likely has the same global-average blind spot for
 localized drift, in dark mode.
 
-- **Task:** either (a) point `check-coloring-drift.mjs` at the night twins too
-  (it currently reads the light `*.light.raw.webp` raws; night twins are `*.night.webp` and are
+- **Task:** either (a) point `check-coloring-drift.mjs` at the night fills too
+  (it currently reads the light `*.light.raw.webp` raws; night fills are `*.night.webp` and are
   white-line-on-dark, so the mask polarity differs — needs an inversion path), or
   (b) add a worst-tile check to the dark generator's gate. (a) is the cheaper first
-  step to just *find out* whether any night twins drift locally.
+  step to just *find out* whether any night fills drift locally.
 - Only relevant if dark-mode ghosting matters; the reported bug was light mode.
 
 ### 3. PR #104 visuals + watching (offered, awaiting your call)
 
 - **Add visuals to the PR body** — I have the ant before/after registration
-  overlay and the Light+Combined contact sheet of all 5 regenerated twins (the
+  overlay and the Light+Combined contact sheet of all 5 regenerated fills (the
   `pr-screenshots` skill wants these for a UI-asset PR). I did not touch your PR
   description; say the word and I'll add a before/after section.
 - **Watch the PR** — I can subscribe to #104 and handle CI failures / review

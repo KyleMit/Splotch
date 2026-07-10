@@ -5,22 +5,22 @@ import { BOOKS, bookAssetPaths, pageNightImage } from './books';
 const page = BOOKS[0].pages[0];
 const spaceBook = BOOKS.find((b) => b.id === 'space')!;
 const spacePage = spaceBook.pages[0];
-// A page with no night twin in any orientation. Synthetic rather than a catalog
+// A page with no night fill in any orientation. Synthetic rather than a catalog
 // page so the null-night-sheet test stays valid as more categories ship their
-// twins (eventually every catalog page has one).
+// fills (eventually every catalog page has one).
 const pageWithoutNight = { ...page, nightImages: {} };
 
 describe('coloring book state', () => {
   beforeEach(() => clearOverlay());
 
-  it('setOverlayPage tracks the line art and the colored twin together', () => {
+  it('setOverlayPage tracks the line art and the colored fill together', () => {
     setOverlayPage(page, 'landscape');
     expect(coloringBookState.overlayUrl).toBe(page.images.landscape);
     expect(coloringBookState.colorSheetUrl).toBe(page.colorImages.landscape);
     expect(coloringBookState.overlayPage?.id).toBe(page.id);
   });
 
-  it('swaps both URLs to the orientation twin on rotation', () => {
+  it('swaps both URLs to the orientation fill on rotation', () => {
     setOverlayPage(page, 'landscape');
     setOverlayPage(page, 'portrait');
     expect(coloringBookState.overlayUrl).toBe(page.images.portrait);
@@ -36,7 +36,7 @@ describe('coloring book state', () => {
     expect(coloringBookState.overlayPage).toBeNull();
   });
 
-  it('the colored twin is derived from the line-art path', () => {
+  it('the colored fill is derived from the line-art path', () => {
     expect(page.colorImages.portrait).toBe(
       page.images.portrait.replace('.outline.webp', '.light.webp')
     );
@@ -45,8 +45,8 @@ describe('coloring book state', () => {
     );
   });
 
-  it('tracks the night twin for each orientation that has one', () => {
-    // Space ships night twins for both orientations (ADR-0052 direction B),
+  it('tracks the night fill for each orientation that has one', () => {
+    // Space ships night fills for both orientations (ADR-0052 direction B),
     // derived from the line-art path.
     setOverlayPage(spacePage, 'portrait');
     expect(coloringBookState.nightSheetUrl).toBe(spacePage.nightImages.portrait);
@@ -60,7 +60,7 @@ describe('coloring book state', () => {
     );
   });
 
-  it('pages without a night twin track a null night sheet', () => {
+  it('pages without a night fill track a null night sheet', () => {
     setOverlayPage(pageWithoutNight, 'portrait');
     expect(coloringBookState.nightSheetUrl).toBeNull();
     expect(pageNightImage(pageWithoutNight, 'portrait')).toBeNull();
@@ -68,7 +68,7 @@ describe('coloring book state', () => {
 });
 
 describe('book asset manifest', () => {
-  it('bookAssetPaths lists each page and its colored twin (so check-assets guards it)', () => {
+  it('bookAssetPaths lists each page and its colored fill (so check-assets guards it)', () => {
     for (const book of BOOKS) {
       const paths = bookAssetPaths(book);
       for (const p of book.pages) {
@@ -76,7 +76,7 @@ describe('book asset manifest', () => {
         expect(paths).toContain(p.images.landscape);
         expect(paths).toContain(p.colorImages.portrait);
         expect(paths).toContain(p.colorImages.landscape);
-        // Night twins are listed only where they exist, so check-assets guards them too.
+        // Night fills are listed only where they exist, so check-assets guards them too.
         for (const url of Object.values(p.nightImages)) {
           expect(paths).toContain(url);
         }
@@ -84,7 +84,7 @@ describe('book asset manifest', () => {
     }
   });
 
-  it('lists the shipped night twins (both orientations) for Space and Nature', () => {
+  it('lists the shipped night fills (both orientations) for Space and Nature', () => {
     for (const id of ['space', 'nature']) {
       const book = BOOKS.find((b) => b.id === id)!;
       const paths = bookAssetPaths(book);

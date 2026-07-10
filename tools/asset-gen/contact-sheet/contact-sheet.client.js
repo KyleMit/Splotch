@@ -4,7 +4,7 @@
 // reads its inputs from that global. See ../contact-sheet.md for the layer model.
 const { cells: CELLS } = window.__CONTACT_SHEET__;
 const RENDER_MAX = 640;
-const OUTLINE_LUMA = 150; // asset-gen's punch threshold (lib/punch-twin.mjs)
+const OUTLINE_LUMA = 150; // asset-gen's punch threshold (lib/punch-fill.mjs)
 const PAPER = { dark: '#211f29', light: '#fcfbf8' };
 const BLEND = { dark: 'screen', light: 'multiply' };
 const INVERT = { dark: true, light: false };
@@ -32,17 +32,17 @@ function fit(w, h) {
   return [Math.round(w * s), Math.round(h * s)];
 }
 
-// Fills-only twin: punch the twin's own outline pixels using the line art as a
+// Fills-only fill: punch the fill's own outline pixels using the line art as a
 // mask (luma<OUTLINE_LUMA -> transparent) — the same punch asset-gen bakes into
-// the shipped twins (lib/punch-twin.mjs). Shipped twins arrive fills-only so this
+// the shipped fills (lib/punch-fill.mjs). Shipped fills arrive fills-only so this
 // is a no-op on them; it's what makes the Combined view faithful for `--source
 // samples`, whose fresh Gemini takes still carry their outlines.
-function buildFills(twin, lineArt, w, h) {
+function buildFills(fill, lineArt, w, h) {
   const fc = document.createElement('canvas');
   fc.width = w;
   fc.height = h;
   const fx = fc.getContext('2d');
-  fx.drawImage(twin, 0, 0, w, h);
+  fx.drawImage(fill, 0, 0, w, h);
   if (lineArt) {
     const mc = document.createElement('canvas');
     mc.width = w;
@@ -78,8 +78,8 @@ function drawLineArt(ctx, lineArt, theme, w, h) {
 function render(tile) {
   const { canvas, theme, imgs } = tile;
   const view = tile.view || gView;
-  const twin = theme === 'dark' ? imgs.night : imgs.light;
-  const ref = twin || imgs.lineArt || imgs.light || imgs.night;
+  const fill = theme === 'dark' ? imgs.night : imgs.light;
+  const ref = fill || imgs.lineArt || imgs.light || imgs.night;
   if (!ref) {
     return;
   }
@@ -90,7 +90,7 @@ function render(tile) {
   ctx.clearRect(0, 0, w, h);
 
   if (view === 'color') {
-    if (twin) ctx.drawImage(twin, 0, 0, w, h);
+    if (fill) ctx.drawImage(fill, 0, 0, w, h);
     else {
       ctx.fillStyle = PAPER[theme];
       ctx.fillRect(0, 0, w, h);
@@ -102,8 +102,8 @@ function render(tile) {
   ctx.fillStyle = PAPER[theme];
   ctx.fillRect(0, 0, w, h);
 
-  if (view === 'combined' && twin) {
-    if (!tile.fills) tile.fills = buildFills(twin, imgs.lineArt, w, h);
+  if (view === 'combined' && fill) {
+    if (!tile.fills) tile.fills = buildFills(fill, imgs.lineArt, w, h);
     ctx.drawImage(tile.fills, 0, 0, w, h);
   }
   if (imgs.lineArt) drawLineArt(ctx, imgs.lineArt, theme, w, h);
@@ -144,7 +144,7 @@ function buildHalf(pair, cell, theme, imgsP) {
   if (theme === 'dark' && !cell.night) {
     const note = document.createElement('span');
     note.className = 'note';
-    note.textContent = 'no night twin';
+    note.textContent = 'no night fill';
     cap.appendChild(note);
   }
   const pill = document.createElement('span');

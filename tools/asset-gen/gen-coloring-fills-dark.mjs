@@ -1,16 +1,16 @@
-// EXPERIMENT (not shipped): generate a DARK-THEME colored twin for coloring
-// pages — the counterpart to gen-coloring-fills.mjs's light twins. Instead of
+// EXPERIMENT (not shipped): generate a DARK-THEME colored fill for coloring
+// pages — the counterpart to gen-coloring-fills.mjs's light fills. Instead of
 // black lines on white filled with pastels, the source is inverted to WHITE
 // lines on a dark background and Gemini fills the regions with vivid colors that
 // glow against the dark (a "night / neon" coloring), so dark mode can show a
 // whole separate set of renders rather than forcing a light sheet.
 //
 // The model sometimes DRIFTS — inventing a shape the line art doesn't have (an
-// extra star, a stray dot). Because a night twin's WHITE pixels are outlines only
+// extra star, a stray dot). Because a night fill's WHITE pixels are outlines only
 // (fills are saturated, background is deep navy), any white/low-chroma pixel that
 // lands far from a source outline is an invented outline. scoreDrift() counts
 // those; a render above the threshold is regenerated (bumping temperature) up to
-// --max-attempts times, keeping the least-drifted take. Clean twins score ~0.
+// --max-attempts times, keeping the least-drifted take. Clean fills score ~0.
 //
 // Three automated gates run per take, each with keep-best-of-N retry: scoreDrift()
 // (invented outlines), scoreNightness() (a bright/daytime background), and
@@ -18,7 +18,7 @@
 // white so they sit under the app's white "chalk" line art in dark mode).
 //
 // Full workflow (generate → review contact sheet → ship → wire → verify), the prompt
-// lessons, and the remaining-category checklist: tools/asset-gen/night-twins.md.
+// lessons, and the remaining-category checklist: tools/asset-gen/night-fills.md.
 //
 // Requires GEMINI_API_KEY. Writes candidates to .coloring-samples-dark/ for
 // review — it does NOT touch the shipped assets.
@@ -42,8 +42,8 @@ import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety
 
 // Registration nudge undo, copied from gen-coloring-fills.mjs rather than
 // imported — that module runs a CLI at top level, so importing it would re-run
-// the light-twin generator (and overwrite shipped assets). Edges are
-// polarity-agnostic, so this aligns a dark twin to the original black-line
+// the light-fill generator (and overwrite shipped assets). Edges are
+// polarity-agnostic, so this aligns a dark fill to the original black-line
 // source just as well.
 const ALIGN_MAX = 12;
 const ALIGN_W = 1000;
@@ -108,20 +108,20 @@ async function alignToSource(coloredBuf, sourceBuf, width, height) {
 }
 
 // --- Drift detection ----------------------------------------------------------
-// A night twin's white pixels are outlines; the model has drifted when it draws a
+// A night fill's white pixels are outlines; the model has drifted when it draws a
 // white outline where the source line art has none. We rasterize both at a working
 // width, mark the source's outline pixels (dark in the black-on-white source),
-// dilate that mask to absorb registration slack + the twin's glow, then count
-// twin white/low-chroma pixels that fall outside it. Normalized by the source
+// dilate that mask to absorb registration slack + the fill's glow, then count
+// fill white/low-chroma pixels that fall outside it. Normalized by the source
 // outline mass so pages of different line density compare on one scale.
 const DRIFT_W = 512; // working width for the comparison
 const DRIFT_SRC_DARK = 110; // source pixel darker than this = a line
 const DRIFT_DILATE = 6; // px of slack around each source line (registration + glow)
 const DRIFT_THIN = 3; // white strokes up to ~2*this px wide are outline-like, not fills
-const DRIFT_LUMA_WHITE = 185; // twin pixel this bright...
+const DRIFT_LUMA_WHITE = 185; // fill pixel this bright...
 const DRIFT_CHROMA_MAX = 45; // ...and this desaturated = a white outline, not a fill
 // Above this share of invented white (relative to source outline mass) a render is
-// regenerated. Clean twins score 0; a stray invented shape lands well above this.
+// regenerated. Clean fills score 0; a stray invented shape lands well above this.
 const DRIFT_THRESHOLD_DEFAULT = 0.004;
 
 // Separable box morphology of a 0/1 mask. dilate = a pixel is set if ANY neighbor
@@ -169,20 +169,20 @@ const erodeMask = (mask, w, h, r) => morph(mask, w, h, r, false);
 // every shape, flood-filled from the border through the source's white) must be a
 // deep evening tone. We report its MEDIAN luma — robust to a bright edge-touching
 // shape (ground, planet) leaking into the fill — so a genuinely dark night sky
-// stays low even then, while a daytime sky reads bright. Known-good night twins
+// stays low even then, while a daytime sky reads bright. Known-good night fills
 // sit at ~15-32; sky-blue daytime is ~150+.
 const NIGHT_W = 384;
 const NIGHT_SRC_LIGHT = 170; // source pixel brighter than this = background candidate
 const NIGHT_BG_LUMA_MAX_DEFAULT = 100; // median background luma above this = too bright / daytime
 const NIGHT_MIN_BG_FRAC = 0.04; // skip the check if there's barely any open background
 
-async function scoreNightness(twinBuf, sourceBuf) {
+async function scoreNightness(fillBuf, sourceBuf) {
   const s = await sharp(sourceBuf)
     .resize(NIGHT_W, null, { fit: 'inside' })
     .grayscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
-  const t = await sharp(twinBuf)
+  const t = await sharp(fillBuf)
     .resize(NIGHT_W, null, { fit: 'inside' })
     .removeAlpha()
     .raw()
@@ -231,13 +231,13 @@ async function scoreNightness(twinBuf, sourceBuf) {
   return { bgLuma: lumas[lumas.length >> 1], bgFrac: lumas.length / n };
 }
 
-async function scoreDrift(twinBuf, sourceBuf) {
+async function scoreDrift(fillBuf, sourceBuf) {
   const s = await sharp(sourceBuf)
     .resize(DRIFT_W, null, { fit: 'inside' })
     .grayscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
-  const t = await sharp(twinBuf)
+  const t = await sharp(fillBuf)
     .resize(DRIFT_W, null, { fit: 'inside' })
     .removeAlpha()
     .raw()
@@ -255,7 +255,7 @@ async function scoreDrift(twinBuf, sourceBuf) {
   }
   const allowed = dilateMask(outline, w, h, DRIFT_DILATE);
 
-  // Bright, desaturated pixels in the twin — outlines AND any pale/white fill
+  // Bright, desaturated pixels in the fill — outlines AND any pale/white fill
   // (a moonlit face, a water droplet). We only want INVENTED OUTLINES, so keep the
   // THIN white and drop the thick blobs: an erode-then-dilate (opening) preserves
   // fill blobs; whatever the opening removes was a thin stroke. An invented shape's
@@ -279,14 +279,14 @@ async function scoreDrift(twinBuf, sourceBuf) {
 }
 
 // --- Line-color detection -----------------------------------------------------
-// The twin's outlines must stay WHITE — in dark mode they sit under the app's
-// white "chalk" line art, so a twin whose outlines came back DARK (the model
+// The fill's outlines must stay WHITE — in dark mode they sit under the app's
+// white "chalk" line art, so a fill whose outlines came back DARK (the model
 // re-inked every shape with a black/brown stroke instead of keeping them white)
 // doubles against the chalk and reads wrong. The source (black-on-white) says
-// exactly WHERE the outlines are; at each, a good twin has a bright WHITE line and
-// a dark-lined twin has only dark ink. Per source-outline pixel we take the
-// brightest twin luma within 1px (absorbing a pixel of registration slack) and
-// report the MEDIAN. Calibrated on a labeled Farm batch: fully dark-lined twins
+// exactly WHERE the outlines are; at each, a good fill has a bright WHITE line and
+// a dark-lined fill has only dark ink. Per source-outline pixel we take the
+// brightest fill luma within 1px (absorbing a pixel of registration slack) and
+// report the MEDIAN. Calibrated on a labeled Farm batch: fully dark-lined fills
 // read ~65-135, white-lined ~154-250. Reject below --line-white-min (default 150,
 // the highest cut that still clears the good set's floor). A pale, patchy subject
 // (a mostly-white dog with a few dark contours) is the hard case — it can land near
@@ -296,13 +296,13 @@ const LINE_W = 512;
 const LINE_SRC_DARK = 110; // source pixel darker than this = an outline
 const LINE_WHITE_MIN_DEFAULT = 150; // median outline brightness below this = dark outlines
 
-async function scoreLineColor(twinBuf, sourceBuf) {
+async function scoreLineColor(fillBuf, sourceBuf) {
   const s = await sharp(sourceBuf)
     .resize(LINE_W, null, { fit: 'inside' })
     .grayscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
-  const t = await sharp(twinBuf)
+  const t = await sharp(fillBuf)
     .resize(LINE_W, null, { fit: 'inside' })
     .grayscale()
     .raw()
@@ -356,7 +356,7 @@ COLORING STYLE — a dim, moonlit night palette:
 - Colors stay deep and moonlit, but they are still the subject's OWN NATURAL colors — just dimmed and cooled by moonlight, not swapped out. A few GLOWING accent colors (warm gold, amber, teal, magenta) can pop as if lit by the moon, fireflies, or a lantern, while the overall scene stays dim and evening-lit — deep, not bright and sunny.
 - FACES, SKIN, and ANIMAL BODIES must keep a NATURAL, living color — never grey, ashen, ghostly, chalky, or washed-out slate. Give a person a real SKIN TONE (a warm tan, brown, peach, or golden-brown, only darkened for night); give an animal its real coloring (a green caterpillar, a yellow-and-black bee, a red ladybug), softened toward evening. A face must look like living skin or fur under moonlight, NOT like a pale ghost.
 - Only things that have no real color of their own — a cloud, a water droplet, a wisp of steam, a puff of smoke, the glow of a star — may take a soft, dim, moonlit off-white or pale tint. Everything else keeps its own (dimmed) color.
-- EYES: don't fight them. In the app the eye is drawn by the (inverted) line art, not by you — the pupil is punched out of your fills — so the pupil, glint, and shape come from the outline, and your job is only to keep the small eye area NATURAL and LIGHT. Keep the eye-white a light off-white, and NEVER fill an eye with a single dark colour (a dark-filled eye reads as an empty socket). Eye-whites and the catchlight may take a near-white tint. (A blown-out or socketed eye is a base-line-art problem fixed by retouching the outline, not by recolouring — see tools/asset-gen/night-twins.md.)
+- EYES: don't fight them. In the app the eye is drawn by the (inverted) line art, not by you — the pupil is punched out of your fills — so the pupil, glint, and shape come from the outline, and your job is only to keep the small eye area NATURAL and LIGHT. Keep the eye-white a light off-white, and NEVER fill an eye with a single dark colour (a dark-filled eye reads as an empty socket). Eye-whites and the catchlight may take a near-white tint. (A blown-out or socketed eye is a base-line-art problem fixed by retouching the outline, not by recolouring — see tools/asset-gen/night-fills.md.)
 - Do NOT use pure or bright WHITE fills elsewhere, and avoid bright daytime colors (bright sky blue, bright grass green). Deepen and cool every color toward evening. The only pure-white pixels allowed are the outlines themselves, the eye-whites, and tiny eye glints.
 - Keep the WHITE outlines fully visible — every fill should butt right up against the white outline without covering it.
 
@@ -534,7 +534,7 @@ async function generateCleanTake({ darkInput, source, width, height, temp0 }) {
 let pages = positionals.length
   ? (await Promise.all(positionals.map(resolveArg))).flat()
   : fail('give a category or page, e.g. "space"');
-// Optionally restrict to one orientation (e.g. generate wide twins without
+// Optionally restrict to one orientation (e.g. generate wide fills without
 // retouching already-good tall ones). --tall and --wide are mutually exclusive.
 if (values.tall && values.wide) fail('pass only one of --tall / --wide');
 if (values.tall) pages = pages.filter((p) => p.includes('-tall'));

@@ -11,7 +11,7 @@ import { sheetPatternFor } from './magicBrush';
 // bit-identical to its op; the stored ops are then simplified once at commit
 // (ADR-0036) so replay re-strokes far fewer segments without a visible change. A
 // 'clear' op wipes the target.
-// `magic`, when true, means the op reveals the coloring page's colored twin
+// `magic`, when true, means the op reveals the coloring page's colored fill
 // instead of laying down `color` — its shape samples the pre-rendered color sheet
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
 // undo, eraser (destination-out clears revealed pixels too), and later solid

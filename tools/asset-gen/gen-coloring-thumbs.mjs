@@ -27,7 +27,7 @@ const SOURCE_SUFFIX = '.outline.webp';
 const THUMB_SUFFIX = '.thumb.webp';
 
 // Every shipped source image: the `.outline.webp` line art (covers and both
-// orientations of each page). The colored twins (.light.webp light + .night.webp
+// orientations of each page). The colored fills (.light.webp light + .night.webp
 // dark) are magic-brush reveals, never shown in the picker — so they get no
 // thumbnail.
 function isSource(path) {

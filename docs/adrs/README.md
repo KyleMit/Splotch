@@ -46,7 +46,7 @@ This directory records significant architectural decisions made in the Splotch p
 | [0040](0040-per-route-render-modes-and-ssg-home.md) | Per-Route Render Modes — the Home Route Stays Prerendered (SSG), Not Per-Request SSR | Active |
 | [0041](0041-lock-viewport-zoom-for-toddlers.md) | Lock Viewport Pinch-Zoom (`user-scalable=no`) for a Toddler Drawing App | Active |
 | [0042](0042-static-media-cache-invalidation.md) | Cache Invalidation for Stable-Filename Static Media | Active |
-| [0043](0043-magic-brush-color-sheet-reveal.md) | Magic Brush Reveals the Coloring Page's Colored Twin via Pattern-Fill Ops | Active |
+| [0043](0043-magic-brush-color-sheet-reveal.md) | Magic Brush Reveals the Coloring Page's Colored Fill via Pattern-Fill Ops | Active |
 | [0044](0044-svg-optimization-audit.md) | SVG Optimization as a Re-runnable Audit, Not a One-Off Pass | Active |
 | [0045](0045-coloring-picker-thumbnails-and-prefetch.md) | Coloring-Picker Thumbnails + Prefetch (Two Resolutions per Page) | Active |
 | [0046](0046-pr-screenshot-hosting-via-orphan-branch.md) | Host PR Screenshots on a `pr-assets` Orphan Branch | Active |
@@ -55,7 +55,8 @@ This directory records significant architectural decisions made in the Splotch p
 | [0049](0049-idle-mount-boot-hidden-overlays.md) | Idle-Mount the Boot-Hidden Overlays (Parent Center on First Open) | Active |
 | [0050](0050-locked-paper-view-on-rotation.md) | Lock the "Paper" on Rotation and Present It Upright Through a Contain-Fit View | Active |
 | [0051](0051-desynchronized-canvas-low-latency.md) | `desynchronized` Canvas for Lower Ink Latency — Tried and Rejected | Rejected |
-| [0052](0052-dark-mode-theme-tokens.md) | Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper, White "Chalk" Line Art, Night Coloring Twins | Active |
+| [0052](0052-dark-mode-theme-tokens.md) | Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper, White "Chalk" Line Art, Night Coloring Fills | Active |
 | [0053](0053-asset-gen-in-repo-folder.md) | Asset-Generation Pipeline in `tools/asset-gen/` (In-Repo Folder, Not a Workspace or Separate Repo) | Active |
 | [0054](0054-coloring-asset-variant-suffix-scheme.md) | Uniform Dot-Separated Variant Suffixes for Coloring Assets (`{name}.{variant}.webp`) | Active |
+| [0055](0055-coloring-fill-vocabulary.md) | The Magic-Brush Reveal Assets Are "Fills", Not "Twins" | Active |
 

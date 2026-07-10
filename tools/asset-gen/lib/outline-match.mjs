@@ -2,7 +2,7 @@
 // the quality gate) and the drift auditor (check-coloring-drift.mjs). Given a source
 // line-art page and a colored candidate, it measures how well the candidate's black
 // outlines still sit on top of the source's — the whole premise of the magic-brush
-// twin (ADR-0043) is that the two register pixel-for-pixel.
+// fill (ADR-0043) is that the two register pixel-for-pixel.
 //
 // Two scores, because a single global number hides the failure mode we actually hit:
 //   - `keep`      — GLOBAL fraction of the source outline covered by candidate ink
@@ -31,10 +31,10 @@ const TOL = 2;
 const GRID = 8;
 const TILE_MIN_INK = 50;
 
-// Pass bars, shared by the generation gate and the shipped-twin auditor so they
-// can't drift apart. A twin must hold this much of the source outline globally AND
+// Pass bars, shared by the generation gate and the shipped-fill auditor so they
+// can't drift apart. A fill must hold this much of the source outline globally AND
 // in its worst tile. The local bar sits in the gap between the clearly-drifted
-// shipped twins (worst tile ≤ 80%) and the clean ones (≥ 83%).
+// shipped fills (worst tile ≤ 80%) and the clean ones (≥ 83%).
 export const KEEP_THRESHOLD = 0.92;
 export const LOCAL_KEEP_THRESHOLD = 0.8;
 
