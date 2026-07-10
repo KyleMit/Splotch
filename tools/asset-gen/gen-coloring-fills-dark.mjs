@@ -17,7 +17,7 @@
 // scoreLineColor() (the model re-inked the white outlines DARK — they must stay
 // white so they sit under the app's white "chalk" line art in dark mode).
 //
-// Full workflow (generate → review gallery → ship → wire → verify), the prompt
+// Full workflow (generate → review contact sheet → ship → wire → verify), the prompt
 // lessons, and the remaining-category checklist: tools/asset-gen/night-twins.md.
 //
 // Requires GEMINI_API_KEY. Writes candidates to .coloring-samples-dark/ for
@@ -291,7 +291,7 @@ async function scoreDrift(twinBuf, sourceBuf) {
 // the highest cut that still clears the good set's floor). A pale, patchy subject
 // (a mostly-white dog with a few dark contours) is the hard case — it can land near
 // the boundary, so a flagged page may need a targeted low-temp regen to come back
-// cleanly white; eyeball borderline pages in the gallery.
+// cleanly white; eyeball borderline pages in the contact sheet.
 const LINE_W = 512;
 const LINE_SRC_DARK = 110; // source pixel darker than this = an outline
 const LINE_WHITE_MIN_DEFAULT = 150; // median outline brightness below this = dark outlines

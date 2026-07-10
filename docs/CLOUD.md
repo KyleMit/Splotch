@@ -39,6 +39,22 @@ becomes context):
   pushing so you can watch the committed work in progress; the URL is stable for
   the branch, so it tracks every later push (each deploy takes a minute or two).
 
+### PR base branch — inherit the session's `feat/*` branch
+
+The default flow forks off `origin/main`, so the PR merges back into `main`. But
+when a session **opens on an existing `feat/*` branch** — a follow-up session
+stacked on feature work that isn't merged yet — that starting branch, not `main`,
+is the integration target. In that case:
+
+* Branch the new work off the session's `feat/*` branch (not `origin/main`), and
+* When opening the PR, set its **base branch to that original `feat/*` branch**,
+  not `main`.
+
+This keeps the follow-up stacked on the in-flight feature instead of diffing
+against `main` (which would fold in every unmerged change from the parent branch
+and target the wrong merge destination). Once the parent `feat/*` branch merges to
+`main`, GitHub retargets its open child PRs to `main` automatically.
+
 ### Two preview modes — check which one is active
 
 The `splotchy` site runs in one of two preview modes, toggled in the Netlify UI

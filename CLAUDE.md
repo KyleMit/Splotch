@@ -47,6 +47,9 @@ On-demand **skills** (invoke when the topic comes up — don't guess from memory
 | `lighthouse-audit` | auditing page-load performance / Core Web Vitals on a throttled device (Lighthouse, first vs repeat visit) |
 | `adrs` | proposing or discussing any architectural approach |
 | `pr-screenshots` | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow |
+| `create-handoff` / `resume-handoff` | pausing in-flight work for a later session (`create-handoff`), or picking it back up (`resume-handoff`) — transfer packets live in `docs/handoff/` |
+
+**Prefer skills over slash commands.** Every reusable Claude workflow in this repo lives as a skill in `.claude/skills/<name>/SKILL.md`, not as a command in `.claude/commands/`. A skill with a good `description` is both user-invocable (`/name`) *and* model-invocable, so Claude can reach for it on its own — a plain command can't. When authoring a new reusable workflow, create a skill: give it a `name` and a `description` that says both what it does and when to use it (add `disable-model-invocation: true` if it should stay user-only). If the user asks to create a *command*, ask whether they'd like a skill instead before making one.
 
 Path-scoped **rules** in `.claude/rules/` (load automatically): `svelte.md`, `server-api.md`, `testing.md`. Nested CLAUDE.md files in `web/src/`, `android/`, and `scripts/` cover those areas.
 
@@ -61,6 +64,7 @@ Remaining `docs/`:
 | `docs/AUDIT-LOG.md` | Committable history of every audit-skill run (date · audit · one-line summary) |
 | `docs/PROMPTS.md` | Reusable AI art prompts for assets |
 | `docs/CLOUD.md` | Running/previewing the app in a Claude Code on the web cloud session, and its network constraints |
+| `docs/handoff/` | Transient session-to-session transfer packets — see `docs/handoff/CLAUDE.md`. Written by `/create-handoff`, consumed by `/resume-handoff` |
 
 If you discover any doc, skill, or rule is out of date while working, update it as part of the same task — don't leave it stale.
 

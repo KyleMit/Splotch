@@ -78,9 +78,11 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
   twin by `resolvedTheme()` — the light twin (`.color.webp`) in light mode, the night twin in
   dark mode — reading it reactively so a live theme flip re-rasterizes the sheet. Where a night
   twin isn't generated yet (an orientation/page still pending), dark mode falls back to the
-  light twin. The magic-brush outline mask (`buildFillsSheet`) is built from the **original**
-  black-on-white line art, not the twin, so it punches either twin's outlines with the same
-  polarity — no per-twin flip needed. *(This supersedes two earlier attempts: inverting the
+  light twin. Both twins ship **fills-only** — asset-gen punches each one's outlines out at
+  build time against the **original** black-on-white line art (ADR-0043's build-time
+  follow-up), keyed off the line art's darkness so both twins punch with the same polarity —
+  no per-twin flip needed, and the overlay line art stays the single source of line work in
+  either theme. *(This supersedes two earlier attempts: inverting the
   line art with the magic brush left untouched — the light twin's bright background jarred on
   dark — and the light-sheet approach that reverted the whole page to light paper via a
   now-removed `:root[data-coloring]` override.)*

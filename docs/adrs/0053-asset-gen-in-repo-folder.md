@@ -56,7 +56,7 @@ installed — `node_modules` layout is unchanged.
 
 What moved: `gen-style-covers`, `gen-coloring-fills`, `gen-coloring-fills-dark`,
 `retouch-line-art`, `gen-coloring-thumbs`, `gen-coloring-sheet`,
-`night-twins-gallery`, `png-to-webp`, `lib/pixelate.mjs`, and the `night-twins.md`
+`gen-contact-sheet`, `png-to-webp`, `lib/pixelate.mjs`, and the `night-twins.md`
 runbook.
 
 What stayed in `scripts/`: build-path codegen (`gen:icons`, `gen:releases`) and

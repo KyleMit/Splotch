@@ -166,6 +166,28 @@ A Playwright guard (`flows.spec.ts`) sweeps the magic brush across a page and as
 the canvas reveal is effectively black-free (the twin outlines are gone); before the
 fix that sweep painted ~2.8% near-black pixels — the duplicate lines.
 
+**This masks the twin's outline *copy*, not the twin's drift itself.** Where a twin's
+*fills* are geometrically drifted from the line art (the model redrew a feature shifted
+or scaled), the reveal still paints colour that misregisters with the overlay's lines —
+colour bleeding past the outline on one side, a white gap on the other. Fills-only
+removes the doubled lines but can't un-drift the fills; only a well-registered twin can.
+That is an **asset-quality** problem, fixed upstream at generation, not in the reveal —
+see the drift gate below. (A tempting reveal-time patch — dilating the outline mask so
+it eats the twin's line rim — was tried and rejected: it only carves a white halo around
+every line and does nothing for the drifted fills.)
+
+### The upstream fix: a worst-tile drift gate at generation
+
+`nature/ant-wide` was the reported case — its ant registers perfectly but its flowers
+drifted ~12 px. It shipped because `gen-coloring-fills.mjs` gated only on the **global**
+`keep` (93% here, over the 0.92 bar): a big aligned subject averages a small drifted
+feature away. The gate now also scores `localKeep` — the worst grid tile — which reads
+34% on that flower tile, so a drifted candidate is rejected and retried
+(`tools/asset-gen/lib/outline-match.mjs`, shared with the generator and the auditor).
+`npm run gen:coloring-fills:audit` runs the same scoring over the already-shipped twins
+and lists the ones to regenerate (ant-wide, police-wide, triangle-wide, fire-tall,
+dog-wide as of this writing).
+
 ## Follow-up: the sheet is sized to the paper, not the visible canvas
 
 **ADR-0050** introduced the locked "paper" (the coordinate space ops live in,
@@ -249,3 +271,37 @@ form rather than the single-axis one.
 - Margin ink still crops on rotating back and may drop once keyframed past the
   paper-square baseline, exactly as pen ink in the margins already does (ADR-0050) — the
   reveal follows the same rules as every other op.
+
+## Follow-up: the punch moved to build time — shipped twins are fills-only
+
+The fills-only fix above ran at **runtime**: the app downloaded the lined twin and
+`buildFillsSheet` punched its outlines out on every page apply. But the lined twin
+was never shown — every consumer (the reveal, and the contact sheet's Combined
+view, which duplicated the same mask logic) punched it first. So the punch is now
+a **build-time post-process** and the app ships the final image:
+
+- The lined twins ("raws") moved out of `web/static` into
+  `tools/asset-gen/twin-src/{book}/{page}-{orient}.{color,night}.raw.webp` —
+  committed as the source of truth, never shipped to web or native.
+- `tools/asset-gen/lib/punch-twin.mjs` (`npm run gen:coloring-punch`) derives the
+  shipped `web/static/coloring/**/*.{color,night}.webp` from the raws with the
+  same mask math `buildFillsSheet` used (line-art luma < 150 → transparent).
+  Offline, deterministic `sharp` — the migration reprocessed the existing
+  committed raws with no regeneration. `gen-coloring-fills.mjs` ships through the
+  same helper (raw to `twin-src/`, punch to `web/static`), so a lined twin can't
+  reach the app by construction.
+- The **drift audit** (`gen:coloring-fills:audit`) now scores the raws — the
+  shipped twins have no outlines left to register. A clean raw guarantees a clean
+  punch, because the shipped twin is a pure derivation.
+- **Cost:** the shipped twin carries a binary alpha plane (the line art's shape,
+  lossless), which is real entropy the lined twin didn't pay. Measured on
+  ant-tall.color (raw 71 KB): q90 108 KB, q85/effort6 88 KB — shipped at
+  q85/effort6, ~13.5 MB total vs 12 MB before for all 154 twins.
+- **Done:** with fills-only twins shipped, the runtime masking in `magicBrush.ts`
+  (`buildFillsSheet`, `OUTLINE_LUMA_THRESHOLD`, the line-art load and its
+  `getImageData` readback) was deleted — the app always loads a shipped fills-only
+  twin, so the reveal is now a plain image load and `setColorSheet` takes just the
+  color URL. The contact sheet's `buildFills` **stays**: its Combined view still
+  reviews `--source samples`, whose fresh Gemini takes are raw lined twins that need
+  the punch to preview the shipped look (on already-punched shipped twins it's a
+  no-op).

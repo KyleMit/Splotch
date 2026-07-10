@@ -74,12 +74,12 @@ night recolor, registers the result back onto the original outline, and scores i
    (default 150 — the highest cut that still clears the good set's floor). A pale,
    patchy subject (a mostly-white dog with a few dark contours) is the hard case: it
    can land near the boundary, so a flagged page may need a targeted low-temp regen
-   (see step 3) to come back cleanly white — eyeball borderline pages in the gallery.
+   (see step 3) to come back cleanly white — eyeball borderline pages in the contact sheet.
 
 Each page retries (rising temperature) until a take passes all three gates, keeping the
 least-drifted take that reads as night AND keeps white outlines; it warns
 (`⚠ still drifting` / `⚠ too bright/daytime` / `⚠ dark outlines`) if none do — eyeball
-those in the gallery.
+those in the contact sheet.
 
 ### Prompt lessons (already baked into `DARK_FILL_PROMPT`)
 
@@ -110,7 +110,7 @@ those in the gallery.
     solid pupil + one clear glare, no iris — enlarge a too-small glare). Do NOT "open the
     eye into an outlined iris" — that was tried on the mermaid and made it a dark socket.
     After retouching the outline, regenerate the WHOLE related suite from it (light
-    `.color.webp` + night twin + thumbnails, both orientations) and re-check the gallery
+    `.color.webp` + night twin + thumbnails, both orientations) and re-check the contact sheet
     **Combined** view in BOTH light and dark. Solid-pupil eyes are the normal cute eye in
     light mode too, so the same fix serves both.
 - **Outlines stay WHITE, never dark.** The input is a white-line-on-dark drawing, and
@@ -128,19 +128,21 @@ don't hand-fix images.
 1. **Generate** to samples: `... gen-coloring-fills-dark.mjs <category> --max-attempts 4`
    (give the retry loop room to reject dark-outline / daytime takes; the default 3 is
    a touch tight now that three gates run).
-2. **Build a review gallery** and publish it as an Artifact for the user:
+2. **Build the contact sheet** and publish it as an Artifact for the user (rebuild
+   it every time you touch an asset):
    ```bash
-   node --experimental-strip-types --disable-warning=ExperimentalWarning \
-     tools/asset-gen/night-twins-gallery.mjs <category> --source samples \
-     --out .coloring-samples-dark/<category>-gallery.html
+   npm run gen:contact-sheet -- <category> --source samples \
+     --out .coloring-samples-dark/<category>-contact-sheet.html
    ```
    Then publish that file with the **Artifact tool** (it embeds images as data
    URIs, so it renders in the sandbox — do NOT hand-composite a PNG). Show the URL.
    The sheet has a **Light/Dark** toggle (defaults to Dark) and a per-tile
    **Color / Outline / Combined** toggle. **Always judge on the Combined view** — it
    reproduces the real canvas: the fills-only twin (its own outlines punched with the
-   line art as a mask, exactly like `magicBrush.buildFillsSheet`) under the themed
-   line-art layer over the paper. A twin that looks fine in isolation can break once
+   line art as a mask — the same punch asset-gen bakes into shipped twins, see
+   `lib/punch-twin.mjs`) under the themed line-art layer over the paper. That punch is
+   what makes this `--source samples` review faithful, since fresh takes still carry
+   their own outlines. A twin that looks fine in isolation can break once
    merged, so reviewing the raw twin alone is not enough. Also glance at a couple of
    Combined tiles inline (Read tool) to sanity-check faces/eyes/mood.
    - **Eyes gotcha (line-art driven, not the twin):** in dark mode the eye is rendered by
@@ -175,8 +177,9 @@ eye lesson applies to light mode too):
 2. `node tools/asset-gen/gen-coloring-thumbs.mjs <cat>` (picker thumbnail).
 3. `gen-coloring-fills.mjs <cat>/<page>-tall <cat>/<page>-wide` (light `.color.webp`).
 4. `gen-coloring-fills-dark.mjs <cat>/<page>-tall <cat>/<page>-wide --max-attempts 4`,
-   then copy the samples to `…/<page>-<orient>.night.webp`.
-5. Rebuild the gallery `--source shipped`, verify eyes read well in Combined light AND
+   then copy the samples to `twin-src/<cat>/<page>-<orient>.night.raw.webp` and
+   `npm run gen:coloring-punch -- <cat>/<page>`.
+5. Rebuild the contact sheet `--source shipped`, verify eyes read well in Combined light AND
    dark, then `npm run check:assets && npm run check && npm run test:unit` and commit.
 
 (Fixed Creatures' mermaid tall+wide: the original solid-black eyes had a pin-dot glare
@@ -212,14 +215,17 @@ Combined light and dark.)
    line art. Reach for it only for the stubborn pale outliers; the default 0 keeps the
    input pixel-faithful.
 4. **On the user's approval**, ship:
-   - Copy each twin from samples to the shipped path (strip the sample suffix, add
-     `.night`):
+   - Copy each twin from samples to its RAW source path in `twin-src/` (strip the
+     sample suffix, add `.night.raw`), then punch the shipped fills-only twins:
      ```bash
      for p in cat cow dog duck horse pig; do
-       cp .coloring-samples-dark/farm/$p-tall.webp web/static/coloring/farm/$p-tall.night.webp
-       cp .coloring-samples-dark/farm/$p-wide.webp web/static/coloring/farm/$p-wide.night.webp
+       cp .coloring-samples-dark/farm/$p-tall.webp tools/asset-gen/twin-src/farm/$p-tall.night.raw.webp
+       cp .coloring-samples-dark/farm/$p-wide.webp tools/asset-gen/twin-src/farm/$p-wide.night.raw.webp
      done
+     npm run gen:coloring-punch -- farm
      ```
+     Never copy a lined twin straight into `web/static/coloring/` — the shipped
+     `.night.webp` must be the punched (fills-only) derivation of the raw.
    - Wire the catalog in `web/src/lib/state/books.ts` — add the night orientations to
      each page: `page('farm', 'cat', 'Cat', ['portrait', 'landscape'])`.
    - `npm run check:assets` (validates every listed twin exists; also gates
@@ -238,8 +244,10 @@ npm run test:unit      # includes books/coloringBook night-twin tests
 
 ## Notes
 
-- `.coloring-samples-dark/` is gitignored — never commit samples. Only the shipped
-  `web/static/coloring/**/*.night.webp` + the `books.ts` wiring get committed.
+- `.coloring-samples-dark/` is gitignored — never commit samples. What gets
+  committed: the raw twins in `tools/asset-gen/twin-src/**/*.night.raw.webp`, their
+  punched `web/static/coloring/**/*.night.webp` derivations, and the `books.ts`
+  wiring.
 - No thumbnails for night twins (they're never in the picker grid, like
   `.color.webp`). `bookAssetPaths()` already lists them for check-assets.
 - Light mode must stay byte-identical throughout.

@@ -1,8 +1,14 @@
 // Generates a flat-color "answer key" for each black-and-white coloring page in
 // web/static/coloring/ by asking Gemini to color inside the existing lines.
 // The colored version keeps the page's exact black outlines and only fills the
-// white regions with solid flat color, so a future brush tool can pair each
-// page with its colored twin and reveal the prefilled colors as a child paints.
+// white regions with solid flat color, so the magic brush can pair each page
+// with its colored twin and reveal the prefilled colors as a child paints.
+//
+// Shipping is two files per twin: the raw (lined) result is committed to
+// tools/asset-gen/twin-src/ as the source of truth — the drift audit scores it —
+// and its fills-only punch (outlines masked out with the line art, so the app's
+// overlay is the single source of line work) is what lands in web/static/coloring/
+// as the shipped .color.webp (lib/punch-twin.mjs; ADR-0043 "reveal fills only").
 //
 // Requires GEMINI_API_KEY. Run via npm so the .ts imports resolve:
 //   npm run gen:coloring-fills                                 all pages
@@ -12,22 +18,27 @@
 //   npm run gen:coloring-fills -- farm/dog-wide -t 1.2         hotter retry
 //
 // Each candidate is post-processed and scored before it's kept:
-//   1. alignToSource undoes the few-pixel nudge the model tends to add, so the
-//      colored outlines re-register onto the source pixel-for-pixel.
-//   2. outlineMatch reports `keep` — the fraction of the original outline the
-//      fill still covers (want ~1) — by overlaying the two outline masks.
+//   1. alignToSource undoes the few-pixel GLOBAL nudge the model tends to add, so
+//      the colored outlines re-register onto the source. It's a single translation,
+//      so it can't fix a feature that drifted on its own (step 2 catches that).
+//   2. outlineMatch reports `keep` (global outline coverage) AND `localKeep` (the
+//      worst grid tile's coverage) by overlaying the two outline masks. localKeep
+//      is the gate that catches a localized drift a high global keep would hide.
 //   3. whiteFraction reports how much of the page is left pure white; big blank
 //      areas would look uncolored under the child's brush, so they're rejected.
-// A candidate that fails either gate is retried (temperature nudged up); the best
-// attempt is kept if none fully pass.
+// A candidate that fails any gate is retried (temperature nudged up); the best
+// attempt is kept if none fully pass. (See lib/outline-match.mjs; the same scoring
+// backs `npm run gen:coloring-fills:audit`, which flags already-shipped twins.)
 import { parseArgs } from 'node:util';
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
+import { REPO_ROOT, COLORING_DIR, TWIN_SRC_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
+import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
+import { punchTwin } from './lib/punch-twin.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-2.5-flash-image';
@@ -79,83 +90,6 @@ export async function generateColoredPage(ai, { imageBytes, mimeType, temperatur
     throw new Error(`${classified.kind}: ${classified.reason}`);
   }
   return { bytes: Buffer.from(classified.data, 'base64'), mimeType: classified.mimeType };
-}
-
-// Downscaled binary mask of the dark (outline) pixels of an image. Everything
-// darker than THRESHOLD counts as ink. Note this also catches genuinely dark
-// FILL colors (a brown dog, a navy sky) — outlineMatch handles that below by
-// scoring with a tolerance rather than an exact overlap.
-const MASK_W = 512;
-const THRESHOLD = 110;
-async function darkMask(buf) {
-  const img = sharp(buf).grayscale().resize(MASK_W, MASK_W, { fit: 'fill' });
-  const { data } = await img.raw().toBuffer({ resolveWithObject: true });
-  const mask = new Uint8Array(data.length);
-  for (let i = 0; i < data.length; i++) mask[i] = data[i] < THRESHOLD ? 1 : 0;
-  return mask;
-}
-
-// Whether a mask has any set pixel within `r` of index i (a cheap dilation test).
-// Used so a 1px-thicker or slightly anti-aliased line still counts as a match.
-function nearby(mask, i, r) {
-  const x = i % MASK_W;
-  const y = (i / MASK_W) | 0;
-  for (let dy = -r; dy <= r; dy++) {
-    const yy = y + dy;
-    if (yy < 0 || yy >= MASK_W) continue;
-    for (let dx = -r; dx <= r; dx++) {
-      const xx = x + dx;
-      if (xx < 0 || xx >= MASK_W) continue;
-      if (mask[yy * MASK_W + xx]) return true;
-    }
-  }
-  return false;
-}
-
-// Compare the outline of the source page against a colored candidate, tolerant
-// of ±TOL px so line-thickening and anti-aliasing don't read as drift.
-// `keep`  = fraction of the original outline that has ink within TOL in the
-//           candidate — the real "did the outlines survive" score (want ~1).
-// `drift` = fraction of the original outline with NO ink nearby — outlines that
-//           actually moved or vanished (want ~0).
-// The overlay PNG then shows ONLY genuine mismatches: original ink that drifted
-// = red, candidate ink far from any original line (invented detail, or a dark
-// fill) = blue, everything aligned = near-black.
-const TOL = 2;
-export async function outlineMatch(sourceBuf, filledBuf) {
-  const src = await darkMask(sourceBuf);
-  const fill = await darkMask(filledBuf);
-  let srcCount = 0;
-  let covered = 0;
-  const rgb = Buffer.alloc(MASK_W * MASK_W * 3, 255);
-  for (let i = 0; i < src.length; i++) {
-    const s = src[i];
-    const f = fill[i];
-    const p = i * 3;
-    if (s) {
-      srcCount++;
-      if (nearby(fill, i, TOL)) {
-        covered++;
-        rgb[p] = 30;
-        rgb[p + 1] = 30;
-        rgb[p + 2] = 30;
-      } else {
-        rgb[p] = 230;
-        rgb[p + 1] = 50;
-        rgb[p + 2] = 50;
-      }
-    } else if (f && !nearby(src, i, TOL)) {
-      rgb[p] = 80;
-      rgb[p + 1] = 120;
-      rgb[p + 2] = 235;
-    }
-  }
-  const keep = srcCount ? covered / srcCount : 0;
-  const drift = 1 - keep;
-  const overlay = await sharp(rgb, { raw: { width: MASK_W, height: MASK_W, channels: 3 } })
-    .png()
-    .toBuffer();
-  return { keep, drift, overlay };
 }
 
 // The model sometimes returns the fill nudged a few pixels (usually rightward)
@@ -306,11 +240,15 @@ const pages = positionals.length
 const sampleMode = samples > 1;
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// A candidate is only usable if it preserves this much of the original outline
-// (within the ±TOL tolerance) AND leaves no big blank-white area. Below either
-// bar the twin either drifted off its outline or reads as half-uncolored — reject
-// and retry.
-const KEEP_THRESHOLD = 0.92;
+// A candidate is only usable if it holds the original outline — globally AND in
+// every region — and leaves no big blank-white area. Below any bar the twin either
+// drifted off its outline or reads as half-uncolored, so reject and retry.
+//
+// KEEP is the global coverage; LOCAL_KEEP gates the WORST tile (both imported from
+// lib/outline-match.mjs, shared with the auditor). A high global keep can hide a
+// small feature that drifted badly: nature/ant-wide scored 93% global (over the old
+// 92% bar) while its flower tile was 34% — the drift the child sees. Gating the
+// worst tile is what catches that; the global bar alone never could.
 const WHITE_THRESHOLD = 0.05; // >5% pure white ⇒ blank areas left uncolored
 const MAX_ATTEMPTS = 5;
 
@@ -322,11 +260,13 @@ function baseTempForSlot(i) {
   return samples === 1 ? 0.55 : 0.55 + i * 0.12;
 }
 
-// A candidate clears if it holds the outline and isn't mostly blank white.
-const passes = (c) => c.keep >= KEEP_THRESHOLD && c.white <= WHITE_THRESHOLD;
+// A candidate clears if it holds the outline globally AND in its worst tile, and
+// isn't mostly blank white.
+const passes = (c) =>
+  c.keep >= KEEP_THRESHOLD && c.localKeep >= LOCAL_KEEP_THRESHOLD && c.white <= WHITE_THRESHOLD;
 // Rank for keeping the best of several imperfect attempts: fidelity is the hard
-// constraint, then prefer less leftover white.
-const rank = (c) => (c.keep >= KEEP_THRESHOLD ? 1000 : 0) + (1 - c.white) * 100 + c.keep;
+// constraint (global then worst-tile), then prefer less leftover white.
+const rank = (c) => (passes(c) ? 1000 : 0) + c.localKeep * 200 + (1 - c.white) * 100 + c.keep;
 
 // Generate, size-match, re-register onto the source outline, and score one
 // candidate; retry until it passes both gates, keeping the best attempt if none
@@ -346,11 +286,21 @@ async function renderClean(source, width, height, slot) {
     const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
     const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
-    const [{ keep, drift, overlay }, white] = await Promise.all([
+    const [{ keep, drift, localKeep, worstTile, overlay }, white] = await Promise.all([
       outlineMatch(source, colored),
       whiteFraction(colored),
     ]);
-    const cand = { colored, keep, drift, overlay, white, shift: { dx, dy }, attempt };
+    const cand = {
+      colored,
+      keep,
+      drift,
+      localKeep,
+      worstTile,
+      overlay,
+      white,
+      shift: { dx, dy },
+      attempt,
+    };
     if (!best || rank(cand) > rank(best)) best = cand;
     if (passes(cand)) break;
   }
@@ -368,14 +318,15 @@ for (const page of pages) {
     process.stdout.write(`${label} ... `);
     try {
       const cand = await renderClean(source, width, height, i);
-      const { colored, keep, overlay, white, shift, attempt } = cand;
+      const { colored, keep, localKeep, overlay, white, shift, attempt } = cand;
       const tries = attempt > 0 ? `  (${attempt + 1} tries)` : '';
       const nudge = shift.dx || shift.dy ? `  shift ${shift.dx},${shift.dy}` : '';
       const warn = [];
       if (keep < KEEP_THRESHOLD) warn.push('drifting');
+      if (localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
       if (white > WHITE_THRESHOLD) warn.push('white');
       const flag = warn.length ? `  ⚠ ${warn.join(' + ')}` : '';
-      const score = `keep ${(keep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%${nudge}`;
+      const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%${nudge}`;
 
       let out;
       if (sampleMode) {
@@ -385,8 +336,12 @@ for (const page of pages) {
         await sharp(colored).toFile(out);
         await sharp(overlay).toFile(join(dir, `sample-${i + 1}.overlay.png`));
       } else {
-        out = join(dirname(page), `${rel.split('/').pop()}.color.webp`);
-        await sharp(colored).toFile(out);
+        // Ship = the raw (lined) twin into twin-src/ as the committed source of
+        // truth, then its fills-only punch into web/static (lib/punch-twin.mjs).
+        const rawOut = join(TWIN_SRC_DIR, `${rel}.color.raw.webp`);
+        await mkdir(dirname(rawOut), { recursive: true });
+        await writeFile(rawOut, colored);
+        ({ out } = await punchTwin(rawOut));
       }
       console.log(`${score}${tries}${flag}  -> ${relative(REPO_ROOT, out)}`);
     } catch (err) {

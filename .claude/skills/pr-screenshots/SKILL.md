@@ -74,8 +74,11 @@ ADR's Verification table.
    ```
 
    Use `<pr-slug>` = the feature branch's kebab summary (e.g. `magic-brush`). Sanity-
-   check a URL before posting: `curl -sI <raw-url>` should return `200` and
-   `content-type: image/png`.
+   check a URL before posting: `curl -s -o /dev/null -w "%{http_code} %{content_type}\n" <raw-url>`
+   should print `200 image/png`. (Don't use `curl -sI | head -1` — in cloud sessions
+   every HTTPS request tunnels through the agent proxy, whose CONNECT handshake always
+   returns `HTTP/1.1 200 Connection Established`, masking the real origin status so a
+   404'd URL still reads `200`.)
 
 > Two escape hatches, neither better here: committing shots into the **feature
 > branch** (`docs/pr/…`) is simplest but drags binaries into `main` on merge — the

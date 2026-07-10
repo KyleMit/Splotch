@@ -18,8 +18,21 @@ into the root `node_modules`, so there is nothing to install in this folder —
 **do not run `npm install` here.**
 
 Path/tree resolution is centralized in `lib/paths.mjs` (`REPO_ROOT`,
-`COLORING_DIR`, `STYLES_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) so the scripts
-never hardcode `../../..` walks or reach back into `scripts/lib/`.
+`COLORING_DIR`, `STYLES_DIR`, `TWIN_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`)
+so the scripts never hardcode `../../..` walks or reach back into `scripts/lib/`.
+
+### Raw twins vs shipped twins
+
+`twin-src/{book}/{page}-{orient}.{color,night}.raw.webp` (committed, in this
+folder, never shipped) holds the colored twins **with their outlines intact** —
+the raw model output. The shipped `web/static/coloring/**/*.{color,night}.webp`
+are the fills-only **punch** of those raws: `punch-twin-outlines.mjs` masks each
+raw's own outline pixels out using the page's line art, because the app's overlay
+`<img>` already draws the line art on top and revealing the twin's copy would
+double every line (ADR-0043 "reveal fills only"). The punch is deterministic,
+offline `sharp` — no key, no network — so the shipped twins are always a pure,
+reproducible derivation of the raws. Edit or regenerate a raw, then re-punch;
+never hand-edit a shipped twin.
 
 ### The one coupling to the app
 
@@ -33,7 +46,7 @@ dependency-free precisely so this stays clean):
 | `web/src/lib/ai/styles.ts` | `gen-style-covers` |
 | `web/src/lib/ai/prompt.ts` | `gen-style-covers` |
 | `web/src/lib/server/ai/geminiSafety.ts` | every Gemini generator |
-| `web/src/lib/state/books.ts` | `night-twins-gallery` |
+| `web/src/lib/state/books.ts` | `gen-contact-sheet` |
 
 ## Running
 
@@ -42,9 +55,37 @@ From the **repo root** (the discoverable entry points — ADR-0019):
 ```bash
 npm run gen:style-covers        # AI style thumbnails  -> web/static/styles/
 npm run gen:coloring-fills      # light colored twins  -> web/static/coloring/**/*.color.webp
+npm run gen:coloring-fills:audit # drift-check the raw twins in twin-src/ (no key/network)
+npm run gen:coloring-punch      # re-derive shipped fills-only twins from twin-src/ raws (no key/network)
 npm run gen:coloring-thumbs     # picker thumbnails     -> web/static/coloring/**/*-thumb.webp
 npm run gen:coloring-sheet      # light-twin review sheet (gitignored)
+npm run gen:contact-sheet -- all # HTML contact sheet of every twin (gitignored) — publish as an Artifact
 ```
+
+**Whenever you touch an asset — generate, retouch, regenerate, or ship a
+twin — rebuild the contact sheet for the affected page/category and publish it
+with the Artifact tool** so the change is visible in the session (see "Viewing a
+review sheet" below).
+
+### Twin outline drift & the audit
+
+A colored twin must register on its line art pixel-for-pixel — the magic brush
+(ADR-0043) reveals the twin's fills under the overlay's lines, so a drifted region
+shows the wrong colour outside the lines. `gen-coloring-fills` scores every
+candidate two ways (`lib/outline-match.mjs`): global outline coverage (`keep`) and
+the **worst grid tile** (`localKeep`). The local bar is the important one — a large
+aligned subject can hold a 93% global keep while one small feature (a flower) sits
+at 34%, which is exactly how `nature/ant-wide` shipped drifted. `alignToSource`
+only corrects a single global nudge, so a self-drifted feature can't be aligned
+away; a failing candidate is retried, and if none pass, regenerate.
+
+`gen:coloring-fills:audit` runs the same scoring over the **committed raw twins**
+in `twin-src/` (it reads committed assets only — no key, no network) and prints
+the pages that fail, with a ready-to-run regenerate command. It scores the raws
+rather than the shipped twins because the shipped ones are punched fills-only
+(no outlines left to register); a clean raw guarantees a clean punch. `--overlay`
+dumps a drift map per failing page (red = source outline the twin left uncovered)
+to `.coloring-samples/drift/`.
 
 Or, from **inside this folder**, the local aliases (same flags, resolve the same
 root `node_modules`):
@@ -52,7 +93,7 @@ root `node_modules`):
 ```bash
 npm run coloring-fills -- farm/dog-wide --samples 3
 npm run coloring-fills-dark -- space --max-attempts 4   # not exposed as a root gen:* script
-npm run night-twins-gallery -- space --source samples
+npm run contact-sheet -- space --source samples
 npm run retouch-line-art -- creatures/mermaid-tall
 npm run png-to-webp
 ```
@@ -70,6 +111,41 @@ API cost).
 - **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/`.
 
 Generate → review the scratch → copy the good outputs into `web/static/` → commit.
+
+### Viewing a review sheet
+
+Both sheets — the light-twin `gen:coloring-sheet` output and the
+`gen-contact-sheet.mjs` contact sheet — are **self-contained HTML** (images inlined
+as base64 data URIs), built to render anywhere:
+
+- **Rebuild the contact sheet every time you touch an asset**, then **publish the
+  sheet with the Artifact tool** instead of hand-rolling a headless screenshot —
+  same steps as the night-twins runbook
+  ([`night-twins.md`](./night-twins.md#per-category-workflow)). Show the URL.
+- For a **whole-catalog** pass (e.g. a cross-session review of everything
+  shipped), the `all` target expands to every book —
+  `gen:contact-sheet -- all --source shipped` — so you needn't enumerate the
+  eight categories. It reads only committed assets, so any session rebuilds the
+  identical sheet in a couple of seconds with no key or network. **But the
+  Artifact tool caps uploads at 16 MB and the `all` sheet exceeds that** (~29 MB
+  today, and it grows as more twins ship — the generator warns when the file is
+  over the cap). To publish a catalog-wide review, build and publish it
+  **per-category** (or 2–3 categories per sheet, e.g.
+  `gen:contact-sheet -- nature farm creatures --source shipped`) so each Artifact
+  stays under 16 MB. Use `all` only to eyeball the sheet locally.
+- For a **focused** pass, `gen-contact-sheet.mjs` takes page/cell targets
+  (`nature/ant`, `nature/ant-wide`) and `--theme light` to open the light-twin
+  (magic-brush) view — not just a whole dark category.
+- **To change how the sheet looks or behaves**, edit the real files under
+  `contact-sheet/` — `contact-sheet.css` (styling) and `contact-sheet.client.js`
+  (the in-browser render/interaction runtime). `gen-contact-sheet.mjs` only
+  assembles the shell and injects the cell data + initial theme as a JSON global
+  (`window.__CONTACT_SHEET__`), so those two files carry the design surface with
+  full editor highlighting, Prettier, and ESLint.
+- If a raw PNG is genuinely needed, **don't launch Chromium directly** — the cloud
+  env's Chromium revision drifts from Playwright's pin. Reuse `run-splotch`'s
+  `chromiumExecutablePath()` fallback or set `PLAYWRIGHT_CHROMIUM`
+  (`.claude/skills/run-splotch/SKILL.md`, `docs/CLOUD.md`).
 
 ## Runbooks
 
