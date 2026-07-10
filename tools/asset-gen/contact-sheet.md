@@ -48,7 +48,7 @@ twin:
 
 - **outline** — the page line art rendered as the canvas renders it: black lines
   on light paper in the light half, white "chalk" on dark paper in the night half.
-- **color** — the generated colored twin alone (`.color.webp` in the light half,
+- **color** — the generated colored twin alone (`.light.webp` in the light half,
   night twin in the dark half).
 - **combined** — the real canvas composite: the fills-only twin (its own
   outlines punched with the line art as a mask — the same punch asset-gen bakes

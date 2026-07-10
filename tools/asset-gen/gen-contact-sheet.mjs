@@ -59,8 +59,8 @@ function nightPath(id, orient) {
 }
 // The black-on-white line art and the light colored twin always come from
 // web/static — light twins ship straight from the fills generator's punch.
-const lineArtPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.webp`);
-const lightPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.color.webp`);
+const lineArtPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.outline.webp`);
+const lightPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.light.webp`);
 
 function dataUri(p) {
   if (!existsSync(p)) return null;
@@ -73,7 +73,7 @@ function dataUri(p) {
 // outlines, which the dark-ink mask in lib/outline-match.mjs can't read, so only
 // the light half carries the badge.
 async function lightKeep(id, orient) {
-  const raw = join(TWIN_SRC_DIR, catId, `${id}-${orient}.color.raw.webp`);
+  const raw = join(TWIN_SRC_DIR, catId, `${id}-${orient}.light.raw.webp`);
   const src = lineArtPath(id, orient);
   if (!existsSync(raw) || !existsSync(src)) return null;
   const { keep } = await outlineMatch(readFileSync(src), readFileSync(raw));

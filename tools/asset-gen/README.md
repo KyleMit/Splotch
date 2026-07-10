@@ -23,9 +23,9 @@ so the scripts never hardcode `../../..` walks or reach back into `scripts/lib/`
 
 ### Raw twins vs shipped twins
 
-`twin-src/{book}/{page}-{orient}.{color,night}.raw.webp` (committed, in this
+`twin-src/{book}/{page}-{orient}.{light,night}.raw.webp` (committed, in this
 folder, never shipped) holds the colored twins **with their outlines intact** —
-the raw model output. The shipped `web/static/coloring/**/*.{color,night}.webp`
+the raw model output. The shipped `web/static/coloring/**/*.{light,night}.webp`
 are the fills-only **punch** of those raws: `punch-twin-outlines.mjs` masks each
 raw's own outline pixels out using the page's line art, because the app's overlay
 `<img>` already draws the line art on top and revealing the twin's copy would
@@ -54,10 +54,10 @@ From the **repo root** (the discoverable entry points — ADR-0019):
 
 ```bash
 npm run gen:style-covers        # AI style thumbnails  -> web/static/styles/
-npm run gen:coloring-fills      # light colored twins  -> web/static/coloring/**/*.color.webp
+npm run gen:coloring-fills      # light colored twins  -> web/static/coloring/**/*.light.webp
 npm run gen:coloring-fills:audit # drift-check the raw twins in twin-src/ (no key/network)
 npm run gen:coloring-punch      # re-derive shipped fills-only twins from twin-src/ raws (no key/network)
-npm run gen:coloring-thumbs     # picker thumbnails     -> web/static/coloring/**/*-thumb.webp
+npm run gen:coloring-thumbs     # picker thumbnails     -> web/static/coloring/**/*.thumb.webp
 npm run gen:contact-sheet -- nature # HTML contact sheet of ONE category (gitignored) — publish as an Artifact
 ```
 
@@ -104,9 +104,9 @@ API cost).
 ## Inputs & outputs
 
 - **Inputs** (committed): `web/static/styles/source.svg`, the black-and-white
-  `web/static/coloring/**/*-{tall,wide}.webp` line-art pages.
-- **Shipped outputs** (committed, read by the app): `*.color.webp` / `*.night.webp`
-  twins, `*-thumb.webp` thumbnails, `web/static/styles/*.webp` covers.
+  `web/static/coloring/**/*-{tall,wide}.outline.webp` line-art pages.
+- **Shipped outputs** (committed, read by the app): `*.light.webp` / `*.night.webp`
+  twins, `*.thumb.webp` thumbnails, `web/static/styles/*.webp` covers.
 - **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/`.
 
 Generate → review the scratch → copy the good outputs into `web/static/` → commit.

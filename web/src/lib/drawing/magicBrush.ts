@@ -3,7 +3,7 @@
 // The magic brush reveals a hidden "color sheet" wherever the child strokes.
 // Two sources can feed that sheet, and this module owns both:
 //
-//   1. A coloring page's flat-colored twin (`{page}.color.webp`), when a page is
+//   1. A coloring page's flat-colored twin (`{page}.light.webp`), when a page is
 //      applied — a revealed pixel lands under the line art it belongs to. The
 //      shipped twin is fills-only: its own outline pixels are already punched to
 //      transparency at build time (asset-gen's `tools/asset-gen/lib/punch-twin.mjs`,

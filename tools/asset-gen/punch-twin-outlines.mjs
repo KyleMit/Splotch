@@ -3,9 +3,9 @@
 // The punch itself (why it exists, the mask math, the encode settings) lives in
 // lib/punch-twin.mjs, shared with gen-coloring-fills.mjs.
 //
-// Inputs (committed, never shipped):  tools/asset-gen/twin-src/{book}/{page}-{orient}.{color,night}.raw.webp
-// Mask:                               web/static/coloring/{book}/{page}-{orient}.webp (the line art)
-// Outputs (committed, shipped):       web/static/coloring/{book}/{page}-{orient}.{color,night}.webp
+// Inputs (committed, never shipped):  tools/asset-gen/twin-src/{book}/{page}-{orient}.{light,night}.raw.webp
+// Mask:                               web/static/coloring/{book}/{page}-{orient}.outline.webp (the line art)
+// Outputs (committed, shipped):       web/static/coloring/{book}/{page}-{orient}.{light,night}.webp
 //
 // Offline + deterministic: pure sharp, no network, no GEMINI_API_KEY. Safe to
 // re-run anytime; a raw twin with no matching line art fails loudly.
@@ -21,7 +21,7 @@ import { REPO_ROOT, COLORING_DIR, TWIN_SRC_DIR, fail } from './lib/paths.mjs';
 import { punchTwin } from './lib/punch-twin.mjs';
 
 // Resolve args to raw twins (default: all). An arg is a category ("nature") or a
-// page ("nature/ant-wide" — both its color and night raws).
+// page ("nature/ant-wide" — both its light and night raws).
 async function rawsUnder(sub = '') {
   const cwd = sub ? join(TWIN_SRC_DIR, sub) : TWIN_SRC_DIR;
   if (!existsSync(cwd)) return [];

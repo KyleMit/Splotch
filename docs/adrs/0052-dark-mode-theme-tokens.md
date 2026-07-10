@@ -75,7 +75,7 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
   SET of pre-colored **night twins**
   (`{page}-{orient}.night.webp`, `tools/asset-gen/gen-coloring-fills-dark.mjs`): deep-navy backgrounds
   with glowing, cozy-night fills, registered to the original outline. `DrawingCanvas` picks the
-  twin by `resolvedTheme()` — the light twin (`.color.webp`) in light mode, the night twin in
+  twin by `resolvedTheme()` — the light twin (`.light.webp`) in light mode, the night twin in
   dark mode — reading it reactively so a live theme flip re-rasterizes the sheet. Where a night
   twin isn't generated yet (an orientation/page still pending), dark mode falls back to the
   light twin. Both twins ship **fills-only** — asset-gen punches each one's outlines out at
@@ -99,7 +99,7 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
   (only the orientations that have a generated twin) with a `pageNightImage()` helper;
   `coloringBook.svelte.ts` tracks `nightSheetUrl` alongside `colorSheetUrl`. `bookAssetPaths()`
   lists the shipped night twins so `check-assets` validates them and `strip-native-assets`
-  removes them, exactly like the light `.color.webp` twins (no thumbnails — never in the grid).
+  removes them, exactly like the light `.light.webp` twins (no thumbnails — never in the grid).
 - **Prominence of the float cards in dark mode.** The action buttons' warm drop shadow vanishes
   on dark paper, so `--float-border` (a faint light hairline) + `--float-shadow` /
   `--float-shadow-flyout` give each card a visible edge and lift in dark mode; both are
