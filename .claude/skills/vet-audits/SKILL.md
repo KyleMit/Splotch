@@ -1,3 +1,8 @@
+---
+name: vet-audits
+description: Adversarially validate each finding in docs/AUDIT.md against the current code — is it real, worth solving, and actionable — enriching the keepers with verification steps and pruning the rest. Use when asked to vet, review, or prune the audit backlog before fixing it. Review only; it does not implement fixes.
+---
+
 # Vet Audits
 
 Read `docs/AUDIT.md` and the current codebase, then **adversarially** validate each finding against the actual code — is the problem real, is it *worth solving*, and does the fix agent have what it needs to act on it.

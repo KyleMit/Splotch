@@ -1,4 +1,5 @@
 ---
+name: build
 description: Build the signed release artifacts for the current version (Android .aab, iOS .ipa)
 ---
 

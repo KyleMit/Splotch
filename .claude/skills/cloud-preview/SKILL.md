@@ -1,4 +1,5 @@
 ---
+name: cloud-preview
 description: Claude Code Cloud session only — start the dev server + reverse tunnel and report the public phone-preview URL
 ---
 

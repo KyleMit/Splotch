@@ -1,3 +1,8 @@
+---
+name: workflow-audit
+description: Review the Claude Code configuration and session history, benchmark against current best practice, and recommend and apply updates for an integrated, token-efficient setup. Use when asked to audit or improve the Claude Code workflow, config, permissions, or token efficiency, or to reduce repetitive permission prompts.
+---
+
 # Workflow Audit
 
 Review my Claude Code configuration and session history, benchmark it against current best practice, and recommend (and apply) updates so my setup is an integrated, token-efficient development system tuned to how I actually work.
@@ -7,7 +12,7 @@ The two standing priorities are **token efficiency** and **reducing repetitive p
 ## What to look at
 
 1. **User config** — `~/.claude/settings.json` (model, hooks, theme, env).
-2. **Project config** — `.claude/settings.json`, `.claude/settings.local.json`, `.claude/rules/*`, `.claude/skills/*`, `.claude/commands/*`, `.claude/agents/*`, and the root + nested `CLAUDE.md` files.
+2. **Project config** — `.claude/settings.json`, `.claude/settings.local.json`, `.claude/rules/*`, `.claude/skills/*`, `.claude/agents/*`, and the root + nested `CLAUDE.md` files.
 3. **Session history** — the JSONL transcripts under `~/.claude/projects/-Users-kylemit-Code-Splotch/`. Aggregate across sessions; do not read them one line at a time in the main context. Pull out:
    - **Tool usage counts** (Bash, Read, Edit, Write, Skill, ToolSearch, AskUserQuestion, …).
    - **Bash command breakdown by first word** — flag read-only shell (`grep`/`ls`/`cat`/`find`/`head`/`tail`/`wc`) that the dedicated Grep/Glob/Read tools should be doing instead. This is usually the biggest token leak.
@@ -78,7 +83,7 @@ End by printing a short summary of what changed and what's left as optional foll
 
 This is an audit skill. Its findings go in the dated `docs/claude-workflow-review-YYYY-MM-DD.md`
 report rather than `docs/AUDIT.md`, but the run-tracking conventions in
-[`.claude/audit-conventions.md`](../audit-conventions.md) still apply:
+[`.claude/audit-conventions.md`](../../audit-conventions.md) still apply:
 
 - **Log the run** (§2) — add a row to `docs/AUDIT-LOG.md` linking the dated report and
   summarizing the headline findings in one line.

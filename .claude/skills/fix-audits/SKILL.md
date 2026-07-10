@@ -1,3 +1,8 @@
+---
+name: fix-audits
+description: Work through every finding in docs/AUDIT.md autonomously on a dedicated branch — one commit per item — validating, fixing, and verifying each. Use when asked to fix, clear, or work through the audit backlog.
+---
+
 # Fix Audits
 
 Work through **every** item in `docs/AUDIT.md` autonomously on a dedicated branch — one

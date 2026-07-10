@@ -1,7 +1,7 @@
 # Audit skills — inventory & shared conventions
 
 The single reference for Splotch's custom **audit skills**: what they are, and the
-rules every one of them follows. Each audit command/skill links here instead of
+rules every one of them follows. Each audit skill links here instead of
 repeating these instructions. If you change a shared rule, change it **here** — the
 skills point at this file on purpose.
 

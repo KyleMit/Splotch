@@ -1,4 +1,5 @@
 ---
+name: release
 description: Draft release notes from the git log, then bump versions and publish a release
 ---
 

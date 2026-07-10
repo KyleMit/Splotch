@@ -1,3 +1,8 @@
+---
+name: update-adrs
+description: Review recent decisions from the current conversation and git history, verify existing ADRs still reflect reality, and add or amend ADRs as needed. Use at the end of a session that touched architecture, testing, infrastructure, or build tooling, or when asked to refresh or reconcile the ADRs.
+---
+
 # Update ADRs
 
 Review recent decisions from the current conversation and git history, verify that all existing ADRs still reflect reality, and add or amend ADRs as needed.
