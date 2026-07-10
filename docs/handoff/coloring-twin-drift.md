@@ -1,8 +1,6 @@
 # Handoff — coloring-twin outline drift (magic-brush ghosting)
 
-> Session handoff, 2026-07-09. Branch `claude/coloring-outline-ghosting-regression-4e21rr`,
-> PR [#104](https://github.com/KyleMit/Splotch/pull/104). Delete this file once the open
-> items below are closed (or the PR merges and you don't want the follow-ups tracked here).
+> 2026-07-09 · branch `claude/coloring-outline-ghosting-regression-4e21rr` · PR [#104](https://github.com/KyleMit/Splotch/pull/104) · worst-tile drift gate shipped; open follow-ups on night-twins + threshold
 
 ## What this was
 
