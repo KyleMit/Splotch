@@ -17,6 +17,10 @@ An ADR is warranted when a decision:
 
 Skip trivial implementation details, stylistic choices, and decisions that are self-evident from reading the code.
 
+## Asset-gen carve-out
+
+Decisions about the **asset-generation pipeline** (line art, coloring fills, the tools under `tools/asset-gen/`) do NOT become numbered ADRs — they live as un-numbered decision records in `tools/asset-gen/docs/` (same Context/Decision/Consequences structure, a descriptive kebab-case filename, no number). Everything below about numbering and the index applies only to app/infra decisions in `docs/adrs/`.
+
 ## Process
 
 1. **Identify the decision.** If the user named it, use that. Otherwise infer it from the current conversation, recent git log (`git log --oneline -20`), or the code change being made.
