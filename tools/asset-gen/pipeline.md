@@ -194,21 +194,27 @@ normalization silently **deleted a cloud** (worst-tile keep 0%), fixed with a
 pen as a chalk line drawing (`gen-coloring-chalk.mjs`), keep-best-of-N with a
 rising temperature ladder, candidates in `.coloring-samples-dark/chalk/` (each
 with a `.display.webp` preview of what dark mode will show and a registration
-overlay). Four gates per candidate:
+overlay). Four gates per candidate (`--rescore` re-runs them over saved
+candidates offline — no API — after a gate change):
 
 1. **keep ≥ 92% / worst-tile ≥ 80%** (`lib/outline-match.mjs`, pen →
    candidate) — every pen stroke is still traced in place. Only the forward
    direction is gated: a chalk legitimately *adds* ink (its solid whites), so
-   the reverse direction is covered by the next two gates instead;
-2. **no invented strokes** — new ink beyond the pen's slack must be SOLID
-   (an opening survives it); thin new ink far from any pen line is an invented
-   outline and fails;
-3. **background integrity** — new solid ink must not touch the open background
-   (flood-filled from the page border): whites live in pen-bounded interiors
-   (a sclera, a tooth), never on the board;
-4. **white budget** — total solid-whitened area ≤ 10% of the page (a chalk
-   that whitens a whole body is a review-worthy surprise, not a judgment
-   call).
+   the reverse direction is covered by the enclosure gate instead;
+2. **enclosure** — new ink is judged by WHERE it lands, not how thick it is:
+   inside a pen-bounded interior it's a deliberate whitening; on the open
+   background (flood-reachable from the page border) it's an invented shape
+   and fails. The first draft judged by *thickness* (a morphological opening)
+   and misread every whitened sclera — a thin annulus around the pupil — as an
+   invented stroke, rejecting 9 of nature's 12 perfectly good chalks;
+3. **white budget** — total whitened area ≤ 10% of the page (a chalk that
+   whitens a whole body is a review-worthy surprise, not a judgment call);
+4. **eye polarity** — pen eye cores the committed light raw paints DARK
+   (pupils) must stay non-ink/fillable in the chalk; cores it paints BRIGHT
+   (catchlights) should be chalk ink (warns only). Added after the first
+   spider/caterpillar chalks whitened whole eyeballs — pupil included — which
+   the registration gates can't see (the rings are all still traced) and the
+   night-fill composite gate only catches after a fill has been burned.
 
 After applying a chalk, regenerate the page's **night fill** (it conditions on
 the chalk) and re-punch. Thumbs and light fills are untouched — they belong to

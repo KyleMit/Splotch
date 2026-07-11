@@ -59,4 +59,5 @@ This directory records significant architectural decisions made in the Splotch p
 | [0053](0053-asset-gen-in-repo-folder.md) | Asset-Generation Pipeline in `tools/asset-gen/` (In-Repo Folder, Not a Workspace or Separate Repo) | Active |
 | [0054](0054-coloring-asset-variant-suffix-scheme.md) | Uniform Dot-Separated Variant Suffixes for Coloring Assets (`{name}.{variant}.webp`) | Active |
 | [0055](0055-coloring-fill-vocabulary.md) | The Magic-Brush Reveal Assets Are "Fills", Not "Twins" | Active |
+| [0056](0056-pen-chalk-outline-fork.md) | Fork the Line Art per Theme — Pen Outline (Light) + Gemini-Authored Chalk Outline (Dark) | Active |
 

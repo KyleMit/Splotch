@@ -28,6 +28,9 @@
 //      thin annulus — thickness tests misread it); on the open background
 //      (flood-reachable from the border) it's an invented shape and fails.
 //   3. white budget — total whitened area stays a small share of the page.
+//   4. eye polarity — pen eye cores the light raw paints DARK (pupils) must
+//      stay non-ink (fillable); cores it paints BRIGHT (catchlights) should be
+//      chalk ink (warns only). Skipped when the page has no light raw.
 //
 // Candidates land in .coloring-samples-dark/chalk/ (with a .display.webp preview
 // of what dark mode will show); shipped assets are only touched with --apply,
@@ -44,10 +47,11 @@ import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
 import { alignToSource } from './lib/align-to-source.mjs';
-import { dilateMask, erodeMask } from './lib/morphology.mjs';
+import { dilateMask } from './lib/morphology.mjs';
+import { scoreEyeFill, EYE_DARK_MAX, EYE_LIGHT_MIN } from './lib/eye-fill.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-2.5-flash-image';
@@ -150,11 +154,32 @@ async function scoreNewInk(penBuf, candidateBuf) {
   };
 }
 
+// Eye polarity: the chalk must whiten the eye's WHITES and leave its PUPILS
+// fillable. Which core is which comes from the committed light raw — a core
+// the light fill paints near-black (a pupil disc) must stay NON-INK in the
+// chalk so the night fill can paint it (the first spider/caterpillar chalks
+// whitened whole eyeballs, pupils included, and the composite eye gate caught
+// it only after a night fill was burned). A core the light fill paints bright
+// (a catchlight interior) should be chalk ink — solid white at night — but
+// that misfire is survivable, so it only warns.
+function judgeChalkEyes(chalkScored, lightScored) {
+  let pupilsInked = 0;
+  let whitesMissed = 0;
+  for (let i = 0; i < lightScored.cores.length; i++) {
+    const ref = lightScored.cores[i];
+    const chalkCore = chalkScored.cores[i];
+    if (!ref || !chalkCore) continue;
+    if (ref.coreLuma <= EYE_DARK_MAX && chalkCore.coreLuma < EYE_LIGHT_MIN) pupilsInked++;
+    if (ref.coreLuma >= 180 && chalkCore.coreLuma > EYE_DARK_MAX) whitesMissed++;
+  }
+  return { passes: pupilsInked === 0, pupilsInked, whitesMissed };
+}
+
 const INSTRUCTION = `This is a children's coloring-page drawing rendered as WHITE line art on a BLACK background — a chalk line drawing on a blackboard.
 
 YOUR EDIT — redraw it as a proper CHALK LINE DRAWING, making the judgment calls a chalk artist makes about which areas should be SOLID WHITE and which should stay black:
-- THE WHITES OF EYES: fill each eye's sclera (the area inside the eyeball outline, around the pupil) SOLID WHITE, and fill each tiny catchlight/glare circle SOLID WHITE, so the eyes read correctly on the dark board.
-- PUPILS STAY BLACK — the dark board showing through, surrounded by the solid white sclera. Never fill a pupil white.
+- THE WHITES OF EYES: fill each eye's sclera — ONLY the area between the eyeball outline and the pupil circle — SOLID WHITE, and fill each tiny catchlight/glare circle SOLID WHITE, so the eyes read correctly on the dark board.
+- PUPILS STAY BLACK. The pupil is the large circle inside each eye: its inside must remain BLACK — the dark board showing through — surrounded by the solid white sclera, with only the small catchlight circle white inside it. NEVER fill a pupil white, and NEVER fill the entire eye white: an eye that is one solid white disc is WRONG and unusable. Every finished eye must show white sclera, BLACK pupil, and a small white catchlight.
 - Small features that are naturally white on the subject (teeth, a white patch or marking, a sparkle) may also be filled solid white.
 - Everything else stays exactly as it is: thin white outlines on black.
 
@@ -266,12 +291,15 @@ const passes = (c) =>
   c.keep >= KEEP_THRESHOLD &&
   c.localKeep >= LOCAL_KEEP_THRESHOLD &&
   c.newInk.inventedRatio <= inventedMax &&
-  c.newInk.whiteFrac <= whiteFracMax;
+  c.newInk.whiteFrac <= whiteFracMax &&
+  c.eyes.passes;
 const rank = (c) =>
   (passes(c) ? 1000 : 0) +
+  (c.eyes.passes ? 500 : 0) +
   (c.newInk.inventedRatio <= inventedMax ? 300 : 0) +
   c.localKeep * 200 +
-  c.keep * 100;
+  c.keep * 100 -
+  c.eyes.whitesMissed * 10;
 
 const pages = (await Promise.all(positionals.map(resolveArg))).flat();
 
@@ -285,7 +313,7 @@ for (const page of pages) {
     continue;
   }
   const dest = join(COLORING_DIR, `${rel}.chalk.webp`);
-  if (existsSync(dest) && !values.force && !values.apply) {
+  if (existsSync(dest) && !values.force && !values.apply && !values.rescore) {
     console.log(`${rel}  chalk already shipped — skipping (--force to redraw)`);
     continue;
   }
@@ -298,15 +326,25 @@ for (const page of pages) {
 
   process.stdout.write(`${rel} ... `);
   const sample = join(OUT_DIR, `${rel}.webp`);
+  // Eye-polarity reference: which pen eye cores the committed light fill paints
+  // dark (pupils — must stay fillable) vs bright (whites — should be chalked).
+  const lightRawPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
+  const lightEyes = existsSync(lightRawPath)
+    ? await scoreEyeFill(await readFile(lightRawPath), pen)
+    : null;
   const score = async (candidate, shift, attempt) => {
     const fwd = await outlineMatch(pen, candidate);
     const newInk = await scoreNewInk(pen, candidate);
+    const eyes = lightEyes
+      ? judgeChalkEyes(await scoreEyeFill(candidate, pen), lightEyes)
+      : { passes: true, pupilsInked: 0, whitesMissed: 0 };
     return {
       candidate,
       keep: fwd.keep,
       localKeep: fwd.localKeep,
       overlay: fwd.overlay,
       newInk,
+      eyes,
       shift,
       attempt,
     };
@@ -357,6 +395,8 @@ for (const page of pages) {
   if (best.localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
   if (best.newInk.inventedRatio > inventedMax) warn.push('invented shapes on the background');
   if (best.newInk.whiteFrac > whiteFracMax) warn.push('over-whitened');
+  if (!best.eyes.passes) warn.push(`pupils whitened (${best.eyes.pupilsInked})`);
+  if (best.eyes.whitesMissed) warn.push(`eye whites not chalked (${best.eyes.whitesMissed})`);
   const stats = `keep ${(best.keep * 100).toFixed(1)}%  local ${(best.localKeep * 100).toFixed(1)}%  white ${(best.newInk.whiteFrac * 100).toFixed(1)}%  invented ${best.newInk.inventedRatio.toFixed(4)}`;
   console.log(
     `${stats}${nudge}${tries}${warn.length ? `  ⚠ ${warn.join(' + ')}` : ''}  -> ${relative(REPO_ROOT, sample)}`
