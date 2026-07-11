@@ -39,6 +39,7 @@ import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
 import { alignToSource } from './lib/align-to-source.mjs';
+import { scoreEyeFill, judgeLightEyes } from './lib/eye-fill.mjs';
 import { punchFill } from './lib/punch-fill.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
@@ -179,13 +180,18 @@ function baseTempForSlot(i) {
   return samples === 1 ? 0.55 : 0.55 + i * 0.12;
 }
 
-// A candidate clears if it holds the outline globally AND in its worst tile, and
-// isn't mostly blank white.
+// A candidate clears if it holds the outline globally AND in its worst tile,
+// isn't mostly blank white, and painted the eyes (at least one nested eye core
+// reads lively — lib/eye-fill.mjs; pages with no eye cores pass vacuously).
 const passes = (c) =>
-  c.keep >= KEEP_THRESHOLD && c.localKeep >= LOCAL_KEEP_THRESHOLD && c.white <= WHITE_THRESHOLD;
+  c.keep >= KEEP_THRESHOLD &&
+  c.localKeep >= LOCAL_KEEP_THRESHOLD &&
+  c.white <= WHITE_THRESHOLD &&
+  c.eyesOk;
 // Rank for keeping the best of several imperfect attempts: fidelity is the hard
-// constraint (global then worst-tile), then prefer less leftover white.
-const rank = (c) => (passes(c) ? 1000 : 0) + c.localKeep * 200 + (1 - c.white) * 100 + c.keep;
+// constraint (global then worst-tile), then eyes, then less leftover white.
+const rank = (c) =>
+  (passes(c) ? 1000 : 0) + c.localKeep * 200 + (c.eyesOk ? 150 : 0) + (1 - c.white) * 100 + c.keep;
 
 // Generate, size-match, re-register onto the source outline, and score one
 // candidate; retry until it passes both gates, keeping the best attempt if none
@@ -205,9 +211,10 @@ async function renderClean(source, width, height, slot) {
     const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
     const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
-    const [{ keep, drift, localKeep, worstTile, overlay }, white] = await Promise.all([
+    const [{ keep, drift, localKeep, worstTile, overlay }, white, eyeScore] = await Promise.all([
       outlineMatch(source, colored),
       whiteFraction(colored),
+      scoreEyeFill(colored, source),
     ]);
     const cand = {
       colored,
@@ -217,6 +224,7 @@ async function renderClean(source, width, height, slot) {
       worstTile,
       overlay,
       white,
+      eyesOk: judgeLightEyes(eyeScore).passes,
       shift: { dx, dy },
       attempt,
     };
@@ -244,6 +252,7 @@ for (const page of pages) {
       if (keep < KEEP_THRESHOLD) warn.push('drifting');
       if (localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
       if (white > WHITE_THRESHOLD) warn.push('white');
+      if (!cand.eyesOk) warn.push('flat eyes');
       const flag = warn.length ? `  ⚠ ${warn.join(' + ')}` : '';
       const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%${nudge}`;
 

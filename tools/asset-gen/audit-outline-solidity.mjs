@@ -11,7 +11,7 @@ import { join, relative } from 'node:path';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { COLORING_DIR, fail } from './lib/paths.mjs';
-import { scoreSolidity, SOLID_BLOB_MAX } from './lib/solid-regions.mjs';
+import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from './lib/solid-regions.mjs';
 
 async function pagesUnder(sub = '') {
   const out = [];
@@ -34,17 +34,28 @@ const pages = args.length ? (await Promise.all(args.map(resolveArg))).flat() : a
 const rows = [];
 for (const page of pages) {
   const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
-  const { darkPx, solidPx, biggestBlob, passes } = await scoreSolidity(await readFile(page));
-  rows.push({ rel, darkPx, solidPx, biggestBlob, passes });
+  const { darkPx, solidPx, interiorPx, biggestBlob, passes } = await scoreSolidity(
+    await readFile(page)
+  );
+  rows.push({ rel, darkPx, solidPx, interiorPx, biggestBlob, passes });
 }
 rows.sort((a, b) => b.biggestBlob - a.biggestBlob);
 
-console.log('page'.padEnd(36), 'solid px'.padStart(9), 'biggest blob'.padStart(13), '  verdict');
+console.log(
+  'page'.padEnd(36),
+  'solid px'.padStart(9),
+  'interior px'.padStart(12),
+  'biggest blob'.padStart(13),
+  '  verdict'
+);
 for (const r of rows) {
-  const verdict = r.passes ? 'ok' : `SOLID (> ${SOLID_BLOB_MAX})`;
+  const verdict = r.passes
+    ? 'ok'
+    : `SOLID (blob > ${SOLID_BLOB_MAX} or interior > ${SOLID_INTERIOR_MAX})`;
   console.log(
     r.rel.padEnd(36),
     String(r.solidPx).padStart(9),
+    String(r.interiorPx).padStart(12),
     String(r.biggestBlob).padStart(13),
     ' ',
     verdict

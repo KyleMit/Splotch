@@ -37,8 +37,9 @@ import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
 import { alignToSource } from './lib/align-to-source.mjs';
+import { scoreEyeFill, judgeNightEyes } from './lib/eye-fill.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
 // --- Drift detection ----------------------------------------------------------
@@ -290,7 +291,7 @@ COLORING STYLE — a dim, moonlit night palette:
 - Colors stay deep and moonlit, but they are still the subject's OWN NATURAL colors — just dimmed and cooled by moonlight, not swapped out. A few GLOWING accent colors (warm gold, amber, teal, magenta) can pop as if lit by the moon, fireflies, or a lantern, while the overall scene stays dim and evening-lit — deep, not bright and sunny.
 - FACES, SKIN, and ANIMAL BODIES must keep a NATURAL, living color — never grey, ashen, ghostly, chalky, or washed-out slate. Give a person a real SKIN TONE (a warm tan, brown, peach, or golden-brown, only darkened for night); give an animal its real coloring (a green caterpillar, a yellow-and-black bee, a red ladybug), softened toward evening. A face must look like living skin or fur under moonlight, NOT like a pale ghost.
 - Only things that have no real color of their own — a cloud, a water droplet, a wisp of steam, a puff of smoke, the glow of a star — may take a soft, dim, moonlit off-white or pale tint. Everything else keeps its own (dimmed) color.
-- EYES: paint each eye fully and correctly — in dark mode YOUR pixels are the eye the child sees. Keep the eyeball/sclera a light off-white, fill an outlined pupil with a deep near-black color (dark brown, near-black navy), and leave the small catchlight circle inside it bright white. The eye must read as a lively cartoon eye: light eyeball, dark pupil, white glint. NEVER leave a pupil pale, washed-out, or the same color as the eyeball, and NEVER fill the whole eye with one dark color (that reads as an empty socket).
+- EYES — FILL EVERY RING: an eye in this drawing is NESTED OUTLINED CIRCLES — an eyeball, a pupil circle inside it, and a tiny catchlight circle inside the pupil. Each circle's inside is a REGION TO FILL like any other region, never a ring left sitting on one flat color. Paint the eyeball's inside a LIGHT OFF-WHITE, the pupil circle's inside a DEEP NEAR-BLACK (very dark brown or near-black navy), and the tiny catchlight circle's inside BRIGHT WHITE. The finished eye must show three clearly different tones — light eyeball, dark pupil, white glint — so it reads as a lively cartoon eye. An eye where the eyeball, pupil, and catchlight all came out the same color (all dark, or all light) is WRONG and unusable — in dark mode YOUR pixels are the eye the child sees.
 - Do NOT use pure or bright WHITE fills elsewhere, and avoid bright daytime colors (bright sky blue, bright grass green). Deepen and cool every color toward evening. The only pure-white pixels allowed are the outlines themselves, the eye-whites, and tiny eye glints.
 - Keep the WHITE outlines fully visible — every fill should butt right up against the white outline without covering it.
 
@@ -429,17 +430,21 @@ if (!(Number.isInteger(dilateLines) && dilateLines >= 0))
   fail(`--dilate-lines must be a non-negative integer`);
 if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
 
-// Generate one take, register it to the source, and score three ways: structural
-// DRIFT (invented outlines), NIGHT-ness (background too bright / daytime), and LINE
-// color (outlines re-inked dark instead of staying white). Retry (with a rising
-// temperature to shake loose a different composition) until a take passes all gates
-// or the attempt budget runs out. A take is "acceptable" when its background reads as
-// night AND its outlines stayed white; among acceptable takes we keep the least-drifted,
-// and stop early once one is also drift-clean. If none qualify we fall back to the
-// least-drifted take overall and flag it, so even a stubborn page yields a render.
-async function generateCleanTake({ darkInput, source, width, height, temp0 }) {
+// Generate one take, register it to the source, and score four ways: structural
+// DRIFT (invented outlines), NIGHT-ness (background too bright / daytime), LINE
+// color (outlines re-inked dark instead of staying white), and EYES (every eye
+// the page's light fill paints must stay lively at night — not flooded flat;
+// lib/eye-fill.mjs, skipped when the page has no committed light raw to
+// reference). Retry (with a rising temperature to shake loose a different
+// composition) until a take passes all gates or the attempt budget runs out. A
+// take is "acceptable" when its background reads as night AND its outlines
+// stayed white AND its eyes are painted; among acceptable takes we keep the
+// least-drifted, and stop early once one is also drift-clean. If none qualify
+// we fall back to the least-drifted take overall and flag it, so even a
+// stubborn page yields a render.
+async function generateCleanTake({ darkInput, source, width, height, temp0, lightEyes }) {
   let best = null; // lowest drift overall (fallback)
-  let bestAccept = null; // lowest drift among takes that read as night AND keep white outlines
+  let bestAccept = null; // lowest drift among takes that pass mood + line + eyes
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const temperature = Math.min(2, temp0 + (attempt - 1) * 0.15);
     const { bytes } = await generateDarkPage(ai, {
@@ -454,13 +459,16 @@ async function generateCleanTake({ darkInput, source, width, height, temp0 }) {
     const drift = await scoreDrift(aligned, source);
     const night = await scoreNightness(aligned, source);
     const line = await scoreLineColor(aligned, source);
-    const take = { aligned, dx, dy, drift, night, line, attempt };
+    const eyes = lightEyes
+      ? judgeNightEyes(await scoreEyeFill(aligned, source), lightEyes)
+      : { passes: true, failed: 0 };
+    const take = { aligned, dx, dy, drift, night, line, eyes, attempt };
     if (!best || drift.ratio < best.drift.ratio) best = take;
     const moodOk = night.bgLuma <= nightLumaMax;
     const lineOk = line.lineWhite >= lineWhiteMin;
-    if (moodOk && lineOk && (!bestAccept || drift.ratio < bestAccept.drift.ratio))
+    if (moodOk && lineOk && eyes.passes && (!bestAccept || drift.ratio < bestAccept.drift.ratio))
       bestAccept = take;
-    if (drift.ratio <= driftThreshold && moodOk && lineOk) break;
+    if (drift.ratio <= driftThreshold && moodOk && lineOk && eyes.passes) break;
   }
   return bestAccept ?? best;
 }
@@ -482,6 +490,12 @@ for (const page of pages) {
   const source = await readFile(page);
   const { width, height } = await sharp(source).metadata();
   const darkInput = await toDarkInput(source);
+  // Eye reference: which nested cores the committed light fill paints as lively
+  // eyes. Absent (page has no light raw yet) the eye gate is skipped.
+  const lightRawPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
+  const lightEyes = existsSync(lightRawPath)
+    ? await scoreEyeFill(await readFile(lightRawPath), source)
+    : null;
 
   for (let i = 0; i < samples; i++) {
     const label = samples > 1 ? `${rel}  ${i + 1}/${samples}` : rel;
@@ -493,6 +507,7 @@ for (const page of pages) {
         width,
         height,
         temp0: baseTemp + i * 0.12,
+        lightEyes,
       });
       const colored = await sharp(take.aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
@@ -509,7 +524,8 @@ for (const page of pages) {
       const warn =
         (take.drift.ratio > driftThreshold ? '  ⚠ still drifting' : '') +
         (take.night.bgLuma > nightLumaMax ? '  ⚠ too bright/daytime' : '') +
-        (take.line.lineWhite < lineWhiteMin ? '  ⚠ dark outlines' : '');
+        (take.line.lineWhite < lineWhiteMin ? '  ⚠ dark outlines' : '') +
+        (take.eyes.passes ? '' : `  ⚠ flat eyes (${take.eyes.failed})`);
       console.log(`ok${nudge}${tries}${stats}${warn}  -> ${relative(REPO_ROOT, out)}`);
     } catch (err) {
       failures++;

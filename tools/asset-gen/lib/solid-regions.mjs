@@ -22,18 +22,26 @@ import sharp from 'sharp';
 // so "solid" is judged on exactly the pixels the punch would cut.
 export const SOLID_LUMA_THRESHOLD = 150;
 
-// Erosion radius in native px. Shipped line art is ~1024px on the short edge
-// with strokes ~6-14px wide; r=8 erases every stroke while a pupil (~25-60px
-// across) keeps a core. All shipped pages share that scale, so a fixed native
-// radius means the same thing everywhere.
-export const OPEN_RADIUS = 8;
+// Bounds for the erosion radius. The radius is derived per page from the
+// MEASURED stroke width (see strokeWidthP90) rather than fixed: a fixed r=8
+// missed nature/bee-tall's small solid pupils (~22px across — their core
+// eroded away with the strokes), while the measured strokes on shipped pages
+// are only ~4px wide (p90 ≈ 6-8 at junctions). r = ceil(p90/2) + 2 erases
+// every stroke with margin and keeps a scoreable core in even a small pupil.
+export const OPEN_RADIUS_MIN = 5;
+export const OPEN_RADIUS_MAX = 8;
 
-// Pass bar for biggestBlob, calibrated on the shipped set: the visibly-broken
-// pages score high (owl-tall pupils 1919, ant-tall 1150, trex-tall 832) while
-// genuinely stroke-only pages score near zero (bee-tall 23, stegosaurus-tall 12,
-// most covers 0). Junction/antialiasing residue stays well under 100. The bar is
-// advisory — the audit lists candidates for normalization, worst first.
+// Pass bars, calibrated on the shipped set at the adaptive radius. Two bars
+// because they catch different cheats:
+//   - biggestBlob: pages with solid (or crescent-solid) pupils score high
+//     (owl-tall 2908, ant-tall pre-fix 1150, bee-tall 211, snail-tall 274)
+//     while stroke-only pages stay low (junction residue < 30).
+//   - interiorPx (the TOTAL surviving erosion, page-wide): a solid pupil whose
+//     white catchlight holes FRAGMENT its eroded interior can sneak every
+//     fragment under the blob bar (bee-tall's fake-hollow redraw: blob 46 but
+//     103 total interior px vs 0-4 on truly thin-stroke pages).
 export const SOLID_BLOB_MAX = 100;
+export const SOLID_INTERIOR_MAX = 60;
 
 function erode(mask, w, h, r) {
   const tmp = new Uint8Array(w * h);
@@ -76,6 +84,43 @@ function dilate(mask, w, h, r) {
   return out;
 }
 
+// 90th-percentile stroke width in px: two-pass chamfer distance-to-light over
+// the ink mask, doubled. The p90 (not median) captures junction thickness, so
+// the opening radius clears crossings without a blob-sized safety margin.
+function strokeWidthP90(mask, w, h) {
+  const d = new Float32Array(w * h);
+  for (let i = 0; i < d.length; i++) d[i] = mask[i] ? Infinity : 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (!d[i]) continue;
+      let m = d[i];
+      if (x > 0) m = Math.min(m, d[i - 1] + 1);
+      if (y > 0) m = Math.min(m, d[i - w] + 1);
+      if (x > 0 && y > 0) m = Math.min(m, d[i - w - 1] + 1.414);
+      if (x < w - 1 && y > 0) m = Math.min(m, d[i - w + 1] + 1.414);
+      d[i] = m;
+    }
+  }
+  for (let y = h - 1; y >= 0; y--) {
+    for (let x = w - 1; x >= 0; x--) {
+      const i = y * w + x;
+      if (!d[i]) continue;
+      let m = d[i];
+      if (x < w - 1) m = Math.min(m, d[i + 1] + 1);
+      if (y < h - 1) m = Math.min(m, d[i + w] + 1);
+      if (x < w - 1 && y < h - 1) m = Math.min(m, d[i + w + 1] + 1.414);
+      if (x > 0 && y < h - 1) m = Math.min(m, d[i + w - 1] + 1.414);
+      d[i] = m;
+    }
+  }
+  const vals = [];
+  for (let i = 0; i < d.length; i++) if (mask[i]) vals.push(d[i]);
+  if (!vals.length) return 0;
+  vals.sort((a, b) => a - b);
+  return 2 * vals[Math.floor(vals.length * 0.9)];
+}
+
 function largestComponent(mask, w, h) {
   const seen = new Uint8Array(mask.length);
   const stack = new Int32Array(mask.length);
@@ -115,7 +160,7 @@ function largestComponent(mask, w, h) {
 //   solidPx     — the opening (interior re-grown, clipped to ink): the full
 //                 footprint of every solid region
 //   biggestBlob — largest connected interior component; the gate signal
-export async function scoreSolidity(outlineBuf, { openRadius = OPEN_RADIUS } = {}) {
+export async function scoreSolidity(outlineBuf, { openRadius } = {}) {
   const { data, info } = await sharp(outlineBuf)
     .removeAlpha()
     .raw()
@@ -130,8 +175,11 @@ export async function scoreSolidity(outlineBuf, { openRadius = OPEN_RADIUS } = {
       darkPx++;
     }
   }
-  const interior = erode(dark, w, h, openRadius);
-  const grown = dilate(interior, w, h, openRadius);
+  const strokeW = strokeWidthP90(dark, w, h);
+  const r =
+    openRadius ?? Math.min(OPEN_RADIUS_MAX, Math.max(OPEN_RADIUS_MIN, Math.ceil(strokeW / 2) + 2));
+  const interior = erode(dark, w, h, r);
+  const grown = dilate(interior, w, h, r);
   const solid = new Uint8Array(w * h);
   let interiorPx = 0;
   let solidPx = 0;
@@ -150,7 +198,9 @@ export async function scoreSolidity(outlineBuf, { openRadius = OPEN_RADIUS } = {
     interiorPx,
     solidPx,
     biggestBlob,
-    passes: biggestBlob <= SOLID_BLOB_MAX,
+    strokeWidth: strokeW,
+    openRadius: r,
+    passes: biggestBlob <= SOLID_BLOB_MAX && interiorPx <= SOLID_INTERIOR_MAX,
     masks: { dark, solid, interior },
   };
 }
