@@ -437,7 +437,7 @@ Useful history (this branch, `feat/thin-stroke-outlines`):
 
 | Category | Pen outlines | Chalk outlines | Night fills | Notes |
 | --- | --- | --- | --- | --- |
-| Nature | ✅ thin-stroke, all 12 | ✅ all 12 | ✅ chalk-era, all gates green | the pilot for both the normalization and the fork |
+| Nature | ✅ thin-stroke, all 12 | ✅ all 12 | ✅ chalk-era; caterpillar-wide + ladybug-wide ship with a flat-pupil ⚠ | the pilot for both the normalization and the fork. The two wides' pen eyes use a SPIRAL catchlight instead of a clean pupil ring; the fill model reliably refuses to paint a spiral's interior dark (≥11 attempts each, notes + low temp). Durable fix: de-swirl those two pen eyes (as caterpillar-tall was), then regen their suites. `snail-wide` carries a 1-core flag the eye judged fine on review. |
 | Space, Farm, Dinosaurs, Creatures | ❌ accident-era | ❌ | shipped, accident-era | owl (blob 1919), trex, dog, cat, dragon, etc. flagged by the audit |
 | Objects, Shapes, Vehicles | ❌ | ❌ | none yet | chalk + night fills together when each category is processed |
 
