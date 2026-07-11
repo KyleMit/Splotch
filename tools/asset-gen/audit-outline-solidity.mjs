@@ -1,0 +1,57 @@
+// Audit every shipped line art for SOLID black regions — the areas that break
+// dark mode (blanket invert paints them as white blobs; see lib/solid-regions.mjs
+// for the mechanism and the measure). Offenders are candidates for
+// normalize-outline-strokes.mjs. Deterministic, no API key/network.
+//
+//   npm run gen:coloring-outlines:audit                 whole catalog
+//   npm run gen:coloring-outlines:audit -- nature       one category
+//   npm run gen:coloring-outlines:audit -- nature/ant-tall
+import { readFile } from 'node:fs/promises';
+import { join, relative } from 'node:path';
+import { glob } from 'node:fs/promises';
+import { existsSync, statSync } from 'node:fs';
+import { COLORING_DIR, fail } from './lib/paths.mjs';
+import { scoreSolidity, SOLID_BLOB_MAX } from './lib/solid-regions.mjs';
+
+async function pagesUnder(sub = '') {
+  const out = [];
+  const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
+  for await (const entry of glob('**/*.outline.webp', { cwd })) out.push(join(cwd, entry));
+  return out.sort();
+}
+
+async function resolveArg(arg) {
+  const asFile = join(COLORING_DIR, `${arg}.outline.webp`);
+  if (existsSync(asFile)) return [asFile];
+  const asDir = join(COLORING_DIR, arg);
+  if (existsSync(asDir) && statSync(asDir).isDirectory()) return pagesUnder(arg);
+  fail(`no page or category "${arg}" under ${COLORING_DIR}`);
+}
+
+const args = process.argv.slice(2);
+const pages = args.length ? (await Promise.all(args.map(resolveArg))).flat() : await pagesUnder();
+
+const rows = [];
+for (const page of pages) {
+  const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
+  const { darkPx, solidPx, biggestBlob, passes } = await scoreSolidity(await readFile(page));
+  rows.push({ rel, darkPx, solidPx, biggestBlob, passes });
+}
+rows.sort((a, b) => b.biggestBlob - a.biggestBlob);
+
+console.log('page'.padEnd(36), 'solid px'.padStart(9), 'biggest blob'.padStart(13), '  verdict');
+for (const r of rows) {
+  const verdict = r.passes ? 'ok' : `SOLID (> ${SOLID_BLOB_MAX})`;
+  console.log(
+    r.rel.padEnd(36),
+    String(r.solidPx).padStart(9),
+    String(r.biggestBlob).padStart(13),
+    ' ',
+    verdict
+  );
+}
+const offenders = rows.filter((r) => !r.passes);
+console.log(
+  `\n${offenders.length}/${rows.length} outline(s) carry solid regions` +
+    (offenders.length ? ` — normalize with: npm run gen:coloring-outlines:normalize -- <page>` : '')
+);

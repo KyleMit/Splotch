@@ -38,74 +38,8 @@ import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
+import { alignToSource } from './lib/align-to-source.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
-
-// Registration nudge undo, copied from gen-coloring-fills.mjs rather than
-// imported — that module runs a CLI at top level, so importing it would re-run
-// the light-fill generator (and overwrite shipped assets). Edges are
-// polarity-agnostic, so this aligns a dark fill to the original black-line
-// source just as well.
-const ALIGN_MAX = 12;
-const ALIGN_W = 1000;
-async function grayRaw(buf, w, h) {
-  const { data } = await sharp(buf)
-    .grayscale()
-    .resize(w, h, { fit: 'fill' })
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  return data;
-}
-function edgeMap(g, w, h) {
-  const e = new Float32Array(w * h);
-  for (let y = 0; y < h - 1; y++) {
-    for (let x = 0; x < w - 1; x++) {
-      const i = y * w + x;
-      e[i] = Math.abs(g[i] - g[i + 1]) + Math.abs(g[i] - g[i + w]);
-    }
-  }
-  return e;
-}
-async function alignToSource(coloredBuf, sourceBuf, width, height) {
-  const w = Math.min(width, ALIGN_W);
-  const h = Math.round((height * w) / width);
-  const srcE = edgeMap(await grayRaw(sourceBuf, w, h), w, h);
-  const colE = edgeMap(await grayRaw(coloredBuf, w, h), w, h);
-  const idx = [];
-  const wt = [];
-  for (let i = 0; i < srcE.length; i++) {
-    if (srcE[i] > 60) {
-      idx.push(i);
-      wt.push(srcE[i]);
-    }
-  }
-  let best = { dx: 0, dy: 0, score: -1 };
-  for (let dy = -ALIGN_MAX; dy <= ALIGN_MAX; dy++) {
-    for (let dx = -ALIGN_MAX; dx <= ALIGN_MAX; dx++) {
-      let s = 0;
-      for (let k = 0; k < idx.length; k++) {
-        const i = idx[k];
-        const x = (i % w) + dx;
-        const y = ((i / w) | 0) + dy;
-        if (x < 0 || x >= w || y < 0 || y >= h) continue;
-        s += wt[k] * colE[y * w + x];
-      }
-      if (s > best.score) best = { dx, dy, score: s };
-    }
-  }
-  const scale = width / w;
-  const cdx = Math.round(-best.dx * scale);
-  const cdy = Math.round(-best.dy * scale);
-  if (cdx === 0 && cdy === 0) return { buffer: coloredBuf, dx: 0, dy: 0 };
-  const pad = Math.ceil(ALIGN_MAX * scale) + 1;
-  const extended = await sharp(coloredBuf)
-    .extend({ top: pad, bottom: pad, left: pad, right: pad, extendWith: 'copy' })
-    .toBuffer();
-  const clamp = (v, hi) => Math.max(0, Math.min(v, hi));
-  const buffer = await sharp(extended)
-    .extract({ left: clamp(pad - cdx, 2 * pad), top: clamp(pad - cdy, 2 * pad), width, height })
-    .toBuffer();
-  return { buffer, dx: cdx, dy: cdy };
-}
 
 // --- Drift detection ----------------------------------------------------------
 // A night fill's white pixels are outlines; the model has drifted when it draws a
@@ -356,7 +290,7 @@ COLORING STYLE — a dim, moonlit night palette:
 - Colors stay deep and moonlit, but they are still the subject's OWN NATURAL colors — just dimmed and cooled by moonlight, not swapped out. A few GLOWING accent colors (warm gold, amber, teal, magenta) can pop as if lit by the moon, fireflies, or a lantern, while the overall scene stays dim and evening-lit — deep, not bright and sunny.
 - FACES, SKIN, and ANIMAL BODIES must keep a NATURAL, living color — never grey, ashen, ghostly, chalky, or washed-out slate. Give a person a real SKIN TONE (a warm tan, brown, peach, or golden-brown, only darkened for night); give an animal its real coloring (a green caterpillar, a yellow-and-black bee, a red ladybug), softened toward evening. A face must look like living skin or fur under moonlight, NOT like a pale ghost.
 - Only things that have no real color of their own — a cloud, a water droplet, a wisp of steam, a puff of smoke, the glow of a star — may take a soft, dim, moonlit off-white or pale tint. Everything else keeps its own (dimmed) color.
-- EYES: don't fight them. In the app the eye is drawn by the (inverted) line art, not by you — the pupil is punched out of your fills — so the pupil, glint, and shape come from the outline, and your job is only to keep the small eye area NATURAL and LIGHT. Keep the eye-white a light off-white, and NEVER fill an eye with a single dark colour (a dark-filled eye reads as an empty socket). Eye-whites and the catchlight may take a near-white tint. (A blown-out or socketed eye is a base-line-art problem fixed by retouching the outline, not by recolouring — see tools/asset-gen/night-fills.md.)
+- EYES: paint each eye fully and correctly — in dark mode YOUR pixels are the eye the child sees. Keep the eyeball/sclera a light off-white, fill an outlined pupil with a deep near-black color (dark brown, near-black navy), and leave the small catchlight circle inside it bright white. The eye must read as a lively cartoon eye: light eyeball, dark pupil, white glint. NEVER leave a pupil pale, washed-out, or the same color as the eyeball, and NEVER fill the whole eye with one dark color (that reads as an empty socket).
 - Do NOT use pure or bright WHITE fills elsewhere, and avoid bright daytime colors (bright sky blue, bright grass green). Deepen and cool every color toward evening. The only pure-white pixels allowed are the outlines themselves, the eye-whites, and tiny eye glints.
 - Keep the WHITE outlines fully visible — every fill should butt right up against the white outline without covering it.
 
