@@ -1,8 +1,12 @@
 # tools/asset-gen/ — asset-generation pipeline
 
 The AI/`sharp` tooling that produces Splotch's committed art. Read `README.md`
-here for the full runbook; the architecture rationale is **ADR-0053**. Key rules
-when working in this folder:
+here for the full runbook; the architecture rationale is **ADR-0053**. For the
+END-TO-END picture — outline normalization, the punch, day/night fills, every
+quality gate and the shipped regression that motivated it, iteration methods,
+and where future categories will likely break — read **`pipeline.md`** (its
+illustrations are frozen copies in `pipeline-assets/`; keep both updated as the
+pipeline evolves). Key rules when working in this folder:
 
 - **Not a workspace, not separately installed.** Deps (`sharp`, `@google/genai`)
   live in the repo-root `package.json` so the root `node_modules` stays flat for
