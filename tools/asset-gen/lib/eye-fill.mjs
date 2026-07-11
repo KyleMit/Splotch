@@ -228,70 +228,57 @@ export async function scoreEyeFill(fillBuf, sourceBuf) {
       for (let x = core.minX; x <= core.maxX; x++)
         if (label[y * w + x] === core.id) coreVals.push(luma[y * w + x]);
 
-    // Neighborhood: flood outward from just past the core's ring, capped to a
-    // small radius, traversing ONLY pixels ≥2px clear of any ink. Connectivity
-    // through clear pixels is what keeps the sample inside the eye: the
-    // eyeball ring's ink contains the flood even where the ring has a hairline
-    // gap (a gap narrower than ~2×clearance has no clear channel), so a lit
-    // face right outside the eye can't masquerade as a lit sclera — a plain
-    // annulus passed the caterpillar's dead navy eyes exactly that way. The
-    // clearance doubles as the antialiasing guard for the sampled values.
+    // Neighborhood: a TIGHT geometric annulus just outside the core's ring —
+    // wide enough to cross a double-stroked ring into the next region, narrow
+    // enough that features beyond the eye (a lit cheek, the dark face) barely
+    // register. Flood- and label-based variants each failed a real page: label
+    // marches tunnel past tangent rings (bee-tall), sealed floods starve
+    // behind double-stroked rings (spider), leaky floods drown the sclera in
+    // face pixels (spider again), and wide annuli sample the cheek
+    // (caterpillar). Geometry with a tight cap is the only definition that
+    // held up. Samples keep 1px of ink clearance — enough to skip line
+    // antialiasing while still reaching the thin slivers of pupil paint
+    // around a large catchlight.
     const rIn = r + 3;
-    const rOut = r * 2.2 + 6;
-    const clear = (p) => {
-      const x = p % w;
-      const y = (p / w) | 0;
-      for (let dy = -2; dy <= 2; dy++) {
-        for (let dx = -2; dx <= 2; dx++) {
-          const xx = x + dx;
-          const yy = y + dy;
-          if (xx < 0 || xx >= w || yy < 0 || yy >= h || ink[yy * w + xx]) return false;
-        }
-      }
-      return true;
-    };
+    const rOut = r + 3 + Math.max(12, r * 0.6);
     const bandVals = [];
-    {
-      const seen = new Set();
-      const queue = [];
-      const seedR = Math.ceil(rIn + 3);
-      for (let y = Math.max(0, Math.floor(cy - seedR)); y <= Math.min(h - 1, cy + seedR); y++) {
-        for (let x = Math.max(0, Math.floor(cx - seedR)); x <= Math.min(w - 1, cx + seedR); x++) {
-          const p = y * w + x;
-          if (ink[p] || label[p] === core.id || seen.has(p) || !clear(p)) continue;
-          seen.add(p);
-          queue.push(p);
-        }
-      }
-      for (let qi = 0; qi < queue.length; qi++) {
-        const p = queue[qi];
-        const x = p % w;
-        const y = (p / w) | 0;
+    for (
+      let y = Math.max(0, Math.floor(cy - rOut));
+      y <= Math.min(h - 1, Math.ceil(cy + rOut));
+      y++
+    ) {
+      for (
+        let x = Math.max(0, Math.floor(cx - rOut));
+        x <= Math.min(w - 1, Math.ceil(cx + rOut));
+        x++
+      ) {
+        const p = y * w + x;
+        if (ink[p] || label[p] === core.id) continue;
         const d = Math.hypot(x - cx, y - cy);
-        if (d > rOut) continue;
-        if (d >= rIn) bandVals.push(luma[p]);
-        const tryPush = (q) => {
-          if (!ink[q] && label[q] !== core.id && !seen.has(q) && clear(q)) {
-            seen.add(q);
-            queue.push(q);
+        if (d < rIn || d > rOut) continue;
+        let nearInk = false;
+        for (let dy = -1; dy <= 1 && !nearInk; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const xx = x + dx;
+            const yy = y + dy;
+            if (xx < 0 || xx >= w || yy < 0 || yy >= h || ink[yy * w + xx]) {
+              nearInk = true;
+              break;
+            }
           }
-        };
-        if (x > 0) tryPush(p - 1);
-        if (x < w - 1) tryPush(p + 1);
-        if (y > 0) tryPush(p - w);
-        if (y < h - 1) tryPush(p + w);
+        }
+        if (!nearInk) bandVals.push(luma[p]);
       }
     }
     if (bandVals.length < MIN_BAND_SAMPLES) continue;
 
     const coreLuma = median(coreVals);
     bandVals.sort((a, b) => a - b);
-    // Quartiles, not extremes: the flood is region-targeted so a real
-    // contrasting element (a sclera crescent, a pupil sliver) is a meaningful
-    // share of the samples, and a few pixels leaked through a hairline ring
-    // gap can't fake one.
-    const bandDark = bandVals[Math.floor(bandVals.length * 0.25)];
-    const bandLight = bandVals[Math.floor(bandVals.length * 0.75)];
+    // p15/p85, not min/max or quartiles: the contrasting element can be a
+    // sliver (the pupil paint around a big catchlight), but a handful of
+    // stray pixels shouldn't fake one.
+    const bandDark = bandVals[Math.floor(bandVals.length * 0.15)];
+    const bandLight = bandVals[Math.floor(bandVals.length * 0.85)];
     const lively =
       coreLuma >= EYE_LIGHT_MIN
         ? bandDark <= EYE_DARK_MAX && coreLuma - bandDark >= EYE_CONTRAST_MIN
@@ -318,55 +305,29 @@ export function judgeLightEyes(scored) {
   return { passes: scored.cores.length === 0 || scored.cores.some((c) => c.lively) };
 }
 
-// A night fill's eyes pass when every EYE that the light fill paints strongly
-// also shows life in the night fill. The light fill is the reference for which
-// cores are real eyes: shell spots and segment dots are flat (or weakly lit)
-// in light and never gate.
+// A night fill's eyes pass when EVERY eye structure the light fill paints
+// strongly also reads lively in the night fill — core by core. The light fill
+// is the reference for which cores are real eyes: shell spots and segment dots
+// are flat (or weakly lit, below STRONG_LIGHT_SIDE) in light and never gate.
 //
-// Enforcement is per EYE, not per core: an eye is a proximity cluster of cores
-// (a pupil disc plus one or two catchlight circles land within a few dozen px
-// of each other), and it passes if ANY of its cores reads lively at night. A
-// night eye with a crisp dark-pupil-on-light-sclera but a navy-flooded
-// catchlight interior still reads alive; only an eye with NO contrast anywhere
-// — the shipped bee-wide failure — is dead. The reference bar is stricter than
-// plain lively (light side >= STRONG_LIGHT_SIDE) so a marginal dark-dot-on-red
-// shell spot doesn't get enforced as an eye and then legitimately dim at night.
-// Same-eye cores (a pupil disc and its catchlights) sit within ~15px of each
-// other; the nearest DIFFERENT feature observed is ~52px away (caterpillar's
-// right eye vs its nose highlight — merging those let a dead eye borrow the
-// nose's liveliness). 35 splits the difference.
-const CLUSTER_DIST = 35;
+// Enforcement was briefly per-eye-any-core ("one lively core keeps the eye
+// alive") and that shipped a ladybug whose white catchlight sat on a dead navy
+// sclera — the catchlight carried the verdict while the eye read as a dark
+// socket. Every strong structure must survive: the catchlight stays bright ON
+// a dark pupil AND the pupil stays dark ON a light sclera.
 const STRONG_LIGHT_SIDE = 180;
 
 export function judgeNightEyes(scoredNight, scoredLight) {
-  const n = scoredLight.cores.length;
-  const parent = [...Array(n).keys()];
-  const find = (i) => (parent[i] === i ? i : (parent[i] = find(parent[i])));
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      const a = scoredLight.cores[i];
-      const b = scoredLight.cores[j];
-      if (Math.hypot(a.x - b.x, a.y - b.y) <= CLUSTER_DIST) parent[find(i)] = find(j);
-    }
-  }
-  const groups = new Map();
-  for (let i = 0; i < n; i++) {
-    const g = find(i);
-    if (!groups.has(g)) groups.set(g, []);
-    groups.get(g).push(i);
-  }
   let worst = null;
   let failed = 0;
-  for (const idxs of groups.values()) {
-    const isReferenceEye = idxs.some((i) => {
-      const c = scoredLight.cores[i];
-      return c.lively && Math.max(c.coreLuma, c.bandLight) >= STRONG_LIGHT_SIDE;
-    });
-    if (!isReferenceEye) continue;
-    if (idxs.some((i) => scoredNight.cores[i]?.lively)) continue;
+  for (let i = 0; i < scoredLight.cores.length; i++) {
+    const lightCore = scoredLight.cores[i];
+    const nightCore = scoredNight.cores[i];
+    const isReference =
+      lightCore.lively && Math.max(lightCore.coreLuma, lightCore.bandLight) >= STRONG_LIGHT_SIDE;
+    if (!isReference || !nightCore || nightCore.lively) continue;
     failed++;
-    const c = scoredNight.cores[idxs[0]];
-    if (c && (!worst || c.contrast < worst.contrast)) worst = c;
+    if (!worst || nightCore.contrast < worst.contrast) worst = nightCore;
   }
   return { passes: failed === 0, failed, worst };
 }

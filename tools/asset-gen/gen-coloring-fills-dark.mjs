@@ -300,6 +300,9 @@ Convey the night mood with COLOR AND MOOD ONLY. Do NOT add a moon, stars, firefl
 The result must look like the identical white-line drawing, recolored as a cozy, dim, moonlit NIGHT-TIME scene on a deep dark evening background — never a bright daytime picture.`;
 
 async function generateDarkPage(ai, { imageBytes, mimeType, temperature }) {
+  const prompt = values.notes
+    ? `${DARK_FILL_PROMPT}\n\nPAGE-SPECIFIC NOTES:\n${values.notes}`
+    : DARK_FILL_PROMPT;
   const response = await ai.models.generateContent({
     model: MODEL,
     contents: [
@@ -307,7 +310,7 @@ async function generateDarkPage(ai, { imageBytes, mimeType, temperature }) {
         role: 'user',
         parts: [
           { inlineData: { mimeType, data: Buffer.from(imageBytes).toString('base64') } },
-          { text: DARK_FILL_PROMPT },
+          { text: prompt },
         ],
       },
     ],
@@ -402,6 +405,7 @@ const { values, positionals } = parseArgs({
     'night-luma-max': { type: 'string' },
     'line-white-min': { type: 'string' },
     'dilate-lines': { type: 'string' },
+    notes: { type: 'string' },
   },
 });
 const samples = values.samples === undefined ? 1 : Number(values.samples);
@@ -463,7 +467,16 @@ async function generateCleanTake({ darkInput, source, width, height, temp0, ligh
       ? judgeNightEyes(await scoreEyeFill(aligned, source), lightEyes)
       : { passes: true, failed: 0 };
     const take = { aligned, dx, dy, drift, night, line, eyes, attempt };
-    if (!best || drift.ratio < best.drift.ratio) best = take;
+    // Fallback ranking: fewest dead eyes first, then least drift — a take with
+    // living eyes and a hair more drift beats a drift-perfect take whose eyes
+    // are flooded flat (the failure mode a dark-bodied subject like the spider
+    // rolls constantly).
+    if (
+      !best ||
+      eyes.failed < best.eyes.failed ||
+      (eyes.failed === best.eyes.failed && drift.ratio < best.drift.ratio)
+    )
+      best = take;
     const moodOk = night.bgLuma <= nightLumaMax;
     const lineOk = line.lineWhite >= lineWhiteMin;
     if (moodOk && lineOk && eyes.passes && (!bestAccept || drift.ratio < bestAccept.drift.ratio))
