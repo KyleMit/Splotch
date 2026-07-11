@@ -135,6 +135,54 @@ export async function findEyeCores(sourceBuf) {
   return { cores, label, ink, w, h };
 }
 
+// Deeper nesting than a normal eye means the outline grew extra concentric
+// circles — the "hypno swirl" failure a normalization redraw produced on
+// caterpillar-tall. Registration can't catch it (extra rings hug the old pupil
+// boundary) and solidity can't either (everything is thin), so ring depth is
+// its own outline gate. Measured anatomy on the approved nature set: a normal
+// eye chains 3-4 eye-scale levels (catchlight → pupil → sclera, sometimes one
+// more enclosing eye-scale region); the swirl-eyed caterpillar measured 5.
+export const EYE_RING_DEPTH_MAX = 4;
+
+// Deepest eye-scale nesting chain in a line art, walking each eye core's
+// parent chain upward until the enclosing region stops being eye-sized.
+// Returns { maxDepth, worst: {x, y, depth}, overDeep: [{depth, outer bbox}] }
+// — maxDepth 0 means no eye cores; overDeep lists the outermost eye-scale
+// region of every chain past the bar, so a normalization redraw can treat that
+// whole eye interior as replaceable.
+export async function scoreEyeRings(sourceBuf) {
+  const { ink, w, h } = await inkMask(sourceBuf);
+  const { label, regions } = labelRegions(ink, w, h);
+  const page = w * h;
+  let maxDepth = 0;
+  let worst = null;
+  const overDeep = [];
+  for (const a of regions) {
+    if (a.border || a.area < CORE_MIN_PX || a.area > page * CORE_MAX_FRAC) continue;
+    let depth = 1;
+    let cur = a;
+    while (true) {
+      const pId = parentOf(cur, label, ink, w);
+      if (pId < 0) break;
+      const p = regions[pId];
+      if (p.border || p.area > page * PARENT_MAX_FRAC || !contains(p, cur)) break;
+      depth++;
+      cur = p;
+    }
+    if (depth < 3) continue; // not an eye-like chain at all
+    if (depth > EYE_RING_DEPTH_MAX)
+      overDeep.push({
+        depth,
+        outer: { minX: cur.minX, minY: cur.minY, maxX: cur.maxX, maxY: cur.maxY },
+      });
+    if (depth > maxDepth) {
+      maxDepth = depth;
+      worst = { x: Math.round((a.minX + a.maxX) / 2), y: Math.round((a.minY + a.maxY) / 2), depth };
+    }
+  }
+  return { maxDepth, worst, overDeep, passes: maxDepth <= EYE_RING_DEPTH_MAX };
+}
+
 function median(vals) {
   if (!vals.length) return null;
   vals.sort((x, y) => x - y);

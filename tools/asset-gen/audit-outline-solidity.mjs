@@ -12,6 +12,7 @@ import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { COLORING_DIR, fail } from './lib/paths.mjs';
 import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from './lib/solid-regions.mjs';
+import { scoreEyeRings, EYE_RING_DEPTH_MAX } from './lib/eye-fill.mjs';
 
 async function pagesUnder(sub = '') {
   const out = [];
@@ -34,10 +35,20 @@ const pages = args.length ? (await Promise.all(args.map(resolveArg))).flat() : a
 const rows = [];
 for (const page of pages) {
   const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
-  const { darkPx, solidPx, interiorPx, biggestBlob, passes } = await scoreSolidity(
-    await readFile(page)
-  );
-  rows.push({ rel, darkPx, solidPx, interiorPx, biggestBlob, passes });
+  const buf = await readFile(page);
+  const { darkPx, solidPx, interiorPx, biggestBlob, passes } = await scoreSolidity(buf);
+  const rings = await scoreEyeRings(buf);
+  rows.push({
+    rel,
+    darkPx,
+    solidPx,
+    interiorPx,
+    biggestBlob,
+    ringDepth: rings.maxDepth,
+    passes: passes && rings.passes,
+    solidOk: passes,
+    ringsOk: rings.passes,
+  });
 }
 rows.sort((a, b) => b.biggestBlob - a.biggestBlob);
 
@@ -46,23 +57,26 @@ console.log(
   'solid px'.padStart(9),
   'interior px'.padStart(12),
   'biggest blob'.padStart(13),
+  'ring depth'.padStart(11),
   '  verdict'
 );
 for (const r of rows) {
-  const verdict = r.passes
-    ? 'ok'
-    : `SOLID (blob > ${SOLID_BLOB_MAX} or interior > ${SOLID_INTERIOR_MAX})`;
+  const problems = [];
+  if (!r.solidOk)
+    problems.push(`SOLID (blob > ${SOLID_BLOB_MAX} or interior > ${SOLID_INTERIOR_MAX})`);
+  if (!r.ringsOk) problems.push(`OVER-RINGED (depth > ${EYE_RING_DEPTH_MAX})`);
   console.log(
     r.rel.padEnd(36),
     String(r.solidPx).padStart(9),
     String(r.interiorPx).padStart(12),
     String(r.biggestBlob).padStart(13),
+    String(r.ringDepth).padStart(11),
     ' ',
-    verdict
+    problems.length ? problems.join(' + ') : 'ok'
   );
 }
 const offenders = rows.filter((r) => !r.passes);
 console.log(
-  `\n${offenders.length}/${rows.length} outline(s) carry solid regions` +
-    (offenders.length ? ` — normalize with: npm run gen:coloring-outlines:normalize -- <page>` : '')
+  `\n${offenders.length}/${rows.length} outline(s) need normalizing (solid regions or over-ringed eyes)` +
+    (offenders.length ? ` — npm run gen:coloring-outlines:normalize -- <page>` : '')
 );

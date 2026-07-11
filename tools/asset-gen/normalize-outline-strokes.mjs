@@ -41,6 +41,7 @@ import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
 import { alignToSource } from './lib/align-to-source.mjs';
 import { scoreSolidity, whitenSolidRegions } from './lib/solid-regions.mjs';
+import { scoreEyeRings, findEyeCores } from './lib/eye-fill.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-2.5-flash-image';
@@ -58,7 +59,7 @@ PROBLEM: some areas of this drawing are filled with SOLID BLACK ink — for exam
 
 YOUR EDIT — convert every solid-black area into an outlined shape:
 - Trace the BOUNDARY of each solid-black area with the same clean, thin black stroke used everywhere else in the drawing, exactly where the solid shape's edge is now, and leave its INSIDE pure white.
-- EYES: a solid black pupil becomes an outlined pupil — a thin black circle/oval of the same size and position, white inside. If the pupil contains a white catchlight/glare dot, draw that catchlight as a small thin-outlined circle inside the outlined pupil, same size and spot.
+- EYES: a solid black pupil becomes an outlined pupil — EXACTLY ONE thin black circle/oval of the same size and position, white inside, plus EXACTLY ONE small thin-outlined catchlight circle inside it (where the white glare dot is now). Two circles per eye interior, NO MORE — never draw extra concentric circles, double rings, spirals, or repeated outlines inside an eye.
 - Do this for EVERY solid black area in the picture, large or small.
 
 ABSOLUTE RULES:
@@ -132,17 +133,48 @@ async function cleanRender(buf, width, height) {
 
 const passes = (c) =>
   c.solidity.passes &&
+  c.rings.passes &&
+  c.eyesPreserved &&
   c.keep >= KEEP_THRESHOLD &&
   c.localKeep >= LOCAL_KEEP_THRESHOLD &&
   c.reverseKeep >= REVERSE_KEEP_THRESHOLD;
-// Rank imperfect attempts: a thin-stroke result is the hard requirement, then
-// registration (worst tile first, like the fill generators), then reverse.
+// Rank imperfect attempts: a thin-stroke, sanely-ringed, eyes-intact result is
+// the hard requirement, then registration (worst tile first, like the fill
+// generators), then reverse.
 const rank = (c) =>
   (passes(c) ? 1000 : 0) +
   (c.solidity.passes ? 500 : 0) +
+  (c.eyesPreserved ? 400 : 0) +
+  (c.rings.passes ? 300 : 0) +
   c.localKeep * 200 +
   c.keep * 100 +
   c.reverseKeep * 50;
+
+// Every eye in the source must still exist in the candidate. Eyes are where
+// the redraws work hardest, and the registration gates can't guarantee this:
+// whitened eye interiors are exempt from drift scoring by design, and a thin
+// eyeball ring is too few pixels to sink a tile — a low-temperature caterpillar
+// redraw deleted a whole eye and still scored 99.7% locally. Cluster the
+// source's eye cores (same radius as lib/eye-fill.mjs) and require a candidate
+// core near each cluster's center.
+const EYE_MATCH_DIST = 45;
+function eyesPreserved(srcCores, candCores) {
+  const clusters = [];
+  for (const c of srcCores) {
+    const x = (c.minX + c.maxX) / 2;
+    const y = (c.minY + c.maxY) / 2;
+    const hit = clusters.find((k) => Math.hypot(k.x - x, k.y - y) <= EYE_MATCH_DIST);
+    if (hit) {
+      hit.x = (hit.x + x) / 2;
+      hit.y = (hit.y + y) / 2;
+    } else clusters.push({ x, y });
+  }
+  return clusters.every((k) =>
+    candCores.some(
+      (c) => Math.hypot((c.minX + c.maxX) / 2 - k.x, (c.minY + c.maxY) / 2 - k.y) <= EYE_MATCH_DIST
+    )
+  );
+}
 
 let failures = 0;
 for (const arg of positionals) {
@@ -154,15 +186,48 @@ for (const arg of positionals) {
   const source = await readFile(src);
   const { width, height } = await sharp(source).metadata();
   const srcSolidity = await scoreSolidity(source);
-  if (srcSolidity.passes && !values.force) {
+  const srcRings = await scoreEyeRings(source);
+  if (srcSolidity.passes && srcRings.passes && !values.force) {
     console.log(
-      `${arg}  already thin-stroke (biggest blob ${srcSolidity.biggestBlob}) — skipping (--force to redraw anyway)`
+      `${arg}  already thin-stroke (biggest blob ${srcSolidity.biggestBlob}, ring depth ${srcRings.maxDepth}) — skipping (--force to redraw anyway)`
     );
     continue;
   }
-  const reference = await whitenSolidRegions(source, srcSolidity);
+  // An over-ringed eye's interior is REPLACEABLE (the redraw simplifies it to
+  // one pupil + one catchlight), so clear it on BOTH sides of the registration
+  // scoring — from the reference for the same reason solid interiors are
+  // whitened (removing the extra rings is the point, not drift), and from the
+  // candidate before the reverse pass (the replacement pupil isn't invented
+  // ink). The outer eyeball ring survives the 4px bbox inset on each side and
+  // must still be traced.
+  const whitenEyeInteriors = (buf) => {
+    const inset = 4;
+    return sharp(buf)
+      .composite(
+        srcRings.overDeep.map(({ outer }) => ({
+          input: {
+            create: {
+              width: Math.max(1, outer.maxX - outer.minX - 2 * inset),
+              height: Math.max(1, outer.maxY - outer.minY - 2 * inset),
+              channels: 3,
+              background: { r: 255, g: 255, b: 255 },
+            },
+          },
+          left: outer.minX + inset,
+          top: outer.minY + inset,
+        }))
+      )
+      .png()
+      .toBuffer();
+  };
+  let reference = await whitenSolidRegions(source, srcSolidity);
+  if (srcRings.overDeep.length) reference = await whitenEyeInteriors(reference);
 
-  process.stdout.write(`${arg}  (blob ${srcSolidity.biggestBlob}) ... `);
+  const srcEyeCores = (await findEyeCores(source)).cores;
+
+  process.stdout.write(
+    `${arg}  (blob ${srcSolidity.biggestBlob}, rings ${srcRings.maxDepth}) ... `
+  );
   let best = null;
   try {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -173,11 +238,17 @@ for (const arg of positionals) {
       const candidate = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
       const solidity = await scoreSolidity(candidate);
+      const rings = await scoreEyeRings(candidate);
       const fwd = await outlineMatch(reference, candidate);
-      const rev = await outlineMatch(candidate, reference);
+      const revCandidate = srcRings.overDeep.length
+        ? await whitenEyeInteriors(candidate)
+        : candidate;
+      const rev = await outlineMatch(revCandidate, reference);
       const cand = {
         candidate,
         solidity,
+        rings,
+        eyesPreserved: eyesPreserved(srcEyeCores, (await findEyeCores(candidate)).cores),
         keep: fwd.keep,
         localKeep: fwd.localKeep,
         overlay: fwd.overlay,
@@ -204,6 +275,8 @@ for (const arg of positionals) {
   const nudge = best.shift.dx || best.shift.dy ? `  shift ${best.shift.dx},${best.shift.dy}` : '';
   const warn = [];
   if (!best.solidity.passes) warn.push(`still solid (blob ${best.solidity.biggestBlob})`);
+  if (!best.rings.passes) warn.push(`over-ringed (depth ${best.rings.maxDepth})`);
+  if (!best.eyesPreserved) warn.push('an eye went missing');
   if (best.keep < KEEP_THRESHOLD) warn.push('drifting');
   if (best.localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
   if (best.reverseKeep < REVERSE_KEEP_THRESHOLD) warn.push('invented strokes');
