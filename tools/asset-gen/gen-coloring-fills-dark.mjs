@@ -1,9 +1,17 @@
-// EXPERIMENT (not shipped): generate a DARK-THEME colored fill for coloring
-// pages — the counterpart to gen-coloring-fills.mjs's light fills. Instead of
-// black lines on white filled with pastels, the source is inverted to WHITE
-// lines on a dark background and Gemini fills the regions with vivid colors that
-// glow against the dark (a "night / neon" coloring), so dark mode can show a
-// whole separate set of renders rather than forcing a light sheet.
+// Generate a DARK-THEME colored fill for coloring pages — the counterpart to
+// gen-coloring-fills.mjs's light fills. The model's input is the page's line
+// art as WHITE lines on a dark background and Gemini fills the regions with
+// colors that read against the dark (a moonlit "night" coloring), so dark mode
+// shows a whole separate set of renders rather than forcing a light sheet.
+//
+// The line-art input is the page's CHALK outline ({page}.chalk.webp — the
+// dedicated dark-mode line art with deliberate solid whites, stored ink-on-white
+// and negated here) when the page has one; pages that haven't forked yet fall
+// back to inverting the PEN outline. With a chalk input, every registration and
+// color gate scores against the chalk (it is the line art the fill must sit
+// under), and the eye gate judges the SIMULATED FINAL COMPOSITE — the
+// chalk-punched fill under the screened chalk over dark paper — because the
+// chalk owns the eye whites and the fill only paints what survives the punch.
 //
 // The model sometimes DRIFTS — inventing a shape the line art doesn't have (an
 // extra star, a stray dot). Because a night fill's WHITE pixels are outlines only
@@ -39,6 +47,7 @@ import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
 import { alignToSource } from './lib/align-to-source.mjs';
+import { dilateMask, erodeMask } from './lib/morphology.mjs';
 import { scoreEyeFill, judgeNightEyes } from './lib/eye-fill.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
@@ -58,45 +67,6 @@ const DRIFT_CHROMA_MAX = 45; // ...and this desaturated = a white outline, not a
 // Above this share of invented white (relative to source outline mass) a render is
 // regenerated. Clean fills score 0; a stray invented shape lands well above this.
 const DRIFT_THRESHOLD_DEFAULT = 0.004;
-
-// Separable box morphology of a 0/1 mask. dilate = a pixel is set if ANY neighbor
-// within r is set; erode = set only if ALL neighbors within r are set.
-function morph(mask, w, h, r, dilate) {
-  const hit = dilate ? 1 : 0; // dilate stops on the first set; erode stops on first unset
-  const tmp = new Uint8Array(w * h);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let on = dilate ? 0 : 1;
-      for (let dx = -r; dx <= r; dx++) {
-        const xx = x + dx;
-        const v = xx < 0 || xx >= w ? 0 : mask[y * w + xx];
-        if (v === hit) {
-          on = hit;
-          break;
-        }
-      }
-      tmp[y * w + x] = on;
-    }
-  }
-  const out = new Uint8Array(w * h);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let on = dilate ? 0 : 1;
-      for (let dy = -r; dy <= r; dy++) {
-        const yy = y + dy;
-        const v = yy < 0 || yy >= h ? 0 : tmp[yy * w + x];
-        if (v === hit) {
-          on = hit;
-          break;
-        }
-      }
-      out[y * w + x] = on;
-    }
-  }
-  return out;
-}
-const dilateMask = (mask, w, h, r) => morph(mask, w, h, r, true);
-const erodeMask = (mask, w, h, r) => morph(mask, w, h, r, false);
 
 // --- Night-ness detection -----------------------------------------------------
 // The model also drifts on MOOD — painting a bright daytime "sky blue" (or white)
@@ -270,13 +240,23 @@ const MODEL = 'gemini-2.5-flash-image';
 const OUT_DIR = SAMPLES_DARK_DIR;
 const WEBP_QUALITY = 90;
 
-// The input handed to the model is the inverted line art: WHITE outlines on a
-// near-black ground. The prompt asks it to keep those white lines and fill the
-// regions with colors that read on dark — the "answer key" for a dark theme.
-const DARK_FILL_PROMPT = `You are given a toddler coloring-book page drawn as WHITE outlines on a dark background. Color it in as a cozy NIGHT-TIME / EVENING scene — as if the whole picture is happening at dusk or after dark, softly lit by moonlight.
+// The eye instruction depends on the line-art input. A plain inverted PEN
+// outline has ringed eyes the fill must paint in three tones; a CHALK outline
+// already carries the whites (solid sclera + catchlight), so the fill's only
+// eye job is a deep dark pupil — and it must leave the chalk whites alone.
+const EYES_RINGED = `- EYES — FILL EVERY RING: an eye in this drawing is NESTED OUTLINED CIRCLES — an eyeball, a pupil circle inside it, and a tiny catchlight circle inside the pupil. Each circle's inside is a REGION TO FILL like any other region, never a ring left sitting on one flat color. Paint the eyeball's inside a LIGHT OFF-WHITE, the pupil circle's inside a DEEP NEAR-BLACK (very dark brown or near-black navy), and the tiny catchlight circle's inside BRIGHT WHITE. The finished eye must show three clearly different tones — light eyeball, dark pupil, white glint — so it reads as a lively cartoon eye. An eye where the eyeball, pupil, and catchlight all came out the same color (all dark, or all light) is WRONG and unusable — in dark mode YOUR pixels are the eye the child sees.`;
+const EYES_CHALKED = `- EYES — THE WHITES ARE ALREADY PAINTED: each eye's white (the sclera) and its tiny catchlight dot are already SOLID WHITE in the drawing — they are chalk, part of the line-art layer. Keep every solid white area PURE BRIGHT WHITE — never repaint, tint, dim, shade, or color over it. The PUPIL is the dark region inside the white sclera: fill it a DEEP NEAR-BLACK (very dark brown or near-black navy), so the finished eye reads white sclera / dark pupil / white glint.`;
+
+// The input handed to the model is the line art as WHITE marks on a near-black
+// ground (the chalk outline as-displayed, or the inverted pen outline). The
+// prompt asks it to keep those white marks and fill the regions with colors
+// that read on dark — the "answer key" for a dark theme.
+const darkFillPrompt = (
+  chalked
+) => `You are given a toddler coloring-book page drawn as WHITE ${chalked ? 'chalk — thin outlines plus a few deliberate SOLID WHITE areas (eye whites, catchlight dots, small white markings) — ' : 'outlines '}on a dark background. Color it in as a cozy NIGHT-TIME / EVENING scene — as if the whole picture is happening at dusk or after dark, softly lit by moonlight.
 
 ABSOLUTE RULES — the colored image must line up perfectly on top of the original:
-- Keep every WHITE outline exactly where it is. Do not move, redraw, thicken, thin, smooth, or erase a single line. The outlines must stay white and pixel-for-pixel identical to the original.
+- Keep every WHITE outline exactly where it is. Do not move, redraw, thicken, thin, smooth, or erase a single line. The outlines must stay white and pixel-for-pixel identical to the original.${chalked ? '\n- Keep every SOLID WHITE area exactly as it is — same shape, same place, PURE BRIGHT WHITE. The solid whites are chalk line-art, not regions to color.' : ''}
 - THE OUTLINES ARE WHITE AND MUST STAY BRIGHT WHITE. This is a white-line drawing on a dark ground, NOT a normal black-outline coloring page. NEVER turn the outlines black, dark, grey, brown, or any dark color. NEVER trace, re-ink, or redraw the shapes with dark or black lines. Every outline that is white in the input must still be a bright white line in your output. A picture with dark outlines is WRONG and unusable — the lines must glow white against the dark fills.
 - Do not add any new lines, outlines, stars, dots, details, decorations, patterns, textures, letters, or objects. Only add color to the regions that are already there.
 - Do not crop, zoom, rotate, shift, or resize the picture. Keep the exact same composition, framing, and margins.
@@ -291,18 +271,17 @@ COLORING STYLE — a dim, moonlit night palette:
 - Colors stay deep and moonlit, but they are still the subject's OWN NATURAL colors — just dimmed and cooled by moonlight, not swapped out. A few GLOWING accent colors (warm gold, amber, teal, magenta) can pop as if lit by the moon, fireflies, or a lantern, while the overall scene stays dim and evening-lit — deep, not bright and sunny.
 - FACES, SKIN, and ANIMAL BODIES must keep a NATURAL, living color — never grey, ashen, ghostly, chalky, or washed-out slate. Give a person a real SKIN TONE (a warm tan, brown, peach, or golden-brown, only darkened for night); give an animal its real coloring (a green caterpillar, a yellow-and-black bee, a red ladybug), softened toward evening. A face must look like living skin or fur under moonlight, NOT like a pale ghost.
 - Only things that have no real color of their own — a cloud, a water droplet, a wisp of steam, a puff of smoke, the glow of a star — may take a soft, dim, moonlit off-white or pale tint. Everything else keeps its own (dimmed) color.
-- EYES — FILL EVERY RING: an eye in this drawing is NESTED OUTLINED CIRCLES — an eyeball, a pupil circle inside it, and a tiny catchlight circle inside the pupil. Each circle's inside is a REGION TO FILL like any other region, never a ring left sitting on one flat color. Paint the eyeball's inside a LIGHT OFF-WHITE, the pupil circle's inside a DEEP NEAR-BLACK (very dark brown or near-black navy), and the tiny catchlight circle's inside BRIGHT WHITE. The finished eye must show three clearly different tones — light eyeball, dark pupil, white glint — so it reads as a lively cartoon eye. An eye where the eyeball, pupil, and catchlight all came out the same color (all dark, or all light) is WRONG and unusable — in dark mode YOUR pixels are the eye the child sees.
-- Do NOT use pure or bright WHITE fills elsewhere, and avoid bright daytime colors (bright sky blue, bright grass green). Deepen and cool every color toward evening. The only pure-white pixels allowed are the outlines themselves, the eye-whites, and tiny eye glints.
+${chalked ? EYES_CHALKED : EYES_RINGED}
+- Do NOT use pure or bright WHITE fills elsewhere, and avoid bright daytime colors (bright sky blue, bright grass green). Deepen and cool every color toward evening. The only pure-white pixels allowed are the ${chalked ? 'white chalk marks already in the drawing — the outlines and the solid white areas' : 'outlines themselves, the eye-whites, and tiny eye glints'}.
 - Keep the WHITE outlines fully visible — every fill should butt right up against the white outline without covering it.
 
 Convey the night mood with COLOR AND MOOD ONLY. Do NOT add a moon, stars, fireflies, lamps, or any new shapes or lines — only the outlines already present may be colored.
 
 The result must look like the identical white-line drawing, recolored as a cozy, dim, moonlit NIGHT-TIME scene on a deep dark evening background — never a bright daytime picture.`;
 
-async function generateDarkPage(ai, { imageBytes, mimeType, temperature }) {
-  const prompt = values.notes
-    ? `${DARK_FILL_PROMPT}\n\nPAGE-SPECIFIC NOTES:\n${values.notes}`
-    : DARK_FILL_PROMPT;
+async function generateDarkPage(ai, { imageBytes, mimeType, temperature, chalked }) {
+  const base = darkFillPrompt(chalked);
+  const prompt = values.notes ? `${base}\n\nPAGE-SPECIFIC NOTES:\n${values.notes}` : base;
   const response = await ai.models.generateContent({
     model: MODEL,
     contents: [
@@ -376,6 +355,38 @@ async function toDarkInput(sourceBuf) {
   return grown.webp({ quality: WEBP_QUALITY }).toBuffer();
 }
 
+// The final combined image dark mode will actually show: the fill punched with
+// the chalk (transparent where the chalk has ink) over the dark paper, with the
+// chalk's negation screened on top — mirroring lib/punch-fill.mjs plus the
+// app's dark --lineart-* treatment. The eye gate judges THIS, not the raw fill:
+// the chalk owns the eye whites, so only the composite shows whether an eye
+// reads as white-sclera / dark-pupil / white-glint.
+const PUNCH_LUMA = 150; // lib/punch-fill.mjs OUTLINE_LUMA_THRESHOLD
+const PAPER_DARK = [0x21, 0x1f, 0x29]; // app.css --paper (dark)
+async function compositeNight(fillBuf, chalkBuf) {
+  const {
+    data: fill,
+    info: { width, height },
+  } = await sharp(fillBuf).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { data: ink } = await sharp(chalkBuf)
+    .grayscale()
+    .resize(width, height, { fit: 'fill' })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const out = Buffer.alloc(width * height * 3);
+  for (let p = 0, i = 0; p < width * height; p++, i += 3) {
+    const punched = ink[p] < PUNCH_LUMA;
+    const chalkWhite = 255 - ink[p];
+    for (let c = 0; c < 3; c++) {
+      const base = punched ? PAPER_DARK[c] : fill[i + c];
+      out[i + c] = 255 - ((255 - base) * (255 - chalkWhite)) / 255;
+    }
+  }
+  return sharp(out, { raw: { width, height, channels: 3 } })
+    .png()
+    .toBuffer();
+}
+
 async function pagesUnder(sub = '') {
   const out = [];
   const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
@@ -446,7 +457,16 @@ if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
 // least-drifted, and stop early once one is also drift-clean. If none qualify
 // we fall back to the least-drifted take overall and flag it, so even a
 // stubborn page yields a render.
-async function generateCleanTake({ darkInput, source, width, height, temp0, lightEyes }) {
+async function generateCleanTake({
+  darkInput,
+  source,
+  pen,
+  chalk,
+  width,
+  height,
+  temp0,
+  lightEyes,
+}) {
   let best = null; // lowest drift overall (fallback)
   let bestAccept = null; // lowest drift among takes that pass mood + line + eyes
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -455,16 +475,23 @@ async function generateCleanTake({ darkInput, source, width, height, temp0, ligh
       imageBytes: darkInput,
       mimeType: 'image/webp',
       temperature,
+      chalked: !!chalk,
     });
     const resized = await sharp(bytes).resize(width, height, { fit: 'fill' }).png().toBuffer();
-    // Edges are polarity-agnostic, so align the colored output to the ORIGINAL
-    // black-line source to undo the model's few-pixel nudge.
+    // Edges are polarity-agnostic, so align the colored output to the ink-on-white
+    // line-art source (chalk when forked, else pen) to undo the model's nudge.
     const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
     const drift = await scoreDrift(aligned, source);
     const night = await scoreNightness(aligned, source);
     const line = await scoreLineColor(aligned, source);
+    // Eye cores always come from the PEN outline (the chalk's solid sclera has
+    // no nested rings to find); with a chalk the measured pixels are the
+    // simulated final composite rather than the raw fill.
     const eyes = lightEyes
-      ? judgeNightEyes(await scoreEyeFill(aligned, source), lightEyes)
+      ? judgeNightEyes(
+          await scoreEyeFill(chalk ? await compositeNight(aligned, chalk) : aligned, pen),
+          lightEyes
+        )
       : { passes: true, failed: 0 };
     const take = { aligned, dx, dy, drift, night, line, eyes, attempt };
     // Fallback ranking: fewest dead eyes first, then least drift — a take with
@@ -500,14 +527,21 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 let failures = 0;
 for (const page of pages) {
   const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
-  const source = await readFile(page);
-  const { width, height } = await sharp(source).metadata();
+  const pen = await readFile(page);
+  const { width, height } = await sharp(pen).metadata();
+  // The page's chalk outline (ink-on-white), when the fork has happened — the
+  // line art dark mode actually renders, so it is both the model's input and
+  // the registration/scoring reference. Un-forked pages fall back to the pen.
+  const chalkPath = page.replace(/\.outline\.webp$/, '.chalk.webp');
+  const chalk = existsSync(chalkPath) ? await readFile(chalkPath) : null;
+  const source = chalk ?? pen;
   const darkInput = await toDarkInput(source);
   // Eye reference: which nested cores the committed light fill paints as lively
-  // eyes. Absent (page has no light raw yet) the eye gate is skipped.
+  // eyes — cores keyed off the PEN outline on both sides of the comparison.
+  // Absent (page has no light raw yet) the eye gate is skipped.
   const lightRawPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
   const lightEyes = existsSync(lightRawPath)
-    ? await scoreEyeFill(await readFile(lightRawPath), source)
+    ? await scoreEyeFill(await readFile(lightRawPath), pen)
     : null;
 
   for (let i = 0; i < samples; i++) {
@@ -517,6 +551,8 @@ for (const page of pages) {
       const take = await generateCleanTake({
         darkInput,
         source,
+        pen,
+        chalk,
         width,
         height,
         temp0: baseTemp + i * 0.12,

@@ -74,12 +74,15 @@ function drawLineArt(ctx, lineArt, theme, w, h) {
 }
 
 // A tile is one themed half of a pair — its theme is fixed (light or dark);
-// only its view changes.
+// only its view changes. The dark half's line art is the CHALK outline
+// (ink-on-white, same polarity as the pen) where the page has one, falling
+// back to the pen — matching DrawingCanvas's themed overlay swap.
 function render(tile) {
   const { canvas, theme, imgs } = tile;
   const view = tile.view || gView;
   const fill = theme === 'dark' ? imgs.night : imgs.light;
-  const ref = fill || imgs.lineArt || imgs.light || imgs.night;
+  const lineArt = theme === 'dark' ? imgs.chalk || imgs.lineArt : imgs.lineArt;
+  const ref = fill || lineArt || imgs.light || imgs.night;
   if (!ref) {
     return;
   }
@@ -103,10 +106,10 @@ function render(tile) {
   ctx.fillRect(0, 0, w, h);
 
   if (view === 'combined' && fill) {
-    if (!tile.fills) tile.fills = buildFills(fill, imgs.lineArt, w, h);
+    if (!tile.fills) tile.fills = buildFills(fill, lineArt, w, h);
     ctx.drawImage(tile.fills, 0, 0, w, h);
   }
-  if (imgs.lineArt) drawLineArt(ctx, imgs.lineArt, theme, w, h);
+  if (lineArt) drawLineArt(ctx, lineArt, theme, w, h);
   tile.vlabel.textContent = view;
 }
 
@@ -147,6 +150,12 @@ function buildHalf(pair, cell, theme, imgsP) {
     note.textContent = 'no night fill';
     cap.appendChild(note);
   }
+  if (theme === 'dark' && !cell.chalk) {
+    const note = document.createElement('span');
+    note.className = 'note';
+    note.textContent = 'no chalk (inverted pen)';
+    cap.appendChild(note);
+  }
   const pill = document.createElement('span');
   pill.className = 'pill ' + (theme === 'dark' ? 'night' : 'light');
   pill.textContent = theme === 'dark' ? 'NIGHT' : 'LIGHT';
@@ -155,8 +164,8 @@ function buildHalf(pair, cell, theme, imgsP) {
   fig.appendChild(cap);
   pair.appendChild(fig);
 
-  imgsP.then(([night, lineArt, light]) => {
-    const tile = { canvas, theme, vlabel: vl, imgs: { night, lineArt, light }, view: null };
+  imgsP.then(([night, lineArt, light, chalk]) => {
+    const tile = { canvas, theme, vlabel: vl, imgs: { night, lineArt, light, chalk }, view: null };
     tiles.push(tile);
     frame.addEventListener('click', () => {
       const cur = tile.view || gView;
@@ -173,7 +182,7 @@ function build() {
     const pair = document.createElement('div');
     pair.className = 'pair ' + c.orient;
     root.appendChild(pair);
-    const imgsP = Promise.all([load(c.night), load(c.lineArt), load(c.light)]);
+    const imgsP = Promise.all([load(c.night), load(c.lineArt), load(c.light), load(c.chalk)]);
     buildHalf(pair, c, 'light', imgsP);
     buildHalf(pair, c, 'dark', imgsP);
   }

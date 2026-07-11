@@ -58,8 +58,11 @@ function nightPath(id, orient) {
     : join(COLORING_DIR, catId, `${id}-${orient}.night.webp`);
 }
 // The black-on-white line art and the light colored fill always come from
-// web/static — light fills ship straight from the fills generator's punch.
+// web/static — light fills ship straight from the fills generator's punch. The
+// chalk outline (dedicated dark-mode line art, ink-on-white) is optional; the
+// dark half falls back to inverting the pen outline where it's absent.
 const lineArtPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.outline.webp`);
+const chalkPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.chalk.webp`);
 const lightPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.light.webp`);
 
 function dataUri(p) {
@@ -92,6 +95,7 @@ for (const p of book.pages) {
       orient,
       night: dataUri(nightPath(p.id, orient)),
       lineArt: dataUri(lineArtPath(p.id, orient)),
+      chalk: dataUri(chalkPath(p.id, orient)),
       light: dataUri(lightPath(p.id, orient)),
       keep: await lightKeep(p.id, orient),
     });
