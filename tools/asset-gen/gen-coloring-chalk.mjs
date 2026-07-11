@@ -23,11 +23,11 @@
 //   1. keep/localKeep — outlineMatch(pen, candidate): every pen stroke is still
 //      traced, globally and in the worst tile (solid whites only ADD ink, so the
 //      forward direction must hold completely).
-//   2. no invented strokes — new ink far from any pen line must be SOLID
-//      (a deliberate white region); thin new ink is an invented outline.
-//   3. background integrity — new solid ink must not flood the open background
-//      (the region reachable from the page border), only pen-bounded interiors.
-//   4. white budget — total solid-whitened area stays a small share of the page.
+//   2. enclosure — new ink is judged by WHERE it lands, not how thick it is:
+//      inside a pen-bounded interior it's a deliberate whitening (a sclera is a
+//      thin annulus — thickness tests misread it); on the open background
+//      (flood-reachable from the border) it's an invented shape and fails.
+//   3. white budget — total whitened area stays a small share of the page.
 //
 // Candidates land in .coloring-samples-dark/chalk/ (with a .display.webp preview
 // of what dark mode will show); shipped assets are only touched with --apply,
@@ -55,20 +55,26 @@ const WEBP_QUALITY = 92;
 const OUT_DIR = join(SAMPLES_DARK_DIR, 'chalk');
 
 // --- New-ink analysis ----------------------------------------------------------
-// Everything the chalk draws beyond the pen's strokes is "new ink". Deliberate
-// whites are SOLID regions; anything thin is an invented stroke. Same working
-// scale and ink bar as lib/outline-match.mjs so the masks agree.
+// Everything the chalk draws beyond the pen's strokes is "new ink", judged by
+// ENCLOSURE, not thickness: new ink inside a pen-bounded interior is a
+// deliberate whitening (a sclera — which is a thin annulus around the pupil —
+// a catchlight, a tooth), while new ink on the OPEN BACKGROUND (the region
+// flood-reachable from the page border) is an invented shape. A first draft
+// judged by thickness (opening) misread every whitened sclera as an "invented
+// thin stroke" and rejected 9 of nature's 12 perfectly-good chalks. Same
+// working scale and ink bar as lib/outline-match.mjs so the masks agree.
 const INK_W = 512;
 const INK_DARK = 110; // grayscale px darker than this = ink
 const PEN_SLACK = 2; // px of registration slack around pen strokes (outline-match TOL)
-const OPEN_R = 3; // opening radius: new ink thinner than ~2*OPEN_R px = a stroke, not a fill
-// Thin new ink beyond this share of the pen's ink mass = invented outlines.
+// Background-invention test uses a wider berth: local stroke thickening and the
+// residue of an align-corrected nudge hug the pen lines, while a genuinely
+// invented shape (a star in the open sky) sits far from any of them.
+const BG_SLACK = 4;
+// New ink on the open background beyond this share of the pen's ink mass = an
+// invented shape (a clean chalk reads ~0).
 const INVENTED_MAX_DEFAULT = 0.01;
-// New solid ink overlapping the open background beyond this share of the page =
-// the model flooded the board, not a bounded region.
-const BG_FLOOD_MAX = 0.002;
-// Total solid-whitened share of the page a chalk may claim (eyes/teeth/markings
-// are small; a whole white body is a review-worthy surprise).
+// Total whitened share of the page a chalk may claim (eyes/teeth/markings are
+// small; a whole white body is a review-worthy surprise).
 const WHITE_FRAC_MAX_DEFAULT = 0.1;
 
 async function inkMask(buf) {
@@ -117,36 +123,30 @@ function openBackground(penMask) {
 }
 
 // Split a candidate's new ink (beyond the pen's slack-dilated strokes) into
-// SOLID regions (deliberate whites) and THIN residue (invented strokes), and
-// measure how much solid ink landed on the open background.
+// ENCLOSED whitening (inside pen-bounded interiors — deliberate, budgeted) and
+// OPEN-BACKGROUND ink (invented shapes — gated hard).
 async function scoreNewInk(penBuf, candidateBuf) {
   const pen = await inkMask(penBuf);
   const cand = await inkMask(candidateBuf);
   const n = INK_W * INK_W;
   const allowed = dilateMask(pen, INK_W, INK_W, PEN_SLACK);
-  const newInk = new Uint8Array(n);
-  for (let i = 0; i < n; i++) newInk[i] = cand[i] && !allowed[i] ? 1 : 0;
-  const solid = dilateMask(erodeMask(newInk, INK_W, INK_W, OPEN_R), INK_W, INK_W, OPEN_R);
-  // Thin residue hugging a solid region's boundary is antialiasing of the fill,
-  // not an invented stroke — excuse anything within a small halo of a solid.
-  const nearSolid = dilateMask(solid, INK_W, INK_W, OPEN_R);
+  const bgSafe = dilateMask(pen, INK_W, INK_W, BG_SLACK);
   const bg = openBackground(pen);
   let penMass = 0;
   let invented = 0;
-  let solidPx = 0;
-  let bgFlood = 0;
+  let whitened = 0;
   for (let i = 0; i < n; i++) {
     if (pen[i]) penMass++;
-    if (newInk[i] && !solid[i] && !nearSolid[i]) invented++;
-    if (newInk[i] && solid[i]) {
-      solidPx++;
-      if (bg[i]) bgFlood++;
+    if (!cand[i] || allowed[i]) continue;
+    if (bg[i]) {
+      if (!bgSafe[i]) invented++;
+    } else {
+      whitened++;
     }
   }
   return {
     inventedRatio: penMass ? invented / penMass : 0,
-    whiteFrac: solidPx / n,
-    bgFloodFrac: bgFlood / n,
+    whiteFrac: whitened / n,
   };
 }
 
@@ -171,6 +171,7 @@ const { values, positionals } = parseArgs({
   options: {
     apply: { type: 'boolean' },
     force: { type: 'boolean' },
+    rescore: { type: 'boolean' },
     notes: { type: 'string' },
     temperature: { type: 'string', short: 't' },
     'max-attempts': { type: 'string' },
@@ -180,7 +181,9 @@ const { values, positionals } = parseArgs({
 });
 if (!positionals.length)
   fail('give one or more pages or categories, e.g. "nature/ant-tall" or "nature"');
-if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
+// --rescore re-runs the gates over the existing candidates in the samples dir
+// (no API calls) — for re-judging after a gate change without burning takes.
+if (!values.rescore && !process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
 const baseTemp = values.temperature === undefined ? 0.35 : Number(values.temperature);
 if (!(baseTemp >= 0 && baseTemp <= 2)) fail('--temperature must be between 0 and 2');
 const maxAttempts = values['max-attempts'] === undefined ? 4 : Number(values['max-attempts']);
@@ -215,7 +218,9 @@ async function resolveArg(arg) {
   return [asFile];
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = process.env.GEMINI_API_KEY
+  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+  : null;
 
 async function drawChalk(imageBytes, temperature) {
   const response = await ai.models.generateContent({
@@ -261,11 +266,9 @@ const passes = (c) =>
   c.keep >= KEEP_THRESHOLD &&
   c.localKeep >= LOCAL_KEEP_THRESHOLD &&
   c.newInk.inventedRatio <= inventedMax &&
-  c.newInk.bgFloodFrac <= BG_FLOOD_MAX &&
   c.newInk.whiteFrac <= whiteFracMax;
 const rank = (c) =>
   (passes(c) ? 1000 : 0) +
-  (c.newInk.bgFloodFrac <= BG_FLOOD_MAX ? 400 : 0) +
   (c.newInk.inventedRatio <= inventedMax ? 300 : 0) +
   c.localKeep * 200 +
   c.keep * 100;
@@ -294,28 +297,42 @@ for (const page of pages) {
     .toBuffer();
 
   process.stdout.write(`${rel} ... `);
+  const sample = join(OUT_DIR, `${rel}.webp`);
+  const score = async (candidate, shift, attempt) => {
+    const fwd = await outlineMatch(pen, candidate);
+    const newInk = await scoreNewInk(pen, candidate);
+    return {
+      candidate,
+      keep: fwd.keep,
+      localKeep: fwd.localKeep,
+      overlay: fwd.overlay,
+      newInk,
+      shift,
+      attempt,
+    };
+  };
   let best = null;
   try {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const temperature = Math.min(2, baseTemp + attempt * 0.15);
-      const drawn = await drawChalk(displayInput, temperature);
-      const inked = await toInkPolarity(drawn, width, height);
-      const { buffer: aligned, dx, dy } = await alignToSource(inked, pen, width, height);
-      const candidate = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
-
-      const fwd = await outlineMatch(pen, candidate);
-      const newInk = await scoreNewInk(pen, candidate);
-      const cand = {
-        candidate,
-        keep: fwd.keep,
-        localKeep: fwd.localKeep,
-        overlay: fwd.overlay,
-        newInk,
-        shift: { dx, dy },
-        attempt,
-      };
-      if (!best || rank(cand) > rank(best)) best = cand;
-      if (passes(cand)) break;
+    if (values.rescore) {
+      if (!existsSync(sample)) {
+        console.log(`(skip) no candidate to rescore at ${relative(REPO_ROOT, sample)}`);
+        continue;
+      }
+      best = await score(await readFile(sample), { dx: 0, dy: 0 }, 0);
+    } else {
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const temperature = Math.min(2, baseTemp + attempt * 0.15);
+        const drawn = await drawChalk(displayInput, temperature);
+        const inked = await toInkPolarity(drawn, width, height);
+        const { buffer: aligned, dx, dy } = await alignToSource(inked, pen, width, height);
+        const cand = await score(
+          await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer(),
+          { dx, dy },
+          attempt
+        );
+        if (!best || rank(cand) > rank(best)) best = cand;
+        if (passes(cand)) break;
+      }
     }
   } catch (err) {
     failures++;
@@ -323,7 +340,6 @@ for (const page of pages) {
     continue;
   }
 
-  const sample = join(OUT_DIR, `${rel}.webp`);
   await mkdir(dirname(sample), { recursive: true });
   await writeFile(sample, best.candidate);
   // What dark mode will actually show — the negation — for human review.
@@ -339,8 +355,7 @@ for (const page of pages) {
   const warn = [];
   if (best.keep < KEEP_THRESHOLD) warn.push('drifting');
   if (best.localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
-  if (best.newInk.inventedRatio > inventedMax) warn.push('invented strokes');
-  if (best.newInk.bgFloodFrac > BG_FLOOD_MAX) warn.push('flooded background');
+  if (best.newInk.inventedRatio > inventedMax) warn.push('invented shapes on the background');
   if (best.newInk.whiteFrac > whiteFracMax) warn.push('over-whitened');
   const stats = `keep ${(best.keep * 100).toFixed(1)}%  local ${(best.localKeep * 100).toFixed(1)}%  white ${(best.newInk.whiteFrac * 100).toFixed(1)}%  invented ${best.newInk.inventedRatio.toFixed(4)}`;
   console.log(

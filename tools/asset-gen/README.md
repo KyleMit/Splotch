@@ -54,6 +54,7 @@ From the **repo root** (the discoverable entry points — ADR-0019):
 
 ```bash
 npm run gen:style-covers        # AI style thumbnails  -> web/static/styles/
+npm run gen:coloring-chalk      # chalk outlines (dark-mode line art) -> web/static/coloring/**/*.chalk.webp
 npm run gen:coloring-fills      # light colored fills  -> web/static/coloring/**/*.light.webp
 npm run gen:coloring-fills:audit # drift-check the raw fills in fill-src/ (no key/network)
 npm run gen:coloring-punch      # re-punch the shipped fills from fill-src/ raws (no key/network)
@@ -104,9 +105,12 @@ API cost).
 ## Inputs & outputs
 
 - **Inputs** (committed): `web/static/styles/source.svg`, the black-and-white
-  `web/static/coloring/**/*-{tall,wide}.outline.webp` line-art pages.
-- **Shipped outputs** (committed, read by the app): `*.light.webp` / `*.night.webp`
-  fills, `*.thumb.webp` thumbnails, `web/static/styles/*.webp` covers.
+  `web/static/coloring/**/*-{tall,wide}.outline.webp` PEN outlines (the source
+  of every derivation).
+- **Shipped outputs** (committed, read by the app): `*.chalk.webp` chalk
+  outlines (dedicated dark-mode line art, stored ink-on-white — see
+  `pipeline.md`), `*.light.webp` / `*.night.webp` fills, `*.thumb.webp`
+  thumbnails, `web/static/styles/*.webp` covers.
 - **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/`.
 
 Generate → review the scratch → copy the good outputs into `web/static/` → commit.

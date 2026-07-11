@@ -4,6 +4,17 @@ How to generate, review, and ship the dark-mode **night fills** for coloring
 pages. Architecture (why they exist, how they render) lives in **ADR-0052**; this
 is the operational playbook. Owner script: `tools/asset-gen/gen-coloring-fills-dark.mjs`.
 
+> **2026-07 — the pen/chalk fork (`pipeline.md`) changed the front of this
+> flow.** Pages now get a dedicated dark-mode CHALK outline
+> (`{page}.chalk.webp`, `npm run gen:coloring-chalk`) with deliberate solid
+> whites; the night-fill generator conditions on it and the punch masks the
+> night fill with it. Generate the chalk BEFORE the night fill. The
+> "eyes-are-line-art-driven" / canonical-eye guidance below predates the fork
+> and applies only to un-chalked categories; the gate documentation and the
+> ship/wire steps are still accurate (wire `chalk` orientations in `books.ts`
+> alongside `night` — `page('nature', 'ant', 'Ant', ['portrait', 'landscape'],
+> ['portrait', 'landscape'])`).
+
 ## What a night fill is
 
 Dark mode keeps coloring pages on the dark chalkboard (white "chalk" line art on

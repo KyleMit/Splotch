@@ -156,13 +156,20 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/nature/cover.outline.webp',
     pages: [
-      // Night fills shipped for both orientations (ADR-0052).
-      page('nature', 'ant', 'Ant', ['portrait', 'landscape']),
-      page('nature', 'bee', 'Bee', ['portrait', 'landscape']),
-      page('nature', 'caterpillar', 'Caterpillar', ['portrait', 'landscape']),
-      page('nature', 'ladybug', 'Ladybug', ['portrait', 'landscape']),
-      page('nature', 'snail', 'Snail', ['portrait', 'landscape']),
-      page('nature', 'spider', 'Spider', ['portrait', 'landscape']),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page('nature', 'ant', 'Ant', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('nature', 'bee', 'Bee', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page(
+        'nature',
+        'caterpillar',
+        'Caterpillar',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page('nature', 'ladybug', 'Ladybug', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('nature', 'snail', 'Snail', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('nature', 'spider', 'Spider', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
   {

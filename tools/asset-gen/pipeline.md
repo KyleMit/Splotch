@@ -17,41 +17,57 @@ architecture). Every illustration here is a frozen copy in
 
 ```mermaid
 flowchart LR
-    O["outline<br/>(.outline.webp)"] -->|gen:coloring-thumbs| T[".thumb.webp<br/>(picker)"]
+    O["pen outline<br/>(.outline.webp)"] -->|gen:coloring-thumbs| T[".thumb.webp<br/>(picker)"]
+    O -->|"gen:coloring-chalk<br/>(Gemini, gated)"| C["chalk outline<br/>(.chalk.webp)"]
     O -->|"gen:coloring-fills<br/>(Gemini, gated)"| LR2["light raw<br/>(fill-src/…light.raw.webp)"]
-    O -->|"invert → gen-coloring-fills-dark<br/>(Gemini, gated)"| NR["night raw<br/>(fill-src/…night.raw.webp)"]
+    C -->|"gen-coloring-fills-dark<br/>(Gemini, gated)"| NR["night raw<br/>(fill-src/…night.raw.webp)"]
     LR2 -->|gen:coloring-punch| LS["shipped .light.webp<br/>(fills-only)"]
     NR -->|gen:coloring-punch| NS["shipped .night.webp<br/>(fills-only)"]
     O -.->|"punch mask"| LS
-    O -.->|"punch mask"| NS
+    C -.->|"punch mask"| NS
 ```
+
+The line work is **forked per theme** (the pen/chalk split): the **pen
+outline** is black ink on white paper — the light-mode overlay and the source
+every other asset derives from. The **chalk outline** is white ink on a black
+board — the dark-mode overlay, a Gemini redraw of the inverted pen that makes
+the judgment calls a blind invert can't: eye sclera and catchlights become
+deliberate SOLID WHITE, pupils stay black, everything else stays thin strokes.
+The chalk is *stored* ink-on-white (`{page}.chalk.webp`, the negation of what
+dark mode displays) so the app's existing dark treatment (`invert(1)` +
+screen) renders it unchanged and every ink-on-white tool in this folder reads
+it unmodified. Orientations without a chalk fall back to inverting the pen —
+the pre-fork behavior — so categories migrate incrementally.
 
 | Asset | Lives in | Shipped? | Produced by |
 | --- | --- | --- | --- |
-| `{page}.outline.webp` | `web/static/coloring/{book}/` | yes — the drawing overlay, single source of line work | hand-curated + `normalize-outline-strokes.mjs` |
-| `{page}.thumb.webp` | `web/static/coloring/{book}/` | yes — picker grid | `gen-coloring-thumbs.mjs` |
+| `{page}.outline.webp` | `web/static/coloring/{book}/` | yes — the PEN outline: light-mode overlay, source of all derivations | hand-curated + `normalize-outline-strokes.mjs` |
+| `{page}.chalk.webp` | `web/static/coloring/{book}/` | yes — the CHALK outline: dark-mode overlay + night punch mask, stored ink-on-white | `gen-coloring-chalk.mjs` from the pen |
+| `{page}.thumb.webp` | `web/static/coloring/{book}/` | yes — picker grid (from the pen; the picker inverts it in dark mode) | `gen-coloring-thumbs.mjs` |
 | `{page}.{light,night}.raw.webp` | `tools/asset-gen/fill-src/{book}/` | no — committed source of truth for fills, keeps its own outlines so audits can score registration | `gen-coloring-fills.mjs` / `gen-coloring-fills-dark.mjs` |
-| `{page}.{light,night}.webp` | `web/static/coloring/{book}/` | yes — magic-brush reveal, fills-only (outlines punched to alpha) | `punch-fill-outlines.mjs` from the raw |
+| `{page}.{light,night}.webp` | `web/static/coloring/{book}/` | yes — magic-brush reveal, fills-only (outlines punched to alpha: pen mask for light, chalk mask for night) | `punch-fill-outlines.mjs` from the raw |
 
 Everything shipped is a **static, committed artifact** — no generation at
 build or run time, no server dependency, trivially cacheable. The renderer is
-deliberately dumb: light mode multiplies the outline over light paper; dark
-mode inverts it to white "chalk" and screens it over dark paper (ADR-0052);
-the reveal layers the punched fill underneath. All intelligence lives at
-generation time, behind gates, with a human review at the end.
+deliberately dumb: light mode multiplies the pen outline over light paper;
+dark mode inverts the chalk (shipped ink-on-white) to white chalk and screens
+it over dark paper (ADR-0052); the reveal layers the punched fill underneath.
+Because screen with white is white, the chalk's solid whites always survive
+into the final combined image — no runtime smarts needed. All intelligence
+lives at generation time, behind gates, with a human review at the end.
 
-## The load-bearing invariant: thin-stroke outlines
+## Why the fork: the white-blob problem
 
-Both halves of the renderer assume **every dark outline pixel is a thin
-stroke**:
+Before the pen/chalk split, one outline served both themes, and both halves of
+the renderer assumed **every dark outline pixel is a thin stroke**:
 
-1. the punch cuts every outline-dark pixel out of the fills
+1. the punch cut every outline-dark pixel out of the fills
    (`lib/punch-fill.mjs`, luma < 150), and
-2. dark mode inverts the whole outline (`--lineart-filter: invert(1)`).
+2. dark mode inverted the whole outline (`--lineart-filter: invert(1)`).
 
-A large SOLID black region (a cartoon pupil, a tire, a black patch) breaks
-both at once: its correct fill pixels are deleted by the punch, then the
-invert paints the hole **pure white**. A white *border* reads fine; a white
+A large SOLID black region (a cartoon pupil, a tire, a black patch) broke
+both at once: its correct fill pixels were deleted by the punch, then the
+invert painted the hole **pure white**. A white *border* reads fine; a white
 *blob* does not. The owl demonstrates the whole problem in one page:
 
 | The blanket invert on solid pupils | …but the raw night fill already had the eyes |
@@ -63,12 +79,26 @@ invert paints the hole **pure white**. A white *border* reads fine; a white
 *The source of it all: solid-black pupils in the outline (owl, pre-fix — the
 creatures category still looks like this).*
 
-So the adopted approach is to **fix outlines at the source**: every outline is
-normalized to thin strokes only, which makes the blanket invert and the punch
-*correct by construction*, and — the compounding win — gives the fill
-generators blob-free inputs, so the fills' eye interiors regenerate properly
-too (the night generator's input is the *inverted* outline; when its eyes were
-white blobs, the model guessed).
+Two approaches shipped against this, in order:
+
+1. **Thin-stroke normalization** (2026-07, first pass): normalize every
+   outline to thin strokes only, making the blanket invert and the punch
+   correct by construction. It worked — but reusing a single outline across
+   both themes kept forcing compromises: whites the *dark* render genuinely
+   wants solid (an eye's sclera) can't exist in a shared outline without
+   breaking the light theme, so the night fill had to paint them and the eye
+   gates had to police it.
+2. **The pen/chalk fork** (current): give dark mode its own line art. The
+   chalk redraw decides per-feature what is solid white and what stays black,
+   the night punch masks with the chalk, and the traditional blanket
+   invert/punch machinery stays dumb — the chalk's whites are *correct by
+   authorship*, and they survive the punch + screen by construction.
+
+Normalization remains valuable on the PEN side: light-mode pages get classic
+outlined pupils (a solid pen pupil is harmless in light mode — the overlay's
+black covers the punched hole — but outlined reads better as a coloring page),
+and a blob-free pen gives the light-fill generator clean inputs. It is no
+longer what keeps dark mode correct.
 
 ![ant outline before and after normalization](pipeline-assets/outline-ant-before-after.webp)
 
@@ -89,10 +119,10 @@ survives the punch.*
 
 | # | Approach | Why not |
 | --- | --- | --- |
-| A | **Structure-aware "smart chalk"** — build-time morphological classifier splits thin strokes from solid interiors; ship a derived `.chalk.webp` per page; dark mode renders it instead of `invert(1)`; punch keeps solid interiors | Fully prototyped and it worked (below) — but it only *reveals* what the night fill painted; it can never repaint a mediocre fill. Fill quality was the real ceiling (fairy's washed sclera, ant's glossy pupils came from blob-eyed inputs). Also: new shipped asset per page, renderer changes, a classification threshold to maintain forever. |
+| A | **Structure-aware "smart chalk"** — build-time morphological classifier splits thin strokes from solid interiors; ship a derived `.chalk.webp` per page; dark mode renders it instead of `invert(1)`; punch keeps solid interiors | Fully prototyped and it worked (below) — but a *classifier* can only preserve what the pen happens to contain; it can't decide a thin-ringed sclera should go solid white. The pen/chalk fork ships the same asset shape (a `.chalk.webp` per page) with an *author* instead of a classifier. |
 | B | Same classifier at **runtime** (canvas, per page-apply) | The exact main-thread work ADR-0043 moved to build time, on low-end tablets. |
 | C | **Canonical-eye retouch** at scale (solid pupil + one big glare, so the invert *accident* lands well) | Eyes-only; nothing for tires/patches/shapes; keeps the accident as the mechanism. This was the pre-2026-07 playbook (see the mermaid saga in `night-fills.md`). |
-| D | **AI-generated dedicated night line art** per page | Highest ceiling, but two independently-generated line arts drift out of registration — the exact ghosting class ADR-0043 exists to prevent. Kept as a per-page escape hatch, never yet needed. |
+| D | **AI-generated dedicated night line art** per page | Two *independently-generated* line arts drift out of registration — the ghosting class ADR-0043 exists to prevent. The pen/chalk fork is D **domesticated**: the chalk is an *edit of the pen* (not a fresh generation), gated on outlineMatch registration exactly like the fills, so every pen stroke provably survives in place and only bounded solid whites are added. |
 
 ![option A prototype, owl before and after](pipeline-assets/optionA-chalk-owl.webp)
 
@@ -107,13 +137,13 @@ unnecessary.*
 rimmed outlines). With thin-stroke outlines the uncolored page is simply
 correct.*
 
-## Stage 1 — Outlines
+## Stage 1 — Pen outlines
 
-The outline is the single source of line work: the app overlays it above the
-canvas, the punch uses it as a mask, both fill generators condition on it, and
-the thumbnail is a resize of it. **Every downstream regeneration flows from an
-outline change**, so an outline edit means regenerating the page's whole suite
-(thumb + light + night + punch).
+The pen outline is the source of everything: the light overlay renders it, the
+light punch masks with it, the light-fill generator conditions on it, the
+chalk redraws from it, and the thumbnail is a resize of it. **Every downstream
+regeneration flows from a pen change**, so a pen edit means regenerating the
+page's whole suite (thumb + chalk + light + night + punch).
 
 ### Outline invariants, and the audit that enforces them
 
@@ -157,15 +187,47 @@ The registration gate also catches semantic damage: the first bee-wide
 normalization silently **deleted a cloud** (worst-tile keep 0%), fixed with a
 `--notes` telling it the sky has three clouds.
 
+## Stage 1.5 — Chalk outlines
+
+`npm run gen:coloring-chalk -- <page-or-category…> [--apply] [--notes "…"]
+[-t F] [--max-attempts N] [--force]` — Gemini image-edit redraws the inverted
+pen as a chalk line drawing (`gen-coloring-chalk.mjs`), keep-best-of-N with a
+rising temperature ladder, candidates in `.coloring-samples-dark/chalk/` (each
+with a `.display.webp` preview of what dark mode will show and a registration
+overlay). Four gates per candidate:
+
+1. **keep ≥ 92% / worst-tile ≥ 80%** (`lib/outline-match.mjs`, pen →
+   candidate) — every pen stroke is still traced in place. Only the forward
+   direction is gated: a chalk legitimately *adds* ink (its solid whites), so
+   the reverse direction is covered by the next two gates instead;
+2. **no invented strokes** — new ink beyond the pen's slack must be SOLID
+   (an opening survives it); thin new ink far from any pen line is an invented
+   outline and fails;
+3. **background integrity** — new solid ink must not touch the open background
+   (flood-filled from the page border): whites live in pen-bounded interiors
+   (a sclera, a tooth), never on the board;
+4. **white budget** — total solid-whitened area ≤ 10% of the page (a chalk
+   that whitens a whole body is a review-worthy surprise, not a judgment
+   call).
+
+After applying a chalk, regenerate the page's **night fill** (it conditions on
+the chalk) and re-punch. Thumbs and light fills are untouched — they belong to
+the pen.
+
 ## Stage 2 — The punch
 
 `npm run gen:coloring-punch -- [pages…]` re-derives every shipped fill from
-its committed raw: alpha = 0 where the outline is dark (luma < 150), 255
-elsewhere (`lib/punch-fill.mjs`). Why: the app's overlay already draws the
-line art, so a revealed fill carrying its *own* copy of the outlines would
-double every line, and any drift between the copies shows as ghosting
-(ADR-0043 "reveal fills only"). Deterministic and offline — after any raw or
-outline change, re-punch.
+its committed raw: alpha = 0 where the line art is dark (luma < 150), 255
+elsewhere (`lib/punch-fill.mjs`). The mask is **per-theme**: light raws punch
+against the pen, night raws against the chalk when the page has one (both ship
+ink-on-white, so the mask math is identical; pages without a chalk fall back
+to the pen). Why: the app's overlay already draws the line art, so a revealed
+fill carrying its *own* copy of the outlines would double every line, and any
+drift between the copies shows as ghosting (ADR-0043 "reveal fills only").
+Punching the night fill with the chalk is also what makes the chalk's solid
+whites land in the final image: the fill's pixels there are removed, and the
+screened chalk white shows through. Deterministic and offline — after any raw,
+pen, or chalk change, re-punch.
 
 ![outline, raw fill, punched fill](pipeline-assets/punch-outline-raw-punched-ant.webp)
 
@@ -202,23 +264,27 @@ one step.
 
 `node --experimental-strip-types --disable-warning=ExperimentalWarning
 tools/asset-gen/gen-coloring-fills-dark.mjs <pages…> [--max-attempts N]
-[-t F] [--notes "…"]` — the input is the **inverted** outline (white lines on
-near-black):
+[-t F] [--notes "…"]` — the input is the **chalk outline as dark mode displays
+it** (white marks on near-black — the negation of the shipped ink-on-white
+chalk), falling back to the inverted pen for un-forked pages:
 
 ![inverted outline input](pipeline-assets/nightfill-inverted-input-ant.webp)
 
-`DARK_FILL_PROMPT` asks for a cozy moonlit recolor: deep evening background,
-natural (dimmed, not grey) subject colors, outlines stay bright white, eyes
-painted in three tones (light eyeball / near-black pupil / bright white
-catchlight). Four gates, keep-best-of-N (fallback ranking prefers takes with
-more surviving eyes over least drift):
+The prompt asks for a cozy moonlit recolor: deep evening background, natural
+(dimmed, not grey) subject colors, white marks stay bright white. The eye
+instruction is input-dependent: with a chalk, the whites are already painted
+(solid sclera + catchlight are chalk) and the fill's only eye job is a deep
+near-black pupil; without one, the fill paints all three tones itself. Four
+gates, keep-best-of-N (fallback ranking prefers takes with more surviving
+eyes over least drift) — registration/mood/line gates score against the chalk
+(the line art the fill must sit under):
 
 | Gate | Catches | Bar |
 | --- | --- | --- |
 | `scoreDrift` | invented shapes (thin white strokes far from any source line) | ≤ 0.004 (clean ≈ 0) |
 | `scoreNightness` | daytime "sky blue" background (median luma of the flood-filled true background) | ≤ 100 (good ≈ 15–50) |
 | `scoreLineColor` | the model re-inking white outlines dark (they'd double against the chalk overlay) | median ≥ 150 (white ≈ 154–250) |
-| `judgeNightEyes` | flat-flooded eyes (below) | every strong light-lively core stays lively |
+| `judgeNightEyes` | flat-flooded eyes (below) | every strong light-lively core stays lively — judged on the **simulated final composite** (chalk-punched fill + screened chalk over dark paper) when the page has a chalk, since the chalk owns the whites; cores keyed off the pen |
 
 Levers for stubborn pages, in order: more attempts against the gates → a low
 `-t` (~0.25–0.3, keeps the model faithful) → `--dilate-lines 2` (pale subjects
@@ -350,8 +416,9 @@ Useful history (this branch, `feat/thin-stroke-outlines`):
 
 | Command | Purpose | API key? |
 | --- | --- | --- |
-| `npm run gen:coloring-outlines:audit -- [cat]` | solid regions + ring depth per outline | no |
-| `npm run gen:coloring-outlines:normalize -- <page…>` | thin-stroke redraw, 6 gates, `--apply` to ship | yes |
+| `npm run gen:coloring-outlines:audit -- [cat]` | solid regions + ring depth per pen outline | no |
+| `npm run gen:coloring-outlines:normalize -- <page…>` | thin-stroke pen redraw, 6 gates, `--apply` to ship | yes |
+| `npm run gen:coloring-chalk -- <page-or-cat…>` | chalk-outline redraw from the pen, 4 gates, `--apply` to ship | yes |
 | `npm run gen:coloring-fills -- <pages…>` | light fills (gated) + auto-punch | yes |
 | `node … gen-coloring-fills-dark.mjs <pages…>` | night fills (gated) → samples | yes |
 | `npm run gen:coloring-punch -- [pages…]` | re-derive shipped fills from raws | no |
@@ -362,31 +429,43 @@ Useful history (this branch, `feat/thin-stroke-outlines`):
 
 ## Status and the next category
 
-| Category | Thin-stroke outlines | Night fills | Notes |
-| --- | --- | --- | --- |
-| Nature | ✅ all 12 | ✅ all gates green | the pilot; everything above was learned here |
-| Space, Farm, Dinosaurs, Creatures | ❌ accident-era | shipped, accident-era | owl (blob 1919), trex, dog, cat, dragon, etc. flagged by the audit |
-| Objects, Shapes, Vehicles | ❌ | none yet | do outlines FIRST — shapes especially would ship broken night fills today |
+| Category | Pen outlines | Chalk outlines | Night fills | Notes |
+| --- | --- | --- | --- | --- |
+| Nature | ✅ thin-stroke, all 12 | ✅ all 12 | ✅ chalk-era, all gates green | the pilot for both the normalization and the fork |
+| Space, Farm, Dinosaurs, Creatures | ❌ accident-era | ❌ | shipped, accident-era | owl (blob 1919), trex, dog, cat, dragon, etc. flagged by the audit |
+| Objects, Shapes, Vehicles | ❌ | ❌ | none yet | chalk + night fills together when each category is processed |
 
-Next-category runbook: audit → normalize offenders (worst-first, `--apply`) →
-thumbs → light fills → night fills → ship raws + punch → wire `books.ts`
-(if night fills are new — see `night-fills.md` step 4) → all three audits →
-contact sheet review in both themes → checks → commit.
+Next-category runbook: pen audit → normalize offenders if the light page
+warrants it (worst-first, `--apply`) → thumbs → light fills → **chalks**
+(`gen:coloring-chalk --apply`) → night fills (they condition on the chalk) →
+ship raws + punch → wire `books.ts` (`night` + `chalk` orientation lists — see
+`night-fills.md` step 4) → all three audits → contact sheet review in both
+themes → checks → commit.
+
+Note the fork loosens the old hard ordering: a solid-pupil pen no longer
+*breaks* dark mode (the chalk redraw makes its own judgment from whatever pen
+it gets, and light mode covers punched holes with its own black ink), so pen
+normalization is a light-theme quality call, not a dark-theme prerequisite.
 
 ## Where the next problems are likely to come from
 
 - **Shapes is not a face category.** `circle-tall` (blob 1921),
-  `star-tall` (901), `rectangle-tall` (1266) carry big *geometric* solids —
-  the normalizer's instruction is eye-flavored ("outlined pupil +
-  catchlight"), and the eye detector will be inert (no nested triples), so
-  the eye gates provide zero cover there. Boundary-tracing generalizes, but
-  review the first shapes normalization very carefully; expect to extend the
-  instruction, and expect night fills with almost no gate coverage beyond
-  drift/night/line-color.
-- **The owl.** Its pupils are the biggest solid regions in the catalog
-  (1919 px core) and its whole identity is giant eyes. Normalizing may change
-  its character; the raw night fill (which is gorgeous) is the target to
-  preserve. Consider `--notes` from the start.
+  `star-tall` (901), `rectangle-tall` (1266) carry big *geometric* solids.
+  The chalk generator's instruction is eye-flavored, the eye detector will be
+  inert (no nested triples), and a big pen solid is *new territory for the
+  chalk redraw*: should a solid star stay solid white chalk (probably — it's
+  under the 10% white budget only if small) or become an outline? Expect to
+  extend the instruction and lean on `--notes` and careful review; expect
+  night fills with almost no gate coverage beyond drift/night/line-color.
+- **The owl.** Its giant eyes are now the chalk's *best case* (huge sclera →
+  solid white chalk, exactly what a chalk artist would do) — but its pupils
+  are the biggest solids in the catalog and the raw night fill (which is
+  gorgeous) is the target to preserve. Consider `--notes` from the start.
+- **Chalk whites the fill disagrees with.** The chalk decides what is white
+  at authoring time; the night fill can't overrule it (the punch wins). A
+  chalk that whitens something the night palette wanted colored (a tooth on a
+  dark face, a marking) is only caught by human review — no gate compares the
+  chalk's whites to the fill's intent.
 - **Dark-bodied subjects at night** (spider precedent): the model wants to
   flood them; eyes and markings vanish. Reach for `--notes` early.
 - **The eye detector's anatomy assumptions.** Nested-circle eyes, cores
@@ -419,12 +498,13 @@ contact sheet review in both themes → checks → commit.
 ## Doc debt
 
 - `night-fills.md` still documents the **canonical-eye** ("solid pupil + one
-  glare") recipe and the eyes-are-line-art-driven model — both obsolete for
-  normalized categories. Its per-category workflow and gate documentation
-  are still accurate. Rewrite once the remaining categories migrate.
+  glare") recipe, the eyes-are-line-art-driven model, and the single-outline
+  (pre-fork) flow — all obsolete for chalked categories. Its per-category
+  workflow and gate documentation are still accurate. Rewrite once the
+  remaining categories migrate.
 - `retouch-line-art.mjs`'s default instruction is the canonical-eye edit —
   superseded by `normalize-outline-strokes.mjs` for solid regions; still
   useful for arbitrary non-eye retouches.
-- An ADR for the thin-stroke-outline decision (supersedes parts of
-  ADR-0052's rendering assumptions) is pending the owner's final sign-off on
-  the nature results.
+- The Stage 4 input illustration (`nightfill-inverted-input-ant.webp`) shows
+  the pre-fork inverted pen; the current input is the chalk with its solid
+  eye whites. Refresh when the illustrations are next regenerated.

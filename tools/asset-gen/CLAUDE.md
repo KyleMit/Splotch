@@ -21,6 +21,14 @@ pipeline evolves). Key rules when working in this folder:
   (`punch-fill-outlines.mjs`, root: `npm run gen:coloring-punch` — offline,
   deterministic). Never hand-edit a shipped fill, and after changing any raw,
   re-punch it. The drift audit scores the raws.
+- **Line work is forked per theme (the pen/chalk split — see `pipeline.md`).**
+  The PEN outline (`{page}.outline.webp`, black ink on white) drives light mode
+  and every derivation; the CHALK outline (`{page}.chalk.webp`,
+  `gen-coloring-chalk.mjs`) is the dedicated dark-mode line art with deliberate
+  solid whites (eye sclera, catchlights), **stored ink-on-white** — negate it
+  before showing it to Gemini or a human as "dark mode art". Night fills
+  condition on the chalk and punch against it; after changing a chalk,
+  regenerate the page's night fill and re-punch.
 - **The only sanctioned imports from `web/src`** are the four modules listed in
   `README.md` (styles, prompt, geminiSafety, books) — the app's single source of
   truth for prompts/safety/catalog. Don't reach into anything else under `web/src`.
