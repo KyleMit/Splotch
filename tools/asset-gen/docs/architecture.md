@@ -1,6 +1,7 @@
-# ADR-0053: Asset-Generation Pipeline in `tools/asset-gen/` (In-Repo Folder, Not a Workspace or Separate Repo)
+# Asset-Generation Pipeline in `tools/asset-gen/` (In-Repo Folder, Not a Workspace or Separate Repo)
 
-**Status:** Active
+**Decision record** — in force. Originally ADR-0053 in `docs/adrs/`; moved here 2026-07 so the
+asset-generation pipeline's decisions live beside the pipeline (the ADR index notes the move).
 **Date:** 2026-07
 
 ## Context

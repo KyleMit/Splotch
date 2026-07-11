@@ -46,7 +46,7 @@ for (const page of pages) {
   const source = await readFile(page);
   const light = await scoreEyeFill(await readFile(lightPath), source);
   const lightVerdict = judgeLightEyes(light);
-  // With a chalk outline (pen/chalk fork, ADR-0056) the chalk owns the eye
+  // With a chalk outline (pen/chalk fork, docs/pen-chalk-fork.md) the chalk owns the eye
   // whites and the punch enforces them, so the night raw is judged as the
   // simulated final composite; without one the raw IS what dark mode reveals.
   const nightPath = join(FILL_SRC_DIR, `${rel}.night.raw.webp`);

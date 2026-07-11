@@ -2,7 +2,7 @@
 // the fill punched with the chalk (transparent where the chalk has ink) over
 // the dark paper, with the chalk's negation screened on top — mirroring
 // lib/punch-fill.mjs plus the app's dark --lineart-* treatment. Post pen/chalk
-// fork (ADR-0056) the chalk owns the eye whites, so any judgment about what a
+// fork (docs/pen-chalk-fork.md) the chalk owns the eye whites, so any judgment about what a
 // child actually SEES at night (the eye gates in gen-coloring-fills-dark.mjs
 // and audit-fill-eyes.mjs) must run on this composite, not the raw fill.
 import sharp from 'sharp';

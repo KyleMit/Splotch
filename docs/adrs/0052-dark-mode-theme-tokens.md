@@ -1,6 +1,6 @@
 # ADR-0052: Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper, White "Chalk" Line Art, Night Coloring Fills
 
-**Status:** Active — amended by [ADR-0056](0056-pen-chalk-outline-fork.md): coloring pages with a
+**Status:** Active — amended by [the pen/chalk fork](../../tools/asset-gen/docs/pen-chalk-fork.md): coloring pages with a
 shipped chalk outline render *it* in dark mode (via the same invert+screen treatment) instead of
 inverting the shared outline, superseding this ADR's "no pre-generated inverted assets" clause
 **Date:** 2026-07

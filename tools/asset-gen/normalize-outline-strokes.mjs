@@ -25,7 +25,7 @@
 // shipped assets are only touched with --apply, and --apply only copies a
 // candidate that passed every gate. After applying, regenerate the WHOLE suite
 // from the new outline (thumbs, light fill, night fill, punch) and re-review the
-// contact sheet in BOTH themes — see tools/asset-gen/night-fills.md.
+// contact sheet in BOTH themes — see tools/asset-gen/pipeline.md.
 //
 //   npm run gen:coloring-outlines:normalize -- nature/ant-tall nature/ant-wide
 //   ... -- nature/ant-tall --apply             copy the passing candidate over web/static
@@ -121,7 +121,7 @@ async function editLineArt(imageBytes, temperature) {
 // Normalize the model output back to a clean black-on-white page at the source
 // resolution: grayscale, gentle contrast to whiten a faintly-grey ground and
 // deepen the lines, keep antialiasing (a hard threshold would jaggy the lines
-// and fail the fill generators' alignment). Same treatment as retouch-line-art.
+// and fail the fill generators' alignment).
 async function cleanRender(buf, width, height) {
   return sharp(buf)
     .resize(width, height, { fit: 'fill' })

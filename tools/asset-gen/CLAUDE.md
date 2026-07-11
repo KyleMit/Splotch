@@ -1,7 +1,7 @@
 # tools/asset-gen/ — asset-generation pipeline
 
 The AI/`sharp` tooling that produces Splotch's committed art. Read `README.md`
-here for the full runbook; the architecture rationale is **ADR-0053**. For the
+here for the full runbook; the architecture rationale is **`docs/architecture.md`**. For the
 END-TO-END picture — outline normalization, the punch, day/night fills, every
 quality gate and the shipped regression that motivated it, iteration methods,
 and where future categories will likely break — read **`pipeline.md`** (its
@@ -59,6 +59,8 @@ pipeline evolves). Key rules when working in this folder:
   so the change is visible in the session — the sheet is self-contained (images
   inlined as base64), so it renders in the sandbox; do NOT hand-composite a PNG.
   Judge on the **Combined** view.
-- **Dark-mode night fills** have their own detailed runbook in `night-fills.md`
-  (generate → review contact sheet → retouch line art if needed → ship → wire).
-  Read it before generating more.
+- **Retired techniques and failed approaches live in `legacy/`** (the
+  canonical-eye era's `night-fills.md` runbook and `retouch-line-art.mjs`,
+  plus the history chronicle in `legacy/README.md`). Nothing in there is part
+  of the current pipeline — `pipeline.md` is the live runbook; borrow from
+  legacy, don't follow it.

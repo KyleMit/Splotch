@@ -1,6 +1,7 @@
-# ADR-0056: Fork the Line Art per Theme — Pen Outline (Light) + Gemini-Authored Chalk Outline (Dark)
+# Fork the Line Art per Theme — Pen Outline (Light) + Gemini-Authored Chalk Outline (Dark)
 
-**Status:** Active
+**Decision record** — in force. Originally ADR-0056 in `docs/adrs/`; moved here 2026-07 so the
+asset-generation pipeline's decisions live beside the pipeline (the ADR index notes the move).
 **Date:** 2026-07
 
 ## Context

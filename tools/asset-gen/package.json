@@ -9,7 +9,6 @@
     "coloring-chalk": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-coloring-chalk.mjs",
     "coloring-fills": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-coloring-fills.mjs",
     "coloring-fills-dark": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-coloring-fills-dark.mjs",
-    "retouch-line-art": "node --experimental-strip-types --disable-warning=ExperimentalWarning retouch-line-art.mjs",
     "coloring-punch": "node punch-fill-outlines.mjs",
     "coloring-thumbs": "node gen-coloring-thumbs.mjs",
     "contact-sheet": "node --experimental-strip-types --disable-warning=ExperimentalWarning gen-contact-sheet.mjs",

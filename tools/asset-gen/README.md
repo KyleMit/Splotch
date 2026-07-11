@@ -6,7 +6,7 @@ picker thumbnails, and format/line-art utilities. It lives in its own folder so
 you can iterate on it in a small footprint — the app never runs any of this at
 build time; it just reads the committed outputs from `web/static/`.
 
-Architecture and the "why a folder, not a workspace/repo" decision: **ADR-0053**.
+Architecture and the "why a folder, not a workspace/repo" decision: **[`docs/architecture.md`](docs/architecture.md)**.
 
 ## Where it sits in the repo
 
@@ -94,7 +94,6 @@ root `node_modules`):
 npm run coloring-fills -- farm/dog-wide --samples 3
 npm run coloring-fills-dark -- space --max-attempts 4   # not exposed as a root gen:* script
 npm run contact-sheet -- space --source samples
-npm run retouch-line-art -- creatures/mermaid-tall
 npm run png-to-webp
 ```
 
@@ -126,8 +125,8 @@ views, the outline-% badge, size constraints — lives in
 
 - **Rebuild the sheet every time you touch an asset**, then **publish it with
   the Artifact tool** instead of hand-rolling a headless screenshot — same steps
-  as the night-fills runbook
-  ([`night-fills.md`](./night-fills.md#per-category-workflow)). Show the URL.
+  as the pipeline's shipping runbook ([`pipeline.md`](./pipeline.md)). Show the
+  URL.
 - **One category per sheet** (`gen:contact-sheet -- nature`); `all` is rejected
   because a whole-catalog sheet exceeds the Artifact tool's 16 MB upload cap.
   For a catalog-wide review, build and publish one sheet per category. The
@@ -147,7 +146,9 @@ views, the outline-% badge, size constraints — lives in
 
 ## Runbooks
 
-- **Dark-mode night fills** (generate → review → ship → wire): [`night-fills.md`](./night-fills.md).
+- **The coloring-page pipeline** (pen/chalk outlines → fills → punch, gates,
+  per-category runbook): [`pipeline.md`](./pipeline.md). Decision records:
+  [`docs/`](./docs/). Retired techniques + history: [`legacy/`](./legacy/).
 - **AI art prompts** for authoring new source drawings / icons: `docs/PROMPTS.md`.
 
 ## Not here

@@ -1,6 +1,7 @@
-# ADR-0055: The Magic-Brush Reveal Assets Are "Fills", Not "Twins"
+# The Magic-Brush Reveal Assets Are "Fills", Not "Twins"
 
-**Status:** Active
+**Decision record** — in force. Originally ADR-0055 in `docs/adrs/`; moved here 2026-07 so the
+asset-generation pipeline's decisions live beside the pipeline (the ADR index notes the move).
 **Date:** 2026-07
 
 ## Context

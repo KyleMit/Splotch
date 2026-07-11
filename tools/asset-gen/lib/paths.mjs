@@ -1,5 +1,5 @@
 // Path + tree resolution for the asset-gen scripts, self-contained so this
-// project doesn't reach back into scripts/lib/ (ADR-0053). The generators are
+// project doesn't reach back into scripts/lib/ (docs/architecture.md). The generators are
 // producers for the app's committed assets: inputs and outputs both live under
 // web/static/, and review scratch lands in the gitignored .coloring-samples*/.
 import { dirname, join } from 'node:path';

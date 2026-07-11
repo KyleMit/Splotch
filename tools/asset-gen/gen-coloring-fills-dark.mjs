@@ -26,7 +26,7 @@
 // white so they sit under the app's white "chalk" line art in dark mode).
 //
 // Full workflow (generate → review contact sheet → ship → wire → verify), the prompt
-// lessons, and the remaining-category checklist: tools/asset-gen/night-fills.md.
+// lessons, and the remaining-category checklist: tools/asset-gen/pipeline.md (Stage 4).
 //
 // Requires GEMINI_API_KEY. Writes candidates to .coloring-samples-dark/ for
 // review — it does NOT touch the shipped assets.

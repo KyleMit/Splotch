@@ -56,8 +56,8 @@ This directory records significant architectural decisions made in the Splotch p
 | [0050](0050-locked-paper-view-on-rotation.md) | Lock the "Paper" on Rotation and Present It Upright Through a Contain-Fit View | Active |
 | [0051](0051-desynchronized-canvas-low-latency.md) | `desynchronized` Canvas for Lower Ink Latency — Tried and Rejected | Rejected |
 | [0052](0052-dark-mode-theme-tokens.md) | Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper, White "Chalk" Line Art, Night Coloring Fills | Active |
-| [0053](0053-asset-gen-in-repo-folder.md) | Asset-Generation Pipeline in `tools/asset-gen/` (In-Repo Folder, Not a Workspace or Separate Repo) | Active |
-| [0054](0054-coloring-asset-variant-suffix-scheme.md) | Uniform Dot-Separated Variant Suffixes for Coloring Assets (`{name}.{variant}.webp`) | Active |
-| [0055](0055-coloring-fill-vocabulary.md) | The Magic-Brush Reveal Assets Are "Fills", Not "Twins" | Active |
-| [0056](0056-pen-chalk-outline-fork.md) | Fork the Line Art per Theme — Pen Outline (Light) + Gemini-Authored Chalk Outline (Dark) | Active |
+| 0053 | Asset-Generation Pipeline in `tools/asset-gen/` (In-Repo Folder, Not a Workspace or Separate Repo) | Moved to [asset-gen docs](../../tools/asset-gen/docs/architecture.md) |
+| 0054 | Uniform Dot-Separated Variant Suffixes for Coloring Assets (`{name}.{variant}.webp`) | Moved to [asset-gen docs](../../tools/asset-gen/docs/asset-naming.md) |
+| 0055 | The Magic-Brush Reveal Assets Are "Fills", Not "Twins" | Moved to [asset-gen docs](../../tools/asset-gen/docs/fill-vocabulary.md) |
+| 0056 | Fork the Line Art per Theme — Pen Outline (Light) + Gemini-Authored Chalk Outline (Dark) | Moved to [asset-gen docs](../../tools/asset-gen/docs/pen-chalk-fork.md) |
 
