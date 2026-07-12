@@ -50,6 +50,7 @@ import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
 import { alignToSource } from './lib/align-to-source.mjs';
+import { crispInk } from './lib/crisp-ink.mjs';
 import { dilateMask } from './lib/morphology.mjs';
 import { scoreEyeFill, EYE_DARK_MAX, EYE_LIGHT_MIN } from './lib/eye-fill.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
@@ -275,14 +276,17 @@ async function drawChalk(imageBytes, temperature) {
 }
 
 // Model output (white-on-black) -> stored ink polarity at source resolution:
-// grayscale, negate, then the same gentle contrast as the other line-art
-// generators (whiten a faintly-grey ground, deepen the ink, keep antialiasing).
+// grayscale, negate, then crisp the edges (lib/crisp-ink.mjs). The pen tools'
+// gentle linear contrast is not enough here — on the dark board the invert +
+// screen render and the binary night punch turn any soft antialias ramp or
+// faint grey ground into a ring of dark specks around every line.
 async function toInkPolarity(buf, width, height) {
-  return sharp(buf)
+  const negated = await sharp(buf)
     .resize(width, height, { fit: 'fill' })
     .grayscale()
     .negate()
-    .linear(1.25, -18)
+    .toBuffer();
+  return sharp(await crispInk(negated))
     .webp({ quality: WEBP_QUALITY })
     .toBuffer();
 }

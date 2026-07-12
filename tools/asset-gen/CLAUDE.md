@@ -38,8 +38,10 @@ pipeline evolves). Key rules when working in this folder:
   tags the 4th band as a generic extra channel, not alpha, so the webp/png encoder
   *silently* flattens it (output decodes `channels: 3, hasAlpha: false`, no error).
   Interleave an explicit RGBA buffer and construct `sharp(rgba, { raw: { width,
-  height, channels: 4 } })` instead (see `punchFill` in `lib/punch-fill.mjs`), and
-  verify outputs with `sharp(out).metadata()` → `hasAlpha: true`.
+  height, channels: 4 } })` instead, and verify outputs with
+  `sharp(out).metadata()` → `hasAlpha: true`. (No current asset ships alpha — the
+  punch inpaints instead of cutting holes, `docs/inpainted-fill-punch.md` — this
+  trap applies to any future alpha-carrying asset.)
 - **Outputs are committed artifacts**, reviewed by a human before shipping. The
   generators write shipped art into `web/static/` and review scratch into the
   gitignored `.coloring-samples*/`. Never commit the scratch dirs.

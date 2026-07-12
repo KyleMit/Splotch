@@ -2,7 +2,7 @@
 // `window.__CONTACT_SHEET__` (a JSON blob) ahead of this script, so nothing here
 // is string-interpolated at build time — this file is plain, lintable JS that
 // reads its inputs from that global. See ../contact-sheet.md for the layer model.
-const { cells: CELLS } = window.__CONTACT_SHEET__;
+const { cells: CELLS, source: SOURCE } = window.__CONTACT_SHEET__;
 const RENDER_MAX = 640;
 const OUTLINE_LUMA = 150; // asset-gen's punch threshold (lib/punch-fill.mjs)
 const PAPER = { dark: '#211f29', light: '#fcfbf8' };
@@ -32,11 +32,14 @@ function fit(w, h) {
   return [Math.round(w * s), Math.round(h * s)];
 }
 
-// Fills-only fill: punch the fill's own outline pixels using the line art as a
-// mask (luma<OUTLINE_LUMA -> transparent) — the same punch asset-gen bakes into
-// the shipped fills (lib/punch-fill.mjs). Shipped fills arrive fills-only so this
-// is a no-op on them; it's what makes the Combined view faithful for `--source
-// samples`, whose fresh Gemini takes still carry their outlines.
+// Fills-only fill for `--source samples` ONLY: fresh Gemini takes still carry
+// their outlines, so punch them with the line art as a mask (luma<OUTLINE_LUMA
+// -> transparent), approximating the punch asset-gen bakes into shipped fills
+// (lib/punch-fill.mjs). Shipped fills are already fills-only (opaque, outline
+// pixels inpainted) and MUST be drawn as-is: re-cutting them here with a binary
+// mask at render resolution punches paper-holes whose resample phase never
+// matches the line art's — a dotted dark ring around every line in dark mode
+// (see tools/asset-gen/docs/inpainted-fill-punch.md).
 function buildFills(fill, lineArt, w, h) {
   const fc = document.createElement('canvas');
   fc.width = w;
@@ -106,8 +109,12 @@ function render(tile) {
   ctx.fillRect(0, 0, w, h);
 
   if (view === 'combined' && fill) {
-    if (!tile.fills) tile.fills = buildFills(fill, lineArt, w, h);
-    ctx.drawImage(tile.fills, 0, 0, w, h);
+    if (SOURCE === 'samples') {
+      if (!tile.fills) tile.fills = buildFills(fill, lineArt, w, h);
+      ctx.drawImage(tile.fills, 0, 0, w, h);
+    } else {
+      ctx.drawImage(fill, 0, 0, w, h);
+    }
   }
   if (lineArt) drawLineArt(ctx, lineArt, theme, w, h);
   tile.vlabel.textContent = view;
