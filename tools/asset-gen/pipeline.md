@@ -10,8 +10,9 @@ the eye-failure gallery that produced today's gates) live in
 
 Companion docs: `README.md` (runbook), `contact-sheet.md` (review surface),
 the decision records in [`docs/`](docs/) — [pen/chalk
-fork](docs/pen-chalk-fork.md), [asset naming](docs/asset-naming.md), [fill
-vocabulary](docs/fill-vocabulary.md), [asset-gen
+fork](docs/pen-chalk-fork.md), [chalk edge
+crisping](docs/chalk-edge-crisping.md), [asset naming](docs/asset-naming.md),
+[fill vocabulary](docs/fill-vocabulary.md), [asset-gen
 architecture](docs/architecture.md) — plus ADR-0043 (magic-brush reveal) and
 ADR-0052 (dark mode) in `docs/adrs/`. Every illustration here is a frozen copy
 in `pipeline-assets/` — live assets regenerate, these don't.
@@ -144,6 +145,12 @@ candidates offline — no API — after a gate change):
    spider/caterpillar chalks whitened whole eyeballs — pupil included — which
    the registration gates can't see (the rings are all still traced) and the
    night-fill composite gate only catches after a fill has been burned.
+
+Candidates render to ink polarity through a **crisping S-curve**
+(`lib/crisp-ink.mjs`) instead of the pen tools' gentle contrast: on the dark
+board the invert + screen render and the binary night punch turn a soft
+antialias ramp or a faintly-grey ground into a ring of dark specks around
+every line ([decision record](docs/chalk-edge-crisping.md)).
 
 Judgment-call misfires the gates can't see (a chalk that whitens something
 canon says is dark — the ladybug's first take gave it white shell spots) are
