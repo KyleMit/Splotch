@@ -217,13 +217,14 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/space/cover.outline.webp',
     pages: [
-      // Night fills shipped for both orientations (ADR-0052).
-      page('space', 'astronaut', 'Astronaut', ['portrait', 'landscape']),
-      page('space', 'meteor', 'Meteor', ['portrait', 'landscape']),
-      page('space', 'moon', 'Moon', ['portrait', 'landscape']),
-      page('space', 'rover', 'Rover', ['portrait', 'landscape']),
-      page('space', 'ship', 'Ship', ['portrait', 'landscape']),
-      page('space', 'station', 'Station', ['portrait', 'landscape']),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page('space', 'astronaut', 'Astronaut', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('space', 'meteor', 'Meteor', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('space', 'moon', 'Moon', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('space', 'rover', 'Rover', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('space', 'ship', 'Ship', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('space', 'station', 'Station', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
   {
