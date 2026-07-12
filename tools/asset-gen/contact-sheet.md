@@ -53,14 +53,16 @@ fill:
   (the dark caption notes "no chalk (inverted pen)" when it does).
 - **color** — the generated colored fill alone (`.light.webp` in the light half,
   night fill in the dark half).
-- **combined** — the real canvas composite: the fills-only fill (its own
-  outlines punched with the themed line art as a mask — pen for the light half,
-  chalk for the night half where one exists; the same per-theme punch asset-gen
-  bakes into shipped fills, `lib/punch-fill.mjs`) under the themed line-art
-  layer, over the paper. The in-browser punch is a no-op on shipped fills (already
-  fills-only) and does the real work for `--source samples`, whose fresh takes
-  still carry outlines. **This is the view to trust when judging a fill** — a
-  bug like blown-out eyes only shows once the layers are merged.
+- **combined** — the real canvas composite: the fills-only fill under the
+  themed line-art layer, over the paper. Shipped fills draw **as-is** — they
+  are already fills-only (opaque, outline pixels inpainted with bled fill
+  color; `lib/punch-fill.mjs`, `docs/inpainted-fill-punch.md`) and re-cutting
+  them with a binary mask at render resolution is exactly what used to stitch
+  a dotted dark ring around every line in dark mode. Only `--source samples`
+  runs the in-browser punch (themed mask: pen light half, chalk night half),
+  because fresh takes still carry their own outlines. **This is the view to
+  trust when judging a fill** — a bug like blown-out eyes only shows once the
+  layers are merged.
 
 The compositing mirrors `DrawingCanvas.svelte` + `magicBrush.ts` (ADR-0043/0052).
 

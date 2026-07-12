@@ -305,3 +305,14 @@ a **build-time post-process** and the app ships the final image:
   reviews `--source samples`, whose fresh Gemini takes are raw lined fills that need
   the punch to preview the shipped look (on already-punched shipped fills it's a
   no-op).
+
+## Follow-up (2026-07): the punch now inpaints instead of cutting to transparency
+
+The build-time punch's mechanics changed: outline pixels are replaced by the
+surrounding fill color bled inward and the shipped fills are fully opaque (no
+alpha plane). The transparent holes resampled against the paper at display
+scale into a dotted dark ring around every line in dark mode. "Reveal fills
+only" is unchanged — the fill still carries no copy of the outlines. Details
+and the review-surface consequences (the contact sheet's `buildFills` now runs
+only for `--source samples`) live in
+[`tools/asset-gen/docs/inpainted-fill-punch.md`](../../tools/asset-gen/docs/inpainted-fill-punch.md).

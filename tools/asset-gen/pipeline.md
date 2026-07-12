@@ -11,7 +11,8 @@ the eye-failure gallery that produced today's gates) live in
 Companion docs: `README.md` (runbook), `contact-sheet.md` (review surface),
 the decision records in [`docs/`](docs/) — [pen/chalk
 fork](docs/pen-chalk-fork.md), [chalk edge
-crisping](docs/chalk-edge-crisping.md), [asset naming](docs/asset-naming.md),
+crisping](docs/chalk-edge-crisping.md), [inpainted fill
+punch](docs/inpainted-fill-punch.md), [asset naming](docs/asset-naming.md),
 [fill vocabulary](docs/fill-vocabulary.md), [asset-gen
 architecture](docs/architecture.md) — plus ADR-0043 (magic-brush reveal) and
 ADR-0052 (dark mode) in `docs/adrs/`. Every illustration here is a frozen copy
@@ -52,7 +53,7 @@ chronicled in [`legacy/README.md`](legacy/README.md).)
 | `{page}.chalk.webp` | `web/static/coloring/{book}/` | yes — the CHALK outline: dark-mode overlay + night punch mask, stored ink-on-white | `gen-coloring-chalk.mjs` from the pen |
 | `{page}.thumb.webp` | `web/static/coloring/{book}/` | yes — picker grid (from the pen; the picker inverts it in dark mode) | `gen-coloring-thumbs.mjs` |
 | `{page}.{light,night}.raw.webp` | `tools/asset-gen/fill-src/{book}/` | no — committed source of truth for fills, keeps its own outlines so audits can score registration | `gen-coloring-fills.mjs` / `gen-coloring-fills-dark.mjs` |
-| `{page}.{light,night}.webp` | `web/static/coloring/{book}/` | yes — magic-brush reveal, fills-only (outlines punched to alpha: pen mask for light, chalk mask for night) | `punch-fill-outlines.mjs` from the raw |
+| `{page}.{light,night}.webp` | `web/static/coloring/{book}/` | yes — magic-brush reveal, fills-only (outline pixels inpainted with bled fill color, opaque: pen mask for light, chalk mask for night) | `punch-fill-outlines.mjs` from the raw |
 
 Everything shipped is a **static, committed artifact** — no generation at
 build or run time, no server dependency, trivially cacheable. The renderer is
@@ -164,25 +165,32 @@ the pen.
 ## Stage 2 — The punch
 
 `npm run gen:coloring-punch -- [pages…]` re-derives every shipped fill from
-its committed raw: alpha = 0 where the line art is dark (luma < 150), 255
-elsewhere (`lib/punch-fill.mjs`). The mask is **per-theme**: light raws punch
-against the pen, night raws against the chalk when the page has one (both ship
-ink-on-white, so the mask math is identical; pages without a chalk fall back
-to the pen). Why: the app's overlay already draws the line art, so a revealed
-fill carrying its *own* copy of the outlines would double every line, and any
-drift between the copies shows as ghosting (ADR-0043 "reveal fills only").
-Punching the night fill with the chalk is also what makes the chalk's solid
-whites land in the final image: the fill's pixels there are removed, and the
-screened chalk white shows through. Deterministic and offline — after any raw,
-pen, or chalk change, re-punch.
+its committed raw: where the line art is dark (luma < 150) the fill's pixels
+are **inpainted** — replaced by the surrounding fill color bled inward — and
+the shipped fill is fully opaque (`lib/punch-fill.mjs`; [decision
+record](docs/inpainted-fill-punch.md) — the punch originally cut these pixels
+to transparency, whose alpha edge resampled against the dark paper into a
+dotted dark ring around every line at display scale). The mask is
+**per-theme**: light raws punch against the pen, night raws against the chalk
+when the page has one (both ship ink-on-white, so the mask math is identical;
+pages without a chalk fall back to the pen). Why: the app's overlay already
+draws the line art, so a revealed fill carrying its *own* copy of the outlines
+would double every line, and any drift between the copies shows as ghosting
+(ADR-0043 "reveal fills only"). Punching the night fill with the chalk is also
+what makes the chalk's solid whites land in the final image: the fill's own
+paint there is cleared to neighbor color, and the screened chalk white owns
+the region. Deterministic and offline — after any raw, pen, or chalk change,
+re-punch.
 
 ![outline, raw fill, punched fill](pipeline-assets/punch-outline-raw-punched-ant.webp)
 
 *Left to right: outline → raw light fill (keeps its outlines, committed to
 `fill-src/`) → the shipped punched fill composited over magenta so the
-punched-out line work is visible.*
+punched-out line work is visible. (Illustration from the transparent-punch
+era — today those pixels hold bled fill color instead of alpha holes.)*
 
-Sharp gotcha, documented in `CLAUDE.md` and worth repeating: never
+Sharp gotcha, documented in `CLAUDE.md` and worth repeating for any future
+alpha-carrying asset (the punch itself no longer ships alpha): never
 `joinChannel` an alpha plane and encode — sharp tags it as a generic extra
 channel and the encoder silently flattens it. Interleave an explicit RGBA
 buffer, and verify outputs with `sharp(out).metadata()` → `hasAlpha: true`.

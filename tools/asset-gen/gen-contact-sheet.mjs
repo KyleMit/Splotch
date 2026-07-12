@@ -111,7 +111,7 @@ const SHEET_DIR = join(ASSET_GEN_DIR, 'contact-sheet');
 const css = readFileSync(join(SHEET_DIR, 'contact-sheet.css'), 'utf8');
 const clientJs = readFileSync(join(SHEET_DIR, 'contact-sheet.client.js'), 'utf8');
 
-const bootData = JSON.stringify({ cells });
+const bootData = JSON.stringify({ cells, source });
 
 const html = `<title>Splotch contact sheet — ${book.name} · ${source}</title>
 <style>
