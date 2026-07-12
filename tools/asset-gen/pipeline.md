@@ -403,8 +403,35 @@ Hard-won process lessons:
 | Category | Pen outlines | Chalk outlines | Night fills | Notes |
 | --- | --- | --- | --- | --- |
 | Nature | ✅ thin-stroke, all 12 | ✅ all 12 | ✅ chalk-era; caterpillar-wide + ladybug-wide ship with a flat-pupil ⚠ | the pilot for the fork. The two wides' pen eyes use a SPIRAL catchlight instead of a clean pupil ring; the fill model reliably refuses to paint a spiral's interior dark (≥11 attempts each, notes + low temp). Durable fix: de-swirl those two pen eyes (as caterpillar-tall was), then regen their suites. `snail-wide` carries a 1-core flag the eye judged fine on review. |
-| Space, Farm, Dinosaurs, Creatures | ❌ accident-era | ❌ | shipped, pre-fork | owl (blob 1919), trex, dog, cat, dragon, etc. flagged by the audit — but see Stage 1: pen normalization is now optional |
-| Objects, Shapes, Vehicles | ❌ | ❌ | none yet | chalk + night fills together when each category is processed |
+| Space, Farm, Dinosaurs, Creatures | ❌ accident-era (normalization stays optional) | ✅ all 12 each | ✅ chalk-era regens | migrated 2026-07 in one autonomous batch (see below). The owl landed its predicted best case — huge solid-white sclera, black pupils + catchlights preserved. |
+| Objects, Shapes, Vehicles | ❌ | ✅ (11 / 11 / 12) | ✅ chalk-era (first night fills) | shapes' "geometric solids" turned out to be giant cartoon pupils — the face pipeline applied cleanly. vehicles/train-wide ships with a dark-outline ⚠ its composite disproved (below). |
+
+Every category now ships pen + chalk + light + night; `heart-tall` and
+`umbrella-wide` have full asset suites on disk but stay uncataloged in
+`books.ts` (single-orientation pages). Batch lessons from the 2026-07
+migration, all verified on overlays/composites before hand-shipping:
+
+- **The worst-tile keep gate can't credit whitened pen solids.** A chalk that
+  correctly whitens a big solid pupil into sclera + outlined pupil reads as
+  "untraced ink" in that tile (objects/flower-tall 75%, shapes' giant pupils
+  49–78%, both police cars, both owls, moon-tall). Every such candidate was
+  shipped only after its registration overlay showed the miss confined to the
+  deliberately whitened regions and its `.display.webp` read as proper chalk.
+  If a gate-side fix is ever wanted: whiten pen solids out of the keep
+  reference the way the normalizer whitens its reference (Stage 1 gate 4).
+- **Dark-bodied subjects can defeat the line-color gate without being wrong.**
+  vehicles/train-wide held lineW 51–105 through ~27 attempts of every lever
+  (strict gate, low temp, dilate, notes); its simulated composite
+  (`lib/night-composite.mjs`) rendered perfectly — the chalk owns the lines
+  and the punch clears the fill's ink. When a page resists the gate, render
+  the composite before burning more attempts.
+- **The eye-flavored redraw instruction can refuse eyeless scenes** —
+  objects/house-wide came back "there are no eyes in the image to edit."
+  A `--notes` telling the model the eyeless scene is expected fixed it in one
+  pass. Same lever fixed shapes/rectangle-wide whitening every shape solid.
+- **Flat-eye warnings on non-face cores are routine** (wheel hubs, roof
+  lights, grille slots, rover screens): the detector is calibrated on nature
+  faces. Every night-side FAIL in the audit was visually adjudicated lively.
 
 Next-category runbook: pen audit → normalize offenders if the light page
 warrants it (worst-first, `--apply`) → thumbs → light fills → **chalks**
@@ -412,20 +439,21 @@ warrants it (worst-first, `--apply`) → thumbs → light fills → **chalks**
 ship raws + punch → wire `books.ts` (`night` + `chalk` orientation lists) →
 all three audits → contact sheet review in both themes → checks → commit.
 
+The Stage 4 model input — the chalk as dark mode displays it (negated,
+white-on-black), here the owl whose sclera the chalk owns:
+
+![chalk display input](pipeline-assets/nightfill-chalk-input-owl.webp)
+
 ## Where the next problems are likely to come from
 
-- **Shapes is not a face category.** `circle-tall` (blob 1921),
-  `star-tall` (901), `rectangle-tall` (1266) carry big *geometric* solids.
-  The chalk generator's instruction is eye-flavored, the eye detector will be
-  inert (no nested triples), and a big pen solid is *new territory for the
-  chalk redraw*: should a solid star stay solid white chalk (probably — it's
-  under the 10% white budget only if small) or become an outline? Expect to
-  extend the instruction and lean on `--notes` and careful review; expect
-  night fills with almost no gate coverage beyond drift/night/line-color.
-- **The owl.** Its giant eyes are now the chalk's *best case* (huge sclera →
-  solid white chalk, exactly what a chalk artist would do) — but its pupils
-  are the biggest solids in the catalog and the raw night fill (which is
-  gorgeous) is the target to preserve. Consider `--notes` from the start.
+- ~~**Shapes is not a face category.**~~ Resolved 2026-07: the audit's
+  "geometric solids" were giant cartoon pupils — shapes IS a face category
+  and processed cleanly (rectangle-wide's whiten-everything misfire took one
+  outlines-only `--notes` retry; the whitened-pupil keep blind spot needed
+  hand-shipping, see the status-table lessons).
+- ~~**The owl.**~~ Resolved 2026-07: landed its predicted best case with no
+  `--notes` — solid white sclera, black pupils + catchlights preserved, and
+  the regenerated night fill kept the look the pre-fork raw had.
 - **Chalk whites the fill disagrees with.** The chalk decides what is white
   at authoring time; the night fill can't overrule it (the punch wins). A
   chalk that whitens something the night palette wanted colored (a tooth on a
@@ -463,9 +491,6 @@ all three audits → contact sheet review in both themes → checks → commit.
 
 ## Doc debt
 
-- The Stage 4 input illustration was dropped when the input switched to the
-  chalk; capture a fresh `chalk display input` illustration into
-  `pipeline-assets/` on the next category run.
 - `legacy/night-fills.md` preserves the pre-fork playbook verbatim; if a
   lever documented only there proves load-bearing again, migrate it here
   rather than linking into legacy from active docs.

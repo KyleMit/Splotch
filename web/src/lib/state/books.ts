@@ -111,13 +111,14 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/farm/cover.outline.webp',
     pages: [
-      // Night fills shipped for both orientations (ADR-0052).
-      page('farm', 'cat', 'Cat', ['portrait', 'landscape']),
-      page('farm', 'cow', 'Cow', ['portrait', 'landscape']),
-      page('farm', 'dog', 'Dog', ['portrait', 'landscape']),
-      page('farm', 'duck', 'Duck', ['portrait', 'landscape']),
-      page('farm', 'horse', 'Horse', ['portrait', 'landscape']),
-      page('farm', 'pig', 'Pig', ['portrait', 'landscape']),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page('farm', 'cat', 'Cat', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('farm', 'cow', 'Cow', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('farm', 'dog', 'Dog', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('farm', 'duck', 'Duck', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('farm', 'horse', 'Horse', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('farm', 'pig', 'Pig', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
   {
@@ -126,13 +127,14 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/dinosaur/cover.outline.webp',
     pages: [
-      // Night fills shipped for both orientations (ADR-0052).
-      page('dinosaur', 'brachiosaurus', 'Brachiosaurus', ['portrait', 'landscape']),
-      page('dinosaur', 'pterodactyl', 'Pterodactyl', ['portrait', 'landscape']),
-      page('dinosaur', 'stegosaurus', 'Stegosaurus', ['portrait', 'landscape']),
-      page('dinosaur', 'trex', 'T. Rex', ['portrait', 'landscape']),
-      page('dinosaur', 'triceratops', 'Triceratops', ['portrait', 'landscape']),
-      page('dinosaur', 'velociraptor', 'Velociraptor', ['portrait', 'landscape']),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page('dinosaur', 'brachiosaurus', 'Brachiosaurus', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('dinosaur', 'pterodactyl', 'Pterodactyl', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('dinosaur', 'stegosaurus', 'Stegosaurus', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('dinosaur', 'trex', 'T. Rex', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('dinosaur', 'triceratops', 'Triceratops', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('dinosaur', 'velociraptor', 'Velociraptor', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
   {
@@ -141,13 +143,14 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/creatures/cover.outline.webp',
     pages: [
-      // Night fills shipped for both orientations (ADR-0052).
-      page('creatures', 'dragon', 'Dragon', ['portrait', 'landscape']),
-      page('creatures', 'fairy', 'Fairy', ['portrait', 'landscape']),
-      page('creatures', 'mermaid', 'Mermaid', ['portrait', 'landscape']),
-      page('creatures', 'owl', 'Owl', ['portrait', 'landscape']),
-      page('creatures', 'pegasus', 'Pegasus', ['portrait', 'landscape']),
-      page('creatures', 'unicorn', 'Unicorn', ['portrait', 'landscape']),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page('creatures', 'dragon', 'Dragon', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('creatures', 'fairy', 'Fairy', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('creatures', 'mermaid', 'Mermaid', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('creatures', 'owl', 'Owl', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('creatures', 'pegasus', 'Pegasus', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('creatures', 'unicorn', 'Unicorn', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
   {
@@ -178,11 +181,13 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/objects/cover.outline.webp',
     pages: [
-      page('objects', 'apple', 'Apple'),
-      page('objects', 'balloon', 'Balloon'),
-      page('objects', 'flower', 'Flower'),
-      page('objects', 'house', 'House'),
-      page('objects', 'teddy', 'Teddy'),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page('objects', 'apple', 'Apple', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('objects', 'balloon', 'Balloon', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('objects', 'flower', 'Flower', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('objects', 'house', 'House', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('objects', 'teddy', 'Teddy', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
   {
@@ -191,11 +196,19 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/shapes/cover.outline.webp',
     pages: [
-      page('shapes', 'circle', 'Circle'),
-      page('shapes', 'rectangle', 'Rectangle'),
-      page('shapes', 'square', 'Square'),
-      page('shapes', 'star', 'Star'),
-      page('shapes', 'triangle', 'Triangle'),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page('shapes', 'circle', 'Circle', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page(
+        'shapes',
+        'rectangle',
+        'Rectangle',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page('shapes', 'square', 'Square', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('shapes', 'star', 'Star', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('shapes', 'triangle', 'Triangle', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
   {
@@ -204,13 +217,14 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/space/cover.outline.webp',
     pages: [
-      // Night fills shipped for both orientations (ADR-0052).
-      page('space', 'astronaut', 'Astronaut', ['portrait', 'landscape']),
-      page('space', 'meteor', 'Meteor', ['portrait', 'landscape']),
-      page('space', 'moon', 'Moon', ['portrait', 'landscape']),
-      page('space', 'rover', 'Rover', ['portrait', 'landscape']),
-      page('space', 'ship', 'Ship', ['portrait', 'landscape']),
-      page('space', 'station', 'Station', ['portrait', 'landscape']),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page('space', 'astronaut', 'Astronaut', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('space', 'meteor', 'Meteor', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('space', 'moon', 'Moon', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('space', 'rover', 'Rover', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('space', 'ship', 'Ship', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('space', 'station', 'Station', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
   {
@@ -219,12 +233,38 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/vehicles/cover.outline.webp',
     pages: [
-      page('vehicles', 'excavator', 'Excavator'),
-      page('vehicles', 'fire', 'Fire Truck'),
-      page('vehicles', 'garbage', 'Garbage Truck'),
-      page('vehicles', 'monster', 'Monster Truck'),
-      page('vehicles', 'police', 'Police Car'),
-      page('vehicles', 'train', 'Train'),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page(
+        'vehicles',
+        'excavator',
+        'Excavator',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page('vehicles', 'fire', 'Fire Truck', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page(
+        'vehicles',
+        'garbage',
+        'Garbage Truck',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page(
+        'vehicles',
+        'monster',
+        'Monster Truck',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page(
+        'vehicles',
+        'police',
+        'Police Car',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page('vehicles', 'train', 'Train', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
 ];
