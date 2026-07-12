@@ -111,13 +111,14 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/farm/cover.outline.webp',
     pages: [
-      // Night fills shipped for both orientations (ADR-0052).
-      page('farm', 'cat', 'Cat', ['portrait', 'landscape']),
-      page('farm', 'cow', 'Cow', ['portrait', 'landscape']),
-      page('farm', 'dog', 'Dog', ['portrait', 'landscape']),
-      page('farm', 'duck', 'Duck', ['portrait', 'landscape']),
-      page('farm', 'horse', 'Horse', ['portrait', 'landscape']),
-      page('farm', 'pig', 'Pig', ['portrait', 'landscape']),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page('farm', 'cat', 'Cat', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('farm', 'cow', 'Cow', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('farm', 'dog', 'Dog', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('farm', 'duck', 'Duck', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('farm', 'horse', 'Horse', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('farm', 'pig', 'Pig', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
   {
