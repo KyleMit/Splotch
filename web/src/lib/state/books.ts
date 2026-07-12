@@ -221,12 +221,38 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/vehicles/cover.outline.webp',
     pages: [
-      page('vehicles', 'excavator', 'Excavator'),
-      page('vehicles', 'fire', 'Fire Truck'),
-      page('vehicles', 'garbage', 'Garbage Truck'),
-      page('vehicles', 'monster', 'Monster Truck'),
-      page('vehicles', 'police', 'Police Car'),
-      page('vehicles', 'train', 'Train'),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page(
+        'vehicles',
+        'excavator',
+        'Excavator',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page('vehicles', 'fire', 'Fire Truck', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page(
+        'vehicles',
+        'garbage',
+        'Garbage Truck',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page(
+        'vehicles',
+        'monster',
+        'Monster Truck',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page(
+        'vehicles',
+        'police',
+        'Police Car',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page('vehicles', 'train', 'Train', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
 ];
