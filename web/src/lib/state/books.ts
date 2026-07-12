@@ -143,13 +143,14 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/creatures/cover.outline.webp',
     pages: [
-      // Night fills shipped for both orientations (ADR-0052).
-      page('creatures', 'dragon', 'Dragon', ['portrait', 'landscape']),
-      page('creatures', 'fairy', 'Fairy', ['portrait', 'landscape']),
-      page('creatures', 'mermaid', 'Mermaid', ['portrait', 'landscape']),
-      page('creatures', 'owl', 'Owl', ['portrait', 'landscape']),
-      page('creatures', 'pegasus', 'Pegasus', ['portrait', 'landscape']),
-      page('creatures', 'unicorn', 'Unicorn', ['portrait', 'landscape']),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page('creatures', 'dragon', 'Dragon', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('creatures', 'fairy', 'Fairy', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('creatures', 'mermaid', 'Mermaid', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('creatures', 'owl', 'Owl', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('creatures', 'pegasus', 'Pegasus', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('creatures', 'unicorn', 'Unicorn', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
   {
