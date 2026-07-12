@@ -178,11 +178,13 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/objects/cover.outline.webp',
     pages: [
-      page('objects', 'apple', 'Apple'),
-      page('objects', 'balloon', 'Balloon'),
-      page('objects', 'flower', 'Flower'),
-      page('objects', 'house', 'House'),
-      page('objects', 'teddy', 'Teddy'),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page('objects', 'apple', 'Apple', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('objects', 'balloon', 'Balloon', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('objects', 'flower', 'Flower', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('objects', 'house', 'House', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('objects', 'teddy', 'Teddy', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
   {
