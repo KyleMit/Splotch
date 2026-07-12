@@ -70,7 +70,7 @@ If you discover any doc, skill, or rule is out of date while working, update it 
 
 ## Architectural Decision Records
 
-`docs/adrs/` is the home for architectural decisions; the `adrs` skill is the entry point for consulting them.
+`docs/adrs/` is the home for architectural decisions; the `adrs` skill is the entry point for consulting them. One carve-out: decisions about the **asset-generation pipeline** (line art, coloring fills) live beside the pipeline as un-numbered records in `tools/asset-gen/docs/` — write new ones there, not as numbered ADRs (the ADR index marks the ones that moved).
 
 **When a significant decision is made or confirmed:** use `/create-adr` to document it. A decision is significant if it chose one approach over real alternatives, has non-obvious consequences, or encodes a constraint a future contributor would want to understand.
 

@@ -1,8 +1,12 @@
 # tools/asset-gen/ — asset-generation pipeline
 
 The AI/`sharp` tooling that produces Splotch's committed art. Read `README.md`
-here for the full runbook; the architecture rationale is **ADR-0053**. Key rules
-when working in this folder:
+here for the full runbook; the architecture rationale is **`docs/architecture.md`**. For the
+END-TO-END picture — outline normalization, the punch, day/night fills, every
+quality gate and the shipped regression that motivated it, iteration methods,
+and where future categories will likely break — read **`pipeline.md`** (its
+illustrations are frozen copies in `pipeline-assets/`; keep both updated as the
+pipeline evolves). Key rules when working in this folder:
 
 - **Not a workspace, not separately installed.** Deps (`sharp`, `@google/genai`)
   live in the repo-root `package.json` so the root `node_modules` stays flat for
@@ -17,6 +21,14 @@ when working in this folder:
   (`punch-fill-outlines.mjs`, root: `npm run gen:coloring-punch` — offline,
   deterministic). Never hand-edit a shipped fill, and after changing any raw,
   re-punch it. The drift audit scores the raws.
+- **Line work is forked per theme (the pen/chalk split — see `pipeline.md`).**
+  The PEN outline (`{page}.outline.webp`, black ink on white) drives light mode
+  and every derivation; the CHALK outline (`{page}.chalk.webp`,
+  `gen-coloring-chalk.mjs`) is the dedicated dark-mode line art with deliberate
+  solid whites (eye sclera, catchlights), **stored ink-on-white** — negate it
+  before showing it to Gemini or a human as "dark mode art". Night fills
+  condition on the chalk and punch against it; after changing a chalk,
+  regenerate the page's night fill and re-punch.
 - **The only sanctioned imports from `web/src`** are the four modules listed in
   `README.md` (styles, prompt, geminiSafety, books) — the app's single source of
   truth for prompts/safety/catalog. Don't reach into anything else under `web/src`.
@@ -26,8 +38,10 @@ when working in this folder:
   tags the 4th band as a generic extra channel, not alpha, so the webp/png encoder
   *silently* flattens it (output decodes `channels: 3, hasAlpha: false`, no error).
   Interleave an explicit RGBA buffer and construct `sharp(rgba, { raw: { width,
-  height, channels: 4 } })` instead (see `punchFill` in `lib/punch-fill.mjs`), and
-  verify outputs with `sharp(out).metadata()` → `hasAlpha: true`.
+  height, channels: 4 } })` instead, and verify outputs with
+  `sharp(out).metadata()` → `hasAlpha: true`. (No current asset ships alpha — the
+  punch inpaints instead of cutting holes, `docs/inpainted-fill-punch.md` — this
+  trap applies to any future alpha-carrying asset.)
 - **Outputs are committed artifacts**, reviewed by a human before shipping. The
   generators write shipped art into `web/static/` and review scratch into the
   gitignored `.coloring-samples*/`. Never commit the scratch dirs.
@@ -47,6 +61,8 @@ when working in this folder:
   so the change is visible in the session — the sheet is self-contained (images
   inlined as base64), so it renders in the sandbox; do NOT hand-composite a PNG.
   Judge on the **Combined** view.
-- **Dark-mode night fills** have their own detailed runbook in `night-fills.md`
-  (generate → review contact sheet → retouch line art if needed → ship → wire).
-  Read it before generating more.
+- **Retired techniques and failed approaches live in `legacy/`** (the
+  canonical-eye era's `night-fills.md` runbook and `retouch-line-art.mjs`,
+  plus the history chronicle in `legacy/README.md`). Nothing in there is part
+  of the current pipeline — `pipeline.md` is the live runbook; borrow from
+  legacy, don't follow it.

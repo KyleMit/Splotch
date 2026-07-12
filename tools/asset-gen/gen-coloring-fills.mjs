@@ -38,6 +38,8 @@ import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
+import { alignToSource } from './lib/align-to-source.mjs';
+import { scoreEyeFill, judgeLightEyes } from './lib/eye-fill.mjs';
 import { punchFill } from './lib/punch-fill.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
@@ -56,6 +58,7 @@ ABSOLUTE RULES — the colored image must line up perfectly on top of the origin
 COLORING STYLE:
 - Fill each region with one solid, flat, even color. No gradients, no shading, no highlights, no shadows, no extra outlines around the fills, no crayon or paint texture.
 - Choose simple, cheerful, natural colors that suit each part of the picture.
+- EYES: fill each outlined pupil solid BLACK, leave the small catchlight circle inside it pure white, and keep the surrounding eyeball white or a very pale tint — a classic lively cartoon eye.
 - Stay inside the lines; every fill should butt right up against the black outline without covering it.
 
 FILL EVERYTHING — no blank white:
@@ -90,89 +93,6 @@ export async function generateColoredPage(ai, { imageBytes, mimeType, temperatur
     throw new Error(`${classified.kind}: ${classified.reason}`);
   }
   return { bytes: Buffer.from(classified.data, 'base64'), mimeType: classified.mimeType };
-}
-
-// The model sometimes returns the fill nudged a few pixels (usually rightward)
-// even though it otherwise lines up perfectly. alignToSource detects that global
-// translation and shifts the colored image back into registration.
-//
-// It correlates edge maps rather than dark masks: the source's black lines and
-// the colored image's outlines are both strong edges, while flat fills are not —
-// so a solid dark fill can't pull the match off the outlines (which a plain
-// dark-pixel overlap would). The winning offset is the colored image's
-// displacement; the correction is its negation.
-const ALIGN_MAX = 12; // search radius (px) for the registration nudge
-const ALIGN_W = 1000; // work resolution for the correlation
-
-async function grayRaw(buf, w, h) {
-  const { data } = await sharp(buf)
-    .grayscale()
-    .resize(w, h, { fit: 'fill' })
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  return data;
-}
-
-function edgeMap(g, w, h) {
-  const e = new Float32Array(w * h);
-  for (let y = 0; y < h - 1; y++) {
-    for (let x = 0; x < w - 1; x++) {
-      const i = y * w + x;
-      e[i] = Math.abs(g[i] - g[i + 1]) + Math.abs(g[i] - g[i + w]);
-    }
-  }
-  return e;
-}
-
-export async function alignToSource(coloredBuf, sourceBuf, width, height) {
-  const w = Math.min(width, ALIGN_W);
-  const h = Math.round((height * w) / width);
-  const srcE = edgeMap(await grayRaw(sourceBuf, w, h), w, h);
-  const colE = edgeMap(await grayRaw(coloredBuf, w, h), w, h);
-  const idx = [];
-  const wt = [];
-  for (let i = 0; i < srcE.length; i++) {
-    if (srcE[i] > 60) {
-      idx.push(i);
-      wt.push(srcE[i]);
-    }
-  }
-  let best = { dx: 0, dy: 0, score: -1 };
-  for (let dy = -ALIGN_MAX; dy <= ALIGN_MAX; dy++) {
-    for (let dx = -ALIGN_MAX; dx <= ALIGN_MAX; dx++) {
-      let s = 0;
-      for (let k = 0; k < idx.length; k++) {
-        const i = idx[k];
-        const x = (i % w) + dx;
-        const y = ((i / w) | 0) + dy;
-        if (x < 0 || x >= w || y < 0 || y >= h) continue;
-        s += wt[k] * colE[y * w + x];
-      }
-      if (s > best.score) best = { dx, dy, score: s };
-    }
-  }
-  // Scale the detected displacement back to native pixels; the correction is its
-  // negation (undo the shift the model applied).
-  const scale = width / w;
-  const cdx = Math.round(-best.dx * scale);
-  const cdy = Math.round(-best.dy * scale);
-  if (cdx === 0 && cdy === 0) return { buffer: coloredBuf, dx: 0, dy: 0 };
-  const pad = Math.ceil(ALIGN_MAX * scale) + 1;
-  // Materialize the padded canvas first; chaining extend+extract in one pipeline
-  // lets sharp reorder them and mis-computes the window.
-  const extended = await sharp(coloredBuf)
-    .extend({ top: pad, bottom: pad, left: pad, right: pad, extendWith: 'copy' })
-    .toBuffer();
-  const clamp = (v, hi) => Math.max(0, Math.min(v, hi));
-  const buffer = await sharp(extended)
-    .extract({
-      left: clamp(pad - cdx, 2 * pad),
-      top: clamp(pad - cdy, 2 * pad),
-      width,
-      height,
-    })
-    .toBuffer();
-  return { buffer, dx: cdx, dy: cdy };
 }
 
 // Fraction of the image that is essentially pure white — a large value means big
@@ -260,13 +180,18 @@ function baseTempForSlot(i) {
   return samples === 1 ? 0.55 : 0.55 + i * 0.12;
 }
 
-// A candidate clears if it holds the outline globally AND in its worst tile, and
-// isn't mostly blank white.
+// A candidate clears if it holds the outline globally AND in its worst tile,
+// isn't mostly blank white, and painted the eyes (at least one nested eye core
+// reads lively — lib/eye-fill.mjs; pages with no eye cores pass vacuously).
 const passes = (c) =>
-  c.keep >= KEEP_THRESHOLD && c.localKeep >= LOCAL_KEEP_THRESHOLD && c.white <= WHITE_THRESHOLD;
+  c.keep >= KEEP_THRESHOLD &&
+  c.localKeep >= LOCAL_KEEP_THRESHOLD &&
+  c.white <= WHITE_THRESHOLD &&
+  c.eyesOk;
 // Rank for keeping the best of several imperfect attempts: fidelity is the hard
-// constraint (global then worst-tile), then prefer less leftover white.
-const rank = (c) => (passes(c) ? 1000 : 0) + c.localKeep * 200 + (1 - c.white) * 100 + c.keep;
+// constraint (global then worst-tile), then eyes, then less leftover white.
+const rank = (c) =>
+  (passes(c) ? 1000 : 0) + c.localKeep * 200 + (c.eyesOk ? 150 : 0) + (1 - c.white) * 100 + c.keep;
 
 // Generate, size-match, re-register onto the source outline, and score one
 // candidate; retry until it passes both gates, keeping the best attempt if none
@@ -286,9 +211,10 @@ async function renderClean(source, width, height, slot) {
     const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
     const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
-    const [{ keep, drift, localKeep, worstTile, overlay }, white] = await Promise.all([
+    const [{ keep, drift, localKeep, worstTile, overlay }, white, eyeScore] = await Promise.all([
       outlineMatch(source, colored),
       whiteFraction(colored),
+      scoreEyeFill(colored, source),
     ]);
     const cand = {
       colored,
@@ -298,6 +224,7 @@ async function renderClean(source, width, height, slot) {
       worstTile,
       overlay,
       white,
+      eyesOk: judgeLightEyes(eyeScore).passes,
       shift: { dx, dy },
       attempt,
     };
@@ -325,6 +252,7 @@ for (const page of pages) {
       if (keep < KEEP_THRESHOLD) warn.push('drifting');
       if (localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
       if (white > WHITE_THRESHOLD) warn.push('white');
+      if (!cand.eyesOk) warn.push('flat eyes');
       const flag = warn.length ? `  ⚠ ${warn.join(' + ')}` : '';
       const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%${nudge}`;
 

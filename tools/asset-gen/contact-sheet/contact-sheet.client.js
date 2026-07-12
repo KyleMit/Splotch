@@ -2,7 +2,7 @@
 // `window.__CONTACT_SHEET__` (a JSON blob) ahead of this script, so nothing here
 // is string-interpolated at build time — this file is plain, lintable JS that
 // reads its inputs from that global. See ../contact-sheet.md for the layer model.
-const { cells: CELLS } = window.__CONTACT_SHEET__;
+const { cells: CELLS, source: SOURCE } = window.__CONTACT_SHEET__;
 const RENDER_MAX = 640;
 const OUTLINE_LUMA = 150; // asset-gen's punch threshold (lib/punch-fill.mjs)
 const PAPER = { dark: '#211f29', light: '#fcfbf8' };
@@ -32,11 +32,14 @@ function fit(w, h) {
   return [Math.round(w * s), Math.round(h * s)];
 }
 
-// Fills-only fill: punch the fill's own outline pixels using the line art as a
-// mask (luma<OUTLINE_LUMA -> transparent) — the same punch asset-gen bakes into
-// the shipped fills (lib/punch-fill.mjs). Shipped fills arrive fills-only so this
-// is a no-op on them; it's what makes the Combined view faithful for `--source
-// samples`, whose fresh Gemini takes still carry their outlines.
+// Fills-only fill for `--source samples` ONLY: fresh Gemini takes still carry
+// their outlines, so punch them with the line art as a mask (luma<OUTLINE_LUMA
+// -> transparent), approximating the punch asset-gen bakes into shipped fills
+// (lib/punch-fill.mjs). Shipped fills are already fills-only (opaque, outline
+// pixels inpainted) and MUST be drawn as-is: re-cutting them here with a binary
+// mask at render resolution punches paper-holes whose resample phase never
+// matches the line art's — a dotted dark ring around every line in dark mode
+// (see tools/asset-gen/docs/inpainted-fill-punch.md).
 function buildFills(fill, lineArt, w, h) {
   const fc = document.createElement('canvas');
   fc.width = w;
@@ -74,12 +77,15 @@ function drawLineArt(ctx, lineArt, theme, w, h) {
 }
 
 // A tile is one themed half of a pair — its theme is fixed (light or dark);
-// only its view changes.
+// only its view changes. The dark half's line art is the CHALK outline
+// (ink-on-white, same polarity as the pen) where the page has one, falling
+// back to the pen — matching DrawingCanvas's themed overlay swap.
 function render(tile) {
   const { canvas, theme, imgs } = tile;
   const view = tile.view || gView;
   const fill = theme === 'dark' ? imgs.night : imgs.light;
-  const ref = fill || imgs.lineArt || imgs.light || imgs.night;
+  const lineArt = theme === 'dark' ? imgs.chalk || imgs.lineArt : imgs.lineArt;
+  const ref = fill || lineArt || imgs.light || imgs.night;
   if (!ref) {
     return;
   }
@@ -103,10 +109,14 @@ function render(tile) {
   ctx.fillRect(0, 0, w, h);
 
   if (view === 'combined' && fill) {
-    if (!tile.fills) tile.fills = buildFills(fill, imgs.lineArt, w, h);
-    ctx.drawImage(tile.fills, 0, 0, w, h);
+    if (SOURCE === 'samples') {
+      if (!tile.fills) tile.fills = buildFills(fill, lineArt, w, h);
+      ctx.drawImage(tile.fills, 0, 0, w, h);
+    } else {
+      ctx.drawImage(fill, 0, 0, w, h);
+    }
   }
-  if (imgs.lineArt) drawLineArt(ctx, imgs.lineArt, theme, w, h);
+  if (lineArt) drawLineArt(ctx, lineArt, theme, w, h);
   tile.vlabel.textContent = view;
 }
 
@@ -147,6 +157,12 @@ function buildHalf(pair, cell, theme, imgsP) {
     note.textContent = 'no night fill';
     cap.appendChild(note);
   }
+  if (theme === 'dark' && !cell.chalk) {
+    const note = document.createElement('span');
+    note.className = 'note';
+    note.textContent = 'no chalk (inverted pen)';
+    cap.appendChild(note);
+  }
   const pill = document.createElement('span');
   pill.className = 'pill ' + (theme === 'dark' ? 'night' : 'light');
   pill.textContent = theme === 'dark' ? 'NIGHT' : 'LIGHT';
@@ -155,8 +171,8 @@ function buildHalf(pair, cell, theme, imgsP) {
   fig.appendChild(cap);
   pair.appendChild(fig);
 
-  imgsP.then(([night, lineArt, light]) => {
-    const tile = { canvas, theme, vlabel: vl, imgs: { night, lineArt, light }, view: null };
+  imgsP.then(([night, lineArt, light, chalk]) => {
+    const tile = { canvas, theme, vlabel: vl, imgs: { night, lineArt, light, chalk }, view: null };
     tiles.push(tile);
     frame.addEventListener('click', () => {
       const cur = tile.view || gView;
@@ -173,7 +189,7 @@ function build() {
     const pair = document.createElement('div');
     pair.className = 'pair ' + c.orient;
     root.appendChild(pair);
-    const imgsP = Promise.all([load(c.night), load(c.lineArt), load(c.light)]);
+    const imgsP = Promise.all([load(c.night), load(c.lineArt), load(c.light), load(c.chalk)]);
     buildHalf(pair, c, 'light', imgsP);
     buildHalf(pair, c, 'dark', imgsP);
   }
