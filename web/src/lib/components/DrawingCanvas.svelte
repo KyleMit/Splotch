@@ -176,6 +176,17 @@
     setMagicMode(toolState.magic);
   });
 
+  // The overlay's line art is theme-aware: dark mode shows the page's CHALK
+  // outline where one exists (shipped ink-on-white, so the same
+  // --lineart-filter invert + screen treatment renders it as white chalk),
+  // falling back to inverting the pen outline for un-forked pages. Reading
+  // resolvedTheme() re-picks the art on a live theme switch.
+  const themedOverlayUrl = $derived(
+    resolvedTheme() === 'dark'
+      ? (coloringBookState.chalkUrl ?? coloringBookState.overlayUrl)
+      : coloringBookState.overlayUrl
+  );
+
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
   // and swaps the page art to the other tall/wide variant — a different
   // composition. Pointing the <img> straight at the new URL shows the old art
@@ -185,7 +196,7 @@
   // picker flows through the same gate.
   let displayedOverlayUrl = $state<string | null>(null);
   $effect(() => {
-    const url = coloringBookState.overlayUrl;
+    const url = themedOverlayUrl;
     displayedOverlayUrl = null;
     if (!url) return;
     let stale = false;

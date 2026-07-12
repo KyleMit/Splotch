@@ -35,13 +35,21 @@ const WEBP_EFFORT = 6;
 // Punch one raw fill (fill-src/{book}/{page}-{orient}.{light,night}.raw.webp) into
 // its shipped path under web/static/coloring/: alpha = 0 where the line art is
 // outline-dark, 255 elsewhere. Throws if the page's line art is missing.
+//
+// The mask is per-theme: light fills punch against the PEN outline
+// ({page}.outline.webp); night fills punch against the CHALK outline
+// ({page}.chalk.webp) when the page has one, so the chalk's deliberate solid
+// whites (eye sclera, catchlights) are cut from the fill and the chalk overlay's
+// white shows through in the combined image. The chalk ships ink-on-white — the
+// same dark-ink polarity as the pen — so the mask math is identical. Pages
+// without a chalk fall back to the pen outline (the pre-fork behavior).
 export async function punchFill(rawPath) {
   const rel = relative(FILL_SRC_DIR, rawPath).replace(/\\/g, '/');
   const shippedRel = rel.replace(/\.raw\.webp$/, '.webp');
-  const lineArtPath = join(
-    COLORING_DIR,
-    shippedRel.replace(/\.(light|night)\.webp$/, '.outline.webp')
-  );
+  const penPath = join(COLORING_DIR, shippedRel.replace(/\.(light|night)\.webp$/, '.outline.webp'));
+  const chalkPath = join(COLORING_DIR, shippedRel.replace(/\.(light|night)\.webp$/, '.chalk.webp'));
+  const lineArtPath =
+    shippedRel.endsWith('.night.webp') && existsSync(chalkPath) ? chalkPath : penPath;
   if (!existsSync(lineArtPath)) throw new Error(`Missing line art for ${rel}: ${lineArtPath}`);
 
   const {

@@ -14,6 +14,7 @@ import { existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { COLORING_DIR, FILL_SRC_DIR, fail } from './lib/paths.mjs';
 import { scoreEyeFill, judgeLightEyes, judgeNightEyes } from './lib/eye-fill.mjs';
+import { compositeNight } from './lib/night-composite.mjs';
 
 async function pagesUnder(sub = '') {
   const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
@@ -45,10 +46,19 @@ for (const page of pages) {
   const source = await readFile(page);
   const light = await scoreEyeFill(await readFile(lightPath), source);
   const lightVerdict = judgeLightEyes(light);
+  // With a chalk outline (pen/chalk fork, docs/pen-chalk-fork.md) the chalk owns the eye
+  // whites and the punch enforces them, so the night raw is judged as the
+  // simulated final composite; without one the raw IS what dark mode reveals.
   const nightPath = join(FILL_SRC_DIR, `${rel}.night.raw.webp`);
-  const night = existsSync(nightPath)
-    ? judgeNightEyes(await scoreEyeFill(await readFile(nightPath), source), light)
-    : null;
+  const chalkPath = page.replace(/\.outline\.webp$/, '.chalk.webp');
+  let night = null;
+  if (existsSync(nightPath)) {
+    const raw = await readFile(nightPath);
+    const judged = existsSync(chalkPath)
+      ? await compositeNight(raw, await readFile(chalkPath))
+      : raw;
+    night = judgeNightEyes(await scoreEyeFill(judged, source), light);
+  }
   audited++;
   const bad = !lightVerdict.passes || (night && !night.passes);
   if (bad) flagged++;

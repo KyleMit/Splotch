@@ -1,3 +1,11 @@
+// LEGACY — retired from the pipeline (2026-07, the pen/chalk fork:
+// docs/pen-chalk-fork.md). This is the canonical-eye era's retouch tool: it
+// reshapes eyes in the shared outline so the blanket invert(1) *accident*
+// landed well. The chalk outline now owns dark-mode eye whites, so the recipe
+// below is obsolete; the script is kept (runnable, no npm alias) because its
+// arbitrary --instruction mode is still a handy template for one-off Gemini
+// line-art edits. History and context: legacy/README.md.
+//
 // Retouch a coloring-page's BASE LINE ART with Gemini image editing, for a
 // "particularly hard section" that the color generators can't rescue downstream.
 // The motivating case (ADR-0052 / night fills): in dark mode the line art is
@@ -12,7 +20,7 @@
 // over web/static/coloring/<cat>/<page>-<orient>.outline.webp and regenerate the whole
 // related suite from it (light fill .light.webp via gen-coloring-fills, night fill via
 // gen-coloring-fills-dark, thumbnail via gen-coloring-thumbs), then re-review in the
-// contact sheet's Combined view in BOTH light and dark. See tools/asset-gen/night-fills.md.
+// contact sheet's Combined view in BOTH light and dark. See ./night-fills.md (legacy).
 //
 //   node --experimental-strip-types --disable-warning=ExperimentalWarning \
 //     tools/asset-gen/retouch-line-art.mjs <cat/page-orient...> [--instruction "..."] [--samples N] [-t F]
@@ -26,8 +34,8 @@ import { join, dirname } from 'node:path';
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { COLORING_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
-import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
+import { COLORING_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-2.5-flash-image';
 const WEBP_QUALITY = 92;
@@ -40,7 +48,7 @@ const OUT_DIR = join(SAMPLES_DARK_DIR, 'retouch');
 // (the pupil region is punched out of the reveal). The load-bearing element is the
 // GLARE — it becomes the pupil, so it must be present, single, and big enough; a
 // too-small glare gives a featureless white blob in dark mode (the mermaid bug).
-// See tools/asset-gen/night-fills.md ("Eyes" recipe). Written to touch ONLY the eyes.
+// See ./night-fills.md ("Eyes" recipe, legacy). Written to touch ONLY the eyes.
 const DEFAULT_INSTRUCTION = `This is a black-and-white children's COLORING PAGE — clean black outlines on a pure white background.
 
 Fix ONLY the main character's EYES so each reads as a simple, cute cartoon eye in this exact canonical form:

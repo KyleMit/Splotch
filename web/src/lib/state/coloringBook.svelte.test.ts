@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { coloringBookState, setOverlayPage, clearOverlay } from './coloringBook.svelte';
-import { BOOKS, bookAssetPaths, pageNightImage } from './books';
+import { BOOKS, bookAssetPaths, pageNightImage, pageChalkImage } from './books';
 
 const page = BOOKS[0].pages[0];
 const spaceBook = BOOKS.find((b) => b.id === 'space')!;
 const spacePage = spaceBook.pages[0];
-// A page with no night fill in any orientation. Synthetic rather than a catalog
-// page so the null-night-sheet test stays valid as more categories ship their
-// fills (eventually every catalog page has one).
-const pageWithoutNight = { ...page, nightImages: {} };
+// A page with no night fill or chalk outline in any orientation. Synthetic
+// rather than a catalog page so the null-fallback tests stay valid as more
+// categories ship their assets (eventually every catalog page has them).
+const pageWithoutNight = { ...page, nightImages: {}, chalkImages: {} };
 
 describe('coloring book state', () => {
   beforeEach(() => clearOverlay());
@@ -27,10 +27,11 @@ describe('coloring book state', () => {
     expect(coloringBookState.colorSheetUrl).toBe(page.colorImages.portrait);
   });
 
-  it('clearOverlay drops the line art, the color sheet, and the night sheet', () => {
+  it('clearOverlay drops the line art, the chalk, the color sheet, and the night sheet', () => {
     setOverlayPage(spacePage, 'portrait');
     clearOverlay();
     expect(coloringBookState.overlayUrl).toBeNull();
+    expect(coloringBookState.chalkUrl).toBeNull();
     expect(coloringBookState.colorSheetUrl).toBeNull();
     expect(coloringBookState.nightSheetUrl).toBeNull();
     expect(coloringBookState.overlayPage).toBeNull();
@@ -65,6 +66,19 @@ describe('coloring book state', () => {
     expect(coloringBookState.nightSheetUrl).toBeNull();
     expect(pageNightImage(pageWithoutNight, 'portrait')).toBeNull();
   });
+
+  it('tracks the chalk outline where one exists, null otherwise', () => {
+    const chalked = {
+      ...page,
+      chalkImages: { portrait: '/coloring/farm/cat-tall.chalk.webp' },
+    };
+    setOverlayPage(chalked, 'portrait');
+    expect(coloringBookState.chalkUrl).toBe('/coloring/farm/cat-tall.chalk.webp');
+    expect(pageChalkImage(chalked, 'portrait')).toBe('/coloring/farm/cat-tall.chalk.webp');
+    setOverlayPage(chalked, 'landscape');
+    expect(coloringBookState.chalkUrl).toBeNull();
+    expect(pageChalkImage(chalked, 'landscape')).toBeNull();
+  });
 });
 
 describe('book asset manifest', () => {
@@ -76,8 +90,9 @@ describe('book asset manifest', () => {
         expect(paths).toContain(p.images.landscape);
         expect(paths).toContain(p.colorImages.portrait);
         expect(paths).toContain(p.colorImages.landscape);
-        // Night fills are listed only where they exist, so check-assets guards them too.
-        for (const url of Object.values(p.nightImages)) {
+        // Night fills and chalk outlines are listed only where they exist, so
+        // check-assets guards them too.
+        for (const url of [...Object.values(p.nightImages), ...Object.values(p.chalkImages)]) {
           expect(paths).toContain(url);
         }
       }

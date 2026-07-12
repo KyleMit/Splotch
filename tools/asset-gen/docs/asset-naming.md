@@ -1,6 +1,7 @@
-# ADR-0054: Uniform Dot-Separated Variant Suffixes for Coloring Assets (`{name}.{variant}.webp`)
+# Uniform Dot-Separated Variant Suffixes for Coloring Assets (`{name}.{variant}.webp`)
 
-**Status:** Active
+**Decision record** — in force. Originally ADR-0054 in `docs/adrs/`; moved here 2026-07 so the
+asset-generation pipeline's decisions live beside the pipeline (the ADR index notes the move).
 **Date:** 2026-07
 
 ## Context
@@ -55,7 +56,7 @@ Key implementation points:
 - CLI page arguments stay suffix-free (`farm/dog-wide`); each script appends
   `.outline.webp` when resolving them, and the dark generator's review samples
   in `.coloring-samples-dark/` stay bare (`dog-wide.webp`) — the `.night.raw`
-  suffix is added at ship time (`night-fills.md`).
+  suffix is added at ship time (the night-fill runbook, now `../legacy/night-fills.md`).
 - The E2E overlay assertions (`web/tests/flows.spec.ts`) pin the overlay `src`
   to `-{tall,wide}.outline.webp`.
 

@@ -5,13 +5,23 @@
 //
 // Image storage format:
 //   static/coloring/{book}/cover.outline.webp         cover line art, 1:1
-//   static/coloring/{book}/{page}-tall.outline.webp   portrait line art, 2:3
-//   static/coloring/{book}/{page}-wide.outline.webp   landscape line art, 3:2
+//   static/coloring/{book}/{page}-tall.outline.webp   portrait PEN outline, 2:3
+//   static/coloring/{book}/{page}-wide.outline.webp   landscape PEN outline, 3:2
+//   static/coloring/{book}/{page}-tall.chalk.webp     portrait CHALK outline (dark mode)
+//   static/coloring/{book}/{page}-wide.chalk.webp     landscape CHALK outline (dark mode)
 //   static/coloring/{book}/{name}.thumb.webp          grid thumbnail of the line art
 //   static/coloring/{book}/{page}-tall.light.webp     portrait colored fill
 //   static/coloring/{book}/{page}-wide.light.webp     landscape colored fill
 //   static/coloring/{book}/{page}-tall.night.webp     portrait night fill (dark mode)
 //   static/coloring/{book}/{page}-wide.night.webp     landscape night fill (dark mode)
+//
+// The PEN outline (black ink on white) is the light-mode overlay and the source
+// every other asset derives from. The CHALK outline is the dark-mode overlay —
+// a Gemini redraw of the pen as a chalk drawing whose deliberate solid whites
+// (eye sclera, catchlights) survive into the night render. It ships INK-ON-WHITE
+// (the negation of what dark mode shows) so the existing dark treatment
+// (--lineart-filter: invert(1) + screen) renders it unchanged; orientations
+// without a chalk fall back to inverting the pen (tools/asset-gen/gen-coloring-chalk.mjs).
 //
 // Each picker-facing line-art image (cover + pages) has a `.thumb.webp` sibling
 // (tools/asset-gen/gen-coloring-thumbs.mjs): the picker grid shows the thumbnail, the
@@ -43,6 +53,11 @@ export interface ColoringPage {
       (ADR-0052 direction B). Only present for orientations whose night asset has
       been generated; dark mode falls back to the light fill where it's absent. */
   nightImages: Partial<Record<BookOrientation, string>>;
+  /** Chalk outline per orientation — the dedicated dark-mode line art, shipped
+      ink-on-white so the dark --lineart-* treatment renders it unchanged. Only
+      present for orientations whose chalk has been generated; dark mode falls
+      back to inverting the pen outline (`images`) where it's absent. */
+  chalkImages: Partial<Record<BookOrientation, string>>;
 }
 
 export interface Book {
@@ -55,13 +70,24 @@ export interface Book {
 
 export const PLATFORMS = { WEB: 'web', MOBILE: 'mobile' } as const;
 
-// `night` lists the orientations that have a generated `.night.webp` fill (empty
-// until a category is processed; portrait/landscape naming mirrors tall/wide).
-function page(book: string, id: string, name: string, night: BookOrientation[] = []): ColoringPage {
+// `night` lists the orientations that have a generated `.night.webp` fill, and
+// `chalk` the ones with a generated `.chalk.webp` outline (both empty until a
+// category is processed; portrait/landscape naming mirrors tall/wide).
+function page(
+  book: string,
+  id: string,
+  name: string,
+  night: BookOrientation[] = [],
+  chalk: BookOrientation[] = []
+): ColoringPage {
   const nightImages: Partial<Record<BookOrientation, string>> = {};
   if (night.includes('portrait')) nightImages.portrait = `/coloring/${book}/${id}-tall.night.webp`;
   if (night.includes('landscape'))
     nightImages.landscape = `/coloring/${book}/${id}-wide.night.webp`;
+  const chalkImages: Partial<Record<BookOrientation, string>> = {};
+  if (chalk.includes('portrait')) chalkImages.portrait = `/coloring/${book}/${id}-tall.chalk.webp`;
+  if (chalk.includes('landscape'))
+    chalkImages.landscape = `/coloring/${book}/${id}-wide.chalk.webp`;
   return {
     id,
     name,
@@ -74,6 +100,7 @@ function page(book: string, id: string, name: string, night: BookOrientation[] =
       landscape: `/coloring/${book}/${id}-wide.light.webp`,
     },
     nightImages,
+    chalkImages,
   };
 }
 
@@ -129,13 +156,20 @@ export const BOOKS: Book[] = [
     platforms: ['web', 'mobile'],
     cover: '/coloring/nature/cover.outline.webp',
     pages: [
-      // Night fills shipped for both orientations (ADR-0052).
-      page('nature', 'ant', 'Ant', ['portrait', 'landscape']),
-      page('nature', 'bee', 'Bee', ['portrait', 'landscape']),
-      page('nature', 'caterpillar', 'Caterpillar', ['portrait', 'landscape']),
-      page('nature', 'ladybug', 'Ladybug', ['portrait', 'landscape']),
-      page('nature', 'snail', 'Snail', ['portrait', 'landscape']),
-      page('nature', 'spider', 'Spider', ['portrait', 'landscape']),
+      // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      page('nature', 'ant', 'Ant', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('nature', 'bee', 'Bee', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page(
+        'nature',
+        'caterpillar',
+        'Caterpillar',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page('nature', 'ladybug', 'Ladybug', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('nature', 'snail', 'Snail', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('nature', 'spider', 'Spider', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
   {
@@ -213,6 +247,12 @@ export function pageNightImage(page: ColoringPage, orientation: BookOrientation)
   return page.nightImages[orientation] ?? null;
 }
 
+/** Chalk-outline path for the orientation, or null when none is generated yet
+    (dark mode then falls back to inverting the pen outline). */
+export function pageChalkImage(page: ColoringPage, orientation: BookOrientation): string | null {
+  return page.chalkImages[orientation] ?? null;
+}
+
 /** Grid-thumbnail path for a picker-facing line-art image (`x.outline.webp` -> `x.thumb.webp`). */
 export function thumbPath(src: string): string {
   return src.replace(/\.outline\.webp$/, '.thumb.webp');
@@ -238,5 +278,12 @@ export function bookAssetPaths(book: Book): string[] {
       .map((o) => page.nightImages[o])
       .filter((p): p is string => !!p)
   );
-  return [...lineArt, ...lightFills, ...nightFills, ...lineArt.map(thumbPath)];
+  // Chalk outlines exist only for forked orientations — the full-screen overlay
+  // swaps to them in dark mode; the picker keeps inverting the pen thumbnail.
+  const chalkOutlines = book.pages.flatMap((page) =>
+    (['portrait', 'landscape'] as BookOrientation[])
+      .map((o) => page.chalkImages[o])
+      .filter((p): p is string => !!p)
+  );
+  return [...lineArt, ...lightFills, ...nightFills, ...chalkOutlines, ...lineArt.map(thumbPath)];
 }

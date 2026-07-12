@@ -1,8 +1,28 @@
-# Night coloring fills — generation runbook
+# Night coloring fills — generation runbook (LEGACY, canonical-eye / single-outline era)
+
+> **RETIRED 2026-07.** This is the night-fill playbook as written before the
+> pen/chalk fork (`../docs/pen-chalk-fork.md`). The live runbook — chalk-first
+> flow, current gates, stubborn-page levers, ship/wire steps — is
+> **`../pipeline.md`**; this copy is preserved for its era-specific knowledge:
+> the canonical-eye recipe, the "eyes are line-art-driven" model, the mermaid
+> saga, and the per-page lever history (dog-wide, duck-tall, unicorn-wide).
+> `retouch-line-art.mjs`, referenced throughout, also lives in this folder now.
 
 How to generate, review, and ship the dark-mode **night fills** for coloring
-pages. Architecture (why they exist, how they render) lives in **ADR-0052**; this
-is the operational playbook. Owner script: `tools/asset-gen/gen-coloring-fills-dark.mjs`.
+pages, as practiced in the single-outline era. Architecture: **ADR-0052**.
+Owner script: `tools/asset-gen/gen-coloring-fills-dark.mjs` (still the active
+generator — its documentation migrated to `../pipeline.md`).
+
+> **The pen/chalk fork (`../pipeline.md`) changed the front of this
+> flow.** Pages now get a dedicated dark-mode CHALK outline
+> (`{page}.chalk.webp`, `npm run gen:coloring-chalk`) with deliberate solid
+> whites; the night-fill generator conditions on it and the punch masks the
+> night fill with it. Generate the chalk BEFORE the night fill. The
+> "eyes-are-line-art-driven" / canonical-eye guidance below predates the fork
+> and applies only to un-chalked categories; the gate documentation and the
+> ship/wire steps are still accurate (wire `chalk` orientations in `books.ts`
+> alongside `night` — `page('nature', 'ant', 'Ant', ['portrait', 'landscape'],
+> ['portrait', 'landscape'])`).
 
 ## What a night fill is
 
