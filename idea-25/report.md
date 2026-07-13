@@ -182,5 +182,5 @@ need to distinguish "asset PRs" (which the workflow currently has no mechanism f
 2. If #23's golden score fixtures also land, note in both docs that the pair closes each other's
    blind spot (scores without bytes / bytes without scores).
 3. Mention `gen:assets:manifest` in `tools/asset-gen/pipeline.md`'s shipping runbook (after re-punch
-   + contact sheet: regenerate the manifest) — left out of the patch as a docs judgment call for the
+   \+ contact sheet: regenerate the manifest) — left out of the patch as a docs judgment call for the
    adopting session.

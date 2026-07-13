@@ -111,7 +111,7 @@ seal every stroke-bounded region at close radius 0 — the normalized outlines
 2. **Hybrid shading question**: a single low-strength img2img pass over the
    deterministic base could restore blush/soft shading, but it reintroduces
    the drift risk this idea exists to kill; if tried, it must re-run the punch
-   + drift gates (the deterministic base at least guarantees the *colors*
+   \+ drift gates (the deterministic base at least guarantees the *colors*
    can't wander). The mermaid result suggests the hybrid may not be needed for
    shipping quality; the circle result suggests it would help the simplest
    pages most.
