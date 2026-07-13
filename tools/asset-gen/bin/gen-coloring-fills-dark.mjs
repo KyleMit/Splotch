@@ -82,7 +82,7 @@ const DRIFT_THRESHOLD_DEFAULT = 0.004;
 // sit at ~15-32; sky-blue daytime is ~150+.
 const NIGHT_W = 384;
 const NIGHT_SRC_LIGHT = 170; // source pixel brighter than this = background candidate
-const NIGHT_BG_LUMA_MAX_DEFAULT = 100; // median background luma above this = too bright / daytime
+const NIGHT_BG_LUMA_MAX_DEFAULT = 60; // median background luma above this = too bright / daytime (3.1-migration bar; shipped catalog is 18-48)
 const NIGHT_MIN_BG_FRAC = 0.04; // skip the check if there's barely any open background
 
 async function scoreNightness(fillBuf, sourceBuf) {
