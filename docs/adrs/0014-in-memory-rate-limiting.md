@@ -1,30 +1,53 @@
 # ADR-0014: In-Memory Rate Limiting (Per-Instance Sliding Window)
 
-**Status:** Active  
+**Status:** Active\
 **Date:** 2025
 
 ## Context
 
-The `/api/generate-image` endpoint consumes the project's Gemini API quota. A leaked or abused access token could exhaust quota rapidly if not throttled. Options for rate limiting:
+The `/api/generate-image` endpoint consumes the project's Gemini API quota. A leaked or abused
+access token could exhaust quota rapidly if not throttled. Options for rate limiting:
 
-- **Shared durable store (Redis, Netlify Blobs counter)** — accurate across all Netlify function instances; adds latency and a dependency on an external store being available.
-- **In-memory per-instance Map** — zero latency, no external dependency; but each Netlify cold start gets a fresh counter, and concurrent instances don't share state.
-- **No rate limiting** — rely solely on token revocation via the `/admin` console.
+* **Shared durable store (Redis, Netlify Blobs counter)** — accurate across all Netlify function
+  instances; adds latency and a dependency on an external store being available.
+* **In-memory per-instance Map** — zero latency, no external dependency; but each Netlify cold start
+  gets a fresh counter, and concurrent instances don't share state.
+* **No rate limiting** — rely solely on token revocation via the `/admin` console.
 
 ## Decision
 
-Use an **in-memory sliding-window rate limiter** (`src/lib/server/rateLimit.ts`) backed by a module-level `Map<key, number[]>`. Each entry records timestamps of recent hits; hits older than the window are pruned on each call.
+Use an **in-memory sliding-window rate limiter** (`src/lib/server/rateLimit.ts`) backed by a
+module-level `Map<key, number[]>`. Each entry records timestamps of recent hits; hits older than the
+window are pruned on each call.
 
-Default limits on the managed (non-BYOK) generate endpoint: **15 requests per 60-second window** per token. BYOK requests (users supplying their own Gemini key) spend their own quota, so they get a deliberately generous **per-IP** limit (30/min) rather than none: any non-empty `apiKey` reaches the BYOK branch unauthenticated, and the 502-vs-200 outcome is a key-validity oracle that would otherwise sidestep `/api/verify-key`'s limiter — so the branch still falls under the "every unauthenticated oracle is rate-limited per IP" rule, with a ceiling high enough that a valid key's legitimate use is never the binding constraint.
+Default limits on the managed (non-BYOK) generate endpoint: **15 requests per 60-second window** per
+token. BYOK requests (users supplying their own Gemini key) spend their own quota, so they get a
+deliberately generous **per-IP** limit (30/min) rather than none: any non-empty `apiKey` reaches the
+BYOK branch unauthenticated, and the 502-vs-200 outcome is a key-validity oracle that would
+otherwise sidestep `/api/verify-key`'s limiter — so the branch still falls under the "every
+unauthenticated oracle is rate-limited per IP" rule, with a ceiling high enough that a valid key's
+legitimate use is never the binding constraint.
 
-The limiter also serves the credential-verification endpoints (`/api/verify-access-code`, `/api/verify-key`) to blunt brute-force scanning. An invalid managed token at `/api/generate-image` is the same access-code oracle, so failed guesses draw on the `verify-access-code` per-IP bucket — checked read-only (`peekRateLimit`) before the allowlist lookup so a limited IP gets a blind 429, and recorded only when the guess fails, so valid tokens stay keyed per token.
+The limiter also serves the credential-verification endpoints (`/api/verify-access-code`,
+`/api/verify-key`) to blunt brute-force scanning. An invalid managed token at `/api/generate-image`
+is the same access-code oracle, so failed guesses draw on the `verify-access-code` per-IP bucket —
+checked read-only (`peekRateLimit`) before the allowlist lookup so a limited IP gets a blind 429,
+and recorded only when the guess fails, so valid tokens stay keyed per token.
 
-An opportunistic cleanup pass runs when the `buckets` Map exceeds 5,000 entries to prevent unbounded memory growth from large numbers of distinct source IPs.
+An opportunistic cleanup pass runs when the `buckets` Map exceeds 5,000 entries to prevent unbounded
+memory growth from large numbers of distinct source IPs.
 
 ## Consequences
 
-- **+** Zero added latency — no async I/O on every request.
-- **+** No external dependency; works identically in local dev and in production.
-- **-** State resets on cold start. A token that hit the limit resets its counter when the function instance is recycled. This is acceptable: the limit is a **cost guardrail** to blunt a tight hammering loop, not a hard security boundary. The real response to a rogue token is revocation via the admin console.
-- **-** Concurrent Netlify instances don't share state — a token could exceed the per-instance limit on one instance while staying under limit on another. In practice, Netlify routes similar traffic to the same warm instance, but this is not guaranteed.
-- **-** If a durable, cross-instance rate limit is ever required, the `Map` should be replaced with a Netlify Blobs counter (the code already shows this path in a comment; the Blobs storage model and its eventual-consistency constraint are in ADR-0025).
+* **+** Zero added latency — no async I/O on every request.
+* **+** No external dependency; works identically in local dev and in production.
+* **-** State resets on cold start. A token that hit the limit resets its counter when the function
+  instance is recycled. This is acceptable: the limit is a **cost guardrail** to blunt a tight
+  hammering loop, not a hard security boundary. The real response to a rogue token is revocation via
+  the admin console.
+* **-** Concurrent Netlify instances don't share state — a token could exceed the per-instance limit
+  on one instance while staying under limit on another. In practice, Netlify routes similar traffic
+  to the same warm instance, but this is not guaranteed.
+* **-** If a durable, cross-instance rate limit is ever required, the `Map` should be replaced with
+  a Netlify Blobs counter (the code already shows this path in a comment; the Blobs storage model
+  and its eventual-consistency constraint are in ADR-0025).

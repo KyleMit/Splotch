@@ -1,4 +1,5 @@
 ✨ New
+
 • Parent Center: a slider to resize the on-screen buttons.
 • Save your drawings straight to a folder on your computer (web).
 • A fullscreen button for a distraction-free canvas (web).
@@ -6,11 +7,13 @@
 • Native Apple Pencil support, including a double-tap-to-erase setting.
 
 🚀 Improved
+
 • Faster first load and quicker startup.
 • Bigger, easier-to-tap buttons and color swatches.
 • Sliders now snap to their default value.
 
 🛠 Fixed
+
 • Apple Pencil strokes and quick taps no longer get dropped.
 • White strokes are now easy to see while drawing.
 • The color palette stays centered in landscape.

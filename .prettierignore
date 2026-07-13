@@ -14,8 +14,10 @@ web/tests/**/*-snapshots/
 # would leave the check permanently red.
 tools/asset-gen/ideas-exploration/ideas-review.html
 
-# Deliberately out of Prettier scope for now — remove these to bring docs/configs into the check
+# Markdown is owned by dprint (dprint.json, ADR-0057) — permanently out of Prettier scope
 *.md
+
+# Deliberately out of Prettier scope for now — remove these to bring configs into the check
 *.json
 *.yml
 *.yaml

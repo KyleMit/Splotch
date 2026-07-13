@@ -1,0 +1,6 @@
+{
+  "[markdown]": {
+    "editor.defaultFormatter": "dprint.dprint",
+    "editor.tabSize": 2
+  }
+}

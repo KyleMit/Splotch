@@ -1,52 +1,49 @@
 # asset-gen — Splotch asset-generation pipeline
 
-The AI (`@google/genai`) and image-processing (`sharp`) tooling that **produces**
-Splotch's committed art: AI style covers, the light/dark coloring-page fills,
-picker thumbnails, and format/line-art utilities. It lives in its own folder so
-you can iterate on it in a small footprint — the app never runs any of this at
-build time; it just reads the committed outputs from `web/static/`.
+The AI (`@google/genai`) and image-processing (`sharp`) tooling that **produces** Splotch's
+committed art: AI style covers, the light/dark coloring-page fills, picker thumbnails, and
+format/line-art utilities. It lives in its own folder so you can iterate on it in a small footprint
+— the app never runs any of this at build time; it just reads the committed outputs from
+`web/static/`.
 
-Architecture and the "why a folder, not a workspace/repo" decision: **[`docs/architecture.md`](docs/architecture.md)**.
+Architecture and the "why a folder, not a workspace/repo" decision:
+**[`docs/architecture.md`](docs/architecture.md)**.
 
 ## Where it sits in the repo
 
-This is a self-contained project, **not** an npm workspace and **not** separately
-installed. Its dependencies (`sharp`, `@google/genai`) live in the **repo-root**
-`package.json` so the root `node_modules` stays flat for `cap sync` +
-`patch-package` (ADR-0029). Node resolves those binaries by walking up from here
-into the root `node_modules`, so there is nothing to install in this folder —
-**do not run `npm install` here.**
+This is a self-contained project, **not** an npm workspace and **not** separately installed. Its
+dependencies (`sharp`, `@google/genai`) live in the **repo-root** `package.json` so the root
+`node_modules` stays flat for `cap sync` + `patch-package` (ADR-0029). Node resolves those binaries
+by walking up from here into the root `node_modules`, so there is nothing to install in this folder
+— **do not run `npm install` here.**
 
-Path/tree resolution is centralized in `lib/paths.mjs` (`REPO_ROOT`,
-`COLORING_DIR`, `STYLES_DIR`, `FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`)
-so the scripts never hardcode `../../..` walks or reach back into `scripts/lib/`.
+Path/tree resolution is centralized in `lib/paths.mjs` (`REPO_ROOT`, `COLORING_DIR`, `STYLES_DIR`,
+`FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) so the scripts never hardcode `../../..` walks or
+reach back into `scripts/lib/`.
 
 ### Raw fills vs shipped fills
 
-`fill-src/{book}/{page}-{orient}.{light,night}.raw.webp` (committed, in this
-folder, never shipped) holds the colored fills **with their outlines intact** —
-the raw model output. The shipped `web/static/coloring/**/*.{light,night}.webp`
-are the fills-only **punch** of those raws: `punch-fill-outlines.mjs` masks each
-raw's own outline pixels out using the page's line art, because the app's overlay
-`<img>` already draws the line art on top and revealing the fill's copy would
-double every line (ADR-0043 "reveal fills only"). The punch is deterministic,
-offline `sharp` — no key, no network — so the shipped fills are always a pure,
-reproducible derivation of the raws. Edit or regenerate a raw, then re-punch;
-never hand-edit a shipped fill.
+`fill-src/{book}/{page}-{orient}.{light,night}.raw.webp` (committed, in this folder, never shipped)
+holds the colored fills **with their outlines intact** — the raw model output. The shipped
+`web/static/coloring/**/*.{light,night}.webp` are the fills-only **punch** of those raws:
+`punch-fill-outlines.mjs` masks each raw's own outline pixels out using the page's line art, because
+the app's overlay `<img>` already draws the line art on top and revealing the fill's copy would
+double every line (ADR-0043 "reveal fills only"). The punch is deterministic, offline `sharp` — no
+key, no network — so the shipped fills are always a pure, reproducible derivation of the raws. Edit
+or regenerate a raw, then re-punch; never hand-edit a shipped fill.
 
 ### The one coupling to the app
 
 The AI generators reuse the app's single source of truth rather than duplicating
-prompts/safety/catalog. This is the **entire** sanctioned import surface from
-`web/src` — keep it to these four modules (ADR-0047 keeps `geminiSafety.ts`
-dependency-free precisely so this stays clean):
+prompts/safety/catalog. This is the **entire** sanctioned import surface from `web/src` — keep it to
+these four modules (ADR-0047 keeps `geminiSafety.ts` dependency-free precisely so this stays clean):
 
-| Import | Used by |
-| --- | --- |
-| `web/src/lib/ai/styles.ts` | `gen-style-covers` |
-| `web/src/lib/ai/prompt.ts` | `gen-style-covers` |
+| Import                                  | Used by                |
+| --------------------------------------- | ---------------------- |
+| `web/src/lib/ai/styles.ts`              | `gen-style-covers`     |
+| `web/src/lib/ai/prompt.ts`              | `gen-style-covers`     |
 | `web/src/lib/server/ai/geminiSafety.ts` | every Gemini generator |
-| `web/src/lib/state/books.ts` | `gen-contact-sheet` |
+| `web/src/lib/state/books.ts`            | `gen-contact-sheet`    |
 
 ## Running
 
@@ -63,33 +60,30 @@ npm run gen:coloring-thumbs     # picker thumbnails     -> web/static/coloring/*
 npm run gen:contact-sheet -- nature # HTML contact sheet of ONE category (gitignored) — publish as an Artifact
 ```
 
-**Whenever you touch an asset — generate, retouch, regenerate, or ship a
-fill — rebuild the contact sheet for the affected page/category and publish it
-with the Artifact tool** so the change is visible in the session (see "Viewing a
-review sheet" below).
+**Whenever you touch an asset — generate, retouch, regenerate, or ship a fill — rebuild the contact
+sheet for the affected page/category and publish it with the Artifact tool** so the change is
+visible in the session (see "Viewing a review sheet" below).
 
 ### Fill outline drift & the audit
 
-A colored fill must register on its line art pixel-for-pixel — the magic brush
-(ADR-0043) reveals the fill's fills under the overlay's lines, so a drifted region
-shows the wrong colour outside the lines. `gen-coloring-fills` scores every
-candidate two ways (`lib/outline-match.mjs`): global outline coverage (`keep`) and
-the **worst grid tile** (`localKeep`). The local bar is the important one — a large
-aligned subject can hold a 93% global keep while one small feature (a flower) sits
-at 34%, which is exactly how `nature/ant-wide` shipped drifted. `alignToSource`
-only corrects a single global nudge, so a self-drifted feature can't be aligned
-away; a failing candidate is retried, and if none pass, regenerate.
+A colored fill must register on its line art pixel-for-pixel — the magic brush (ADR-0043) reveals
+the fill's fills under the overlay's lines, so a drifted region shows the wrong colour outside the
+lines. `gen-coloring-fills` scores every candidate two ways (`lib/outline-match.mjs`): global
+outline coverage (`keep`) and the **worst grid tile** (`localKeep`). The local bar is the important
+one — a large aligned subject can hold a 93% global keep while one small feature (a flower) sits at
+34%, which is exactly how `nature/ant-wide` shipped drifted. `alignToSource` only corrects a single
+global nudge, so a self-drifted feature can't be aligned away; a failing candidate is retried, and
+if none pass, regenerate.
 
-`gen:coloring-fills:audit` runs the same scoring over the **committed raw fills**
-in `fill-src/` (it reads committed assets only — no key, no network) and prints
-the pages that fail, with a ready-to-run regenerate command. It scores the raws
-rather than the shipped fills because the shipped ones are punched fills-only
-(no outlines left to register); a clean raw guarantees a clean punch. `--overlay`
-dumps a drift map per failing page (red = source outline the fill left uncovered)
+`gen:coloring-fills:audit` runs the same scoring over the **committed raw fills** in `fill-src/` (it
+reads committed assets only — no key, no network) and prints the pages that fail, with a
+ready-to-run regenerate command. It scores the raws rather than the shipped fills because the
+shipped ones are punched fills-only (no outlines left to register); a clean raw guarantees a clean
+punch. `--overlay` dumps a drift map per failing page (red = source outline the fill left uncovered)
 to `.coloring-samples/drift/`.
 
-Or, from **inside this folder**, the local aliases (same flags, resolve the same
-root `node_modules`):
+Or, from **inside this folder**, the local aliases (same flags, resolve the same root
+`node_modules`):
 
 ```bash
 npm run coloring-fills -- farm/dog-wide --samples 3
@@ -98,66 +92,58 @@ npm run contact-sheet -- space --source samples
 npm run png-to-webp
 ```
 
-The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast
-without it. They are **manual, on-demand** tools — never run in CI (no key, real
-API cost).
+The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast without it. They are
+**manual, on-demand** tools — never run in CI (no key, real API cost).
 
 ## Inputs & outputs
 
-- **Inputs** (committed): `web/static/styles/source.svg`, the black-and-white
-  `web/static/coloring/**/*-{tall,wide}.outline.webp` PEN outlines (the source
-  of every derivation).
-- **Shipped outputs** (committed, read by the app): `*.chalk.webp` chalk
-  outlines (dedicated dark-mode line art, stored ink-on-white — see
-  `pipeline.md`), `*.light.webp` / `*.night.webp` fills, `*.thumb.webp`
-  thumbnails, `web/static/styles/*.webp` covers.
-- **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/`.
+* **Inputs** (committed): `web/static/styles/source.svg`, the black-and-white
+  `web/static/coloring/**/*-{tall,wide}.outline.webp` PEN outlines (the source of every derivation).
+* **Shipped outputs** (committed, read by the app): `*.chalk.webp` chalk outlines (dedicated
+  dark-mode line art, stored ink-on-white — see `pipeline.md`), `*.light.webp` / `*.night.webp`
+  fills, `*.thumb.webp` thumbnails, `web/static/styles/*.webp` covers.
+* **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/`.
 
 Generate → review the scratch → copy the good outputs into `web/static/` → commit.
 
 ### Viewing the contact sheet
 
-The contact sheet is the **single review surface** for the coloring fills —
-self-contained HTML (images inlined as base64 data URIs), built to render
-anywhere. Full reference — CLI, the side-by-side light/night layout, the three
-views, the outline-% badge, size constraints — lives in
-[`contact-sheet.md`](./contact-sheet.md); **read it before modifying
-`gen-contact-sheet.mjs` or `contact-sheet/`**. The essentials:
+The contact sheet is the **single review surface** for the coloring fills — self-contained HTML
+(images inlined as base64 data URIs), built to render anywhere. Full reference — CLI, the
+side-by-side light/night layout, the three views, the outline-% badge, size constraints — lives in
+[`contact-sheet.md`](./contact-sheet.md); **read it before modifying `gen-contact-sheet.mjs` or
+`contact-sheet/`**. The essentials:
 
-- **Rebuild the sheet every time you touch an asset**, then **publish it with
-  the Artifact tool** instead of hand-rolling a headless screenshot — same steps
-  as the pipeline's shipping runbook ([`pipeline.md`](./pipeline.md)). Show the
-  URL.
-- **One category per sheet** (`gen:contact-sheet -- nature`); `all` is rejected
-  because a whole-catalog sheet exceeds the Artifact tool's 16 MB upload cap.
-  For a catalog-wide review, build and publish one sheet per category. The
-  default `--source shipped` reads only committed assets, so any session
-  rebuilds the identical sheet in seconds with no key or network;
-  `--source samples` reviews fresh, uncommitted night-fill takes from
-  `.coloring-samples-dark/` — the human gate before committing.
-- For a **focused** pass, target a page or cell within the category
-  (`nature/ant`, `nature/ant-wide`).
-- Every page shows its light and night fills **side by side**, each with an
-  Outline / Color / Combined toggle (default Combined — judge there), and the
-  light tile carries the outline-keep % badge scored from the `fill-src/` raw.
-- If a raw PNG is genuinely needed, **don't launch Chromium directly** — the cloud
-  env's Chromium revision drifts from Playwright's pin. Reuse `run-splotch`'s
-  `chromiumExecutablePath()` fallback or set `PLAYWRIGHT_CHROMIUM`
-  (`.claude/skills/run-splotch/SKILL.md`, `docs/CLOUD.md`).
+* **Rebuild the sheet every time you touch an asset**, then **publish it with the Artifact tool**
+  instead of hand-rolling a headless screenshot — same steps as the pipeline's shipping runbook
+  ([`pipeline.md`](./pipeline.md)). Show the URL.
+* **One category per sheet** (`gen:contact-sheet -- nature`); `all` is rejected because a
+  whole-catalog sheet exceeds the Artifact tool's 16 MB upload cap. For a catalog-wide review, build
+  and publish one sheet per category. The default `--source shipped` reads only committed assets, so
+  any session rebuilds the identical sheet in seconds with no key or network; `--source samples`
+  reviews fresh, uncommitted night-fill takes from `.coloring-samples-dark/` — the human gate before
+  committing.
+* For a **focused** pass, target a page or cell within the category (`nature/ant`,
+  `nature/ant-wide`).
+* Every page shows its light and night fills **side by side**, each with an Outline / Color /
+  Combined toggle (default Combined — judge there), and the light tile carries the outline-keep %
+  badge scored from the `fill-src/` raw.
+* If a raw PNG is genuinely needed, **don't launch Chromium directly** — the cloud env's Chromium
+  revision drifts from Playwright's pin. Reuse `run-splotch`'s `chromiumExecutablePath()` fallback
+  or set `PLAYWRIGHT_CHROMIUM` (`.claude/skills/run-splotch/SKILL.md`, `docs/CLOUD.md`).
 
 ## Runbooks
 
-- **The coloring-page pipeline** (pen/chalk outlines → fills → punch, gates,
-  per-category runbook): [`pipeline.md`](./pipeline.md). Decision records:
-  [`docs/`](./docs/). Retired techniques + history: [`legacy/`](./legacy/).
-- **Known outstanding issues** (shipped-asset defects, gate blind spots,
-  tooling gaps): [`ISSUES.md`](./ISSUES.md) — check it before regenerating a
-  page or trusting a gate on an unfamiliar failure class; update it when you
-  fix or find one.
-- **AI art prompts** for authoring new source drawings / icons: `docs/PROMPTS.md`.
+* **The coloring-page pipeline** (pen/chalk outlines → fills → punch, gates, per-category runbook):
+  [`pipeline.md`](./pipeline.md). Decision records: [`docs/`](./docs/). Retired techniques +
+  history: [`legacy/`](./legacy/).
+* **Known outstanding issues** (shipped-asset defects, gate blind spots, tooling gaps):
+  [`ISSUES.md`](./ISSUES.md) — check it before regenerating a page or trusting a gate on an
+  unfamiliar failure class; update it when you fix or find one.
+* **AI art prompts** for authoring new source drawings / icons: `docs/PROMPTS.md`.
 
 ## Not here
 
-Scripts that **drive the live app** (`gen:shots`, `gen:large-image` — Playwright
-against the running UI) or that are **build-path codegen** (`gen:icons`,
-`gen:releases`) stay in `scripts/`. They are app-coupled, not asset producers.
+Scripts that **drive the live app** (`gen:shots`, `gen:large-image` — Playwright against the running
+UI) or that are **build-path codegen** (`gen:icons`, `gen:releases`) stay in `scripts/`. They are
+app-coupled, not asset producers.

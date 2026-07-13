@@ -9,5 +9,7 @@ The current index:
 
 @../../../docs/adrs/README.md
 
-* Read only the ADR(s) relevant to the decision at hand — never all of them — and cite the ADR numbers in your response.
-* If the decision space isn't covered and a significant choice is being made, document it with `/create-adr`.
+* Read only the ADR(s) relevant to the decision at hand — never all of them — and cite the ADR
+  numbers in your response.
+* If the decision space isn't covered and a significant choice is being made, document it with
+  `/create-adr`.

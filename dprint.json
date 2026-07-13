@@ -1,0 +1,28 @@
+{
+  "lineWidth": 100,
+  "indentWidth": 2,
+  "markdown": {
+    "textWrap": "always",
+    "emphasisKind": "asterisks",
+    "strongKind": "asterisks",
+    "unorderedListKind": "asterisks"
+  },
+  "typescript": {
+    "quoteStyle": "preferSingle"
+  },
+  "includes": ["**/*.md"],
+  "excludes": [
+    "**/node_modules",
+    "**/.svelte-kit",
+    "**/.netlify",
+    "**/.gradle",
+    "web/build",
+    "android/**/build",
+    "ios/**/build"
+  ],
+  "plugins": [
+    "node_modules/@dprint/markdown/plugin.wasm",
+    "node_modules/@dprint/typescript/plugin.wasm",
+    "node_modules/@dprint/json/plugin.wasm"
+  ]
+}

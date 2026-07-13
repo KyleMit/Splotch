@@ -4,33 +4,34 @@ The supported-browser/device floor for Splotch, the single source of truth for i
 every modern web API the app relies on with its risk on older devices.
 
 Splotch ships one SvelteKit codebase to three targets (ADR-0001): **web** (Netlify), **native
-Android** and **native iOS** (Capacitor). This document states one floor that holds across all three.
+Android** and **native iOS** (Capacitor). This document states one floor that holds across all
+three.
 
 ## Supported browsers & devices
 
-| Target | Minimum | Oldest typical device |
-| --- | --- | --- |
-| Chrome / Edge (desktop + Android) | **111+** (Mar 2023) | — |
-| Firefox (desktop + Android) | **114+** (Jun 2023) | — |
-| Safari (macOS) | **16.4+** | — |
-| iOS / iPadOS Safari (web) | **16.4+** | iPhone 8 / 2017-era iPad |
-| **Native Android app** | **Android 7.0 / API 24+** | 2016-era phone (with an up-to-date System WebView) |
-| **Native iOS app** | **iOS 16.4+** | iPhone 8 (2017) |
+| Target                            | Minimum                   | Oldest typical device                              |
+| --------------------------------- | ------------------------- | -------------------------------------------------- |
+| Chrome / Edge (desktop + Android) | **111+** (Mar 2023)       | —                                                  |
+| Firefox (desktop + Android)       | **114+** (Jun 2023)       | —                                                  |
+| Safari (macOS)                    | **16.4+**                 | —                                                  |
+| iOS / iPadOS Safari (web)         | **16.4+**                 | iPhone 8 / 2017-era iPad                           |
+| **Native Android app**            | **Android 7.0 / API 24+** | 2016-era phone (with an up-to-date System WebView) |
+| **Native iOS app**                | **iOS 16.4+**             | iPhone 8 (2017)                                    |
 
-Anything older is **not supported**. The app may still partially work, but we don't test it and won't
-hold back a feature for it.
+Anything older is **not supported**. The app may still partially work, but we don't test it and
+won't hold back a feature for it.
 
 ### Why these numbers
 
-- **Web 111 / 16.4** is the floor the build actually transpiles to. It matches Baseline "Widely
+* **Web 111 / 16.4** is the floor the build actually transpiles to. It matches Baseline "Widely
   Available" as of early 2026 and clears every CSS/JS feature the app uses unguarded (notably
   `color-mix()`, which needs Chrome 111 / Safari 16.2).
-- **Native iOS 16.4** is deliberately aligned to the *same* floor as the web bundle, because the
+* **Native iOS 16.4** is deliberately aligned to the *same* floor as the web bundle, because the
   native app loads that exact bundle in a WKWebView. iOS 16+ is ~99% of active devices in 2026, and
   every iPhone that reaches iOS 16 (iPhone 8 and newer) is covered. Raising from the previous 15.0
   closed a real gap: an iOS 15 WebView could be handed syntax/CSS it can't run (white-screen, not
   graceful degradation).
-- **Native Android API 24 (7.0)** is older than the web floor *on purpose and safely*: the Android
+* **Native Android API 24 (7.0)** is older than the web floor *on purpose and safely*: the Android
   System WebView updates through the Play Store independently of the OS, so any maintained device —
   even on Android 7 — runs a current Chromium (≥ 111). The OS floor only governs native-shell APIs,
   not the web content.
@@ -40,67 +41,69 @@ hold back a feature for it.
 Three places must agree. **The web target's iOS/Safari version MUST stay ≥ the native iOS deployment
 target** — otherwise an iOS device gets a bundle its WebView can't run.
 
-| Source of truth | File | Value |
-| --- | --- | --- |
-| Web JS/CSS transpile target | `web/vite.config.ts` → `build.target` | `chrome111, edge111, firefox114, safari16.4, ios16.4` |
-| Declared browser support (tooling) | `package.json` → `browserslist` | mirror of the above (refresh data with `npm run update:browserslist`) |
-| Native iOS deployment target | `ios/App/App.xcodeproj/project.pbxproj` → `IPHONEOS_DEPLOYMENT_TARGET` | `16.4` (×4) |
-| Native Android min SDK | `android/variables.gradle` → `minSdkVersion` | `24` |
+| Source of truth                    | File                                                                   | Value                                                                 |
+| ---------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Web JS/CSS transpile target        | `web/vite.config.ts` → `build.target`                                  | `chrome111, edge111, firefox114, safari16.4, ios16.4`                 |
+| Declared browser support (tooling) | `package.json` → `browserslist`                                        | mirror of the above (refresh data with `npm run update:browserslist`) |
+| Native iOS deployment target       | `ios/App/App.xcodeproj/project.pbxproj` → `IPHONEOS_DEPLOYMENT_TARGET` | `16.4` (×4)                                                           |
+| Native Android min SDK             | `android/variables.gradle` → `minSdkVersion`                           | `24`                                                                  |
 
 `vite.config.ts` pins `build.target` explicitly rather than inheriting Vite's default
-(`baseline-widely-available`), because that default silently moves up every year and would change the
-floor without a decision. Keep `build.target` and `browserslist` in sync by hand.
+(`baseline-widely-available`), because that default silently moves up every year and would change
+the floor without a decision. Keep `build.target` and `browserslist` in sync by hand.
 
 `ios/App/CapApp-SPM/Package.swift` declares `.iOS(.v15)` — that is the Capacitor-managed SPM package
-*lower bound* (regenerated by `cap sync`), not the app floor. A `.v15` package under a 16.4 app target
-is consistent; the binding number is the pbxproj one above. Do not edit `Package.swift` by hand.
+*lower bound* (regenerated by `cap sync`), not the app floor. A `.v15` package under a 16.4 app
+target is consistent; the binding number is the pbxproj one above. Do not edit `Package.swift` by
+hand.
 
 ## API risk register
 
 Every modern API the app uses, its baseline, whether the code guards it, and what happens below the
 floor. With the floor at Chrome 111 / Safari 16.4 / iOS 16.4, **every unguarded feature is within
-baseline**, and every remaining below-floor risk is already feature-detected and degrades gracefully.
+baseline**, and every remaining below-floor risk is already feature-detected and degrades
+gracefully.
 
-| API / feature | Where | Baseline | Guarded? | Behavior below floor |
-| --- | --- | --- | --- | --- |
-| `PointerEvent` + `setPointerCapture` | `lib/drawing/engine.ts` | Chrome 55 / Safari 13 | core | within floor — core to drawing |
-| `getCoalescedEvents()` | `lib/drawing/engine.ts:651` | not in iOS Safari at all | ✅ `?.() ?? [e]` | one sample per move; fast scribbles a touch less smooth |
-| `color-mix(in srgb …)` | `lib/components/ColorPicker.svelte:427`; brand-tinted `box-shadow`s in ActionsPanel, ColoringBook, AiImagePrompt, AiImageResult, AdminConsole | Chrome 111 / Safari 16.2 | shadows ✅ plain-rgba declaration precedes each; picker ❌ none | **within floor**; below it shadows fall back to the rgba line, and the selected-swatch darken is dropped (cascades to plain bg) |
-| `100dvh` unit | `app.css:61` | Safari 15.4 | ✅ `100vh` precedes it | falls back to `100vh` |
-| `backdrop-filter` | `app.css:88` | Safari 9 (`-webkit-`) | ✅ prefixed | no blur; dim still applies |
-| `aspect-ratio` | `app.css:221` | Safari 15 | within floor | n/a |
-| `env(safe-area-inset-*)` | `app.css:52` | Safari 11 | within floor | resolves to 0 |
-| `crypto.subtle` (AES-GCM) | `lib/secureStorage.ts` | Chrome 37 / Safari 11 | secure-context only | within floor |
-| `navigator.storage.persist` | `lib/secureStorage.ts:154` | Chrome 55 / Safari 15.2 | ✅ `?.` + web-only | best-effort persistence skipped |
-| `localStorage` | `lib/storage.ts`; `app.html:62` boot script | universal, but *accessing the global* throws under "block all cookies" / sandboxed iframes / locked-down WebViews | ✅ try/catch on every read & write | settings neither load nor persist — defaults every visit; app still boots |
-| Wake Lock | `routes/+page.svelte:56` | Chrome 84 / Safari 16.4 | ✅ feature-detected | screen may sleep mid-draw |
-| `Element.requestFullscreen` (immersive) | `lib/state/fullscreen.svelte.ts` | Chrome 71 / Safari 16.4 (macOS); no element fullscreen on iOS Safari | ✅ `document.fullscreenEnabled` + Android-only | Fullscreen Toggle hidden; URL bar stays (iOS Safari, desktop deliberately excluded) |
-| Screen Orientation lock | `lib/orientation.ts:48` | varies | ✅ `?.` (native uses Capacitor plugin) | no orientation lock |
-| `screen.orientation.angle` (+ `change` event) | `lib/drawing/engine.ts` (paper view, ADR-0050) | Chrome 38 / Safari 16.4 | ✅ `?.` falls back to angle 0 | rotation treated as a plain resize — drawing anchors top-left as before the feature |
-| `navigator.vibrate` | `lib/haptics.ts:24` | Android only | ✅ `?.` (native uses Capacitor Haptics) | no haptic feedback |
-| Web Audio `AudioContext` | `lib/audio/drawingSound.ts` | Chrome 35 / Safari 14.1 | ✅ null-returns | silent draw sound |
-| `ResizeObserver` | `lib/components/ColorPalette.svelte:27` | Safari 13.1 | within floor | n/a |
-| Service Worker / PWA | `lib/pwa/updates.ts` | broad; web-only | ✅ `'serviceWorker' in navigator` | no offline cache / update prompt |
-| `navigator.clipboard.writeText` | `lib/components/admin/AdminConsole.svelte:122` | Safari 13.1 | admin-only (not kid-facing) | n/a |
-| File System Access (`showDirectoryPicker` + writable handles) | `lib/drawing/folderSave.ts` | desktop Chromium 86+ only; never Firefox / Safari / mobile | ✅ `folderSaveSupported()` | folder row hidden in Parent Center; web saves stay plain downloads |
-| `createImageBitmap` | `routes/dev/engine/+page.svelte` | dev harness only | excluded from prod build | n/a |
-| `Touch.touchType` (`'stylus'`) | `lib/actions/scribbleGuard.ts` | Safari/iOS only | ✅ strict `=== 'stylus'`; undefined elsewhere → no-op | guard inert — exactly right, Scribble only exists on iPadOS |
-| CSS `contain` / `container-type` as a *fixed-position containing block* | avoid — no current usage | Chromium only; **WebKit never** treats containment as a containing block for `position: fixed` descendants (long-standing bug) | ⚠️ not testable in cloud (Chromium-only sandbox) | fixed descendants escape to the real viewport in Safari/iOS — never rely on `contain` to trap them; a transformed ancestor (`transform: translate(0)`) is the portable, all-engine mechanism |
+| API / feature                                                           | Where                                                                                                                                         | Baseline                                                                                                                       | Guarded?                                                        | Behavior below floor                                                                                                                                                                         |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PointerEvent` + `setPointerCapture`                                    | `lib/drawing/engine.ts`                                                                                                                       | Chrome 55 / Safari 13                                                                                                          | core                                                            | within floor — core to drawing                                                                                                                                                               |
+| `getCoalescedEvents()`                                                  | `lib/drawing/engine.ts:651`                                                                                                                   | not in iOS Safari at all                                                                                                       | ✅ `?.() ?? [e]`                                                | one sample per move; fast scribbles a touch less smooth                                                                                                                                      |
+| `color-mix(in srgb …)`                                                  | `lib/components/ColorPicker.svelte:427`; brand-tinted `box-shadow`s in ActionsPanel, ColoringBook, AiImagePrompt, AiImageResult, AdminConsole | Chrome 111 / Safari 16.2                                                                                                       | shadows ✅ plain-rgba declaration precedes each; picker ❌ none | **within floor**; below it shadows fall back to the rgba line, and the selected-swatch darken is dropped (cascades to plain bg)                                                              |
+| `100dvh` unit                                                           | `app.css:61`                                                                                                                                  | Safari 15.4                                                                                                                    | ✅ `100vh` precedes it                                          | falls back to `100vh`                                                                                                                                                                        |
+| `backdrop-filter`                                                       | `app.css:88`                                                                                                                                  | Safari 9 (`-webkit-`)                                                                                                          | ✅ prefixed                                                     | no blur; dim still applies                                                                                                                                                                   |
+| `aspect-ratio`                                                          | `app.css:221`                                                                                                                                 | Safari 15                                                                                                                      | within floor                                                    | n/a                                                                                                                                                                                          |
+| `env(safe-area-inset-*)`                                                | `app.css:52`                                                                                                                                  | Safari 11                                                                                                                      | within floor                                                    | resolves to 0                                                                                                                                                                                |
+| `crypto.subtle` (AES-GCM)                                               | `lib/secureStorage.ts`                                                                                                                        | Chrome 37 / Safari 11                                                                                                          | secure-context only                                             | within floor                                                                                                                                                                                 |
+| `navigator.storage.persist`                                             | `lib/secureStorage.ts:154`                                                                                                                    | Chrome 55 / Safari 15.2                                                                                                        | ✅ `?.` + web-only                                              | best-effort persistence skipped                                                                                                                                                              |
+| `localStorage`                                                          | `lib/storage.ts`; `app.html:62` boot script                                                                                                   | universal, but *accessing the global* throws under "block all cookies" / sandboxed iframes / locked-down WebViews              | ✅ try/catch on every read & write                              | settings neither load nor persist — defaults every visit; app still boots                                                                                                                    |
+| Wake Lock                                                               | `routes/+page.svelte:56`                                                                                                                      | Chrome 84 / Safari 16.4                                                                                                        | ✅ feature-detected                                             | screen may sleep mid-draw                                                                                                                                                                    |
+| `Element.requestFullscreen` (immersive)                                 | `lib/state/fullscreen.svelte.ts`                                                                                                              | Chrome 71 / Safari 16.4 (macOS); no element fullscreen on iOS Safari                                                           | ✅ `document.fullscreenEnabled` + Android-only                  | Fullscreen Toggle hidden; URL bar stays (iOS Safari, desktop deliberately excluded)                                                                                                          |
+| Screen Orientation lock                                                 | `lib/orientation.ts:48`                                                                                                                       | varies                                                                                                                         | ✅ `?.` (native uses Capacitor plugin)                          | no orientation lock                                                                                                                                                                          |
+| `screen.orientation.angle` (+ `change` event)                           | `lib/drawing/engine.ts` (paper view, ADR-0050)                                                                                                | Chrome 38 / Safari 16.4                                                                                                        | ✅ `?.` falls back to angle 0                                   | rotation treated as a plain resize — drawing anchors top-left as before the feature                                                                                                          |
+| `navigator.vibrate`                                                     | `lib/haptics.ts:24`                                                                                                                           | Android only                                                                                                                   | ✅ `?.` (native uses Capacitor Haptics)                         | no haptic feedback                                                                                                                                                                           |
+| Web Audio `AudioContext`                                                | `lib/audio/drawingSound.ts`                                                                                                                   | Chrome 35 / Safari 14.1                                                                                                        | ✅ null-returns                                                 | silent draw sound                                                                                                                                                                            |
+| `ResizeObserver`                                                        | `lib/components/ColorPalette.svelte:27`                                                                                                       | Safari 13.1                                                                                                                    | within floor                                                    | n/a                                                                                                                                                                                          |
+| Service Worker / PWA                                                    | `lib/pwa/updates.ts`                                                                                                                          | broad; web-only                                                                                                                | ✅ `'serviceWorker' in navigator`                               | no offline cache / update prompt                                                                                                                                                             |
+| `navigator.clipboard.writeText`                                         | `lib/components/admin/AdminConsole.svelte:122`                                                                                                | Safari 13.1                                                                                                                    | admin-only (not kid-facing)                                     | n/a                                                                                                                                                                                          |
+| File System Access (`showDirectoryPicker` + writable handles)           | `lib/drawing/folderSave.ts`                                                                                                                   | desktop Chromium 86+ only; never Firefox / Safari / mobile                                                                     | ✅ `folderSaveSupported()`                                      | folder row hidden in Parent Center; web saves stay plain downloads                                                                                                                           |
+| `createImageBitmap`                                                     | `routes/dev/engine/+page.svelte`                                                                                                              | dev harness only                                                                                                               | excluded from prod build                                        | n/a                                                                                                                                                                                          |
+| `Touch.touchType` (`'stylus'`)                                          | `lib/actions/scribbleGuard.ts`                                                                                                                | Safari/iOS only                                                                                                                | ✅ strict `=== 'stylus'`; undefined elsewhere → no-op           | guard inert — exactly right, Scribble only exists on iPadOS                                                                                                                                  |
+| CSS `contain` / `container-type` as a *fixed-position containing block* | avoid — no current usage                                                                                                                      | Chromium only; **WebKit never** treats containment as a containing block for `position: fixed` descendants (long-standing bug) | ⚠️ not testable in cloud (Chromium-only sandbox)                 | fixed descendants escape to the real viewport in Safari/iOS — never rely on `contain` to trap them; a transformed ancestor (`transform: translate(0)`) is the portable, all-engine mechanism |
 
 ## Polyfills & workarounds
 
 The floor is set high enough that **no polyfills are required** — every unguarded API is Baseline at
 Chrome 111 / Safari 16.4. The deliberate non-polyfill choices:
 
-- **`getCoalescedEvents()`** has no polyfill and is *still* absent from iOS Safari. The intended
-  workaround is the engine's `e.getCoalescedEvents?.() ?? [e]` fallback: without coalesced samples it
-  draws one chord per `pointermove`. This is acceptable and ships everywhere.
-- **CSS feature fallbacks** (`100dvh`→`100vh`, prefixed `backdrop-filter`) are written inline in
+* **`getCoalescedEvents()`** has no polyfill and is *still* absent from iOS Safari. The intended
+  workaround is the engine's `e.getCoalescedEvents?.() ?? [e]` fallback: without coalesced samples
+  it draws one chord per `pointermove`. This is acceptable and ships everywhere.
+* **CSS feature fallbacks** (`100dvh`→`100vh`, prefixed `backdrop-filter`) are written inline in
   `app.css` rather than via a polyfill, and stay even though they're within the current floor — they
   cost nothing and protect the few users between iOS 15.4 and 16.4 on the web.
-- **Native-shell capabilities** (haptics, orientation lock, secure storage, filesystem, media) go
+* **Native-shell capabilities** (haptics, orientation lock, secure storage, filesystem, media) go
   through Capacitor plugins on device, so the web-API versions only need to work on the web floor.
-- **iPadOS Scribble** silently claims an Apple Pencil stroke that starts within ~450ms of a pen tap
+* **iPadOS Scribble** silently claims an Apple Pencil stroke that starts within ~450ms of a pen tap
   (the events still arrive and the canvas paints, but the frames are never presented). The engine
   cancels the canvas's touch stream and `scribbleGuard` cancels stylus taps on the palette —
   non-passive `touchstart`/`touchmove` `preventDefault()` is the only working counter-measure;
@@ -108,9 +111,9 @@ Chrome 111 / Safari 16.4. The deliberate non-polyfill choices:
 
 ## Maintaining this
 
-- Changing the floor means changing all of: `web/vite.config.ts` `build.target`, the `browserslist`
+* Changing the floor means changing all of: `web/vite.config.ts` `build.target`, the `browserslist`
   in `package.json`, and (for native iOS) `IPHONEOS_DEPLOYMENT_TARGET`. Keep the web target ≥ the
   native iOS target.
-- When adding a new web API, check its Baseline status against this floor and either confirm it's
+* When adding a new web API, check its Baseline status against this floor and either confirm it's
   covered or feature-detect it — then add a row here.
-- `npm run update:browserslist` only refreshes the caniuse-lite data; it does not change the floor.
+* `npm run update:browserslist` only refreshes the caniuse-lite data; it does not change the floor.

@@ -1,16 +1,19 @@
 ✨ New
+
 • Splotch is now on iPhone and iPad.
 • A volume slider to fine-tune the sound.
 • Swipe between tabs in Parent Controls.
 
 🚀 Improved
+
 • Smoother, crisper strokes.
 • Faster drawing and saving.
 
 🛠 Fixed
+
 • The first stroke now always draws.
 • No more streaky multi-touch lines on iPhone/iPad.
 • Saving no longer creates a blank picture.
 • App updates no longer leave stale content.
-</content>
-</invoke>
+  </content>
+  </invoke>
