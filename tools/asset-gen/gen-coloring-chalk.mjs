@@ -61,7 +61,7 @@ import { scoreEyeFill, EYE_DARK_MAX, EYE_LIGHT_MIN } from './lib/eye-fill.mjs';
 import { scoreSolidity, whitenSolidRegions } from './lib/solid-regions.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
-const MODEL = 'gemini-2.5-flash-image';
+const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 92;
 const OUT_DIR = join(SAMPLES_DARK_DIR, 'chalk');
 

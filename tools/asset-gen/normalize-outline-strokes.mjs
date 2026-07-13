@@ -44,7 +44,7 @@ import { scoreSolidity, whitenSolidRegions } from './lib/solid-regions.mjs';
 import { scoreEyeRings, findEyeCores } from './lib/eye-fill.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
-const MODEL = 'gemini-2.5-flash-image';
+const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 92;
 const OUT_DIR = join(SAMPLES_DARK_DIR, 'normalize');
 // The candidate's ink must all lie on the reference's (no invented strokes).

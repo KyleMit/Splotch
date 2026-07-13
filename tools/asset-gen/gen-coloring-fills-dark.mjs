@@ -240,7 +240,7 @@ async function scoreLineColor(fillBuf, sourceBuf) {
   return { lineWhite: maxes[maxes.length >> 1] };
 }
 
-const MODEL = 'gemini-2.5-flash-image';
+const MODEL = 'gemini-3.1-flash-image';
 const OUT_DIR = SAMPLES_DARK_DIR;
 const WEBP_QUALITY = 90;
 
