@@ -1,7 +1,7 @@
 // Convert all PNGs under web/static/ to WebP, written alongside the original.
-// Usage:  node tools/asset-gen/scripts/png-to-webp.mjs            (lossy, quality 80)
-//         QUALITY=90 node tools/asset-gen/scripts/png-to-webp.mjs (override quality)
-//         LOSSLESS=1 node tools/asset-gen/scripts/png-to-webp.mjs (lossless — better for flat line art)
+// Usage:  node tools/asset-gen/bin/png-to-webp.mjs            (lossy, quality 80)
+//         QUALITY=90 node tools/asset-gen/bin/png-to-webp.mjs (override quality)
+//         LOSSLESS=1 node tools/asset-gen/bin/png-to-webp.mjs (lossless — better for flat line art)
 import { globSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { join } from 'node:path';

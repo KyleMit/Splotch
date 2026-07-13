@@ -12,7 +12,7 @@ Companion docs: `README.md` (runbook), `contact-sheet.md` (review surface), the 
 [inpainted fill punch](inpainted-fill-punch.md), [asset naming](asset-naming.md),
 [fill vocabulary](fill-vocabulary.md), [asset-gen architecture](architecture.md) — plus
 ADR-0043 (magic-brush reveal) and ADR-0052 (dark mode) in `docs/adrs/`. Every illustration here is a
-frozen copy in `pipeline-assets/` — live assets regenerate, these don't.
+frozen copy in the sibling `pipeline-assets/` — live assets regenerate, these don't.
 
 ## The pipeline at a glance
 
@@ -181,7 +181,7 @@ is also what makes the chalk's solid whites land in the final image: the fill's 
 cleared to neighbor color, and the screened chalk white owns the region. Deterministic and offline —
 after any raw, pen, or chalk change, re-punch.
 
-![outline, raw fill, punched fill](../pipeline-assets/punch-outline-raw-punched-ant.webp)
+![outline, raw fill, punched fill](pipeline-assets/punch-outline-raw-punched-ant.webp)
 
 *Left to right: outline → raw light fill (keeps its outlines, committed to `fill-src/`) → the
 shipped punched fill composited over magenta so the punched-out line work is visible. (Illustration
@@ -212,7 +212,7 @@ Passing output writes the raw to `fill-src/` and punches the shipped fill in one
 
 ```bash
 node --experimental-strip-types --disable-warning=ExperimentalWarning \
-  tools/asset-gen/scripts/gen-coloring-fills-dark.mjs <category|page> [flags]
+  tools/asset-gen/bin/gen-coloring-fills-dark.mjs <category|page> [flags]
 ```
 
 Targets: a category (`nature`), one orientation (`nature --tall` / `nature --wide`), or a single
@@ -358,7 +358,7 @@ The loop that has worked, per category:
 4. **Rebuild the contact sheet and publish it as an Artifact** — judge on the Combined view in BOTH
    themes; zoom the eyes. The sheet is the review surface of record (`contact-sheet.md`):
 
-   ![contact sheet pair](../pipeline-assets/review-contact-sheet-pair.webp)
+   ![contact sheet pair](pipeline-assets/review-contact-sheet-pair.webp)
 
 5. **After a regen wave, run the exploration auditors too** (proven in the 3.1 migration; not yet
    promoted to first-class scripts — `ISSUES.md`): the invented-shape detector
@@ -445,7 +445,7 @@ condition on the chalk) → ship raws + punch → wire `books.ts` (`night` + `ch
 The Stage 4 model input — the chalk as dark mode displays it (negated, white-on-black), here the owl
 whose sclera the chalk owns:
 
-![chalk display input](../pipeline-assets/nightfill-chalk-input-owl.webp)
+![chalk display input](pipeline-assets/nightfill-chalk-input-owl.webp)
 
 ## Where the next problems are likely to come from
 

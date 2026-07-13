@@ -1,7 +1,7 @@
 # tools/asset-gen/ — asset-generation pipeline
 
 The AI/`sharp` tooling that produces Splotch's committed art. Layout: runnable entry points in
-`scripts/`, shared helpers in `lib/`, all documentation in `docs/`.
+`bin/`, shared helpers in `lib/`, all documentation in `docs/`.
 
 ## The docs (`docs/`)
 
@@ -10,8 +10,8 @@ Runbooks and living lists:
 | File               | What it is                                                                                                                                     |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `README.md`        | The runbook — where the folder sits in the repo, every `gen:*` command, the drift audit, and the review workflow. Start here.                  |
-| `pipeline.md`      | The END-TO-END picture — outline normalization, the punch, day/night fills, every quality gate and the shipped regression that motivated it, iteration methods, and where future categories will likely break. Its illustrations are frozen copies in `pipeline-assets/`; keep both updated as the pipeline evolves. |
-| `contact-sheet.md` | The contact sheet's CLI contract, layer/compositing model, and size constraints — read before modifying `scripts/gen-contact-sheet.mjs` or anything under `contact-sheet/`. |
+| `pipeline.md`      | The END-TO-END picture — outline normalization, the punch, day/night fills, every quality gate and the shipped regression that motivated it, iteration methods, and where future categories will likely break. Its illustrations are frozen copies in `docs/pipeline-assets/`; keep both updated as the pipeline evolves. |
+| `contact-sheet.md` | The contact sheet's CLI contract, layer/compositing model, and size constraints — read before modifying `bin/gen-contact-sheet.mjs` or anything under `contact-sheet-assets/`. |
 | `ISSUES.md`        | Living list of known defects, gate blind spots, and tooling gaps.                                                                              |
 | `IDEAS.md`         | Image-quality backlog from the 2026-07 migration — mostly burned down empirically in `ideas-exploration/`.                                     |
 
@@ -39,12 +39,12 @@ Decision records (un-numbered, live here instead of `docs/adrs/` — see the rep
   or import from the repo-root `scripts/lib/`.
 * **Raw fills are the source of truth; shipped fills are derived.** The lined colored fills live in
   `fill-src/` (committed, never shipped); the shipped `web/static/coloring/**/*.{light,night}.webp`
-  are their fills-only punch (`scripts/punch-fill-outlines.mjs`, root: `npm run gen:coloring-punch`
+  are their fills-only punch (`bin/punch-fill-outlines.mjs`, root: `npm run gen:coloring-punch`
   — offline, deterministic). Never hand-edit a shipped fill, and after changing any raw, re-punch
   it. The drift audit scores the raws.
 * **Line work is forked per theme (the pen/chalk split — see `docs/pipeline.md`).** The PEN outline
   (`{page}.outline.webp`, black ink on white) drives light mode and every derivation; the CHALK
-  outline (`{page}.chalk.webp`, `scripts/gen-coloring-chalk.mjs`) is the dedicated dark-mode line
+  outline (`{page}.chalk.webp`, `bin/gen-coloring-chalk.mjs`) is the dedicated dark-mode line
   art with deliberate solid whites (eye sclera, catchlights), **stored ink-on-white** — negate it
   before showing it to Gemini or a human as "dark mode art". Night fills condition on the chalk and
   punch against it; after changing a chalk, regenerate the page's night fill and re-punch.
@@ -71,10 +71,10 @@ Decision records (un-numbered, live here instead of `docs/adrs/` — see the rep
 * **Manual/on-demand only** — the Gemini generators need `GEMINI_API_KEY` and are never run in CI
   (real API cost). The app never runs any of this at build time.
 * **The contact sheet is the single fill-review surface — read `docs/contact-sheet.md` before
-  modifying `scripts/gen-contact-sheet.mjs` or anything under `contact-sheet/`.** It holds the CLI
+  modifying `bin/gen-contact-sheet.mjs` or anything under `contact-sheet-assets/`.** It holds the CLI
   contract, the layer/compositing model, and the size constraints.
 * **Always rebuild the contact sheet when you touch an asset.** Any time you generate, retouch,
-  regenerate, or ship a coloring fill, re-run `scripts/gen-contact-sheet.mjs` (root:
+  regenerate, or ship a coloring fill, re-run `bin/gen-contact-sheet.mjs` (root:
   `npm run gen:contact-sheet -- <category>`) for the affected category — **one category per sheet**
   (`all` is rejected: the Artifact tool caps uploads at 16 MB and a whole-catalog sheet exceeds it).
   The default `--source shipped` rebuilds from committed assets only (no key/network, ~3s). Then

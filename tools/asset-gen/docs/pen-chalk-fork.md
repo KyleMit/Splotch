@@ -35,7 +35,7 @@ gates:
 * **Pen outline** (`{page}.outline.webp`) — black ink on white. The light-mode overlay and the
   source of every derivation (thumbs, light fills, chalk).
 * **Chalk outline** (`{page}.chalk.webp`) — the dark-mode line art:
-  `tools/asset-gen/scripts/gen-coloring-chalk.mjs` has Gemini redraw the inverted pen as a chalk drawing,
+  `tools/asset-gen/bin/gen-coloring-chalk.mjs` has Gemini redraw the inverted pen as a chalk drawing,
   making the judgment calls a blind invert can't — eye sclera and catchlights become deliberate
   SOLID WHITE, pupils stay black. Gates: every pen stroke still traced (`lib/outline-match.mjs` keep
   ≥ 92%, worst tile ≥ 80%), new ink only inside pen-enclosed interiors (judged by enclosure, not

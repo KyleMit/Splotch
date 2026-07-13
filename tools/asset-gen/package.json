@@ -5,13 +5,13 @@
   "type": "module",
   "description": "AI/sharp asset-generation pipeline for Splotch. NOT a workspace and NOT separately installed \u2014 its dependencies (sharp, @google/genai) live in the repo-root package.json so the root node_modules stays flat for cap sync + patch-package (ADR-0029/0053). Run these via `npm run gen:*` from the repo root, or the aliases below from inside this folder; either way binaries resolve from the hoisted root node_modules. Do not `npm install` here.",
   "scripts": {
-    "style-covers": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/gen-style-covers.mjs",
-    "coloring-chalk": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/gen-coloring-chalk.mjs",
-    "coloring-fills": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/gen-coloring-fills.mjs",
-    "coloring-fills-dark": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/gen-coloring-fills-dark.mjs",
-    "coloring-punch": "node scripts/punch-fill-outlines.mjs",
-    "coloring-thumbs": "node scripts/gen-coloring-thumbs.mjs",
-    "contact-sheet": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/gen-contact-sheet.mjs",
-    "png-to-webp": "node scripts/png-to-webp.mjs"
+    "style-covers": "node --experimental-strip-types --disable-warning=ExperimentalWarning bin/gen-style-covers.mjs",
+    "coloring-chalk": "node --experimental-strip-types --disable-warning=ExperimentalWarning bin/gen-coloring-chalk.mjs",
+    "coloring-fills": "node --experimental-strip-types --disable-warning=ExperimentalWarning bin/gen-coloring-fills.mjs",
+    "coloring-fills-dark": "node --experimental-strip-types --disable-warning=ExperimentalWarning bin/gen-coloring-fills-dark.mjs",
+    "coloring-punch": "node bin/punch-fill-outlines.mjs",
+    "coloring-thumbs": "node bin/gen-coloring-thumbs.mjs",
+    "contact-sheet": "node --experimental-strip-types --disable-warning=ExperimentalWarning bin/gen-contact-sheet.mjs",
+    "png-to-webp": "node bin/png-to-webp.mjs"
   }
 }

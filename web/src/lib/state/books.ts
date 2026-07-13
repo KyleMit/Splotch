@@ -21,13 +21,13 @@
 // (eye sclera, catchlights) survive into the night render. It ships INK-ON-WHITE
 // (the negation of what dark mode shows) so the existing dark treatment
 // (--lineart-filter: invert(1) + screen) renders it unchanged; orientations
-// without a chalk fall back to inverting the pen (tools/asset-gen/scripts/gen-coloring-chalk.mjs).
+// without a chalk fall back to inverting the pen (tools/asset-gen/bin/gen-coloring-chalk.mjs).
 //
 // Each picker-facing line-art image (cover + pages) has a `.thumb.webp` sibling
-// (tools/asset-gen/scripts/gen-coloring-thumbs.mjs): the picker grid shows the thumbnail, the
+// (tools/asset-gen/bin/gen-coloring-thumbs.mjs): the picker grid shows the thumbnail, the
 // full-screen canvas overlay uses the full-res source. `thumbPath()` maps one to
 // the other. The colored `.light.webp` fill is a flat-colored, pixel-aligned
-// version of the line-art page (tools/asset-gen/scripts/gen-coloring-fills.mjs) that the magic
+// version of the line-art page (tools/asset-gen/bin/gen-coloring-fills.mjs) that the magic
 // brush reveals where the child paints (ADR-0043); it never appears in the grid,
 // so it has no thumbnail. `bookAssetPaths()` lists them all so check-assets
 // validates and strip-native-assets removes them together. Thumbnails: ADR-0045.

@@ -30,14 +30,14 @@
 //
 // Requires GEMINI_API_KEY. Writes candidates to .coloring-samples-dark/ for
 // review — it does NOT touch the shipped assets.
-//   node tools/asset-gen/scripts/gen-coloring-fills-dark.mjs space               whole category
-//   node tools/asset-gen/scripts/gen-coloring-fills-dark.mjs space/astronaut-tall one page
-//   node tools/asset-gen/scripts/gen-coloring-fills-dark.mjs space --tall         portrait pages only
-//   node tools/asset-gen/scripts/gen-coloring-fills-dark.mjs space --wide         landscape pages only
-//   node tools/asset-gen/scripts/gen-coloring-fills-dark.mjs space --samples 2    2 takes each
-//   node tools/asset-gen/scripts/gen-coloring-fills-dark.mjs space --max-attempts 4  retry harder
-//   node tools/asset-gen/scripts/gen-coloring-fills-dark.mjs space --line-white-min 150  dark-outline gate
-//   node tools/asset-gen/scripts/gen-coloring-fills-dark.mjs space --dilate-lines 2  thicken white input lines
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space               whole category
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space/astronaut-tall one page
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --tall         portrait pages only
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --wide         landscape pages only
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --samples 2    2 takes each
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --max-attempts 4  retry harder
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --line-white-min 150  dark-outline gate
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --dilate-lines 2  thicken white input lines
 import { parseArgs } from 'node:util';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';

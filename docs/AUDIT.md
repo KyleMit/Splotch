@@ -8,7 +8,7 @@
 
 ### [Tooling] Chalk keep gate rejects correct whitened-pupil chalks and offers no sanctioned apply path
 
-**File(s):** `tools/asset-gen/scripts/gen-coloring-chalk.mjs` (gate 1 keep/localKeep, apply block ~lines
+**File(s):** `tools/asset-gen/bin/gen-coloring-chalk.mjs` (gate 1 keep/localKeep, apply block ~lines
 409–421; `--force` at ~line 320 only skips the already-shipped check),
 `tools/asset-gen/lib/outline-match.mjs`
 
@@ -49,7 +49,7 @@ candidate): with the reference fix the shipped candidate's worst tile should sco
 
 ### [Tooling] gen-coloring-fills-dark result lines misreport gate outcomes ("ok" + warning = failed gate, "(N tries)" = kept attempt index)
 
-**File(s):** `tools/asset-gen/scripts/gen-coloring-fills-dark.mjs` (retry loop ~lines 444–486 and the
+**File(s):** `tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (retry loop ~lines 444–486 and the
 per-page result line)
 
 #### Problem

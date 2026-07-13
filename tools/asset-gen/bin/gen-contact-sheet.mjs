@@ -1,10 +1,10 @@
 // Builds the coloring-fill contact sheet for ONE category. Read
-// ../docs/contact-sheet.md before changing this file or anything under contact-sheet/
+// ../docs/contact-sheet.md before changing this file or anything under contact-sheet-assets/
 // — it holds the CLI contract, the layer/compositing model, and the size
 // constraints that shape this generator.
 //
 //   node --experimental-strip-types --disable-warning=ExperimentalWarning \
-//     tools/asset-gen/scripts/gen-contact-sheet.mjs <category>[/page[-orient]] \
+//     tools/asset-gen/bin/gen-contact-sheet.mjs <category>[/page[-orient]] \
 //       [--source shipped|samples] [--out FILE]
 import { parseArgs } from 'node:util';
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -104,10 +104,10 @@ for (const p of book.pages) {
 if (!cells.length) fail(`no pages matched "${target}"`);
 
 // The look (CSS) and interactive runtime (client JS) live in real files under
-// contact-sheet/ so they get editor highlighting, Prettier, and ESLint. The
+// contact-sheet-assets/ so they get editor highlighting, Prettier, and ESLint. The
 // generator only assembles the shell and injects the cell data as a JSON global
 // — no build-time string interpolation reaches the runtime.
-const SHEET_DIR = join(ASSET_GEN_DIR, 'contact-sheet');
+const SHEET_DIR = join(ASSET_GEN_DIR, 'contact-sheet-assets');
 const css = readFileSync(join(SHEET_DIR, 'contact-sheet.css'), 'utf8');
 const clientJs = readFileSync(join(SHEET_DIR, 'contact-sheet.client.js'), 'utf8');
 
