@@ -11,10 +11,10 @@
   "garbage-tall": {
     "night": {
       "retry": {
-        "notes": "The trash can's body is plain slatted metal — do NOT paint a leaf, recycling emblem, or any logo on the can. Keep the leaves on the ground where the pen draws them."
+        "notes": "The trash can's body is plain slatted metal — do NOT paint a leaf, recycling emblem, or any logo on the can. Keep the leaves on the ground where the pen draws them. The garbage truck is GREEN all over — cab and body both a deep moonlit green, never navy or blue — and the trash can stays plain grey metal."
       },
-      "review": "The shipped 2026-07 night fill invented a translucent green leaf emblem across the can's slats (pen, chalk, and light fill all have a clean bin) — a FILL-side invention inside the subject that no gate or audit scans for (ISSUES Tier 1). Also note: this page's light fill is on the flat-eye list (cab face, light FAIL) — consult the ISSUES flat-eye item before a light-side regen.",
-      "why": "2026-07-13 dark-mode composite review — first confirmed fill-side subject-interior invention; the invented-shapes audit only scans the open background."
+      "review": "Zoom the can's slats and confirm bare metal — the 2026-07 wave's fill invented a translucent green leaf emblem there (first confirmed fill-side subject-interior invention; no gate or audit scans subject interiors), fixed by a seeded-notes night regen 2026-07-13. Also confirm the cab stays GREEN: without the palette pin a retake painted it sky-navy (the night-contrast trap). Also note: this page's light fill is on the flat-eye list (cab face, light FAIL) — consult the ISSUES flat-eye item before a light-side regen.",
+      "why": "2026-07-13 ISSUES Tier 1 fix (night regen, this session): the no-emblem notes removed the leaf on every take, but take 1 re-rolled the cab navy-on-navy — the truck-green + grey-can pin was appended and the combined notes shipped clean on take 2 (drift 0.0000, bgLuma 17, lineW 255)."
     }
   },
   "police-tall": {

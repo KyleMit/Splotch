@@ -14,14 +14,17 @@ tagged by kind (*shipped asset*, *gate blind spot*, *tooling gap*). When you fix
 
 ## Tier 1 — reported in the 2026-07-13 review pass — fix these before everything else
 
-The 2026-07-13 dark-mode review initially flagged four batches covering 18 pages; every finding was
-then verified per layer — raws, shipped punches, and chalk-over-night composites cross-checked
-against the pen. Burn the remaining items down before any other tier: #1 is a night-fill-only regen
+Every page in this tier was flagged by a human in the 2026-07-13 dark-mode review (four batches, 18
+pages) and then verified per layer — raws, shipped punches, and chalk-over-night composites
+cross-checked against the pen. Burn these down before any other tier: #1 is a night-fill-only regen
 (the cheapest fix in the pipeline), #2–#4 need a chalk regen first, and #5 is the one page needing
 pen work. With one exception (#1, which the halo auditor ranks but nothing reviews), every item
 passes all its gates (`gen:coloring-fills:audit:eyes` → ok on every listed page), so nothing but
 composite review sees them. Each page has a seeded registry entry in `fill-src/<cat>/notes.json`
-carrying the retry recipe and the composite-review instruction.
+carrying the retry recipe and the composite-review instruction. (The tier originally opened with
+`vehicles/garbage-tall`'s night fill painting a translucent green leaf emblem on the trash can — the
+first confirmed FILL-side invention inside the subject, where no gate or audit looks; fixed
+2026-07-13 by a seeded-notes night regen + re-punch, recipe in `fill-src/vehicles/notes.json`.)
 
 1. **`vehicles/excavator-tall` ships noisy static around its night lines — and the halo auditor
    already ranks it #2 in the catalog** *(shipped asset + unreviewed audit)*: the raw night fill
@@ -34,9 +37,10 @@ carrying the retry recipe and the composite-review instruction.
    `objects/house-tall` 2.5, `vehicles/fire-tall` 2.4, `objects/house-wide` 2.2 — then a clean break
    to ≤1.3. (`objects/flower-wide`, formerly 4.0 in this cluster, dropped to 0.2 with its 2026-07-13
    chalk+night regen.) The auditor is deterministic and offline but "a ranking for crop review, not
-   a verdict": nothing reviews its top before shipping, which is how excavator-tall and ship-tall
-   shipped. Fix: night regen for excavator-tall (seeded no-re-inked-lines notes), crop-review the
-   rest of the ≥2.2 cluster, and decide a haloScore threshold so the next wave gates on it.
+   a verdict": nothing reviews its top before shipping, which is how this page (and the since-fixed
+   garbage-tall leaf) shipped. Fix: night regen for excavator-tall (seeded no-re-inked-lines notes),
+   crop-review the rest of the ≥2.2 cluster, and decide a haloScore threshold so the next wave gates
+   on it.
 2. **The chalk invents facial features — teeth on `farm/duck-wide`, whole faces on
    `objects/apple-wide` + `objects/apple-tall`, eyeballs in `space/ship-tall`'s porthole and all
    FOUR of `space/station-tall`'s windows** *(shipped asset)*: in every case the pen and the light
@@ -114,8 +118,9 @@ carrying the retry recipe and the composite-review instruction.
    flagged-blob area — the idea-13 report's recommendation), a fill can ship an invented colored
    shape that keep/white/eye gates cannot see, and only the audit-after-the-wave catches it. And its
    scope is the open background only — Tier 1 #2's invented teeth, apple faces, and porthole
-   eyeballs, and the fixed `vehicles/garbage-tall` fill-side leaf all sit *inside* the subject,
-   where neither this audit nor any gate looks.
+   eyeballs all sit *inside* the subject, where neither this audit nor any gate looks (and the
+   since-fixed `vehicles/garbage-tall` leaf proved 2026-07-13 that fills invent inside the subject
+   too, not just chalks).
 
 ## Tier 3 — high impact but expensive
 
