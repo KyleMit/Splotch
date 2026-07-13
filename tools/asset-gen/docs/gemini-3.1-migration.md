@@ -20,8 +20,8 @@ whose prompt or call arguments were customized, and the issues that remain open 
   * **IDEAS #12** — `judgeNightEyes` ignores band-blind cores and, on chalk-forked pages, cores the
     chalk never marked white (wheel hubs, rover screens), so flat-eye flags mean something again.
 * Night fills were generated against a **tightened mood gate** (`--night-luma-max 60` instead of the
-  default 100) to close IDEAS #4's 4× night-sky brightness spread. The shipped catalog's night
-  backgrounds now span bgLuma **18–48** (previously 16–66).
+  then-default 100 — since made the code default) to close IDEAS #4's 4× night-sky brightness
+  spread. The shipped catalog's night backgrounds now span bgLuma **18–48** (previously 16–66).
 
 ## Results
 
@@ -58,6 +58,14 @@ chalk and `shapes/rectangle-wide` night (both landed acceptable takes — see be
 
 Pages whose generation deviated from the uniform prompt/arguments. (Uniform = the stock prompt,
 `--max-attempts 5`, night `--night-luma-max 60`.)
+
+> **2026-07-13:** the still-relevant customizations below are now encoded in the per-page notes
+> registry (`fill-src/<cat>/notes.json`, auto-loaded by the generators — see `pipeline.md`), so a
+> future regen no longer needs to mine this table: circle-wide's contrast note is seeded;
+> rectangle-wide's bubble note was superseded by its 2026-07-13 fresh pen (no bubbles — its registry
+> entry carries the fresh pen's contrast note instead); police-tall's erase note applied only to its
+> old solid-pupil pen (also replaced 2026-07-13) and lives on as the `retry` recipe on its
+> still-solid-pupil sibling `police-wide`. This table remains the historical run record.
 
 | Page                    | Asset | Customization                                                                                                                                      | Why                                                                                                                                                                                                       |
 | ----------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
