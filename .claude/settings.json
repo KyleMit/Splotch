@@ -75,9 +75,6 @@
       "Skill(update-config:*)",
 
       "Read(//tmp/**)"
-    ],
-    "additionalDirectories": [
-      "/Users/kylemit/Code/Splotch/.claude/rules"
     ]
   }
 }
