@@ -59,6 +59,14 @@ chalk and `shapes/rectangle-wide` night (both landed acceptable takes — see be
 Pages whose generation deviated from the uniform prompt/arguments. (Uniform = the stock prompt,
 `--max-attempts 5`, night `--night-luma-max 60`.)
 
+> **2026-07-13:** the still-relevant customizations below are now encoded in the per-page notes
+> registry (`fill-src/<cat>/notes.json`, auto-loaded by the generators — see `pipeline.md`), so a
+> future regen no longer needs to mine this table: circle-wide's contrast note is seeded;
+> rectangle-wide's bubble note was superseded by its 2026-07-13 fresh pen (no bubbles — its registry
+> entry carries the fresh pen's contrast note instead); police-tall's erase note applied only to its
+> old solid-pupil pen (also replaced 2026-07-13) and lives on as the `retry` recipe on its
+> still-solid-pupil sibling `police-wide`. This table remains the historical run record.
+
 | Page                    | Asset | Customization                                                                                                                                      | Why                                                                                                                                                                                                       |
 | ----------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `vehicles/police-tall`  | chalk | `--notes` erase-and-redraw instruction ("erase the solid white inside each pupil… white sclera, black outlined pupil, white catchlight"), `-t 0.4` | The wave's chalk whitened the pupils along with the sclera — the gate-blind class (solid pen pupils yield no eye cores, so eye-polarity can't gate). Night fill then regenerated against the fixed chalk. |

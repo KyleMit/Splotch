@@ -74,6 +74,17 @@ npm run gen:contact-sheet -- nature # HTML contact sheet of ONE category (gitign
 sheet for the affected page/category and publish it with the Artifact tool** so the change is
 visible in the session (see "Viewing a review sheet" below).
 
+### The per-page notes registry
+
+Known per-page levers (`--notes` text, temperature, gate overrides) live in
+`fill-src/<cat>/notes.json` and **auto-load** in the night, chalk, and normalize generators
+(`lib/page-notes.mjs` documents the schema): registry `flags` fill in whatever the CLI left unset —
+**an explicit CLI flag always wins** — and every applied value is printed with its source; `retry`
+recipes, `review` expectations, and sibling-`motifs` facts are printed, never applied. `--dry-run`
+on those three generators previews a page's resolved levers with no key and no API call. When a page
+needs a new lever, record it in the registry in the same commit that ships the asset. Full
+description: [`pipeline.md`](./pipeline.md).
+
 ### Fill outline drift & the audit
 
 A colored fill must register on its line art pixel-for-pixel — the magic brush (ADR-0043) reveals

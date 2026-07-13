@@ -10,9 +10,11 @@
 > regenerated); **both landed 2026-07-13 as first-class audit scripts**
 > (`gen:coloring-fills:audit:halo` / `gen:coloring-fills:audit:shapes`). **#23 and #25 landed
 > 2026-07-13** as the committed regression fixtures in `golden/`
-> (`gen:coloring-golden:freeze`/`diff` + `gen:assets:manifest`/`check:assets:manifest`). The
-> remaining ideas below are still open leads. The living list of concrete outstanding defects and
-> gate blind spots (as opposed to these exploratory leads) is [`ISSUES.md`](ISSUES.md).
+> (`gen:coloring-golden:freeze`/`diff` + `gen:assets:manifest`/`check:assets:manifest`). **#10
+> landed 2026-07-13** as the per-page notes registry (`fill-src/<cat>/notes.json` +
+> `lib/page-notes.mjs`, auto-loaded by the night/chalk/normalize generators). The remaining ideas
+> below are still open leads. The living list of concrete outstanding defects and gate blind spots
+> (as opposed to these exploratory leads) is [`ISSUES.md`](ISSUES.md).
 
 Brainstormed immediately after generating and reviewing the whole catalog (7 categories: 83 chalks +
 83 night fills, ~350 candidate images eyeballed). **Nothing here is empirically verified** — each
@@ -139,7 +141,14 @@ Idea: same region-hue scorer as #8 applied across orientations; or condition the
 
 * Try on: `creatures/dragon-tall` vs `dragon-wide`, `objects/balloon-tall` vs `balloon-wide`.
 
-### 10. Per-page notes registry so regens don't rediscover levers **[process]**
+### 10. Per-page notes registry so regens don't rediscover levers **[process — LANDED 2026-07-13]**
+
+> Validated in `ideas-exploration/idea-10/` (registry mined from history; spider-tall passed every
+> gate FIRST take with its registry note auto-injected), then landed as `lib/page-notes.mjs` +
+> per-category `fill-src/<cat>/notes.json`, auto-loaded by the night/chalk/normalize generators
+> (explicit CLI always wins; `--dry-run` previews). Seeded by reconciling the mined 2.5-era registry
+> with the 3.1 migration record — durable page quirks kept, dead-model-habit workarounds dropped.
+> See `pipeline.md` "The per-page notes registry".
 
 The levers that finally worked are buried in commit messages and pipeline.md prose (spider: "THE
 EYES ARE THE STAR", train-wide: composite-over-gate, house-wide: "this scene has no eyes"). Any

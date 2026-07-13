@@ -38,6 +38,11 @@
 //   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --max-attempts 4  retry harder
 //   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --line-white-min 150  dark-outline gate
 //   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --dilate-lines 2  thicken white input lines
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --dry-run       print each page's resolved levers (no API)
+//
+// Per-page levers (notes, temperature, gate overrides) auto-load from the
+// fill-src/<category>/notes.json registry (lib/page-notes.mjs) so a regen starts
+// from the known-good settings; explicit CLI flags always override the registry.
 import { parseArgs } from 'node:util';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
@@ -46,6 +51,7 @@ import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 // Drift / night-mood / line-color scoring is shared with audit-golden.mjs so the
 // committed raws can be re-scored offline with the exact generation-time math.
@@ -107,9 +113,9 @@ Convey the night mood with COLOR AND MOOD ONLY. Do NOT add a moon, stars, firefl
 
 The result must look like the identical white-line drawing, recolored as a cozy, dim, moonlit NIGHT-TIME scene on a deep dark evening background — never a bright daytime picture.`;
 
-async function generateDarkPage(ai, { imageBytes, mimeType, temperature, chalked }) {
+async function generateDarkPage(ai, { imageBytes, mimeType, temperature, chalked, notes }) {
   const base = darkFillPrompt(chalked);
-  const prompt = values.notes ? `${base}\n\nPAGE-SPECIFIC NOTES:\n${values.notes}` : base;
+  const prompt = notes ? `${base}\n\nPAGE-SPECIFIC NOTES:\n${notes}` : base;
   const response = await ai.models.generateContent({
     model: MODEL,
     contents: [
@@ -177,7 +183,7 @@ async function dilateWhiteLines(negatedBuf, radius) {
 // white lines on pure black; nudge the floor up a touch so it reads as deep
 // charcoal rather than absolute black (closer to the app's --paper dark).
 // With --dilate-lines N, thicken the white lines first (see dilateWhiteLines).
-async function toDarkInput(sourceBuf) {
+async function toDarkInput(sourceBuf, dilateLines) {
   const negated = await sharp(sourceBuf).negate({ alpha: false }).toBuffer();
   const grown = dilateLines > 0 ? await dilateWhiteLines(negated, dilateLines) : sharp(negated);
   return grown.webp({ quality: WEBP_QUALITY }).toBuffer();
@@ -213,33 +219,38 @@ const { values, positionals } = parseArgs({
     'line-white-min': { type: 'string' },
     'dilate-lines': { type: 'string' },
     notes: { type: 'string' },
+    'dry-run': { type: 'boolean' },
   },
 });
 const samples = values.samples === undefined ? 1 : Number(values.samples);
 if (!(Number.isInteger(samples) && samples >= 1)) fail(`--samples must be a positive integer`);
-const baseTemp = values.temperature === undefined ? 0.6 : Number(values.temperature);
-const maxAttempts = values['max-attempts'] === undefined ? 3 : Number(values['max-attempts']);
-if (!(Number.isInteger(maxAttempts) && maxAttempts >= 1))
-  fail(`--max-attempts must be a positive integer`);
-const driftThreshold =
-  values['drift-threshold'] === undefined
-    ? DRIFT_THRESHOLD_DEFAULT
-    : Number(values['drift-threshold']);
-if (!(driftThreshold >= 0)) fail(`--drift-threshold must be a non-negative number`);
-const nightLumaMax =
-  values['night-luma-max'] === undefined
-    ? NIGHT_BG_LUMA_MAX_DEFAULT
-    : Number(values['night-luma-max']);
-if (!(nightLumaMax >= 0)) fail(`--night-luma-max must be a non-negative number`);
-const lineWhiteMin =
-  values['line-white-min'] === undefined
-    ? LINE_WHITE_MIN_DEFAULT
-    : Number(values['line-white-min']);
-if (!(lineWhiteMin >= 0)) fail(`--line-white-min must be a non-negative number`);
-const dilateLines = values['dilate-lines'] === undefined ? 0 : Number(values['dilate-lines']);
-if (!(Number.isInteger(dilateLines) && dilateLines >= 0))
-  fail(`--dilate-lines must be a non-negative integer`);
-if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
+
+// Per-page tuning resolves in the page loop — defaults, then the page's
+// fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
+function nightSettings(v, where) {
+  const s = {
+    baseTemp: v.temperature === undefined ? 0.6 : Number(v.temperature),
+    maxAttempts: v['max-attempts'] === undefined ? 3 : Number(v['max-attempts']),
+    driftThreshold:
+      v['drift-threshold'] === undefined ? DRIFT_THRESHOLD_DEFAULT : Number(v['drift-threshold']),
+    nightLumaMax:
+      v['night-luma-max'] === undefined ? NIGHT_BG_LUMA_MAX_DEFAULT : Number(v['night-luma-max']),
+    lineWhiteMin:
+      v['line-white-min'] === undefined ? LINE_WHITE_MIN_DEFAULT : Number(v['line-white-min']),
+    dilateLines: v['dilate-lines'] === undefined ? 0 : Number(v['dilate-lines']),
+    notes: v.notes,
+  };
+  if (!(Number.isInteger(s.maxAttempts) && s.maxAttempts >= 1))
+    fail(`--max-attempts must be a positive integer (${where})`);
+  if (!(s.driftThreshold >= 0)) fail(`--drift-threshold must be a non-negative number (${where})`);
+  if (!(s.nightLumaMax >= 0)) fail(`--night-luma-max must be a non-negative number (${where})`);
+  if (!(s.lineWhiteMin >= 0)) fail(`--line-white-min must be a non-negative number (${where})`);
+  if (!(Number.isInteger(s.dilateLines) && s.dilateLines >= 0))
+    fail(`--dilate-lines must be a non-negative integer (${where})`);
+  return s;
+}
+nightSettings(values, 'cli');
+if (!values['dry-run'] && !process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
 
 // Generate one take, register it to the source, and score four ways: structural
 // DRIFT (invented outlines), NIGHT-ness (background too bright / daytime), LINE
@@ -262,7 +273,9 @@ async function generateCleanTake({
   height,
   temp0,
   lightEyes,
+  cfg,
 }) {
+  const { maxAttempts, nightLumaMax, lineWhiteMin, driftThreshold } = cfg;
   let best = null; // lowest drift overall (fallback)
   let bestAccept = null; // lowest drift among takes that pass mood + line + eyes
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -272,6 +285,7 @@ async function generateCleanTake({
       mimeType: 'image/webp',
       temperature,
       chalked: !!chalk,
+      notes: cfg.notes,
     });
     const resized = await sharp(bytes).resize(width, height, { fit: 'fill' }).png().toBuffer();
     // Edges are polarity-agnostic, so align the colored output to the ink-on-white
@@ -319,11 +333,38 @@ if (values.tall && values.wide) fail('pass only one of --tall / --wide');
 if (values.tall) pages = pages.filter((p) => p.includes('-tall'));
 if (values.wide) pages = pages.filter((p) => p.includes('-wide'));
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = process.env.GEMINI_API_KEY
+  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+  : null;
 
 let failures = 0;
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
+  const rel = relative(COLORING_DIR, page)
+    .replace(/\.outline\.webp$/, '')
+    .replace(/\\/g, '/');
+  // Resolve this page's levers: defaults < fill-src/<cat>/notes.json < CLI.
+  const levers = pageLevers(rel, 'night');
+  const { merged, fromRegistry } = mergeFlags(values, levers);
+  const cfg = nightSettings(merged, `${rel} via notes.json`);
+  if (levers || values['dry-run'])
+    console.log(
+      describeLevers({
+        rel,
+        levers,
+        fromRegistry,
+        cliValues: values,
+        settings: {
+          temperature: cfg.baseTemp,
+          'max-attempts': cfg.maxAttempts,
+          'drift-threshold': cfg.driftThreshold,
+          'night-luma-max': cfg.nightLumaMax,
+          'line-white-min': cfg.lineWhiteMin,
+          'dilate-lines': cfg.dilateLines,
+          notes: cfg.notes,
+        },
+      })
+    );
+  if (values['dry-run']) continue;
   const pen = await readFile(page);
   const { width, height } = await sharp(pen).metadata();
   // The page's chalk outline (ink-on-white), when the fork has happened — the
@@ -332,7 +373,7 @@ for (const page of pages) {
   const chalkPath = page.replace(/\.outline\.webp$/, '.chalk.webp');
   const chalk = existsSync(chalkPath) ? await readFile(chalkPath) : null;
   const source = chalk ?? pen;
-  const darkInput = await toDarkInput(source);
+  const darkInput = await toDarkInput(source, cfg.dilateLines);
   // Eye reference: which nested cores the committed light fill paints as lively
   // eyes — cores keyed off the PEN outline on both sides of the comparison.
   // Absent (page has no light raw yet) the eye gate is skipped.
@@ -352,8 +393,9 @@ for (const page of pages) {
         chalk,
         width,
         height,
-        temp0: baseTemp + i * 0.12,
+        temp0: cfg.baseTemp + i * 0.12,
         lightEyes,
+        cfg,
       });
       const colored = await sharp(take.aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
@@ -368,9 +410,9 @@ for (const page of pages) {
       const tries = take.attempt > 1 ? `  (${take.attempt} tries)` : '';
       const stats = `  drift ${take.drift.ratio.toFixed(4)} bgLuma ${take.night.bgLuma.toFixed(0)} lineW ${take.line.lineWhite.toFixed(0)}`;
       const warn =
-        (take.drift.ratio > driftThreshold ? '  ⚠ still drifting' : '') +
-        (take.night.bgLuma > nightLumaMax ? '  ⚠ too bright/daytime' : '') +
-        (take.line.lineWhite < lineWhiteMin ? '  ⚠ dark outlines' : '') +
+        (take.drift.ratio > cfg.driftThreshold ? '  ⚠ still drifting' : '') +
+        (take.night.bgLuma > cfg.nightLumaMax ? '  ⚠ too bright/daytime' : '') +
+        (take.line.lineWhite < cfg.lineWhiteMin ? '  ⚠ dark outlines' : '') +
         (take.eyes.passes ? '' : `  ⚠ flat eyes (${take.eyes.failed})`);
       console.log(`ok${nudge}${tries}${stats}${warn}  -> ${relative(REPO_ROOT, out)}`);
     } catch (err) {

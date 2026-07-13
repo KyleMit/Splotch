@@ -85,7 +85,7 @@ solid regions are harmless noise.
 ### The normalizer
 
 `npm run gen:coloring-outlines:normalize -- <page…> [--apply] [--notes "…"]
-[-t F] [--max-attempts N]`
+[-t F] [--max-attempts N] [--dry-run]`
 — Gemini image-edit (`gemini-3.1-flash-image`) redraws solid regions as thin outlined shapes (eyes:
 exactly one pupil ring + one catchlight circle), keep-best-of-N with a rising temperature ladder,
 candidates land in `.coloring-samples-dark/normalize/`. Six gates per candidate:
@@ -106,7 +106,9 @@ candidates land in `.coloring-samples-dark/normalize/`. Six gates per candidate:
 
 The registration gate also catches semantic damage: the first bee-wide normalization silently
 **deleted a cloud** (worst-tile keep 0%), fixed with a `--notes` telling it the sky has three
-clouds.
+clouds. Those hard-won per-page levers (bee-wide's clouds, bee-tall's eye note, caterpillar-tall's
+low-temperature de-swirl) now auto-load from the [notes registry](#the-per-page-notes-registry) —
+`--dry-run` previews what a page will resolve to.
 
 ### The from-scratch alternative
 
@@ -123,7 +125,7 @@ five-page pass: [fresh-outline-regen.md](fresh-outline-regen.md).
 ## Stage 1.5 — Chalk outlines
 
 `npm run gen:coloring-chalk -- <page-or-category…> [--apply] [--notes "…"]
-[-t F] [--max-attempts N] [--force]`
+[-t F] [--max-attempts N] [--force] [--dry-run]`
 — Gemini image-edit redraws the inverted pen as a chalk line drawing (`gen-coloring-chalk.mjs`),
 keep-best-of-N with a rising temperature ladder, candidates in `.coloring-samples-dark/chalk/` (each
 with a `.display.webp` preview of what dark mode will show and a registration overlay). Four gates
@@ -162,7 +164,9 @@ line ([decision record](chalk-edge-crisping.md)).
 
 Judgment-call misfires the gates can't see (a chalk that whitens something canon says is dark — the
 ladybug's first take gave it white shell spots) are caught only by human review of the
-`.display.webp`; the fix is a page `--notes` at low temperature.
+`.display.webp`; the fix is a page `--notes` at low temperature, recorded in the
+[notes registry](#the-per-page-notes-registry) so the next regen starts from it (the ladybug's
+shell-spot note is seeded there).
 
 After applying a chalk, regenerate the page's **night fill** (it conditions on the chalk), re-punch,
 and re-run `gen:coloring-thumbs` (the chalk's `.chalk.thumb.webp` is the dark-mode picker tile). Pen
@@ -221,8 +225,9 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning \
 Targets: a category (`nature`), one orientation (`nature --tall` / `nature --wide`), or a single
 cell (`nature/ant-tall`). Tuning: `--samples N` (takes per page), `--max-attempts N` (default 3; 4–5
 is a better batch default), `-t F`, `--notes "…"`, plus per-gate bars (`--drift-threshold`,
-`--night-luma-max`, `--line-white-min`) and `--dilate-lines N`. Writes to the gitignored
-`.coloring-samples-dark/` — never to shipped assets.
+`--night-luma-max`, `--line-white-min`) and `--dilate-lines N`; `--dry-run` prints each page's
+resolved levers without an API call. Writes to the gitignored `.coloring-samples-dark/` — never to
+shipped assets.
 
 The model input is the **chalk outline as dark mode displays it** (white marks on near-black — the
 negation of the shipped ink-on-white chalk), falling back to the inverted pen for un-forked pages.
@@ -250,6 +255,8 @@ Since the 3.1 migration these are genuine escalations, not batch defaults: the f
 needed none of levers 1–3 on any page (94/94 nights at lineW 255; 72 first-take), and the only
 `--notes` were judgment calls, not gate fights (`docs/gemini-3.1-migration.md`). The list below
 documents 2.5-era case history — expect to reach for it again mainly after a future model change.
+Levers that prove out per page are recorded in the [notes registry](#the-per-page-notes-registry)
+and auto-apply on the next regen.
 
 1. **More attempts against a stricter gate** — the retry loop keeps hunting instead of settling at
    the boundary: `--max-attempts 8 --line-white-min 175` (fixed farm/dog-wide 70→219 and
@@ -266,6 +273,32 @@ documents 2.5-era case history — expect to reach for it again mainly after a f
 On 3.1 expect near-zero flagged pages per category (the 2.5-era budget was roughly one flagged
 `-wide` per category). Borderline-but-light pages (a dim moonlit rim, lineW ≈ 150) are fine. Gemini
 occasionally 503s ("high demand") — just re-run the failed page.
+
+### The per-page notes registry
+
+Known per-page levers live in **`fill-src/<cat>/notes.json`** and auto-load in the night, chalk, and
+normalize generators (`lib/page-notes.mjs` — the schema is documented there; IDEAS #10, landed
+2026-07-13), so a regen starts from the settings past sessions fought to discover instead of
+re-fighting the battle (the spider's "THE EYES ARE THE STAR" note took ~26 attempts to find; with
+the registry it applies on attempt one). Per entry and tool (`night`/`chalk`/`normalize`, plus a
+reserved `light` and a `"*"` category wildcard):
+
+* **`flags`** — exact CLI long-option values, auto-applied; **an explicit CLI flag always wins**
+  over the registry. Every applied value is printed tagged `[cli]` / `[notes.json]` / `[default]`,
+  and `--dry-run` previews the resolution per page with no key and no API call.
+* **`retry`** — an escalation recipe that is *printed, never auto-applied* (for levers that were
+  needed once but shouldn't silently change the model input on a clean pass).
+* **`review`** — what the human gate should expect (acceptable warnings, known false positives).
+* **`why`** — provenance (commit / doc / session), so entries can be pruned when a model change
+  makes them obsolete.
+* **`motifs`** (per page, cross-tool) — sibling-motif facts (the pterodactyl -wide's crescent moon
+  vs the -tall's gold sun) printed on every run; nothing conditions on them yet (`ISSUES.md`).
+
+**When a page needs a new lever, record it in the registry in the same commit that ships the asset**
+— the registry only stays alive if writing it is part of shipping. The seed entries were reconciled
+against the 3.1 migration: durable page quirks stayed (eyeless house-wide, the ladybug's black shell
+spots), 2.5-era model-habit workarounds (re-inking temperatures, `--dilate-lines` recipes,
+keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
 
 ### Shipping (manual on purpose — the human gate)
 
@@ -486,7 +519,8 @@ whose sclera the chalk owns:
   wanted colored (a tooth on a dark face, a marking) is only caught by human review — no gate
   compares the chalk's whites to the fill's intent.
 * **Dark-bodied subjects at night** (spider precedent): the model wants to flood them; eyes and
-  markings vanish. Reach for `--notes` early.
+  markings vanish. Reach for `--notes` early (the spider's note is seeded in the notes registry and
+  auto-applies).
 * **The eye detector's anatomy assumptions.** Nested-circle eyes, cores ≥ 6 px, eye-scale area
   bands, and the 180 strong-reference bar were all calibrated on *nature*. New art styles
   (side-profile eyes, closed happy eyes `>‿<`, characters wearing glasses — the owl's witch hat
