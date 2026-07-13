@@ -1,0 +1,48 @@
+{
+  "idea": 9,
+  "title": "Tall-wide palette coherence for the same subject",
+  "verdict": "WORKED",
+  "oneline": "Inventory ranks 46 pairs; text-palette conditioning fixed dragon-wide (53deg to 11deg)",
+  "summary": "An offline hue-signature scorer (circular EMD over chroma-weighted hue histograms of interior fill pixels) ranked all 46 tall/wide pairs in light and night; the worst offenders are visually confirmed (blue vs pink rectangle, green vs teal dragon, blue vs green garbage truck, red vs yellow balloon). Multi-image conditioning across orientations fails 6/6 — the model copies the reference's composition and destroys line registration (keep 8-26%). Flattening the tall sibling's palette into a per-part text COLOR PLAN appended to the proven single-image prompt fixed creatures/dragon-wide on the first take: keep 100%, local 99.3%, hue EMD 52.9deg to 10.6deg.",
+  "tried": [
+    "Offline cross-orientation hue-signature scorer (36-bin chroma-weighted circular hue histogram over interior fill pixels; circular EMD + smeared-mismatch metrics) over all 46 tall/wide pairs, light + night",
+    "Visual verification of top offenders and controls via side-by-side pairs",
+    "Multi-image conditioning of dragon-wide light on the shipped punched dragon-tall light fill (idea-8 recipe), 4 calls",
+    "Multi-image with the reference downscaled to a 320px thumbnail + harder prompt, 2 calls",
+    "Text-palette conditioning: single-image proven prompt + per-part COLOR PLAN with hexes auto-extracted from the tall punched fill, 2 calls"
+  ],
+  "worked": [
+    "The scorer: ranks the catalog in ~50s offline and its top light-mode offenders are all real on inspection (rectangle 126deg blue-vs-pink, garbage 86deg blue-vs-green truck, dragon 53deg green-vs-teal)",
+    "Text-palette conditioning: first take passed drift gates perfectly (keep 100%, local 99.3%, white 0.2%) and moved dragon EMD 52.9deg to 10.6deg (control territory); second take equivalent",
+    "Extracting the reference palette offline is trivial: the top-4 quantized colors of the tall punch were exactly sky/body/pale-green/cream"
+  ],
+  "failed": [
+    "Multi-image palette conditioning across DIFFERENT drawings: 6/6 takes copied the reference's composition (drew the tall dragon on the wide canvas), keep 8-26%, local 0% — prompt wording and thumbnail-sizing the reference did not help",
+    "The eye gate flagged both text-palette takes, but the shipped dragon-wide raw fails judgeLightEyes identically (same near-white cores, same coordinates) — pre-existing detector quirk on this page, not a regression"
+  ],
+  "limitations": [
+    "The scorer measures the whole scene palette, not the subject: balloon (total red-to-yellow subject flip) under-ranks at 37.9deg due to prop dilution, spider (102deg) over-ranks though both spiders are purple — triage order, not a hard gate",
+    "Only one page conditioned (8-call cap); rectangle/balloon retrofits untested",
+    "Hex-to-part-name mapping in the COLOR PLAN was done by one human glance; automating it needs a cheap VLM text call or per-page notes",
+    "Night-mode cross-orientation incoherence is largely idea #8's light-night flips hitting one orientation; fix those first"
+  ],
+  "comparisons": [
+    {"label": "creatures/dragon light: shipped tall|wide vs tall|conditioned-wide", "before": "dragon-light-pair.webp", "after": "dragon-light-pair-after.webp", "note": "EMD 52.9deg to 10.6deg; wide dragon goes teal-with-orange-horns to the tall sibling's green, line art held at keep 100% / local 99.3%"}
+  ],
+  "images": [
+    {"file": "rectangle-light-pair.webp", "caption": "Worst light pair (126deg): tall BLUE rectangle vs wide PINK rectangle"},
+    {"file": "garbage-light-pair.webp", "caption": "vehicles/garbage light (86deg): blue truck vs green truck"},
+    {"file": "balloon-light-pair.webp", "caption": "objects/balloon light (38deg, under-ranked): RED balloon vs YELLOW balloon — prop dilution hides a total subject flip"},
+    {"file": "spider-light-pair.webp", "caption": "nature/spider light (102deg): scorer false positive — both spiders purple, scene differs"},
+    {"file": "station-night-pair.webp", "caption": "Worst night pair (149deg): white-grey station vs gold station"},
+    {"file": "dog-light-pair-control.webp", "caption": "Coherent control (4.4deg): brown dog in both orientations"},
+    {"file": "dragon-light-pair.webp", "caption": "BEFORE: shipped dragon — green tall vs teal wide with orange horns (52.9deg)"},
+    {"file": "dragon-light-pair-after.webp", "caption": "AFTER: text-palette-conditioned wide take — green dragon in both (10.6deg)"},
+    {"file": "dragon-wide-failure-composition-copy.webp", "caption": "Multi-image failure: the model drew the TALL composition instead of coloring the wide line art (keep 7.9%)"}
+  ],
+  "code": [
+    {"title": "Cross-orientation hue-signature scorer (circular EMD, offline)", "file": "code/score-orient-coherence.mjs"},
+    {"title": "Conditioned light-fill generator (--ref multi-image / --palette-text modes, standard gates)", "file": "code/gen-coloring-fills-cond.mjs"},
+    {"title": "Side-by-side tall|wide pair image builder", "file": "code/make-pair-image.mjs"}
+  ]
+}

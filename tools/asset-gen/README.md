@@ -55,6 +55,7 @@ From the **repo root** (the discoverable entry points — ADR-0019):
 ```bash
 npm run gen:style-covers        # AI style thumbnails  -> web/static/styles/
 npm run gen:coloring-chalk      # chalk outlines (dark-mode line art) -> web/static/coloring/**/*.chalk.webp
+npm run gen:coloring-outlines:fresh # brand-new pen outline from a text scene (same subject, new drawing)
 npm run gen:coloring-fills      # light colored fills  -> web/static/coloring/**/*.light.webp
 npm run gen:coloring-fills:audit # drift-check the raw fills in fill-src/ (no key/network)
 npm run gen:coloring-punch      # re-punch the shipped fills from fill-src/ raws (no key/network)
@@ -149,6 +150,10 @@ views, the outline-% badge, size constraints — lives in
 - **The coloring-page pipeline** (pen/chalk outlines → fills → punch, gates,
   per-category runbook): [`pipeline.md`](./pipeline.md). Decision records:
   [`docs/`](./docs/). Retired techniques + history: [`legacy/`](./legacy/).
+- **Known outstanding issues** (shipped-asset defects, gate blind spots,
+  tooling gaps): [`ISSUES.md`](./ISSUES.md) — check it before regenerating a
+  page or trusting a gate on an unfamiliar failure class; update it when you
+  fix or find one.
 - **AI art prompts** for authoring new source drawings / icons: `docs/PROMPTS.md`.
 
 ## Not here

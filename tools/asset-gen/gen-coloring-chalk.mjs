@@ -20,9 +20,14 @@
 // to Gemini or a human negates it back to white-on-black first.
 //
 // Gates per candidate (keep-best-of-N with a rising temperature ladder):
-//   1. keep/localKeep — outlineMatch(pen, candidate): every pen stroke is still
-//      traced, globally and in the worst tile (solid whites only ADD ink, so the
-//      forward direction must hold completely).
+//   1. keep/localKeep — outlineMatch(reference, candidate) where the reference
+//      is the pen with its SOLID INTERIORS whitened out (rim kept — the same
+//      exemption normalize-outline-strokes.mjs grants its redraws): every pen
+//      STROKE is still traced, globally and in the worst tile. A solid pen
+//      pupil is exactly what the chalk is supposed to whiten into sclera +
+//      outlined pupil, so scoring against the raw pen read that deliberate
+//      whitening as lost ink — 19 of the 2026-07 catalog's 94 shipped chalks
+//      failed this gate for no other reason and had to ship by hand-cp.
 //   2. enclosure — new ink is judged by WHERE it lands, not how thick it is:
 //      inside a pen-bounded interior it's a deliberate whitening (a sclera is a
 //      thin annulus — thickness tests misread it); on the open background
@@ -53,9 +58,10 @@ import { alignToSource } from './lib/align-to-source.mjs';
 import { crispInk } from './lib/crisp-ink.mjs';
 import { dilateMask } from './lib/morphology.mjs';
 import { scoreEyeFill, EYE_DARK_MAX, EYE_LIGHT_MIN } from './lib/eye-fill.mjs';
+import { scoreSolidity, whitenSolidRegions } from './lib/solid-regions.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
-const MODEL = 'gemini-2.5-flash-image';
+const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 92;
 const OUT_DIR = join(SAMPLES_DARK_DIR, 'chalk');
 
@@ -322,6 +328,11 @@ for (const page of pages) {
     continue;
   }
   const pen = await readFile(page);
+  // Keep-gate reference: whiten the pen's solid interiors (keeping a boundary
+  // rim) so the chalk's deliberate whitening of a solid pupil doesn't score as
+  // lost ink. Enclosure/white-budget/eye gates still judge against the raw pen.
+  const penSolidity = await scoreSolidity(pen);
+  const keepReference = penSolidity.solidPx ? await whitenSolidRegions(pen, penSolidity) : pen;
   const { width, height } = await sharp(pen).metadata();
   const displayInput = await sharp(pen)
     .negate({ alpha: false })
@@ -337,7 +348,7 @@ for (const page of pages) {
     ? await scoreEyeFill(await readFile(lightRawPath), pen)
     : null;
   const score = async (candidate, shift, attempt) => {
-    const fwd = await outlineMatch(pen, candidate);
+    const fwd = await outlineMatch(keepReference, candidate);
     const newInk = await scoreNewInk(pen, candidate);
     const eyes = lightEyes
       ? judgeChalkEyes(await scoreEyeFill(candidate, pen), lightEyes)

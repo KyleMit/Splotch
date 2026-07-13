@@ -45,6 +45,10 @@ pipeline evolves). Key rules when working in this folder:
 - **Outputs are committed artifacts**, reviewed by a human before shipping. The
   generators write shipped art into `web/static/` and review scratch into the
   gitignored `.coloring-samples*/`. Never commit the scratch dirs.
+- **`ISSUES.md` is the living list of known defects, gate blind spots, and
+  tooling gaps.** Read it before regenerating a page or overriding a gate
+  (several failure classes are gate-blind and only caught by composite
+  review); when you fix or discover an issue, update it in the same task.
 - **Manual/on-demand only** — the Gemini generators need `GEMINI_API_KEY` and are
   never run in CI (real API cost). The app never runs any of this at build time.
 - **The contact sheet is the single fill-review surface — read
@@ -66,3 +70,9 @@ pipeline evolves). Key rules when working in this folder:
   plus the history chronicle in `legacy/README.md`). Nothing in there is part
   of the current pipeline — `pipeline.md` is the live runbook; borrow from
   legacy, don't follow it.
+- **`ideas-exploration/` is the frozen 2026-07 empirical burn-down of
+  `IDEAS.md`** — one report, evidence set, and (mostly) re-appliable patch per
+  idea, plus a self-contained review dashboard (`ideas-review.html`). Read its
+  README before working any IDEAS.md item: 24 of 25 ideas were validated there,
+  and several carry finished patches/assets waiting to be promoted. Like
+  `legacy/`, nothing in it is live pipeline code.

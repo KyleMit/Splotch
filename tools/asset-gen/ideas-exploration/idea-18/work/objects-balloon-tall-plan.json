@@ -1,0 +1,175 @@
+{
+  "closeR": 0,
+  "plan": [
+    {
+      "n": 1,
+      "what": "background",
+      "color": "dusty-rose"
+    },
+    {
+      "n": 2,
+      "what": "cloud",
+      "color": "white-tint"
+    },
+    {
+      "n": 3,
+      "what": "cloud",
+      "color": "white-tint"
+    },
+    {
+      "n": 4,
+      "what": "cloud",
+      "color": "white-tint"
+    },
+    {
+      "n": 5,
+      "what": "balloon body",
+      "color": "sky-blue"
+    },
+    {
+      "n": 6,
+      "what": "balloon highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 7,
+      "what": "star",
+      "color": "sunny-yellow"
+    },
+    {
+      "n": 8,
+      "what": "star",
+      "color": "sunny-yellow"
+    },
+    {
+      "n": 9,
+      "what": "balloon highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 10,
+      "what": "star",
+      "color": "sunny-yellow"
+    },
+    {
+      "n": 11,
+      "what": "star",
+      "color": "sunny-yellow"
+    },
+    {
+      "n": 12,
+      "what": "balloon knot",
+      "color": "white-tint"
+    },
+    {
+      "n": 13,
+      "what": "balloon knot",
+      "color": "white-tint"
+    },
+    {
+      "n": 14,
+      "what": "balloon knot",
+      "color": "white-tint"
+    },
+    {
+      "n": 15,
+      "what": "balloon string",
+      "color": "leaf-green"
+    },
+    {
+      "n": 16,
+      "what": "balloon string",
+      "color": "lavender"
+    },
+    {
+      "n": 17,
+      "what": "string highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 18,
+      "what": "star",
+      "color": "sunny-yellow"
+    },
+    {
+      "n": 19,
+      "what": "star",
+      "color": "sunny-yellow"
+    },
+    {
+      "n": 20,
+      "what": "bow loop",
+      "color": "leaf-green"
+    },
+    {
+      "n": 21,
+      "what": "bow loop",
+      "color": "ocean-blue"
+    },
+    {
+      "n": 22,
+      "what": "bow highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 23,
+      "what": "bow highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 24,
+      "what": "bow center",
+      "color": "pink"
+    },
+    {
+      "n": 25,
+      "what": "gift box top panel",
+      "color": "sunny-yellow"
+    },
+    {
+      "n": 26,
+      "what": "gift box top panel",
+      "color": "teal"
+    },
+    {
+      "n": 27,
+      "what": "bow tail",
+      "color": "pink"
+    },
+    {
+      "n": 28,
+      "what": "bow tail",
+      "color": "orange"
+    },
+    {
+      "n": 29,
+      "what": "bow highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 30,
+      "what": "bow highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 31,
+      "what": "bow highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 32,
+      "what": "gift box side panel",
+      "color": "lavender"
+    },
+    {
+      "n": 33,
+      "what": "gift box ribbon",
+      "color": "leaf-green"
+    },
+    {
+      "n": 34,
+      "what": "gift box side panel",
+      "color": "ocean-blue"
+    }
+  ]
+}

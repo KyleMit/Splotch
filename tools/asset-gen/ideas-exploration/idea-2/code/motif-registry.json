@@ -1,0 +1,25 @@
+{
+  "bubbles": [
+    { "page": "shapes/rectangle-tall", "bbox512": [307, 28, 411, 99], "label": "rectangle-tall (rings)" },
+    { "page": "shapes/rectangle-tall", "bbox512": [97, 48, 162, 102], "label": "rectangle-tall #2" },
+    { "page": "shapes/rectangle-wide", "bbox512": [347, 69, 391, 136], "label": "rectangle-wide (donut)" },
+    { "page": "shapes/rectangle-wide", "bbox512": [149, 60, 191, 124], "label": "rectangle-wide #2" }
+  ],
+  "sun": [
+    { "page": "dinosaur/pterodactyl-tall", "bbox512": [345, 59, 396, 92], "label": "pterodactyl-tall (solid)" },
+    { "page": "dinosaur/pterodactyl-wide", "bbox512": [347, 44, 367, 77], "label": "pterodactyl-wide (solid dot)" }
+  ],
+  "stars": [
+    { "page": "space/moon-wide", "bbox512": [338, 64, 379, 129], "label": "moon-wide (solid)" },
+    { "page": "space/ship-wide", "bbox512": [410, 38, 478, 141], "label": "ship-wide (outline)" },
+    { "page": "dinosaur/pterodactyl-tall", "bbox512": [230, 70, 275, 105], "label": "pterodactyl-tall (outline)" }
+  ],
+  "planets": [
+    { "page": "space/ship-wide", "bbox512": [48, 40, 145, 154], "label": "ship-wide (solid)" },
+    { "page": "space/moon-wide", "bbox512": [388, 128, 478, 250], "label": "moon-wide (outline)" }
+  ],
+  "flowers": [
+    { "page": "shapes/heart-tall", "bbox512": [185, 382, 323, 459], "label": "heart-tall (solid)" },
+    { "page": "shapes/square-wide", "bbox512": [95, 389, 143, 472], "label": "square-wide (outline)" }
+  ]
+}
