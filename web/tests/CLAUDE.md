@@ -1,0 +1,18 @@
+<!-- Source: .ruler/AGENTS.md -->
+
+# web/tests/ orientation
+
+> This directory's `CLAUDE.md` and `AGENTS.md` are generated from the `.ruler/AGENTS.md` beside them
+> — edit that source, then run `npm run ruler:apply` at the repo root (ADR-0058).
+
+* These are Playwright E2E specs. Unit tests are colocated with source as `src/**/*.test.ts`, and
+  the shared Maestro native smoke flow lives at `.maestro/smoke.yaml` (ADR-0008). Pick the lowest
+  layer that can catch the regression.
+* Run E2E tests through the root npm scripts, not raw Playwright from the repository root:
+  `npm run test:e2e -- flows.spec.ts -g "test title"`. The wrapper selects the `web/` working
+  directory and the configured browser fallback.
+* Playwright builds and previews the production artifact by default. Set `DEV_SERVER=1` only for
+  faster local iteration against Vite's development server.
+* The admin specs rely on `ADMIN_ACCESS_TOKEN=test-admin-secret` from `playwright.config.ts`.
+* Read the `testing` skill before adding or substantially changing coverage; it documents the full
+  command matrix, test-layer boundaries, CI triggers, and cloud-session constraints.

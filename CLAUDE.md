@@ -59,6 +59,9 @@ Not generated — edit in place: `.claude/rules/` (path-scoped rules), `.claude/
 | Command                       | Purpose                                                                               |
 | ----------------------------- | ------------------------------------------------------------------------------------- |
 | `npm run info`                | List **every** npm script with its description — run this before guessing at a script |
+| `npm run ruler:apply`         | Regenerate agent files from `.ruler/` and format them                                 |
+| `npm run ruler:dry-run`       | List the agent files Ruler would regenerate without writing them                      |
+| `npm run ruler:check`         | Regenerate and fail if committed agent files have drifted                             |
 | `npm run dev`                 | Dev server at `localhost:5173` (no `/api` functions)                                  |
 | `npm run dev:netlify`         | Dev server **with** the `/api/*` serverless functions                                 |
 | `npm run check`               | svelte-check / type checking                                                          |
@@ -113,7 +116,7 @@ skill instead before making one.
 Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
 agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,
 `testing.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`, `android/`, `scripts/`,
-`tools/asset-gen/`, and `docs/handoff/` cover those areas.
+`tools/asset-gen/`, `web/tests/`, and `docs/handoff/` cover those areas.
 
 Remaining `docs/`:
 

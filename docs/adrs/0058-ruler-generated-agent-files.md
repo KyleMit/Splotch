@@ -39,8 +39,9 @@ deliberate):
   disabled (files are tracked; there are no project MCP servers; `.bak` files would be noise).
 * **Commands:** `npm run ruler:apply` regenerates and then runs `dprint fmt` (ruler's raw output
   carries extra blank lines dprint collapses — formatting post-apply keeps the committed files
-  inside the ADR-0057 gate). `npm run ruler:check` (`scripts/ruler-check.mjs`) re-applies and fails
-  on any worktree change or untracked generated file; the Quality CI job runs it.
+  inside the ADR-0057 gate). `npm run ruler:dry-run` lists the outputs Ruler would write without
+  changing the worktree. `npm run ruler:check` (`scripts/ruler-check.mjs`) re-applies and fails on
+  any worktree change or untracked generated file; the Quality CI job runs it.
 * **Not generated** (edited in place): `.claude/rules/` path-scoped rules, `.claude/hooks/`,
   `.claude/settings.json`, `.claude/audit-conventions.md`, `.claude/cloud/`, and `docs/`.
 

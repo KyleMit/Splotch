@@ -155,6 +155,7 @@ on save.
 [ruler](https://github.com/intellectronica/ruler) from the sources in `.ruler/` (and the nested
 `<dir>/.ruler/` directories). Don't edit the generated files — edit the `.ruler/**` source, run
 `npm run ruler:apply`, and commit the regenerated output; CI fails on drift (`npm run ruler:check`).
+Use `npm run ruler:dry-run` to list the files Ruler would regenerate without changing the worktree.
 
 ## Adding a new icon
 
