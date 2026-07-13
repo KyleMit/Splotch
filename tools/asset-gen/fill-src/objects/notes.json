@@ -18,12 +18,20 @@
     }
   },
   "flower-wide": {
+    "chalk": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "The big flower's two eyes currently read as solid white pupil-blobs (the source drawing has solid-ink pupils). Erase the solid white inside each eye and redraw it: white sclera, a BLACK outlined pupil, and a small white catchlight circle inside the pupil. CRITICAL: each pupil must sit DEAD CENTER in its eye — the white sclera must surround the pupil EVENLY, with the SAME thickness of white on the left, right, top, and bottom of the pupil. Do NOT place the pupil toward the nose or leave a big white lobe on the outer side of the eye — that reads cross-eyed. Never leave an eye as one solid white disc, and keep both eyes symmetric with each other."
+      },
+      "review": "Solid-pen-eye page (0 cores, eye-polarity gate vacuous — the police-wide class). The CHALK owns pupil placement: chalk ink screens to solid white in the composite, so the pupil can only appear in the chalk's non-ink opening — judge pupil CENTERING on the chalk itself (ASCII luma map the eyes) and on the composite against the light fill; a night regen cannot move a pupil the chalk placed. A softer centered-pupil note at these settings still left the openings inner-biased; the EVEN-sclera phrasing above is what centered them (take 2).",
+      "why": "2026-07-13 ISSUES Tier 1 fix (cross-eyed night face): the 2026-07 wave chalk enlarged each eye outward into a big sclera lobe while leaving the fillable pupil hole at the pen's solid-pupil position — the inner edge of the new bigger eye — and every gate passed. The original ISSUES entry blamed the night fill; per-layer ASCII luma maps proved the chalk defines pupil position via its opening."
+    },
     "night": {
       "retry": {
-        "notes": "Center each pupil in its eye exactly as the light fill does — the pupils must NOT sit at the inner edge of the eyes (cross-eyed)."
+        "notes": "Each eye's white sclera and small white catchlight are already drawn — your only eye job is to fill each pupil circle a deep near-black; do NOT paint any extra white catchlight or highlight inside the pupils. Draw crisp WHITE lines only — do NOT add dark outlines, rims, or drop shadows beside the white lines. PALETTE: the big flower keeps deep plum-magenta petals with a warm golden face; the four background flowers keep their daytime hues dimmed for night — the tall left flower dusty rose-pink, the small left flower muted burnt orange, the small right flower soft violet, the tall right flower slate blue. NEVER paint any flower's petals the same navy as the sky — every flower must clearly stand out against the night sky."
       },
-      "review": "The shipped 2026-07 night fill painted both pupils at the inner edge of the eyes, so the flower reads cross-eyed in dark mode (the light fill is centered and correct). Pupil PLACEMENT is invisible to every gate — cores lively, polarity fine — so judge placement by eye against the light fill (ISSUES Tier 1).",
-      "why": "2026-07-13 dark-mode composite review — all gates pass the cross-eyed take."
+      "review": "Judge pupil placement on the chalk-over-night COMPOSITE against the light fill — placement is chalk-owned (see this page's chalk entry), invisible to every gate. Without the palette pin the secondary flowers re-roll badly: the 2026-07-13 regen's unpinned take painted both small background flowers sky-navy (the ISSUES night-contrast blind spot) and both tall siblings the same teal. Pre-fix this page sat at haloScore 4.0 (dark rims in the old raw); the pinned regen landed 0.18 — re-run gen:coloring-fills:audit:halo after any regen.",
+      "why": "2026-07-13 ISSUES Tier 1 fix — night regenerated against the recentered chalk (take 1 unpinned lost the background flowers to sky-navy; take 2 with the pin shipped)."
     }
   },
   "house-wide": {

@@ -105,7 +105,7 @@ d21a95a1b682b29eae0372c0caee5861f0b898df3400664a9c52bfdb4c7c0bb2  tools/asset-ge
 d4f5c459fa20136b173b9b1fbb31f7faacd67f038ada04f047e0b8c5651dfc8e  tools/asset-gen/fill-src/objects/flower-tall.light.raw.webp
 185e8baff8fe1398441b68d275ca18201aee101005501e41a90d92a18b2be7af  tools/asset-gen/fill-src/objects/flower-tall.night.raw.webp
 710a0245676fc83a265c6a579e28e1ee28177247bd41bdfb046acbfcdd8322aa  tools/asset-gen/fill-src/objects/flower-wide.light.raw.webp
-b66526f929e0780216085c24c34dd977940c08b362fde1036e4d6457d9c30f41  tools/asset-gen/fill-src/objects/flower-wide.night.raw.webp
+4d8ce23a03d53e15e979bfb6217d787b421f1c58ac2432c05b8a95cb1693e35f  tools/asset-gen/fill-src/objects/flower-wide.night.raw.webp
 9d896d21a29aab5629d6cc3b0276281061bc277ed090e77449ce96f5ae8ee42e  tools/asset-gen/fill-src/objects/house-tall.light.raw.webp
 23ffb4a59b1319ee3c6daf2ccf9824ee07f035a08cad7b93e15ef5c7bf551ea7  tools/asset-gen/fill-src/objects/house-tall.night.raw.webp
 a9379eec84fa0683713fccc19e83aad3b7166ae2d368935be0025d6ae2239e22  tools/asset-gen/fill-src/objects/house-wide.light.raw.webp
@@ -514,10 +514,10 @@ f34df31908185a90a63b6a1ba65024695b57aae3de6f63f6b965623ac85af75d  web/static/col
 cd3c31805b13980c05508c213dd4e1710e8061611f403b3b813a618cecf461e5  web/static/coloring/objects/flower-tall.night.webp
 62688793114a5c663b62b386d52ec6928b170b55251de77a56567f4df45f45cd  web/static/coloring/objects/flower-tall.outline.webp
 81a774ff32f70211a381d1d0f7030c8f29e579b1462b9f15a86a9f48aae29531  web/static/coloring/objects/flower-tall.thumb.webp
-6d6b90e3b29a1af1fc1ef28f31bcf2339a92867a1489c4d1592804335dbd6455  web/static/coloring/objects/flower-wide.chalk.thumb.webp
-c311658806f418f75361f179ee3e29cb2f4c1618b92415c4915006f1c02bead9  web/static/coloring/objects/flower-wide.chalk.webp
+6bb872bcdc691221bb0a7f5aeb48fa2fea6e3665ff9a8cef1a2aed236e80e9dd  web/static/coloring/objects/flower-wide.chalk.thumb.webp
+3fa9dc4cc91f846d7841a15c2e6e1b6af6722990519bdbf7ac4d2b17a2a2c592  web/static/coloring/objects/flower-wide.chalk.webp
 c5f5140957f2adfb12736e78944bb7e5edb1d2efa1e228e160a16afbd64b9c66  web/static/coloring/objects/flower-wide.light.webp
-88b40ac5db0a2780dbdf33a138185ae310fe24c2d6c2a33380ff2fd2072225c2  web/static/coloring/objects/flower-wide.night.webp
+f1288477fa4931b0dff368f61704f25ab3498554c051d52f7ef47642e48202da  web/static/coloring/objects/flower-wide.night.webp
 99b111c5ca25b3a8152df08df1e703f89ef2b0a3c93a71e228a984fe236e35c1  web/static/coloring/objects/flower-wide.outline.webp
 3891ef32333ec784a9e3542799ef099f6761df5aa8165822dc79562cf28c7a72  web/static/coloring/objects/flower-wide.thumb.webp
 04bc790d64905cc26e4f08c3c955db3b07a585bd95d584b9f374b98188099d4c  web/static/coloring/objects/house-tall.chalk.thumb.webp
