@@ -1,64 +1,65 @@
 # Architectural Decision Records
 
-This directory records significant architectural decisions made in the Splotch project. Each ADR documents the context, the decision, and the consequences so future contributors understand *why* things are the way they are.
+This directory records significant architectural decisions made in the Splotch project. Each ADR
+documents the context, the decision, and the consequences so future contributors understand *why*
+things are the way they are.
 
-| # | Title | Status |
-|---|-------|--------|
-| [0001](0001-sveltekit-dual-adapter-strategy.md) | SvelteKit Dual-Adapter Strategy (Web + Native) | Active |
-| [0002](0002-svelte-5-runes.md) | Svelte 5 Runes Over Legacy Stores | Active |
-| [0003](0003-typescript-migration.md) | Full TypeScript Adoption | Active |
-| [0004](0004-imperative-canvas-engine.md) | Imperative Canvas Engine with Callback Interface | Active |
-| [0005](0005-dual-layer-storage.md) | Dual-Layer Storage (localStorage + Capacitor Preferences) | Active |
-| [0006](0006-server-side-ai-generation.md) | Server-Side AI Image Generation via Netlify Serverless Function | Active |
-| [0007](0007-cors-csrf-for-native-api-calls.md) | CORS and CSRF Strategy for Native-to-Web API Calls | Active |
-| [0008](0008-three-tier-testing-strategy.md) | Three-Tier Testing Strategy (Vitest + Playwright + Maestro) | Active |
-| [0009](0009-happy-dom-over-jsdom.md) | happy-dom Over jsdom for Vitest Unit Tests | Active |
-| [0010](0010-compile-time-build-constants.md) | Compile-Time Build Constants via Vite Define | Active |
-| [0011](0011-capacitor-cli-windows-patch.md) | patch-package for Capacitor CLI Windows gradlew Bug | Active |
-| [0012](0012-android-build-toolchain.md) | Android Build Toolchain Requirements (Node 22 + JDK 21 Temurin) | Active |
-| [0013](0013-platform-detection-without-capacitor-core.md) | Platform Detection Without Importing @capacitor/core | Active |
-| [0014](0014-in-memory-rate-limiting.md) | In-Memory Rate Limiting (Per-Instance Sliding Window) | Active |
-| [0015](0015-capped-dpr-canvas-rendering.md) | Capped-DPR Canvas Rendering (min(devicePixelRatio, 2)) | Active |
-| [0016](0016-admin-console-bearer-api-for-native.md) | Admin Console via Shared Server Core + Bearer-Session API for Native | Active |
-| [0017](0017-cross-platform-node-scripts.md) | Cross-Platform Node Scripts with Shared Helpers in scripts/lib/ | Active |
-| [0018](0018-claude-native-knowledge-tiers.md) | Project Knowledge in Claude Code-Native Tiers (Skills, Rules, Nested CLAUDE.md) | Active |
-| [0019](0019-npm-script-naming-and-scripts-info.md) | npm Script Naming Conventions + scripts-info Self-Documentation | Active |
-| [0020](0020-ios-build-toolchain.md) | iOS Build Toolchain (Swift Package Manager, xcodebuild Scripts, Automatic Signing) | Active |
-| [0021](0021-cloud-session-tunneling.md) | Tunneling the Dev Server from Claude Code Cloud Sessions (self-hosted chisel reverse tunnel) | Active |
-| [0022](0022-pwa-service-worker-strategy.md) | PWA Service Worker Strategy — vite-plugin-pwa as Manifest Injector with Custom Update Lifecycle | Active |
-| [0023](0023-redteam-ai-safety-integration-test.md) | Red-Team Integration Test for AI Image Safety (Manual, Token-Gated, Encrypted Fixtures, Excluded from CI) | Active |
-| [0024](0024-web-app-subdirectory-for-netlify-watcher.md) | Web App in web/ Subdirectory to Scope the Netlify Dev Watcher | Active |
-| [0025](0025-netlify-blobs-server-storage.md) | Netlify Blobs for Server-Side Storage (Eventual Consistency, Env-Seeded Fallback) | Active |
-| [0026](0026-notch-band-via-safe-area-css.md) | Notch Band via a Safe-Area CSS Strip, Not Per-Platform Native Status Bars | Active |
-| [0027](0027-device-lock-detection-plugin.md) | A Custom `DeviceLock` Capacitor Plugin to Detect Guided Access / App Pinning | Active |
-| [0028](0028-apple-pencil-eraser-plugin.md) | A Custom `PencilEraser` Capacitor Plugin for the Apple Pencil Double-Tap | Active |
-| [0029](0029-npm-as-package-manager.md) | npm as the Package Manager | Active |
-| [0030](0030-git-derived-web-version.md) | Git-Derived Per-Commit Web Version (major.minor.commits-since-tag) | Active |
-| [0031](0031-linting-formatting-and-ci-quality-gates.md) | Linting, Formatting, and CI Quality Gates (ESLint + Prettier, critical-only audit) | Active |
-| [0032](0032-performance-profiling-harness.md) | Automated Performance Profiling Harness (build-flag marks + CDP/WebKit capture, web + Android + iOS) | Active |
-| [0033](0033-command-replay-undo.md) | Command-Replay Undo (Single Baseline + Stroke Log, replacing the snapshot stack) | Active |
-| [0034](0034-drop-virtual-canvas-rebuild-on-resize.md) | Drop the Virtual Canvas — Rebuild on Resize from the Baseline + Log | Active |
-| [0035](0035-keyframe-long-commands.md) | Keyframe Long Commands So Undo Doesn't Replay Thousands of Ops | Active |
-| [0036](0036-stroke-simplification-at-commit.md) | Simplify Stroke Ops at Commit (Ramer–Douglas–Peucker) So Undo Replays Few Segments | Active |
-| [0037](0037-photo-save-targets-per-platform.md) | Photo Save Targets per Platform (Native Gallery, Web Folder Save, Download Fallback) | Active |
-| [0038](0038-scribble-guard-cancel-stylus-touch-streams.md) | Cancel Stylus Touch Streams to Stop iPadOS Scribble Swallowing Quick Pen Strokes | Active |
-| [0039](0039-pwa-install-prompt-ux.md) | Friendly PWA Install Prompt — Capture `beforeinstallprompt`, Fall Back to Guided Hints | Active |
-| [0040](0040-per-route-render-modes-and-ssg-home.md) | Per-Route Render Modes — the Home Route Stays Prerendered (SSG), Not Per-Request SSR | Active |
-| [0041](0041-lock-viewport-zoom-for-toddlers.md) | Lock Viewport Pinch-Zoom (`user-scalable=no`) for a Toddler Drawing App | Active |
-| [0042](0042-static-media-cache-invalidation.md) | Cache Invalidation for Stable-Filename Static Media | Active |
-| [0043](0043-magic-brush-color-sheet-reveal.md) | Magic Brush Reveals the Coloring Page's Colored Fill via Pattern-Fill Ops | Active |
-| [0044](0044-svg-optimization-audit.md) | SVG Optimization as a Re-runnable Audit, Not a One-Off Pass | Active |
-| [0045](0045-coloring-picker-thumbnails-and-prefetch.md) | Coloring-Picker Thumbnails + Prefetch (Two Resolutions per Page) | Active |
-| [0046](0046-pr-screenshot-hosting-via-orphan-branch.md) | Host PR Screenshots on a `pr-assets` Orphan Branch | Active |
-| [0047](0047-provider-agnostic-ai-adapter.md) | Provider-Agnostic AI Image Adapter (`AiImageProvider` Seam) | Active |
-| [0048](0048-hex-picker-trims-shades-before-hues.md) | Hex Color Picker Trims Shades Before Hues, Transposing in Landscape | Active |
-| [0049](0049-idle-mount-boot-hidden-overlays.md) | Idle-Mount the Boot-Hidden Overlays (Parent Center on First Open) | Active |
-| [0050](0050-locked-paper-view-on-rotation.md) | Lock the "Paper" on Rotation and Present It Upright Through a Contain-Fit View | Active |
-| [0051](0051-desynchronized-canvas-low-latency.md) | `desynchronized` Canvas for Lower Ink Latency — Tried and Rejected | Rejected |
-| [0052](0052-dark-mode-theme-tokens.md) | Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper, White "Chalk" Line Art, Night Coloring Fills | Active |
-| 0053 | Asset-Generation Pipeline in `tools/asset-gen/` (In-Repo Folder, Not a Workspace or Separate Repo) | Moved to [asset-gen docs](../../tools/asset-gen/docs/architecture.md) |
-| 0054 | Uniform Dot-Separated Variant Suffixes for Coloring Assets (`{name}.{variant}.webp`) | Moved to [asset-gen docs](../../tools/asset-gen/docs/asset-naming.md) |
-| 0055 | The Magic-Brush Reveal Assets Are "Fills", Not "Twins" | Moved to [asset-gen docs](../../tools/asset-gen/docs/fill-vocabulary.md) |
-| 0056 | Fork the Line Art per Theme — Pen Outline (Light) + Gemini-Authored Chalk Outline (Dark) | Moved to [asset-gen docs](../../tools/asset-gen/docs/pen-chalk-fork.md) |
-| [0057](0057-dprint-markdown-formatter.md) | dprint Formats Markdown (Prettier Can't Match House Style) | Active |
-
+| #                                                          | Title                                                                                                             | Status                                                                   |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [0001](0001-sveltekit-dual-adapter-strategy.md)            | SvelteKit Dual-Adapter Strategy (Web + Native)                                                                    | Active                                                                   |
+| [0002](0002-svelte-5-runes.md)                             | Svelte 5 Runes Over Legacy Stores                                                                                 | Active                                                                   |
+| [0003](0003-typescript-migration.md)                       | Full TypeScript Adoption                                                                                          | Active                                                                   |
+| [0004](0004-imperative-canvas-engine.md)                   | Imperative Canvas Engine with Callback Interface                                                                  | Active                                                                   |
+| [0005](0005-dual-layer-storage.md)                         | Dual-Layer Storage (localStorage + Capacitor Preferences)                                                         | Active                                                                   |
+| [0006](0006-server-side-ai-generation.md)                  | Server-Side AI Image Generation via Netlify Serverless Function                                                   | Active                                                                   |
+| [0007](0007-cors-csrf-for-native-api-calls.md)             | CORS and CSRF Strategy for Native-to-Web API Calls                                                                | Active                                                                   |
+| [0008](0008-three-tier-testing-strategy.md)                | Three-Tier Testing Strategy (Vitest + Playwright + Maestro)                                                       | Active                                                                   |
+| [0009](0009-happy-dom-over-jsdom.md)                       | happy-dom Over jsdom for Vitest Unit Tests                                                                        | Active                                                                   |
+| [0010](0010-compile-time-build-constants.md)               | Compile-Time Build Constants via Vite Define                                                                      | Active                                                                   |
+| [0011](0011-capacitor-cli-windows-patch.md)                | patch-package for Capacitor CLI Windows gradlew Bug                                                               | Active                                                                   |
+| [0012](0012-android-build-toolchain.md)                    | Android Build Toolchain Requirements (Node 22 + JDK 21 Temurin)                                                   | Active                                                                   |
+| [0013](0013-platform-detection-without-capacitor-core.md)  | Platform Detection Without Importing @capacitor/core                                                              | Active                                                                   |
+| [0014](0014-in-memory-rate-limiting.md)                    | In-Memory Rate Limiting (Per-Instance Sliding Window)                                                             | Active                                                                   |
+| [0015](0015-capped-dpr-canvas-rendering.md)                | Capped-DPR Canvas Rendering (min(devicePixelRatio, 2))                                                            | Active                                                                   |
+| [0016](0016-admin-console-bearer-api-for-native.md)        | Admin Console via Shared Server Core + Bearer-Session API for Native                                              | Active                                                                   |
+| [0017](0017-cross-platform-node-scripts.md)                | Cross-Platform Node Scripts with Shared Helpers in scripts/lib/                                                   | Active                                                                   |
+| [0018](0018-claude-native-knowledge-tiers.md)              | Project Knowledge in Claude Code-Native Tiers (Skills, Rules, Nested CLAUDE.md)                                   | Active                                                                   |
+| [0019](0019-npm-script-naming-and-scripts-info.md)         | npm Script Naming Conventions + scripts-info Self-Documentation                                                   | Active                                                                   |
+| [0020](0020-ios-build-toolchain.md)                        | iOS Build Toolchain (Swift Package Manager, xcodebuild Scripts, Automatic Signing)                                | Active                                                                   |
+| [0021](0021-cloud-session-tunneling.md)                    | Tunneling the Dev Server from Claude Code Cloud Sessions (self-hosted chisel reverse tunnel)                      | Active                                                                   |
+| [0022](0022-pwa-service-worker-strategy.md)                | PWA Service Worker Strategy — vite-plugin-pwa as Manifest Injector with Custom Update Lifecycle                   | Active                                                                   |
+| [0023](0023-redteam-ai-safety-integration-test.md)         | Red-Team Integration Test for AI Image Safety (Manual, Token-Gated, Encrypted Fixtures, Excluded from CI)         | Active                                                                   |
+| [0024](0024-web-app-subdirectory-for-netlify-watcher.md)   | Web App in web/ Subdirectory to Scope the Netlify Dev Watcher                                                     | Active                                                                   |
+| [0025](0025-netlify-blobs-server-storage.md)               | Netlify Blobs for Server-Side Storage (Eventual Consistency, Env-Seeded Fallback)                                 | Active                                                                   |
+| [0026](0026-notch-band-via-safe-area-css.md)               | Notch Band via a Safe-Area CSS Strip, Not Per-Platform Native Status Bars                                         | Active                                                                   |
+| [0027](0027-device-lock-detection-plugin.md)               | A Custom `DeviceLock` Capacitor Plugin to Detect Guided Access / App Pinning                                      | Active                                                                   |
+| [0028](0028-apple-pencil-eraser-plugin.md)                 | A Custom `PencilEraser` Capacitor Plugin for the Apple Pencil Double-Tap                                          | Active                                                                   |
+| [0029](0029-npm-as-package-manager.md)                     | npm as the Package Manager                                                                                        | Active                                                                   |
+| [0030](0030-git-derived-web-version.md)                    | Git-Derived Per-Commit Web Version (major.minor.commits-since-tag)                                                | Active                                                                   |
+| [0031](0031-linting-formatting-and-ci-quality-gates.md)    | Linting, Formatting, and CI Quality Gates (ESLint + Prettier, critical-only audit)                                | Active                                                                   |
+| [0032](0032-performance-profiling-harness.md)              | Automated Performance Profiling Harness (build-flag marks + CDP/WebKit capture, web + Android + iOS)              | Active                                                                   |
+| [0033](0033-command-replay-undo.md)                        | Command-Replay Undo (Single Baseline + Stroke Log, replacing the snapshot stack)                                  | Active                                                                   |
+| [0034](0034-drop-virtual-canvas-rebuild-on-resize.md)      | Drop the Virtual Canvas — Rebuild on Resize from the Baseline + Log                                               | Active                                                                   |
+| [0035](0035-keyframe-long-commands.md)                     | Keyframe Long Commands So Undo Doesn't Replay Thousands of Ops                                                    | Active                                                                   |
+| [0036](0036-stroke-simplification-at-commit.md)            | Simplify Stroke Ops at Commit (Ramer–Douglas–Peucker) So Undo Replays Few Segments                                | Active                                                                   |
+| [0037](0037-photo-save-targets-per-platform.md)            | Photo Save Targets per Platform (Native Gallery, Web Folder Save, Download Fallback)                              | Active                                                                   |
+| [0038](0038-scribble-guard-cancel-stylus-touch-streams.md) | Cancel Stylus Touch Streams to Stop iPadOS Scribble Swallowing Quick Pen Strokes                                  | Active                                                                   |
+| [0039](0039-pwa-install-prompt-ux.md)                      | Friendly PWA Install Prompt — Capture `beforeinstallprompt`, Fall Back to Guided Hints                            | Active                                                                   |
+| [0040](0040-per-route-render-modes-and-ssg-home.md)        | Per-Route Render Modes — the Home Route Stays Prerendered (SSG), Not Per-Request SSR                              | Active                                                                   |
+| [0041](0041-lock-viewport-zoom-for-toddlers.md)            | Lock Viewport Pinch-Zoom (`user-scalable=no`) for a Toddler Drawing App                                           | Active                                                                   |
+| [0042](0042-static-media-cache-invalidation.md)            | Cache Invalidation for Stable-Filename Static Media                                                               | Active                                                                   |
+| [0043](0043-magic-brush-color-sheet-reveal.md)             | Magic Brush Reveals the Coloring Page's Colored Fill via Pattern-Fill Ops                                         | Active                                                                   |
+| [0044](0044-svg-optimization-audit.md)                     | SVG Optimization as a Re-runnable Audit, Not a One-Off Pass                                                       | Active                                                                   |
+| [0045](0045-coloring-picker-thumbnails-and-prefetch.md)    | Coloring-Picker Thumbnails + Prefetch (Two Resolutions per Page)                                                  | Active                                                                   |
+| [0046](0046-pr-screenshot-hosting-via-orphan-branch.md)    | Host PR Screenshots on a `pr-assets` Orphan Branch                                                                | Active                                                                   |
+| [0047](0047-provider-agnostic-ai-adapter.md)               | Provider-Agnostic AI Image Adapter (`AiImageProvider` Seam)                                                       | Active                                                                   |
+| [0048](0048-hex-picker-trims-shades-before-hues.md)        | Hex Color Picker Trims Shades Before Hues, Transposing in Landscape                                               | Active                                                                   |
+| [0049](0049-idle-mount-boot-hidden-overlays.md)            | Idle-Mount the Boot-Hidden Overlays (Parent Center on First Open)                                                 | Active                                                                   |
+| [0050](0050-locked-paper-view-on-rotation.md)              | Lock the "Paper" on Rotation and Present It Upright Through a Contain-Fit View                                    | Active                                                                   |
+| [0051](0051-desynchronized-canvas-low-latency.md)          | `desynchronized` Canvas for Lower Ink Latency — Tried and Rejected                                                | Rejected                                                                 |
+| [0052](0052-dark-mode-theme-tokens.md)                     | Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper, White "Chalk" Line Art, Night Coloring Fills | Active                                                                   |
+| 0053                                                       | Asset-Generation Pipeline in `tools/asset-gen/` (In-Repo Folder, Not a Workspace or Separate Repo)                | Moved to [asset-gen docs](../../tools/asset-gen/docs/architecture.md)    |
+| 0054                                                       | Uniform Dot-Separated Variant Suffixes for Coloring Assets (`{name}.{variant}.webp`)                              | Moved to [asset-gen docs](../../tools/asset-gen/docs/asset-naming.md)    |
+| 0055                                                       | The Magic-Brush Reveal Assets Are "Fills", Not "Twins"                                                            | Moved to [asset-gen docs](../../tools/asset-gen/docs/fill-vocabulary.md) |
+| 0056                                                       | Fork the Line Art per Theme — Pen Outline (Light) + Gemini-Authored Chalk Outline (Dark)                          | Moved to [asset-gen docs](../../tools/asset-gen/docs/pen-chalk-fork.md)  |
+| [0057](0057-dprint-markdown-formatter.md)                  | dprint Formats Markdown (Prettier Can't Match House Style)                                                        | Active                                                                   |

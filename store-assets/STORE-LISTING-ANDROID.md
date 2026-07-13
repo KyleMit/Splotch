@@ -3,22 +3,19 @@
 
 # Splotch — Google Play store listing
 
-
-## App name  (max 30)
+## App name (max 30)
 
 ```
 Splotch: Drawing for Kids
 ```
 
-
-## Short description  (max 80)
+## Short description (max 80)
 
 ```
 Doodle, color, and create. A quiet, ad-free coloring app made for little hands
 ```
 
-
-## Full description  (max 4000)
+## Full description (max 4000)
 
 ```
 Splotch is a simple, joyful drawing app made for the youngest artists — toddlers and preschoolers who just want to scribble, color, and make something of their own.

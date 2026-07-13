@@ -3,36 +3,31 @@
 
 # Splotch — Apple App Store listing
 
-
-## App name  (max 30)
+## App name (max 30)
 
 ```
 Splotch: Drawing for Kids
 ```
 
-
-## Subtitle  (max 30)
+## Subtitle (max 30)
 
 ```
 Calm, ad-free art for ages 2+
 ```
 
-
-## Promotional text  (max 170 — editable any time without a new review)
+## Promotional text (max 170 — editable any time without a new review)
 
 ```
 A blank page and a box of crayons — no ads, no accounts, nothing to buy. Open Splotch, hand over the device, and let them make a mess.
 ```
 
-
-## Keywords  (max 100 — comma-separated; words already in the name/subtitle are indexed automatically, so they're omitted)
+## Keywords (max 100 — comma-separated; words already in the name/subtitle are indexed automatically, so they're omitted)
 
 ```
 toddler,doodle,color,coloring,paint,scribble,preschool,crayon,art,sketch,creative,baby
 ```
 
-
-## Description  (max 4000 — same copy as the Play listing)
+## Description (max 4000 — same copy as the Play listing)
 
 ```
 Splotch is a simple, joyful drawing app made for the youngest artists — toddlers and preschoolers who just want to scribble, color, and make something of their own.
@@ -70,70 +65,61 @@ Splotch is also free and open source. If you spot a problem or have an idea, you
 Open it up, hand over the device, and let them make a mess. That's the whole idea.
 ```
 
-
-## What's New  (max 4000)
+## What's New (max 4000)
 
 Generated per release — `fastlane/metadata/en-US/release_notes.txt` (written by
 `npm run gen:releases` from `releases/<version>.md`).
 
-
 ## URLs
 
-| Field | Value |
-| --- | --- |
-| Support URL | https://github.com/KyleMit/Splotch/issues |
-| Marketing URL (optional) | https://splotch.art |
-| Privacy Policy URL | https://splotch.art/privacy |
-
+| Field                    | Value                                     |
+| ------------------------ | ----------------------------------------- |
+| Support URL              | https://github.com/KyleMit/Splotch/issues |
+| Marketing URL (optional) | https://splotch.art                       |
+| Privacy Policy URL       | https://splotch.art/privacy               |
 
 ## General
 
-| Field | Value |
-| --- | --- |
-| Copyright | 2026 Kyle Mitofsky |
+| Field                     | Value                              |
+| ------------------------- | ---------------------------------- |
+| Copyright                 | 2026 Kyle Mitofsky                 |
 | Routing App Coverage File | N/A — not a routing/navigation app |
-
 
 ## Categories & age
 
-| Field | Value |
-| --- | --- |
-| Primary category | Education |
-| Secondary category (optional) | Entertainment |
-| Kids Category | Yes — age band **5 & Under** |
-| Age rating questionnaire | Should land at **4+** (no violence, no UGC sharing, no web access) |
-
+| Field                         | Value                                                              |
+| ----------------------------- | ------------------------------------------------------------------ |
+| Primary category              | Education                                                          |
+| Secondary category (optional) | Entertainment                                                      |
+| Kids Category                 | Yes — age band **5 & Under**                                       |
+| Age rating questionnaire      | Should land at **4+** (no violence, no UGC sharing, no web access) |
 
 ## App Privacy (nutrition label)
 
-Declare exactly this — it must match the Play Data safety form and the privacy
-policy:
+Declare exactly this — it must match the Play Data safety form and the privacy policy:
 
-* **Data not collected** for everything, with one carve-out if the reviewer
-  presses on the AI feature: **User Content (drawings)** — used for **App
-  Functionality** only, **not linked to identity**, **not used for tracking**,
-  sent only when the user taps the button.
+* **Data not collected** for everything, with one carve-out if the reviewer presses on the AI
+  feature: **User Content (drawings)** — used for **App Functionality** only, **not linked to
+  identity**, **not used for tracking**, sent only when the user taps the button.
 * No third-party SDKs, no analytics, no ads, no accounts.
-
 
 ## Screenshots (this folder)
 
-| Device slot | Files | Size |
-| --- | --- | --- |
-| iPhone 6.9" | `screenshots/iphone69/01–05` | 1290×2796 portrait |
-| iPad 13" | `screenshots/ipad13/01–05` | 2732×2048 landscape |
+| Device slot | Files                        | Size                |
+| ----------- | ---------------------------- | ------------------- |
+| iPhone 6.9" | `screenshots/iphone69/01–05` | 1290×2796 portrait  |
+| iPad 13"    | `screenshots/ipad13/01–05`   | 2732×2048 landscape |
 
-Regenerate with `npm run gen:shots`. The App Store icon is **not** uploaded
-separately — App Store Connect takes the 1024×1024 `AppIcon` from the binary's
-asset catalog (`ios/App/App/Assets.xcassets`).
-
+Regenerate with `npm run gen:shots`. The App Store icon is **not** uploaded separately — App Store
+Connect takes the 1024×1024 `AppIcon` from the binary's asset catalog
+(`ios/App/App/Assets.xcassets`).
 
 ## Kids Category notes (review will check these)
 
 * No third-party analytics or advertising — true, keep it that way.
-* External links / purchases must sit behind a parental gate. The only outbound
-  surfaces are in the Parent Center and About tab (GitHub, privacy policy);
-  verify they're acceptable or gate them before submission.
-* The AI feature sends the child's own drawing for processing at an explicit
-  tap, requires a parent to enable it in the Parent Center first, and involves
-  no browsing, chat, or sharing — document this in the review notes field.
+* External links / purchases must sit behind a parental gate. The only outbound surfaces are in the
+  Parent Center and About tab (GitHub, privacy policy); verify they're acceptable or gate them
+  before submission.
+* The AI feature sends the child's own drawing for processing at an explicit tap, requires a parent
+  to enable it in the Parent Center first, and involves no browsing, chat, or sharing — document
+  this in the review notes field.

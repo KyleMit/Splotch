@@ -11,7 +11,6 @@
 * Olaf
 * Pabbie
 
-
 ### Bluey
 
 * Bluey
@@ -272,8 +271,6 @@ Leave generous safe margins on all four sides. Keep all important content fully 
 The image should feel like a cover or tile for the category, not a busy poster.
 
 ## Image
-
-
 ```
 
 ## Portrait 2:3
@@ -309,8 +306,6 @@ Leave generous safe margins on all four sides, especially above the head or top 
 Avoid leaving the top or bottom feeling empty. Avoid spreading important details too far to the sides. The image should feel intentionally composed for portrait orientation, not like a square image cropped taller.
 
 ## Image
-
-
 ```
 
 ## Landscape 3:2
@@ -348,6 +343,4 @@ Leave generous safe margins on all four sides, especially the left and right edg
 Avoid putting all the interesting content in the center with blank sides. The image should feel intentionally composed for landscape orientation, not like a square image cropped wider.
 
 ## Image
-
-
 ```
