@@ -1,4 +1,22 @@
 {
+  "ant-tall": {
+    "night": {
+      "retry": {
+        "notes": "The ant's head and body must stay REDDISH-BROWN like the light fill — an ant is red-brown, never green. Keep the night palette dark but keep the subject's identity color."
+      },
+      "review": "The shipped 2026-07 night fill re-rolled the ant GREEN (the light fill is a proper reddish-brown ant) — a wrong subject-identity color, not a hue nuance. No gate checks subject-color plausibility (ISSUES Tier 1); compare against the light fill before accepting a take.",
+      "why": "2026-07-13 dark-mode composite review — the light↔night palette-coherence gap (ISSUES) shipping a real defect; all gates pass the green take."
+    }
+  },
+  "caterpillar-wide": {
+    "chalk": {
+      "retry": {
+        "notes": "Keep the pupils exactly as the pen draws them — outlined rings with a small solid white catchlight — and never fill a pupil with solid ink; solid chalk ink renders as glowing white in dark mode."
+      },
+      "review": "The pen has healthy RINGED pupils (light fill fully lively, 2/2 cores), but the shipped 2026-07 chalk solidified the eye interiors, so the composited night eyes read washed-out white with no legible pupil (ISSUES Tier 1). Judge on the chalk-over-night COMPOSITE; after a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-13 dark-mode composite review — the ISSUES chalk-whitening class introduced by the chalk itself on a healthy ringed pen; every gate passes the defective take."
+    }
+  },
   "spider-tall": {
     "night": {
       "flags": {
@@ -32,6 +50,13 @@
     }
   },
   "bee-tall": {
+    "chalk": {
+      "retry": {
+        "notes": "Draw each catchlight as a SMALL SOLID WHITE DOT inside the pupil, never as an outlined hollow circle, and keep exactly the pen's one-ring-one-catchlight eye structure."
+      },
+      "review": "The pen has healthy RINGED pupils (light fill fully lively, 6/6 cores), but the shipped 2026-07 chalk redrew the eye interiors with hollow outlined-circle catchlights that composite as empty navy rings floating in the eye (googly bubbles). Judge on the chalk-over-night COMPOSITE (ISSUES Tier 1); after a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-13 dark-mode composite review — the ISSUES chalk-whitening class introduced by the chalk itself on a healthy ringed pen; every gate passes the defective take."
+    },
     "normalize": {
       "flags": {
         "temperature": 0.7,

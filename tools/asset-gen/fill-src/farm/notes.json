@@ -1,8 +1,44 @@
 {
+  "dog-wide": {
+    "chalk": {
+      "retry": {
+        "notes": "keep the nose as an outlined region (not solid ink) and keep the rump patch an outlined fillable region exactly as the pen draws it — solid chalk ink renders as glowing white in dark mode"
+      },
+      "review": "The shipped 2026-07 chalk solidified the pen's solid-ink nose AND the pen's merely-outlined rump patch, so both glow solid white in dark mode (the night fill painted the patch maroon — the chalk's white covers it), and the wide white scleras read manic. Judge on the chalk-over-night COMPOSITE (ISSUES Tier 1); after a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-13 dark-mode composite review — audit-fill-eyes reports night ok on the defective shipped take; the ISSUES chalk-whitening class escaping the eye."
+    }
+  },
+  "horse-tall": {
+    "chalk": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "Erase the solid black inside each pupil and redraw it: white sclera, a black outlined pupil ring, and a small white catchlight inside the pupil. Never leave a pupil as solid ink — solid chalk ink renders as glowing white in dark mode."
+      },
+      "review": "Solid-pen-eye page: the pen's pupils are solid ink, the shipped 2026-07 chalk copied them, and the composited night eyes read washed-out white with no legible pupil (ISSUES Tier 1). findEyeCores finds nothing here, so the eye-polarity gate passes VACUOUSLY — render the chalk-over-night composite and confirm dark pupils before trusting any chalk of this page. After a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-13 dark-mode composite review — same class and recipe as vehicles/police-wide. 3.1 resists erase-style edits on solid ink; budget extra attempts."
+    }
+  },
+  "horse-wide": {
+    "chalk": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "Erase the solid black inside the pupil and redraw it: white sclera, a black outlined pupil ring, and a small white catchlight inside the pupil. Never leave a pupil as solid ink — solid chalk ink renders as glowing white in dark mode."
+      },
+      "review": "Solid-pen-eye page: the pen's pupil is solid ink, the shipped 2026-07 chalk copied it, and the composited night eye is a blank white orb (ISSUES Tier 1). findEyeCores finds nothing here (0 cores), so the eye-polarity gate passes VACUOUSLY — render the chalk-over-night composite and confirm a dark pupil before trusting any chalk of this page. After a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-13 dark-mode composite review — same class and recipe as vehicles/police-wide. 3.1 resists erase-style edits on solid ink; budget extra attempts."
+    }
+  },
   "duck-wide": {
     "light": {
       "review": "A flat-eye flag here is the known side-profile detector false positive — verified lively by eye in the 3.1 wave (gemini-3.1-migration.md). judgeLightEyes has no suppressions (ISSUES), so adjudicate visually before burning retries.",
       "why": "The night judge's IDEAS #12 suppressions cleared this page's night-side flag; the light judge still re-derives cores and misreads the side-profile eye."
+    },
+    "chalk": {
+      "retry": {
+        "notes": "the open bill interior must stay toothless — the pen has a clean open bill with a tongue outline and no teeth; do not draw teeth"
+      },
+      "review": "The shipped 2026-07 chalk INVENTED a row of human-like teeth inside the open bill (the pen and the light fill have none) and the night fill colored them in — dark mode grins with teeth light mode doesn't have. Check the bill interior on the chalk-over-night COMPOSITE (ISSUES Tier 1). 3.1 resists erase edits on solid ink — budget extra attempts/notes; after a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-13 dark-mode composite review — no gate sees content invention inside the subject (the invented-shapes audit only scans the open background)."
     }
   }
 }
