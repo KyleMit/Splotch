@@ -373,16 +373,15 @@ The loop that has worked, per category:
 
    ![contact sheet pair](pipeline-assets/review-contact-sheet-pair.webp)
 
-5. **After a regen wave, run the exploration auditors too** (proven in the 3.1 migration; not yet
-   promoted to first-class scripts — `ISSUES.md`): the invented-shape detector
-   (`ideas-exploration/idea-13/code/invented-shape-audit.mjs`) — the only thing that caught
-   house-tall's two invented sky flowers, invisible to every standard gate — and the residual-halo
-   auditor (`ideas-exploration/idea-7/code/audit-night-halo.mjs`). Both import `./lib/*.mjs`, so
-   copy them into `tools/asset-gen/` to run (the halo script's main-guard also expects its original
-   `idea7-…` filename). For gate-blind classes (solid-pen-eye chalks, subject/background contrast),
-   batch-render the night composites (`lib/night-composite.mjs`) into per-category montages and
-   eyeball them — that sweep is what caught police-tall's whitened pupils and circle-wide's
-   sky-colored disc.
+5. **After a regen wave, run the invention + halo audits too** (proven in the 3.1 migration, since
+   promoted to first-class scripts): the invented-shape detector (`gen:coloring-fills:audit:shapes`)
+   — the only thing that caught house-tall's two invented sky flowers, invisible to every standard
+   gate — and the residual-halo ranker (`gen:coloring-fills:audit:halo`); both are offline and
+   deterministic, and the halo table's top scorers need a human crop review (deliberate mid-dark art
+   hugging lines scores like halo). For gate-blind classes (solid-pen-eye chalks, subject/background
+   contrast), batch-render the night composites (`lib/night-composite.mjs`) into per-category
+   montages and eyeball them — that sweep is what caught police-tall's whitened pupils and
+   circle-wide's sky-colored disc.
 6. **Diff against the golden set** (`gen:coloring-golden:diff`, ~1 min offline) — the safety net
    that keeps "improved train-wide" from silently degrading the other 93 pages. Regressions exit
    non-zero; the changed pages should be exactly the ones you touched. Re-freeze
@@ -422,6 +421,8 @@ Hard-won process lessons:
 | `npm run gen:coloring-punch -- [pages…]`                    | re-derive shipped fills from raws (pen/chalk masks)                                             | no       |
 | `npm run gen:coloring-fills:audit -- [cat]`                 | registration drift on committed raws                                                            | no       |
 | `npm run gen:coloring-fills:audit:eyes -- [cat]`            | eye liveliness on committed raws (night judged as the chalk composite)                          | no       |
+| `npm run gen:coloring-fills:audit:shapes -- [cat]`          | invented colored shapes floating on the open background of committed raws                       | no       |
+| `npm run gen:coloring-fills:audit:halo -- [cat]`            | residual dark halo around chalk strokes in shipped night fills (ranking for crop review)        | no       |
 | `npm run gen:coloring-thumbs -- [cat]`                      | picker thumbnails (pen `.thumb` + chalk `.chalk.thumb`)                                         | no       |
 | `npm run gen:coloring-golden:diff`                          | re-score the catalog vs `golden/golden-scores.json`; exit 1 on regressions                      | no       |
 | `npm run gen:coloring-golden:freeze`                        | adopt the current scores as the new golden baseline                                             | no       |

@@ -60,6 +60,8 @@ npm run gen:coloring-chalk      # chalk outlines (dark-mode line art) -> web/sta
 npm run gen:coloring-outlines:fresh # brand-new pen outline from a text scene (same subject, new drawing)
 npm run gen:coloring-fills      # light colored fills  -> web/static/coloring/**/*.light.webp
 npm run gen:coloring-fills:audit # drift-check the raw fills in fill-src/ (no key/network)
+npm run gen:coloring-fills:audit:shapes # invented colored shapes on the open background of the raws (no key/network)
+npm run gen:coloring-fills:audit:halo # rank shipped night fills by residual dark halo after the punch (no key/network)
 npm run gen:coloring-punch      # re-punch the shipped fills from fill-src/ raws (no key/network)
 npm run gen:coloring-thumbs     # picker thumbnails (pen + chalk) -> web/static/coloring/**/*.{thumb,chalk.thumb}.webp
 npm run gen:coloring-golden:diff # re-score the catalog vs the frozen golden/golden-scores.json (no key/network, ~1 min)

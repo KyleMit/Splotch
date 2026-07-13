@@ -7,7 +7,9 @@
 > picker; chalk *covers* remain open), effectively resolved **#1** (re-inking gone), **#5** (both
 > flat-pupil pages now lively without pen surgery), and **#4** (night bgLuma tightened to 18–48 via
 > `--night-luma-max 60`), and ran **#7/#13** as post-regen audits (1 real invented shape caught and
-> regenerated). **#23 and #25 landed 2026-07-13** as the committed regression fixtures in `golden/`
+> regenerated); **both landed 2026-07-13 as first-class audit scripts**
+> (`gen:coloring-fills:audit:halo` / `gen:coloring-fills:audit:shapes`). **#23 and #25 landed
+> 2026-07-13** as the committed regression fixtures in `golden/`
 > (`gen:coloring-golden:freeze`/`diff` + `gen:assets:manifest`/`check:assets:manifest`). The
 > remaining ideas below are still open leads. The living list of concrete outstanding defects and
 > gate blind spots (as opposed to these exploratory leads) is [`ISSUES.md`](ISSUES.md).
@@ -99,7 +101,10 @@ quality lever left.
 * Try on: `objects/teddy-tall` (blob 719), `vehicles/police-tall` (blob 1886), `creatures/owl-tall`
   (blob 1919 — also the riskiest, its chalk is perfect; light-only regen).
 
-### 7. Residual dark halo audit after the punch **[unknown]**
+### 7. Residual dark halo audit after the punch **[LANDED 2026-07-13]**
+
+> Validated in `ideas-exploration/idea-7/` (found 3 real halos the lineW gate missed), then landed
+> as `bin/audit-night-halo.mjs` (`gen:coloring-fills:audit:halo`).
 
 I only checked `train-wide` at 2× zoom by hand. Nobody has systematically looked for the
 dotted-dark-ring / halo failure at display scale across all 94 shipped night fills. Idea: automate
@@ -165,7 +170,12 @@ reference isn't strongly lit (already partially done — verify why hubs still f
 
 * Try on: `farm/duck-wide`, `vehicles/monster-wide`, `space/rover-wide`.
 
-### 13. Colored-shape invention isn't gated **[unknown]**
+### 13. Colored-shape invention isn't gated **[audit LANDED 2026-07-13; the gate half is ISSUES]**
+
+> Validated in `ideas-exploration/idea-13/` (11 pre-wave night fills carried confirmed inventions;
+> anchoring, not saturation, is the discriminator), then landed as `bin/audit-invented-shapes.mjs`
+> (`gen:coloring-fills:audit:shapes`). Wiring it as a generation-time gate is still open — see
+> `ISSUES.md`.
 
 `scoreDrift` only counts *white/low-chroma* pixels far from source lines — an invented **colored**
 shape (an extra saturated star or planet on the open background, with no white outline) slips every
@@ -327,4 +337,5 @@ show up in the diff.
    standard post-change check.
 4. **#19 dark-mode thumbs/covers** — cheap, user-visible, no model risk.
 5. **#7/#15 halo + inpaint crop-audits** — verify the punch quality story before building anything
-   else on top of it.
+   else on top of it. (#7 landed as `gen:coloring-fills:audit:halo`; #15's junction crop-audit
+   remains.)

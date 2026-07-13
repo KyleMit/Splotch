@@ -6,7 +6,7 @@ the fix of choice is a **brand-new drawing of the same subject**, generated text
 conditioning on the old image, followed by a full-suite regen (thumb → light → chalk → night →
 punch). The alternative (edit-style normalization of the existing pen,
 `gen:coloring-outlines:normalize`) stays available but is now the second choice for the worst pages:
-3.1's faithfulness resists erase-style edits on solid ink (ISSUES #8 caveat), while a fresh
+3.1's faithfulness resists erase-style edits on solid ink (ISSUES #7 caveat), while a fresh
 composition simply never draws the bad anatomy in the first place.
 
 The tool is `gen:coloring-outlines:fresh` (`gen-coloring-outlines-fresh.mjs`): a fixed baseline
@@ -54,14 +54,14 @@ picker shows it in dark mode (`pageThumb()` in `books.ts`).
 * `creatures/owl-tall` — the biggest solid-pen offender (blob 2908) but its chalk is the flagship
   dark-mode result; a fresh pen would re-roll it. The right fix is light-side-only (normalize or
   fresh-with-matching-eyes), made deliberately, not as part of a batch.
-* The ~30 remaining flat-eye flags — a mix of detector noise on non-face cores (ISSUES #3) and
+* The ~30 remaining flat-eye flags — a mix of detector noise on non-face cores (ISSUES #2) and
   milder solid-pupil pages. Burn down worst-first with this recipe once the five shipped pages
   survive human review.
 
 ## Caveats for the next pass
 
 * A fresh drawing re-rolls **everything** — composition, motifs, palette anchors.
-  Sibling-orientation consistency (ISSUES #11) gets worse, not better, unless the `--scene` names
+  Sibling-orientation consistency (ISSUES #10) gets worse, not better, unless the `--scene` names
   the sibling's motifs.
 * The style prompt bans text; the model still tries letters on letter-bearing props (toy blocks).
   Say "no letters" in `--notes` when the scene contains any prop that conventionally carries them.
