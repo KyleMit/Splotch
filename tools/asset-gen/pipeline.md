@@ -94,7 +94,7 @@ audit but are picker-only, so their solid regions are harmless noise.
 
 `npm run gen:coloring-outlines:normalize -- <page…> [--apply] [--notes "…"]
 [-t F] [--max-attempts N]` — Gemini image-edit
-(`gemini-2.5-flash-image`) redraws solid regions as thin outlined shapes
+(`gemini-3.1-flash-image`) redraws solid regions as thin outlined shapes
 (eyes: exactly one pupil ring + one catchlight circle), keep-best-of-N with a
 rising temperature ladder, candidates land in
 `.coloring-samples-dark/normalize/`. Six gates per candidate:
@@ -402,9 +402,9 @@ Hard-won process lessons:
 
 | Category | Pen outlines | Chalk outlines | Night fills | Notes |
 | --- | --- | --- | --- | --- |
-| Nature | ✅ thin-stroke, all 12 | ✅ all 12 | ✅ chalk-era; caterpillar-wide + ladybug-wide ship with a flat-pupil ⚠ | the pilot for the fork. The two wides' pen eyes use a SPIRAL catchlight instead of a clean pupil ring; the fill model reliably refuses to paint a spiral's interior dark (≥11 attempts each, notes + low temp). Durable fix: de-swirl those two pen eyes (as caterpillar-tall was), then regen their suites. `snail-wide` carries a 1-core flag the eye judged fine on review. |
-| Space, Farm, Dinosaurs, Creatures | ❌ accident-era (normalization stays optional) | ✅ all 12 each | ✅ chalk-era regens | migrated 2026-07 in one autonomous batch (see below). The owl landed its predicted best case — huge solid-white sclera, black pupils + catchlights preserved. |
-| Objects, Shapes, Vehicles | ❌ | ✅ (11 / 11 / 12) | ✅ chalk-era (first night fills) | shapes' "geometric solids" turned out to be giant cartoon pupils — the face pipeline applied cleanly. vehicles/train-wide ships with a dark-outline ⚠ its composite disproved (below). |
+| Nature | ✅ thin-stroke, all 12 | ✅ all 12 | ✅ | the pilot for the fork. The 3.1 regen cleared the historical flat-pupil ⚠ on caterpillar-wide + ladybug-wide (2.5 refused their spiral-catchlight eyes across 11+ attempts each; 3.1 painted them lively unprompted — the pen de-swirl is no longer urgent). |
+| Space, Farm, Dinosaurs, Creatures | ❌ accident-era (normalization stays optional) | ✅ all 12 each | ✅ | first migrated 2026-07 on 2.5 in one autonomous batch, fully regenerated on 3.1 (see the [migration record](docs/gemini-3.1-migration.md)). The owl kept its best-case look through the regen. |
+| Objects, Shapes, Vehicles | ❌ | ✅ (11 / 11 / 12) | ✅ | shapes' "geometric solids" turned out to be giant cartoon pupils — the face pipeline applied cleanly. vehicles/train-wide's historical dark-outline ⚠ is gone (3.1 passed it first take, lineW 255). police-tall's chalk needed an erase `--notes` (whitened pupils, gate-blind). |
 
 Every category now ships pen + chalk + light + night; `heart-tall` and
 `umbrella-wide` have full asset suites on disk but stay uncataloged in
@@ -468,11 +468,15 @@ white-on-black), here the owl whose sclera the chalk owns:
   flirts with this) can break detection silently: no cores found = vacuous
   pass. The audit prints core counts; a face page reporting 0 cores is a
   red flag to investigate, not a pass.
-- **Model drift.** Everything is tuned against `gemini-2.5-flash-image`
-  behavior observed in 2026-07 (its nudge, its re-inking habit, its
-  eye-flooding on dark bodies). A model upgrade re-rolls all of those
-  tendencies; the gates should catch regressions, but attempt budgets and
-  temperature ladders will need re-tuning.
+- **Model drift.** The default model is `gemini-3.1-flash-image` since the
+  2026-07 full-catalog regeneration ([run
+  record](docs/gemini-3.1-migration.md)); it cleared 2.5's re-inking, nudge,
+  and eye-flooding habits, so the temperature ladder and `--dilate-lines`
+  are now escalation levers, not defaults. A future model upgrade re-rolls
+  all of those tendencies; the gates should catch regressions, but attempt
+  budgets will need re-tuning again. One 3.1-specific habit to watch:
+  faithful edits — it resists erase-style chalk edits on solid pen pupils
+  (police-tall needed an explicit erase `--notes`).
 - **Registration tolerance stack-up.** outlineMatch tolerates ±2 px at 512;
   alignToSource corrects only *global* shifts. A redraw that locally warps
   by 3–4 px passes gates but can shimmer under the punch. No incident yet;
