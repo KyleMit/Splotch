@@ -281,12 +281,19 @@ occasionally 503s ("high demand") — just re-run the failed page.
    the punched (fills-only) derivation of the raw.
 3. Wire the catalog in `web/src/lib/state/books.ts` — the `night` and `chalk` orientation lists per
    page: `page('nature', 'ant', 'Ant', ['portrait', 'landscape'], ['portrait', 'landscape'])`.
-4. `npm run check:assets` + `npm run check` + `npm run test:unit`, rebuild the contact sheet
+4. Refresh the committed regression fixtures: `npm run gen:coloring-golden:diff` (review the report
+   — the changed pages should be exactly the ones you shipped), then
+   `npm run gen:coloring-golden:freeze` to adopt the new baseline and `npm run gen:assets:manifest`
+   to re-hash the changed bytes; commit both fixture updates with the assets (CI's
+   `check:assets:manifest` fails otherwise).
+5. `npm run check:assets` + `npm run check` + `npm run test:unit`, rebuild the contact sheet
    `--source shipped`, optionally verify live with the `run-splotch` skill (dark mode → apply page →
    magic-brush reveal), commit.
 
-Light mode must stay byte-identical throughout a night-fill pass. Night fills have no thumbnails
-(never in the picker grid); `bookAssetPaths()` lists them for check-assets automatically once wired.
+Light mode must stay byte-identical throughout a night-fill pass — enforced by
+`golden/asset-manifest.sha256`: the manifest diff for a night pass must contain only
+`*.night`/`*.chalk`/`*.chalk.thumb` lines. Night fills have no thumbnails (never in the picker
+grid); `bookAssetPaths()` lists them for check-assets automatically once wired.
 
 ## How the eye detector works
 
@@ -354,7 +361,10 @@ lie:
 The loop that has worked, per category:
 
 1. **Audit first** (`gen:coloring-outlines:audit`, `gen:coloring-fills:audit`,
-   `gen:coloring-fills:audit:eyes`) — all deterministic and free.
+   `gen:coloring-fills:audit:eyes`) — all deterministic and free. The whole-catalog baseline is
+   already frozen in `golden/golden-scores.json` (`gen:coloring-golden:freeze`), so there's no need
+   for ad-hoc score snapshots in a scratchpad — the 3.1 wave's approach before the golden set
+   landed.
 2. **Generate chalks** (`gen:coloring-chalk --apply`), eyeballing every `.display.webp` — gates have
    been fooled, each time by something no existing gate measured.
 3. **Regenerate the suite** for changed pages: thumbs → light fills → night fills → punch.
@@ -373,7 +383,14 @@ The loop that has worked, per category:
    batch-render the night composites (`lib/night-composite.mjs`) into per-category montages and
    eyeball them — that sweep is what caught police-tall's whitened pupils and circle-wide's
    sky-colored disc.
-6. `check:assets` + `check` + `test:unit`, commit, push.
+6. **Diff against the golden set** (`gen:coloring-golden:diff`, ~1 min offline) — the safety net
+   that keeps "improved train-wide" from silently degrading the other 93 pages. Regressions exit
+   non-zero; the changed pages should be exactly the ones you touched. Re-freeze
+   (`gen:coloring-golden:freeze`, reviewing the printed known-fail list) and regenerate the byte
+   manifest (`gen:assets:manifest`) to adopt the intended changes — the two fixtures close each
+   other's blind spot (the golden set catches score drift; the manifest catches byte swaps between
+   score-identical renders).
+7. `check:assets` + `check` + `test:unit`, commit, push.
 
 Hard-won process lessons:
 
@@ -406,6 +423,9 @@ Hard-won process lessons:
 | `npm run gen:coloring-fills:audit -- [cat]`                 | registration drift on committed raws                                                            | no       |
 | `npm run gen:coloring-fills:audit:eyes -- [cat]`            | eye liveliness on committed raws (night judged as the chalk composite)                          | no       |
 | `npm run gen:coloring-thumbs -- [cat]`                      | picker thumbnails (pen `.thumb` + chalk `.chalk.thumb`)                                         | no       |
+| `npm run gen:coloring-golden:diff`                          | re-score the catalog vs `golden/golden-scores.json`; exit 1 on regressions                      | no       |
+| `npm run gen:coloring-golden:freeze`                        | adopt the current scores as the new golden baseline                                             | no       |
+| `npm run gen:assets:manifest`                               | re-hash the committed art into `golden/asset-manifest.sha256` (CI-checked)                      | no       |
 | `npm run gen:contact-sheet -- <cat>`                        | the review sheet (publish as Artifact)                                                          | no       |
 
 ## Status and the next category

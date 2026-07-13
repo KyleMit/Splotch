@@ -9,9 +9,10 @@ format/line-art utilities. It lives in its own folder so you can iterate on it i
 Architecture and the "why a folder, not a workspace/repo" decision:
 **[`architecture.md`](architecture.md)**.
 
-Layout: the runnable entry points live in `bin/`, shared helpers in `lib/`, and every doc — this
-runbook, `pipeline.md`, `contact-sheet.md`, `ISSUES.md`, `IDEAS.md`, and the decision records — in
-`docs/` (paths in prose below are relative to the `tools/asset-gen/` folder root).
+Layout: the runnable entry points live in `bin/`, shared helpers in `lib/`, the committed regression
+fixtures (`golden-scores.json`, `asset-manifest.sha256`) in `golden/`, and every doc — this runbook,
+`pipeline.md`, `contact-sheet.md`, `ISSUES.md`, `IDEAS.md`, and the decision records — in `docs/`
+(paths in prose below are relative to the `tools/asset-gen/` folder root).
 
 ## Where it sits in the repo
 
@@ -61,6 +62,9 @@ npm run gen:coloring-fills      # light colored fills  -> web/static/coloring/**
 npm run gen:coloring-fills:audit # drift-check the raw fills in fill-src/ (no key/network)
 npm run gen:coloring-punch      # re-punch the shipped fills from fill-src/ raws (no key/network)
 npm run gen:coloring-thumbs     # picker thumbnails (pen + chalk) -> web/static/coloring/**/*.{thumb,chalk.thumb}.webp
+npm run gen:coloring-golden:diff # re-score the catalog vs the frozen golden/golden-scores.json (no key/network, ~1 min)
+npm run gen:coloring-golden:freeze # adopt the current catalog scores as the new golden baseline
+npm run gen:assets:manifest     # re-hash the committed art -> golden/asset-manifest.sha256 (CI drift guard)
 npm run gen:contact-sheet -- nature # HTML contact sheet of ONE category (gitignored) — publish as an Artifact
 ```
 
@@ -85,6 +89,24 @@ ready-to-run regenerate command. It scores the raws rather than the shipped fill
 shipped ones are punched fills-only (no outlines left to register); a clean raw guarantees a clean
 punch. `--overlay` dumps a drift map per failing page (red = source outline the fill left uncovered)
 to `.coloring-samples/drift/`.
+
+### The committed regression fixtures (`golden/`)
+
+Two fixtures freeze the current catalog's state so a change can prove it didn't degrade anything
+else (both offline, no key):
+
+* **`golden/golden-scores.json`** — every offline audit score per page (outline solidity/eye rings,
+  light keep/localKeep + eyes, night drift/bgLuma/lineWhite + eyes), written by
+  `gen:coloring-golden:freeze`. `gen:coloring-golden:diff` re-scores (~1 min) and exits non-zero on
+  any verdict flip or bad-direction movement — run it after any pipeline or asset change, and
+  re-freeze to adopt intended changes.
+* **`golden/asset-manifest.sha256`** — one sha256 line per committed art asset (shipped coloring
+  pages, style covers, `fill-src/` raws), written by `gen:assets:manifest` and verified in CI by
+  `check:assets:manifest`. It turns binary churn into a reviewable text diff and guards the
+  night-pass invariant (light bytes untouched).
+
+They close each other's blind spot: the golden set catches score drift the bytes can hide, the
+manifest catches byte swaps between score-identical renders.
 
 Or, from **inside this folder**, the local aliases (same flags, resolve the same root
 `node_modules`):

@@ -7,9 +7,10 @@
 > picker; chalk *covers* remain open), effectively resolved **#1** (re-inking gone), **#5** (both
 > flat-pupil pages now lively without pen surgery), and **#4** (night bgLuma tightened to 18–48 via
 > `--night-luma-max 60`), and ran **#7/#13** as post-regen audits (1 real invented shape caught and
-> regenerated). The remaining ideas below are still open leads. The living list of concrete
-> outstanding defects and gate blind spots (as opposed to these exploratory leads) is
-> [`ISSUES.md`](ISSUES.md).
+> regenerated). **#23 and #25 landed 2026-07-13** as the committed regression fixtures in `golden/`
+> (`gen:coloring-golden:freeze`/`diff` + `gen:assets:manifest`/`check:assets:manifest`). The
+> remaining ideas below are still open leads. The living list of concrete outstanding defects and
+> gate blind spots (as opposed to these exploratory leads) is [`ISSUES.md`](ISSUES.md).
 
 Brainstormed immediately after generating and reviewing the whole catalog (7 categories: 83 chalks +
 83 night fills, ~350 candidate images eyeballed). **Nothing here is empirically verified** — each
@@ -276,7 +277,11 @@ every "should I override this gate?" call. (Doubles as the harness for ideas #7 
 
 * Try on: `vehicles/train-wide`, `farm/cat-tall`.
 
-### 23. Golden-set regression fixtures **[safety net for all of the above]**
+### 23. Golden-set regression fixtures **[safety net for all of the above — LANDED 2026-07-13]**
+
+> Landed as `bin/audit-golden.mjs` + the committed `golden/golden-scores.json`
+> (`gen:coloring-golden:freeze` / `gen:coloring-golden:diff`), with the night generation gates
+> extracted into `lib/night-scores.mjs` so the committed raws re-score offline.
 
 Before running down any regen-heavy idea, freeze the current shipped set's scores
 (keep/localKeep/drift/bgLuma/lineW/eye verdicts per page — all cheap and offline) into a committed
@@ -296,7 +301,10 @@ each through the standard suite, and wire both pages into `books.ts`.
 
 * Try on: `shapes/heart-wide` (new pen needed), `objects/umbrella-tall` (new pen needed).
 
-### 25. Light-mode byte-stability check in CI **[guard rail]**
+### 25. Light-mode byte-stability check in CI **[guard rail — LANDED 2026-07-13]**
+
+> Landed as `bin/gen-asset-manifest.mjs` + the committed `golden/asset-manifest.sha256`
+> (`gen:assets:manifest` / `check:assets:manifest`, verified in CI's Quality job and prerelease).
 
 Several ideas above regenerate *night* assets; the standing invariant is "light mode stays
 byte-identical through a night pass". Right now that's discipline, not a check. Idea: a tiny script
@@ -315,7 +323,8 @@ show up in the diff.
    first so the chalk gate stops fighting the same pages.
 2. **#16 recolor-edit night fills** bake-off on 3 pages — if it wins, it absorbs #1 and #8
    wholesale.
-3. **#23 golden-set fixtures** before any mass regen.
+3. ~~**#23 golden-set fixtures** before any mass regen.~~ Landed — `gen:coloring-golden:diff` is the
+   standard post-change check.
 4. **#19 dark-mode thumbs/covers** — cheap, user-visible, no model risk.
 5. **#7/#15 halo + inpaint crop-audits** — verify the punch quality story before building anything
    else on top of it.
