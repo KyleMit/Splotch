@@ -1,8 +1,14 @@
-# Audit skills — inventory & shared conventions
+---
+name: audit-conventions
+description: Shared conventions for Splotch audit-producing and audit-consuming skills.
+---
+
+# Audit Skills - Inventory And Shared Conventions
 
 The single reference for Splotch's custom **audit skills**: what they are, and the rules every one
 of them follows. Each audit skill links here instead of repeating these instructions. If you change
-a shared rule, change it **here** — the skills point at this file on purpose.
+a shared rule, change it **here** in `.ruler/skills/audit-conventions/SKILL.md`. Ruler propagates
+this skill to generated agent skill directories.
 
 ## Inventory
 
@@ -83,8 +89,8 @@ The `docs/AUDIT.md` header (create it if the file doesn't exist yet):
 ```markdown
 # Audit
 
-> Findings from Splotch's audit skills (`.claude/audit-conventions.md`). Clear the whole list
-> autonomously with `/fix-audits`; validate it with `/vet-audits`. Skills **merge** into this file —
+> Findings from Splotch's audit skills (`audit-conventions` skill). Clear the whole list
+> autonomously with `fix-audits`; validate it with `vet-audits`. Skills **merge** into this file;
 > they never overwrite each other's sections.
 ```
 

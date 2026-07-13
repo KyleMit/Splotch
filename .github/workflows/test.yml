@@ -34,6 +34,9 @@ jobs:
       - name: Format check
         run: npm run format:check
 
+      - name: Ruler drift check
+        run: npm run ruler:check
+
       # Drift guard: fails if any shipped SVG under web/ isn't SVGO-optimized
       # (a new icon landed un-optimized). Fix with `npm run img:audit`.
       - name: SVG audit
