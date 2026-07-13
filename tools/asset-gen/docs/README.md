@@ -9,9 +9,9 @@ format/line-art utilities. It lives in its own folder so you can iterate on it i
 Architecture and the "why a folder, not a workspace/repo" decision:
 **[`architecture.md`](architecture.md)**.
 
-Layout: the runnable entry points live in `bin/`, shared helpers in `lib/`, and every doc —
-this runbook, `pipeline.md`, `contact-sheet.md`, `ISSUES.md`, `IDEAS.md`, and the decision records —
-in `docs/` (paths in prose below are relative to the `tools/asset-gen/` folder root).
+Layout: the runnable entry points live in `bin/`, shared helpers in `lib/`, and every doc — this
+runbook, `pipeline.md`, `contact-sheet.md`, `ISSUES.md`, `IDEAS.md`, and the decision records — in
+`docs/` (paths in prose below are relative to the `tools/asset-gen/` folder root).
 
 ## Where it sits in the repo
 
@@ -30,11 +30,11 @@ reach back into the repo-root `scripts/lib/`.
 `fill-src/{book}/{page}-{orient}.{light,night}.raw.webp` (committed, in this folder, never shipped)
 holds the colored fills **with their outlines intact** — the raw model output. The shipped
 `web/static/coloring/**/*.{light,night}.webp` are the fills-only **punch** of those raws:
-`bin/punch-fill-outlines.mjs` masks each raw's own outline pixels out using the page's line art, because
-the app's overlay `<img>` already draws the line art on top and revealing the fill's copy would
-double every line (ADR-0043 "reveal fills only"). The punch is deterministic, offline `sharp` — no
-key, no network — so the shipped fills are always a pure, reproducible derivation of the raws. Edit
-or regenerate a raw, then re-punch; never hand-edit a shipped fill.
+`bin/punch-fill-outlines.mjs` masks each raw's own outline pixels out using the page's line art,
+because the app's overlay `<img>` already draws the line art on top and revealing the fill's copy
+would double every line (ADR-0043 "reveal fills only"). The punch is deterministic, offline `sharp`
+— no key, no network — so the shipped fills are always a pure, reproducible derivation of the raws.
+Edit or regenerate a raw, then re-punch; never hand-edit a shipped fill.
 
 ### The one coupling to the app
 
@@ -115,8 +115,8 @@ Generate → review the scratch → copy the good outputs into `web/static/` →
 The contact sheet is the **single review surface** for the coloring fills — self-contained HTML
 (images inlined as base64 data URIs), built to render anywhere. Full reference — CLI, the
 side-by-side light/night layout, the three views, the outline-% badge, size constraints — lives in
-[`contact-sheet.md`](./contact-sheet.md); **read it before modifying `bin/gen-contact-sheet.mjs`
-or `contact-sheet-assets/`**. The essentials:
+[`contact-sheet.md`](./contact-sheet.md); **read it before modifying `bin/gen-contact-sheet.mjs` or
+`contact-sheet-assets/`**. The essentials:
 
 * **Rebuild the sheet every time you touch an asset**, then **publish it with the Artifact tool**
   instead of hand-rolling a headless screenshot — same steps as the pipeline's shipping runbook
@@ -139,8 +139,8 @@ or `contact-sheet-assets/`**. The essentials:
 ## Runbooks
 
 * **The coloring-page pipeline** (pen/chalk outlines → fills → punch, gates, per-category runbook):
-  [`pipeline.md`](./pipeline.md). Decision records: the sibling `*.md` files in this `docs/`
-  folder. Retired techniques + history: [`legacy/`](../legacy/).
+  [`pipeline.md`](./pipeline.md). Decision records: the sibling `*.md` files in this `docs/` folder.
+  Retired techniques + history: [`legacy/`](../legacy/).
 * **Known outstanding issues** (shipped-asset defects, gate blind spots, tooling gaps):
   [`ISSUES.md`](./ISSUES.md) — check it before regenerating a page or trusting a gate on an
   unfamiliar failure class; update it when you fix or find one.

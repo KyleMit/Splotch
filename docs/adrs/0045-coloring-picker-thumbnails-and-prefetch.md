@@ -26,8 +26,8 @@ Ship **two resolutions of the same art** and **prefetch along the interaction pa
 
 ### 1. A `.thumb.webp` sibling for every cover and page
 
-`tools/asset-gen/bin/gen-coloring-thumbs.mjs` (`npm run gen:coloring-thumbs`) uses `sharp` to write a
-`{name}.thumb.webp` beside every full-res source — longest edge 400 px (covers a 2× DPR ~200 px
+`tools/asset-gen/bin/gen-coloring-thumbs.mjs` (`npm run gen:coloring-thumbs`) uses `sharp` to write
+a `{name}.thumb.webp` beside every full-res source — longest edge 400 px (covers a 2× DPR ~200 px
 tile), quality 80. A thumbnail is ~15 KB vs. the source's ~84–120 KB, so regenerating the whole set
 saves ~9 MB. The colored `.light.webp` fills (the magic brush's reveal layer, ADR-0043) are skipped;
 they're never shown in the picker, so they get no thumbnail.

@@ -79,9 +79,9 @@ that all 2 attempts ran and that the line gate failed, without needing the sourc
 
 ### [Execution] Night-fill shipping step: samples dirs resolve to repo root, and `*.input.webp` debug siblings break batch cp/punch
 
-**File(s):** `tools/asset-gen/docs/pipeline.md` (Stage 4 "Shipping" step), `tools/asset-gen/docs/README.md`
-("Review scratch" line), `tools/asset-gen/lib/paths.mjs` (`SAMPLES_DARK_DIR`),
-`tools/asset-gen/lib/punch-fill.mjs` (~line 102)
+**File(s):** `tools/asset-gen/docs/pipeline.md` (Stage 4 "Shipping" step),
+`tools/asset-gen/docs/README.md` ("Review scratch" line), `tools/asset-gen/lib/paths.mjs`
+(`SAMPLES_DARK_DIR`), `tools/asset-gen/lib/punch-fill.mjs` (~line 102)
 
 #### Problem
 

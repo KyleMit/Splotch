@@ -18,9 +18,10 @@
   (`tools/asset-gen/docs/architecture.md`): the AI style covers, light/dark coloring-page fills,
   thumbnails, and format/line-art utilities (`gen-style-covers`, `gen-coloring-chalk`,
   `gen-coloring-fills`, `gen-coloring-fills-dark`, `gen-coloring-thumbs`, `gen-contact-sheet`,
-  `png-to-webp`, `lib/pixelate.mjs`). See `tools/asset-gen/docs/README.md` + `tools/asset-gen/CLAUDE.md`.
-  The **coloring-page pipeline** (pen/chalk outlines → fills → punch, gates, per-category runbook)
-  lives in `tools/asset-gen/docs/pipeline.md` — read it before generating more.
+  `png-to-webp`, `lib/pixelate.mjs`). See `tools/asset-gen/docs/README.md` +
+  `tools/asset-gen/CLAUDE.md`. The **coloring-page pipeline** (pen/chalk outlines → fills → punch,
+  gates, per-category runbook) lives in `tools/asset-gen/docs/pipeline.md` — read it before
+  generating more.
 * The app-driving `gen:*` generators that stay here — `gen:shots` (`store-shots.mjs`) and
   `gen:large-image` (`gen-large-image.mjs`) — drive the live app by selector through
   `scripts/lib/app-driver.mjs` and only run on demand, so that module rots silently when app markup,

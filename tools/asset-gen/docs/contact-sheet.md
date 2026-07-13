@@ -1,8 +1,8 @@
 # The contact sheet — `bin/gen-contact-sheet.mjs`
 
-**Read this before modifying `bin/gen-contact-sheet.mjs` or anything under `contact-sheet-assets/`.** It is the
-single review surface for the coloring fills — the review-sheet role previously split across
-`gen-coloring-sheet.mjs` lives here now.
+**Read this before modifying `bin/gen-contact-sheet.mjs` or anything under
+`contact-sheet-assets/`.** It is the single review surface for the coloring fills — the review-sheet
+role previously split across `gen-coloring-sheet.mjs` lives here now.
 
 ## What it builds
 
