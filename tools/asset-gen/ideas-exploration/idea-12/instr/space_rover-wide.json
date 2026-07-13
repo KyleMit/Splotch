@@ -1,0 +1,232 @@
+[
+ {
+  "i": 0,
+  "L": {
+   "x": 614,
+   "y": 342,
+   "coreLuma": 250.5050048828125,
+   "bandDark": 230.2689971923828,
+   "bandLight": 233.15499877929688,
+   "contrast": 20.236007690429688,
+   "lively": false
+  },
+  "N": {
+   "x": 614,
+   "y": 342,
+   "coreLuma": 254,
+   "bandDark": 180.71299743652344,
+   "bandLight": 182.92999267578125,
+   "contrast": 73.28700256347656,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 1,
+  "L": {
+   "x": 722,
+   "y": 347,
+   "coreLuma": 250.28799438476562,
+   "bandDark": 230.2689971923828,
+   "bandLight": 232.9600067138672,
+   "contrast": 20.018997192382812,
+   "lively": false
+  },
+  "N": {
+   "x": 722,
+   "y": 347,
+   "coreLuma": 254,
+   "bandDark": 179.6529998779297,
+   "bandLight": 181.71299743652344,
+   "contrast": 74.34700012207031,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 2,
+  "L": {
+   "x": 617,
+   "y": 338,
+   "coreLuma": 252.77200317382812,
+   "bandDark": 248.91799926757812,
+   "bandLight": 254,
+   "contrast": 3.85400390625,
+   "lively": false
+  },
+  "N": {
+   "x": 617,
+   "y": 338,
+   "coreLuma": 253,
+   "bandDark": 253,
+   "bandLight": 255,
+   "contrast": 2,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 3,
+  "L": {
+   "x": 722,
+   "y": 343,
+   "coreLuma": 254,
+   "bandDark": 248.22799682617188,
+   "bandLight": 253.98899841308594,
+   "contrast": 5.772003173828125,
+   "lively": false
+  },
+  "N": {
+   "x": 722,
+   "y": 343,
+   "coreLuma": 253,
+   "bandDark": 253,
+   "bandLight": 254,
+   "contrast": 1,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 4,
+  "L": {
+   "x": 717,
+   "y": 580,
+   "coreLuma": 117.78099822998047,
+   "bandDark": 219.11500549316406,
+   "bandLight": 224.33700561523438,
+   "contrast": 106.5560073852539,
+   "lively": false
+  },
+  "N": {
+   "x": 717,
+   "y": 580,
+   "coreLuma": 54.400001525878906,
+   "bandDark": 29.10099983215332,
+   "bandLight": 33.513999938964844,
+   "contrast": 25.299001693725586,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 5,
+  "L": {
+   "x": 767,
+   "y": 583,
+   "coreLuma": 161.72500610351562,
+   "bandDark": 220.1529998779297,
+   "bandLight": 223.72999572753906,
+   "contrast": 62.00498962402344,
+   "lively": false
+  },
+  "N": {
+   "x": 767,
+   "y": 583,
+   "coreLuma": 49.11199951171875,
+   "bandDark": 28.10099983215332,
+   "bandLight": 32.513999938964844,
+   "contrast": 21.01099967956543,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 6,
+  "L": {
+   "x": 606,
+   "y": 759,
+   "coreLuma": 196,
+   "bandDark": 72,
+   "bandLight": 197,
+   "contrast": 124,
+   "lively": true
+  },
+  "N": {
+   "x": 606,
+   "y": 759,
+   "coreLuma": 24.5310001373291,
+   "bandDark": 19.6560001373291,
+   "bandLight": 34.513999938964844,
+   "contrast": 9.982999801635742,
+   "lively": false
+  },
+  "isRef": true,
+  "fails": true
+ },
+ {
+  "i": 7,
+  "L": {
+   "x": 1086,
+   "y": 766,
+   "coreLuma": 145.77200317382812,
+   "bandDark": 76,
+   "bandLight": 198,
+   "contrast": 69.77200317382812,
+   "lively": false
+  },
+  "N": {
+   "x": 1086,
+   "y": 766,
+   "coreLuma": 28.87299919128418,
+   "bandDark": 20.47100067138672,
+   "bandLight": 26.87299919128418,
+   "contrast": 8.401998519897461,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 8,
+  "L": {
+   "x": 922,
+   "y": 787,
+   "coreLuma": 151,
+   "bandDark": 192,
+   "bandLight": 199.0489959716797,
+   "contrast": 48.04899597167969,
+   "lively": false
+  },
+  "N": {
+   "x": 922,
+   "y": 787,
+   "coreLuma": 23.243000030517578,
+   "bandDark": 20.645000457763672,
+   "bandLight": 25.87299919128418,
+   "contrast": 2.6299991607666016,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 9,
+  "L": {
+   "x": 752,
+   "y": 794,
+   "coreLuma": 175,
+   "bandDark": 192.35899353027344,
+   "bandLight": 198,
+   "contrast": 23,
+   "lively": false
+  },
+  "N": {
+   "x": 752,
+   "y": 794,
+   "coreLuma": 23.48200035095215,
+   "bandDark": 19.884000778198242,
+   "bandLight": 24.584999084472656,
+   "contrast": 3.5979995727539062,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ }
+]

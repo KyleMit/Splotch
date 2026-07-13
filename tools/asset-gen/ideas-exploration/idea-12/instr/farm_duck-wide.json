@@ -1,0 +1,25 @@
+[
+ {
+  "i": 0,
+  "L": {
+   "x": 587,
+   "y": 385,
+   "coreLuma": 248.22799682617188,
+   "bandDark": 62.77199935913086,
+   "bandLight": 254.77200317382812,
+   "contrast": 185.45599746704102,
+   "lively": true
+  },
+  "N": {
+   "x": 587,
+   "y": 385,
+   "coreLuma": 254,
+   "bandDark": 179.1269989013672,
+   "bandLight": 254,
+   "contrast": 74.87300109863281,
+   "lively": false
+  },
+  "isRef": true,
+  "fails": true
+ }
+]

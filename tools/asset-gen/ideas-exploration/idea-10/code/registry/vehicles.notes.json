@@ -1,0 +1,28 @@
+{
+  "train-wide": {
+    "night": {
+      "review": "Dark-bodied subject that DEFEATS the line-color gate without being wrong: held lineW 51-105 through ~27 attempts of every lever (strict --line-white-min, low temperature, --dilate-lines 2, --notes) — commit d652c15. Do NOT burn attempts chasing the gate: render the simulated composite (lib/night-composite.mjs) early; the chalk owns the lines and the punch clears the fill's dark ink. Shipped with the dark-outline warning acknowledged after 2x-zoom composite review.",
+      "why": "commits 7a9ca89 + d652c15; pipeline.md status-table lesson 'Dark-bodied subjects can defeat the line-color gate without being wrong'."
+    }
+  },
+  "police-tall": {
+    "chalk": {
+      "review": "Expect a worst-tile keep FAIL confined to the deliberately whitened windshields/hubs/beacons (the whitened-interior keep blind spot — commit b8bbe8c). Ship via registration-overlay + display review when the misses are only those regions, matching the passing monster-truck treatment."
+    }
+  },
+  "police-wide": {
+    "chalk": {
+      "review": "Same whitened-windshield/hub/beacon keep blind spot as police-tall (commit b8bbe8c) — verify on the overlay, then hand-ship."
+    }
+  },
+  "monster-wide": {
+    "night": {
+      "review": "Flat-eye warnings here are false positives on non-eye cores (wheel hubs, grille slots — commit 7a9ca89); adjudicate visually before retrying."
+    }
+  },
+  "fire-tall": {
+    "night": {
+      "review": "Flat-eye warnings are false positives on non-eye cores (roof lights, grille — commit 7a9ca89); adjudicate visually before retrying."
+    }
+  }
+}

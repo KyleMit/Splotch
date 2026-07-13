@@ -1,0 +1,16 @@
+{
+  "*": {
+    "chalk": {
+      "review": "Shapes' 'geometric solids' are giant cartoon pupils: most pages fail ONLY the worst-tile keep on their whitened giant pupils (the keep blind spot at shapes' bigger eye scale — commit 52c7853). Overlay-verify the misses are the eyes, then hand-ship the generator's candidate."
+    }
+  },
+  "rectangle-wide": {
+    "chalk": {
+      "flags": {
+        "temperature": 0.25,
+        "notes": "The circles floating around the rectangle are BUBBLES, not eyes — do NOT whiten any shape solid. Whiten nothing except the rectangle's own eye sclera and catchlights; every bubble stays a thin outlined ring, matching rectangle-tall's treatment."
+      },
+      "why": "First pass whitened EVERY shape solid (white 32.8% — commit 52c7853), fixed with an outlines-only --notes at low temperature; idea-run #2 re-validated: a motif-naming note at t 0.25 converged to the sibling's thin-ring bubbles in ONE attempt (keep 100%, white 0%)."
+    }
+  }
+}

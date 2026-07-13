@@ -1,0 +1,335 @@
+{
+  "closeR": 0,
+  "plan": [
+    {
+      "n": 1,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 2,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 3,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 4,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 5,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 6,
+      "what": "mermaid hair",
+      "color": "pink"
+    },
+    {
+      "n": 7,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 8,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 9,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 10,
+      "what": "mermaid face",
+      "color": "skin-peach"
+    },
+    {
+      "n": 11,
+      "what": "starfish",
+      "color": "magenta"
+    },
+    {
+      "n": 12,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 13,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 14,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 15,
+      "what": "mermaid eye",
+      "color": "black"
+    },
+    {
+      "n": 16,
+      "what": "mermaid eye",
+      "color": "black"
+    },
+    {
+      "n": 17,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 18,
+      "what": "background",
+      "color": "tan"
+    },
+    {
+      "n": 19,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 20,
+      "what": "mermaid torso",
+      "color": "skin-peach"
+    },
+    {
+      "n": 21,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 22,
+      "what": "bubble",
+      "color": "sky-blue"
+    },
+    {
+      "n": 23,
+      "what": "seaweed",
+      "color": "leaf-green"
+    },
+    {
+      "n": 24,
+      "what": "clam bra",
+      "color": "lavender"
+    },
+    {
+      "n": 25,
+      "what": "sea plant",
+      "color": "sunny-yellow"
+    },
+    {
+      "n": 26,
+      "what": "clam bra",
+      "color": "sky-blue"
+    },
+    {
+      "n": 27,
+      "what": "seaweed",
+      "color": "deep-blue"
+    },
+    {
+      "n": 28,
+      "what": "mermaid belly",
+      "color": "skin-peach"
+    },
+    {
+      "n": 29,
+      "what": "seaweed",
+      "color": "pink"
+    },
+    {
+      "n": 30,
+      "what": "background",
+      "color": "tan"
+    },
+    {
+      "n": 31,
+      "what": "background",
+      "color": "tan"
+    },
+    {
+      "n": 32,
+      "what": "seaweed",
+      "color": "purple"
+    },
+    {
+      "n": 33,
+      "what": "mermaid hip",
+      "color": "seafoam"
+    },
+    {
+      "n": 34,
+      "what": "sea plant",
+      "color": "navy"
+    },
+    {
+      "n": 35,
+      "what": "seaweed",
+      "color": "coral"
+    },
+    {
+      "n": 36,
+      "what": "mermaid tail scales",
+      "color": "seafoam"
+    },
+    {
+      "n": 37,
+      "what": "sea plant",
+      "color": "lavender"
+    },
+    {
+      "n": 38,
+      "what": "seaweed",
+      "color": "orange"
+    },
+    {
+      "n": 39,
+      "what": "rock",
+      "color": "sky-blue"
+    },
+    {
+      "n": 40,
+      "what": "seaweed",
+      "color": "dusty-rose"
+    },
+    {
+      "n": 41,
+      "what": "sea plant",
+      "color": "teal"
+    },
+    {
+      "n": 42,
+      "what": "sea plant",
+      "color": "lavender"
+    },
+    {
+      "n": 43,
+      "what": "sea plant",
+      "color": "coral"
+    },
+    {
+      "n": 44,
+      "what": "background",
+      "color": "tan"
+    },
+    {
+      "n": 45,
+      "what": "coral",
+      "color": "coral"
+    },
+    {
+      "n": 46,
+      "what": "mermaid tail fin",
+      "color": "leaf-green"
+    },
+    {
+      "n": 47,
+      "what": "mermaid tail fin",
+      "color": "sky-blue"
+    },
+    {
+      "n": 48,
+      "what": "seabed",
+      "color": "tan"
+    },
+    {
+      "n": 49,
+      "what": "seabed",
+      "color": "tan"
+    },
+    {
+      "n": 50,
+      "what": "seabed",
+      "color": "tan"
+    },
+    {
+      "n": 51,
+      "what": "scallop shell",
+      "color": "golden"
+    },
+    {
+      "n": 52,
+      "what": "snail shell part",
+      "color": "leaf-green"
+    },
+    {
+      "n": 53,
+      "what": "snail shell part",
+      "color": "leaf-green"
+    },
+    {
+      "n": 54,
+      "what": "snail shell part",
+      "color": "leaf-green"
+    },
+    {
+      "n": 55,
+      "what": "snail shell part",
+      "color": "leaf-green"
+    },
+    {
+      "n": 56,
+      "what": "snail shell",
+      "color": "coral"
+    },
+    {
+      "n": 57,
+      "what": "spiral shell",
+      "color": "leaf-green"
+    },
+    {
+      "n": 58,
+      "what": "seabed",
+      "color": "tan"
+    },
+    {
+      "n": 59,
+      "what": "snail shell part",
+      "color": "leaf-green"
+    },
+    {
+      "n": 60,
+      "what": "snail shell part",
+      "color": "leaf-green"
+    },
+    {
+      "n": 61,
+      "what": "seabed",
+      "color": "tan"
+    },
+    {
+      "n": 62,
+      "what": "seabed",
+      "color": "tan"
+    },
+    {
+      "n": 63,
+      "what": "snail shell part",
+      "color": "leaf-green"
+    },
+    {
+      "n": 64,
+      "what": "seabed",
+      "color": "tan"
+    },
+    {
+      "n": 65,
+      "what": "mermaid arm",
+      "color": "skin-peach"
+    },
+    {
+      "n": 66,
+      "what": "seabed",
+      "color": "tan"
+    }
+  ]
+}

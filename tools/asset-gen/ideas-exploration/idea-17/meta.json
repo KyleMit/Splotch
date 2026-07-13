@@ -1,0 +1,48 @@
+{
+  "idea": 17,
+  "title": "Model bake-off: flash-image vs pro image tier",
+  "verdict": "WORKED",
+  "oneline": "gemini-3.1-flash-image clears all three flash-2.5 failure classes; pro tier drifts",
+  "summary": "The API key has both a pro image tier (gemini-3-pro-image) and a newer flash tier (gemini-3.1-flash-image). Running the production generators and gates on the three hard pages (12 calls exactly), gemini-3.1-flash-image passed every model-owned gate on the first take with no notes: lineW 255 (vs 2.5's 51-107 re-inking), drift 0, no nudge, and a correct rectangle chalk without the --notes the shipped one needed. The pro tier also never re-inks but extends/invents geometry (drift 0.019-0.062 on both train takes) and returned a gate-passing null edit on the chalk, so the recommendation is a straight default-swap candidate (3.1-flash) rather than a routing table; caterpillar's eye flooding proved asset-owned (the shipped chalk whitens the eyeballs), unfixable by any model swap.",
+  "tried": [
+    "list-models discovery of image-capable models on this key",
+    "env-var MODEL override on gen-coloring-fills-dark.mjs and gen-coloring-chalk.mjs (reverted)",
+    "gemini-3-pro-image: 2 night takes each on train-wide + caterpillar-wide, 1 chalk attempt on rectangle-wide (no --notes)",
+    "gemini-3.1-flash-image: same 5 calls",
+    "fresh flash-2.5 baseline confirmation on train-wide (2 takes)",
+    "offline rescore harness with the generators' exact gate math to score shipped raws on the same scorecard",
+    "night-composite and drift-overlay visualizers to explain ambiguous scores"
+  ],
+  "worked": [
+    "gemini-3.1-flash-image: lineW 255 / drift 0 / no nudge on all 4 night takes; correct rectangle chalk (whiteFrac 1.27% vs shipped 1.1%) first try without --notes",
+    "gemini-3-pro-image: no re-inking (lineW 255 on all takes)",
+    "flash-2.5 re-inking signature reconfirmed live (fresh take lineW 107, plus a -5,-2 nudge on the other take)",
+    "rescore harness parity with generator output (diffs only from webp re-encode)"
+  ],
+  "failed": [
+    "gemini-3-pro-image failed the drift gate on 2/2 train takes (0.019, 0.062) - it extends rails past the source line art and adds gradient skies",
+    "gemini-3-pro-image chalk was a null edit (whiteFrac 0%) that the gates cannot catch - a new failure signature",
+    "no model fixed caterpillar-wide's 2 flat eyes - the shipped chalk whitens the whole eyeball, so the composite fails regardless of fill model"
+  ],
+  "limitations": [
+    "2 takes per page per model (the idea's reduced cap) - a screen, not a proof; run a full category before swapping the default",
+    "gemini-3.1-flash-lite-image and nano-banana-pro-preview not exercised (budget)",
+    "chalk generation tested only on rectangle-wide; caterpillar chalk not regenerated with new models",
+    "pricing/quota of the new tiers not evaluated"
+  ],
+  "comparisons": [
+    {"label": "train-wide night fill: flash-2.5 vs 3.1-flash", "before": "images/train-flash25-take.webp", "after": "images/train-flash31-take.webp", "note": "before: re-inked (lineW 107, dark soft-shaded lines); after: crisp white lines, drift 0, lineW 255"},
+    {"label": "rectangle chalk display: pro vs 3.1-flash", "before": "images/rectangle-pro-display.webp", "after": "images/rectangle-flash31-display.webp", "note": "before: pro's null edit (no whitening); after: 3.1-flash whitens the ring annuli like the shipped notes-assisted chalk"}
+  ],
+  "images": [
+    {"file": "images/train-night-4up.webp", "caption": "Re-inking class, vehicles/train-wide: fresh flash-2.5 re-inked take (lineW 107) and shipped raw (lineW 75) vs 3-pro (lineW 255 but drift .019) and 3.1-flash (lineW 255, drift 0, PASS)"},
+    {"file": "images/train-drift-pro.webp", "caption": "3-pro's drift-gate failure explained: red = counted drift pixels - it extended the rails past where the chalk's line art stops"},
+    {"file": "images/caterpillar-eyes.webp", "caption": "Eye-flooding class, nature/caterpillar-wide: both challengers paint lively raw-fill eyes (drift 0, lineW 255), but the composite with the shipped chalk floods the eyes white - the chalk owns this failure, not the fill model"},
+    {"file": "images/rectangle-chalk-3up.webp", "caption": "Whiten-everything class, shapes/rectangle-wide chalk without --notes: shipped baseline (white 1.1%) vs pro's gate-passing null edit (0%) vs 3.1-flash's correct first-try chalk (1.27%)"}
+  ],
+  "code": [
+    {"title": "Offline rescore harness (generators' exact gate math, night + chalk modes)", "file": "code/bakeoff-idea17.mjs"},
+    {"title": "Visualizers: night-composite render + drift-pixel overlay", "file": "code/bakeoff-vis-idea17.mjs"},
+    {"title": "Caption-bar montage builder for the evidence images", "file": "code/bakeoff-montage-idea17.mjs"}
+  ]
+}

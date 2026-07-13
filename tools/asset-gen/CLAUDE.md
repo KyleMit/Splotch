@@ -66,3 +66,9 @@ pipeline evolves). Key rules when working in this folder:
   plus the history chronicle in `legacy/README.md`). Nothing in there is part
   of the current pipeline — `pipeline.md` is the live runbook; borrow from
   legacy, don't follow it.
+- **`ideas-exploration/` is the frozen 2026-07 empirical burn-down of
+  `IDEAS.md`** — one report, evidence set, and (mostly) re-appliable patch per
+  idea, plus a self-contained review dashboard (`ideas-review.html`). Read its
+  README before working any IDEAS.md item: 24 of 25 ideas were validated there,
+  and several carry finished patches/assets waiting to be promoted. Like
+  `legacy/`, nothing in it is live pipeline code.

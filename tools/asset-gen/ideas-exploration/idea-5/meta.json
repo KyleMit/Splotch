@@ -1,0 +1,58 @@
+{
+  "idea": 5,
+  "title": "De-swirl the two flat-pupil pages",
+  "verdict": "WORKED",
+  "oneline": "Deterministic pen-eye surgery fixed caterpillar-wide's flat night pupils end-to-end",
+  "summary": "The flat pupils come from spiral-welded pen eyes collapsing the eye detector's nested-ring topology, so the chalk's polarity gate had no pupil core to protect and the chalk whitened whole eyeballs, which the punch then imposes on every night fill. A zero-API sharp/SVG surgery (erase eye interior, redraw pupil ellipse + detached catchlight with >=2.5px clearances) restored 4 detector cores at 100% registration; regenerating light+chalk+night on the fixed pen flipped the eyes audit from night-FAIL to ok. Ladybug-wide (true one-stroke spirals, outer ring included) was left for the real fix; the best night take still carries a non-eye drift warning (0.0056 vs 0.004, antenna glow) that a normal retry budget should clear.",
+  "tried": [
+    "Diagnosed the shipped failure chain: spiral pen eyes -> findEyeCores topology collapse -> chalk whitens whole eyeball (polarity gate blind) -> punch flattens every night pupil",
+    "Flood-based erase that keeps only the eyeball ring (leaked through the spiral's opening; abandoned)",
+    "Fitted-ellipse interior erase + SVG two-circle redraw with numerically verified clearances (worked)",
+    "Regenerated light fill, chalk, and night fill on the fixed pen (7 Gemini calls) and re-punched",
+    "Full offline audit battery + simulated night composites before/after"
+  ],
+  "worked": [
+    "Deterministic de-swirl: cores 2 -> 4, ring depth 4, solidity 0, keep 100/100 fwd and 99.9/97.6 rev vs shipped pen",
+    "Chalk regen passed first try and kept a fillable pupil + chalk-ink catchlight (owl-style best case)",
+    "Night fill eyes lively in every take; eyes audit flipped caterpillar-wide night FAIL -> ok",
+    "Light fill passed first try at keep 100/100"
+  ],
+  "failed": [
+    "Flood-fill inside/outside separation (spiral opening leaks the sclera into the face white)",
+    "First surgery geometry (pupil rx13, catchlight r5.5): antialias welds re-broke one eye's topology",
+    "Best night take still 0.0056 drift vs 0.004 bar (antenna glow, not eyes) within the capped attempt budget"
+  ],
+  "limitations": [
+    "ladybug-wide not attempted: its eyes are one-stroke spirals including the outer ring, needing outer-ring redraw or the forced normalizer",
+    "surgery constants are hand-measured per page, not a general tool",
+    "thumbs not regenerated; repo fully reverted, nothing committed",
+    "no pipeline gate measures spiralness: outline audit passes these pens (ring depth 4), so the normalizer skips them without --force"
+  ],
+  "comparisons": [
+    {"label": "Pen eyes (caterpillar-wide)", "before": "before-cw-pen-eyes-zoom.png", "after": "after-cw-pen-eyes-zoom.png", "note": "welded spiral rings vs clean pupil + detached catchlight (weld nubs remain, harmless)"},
+    {"label": "Chalk eyes (stored ink-on-white)", "before": "before-cw-chalk-eyes-zoom.png", "after": "after-cw-chalk-eyes-zoom.png", "note": "whole eyeball solid ink vs fillable pupil with chalk catchlight"},
+    {"label": "Night composite eyes (what a child sees)", "before": "before-cw-night-composite-eyes.png", "after": "after-cw-night-composite-eyes.png", "note": "the shipped flat white eyeballs vs deep pupils + catchlights"},
+    {"label": "Night composite full page", "before": "before-cw-night-composite-full.png", "after": "after-cw-night-composite-full.png"},
+    {"label": "Light raw eyes", "before": "before-cw-light-eyes-zoom.png", "after": "after-cw-light-eyes-zoom.png", "note": "light was never broken; regen needed so the chalk gate's reference matches the new pen"}
+  ],
+  "images": [
+    {"file": "before-cw-pen-eyes-zoom.png", "caption": "Shipped caterpillar-wide pen eyes: tangent-welded spiral rings"},
+    {"file": "after-cw-pen-eyes-zoom.png", "caption": "De-swirled pen eyes: two-circle treatment, 4 detector cores"},
+    {"file": "before-cw-chalk-eyes-zoom.png", "caption": "Shipped chalk whitens the whole eyeball (solid ink incl. pupil)"},
+    {"file": "after-cw-chalk-eyes-zoom.png", "caption": "Regenerated chalk keeps a fillable pupil + catchlight"},
+    {"file": "before-cw-night-composite-eyes.png", "caption": "Shipped night composite: flat white eyeballs"},
+    {"file": "after-cw-night-composite-eyes.png", "caption": "Fixed night composite: deep pupils, white catchlights"},
+    {"file": "before-cw-night-composite-full.png", "caption": "Shipped full night composite"},
+    {"file": "after-cw-night-composite-full.png", "caption": "Regenerated full night composite"},
+    {"file": "before-cw-light-eyes-zoom.png", "caption": "Shipped light raw eyes (already lively)"},
+    {"file": "after-cw-light-eyes-zoom.png", "caption": "Regenerated light raw eyes on the new pen"},
+    {"file": "before-lw-pen-eyes-zoom.png", "caption": "ladybug-wide pen eyes: true one-stroke spirals (page 2, unfixed)"},
+    {"file": "before-lw-night-composite-eyes.png", "caption": "ladybug-wide shipped night composite: flat pupils"},
+    {"file": "template-ct-pen-eyes.png", "caption": "caterpillar-tall pen eyes: the de-swirl template"}
+  ],
+  "code": [
+    {"title": "Deterministic pen-eye de-swirl surgery (erase + SVG two-circle redraw)", "file": "code/idea5-deswirl.mjs"},
+    {"title": "Night-composite crop renderer (simulated final dark-mode view)", "file": "code/idea5-composite.mjs"},
+    {"title": "ASCII luma-map dumper for measuring stroke geometry", "file": "code/idea5-ascii.mjs"}
+  ]
+}
