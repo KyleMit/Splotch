@@ -1,0 +1,8 @@
+{
+  "bubbles-after": [
+    { "page": "shapes/rectangle-tall", "bbox512": [307, 28, 411, 99], "label": "sibling rectangle-tall (target)" },
+    { "page": "shapes/rectangle-wide", "bbox512": [347, 69, 391, 136], "label": "shipped (donut, before)" },
+    { "page": "shapes/rectangle-wide", "bbox512": [347, 69, 391, 136], "label": "re-chalk candidate (after)", "chalk": "/home/user/Splotch/.coloring-samples-dark/chalk/shapes/rectangle-wide.webp" },
+    { "page": "shapes/rectangle-wide", "bbox512": [149, 60, 191, 124], "label": "re-chalk candidate #2", "chalk": "/home/user/Splotch/.coloring-samples-dark/chalk/shapes/rectangle-wide.webp" }
+  ]
+}

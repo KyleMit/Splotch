@@ -54,10 +54,9 @@ for (const page of pages) {
   let night = null;
   if (existsSync(nightPath)) {
     const raw = await readFile(nightPath);
-    const judged = existsSync(chalkPath)
-      ? await compositeNight(raw, await readFile(chalkPath))
-      : raw;
-    night = judgeNightEyes(await scoreEyeFill(judged, source), light);
+    const chalked = existsSync(chalkPath);
+    const judged = chalked ? await compositeNight(raw, await readFile(chalkPath)) : raw;
+    night = judgeNightEyes(await scoreEyeFill(judged, source), light, { chalked });
   }
   audited++;
   const bad = !lightVerdict.passes || (night && !night.passes);

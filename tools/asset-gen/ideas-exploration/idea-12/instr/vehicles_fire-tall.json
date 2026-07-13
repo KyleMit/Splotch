@@ -1,0 +1,278 @@
+[
+ {
+  "i": 0,
+  "L": {
+   "x": 540,
+   "y": 751,
+   "coreLuma": 199.43899536132812,
+   "bandDark": 133.66000366210938,
+   "bandLight": 223.89100646972656,
+   "contrast": 65.77899169921875,
+   "lively": false
+  },
+  "N": {
+   "x": 540,
+   "y": 751,
+   "coreLuma": 30.31800079345703,
+   "bandDark": 52.215999603271484,
+   "bandLight": 255,
+   "contrast": 224.68199920654297,
+   "lively": true
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 1,
+  "L": {
+   "x": 827,
+   "y": 789,
+   "coreLuma": 181.5050048828125,
+   "bandDark": 179.4409942626953,
+   "bandLight": 183.86399841308594,
+   "contrast": 2.3589935302734375,
+   "lively": false
+  },
+  "N": {
+   "x": 827,
+   "y": 789,
+   "coreLuma": 90.8270034790039,
+   "bandDark": 88.18599700927734,
+   "bandLight": 91.28299713134766,
+   "contrast": 2.6410064697265625,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 2,
+  "L": {
+   "x": 803,
+   "y": 790,
+   "coreLuma": 181.9459991455078,
+   "bandDark": 179.33700561523438,
+   "bandLight": 183.86399841308594,
+   "contrast": 2.6089935302734375,
+   "lively": false
+  },
+  "N": {
+   "x": 803,
+   "y": 790,
+   "coreLuma": 88.34300231933594,
+   "bandDark": 88.20099639892578,
+   "bandLight": 92.0479965209961,
+   "contrast": 3.7049942016601562,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 3,
+  "L": {
+   "x": 139,
+   "y": 902,
+   "coreLuma": 252.77200317382812,
+   "bandDark": 249.28799438476562,
+   "bandLight": 254,
+   "contrast": 3.4840087890625,
+   "lively": false
+  },
+  "N": {
+   "x": 139,
+   "y": 902,
+   "coreLuma": 254,
+   "bandDark": 254,
+   "bandLight": 255,
+   "contrast": 1,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 4,
+  "L": {
+   "x": 253,
+   "y": 905,
+   "coreLuma": 201,
+   "bandDark": 133.67100524902344,
+   "bandLight": 203,
+   "contrast": 67.32899475097656,
+   "lively": false
+  },
+  "N": {
+   "x": 253,
+   "y": 905,
+   "coreLuma": 79.197998046875,
+   "bandDark": 52.215999603271484,
+   "bandLight": 82.74199676513672,
+   "contrast": 26.981998443603516,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 5,
+  "L": {
+   "x": 404,
+   "y": 908,
+   "coreLuma": 254,
+   "bandDark": 251.41299438476562,
+   "bandLight": 255,
+   "contrast": 2.587005615234375,
+   "lively": false
+  },
+  "N": {
+   "x": 404,
+   "y": 908,
+   "coreLuma": 253,
+   "bandDark": 253,
+   "bandLight": 255,
+   "contrast": 2,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 6,
+  "L": {
+   "x": 251,
+   "y": 934,
+   "coreLuma": 201,
+   "bandDark": 133.67100524902344,
+   "bandLight": 202.77200317382812,
+   "contrast": 67.32899475097656,
+   "lively": false
+  },
+  "N": {
+   "x": 251,
+   "y": 934,
+   "coreLuma": 80.62799835205078,
+   "bandDark": 52.4109992980957,
+   "bandLight": 83.98100280761719,
+   "contrast": 28.216999053955078,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 7,
+  "L": {
+   "x": 251,
+   "y": 962,
+   "coreLuma": 203,
+   "bandDark": 132.70899963378906,
+   "bandLight": 201.28799438476562,
+   "contrast": 70.29100036621094,
+   "lively": false
+  },
+  "N": {
+   "x": 251,
+   "y": 962,
+   "coreLuma": 80.4000015258789,
+   "bandDark": 54.834999084472656,
+   "bandLight": 249,
+   "contrast": 168.5999984741211,
+   "lively": true
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 8,
+  "L": {
+   "x": 889,
+   "y": 1008,
+   "coreLuma": 94.35900115966797,
+   "bandDark": 98,
+   "bandLight": 204,
+   "contrast": 109.64099884033203,
+   "lively": true
+  },
+  "N": {
+   "x": 889,
+   "y": 1008,
+   "coreLuma": 16.218000411987305,
+   "bandDark": 28.958999633789062,
+   "bandLight": 53.57500076293945,
+   "contrast": 37.35700035095215,
+   "lively": false
+  },
+  "isRef": true,
+  "fails": true
+ },
+ {
+  "i": 9,
+  "L": {
+   "x": 704,
+   "y": 1023,
+   "coreLuma": 203.6790008544922,
+   "bandDark": 199.28799438476562,
+   "bandLight": 205,
+   "contrast": 4.3910064697265625,
+   "lively": false
+  },
+  "N": {
+   "x": 704,
+   "y": 1023,
+   "coreLuma": 30.257999420166016,
+   "bandDark": 27.65999984741211,
+   "bandLight": 31.947999954223633,
+   "contrast": 2.5979995727539062,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 10,
+  "L": {
+   "x": 880,
+   "y": 1087,
+   "coreLuma": 200,
+   "bandDark": 197,
+   "bandLight": 204,
+   "contrast": 4,
+   "lively": false
+  },
+  "N": {
+   "x": 880,
+   "y": 1087,
+   "coreLuma": 83.87300109863281,
+   "bandDark": 83.6449966430664,
+   "bandLight": 89.87300109863281,
+   "contrast": 6,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ },
+ {
+  "i": 11,
+  "L": {
+   "x": 589,
+   "y": 1101,
+   "coreLuma": 204,
+   "bandDark": 197.98899841308594,
+   "bandLight": 204.98899841308594,
+   "contrast": 6.0110015869140625,
+   "lively": false
+  },
+  "N": {
+   "x": 589,
+   "y": 1101,
+   "coreLuma": 85.10099792480469,
+   "bandDark": 80.62799835205078,
+   "bandLight": 85.10099792480469,
+   "contrast": 4.472999572753906,
+   "lively": false
+  },
+  "isRef": false,
+  "fails": false
+ }
+]

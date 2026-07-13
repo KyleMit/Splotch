@@ -1,0 +1,65 @@
+{
+  "spider-tall": {
+    "night": {
+      "flags": {
+        "notes": "THE EYES ARE THE STAR OF THIS PAGE. The spider's body is dark, but every eye must stay lively: light sclera, deep near-black pupil, bright white catchlight. Do NOT flood the eyes with the body color or navy.",
+        "max-attempts": 6
+      },
+      "why": "Dark-bodied subject: the model floods the eyes navy without the note — burned ~26 attempts pre-notes (commit d96ae6f 'the dark-bodied spider needed \"the eyes are the star\"'; pipeline.md Stage 4 lever 4). Note text reconstructed from that prose; the original verbatim string was not preserved."
+    }
+  },
+  "ladybug-tall": {
+    "night": {
+      "flags": {
+        "notes": "Paint every shell circle DEEP NEAR-BLACK — the ladybug's spots are black, never white or light."
+      },
+      "why": "pipeline.md Stage 4 lever 4: 'the ladybug's shell spots needed \"paint every shell circle deep near-black\"' (regen in d96ae6f after the per-eye relaxation shipped a dead-sclera ladybug)."
+    },
+    "chalk": {
+      "flags": {
+        "temperature": 0.2,
+        "notes": "The ladybug's shell spots are BLACK in canon — never fill a shell circle white. Whiten only the eye sclera and catchlights."
+      },
+      "why": "commit e99fd22: 'Ladybug redone at low temperature with a page note to keep its shell spots black (the model's one bad judgment call)'; pipeline.md Stage 1.5 names the white-shell-spot misfire. Orientation not recorded in the commit — entry placed on the cataloged tall page; apply to the wide too if it misfires the same way."
+    }
+  },
+  "caterpillar-tall": {
+    "normalize": {
+      "flags": {
+        "temperature": 0.2,
+        "notes": "CHANGE NOTHING ELSE ANYWHERE."
+      },
+      "why": "pipeline.md Stage 1 gate 6: 'caterpillar's faithful de-swirl took t 0.2 plus \"CHANGE NOTHING ELSE ANYWHERE\"' (commit 551ab52 — the first redraw produced hypno-swirl eyes, depth 5 -> 3 after)."
+    }
+  },
+  "caterpillar-wide": {
+    "night": {
+      "review": "Ships with a flat-pupil warning: the pen eye uses a SPIRAL catchlight and the fill model reliably refuses to paint the spiral interior dark (>=11 attempts, notes + low temp all failed — commit 8e02fd5). Do not burn attempts on the fill; the durable fix is de-swirling the pen (idea-run #5 validated a deterministic sharp/SVG surgery for this page), then regenerating the suite."
+    },
+    "normalize": {
+      "review": "The outline audit PASSES this pen (ring depth 4, all thin strokes), so the normalizer skips it without --force — the spiral weld is invisible to every current gate (idea-run #5)."
+    }
+  },
+  "ladybug-wide": {
+    "night": {
+      "review": "Same spiral-catchlight flat-pupil warning as caterpillar-wide (commit 8e02fd5), but harder: the eyes are true one-stroke spirals INCLUDING the outer ring, so the idea-#5 interior surgery does not apply — needs an outer-ring redraw or the forced normalizer before the fill can succeed."
+    }
+  },
+  "bee-tall": {
+    "normalize": {
+      "flags": {
+        "temperature": 0.7,
+        "notes": "Each eye must end as EXACTLY one thin pupil ring with one small catchlight circle inside it — redraw the small solid pupils as outlined rings; do not leave any solid ink in the eyes."
+      },
+      "why": "pipeline.md Stage 1 gate 6: 'bee-tall's pupils took an eye-specific note at t 0.7-0.8' (commit 6840bba: small pupils under ~4px strokes ducked the fixed erosion radius). Note text reconstructed."
+    }
+  },
+  "bee-wide": {
+    "normalize": {
+      "flags": {
+        "notes": "The sky has THREE CLOUDS — keep all three exactly where they are."
+      },
+      "why": "pipeline.md Stage 1: 'the first bee-wide normalization silently deleted a cloud (worst-tile keep 0%), fixed with a --notes telling it the sky has three clouds'."
+    }
+  }
+}

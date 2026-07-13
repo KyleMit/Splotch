@@ -1,0 +1,29 @@
+{
+  "velociraptor-wide": {
+    "night": {
+      "flags": {
+        "max-attempts": 8,
+        "line-white-min": 175
+      },
+      "why": "Fixed lineW 70 -> 223 in <=6 tries with more attempts against the stricter gate (pipeline.md Stage 4 lever 1)."
+    }
+  },
+  "trex-wide": {
+    "night": {
+      "flags": {
+        "temperature": 0.3
+      },
+      "why": "Needed a low-temp retry for drift 0.0045 -> 0.0035 (commit f50d69d). Exact temperature not recorded — 0.3 reconstructed from the pipeline's low-temp lever range."
+    }
+  },
+  "pterodactyl-tall": {
+    "chalk": {
+      "review": "Expect a worst-tile keep FAIL confined to the redrawn eye + deliberately whitened sun/teeth/mouth — the whitened-interior keep blind spot (commit 660ffd5). Overlay-verify, then hand-ship."
+    }
+  },
+  "trex-tall": {
+    "chalk": {
+      "review": "Same whitened-interior keep blind spot as pterodactyl-tall (commit 660ffd5) — overlay-verify the misses, then hand-ship."
+    }
+  }
+}

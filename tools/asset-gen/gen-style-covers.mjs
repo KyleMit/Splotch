@@ -19,7 +19,7 @@ import { STYLE_SUFFIXES, STYLE_NAMES } from '../../web/src/lib/ai/styles.ts';
 import { buildPromptForStyle } from '../../web/src/lib/ai/prompt.ts';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
-const MODEL = 'gemini-2.5-flash-image';
+const MODEL = 'gemini-3.1-flash-image';
 const SOURCE_SVG = join(STYLES_DIR, 'source.svg');
 const THUMB_SIZE = 448;
 const WEBP_QUALITY = 75;

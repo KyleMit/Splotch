@@ -1,0 +1,145 @@
+{
+  "closeR": 0,
+  "plan": [
+    {
+      "n": 1,
+      "what": "bubble",
+      "color": "ocean-blue"
+    },
+    {
+      "n": 2,
+      "what": "bubble highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 3,
+      "what": "bubble",
+      "color": "ocean-blue"
+    },
+    {
+      "n": 4,
+      "what": "bubble highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 5,
+      "what": "bubble highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 6,
+      "what": "bubble",
+      "color": "ocean-blue"
+    },
+    {
+      "n": 7,
+      "what": "bubble highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 8,
+      "what": "bubble",
+      "color": "ocean-blue"
+    },
+    {
+      "n": 9,
+      "what": "bubble highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 10,
+      "what": "bubble",
+      "color": "ocean-blue"
+    },
+    {
+      "n": 11,
+      "what": "bubble highlight",
+      "color": "white-tint"
+    },
+    {
+      "n": 12,
+      "what": "creature body",
+      "color": "leaf-green"
+    },
+    {
+      "n": 13,
+      "what": "left eye iris",
+      "color": "sky-blue"
+    },
+    {
+      "n": 14,
+      "what": "right eye iris",
+      "color": "pink"
+    },
+    {
+      "n": 15,
+      "what": "left pupil",
+      "color": "black"
+    },
+    {
+      "n": 16,
+      "what": "right pupil",
+      "color": "black"
+    },
+    {
+      "n": 17,
+      "what": "left flower petals",
+      "color": "sunny-yellow"
+    },
+    {
+      "n": 18,
+      "what": "right flower petals",
+      "color": "sky-blue"
+    },
+    {
+      "n": 19,
+      "what": "left flower center",
+      "color": "golden"
+    },
+    {
+      "n": 20,
+      "what": "right flower center",
+      "color": "ocean-blue"
+    },
+    {
+      "n": 21,
+      "what": "left flower stem",
+      "color": "grass-green"
+    },
+    {
+      "n": 22,
+      "what": "right flower stem",
+      "color": "grass-green"
+    },
+    {
+      "n": 23,
+      "what": "left flower leaf",
+      "color": "leaf-green"
+    },
+    {
+      "n": 24,
+      "what": "right flower leaf",
+      "color": "leaf-green"
+    },
+    {
+      "n": 25,
+      "what": "left flower leaf",
+      "color": "leaf-green"
+    },
+    {
+      "n": 26,
+      "what": "right flower leaf",
+      "color": "leaf-green"
+    },
+    {
+      "n": 27,
+      "what": "background",
+      "color": "lavender"
+    },
+    {
+      "n": 28,
+      "what": "ground/grass",
+      "color": "grass-green"
+    }
+  ]
+}

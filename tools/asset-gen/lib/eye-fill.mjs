@@ -242,6 +242,8 @@ export async function scoreEyeFill(fillBuf, sourceBuf) {
     const rIn = r + 3;
     const rOut = r + 3 + Math.max(12, r * 0.6);
     const bandVals = [];
+    let annulusTotal = 0;
+    let annulusInk = 0;
     for (
       let y = Math.max(0, Math.floor(cy - rOut));
       y <= Math.min(h - 1, Math.ceil(cy + rOut));
@@ -253,9 +255,14 @@ export async function scoreEyeFill(fillBuf, sourceBuf) {
         x++
       ) {
         const p = y * w + x;
-        if (ink[p] || label[p] === core.id) continue;
+        if (label[p] === core.id) continue;
         const d = Math.hypot(x - cx, y - cy);
         if (d < rIn || d > rOut) continue;
+        annulusTotal++;
+        if (ink[p]) {
+          annulusInk++;
+          continue;
+        }
         let nearInk = false;
         for (let dy = -1; dy <= 1 && !nearInk; dy++) {
           for (let dx = -1; dx <= 1; dx++) {
@@ -293,6 +300,7 @@ export async function scoreEyeFill(fillBuf, sourceBuf) {
       bandLight,
       contrast: Math.max(coreLuma - bandDark, bandLight - coreLuma),
       lively,
+      annulusInkFrac: annulusTotal ? annulusInk / annulusTotal : 0,
     });
   }
   return { eyes: measured.length, cores: measured };
@@ -317,7 +325,23 @@ export function judgeLightEyes(scored) {
 // a dark pupil AND the pupil stays dark ON a light sclera.
 const STRONG_LIGHT_SIDE = 180;
 
-export function judgeNightEyes(scoredNight, scoredLight) {
+// A core whose annulus is mostly PEN ink is band-blind: the ink exclusion
+// hides whatever surrounds it (an accident-era solid pupil around a
+// catchlight), so its band stats are meaningless in both fills and can't
+// gate. farm/duck-wide's side-profile eye measured 0.74 while every
+// thin-stroke true failure (caterpillar/ladybug spirals) sits at 0.26-0.29.
+export const BAND_BLIND_INK_FRAC = 0.5;
+
+// On a chalk-forked page the chalk owns the eye whites, so in the simulated
+// night composite every REAL eye structure has chalk-white nearby — the
+// catchlight core itself or the sclera in the band reads ~255. A reference
+// core with no chalk-white anywhere near it (wheel hubs, rover screens, roof
+// lights — lively light-on-dark by day, legitimately dark at night) is a
+// core the chalk never marked as an eye, and doesn't gate. The committed,
+// human-reviewed chalk is effectively the per-page eye annotation.
+export const CHALK_WHITE_MIN = 245;
+
+export function judgeNightEyes(scoredNight, scoredLight, { chalked = false } = {}) {
   let worst = null;
   let failed = 0;
   for (let i = 0; i < scoredLight.cores.length; i++) {
@@ -326,6 +350,8 @@ export function judgeNightEyes(scoredNight, scoredLight) {
     const isReference =
       lightCore.lively && Math.max(lightCore.coreLuma, lightCore.bandLight) >= STRONG_LIGHT_SIDE;
     if (!isReference || !nightCore || nightCore.lively) continue;
+    if (lightCore.annulusInkFrac > BAND_BLIND_INK_FRAC) continue;
+    if (chalked && Math.max(nightCore.coreLuma, nightCore.bandLight) < CHALK_WHITE_MIN) continue;
     failed++;
     if (!worst || nightCore.contrast < worst.contrast) worst = nightCore;
   }

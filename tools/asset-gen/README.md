@@ -149,6 +149,10 @@ views, the outline-% badge, size constraints — lives in
 - **The coloring-page pipeline** (pen/chalk outlines → fills → punch, gates,
   per-category runbook): [`pipeline.md`](./pipeline.md). Decision records:
   [`docs/`](./docs/). Retired techniques + history: [`legacy/`](./legacy/).
+- **Known outstanding issues** (shipped-asset defects, gate blind spots,
+  tooling gaps): [`ISSUES.md`](./ISSUES.md) — check it before regenerating a
+  page or trusting a gate on an unfamiliar failure class; update it when you
+  fix or find one.
 - **AI art prompts** for authoring new source drawings / icons: `docs/PROMPTS.md`.
 
 ## Not here
