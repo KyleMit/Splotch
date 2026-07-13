@@ -1,0 +1,39 @@
+{
+  "idea": 10,
+  "title": "Per-page notes registry for regen levers",
+  "verdict": "WORKED",
+  "oneline": "Registry mined (28 entries), auto-loaded by generators, CLI wins; spider-tall passed first take",
+  "summary": "Mined the real per-page levers out of commit bodies, pipeline.md, and sibling idea-runs into fill-src/<cat>/notes.json for all 8 categories (28 entries: flags, print-only retry recipes, review expectations, provenance). A ~100-line lib/page-notes.mjs merges defaults < registry < CLI per page, patched into gen-coloring-fills-dark.mjs and gen-coloring-chalk.mjs with a --dry-run provenance mode. One live Gemini call proved it end-to-end: nature/spider-tall regenerated with its registry note auto-injected and passed every gate on the first take (drift 0.0000, lineW 246) — a page that originally burned ~26 attempts.",
+  "tried": [
+    "Mining git log full commit bodies + pipeline.md + idea-runs #2/#5/#6 for every recorded per-page lever",
+    "Per-category fill-src/<cat>/notes.json schema with flags / retry / review / why and a '*' category wildcard",
+    "lib/page-notes.mjs read path (defaults < notes.json < CLI) patched into the night-fill and chalk generators",
+    "--dry-run provenance mode tagging each resolved setting [cli]/[notes.json]/[default]",
+    "One live spider-tall night generation with the registry note auto-injected"
+  ],
+  "worked": [
+    "All three named pages resolve their levers automatically (spider-tall notes+attempts, train-wide procedural review, house-wide no-eyes note); shapes '*' wildcard works",
+    "CLI precedence verified: explicit --notes/--max-attempts override registry values",
+    "Live proof: spider-tall passed all four gates on the FIRST take with zero levers typed (historically ~26 attempts pre-note)",
+    "Patch re-applies clean on baseline 8e471b8 (git apply --check)"
+  ],
+  "failed": [
+    "Original verbatim --notes strings are unrecoverable from history — 4 of ~14 flag entries are reconstructions (marked in why), which is itself the strongest argument for the registry"
+  ],
+  "limitations": [
+    "gen-coloring-fills.mjs (light) has no notes/gate flags yet, so its 'light' registry section is reserved, not consumed",
+    "normalize-outline-strokes.mjs not patched (identical ~15-line treatment; its entries are in the registry as data)",
+    "retry recipes (e.g. unicorn-wide dilate-lines) are printed, never auto-applied — escalation stays manual",
+    "Registry stays alive only if updating notes.json becomes part of the shipping runbook in pipeline.md"
+  ],
+  "comparisons": [],
+  "images": [],
+  "code": [
+    { "title": "Full re-appliable patch: lib + 2 generators + 8 registry files", "file": "code/notes-registry.patch" },
+    { "title": "Registry loader/merger (lib/page-notes.mjs)", "file": "code/page-notes.mjs" },
+    { "title": "Mined registry: nature (spider-tall, ladybug, bee, caterpillar)", "file": "code/registry/nature.notes.json" },
+    { "title": "Mined registry: vehicles (train-wide procedural review, police blind spot)", "file": "code/registry/vehicles.notes.json" },
+    { "title": "Mined registry: objects (house-wide no-eyes note, apple-tall strict gate)", "file": "code/registry/objects.notes.json" },
+    { "title": "Mined registries: farm / dinosaur / creatures / shapes / space", "file": "code/registry/shapes.notes.json" }
+  ]
+}

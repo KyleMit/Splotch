@@ -1,0 +1,68 @@
+diff --git a/web/src/lib/state/books.ts b/web/src/lib/state/books.ts
+index 19dea9f..94704cf 100644
+--- a/web/src/lib/state/books.ts
++++ b/web/src/lib/state/books.ts
+@@ -129,12 +129,42 @@ export const BOOKS: Book[] = [
+     pages: [
+       // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+       // pen/chalk fork — see tools/asset-gen/pipeline.md).
+-      page('dinosaur', 'brachiosaurus', 'Brachiosaurus', ['portrait', 'landscape'], ['portrait', 'landscape']),
+-      page('dinosaur', 'pterodactyl', 'Pterodactyl', ['portrait', 'landscape'], ['portrait', 'landscape']),
+-      page('dinosaur', 'stegosaurus', 'Stegosaurus', ['portrait', 'landscape'], ['portrait', 'landscape']),
++      page(
++        'dinosaur',
++        'brachiosaurus',
++        'Brachiosaurus',
++        ['portrait', 'landscape'],
++        ['portrait', 'landscape']
++      ),
++      page(
++        'dinosaur',
++        'pterodactyl',
++        'Pterodactyl',
++        ['portrait', 'landscape'],
++        ['portrait', 'landscape']
++      ),
++      page(
++        'dinosaur',
++        'stegosaurus',
++        'Stegosaurus',
++        ['portrait', 'landscape'],
++        ['portrait', 'landscape']
++      ),
+       page('dinosaur', 'trex', 'T. Rex', ['portrait', 'landscape'], ['portrait', 'landscape']),
+-      page('dinosaur', 'triceratops', 'Triceratops', ['portrait', 'landscape'], ['portrait', 'landscape']),
+-      page('dinosaur', 'velociraptor', 'Velociraptor', ['portrait', 'landscape'], ['portrait', 'landscape']),
++      page(
++        'dinosaur',
++        'triceratops',
++        'Triceratops',
++        ['portrait', 'landscape'],
++        ['portrait', 'landscape']
++      ),
++      page(
++        'dinosaur',
++        'velociraptor',
++        'Velociraptor',
++        ['portrait', 'landscape'],
++        ['portrait', 'landscape']
++      ),
+     ],
+   },
+   {
+@@ -188,6 +218,7 @@ export const BOOKS: Book[] = [
+       page('objects', 'flower', 'Flower', ['portrait', 'landscape'], ['portrait', 'landscape']),
+       page('objects', 'house', 'House', ['portrait', 'landscape'], ['portrait', 'landscape']),
+       page('objects', 'teddy', 'Teddy', ['portrait', 'landscape'], ['portrait', 'landscape']),
++      page('objects', 'umbrella', 'Umbrella', ['portrait', 'landscape'], ['portrait', 'landscape']),
+     ],
+   },
+   {
+@@ -199,6 +230,7 @@ export const BOOKS: Book[] = [
+       // Night fills + chalk outlines shipped for both orientations (ADR-0052;
+       // pen/chalk fork — see tools/asset-gen/pipeline.md).
+       page('shapes', 'circle', 'Circle', ['portrait', 'landscape'], ['portrait', 'landscape']),
++      page('shapes', 'heart', 'Heart', ['portrait', 'landscape'], ['portrait', 'landscape']),
+       page(
+         'shapes',
+         'rectangle',

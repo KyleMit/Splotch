@@ -1,0 +1,52 @@
+{
+  "idea": 24,
+  "title": "Complete the orphan pages: heart + umbrella",
+  "verdict": "WORKED",
+  "oneline": "Both orphan pages completed end-to-end, all gates green, in 12 Gemini calls",
+  "summary": "Verified the real gaps are heart-wide and umbrella-tall (IDEAS.md had them backwards). Authored both missing pens by conditioning Gemini on the sibling orientation with an explicit imageConfig aspectRatio, then ran the full standard suite (thumb, chalk, light, night, punch) — every stock gate passed, mostly first-attempt. Wired both pages into books.ts; check:assets (496 assets), svelte-check, and 353 unit tests all green. Zero API calls remain to ship; docs/PROMPTS.md lacks the promised pen prompt, so the sibling-conditioned recipe should be documented.",
+  "tried": [
+    "Inventory of both pages' assets on disk vs the books.ts catalog",
+    "Sibling-conditioned pen authoring via gemini-2.5-flash-image + imageConfig.aspectRatio",
+    "Full standard suite on both new pens with stock gates (chalk, light fill, night fill, punch)",
+    "Preemptive --notes for eyeless-scene chalk refusal",
+    "books.ts wiring + check:assets/check/test:unit validation"
+  ],
+  "worked": [
+    "aspectRatio config honored (1248x832 / 832x1248 outputs)",
+    "Sibling conditioning kept the category style perfectly; both pens scored 0 solid px",
+    "Chalks and night fills passed all gates in 1 attempt each; heart light fill in 1, umbrella light in 4",
+    "Eyeless --notes preempted the documented house-wide refusal failure",
+    "Full validation green with both pages cataloged (496 assets, 353 tests)"
+  ],
+  "failed": [
+    "First heart-wide pen kept a portrait composition on the wide canvas (fixed with a fill-the-axis note)",
+    "docs/PROMPTS.md does not actually contain a pen-outline prompt (the idea text pointed there)"
+  ],
+  "limitations": [
+    "Human contact-sheet review (the pipeline's final gate) not performed",
+    "umbrella-tall light fill leaves raindrops a near-white tint; passes the white gate but may want a reviewer retint",
+    "umbrella-tall has slightly larger top/bottom margins than its sibling"
+  ],
+  "comparisons": [
+    {"label": "Heart page: only orientation before vs new wide suite (light)", "before": "heart-tall.pen.webp", "after": "heart-wide.light-combined.webp", "note": "before = the lone existing orientation; the wide page did not exist at all"},
+    {"label": "Umbrella page: only orientation before vs new tall suite (light)", "before": "umbrella-wide.pen.webp", "after": "umbrella-tall.light-combined.webp"},
+    {"label": "heart-wide pen vs its night composite", "before": "heart-wide.pen.webp", "after": "heart-wide.night-combined.webp", "note": "simulated final dark-mode render (chalk-punched fill + screened chalk)"}
+  ],
+  "images": [
+    {"file": "heart-wide.pen.webp", "caption": "New heart-wide PEN outline (0 solid px, ring depth 0)"},
+    {"file": "heart-wide.chalk-display.webp", "caption": "heart-wide chalk as dark mode displays it (keep 100%)"},
+    {"file": "heart-wide.light-combined.webp", "caption": "heart-wide light fill under its outline (keep 100%, white 0%)"},
+    {"file": "heart-wide.night-combined.webp", "caption": "heart-wide simulated night composite (drift 0.0016, bgLuma 25, lineW 252)"},
+    {"file": "umbrella-tall.pen.webp", "caption": "New umbrella-tall PEN outline (0 solid px)"},
+    {"file": "umbrella-tall.chalk-display.webp", "caption": "umbrella-tall chalk display view (keep 99.9%)"},
+    {"file": "umbrella-tall.light-combined.webp", "caption": "umbrella-tall light fill (keep 100% after 4 tries)"},
+    {"file": "umbrella-tall.night-combined.webp", "caption": "umbrella-tall simulated night composite (drift 0.0000, lineW 255)"},
+    {"file": "heart-tall.pen.webp", "caption": "BEFORE: heart-tall, the page's only existing orientation"},
+    {"file": "umbrella-wide.pen.webp", "caption": "BEFORE: umbrella-wide, the page's only existing orientation"}
+  ],
+  "code": [
+    {"title": "books.ts catalog wiring (heart + umbrella pages)", "file": "code/books-ts-wiring.patch"},
+    {"title": "Sibling-conditioned pen authoring script (temporary, candidate for promotion)", "file": "code/gen-pen-idea24.mjs"},
+    {"title": "Evidence composite builder", "file": "code/evidence-idea24.mjs"}
+  ]
+}

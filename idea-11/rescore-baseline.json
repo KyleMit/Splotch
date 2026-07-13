@@ -1,0 +1,1506 @@
+[
+  {
+    "page": "creatures/dragon-tall",
+    "blob": 1861,
+    "interiorPx": 3068,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9715943799633476,
+      "localKeep": 0.7047120418848167,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.995260959032238,
+      "localKeep": 0.9513590844062947,
+      "pass": true
+    }
+  },
+  {
+    "page": "creatures/dragon-wide",
+    "blob": 1013,
+    "interiorPx": 1810,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.983495145631068,
+      "localKeep": 0.8002610966057441,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9987479406919275,
+      "localKeep": 0.9789303079416531,
+      "pass": true
+    }
+  },
+  {
+    "page": "creatures/fairy-tall",
+    "blob": 254,
+    "interiorPx": 541,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9935183437165691,
+      "localKeep": 0.8234126984126984,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9966593129530413,
+      "localKeep": 0.9037199124726477,
+      "pass": true
+    }
+  },
+  {
+    "page": "creatures/fairy-wide",
+    "blob": 250,
+    "interiorPx": 490,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9975318798848211,
+      "localKeep": 0.961038961038961,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9983985121661414,
+      "localKeep": 0.9727891156462585,
+      "pass": true
+    }
+  },
+  {
+    "page": "creatures/mermaid-tall",
+    "blob": 1004,
+    "interiorPx": 2004,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9837897901823649,
+      "localKeep": 0.8231966053748232,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.998611386629637,
+      "localKeep": 0.9818481848184818,
+      "pass": true
+    }
+  },
+  {
+    "page": "creatures/mermaid-wide",
+    "blob": 963,
+    "interiorPx": 1857,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9894012853760289,
+      "localKeep": 0.8456189151599444,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9994293540287605,
+      "localKeep": 0.9880749574105622,
+      "pass": true
+    }
+  },
+  {
+    "page": "creatures/owl-tall",
+    "blob": 2908,
+    "interiorPx": 5630,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9391681782845297,
+      "localKeep": 0.5896358543417367,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9927397260273972,
+      "localKeep": 0.9507735583684951,
+      "pass": true
+    }
+  },
+  {
+    "page": "creatures/owl-wide",
+    "blob": 1462,
+    "interiorPx": 2764,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9790510474476276,
+      "localKeep": 0.734207389749702,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9978438318188819,
+      "localKeep": 0.9615384615384616,
+      "pass": true
+    }
+  },
+  {
+    "page": "creatures/pegasus-tall",
+    "blob": 1265,
+    "interiorPx": 1275,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9850884138295065,
+      "localKeep": 0.8185840707964602,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9953320885569485,
+      "localKeep": 0.9225352112676056,
+      "pass": true
+    }
+  },
+  {
+    "page": "creatures/pegasus-wide",
+    "blob": 554,
+    "interiorPx": 554,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.994585703515866,
+      "localKeep": 0.8410462776659959,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9986107252014449,
+      "localKeep": 0.9523809523809523,
+      "pass": true
+    }
+  },
+  {
+    "page": "creatures/unicorn-tall",
+    "blob": 1262,
+    "interiorPx": 1262,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9902516436182272,
+      "localKeep": 0.777972027972028,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9986820994728398,
+      "localKeep": 0.9637883008356546,
+      "pass": true
+    }
+  },
+  {
+    "page": "creatures/unicorn-wide",
+    "blob": 814,
+    "interiorPx": 814,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9938843587842846,
+      "localKeep": 0.886736214605067,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9986231929407348,
+      "localKeep": 0.9693877551020408,
+      "pass": true
+    }
+  },
+  {
+    "page": "dinosaur/brachiosaurus-tall",
+    "blob": 92,
+    "interiorPx": 92,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9995888439662852,
+      "localKeep": 0.9837662337662337,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9997260836814353,
+      "localKeep": 0.9899665551839465,
+      "pass": true
+    }
+  },
+  {
+    "page": "dinosaur/brachiosaurus-wide",
+    "blob": 130,
+    "interiorPx": 132,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9993960542209099,
+      "localKeep": 0.9857904085257548,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9999324461257854,
+      "localKeep": 0.998272884283247,
+      "pass": true
+    }
+  },
+  {
+    "page": "dinosaur/pterodactyl-tall",
+    "blob": 713,
+    "interiorPx": 713,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9905643421998562,
+      "localKeep": 0.7922606924643585,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9990931350321937,
+      "localKeep": 0.9748110831234257,
+      "pass": true
+    }
+  },
+  {
+    "page": "dinosaur/pterodactyl-wide",
+    "blob": 540,
+    "interiorPx": 592,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9960822049625404,
+      "localKeep": 0.8977272727272727,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9997919700436863,
+      "localKeep": 0.9956331877729258,
+      "pass": true
+    }
+  },
+  {
+    "page": "dinosaur/stegosaurus-tall",
+    "blob": 210,
+    "interiorPx": 210,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9983481995374959,
+      "localKeep": 0.9541547277936963,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9994045256053989,
+      "localKeep": 0.9845758354755784,
+      "pass": true
+    }
+  },
+  {
+    "page": "dinosaur/stegosaurus-wide",
+    "blob": 278,
+    "interiorPx": 278,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9976022059705071,
+      "localKeep": 0.9351701782820098,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9990969839263139,
+      "localKeep": 0.9742710120068611,
+      "pass": true
+    }
+  },
+  {
+    "page": "dinosaur/trex-tall",
+    "blob": 1436,
+    "interiorPx": 1483,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9874563262500716,
+      "localKeep": 0.7343173431734318,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9982585476287223,
+      "localKeep": 0.9639175257731959,
+      "pass": true
+    }
+  },
+  {
+    "page": "dinosaur/trex-wide",
+    "blob": 522,
+    "interiorPx": 522,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9958250497017893,
+      "localKeep": 0.8732394366197183,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9998664440734557,
+      "localKeep": 0.995260663507109,
+      "pass": true
+    }
+  },
+  {
+    "page": "dinosaur/triceratops-tall",
+    "blob": 1312,
+    "interiorPx": 2577,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9750733137829912,
+      "localKeep": 0.8127853881278538,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9979152189020153,
+      "localKeep": 0.9720101781170484,
+      "pass": true
+    }
+  },
+  {
+    "page": "dinosaur/triceratops-wide",
+    "blob": 396,
+    "interiorPx": 432,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9970796524786449,
+      "localKeep": 0.9151376146788991,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9992635687458575,
+      "localKeep": 0.9768041237113402,
+      "pass": true
+    }
+  },
+  {
+    "page": "dinosaur/velociraptor-tall",
+    "blob": 1445,
+    "interiorPx": 1446,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9868258079045152,
+      "localKeep": 0.8003072196620584,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9983486134047036,
+      "localKeep": 0.9728,
+      "pass": true
+    }
+  },
+  {
+    "page": "dinosaur/velociraptor-wide",
+    "blob": 453,
+    "interiorPx": 453,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9969568470940384,
+      "localKeep": 0.908955223880597,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9995478295819936,
+      "localKeep": 0.9854604200323102,
+      "pass": true
+    }
+  },
+  {
+    "page": "farm/cat-tall",
+    "blob": 1214,
+    "interiorPx": 2422,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9802505097582289,
+      "localKeep": 0.7542613636363636,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9981003265063817,
+      "localKeep": 0.9668508287292817,
+      "pass": true
+    }
+  },
+  {
+    "page": "farm/cat-wide",
+    "blob": 522,
+    "interiorPx": 975,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9928649482548049,
+      "localKeep": 0.8700410396716827,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9996098068543929,
+      "localKeep": 0.9895287958115183,
+      "pass": true
+    }
+  },
+  {
+    "page": "farm/cow-tall",
+    "blob": 444,
+    "interiorPx": 794,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9939569587469939,
+      "localKeep": 0.9268617021276596,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9985095944854996,
+      "localKeep": 0.9828080229226361,
+      "pass": true
+    }
+  },
+  {
+    "page": "farm/cow-wide",
+    "blob": 532,
+    "interiorPx": 908,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9932943184589125,
+      "localKeep": 0.8580246913580247,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9998144023756496,
+      "localKeep": 0.9963235294117647,
+      "pass": true
+    }
+  },
+  {
+    "page": "farm/dog-tall",
+    "blob": 2309,
+    "interiorPx": 3793,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9817572598659717,
+      "localKeep": 0.7475728155339806,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9961952666537692,
+      "localKeep": 0.9333333333333333,
+      "pass": true
+    }
+  },
+  {
+    "page": "farm/dog-wide",
+    "blob": 1102,
+    "interiorPx": 1725,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9944616601832926,
+      "localKeep": 0.8953722334004024,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9989222686245454,
+      "localKeep": 0.974477958236659,
+      "pass": true
+    }
+  },
+  {
+    "page": "farm/duck-tall",
+    "blob": 851,
+    "interiorPx": 1384,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9901559627587024,
+      "localKeep": 0.8177676537585421,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9990374781928653,
+      "localKeep": 0.96875,
+      "pass": true
+    }
+  },
+  {
+    "page": "farm/duck-wide",
+    "blob": 496,
+    "interiorPx": 496,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9962108839093226,
+      "localKeep": 0.9312977099236641,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9987464537837303,
+      "localKeep": 0.9525691699604744,
+      "pass": true
+    }
+  },
+  {
+    "page": "farm/horse-tall",
+    "blob": 697,
+    "interiorPx": 887,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9927217887351649,
+      "localKeep": 0.878345498783455,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9994023507537021,
+      "localKeep": 0.9932659932659933,
+      "pass": true
+    }
+  },
+  {
+    "page": "farm/horse-wide",
+    "blob": 366,
+    "interiorPx": 370,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9933298456709391,
+      "localKeep": 0.9057750759878419,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9953008140843206,
+      "localKeep": 0.9085365853658537,
+      "pass": true
+    }
+  },
+  {
+    "page": "farm/pig-tall",
+    "blob": 714,
+    "interiorPx": 1295,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9874979704497483,
+      "localKeep": 0.8067415730337079,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9992582213797082,
+      "localKeep": 0.9887005649717514,
+      "pass": true
+    }
+  },
+  {
+    "page": "farm/pig-wide",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "nature/ant-tall",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "nature/ant-wide",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "nature/bee-tall",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 0.9998338594450905,
+      "localKeep": 0.9930795847750865,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9998334443704198,
+      "localKeep": 0.993127147766323,
+      "pass": true
+    }
+  },
+  {
+    "page": "nature/bee-wide",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "nature/caterpillar-tall",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "nature/caterpillar-wide",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "nature/ladybug-tall",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "nature/ladybug-wide",
+    "blob": 4,
+    "interiorPx": 4,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "nature/snail-tall",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "nature/snail-wide",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "nature/spider-tall",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "nature/spider-wide",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "objects/apple-tall",
+    "blob": 9,
+    "interiorPx": 9,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "objects/apple-wide",
+    "blob": 26,
+    "interiorPx": 34,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "objects/balloon-tall",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "objects/balloon-wide",
+    "blob": 279,
+    "interiorPx": 542,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9960890892217951,
+      "localKeep": 0.927027027027027,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9999331461425324,
+      "localKeep": 0.9976798143851509,
+      "pass": true
+    }
+  },
+  {
+    "page": "objects/flower-tall",
+    "blob": 335,
+    "interiorPx": 667,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9866910866910867,
+      "localKeep": 0.7539503386004515,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9963026867143209,
+      "localKeep": 0.9148351648351648,
+      "pass": true
+    }
+  },
+  {
+    "page": "objects/flower-wide",
+    "blob": 299,
+    "interiorPx": 585,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9944686866203675,
+      "localKeep": 0.8955555555555555,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9988861386138614,
+      "localKeep": 0.9782082324455206,
+      "pass": true
+    }
+  },
+  {
+    "page": "objects/house-tall",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "objects/house-wide",
+    "blob": 4,
+    "interiorPx": 5,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "objects/teddy-tall",
+    "blob": 719,
+    "interiorPx": 1370,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9875252865812543,
+      "localKeep": 0.8488188976377953,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9984240098670687,
+      "localKeep": 0.9701492537313433,
+      "pass": true
+    }
+  },
+  {
+    "page": "objects/teddy-wide",
+    "blob": 626,
+    "interiorPx": 1223,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9901311830545192,
+      "localKeep": 0.8531073446327684,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9990854216206329,
+      "localKeep": 0.9742990654205608,
+      "pass": true
+    }
+  },
+  {
+    "page": "objects/umbrella-wide",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "shapes/circle-tall",
+    "blob": 2253,
+    "interiorPx": 4393,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9313725490196079,
+      "localKeep": 0.4972170686456401,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9910485933503836,
+      "localKeep": 0.8869047619047619,
+      "pass": true
+    }
+  },
+  {
+    "page": "shapes/circle-wide",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "shapes/heart-tall",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "shapes/rectangle-tall",
+    "blob": 1767,
+    "interiorPx": 3505,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9474106784423926,
+      "localKeep": 0.6388261851015802,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9943436048965808,
+      "localKeep": 0.9454855195911414,
+      "pass": true
+    }
+  },
+  {
+    "page": "shapes/rectangle-wide",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "shapes/square-tall",
+    "blob": 1388,
+    "interiorPx": 2791,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9602789569436022,
+      "localKeep": 0.685207100591716,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9960369881109643,
+      "localKeep": 0.956882255389718,
+      "pass": true
+    }
+  },
+  {
+    "page": "shapes/square-wide",
+    "blob": 1214,
+    "interiorPx": 2423,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9696055684454756,
+      "localKeep": 0.6962233169129721,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9959052589321558,
+      "localKeep": 0.9512195121951219,
+      "pass": true
+    }
+  },
+  {
+    "page": "shapes/star-tall",
+    "blob": 1087,
+    "interiorPx": 2170,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9617045241223954,
+      "localKeep": 0.6688963210702341,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9971613155833986,
+      "localKeep": 0.9669421487603306,
+      "pass": true
+    }
+  },
+  {
+    "page": "shapes/star-wide",
+    "blob": 525,
+    "interiorPx": 1019,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9809853068280034,
+      "localKeep": 0.8360655737704918,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9979042576660049,
+      "localKeep": 0.9777158774373259,
+      "pass": true
+    }
+  },
+  {
+    "page": "shapes/triangle-tall",
+    "blob": 850,
+    "interiorPx": 1687,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9693688935833114,
+      "localKeep": 0.7458893871449925,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9962858954615454,
+      "localKeep": 0.9624505928853755,
+      "pass": true
+    }
+  },
+  {
+    "page": "shapes/triangle-wide",
+    "blob": 1463,
+    "interiorPx": 2877,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9616939930887435,
+      "localKeep": 0.6545454545454545,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.997325590280431,
+      "localKeep": 0.9652509652509652,
+      "pass": true
+    }
+  },
+  {
+    "page": "space/astronaut-tall",
+    "blob": 475,
+    "interiorPx": 942,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9892186789634344,
+      "localKeep": 0.8855172413793103,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9969244863237796,
+      "localKeep": 0.9654135338345865,
+      "pass": true
+    }
+  },
+  {
+    "page": "space/astronaut-wide",
+    "blob": 113,
+    "interiorPx": 405,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9961389961389961,
+      "localKeep": 0.9521367521367521,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9979793444095195,
+      "localKeep": 0.9717813051146384,
+      "pass": true
+    }
+  },
+  {
+    "page": "space/meteor-tall",
+    "blob": 628,
+    "interiorPx": 1438,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9891189360737495,
+      "localKeep": 0.8154613466334164,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9994647499617678,
+      "localKeep": 0.9875,
+      "pass": true
+    }
+  },
+  {
+    "page": "space/meteor-wide",
+    "blob": 61,
+    "interiorPx": 113,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.999185667752443,
+      "localKeep": 0.9853300733496333,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9996271995228154,
+      "localKeep": 0.9916897506925207,
+      "pass": true
+    }
+  },
+  {
+    "page": "space/moon-tall",
+    "blob": 646,
+    "interiorPx": 1168,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9811931243680485,
+      "localKeep": 0.7785888077858881,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9976254387776172,
+      "localKeep": 0.9738562091503268,
+      "pass": true
+    }
+  },
+  {
+    "page": "space/moon-wide",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 0.999205324327009,
+      "localKeep": 0.9921414538310412,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9992057976769582,
+      "localKeep": 0.9922027290448343,
+      "pass": true
+    }
+  },
+  {
+    "page": "space/rover-tall",
+    "blob": 1169,
+    "interiorPx": 1170,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9872452249711575,
+      "localKeep": 0.8035538005923001,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9976679406620458,
+      "localKeep": 0.9574970484061394,
+      "pass": true
+    }
+  },
+  {
+    "page": "space/rover-wide",
+    "blob": 349,
+    "interiorPx": 655,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9958968347010551,
+      "localKeep": 0.8969325153374234,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.99911526173507,
+      "localKeep": 0.975103734439834,
+      "pass": true
+    }
+  },
+  {
+    "page": "space/ship-tall",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "space/ship-wide",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "space/station-tall",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "space/station-wide",
+    "blob": 0,
+    "interiorPx": 0,
+    "solidPasses": true,
+    "before": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    },
+    "after": {
+      "keep": 1,
+      "localKeep": 1,
+      "pass": true
+    }
+  },
+  {
+    "page": "vehicles/excavator-tall",
+    "blob": 190,
+    "interiorPx": 371,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9914778975148449,
+      "localKeep": 0.8407079646017699,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9945934017433521,
+      "localKeep": 0.8825757575757576,
+      "pass": true
+    }
+  },
+  {
+    "page": "vehicles/excavator-wide",
+    "blob": 386,
+    "interiorPx": 758,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9948741142770994,
+      "localKeep": 0.8785714285714286,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9977166632839456,
+      "localKeep": 0.939106901217862,
+      "pass": true
+    }
+  },
+  {
+    "page": "vehicles/fire-tall",
+    "blob": 710,
+    "interiorPx": 1278,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9912399530389235,
+      "localKeep": 0.8567708333333334,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.998179335457442,
+      "localKeep": 0.968609865470852,
+      "pass": true
+    }
+  },
+  {
+    "page": "vehicles/fire-wide",
+    "blob": 409,
+    "interiorPx": 767,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9941653004146976,
+      "localKeep": 0.8761384335154827,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9988778298204528,
+      "localKeep": 0.966,
+      "pass": true
+    }
+  },
+  {
+    "page": "vehicles/garbage-tall",
+    "blob": 537,
+    "interiorPx": 947,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9942648592283628,
+      "localKeep": 0.9348591549295775,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9987157784134026,
+      "localKeep": 0.9790575916230366,
+      "pass": true
+    }
+  },
+  {
+    "page": "vehicles/garbage-wide",
+    "blob": 529,
+    "interiorPx": 904,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9952068864325541,
+      "localKeep": 0.9110105580693816,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9994052044609666,
+      "localKeep": 0.9882352941176471,
+      "pass": true
+    }
+  },
+  {
+    "page": "vehicles/monster-tall",
+    "blob": 777,
+    "interiorPx": 1546,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9865311042398197,
+      "localKeep": 0.845398773006135,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9972346309295894,
+      "localKeep": 0.9648173207036536,
+      "pass": true
+    }
+  },
+  {
+    "page": "vehicles/monster-wide",
+    "blob": 708,
+    "interiorPx": 1086,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9903492647058824,
+      "localKeep": 0.8760429082240763,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9930139139547068,
+      "localKeep": 0.8976572133168927,
+      "pass": true
+    }
+  },
+  {
+    "page": "vehicles/police-tall",
+    "blob": 1886,
+    "interiorPx": 3732,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9594561489465948,
+      "localKeep": 0.6272352132049519,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9962384443736053,
+      "localKeep": 0.9554794520547946,
+      "pass": true
+    }
+  },
+  {
+    "page": "vehicles/police-wide",
+    "blob": 763,
+    "interiorPx": 1445,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9834887824552558,
+      "localKeep": 0.7580853816300129,
+      "pass": false
+    },
+    "after": {
+      "keep": 0.9950634696755994,
+      "localKeep": 0.9490131578947368,
+      "pass": true
+    }
+  },
+  {
+    "page": "vehicles/train-tall",
+    "blob": 498,
+    "interiorPx": 1452,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9941605839416059,
+      "localKeep": 0.9218523878437048,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.9990331772847547,
+      "localKeep": 0.9854881266490765,
+      "pass": true
+    }
+  },
+  {
+    "page": "vehicles/train-wide",
+    "blob": 280,
+    "interiorPx": 700,
+    "solidPasses": false,
+    "before": {
+      "keep": 0.9944676831736607,
+      "localKeep": 0.8882521489971347,
+      "pass": true
+    },
+    "after": {
+      "keep": 0.996372046619201,
+      "localKeep": 0.8885714285714286,
+      "pass": true
+    }
+  }
+]

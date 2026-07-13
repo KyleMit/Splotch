@@ -1,0 +1,102 @@
+
+> splotch@1.3.0 gen:coloring-fills:audit:eyes
+> node tools/asset-gen/audit-fill-eyes.mjs
+
+page                         cores lively  light  night
+creatures/dragon-tall            5      0  FAIL   ok
+creatures/dragon-wide            2      0  FAIL   ok
+creatures/fairy-tall             0      0  ok     ok
+creatures/fairy-wide             0      0  ok     ok
+creatures/mermaid-tall           8      0  FAIL   ok
+creatures/mermaid-wide           3      0  FAIL   ok
+creatures/owl-tall               2      0  FAIL   ok
+creatures/owl-wide               2      0  FAIL   ok
+creatures/pegasus-tall           1      0  FAIL   ok
+creatures/pegasus-wide           2      0  FAIL   ok
+creatures/unicorn-tall           2      0  FAIL   ok
+creatures/unicorn-wide           1      0  FAIL   ok
+dinosaur/brachiosaurus-tall      3      0  FAIL   ok
+dinosaur/brachiosaurus-wide      0      0  ok     ok
+dinosaur/pterodactyl-tall        0      0  ok     ok
+dinosaur/pterodactyl-wide        0      0  ok     ok
+dinosaur/stegosaurus-tall        1      0  FAIL   ok
+dinosaur/stegosaurus-wide        0      0  ok     ok
+dinosaur/trex-tall               5      3  ok     ok
+dinosaur/trex-wide               3      0  FAIL   ok
+dinosaur/triceratops-tall        5      0  FAIL   ok
+dinosaur/triceratops-wide        2      0  FAIL   ok
+dinosaur/velociraptor-tall       1      0  FAIL   ok
+dinosaur/velociraptor-wide       2      1  ok     ok
+farm/cat-tall                    2      0  FAIL   ok
+farm/cat-wide                    2      0  FAIL   ok
+farm/cow-tall                    2      0  FAIL   ok
+farm/cow-wide                    2      0  FAIL   ok
+farm/dog-tall                    2      0  FAIL   ok
+farm/dog-wide                    2      0  FAIL   ok
+farm/duck-tall                   2      0  FAIL   ok
+farm/duck-wide                   1      1  ok     FAIL (1 eye(s) flat)
+farm/horse-tall                  4      0  FAIL   ok
+farm/horse-wide                  0      0  ok     ok
+farm/pig-tall                    2      0  FAIL   ok
+farm/pig-wide                    3      2  ok     ok
+nature/ant-tall                  2      2  ok     ok
+nature/ant-wide                  2      2  ok     ok
+nature/bee-tall                  6      6  ok     ok
+nature/bee-wide                  4      4  ok     ok
+nature/caterpillar-tall          5      5  ok     ok
+nature/caterpillar-wide          2      2  ok     FAIL (2 eye(s) flat)
+nature/ladybug-tall             11      5  ok     ok
+nature/ladybug-wide              2      2  ok     FAIL (2 eye(s) flat)
+nature/snail-tall                2      2  ok     ok
+nature/snail-wide                2      2  ok     FAIL (1 eye(s) flat)
+nature/spider-tall               4      4  ok     ok
+nature/spider-wide               6      4  ok     ok
+objects/apple-tall               0      0  ok     ok
+objects/apple-wide               0      0  ok     ok
+objects/balloon-tall             0      0  ok     ok
+objects/balloon-wide             2      0  FAIL   ok
+objects/flower-tall              0      0  ok     ok
+objects/flower-wide              0      0  ok     ok
+objects/house-tall              14      0  FAIL   ok
+objects/house-wide               1      0  FAIL   ok
+objects/teddy-tall              10      0  FAIL   ok
+objects/teddy-wide               1      0  FAIL   ok
+objects/umbrella-wide            0      0  ok     ok
+shapes/circle-tall               1      0  FAIL   ok
+shapes/circle-wide               0      0  ok     ok
+shapes/heart-tall                0      0  ok     ok
+shapes/rectangle-tall            2      0  FAIL   ok
+shapes/rectangle-wide            0      0  ok     ok
+shapes/square-tall               2      0  FAIL   ok
+shapes/square-wide               2      0  FAIL   ok
+shapes/star-tall                 2      0  FAIL   ok
+shapes/star-wide                 0      0  ok     ok
+shapes/triangle-tall             2      0  FAIL   ok
+shapes/triangle-wide             2      0  FAIL   ok
+space/astronaut-tall             6      0  FAIL   ok
+space/astronaut-wide             6      0  FAIL   ok
+space/meteor-tall                0      0  ok     ok
+space/meteor-wide                7      0  FAIL   ok
+space/moon-tall                  2      0  FAIL   ok
+space/moon-wide                  0      0  ok     ok
+space/rover-tall                 5      0  FAIL   ok
+space/rover-wide                10      1  ok     FAIL (1 eye(s) flat)
+space/ship-tall                  8      0  FAIL   ok
+space/ship-wide                  0      0  ok     ok
+space/station-tall               0      0  ok     ok
+space/station-wide               0      0  ok     ok
+vehicles/excavator-tall          6      0  FAIL   ok
+vehicles/excavator-wide          8      0  FAIL   ok
+vehicles/fire-tall              12      1  ok     FAIL (1 eye(s) flat)
+vehicles/fire-wide              13      0  FAIL   ok
+vehicles/garbage-tall            3      0  FAIL   ok
+vehicles/garbage-wide           11      0  FAIL   ok
+vehicles/monster-tall            8      1  ok     ok
+vehicles/monster-wide           16      8  ok     FAIL (7 eye(s) flat)
+vehicles/police-tall             2      0  FAIL   ok
+vehicles/police-wide             7      2  ok     ok
+vehicles/train-tall              5      0  FAIL   ok
+vehicles/train-wide              2      1  ok     FAIL (1 eye(s) flat)
+
+94 page(s) audited · 58 flagged.
+A flat LIGHT verdict usually means the outline itself needs normalizing (gen:coloring-outlines:audit); a flat NIGHT verdict means regenerating the night fill (gen-coloring-fills-dark).

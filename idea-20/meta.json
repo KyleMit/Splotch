@@ -1,0 +1,47 @@
+{
+  "idea": 20,
+  "title": "Upscale / resolution audit vs device DPR",
+  "verdict": "WORKED",
+  "oneline": "1024/1536 adequate; tablets overscale 1.7x but lanczos upscale buys nothing visible",
+  "summary": "Playwright-measured real rendered sizes across 9 device profiles: 2x tablets display the art 1.43-1.68x above native; phones are fine (the fill is capped at renderScale=2 per ADR-0015, so only the outline img ever runs above native on 3x phones). Lanczos-2x + re-punch of dragon-wide was tested end-to-end: the combined render at worst-case display size is visually indistinguishable from shipped (diff 0.83/255) while shipping bytes grow 2.36x — the cleaner punch seams hide under the overlay lines. The pipeline's gemini-2.5-flash-image silently ignores imageSize (caps ~1MP); gemini-3-pro-image-preview at 2K returns 2528x1696, a near-exact match for the worst-case demand, at ~3.4x per-image cost. Recommendation: keep current resolution; if tablet crispness ever matters, regen outlines at 2K via a model swap — never deterministic upscale.",
+  "tried": [
+    "Grounded the DPR math in the app code (overlay img at native DPR; magic-fill sheet capped at renderScale=min(DPR,2))",
+    "Playwright measurement of #coloringOverlay + canvas backing store across 9 emulated device profiles against the live dev server",
+    "Lanczos3 2x upscale of dragon-wide raw fill + outline, re-punch at 3072x2048 with the pipeline's mask+inpaint logic",
+    "Simulated worst-case display (iPad Pro 13 landscape, 2564x1709) for shipped vs upscaled pipelines and produced same-crop 2x comparisons",
+    "Probed imageConfig.imageSize on gemini-2.5-flash-image and gemini-3-pro-image-preview (2 API calls)"
+  ],
+  "worked": [
+    "Empirical rendered-size table: 2x tablets 1.43-1.68x above native; 3x phones 1.15-1.26x (outline only); 2x phones under native",
+    "Re-punch at 3072 runs fine (~0.2s) and yields visibly cleaner inpaint seams in the fill-only view",
+    "gemini-3-pro-image-preview honors imageSize=2K (2528x1696, near-exact worst-case match); 2.5-flash-image ignores it (1248x832)"
+  ],
+  "failed": [
+    "The deterministic lanczos upscale produced no visible improvement in the combined render (mean abs diff 0.83/255) — the improved seams sit exactly under the overlay line art",
+    "Regen-at-higher-res is impossible with the pipeline's current model (imageSize silently ignored)"
+  ],
+  "limitations": [
+    "Browser resampling approximated with sharp kernels (linear for canvas, lanczos3 for img)",
+    "Emulated profiles lack safe-area insets, so measured display sizes are upper bounds",
+    "Only light theme composited; night mode shares the geometry",
+    "Upscale path tested on one page (dragon-wide); catalog style is uniform"
+  ],
+  "comparisons": [
+    { "label": "Face crop, combined view (fill + outline) at iPad Pro 13 display size, 2x zoom", "before": "face-shipped-2x.webp", "after": "face-upscaled-2x.webp", "note": "Visually indistinguishable — the upscale buys nothing the child can see" },
+    { "label": "Face crop, fill only (punch seams exposed)", "before": "face-shipped-fill-2x.webp", "after": "face-upscaled-fill-2x.webp", "note": "Upscaled re-punch has cleaner seams, but the overlay lines cover exactly these pixels" },
+    { "label": "Flower crop, combined view", "before": "flower-shipped-2x.webp", "after": "flower-upscaled-2x.webp", "note": "Small line-dense detail; still indistinguishable" }
+  ],
+  "images": [
+    { "file": "face-shipped-2x.webp", "caption": "Shipped 1536 pipeline at worst-case display scale (1.67x), face crop, 2x zoom" },
+    { "file": "face-upscaled-2x.webp", "caption": "Lanczos-2x + re-punched pipeline, same crop" },
+    { "file": "face-shipped-fill-2x.webp", "caption": "Shipped punched fill only — inpaint seams visible where lines will sit" },
+    { "file": "face-upscaled-fill-2x.webp", "caption": "Re-punched-at-3072 fill only — smoother seams (hidden in the composite)" },
+    { "file": "flower-shipped-2x.webp", "caption": "Shipped pipeline, flower crop, combined view" },
+    { "file": "flower-upscaled-2x.webp", "caption": "Upscaled pipeline, flower crop, combined view" }
+  ],
+  "code": [
+    { "title": "Device-profile rendered-size measurement (Playwright)", "file": "code/idea20-measure.mjs" },
+    { "title": "Lanczos upscale + re-punch + display simulation harness", "file": "code/idea20-upscale.mjs" },
+    { "title": "Gemini imageSize support probe", "file": "code/idea20-res-probe.mjs" }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "rover-tall": {
+    "night": {
+      "flags": {
+        "temperature": 0.3
+      },
+      "why": "Needed a low-temp retry for drift 0.0044 -> 0.0032 (commit f1230d2). Exact temperature not recorded — 0.3 reconstructed from the pipeline's low-temp lever range."
+    }
+  },
+  "rover-wide": {
+    "night": {
+      "review": "Flat-eye flag verified false positive on the rover's lively screen-face (commit f1230d2) — adjudicate visually before retrying."
+    }
+  },
+  "moon-tall": {
+    "chalk": {
+      "review": "Expect worst-tile keep ~78% vs the 80% bar, confined to the redrawn eyes + whitened teeth — the whitened-pupil keep blind spot (commit 3f838ce). Overlay-verify, then hand-ship."
+    }
+  }
+}

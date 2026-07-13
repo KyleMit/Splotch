@@ -1,0 +1,3453 @@
+{
+ "$schema": "eye-annotations.draft — cores detected from the pen outline, measured on the committed light raw (reference) and the simulated night composite. A human flips `eye` where the draft guessed wrong and sets blessed=true; the night eye gate then trusts `eye` instead of re-deriving which cores are eyes.",
+ "pages": {
+  "creatures/dragon-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 647,
+     "y": 601,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 652,
+     "y": 607,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 599,
+     "y": 635,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 616,
+     "y": 675,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 529,
+     "y": 770,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "creatures/dragon-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 758,
+     "y": 380,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 904,
+     "y": 402,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "creatures/fairy-tall": {
+   "blessed": false,
+   "cores": []
+  },
+  "creatures/fairy-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "creatures/mermaid-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 352,
+     "y": 340,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 367,
+     "y": 345,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 344,
+     "y": 356,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 356,
+     "y": 365,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 564,
+     "y": 419,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 590,
+     "y": 438,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 439,
+     "y": 452,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 466,
+     "y": 471,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "creatures/mermaid-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 673,
+     "y": 286,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 558,
+     "y": 286,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 614,
+     "y": 370,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "creatures/owl-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 605,
+     "y": 739,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 417,
+     "y": 746,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "creatures/owl-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 651,
+     "y": 423,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 801,
+     "y": 439,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "creatures/pegasus-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 385,
+     "y": 642,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "creatures/pegasus-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 836,
+     "y": 275,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 639,
+     "y": 303,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "creatures/unicorn-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 408,
+     "y": 588,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 381,
+     "y": 613,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "creatures/unicorn-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 634,
+     "y": 358,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "dinosaur/brachiosaurus-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 606,
+     "y": 369,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 582,
+     "y": 1267,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 372,
+     "y": 1267,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "dinosaur/brachiosaurus-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "dinosaur/pterodactyl-tall": {
+   "blessed": false,
+   "cores": []
+  },
+  "dinosaur/pterodactyl-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "dinosaur/stegosaurus-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 208,
+     "y": 756,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "dinosaur/stegosaurus-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "dinosaur/trex-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 490,
+     "y": 386,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 534,
+     "y": 546,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 585,
+     "y": 562,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 639,
+     "y": 570,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 676,
+     "y": 633,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "dinosaur/trex-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 939,
+     "y": 263,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 960,
+     "y": 774,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 929,
+     "y": 793,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "dinosaur/triceratops-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 386,
+     "y": 748,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 619,
+     "y": 748,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 162,
+     "y": 1273,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 861,
+     "y": 1316,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 480,
+     "y": 1344,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "dinosaur/triceratops-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 425,
+     "y": 489,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 539,
+     "y": 510,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "dinosaur/velociraptor-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 529,
+     "y": 397,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "dinosaur/velociraptor-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 914,
+     "y": 323,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 1002,
+     "y": 426,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "farm/cat-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 348,
+     "y": 636,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 549,
+     "y": 664,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "farm/cat-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 946,
+     "y": 426,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 814,
+     "y": 441,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "farm/cow-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 263,
+     "y": 565,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 416,
+     "y": 586,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "farm/cow-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 538,
+     "y": 350,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 690,
+     "y": 361,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "farm/dog-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 608,
+     "y": 597,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 447,
+     "y": 636,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "farm/dog-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 534,
+     "y": 359,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 644,
+     "y": 378,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "farm/duck-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 465,
+     "y": 562,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 571,
+     "y": 673,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "farm/duck-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 587,
+     "y": 385,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "farm/horse-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 637,
+     "y": 385,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 508,
+     "y": 560,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 699,
+     "y": 658,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 622,
+     "y": 665,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "farm/horse-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "farm/pig-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 422,
+     "y": 791,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 492,
+     "y": 802,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "farm/pig-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 668,
+     "y": 409,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 723,
+     "y": 419,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 933,
+     "y": 652,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "nature/ant-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 276,
+     "y": 671,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 457,
+     "y": 698,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "nature/ant-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 624,
+     "y": 423,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 616,
+     "y": 410,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "nature/bee-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 499,
+     "y": 494,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 500,
+     "y": 488,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 390,
+     "y": 505,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 392,
+     "y": 500,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 493,
+     "y": 501,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 384,
+     "y": 512,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "nature/bee-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 664,
+     "y": 453,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 789,
+     "y": 457,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 667,
+     "y": 442,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 793,
+     "y": 445,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "nature/caterpillar-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 738,
+     "y": 572,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 727,
+     "y": 574,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 605,
+     "y": 606,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 600,
+     "y": 608,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 764,
+     "y": 618,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "nature/caterpillar-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 456,
+     "y": 511,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 582,
+     "y": 515,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "nature/ladybug-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 383,
+     "y": 311,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 277,
+     "y": 453,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 396,
+     "y": 528,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 434,
+     "y": 669,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 356,
+     "y": 737,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 354,
+     "y": 885,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 474,
+     "y": 901,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 362,
+     "y": 894,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 370,
+     "y": 884,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 479,
+     "y": 910,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 487,
+     "y": 900,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "nature/ladybug-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 574,
+     "y": 566,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 705,
+     "y": 588,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "nature/snail-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 813,
+     "y": 710,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 697,
+     "y": 718,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "nature/snail-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 508,
+     "y": 251,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 696,
+     "y": 269,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "nature/spider-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 436,
+     "y": 786,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 574,
+     "y": 786,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 431,
+     "y": 771,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 568,
+     "y": 771,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "nature/spider-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 720,
+     "y": 540,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 815,
+     "y": 541,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 712,
+     "y": 530,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 807,
+     "y": 530,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 353,
+     "y": 808,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 1152,
+     "y": 813,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "objects/apple-tall": {
+   "blessed": false,
+   "cores": []
+  },
+  "objects/apple-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "objects/balloon-tall": {
+   "blessed": false,
+   "cores": []
+  },
+  "objects/balloon-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 834,
+     "y": 229,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 697,
+     "y": 234,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "objects/flower-tall": {
+   "blessed": false,
+   "cores": []
+  },
+  "objects/flower-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "objects/house-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 471,
+     "y": 541,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 548,
+     "y": 541,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 471,
+     "y": 618,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 548,
+     "y": 618,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 240,
+     "y": 843,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 302,
+     "y": 843,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 718,
+     "y": 843,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 780,
+     "y": 843,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 509,
+     "y": 908,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 240,
+     "y": 925,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 302,
+     "y": 925,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 718,
+     "y": 925,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 780,
+     "y": 925,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 564,
+     "y": 985,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "objects/house-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 728,
+     "y": 617,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "objects/teddy-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 404,
+     "y": 661,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 611,
+     "y": 666,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 292,
+     "y": 1094,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 657,
+     "y": 1094,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 341,
+     "y": 1097,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 609,
+     "y": 1097,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 253,
+     "y": 1123,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 695,
+     "y": 1123,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 320,
+     "y": 1177,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 627,
+     "y": 1177,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "objects/teddy-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 743,
+     "y": 412,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "objects/umbrella-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "shapes/circle-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 660,
+     "y": 775,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "shapes/circle-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "shapes/heart-tall": {
+   "blessed": false,
+   "cores": []
+  },
+  "shapes/rectangle-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 401,
+     "y": 777,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 598,
+     "y": 785,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "shapes/rectangle-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "shapes/square-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 402,
+     "y": 627,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 621,
+     "y": 627,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "shapes/square-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 705,
+     "y": 483,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 913,
+     "y": 503,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "shapes/star-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 631,
+     "y": 738,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 417,
+     "y": 739,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "shapes/star-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "shapes/triangle-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 395,
+     "y": 825,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 610,
+     "y": 825,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "shapes/triangle-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 695,
+     "y": 590,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 842,
+     "y": 590,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "space/astronaut-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 383,
+     "y": 473,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 375,
+     "y": 536,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 379,
+     "y": 581,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 440,
+     "y": 799,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 512,
+     "y": 823,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 431,
+     "y": 850,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "space/astronaut-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 836,
+     "y": 415,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 844,
+     "y": 408,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 742,
+     "y": 452,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 804,
+     "y": 494,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 761,
+     "y": 628,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 779,
+     "y": 667,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "space/meteor-tall": {
+   "blessed": false,
+   "cores": []
+  },
+  "space/meteor-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 532,
+     "y": 363,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 602,
+     "y": 381,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 575,
+     "y": 487,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 929,
+     "y": 490,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 968,
+     "y": 505,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 757,
+     "y": 735,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 798,
+     "y": 751,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "space/moon-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 427,
+     "y": 747,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 295,
+     "y": 767,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "space/moon-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "space/rover-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 490,
+     "y": 466,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 462,
+     "y": 492,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 126,
+     "y": 948,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 755,
+     "y": 971,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 283,
+     "y": 998,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "space/rover-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 614,
+     "y": 342,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 722,
+     "y": 347,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 617,
+     "y": 338,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 722,
+     "y": 343,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 717,
+     "y": 580,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 767,
+     "y": 583,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 606,
+     "y": 759,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 1086,
+     "y": 766,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 922,
+     "y": 787,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 752,
+     "y": 794,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "space/ship-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 510,
+     "y": 533,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 433,
+     "y": 567,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 587,
+     "y": 567,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 401,
+     "y": 644,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 619,
+     "y": 644,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 433,
+     "y": 721,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 587,
+     "y": 721,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 510,
+     "y": 755,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "space/ship-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "space/station-tall": {
+   "blessed": false,
+   "cores": []
+  },
+  "space/station-wide": {
+   "blessed": false,
+   "cores": []
+  },
+  "vehicles/excavator-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 461,
+     "y": 807,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 374,
+     "y": 808,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 454,
+     "y": 809,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 370,
+     "y": 813,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 135,
+     "y": 1154,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 320,
+     "y": 1186,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "vehicles/excavator-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 847,
+     "y": 433,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 936,
+     "y": 439,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 844,
+     "y": 435,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 932,
+     "y": 441,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 1161,
+     "y": 724,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 1093,
+     "y": 737,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 1022,
+     "y": 747,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 945,
+     "y": 760,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "vehicles/fire-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 540,
+     "y": 751,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 827,
+     "y": 789,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 803,
+     "y": 790,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 139,
+     "y": 902,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 253,
+     "y": 905,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 404,
+     "y": 908,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 251,
+     "y": 934,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 251,
+     "y": 962,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 889,
+     "y": 1008,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 704,
+     "y": 1023,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 880,
+     "y": 1087,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 589,
+     "y": 1101,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "vehicles/fire-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 470,
+     "y": 511,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 590,
+     "y": 513,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 1073,
+     "y": 510,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 1073,
+     "y": 540,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 871,
+     "y": 569,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 928,
+     "y": 570,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 1073,
+     "y": 572,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 1073,
+     "y": 602,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 403,
+     "y": 664,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 609,
+     "y": 675,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 1062,
+     "y": 745,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 152,
+     "y": 750,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 758,
+     "y": 761,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "vehicles/garbage-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 316,
+     "y": 752,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 109,
+     "y": 747,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 203,
+     "y": 751,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "vehicles/garbage-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 124,
+     "y": 368,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 124,
+     "y": 391,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 116,
+     "y": 475,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 142,
+     "y": 497,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 490,
+     "y": 523,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 604,
+     "y": 531,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 116,
+     "y": 520,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 503,
+     "y": 520,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 618,
+     "y": 528,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 405,
+     "y": 684,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 599,
+     "y": 701,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "vehicles/monster-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 416,
+     "y": 583,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 608,
+     "y": 583,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 428,
+     "y": 581,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 610,
+     "y": 581,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 510,
+     "y": 688,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 510,
+     "y": 713,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 510,
+     "y": 737,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 510,
+     "y": 760,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "vehicles/monster-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 590,
+     "y": 353,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 872,
+     "y": 341,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 761,
+     "y": 350,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 867,
+     "y": 342,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 758,
+     "y": 352,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 139,
+     "y": 544,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 1389,
+     "y": 553,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 538,
+     "y": 540,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 565,
+     "y": 570,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 570,
+     "y": 589,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 414,
+     "y": 659,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 415,
+     "y": 659,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 828,
+     "y": 647,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 653,
+     "y": 707,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 654,
+     "y": 707,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 197,
+     "y": 840,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  },
+  "vehicles/police-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 640,
+     "y": 784,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 411,
+     "y": 784,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "vehicles/police-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 920,
+     "y": 461,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 771,
+     "y": 467,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 910,
+     "y": 460,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 763,
+     "y": 467,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 577,
+     "y": 619,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    },
+    {
+     "x": 450,
+     "y": 683,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 674,
+     "y": 746,
+     "eye": true,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "vehicles/train-tall": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 333,
+     "y": 801,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 452,
+     "y": 806,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 345,
+     "y": 799,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 464,
+     "y": 805,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 394,
+     "y": 901,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": false,
+      "chalkWhiteNear": true
+     }
+    }
+   ]
+  },
+  "vehicles/train-wide": {
+   "blessed": false,
+   "cores": [
+    {
+     "x": 869,
+     "y": 518,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": false,
+      "bandBlind": true,
+      "chalkWhiteNear": true
+     }
+    },
+    {
+     "x": 485,
+     "y": 695,
+     "eye": false,
+     "draftReasons": {
+      "lightReference": true,
+      "bandBlind": false,
+      "chalkWhiteNear": false
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,60 @@
+{
+  "idea": 19,
+  "title": "Chalk covers + dark-mode thumbnails",
+  "verdict": "WORKED",
+  "oneline": "Chalk page thumbs + dark-mode picker swap work end-to-end; covers need 8 Gemini calls",
+  "summary": "Extended gen-coloring-thumbs to also thumbnail every *.chalk.webp (94 files, offline, seconds) and added a theme-aware pageThumb() to books.ts plus a resolvedTheme() swap in ColoringBook.svelte — verified with real-app dark-mode screenshots (owl tile now previews the solid-sclera chalk it applies). No negation was needed anywhere: chalks are stored ink-on-white and the picker tile's existing --lineart-filter invert+screen renders the chalk thumb correctly, so the tile and canvas share one render path. Covers have no chalk assets (the gap), but gen-coloring-chalk already accepts explicit 'book/cover' args with gates intact, so cover chalks cost 8 Gemini calls plus a small Book.coverChalk wiring — no tooling changes.",
+  "tried": [
+    "gen-coloring-thumbs.mjs extended to thumbnail .chalk.webp sources as {page}.chalk.thumb.webp (full-catalog run: 94 chalk thumbs, 0 Gemini calls)",
+    "books.ts: chalkThumbPath() + theme-aware pageThumb(); bookAssetPaths() lists chalk thumbs for check-assets/strip-native-assets",
+    "ColoringBook.svelte: page tiles + prefetch swap to pageThumb(page, orientation, resolvedTheme())",
+    "Before/after dark-mode screenshots of the live app (run-splotch driver + Playwright, splotch-theme=dark) for creatures, shapes, and the covers grid",
+    "svelte-check, extended books unit tests, and scripts/check-assets.mjs over the result",
+    "Assessed cover-chalk generation path in gen-coloring-chalk.mjs without burning API calls"
+  ],
+  "worked": [
+    "Chalk thumbs are a plain resize — chalks stay ink-on-white and the tile's existing --lineart-filter invert(1)+screen renders them as white chalk, identical to the canvas overlay path (the idea's 'negate appropriately' step is unnecessary)",
+    "Owl dark-mode tile now previews the actual chalk (solid white sclera, catchlights, wand star) instead of the hollow inverted pen; circle confirms the harmless minimal-delta case",
+    "check-assets validates all 568 assets including the 94 new chalk thumbs; regenerating existing pen thumbs is byte-identical, so full regen is safe",
+    "npm run check 0 errors; 9/9 books unit tests pass (tests extended for chalkThumbPath/pageThumb)"
+  ],
+  "failed": [],
+  "limitations": [
+    "Cover half not delivered: no cover.chalk.webp exists for any of the 8 books, so book tiles keep the inverted-pen cover in dark mode",
+    "Generating cover chalks needs 8 Gemini calls (gen-coloring-chalk -- <book>/cover works as-is; eye gate auto-skips, no night-fill follow-up since covers have no fills) plus small Book.coverChalk + coverThumb() app wiring",
+    "+94 committed webp files (~600KB) added to web/static and native bundles",
+    "Two uncataloged stray assets on disk (shapes/heart-tall, objects/umbrella-wide) also get chalk thumbs — harmless but worth noting"
+  ],
+  "comparisons": [
+    {
+      "label": "Owl tile, dark-mode picker (max pen-chalk delta)",
+      "before": "owl-tile-before.webp",
+      "after": "owl-tile-after.webp",
+      "note": "Before: hollow inverted-pen eyes and wand star. After: the chalk's solid white sclera/catchlights/stars — what the canvas actually applies."
+    },
+    {
+      "label": "Circle tile, dark-mode picker (minimal delta)",
+      "before": "circle-tile-before.webp",
+      "after": "circle-tile-after.webp",
+      "note": "Chalk is nearly identical to pen here — only small bubble highlights go solid; the swap is harmless on low-delta pages."
+    },
+    {
+      "label": "Creatures grid, dark mode",
+      "before": "creatures-grid-dark-before.webp",
+      "after": "creatures-grid-dark-after.webp",
+      "note": "Dragon/fairy/mermaid/owl all gain proper chalk eyes."
+    }
+  ],
+  "images": [
+    { "file": "owl-tile-before.webp", "caption": "Dark-mode owl tile today: inverted pen thumb (hollow eyes, hollow star)" },
+    { "file": "owl-tile-after.webp", "caption": "Dark-mode owl tile with chalk thumb: solid sclera, catchlights, white stars" },
+    { "file": "circle-tile-before.webp", "caption": "Dark-mode circle tile today (inverted pen)" },
+    { "file": "circle-tile-after.webp", "caption": "Dark-mode circle tile with chalk thumb (near-identical, as expected)" },
+    { "file": "creatures-grid-dark-before.webp", "caption": "Creatures page grid in dark mode, before (inverted pen thumbs)" },
+    { "file": "creatures-grid-dark-after.webp", "caption": "Creatures page grid in dark mode, after (chalk thumbs)" },
+    { "file": "covers-dark-today.webp", "caption": "Books grid in dark mode — covers unchanged (no cover chalk exists; the documented gap)" }
+  ],
+  "code": [
+    { "title": "Full change: gen-coloring-thumbs chalk support + books.ts pageThumb/chalkThumbPath + picker swap + tests", "file": "code/idea-19-chalk-thumbs.patch" }
+  ]
+}

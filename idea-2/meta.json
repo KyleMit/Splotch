@@ -1,0 +1,59 @@
+{
+  "idea": 2,
+  "title": "Whitened-motif inconsistency across sibling pages",
+  "verdict": "WORKED",
+  "oneline": "Motif strips confirmed outliers; notes-driven re-chalk matched sibling treatment first try",
+  "summary": "Built an offline whitened-region inventory (per-page bboxes of everything each chalk whitened, all 94 pages, no API) plus a motif contact-strip tool that renders side-by-side chalk-display and night-composite crops from a small registry. It confirmed rectangle-wide's eyeball-donut bubbles and surfaced new inconsistencies (planets, stars, flowers; the pterodactyl suns genuinely differ). A single --notes re-chalk of shapes/rectangle-wide converged to the sibling's thin-ring treatment on the first attempt (keep 100%, white 0%), and a night-fill regen against the new chalk completed the loop — 4 of 8 Gemini calls used.",
+  "tried": [
+    "Offline whitened-region inventory over all 94 chalked pages (reusing the chalk gate's ink/flood definitions)",
+    "Motif contact strips: chalk display + night composite crops side by side for bubbles/sun/stars/planets/flowers",
+    "Sibling tall-vs-wide whitened-area ratio as an outlier triage heuristic",
+    "Re-chalk of shapes/rectangle-wide with --notes naming the motif and the sibling's treatment (t 0.25)",
+    "Night-fill regen against the candidate chalk (shipped chalk temporarily swapped, then git-restored)"
+  ],
+  "worked": [
+    "Inventory + strips make the inconsistencies obvious in minutes, fully offline",
+    "Notes-driven re-chalk converged to the sibling treatment in ONE attempt, all gates green",
+    "End-to-end: regenerated night fill passed gates in 3 tries; final composite matches sibling's glowing thin-ring bubbles",
+    "Found new unlisted inconsistencies: space planets (solid vs outlined), stars (moon-wide solid vs others outlined), flowers (heart-tall solid petals)"
+  ],
+  "failed": [
+    "No fully-automatic motif grouping: naming motifs and locating non-whitened sibling occurrences needs a human (bboxes hand-picked for those)",
+    "IDEAS.md's example was partly wrong: square-wide has no bubbles (clouds); pterodactyl-wide has no rayed sun (its sun is an outlined ring filled gold)"
+  ],
+  "limitations": [
+    "Old night fill under a new chalk leaks its own whites through the punch, so every chalk fix requires a night-fill regen (1-5 extra Gemini calls)",
+    "Sibling-asymmetry ratio flags legitimate composition differences too (spider web) - triage, not a gate",
+    "Which treatment is canon (solid glowing white vs outlined+fill glow) is an art call the tooling cannot make",
+    "Nothing shipped: candidates live in gitignored .coloring-samples-dark/ for a follow-up session"
+  ],
+  "comparisons": [
+    {
+      "label": "Bubbles: sibling vs shipped donut vs re-chalk+regen",
+      "before": "before-bubbles-strip.webp",
+      "after": "after-bubbles-strip.webp",
+      "note": "Top row chalk display, bottom row night composite; after columns are the gate-clean candidates"
+    },
+    {
+      "label": "Full page night composite after fix",
+      "before": "before-rectangle-wide-chalk.webp",
+      "after": "after-full-page-composite.webp"
+    }
+  ],
+  "images": [
+    { "file": "before-bubbles-strip.webp", "caption": "Bubbles motif: rectangle-tall thin rings (teal glow) vs rectangle-wide fat white donuts" },
+    { "file": "after-bubbles-strip.webp", "caption": "After: re-chalked rings + regenerated night fill match the sibling treatment" },
+    { "file": "after-full-page-composite.webp", "caption": "Full-page simulated dark-mode render with candidate chalk + new night fill" },
+    { "file": "before-rectangle-wide-chalk.webp", "caption": "Shipped rectangle-wide chalk (display polarity) with donut bubbles" },
+    { "file": "before-planets-strip.webp", "caption": "Planets: ship-wide solid white vs moon-wide outlined magenta-glow" },
+    { "file": "before-stars-strip.webp", "caption": "Stars: moon-wide solid white vs outlined golden-glow elsewhere" },
+    { "file": "before-sun-strip.webp", "caption": "Sun: pterodactyl-tall solid (moon-like) vs -wide outlined gold" },
+    { "file": "before-flowers-strip.webp", "caption": "Flowers: heart-tall solid white petals vs square-wide outlined" }
+  ],
+  "code": [
+    { "title": "Whitened-region inventory (offline, all pages)", "file": "code/motif-whitened-inventory.mjs" },
+    { "title": "Motif contact-strip renderer (chalk display + night composite crops)", "file": "code/motif-strip.mjs" },
+    { "title": "Motif registry used for the before strips", "file": "code/motif-registry.json" },
+    { "title": "Registry for the end-to-end after strip (candidate overrides)", "file": "code/motif-registry-final.json" }
+  ]
+}

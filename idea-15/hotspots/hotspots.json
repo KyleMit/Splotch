@@ -1,0 +1,275 @@
+[
+  {
+    "spec": "vehicles/fire-tall.night",
+    "h": 0,
+    "cx": 912,
+    "cy": 1008,
+    "score": 355
+  },
+  {
+    "spec": "vehicles/fire-tall.night",
+    "h": 1,
+    "cx": 624,
+    "cy": 1008,
+    "score": 338
+  },
+  {
+    "spec": "vehicles/fire-tall.night",
+    "h": 2,
+    "cx": 624,
+    "cy": 528,
+    "score": 246
+  },
+  {
+    "spec": "farm/cow-tall.night",
+    "h": 0,
+    "cx": 240,
+    "cy": 816,
+    "score": 153
+  },
+  {
+    "spec": "farm/cow-tall.night",
+    "h": 1,
+    "cx": 240,
+    "cy": 432,
+    "score": 134
+  },
+  {
+    "spec": "farm/cow-tall.night",
+    "h": 2,
+    "cx": 336,
+    "cy": 1008,
+    "score": 132
+  },
+  {
+    "spec": "vehicles/police-tall.night",
+    "h": 0,
+    "cx": 912,
+    "cy": 1296,
+    "score": 299
+  },
+  {
+    "spec": "vehicles/police-tall.night",
+    "h": 1,
+    "cx": 48,
+    "cy": 1296,
+    "score": 263
+  },
+  {
+    "spec": "vehicles/police-tall.night",
+    "h": 2,
+    "cx": 144,
+    "cy": 1008,
+    "score": 215
+  },
+  {
+    "spec": "nature/spider-wide.night",
+    "h": 0,
+    "cx": 912,
+    "cy": 624,
+    "score": 319
+  },
+  {
+    "spec": "nature/spider-wide.night",
+    "h": 1,
+    "cx": 240,
+    "cy": 528,
+    "score": 304
+  },
+  {
+    "spec": "nature/spider-wide.night",
+    "h": 2,
+    "cx": 624,
+    "cy": 624,
+    "score": 304
+  },
+  {
+    "spec": "farm/cow-wide.night",
+    "h": 0,
+    "cx": 816,
+    "cy": 336,
+    "score": 238
+  },
+  {
+    "spec": "farm/cow-wide.night",
+    "h": 1,
+    "cx": 528,
+    "cy": 240,
+    "score": 233
+  },
+  {
+    "spec": "farm/cow-wide.night",
+    "h": 2,
+    "cx": 624,
+    "cy": 816,
+    "score": 217
+  },
+  {
+    "spec": "objects/flower-wide.night",
+    "h": 0,
+    "cx": 1296,
+    "cy": 816,
+    "score": 347
+  },
+  {
+    "spec": "objects/flower-wide.night",
+    "h": 1,
+    "cx": 1104,
+    "cy": 816,
+    "score": 338
+  },
+  {
+    "spec": "objects/flower-wide.night",
+    "h": 2,
+    "cx": 336,
+    "cy": 816,
+    "score": 320
+  },
+  {
+    "spec": "space/ship-wide.night",
+    "h": 0,
+    "cx": 720,
+    "cy": 720,
+    "score": 222
+  },
+  {
+    "spec": "space/ship-wide.night",
+    "h": 1,
+    "cx": 528,
+    "cy": 624,
+    "score": 210
+  },
+  {
+    "spec": "space/ship-wide.night",
+    "h": 2,
+    "cx": 1200,
+    "cy": 432,
+    "score": 197
+  },
+  {
+    "spec": "vehicles/monster-tall.night",
+    "h": 0,
+    "cx": 336,
+    "cy": 1008,
+    "score": 405
+  },
+  {
+    "spec": "vehicles/monster-tall.night",
+    "h": 1,
+    "cx": 624,
+    "cy": 1008,
+    "score": 360
+  },
+  {
+    "spec": "vehicles/monster-tall.night",
+    "h": 2,
+    "cx": 624,
+    "cy": 432,
+    "score": 276
+  },
+  {
+    "spec": "vehicles/fire-wide.night",
+    "h": 0,
+    "cx": 1104,
+    "cy": 720,
+    "score": 306
+  },
+  {
+    "spec": "vehicles/fire-wide.night",
+    "h": 1,
+    "cx": 816,
+    "cy": 720,
+    "score": 289
+  },
+  {
+    "spec": "vehicles/fire-wide.night",
+    "h": 2,
+    "cx": 1008,
+    "cy": 336,
+    "score": 248
+  },
+  {
+    "spec": "shapes/heart-tall.night",
+    "h": 0,
+    "cx": 432,
+    "cy": 432,
+    "score": 159
+  },
+  {
+    "spec": "shapes/heart-tall.night",
+    "h": 1,
+    "cx": 336,
+    "cy": 1008,
+    "score": 155
+  },
+  {
+    "spec": "shapes/heart-tall.night",
+    "h": 2,
+    "cx": 816,
+    "cy": 432,
+    "score": 150
+  },
+  {
+    "spec": "vehicles/train-wide.light",
+    "h": 0,
+    "cx": 240,
+    "cy": 720,
+    "score": 354
+  },
+  {
+    "spec": "vehicles/train-wide.light",
+    "h": 1,
+    "cx": 912,
+    "cy": 336,
+    "score": 276
+  },
+  {
+    "spec": "vehicles/train-wide.light",
+    "h": 2,
+    "cx": 432,
+    "cy": 720,
+    "score": 275
+  },
+  {
+    "spec": "vehicles/train-wide.night",
+    "h": 0,
+    "cx": 912,
+    "cy": 528,
+    "score": 230
+  },
+  {
+    "spec": "vehicles/train-wide.night",
+    "h": 1,
+    "cx": 912,
+    "cy": 240,
+    "score": 110
+  },
+  {
+    "spec": "vehicles/train-wide.night",
+    "h": 2,
+    "cx": 144,
+    "cy": 240,
+    "score": 98
+  },
+  {
+    "spec": "space/station-tall.night",
+    "h": 0,
+    "cx": 432,
+    "cy": 1008,
+    "score": 257
+  },
+  {
+    "spec": "space/station-tall.night",
+    "h": 1,
+    "cx": 528,
+    "cy": 1296,
+    "score": 246
+  },
+  {
+    "spec": "space/station-tall.night",
+    "h": 2,
+    "cx": 624,
+    "cy": 432,
+    "score": 243
+  }
+]

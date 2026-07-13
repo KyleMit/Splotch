@@ -1,0 +1,34 @@
+{
+  "dog-wide": {
+    "night": {
+      "flags": {
+        "max-attempts": 8,
+        "line-white-min": 175
+      },
+      "why": "Pale patchy subject near the line-color boundary: more attempts against the stricter gate fixed lineW 70 -> 219 in <=6 tries (pipeline.md Stage 4 lever 1)."
+    }
+  },
+  "duck-tall": {
+    "night": {
+      "flags": {
+        "temperature": 0.25
+      },
+      "why": "Only came back with white outlines at -t 0.25 — higher temperatures re-inked the lines dark (pipeline.md Stage 4 lever 2)."
+    }
+  },
+  "duck-wide": {
+    "night": {
+      "review": "A 1-core flat-eye flag here was verified false positive — the eye is lively (commit 6a95c46); adjudicate visually before retrying."
+    }
+  },
+  "cat-tall": {
+    "chalk": {
+      "review": "Expect a worst-tile keep FAIL confined to the whitened pupils/inner ears/nose/collar — the whitened-pupil keep blind spot (commit 46bc770). Verify on the overlay, then hand-ship."
+    }
+  },
+  "dog-tall": {
+    "chalk": {
+      "review": "Same whitened-pupil keep blind spot as cat-tall (commit 46bc770) — overlay-verify the misses are the redrawn eyes, then hand-ship."
+    }
+  }
+}

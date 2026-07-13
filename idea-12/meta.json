@@ -1,0 +1,52 @@
+{
+ "idea": 12,
+ "title": "Eye detector: side profiles and non-face cores",
+ "verdict": "WORKED",
+ "oneline": "All five night false-flags cleared, every true fail retained, fully offline",
+ "summary": "Instrumentation showed the two false-flag mechanisms: wheel hubs pass the STRONG_LIGHT_SIDE reference bar because they are legitimately light-on-dark by day, and duck-wide's band is 74% solid pen-pupil ink so the detector cannot see its dark pupil. Two suppressions in judgeNightEyes fix both: skip band-blind cores (annulus ink fraction > 0.5) and, on chalk-forked pages, skip cores with no chalk-white nearby in the night composite (the committed chalk is effectively the human-blessed eye annotation idea (a) asked for). Full-catalog audit: 58 -> 53 flagged, all 5 false-flags cleared, caterpillar/ladybug/snail true fails retained, light column byte-identical.",
+ "tried": [
+  "Full-catalog baseline audit (94 pages) tabulating night false-flags vs true fails",
+  "Per-core instrumentation of light/night luma, band extremes, and annulus pen-ink fraction",
+  "Fix (c'): chalk-white-near-core suppression on chalked pages (CHALK_WHITE_MIN=245)",
+  "Fix for duck: band-blind core skip via annulusInkFrac > 0.5",
+  "Idea (a) sketch: generated draft eye-annotations JSON for all 94 pages",
+  "Idea (b) side-profile count relaxation: analyzed and rejected"
+ ],
+ "worked": [
+  "Chalk-white suppression clears monster-wide (7), rover-wide, fire-tall, train-wide; the chalk doubles as the committed per-page eye annotation",
+  "Band-blind skip clears duck-wide (annulus 74% solid pen ink; true fails sit at 0.26-0.29, threshold 0.5 separates cleanly)",
+  "True fails retained: caterpillar-wide 2, ladybug-wide 2, snail-wide 1; light column (teddy/police fails) byte-identical"
+ ],
+ "failed": [
+  "Idea (b) single-eye relaxation rejected: duck's issue is measurement blindness, not eye count; relaxation would weaken true-fail retention",
+  "snail-wide (human-judged fine per pipeline.md) still fires: its stats are indistinguishable from caterpillar's true fail with the current band"
+ ],
+ "limitations": [
+  "CHALK_WHITE_MIN=245 assumes compositeNight renders chalk ink at ~255; recalibrate if the composite gains blur",
+  "BAND_BLIND_INK_FRAC=0.5 calibrated on 14 pages (gap 0.36 vs 0.54); a band-blind genuinely-dead eye would be skipped",
+  "Generator path (gen-coloring-fills-dark) uses the same judge but was verified by reading only (no paid generation)",
+  "Chalk-white suppression only applies to chalked pages; un-forked pages keep the old (noisy) behavior by design"
+ ],
+ "comparisons": [
+  {"label": "monster-wide night: hubs/suspension cores", "before": "img/vehicles_monster-wide.night-before.webp", "after": "img/vehicles_monster-wide.night-after.webp", "note": "7 red firing cores on wheels -> all green (cleared); the truck's face eyes were never gated"},
+  {"label": "duck-wide night: side-profile eye", "before": "img/farm_duck-wide.night-before.webp", "after": "img/farm_duck-wide.night-after.webp", "note": "visually lively eye false-flagged -> cleared via band-blind skip"},
+  {"label": "rover-wide night: rover part", "before": "img/space_rover-wide.night-before.webp", "after": "img/space_rover-wide.night-after.webp"},
+  {"label": "caterpillar-wide night: TRUE fail retained", "before": "img/nature_caterpillar-wide.night-before.webp", "after": "img/nature_caterpillar-wide.night-after.webp", "note": "spiral pupils never painted dark stay red in both"},
+  {"label": "ladybug-wide night: TRUE fail retained", "before": "img/nature_ladybug-wide.night-before.webp", "after": "img/nature_ladybug-wide.night-after.webp"}
+ ],
+ "images": [
+  {"file": "img/farm_duck-wide.pen-chalk-light-night.webp", "caption": "Duck eye across pen | chalk | light raw | night composite: the solid pen pupil (left) is why the band cannot see the navy night pupil (right)"},
+  {"file": "img/vehicles_monster-wide.night-before.webp", "caption": "Baseline: 7 'flat eye' firings, all on wheel hubs/tread/suspension"},
+  {"file": "img/vehicles_monster-wide.night-after.webp", "caption": "After fix: all 7 cleared (green)"},
+  {"file": "img/farm_duck-wide.night-before.webp", "caption": "Baseline false-flag on a clearly lively side-profile night eye"},
+  {"file": "img/nature_caterpillar-wide.night-after.webp", "caption": "True fail correctly retained after fix: pupils genuinely unpainted"}
+ ],
+ "code": [
+  {"title": "The fix: band-blind skip + chalk-white suppression in judgeNightEyes", "file": "code/fix-eye-judge.patch"},
+  {"title": "Per-core instrumentation (light/night luma + verdict per core)", "file": "code/idea12-instrument.mjs"},
+  {"title": "Annulus pen-ink fraction measurement", "file": "code/idea12-inkfrac.mjs"},
+  {"title": "Before/after overlay renderer", "file": "code/idea12-evidence.mjs"},
+  {"title": "Idea (a) draft annotation generator", "file": "code/idea12-annotations.mjs"},
+  {"title": "Idea (a) draft annotation (94 pages, 300 cores, 45 draft eyes)", "file": "code/eye-annotations.draft.json"}
+ ]
+}

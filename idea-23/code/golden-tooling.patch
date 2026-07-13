@@ -1,0 +1,709 @@
+diff --git a/package.json b/package.json
+index 32fb485..27f4bbb 100644
+--- a/package.json
++++ b/package.json
+@@ -67,6 +67,8 @@
+     "gen:coloring-fills:audit:eyes": "node tools/asset-gen/audit-fill-eyes.mjs",
+     "gen:coloring-outlines:audit": "node tools/asset-gen/audit-outline-solidity.mjs",
+     "gen:coloring-outlines:normalize": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/asset-gen/normalize-outline-strokes.mjs",
++    "gen:coloring:golden:freeze": "node tools/asset-gen/audit-golden.mjs --freeze",
++    "gen:coloring:golden:diff": "node tools/asset-gen/audit-golden.mjs --diff",
+     "gen:coloring-punch": "node tools/asset-gen/punch-fill-outlines.mjs",
+     "gen:coloring-thumbs": "node tools/asset-gen/gen-coloring-thumbs.mjs",
+     "gen:contact-sheet": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/asset-gen/gen-contact-sheet.mjs",
+@@ -164,6 +166,8 @@
+     "gen:coloring-fills:audit:eyes": "Audit the committed raw fills' EYES — flags a fill whose outlined eye rings were flooded one flat color (light fill is the reference for which nested regions are real eyes). Deterministic, no API key/network (-- page-or-category… to filter)",
+     "gen:coloring-outlines:audit": "Audit shipped line art for SOLID black regions (they invert to white blobs in dark mode; ADR pending); lists offenders for gen:coloring-outlines:normalize. Deterministic, no API key/network (-- page-or-category… to filter)",
+     "gen:coloring-outlines:normalize": "Redraw an outline's solid black regions as thin outlined strokes via Gemini, gated on solidity + outline registration; candidates land in .coloring-samples-dark/normalize/ (needs GEMINI_API_KEY; -- page… [--apply] [--max-attempts N] [-t F] [--notes \"…\"])",
++    "gen:coloring:golden:freeze": "Freeze every offline audit score for the whole coloring catalog (solidity/eye rings, light keep/localKeep + eyes, night drift/bgLuma/lineWhite + eyes) into tools/asset-gen/golden-scores.json — the committed regression baseline. Deterministic, no API key/network (~1 min)",
++    "gen:coloring:golden:diff": "Re-run every offline audit and diff against golden-scores.json: verdict flips, bad-direction score movements = regressions (exit 1); improvements/moves reported. Run after any pipeline or asset change; re-freeze to adopt intended changes. No API key/network (~1 min)",
+     "gen:coloring-punch": "Re-derive the shipped fills-only .light/.night.webp from the raw fills in tools/asset-gen/fill-src/ by punching their outlines out (line art as mask). Deterministic, no API key/network (-- page-or-category… to filter)",
+     "gen:coloring-thumbs": "Regenerate the .thumb.webp grid thumbnails beside every coloring cover/page for the picker (-- category… to filter)",
+     "gen:contact-sheet": "Build a self-contained HTML contact sheet of ONE coloring category — light + night fills side by side with outline-keep scores — to review/publish as an Artifact (-- category[/page[-orient]], --source shipped|samples, --out FILE)",
+diff --git a/tools/asset-gen/audit-golden.mjs b/tools/asset-gen/audit-golden.mjs
+new file mode 100644
+index 0000000..6548ca4
+--- /dev/null
++++ b/tools/asset-gen/audit-golden.mjs
+@@ -0,0 +1,265 @@
++// Golden-set regression fixtures for the coloring catalog. Every cheap offline
++// audit score the pipeline computes — outline solidity + eye-ring depth
++// (audit-outline-solidity.mjs), light-fill outline keep/localKeep
++// (check-coloring-drift.mjs), light/night eye verdicts (audit-fill-eyes.mjs),
++// and the night fill's drift/bgLuma/lineWhite generation gates
++// (lib/night-scores.mjs) — frozen into one committed JSON, so any pipeline
++// change can re-run the audits and diff against the snapshot: "improved
++// train-wide" can't silently degrade the other 93 pages.
++//
++//   npm run gen:coloring:golden:freeze   score the whole catalog -> golden-scores.json
++//   npm run gen:coloring:golden:diff     re-score and diff; exit 1 on any regression
++//
++// Deterministic (pure sharp + integer math on committed assets), no API
++// key/network. A no-op diff is exact: scores are rounded before both freeze and
++// compare, so byte-identical inputs produce byte-identical golden files. The
++// diff's noise thresholds only absorb future environment shifts (e.g. a sharp
++// upgrade changing a decode by a hair) — verdict flips always count.
++import { readFile, writeFile } from 'node:fs/promises';
++import { glob } from 'node:fs/promises';
++import { existsSync } from 'node:fs';
++import { join, relative } from 'node:path';
++import { ASSET_GEN_DIR, COLORING_DIR, FILL_SRC_DIR, fail } from './lib/paths.mjs';
++import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
++import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from './lib/solid-regions.mjs';
++import {
++  scoreEyeRings,
++  EYE_RING_DEPTH_MAX,
++  scoreEyeFill,
++  judgeLightEyes,
++  judgeNightEyes,
++} from './lib/eye-fill.mjs';
++import { compositeNight } from './lib/night-composite.mjs';
++import {
++  scoreDrift,
++  scoreNightness,
++  scoreLineColor,
++  DRIFT_THRESHOLD_DEFAULT,
++  NIGHT_BG_LUMA_MAX_DEFAULT,
++  LINE_WHITE_MIN_DEFAULT,
++} from './lib/night-scores.mjs';
++
++export const GOLDEN_PATH = join(ASSET_GEN_DIR, 'golden-scores.json');
++const CONCURRENCY = 4;
++
++const round = (v, digits) => {
++  const f = 10 ** digits;
++  return Math.round(v * f) / f;
++};
++
++// Score one page: the pen outline always, the raw fills when committed.
++async function scorePage(outlinePath) {
++  const rel = relative(COLORING_DIR, outlinePath)
++    .replace(/\.outline\.webp$/, '')
++    .replace(/\\/g, '/');
++  const pen = await readFile(outlinePath);
++
++  const solidity = await scoreSolidity(pen);
++  const rings = await scoreEyeRings(pen);
++  const outline = {
++    darkPx: solidity.darkPx,
++    interiorPx: solidity.interiorPx,
++    solidPx: solidity.solidPx,
++    biggestBlob: solidity.biggestBlob,
++    strokeWidth: solidity.strokeWidth,
++    ringDepth: rings.maxDepth,
++    solidOk: solidity.passes,
++    ringsOk: rings.passes,
++  };
++
++  const entry = { outline };
++
++  const lightPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
++  let lightEyes = null;
++  if (existsSync(lightPath)) {
++    const lightRaw = await readFile(lightPath);
++    const { keep, localKeep, worstTile } = await outlineMatch(pen, lightRaw);
++    lightEyes = await scoreEyeFill(lightRaw, pen);
++    entry.light = {
++      keep: round(keep, 4),
++      localKeep: round(localKeep, 4),
++      worstTile: worstTile ? `${worstTile.x},${worstTile.y}` : null,
++      eyeCores: lightEyes.cores.length,
++      eyeLively: lightEyes.cores.filter((c) => c.lively).length,
++      driftOk: keep >= KEEP_THRESHOLD && localKeep >= LOCAL_KEEP_THRESHOLD,
++      eyesOk: judgeLightEyes(lightEyes).passes,
++    };
++  }
++
++  const nightPath = join(FILL_SRC_DIR, `${rel}.night.raw.webp`);
++  if (existsSync(nightPath)) {
++    const nightRaw = await readFile(nightPath);
++    // Score against the line art the fill must sit under: the chalk when the
++    // page has forked, else the pen — mirroring gen-coloring-fills-dark.mjs.
++    const chalkPath = outlinePath.replace(/\.outline\.webp$/, '.chalk.webp');
++    const chalk = existsSync(chalkPath) ? await readFile(chalkPath) : null;
++    const source = chalk ?? pen;
++    const [drift, night, line] = await Promise.all([
++      scoreDrift(nightRaw, source),
++      scoreNightness(nightRaw, source),
++      scoreLineColor(nightRaw, source),
++    ]);
++    // Eyes judge the simulated final composite when a chalk owns the whites;
++    // the light fill is the reference for which cores are real eyes.
++    let eyes = null;
++    if (lightEyes) {
++      const judged = chalk ? await compositeNight(nightRaw, chalk) : nightRaw;
++      eyes = judgeNightEyes(await scoreEyeFill(judged, pen), lightEyes);
++    }
++    entry.night = {
++      drift: round(drift.ratio, 5),
++      bgLuma: round(night.bgLuma, 1),
++      lineWhite: round(line.lineWhite, 1),
++      eyesFailed: eyes ? eyes.failed : null,
++      driftOk: drift.ratio <= DRIFT_THRESHOLD_DEFAULT,
++      moodOk: night.bgLuma <= NIGHT_BG_LUMA_MAX_DEFAULT,
++      lineOk: line.lineWhite >= LINE_WHITE_MIN_DEFAULT,
++      eyesOk: eyes ? eyes.passes : null,
++    };
++  }
++
++  return [rel, entry];
++}
++
++async function scoreCatalog() {
++  const outlines = [];
++  for await (const entry of glob('**/*.outline.webp', { cwd: COLORING_DIR }))
++    outlines.push(join(COLORING_DIR, entry));
++  outlines.sort();
++  if (!outlines.length) fail(`no line art found under ${COLORING_DIR}`);
++
++  const results = new Map();
++  let next = 0;
++  await Promise.all(
++    Array.from({ length: Math.min(CONCURRENCY, outlines.length) }, async () => {
++      while (next < outlines.length) {
++        const path = outlines[next++];
++        const [rel, entry] = await scorePage(path);
++        results.set(rel, entry);
++      }
++    })
++  );
++
++  const pages = {};
++  for (const rel of [...results.keys()].sort()) pages[rel] = results.get(rel);
++  return {
++    version: 1,
++    thresholds: {
++      keep: KEEP_THRESHOLD,
++      localKeep: LOCAL_KEEP_THRESHOLD,
++      nightDriftMax: DRIFT_THRESHOLD_DEFAULT,
++      bgLumaMax: NIGHT_BG_LUMA_MAX_DEFAULT,
++      lineWhiteMin: LINE_WHITE_MIN_DEFAULT,
++      solidBlobMax: SOLID_BLOB_MAX,
++      solidInteriorMax: SOLID_INTERIOR_MAX,
++      eyeRingDepthMax: EYE_RING_DEPTH_MAX,
++    },
++    pages,
++  };
++}
++
++// Numeric fields: how much movement is noise, and which direction is WORSE.
++// Verdict (boolean) fields always gate on ok->fail regardless of these.
++const METRICS = {
++  'outline.darkPx': { noise: 0, worse: null },
++  'outline.interiorPx': { noise: 15, worse: 'up' },
++  'outline.solidPx': { noise: 30, worse: null },
++  'outline.biggestBlob': { noise: 15, worse: 'up' },
++  'outline.strokeWidth': { noise: 0, worse: null },
++  'outline.ringDepth': { noise: 0, worse: 'up' },
++  'light.keep': { noise: 0.005, worse: 'down' },
++  'light.localKeep': { noise: 0.005, worse: 'down' },
++  'light.eyeCores': { noise: 0, worse: null },
++  'light.eyeLively': { noise: 0, worse: 'down' },
++  'night.drift': { noise: 0.001, worse: 'up' },
++  'night.bgLuma': { noise: 3, worse: 'up' },
++  'night.lineWhite': { noise: 3, worse: 'down' },
++  'night.eyesFailed': { noise: 0, worse: 'up' },
++};
++const VERDICTS = [
++  'outline.solidOk',
++  'outline.ringsOk',
++  'light.driftOk',
++  'light.eyesOk',
++  'night.driftOk',
++  'night.moodOk',
++  'night.lineOk',
++  'night.eyesOk',
++];
++const get = (obj, path) => path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
++
++function diffPage(rel, golden, current, out) {
++  for (const path of VERDICTS) {
++    const was = get(golden, path);
++    const now = get(current, path);
++    if (was === now || was === undefined || now === undefined) continue;
++    if (was === null || now === null) {
++      out.info.push(`${rel}  ${path} ${was} -> ${now} (scoreability changed)`);
++    } else if (was && !now) {
++      out.regressions.push(`${rel}  ${path} ok -> FAIL`);
++    } else {
++      out.improvements.push(`${rel}  ${path} FAIL -> ok`);
++    }
++  }
++  for (const [path, spec] of Object.entries(METRICS)) {
++    const was = get(golden, path);
++    const now = get(current, path);
++    if (was == null || now == null || was === now) continue;
++    const delta = now - was;
++    if (Math.abs(delta) <= spec.noise) continue;
++    const line = `${rel}  ${path} ${was} -> ${now}`;
++    const worse = spec.worse === 'up' ? delta > 0 : spec.worse === 'down' ? delta < 0 : false;
++    (worse ? out.regressions : out.info).push(line + (worse ? '' : ' (moved)'));
++  }
++}
++
++const mode = process.argv[2];
++if (mode !== '--freeze' && mode !== '--diff' && mode !== undefined)
++  fail('usage: audit-golden.mjs [--freeze | --diff]   (default: --diff)');
++
++const t0 = performance.now();
++const current = await scoreCatalog();
++const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
++const pageCount = Object.keys(current.pages).length;
++
++if (mode === '--freeze') {
++  await writeFile(GOLDEN_PATH, JSON.stringify(current, null, 2) + '\n');
++  const fails = Object.entries(current.pages).flatMap(([rel, p]) =>
++    VERDICTS.filter((v) => get(p, v) === false).map((v) => `${rel}  ${v}`)
++  );
++  console.log(
++    `Froze ${pageCount} page(s) in ${elapsed}s -> ${relative(process.cwd(), GOLDEN_PATH)}`
++  );
++  if (fails.length) {
++    console.log(`\n${fails.length} known-failing verdict(s) frozen as the baseline:`);
++    for (const f of fails) console.log(`  ${f}`);
++  }
++} else {
++  if (!existsSync(GOLDEN_PATH))
++    fail(`no golden file at ${GOLDEN_PATH} — run gen:coloring:golden:freeze first`);
++  const golden = JSON.parse(await readFile(GOLDEN_PATH, 'utf8'));
++  const out = { regressions: [], improvements: [], info: [] };
++  for (const rel of Object.keys(golden.pages)) {
++    if (!current.pages[rel]) out.regressions.push(`${rel}  page missing (was in golden set)`);
++    else diffPage(rel, golden.pages[rel], current.pages[rel], out);
++  }
++  for (const rel of Object.keys(current.pages))
++    if (!golden.pages[rel])
++      out.info.push(`${rel}  new page (not in golden set — re-freeze to adopt)`);
++
++  const section = (title, rows) => {
++    if (!rows.length) return;
++    console.log(`\n${title}:`);
++    for (const r of rows.sort()) console.log(`  ${r}`);
++  };
++  section('REGRESSIONS', out.regressions);
++  section('IMPROVEMENTS (re-freeze to adopt)', out.improvements);
++  section('MOVEMENTS / INFO', out.info);
++  console.log(
++    `\n${pageCount} page(s) diffed vs golden in ${elapsed}s · ` +
++      `${out.regressions.length} regression(s) · ${out.improvements.length} improvement(s) · ${out.info.length} other change(s).`
++  );
++  if (out.regressions.length) process.exitCode = 1;
++  else if (!out.improvements.length && !out.info.length)
++    console.log('Clean — no drift from the golden set.');
++}
+diff --git a/tools/asset-gen/gen-coloring-fills-dark.mjs b/tools/asset-gen/gen-coloring-fills-dark.mjs
+index d3ad2fa..1b93ff2 100644
+--- a/tools/asset-gen/gen-coloring-fills-dark.mjs
++++ b/tools/asset-gen/gen-coloring-fills-dark.mjs
+@@ -47,7 +47,16 @@ import sharp from 'sharp';
+ import { GoogleGenAI } from '@google/genai';
+ import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
+ import { alignToSource } from './lib/align-to-source.mjs';
+-import { dilateMask, erodeMask } from './lib/morphology.mjs';
++// Drift / night-mood / line-color scoring is shared with audit-golden.mjs so the
++// committed raws can be re-scored offline with the exact generation-time math.
++import {
++  scoreDrift,
++  scoreNightness,
++  scoreLineColor,
++  DRIFT_THRESHOLD_DEFAULT,
++  NIGHT_BG_LUMA_MAX_DEFAULT,
++  LINE_WHITE_MIN_DEFAULT,
++} from './lib/night-scores.mjs';
+ // The eye gate judges the simulated FINAL render, not the raw fill: the chalk
+ // owns the eye whites, so only the composite shows whether an eye reads as
+ // white-sclera / dark-pupil / white-glint.
+@@ -55,191 +64,6 @@ import { compositeNight } from './lib/night-composite.mjs';
+ import { scoreEyeFill, judgeNightEyes } from './lib/eye-fill.mjs';
+ import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
+ 
+-// --- Drift detection ----------------------------------------------------------
+-// A night fill's white pixels are outlines; the model has drifted when it draws a
+-// white outline where the source line art has none. We rasterize both at a working
+-// width, mark the source's outline pixels (dark in the black-on-white source),
+-// dilate that mask to absorb registration slack + the fill's glow, then count
+-// fill white/low-chroma pixels that fall outside it. Normalized by the source
+-// outline mass so pages of different line density compare on one scale.
+-const DRIFT_W = 512; // working width for the comparison
+-const DRIFT_SRC_DARK = 110; // source pixel darker than this = a line
+-const DRIFT_DILATE = 6; // px of slack around each source line (registration + glow)
+-const DRIFT_THIN = 3; // white strokes up to ~2*this px wide are outline-like, not fills
+-const DRIFT_LUMA_WHITE = 185; // fill pixel this bright...
+-const DRIFT_CHROMA_MAX = 45; // ...and this desaturated = a white outline, not a fill
+-// Above this share of invented white (relative to source outline mass) a render is
+-// regenerated. Clean fills score 0; a stray invented shape lands well above this.
+-const DRIFT_THRESHOLD_DEFAULT = 0.004;
+-
+-// --- Night-ness detection -----------------------------------------------------
+-// The model also drifts on MOOD — painting a bright daytime "sky blue" (or white)
+-// background instead of a night sky. The TRUE background (the open area outside
+-// every shape, flood-filled from the border through the source's white) must be a
+-// deep evening tone. We report its MEDIAN luma — robust to a bright edge-touching
+-// shape (ground, planet) leaking into the fill — so a genuinely dark night sky
+-// stays low even then, while a daytime sky reads bright. Known-good night fills
+-// sit at ~15-32; sky-blue daytime is ~150+.
+-const NIGHT_W = 384;
+-const NIGHT_SRC_LIGHT = 170; // source pixel brighter than this = background candidate
+-const NIGHT_BG_LUMA_MAX_DEFAULT = 100; // median background luma above this = too bright / daytime
+-const NIGHT_MIN_BG_FRAC = 0.04; // skip the check if there's barely any open background
+-
+-async function scoreNightness(fillBuf, sourceBuf) {
+-  const s = await sharp(sourceBuf)
+-    .resize(NIGHT_W, null, { fit: 'inside' })
+-    .grayscale()
+-    .raw()
+-    .toBuffer({ resolveWithObject: true });
+-  const t = await sharp(fillBuf)
+-    .resize(NIGHT_W, null, { fit: 'inside' })
+-    .removeAlpha()
+-    .raw()
+-    .toBuffer({ resolveWithObject: true });
+-  const w = s.info.width;
+-  const h = s.info.height;
+-  const n = w * h;
+-  const bg = new Uint8Array(n);
+-  const stack = [];
+-  const push = (x, y) => {
+-    if (x < 0 || x >= w || y < 0 || y >= h) return;
+-    const i = y * w + x;
+-    if (!bg[i] && s.data[i] > NIGHT_SRC_LIGHT) {
+-      bg[i] = 1;
+-      stack.push(i);
+-    }
+-  };
+-  for (let x = 0; x < w; x++) {
+-    push(x, 0);
+-    push(x, h - 1);
+-  }
+-  for (let y = 0; y < h; y++) {
+-    push(0, y);
+-    push(w - 1, y);
+-  }
+-  while (stack.length) {
+-    const i = stack.pop();
+-    const x = i % w;
+-    const y = (i / w) | 0;
+-    push(x + 1, y);
+-    push(x - 1, y);
+-    push(x, y + 1);
+-    push(x, y - 1);
+-  }
+-  const lumas = [];
+-  for (let i = 0; i < n; i++) {
+-    if (!bg[i]) continue;
+-    const r = t.data[i * 3];
+-    const g = t.data[i * 3 + 1];
+-    const b = t.data[i * 3 + 2];
+-    lumas.push(0.299 * r + 0.587 * g + 0.114 * b);
+-  }
+-  // Too little open background to judge (e.g. a full-bleed subject): treat as fine.
+-  if (lumas.length < n * NIGHT_MIN_BG_FRAC) return { bgLuma: 0, bgFrac: lumas.length / n };
+-  lumas.sort((a, b) => a - b);
+-  return { bgLuma: lumas[lumas.length >> 1], bgFrac: lumas.length / n };
+-}
+-
+-async function scoreDrift(fillBuf, sourceBuf) {
+-  const s = await sharp(sourceBuf)
+-    .resize(DRIFT_W, null, { fit: 'inside' })
+-    .grayscale()
+-    .raw()
+-    .toBuffer({ resolveWithObject: true });
+-  const t = await sharp(fillBuf)
+-    .resize(DRIFT_W, null, { fit: 'inside' })
+-    .removeAlpha()
+-    .raw()
+-    .toBuffer({ resolveWithObject: true });
+-  const w = s.info.width;
+-  const h = s.info.height;
+-  const n = w * h;
+-  const outline = new Uint8Array(n);
+-  let srcCount = 0;
+-  for (let i = 0; i < n; i++) {
+-    if (s.data[i] < DRIFT_SRC_DARK) {
+-      outline[i] = 1;
+-      srcCount++;
+-    }
+-  }
+-  const allowed = dilateMask(outline, w, h, DRIFT_DILATE);
+-
+-  // Bright, desaturated pixels in the fill — outlines AND any pale/white fill
+-  // (a moonlit face, a water droplet). We only want INVENTED OUTLINES, so keep the
+-  // THIN white and drop the thick blobs: an erode-then-dilate (opening) preserves
+-  // fill blobs; whatever the opening removes was a thin stroke. An invented shape's
+-  // outline survives; a legit pale fill region does not, so pale-subject pages
+-  // aren't false-flagged as drift.
+-  const white = new Uint8Array(n);
+-  for (let i = 0; i < n; i++) {
+-    const r = t.data[i * 3];
+-    const g = t.data[i * 3 + 1];
+-    const b = t.data[i * 3 + 2];
+-    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+-    const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+-    if (luma > DRIFT_LUMA_WHITE && chroma < DRIFT_CHROMA_MAX) white[i] = 1;
+-  }
+-  const blobs = dilateMask(erodeMask(white, w, h, DRIFT_THIN), w, h, DRIFT_THIN);
+-  let added = 0;
+-  for (let i = 0; i < n; i++) {
+-    if (white[i] && !blobs[i] && !allowed[i]) added++; // thin white, far from a source line
+-  }
+-  return { ratio: srcCount ? added / srcCount : 0, added, srcCount };
+-}
+-
+-// --- Line-color detection -----------------------------------------------------
+-// The fill's outlines must stay WHITE — in dark mode they sit under the app's
+-// white "chalk" line art, so a fill whose outlines came back DARK (the model
+-// re-inked every shape with a black/brown stroke instead of keeping them white)
+-// doubles against the chalk and reads wrong. The source (black-on-white) says
+-// exactly WHERE the outlines are; at each, a good fill has a bright WHITE line and
+-// a dark-lined fill has only dark ink. Per source-outline pixel we take the
+-// brightest fill luma within 1px (absorbing a pixel of registration slack) and
+-// report the MEDIAN. Calibrated on a labeled Farm batch: fully dark-lined fills
+-// read ~65-135, white-lined ~154-250. Reject below --line-white-min (default 150,
+-// the highest cut that still clears the good set's floor). A pale, patchy subject
+-// (a mostly-white dog with a few dark contours) is the hard case — it can land near
+-// the boundary, so a flagged page may need a targeted low-temp regen to come back
+-// cleanly white; eyeball borderline pages in the contact sheet.
+-const LINE_W = 512;
+-const LINE_SRC_DARK = 110; // source pixel darker than this = an outline
+-const LINE_WHITE_MIN_DEFAULT = 150; // median outline brightness below this = dark outlines
+-
+-async function scoreLineColor(fillBuf, sourceBuf) {
+-  const s = await sharp(sourceBuf)
+-    .resize(LINE_W, null, { fit: 'inside' })
+-    .grayscale()
+-    .raw()
+-    .toBuffer({ resolveWithObject: true });
+-  const t = await sharp(fillBuf)
+-    .resize(LINE_W, null, { fit: 'inside' })
+-    .grayscale()
+-    .raw()
+-    .toBuffer({ resolveWithObject: true });
+-  const w = s.info.width;
+-  const h = s.info.height;
+-  const maxes = [];
+-  for (let y = 0; y < h; y++) {
+-    for (let x = 0; x < w; x++) {
+-      if (s.data[y * w + x] >= LINE_SRC_DARK) continue; // not a source outline pixel
+-      let mx = 0;
+-      for (let dy = -1; dy <= 1; dy++) {
+-        for (let dx = -1; dx <= 1; dx++) {
+-          const xx = x + dx;
+-          const yy = y + dy;
+-          if (xx < 0 || xx >= w || yy < 0 || yy >= h) continue;
+-          const v = t.data[yy * w + xx];
+-          if (v > mx) mx = v;
+-        }
+-      }
+-      maxes.push(mx);
+-    }
+-  }
+-  if (!maxes.length) return { lineWhite: 255 };
+-  maxes.sort((a, b) => a - b);
+-  return { lineWhite: maxes[maxes.length >> 1] };
+-}
+-
+ const MODEL = 'gemini-2.5-flash-image';
+ const OUT_DIR = SAMPLES_DARK_DIR;
+ const WEBP_QUALITY = 90;
+diff --git a/tools/asset-gen/lib/night-scores.mjs b/tools/asset-gen/lib/night-scores.mjs
+new file mode 100644
+index 0000000..44802fd
+--- /dev/null
++++ b/tools/asset-gen/lib/night-scores.mjs
+@@ -0,0 +1,196 @@
++// Night-fill scoring shared by the dark-fill generator (gen-coloring-fills-dark.mjs,
++// its per-take gates) and the golden-score auditor (audit-golden.mjs). Extracted so
++// the committed night raws can be re-scored offline with EXACTLY the generation-time
++// math — the same reason lib/outline-match.mjs is shared with the light gate.
++//
++// Three scores, one per failure mode the night generator hits:
++//   scoreDrift()     — invented white outlines far from any source line.
++//   scoreNightness() — a bright/daytime background instead of a deep evening sky.
++//   scoreLineColor() — the model re-inked the white outlines DARK.
++import sharp from 'sharp';
++import { dilateMask, erodeMask } from './morphology.mjs';
++
++// --- Drift detection ----------------------------------------------------------
++// A night fill's white pixels are outlines; the model has drifted when it draws a
++// white outline where the source line art has none. We rasterize both at a working
++// width, mark the source's outline pixels (dark in the black-on-white source),
++// dilate that mask to absorb registration slack + the fill's glow, then count
++// fill white/low-chroma pixels that fall outside it. Normalized by the source
++// outline mass so pages of different line density compare on one scale.
++const DRIFT_W = 512; // working width for the comparison
++const DRIFT_SRC_DARK = 110; // source pixel darker than this = a line
++const DRIFT_DILATE = 6; // px of slack around each source line (registration + glow)
++const DRIFT_THIN = 3; // white strokes up to ~2*this px wide are outline-like, not fills
++const DRIFT_LUMA_WHITE = 185; // fill pixel this bright...
++const DRIFT_CHROMA_MAX = 45; // ...and this desaturated = a white outline, not a fill
++// Above this share of invented white (relative to source outline mass) a render is
++// regenerated. Clean fills score 0; a stray invented shape lands well above this.
++export const DRIFT_THRESHOLD_DEFAULT = 0.004;
++
++// --- Night-ness detection -----------------------------------------------------
++// The model also drifts on MOOD — painting a bright daytime "sky blue" (or white)
++// background instead of a night sky. The TRUE background (the open area outside
++// every shape, flood-filled from the border through the source's white) must be a
++// deep evening tone. We report its MEDIAN luma — robust to a bright edge-touching
++// shape (ground, planet) leaking into the fill — so a genuinely dark night sky
++// stays low even then, while a daytime sky reads bright. Known-good night fills
++// sit at ~15-32; sky-blue daytime is ~150+.
++const NIGHT_W = 384;
++const NIGHT_SRC_LIGHT = 170; // source pixel brighter than this = background candidate
++export const NIGHT_BG_LUMA_MAX_DEFAULT = 100; // median background luma above this = too bright / daytime
++const NIGHT_MIN_BG_FRAC = 0.04; // skip the check if there's barely any open background
++
++export async function scoreNightness(fillBuf, sourceBuf) {
++  const s = await sharp(sourceBuf)
++    .resize(NIGHT_W, null, { fit: 'inside' })
++    .grayscale()
++    .raw()
++    .toBuffer({ resolveWithObject: true });
++  const t = await sharp(fillBuf)
++    .resize(NIGHT_W, null, { fit: 'inside' })
++    .removeAlpha()
++    .raw()
++    .toBuffer({ resolveWithObject: true });
++  const w = s.info.width;
++  const h = s.info.height;
++  const n = w * h;
++  const bg = new Uint8Array(n);
++  const stack = [];
++  const push = (x, y) => {
++    if (x < 0 || x >= w || y < 0 || y >= h) return;
++    const i = y * w + x;
++    if (!bg[i] && s.data[i] > NIGHT_SRC_LIGHT) {
++      bg[i] = 1;
++      stack.push(i);
++    }
++  };
++  for (let x = 0; x < w; x++) {
++    push(x, 0);
++    push(x, h - 1);
++  }
++  for (let y = 0; y < h; y++) {
++    push(0, y);
++    push(w - 1, y);
++  }
++  while (stack.length) {
++    const i = stack.pop();
++    const x = i % w;
++    const y = (i / w) | 0;
++    push(x + 1, y);
++    push(x - 1, y);
++    push(x, y + 1);
++    push(x, y - 1);
++  }
++  const lumas = [];
++  for (let i = 0; i < n; i++) {
++    if (!bg[i]) continue;
++    const r = t.data[i * 3];
++    const g = t.data[i * 3 + 1];
++    const b = t.data[i * 3 + 2];
++    lumas.push(0.299 * r + 0.587 * g + 0.114 * b);
++  }
++  // Too little open background to judge (e.g. a full-bleed subject): treat as fine.
++  if (lumas.length < n * NIGHT_MIN_BG_FRAC) return { bgLuma: 0, bgFrac: lumas.length / n };
++  lumas.sort((a, b) => a - b);
++  return { bgLuma: lumas[lumas.length >> 1], bgFrac: lumas.length / n };
++}
++
++export async function scoreDrift(fillBuf, sourceBuf) {
++  const s = await sharp(sourceBuf)
++    .resize(DRIFT_W, null, { fit: 'inside' })
++    .grayscale()
++    .raw()
++    .toBuffer({ resolveWithObject: true });
++  const t = await sharp(fillBuf)
++    .resize(DRIFT_W, null, { fit: 'inside' })
++    .removeAlpha()
++    .raw()
++    .toBuffer({ resolveWithObject: true });
++  const w = s.info.width;
++  const h = s.info.height;
++  const n = w * h;
++  const outline = new Uint8Array(n);
++  let srcCount = 0;
++  for (let i = 0; i < n; i++) {
++    if (s.data[i] < DRIFT_SRC_DARK) {
++      outline[i] = 1;
++      srcCount++;
++    }
++  }
++  const allowed = dilateMask(outline, w, h, DRIFT_DILATE);
++
++  // Bright, desaturated pixels in the fill — outlines AND any pale/white fill
++  // (a moonlit face, a water droplet). We only want INVENTED OUTLINES, so keep the
++  // THIN white and drop the thick blobs: an erode-then-dilate (opening) preserves
++  // fill blobs; whatever the opening removes was a thin stroke. An invented shape's
++  // outline survives; a legit pale fill region does not, so pale-subject pages
++  // aren't false-flagged as drift.
++  const white = new Uint8Array(n);
++  for (let i = 0; i < n; i++) {
++    const r = t.data[i * 3];
++    const g = t.data[i * 3 + 1];
++    const b = t.data[i * 3 + 2];
++    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
++    const chroma = Math.max(r, g, b) - Math.min(r, g, b);
++    if (luma > DRIFT_LUMA_WHITE && chroma < DRIFT_CHROMA_MAX) white[i] = 1;
++  }
++  const blobs = dilateMask(erodeMask(white, w, h, DRIFT_THIN), w, h, DRIFT_THIN);
++  let added = 0;
++  for (let i = 0; i < n; i++) {
++    if (white[i] && !blobs[i] && !allowed[i]) added++; // thin white, far from a source line
++  }
++  return { ratio: srcCount ? added / srcCount : 0, added, srcCount };
++}
++
++// --- Line-color detection -----------------------------------------------------
++// The fill's outlines must stay WHITE — in dark mode they sit under the app's
++// white "chalk" line art, so a fill whose outlines came back DARK (the model
++// re-inked every shape with a black/brown stroke instead of keeping them white)
++// doubles against the chalk and reads wrong. The source (black-on-white) says
++// exactly WHERE the outlines are; at each, a good fill has a bright WHITE line and
++// a dark-lined fill has only dark ink. Per source-outline pixel we take the
++// brightest fill luma within 1px (absorbing a pixel of registration slack) and
++// report the MEDIAN. Calibrated on a labeled Farm batch: fully dark-lined fills
++// read ~65-135, white-lined ~154-250. Reject below --line-white-min (default 150,
++// the highest cut that still clears the good set's floor). A pale, patchy subject
++// (a mostly-white dog with a few dark contours) is the hard case — it can land near
++// the boundary, so a flagged page may need a targeted low-temp regen to come back
++// cleanly white; eyeball borderline pages in the contact sheet.
++const LINE_W = 512;
++const LINE_SRC_DARK = 110; // source pixel darker than this = an outline
++export const LINE_WHITE_MIN_DEFAULT = 150; // median outline brightness below this = dark outlines
++
++export async function scoreLineColor(fillBuf, sourceBuf) {
++  const s = await sharp(sourceBuf)
++    .resize(LINE_W, null, { fit: 'inside' })
++    .grayscale()
++    .raw()
++    .toBuffer({ resolveWithObject: true });
++  const t = await sharp(fillBuf)
++    .resize(LINE_W, null, { fit: 'inside' })
++    .grayscale()
++    .raw()
++    .toBuffer({ resolveWithObject: true });
++  const w = s.info.width;
++  const h = s.info.height;
++  const maxes = [];
++  for (let y = 0; y < h; y++) {
++    for (let x = 0; x < w; x++) {
++      if (s.data[y * w + x] >= LINE_SRC_DARK) continue; // not a source outline pixel
++      let mx = 0;
++      for (let dy = -1; dy <= 1; dy++) {
++        for (let dx = -1; dx <= 1; dx++) {
++          const xx = x + dx;
++          const yy = y + dy;
++          if (xx < 0 || xx >= w || yy < 0 || yy >= h) continue;
++          const v = t.data[yy * w + xx];
++          if (v > mx) mx = v;
++        }
++      }
++      maxes.push(mx);
++    }
++  }
++  if (!maxes.length) return { lineWhite: 255 };
++  maxes.sort((a, b) => a - b);
++  return { lineWhite: maxes[maxes.length >> 1] };
++}

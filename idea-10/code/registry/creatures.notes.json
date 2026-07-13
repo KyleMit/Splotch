@@ -1,0 +1,33 @@
+{
+  "unicorn-wide": {
+    "night": {
+      "retry": {
+        "dilate-lines": 2,
+        "temperature": 0.3,
+        "line-white-min": 175
+      },
+      "review": "Historically stuck at lineW 138 through every temperature until --dilate-lines 2 cleared it in one pass at 218 (pipeline.md Stage 4 lever 3) — but the chalk-era regen passed clean with no levers (commit dee2966), so the recipe is an escalation, not a default.",
+      "why": "pipeline.md Stage 4 lever 3 (pale subject tempts dark re-inking); dee2966 downgraded it to a fallback."
+    }
+  },
+  "owl-tall": {
+    "chalk": {
+      "review": "Expect a worst-tile keep FAIL on the giant whitened sclera — the predicted best case for the fork (huge solid-white sclera, black pupils + catchlights preserved, commit 6e3f14f). Overlay-verify, then hand-ship."
+    }
+  },
+  "owl-wide": {
+    "chalk": {
+      "review": "Same giant-sclera keep blind spot as owl-tall (commit 6e3f14f) — overlay-verify, then hand-ship."
+    }
+  },
+  "dragon-tall": {
+    "chalk": {
+      "review": "Whitened eyes/mouth trip the keep blind spot (commit 6e3f14f) — overlay-verify, then hand-ship."
+    }
+  },
+  "unicorn-tall": {
+    "chalk": {
+      "review": "Deliberate whitenings (glowing horn + heart cheek mark) trip the keep blind spot but read well (commit 6e3f14f) — overlay-verify, then hand-ship."
+    }
+  }
+}

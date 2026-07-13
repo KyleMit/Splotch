@@ -1,0 +1,98 @@
+{
+  "idea": 1,
+  "title": "Dark-bodied subjects re-ink outlines dark",
+  "verdict": "WORKED",
+  "oneline": "Deterministic rim-erase punch extension validated; blanket dilation risky; Gemini edit re-rolls fills",
+  "summary": "The surviving dark rim is a mid-dark penumbra (raw luma ~80-140) hugging the outside of chalk strokes on lineW-flagged pages. The validated fix extends the night punch mask by pixels within 2px of chalk ink with raw luma in [55,145) and inpaints them with the standard bleed — rim gone on train-wide's face, owl's near-black eye ring and cat's dark straps untouched, control page visually unchanged. Blanket dilation r=2 erodes pupils/catchlights, and the literal 'paint them white' adds white halos. The Gemini 'whiten outlines, change nothing else' edit fixes lineW (75 to 206-224) but redraws eyes and fills (3.6-14.9% drift), so it is a regeneration lever, not a post-process.",
+  "tried": [
+    "(a) paint-white at chalk-line positions (literal IDEAS.md wording)",
+    "(a) rim-delta selective punch (vs dilate-4 reference punch)",
+    "(a) raw-dark punch extension, thresholds 110/145, r=1-3",
+    "(a) thin-structure morphological-opening guard",
+    "(a) FINAL: raw luma in [55,145) within 2px of chalk, lineW page gate",
+    "(c) blanket punch-mask dilation r=1 and r=2",
+    "(b) Gemini image-edit 'make every outline bright white, change nothing else' (5 calls: 3 train-wide, 2 cat-wide)",
+    "rim-delta band metric + hotspot ranking to locate/quantify the rim (doubles as idea #7 machinery)"
+  ],
+  "worked": [
+    "Final rule (a): mask += pixels within 2px of chalk ink with raw luma in [55,145), inpainted by the standard bleed, gated to pages with lineW < 150 — removes train-wide's mouth/nose/face rim (band rim share 0.20% -> 0.08%), composite change confined to 0.117% of pixels",
+    "Near-black floor (55) protects deliberate ink: owl-tall's bold eye ring survives even ungated",
+    "Legit dark fills adjacent to lines (cat bale straps, night sky) re-bleed their own color — visually unchanged",
+    "Control page (shapes/circle-wide, lineW 251) is a natural no-op",
+    "(b) reliably whitens outlines: lineW 75 -> 206/213/224 on train-wide, beating ~27 fresh-generation attempts"
+  ],
+  "failed": [
+    "Paint-white (literal idea (a)): white halos around mouth/chin — visibly worse",
+    "Blanket dilate r=2 (idea (c)): erodes the train's pupil edge and catchlight, beige contamination in the sclera; r=1 is safe but leaves half the rim",
+    "a-dark without the near-black floor: bleeds the owl's ~6px black eye ring away to white — flagship-page regression",
+    "Thin-structure opening: cannot separate a ~5px re-ink shadow from a ~6px legit ring (protected both, fixed nothing)",
+    "(b) 'change nothing else' is never honored: best take still redrew the eye, recolored the tongue, added glow; cat-wide take dropped the bale's red straps (3.6-14.9% of fill pixels drift)"
+  ],
+  "limitations": [
+    "The speckle ring inside the train's eye is the raw's own soft pupil edge >2px from any chalk ink — unreachable by punch-mask fixes (ideas #15/#7 territory)",
+    "Bounds 55/145/r=2 calibrated on 7 pages; a page with deliberate mid-dark art 1-2px wide beside a chalk line would lose it — the lineW page gate (only train-wide qualifies today) keeps exposure near-zero",
+    "(b) tested at t=0.2 only, 5 takes total, one model (gemini-2.5-flash-image)"
+  ],
+  "comparisons": [
+    {
+      "label": "train-wide mouth/nose rim (the headline fix)",
+      "before": "vehicles-train-wide.before.mouth.webp",
+      "after": "vehicles-train-wide.a-final.mouth.webp",
+      "note": "dirty dark shadow around smile, mouth and nose is inpainted away"
+    },
+    {
+      "label": "train-wide eye under the final rule",
+      "before": "vehicles-train-wide.before.eye.webp",
+      "after": "vehicles-train-wide.a-final.eye.webp",
+      "note": "dark edging around the sclera gone; pupil and catchlight intact (residual in-eye speckle is raw quality, not rim)"
+    },
+    {
+      "label": "owl eye ring: why the near-black floor exists",
+      "before": "creatures-owl-tall.a-dark145r2.eye2.webp",
+      "after": "creatures-owl-tall.a-final.eye2.webp",
+      "note": "without the floor the black ring is destroyed (left); with it the ring is preserved (right); committed state = creatures-owl-tall.before.eye2.webp"
+    },
+    {
+      "label": "blanket dilation r=2 collateral (rejected)",
+      "before": "vehicles-train-wide.before.eye.webp",
+      "after": "vehicles-train-wide.c-dilate2.eye.webp",
+      "note": "pupil edge and catchlight erode, beige bleeds into the sclera"
+    },
+    {
+      "label": "paint-white variant (rejected)",
+      "before": "vehicles-train-wide.before.chin.webp",
+      "after": "vehicles-train-wide.a-white.chin.webp",
+      "note": "white halos around the mouth and a ghost band under the chin"
+    },
+    {
+      "label": "(b) Gemini whiten-edit, best train take",
+      "before": "vehicles-train-wide.before.full.webp",
+      "after": "vehicles-train-wide.b-edit2.full.webp",
+      "note": "outlines now white (lineW 213) but fills drifted 3.7%"
+    },
+    {
+      "label": "(b) Gemini whiten-edit on cat-wide",
+      "before": "farm-cat-wide.before.full.webp",
+      "after": "farm-cat-wide.b-edit2.full.webp",
+      "note": "bale's red straps dropped, glow halo added, mood shifted — a re-roll, not an edit"
+    }
+  ],
+  "images": [
+    { "file": "vehicles-train-wide.rim-overlay.full.webp", "caption": "Where the rim actually is on train-wide (red = pixels >25 luma darker than the local fill, within 3px of chalk ink): the face outline, mouth, nose — not the dark boiler" },
+    { "file": "farm-cat-wide.rim-overlay.full.webp", "caption": "cat-wide rim flags are mostly false positives on the hay bale's legit dark straps — why naive delta-selection can't be trusted" },
+    { "file": "creatures-owl-tall.a-dark-changes.full.webp", "caption": "Pixels changed by the un-floored a-dark rule on owl-tall — concentrated exactly on the eye rings it destroys" },
+    { "file": "vehicles-train-wide.b-edit2.eye.webp", "caption": "(b) drift evidence: the Gemini edit reshaped and moved the pupil" },
+    { "file": "vehicles-train-wide.a-final.full.webp", "caption": "train-wide full composite under the final rule" },
+    { "file": "creatures-owl-tall.before.eye2.webp", "caption": "owl eye ring, committed state (the thing the fix must not break)" }
+  ],
+  "code": [
+    { "title": "RECOMMENDED: rim-erase punch extension (addRimOverhang + standalone demo)", "file": "code/punch-rim-erase.mjs" },
+    { "title": "Rim measurement: dilate-4 reference punch, band delta stats, hotspot ranking (reusable for idea #7)", "file": "code/analyze-rim.mjs" },
+    { "title": "Shared machinery: chalk mask, ring bands, punch/bleed, night composite, crops", "file": "code/rim-lib.mjs" },
+    { "title": "Experiment harness for variants (c) dilate, (a) selective, (a) paint-white", "file": "code/fix-rim.mjs" },
+    { "title": "Experiment: raw-dark mask extension (no floor) — the owl-regression variant", "file": "code/fix-rim-dark.mjs" },
+    { "title": "Experiment: thin-structure opening guard (failed separator)", "file": "code/fix-rim-open.mjs" },
+    { "title": "(b) Gemini whiten-outlines image-edit with offline scoring", "file": "code/edit-whiten-lines.mjs" },
+    { "title": "Debug: red rim overlay renderer", "file": "code/rim-overlay.mjs" }
+  ]
+}

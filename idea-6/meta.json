@@ -1,0 +1,85 @@
+{
+  "idea": 6,
+  "title": "Pen normalization + light-fill regen for dead eyes",
+  "verdict": "WORKED",
+  "oneline": "Normalizer + regen (or free re-punch) revives dead light-mode eyes; night untouched",
+  "summary": "Validated end-to-end on objects/teddy-tall and vehicles/police-tall in 6 Gemini calls: the normalizer converted both solid-ink pupils to thin rings (keep 100%, local 99.6%), the light-side eye FAILs cleared, and night/chalk were proven isolated (re-punched night fill byte-identical). Bonus: re-punching the EXISTING light raw against the normalized pen is a zero-API path that already yields lively eyes and preserves the shipped palette — police-tall was fixed with a single Gemini call. Rollout population is ~47 pages (not ~10), est. 100-150 calls / $4-6.",
+  "tried": [
+    "Catalog-wide offline eye + outline-solidity audits for the worst-first ranking (50 light FAILs, 47 of them on solid pens)",
+    "Normalizer on objects/teddy-tall (default, then with a --notes naming the star it deleted)",
+    "Fresh light-fill regen on teddy-tall from the normalized pen",
+    "Zero-API fallback: re-punch the OLD light raw against the NEW pen (teddy-tall, then as the sole path for police-tall)",
+    "Normalizer on vehicles/police-tall (passed first attempt) + free re-punch, no fill regen",
+    "Isolation proof: git-status + byte-identity of the re-punched night fill"
+  ],
+  "worked": [
+    "Both pages: blob 719/1886 -> 0, keep 100%, local 99.6%, reverse 100%, all source eye cores preserved",
+    "Eye audit light FAIL cleared on both pages (0 flagged); drift audit 100%/100%",
+    "Night/chalk fully isolated: chalk untouched, re-punched .night.webp byte-identical",
+    "Zero-API re-punch path: lively eyes with 1 total Gemini call per page and the shipped palette preserved",
+    "Fresh regen also removed old fill inventions (polka-dot bow, belly patch not in the pen)"
+  ],
+  "failed": [
+    "First teddy-tall normalize attempt deleted the star above the teddy (worst-tile keep 0%) — needed a --notes retry, repeating the documented bee-wide cloud precedent"
+  ],
+  "limitations": [
+    "Audit flip is partly definitional: solid-ink pupils are invisible to the eye scorer, so the FAIL measures the fill's inability to paint the eye, not on-canvas breakage in light mode",
+    "Visible product change: uncolored light pages and thumbs switch from solid to outlined pupils (thumbs need free regen)",
+    "Zero-API re-punch relies on the new ring tracing the old solid's boundary (gate-enforced); eyeball crops for black bleed outside the ring before shipping",
+    "creatures/owl-tall (riskiest, perfect chalk) not attempted for budget; spiral-eye nature wides excluded (idea #5's case, normalizer skips them without --force)",
+    "All experiment changes reverted per ground rules — rollout must re-run the recipe"
+  ],
+  "comparisons": [
+    {
+      "label": "teddy-tall pen eyes (face crop)",
+      "before": "teddy-tall.pen-face.before.webp",
+      "after": "teddy-tall.pen-face.after.webp",
+      "note": "solid-ink pupils -> outlined pupil ring + catchlight circle, thin strokes only"
+    },
+    {
+      "label": "teddy-tall shipped light fill (face crop)",
+      "before": "teddy-tall.shipped-light-face.before.webp",
+      "after": "teddy-tall.shipped-light-face.after.webp",
+      "note": "ghost-white inpaint smear -> real painted black pupil + white catchlight"
+    },
+    {
+      "label": "teddy-tall shipped light fill, zero-API path",
+      "before": "teddy-tall.shipped-light-face.before.webp",
+      "after": "teddy-tall.shipped-light-face.oldraw-newpen.webp",
+      "note": "OLD raw re-punched against the NEW pen — free, lively eyes, original palette kept"
+    },
+    {
+      "label": "police-tall shipped light fill (face crop)",
+      "before": "police-tall.shipped-light-face.before.webp",
+      "after": "police-tall.shipped-light-face.after.webp",
+      "note": "fixed with 1 Gemini call total (normalize) + free re-punch"
+    },
+    {
+      "label": "teddy-tall full page, shipped light",
+      "before": "teddy-tall.shipped-light-full.before.webp",
+      "after": "teddy-tall.shipped-light-full.after.webp",
+      "note": "fresh regen; also dropped the old fill's invented bow dots / belly patch"
+    }
+  ],
+  "images": [
+    { "file": "teddy-tall.pen-face.before.webp", "caption": "Before: teddy-tall pen, solid-ink pupils (blob 719)" },
+    { "file": "teddy-tall.pen-face.after.webp", "caption": "After: normalized pen, outlined pupil + catchlight" },
+    { "file": "teddy-tall.shipped-light-face.before.webp", "caption": "Before: shipped light fill, dead ghost-white eyes (punch inpainted the ink pupil)" },
+    { "file": "teddy-tall.shipped-light-face.after.webp", "caption": "After: shipped light fill from fresh regen, lively painted eyes" },
+    { "file": "teddy-tall.shipped-light-face.oldraw-newpen.webp", "caption": "Zero-API path: old raw re-punched against the new pen — lively eyes, palette preserved" },
+    { "file": "teddy-tall.lightraw-face.before.webp", "caption": "Before: committed light raw (its pupil darkness is outline ink, not paint)" },
+    { "file": "teddy-tall.lightraw-face.after.webp", "caption": "After: regenerated light raw, pupil is paint" },
+    { "file": "teddy-tall.normalize-attempt1-overlay.webp", "caption": "Gate catch: first normalize attempt deleted the star (red = untraced source ink)" },
+    { "file": "teddy-tall.pen-full.before.webp", "caption": "Full original pen" },
+    { "file": "teddy-tall.pen-full.after.webp", "caption": "Full normalized pen — stars/clouds/blocks/heart all preserved" },
+    { "file": "teddy-tall.shipped-light-full.before.webp", "caption": "Full shipped light fill, before" },
+    { "file": "teddy-tall.shipped-light-full.after.webp", "caption": "Full shipped light fill, after fresh regen" },
+    { "file": "police-tall.pen-face.before.webp", "caption": "Before: police-tall pen, solid pupils (blob 1886)" },
+    { "file": "police-tall.pen-face.after.webp", "caption": "After: normalized police-tall pen (1 attempt)" },
+    { "file": "police-tall.shipped-light-face.before.webp", "caption": "Before: police-tall shipped light fill, dead eyes" },
+    { "file": "police-tall.shipped-light-face.after.webp", "caption": "After: police-tall shipped light fill via free re-punch of the old raw" }
+  ],
+  "code": [
+    { "title": "Page eye/solidity inspector + eye-region cropper", "file": "code/inspect-page-eyes.mjs" }
+  ]
+}

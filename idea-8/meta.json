@@ -1,0 +1,47 @@
+{
+  "idea": 8,
+  "title": "Light-night palette coherence",
+  "verdict": "WORKED",
+  "oneline": "Hue-flip scorer ranks catalog; punched-light-conditioned night regen fixes ant blanket, all gates pass",
+  "summary": "An offline region-hue scorer (pen-segmented regions, chroma-weighted circular mean hue, cool-shift credit) correctly flags the ant blanket and ranks all 96 cells; worst offenders are spider-tall (98%), the shapes wides (~90%), and farm/cat-tall (80%). Conditioning the night generation on the light fill as a second image works, but ONLY with the shipped punched (line-art-free) fill as the reference: the raw's black outlines made the model re-ink dark lines in 7/7 takes despite explicit prompting. The punched-reference take passed all four standard gates first try and cut ant-wide's hue-flip area from 61.1% to 17.3% (red blanket preserved at night).",
+  "tried": [
+    "Region-hue flip scorer: pen-outline segmentation, background flood-excluded, chroma-weighted circular mean hue per region, >75deg flip threshold with 25deg toward-blue moonlight credit",
+    "Full-catalog ranking (96 cells) + visual spot-checks of spider-tall, teddy-tall, duck-wide",
+    "Night regen conditioned on the light RAW as second image (3 calls, t0.6 ladder)",
+    "Same with explicit anti-black-line prompt, t0.3, --dilate-lines 2 (4 calls)",
+    "Night regen conditioned on the shipped PUNCHED light fill (1 call)"
+  ],
+  "worked": [
+    "Scorer flags ant-wide's blanket (red->cyan, 12k px) and matches eyeballs on every spot-check",
+    "Punched-light conditioning: all 4 gates pass first try (drift 0.0000, bgLuma 72, lineW 173, eyes ok), hue flips 61.1% -> 17.3%",
+    "Scoring the conditioned take with the same scorer closed the loop (raw-ref takes measured 0.0% flip)"
+  ],
+  "failed": [
+    "Conditioning on the light RAW: the model copies its BLACK outlines (lineW 69-75, unshippable) in 7/7 takes — prompt wording, low temp, and dilated lines all failed to stop it"
+  ],
+  "limitations": [
+    "8-call cap: only ant-wide regenerated; teddy-tall/duck-wide untested end-to-end",
+    "Conditioned takes trend brighter (bgLuma 48-72 vs typical 15-50) — 'dimmed day' pulls against deep-night mood",
+    "Residual 17.3%: left flowers went dusty mauve in the single kept take (no best-of-N budget)",
+    "Scorer flags some legitimate night changes (warm glowing windows) and thresholds are uncalibrated"
+  ],
+  "comparisons": [
+    {
+      "label": "nature/ant-wide light vs night",
+      "before": "before-night-shipped.webp",
+      "after": "after-night-conditioned.webp",
+      "note": "Shipped night flips the red/white blanket to navy/green and the yellow flowers to purple; the conditioned take keeps the day palette (see before-light.webp), dimmed for night, and passes all gates"
+    }
+  ],
+  "images": [
+    { "file": "before-light.webp", "caption": "Shipped light raw: red/white blanket, yellow flowers" },
+    { "file": "before-night-shipped.webp", "caption": "Shipped night raw: blanket navy/green, flowers purple — the hue flip" },
+    { "file": "after-night-conditioned.webp", "caption": "Conditioned night take (punched-light reference): palette-coherent, all gates pass" },
+    { "file": "failure-night-blacklines.webp", "caption": "Raw-reference failure mode: perfect palette (0% flip) but black outlines copied from the reference" }
+  ],
+  "code": [
+    { "title": "Region-hue coherence scorer (offline audit + --night-file single-take scoring)", "file": "code/score-hue-coherence.mjs" },
+    { "title": "Conditioned night generator (temp variant of gen-coloring-fills-dark.mjs, second-image palette reference)", "file": "code/gen-coloring-fills-dark-cond.mjs" },
+    { "title": "Full-res gate-passing conditioned take for ant-wide", "file": "code/ant-wide.night.conditioned.fullres.webp" }
+  ]
+}

@@ -1,0 +1,876 @@
+[
+  {
+    "base": "shapes/rectangle",
+    "light": {
+      "emdDeg": 126.02604442645203,
+      "mismatch": 0.7802433788127905,
+      "tallTop": "blue 77%, yellow 10%, yellow-green 10%",
+      "wideTop": "orange 83%, cyan 12%, green 4%",
+      "tallChromaticFrac": 0.9861468887744004,
+      "wideChromaticFrac": 0.9999641049571054
+    },
+    "night": {
+      "emdDeg": 75.9948336838696,
+      "mismatch": 0.8439955505606478,
+      "tallTop": "blue 77%, orange 7%, cyan 7%",
+      "wideTop": "cyan 41%, orange 26%, green 19%",
+      "tallChromaticFrac": 0.9983780792642204,
+      "wideChromaticFrac": 0.9972360816971176
+    }
+  },
+  {
+    "base": "nature/spider",
+    "light": {
+      "emdDeg": 102.08280341931969,
+      "mismatch": 0.7567194274140704,
+      "tallTop": "yellow 79%, orange 13%, purple 8%",
+      "wideTop": "cyan 67%, yellow-green 12%, magenta 11%",
+      "tallChromaticFrac": 0.9972259565115337,
+      "wideChromaticFrac": 0.9990522633673944
+    },
+    "night": {
+      "emdDeg": 18.843117873576237,
+      "mismatch": 0.188581256348896,
+      "tallTop": "blue 73%, red 21%, cyan 3%",
+      "wideTop": "blue 67%, magenta 13%, orange 9%",
+      "tallChromaticFrac": 0.9970765849390777,
+      "wideChromaticFrac": 0.9993796632950218
+    }
+  },
+  {
+    "base": "space/meteor",
+    "light": {
+      "emdDeg": 87.13489084670624,
+      "mismatch": 0.6115879797664024,
+      "tallTop": "blue 51%, yellow 18%, cyan 17%",
+      "wideTop": "yellow-green 63%, orange 17%, yellow 14%",
+      "tallChromaticFrac": 0.5929067592839968,
+      "wideChromaticFrac": 0.8897259526149143
+    },
+    "night": {
+      "emdDeg": 104.06267959546983,
+      "mismatch": 0.5978984575128597,
+      "tallTop": "blue 74%, cyan 15%, orange 11%",
+      "wideTop": "orange 53%, green 14%, cyan 12%",
+      "tallChromaticFrac": 0.5830216403954047,
+      "wideChromaticFrac": 0.8942024238453979
+    }
+  },
+  {
+    "base": "vehicles/garbage",
+    "light": {
+      "emdDeg": 86.39698362796,
+      "mismatch": 0.564487854483068,
+      "tallTop": "blue 63%, cyan 17%, yellow-green 14%",
+      "wideTop": "yellow-green 48%, green 27%, cyan 10%",
+      "tallChromaticFrac": 0.6085682354402087,
+      "wideChromaticFrac": 0.7081424999381081
+    },
+    "night": {
+      "emdDeg": 50.96509674183341,
+      "mismatch": 0.5282239759423456,
+      "tallTop": "cyan 50%, blue 47%, red 1%",
+      "wideTop": "blue 69%, orange 26%, red 2%",
+      "tallChromaticFrac": 0.6692164410778592,
+      "wideChromaticFrac": 0.3880870447849875
+    }
+  },
+  {
+    "base": "vehicles/monster",
+    "light": {
+      "emdDeg": 69.58721387764689,
+      "mismatch": 0.44647177394721804,
+      "tallTop": "red 46%, cyan 35%, blue 16%",
+      "wideTop": "red 31%, yellow 23%, orange 21%",
+      "tallChromaticFrac": 0.5045045045045045,
+      "wideChromaticFrac": 0.6363226509373708
+    },
+    "night": {
+      "emdDeg": 77.05686652903157,
+      "mismatch": 0.5025234794755539,
+      "tallTop": "blue 89%, cyan 7%, yellow 4%",
+      "wideTop": "orange 34%, blue 26%, cyan 19%",
+      "tallChromaticFrac": 0.3556306306306306,
+      "wideChromaticFrac": 0.43051433294511027
+    }
+  },
+  {
+    "base": "space/station",
+    "light": {
+      "emdDeg": 66.46070511673636,
+      "mismatch": 0.32855719277231643,
+      "tallTop": "blue 39%, orange 35%, yellow 15%",
+      "wideTop": "blue 55%, cyan 29%, yellow 11%",
+      "tallChromaticFrac": 0.962180889861415,
+      "wideChromaticFrac": 0.7543733211033218
+    },
+    "night": {
+      "emdDeg": 149.05152423901154,
+      "mismatch": 0.8361924573756194,
+      "tallTop": "blue 86%, cyan 8%, magenta 3%",
+      "wideTop": "orange 85%, blue 10%, red 3%",
+      "tallChromaticFrac": 0.8703136396790664,
+      "wideChromaticFrac": 0.8240843870798663
+    }
+  },
+  {
+    "base": "creatures/dragon",
+    "light": {
+      "emdDeg": 52.91233562751969,
+      "mismatch": 0.5906353535259197,
+      "tallTop": "yellow-green 88%, yellow 8%, blue 4%",
+      "wideTop": "cyan 37%, yellow 33%, orange 26%",
+      "tallChromaticFrac": 0.8929043192184034,
+      "wideChromaticFrac": 0.961726119483899
+    },
+    "night": {
+      "emdDeg": 38.801544113037814,
+      "mismatch": 0.6434087854109054,
+      "tallTop": "cyan 79%, green 12%, magenta 3%",
+      "wideTop": "green 49%, blue 34%, cyan 8%",
+      "tallChromaticFrac": 0.6799840490491738,
+      "wideChromaticFrac": 0.6388376883877264
+    }
+  },
+  {
+    "base": "creatures/unicorn",
+    "light": {
+      "emdDeg": 50.545833502390856,
+      "mismatch": 0.340227765156862,
+      "tallTop": "cyan 32%, yellow-green 26%, purple 19%",
+      "wideTop": "red 44%, yellow 24%, yellow-green 19%",
+      "tallChromaticFrac": 0.3972450727329747,
+      "wideChromaticFrac": 0.7721100560650743
+    },
+    "night": {
+      "emdDeg": 73.17866664330938,
+      "mismatch": 0.5798461582554073,
+      "tallTop": "purple 53%, blue 18%, magenta 11%",
+      "wideTop": "orange 64%, magenta 14%, blue 7%",
+      "tallChromaticFrac": 0.9031433189395218,
+      "wideChromaticFrac": 0.8244158537771008
+    }
+  },
+  {
+    "base": "vehicles/police",
+    "light": {
+      "emdDeg": 47.97560891055956,
+      "mismatch": 0.3700330126313399,
+      "tallTop": "blue 76%, cyan 20%, red 3%",
+      "wideTop": "blue 36%, yellow-green 33%, cyan 22%",
+      "tallChromaticFrac": 0.7944388228349777,
+      "wideChromaticFrac": 0.8281245062411123
+    },
+    "night": {
+      "emdDeg": 24.03859643709421,
+      "mismatch": 0.2578196487140849,
+      "tallTop": "blue 74%, orange 9%, magenta 8%",
+      "wideTop": "blue 68%, green 16%, red 6%",
+      "tallChromaticFrac": 0.45842819799308543,
+      "wideChromaticFrac": 0.7155948807078527
+    }
+  },
+  {
+    "base": "shapes/square",
+    "light": {
+      "emdDeg": 45.28465499691939,
+      "mismatch": 0.2160261390272873,
+      "tallTop": "yellow 58%, cyan 42%, red 0%",
+      "wideTop": "yellow 74%, yellow-green 8%, red 6%",
+      "tallChromaticFrac": 0.9946898738845048,
+      "wideChromaticFrac": 0.9951289469129392
+    },
+    "night": {
+      "emdDeg": 14.111778451606448,
+      "mismatch": 0.08031394624728697,
+      "tallTop": "orange 89%, blue 6%, green 4%",
+      "wideTop": "orange 89%, yellow 3%, magenta 3%",
+      "tallChromaticFrac": 0.6842318755070433,
+      "wideChromaticFrac": 0.9563583314788715
+    }
+  },
+  {
+    "base": "vehicles/fire",
+    "light": {
+      "emdDeg": 41.88182747282285,
+      "mismatch": 0.38505009008169633,
+      "tallTop": "red 58%, cyan 37%, orange 4%",
+      "wideTop": "red 41%, yellow-green 34%, cyan 10%",
+      "tallChromaticFrac": 0.8109837878538319,
+      "wideChromaticFrac": 0.6860139443418152
+    },
+    "night": {
+      "emdDeg": 22.416677362969946,
+      "mismatch": 0.14637032385000637,
+      "tallTop": "red 50%, blue 46%, orange 2%",
+      "wideTop": "red 45%, blue 32%, cyan 20%",
+      "tallChromaticFrac": 0.7250994141038613,
+      "wideChromaticFrac": 0.7652702461116739
+    }
+  },
+  {
+    "base": "dinosaur/pterodactyl",
+    "light": {
+      "emdDeg": 39.37843820583404,
+      "mismatch": 0.5683279073054177,
+      "tallTop": "orange 60%, cyan 25%, yellow 10%",
+      "wideTop": "yellow-green 59%, yellow 27%, orange 14%",
+      "tallChromaticFrac": 0.7929360562437228,
+      "wideChromaticFrac": 0.9722459998683084
+    },
+    "night": {
+      "emdDeg": 71.39592209725869,
+      "mismatch": 0.48977442190214027,
+      "tallTop": "cyan 38%, green 19%, yellow-green 18%",
+      "wideTop": "orange 70%, blue 20%, green 4%",
+      "tallChromaticFrac": 0.5879645128891865,
+      "wideChromaticFrac": 0.7682228221505235
+    }
+  },
+  {
+    "base": "objects/balloon",
+    "light": {
+      "emdDeg": 37.89149888559852,
+      "mismatch": 0.5871303786532662,
+      "tallTop": "red 75%, yellow 14%, green 10%",
+      "wideTop": "yellow 49%, yellow-green 30%, red 17%",
+      "tallChromaticFrac": 0.9857615987771393,
+      "wideChromaticFrac": 0.7361772244599047
+    },
+    "night": {
+      "emdDeg": 58.32348887031454,
+      "mismatch": 0.6088538268155808,
+      "tallTop": "magenta 71%, orange 15%, cyan 12%",
+      "wideTop": "yellow-green 37%, orange 32%, magenta 10%",
+      "tallChromaticFrac": 0.7870467347920854,
+      "wideChromaticFrac": 0.6960515073843525
+    }
+  },
+  {
+    "base": "space/rover",
+    "light": {
+      "emdDeg": 37.138489917073684,
+      "mismatch": 0.05955949912497756,
+      "tallTop": "red 59%, orange 16%, cyan 14%",
+      "wideTop": "orange 56%, cyan 28%, yellow 11%",
+      "tallChromaticFrac": 0.8021195986074134,
+      "wideChromaticFrac": 0.8717710339331961
+    },
+    "night": {
+      "emdDeg": 26.682211678752648,
+      "mismatch": 0.1727724910337476,
+      "tallTop": "blue 67%, purple 30%, cyan 3%",
+      "wideTop": "blue 73%, purple 8%, orange 7%",
+      "tallChromaticFrac": 0.21001433544951875,
+      "wideChromaticFrac": 0.5091307523739956
+    }
+  },
+  {
+    "base": "shapes/triangle",
+    "light": {
+      "emdDeg": 30.331258554325263,
+      "mismatch": 0.24197605727310673,
+      "tallTop": "orange 87%, yellow 13%",
+      "wideTop": "yellow 67%, yellow-green 21%, green 7%",
+      "tallChromaticFrac": 0.9996836808051761,
+      "wideChromaticFrac": 0.9928382375836836
+    },
+    "night": {
+      "emdDeg": 123.28899257475975,
+      "mismatch": 0.9863000718840997,
+      "tallTop": "green 89%, yellow 7%, cyan 3%",
+      "wideTop": "orange 98%, magenta 1%, green 0%",
+      "tallChromaticFrac": 0.9822286125089863,
+      "wideChromaticFrac": 0.6468680263635892
+    }
+  },
+  {
+    "base": "nature/ant",
+    "light": {
+      "emdDeg": 25.73036875612019,
+      "mismatch": 0.21352867677628304,
+      "tallTop": "orange 67%, yellow 17%, cyan 11%",
+      "wideTop": "orange 55%, red 28%, yellow 15%",
+      "tallChromaticFrac": 0.9811499509964065,
+      "wideChromaticFrac": 0.7724079797695982
+    },
+    "night": {
+      "emdDeg": 32.25859631293734,
+      "mismatch": 0.19352822241242346,
+      "tallTop": "red 61%, green 15%, blue 14%",
+      "wideTop": "orange 44%, blue 29%, cyan 12%",
+      "tallChromaticFrac": 0.9925514537732767,
+      "wideChromaticFrac": 0.8688301957478692
+    }
+  },
+  {
+    "base": "creatures/owl",
+    "light": {
+      "emdDeg": 24.587763697422584,
+      "mismatch": 0.27725237952471304,
+      "tallTop": "orange 59%, yellow 21%, blue 16%",
+      "wideTop": "yellow-green 48%, orange 33%, blue 12%",
+      "tallChromaticFrac": 0.9995055777015543,
+      "wideChromaticFrac": 0.9983268528337458
+    },
+    "night": {
+      "emdDeg": 46.07205075280354,
+      "mismatch": 0.3811069225394408,
+      "tallTop": "orange 75%, blue 18%, green 4%",
+      "wideTop": "orange 49%, cyan 44%, blue 6%",
+      "tallChromaticFrac": 0.8841815765891041,
+      "wideChromaticFrac": 0.9275597973371038
+    }
+  },
+  {
+    "base": "nature/ladybug",
+    "light": {
+      "emdDeg": 24.49987364701956,
+      "mismatch": 0.2538451880297862,
+      "tallTop": "yellow-green 76%, red 18%, orange 5%",
+      "wideTop": "yellow-green 47%, red 37%, yellow 9%",
+      "tallChromaticFrac": 0.9851485148514851,
+      "wideChromaticFrac": 0.9221016794125867
+    },
+    "night": {
+      "emdDeg": 57.66065171913528,
+      "mismatch": 0.33433397549808025,
+      "tallTop": "green 66%, red 28%, blue 5%",
+      "wideTop": "red 41%, cyan 29%, magenta 13%",
+      "tallChromaticFrac": 0.9567974869776135,
+      "wideChromaticFrac": 0.7846490002286644
+    }
+  },
+  {
+    "base": "creatures/pegasus",
+    "light": {
+      "emdDeg": 24.149934915569403,
+      "mismatch": 0.2162085941140866,
+      "tallTop": "orange 27%, yellow 20%, cyan 17%",
+      "wideTop": "red 43%, cyan 30%, yellow 19%",
+      "tallChromaticFrac": 0.23899252411385988,
+      "wideChromaticFrac": 0.6515943985152691
+    },
+    "night": {
+      "emdDeg": 76.89049032804145,
+      "mismatch": 0.6127438424875419,
+      "tallTop": "magenta 69%, orange 19%, purple 7%",
+      "wideTop": "cyan 53%, orange 33%, blue 7%",
+      "tallChromaticFrac": 0.7915713510836497,
+      "wideChromaticFrac": 0.35711152353635905
+    }
+  },
+  {
+    "base": "farm/duck",
+    "light": {
+      "emdDeg": 23.58817834340451,
+      "mismatch": 0.15007820153787568,
+      "tallTop": "yellow 68%, cyan 21%, orange 10%",
+      "wideTop": "yellow 57%, yellow-green 26%, orange 15%",
+      "tallChromaticFrac": 0.9673750780338192,
+      "wideChromaticFrac": 0.7970028351559336
+    },
+    "night": {
+      "emdDeg": 40.26049177599716,
+      "mismatch": 0.18142573325211564,
+      "tallTop": "orange 74%, blue 22%, yellow 4%",
+      "wideTop": "yellow 77%, orange 19%, green 3%",
+      "tallChromaticFrac": 0.8996010096897646,
+      "wideChromaticFrac": 0.6121101660591333
+    }
+  },
+  {
+    "base": "space/astronaut",
+    "light": {
+      "emdDeg": 21.885686387326828,
+      "mismatch": 0.11616942154754968,
+      "tallTop": "orange 71%, yellow 13%, yellow-green 10%",
+      "wideTop": "yellow 55%, orange 31%, cyan 13%",
+      "tallChromaticFrac": 0.714976575487381,
+      "wideChromaticFrac": 0.7846449136276391
+    },
+    "night": {
+      "emdDeg": 107.5487857838047,
+      "mismatch": 0.6681508489304253,
+      "tallTop": "blue 90%, green 10%, cyan 0%",
+      "wideTop": "orange 66%, blue 25%, red 3%",
+      "tallChromaticFrac": 0.9824693970077074,
+      "wideChromaticFrac": 1
+    }
+  },
+  {
+    "base": "space/ship",
+    "light": {
+      "emdDeg": 21.45785404196957,
+      "mismatch": 0.22335887008710767,
+      "tallTop": "red 57%, yellow 33%, orange 8%",
+      "wideTop": "yellow 47%, red 38%, blue 5%",
+      "tallChromaticFrac": 0.6534740545294635,
+      "wideChromaticFrac": 0.70961683924985
+    },
+    "night": {
+      "emdDeg": 26.192752400321325,
+      "mismatch": 0.3804762282313978,
+      "tallTop": "cyan 30%, magenta 29%, orange 18%",
+      "wideTop": "orange 42%, cyan 28%, blue 18%",
+      "tallChromaticFrac": 0.8433597185576077,
+      "wideChromaticFrac": 0.6986880200318214
+    }
+  },
+  {
+    "base": "shapes/circle",
+    "light": {
+      "emdDeg": 21.237052638071322,
+      "mismatch": 0.09215979922077168,
+      "tallTop": "yellow 81%, cyan 6%, red 5%",
+      "wideTop": "yellow 93%, red 3%, cyan 3%",
+      "tallChromaticFrac": 0.9941411147839964,
+      "wideChromaticFrac": 0.9958057120514688
+    },
+    "night": {
+      "emdDeg": 127.22851438064195,
+      "mismatch": 0.9006283625125694,
+      "tallTop": "orange 87%, magenta 8%, blue 3%",
+      "wideTop": "blue 91%, purple 3%, cyan 3%",
+      "tallChromaticFrac": 0.9590333979254531,
+      "wideChromaticFrac": 0.9476780350827305
+    }
+  },
+  {
+    "base": "farm/cow",
+    "light": {
+      "emdDeg": 21.20648611824144,
+      "mismatch": 0.1450030431564618,
+      "tallTop": "orange 54%, yellow 23%, red 7%",
+      "wideTop": "yellow 42%, orange 26%, yellow-green 25%",
+      "tallChromaticFrac": 0.29415158091366095,
+      "wideChromaticFrac": 0.7397803375301366
+    },
+    "night": {
+      "emdDeg": 28.827045288146664,
+      "mismatch": 0.320883422655354,
+      "tallTop": "blue 50%, orange 41%, yellow 5%",
+      "wideTop": "orange 37%, cyan 25%, blue 19%",
+      "tallChromaticFrac": 0.7724088674010384,
+      "wideChromaticFrac": 0.4368604339673185
+    }
+  },
+  {
+    "base": "dinosaur/stegosaurus",
+    "light": {
+      "emdDeg": 19.646896637467716,
+      "mismatch": 0.22692142672236415,
+      "tallTop": "yellow-green 78%, orange 13%, cyan 7%",
+      "wideTop": "yellow-green 76%, green 21%, yellow 2%",
+      "tallChromaticFrac": 0.8971374720226175,
+      "wideChromaticFrac": 0.8087190638914776
+    },
+    "night": {
+      "emdDeg": 29.4399951854242,
+      "mismatch": 0.12661453330927686,
+      "tallTop": "green 45%, cyan 33%, yellow-green 17%",
+      "wideTop": "cyan 74%, green 9%, blue 9%",
+      "tallChromaticFrac": 0.6391329956414183,
+      "wideChromaticFrac": 0.7042352697525112
+    }
+  },
+  {
+    "base": "vehicles/train",
+    "light": {
+      "emdDeg": 18.19932474776367,
+      "mismatch": 0.07744160716137141,
+      "tallTop": "yellow-green 32%, cyan 28%, red 19%",
+      "wideTop": "cyan 36%, green 30%, red 25%",
+      "tallChromaticFrac": 0.8589271324968344,
+      "wideChromaticFrac": 0.8286656243627217
+    },
+    "night": {
+      "emdDeg": 36.676300812472576,
+      "mismatch": 0.14423511350255244,
+      "tallTop": "orange 54%, red 29%, blue 10%",
+      "wideTop": "orange 32%, blue 29%, magenta 24%",
+      "tallChromaticFrac": 0.5508518475883504,
+      "wideChromaticFrac": 0.6081843518455577
+    }
+  },
+  {
+    "base": "objects/house",
+    "light": {
+      "emdDeg": 17.645614987634737,
+      "mismatch": 0.23482467882903757,
+      "tallTop": "yellow 58%, yellow-green 21%, cyan 12%",
+      "wideTop": "yellow 34%, yellow-green 32%, orange 16%",
+      "tallChromaticFrac": 0.9638006217530096,
+      "wideChromaticFrac": 0.9822284649912975
+    },
+    "night": {
+      "emdDeg": 22.642658665431632,
+      "mismatch": 0.22897739280217472,
+      "tallTop": "orange 66%, cyan 16%, red 12%",
+      "wideTop": "orange 85%, yellow 7%, blue 4%",
+      "tallChromaticFrac": 0.8550981660372634,
+      "wideChromaticFrac": 0.5292986045375432
+    }
+  },
+  {
+    "base": "space/moon",
+    "light": {
+      "emdDeg": 17.39616767913699,
+      "mismatch": 0.22450728222161273,
+      "tallTop": "yellow 88%, cyan 11%, blue 1%",
+      "wideTop": "yellow 94%, cyan 4%, red 1%",
+      "tallChromaticFrac": 0.9903215067059831,
+      "wideChromaticFrac": 1
+    },
+    "night": {
+      "emdDeg": 33.74516352697637,
+      "mismatch": 0.4472637950077256,
+      "tallTop": "orange 68%, blue 31%, red 1%",
+      "wideTop": "orange 74%, magenta 19%, yellow 4%",
+      "tallChromaticFrac": 0.23399600494625702,
+      "wideChromaticFrac": 0.436080439984886
+    }
+  },
+  {
+    "base": "dinosaur/brachiosaurus",
+    "light": {
+      "emdDeg": 16.760516433921936,
+      "mismatch": 0.050962307695121015,
+      "tallTop": "yellow-green 73%, cyan 14%, yellow 12%",
+      "wideTop": "yellow-green 84%, orange 11%, cyan 5%",
+      "tallChromaticFrac": 0.9977542363269287,
+      "wideChromaticFrac": 0.8976013162452373
+    },
+    "night": {
+      "emdDeg": 102.79059783858193,
+      "mismatch": 0.6447126434791991,
+      "tallTop": "cyan 46%, blue 33%, green 12%",
+      "wideTop": "orange 71%, cyan 15%, yellow 7%",
+      "tallChromaticFrac": 0.768028491708822,
+      "wideChromaticFrac": 0.8663404918600623
+    }
+  },
+  {
+    "base": "creatures/fairy",
+    "light": {
+      "emdDeg": 16.234324575520752,
+      "mismatch": 0.053402498199838375,
+      "tallTop": "yellow-green 37%, red 33%, orange 28%",
+      "wideTop": "orange 35%, yellow-green 34%, red 14%",
+      "tallChromaticFrac": 0.9708629479403118,
+      "wideChromaticFrac": 0.9936894184168013
+    },
+    "night": {
+      "emdDeg": 18.08815981344105,
+      "mismatch": 0.09944635527241173,
+      "tallTop": "orange 46%, cyan 18%, red 13%",
+      "wideTop": "orange 45%, blue 21%, red 14%",
+      "tallChromaticFrac": 0.9611878093253451,
+      "wideChromaticFrac": 0.9950020193861067
+    }
+  },
+  {
+    "base": "objects/apple",
+    "light": {
+      "emdDeg": 14.726189489195814,
+      "mismatch": 0.09528006000746897,
+      "tallTop": "red 74%, yellow 11%, green 9%",
+      "wideTop": "red 91%, yellow-green 4%, orange 3%",
+      "tallChromaticFrac": 1,
+      "wideChromaticFrac": 0.7729291756880426
+    },
+    "night": {
+      "emdDeg": 15.719219277620669,
+      "mismatch": 0.13433869922924116,
+      "tallTop": "red 79%, magenta 15%, green 6%",
+      "wideTop": "red 81%, blue 8%, cyan 5%",
+      "tallChromaticFrac": 0.8999460297010742,
+      "wideChromaticFrac": 0.8558737528180175
+    }
+  },
+  {
+    "base": "dinosaur/triceratops",
+    "light": {
+      "emdDeg": 14.32072420259786,
+      "mismatch": 0.255794074822857,
+      "tallTop": "yellow-green 59%, orange 27%, yellow 12%",
+      "wideTop": "yellow-green 84%, orange 6%, cyan 5%",
+      "tallChromaticFrac": 0.9983492629459053,
+      "wideChromaticFrac": 0.8635705640855265
+    },
+    "night": {
+      "emdDeg": 60.044732822744386,
+      "mismatch": 0.8552206750675555,
+      "tallTop": "yellow-green 50%, green 36%, orange 11%",
+      "wideTop": "green 67%, cyan 15%, blue 9%",
+      "tallChromaticFrac": 0.7200019808844649,
+      "wideChromaticFrac": 0.8312014997982866
+    }
+  },
+  {
+    "base": "vehicles/excavator",
+    "light": {
+      "emdDeg": 14.239172190805567,
+      "mismatch": 0.1891693777759035,
+      "tallTop": "yellow 71%, orange 23%, cyan 6%",
+      "wideTop": "yellow 43%, orange 24%, yellow-green 23%",
+      "tallChromaticFrac": 0.7553994125439152,
+      "wideChromaticFrac": 0.884534481895127
+    },
+    "night": {
+      "emdDeg": 32.339952653129004,
+      "mismatch": 0.13844754060593317,
+      "tallTop": "orange 95%, blue 4%, green 1%",
+      "wideTop": "orange 76%, blue 23%, green 1%",
+      "tallChromaticFrac": 0.4484824051143236,
+      "wideChromaticFrac": 0.5437221415335304
+    }
+  },
+  {
+    "base": "objects/teddy",
+    "light": {
+      "emdDeg": 13.383740360019875,
+      "mismatch": 0.264613794759601,
+      "tallTop": "orange 74%, yellow 10%, cyan 7%",
+      "wideTop": "orange 55%, yellow-green 20%, yellow 12%",
+      "tallChromaticFrac": 0.9893911879957947,
+      "wideChromaticFrac": 0.9994183364422248
+    },
+    "night": {
+      "emdDeg": 27.386944299280856,
+      "mismatch": 0.2199531350547987,
+      "tallTop": "orange 81%, blue 7%, magenta 6%",
+      "wideTop": "orange 72%, blue 24%, cyan 4%",
+      "tallChromaticFrac": 0.9826053713084202,
+      "wideChromaticFrac": 0.98926931022725
+    }
+  },
+  {
+    "base": "creatures/mermaid",
+    "light": {
+      "emdDeg": 12.219614425290548,
+      "mismatch": 0.16661058542496995,
+      "tallTop": "yellow 35%, orange 34%, green 17%",
+      "wideTop": "yellow 40%, orange 36%, cyan 16%",
+      "tallChromaticFrac": 0.6290810007431261,
+      "wideChromaticFrac": 0.958416008781188
+    },
+    "night": {
+      "emdDeg": 19.297804047885236,
+      "mismatch": 0.09190420822506624,
+      "tallTop": "cyan 44%, orange 34%, red 14%",
+      "wideTop": "orange 41%, cyan 31%, red 10%",
+      "tallChromaticFrac": 0.6134505821154322,
+      "wideChromaticFrac": 0.9065310085701017
+    }
+  },
+  {
+    "base": "nature/bee",
+    "light": {
+      "emdDeg": 11.308733980750667,
+      "mismatch": 0.05459245448012499,
+      "tallTop": "yellow-green 46%, yellow 38%, red 8%",
+      "wideTop": "yellow-green 43%, yellow 40%, cyan 14%",
+      "tallChromaticFrac": 0.6618316389467863,
+      "wideChromaticFrac": 0.9193129062209842
+    },
+    "night": {
+      "emdDeg": 41.069540262028774,
+      "mismatch": 0.23606989775144613,
+      "tallTop": "green 25%, magenta 23%, orange 19%",
+      "wideTop": "blue 30%, green 29%, orange 22%",
+      "tallChromaticFrac": 0.6021523671785274,
+      "wideChromaticFrac": 0.8963788300835654
+    }
+  },
+  {
+    "base": "nature/snail",
+    "light": {
+      "emdDeg": 10.4027039896937,
+      "mismatch": 0.03473131691744113,
+      "tallTop": "orange 45%, yellow-green 45%, yellow 5%",
+      "wideTop": "orange 49%, yellow-green 31%, yellow 9%",
+      "tallChromaticFrac": 0.9035976091124394,
+      "wideChromaticFrac": 0.9739180445722502
+    },
+    "night": {
+      "emdDeg": 36.17066435921974,
+      "mismatch": 0.36013819501136357,
+      "tallTop": "red 51%, magenta 19%, blue 10%",
+      "wideTop": "orange 53%, red 16%, cyan 16%",
+      "tallChromaticFrac": 0.5323784820119545,
+      "wideChromaticFrac": 0.9204601006470166
+    }
+  },
+  {
+    "base": "shapes/star",
+    "light": {
+      "emdDeg": 10.277014477781428,
+      "mismatch": 0.09721868429434738,
+      "tallTop": "yellow 92%, cyan 6%, purple 1%",
+      "wideTop": "yellow 86%, cyan 14%, red 0%",
+      "tallChromaticFrac": 0.9948962581108461,
+      "wideChromaticFrac": 0.9917917917917918
+    },
+    "night": {
+      "emdDeg": 5.220713351074542,
+      "mismatch": 0.11092368663655544,
+      "tallTop": "orange 81%, yellow 15%, blue 4%",
+      "wideTop": "yellow 60%, orange 36%, blue 4%",
+      "tallChromaticFrac": 0.8498627888487087,
+      "wideChromaticFrac": 0.6821106821106822
+    }
+  },
+  {
+    "base": "farm/horse",
+    "light": {
+      "emdDeg": 9.960708497236265,
+      "mismatch": 0.060741503375112305,
+      "tallTop": "orange 81%, yellow 15%, cyan 3%",
+      "wideTop": "orange 74%, yellow-green 22%, yellow 4%",
+      "tallChromaticFrac": 0.9797698277311934,
+      "wideChromaticFrac": 0.9995121111238664
+    },
+    "night": {
+      "emdDeg": 12.259915753503684,
+      "mismatch": 0.17106756236928705,
+      "tallTop": "orange 82%, blue 17%, green 0%",
+      "wideTop": "orange 80%, cyan 12%, magenta 4%",
+      "tallChromaticFrac": 0.9750846928233343,
+      "wideChromaticFrac": 0.7467569739409942
+    }
+  },
+  {
+    "base": "nature/caterpillar",
+    "light": {
+      "emdDeg": 8.229777439653738,
+      "mismatch": 0.1118751509018288,
+      "tallTop": "yellow-green 92%, cyan 5%, yellow 3%",
+      "wideTop": "yellow-green 91%, yellow 8%, green 1%",
+      "tallChromaticFrac": 0.9758657902482095,
+      "wideChromaticFrac": 0.7216702531935351
+    },
+    "night": {
+      "emdDeg": 24.01224918933352,
+      "mismatch": 0.106053564834617,
+      "tallTop": "yellow 43%, yellow-green 32%, green 12%",
+      "wideTop": "yellow-green 40%, cyan 30%, yellow 14%",
+      "tallChromaticFrac": 0.9825370352202492,
+      "wideChromaticFrac": 0.7348564626161805
+    }
+  },
+  {
+    "base": "farm/cat",
+    "light": {
+      "emdDeg": 7.897911444084466,
+      "mismatch": 0.053336854073770396,
+      "tallTop": "orange 80%, yellow 12%, blue 4%",
+      "wideTop": "orange 72%, yellow 24%, yellow-green 2%",
+      "tallChromaticFrac": 0.9982207516543888,
+      "wideChromaticFrac": 0.8882679759674398
+    },
+    "night": {
+      "emdDeg": 90.77049389914542,
+      "mismatch": 0.5796384535323131,
+      "tallTop": "blue 89%, magenta 6%, cyan 3%",
+      "wideTop": "orange 55%, blue 39%, yellow 2%",
+      "tallChromaticFrac": 0.8934948183293795,
+      "wideChromaticFrac": 0.9973189482524711
+    }
+  },
+  {
+    "base": "objects/flower",
+    "light": {
+      "emdDeg": 7.106378580530678,
+      "mismatch": 0.022494397701941164,
+      "tallTop": "yellow 66%, orange 18%, yellow-green 12%",
+      "wideTop": "yellow 66%, orange 24%, yellow-green 10%",
+      "tallChromaticFrac": 1,
+      "wideChromaticFrac": 0.7769704041582688
+    },
+    "night": {
+      "emdDeg": 63.5350454383805,
+      "mismatch": 0.5377299065822325,
+      "tallTop": "magenta 51%, orange 32%, red 9%",
+      "wideTop": "blue 51%, orange 35%, magenta 7%",
+      "tallChromaticFrac": 0.886066704536233,
+      "wideChromaticFrac": 0.7470298079983028
+    }
+  },
+  {
+    "base": "dinosaur/velociraptor",
+    "light": {
+      "emdDeg": 5.741046916666085,
+      "mismatch": 0.05765008192809498,
+      "tallTop": "yellow-green 81%, green 18%, yellow 1%",
+      "wideTop": "yellow-green 94%, cyan 4%, yellow 2%",
+      "tallChromaticFrac": 0.8798571874241742,
+      "wideChromaticFrac": 0.7408250047398499
+    },
+    "night": {
+      "emdDeg": 45.23289737987394,
+      "mismatch": 0.5103984113782686,
+      "tallTop": "green 51%, cyan 23%, yellow 17%",
+      "wideTop": "yellow-green 72%, cyan 14%, orange 8%",
+      "tallChromaticFrac": 0.8950743526638705,
+      "wideChromaticFrac": 0.45738197773624767
+    }
+  },
+  {
+    "base": "farm/pig",
+    "light": {
+      "emdDeg": 5.556534812588776,
+      "mismatch": 0.07608877896622111,
+      "tallTop": "red 56%, orange 39%, cyan 5%",
+      "wideTop": "red 53%, orange 42%, cyan 5%",
+      "tallChromaticFrac": 0.9962600044879946,
+      "wideChromaticFrac": 0.810536738596012
+    },
+    "night": {
+      "emdDeg": 16.32898297530222,
+      "mismatch": 0.06466770069434961,
+      "tallTop": "red 80%, orange 19%, magenta 0%",
+      "wideTop": "orange 92%, blue 6%, red 3%",
+      "tallChromaticFrac": 0.8608223003465729,
+      "wideChromaticFrac": 0.7795001365747064
+    }
+  },
+  {
+    "base": "dinosaur/trex",
+    "light": {
+      "emdDeg": 4.647507548694688,
+      "mismatch": 0.08450507517611938,
+      "tallTop": "yellow-green 85%, orange 9%, yellow 4%",
+      "wideTop": "yellow-green 90%, orange 4%, yellow 3%",
+      "tallChromaticFrac": 0.997405485544848,
+      "wideChromaticFrac": 0.9319878527141592
+    },
+    "night": {
+      "emdDeg": 62.620413579767664,
+      "mismatch": 0.7067367714138342,
+      "tallTop": "green 83%, cyan 9%, yellow-green 4%",
+      "wideTop": "orange 51%, blue 18%, yellow-green 15%",
+      "tallChromaticFrac": 0.7803465530022239,
+      "wideChromaticFrac": 0.15291661394407188
+    }
+  },
+  {
+    "base": "farm/dog",
+    "light": {
+      "emdDeg": 4.43102414837271,
+      "mismatch": 0.0658482216634945,
+      "tallTop": "orange 86%, yellow 7%, cyan 3%",
+      "wideTop": "orange 73%, yellow 14%, red 7%",
+      "tallChromaticFrac": 0.9219371793267426,
+      "wideChromaticFrac": 0.998983207518102
+    },
+    "night": {
+      "emdDeg": 9.762596401869953,
+      "mismatch": 0.0665163587131932,
+      "tallTop": "orange 94%, cyan 5%, yellow 1%",
+      "wideTop": "orange 94%, cyan 3%, blue 1%",
+      "tallChromaticFrac": 0.7428607183080966,
+      "wideChromaticFrac": 0.6832845478354644
+    }
+  }
+]

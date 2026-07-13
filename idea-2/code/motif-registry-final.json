@@ -1,0 +1,20 @@
+{
+  "bubbles-final": [
+    { "page": "shapes/rectangle-tall", "bbox512": [307, 28, 411, 99], "label": "sibling rectangle-tall (target)" },
+    { "page": "shapes/rectangle-wide", "bbox512": [347, 69, 391, 136], "label": "shipped (donut, before)" },
+    {
+      "page": "shapes/rectangle-wide",
+      "bbox512": [347, 69, 391, 136],
+      "label": "re-chalk + night regen (after)",
+      "chalk": "/home/user/Splotch/.coloring-samples-dark/chalk/shapes/rectangle-wide.webp",
+      "night": "/home/user/Splotch/.coloring-samples-dark/shapes/rectangle-wide.webp"
+    },
+    {
+      "page": "shapes/rectangle-wide",
+      "bbox512": [149, 60, 191, 124],
+      "label": "after #2",
+      "chalk": "/home/user/Splotch/.coloring-samples-dark/chalk/shapes/rectangle-wide.webp",
+      "night": "/home/user/Splotch/.coloring-samples-dark/shapes/rectangle-wide.webp"
+    }
+  ]
+}

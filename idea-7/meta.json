@@ -1,0 +1,72 @@
+{
+  "idea": 7,
+  "title": "Catalog-wide residual dark halo audit",
+  "verdict": "WORKED",
+  "oneline": "48s offline auditor ranks all 94 night fills, finds 3 new real halos",
+  "summary": "Generalized idea #1's reference-punch rim metric catalog-wide: every shipped night fill is scored on band-1..2 pixels that are >40 luma darker than a dilate-4 reference punch AND mid-dark (luma 55-145, idea #1's penumbra window — without it deliberate near-black art dominates the ranking). The audit found previously-unknown real halos (objects/teddy-wide smile shadow, farm/duck-tall re-inked mouth, a smudged star on dinosaur/pterodactyl-tall) and works as a regression gate: re-running with idea #1's rim-erase applied moved exactly the 4 lineW-gated pages' scores (train-wide 0.269 to 0.099) and left the other 90 byte-identical. Surprise: train-wide, the page that motivated the idea, ranks only #33 — its halo is locally severe but small, and duck-tall (lineW 173) proves the page-median lineW gate misses localized re-inking that this band metric catches.",
+  "tried": [
+    "Reference-punch rimΔ metric (dilate-4 mask + neighbor bleed) generalized to all 94 shipped night fills",
+    "Naive unwindowed rimΔ>40 share as the page score",
+    "Mid-dark luma window [55,145) from idea #1 layered onto the rimΔ test",
+    "64px-tile hotspot detection + composite crops (compositeNight, 4x nearest) of the worst 12",
+    "Regression-gate demo: full second run with idea #1's rim-erase applied to lineW<150 pages, scores diffed",
+    "Ungated rim-erase on the two newly found true positives (teddy-wide, duck-tall)"
+  ],
+  "worked": [
+    "Full-catalog run in ~48s, offline, deterministic (unchanged pages reproduce bit-identical scores)",
+    "Mid-dark window fixed the ranking (farm/cow-wide rawScore 3.60 -> haloScore 0.63; black patches excluded)",
+    "Found 3 real shipped halos nobody had checked: teddy-wide smile shadow, duck-tall re-inked mouth outline, pterodactyl-tall star smudge",
+    "Regression gate: exactly the 4 gated pages moved (train-wide 0.269->0.099, duck-wide 0.161->0.003, caterpillar-wide 0.124->0, trex-wide 0.113->0.083), 90 others byte-identical",
+    "Healthy pages score ~0 (33 pages <= 0.05) — the metric doesn't fire on clean bright-line art"
+  ],
+  "failed": [
+    "train-wide does NOT rank in the worst 10 (it is #33 by haloScore, #22 by hotspot density) — its halo is real but small-area, so the 'verify it ranks where expected' expectation was wrong, not the metric (numbers match idea #1's measurements)",
+    "Local statistics cannot separate deliberate mid-dark art hugging lines (cat-wide bale straps #1, tire rings, spot rings) from halo — top-10 precision is ~30-40%, human crop review is the disambiguator",
+    "Ungated rim-erase barely helps duck-tall (outline re-inked 6-10px thick, beyond the 2px erase) — that page needs a raw regen, not a punch tweak"
+  ],
+  "limitations": [
+    "haloScore is page-area share, diluting localized failures; consumers should also read the per-page hotspot list",
+    "Scores at asset scale (1536x1024), not after downscale to device CSS pixels",
+    "The [55,145) window and rimΔ>40 threshold are inherited from idea #1's single-page tuning, not re-optimized catalog-wide",
+    "Needs fill-src raws (repo-only, not shipped), so it audits the pipeline workspace, not a deployed app"
+  ],
+  "comparisons": [
+    {
+      "label": "train-wide mouth: shipped vs rim-erased punch (regression-gate demo)",
+      "before": "train-wide-mouth.before.webp",
+      "after": "train-wide-mouth.after.webp",
+      "note": "haloScore 0.269 -> 0.099; the dirty shadow around mouth/chin is gone"
+    },
+    {
+      "label": "duck-wide bill: shipped vs rim-erased punch",
+      "before": "duck-wide-hotspot.before.webp",
+      "after": "duck-wide-hotspot.after.webp",
+      "note": "haloScore 0.161 -> 0.003; subtle contour-shadow cleanup"
+    },
+    {
+      "label": "teddy-wide smile: ungated rim-erase on a newly found halo",
+      "before": "teddy-wide-smile.before.webp",
+      "after": "teddy-wide-smile.after.webp",
+      "note": "shadow lightens but a soft remnant survives beyond the 2px erase"
+    },
+    {
+      "label": "duck-tall mouth: ungated rim-erase cannot fix it",
+      "before": "duck-tall-mouth.before.webp",
+      "after": "duck-tall-mouth.after.webp",
+      "note": "outline re-inked 6-10px thick; needs raw regen (idea #15 territory)"
+    }
+  ],
+  "images": [
+    { "file": "crops/objects-teddy-wide.webp", "caption": "NEW TRUE POSITIVE #9: dark drop-shadow hugging the teddy's white smile strokes" },
+    { "file": "crops/farm-duck-tall.webp", "caption": "NEW TRUE POSITIVE #10: duck's mouth outline re-inked dark brown; page lineW 173 evades idea #1's <150 gate" },
+    { "file": "crops/dinosaur-pterodactyl-tall.webp", "caption": "NEW TRUE POSITIVE #3: dark smudges inside a background star hugging the stroke" },
+    { "file": "crops/farm-cat-wide.webp", "caption": "Rank #1 is a false positive: deliberate hay-bale straps hugging lines" },
+    { "file": "crops/vehicles-police-tall.webp", "caption": "Rank #2: dark ring between concentric wheel strokes — likely deliberate tire, flagged for review" },
+    { "file": "crops/nature-caterpillar-tall.webp", "caption": "Rank #7 false positive: deliberate olive two-tone ring in body spots" }
+  ],
+  "code": [
+    { "title": "Catalog-wide night-halo auditor (+ --rim-erase regression mode)", "file": "code/audit-night-halo.mjs" },
+    { "title": "Hotspot crop renderer from a scores JSON", "file": "code/halo-crops.mjs" },
+    { "title": "Same-view before/after composite crops (ungated rim-erase)", "file": "code/halo-before-after.mjs" }
+  ]
+}

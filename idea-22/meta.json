@@ -1,0 +1,59 @@
+{
+  "idea": 22,
+  "title": "Composite view as a first-class tool",
+  "verdict": "WORKED",
+  "oneline": "gen:coloring-composite built, byte-identical to ad hoc lib use, gate-override demo works",
+  "summary": "Implemented gen-coloring-composite.mjs: an offline CLI writing the final light+night canvas renders of any page/category to .coloring-samples/composite/, for shipped assets, fill-src raws, and scratch candidates. Night side calls lib/night-composite.mjs verbatim — sha256-identical to the historical ad hoc node -e usage on all three cases tried. Demonstrated the gate-override workflow on train-wide: shipped raw scores lineWhite 75 and candidate sample-1 scores 102 (both hard gate fails, bar 150) yet both composites render perfect white chalk lines. Wired per ADR-0019 (root script + scripts-info + local alias) with README/pipeline.md mentions.",
+  "tried": [
+    "CLI with drift-audit-style page/category selectors and --source shipped|raw|samples",
+    "Night composite via verbatim compositeNight() for lined fills; screen-only variant for already-punched shipped fills",
+    "Light composite (punch-to-paper + pen multiply) mirroring the contact-sheet client",
+    "sha256 byte-compare of tool output vs ad hoc node-e style compositeNight calls",
+    "Offline replica of the scoreLineColor gate to score the scratch candidates for the worked example",
+    "npm wiring: gen:coloring-composite + scripts-info entry + tools/asset-gen local alias, eslint/prettier clean"
+  ],
+  "worked": [
+    "Byte-identical night composites to the ad hoc lib usage (train-wide raw, cat-tall raw, train-wide sample-1 candidate)",
+    "All three sources on the try-on pages: shipped, raw, and the real train-wide candidates already sitting in .coloring-samples-dark/",
+    "Gate-override demo: lineWhite 75/102 gate-fails whose composites render perfectly (the chalk owns the lines)",
+    "Shipped vs raw composite pixel-diff confirms the no-repunch shipped path (edge-only noise, meanAbs <1.5)"
+  ],
+  "failed": [],
+  "limitations": [
+    "Light-candidate path implemented but untested against real files (no light samples existed in scratch; empty-dir skip verified)",
+    "compositeLight grayscales the pen before multiply (matching the lib's chalk handling); canvas multiplies per-channel RGB — nil for the grayscale line art",
+    "Outputs are PNG (~1-2 MB each) in gitignored scratch; a --webp flag would be a cheap follow-up",
+    "lib/night-composite.mjs deliberately untouched; the shipped-fill screen variant lives in the CLI"
+  ],
+  "comparisons": [
+    {
+      "label": "train-wide final render, light vs night",
+      "before": "vehicles-train-wide.light.webp",
+      "after": "vehicles-train-wide.night.webp",
+      "note": "shipped assets, --source shipped"
+    },
+    {
+      "label": "cat-tall final render, light vs night",
+      "before": "farm-cat-tall.light.webp",
+      "after": "farm-cat-tall.night.webp",
+      "note": "shipped assets, --source shipped"
+    },
+    {
+      "label": "gate-fail vs gate-pass candidate composites (train-wide)",
+      "before": "vehicles-train-wide.sample-1.night.webp",
+      "after": "vehicles-train-wide.sample-2.night.webp",
+      "note": "sample-1 lineWhite 102 (FAIL), sample-2 252 (PASS) — both render clean, so the gate fail is overridable"
+    }
+  ],
+  "images": [
+    { "file": "vehicles-train-wide.light.webp", "caption": "train-wide shipped light composite (pen multiplied over fill)" },
+    { "file": "vehicles-train-wide.night.webp", "caption": "train-wide shipped night composite (screened chalk over moonlit fill)" },
+    { "file": "farm-cat-tall.light.webp", "caption": "cat-tall shipped light composite" },
+    { "file": "farm-cat-tall.night.webp", "caption": "cat-tall shipped night composite" },
+    { "file": "vehicles-train-wide.sample-1.night.webp", "caption": "candidate sample-1: lineWhite 102 gate FAIL, composite perfect — override justified" },
+    { "file": "vehicles-train-wide.sample-2.night.webp", "caption": "candidate sample-2: lineWhite 252 gate PASS" }
+  ],
+  "code": [
+    { "title": "gen:coloring-composite script + npm wiring + docs", "file": "code/gen-coloring-composite.patch" }
+  ]
+}

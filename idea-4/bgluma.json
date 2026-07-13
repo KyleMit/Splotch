@@ -1,0 +1,848 @@
+[
+ {
+  "page": "creatures/owl-tall",
+  "source": "chalk",
+  "bgLuma": 16.48,
+  "bgFrac": 0.6194344979745371,
+  "p10": 16.192,
+  "p90": 20.078,
+  "judged": true
+ },
+ {
+  "page": "nature/spider-tall",
+  "source": "chalk",
+  "bgLuma": 18.551,
+  "bgFrac": 0.5407669632523148,
+  "p10": 18.419999999999998,
+  "p90": 18.779,
+  "judged": true
+ },
+ {
+  "page": "space/station-tall",
+  "source": "chalk",
+  "bgLuma": 18.790999999999997,
+  "bgFrac": 0.6531259042245371,
+  "p10": 14.873000000000001,
+  "p90": 31.473,
+  "judged": true
+ },
+ {
+  "page": "nature/bee-tall",
+  "source": "chalk",
+  "bgLuma": 23.366,
+  "bgFrac": 0.7475043402777778,
+  "p10": 22.067,
+  "p90": 54.767999999999994,
+  "judged": true
+ },
+ {
+  "page": "shapes/rectangle-tall",
+  "source": "chalk",
+  "bgLuma": 23.424,
+  "bgFrac": 0.5864845558449074,
+  "p10": 23.075999999999997,
+  "p90": 26.723,
+  "judged": true
+ },
+ {
+  "page": "farm/duck-tall",
+  "source": "chalk",
+  "bgLuma": 23.497,
+  "bgFrac": 0.6372115523726852,
+  "p10": 23.11,
+  "p90": 55.043,
+  "judged": true
+ },
+ {
+  "page": "space/astronaut-tall",
+  "source": "chalk",
+  "bgLuma": 24.192,
+  "bgFrac": 0.6720558449074074,
+  "p10": 24.192,
+  "p90": 25.779,
+  "judged": true
+ },
+ {
+  "page": "space/moon-wide",
+  "source": "chalk",
+  "bgLuma": 24.566,
+  "bgFrac": 0.761993408203125,
+  "p10": 18.839,
+  "p90": 27.767999999999997,
+  "judged": true
+ },
+ {
+  "page": "space/meteor-tall",
+  "source": "chalk",
+  "bgLuma": 25.779,
+  "bgFrac": 0.6735161675347222,
+  "p10": 22.209,
+  "p90": 31.349,
+  "judged": true
+ },
+ {
+  "page": "space/rover-tall",
+  "source": "chalk",
+  "bgLuma": 25.805,
+  "bgFrac": 0.6996572989004629,
+  "p10": 20.209,
+  "p90": 39.565999999999995,
+  "judged": true
+ },
+ {
+  "page": "objects/flower-tall",
+  "source": "chalk",
+  "bgLuma": 25.828,
+  "bgFrac": 0.5919234664351852,
+  "p10": 20.898999999999997,
+  "p90": 36.413,
+  "judged": true
+ },
+ {
+  "page": "shapes/star-tall",
+  "source": "chalk",
+  "bgLuma": 25.936,
+  "bgFrac": 0.6900363498263888,
+  "p10": 25.647999999999996,
+  "p90": 51.448,
+  "judged": true
+ },
+ {
+  "page": "nature/ladybug-tall",
+  "source": "chalk",
+  "bgLuma": 26.648999999999997,
+  "bgFrac": 0.5349889684606481,
+  "p10": 22.247,
+  "p90": 36.506,
+  "judged": true
+ },
+ {
+  "page": "objects/teddy-tall",
+  "source": "chalk",
+  "bgLuma": 26.708,
+  "bgFrac": 0.5829219111689815,
+  "p10": 25.708000000000002,
+  "p90": 27.995999999999995,
+  "judged": true
+ },
+ {
+  "page": "shapes/triangle-wide",
+  "source": "chalk",
+  "bgLuma": 26.969999999999995,
+  "bgFrac": 0.657470703125,
+  "p10": 18.741999999999997,
+  "p90": 39.742,
+  "judged": true
+ },
+ {
+  "page": "nature/snail-tall",
+  "source": "chalk",
+  "bgLuma": 28.078,
+  "bgFrac": 0.5689742476851852,
+  "p10": 27.719,
+  "p90": 46.873,
+  "judged": true
+ },
+ {
+  "page": "shapes/star-wide",
+  "source": "chalk",
+  "bgLuma": 28.093,
+  "bgFrac": 0.7170206705729166,
+  "p10": 27.865000000000002,
+  "p90": 29.093,
+  "judged": true
+ },
+ {
+  "page": "nature/caterpillar-tall",
+  "source": "chalk",
+  "bgLuma": 28.708,
+  "bgFrac": 0.7918655960648148,
+  "p10": 28.708,
+  "p90": 55.83,
+  "judged": true
+ },
+ {
+  "page": "vehicles/garbage-tall",
+  "source": "chalk",
+  "bgLuma": 29.010999999999996,
+  "bgFrac": 0.5465133101851852,
+  "p10": 27.712,
+  "p90": 29.010999999999996,
+  "judged": true
+ },
+ {
+  "page": "shapes/square-tall",
+  "source": "chalk",
+  "bgLuma": 29.198,
+  "bgFrac": 0.5801052517361112,
+  "p10": 27.611,
+  "p90": 33.611,
+  "judged": true
+ },
+ {
+  "page": "creatures/fairy-tall",
+  "source": "chalk",
+  "bgLuma": 29.198,
+  "bgFrac": 0.6395354094328703,
+  "p10": 27.741999999999997,
+  "p90": 51.333999999999996,
+  "judged": true
+ },
+ {
+  "page": "shapes/circle-wide",
+  "source": "chalk",
+  "bgLuma": 29.208999999999996,
+  "bgFrac": 0.5727132161458334,
+  "p10": 25.551000000000002,
+  "p90": 51.437,
+  "judged": true
+ },
+ {
+  "page": "dinosaur/triceratops-tall",
+  "source": "chalk",
+  "bgLuma": 29.981,
+  "bgFrac": 0.44231047453703703,
+  "p10": 28.980999999999998,
+  "p90": 32.682,
+  "judged": true
+ },
+ {
+  "page": "space/station-wide",
+  "source": "chalk",
+  "bgLuma": 30.127,
+  "bgFrac": 0.6544698079427084,
+  "p10": 30.127,
+  "p90": 31.241,
+  "judged": true
+ },
+ {
+  "page": "space/ship-wide",
+  "source": "chalk",
+  "bgLuma": 30.195999999999998,
+  "bgFrac": 0.6270650227864584,
+  "p10": 24.697,
+  "p90": 61.839,
+  "judged": true
+ },
+ {
+  "page": "creatures/unicorn-tall",
+  "source": "chalk",
+  "bgLuma": 30.289,
+  "bgFrac": 0.5576126663773148,
+  "p10": 28.174999999999997,
+  "p90": 53.681999999999995,
+  "judged": true
+ },
+ {
+  "page": "objects/apple-tall",
+  "source": "chalk",
+  "bgLuma": 30.375,
+  "bgFrac": 0.5410517939814815,
+  "p10": 30.076,
+  "p90": 31.663000000000004,
+  "judged": true
+ },
+ {
+  "page": "dinosaur/stegosaurus-wide",
+  "source": "chalk",
+  "bgLuma": 30.388999999999996,
+  "bgFrac": 0.5280253092447916,
+  "p10": 24.633,
+  "p90": 45.551,
+  "judged": true
+ },
+ {
+  "page": "shapes/triangle-tall",
+  "source": "chalk",
+  "bgLuma": 30.393,
+  "bgFrac": 0.7219147858796297,
+  "p10": 29.843999999999998,
+  "p90": 52.536,
+  "judged": true
+ },
+ {
+  "page": "nature/ladybug-wide",
+  "source": "chalk",
+  "bgLuma": 31.469,
+  "bgFrac": 0.6015116373697916,
+  "p10": 30.354999999999997,
+  "p90": 37.258,
+  "judged": true
+ },
+ {
+  "page": "vehicles/excavator-tall",
+  "source": "chalk",
+  "bgLuma": 32.48,
+  "bgFrac": 0.6046006944444444,
+  "p10": 31.48,
+  "p90": 32.708,
+  "judged": true
+ },
+ {
+  "page": "creatures/mermaid-tall",
+  "source": "chalk",
+  "bgLuma": 32.48,
+  "bgFrac": 0.5315303096064815,
+  "p10": 31.430999999999997,
+  "p90": 40.93599999999999,
+  "judged": true
+ },
+ {
+  "page": "objects/umbrella-wide",
+  "source": "chalk",
+  "bgLuma": 32.577,
+  "bgFrac": 0.6624043782552084,
+  "p10": 21.078,
+  "p90": 48.903999999999996,
+  "judged": true
+ },
+ {
+  "page": "dinosaur/velociraptor-tall",
+  "source": "chalk",
+  "bgLuma": 32.6,
+  "bgFrac": 0.6255832248263888,
+  "p10": 26.611,
+  "p90": 46.735,
+  "judged": true
+ },
+ {
+  "page": "vehicles/monster-wide",
+  "source": "chalk",
+  "bgLuma": 32.66,
+  "bgFrac": 0.6280924479166666,
+  "p10": 27.802,
+  "p90": 46.91199999999999,
+  "judged": true
+ },
+ {
+  "page": "dinosaur/trex-tall",
+  "source": "chalk",
+  "bgLuma": 32.682,
+  "bgFrac": 0.5533854166666666,
+  "p10": 31.334,
+  "p90": 34.981,
+  "judged": true
+ },
+ {
+  "page": "nature/caterpillar-wide",
+  "source": "chalk",
+  "bgLuma": 32.697,
+  "bgFrac": 0.76324462890625,
+  "p10": 22.127000000000002,
+  "p90": 44.245000000000005,
+  "judged": true
+ },
+ {
+  "page": "farm/cat-tall",
+  "source": "chalk",
+  "bgLuma": 33.435,
+  "bgFrac": 0.622802734375,
+  "p10": 32.435,
+  "p90": 62.998,
+  "judged": true
+ },
+ {
+  "page": "objects/balloon-tall",
+  "source": "chalk",
+  "bgLuma": 33.488,
+  "bgFrac": 0.7029351128472222,
+  "p10": 33.488,
+  "p90": 36.146,
+  "judged": true
+ },
+ {
+  "page": "nature/ant-tall",
+  "source": "chalk",
+  "bgLuma": 34.067,
+  "bgFrac": 0.6483651620370371,
+  "p10": 33.626,
+  "p90": 34.078,
+  "judged": true
+ },
+ {
+  "page": "dinosaur/stegosaurus-tall",
+  "source": "chalk",
+  "bgLuma": 34.116,
+  "bgFrac": 0.5768410011574074,
+  "p10": 32.529,
+  "p90": 58.17,
+  "judged": true
+ },
+ {
+  "page": "farm/cow-tall",
+  "source": "chalk",
+  "bgLuma": 34.708,
+  "bgFrac": 0.6106635199652778,
+  "p10": 26.85,
+  "p90": 52.31999999999999,
+  "judged": true
+ },
+ {
+  "page": "vehicles/garbage-wide",
+  "source": "chalk",
+  "bgLuma": 35.126999999999995,
+  "bgFrac": 0.5147501627604166,
+  "p10": 27.611,
+  "p90": 59.27799999999999,
+  "judged": true
+ },
+ {
+  "page": "space/moon-tall",
+  "source": "chalk",
+  "bgLuma": 35.19,
+  "bgFrac": 0.6713957609953703,
+  "p10": 32.304,
+  "p90": 75.685,
+  "judged": true
+ },
+ {
+  "page": "dinosaur/pterodactyl-wide",
+  "source": "chalk",
+  "bgLuma": 35.224,
+  "bgFrac": 0.686065673828125,
+  "p10": 28.985,
+  "p90": 85.127,
+  "judged": true
+ },
+ {
+  "page": "creatures/mermaid-wide",
+  "source": "chalk",
+  "bgLuma": 36.033,
+  "bgFrac": 0.617156982421875,
+  "p10": 35.674,
+  "p90": 37.434999999999995,
+  "judged": true
+ },
+ {
+  "page": "nature/spider-wide",
+  "source": "chalk",
+  "bgLuma": 36.092999999999996,
+  "bgFrac": 0.4324239095052083,
+  "p10": 35.805,
+  "p90": 44.541,
+  "judged": true
+ },
+ {
+  "page": "objects/house-wide",
+  "source": "chalk",
+  "bgLuma": 36.169,
+  "bgFrac": 0.671844482421875,
+  "p10": 21.112000000000002,
+  "p90": 56.76199999999999,
+  "judged": true
+ },
+ {
+  "page": "shapes/circle-tall",
+  "source": "chalk",
+  "bgLuma": 36.19,
+  "bgFrac": 0.6334364149305556,
+  "p10": 26.662999999999997,
+  "p90": 53.68899999999999,
+  "judged": true
+ },
+ {
+  "page": "shapes/heart-tall",
+  "source": "chalk",
+  "bgLuma": 36.403999999999996,
+  "bgFrac": 0.5492711950231481,
+  "p10": 34.517999999999994,
+  "p90": 46.873,
+  "judged": true
+ },
+ {
+  "page": "objects/flower-wide",
+  "source": "chalk",
+  "bgLuma": 37.147,
+  "bgFrac": 0.63238525390625,
+  "p10": 35.805,
+  "p90": 61.801,
+  "judged": true
+ },
+ {
+  "page": "creatures/dragon-tall",
+  "source": "chalk",
+  "bgLuma": 37.196,
+  "bgFrac": 0.5595929181134259,
+  "p10": 35.854,
+  "p90": 60.405,
+  "judged": true
+ },
+ {
+  "page": "vehicles/train-tall",
+  "source": "chalk",
+  "bgLuma": 38.14,
+  "bgFrac": 0.5784505208333334,
+  "p10": 28.835,
+  "p90": 52.383,
+  "judged": true
+ },
+ {
+  "page": "vehicles/police-wide",
+  "source": "chalk",
+  "bgLuma": 38.245,
+  "bgFrac": 0.6446431477864584,
+  "p10": 25.599999999999998,
+  "p90": 73.16099999999999,
+  "judged": true
+ },
+ {
+  "page": "vehicles/excavator-wide",
+  "source": "chalk",
+  "bgLuma": 38.469,
+  "bgFrac": 0.5441792805989584,
+  "p10": 31.561999999999998,
+  "p90": 48.995999999999995,
+  "judged": true
+ },
+ {
+  "page": "farm/pig-tall",
+  "source": "chalk",
+  "bgLuma": 38.532,
+  "bgFrac": 0.6241816767939815,
+  "p10": 37.400999999999996,
+  "p90": 53.303999999999995,
+  "judged": true
+ },
+ {
+  "page": "space/ship-tall",
+  "source": "chalk",
+  "bgLuma": 38.580999999999996,
+  "bgFrac": 0.6135706018518519,
+  "p10": 30.147,
+  "p90": 181.966,
+  "judged": true
+ },
+ {
+  "page": "vehicles/train-wide",
+  "source": "chalk",
+  "bgLuma": 38.664,
+  "bgFrac": 0.5999654134114584,
+  "p10": 26.969999999999995,
+  "p90": 54.495,
+  "judged": true
+ },
+ {
+  "page": "space/astronaut-wide",
+  "source": "chalk",
+  "bgLuma": 38.771,
+  "bgFrac": 0.691680908203125,
+  "p10": 37.483000000000004,
+  "p90": 46.67400000000001,
+  "judged": true
+ },
+ {
+  "page": "dinosaur/pterodactyl-tall",
+  "source": "chalk",
+  "bgLuma": 39.507,
+  "bgFrac": 0.6617115162037037,
+  "p10": 36.403999999999996,
+  "p90": 65.039,
+  "judged": true
+ },
+ {
+  "page": "objects/teddy-wide",
+  "source": "chalk",
+  "bgLuma": 39.985,
+  "bgFrac": 0.5343526204427084,
+  "p10": 39.626,
+  "p90": 46.985,
+  "judged": true
+ },
+ {
+  "page": "space/meteor-wide",
+  "source": "chalk",
+  "bgLuma": 40.626,
+  "bgFrac": 0.7604471842447916,
+  "p10": 32.469,
+  "p90": 62.8,
+  "judged": true
+ },
+ {
+  "page": "space/rover-wide",
+  "source": "chalk",
+  "bgLuma": 41.708,
+  "bgFrac": 0.6802876790364584,
+  "p10": 31.323,
+  "p90": 59.347,
+  "judged": true
+ },
+ {
+  "page": "creatures/pegasus-wide",
+  "source": "chalk",
+  "bgLuma": 41.765,
+  "bgFrac": 0.659271240234375,
+  "p10": 25.756999999999998,
+  "p90": 62.715999999999994,
+  "judged": true
+ },
+ {
+  "page": "dinosaur/trex-wide",
+  "source": "chalk",
+  "bgLuma": 42.160999999999994,
+  "bgFrac": 0.6663004557291666,
+  "p10": 35.101,
+  "p90": 64.233,
+  "judged": true
+ },
+ {
+  "page": "vehicles/monster-tall",
+  "source": "chalk",
+  "bgLuma": 43.142,
+  "bgFrac": 0.5340169270833334,
+  "p10": 41.842999999999996,
+  "p90": 58.367999999999995,
+  "judged": true
+ },
+ {
+  "page": "vehicles/fire-tall",
+  "source": "chalk",
+  "bgLuma": 43.272,
+  "bgFrac": 0.5041323061342593,
+  "p10": 30.385999999999996,
+  "p90": 68.731,
+  "judged": true
+ },
+ {
+  "page": "nature/bee-wide",
+  "source": "chalk",
+  "bgLuma": 43.891999999999996,
+  "bgFrac": 0.6449788411458334,
+  "p10": 29.067,
+  "p90": 61.53199999999999,
+  "judged": true
+ },
+ {
+  "page": "dinosaur/brachiosaurus-wide",
+  "source": "chalk",
+  "bgLuma": 43.97,
+  "bgFrac": 0.5563557942708334,
+  "p10": 36.112,
+  "p90": 80.005,
+  "judged": true
+ },
+ {
+  "page": "creatures/fairy-wide",
+  "source": "chalk",
+  "bgLuma": 43.995999999999995,
+  "bgFrac": 0.663909912109375,
+  "p10": 40.828,
+  "p90": 75.605,
+  "judged": true
+ },
+ {
+  "page": "shapes/square-wide",
+  "source": "chalk",
+  "bgLuma": 44.078,
+  "bgFrac": 0.64862060546875,
+  "p10": 37.295,
+  "p90": 75.75,
+  "judged": true
+ },
+ {
+  "page": "dinosaur/brachiosaurus-tall",
+  "source": "chalk",
+  "bgLuma": 44.198,
+  "bgFrac": 0.5737937644675926,
+  "p10": 30.363,
+  "p90": 73.607,
+  "judged": true
+ },
+ {
+  "page": "farm/dog-wide",
+  "source": "chalk",
+  "bgLuma": 48.664,
+  "bgFrac": 0.6609293619791666,
+  "p10": 34.888,
+  "p90": 67.46,
+  "judged": true
+ },
+ {
+  "page": "farm/duck-wide",
+  "source": "chalk",
+  "bgLuma": 48.87,
+  "bgFrac": 0.7116800944010416,
+  "p10": 37.351,
+  "p90": 73.54499999999999,
+  "judged": true
+ },
+ {
+  "page": "vehicles/police-tall",
+  "source": "chalk",
+  "bgLuma": 49.078,
+  "bgFrac": 0.5592312282986112,
+  "p10": 38.337999999999994,
+  "p90": 55.872,
+  "judged": true
+ },
+ {
+  "page": "objects/apple-wide",
+  "source": "chalk",
+  "bgLuma": 49.214,
+  "bgFrac": 0.5964558919270834,
+  "p10": 37.486,
+  "p90": 66.487,
+  "judged": true
+ },
+ {
+  "page": "nature/snail-wide",
+  "source": "chalk",
+  "bgLuma": 50,
+  "bgFrac": 0.668121337890625,
+  "p10": 49,
+  "p90": 66.196,
+  "judged": true
+ },
+ {
+  "page": "farm/cat-wide",
+  "source": "chalk",
+  "bgLuma": 50.937,
+  "bgFrac": 0.63897705078125,
+  "p10": 46.649,
+  "p90": 72.471,
+  "judged": true
+ },
+ {
+  "page": "farm/dog-tall",
+  "source": "chalk",
+  "bgLuma": 52.099,
+  "bgFrac": 0.6122187861689815,
+  "p10": 46.606,
+  "p90": 65.957,
+  "judged": true
+ },
+ {
+  "page": "farm/horse-wide",
+  "source": "chalk",
+  "bgLuma": 52.6,
+  "bgFrac": 0.6146647135416666,
+  "p10": 51.116,
+  "p90": 95.701,
+  "judged": true
+ },
+ {
+  "page": "objects/house-tall",
+  "source": "chalk",
+  "bgLuma": 53.679,
+  "bgFrac": 0.5303729021990741,
+  "p10": 37.256,
+  "p90": 107.074,
+  "judged": true
+ },
+ {
+  "page": "creatures/dragon-wide",
+  "source": "chalk",
+  "bgLuma": 54.635,
+  "bgFrac": 0.6554768880208334,
+  "p10": 38.102000000000004,
+  "p90": 90.791,
+  "judged": true
+ },
+ {
+  "page": "creatures/owl-wide",
+  "source": "chalk",
+  "bgLuma": 54.69899999999999,
+  "bgFrac": 0.5122782389322916,
+  "p10": 47.985,
+  "p90": 74.259,
+  "judged": true
+ },
+ {
+  "page": "dinosaur/triceratops-wide",
+  "source": "chalk",
+  "bgLuma": 54.858999999999995,
+  "bgFrac": 0.5931396484375,
+  "p10": 37.068,
+  "p90": 82.749,
+  "judged": true
+ },
+ {
+  "page": "shapes/rectangle-wide",
+  "source": "chalk",
+  "bgLuma": 55.13099999999999,
+  "bgFrac": 0.572967529296875,
+  "p10": 53.842999999999996,
+  "p90": 56.131,
+  "judged": true
+ },
+ {
+  "page": "farm/pig-wide",
+  "source": "chalk",
+  "bgLuma": 55.745999999999995,
+  "bgFrac": 0.670074462890625,
+  "p10": 41.802,
+  "p90": 117.41,
+  "judged": true
+ },
+ {
+  "page": "dinosaur/velociraptor-wide",
+  "source": "chalk",
+  "bgLuma": 56.898999999999994,
+  "bgFrac": 0.5392659505208334,
+  "p10": 43.97,
+  "p90": 89.64500000000001,
+  "judged": true
+ },
+ {
+  "page": "creatures/pegasus-tall",
+  "source": "chalk",
+  "bgLuma": 58.166000000000004,
+  "bgFrac": 0.5778356481481481,
+  "p10": 40.67,
+  "p90": 101.16000000000001,
+  "judged": true
+ },
+ {
+  "page": "vehicles/fire-wide",
+  "source": "chalk",
+  "bgLuma": 58.212999999999994,
+  "bgFrac": 0.5503031412760416,
+  "p10": 55.626,
+  "p90": 78.389,
+  "judged": true
+ },
+ {
+  "page": "farm/horse-tall",
+  "source": "chalk",
+  "bgLuma": 58.397999999999996,
+  "bgFrac": 0.5865026403356481,
+  "p10": 45.147999999999996,
+  "p90": 78.208,
+  "judged": true
+ },
+ {
+  "page": "creatures/unicorn-wide",
+  "source": "chalk",
+  "bgLuma": 61.638999999999996,
+  "bgFrac": 0.6267191569010416,
+  "p10": 53.654999999999994,
+  "p90": 78.01599999999999,
+  "judged": true
+ },
+ {
+  "page": "objects/balloon-wide",
+  "source": "chalk",
+  "bgLuma": 62.013000000000005,
+  "bgFrac": 0.6730753580729166,
+  "p10": 40.696999999999996,
+  "p90": 84.912,
+  "judged": true
+ },
+ {
+  "page": "nature/ant-wide",
+  "source": "chalk",
+  "bgLuma": 63.867999999999995,
+  "bgFrac": 0.7142537434895834,
+  "p10": 53.784,
+  "p90": 80.19399999999999,
+  "judged": true
+ },
+ {
+  "page": "farm/cow-wide",
+  "source": "chalk",
+  "bgLuma": 65.33099999999999,
+  "bgFrac": 0.5973917643229166,
+  "p10": 40.85,
+  "p90": 96.44299999999998,
+  "judged": true
+ }
+]

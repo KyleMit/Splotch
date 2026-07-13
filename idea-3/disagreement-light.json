@@ -1,0 +1,5029 @@
+[
+  {
+    "page": "nature/spider-wide",
+    "pageScore": 11250,
+    "regions": [
+      {
+        "area": 3774,
+        "bbox": [
+          31,
+          67,
+          103,
+          179
+        ],
+        "sampled": 2455,
+        "coloredFrac": 1,
+        "meanChroma": 99.2,
+        "coloredPx": 2455,
+        "fillColor": [
+          233,
+          134,
+          170
+        ],
+        "score": 3774
+      },
+      {
+        "area": 3752,
+        "bbox": [
+          408,
+          53,
+          480,
+          169
+        ],
+        "sampled": 2438,
+        "coloredFrac": 1,
+        "meanChroma": 99.6,
+        "coloredPx": 2438,
+        "fillColor": [
+          233,
+          133,
+          170
+        ],
+        "score": 3752
+      },
+      {
+        "area": 1608,
+        "bbox": [
+          91,
+          366,
+          143,
+          441
+        ],
+        "sampled": 743,
+        "coloredFrac": 1,
+        "meanChroma": 129.7,
+        "coloredPx": 743,
+        "fillColor": [
+          247,
+          228,
+          118
+        ],
+        "score": 1608
+      },
+      {
+        "area": 872,
+        "bbox": [
+          371,
+          374,
+          406,
+          438
+        ],
+        "sampled": 347,
+        "coloredFrac": 1,
+        "meanChroma": 128.6,
+        "coloredPx": 347,
+        "fillColor": [
+          247,
+          228,
+          119
+        ],
+        "score": 872
+      },
+      {
+        "area": 519,
+        "bbox": [
+          435,
+          94,
+          455,
+          126
+        ],
+        "sampled": 319,
+        "coloredFrac": 1,
+        "meanChroma": 130,
+        "coloredPx": 319,
+        "fillColor": [
+          248,
+          228,
+          118
+        ],
+        "score": 519
+      },
+      {
+        "area": 412,
+        "bbox": [
+          57,
+          109,
+          75,
+          138
+        ],
+        "sampled": 234,
+        "coloredFrac": 1,
+        "meanChroma": 129.5,
+        "coloredPx": 234,
+        "fillColor": [
+          247,
+          227,
+          118
+        ],
+        "score": 412
+      },
+      {
+        "area": 199,
+        "bbox": [
+          362,
+          400,
+          376,
+          417
+        ],
+        "sampled": 87,
+        "coloredFrac": 1,
+        "meanChroma": 129,
+        "coloredPx": 87,
+        "fillColor": [
+          247,
+          228,
+          118
+        ],
+        "score": 199
+      },
+      {
+        "area": 114,
+        "bbox": [
+          113,
+          396,
+          122,
+          411
+        ],
+        "sampled": 29,
+        "coloredFrac": 1,
+        "meanChroma": 147.1,
+        "coloredPx": 29,
+        "fillColor": [
+          237,
+          157,
+          90
+        ],
+        "score": 114
+      }
+    ]
+  },
+  {
+    "page": "vehicles/police-tall",
+    "pageScore": 10718,
+    "regions": [
+      {
+        "area": 13263,
+        "bbox": [
+          125,
+          215,
+          389,
+          291
+        ],
+        "sampled": 10683,
+        "coloredFrac": 0.808,
+        "meanChroma": 56.4,
+        "coloredPx": 8633,
+        "fillColor": [
+          188,
+          235,
+          252
+        ],
+        "score": 10718
+      },
+      {
+        "area": 402,
+        "bbox": [
+          244,
+          481,
+          266,
+          500
+        ],
+        "sampled": 247,
+        "coloredFrac": 0,
+        "meanChroma": 2.7,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 160,
+        "bbox": [
+          250,
+          452,
+          262,
+          465
+        ],
+        "sampled": 68,
+        "coloredFrac": 0,
+        "meanChroma": 0.5,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 102,
+        "bbox": [
+          250,
+          396,
+          270,
+          400
+        ],
+        "sampled": 14,
+        "coloredFrac": 0,
+        "meanChroma": 1.4,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 100,
+        "bbox": [
+          219,
+          396,
+          239,
+          400
+        ],
+        "sampled": 14,
+        "coloredFrac": 0,
+        "meanChroma": 1.8,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 100,
+        "bbox": [
+          280,
+          396,
+          300,
+          400
+        ],
+        "sampled": 12,
+        "coloredFrac": 0,
+        "meanChroma": 0,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "objects/flower-wide",
+    "pageScore": 10658,
+    "regions": [
+      {
+        "area": 9877,
+        "bbox": [
+          213,
+          153,
+          312,
+          296
+        ],
+        "sampled": 8201,
+        "coloredFrac": 1,
+        "meanChroma": 149.4,
+        "coloredPx": 8201,
+        "fillColor": [
+          241,
+          167,
+          92
+        ],
+        "score": 9877
+      },
+      {
+        "area": 392,
+        "bbox": [
+          406,
+          314,
+          423,
+          341
+        ],
+        "sampled": 224,
+        "coloredFrac": 1,
+        "meanChroma": 148.2,
+        "coloredPx": 224,
+        "fillColor": [
+          241,
+          171,
+          93
+        ],
+        "score": 392
+      },
+      {
+        "area": 389,
+        "bbox": [
+          79,
+          316,
+          96,
+          345
+        ],
+        "sampled": 219,
+        "coloredFrac": 1,
+        "meanChroma": 148.1,
+        "coloredPx": 219,
+        "fillColor": [
+          241,
+          170,
+          93
+        ],
+        "score": 389
+      }
+    ]
+  },
+  {
+    "page": "shapes/heart-tall",
+    "pageScore": 10532,
+    "regions": [
+      {
+        "area": 4734,
+        "bbox": [
+          185,
+          382,
+          323,
+          459
+        ],
+        "sampled": 3303,
+        "coloredFrac": 1,
+        "meanChroma": 96.7,
+        "coloredPx": 3303,
+        "fillColor": [
+          229,
+          132,
+          151
+        ],
+        "score": 4734
+      },
+      {
+        "area": 2991,
+        "bbox": [
+          41,
+          336,
+          146,
+          402
+        ],
+        "sampled": 1767,
+        "coloredFrac": 1,
+        "meanChroma": 98,
+        "coloredPx": 1767,
+        "fillColor": [
+          229,
+          131,
+          151
+        ],
+        "score": 2991
+      },
+      {
+        "area": 2807,
+        "bbox": [
+          372,
+          337,
+          468,
+          403
+        ],
+        "sampled": 1634,
+        "coloredFrac": 1,
+        "meanChroma": 97.9,
+        "coloredPx": 1634,
+        "fillColor": [
+          229,
+          131,
+          151
+        ],
+        "score": 2807
+      }
+    ]
+  },
+  {
+    "page": "space/ship-wide",
+    "pageScore": 9920,
+    "regions": [
+      {
+        "area": 5760,
+        "bbox": [
+          48,
+          40,
+          145,
+          154
+        ],
+        "sampled": 4046,
+        "coloredFrac": 0.989,
+        "meanChroma": 87.1,
+        "coloredPx": 4003,
+        "fillColor": [
+          128,
+          146,
+          151
+        ],
+        "score": 5699
+      },
+      {
+        "area": 2372,
+        "bbox": [
+          310,
+          52,
+          367,
+          133
+        ],
+        "sampled": 1627,
+        "coloredFrac": 1,
+        "meanChroma": 114.8,
+        "coloredPx": 1627,
+        "fillColor": [
+          249,
+          234,
+          134
+        ],
+        "score": 2372
+      },
+      {
+        "area": 854,
+        "bbox": [
+          74,
+          145,
+          141,
+          188
+        ],
+        "sampled": 396,
+        "coloredFrac": 1,
+        "meanChroma": 73.7,
+        "coloredPx": 396,
+        "fillColor": [
+          136,
+          114,
+          178
+        ],
+        "score": 854
+      },
+      {
+        "area": 668,
+        "bbox": [
+          268,
+          120,
+          326,
+          209
+        ],
+        "sampled": 25,
+        "coloredFrac": 1,
+        "meanChroma": 115.2,
+        "coloredPx": 25,
+        "fillColor": [
+          249,
+          234,
+          134
+        ],
+        "score": 668
+      },
+      {
+        "area": 120,
+        "bbox": [
+          64,
+          118,
+          73,
+          134
+        ],
+        "sampled": 34,
+        "coloredFrac": 1,
+        "meanChroma": 114,
+        "coloredPx": 34,
+        "fillColor": [
+          45,
+          95,
+          159
+        ],
+        "score": 120
+      },
+      {
+        "area": 111,
+        "bbox": [
+          305,
+          144,
+          314,
+          157
+        ],
+        "sampled": 31,
+        "coloredFrac": 1,
+        "meanChroma": 54,
+        "coloredPx": 31,
+        "fillColor": [
+          182,
+          226,
+          236
+        ],
+        "score": 111
+      },
+      {
+        "area": 96,
+        "bbox": [
+          120,
+          95,
+          129,
+          109
+        ],
+        "sampled": 19,
+        "coloredFrac": 1,
+        "meanChroma": 116.2,
+        "coloredPx": 19,
+        "fillColor": [
+          46,
+          94,
+          162
+        ],
+        "score": 96
+      }
+    ]
+  },
+  {
+    "page": "vehicles/fire-tall",
+    "pageScore": 9679,
+    "regions": [
+      {
+        "area": 8724,
+        "bbox": [
+          67,
+          208,
+          235,
+          263
+        ],
+        "sampled": 7840,
+        "coloredFrac": 0.872,
+        "meanChroma": 58.8,
+        "coloredPx": 6833,
+        "fillColor": [
+          189,
+          236,
+          251
+        ],
+        "score": 7603
+      },
+      {
+        "area": 1686,
+        "bbox": [
+          255,
+          211,
+          309,
+          265
+        ],
+        "sampled": 1252,
+        "coloredFrac": 0.919,
+        "meanChroma": 59.8,
+        "coloredPx": 1150,
+        "fillColor": [
+          189,
+          237,
+          251
+        ],
+        "score": 1549
+      },
+      {
+        "area": 408,
+        "bbox": [
+          136,
+          169,
+          176,
+          182
+        ],
+        "sampled": 208,
+        "coloredFrac": 0.933,
+        "meanChroma": 117,
+        "coloredPx": 194,
+        "fillColor": [
+          125,
+          210,
+          249
+        ],
+        "score": 381
+      },
+      {
+        "area": 146,
+        "bbox": [
+          107,
+          339,
+          139,
+          346
+        ],
+        "sampled": 14,
+        "coloredFrac": 1,
+        "meanChroma": 152.4,
+        "coloredPx": 14,
+        "fillColor": [
+          237,
+          90,
+          85
+        ],
+        "score": 146
+      },
+      {
+        "area": 209,
+        "bbox": [
+          179,
+          292,
+          205,
+          320
+        ],
+        "sampled": 27,
+        "coloredFrac": 0,
+        "meanChroma": 2.4,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "space/moon-wide",
+    "pageScore": 9011,
+    "regions": [
+      {
+        "area": 2422,
+        "bbox": [
+          391,
+          342,
+          454,
+          435
+        ],
+        "sampled": 1405,
+        "coloredFrac": 1,
+        "meanChroma": 136.4,
+        "coloredPx": 1405,
+        "fillColor": [
+          246,
+          225,
+          110
+        ],
+        "score": 2422
+      },
+      {
+        "area": 2347,
+        "bbox": [
+          75,
+          61,
+          136,
+          155
+        ],
+        "sampled": 1357,
+        "coloredFrac": 1,
+        "meanChroma": 136.8,
+        "coloredPx": 1357,
+        "fillColor": [
+          247,
+          226,
+          110
+        ],
+        "score": 2347
+      },
+      {
+        "area": 2328,
+        "bbox": [
+          52,
+          337,
+          112,
+          431
+        ],
+        "sampled": 1348,
+        "coloredFrac": 1,
+        "meanChroma": 136.3,
+        "coloredPx": 1348,
+        "fillColor": [
+          246,
+          226,
+          110
+        ],
+        "score": 2328
+      },
+      {
+        "area": 1031,
+        "bbox": [
+          338,
+          64,
+          379,
+          129
+        ],
+        "sampled": 378,
+        "coloredFrac": 1,
+        "meanChroma": 137.7,
+        "coloredPx": 378,
+        "fillColor": [
+          246,
+          226,
+          109
+        ],
+        "score": 1031
+      },
+      {
+        "area": 455,
+        "bbox": [
+          227,
+          260,
+          246,
+          288
+        ],
+        "sampled": 275,
+        "coloredFrac": 0.985,
+        "meanChroma": 51.8,
+        "coloredPx": 271,
+        "fillColor": [
+          247,
+          218,
+          195
+        ],
+        "score": 448
+      },
+      {
+        "area": 224,
+        "bbox": [
+          172,
+          286,
+          185,
+          307
+        ],
+        "sampled": 99,
+        "coloredFrac": 0.98,
+        "meanChroma": 48.8,
+        "coloredPx": 97,
+        "fillColor": [
+          249,
+          230,
+          200
+        ],
+        "score": 219
+      },
+      {
+        "area": 216,
+        "bbox": [
+          240,
+          370,
+          253,
+          390
+        ],
+        "sampled": 96,
+        "coloredFrac": 1,
+        "meanChroma": 84.5,
+        "coloredPx": 96,
+        "fillColor": [
+          245,
+          229,
+          160
+        ],
+        "score": 216
+      }
+    ]
+  },
+  {
+    "page": "space/astronaut-tall",
+    "pageScore": 8504,
+    "regions": [
+      {
+        "area": 6174,
+        "bbox": [
+          195,
+          143,
+          347,
+          222
+        ],
+        "sampled": 4076,
+        "coloredFrac": 1,
+        "meanChroma": 58.6,
+        "coloredPx": 4075,
+        "fillColor": [
+          245,
+          212,
+          186
+        ],
+        "score": 6172
+      },
+      {
+        "area": 2577,
+        "bbox": [
+          199,
+          123,
+          353,
+          185
+        ],
+        "sampled": 1576,
+        "coloredFrac": 0.905,
+        "meanChroma": 83.8,
+        "coloredPx": 1426,
+        "fillColor": [
+          147,
+          214,
+          239
+        ],
+        "score": 2332
+      },
+      {
+        "area": 215,
+        "bbox": [
+          246,
+          267,
+          265,
+          280
+        ],
+        "sampled": 99,
+        "coloredFrac": 0,
+        "meanChroma": 0,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "creatures/owl-tall",
+    "pageScore": 6468,
+    "regions": [
+      {
+        "area": 5520,
+        "bbox": [
+          153,
+          214,
+          362,
+          293
+        ],
+        "sampled": 3267,
+        "coloredFrac": 0.945,
+        "meanChroma": 41.3,
+        "coloredPx": 3086,
+        "fillColor": [
+          237,
+          220,
+          195
+        ],
+        "score": 5214
+      },
+      {
+        "area": 469,
+        "bbox": [
+          178,
+          235,
+          221,
+          273
+        ],
+        "sampled": 105,
+        "coloredFrac": 0.971,
+        "meanChroma": 132.9,
+        "coloredPx": 102,
+        "fillColor": [
+          245,
+          228,
+          109
+        ],
+        "score": 456
+      },
+      {
+        "area": 445,
+        "bbox": [
+          283,
+          232,
+          338,
+          269
+        ],
+        "sampled": 59,
+        "coloredFrac": 1,
+        "meanChroma": 137.2,
+        "coloredPx": 59,
+        "fillColor": [
+          246,
+          227,
+          108
+        ],
+        "score": 445
+      },
+      {
+        "area": 353,
+        "bbox": [
+          246,
+          254,
+          273,
+          275
+        ],
+        "sampled": 179,
+        "coloredFrac": 1,
+        "meanChroma": 158.9,
+        "coloredPx": 179,
+        "fillColor": [
+          240,
+          176,
+          82
+        ],
+        "score": 353
+      }
+    ]
+  },
+  {
+    "page": "vehicles/police-wide",
+    "pageScore": 5792,
+    "regions": [
+      {
+        "area": 4392,
+        "bbox": [
+          228,
+          185,
+          337,
+          265
+        ],
+        "sampled": 3107,
+        "coloredFrac": 0.922,
+        "meanChroma": 40,
+        "coloredPx": 2866,
+        "fillColor": [
+          201,
+          234,
+          241
+        ],
+        "score": 4051
+      },
+      {
+        "area": 1409,
+        "bbox": [
+          189,
+          195,
+          215,
+          265
+        ],
+        "sampled": 1034,
+        "coloredFrac": 0.958,
+        "meanChroma": 40.2,
+        "coloredPx": 991,
+        "fillColor": [
+          201,
+          234,
+          241
+        ],
+        "score": 1350
+      },
+      {
+        "area": 594,
+        "bbox": [
+          164,
+          198,
+          185,
+          255
+        ],
+        "sampled": 305,
+        "coloredFrac": 0.626,
+        "meanChroma": 39.8,
+        "coloredPx": 191,
+        "fillColor": [
+          199,
+          233,
+          240
+        ],
+        "score": 372
+      },
+      {
+        "area": 332,
+        "bbox": [
+          262,
+          314,
+          278,
+          340
+        ],
+        "sampled": 175,
+        "coloredFrac": 0.057,
+        "meanChroma": 36.4,
+        "coloredPx": 10,
+        "fillColor": [
+          254,
+          246,
+          210
+        ],
+        "score": 19
+      },
+      {
+        "area": 177,
+        "bbox": [
+          374,
+          306,
+          384,
+          326
+        ],
+        "sampled": 69,
+        "coloredFrac": 0,
+        "meanChroma": 34.8,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 145,
+        "bbox": [
+          221,
+          359,
+          227,
+          386
+        ],
+        "sampled": 31,
+        "coloredFrac": 0,
+        "meanChroma": 1.8,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 120,
+        "bbox": [
+          247,
+          213,
+          265,
+          230
+        ],
+        "sampled": 17,
+        "coloredFrac": 0,
+        "meanChroma": 0,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 110,
+        "bbox": [
+          299,
+          211,
+          315,
+          234
+        ],
+        "sampled": 15,
+        "coloredFrac": 0,
+        "meanChroma": 2.3,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "farm/cow-wide",
+    "pageScore": 5006,
+    "regions": [
+      {
+        "area": 3806,
+        "bbox": [
+          150,
+          198,
+          225,
+          274
+        ],
+        "sampled": 2642,
+        "coloredFrac": 1,
+        "meanChroma": 47.9,
+        "coloredPx": 2642,
+        "fillColor": [
+          246,
+          213,
+          198
+        ],
+        "score": 3806
+      },
+      {
+        "area": 572,
+        "bbox": [
+          309,
+          334,
+          343,
+          371
+        ],
+        "sampled": 287,
+        "coloredFrac": 1,
+        "meanChroma": 45.7,
+        "coloredPx": 287,
+        "fillColor": [
+          245,
+          213,
+          199
+        ],
+        "score": 572
+      },
+      {
+        "area": 331,
+        "bbox": [
+          266,
+          134,
+          292,
+          154
+        ],
+        "sampled": 164,
+        "coloredFrac": 1,
+        "meanChroma": 46.9,
+        "coloredPx": 164,
+        "fillColor": [
+          245,
+          214,
+          198
+        ],
+        "score": 331
+      },
+      {
+        "area": 297,
+        "bbox": [
+          134,
+          132,
+          157,
+          150
+        ],
+        "sampled": 143,
+        "coloredFrac": 1,
+        "meanChroma": 48.4,
+        "coloredPx": 143,
+        "fillColor": [
+          245,
+          213,
+          196
+        ],
+        "score": 297
+      },
+      {
+        "area": 1927,
+        "bbox": [
+          293,
+          186,
+          341,
+          250
+        ],
+        "sampled": 1487,
+        "coloredFrac": 0,
+        "meanChroma": 17.9,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 1817,
+        "bbox": [
+          257,
+          262,
+          303,
+          317
+        ],
+        "sampled": 1412,
+        "coloredFrac": 0,
+        "meanChroma": 18,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 999,
+        "bbox": [
+          363,
+          229,
+          383,
+          298
+        ],
+        "sampled": 645,
+        "coloredFrac": 0,
+        "meanChroma": 18.1,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 125,
+        "bbox": [
+          251,
+          196,
+          258,
+          222
+        ],
+        "sampled": 16,
+        "coloredFrac": 0,
+        "meanChroma": 15.9,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "farm/dog-wide",
+    "pageScore": 4692,
+    "regions": [
+      {
+        "area": 2448,
+        "bbox": [
+          235,
+          121,
+          302,
+          187
+        ],
+        "sampled": 1907,
+        "coloredFrac": 1,
+        "meanChroma": 127.1,
+        "coloredPx": 1907,
+        "fillColor": [
+          218,
+          167,
+          91
+        ],
+        "score": 2448
+      },
+      {
+        "area": 1160,
+        "bbox": [
+          135,
+          99,
+          187,
+          149
+        ],
+        "sampled": 769,
+        "coloredFrac": 1,
+        "meanChroma": 127.3,
+        "coloredPx": 769,
+        "fillColor": [
+          218,
+          167,
+          90
+        ],
+        "score": 1160
+      },
+      {
+        "area": 1060,
+        "bbox": [
+          280,
+          245,
+          325,
+          299
+        ],
+        "sampled": 679,
+        "coloredFrac": 0.862,
+        "meanChroma": 39.8,
+        "coloredPx": 585,
+        "fillColor": [
+          250,
+          238,
+          210
+        ],
+        "score": 913
+      },
+      {
+        "area": 171,
+        "bbox": [
+          183,
+          246,
+          200,
+          265
+        ],
+        "sampled": 52,
+        "coloredFrac": 1,
+        "meanChroma": 91.2,
+        "coloredPx": 52,
+        "fillColor": [
+          242,
+          155,
+          150
+        ],
+        "score": 171
+      }
+    ]
+  },
+  {
+    "page": "farm/pig-tall",
+    "pageScore": 4560,
+    "regions": [
+      {
+        "area": 861,
+        "bbox": [
+          312,
+          271,
+          354,
+          311
+        ],
+        "sampled": 539,
+        "coloredFrac": 1,
+        "meanChroma": 79.7,
+        "coloredPx": 539,
+        "fillColor": [
+          161,
+          119,
+          81
+        ],
+        "score": 861
+      },
+      {
+        "area": 790,
+        "bbox": [
+          123,
+          254,
+          163,
+          298
+        ],
+        "sampled": 430,
+        "coloredFrac": 1,
+        "meanChroma": 79.6,
+        "coloredPx": 430,
+        "fillColor": [
+          161,
+          119,
+          81
+        ],
+        "score": 790
+      },
+      {
+        "area": 622,
+        "bbox": [
+          333,
+          387,
+          373,
+          418
+        ],
+        "sampled": 351,
+        "coloredFrac": 1,
+        "meanChroma": 79.7,
+        "coloredPx": 351,
+        "fillColor": [
+          160,
+          119,
+          80
+        ],
+        "score": 622
+      },
+      {
+        "area": 549,
+        "bbox": [
+          311,
+          359,
+          345,
+          382
+        ],
+        "sampled": 329,
+        "coloredFrac": 0.967,
+        "meanChroma": 41.8,
+        "coloredPx": 318,
+        "fillColor": [
+          241,
+          200,
+          199
+        ],
+        "score": 531
+      },
+      {
+        "area": 504,
+        "bbox": [
+          273,
+          341,
+          310,
+          369
+        ],
+        "sampled": 246,
+        "coloredFrac": 1,
+        "meanChroma": 79.5,
+        "coloredPx": 246,
+        "fillColor": [
+          161,
+          119,
+          81
+        ],
+        "score": 504
+      },
+      {
+        "area": 475,
+        "bbox": [
+          157,
+          341,
+          178,
+          392
+        ],
+        "sampled": 196,
+        "coloredFrac": 1,
+        "meanChroma": 79.4,
+        "coloredPx": 196,
+        "fillColor": [
+          161,
+          119,
+          82
+        ],
+        "score": 475
+      },
+      {
+        "area": 402,
+        "bbox": [
+          252,
+          380,
+          273,
+          408
+        ],
+        "sampled": 208,
+        "coloredFrac": 0.962,
+        "meanChroma": 42,
+        "coloredPx": 200,
+        "fillColor": [
+          240,
+          198,
+          198
+        ],
+        "score": 387
+      },
+      {
+        "area": 285,
+        "bbox": [
+          343,
+          313,
+          374,
+          336
+        ],
+        "sampled": 84,
+        "coloredFrac": 0.714,
+        "meanChroma": 60.2,
+        "coloredPx": 60,
+        "fillColor": [
+          162,
+          120,
+          87
+        ],
+        "score": 204
+      },
+      {
+        "area": 186,
+        "bbox": [
+          233,
+          299,
+          262,
+          308
+        ],
+        "sampled": 52,
+        "coloredFrac": 1,
+        "meanChroma": 41.7,
+        "coloredPx": 52,
+        "fillColor": [
+          238,
+          197,
+          196
+        ],
+        "score": 186
+      }
+    ]
+  },
+  {
+    "page": "objects/umbrella-wide",
+    "pageScore": 4054,
+    "regions": [
+      {
+        "area": 1416,
+        "bbox": [
+          425,
+          228,
+          471,
+          313
+        ],
+        "sampled": 685,
+        "coloredFrac": 1,
+        "meanChroma": 161.9,
+        "coloredPx": 685,
+        "fillColor": [
+          239,
+          158,
+          77
+        ],
+        "score": 1416
+      },
+      {
+        "area": 1401,
+        "bbox": [
+          38,
+          275,
+          87,
+          352
+        ],
+        "sampled": 617,
+        "coloredFrac": 1,
+        "meanChroma": 48.8,
+        "coloredPx": 617,
+        "fillColor": [
+          169,
+          137,
+          185
+        ],
+        "score": 1401
+      },
+      {
+        "area": 329,
+        "bbox": [
+          419,
+          249,
+          438,
+          274
+        ],
+        "sampled": 167,
+        "coloredFrac": 1,
+        "meanChroma": 162,
+        "coloredPx": 167,
+        "fillColor": [
+          239,
+          158,
+          77
+        ],
+        "score": 329
+      },
+      {
+        "area": 201,
+        "bbox": [
+          385,
+          346,
+          411,
+          363
+        ],
+        "sampled": 27,
+        "coloredFrac": 1,
+        "meanChroma": 75.9,
+        "coloredPx": 27,
+        "fillColor": [
+          238,
+          162,
+          182
+        ],
+        "score": 201
+      },
+      {
+        "area": 186,
+        "bbox": [
+          440,
+          261,
+          452,
+          281
+        ],
+        "sampled": 71,
+        "coloredFrac": 1,
+        "meanChroma": 159.9,
+        "coloredPx": 71,
+        "fillColor": [
+          246,
+          220,
+          86
+        ],
+        "score": 186
+      },
+      {
+        "area": 144,
+        "bbox": [
+          57,
+          308,
+          67,
+          326
+        ],
+        "sampled": 47,
+        "coloredFrac": 1,
+        "meanChroma": 155.3,
+        "coloredPx": 47,
+        "fillColor": [
+          245,
+          220,
+          90
+        ],
+        "score": 144
+      },
+      {
+        "area": 116,
+        "bbox": [
+          380,
+          327,
+          390,
+          342
+        ],
+        "sampled": 30,
+        "coloredFrac": 1,
+        "meanChroma": 75.9,
+        "coloredPx": 30,
+        "fillColor": [
+          237,
+          161,
+          178
+        ],
+        "score": 116
+      },
+      {
+        "area": 98,
+        "bbox": [
+          393,
+          313,
+          400,
+          327
+        ],
+        "sampled": 24,
+        "coloredFrac": 1,
+        "meanChroma": 74.4,
+        "coloredPx": 24,
+        "fillColor": [
+          238,
+          163,
+          181
+        ],
+        "score": 98
+      },
+      {
+        "area": 92,
+        "bbox": [
+          404,
+          325,
+          414,
+          339
+        ],
+        "sampled": 16,
+        "coloredFrac": 1,
+        "meanChroma": 74.4,
+        "coloredPx": 16,
+        "fillColor": [
+          237,
+          162,
+          180
+        ],
+        "score": 92
+      },
+      {
+        "area": 71,
+        "bbox": [
+          95,
+          384,
+          102,
+          394
+        ],
+        "sampled": 13,
+        "coloredFrac": 1,
+        "meanChroma": 44.7,
+        "coloredPx": 13,
+        "fillColor": [
+          169,
+          138,
+          182
+        ],
+        "score": 71
+      }
+    ]
+  },
+  {
+    "page": "space/astronaut-wide",
+    "pageScore": 2935,
+    "regions": [
+      {
+        "area": 2935,
+        "bbox": [
+          223,
+          167,
+          294,
+          263
+        ],
+        "sampled": 1657,
+        "coloredFrac": 1,
+        "meanChroma": 60.2,
+        "coloredPx": 1657,
+        "fillColor": [
+          247,
+          216,
+          187
+        ],
+        "score": 2935
+      }
+    ]
+  },
+  {
+    "page": "space/station-wide",
+    "pageScore": 2519,
+    "regions": [
+      {
+        "area": 879,
+        "bbox": [
+          236,
+          353,
+          261,
+          390
+        ],
+        "sampled": 639,
+        "coloredFrac": 1,
+        "meanChroma": 102.3,
+        "coloredPx": 639,
+        "fillColor": [
+          47,
+          101,
+          149
+        ],
+        "score": 879
+      },
+      {
+        "area": 612,
+        "bbox": [
+          239,
+          242,
+          261,
+          277
+        ],
+        "sampled": 394,
+        "coloredFrac": 0.962,
+        "meanChroma": 97,
+        "coloredPx": 379,
+        "fillColor": [
+          49,
+          101,
+          149
+        ],
+        "score": 589
+      },
+      {
+        "area": 498,
+        "bbox": [
+          180,
+          233,
+          199,
+          265
+        ],
+        "sampled": 304,
+        "coloredFrac": 0.964,
+        "meanChroma": 96.8,
+        "coloredPx": 293,
+        "fillColor": [
+          49,
+          102,
+          149
+        ],
+        "score": 480
+      },
+      {
+        "area": 490,
+        "bbox": [
+          301,
+          236,
+          320,
+          268
+        ],
+        "sampled": 295,
+        "coloredFrac": 0.959,
+        "meanChroma": 97.5,
+        "coloredPx": 283,
+        "fillColor": [
+          48,
+          101,
+          149
+        ],
+        "score": 470
+      },
+      {
+        "area": 101,
+        "bbox": [
+          248,
+          77,
+          256,
+          91
+        ],
+        "sampled": 24,
+        "coloredFrac": 1,
+        "meanChroma": 143.8,
+        "coloredPx": 24,
+        "fillColor": [
+          236,
+          98,
+          92
+        ],
+        "score": 101
+      }
+    ]
+  },
+  {
+    "page": "farm/pig-wide",
+    "pageScore": 2426,
+    "regions": [
+      {
+        "area": 966,
+        "bbox": [
+          212,
+          184,
+          251,
+          229
+        ],
+        "sampled": 376,
+        "coloredFrac": 1,
+        "meanChroma": 95.3,
+        "coloredPx": 376,
+        "fillColor": [
+          234,
+          145,
+          139
+        ],
+        "score": 966
+      },
+      {
+        "area": 891,
+        "bbox": [
+          235,
+          288,
+          269,
+          339
+        ],
+        "sampled": 565,
+        "coloredFrac": 1,
+        "meanChroma": 91.6,
+        "coloredPx": 565,
+        "fillColor": [
+          169,
+          124,
+          77
+        ],
+        "score": 891
+      },
+      {
+        "area": 314,
+        "bbox": [
+          194,
+          310,
+          212,
+          350
+        ],
+        "sampled": 98,
+        "coloredFrac": 1,
+        "meanChroma": 90.3,
+        "coloredPx": 98,
+        "fillColor": [
+          169,
+          124,
+          78
+        ],
+        "score": 314
+      },
+      {
+        "area": 255,
+        "bbox": [
+          280,
+          349,
+          296,
+          382
+        ],
+        "sampled": 77,
+        "coloredFrac": 1,
+        "meanChroma": 48.7,
+        "coloredPx": 77,
+        "fillColor": [
+          245,
+          203,
+          197
+        ],
+        "score": 255
+      }
+    ]
+  },
+  {
+    "page": "farm/cow-tall",
+    "pageScore": 2412,
+    "regions": [
+      {
+        "area": 879,
+        "bbox": [
+          146,
+          133,
+          217,
+          156
+        ],
+        "sampled": 471,
+        "coloredFrac": 1,
+        "meanChroma": 65,
+        "coloredPx": 471,
+        "fillColor": [
+          198,
+          166,
+          133
+        ],
+        "score": 879
+      },
+      {
+        "area": 488,
+        "bbox": [
+          447,
+          302,
+          476,
+          334
+        ],
+        "sampled": 253,
+        "coloredFrac": 1,
+        "meanChroma": 68.9,
+        "coloredPx": 253,
+        "fillColor": [
+          198,
+          163,
+          129
+        ],
+        "score": 488
+      },
+      {
+        "area": 490,
+        "bbox": [
+          148,
+          289,
+          185,
+          306
+        ],
+        "sampled": 285,
+        "coloredFrac": 0.93,
+        "meanChroma": 133.1,
+        "coloredPx": 265,
+        "fillColor": [
+          241,
+          206,
+          100
+        ],
+        "score": 456
+      },
+      {
+        "area": 356,
+        "bbox": [
+          233,
+          130,
+          258,
+          158
+        ],
+        "sampled": 165,
+        "coloredFrac": 0.545,
+        "meanChroma": 45.1,
+        "coloredPx": 90,
+        "fillColor": [
+          239,
+          219,
+          187
+        ],
+        "score": 194
+      },
+      {
+        "area": 243,
+        "bbox": [
+          116,
+          125,
+          133,
+          146
+        ],
+        "sampled": 104,
+        "coloredFrac": 0.76,
+        "meanChroma": 41,
+        "coloredPx": 79,
+        "fillColor": [
+          242,
+          227,
+          200
+        ],
+        "score": 185
+      },
+      {
+        "area": 830,
+        "bbox": [
+          311,
+          321,
+          372,
+          350
+        ],
+        "sampled": 446,
+        "coloredFrac": 0.105,
+        "meanChroma": 34.5,
+        "coloredPx": 47,
+        "fillColor": [
+          242,
+          206,
+          194
+        ],
+        "score": 87
+      },
+      {
+        "area": 402,
+        "bbox": [
+          255,
+          168,
+          300,
+          181
+        ],
+        "sampled": 188,
+        "coloredFrac": 0.181,
+        "meanChroma": 37.4,
+        "coloredPx": 34,
+        "fillColor": [
+          241,
+          201,
+          195
+        ],
+        "score": 73
+      },
+      {
+        "area": 339,
+        "bbox": [
+          60,
+          156,
+          100,
+          168
+        ],
+        "sampled": 149,
+        "coloredFrac": 0.148,
+        "meanChroma": 36.8,
+        "coloredPx": 22,
+        "fillColor": [
+          241,
+          200,
+          195
+        ],
+        "score": 50
+      },
+      {
+        "area": 2645,
+        "bbox": [
+          367,
+          236,
+          432,
+          301
+        ],
+        "sampled": 2134,
+        "coloredFrac": 0,
+        "meanChroma": 3.3,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 2553,
+        "bbox": [
+          236,
+          267,
+          324,
+          318
+        ],
+        "sampled": 2005,
+        "coloredFrac": 0,
+        "meanChroma": 2.5,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 2085,
+        "bbox": [
+          290,
+          207,
+          370,
+          252
+        ],
+        "sampled": 1600,
+        "coloredFrac": 0,
+        "meanChroma": 2.8,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 498,
+        "bbox": [
+          205,
+          384,
+          249,
+          399
+        ],
+        "sampled": 273,
+        "coloredFrac": 0,
+        "meanChroma": 25.3,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 415,
+        "bbox": [
+          377,
+          381,
+          417,
+          393
+        ],
+        "sampled": 212,
+        "coloredFrac": 0,
+        "meanChroma": 25.8,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 412,
+        "bbox": [
+          144,
+          377,
+          184,
+          390
+        ],
+        "sampled": 207,
+        "coloredFrac": 0,
+        "meanChroma": 25.7,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 305,
+        "bbox": [
+          299,
+          374,
+          336,
+          385
+        ],
+        "sampled": 123,
+        "coloredFrac": 0,
+        "meanChroma": 32.4,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "space/rover-tall",
+    "pageScore": 2383,
+    "regions": [
+      {
+        "area": 2383,
+        "bbox": [
+          194,
+          135,
+          303,
+          183
+        ],
+        "sampled": 1266,
+        "coloredFrac": 1,
+        "meanChroma": 65.4,
+        "coloredPx": 1266,
+        "fillColor": [
+          155,
+          205,
+          220
+        ],
+        "score": 2383
+      }
+    ]
+  },
+  {
+    "page": "creatures/pegasus-wide",
+    "pageScore": 2163,
+    "regions": [
+      {
+        "area": 1305,
+        "bbox": [
+          351,
+          254,
+          441,
+          315
+        ],
+        "sampled": 715,
+        "coloredFrac": 1,
+        "meanChroma": 47.2,
+        "coloredPx": 715,
+        "fillColor": [
+          251,
+          249,
+          204
+        ],
+        "score": 1305
+      },
+      {
+        "area": 448,
+        "bbox": [
+          177,
+          82,
+          226,
+          117
+        ],
+        "sampled": 133,
+        "coloredFrac": 1,
+        "meanChroma": 46.5,
+        "coloredPx": 133,
+        "fillColor": [
+          250,
+          249,
+          204
+        ],
+        "score": 448
+      },
+      {
+        "area": 410,
+        "bbox": [
+          250,
+          124,
+          284,
+          201
+        ],
+        "sampled": 64,
+        "coloredFrac": 1,
+        "meanChroma": 44.4,
+        "coloredPx": 64,
+        "fillColor": [
+          249,
+          248,
+          205
+        ],
+        "score": 410
+      },
+      {
+        "area": 1445,
+        "bbox": [
+          341,
+          270,
+          444,
+          339
+        ],
+        "sampled": 719,
+        "coloredFrac": 0,
+        "meanChroma": 20.8,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 711,
+        "bbox": [
+          250,
+          106,
+          289,
+          181
+        ],
+        "sampled": 272,
+        "coloredFrac": 0,
+        "meanChroma": 22.2,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 563,
+        "bbox": [
+          353,
+          239,
+          419,
+          277
+        ],
+        "sampled": 169,
+        "coloredFrac": 0,
+        "meanChroma": 22.3,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 378,
+        "bbox": [
+          174,
+          72,
+          221,
+          104
+        ],
+        "sampled": 78,
+        "coloredFrac": 0,
+        "meanChroma": 25.1,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 160,
+        "bbox": [
+          273,
+          120,
+          289,
+          162
+        ],
+        "sampled": 12,
+        "coloredFrac": 0,
+        "meanChroma": 25.2,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 145,
+        "bbox": [
+          206,
+          94,
+          224,
+          114
+        ],
+        "sampled": 17,
+        "coloredFrac": 0,
+        "meanChroma": 25.1,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "objects/flower-tall",
+    "pageScore": 2110,
+    "regions": [
+      {
+        "area": 1061,
+        "bbox": [
+          270,
+          191,
+          321,
+          230
+        ],
+        "sampled": 530,
+        "coloredFrac": 1,
+        "meanChroma": 106,
+        "coloredPx": 530,
+        "fillColor": [
+          244,
+          194,
+          138
+        ],
+        "score": 1061
+      },
+      {
+        "area": 1049,
+        "bbox": [
+          188,
+          191,
+          239,
+          230
+        ],
+        "sampled": 518,
+        "coloredFrac": 1,
+        "meanChroma": 106.5,
+        "coloredPx": 518,
+        "fillColor": [
+          244,
+          194,
+          137
+        ],
+        "score": 1049
+      }
+    ]
+  },
+  {
+    "page": "farm/dog-tall",
+    "pageScore": 2044,
+    "regions": [
+      {
+        "area": 710,
+        "bbox": [
+          194,
+          272,
+          271,
+          300
+        ],
+        "sampled": 299,
+        "coloredFrac": 1,
+        "meanChroma": 164.2,
+        "coloredPx": 299,
+        "fillColor": [
+          225,
+          69,
+          60
+        ],
+        "score": 710
+      },
+      {
+        "area": 525,
+        "bbox": [
+          123,
+          298,
+          173,
+          333
+        ],
+        "sampled": 242,
+        "coloredFrac": 1,
+        "meanChroma": 104.4,
+        "coloredPx": 242,
+        "fillColor": [
+          177,
+          128,
+          72
+        ],
+        "score": 525
+      },
+      {
+        "area": 323,
+        "bbox": [
+          267,
+          306,
+          292,
+          322
+        ],
+        "sampled": 170,
+        "coloredFrac": 1,
+        "meanChroma": 142.7,
+        "coloredPx": 170,
+        "fillColor": [
+          246,
+          233,
+          103
+        ],
+        "score": 323
+      },
+      {
+        "area": 264,
+        "bbox": [
+          261,
+          263,
+          295,
+          275
+        ],
+        "sampled": 82,
+        "coloredFrac": 1,
+        "meanChroma": 66.1,
+        "coloredPx": 82,
+        "fillColor": [
+          241,
+          177,
+          176
+        ],
+        "score": 264
+      },
+      {
+        "area": 222,
+        "bbox": [
+          287,
+          277,
+          314,
+          298
+        ],
+        "sampled": 46,
+        "coloredFrac": 1,
+        "meanChroma": 164.4,
+        "coloredPx": 46,
+        "fillColor": [
+          224,
+          69,
+          60
+        ],
+        "score": 222
+      },
+      {
+        "area": 1287,
+        "bbox": [
+          256,
+          331,
+          301,
+          378
+        ],
+        "sampled": 935,
+        "coloredFrac": 0,
+        "meanChroma": 0.6,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "objects/house-tall",
+    "pageScore": 1728,
+    "regions": [
+      {
+        "area": 454,
+        "bbox": [
+          235,
+          293,
+          273,
+          311
+        ],
+        "sampled": 224,
+        "coloredFrac": 1,
+        "meanChroma": 75.4,
+        "coloredPx": 224,
+        "fillColor": [
+          235,
+          160,
+          167
+        ],
+        "score": 454
+      },
+      {
+        "area": 240,
+        "bbox": [
+          382,
+          301,
+          397,
+          315
+        ],
+        "sampled": 132,
+        "coloredFrac": 0.773,
+        "meanChroma": 41.4,
+        "coloredPx": 102,
+        "fillColor": [
+          181,
+          221,
+          223
+        ],
+        "score": 185
+      },
+      {
+        "area": 240,
+        "bbox": [
+          143,
+          301,
+          158,
+          315
+        ],
+        "sampled": 132,
+        "coloredFrac": 0.765,
+        "meanChroma": 40.5,
+        "coloredPx": 101,
+        "fillColor": [
+          182,
+          221,
+          223
+        ],
+        "score": 184
+      },
+      {
+        "area": 240,
+        "bbox": [
+          351,
+          301,
+          366,
+          315
+        ],
+        "sampled": 132,
+        "coloredFrac": 0.53,
+        "meanChroma": 40.1,
+        "coloredPx": 70,
+        "fillColor": [
+          182,
+          221,
+          223
+        ],
+        "score": 127
+      },
+      {
+        "area": 186,
+        "bbox": [
+          112,
+          273,
+          127,
+          289
+        ],
+        "sampled": 77,
+        "coloredFrac": 0.61,
+        "meanChroma": 40.5,
+        "coloredPx": 47,
+        "fillColor": [
+          181,
+          220,
+          223
+        ],
+        "score": 114
+      },
+      {
+        "area": 195,
+        "bbox": [
+          382,
+          273,
+          397,
+          289
+        ],
+        "sampled": 83,
+        "coloredFrac": 0.578,
+        "meanChroma": 40.5,
+        "coloredPx": 48,
+        "fillColor": [
+          182,
+          220,
+          223
+        ],
+        "score": 113
+      },
+      {
+        "area": 235,
+        "bbox": [
+          112,
+          301,
+          127,
+          315
+        ],
+        "sampled": 127,
+        "coloredFrac": 0.472,
+        "meanChroma": 39.9,
+        "coloredPx": 60,
+        "fillColor": [
+          182,
+          220,
+          223
+        ],
+        "score": 111
+      },
+      {
+        "area": 219,
+        "bbox": [
+          225,
+          173,
+          246,
+          187
+        ],
+        "sampled": 93,
+        "coloredFrac": 0.505,
+        "meanChroma": 39.3,
+        "coloredPx": 47,
+        "fillColor": [
+          181,
+          221,
+          222
+        ],
+        "score": 111
+      },
+      {
+        "area": 186,
+        "bbox": [
+          351,
+          273,
+          366,
+          289
+        ],
+        "sampled": 77,
+        "coloredFrac": 0.597,
+        "meanChroma": 39.8,
+        "coloredPx": 46,
+        "fillColor": [
+          182,
+          220,
+          223
+        ],
+        "score": 111
+      },
+      {
+        "area": 193,
+        "bbox": [
+          143,
+          273,
+          158,
+          289
+        ],
+        "sampled": 81,
+        "coloredFrac": 0.432,
+        "meanChroma": 39.5,
+        "coloredPx": 35,
+        "fillColor": [
+          182,
+          221,
+          224
+        ],
+        "score": 83
+      },
+      {
+        "area": 237,
+        "bbox": [
+          262,
+          173,
+          284,
+          187
+        ],
+        "sampled": 105,
+        "coloredFrac": 0.229,
+        "meanChroma": 37.4,
+        "coloredPx": 24,
+        "fillColor": [
+          181,
+          221,
+          221
+        ],
+        "score": 54
+      },
+      {
+        "area": 222,
+        "bbox": [
+          262,
+          199,
+          284,
+          212
+        ],
+        "sampled": 95,
+        "coloredFrac": 0.189,
+        "meanChroma": 37.7,
+        "coloredPx": 18,
+        "fillColor": [
+          184,
+          220,
+          224
+        ],
+        "score": 42
+      },
+      {
+        "area": 207,
+        "bbox": [
+          225,
+          199,
+          246,
+          212
+        ],
+        "sampled": 86,
+        "coloredFrac": 0.186,
+        "meanChroma": 38.6,
+        "coloredPx": 16,
+        "fillColor": [
+          182,
+          221,
+          223
+        ],
+        "score": 39
+      }
+    ]
+  },
+  {
+    "page": "dinosaur/pterodactyl-tall",
+    "pageScore": 1628,
+    "regions": [
+      {
+        "area": 1348,
+        "bbox": [
+          345,
+          59,
+          396,
+          92
+        ],
+        "sampled": 1020,
+        "coloredFrac": 1,
+        "meanChroma": 107.5,
+        "coloredPx": 1020,
+        "fillColor": [
+          248,
+          232,
+          140
+        ],
+        "score": 1348
+      },
+      {
+        "area": 280,
+        "bbox": [
+          164,
+          215,
+          201,
+          237
+        ],
+        "sampled": 80,
+        "coloredFrac": 1,
+        "meanChroma": 68.2,
+        "coloredPx": 80,
+        "fillColor": [
+          227,
+          162,
+          159
+        ],
+        "score": 280
+      }
+    ]
+  },
+  {
+    "page": "creatures/owl-wide",
+    "pageScore": 1469,
+    "regions": [
+      {
+        "area": 1080,
+        "bbox": [
+          341,
+          130,
+          380,
+          190
+        ],
+        "sampled": 667,
+        "coloredFrac": 1,
+        "meanChroma": 122.1,
+        "coloredPx": 667,
+        "fillColor": [
+          240,
+          221,
+          118
+        ],
+        "score": 1080
+      },
+      {
+        "area": 169,
+        "bbox": [
+          231,
+          84,
+          246,
+          105
+        ],
+        "sampled": 50,
+        "coloredFrac": 1,
+        "meanChroma": 114.4,
+        "coloredPx": 50,
+        "fillColor": [
+          237,
+          223,
+          122
+        ],
+        "score": 169
+      },
+      {
+        "area": 120,
+        "bbox": [
+          262,
+          47,
+          275,
+          64
+        ],
+        "sampled": 30,
+        "coloredFrac": 1,
+        "meanChroma": 105.5,
+        "coloredPx": 30,
+        "fillColor": [
+          240,
+          227,
+          135
+        ],
+        "score": 120
+      },
+      {
+        "area": 100,
+        "bbox": [
+          277,
+          99,
+          288,
+          115
+        ],
+        "sampled": 19,
+        "coloredFrac": 1,
+        "meanChroma": 112.3,
+        "coloredPx": 19,
+        "fillColor": [
+          237,
+          225,
+          125
+        ],
+        "score": 100
+      }
+    ]
+  },
+  {
+    "page": "objects/balloon-tall",
+    "pageScore": 1406,
+    "regions": [
+      {
+        "area": 711,
+        "bbox": [
+          178,
+          152,
+          228,
+          185
+        ],
+        "sampled": 226,
+        "coloredFrac": 1,
+        "meanChroma": 130.5,
+        "coloredPx": 226,
+        "fillColor": [
+          229,
+          102,
+          98
+        ],
+        "score": 711
+      },
+      {
+        "area": 695,
+        "bbox": [
+          278,
+          152,
+          327,
+          185
+        ],
+        "sampled": 214,
+        "coloredFrac": 1,
+        "meanChroma": 129,
+        "coloredPx": 214,
+        "fillColor": [
+          227,
+          102,
+          98
+        ],
+        "score": 695
+      }
+    ]
+  },
+  {
+    "page": "farm/cat-tall",
+    "pageScore": 1387,
+    "regions": [
+      {
+        "area": 625,
+        "bbox": [
+          308,
+          151,
+          342,
+          184
+        ],
+        "sampled": 375,
+        "coloredFrac": 1,
+        "meanChroma": 49.2,
+        "coloredPx": 375,
+        "fillColor": [
+          239,
+          189,
+          196
+        ],
+        "score": 625
+      },
+      {
+        "area": 622,
+        "bbox": [
+          124,
+          136,
+          157,
+          169
+        ],
+        "sampled": 374,
+        "coloredFrac": 1,
+        "meanChroma": 51.1,
+        "coloredPx": 374,
+        "fillColor": [
+          238,
+          187,
+          193
+        ],
+        "score": 622
+      },
+      {
+        "area": 140,
+        "bbox": [
+          199,
+          229,
+          222,
+          237
+        ],
+        "sampled": 33,
+        "coloredFrac": 1,
+        "meanChroma": 75.8,
+        "coloredPx": 33,
+        "fillColor": [
+          234,
+          158,
+          171
+        ],
+        "score": 140
+      }
+    ]
+  },
+  {
+    "page": "objects/apple-tall",
+    "pageScore": 1320,
+    "regions": [
+      {
+        "area": 1014,
+        "bbox": [
+          96,
+          153,
+          151,
+          215
+        ],
+        "sampled": 549,
+        "coloredFrac": 1,
+        "meanChroma": 150,
+        "coloredPx": 549,
+        "fillColor": [
+          216,
+          68,
+          66
+        ],
+        "score": 1014
+      },
+      {
+        "area": 306,
+        "bbox": [
+          99,
+          226,
+          115,
+          248
+        ],
+        "sampled": 153,
+        "coloredFrac": 1,
+        "meanChroma": 149.7,
+        "coloredPx": 153,
+        "fillColor": [
+          216,
+          68,
+          66
+        ],
+        "score": 306
+      }
+    ]
+  },
+  {
+    "page": "space/ship-tall",
+    "pageScore": 1284,
+    "regions": [
+      {
+        "area": 568,
+        "bbox": [
+          238,
+          40,
+          269,
+          61
+        ],
+        "sampled": 368,
+        "coloredFrac": 1,
+        "meanChroma": 137.6,
+        "coloredPx": 368,
+        "fillColor": [
+          245,
+          225,
+          108
+        ],
+        "score": 568
+      },
+      {
+        "area": 258,
+        "bbox": [
+          126,
+          101,
+          146,
+          115
+        ],
+        "sampled": 130,
+        "coloredFrac": 1,
+        "meanChroma": 140.1,
+        "coloredPx": 130,
+        "fillColor": [
+          246,
+          224,
+          106
+        ],
+        "score": 258
+      },
+      {
+        "area": 236,
+        "bbox": [
+          363,
+          86,
+          383,
+          99
+        ],
+        "sampled": 112,
+        "coloredFrac": 1,
+        "meanChroma": 140.9,
+        "coloredPx": 112,
+        "fillColor": [
+          247,
+          223,
+          106
+        ],
+        "score": 236
+      },
+      {
+        "area": 76,
+        "bbox": [
+          176,
+          251,
+          187,
+          258
+        ],
+        "sampled": 14,
+        "coloredFrac": 1,
+        "meanChroma": 134.2,
+        "coloredPx": 14,
+        "fillColor": [
+          230,
+          96,
+          97
+        ],
+        "score": 76
+      },
+      {
+        "area": 73,
+        "bbox": [
+          194,
+          161,
+          205,
+          168
+        ],
+        "sampled": 12,
+        "coloredFrac": 1,
+        "meanChroma": 135,
+        "coloredPx": 12,
+        "fillColor": [
+          230,
+          95,
+          100
+        ],
+        "score": 73
+      },
+      {
+        "area": 73,
+        "bbox": [
+          183,
+          293,
+          193,
+          300
+        ],
+        "sampled": 13,
+        "coloredFrac": 1,
+        "meanChroma": 133,
+        "coloredPx": 13,
+        "fillColor": [
+          228,
+          95,
+          98
+        ],
+        "score": 73
+      }
+    ]
+  },
+  {
+    "page": "objects/teddy-tall",
+    "pageScore": 1036,
+    "regions": [
+      {
+        "area": 442,
+        "bbox": [
+          130,
+          147,
+          164,
+          171
+        ],
+        "sampled": 228,
+        "coloredFrac": 1,
+        "meanChroma": 45.4,
+        "coloredPx": 228,
+        "fillColor": [
+          247,
+          233,
+          202
+        ],
+        "score": 442
+      },
+      {
+        "area": 389,
+        "bbox": [
+          346,
+          150,
+          376,
+          173
+        ],
+        "sampled": 193,
+        "coloredFrac": 1,
+        "meanChroma": 45.1,
+        "coloredPx": 193,
+        "fillColor": [
+          247,
+          232,
+          202
+        ],
+        "score": 389
+      },
+      {
+        "area": 205,
+        "bbox": [
+          235,
+          236,
+          262,
+          246
+        ],
+        "sampled": 73,
+        "coloredFrac": 1,
+        "meanChroma": 112,
+        "coloredPx": 73,
+        "fillColor": [
+          145,
+          83,
+          33
+        ],
+        "score": 205
+      }
+    ]
+  },
+  {
+    "page": "farm/duck-tall",
+    "pageScore": 1013,
+    "regions": [
+      {
+        "area": 1013,
+        "bbox": [
+          246,
+          192,
+          330,
+          218
+        ],
+        "sampled": 527,
+        "coloredFrac": 1,
+        "meanChroma": 188.7,
+        "coloredPx": 527,
+        "fillColor": [
+          239,
+          148,
+          50
+        ],
+        "score": 1013
+      }
+    ]
+  },
+  {
+    "page": "objects/teddy-wide",
+    "pageScore": 960,
+    "regions": [
+      {
+        "area": 881,
+        "bbox": [
+          393,
+          334,
+          427,
+          389
+        ],
+        "sampled": 526,
+        "coloredFrac": 1,
+        "meanChroma": 90.9,
+        "coloredPx": 526,
+        "fillColor": [
+          248,
+          242,
+          157
+        ],
+        "score": 881
+      },
+      {
+        "area": 288,
+        "bbox": [
+          238,
+          196,
+          257,
+          215
+        ],
+        "sampled": 145,
+        "coloredFrac": 0.09,
+        "meanChroma": 29.4,
+        "coloredPx": 13,
+        "fillColor": [
+          251,
+          209,
+          218
+        ],
+        "score": 26
+      },
+      {
+        "area": 244,
+        "bbox": [
+          325,
+          108,
+          338,
+          139
+        ],
+        "sampled": 85,
+        "coloredFrac": 0.106,
+        "meanChroma": 36.3,
+        "coloredPx": 9,
+        "fillColor": [
+          250,
+          207,
+          219
+        ],
+        "score": 26
+      },
+      {
+        "area": 1129,
+        "bbox": [
+          170,
+          365,
+          201,
+          413
+        ],
+        "sampled": 825,
+        "coloredFrac": 0.019,
+        "meanChroma": 34.9,
+        "coloredPx": 16,
+        "fillColor": [
+          250,
+          210,
+          216
+        ],
+        "score": 22
+      },
+      {
+        "area": 296,
+        "bbox": [
+          184,
+          76,
+          202,
+          106
+        ],
+        "sampled": 119,
+        "coloredFrac": 0.017,
+        "meanChroma": 34.8,
+        "coloredPx": 2,
+        "fillColor": [
+          249,
+          208,
+          219
+        ],
+        "score": 5
+      },
+      {
+        "area": 1189,
+        "bbox": [
+          283,
+          367,
+          316,
+          415
+        ],
+        "sampled": 880,
+        "coloredFrac": 0,
+        "meanChroma": 35.1,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "dinosaur/triceratops-tall",
+    "pageScore": 952,
+    "regions": [
+      {
+        "area": 952,
+        "bbox": [
+          235,
+          232,
+          269,
+          272
+        ],
+        "sampled": 667,
+        "coloredFrac": 1,
+        "meanChroma": 52.3,
+        "coloredPx": 667,
+        "fillColor": [
+          248,
+          233,
+          196
+        ],
+        "score": 952
+      }
+    ]
+  },
+  {
+    "page": "vehicles/monster-tall",
+    "pageScore": 760,
+    "regions": [
+      {
+        "area": 316,
+        "bbox": [
+          359,
+          237,
+          384,
+          252
+        ],
+        "sampled": 164,
+        "coloredFrac": 0.805,
+        "meanChroma": 49.1,
+        "coloredPx": 132,
+        "fillColor": [
+          248,
+          245,
+          190
+        ],
+        "score": 254
+      },
+      {
+        "area": 316,
+        "bbox": [
+          124,
+          237,
+          149,
+          252
+        ],
+        "sampled": 165,
+        "coloredFrac": 0.776,
+        "meanChroma": 45.8,
+        "coloredPx": 128,
+        "fillColor": [
+          250,
+          248,
+          196
+        ],
+        "score": 245
+      },
+      {
+        "area": 105,
+        "bbox": [
+          189,
+          131,
+          204,
+          139
+        ],
+        "sampled": 27,
+        "coloredFrac": 0.667,
+        "meanChroma": 50.2,
+        "coloredPx": 18,
+        "fillColor": [
+          247,
+          247,
+          183
+        ],
+        "score": 70
+      },
+      {
+        "area": 106,
+        "bbox": [
+          229,
+          130,
+          244,
+          139
+        ],
+        "sampled": 26,
+        "coloredFrac": 0.654,
+        "meanChroma": 47,
+        "coloredPx": 17,
+        "fillColor": [
+          246,
+          247,
+          182
+        ],
+        "score": 69
+      },
+      {
+        "area": 110,
+        "bbox": [
+          309,
+          130,
+          324,
+          139
+        ],
+        "sampled": 28,
+        "coloredFrac": 0.571,
+        "meanChroma": 44.1,
+        "coloredPx": 16,
+        "fillColor": [
+          245,
+          247,
+          183
+        ],
+        "score": 63
+      },
+      {
+        "area": 109,
+        "bbox": [
+          269,
+          130,
+          284,
+          139
+        ],
+        "sampled": 26,
+        "coloredFrac": 0.538,
+        "meanChroma": 40.3,
+        "coloredPx": 14,
+        "fillColor": [
+          243,
+          246,
+          183
+        ],
+        "score": 59
+      },
+      {
+        "area": 4346,
+        "bbox": [
+          161,
+          165,
+          349,
+          208
+        ],
+        "sampled": 3120,
+        "coloredFrac": 0,
+        "meanChroma": 21.9,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "nature/bee-wide",
+    "pageScore": 560,
+    "regions": [
+      {
+        "area": 194,
+        "bbox": [
+          262,
+          246,
+          273,
+          265
+        ],
+        "sampled": 85,
+        "coloredFrac": 1,
+        "meanChroma": 143.3,
+        "coloredPx": 85,
+        "fillColor": [
+          245,
+          227,
+          101
+        ],
+        "score": 194
+      },
+      {
+        "area": 170,
+        "bbox": [
+          206,
+          243,
+          217,
+          260
+        ],
+        "sampled": 68,
+        "coloredFrac": 1,
+        "meanChroma": 143.9,
+        "coloredPx": 68,
+        "fillColor": [
+          245,
+          227,
+          101
+        ],
+        "score": 170
+      },
+      {
+        "area": 103,
+        "bbox": [
+          255,
+          105,
+          263,
+          119
+        ],
+        "sampled": 26,
+        "coloredFrac": 1,
+        "meanChroma": 140.7,
+        "coloredPx": 26,
+        "fillColor": [
+          243,
+          227,
+          103
+        ],
+        "score": 103
+      },
+      {
+        "area": 93,
+        "bbox": [
+          203,
+          122,
+          211,
+          136
+        ],
+        "sampled": 20,
+        "coloredFrac": 1,
+        "meanChroma": 142.8,
+        "coloredPx": 20,
+        "fillColor": [
+          244,
+          227,
+          101
+        ],
+        "score": 93
+      }
+    ]
+  },
+  {
+    "page": "creatures/unicorn-tall",
+    "pageScore": 518,
+    "regions": [
+      {
+        "area": 245,
+        "bbox": [
+          143,
+          114,
+          170,
+          132
+        ],
+        "sampled": 81,
+        "coloredFrac": 1,
+        "meanChroma": 43.1,
+        "coloredPx": 81,
+        "fillColor": [
+          200,
+          237,
+          243
+        ],
+        "score": 245
+      },
+      {
+        "area": 167,
+        "bbox": [
+          136,
+          104,
+          157,
+          119
+        ],
+        "sampled": 39,
+        "coloredFrac": 1,
+        "meanChroma": 46,
+        "coloredPx": 39,
+        "fillColor": [
+          247,
+          248,
+          202
+        ],
+        "score": 167
+      },
+      {
+        "area": 106,
+        "bbox": [
+          130,
+          96,
+          145,
+          106
+        ],
+        "sampled": 19,
+        "coloredFrac": 1,
+        "meanChroma": 45.6,
+        "coloredPx": 19,
+        "fillColor": [
+          197,
+          237,
+          243
+        ],
+        "score": 106
+      }
+    ]
+  },
+  {
+    "page": "vehicles/garbage-tall",
+    "pageScore": 481,
+    "regions": [
+      {
+        "area": 481,
+        "bbox": [
+          148,
+          238,
+          168,
+          263
+        ],
+        "sampled": 312,
+        "coloredFrac": 1,
+        "meanChroma": 77.9,
+        "coloredPx": 312,
+        "fillColor": [
+          151,
+          204,
+          229
+        ],
+        "score": 481
+      }
+    ]
+  },
+  {
+    "page": "creatures/unicorn-wide",
+    "pageScore": 411,
+    "regions": [
+      {
+        "area": 202,
+        "bbox": [
+          305,
+          287,
+          322,
+          311
+        ],
+        "sampled": 64,
+        "coloredFrac": 1,
+        "meanChroma": 55.3,
+        "coloredPx": 64,
+        "fillColor": [
+          248,
+          244,
+          193
+        ],
+        "score": 202
+      },
+      {
+        "area": 137,
+        "bbox": [
+          188,
+          88,
+          201,
+          108
+        ],
+        "sampled": 22,
+        "coloredFrac": 0.864,
+        "meanChroma": 81.1,
+        "coloredPx": 19,
+        "fillColor": [
+          237,
+          210,
+          146
+        ],
+        "score": 118
+      },
+      {
+        "area": 115,
+        "bbox": [
+          184,
+          74,
+          194,
+          93
+        ],
+        "sampled": 19,
+        "coloredFrac": 0.789,
+        "meanChroma": 71.4,
+        "coloredPx": 15,
+        "fillColor": [
+          236,
+          212,
+          151
+        ],
+        "score": 91
+      }
+    ]
+  },
+  {
+    "page": "objects/balloon-wide",
+    "pageScore": 363,
+    "regions": [
+      {
+        "area": 182,
+        "bbox": [
+          216,
+          137,
+          228,
+          154
+        ],
+        "sampled": 75,
+        "coloredFrac": 1,
+        "meanChroma": 127.4,
+        "coloredPx": 75,
+        "fillColor": [
+          242,
+          231,
+          114
+        ],
+        "score": 182
+      },
+      {
+        "area": 181,
+        "bbox": [
+          274,
+          137,
+          286,
+          154
+        ],
+        "sampled": 75,
+        "coloredFrac": 1,
+        "meanChroma": 130.4,
+        "coloredPx": 75,
+        "fillColor": [
+          243,
+          231,
+          113
+        ],
+        "score": 181
+      },
+      {
+        "area": 80,
+        "bbox": [
+          199,
+          438,
+          206,
+          450
+        ],
+        "sampled": 15,
+        "coloredFrac": 0,
+        "meanChroma": 5.5,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 78,
+        "bbox": [
+          283,
+          438,
+          290,
+          450
+        ],
+        "sampled": 13,
+        "coloredFrac": 0,
+        "meanChroma": 10.1,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "objects/apple-wide",
+    "pageScore": 358,
+    "regions": [
+      {
+        "area": 358,
+        "bbox": [
+          177,
+          165,
+          201,
+          213
+        ],
+        "sampled": 78,
+        "coloredFrac": 1,
+        "meanChroma": 66.2,
+        "coloredPx": 78,
+        "fillColor": [
+          233,
+          168,
+          168
+        ],
+        "score": 358
+      }
+    ]
+  },
+  {
+    "page": "nature/caterpillar-wide",
+    "pageScore": 336,
+    "regions": [
+      {
+        "area": 169,
+        "bbox": [
+          202,
+          136,
+          213,
+          155
+        ],
+        "sampled": 62,
+        "coloredFrac": 1,
+        "meanChroma": 99.9,
+        "coloredPx": 62,
+        "fillColor": [
+          245,
+          239,
+          146
+        ],
+        "score": 169
+      },
+      {
+        "area": 167,
+        "bbox": [
+          129,
+          142,
+          140,
+          160
+        ],
+        "sampled": 61,
+        "coloredFrac": 1,
+        "meanChroma": 85.5,
+        "coloredPx": 61,
+        "fillColor": [
+          244,
+          242,
+          158
+        ],
+        "score": 167
+      }
+    ]
+  },
+  {
+    "page": "farm/cat-wide",
+    "pageScore": 318,
+    "regions": [
+      {
+        "area": 318,
+        "bbox": [
+          232,
+          137,
+          248,
+          172
+        ],
+        "sampled": 138,
+        "coloredFrac": 1,
+        "meanChroma": 59.5,
+        "coloredPx": 138,
+        "fillColor": [
+          245,
+          186,
+          200
+        ],
+        "score": 318
+      }
+    ]
+  },
+  {
+    "page": "dinosaur/trex-tall",
+    "pageScore": 316,
+    "regions": [
+      {
+        "area": 316,
+        "bbox": [
+          260,
+          199,
+          310,
+          224
+        ],
+        "sampled": 53,
+        "coloredFrac": 1,
+        "meanChroma": 85.2,
+        "coloredPx": 53,
+        "fillColor": [
+          226,
+          152,
+          140
+        ],
+        "score": 316
+      },
+      {
+        "area": 93,
+        "bbox": [
+          374,
+          172,
+          388,
+          182
+        ],
+        "sampled": 14,
+        "coloredFrac": 0,
+        "meanChroma": 24.6,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "nature/ladybug-tall",
+    "pageScore": 309,
+    "regions": [
+      {
+        "area": 212,
+        "bbox": [
+          134,
+          140,
+          152,
+          163
+        ],
+        "sampled": 55,
+        "coloredFrac": 1,
+        "meanChroma": 42.2,
+        "coloredPx": 55,
+        "fillColor": [
+          184,
+          219,
+          226
+        ],
+        "score": 212
+      },
+      {
+        "area": 97,
+        "bbox": [
+          197,
+          169,
+          209,
+          183
+        ],
+        "sampled": 14,
+        "coloredFrac": 1,
+        "meanChroma": 40.2,
+        "coloredPx": 14,
+        "fillColor": [
+          187,
+          220,
+          227
+        ],
+        "score": 97
+      }
+    ]
+  },
+  {
+    "page": "nature/spider-tall",
+    "pageScore": 299,
+    "regions": [
+      {
+        "area": 150,
+        "bbox": [
+          195,
+          247,
+          219,
+          272
+        ],
+        "sampled": 15,
+        "coloredFrac": 1,
+        "meanChroma": 45.6,
+        "coloredPx": 15,
+        "fillColor": [
+          204,
+          241,
+          249
+        ],
+        "score": 150
+      },
+      {
+        "area": 149,
+        "bbox": [
+          286,
+          247,
+          310,
+          271
+        ],
+        "sampled": 13,
+        "coloredFrac": 1,
+        "meanChroma": 41.8,
+        "coloredPx": 13,
+        "fillColor": [
+          208,
+          244,
+          250
+        ],
+        "score": 149
+      }
+    ]
+  },
+  {
+    "page": "creatures/dragon-tall",
+    "pageScore": 255,
+    "regions": [
+      {
+        "area": 255,
+        "bbox": [
+          217,
+          264,
+          252,
+          273
+        ],
+        "sampled": 98,
+        "coloredFrac": 1,
+        "meanChroma": 44.5,
+        "coloredPx": 98,
+        "fillColor": [
+          248,
+          212,
+          203
+        ],
+        "score": 255
+      },
+      {
+        "area": 274,
+        "bbox": [
+          163,
+          192,
+          198,
+          222
+        ],
+        "sampled": 45,
+        "coloredFrac": 0,
+        "meanChroma": 2.2,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "shapes/star-tall",
+    "pageScore": 250,
+    "regions": [
+      {
+        "area": 250,
+        "bbox": [
+          238,
+          276,
+          280,
+          285
+        ],
+        "sampled": 47,
+        "coloredFrac": 1,
+        "meanChroma": 184.1,
+        "coloredPx": 47,
+        "fillColor": [
+          218,
+          43,
+          34
+        ],
+        "score": 250
+      },
+      {
+        "area": 133,
+        "bbox": [
+          188,
+          238,
+          208,
+          262
+        ],
+        "sampled": 16,
+        "coloredFrac": 0,
+        "meanChroma": 3.3,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "vehicles/train-wide",
+    "pageScore": 243,
+    "regions": [
+      {
+        "area": 243,
+        "bbox": [
+          228,
+          180,
+          243,
+          198
+        ],
+        "sampled": 121,
+        "coloredFrac": 1,
+        "meanChroma": 142.8,
+        "coloredPx": 121,
+        "fillColor": [
+          70,
+          173,
+          213
+        ],
+        "score": 243
+      },
+      {
+        "area": 105,
+        "bbox": [
+          309,
+          173,
+          316,
+          190
+        ],
+        "sampled": 23,
+        "coloredFrac": 0,
+        "meanChroma": 3.1,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "vehicles/fire-wide",
+    "pageScore": 241,
+    "regions": [
+      {
+        "area": 165,
+        "bbox": [
+          154,
+          171,
+          167,
+          186
+        ],
+        "sampled": 62,
+        "coloredFrac": 1,
+        "meanChroma": 81.3,
+        "coloredPx": 62,
+        "fillColor": [
+          155,
+          218,
+          236
+        ],
+        "score": 165
+      },
+      {
+        "area": 76,
+        "bbox": [
+          199,
+          332,
+          206,
+          343
+        ],
+        "sampled": 14,
+        "coloredFrac": 1,
+        "meanChroma": 101.6,
+        "coloredPx": 14,
+        "fillColor": [
+          247,
+          236,
+          145
+        ],
+        "score": 76
+      },
+      {
+        "area": 3514,
+        "bbox": [
+          138,
+          208,
+          217,
+          278
+        ],
+        "sampled": 2495,
+        "coloredFrac": 0,
+        "meanChroma": 34.1,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 319,
+        "bbox": [
+          233,
+          242,
+          243,
+          278
+        ],
+        "sampled": 150,
+        "coloredFrac": 0,
+        "meanChroma": 0.1,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "space/station-tall",
+    "pageScore": 236,
+    "regions": [
+      {
+        "area": 80,
+        "bbox": [
+          285,
+          365,
+          298,
+          372
+        ],
+        "sampled": 12,
+        "coloredFrac": 1,
+        "meanChroma": 64.8,
+        "coloredPx": 12,
+        "fillColor": [
+          164,
+          205,
+          228
+        ],
+        "score": 80
+      },
+      {
+        "area": 79,
+        "bbox": [
+          211,
+          365,
+          223,
+          372
+        ],
+        "sampled": 14,
+        "coloredFrac": 1,
+        "meanChroma": 62.5,
+        "coloredPx": 14,
+        "fillColor": [
+          162,
+          204,
+          224
+        ],
+        "score": 79
+      },
+      {
+        "area": 77,
+        "bbox": [
+          248,
+          366,
+          260,
+          373
+        ],
+        "sampled": 13,
+        "coloredFrac": 1,
+        "meanChroma": 63.1,
+        "coloredPx": 13,
+        "fillColor": [
+          159,
+          203,
+          222
+        ],
+        "score": 77
+      },
+      {
+        "area": 79,
+        "bbox": [
+          292,
+          148,
+          303,
+          155
+        ],
+        "sampled": 15,
+        "coloredFrac": 0,
+        "meanChroma": 31.9,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 78,
+        "bbox": [
+          204,
+          148,
+          215,
+          155
+        ],
+        "sampled": 15,
+        "coloredFrac": 0,
+        "meanChroma": 27.3,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 78,
+        "bbox": [
+          248,
+          148,
+          259,
+          155
+        ],
+        "sampled": 15,
+        "coloredFrac": 0,
+        "meanChroma": 26.4,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "nature/ladybug-wide",
+    "pageScore": 223,
+    "regions": [
+      {
+        "area": 133,
+        "bbox": [
+          472,
+          338,
+          485,
+          364
+        ],
+        "sampled": 16,
+        "coloredFrac": 1,
+        "meanChroma": 98.1,
+        "coloredPx": 16,
+        "fillColor": [
+          144,
+          179,
+          80
+        ],
+        "score": 133
+      },
+      {
+        "area": 90,
+        "bbox": [
+          230,
+          319,
+          240,
+          329
+        ],
+        "sampled": 18,
+        "coloredFrac": 1,
+        "meanChroma": 45.2,
+        "coloredPx": 18,
+        "fillColor": [
+          181,
+          222,
+          226
+        ],
+        "score": 90
+      },
+      {
+        "area": 123,
+        "bbox": [
+          268,
+          205,
+          277,
+          221
+        ],
+        "sampled": 35,
+        "coloredFrac": 0,
+        "meanChroma": 2.1,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "shapes/star-wide",
+    "pageScore": 154,
+    "regions": [
+      {
+        "area": 154,
+        "bbox": [
+          250,
+          273,
+          272,
+          284
+        ],
+        "sampled": 32,
+        "coloredFrac": 1,
+        "meanChroma": 171.2,
+        "coloredPx": 32,
+        "fillColor": [
+          189,
+          18,
+          23
+        ],
+        "score": 154
+      }
+    ]
+  },
+  {
+    "page": "shapes/square-tall",
+    "pageScore": 151,
+    "regions": [
+      {
+        "area": 151,
+        "bbox": [
+          242,
+          251,
+          272,
+          257
+        ],
+        "sampled": 25,
+        "coloredFrac": 1,
+        "meanChroma": 158.7,
+        "coloredPx": 25,
+        "fillColor": [
+          227,
+          68,
+          158
+        ],
+        "score": 151
+      },
+      {
+        "area": 268,
+        "bbox": [
+          180,
+          197,
+          214,
+          226
+        ],
+        "sampled": 42,
+        "coloredFrac": 0,
+        "meanChroma": 1.8,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 246,
+        "bbox": [
+          296,
+          197,
+          330,
+          225
+        ],
+        "sampled": 29,
+        "coloredFrac": 0,
+        "meanChroma": 1.1,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "vehicles/garbage-wide",
+    "pageScore": 149,
+    "regions": [
+      {
+        "area": 149,
+        "bbox": [
+          155,
+          377,
+          177,
+          391
+        ],
+        "sampled": 19,
+        "coloredFrac": 1,
+        "meanChroma": 143,
+        "coloredPx": 19,
+        "fillColor": [
+          230,
+          100,
+          87
+        ],
+        "score": 149
+      }
+    ]
+  },
+  {
+    "page": "vehicles/excavator-wide",
+    "pageScore": 142,
+    "regions": [
+      {
+        "area": 79,
+        "bbox": [
+          310,
+          241,
+          320,
+          249
+        ],
+        "sampled": 17,
+        "coloredFrac": 1,
+        "meanChroma": 61.4,
+        "coloredPx": 17,
+        "fillColor": [
+          234,
+          173,
+          198
+        ],
+        "score": 79
+      },
+      {
+        "area": 80,
+        "bbox": [
+          270,
+          236,
+          280,
+          244
+        ],
+        "sampled": 19,
+        "coloredFrac": 0.789,
+        "meanChroma": 54.7,
+        "coloredPx": 15,
+        "fillColor": [
+          233,
+          171,
+          198
+        ],
+        "score": 63
+      }
+    ]
+  },
+  {
+    "page": "space/meteor-wide",
+    "pageScore": 99,
+    "regions": [
+      {
+        "area": 418,
+        "bbox": [
+          46,
+          95,
+          72,
+          132
+        ],
+        "sampled": 80,
+        "coloredFrac": 0.237,
+        "meanChroma": 37.6,
+        "coloredPx": 19,
+        "fillColor": [
+          248,
+          206,
+          202
+        ],
+        "score": 99
+      },
+      {
+        "area": 149,
+        "bbox": [
+          250,
+          375,
+          264,
+          391
+        ],
+        "sampled": 42,
+        "coloredFrac": 0,
+        "meanChroma": 0.5,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 145,
+        "bbox": [
+          307,
+          252,
+          322,
+          268
+        ],
+        "sampled": 36,
+        "coloredFrac": 0,
+        "meanChroma": 0.7,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "dinosaur/velociraptor-tall",
+    "pageScore": 84,
+    "regions": [
+      {
+        "area": 205,
+        "bbox": [
+          253,
+          120,
+          284,
+          148
+        ],
+        "sampled": 22,
+        "coloredFrac": 0.409,
+        "meanChroma": 51.9,
+        "coloredPx": 9,
+        "fillColor": [
+          249,
+          242,
+          147
+        ],
+        "score": 84
+      }
+    ]
+  },
+  {
+    "page": "dinosaur/brachiosaurus-tall",
+    "pageScore": 78,
+    "regions": [
+      {
+        "area": 78,
+        "bbox": [
+          295,
+          135,
+          306,
+          142
+        ],
+        "sampled": 15,
+        "coloredFrac": 1,
+        "meanChroma": 59.5,
+        "coloredPx": 15,
+        "fillColor": [
+          244,
+          227,
+          184
+        ],
+        "score": 78
+      }
+    ]
+  },
+  {
+    "page": "vehicles/excavator-tall",
+    "pageScore": 70,
+    "regions": [
+      {
+        "area": 5255,
+        "bbox": [
+          158,
+          231,
+          257,
+          311
+        ],
+        "sampled": 3580,
+        "coloredFrac": 0.013,
+        "meanChroma": 35,
+        "coloredPx": 48,
+        "fillColor": [
+          192,
+          227,
+          226
+        ],
+        "score": 70
+      }
+    ]
+  },
+  {
+    "page": "creatures/mermaid-tall",
+    "pageScore": 0,
+    "regions": [
+      {
+        "area": 120,
+        "bbox": [
+          233,
+          210,
+          245,
+          228
+        ],
+        "sampled": 21,
+        "coloredFrac": 0,
+        "meanChroma": 25.4,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "nature/ant-tall",
+    "pageScore": 0,
+    "regions": [
+      {
+        "area": 208,
+        "bbox": [
+          213,
+          231,
+          237,
+          247
+        ],
+        "sampled": 63,
+        "coloredFrac": 0,
+        "meanChroma": 0.3,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 155,
+        "bbox": [
+          124,
+          222,
+          143,
+          237
+        ],
+        "sampled": 37,
+        "coloredFrac": 0,
+        "meanChroma": 0,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "nature/caterpillar-tall",
+    "pageScore": 0,
+    "regions": [
+      {
+        "area": 283,
+        "bbox": [
+          347,
+          172,
+          392,
+          207
+        ],
+        "sampled": 13,
+        "coloredFrac": 0,
+        "meanChroma": 0,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 215,
+        "bbox": [
+          275,
+          183,
+          305,
+          215
+        ],
+        "sampled": 22,
+        "coloredFrac": 0,
+        "meanChroma": 0.6,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "nature/snail-tall",
+    "pageScore": 0,
+    "regions": [
+      {
+        "area": 109,
+        "bbox": [
+          316,
+          133,
+          331,
+          141
+        ],
+        "sampled": 29,
+        "coloredFrac": 0,
+        "meanChroma": 32.2,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 108,
+        "bbox": [
+          407,
+          135,
+          422,
+          143
+        ],
+        "sampled": 28,
+        "coloredFrac": 0,
+        "meanChroma": 30.7,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "nature/snail-wide",
+    "pageScore": 0,
+    "regions": [
+      {
+        "area": 127,
+        "bbox": [
+          222,
+          129,
+          234,
+          151
+        ],
+        "sampled": 16,
+        "coloredFrac": 0,
+        "meanChroma": 2.3,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 119,
+        "bbox": [
+          159,
+          121,
+          171,
+          142
+        ],
+        "sampled": 12,
+        "coloredFrac": 0,
+        "meanChroma": 1.8,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "shapes/circle-tall",
+    "pageScore": 0,
+    "regions": [
+      {
+        "area": 286,
+        "bbox": [
+          156,
+          241,
+          196,
+          276
+        ],
+        "sampled": 26,
+        "coloredFrac": 0,
+        "meanChroma": 2.5,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "shapes/rectangle-wide",
+    "pageScore": 0,
+    "regions": [
+      {
+        "area": 942,
+        "bbox": [
+          347,
+          69,
+          391,
+          136
+        ],
+        "sampled": 261,
+        "coloredFrac": 0,
+        "meanChroma": 29,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 839,
+        "bbox": [
+          149,
+          60,
+          191,
+          124
+        ],
+        "sampled": 208,
+        "coloredFrac": 0,
+        "meanChroma": 29.3,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 670,
+        "bbox": [
+          69,
+          123,
+          106,
+          180
+        ],
+        "sampled": 133,
+        "coloredFrac": 0,
+        "meanChroma": 27.3,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 435,
+        "bbox": [
+          431,
+          141,
+          458,
+          185
+        ],
+        "sampled": 36,
+        "coloredFrac": 0,
+        "meanChroma": 29.4,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "shapes/square-wide",
+    "pageScore": 0,
+    "regions": [
+      {
+        "area": 206,
+        "bbox": [
+          289,
+          232,
+          310,
+          269
+        ],
+        "sampled": 23,
+        "coloredFrac": 0,
+        "meanChroma": 0,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 194,
+        "bbox": [
+          219,
+          223,
+          240,
+          261
+        ],
+        "sampled": 15,
+        "coloredFrac": 0,
+        "meanChroma": 1.3,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "shapes/triangle-wide",
+    "pageScore": 0,
+    "regions": [
+      {
+        "area": 232,
+        "bbox": [
+          277,
+          275,
+          299,
+          318
+        ],
+        "sampled": 20,
+        "coloredFrac": 0,
+        "meanChroma": 0.5,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 228,
+        "bbox": [
+          212,
+          275,
+          235,
+          319
+        ],
+        "sampled": 15,
+        "coloredFrac": 0,
+        "meanChroma": 1.7,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "vehicles/monster-wide",
+    "pageScore": 0,
+    "regions": [
+      {
+        "area": 1849,
+        "bbox": [
+          230,
+          143,
+          312,
+          196
+        ],
+        "sampled": 999,
+        "coloredFrac": 0,
+        "meanChroma": 0.6,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 203,
+        "bbox": [
+          273,
+          228,
+          285,
+          249
+        ],
+        "sampled": 84,
+        "coloredFrac": 0,
+        "meanChroma": 24.9,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      },
+      {
+        "area": 134,
+        "bbox": [
+          353,
+          219,
+          361,
+          239
+        ],
+        "sampled": 37,
+        "coloredFrac": 0,
+        "meanChroma": 20,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  },
+  {
+    "page": "vehicles/train-tall",
+    "pageScore": 0,
+    "regions": [
+      {
+        "area": 141,
+        "bbox": [
+          218,
+          358,
+          224,
+          382
+        ],
+        "sampled": 31,
+        "coloredFrac": 0,
+        "meanChroma": 2.4,
+        "coloredPx": 0,
+        "fillColor": null,
+        "score": 0
+      }
+    ]
+  }
+]
