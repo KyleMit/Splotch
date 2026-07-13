@@ -22,7 +22,7 @@ correct pixels underneath it. Two generations of fixes attacked the symptom:
   constraint.
 
 Alternatives evaluated for dark mode (chronicled with illustrations in
-`tools/asset-gen/pipeline.md`): a build-time morphological classifier that preserves solid interiors
+`tools/asset-gen/docs/pipeline.md`): a build-time morphological classifier that preserves solid interiors
 (can only *keep* what the pen contains — it can never decide a thin-ringed sclera should go solid);
 the same classifier at runtime (main-thread cost ADR-0043 exists to avoid); and fully independent
 AI-generated night line art (registration drift — the ghosting class ADR-0043 prevents).
@@ -35,7 +35,7 @@ gates:
 * **Pen outline** (`{page}.outline.webp`) — black ink on white. The light-mode overlay and the
   source of every derivation (thumbs, light fills, chalk).
 * **Chalk outline** (`{page}.chalk.webp`) — the dark-mode line art:
-  `tools/asset-gen/gen-coloring-chalk.mjs` has Gemini redraw the inverted pen as a chalk drawing,
+  `tools/asset-gen/scripts/gen-coloring-chalk.mjs` has Gemini redraw the inverted pen as a chalk drawing,
   making the judgment calls a blind invert can't — eye sclera and catchlights become deliberate
   SOLID WHITE, pupils stay black. Gates: every pen stroke still traced (`lib/outline-match.mjs` keep
   ≥ 92%, worst tile ≥ 80%), new ink only inside pen-enclosed interiors (judged by enclosure, not

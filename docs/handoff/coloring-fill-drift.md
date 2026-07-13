@@ -95,7 +95,7 @@ same global-average blind spot for localized drift, in dark mode.
 
 One `[Docs]` finding is filed: the asset-gen review-sheet **viewing** path isn't discoverable — a
 cloud session reinvents headless Playwright screenshots instead of publishing the sheet as an
-Artifact. Fix is a short cross-reference in `tools/asset-gen/README.md`. `/fix-audits` will clear
+Artifact. Fix is a short cross-reference in `tools/asset-gen/docs/README.md`. `/fix-audits` will clear
 it, or do it by hand.
 
 ## How to resume

@@ -4,13 +4,13 @@ The living reference for how Splotch's coloring-page art is produced, gated, rev
 This doc describes the **current** pipeline only — written to let a fresh session run the next
 category without re-deriving any of it. The approaches that were tried and retired (canonical-eye
 retouching, thin-stroke normalization as the dark-mode fix, the rejected alternatives, and the
-eye-failure gallery that produced today's gates) live in [`legacy/README.md`](legacy/README.md).
+eye-failure gallery that produced today's gates) live in [`legacy/README.md`](../legacy/README.md).
 
 Companion docs: `README.md` (runbook), `contact-sheet.md` (review surface), the decision records in
-[`docs/`](docs/) — [pen/chalk fork](docs/pen-chalk-fork.md),
-[chalk edge crisping](docs/chalk-edge-crisping.md),
-[inpainted fill punch](docs/inpainted-fill-punch.md), [asset naming](docs/asset-naming.md),
-[fill vocabulary](docs/fill-vocabulary.md), [asset-gen architecture](docs/architecture.md) — plus
+[`docs/`]() — [pen/chalk fork](pen-chalk-fork.md),
+[chalk edge crisping](chalk-edge-crisping.md),
+[inpainted fill punch](inpainted-fill-punch.md), [asset naming](asset-naming.md),
+[fill vocabulary](fill-vocabulary.md), [asset-gen architecture](architecture.md) — plus
 ADR-0043 (magic-brush reveal) and ADR-0052 (dark mode) in `docs/adrs/`. Every illustration here is a
 frozen copy in `pipeline-assets/` — live assets regenerate, these don't.
 
@@ -29,7 +29,7 @@ flowchart LR
 ```
 
 The line work is **forked per theme** (the pen/chalk split,
-[docs/pen-chalk-fork.md](docs/pen-chalk-fork.md)): the **pen outline** is black ink on white paper —
+[pen-chalk-fork.md](pen-chalk-fork.md)): the **pen outline** is black ink on white paper —
 the light-mode overlay and the source every other asset derives from. The **chalk outline** is white
 ink on a black board — the dark-mode overlay, a Gemini redraw of the inverted pen that makes the
 judgment calls a blind invert can't: eye sclera and catchlights become deliberate SOLID WHITE,
@@ -38,7 +38,7 @@ pupils stay black, everything else stays thin strokes. The chalk is *stored* ink
 (`invert(1)` + screen) renders it unchanged and every ink-on-white tool in this folder reads it
 unmodified. Orientations without a chalk fall back to inverting the pen, so categories migrate
 incrementally. (Why a single shared outline couldn't serve both themes — the white-blob problem and
-two earlier generations of fixes — is chronicled in [`legacy/README.md`](legacy/README.md).)
+two earlier generations of fixes — is chronicled in [`legacy/README.md`](../legacy/README.md).)
 
 | Asset                           | Lives in                           | Shipped?                                                                                                                               | Produced by                                              |
 | ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
@@ -116,7 +116,7 @@ matching the shipped catalog plus a 1–2 sentence scene (same subject, delibera
 composition), gated offline on solidity, ring depth, eye-core presence (`--eyes`), border whiteness,
 and ink density; candidates land in `.coloring-samples/fresh/`. A fresh pen invalidates the page's
 entire suite — regenerate thumb → light → chalk → night → punch. Decision record + the 2026-07-13
-five-page pass: [docs/fresh-outline-regen.md](docs/fresh-outline-regen.md).
+five-page pass: [fresh-outline-regen.md](fresh-outline-regen.md).
 
 ## Stage 1.5 — Chalk outlines
 
@@ -156,7 +156,7 @@ change):
 Candidates render to ink polarity through a **crisping S-curve** (`lib/crisp-ink.mjs`) instead of
 the pen tools' gentle contrast: on the dark board the invert + screen render and the binary night
 punch turn a soft antialias ramp or a faintly-grey ground into a ring of dark specks around every
-line ([decision record](docs/chalk-edge-crisping.md)).
+line ([decision record](chalk-edge-crisping.md)).
 
 Judgment-call misfires the gates can't see (a chalk that whitens something canon says is dark — the
 ladybug's first take gave it white shell spots) are caught only by human review of the
@@ -170,7 +170,7 @@ re-punch. Thumbs and light fills are untouched — they belong to the pen.
 `npm run gen:coloring-punch -- [pages…]` re-derives every shipped fill from its committed raw: where
 the line art is dark (luma < 150) the fill's pixels are **inpainted** — replaced by the surrounding
 fill color bled inward — and the shipped fill is fully opaque (`lib/punch-fill.mjs`;
-[decision record](docs/inpainted-fill-punch.md) — the punch originally cut these pixels to
+[decision record](inpainted-fill-punch.md) — the punch originally cut these pixels to
 transparency, whose alpha edge resampled against the dark paper into a dotted dark ring around every
 line at display scale). The mask is **per-theme**: light raws punch against the pen, night raws
 against the chalk when the page has one (both ship ink-on-white, so the mask math is identical;
@@ -181,7 +181,7 @@ is also what makes the chalk's solid whites land in the final image: the fill's 
 cleared to neighbor color, and the screened chalk white owns the region. Deterministic and offline —
 after any raw, pen, or chalk change, re-punch.
 
-![outline, raw fill, punched fill](pipeline-assets/punch-outline-raw-punched-ant.webp)
+![outline, raw fill, punched fill](../pipeline-assets/punch-outline-raw-punched-ant.webp)
 
 *Left to right: outline → raw light fill (keeps its outlines, committed to `fill-src/`) → the
 shipped punched fill composited over magenta so the punched-out line work is visible. (Illustration
@@ -212,7 +212,7 @@ Passing output writes the raw to `fill-src/` and punches the shipped fill in one
 
 ```bash
 node --experimental-strip-types --disable-warning=ExperimentalWarning \
-  tools/asset-gen/gen-coloring-fills-dark.mjs <category|page> [flags]
+  tools/asset-gen/scripts/gen-coloring-fills-dark.mjs <category|page> [flags]
 ```
 
 Targets: a category (`nature`), one orientation (`nature --tall` / `nature --wide`), or a single
@@ -289,7 +289,7 @@ Light mode must stay byte-identical throughout a night-fill pass. Night fills ha
 
 `lib/eye-fill.mjs` — the shared machinery behind the eye gates in the normalizer, the chalk
 generator, the fill generators, and the audits. (The shipped failure gallery that motivated each
-gate is in [`legacy/README.md`](legacy/README.md).)
+gate is in [`legacy/README.md`](../legacy/README.md).)
 
 Detection: an **eye core** is the innermost region of a nested `A ⊂ B ⊂ C` enclosure chain in
 eye-like size bands (a catchlight interior or a small pupil disc). Strict double-nesting with bbox
@@ -358,7 +358,7 @@ The loop that has worked, per category:
 4. **Rebuild the contact sheet and publish it as an Artifact** — judge on the Combined view in BOTH
    themes; zoom the eyes. The sheet is the review surface of record (`contact-sheet.md`):
 
-   ![contact sheet pair](pipeline-assets/review-contact-sheet-pair.webp)
+   ![contact sheet pair](../pipeline-assets/review-contact-sheet-pair.webp)
 
 5. **After a regen wave, run the exploration auditors too** (proven in the 3.1 migration; not yet
    promoted to first-class scripts — `ISSUES.md`): the invented-shape detector
@@ -410,7 +410,7 @@ Hard-won process lessons:
 | Category                          | Pen outlines                                   | Chalk outlines    | Night fills | Notes                                                                                                                                                                                                                                                                             |
 | --------------------------------- | ---------------------------------------------- | ----------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Nature                            | ✅ thin-stroke, all 12                         | ✅ all 12         | ✅          | the pilot for the fork. The 3.1 regen cleared the historical flat-pupil ⚠ on caterpillar-wide + ladybug-wide (2.5 refused their spiral-catchlight eyes across 11+ attempts each; 3.1 painted them lively unprompted — the pen de-swirl is no longer urgent).                      |
-| Space, Farm, Dinosaurs, Creatures | ❌ accident-era (normalization stays optional) | ✅ all 12 each    | ✅          | first migrated 2026-07 on 2.5 in one autonomous batch, fully regenerated on 3.1 (see the [migration record](docs/gemini-3.1-migration.md)). The owl kept its best-case look through the regen.                                                                                    |
+| Space, Farm, Dinosaurs, Creatures | ❌ accident-era (normalization stays optional) | ✅ all 12 each    | ✅          | first migrated 2026-07 on 2.5 in one autonomous batch, fully regenerated on 3.1 (see the [migration record](gemini-3.1-migration.md)). The owl kept its best-case look through the regen.                                                                                    |
 | Objects, Shapes, Vehicles         | ❌                                             | ✅ (11 / 11 / 12) | ✅          | shapes' "geometric solids" turned out to be giant cartoon pupils — the face pipeline applied cleanly. vehicles/train-wide's historical dark-outline ⚠ is gone (3.1 passed it first take, lineW 255). police-tall's chalk needed an erase `--notes` (whitened pupils, gate-blind). |
 
 Every category now ships pen + chalk + light + night; `heart-tall` and `umbrella-wide` have full
@@ -445,7 +445,7 @@ condition on the chalk) → ship raws + punch → wire `books.ts` (`night` + `ch
 The Stage 4 model input — the chalk as dark mode displays it (negated, white-on-black), here the owl
 whose sclera the chalk owns:
 
-![chalk display input](pipeline-assets/nightfill-chalk-input-owl.webp)
+![chalk display input](../pipeline-assets/nightfill-chalk-input-owl.webp)
 
 ## Where the next problems are likely to come from
 
@@ -468,7 +468,7 @@ whose sclera the chalk owns:
   already flirts with this) can break detection silently: no cores found = vacuous pass. The audit
   prints core counts; a face page reporting 0 cores is a red flag to investigate, not a pass.
 * **Model drift.** The default model is `gemini-3.1-flash-image` since the 2026-07 full-catalog
-  regeneration ([run record](docs/gemini-3.1-migration.md)); it cleared 2.5's re-inking, nudge, and
+  regeneration ([run record](gemini-3.1-migration.md)); it cleared 2.5's re-inking, nudge, and
   eye-flooding habits, so the temperature ladder and `--dilate-lines` are now escalation levers, not
   defaults. A future model upgrade re-rolls all of those tendencies; the gates should catch
   regressions, but attempt budgets will need re-tuning again. One 3.1-specific habit to watch:

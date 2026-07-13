@@ -25,7 +25,7 @@
 // shipped assets are only touched with --apply, and --apply only copies a
 // candidate that passed every gate. After applying, regenerate the WHOLE suite
 // from the new outline (thumbs, light fill, night fill, punch) and re-review the
-// contact sheet in BOTH themes — see tools/asset-gen/pipeline.md.
+// contact sheet in BOTH themes — see tools/asset-gen/docs/pipeline.md.
 //
 //   npm run gen:coloring-outlines:normalize -- nature/ant-tall nature/ant-wide
 //   ... -- nature/ant-tall --apply             copy the passing candidate over web/static
@@ -37,12 +37,12 @@ import { join, dirname, relative } from 'node:path';
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
-import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
-import { alignToSource } from './lib/align-to-source.mjs';
-import { scoreSolidity, whitenSolidRegions } from './lib/solid-regions.mjs';
-import { scoreEyeRings, findEyeCores } from './lib/eye-fill.mjs';
-import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
+import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
+import { alignToSource } from '../lib/align-to-source.mjs';
+import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
+import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
+import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 92;

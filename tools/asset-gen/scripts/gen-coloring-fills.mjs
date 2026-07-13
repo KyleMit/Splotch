@@ -36,12 +36,12 @@ import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
-import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
-import { alignToSource } from './lib/align-to-source.mjs';
-import { scoreEyeFill, judgeLightEyes } from './lib/eye-fill.mjs';
-import { punchFill } from './lib/punch-fill.mjs';
-import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
+import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
+import { alignToSource } from '../lib/align-to-source.mjs';
+import { scoreEyeFill, judgeLightEyes } from '../lib/eye-fill.mjs';
+import { punchFill } from '../lib/punch-fill.mjs';
+import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 90;

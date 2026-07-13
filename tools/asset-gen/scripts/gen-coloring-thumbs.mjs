@@ -19,7 +19,7 @@ import { join } from 'node:path';
 import { globSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import sharp from 'sharp';
-import { COLORING_DIR, fail } from './lib/paths.mjs';
+import { COLORING_DIR, fail } from '../lib/paths.mjs';
 
 const THUMB_EDGE = 400; // longest-edge px — comfortably covers a 2x DPR ~200px tile
 const THUMB_QUALITY = 80;

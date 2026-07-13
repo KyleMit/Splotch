@@ -1,6 +1,6 @@
-# The contact sheet — `gen-contact-sheet.mjs`
+# The contact sheet — `scripts/gen-contact-sheet.mjs`
 
-**Read this before modifying `gen-contact-sheet.mjs` or anything under `contact-sheet/`.** It is the
+**Read this before modifying `scripts/gen-contact-sheet.mjs` or anything under `contact-sheet/`.** It is the
 single review surface for the coloring fills — the review-sheet role previously split across
 `gen-coloring-sheet.mjs` lives here now.
 
@@ -20,7 +20,7 @@ capped), so the images simply grow with the viewport until they hit that cap.
 
 ```bash
 node --experimental-strip-types --disable-warning=ExperimentalWarning \
-  tools/asset-gen/gen-contact-sheet.mjs <category>[/page[-orient]] \
+  tools/asset-gen/scripts/gen-contact-sheet.mjs <category>[/page[-orient]] \
     [--source shipped|samples] [--out FILE]
 ```
 
@@ -69,7 +69,7 @@ outlines, which the dark-ink mask can't read. Badge colors: green ≥ 99, yellow
 
 ## Where the code lives
 
-* `gen-contact-sheet.mjs` — assembles the HTML shell, embeds the images, scores the badges, and
+* `scripts/gen-contact-sheet.mjs` — assembles the HTML shell, embeds the images, scores the badges, and
   injects the cell data as a JSON global (`window.__CONTACT_SHEET__`). No build-time string
   interpolation reaches the runtime.
 * `contact-sheet/contact-sheet.css` — the entire look.

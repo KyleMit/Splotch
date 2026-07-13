@@ -1,15 +1,15 @@
 // Builds the coloring-fill contact sheet for ONE category. Read
-// ./contact-sheet.md before changing this file or anything under contact-sheet/
+// ../docs/contact-sheet.md before changing this file or anything under contact-sheet/
 // — it holds the CLI contract, the layer/compositing model, and the size
 // constraints that shape this generator.
 //
 //   node --experimental-strip-types --disable-warning=ExperimentalWarning \
-//     tools/asset-gen/gen-contact-sheet.mjs <category>[/page[-orient]] \
+//     tools/asset-gen/scripts/gen-contact-sheet.mjs <category>[/page[-orient]] \
 //       [--source shipped|samples] [--out FILE]
 import { parseArgs } from 'node:util';
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { outlineMatch } from './lib/outline-match.mjs';
+import { outlineMatch } from '../lib/outline-match.mjs';
 import {
   ASSET_GEN_DIR,
   COLORING_DIR,
@@ -17,8 +17,8 @@ import {
   SAMPLES_DIR,
   SAMPLES_DARK_DIR,
   fail,
-} from './lib/paths.mjs';
-import { BOOKS } from '../../web/src/lib/state/books.ts';
+} from '../lib/paths.mjs';
+import { BOOKS } from '../../../web/src/lib/state/books.ts';
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,

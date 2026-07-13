@@ -21,13 +21,13 @@
 // (eye sclera, catchlights) survive into the night render. It ships INK-ON-WHITE
 // (the negation of what dark mode shows) so the existing dark treatment
 // (--lineart-filter: invert(1) + screen) renders it unchanged; orientations
-// without a chalk fall back to inverting the pen (tools/asset-gen/gen-coloring-chalk.mjs).
+// without a chalk fall back to inverting the pen (tools/asset-gen/scripts/gen-coloring-chalk.mjs).
 //
 // Each picker-facing line-art image (cover + pages) has a `.thumb.webp` sibling
-// (tools/asset-gen/gen-coloring-thumbs.mjs): the picker grid shows the thumbnail, the
+// (tools/asset-gen/scripts/gen-coloring-thumbs.mjs): the picker grid shows the thumbnail, the
 // full-screen canvas overlay uses the full-res source. `thumbPath()` maps one to
 // the other. The colored `.light.webp` fill is a flat-colored, pixel-aligned
-// version of the line-art page (tools/asset-gen/gen-coloring-fills.mjs) that the magic
+// version of the line-art page (tools/asset-gen/scripts/gen-coloring-fills.mjs) that the magic
 // brush reveals where the child paints (ADR-0043); it never appears in the grid,
 // so it has no thumbnail. `bookAssetPaths()` lists them all so check-assets
 // validates and strip-native-assets removes them together. Thumbnails: ADR-0045.
@@ -112,7 +112,7 @@ export const BOOKS: Book[] = [
     cover: '/coloring/farm/cover.outline.webp',
     pages: [
       // Night fills + chalk outlines shipped for both orientations (ADR-0052;
-      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      // pen/chalk fork — see tools/asset-gen/docs/pipeline.md).
       page('farm', 'cat', 'Cat', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page('farm', 'cow', 'Cow', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page('farm', 'dog', 'Dog', ['portrait', 'landscape'], ['portrait', 'landscape']),
@@ -128,7 +128,7 @@ export const BOOKS: Book[] = [
     cover: '/coloring/dinosaur/cover.outline.webp',
     pages: [
       // Night fills + chalk outlines shipped for both orientations (ADR-0052;
-      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      // pen/chalk fork — see tools/asset-gen/docs/pipeline.md).
       page(
         'dinosaur',
         'brachiosaurus',
@@ -174,7 +174,7 @@ export const BOOKS: Book[] = [
     cover: '/coloring/creatures/cover.outline.webp',
     pages: [
       // Night fills + chalk outlines shipped for both orientations (ADR-0052;
-      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      // pen/chalk fork — see tools/asset-gen/docs/pipeline.md).
       page('creatures', 'dragon', 'Dragon', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page('creatures', 'fairy', 'Fairy', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page('creatures', 'mermaid', 'Mermaid', ['portrait', 'landscape'], ['portrait', 'landscape']),
@@ -190,7 +190,7 @@ export const BOOKS: Book[] = [
     cover: '/coloring/nature/cover.outline.webp',
     pages: [
       // Night fills + chalk outlines shipped for both orientations (ADR-0052;
-      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      // pen/chalk fork — see tools/asset-gen/docs/pipeline.md).
       page('nature', 'ant', 'Ant', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page('nature', 'bee', 'Bee', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page(
@@ -212,7 +212,7 @@ export const BOOKS: Book[] = [
     cover: '/coloring/objects/cover.outline.webp',
     pages: [
       // Night fills + chalk outlines shipped for both orientations (ADR-0052;
-      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      // pen/chalk fork — see tools/asset-gen/docs/pipeline.md).
       page('objects', 'apple', 'Apple', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page('objects', 'balloon', 'Balloon', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page('objects', 'flower', 'Flower', ['portrait', 'landscape'], ['portrait', 'landscape']),
@@ -227,7 +227,7 @@ export const BOOKS: Book[] = [
     cover: '/coloring/shapes/cover.outline.webp',
     pages: [
       // Night fills + chalk outlines shipped for both orientations (ADR-0052;
-      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      // pen/chalk fork — see tools/asset-gen/docs/pipeline.md).
       page('shapes', 'circle', 'Circle', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page(
         'shapes',
@@ -248,7 +248,7 @@ export const BOOKS: Book[] = [
     cover: '/coloring/space/cover.outline.webp',
     pages: [
       // Night fills + chalk outlines shipped for both orientations (ADR-0052;
-      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      // pen/chalk fork — see tools/asset-gen/docs/pipeline.md).
       page('space', 'astronaut', 'Astronaut', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page('space', 'meteor', 'Meteor', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page('space', 'moon', 'Moon', ['portrait', 'landscape'], ['portrait', 'landscape']),
@@ -264,7 +264,7 @@ export const BOOKS: Book[] = [
     cover: '/coloring/vehicles/cover.outline.webp',
     pages: [
       // Night fills + chalk outlines shipped for both orientations (ADR-0052;
-      // pen/chalk fork — see tools/asset-gen/pipeline.md).
+      // pen/chalk fork — see tools/asset-gen/docs/pipeline.md).
       page(
         'vehicles',
         'excavator',

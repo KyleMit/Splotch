@@ -10,9 +10,9 @@ import { readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
-import { COLORING_DIR, fail } from './lib/paths.mjs';
-import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from './lib/solid-regions.mjs';
-import { scoreEyeRings, EYE_RING_DEPTH_MAX } from './lib/eye-fill.mjs';
+import { COLORING_DIR, fail } from '../lib/paths.mjs';
+import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from '../lib/solid-regions.mjs';
+import { scoreEyeRings, EYE_RING_DEPTH_MAX } from '../lib/eye-fill.mjs';
 
 async function pagesUnder(sub = '') {
   const out = [];
