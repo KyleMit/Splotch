@@ -1,0 +1,10 @@
+{
+  "house-wide": {
+    "chalk": {
+      "flags": {
+        "notes": "This scene has NO EYES — that is expected and correct, not a problem with the image. Do not look for eyes. Just redraw the drawing as a chalk line drawing, whitening only small naturally-white features if there are any."
+      },
+      "why": "Durable page quirk: the chalk instruction is eye-flavored and the eyeless scene made 2.5 REFUSE ('there are no eyes in the image to edit' — commits 46daba9 + 6f6e223; pipeline.md status-table lesson). Note text reconstructed. The 3.1 wave chalked it clean without the note, but the instruction is still eye-flavored, so the guard stays."
+    }
+  }
+}

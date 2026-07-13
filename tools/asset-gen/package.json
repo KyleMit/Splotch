@@ -12,6 +12,7 @@
     "coloring-punch": "node bin/punch-fill-outlines.mjs",
     "coloring-thumbs": "node bin/gen-coloring-thumbs.mjs",
     "contact-sheet": "node --experimental-strip-types --disable-warning=ExperimentalWarning bin/gen-contact-sheet.mjs",
+    "asset-manifest": "node bin/gen-asset-manifest.mjs",
     "png-to-webp": "node bin/png-to-webp.mjs"
   }
 }

@@ -8,7 +8,8 @@
     clearOverlay,
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
-  import { pageImage, thumbPath, type Book, type ColoringPage } from '$lib/state/books';
+  import { pageImage, pageThumb, thumbPath, type Book, type ColoringPage } from '$lib/state/books';
+  import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { layout } from '$lib/state/layout.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
@@ -34,9 +35,10 @@
 
   // Pressing/hovering a book tile warms that book's page thumbs before the
   // sub-grid renders; hovering a page tile warms its full-res overlay so applying
-  // it to the canvas is immediate.
+  // it to the canvas is immediate. Page thumbs are theme-aware (chalk in dark
+  // mode) — reading resolvedTheme() keeps the warmed set and the grid in sync.
   function prefetchBookPages(book: Book) {
-    prefetchImages(book.pages.map((page) => thumbPath(pageImage(page, orientation))));
+    prefetchImages(book.pages.map((page) => pageThumb(page, orientation, resolvedTheme())));
   }
   function prefetchPageOverlay(page: ColoringPage) {
     prefetchImages([pageImage(page, orientation)]);
@@ -167,7 +169,7 @@
               onpointerenter={() => prefetchPageOverlay(page)}
               onpointerdown={() => prefetchPageOverlay(page)}
             >
-              <img src={thumbPath(pageImage(page, orientation))} alt="" loading="lazy" />
+              <img src={pageThumb(page, orientation, resolvedTheme())} alt="" loading="lazy" />
             </button>
           {/each}
         </div>

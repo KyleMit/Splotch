@@ -45,6 +45,10 @@
 //   npm run gen:coloring-chalk -- nature                    whole category
 //   npm run gen:coloring-chalk -- nature/ant-tall --apply   ship the passing candidate
 //   ... --max-attempts 6  -t 0.5  --notes "…"  --force      the usual levers
+//   ... --dry-run                                           print resolved levers per page (no API)
+//
+// Per-page levers auto-load from the fill-src/<category>/notes.json registry
+// (lib/page-notes.mjs); explicit CLI flags always override the registry.
 import { parseArgs } from 'node:util';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
@@ -53,6 +57,7 @@ import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { crispInk } from '../lib/crisp-ink.mjs';
@@ -209,29 +214,37 @@ const { values, positionals } = parseArgs({
     'max-attempts': { type: 'string' },
     'invented-max': { type: 'string' },
     'white-frac-max': { type: 'string' },
+    'dry-run': { type: 'boolean' },
   },
 });
 if (!positionals.length)
   fail('give one or more pages or categories, e.g. "nature/ant-tall" or "nature"');
 // --rescore re-runs the gates over the existing candidates in the samples dir
 // (no API calls) — for re-judging after a gate change without burning takes.
-if (!values.rescore && !process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
-const baseTemp = values.temperature === undefined ? 0.35 : Number(values.temperature);
-if (!(baseTemp >= 0 && baseTemp <= 2)) fail('--temperature must be between 0 and 2');
-const maxAttempts = values['max-attempts'] === undefined ? 4 : Number(values['max-attempts']);
-if (!(Number.isInteger(maxAttempts) && maxAttempts >= 1))
-  fail('--max-attempts must be a positive integer');
-const inventedMax =
-  values['invented-max'] === undefined ? INVENTED_MAX_DEFAULT : Number(values['invented-max']);
-if (!(inventedMax >= 0)) fail('--invented-max must be a non-negative number');
-const whiteFracMax =
-  values['white-frac-max'] === undefined
-    ? WHITE_FRAC_MAX_DEFAULT
-    : Number(values['white-frac-max']);
-if (!(whiteFracMax >= 0)) fail('--white-frac-max must be a non-negative number');
-const instruction = values.notes
-  ? `${INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${values.notes}`
-  : INSTRUCTION;
+if (!values.rescore && !values['dry-run'] && !process.env.GEMINI_API_KEY)
+  fail('GEMINI_API_KEY is not set.');
+
+// Per-page tuning resolves in the page loop — defaults, then the page's
+// fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
+function chalkSettings(v, where) {
+  const s = {
+    baseTemp: v.temperature === undefined ? 0.35 : Number(v.temperature),
+    maxAttempts: v['max-attempts'] === undefined ? 4 : Number(v['max-attempts']),
+    inventedMax: v['invented-max'] === undefined ? INVENTED_MAX_DEFAULT : Number(v['invented-max']),
+    whiteFracMax:
+      v['white-frac-max'] === undefined ? WHITE_FRAC_MAX_DEFAULT : Number(v['white-frac-max']),
+    notes: v.notes,
+  };
+  if (!(s.baseTemp >= 0 && s.baseTemp <= 2))
+    fail(`--temperature must be between 0 and 2 (${where})`);
+  if (!(Number.isInteger(s.maxAttempts) && s.maxAttempts >= 1))
+    fail(`--max-attempts must be a positive integer (${where})`);
+  if (!(s.inventedMax >= 0)) fail(`--invented-max must be a non-negative number (${where})`);
+  if (!(s.whiteFracMax >= 0)) fail(`--white-frac-max must be a non-negative number (${where})`);
+  s.instruction = s.notes ? `${INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${s.notes}` : INSTRUCTION;
+  return s;
+}
+chalkSettings(values, 'cli');
 
 async function pagesUnder(sub = '') {
   const out = [];
@@ -254,7 +267,7 @@ const ai = process.env.GEMINI_API_KEY
   ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
   : null;
 
-async function drawChalk(imageBytes, temperature) {
+async function drawChalk(imageBytes, temperature, instruction) {
   const response = await ai.models.generateContent({
     model: MODEL,
     contents: [
@@ -297,16 +310,16 @@ async function toInkPolarity(buf, width, height) {
     .toBuffer();
 }
 
-const passes = (c) =>
+const passes = (c, cfg) =>
   c.keep >= KEEP_THRESHOLD &&
   c.localKeep >= LOCAL_KEEP_THRESHOLD &&
-  c.newInk.inventedRatio <= inventedMax &&
-  c.newInk.whiteFrac <= whiteFracMax &&
+  c.newInk.inventedRatio <= cfg.inventedMax &&
+  c.newInk.whiteFrac <= cfg.whiteFracMax &&
   c.eyes.passes;
-const rank = (c) =>
-  (passes(c) ? 1000 : 0) +
+const rank = (c, cfg) =>
+  (passes(c, cfg) ? 1000 : 0) +
   (c.eyes.passes ? 500 : 0) +
-  (c.newInk.inventedRatio <= inventedMax ? 300 : 0) +
+  (c.newInk.inventedRatio <= cfg.inventedMax ? 300 : 0) +
   c.localKeep * 200 +
   c.keep * 100 -
   c.eyes.whitesMissed * 10;
@@ -318,6 +331,27 @@ for (const page of pages) {
   const rel = relative(COLORING_DIR, page)
     .replace(/\.outline\.webp$/, '')
     .replace(/\\/g, '/');
+  // Resolve this page's levers: defaults < fill-src/<cat>/notes.json < CLI.
+  const levers = pageLevers(rel, 'chalk');
+  const { merged, fromRegistry } = mergeFlags(values, levers);
+  const cfg = chalkSettings(merged, `${rel} via notes.json`);
+  if (levers || values['dry-run'])
+    console.log(
+      describeLevers({
+        rel,
+        levers,
+        fromRegistry,
+        cliValues: values,
+        settings: {
+          temperature: cfg.baseTemp,
+          'max-attempts': cfg.maxAttempts,
+          'invented-max': cfg.inventedMax,
+          'white-frac-max': cfg.whiteFracMax,
+          notes: cfg.notes,
+        },
+      })
+    );
+  if (values['dry-run']) continue;
   if (!existsSync(page)) {
     console.warn(`(skip) no line art at ${page}`);
     continue;
@@ -373,9 +407,9 @@ for (const page of pages) {
       }
       best = await score(await readFile(sample), { dx: 0, dy: 0 }, 0);
     } else {
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const temperature = Math.min(2, baseTemp + attempt * 0.15);
-        const drawn = await drawChalk(displayInput, temperature);
+      for (let attempt = 0; attempt < cfg.maxAttempts; attempt++) {
+        const temperature = Math.min(2, cfg.baseTemp + attempt * 0.15);
+        const drawn = await drawChalk(displayInput, temperature, cfg.instruction);
         const inked = await toInkPolarity(drawn, width, height);
         const { buffer: aligned, dx, dy } = await alignToSource(inked, pen, width, height);
         const cand = await score(
@@ -383,8 +417,8 @@ for (const page of pages) {
           { dx, dy },
           attempt
         );
-        if (!best || rank(cand) > rank(best)) best = cand;
-        if (passes(cand)) break;
+        if (!best || rank(cand, cfg) > rank(best, cfg)) best = cand;
+        if (passes(cand, cfg)) break;
       }
     }
   } catch (err) {
@@ -402,14 +436,14 @@ for (const page of pages) {
     .toFile(sample.replace(/\.webp$/, '.display.webp'));
   await sharp(best.overlay).toFile(sample.replace(/\.webp$/, '.overlay.png'));
 
-  const ok = passes(best);
+  const ok = passes(best, cfg);
   const tries = best.attempt > 0 ? `  (${best.attempt + 1} tries)` : '';
   const nudge = best.shift.dx || best.shift.dy ? `  shift ${best.shift.dx},${best.shift.dy}` : '';
   const warn = [];
   if (best.keep < KEEP_THRESHOLD) warn.push('drifting');
   if (best.localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
-  if (best.newInk.inventedRatio > inventedMax) warn.push('invented shapes on the background');
-  if (best.newInk.whiteFrac > whiteFracMax) warn.push('over-whitened');
+  if (best.newInk.inventedRatio > cfg.inventedMax) warn.push('invented shapes on the background');
+  if (best.newInk.whiteFrac > cfg.whiteFracMax) warn.push('over-whitened');
   if (!best.eyes.passes) warn.push(`pupils whitened (${best.eyes.pupilsInked})`);
   if (best.eyes.whitesMissed) warn.push(`eye whites not chalked (${best.eyes.whitesMissed})`);
   const stats = `keep ${(best.keep * 100).toFixed(1)}%  local ${(best.localKeep * 100).toFixed(1)}%  white ${(best.newInk.whiteFrac * 100).toFixed(1)}%  invented ${best.newInk.inventedRatio.toFixed(4)}`;
