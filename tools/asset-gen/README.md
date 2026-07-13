@@ -55,6 +55,7 @@ From the **repo root** (the discoverable entry points — ADR-0019):
 ```bash
 npm run gen:style-covers        # AI style thumbnails  -> web/static/styles/
 npm run gen:coloring-chalk      # chalk outlines (dark-mode line art) -> web/static/coloring/**/*.chalk.webp
+npm run gen:coloring-outlines:fresh # brand-new pen outline from a text scene (same subject, new drawing)
 npm run gen:coloring-fills      # light colored fills  -> web/static/coloring/**/*.light.webp
 npm run gen:coloring-fills:audit # drift-check the raw fills in fill-src/ (no key/network)
 npm run gen:coloring-punch      # re-punch the shipped fills from fill-src/ raws (no key/network)

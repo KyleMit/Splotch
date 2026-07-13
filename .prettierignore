@@ -9,6 +9,10 @@ web/src/lib/components/icon-names.d.ts
 web/src/lib/releases.json
 web/tests/**/*-snapshots/
 *.svg
+# Frozen review dashboard Prettier cannot round-trip: its reformatted output
+# fails its own HTML parser (raw ">" inside <pre> blocks), so formatting it
+# would leave the check permanently red.
+tools/asset-gen/ideas-exploration/ideas-review.html
 
 # Deliberately out of Prettier scope for now — remove these to bring docs/configs into the check
 *.md

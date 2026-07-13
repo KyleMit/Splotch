@@ -7,31 +7,25 @@
 // luma(reference) - luma(shipped). A re-inked dark rim shows as a large
 // positive delta; legit dark fills show ~0 because the reference is equally
 // dark. Prints per-band delta stats + the worst 64px hotspots for cropping.
-import { join } from "node:path";
-import { sharp } from "./rim-lib.mjs";
-import { dilateMask } from "/home/user/Splotch/tools/asset-gen/lib/morphology.mjs";
-import {
-  loadRgb,
-  chalkMask,
-  ringBands,
-  punchWithMask,
-  lumaOf,
-} from "./rim-lib.mjs";
+import { join } from 'node:path';
+import { sharp } from './rim-lib.mjs';
+import { dilateMask } from '/home/user/Splotch/tools/asset-gen/lib/morphology.mjs';
+import { loadRgb, chalkMask, ringBands, punchWithMask, lumaOf } from './rim-lib.mjs';
 
-const REPO = "/home/user/Splotch";
-const FILL_SRC = join(REPO, "tools/asset-gen/fill-src");
-const COLORING = join(REPO, "web/static/coloring");
+const REPO = '/home/user/Splotch';
+const FILL_SRC = join(REPO, 'tools/asset-gen/fill-src');
+const COLORING = join(REPO, 'web/static/coloring');
 
 async function lineW(rawPath, chalkPath) {
   // Same as gen-coloring-fills-dark.mjs scoreLineColor (median max-3x3 fill
   // luma over source-ink pixels, at width 512).
   const s = await sharp(chalkPath)
-    .resize(512, null, { fit: "inside" })
+    .resize(512, null, { fit: 'inside' })
     .grayscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
   const t = await sharp(rawPath)
-    .resize(512, null, { fit: "inside" })
+    .resize(512, null, { fit: 'inside' })
     .grayscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -88,8 +82,7 @@ export async function analyzePage(page) {
   for (const band of bands)
     for (const p of band) {
       if (deltaAt(p) <= 40) continue;
-      const k =
-        Math.floor(Math.floor(p / w) / 64) * 1000 + Math.floor((p % w) / 64);
+      const k = Math.floor(Math.floor(p / w) / 64) * 1000 + Math.floor((p % w) / 64);
       counts.set(k, (counts.get(k) || 0) + 1);
     }
   const hotspots = [...counts.entries()]
@@ -104,16 +97,15 @@ export async function analyzePage(page) {
   return { page, lineW: lw, bandStats, hotspots, w, h };
 }
 
-if (process.argv[1].endsWith("analyze-rim.mjs")) {
+if (process.argv[1].endsWith('analyze-rim.mjs')) {
   for (const page of process.argv.slice(2)) {
     const r = await analyzePage(page);
     console.log(`\n=== ${r.page}  lineW ${r.lineW} ===`);
     for (const s of r.bandStats)
       console.log(
-        `  band d=${s.d}  n=${s.n}  medΔ=${s.med.toFixed(1)} p90Δ=${s.p90.toFixed(1)} p99Δ=${s.p99.toFixed(1)}  rim(Δ>40)=${(s.rimShare * 100).toFixed(2)}%`,
+        `  band d=${s.d}  n=${s.n}  medΔ=${s.med.toFixed(1)} p90Δ=${s.p90.toFixed(1)} p99Δ=${s.p99.toFixed(1)}  rim(Δ>40)=${(s.rimShare * 100).toFixed(2)}%`
       );
-    console.log("  hotspots (64px tiles, rim px):");
-    for (const hs of r.hotspots)
-      console.log(`    left=${hs.left} top=${hs.top} rimPx=${hs.rimPx}`);
+    console.log('  hotspots (64px tiles, rim px):');
+    for (const hs of r.hotspots) console.log(`    left=${hs.left} top=${hs.top} rimPx=${hs.rimPx}`);
   }
 }

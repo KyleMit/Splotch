@@ -8,7 +8,10 @@ const [base, mode, out] = process.argv.slice(2, 5);
 const wideFileIdx = process.argv.indexOf('--wide-file');
 const H = 400;
 const tall = join(FILL_SRC_DIR, `${base}-tall.${mode}.raw.webp`);
-const wide = wideFileIdx > 0 ? process.argv[wideFileIdx + 1] : join(FILL_SRC_DIR, `${base}-wide.${mode}.raw.webp`);
+const wide =
+  wideFileIdx > 0
+    ? process.argv[wideFileIdx + 1]
+    : join(FILL_SRC_DIR, `${base}-wide.${mode}.raw.webp`);
 const t = await sharp(tall).resize(null, H).toBuffer({ resolveWithObject: true });
 const w = await sharp(wide).resize(null, H).toBuffer({ resolveWithObject: true });
 const gap = 12;
@@ -22,6 +25,17 @@ const composite = sharp({
 const buf = await composite.webp({ quality: 82 }).toBuffer();
 const meta = await sharp(buf).metadata();
 const long = Math.max(meta.width, meta.height);
-const final = long > 560 ? await sharp(buf).resize(Math.round((meta.width * 560) / long)).webp({ quality: 82 }).toBuffer() : buf;
+const final =
+  long > 560
+    ? await sharp(buf)
+        .resize(Math.round((meta.width * 560) / long))
+        .webp({ quality: 82 })
+        .toBuffer()
+    : buf;
 await sharp(final).toFile(out);
-console.log(out, (await sharp(final).metadata()).width, 'x', (await sharp(final).metadata()).height);
+console.log(
+  out,
+  (await sharp(final).metadata()).width,
+  'x',
+  (await sharp(final).metadata()).height
+);

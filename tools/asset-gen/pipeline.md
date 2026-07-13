@@ -118,6 +118,20 @@ The registration gate also catches semantic damage: the first bee-wide
 normalization silently **deleted a cloud** (worst-tile keep 0%), fixed with a
 `--notes` telling it the sky has three clouds.
 
+### The from-scratch alternative
+
+`npm run gen:coloring-outlines:fresh -- <page> --scene "…" [--eyes] [--apply]
+[--max-attempts N] [-t F] [--notes "…"]` — when the pen's *anatomy* is the
+root problem (solid-ink pupils, a motif the fill model keeps misreading),
+don't edit the drawing — replace it. Text-to-image with a baseline style
+prompt matching the shipped catalog plus a 1–2 sentence scene (same subject,
+deliberately NOT the same composition), gated offline on solidity, ring
+depth, eye-core presence (`--eyes`), border whiteness, and ink density;
+candidates land in `.coloring-samples/fresh/`. A fresh pen invalidates the
+page's entire suite — regenerate thumb → light → chalk → night → punch.
+Decision record + the 2026-07-13 five-page pass:
+[docs/fresh-outline-regen.md](docs/fresh-outline-regen.md).
+
 ## Stage 1.5 — Chalk outlines
 
 `npm run gen:coloring-chalk -- <page-or-category…> [--apply] [--notes "…"]
@@ -442,6 +456,7 @@ Hard-won process lessons:
 | --- | --- | --- |
 | `npm run gen:coloring-outlines:audit -- [cat]` | solid regions + ring depth per pen outline | no |
 | `npm run gen:coloring-outlines:normalize -- <page…>` | thin-stroke pen redraw, 6 gates, `--apply` to ship | yes |
+| `npm run gen:coloring-outlines:fresh -- <page> --scene "…"` | brand-new pen from a text scene (same subject, new drawing), 5 offline gates, `--apply` to ship | yes |
 | `npm run gen:coloring-chalk -- <page-or-cat…>` | chalk-outline redraw from the pen, 4 gates, `--apply` to ship, `--rescore` offline | yes |
 | `npm run gen:coloring-fills -- <pages…>` | light fills (gated) + auto-punch | yes |
 | `node … gen-coloring-fills-dark.mjs <pages…>` | night fills (gated) → samples | yes |

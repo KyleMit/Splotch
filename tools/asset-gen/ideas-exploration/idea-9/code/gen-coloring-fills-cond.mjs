@@ -70,18 +70,30 @@ The output image must have IMAGE 1's exact aspect ratio, framing, and line art. 
 async function generateConditioned(ai, { imageBytes, refBytes, temperature, paletteText }) {
   const parts = paletteText
     ? [
-        { inlineData: { mimeType: 'image/webp', data: Buffer.from(imageBytes).toString('base64') } },
-        { text: TEXT_PALETTE_PROMPT + '\n\nCOLOR PLAN — this exact character appears in a sibling page already; match its palette so the character looks the same:\n' + paletteText },
+        {
+          inlineData: { mimeType: 'image/webp', data: Buffer.from(imageBytes).toString('base64') },
+        },
+        {
+          text:
+            TEXT_PALETTE_PROMPT +
+            '\n\nCOLOR PLAN — this exact character appears in a sibling page already; match its palette so the character looks the same:\n' +
+            paletteText,
+        },
       ]
     : [
-        { inlineData: { mimeType: 'image/webp', data: Buffer.from(imageBytes).toString('base64') } },
+        {
+          inlineData: { mimeType: 'image/webp', data: Buffer.from(imageBytes).toString('base64') },
+        },
         { inlineData: { mimeType: 'image/webp', data: Buffer.from(refBytes).toString('base64') } },
         { text: FILL_PROMPT },
       ];
   const response = await ai.models.generateContent({
     model: MODEL,
     contents: [{ role: 'user', parts }],
-    config: { abortSignal: AbortSignal.timeout(120_000), ...(temperature === undefined ? {} : { temperature }) },
+    config: {
+      abortSignal: AbortSignal.timeout(120_000),
+      ...(temperature === undefined ? {} : { temperature }),
+    },
   });
   const classified = classifyGeminiResponse(response);
   if (classified.kind !== 'image') throw new Error(`${classified.kind}: ${classified.reason}`);
@@ -90,7 +102,10 @@ async function generateConditioned(ai, { imageBytes, refBytes, temperature, pale
 
 const WHITE_LEVEL = 248;
 async function whiteFraction(buf) {
-  const { data, info } = await sharp(buf).resize(360, 360, { fit: 'fill' }).raw().toBuffer({ resolveWithObject: true });
+  const { data, info } = await sharp(buf)
+    .resize(360, 360, { fit: 'fill' })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
   const ch = info.channels;
   let white = 0;
   for (let i = 0; i < data.length; i += ch) {
@@ -112,14 +127,18 @@ const { values, positionals } = parseArgs({
 });
 if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
 const [page] = positionals;
-if (!page || !values.out || (!values.ref && !values['palette-text'])) fail('need <page> --out <dir> and --ref or --palette-text');
+if (!page || !values.out || (!values.ref && !values['palette-text']))
+  fail('need <page> --out <dir> and --ref or --palette-text');
 const maxAttempts = values['max-attempts'] ? Number(values['max-attempts']) : 4;
 const baseTemp = values.temperature === undefined ? 0.4 : Number(values.temperature);
 
 const source = await readFile(join(COLORING_DIR, `${page}.outline.webp`));
 let refBytes = values.ref ? await readFile(join(COLORING_DIR, `${values.ref}.light.webp`)) : null; // shipped PUNCHED fill
 if (values['ref-size']) {
-  refBytes = await sharp(refBytes).resize(Number(values['ref-size']), Number(values['ref-size']), { fit: 'inside' }).webp({ quality: 88 }).toBuffer();
+  refBytes = await sharp(refBytes)
+    .resize(Number(values['ref-size']), Number(values['ref-size']), { fit: 'inside' })
+    .webp({ quality: 88 })
+    .toBuffer();
 }
 const { width, height } = await sharp(source).metadata();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -127,14 +146,22 @@ await mkdir(values.out, { recursive: true });
 
 const WHITE_THRESHOLD = 0.05;
 const passes = (c) =>
-  c.keep >= KEEP_THRESHOLD && c.localKeep >= LOCAL_KEEP_THRESHOLD && c.white <= WHITE_THRESHOLD && c.eyesOk;
+  c.keep >= KEEP_THRESHOLD &&
+  c.localKeep >= LOCAL_KEEP_THRESHOLD &&
+  c.white <= WHITE_THRESHOLD &&
+  c.eyesOk;
 
 let best = null;
 for (let attempt = 0; attempt < maxAttempts; attempt++) {
   const temperature = Math.min(2, baseTemp + attempt * 0.15);
   process.stdout.write(`attempt ${attempt + 1}/${maxAttempts} (t=${temperature.toFixed(2)}) ... `);
   try {
-    const bytes = await generateConditioned(ai, { imageBytes: source, refBytes, temperature, paletteText: values['palette-text'] });
+    const bytes = await generateConditioned(ai, {
+      imageBytes: source,
+      refBytes,
+      temperature,
+      paletteText: values['palette-text'],
+    });
     const resized = await sharp(bytes).resize(width, height, { fit: 'fill' }).png().toBuffer();
     const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
     const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
@@ -143,13 +170,25 @@ for (let attempt = 0; attempt < maxAttempts; attempt++) {
       whiteFraction(colored),
       scoreEyeFill(colored, source),
     ]);
-    const cand = { colored, keep, localKeep, white, eyesOk: judgeLightEyes(eyeScore).passes, attempt };
+    const cand = {
+      colored,
+      keep,
+      localKeep,
+      white,
+      eyesOk: judgeLightEyes(eyeScore).passes,
+      attempt,
+    };
     const file = join(values.out, `attempt-${attempt + 1}.webp`);
     await writeFile(file, colored);
     console.log(
       `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%  eyes ${cand.eyesOk ? 'ok' : 'FLAT'}  shift ${dx},${dy}  ${passes(cand) ? 'PASS' : 'fail'}`
     );
-    const rank = (c) => (passes(c) ? 1000 : 0) + c.localKeep * 200 + (c.eyesOk ? 150 : 0) + (1 - c.white) * 100 + c.keep;
+    const rank = (c) =>
+      (passes(c) ? 1000 : 0) +
+      c.localKeep * 200 +
+      (c.eyesOk ? 150 : 0) +
+      (1 - c.white) * 100 +
+      c.keep;
     if (!best || rank(cand) > rank(best)) best = cand;
     if (passes(cand)) break;
   } catch (err) {

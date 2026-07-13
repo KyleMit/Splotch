@@ -129,12 +129,42 @@ export const BOOKS: Book[] = [
     pages: [
       // Night fills + chalk outlines shipped for both orientations (ADR-0052;
       // pen/chalk fork — see tools/asset-gen/pipeline.md).
-      page('dinosaur', 'brachiosaurus', 'Brachiosaurus', ['portrait', 'landscape'], ['portrait', 'landscape']),
-      page('dinosaur', 'pterodactyl', 'Pterodactyl', ['portrait', 'landscape'], ['portrait', 'landscape']),
-      page('dinosaur', 'stegosaurus', 'Stegosaurus', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page(
+        'dinosaur',
+        'brachiosaurus',
+        'Brachiosaurus',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page(
+        'dinosaur',
+        'pterodactyl',
+        'Pterodactyl',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page(
+        'dinosaur',
+        'stegosaurus',
+        'Stegosaurus',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
       page('dinosaur', 'trex', 'T. Rex', ['portrait', 'landscape'], ['portrait', 'landscape']),
-      page('dinosaur', 'triceratops', 'Triceratops', ['portrait', 'landscape'], ['portrait', 'landscape']),
-      page('dinosaur', 'velociraptor', 'Velociraptor', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page(
+        'dinosaur',
+        'triceratops',
+        'Triceratops',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
+      page(
+        'dinosaur',
+        'velociraptor',
+        'Velociraptor',
+        ['portrait', 'landscape'],
+        ['portrait', 'landscape']
+      ),
     ],
   },
   {
