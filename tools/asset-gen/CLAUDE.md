@@ -45,6 +45,10 @@ pipeline evolves). Key rules when working in this folder:
 - **Outputs are committed artifacts**, reviewed by a human before shipping. The
   generators write shipped art into `web/static/` and review scratch into the
   gitignored `.coloring-samples*/`. Never commit the scratch dirs.
+- **`ISSUES.md` is the living list of known defects, gate blind spots, and
+  tooling gaps.** Read it before regenerating a page or overriding a gate
+  (several failure classes are gate-blind and only caught by composite
+  review); when you fix or discover an issue, update it in the same task.
 - **Manual/on-demand only** — the Gemini generators need `GEMINI_API_KEY` and are
   never run in CI (real API cost). The app never runs any of this at build time.
 - **The contact sheet is the single fill-review surface — read

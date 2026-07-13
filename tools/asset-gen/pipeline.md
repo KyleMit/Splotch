@@ -94,7 +94,7 @@ audit but are picker-only, so their solid regions are harmless noise.
 
 `npm run gen:coloring-outlines:normalize -- <page…> [--apply] [--notes "…"]
 [-t F] [--max-attempts N]` — Gemini image-edit
-(`gemini-2.5-flash-image`) redraws solid regions as thin outlined shapes
+(`gemini-3.1-flash-image`) redraws solid regions as thin outlined shapes
 (eyes: exactly one pupil ring + one catchlight circle), keep-best-of-N with a
 rising temperature ladder, candidates land in
 `.coloring-samples-dark/normalize/`. Six gates per candidate:
@@ -128,10 +128,16 @@ with a `.display.webp` preview of what dark mode will show and a registration
 overlay). Four gates per candidate (`--rescore` re-runs them over saved
 candidates offline — no API — after a gate change):
 
-1. **keep ≥ 92% / worst-tile ≥ 80%** (`lib/outline-match.mjs`, pen →
-   candidate) — every pen stroke is still traced in place. Only the forward
-   direction is gated: a chalk legitimately *adds* ink (its solid whites), so
-   the reverse direction is covered by the enclosure gate instead;
+1. **keep ≥ 92% / worst-tile ≥ 80%** (`lib/outline-match.mjs`) — every pen
+   STROKE is still traced in place. The reference is the pen with its SOLID
+   INTERIORS whitened out (rim kept — the same exemption the normalizer
+   grants its redraws), so a chalk that correctly whitens a big solid pupil
+   into sclera + outlined pupil no longer reads as lost ink; 19 of the
+   2026-07 catalog's chalks failed the raw-pen version of this gate for no
+   other reason and had to ship by hand-cp before the fix (IDEAS #11,
+   landed with the 3.1 migration). Only the forward direction is gated: a
+   chalk legitimately *adds* ink (its solid whites), so the reverse
+   direction is covered by the enclosure gate instead;
 2. **enclosure** — new ink is judged by WHERE it lands, not how thick it is:
    inside a pen-bounded interior it's a deliberate whitening; on the open
    background (flood-reachable from the page border) it's an invented shape
@@ -146,6 +152,12 @@ candidates offline — no API — after a gate change):
    spider/caterpillar chalks whitened whole eyeballs — pupil included — which
    the registration gates can't see (the rings are all still traced) and the
    night-fill composite gate only catches after a fill has been burned.
+   **Blind spot: this gate needs pen eye CORES to exist.** A solid-ink pen
+   pupil has no nested rings, so `findEyeCores` finds nothing and the gate
+   passes vacuously — vehicles/police-tall's 3.1 chalk whitened both pupils
+   this way and only composite review caught it (fixed with an
+   erase-and-redraw `--notes`). On any solid-pen-eye page, render the night
+   composite before trusting a chalk (`ISSUES.md`).
 
 Candidates render to ink polarity through a **crisping S-curve**
 (`lib/crisp-ink.mjs`) instead of the pen tools' gentle contrast: on the dark
@@ -246,11 +258,18 @@ eyes over least drift) — registration/mood/line gates score against the chalk
 | Gate | Catches | Bar |
 | --- | --- | --- |
 | `scoreDrift` | invented shapes (thin white strokes far from any source line) | ≤ 0.004 (clean ≈ 0) |
-| `scoreNightness` | daytime "sky blue" background (median luma of the flood-filled true background) | ≤ 100 (good ≈ 15–50) |
+| `scoreNightness` | daytime "sky blue" background (median luma of the flood-filled true background) | ≤ 100 (good ≈ 15–50). **Regens should pass `--night-luma-max 60`**: the whole catalog was regenerated at that bar in the 3.1 migration (shipped range 18–48, closing IDEAS #4's 4× mood spread), and a default-bar regen can reintroduce a dusk outlier |
 | `scoreLineColor` | the model re-inking white outlines dark (they'd double against the chalk overlay) | median ≥ 150 (white ≈ 154–250) |
 | `judgeNightEyes` | flat-flooded eyes (below) | every strong light-lively core stays lively — judged on the **simulated final composite** (`lib/night-composite.mjs`: chalk-punched fill + screened chalk over dark paper) when the page has a chalk, since the chalk owns the whites; cores keyed off the pen |
 
 ### Levers for stubborn pages, in escalation order
+
+Since the 3.1 migration these are genuine escalations, not batch defaults:
+the full-catalog regen needed none of levers 1–3 on any page (94/94 nights
+at lineW 255; 72 first-take), and the only `--notes` were judgment calls,
+not gate fights (`docs/gemini-3.1-migration.md`). The list below documents
+2.5-era case history — expect to reach for it again mainly after a future
+model change.
 
 1. **More attempts against a stricter gate** — the retry loop keeps hunting
    instead of settling at the boundary:
@@ -267,9 +286,10 @@ eyes over least drift) — registration/mood/line gates score against the chalk
    "THE EYES ARE THE STAR OF THIS PAGE" to stop flooding them navy; the
    ladybug's shell spots needed "paint every shell circle deep near-black").
 
-Expect roughly one flagged `-wide` page per category; budget for the extra
-pass. Borderline-but-light pages (a dim moonlit rim, lineW ≈ 150) are fine.
-Gemini occasionally 503s ("high demand") — just re-run the failed page.
+On 3.1 expect near-zero flagged pages per category (the 2.5-era budget was
+roughly one flagged `-wide` per category). Borderline-but-light pages (a dim
+moonlit rim, lineW ≈ 150) are fine. Gemini occasionally 503s ("high
+demand") — just re-run the failed page.
 
 ### Shipping (manual on purpose — the human gate)
 
@@ -333,6 +353,26 @@ when **every** strongly-lit reference core stays lively (`judgeNightEyes`).
 Per-eye-any-core enforcement was tried and shipped a dead-sclera ladybug —
 the white catchlight carried the verdict.
 
+Two suppressions landed with the 3.1 migration (IDEAS #12) keep the night
+judge honest instead of noisy:
+
+- **Band-blind cores don't gate** — a core whose annulus is mostly pen ink
+  (`annulusInkFrac > 0.5`, an accident-era solid pupil around a catchlight)
+  has meaningless band stats in both fills (farm/duck-wide's side-profile
+  eye measured 0.74; the true spiral-eye failures sit at 0.26–0.29).
+- **On chalk-forked pages, cores with no chalk-white nearby don't gate** —
+  every real eye in the composite has chalk white at hand (catchlight core
+  or sclera ≈ 255), so a core the chalk never marked (wheel hubs, rover
+  screens, roof lights — lively by day, legitimately dark at night) is not
+  an eye. The committed, human-reviewed chalk is effectively the per-page
+  eye annotation. Corollary: on pages where the chalk itself is wrong
+  (whitened pupils, the police-tall class) the night judge is silent too —
+  chalk review has to catch those (Stage 1.5 gate 4's blind-spot note).
+
+`judgeLightEyes` has NO such suppressions — light-side flat-eye flags on
+side-profile or band-blind pages are known false-positive noise
+(`ISSUES.md`).
+
 Debugging technique that keeps resolving disputes between scores and eyes:
 **ASCII luma maps**. When a crop and a score disagree, dump the region as
 characters — it's diffable, zoomable, and doesn't lie:
@@ -361,7 +401,20 @@ The loop that has worked, per category:
 
    ![contact sheet pair](pipeline-assets/review-contact-sheet-pair.webp)
 
-5. `check:assets` + `check` + `test:unit`, commit, push.
+5. **After a regen wave, run the exploration auditors too** (proven in the
+   3.1 migration; not yet promoted to first-class scripts — `ISSUES.md`):
+   the invented-shape detector
+   (`ideas-exploration/idea-13/code/invented-shape-audit.mjs`) — the only
+   thing that caught house-tall's two invented sky flowers, invisible to
+   every standard gate — and the residual-halo auditor
+   (`ideas-exploration/idea-7/code/audit-night-halo.mjs`). Both import
+   `./lib/*.mjs`, so copy them into `tools/asset-gen/` to run (the halo
+   script's main-guard also expects its original `idea7-…` filename). For
+   gate-blind classes (solid-pen-eye chalks, subject/background contrast),
+   batch-render the night composites (`lib/night-composite.mjs`) into
+   per-category montages and eyeball them — that sweep is what caught
+   police-tall's whitened pupils and circle-wide's sky-colored disc.
+6. `check:assets` + `check` + `test:unit`, commit, push.
 
 Hard-won process lessons:
 
@@ -402,36 +455,39 @@ Hard-won process lessons:
 
 | Category | Pen outlines | Chalk outlines | Night fills | Notes |
 | --- | --- | --- | --- | --- |
-| Nature | ✅ thin-stroke, all 12 | ✅ all 12 | ✅ chalk-era; caterpillar-wide + ladybug-wide ship with a flat-pupil ⚠ | the pilot for the fork. The two wides' pen eyes use a SPIRAL catchlight instead of a clean pupil ring; the fill model reliably refuses to paint a spiral's interior dark (≥11 attempts each, notes + low temp). Durable fix: de-swirl those two pen eyes (as caterpillar-tall was), then regen their suites. `snail-wide` carries a 1-core flag the eye judged fine on review. |
-| Space, Farm, Dinosaurs, Creatures | ❌ accident-era (normalization stays optional) | ✅ all 12 each | ✅ chalk-era regens | migrated 2026-07 in one autonomous batch (see below). The owl landed its predicted best case — huge solid-white sclera, black pupils + catchlights preserved. |
-| Objects, Shapes, Vehicles | ❌ | ✅ (11 / 11 / 12) | ✅ chalk-era (first night fills) | shapes' "geometric solids" turned out to be giant cartoon pupils — the face pipeline applied cleanly. vehicles/train-wide ships with a dark-outline ⚠ its composite disproved (below). |
+| Nature | ✅ thin-stroke, all 12 | ✅ all 12 | ✅ | the pilot for the fork. The 3.1 regen cleared the historical flat-pupil ⚠ on caterpillar-wide + ladybug-wide (2.5 refused their spiral-catchlight eyes across 11+ attempts each; 3.1 painted them lively unprompted — the pen de-swirl is no longer urgent). |
+| Space, Farm, Dinosaurs, Creatures | ❌ accident-era (normalization stays optional) | ✅ all 12 each | ✅ | first migrated 2026-07 on 2.5 in one autonomous batch, fully regenerated on 3.1 (see the [migration record](docs/gemini-3.1-migration.md)). The owl kept its best-case look through the regen. |
+| Objects, Shapes, Vehicles | ❌ | ✅ (11 / 11 / 12) | ✅ | shapes' "geometric solids" turned out to be giant cartoon pupils — the face pipeline applied cleanly. vehicles/train-wide's historical dark-outline ⚠ is gone (3.1 passed it first take, lineW 255). police-tall's chalk needed an erase `--notes` (whitened pupils, gate-blind). |
 
 Every category now ships pen + chalk + light + night; `heart-tall` and
 `umbrella-wide` have full asset suites on disk but stay uncataloged in
 `books.ts` (single-orientation pages). Batch lessons from the 2026-07
 migration, all verified on overlays/composites before hand-shipping:
 
-- **The worst-tile keep gate can't credit whitened pen solids.** A chalk that
-  correctly whitens a big solid pupil into sclera + outlined pupil reads as
-  "untraced ink" in that tile (objects/flower-tall 75%, shapes' giant pupils
-  49–78%, both police cars, both owls, moon-tall). Every such candidate was
-  shipped only after its registration overlay showed the miss confined to the
-  deliberately whitened regions and its `.display.webp` read as proper chalk.
-  If a gate-side fix is ever wanted: whiten pen solids out of the keep
-  reference the way the normalizer whitens its reference (Stage 1 gate 4).
+- ~~**The worst-tile keep gate can't credit whitened pen solids.**~~ Fixed
+  with the 3.1 migration (IDEAS #11): the keep reference now whitens pen
+  solid interiors (Stage 1.5 gate 1), and the 3.1 full-catalog chalk regen
+  shipped 94/94 through the gates with zero hand-cp overrides (the 2.5
+  batch needed 19).
 - **Dark-bodied subjects can defeat the line-color gate without being wrong.**
   vehicles/train-wide held lineW 51–105 through ~27 attempts of every lever
   (strict gate, low temp, dilate, notes); its simulated composite
   (`lib/night-composite.mjs`) rendered perfectly — the chalk owns the lines
   and the punch clears the fill's ink. When a page resists the gate, render
-  the composite before burning more attempts.
+  the composite before burning more attempts. (3.1 does not re-ink — it
+  passed train-wide first take at lineW 255 — but the
+  composite-before-more-attempts habit stays the right first move whenever
+  any page resists any gate.)
 - **The eye-flavored redraw instruction can refuse eyeless scenes** —
   objects/house-wide came back "there are no eyes in the image to edit."
   A `--notes` telling the model the eyeless scene is expected fixed it in one
   pass. Same lever fixed shapes/rectangle-wide whitening every shape solid.
-- **Flat-eye warnings on non-face cores are routine** (wheel hubs, roof
-  lights, grille slots, rover screens): the detector is calibrated on nature
-  faces. Every night-side FAIL in the audit was visually adjudicated lively.
+- **Flat-eye warnings on non-face cores are routine on the LIGHT side only**
+  (wheel hubs, roof lights, grille slots, rover screens): the detector is
+  calibrated on nature faces. The night judge suppresses them since IDEAS
+  #12 (chalk-white-nearby + band-blind rules, "How the eye detector works"),
+  so a night-side FAIL is now worth believing; light-side FAILs still need
+  visual adjudication.
 
 Next-category runbook: pen audit → normalize offenders if the light page
 warrants it (worst-first, `--apply`) → thumbs → light fills → **chalks**
@@ -468,11 +524,15 @@ white-on-black), here the owl whose sclera the chalk owns:
   flirts with this) can break detection silently: no cores found = vacuous
   pass. The audit prints core counts; a face page reporting 0 cores is a
   red flag to investigate, not a pass.
-- **Model drift.** Everything is tuned against `gemini-2.5-flash-image`
-  behavior observed in 2026-07 (its nudge, its re-inking habit, its
-  eye-flooding on dark bodies). A model upgrade re-rolls all of those
-  tendencies; the gates should catch regressions, but attempt budgets and
-  temperature ladders will need re-tuning.
+- **Model drift.** The default model is `gemini-3.1-flash-image` since the
+  2026-07 full-catalog regeneration ([run
+  record](docs/gemini-3.1-migration.md)); it cleared 2.5's re-inking, nudge,
+  and eye-flooding habits, so the temperature ladder and `--dilate-lines`
+  are now escalation levers, not defaults. A future model upgrade re-rolls
+  all of those tendencies; the gates should catch regressions, but attempt
+  budgets will need re-tuning again. One 3.1-specific habit to watch:
+  faithful edits — it resists erase-style chalk edits on solid pen pupils
+  (police-tall needed an explicit erase `--notes`).
 - **Registration tolerance stack-up.** outlineMatch tolerates ±2 px at 512;
   alignToSource corrects only *global* shifts. A redraw that locally warps
   by 3–4 px passes gates but can shimmer under the punch. No incident yet;

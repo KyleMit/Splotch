@@ -43,7 +43,7 @@ import { scoreEyeFill, judgeLightEyes } from './lib/eye-fill.mjs';
 import { punchFill } from './lib/punch-fill.mjs';
 import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
 
-const MODEL = 'gemini-2.5-flash-image';
+const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 90;
 
 // The single prompt used for every page — no per-page tailoring. It leans hard

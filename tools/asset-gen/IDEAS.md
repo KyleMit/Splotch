@@ -1,5 +1,17 @@
 # IDEAS — image-quality backlog from the 2026-07 full-catalog migration
 
+> **2026-07-13 status:** every idea was empirically explored in
+> [`ideas-exploration/`](ideas-exploration/README.md), and the
+> `gemini-3.1-flash-image` regeneration wave
+> ([run record](docs/gemini-3.1-migration.md)) **landed #11, #12, and #17**,
+> effectively resolved **#1** (re-inking gone), **#5** (both flat-pupil pages
+> now lively without pen surgery), and **#4** (night bgLuma tightened to
+> 18–48 via `--night-luma-max 60`), and ran **#7/#13** as post-regen audits
+> (1 real invented shape caught and regenerated). The remaining ideas below
+> are still open leads. The living list of concrete outstanding defects and
+> gate blind spots (as opposed to these exploratory leads) is
+> [`ISSUES.md`](ISSUES.md).
+
 Brainstormed immediately after generating and reviewing the whole catalog
 (7 categories: 83 chalks + 83 night fills, ~350 candidate images eyeballed).
 **Nothing here is empirically verified** — each idea is a lead to run down in a
