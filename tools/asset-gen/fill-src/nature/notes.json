@@ -4,8 +4,8 @@
       "retry": {
         "notes": "The ant's head and body must stay REDDISH-BROWN like the light fill — an ant is red-brown, never green. Keep the night palette dark but keep the subject's identity color."
       },
-      "review": "The shipped 2026-07 night fill re-rolled the ant GREEN (the light fill is a proper reddish-brown ant) — a wrong subject-identity color, not a hue nuance. No gate checks subject-color plausibility (ISSUES Tier 1); compare against the light fill before accepting a take.",
-      "why": "2026-07-13 dark-mode composite review — the light↔night palette-coherence gap (ISSUES) shipping a real defect; all gates pass the green take."
+      "review": "The 2026-07 wave once re-rolled the ant GREEN (fixed 2026-07-13 with the retry notes — deep red-brown ant, first take through every gate). No gate checks subject-color plausibility (ISSUES light↔night coherence item); compare against the light fill before accepting a take.",
+      "why": "2026-07-13 ISSUES Tier 1 fix (green-ant regen session): the retry notes above fixed the identity color on the FIRST take at default levers — kept as the proven recipe because all gates pass a wrong-color take."
     }
   },
   "caterpillar-wide": {

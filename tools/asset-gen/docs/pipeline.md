@@ -542,7 +542,7 @@ whose sclera the chalk owns:
   rendering (`legacy/README.md`, option A) is the fallback that preserves solid ink in light mode.
 * **Cross-fill consistency.** The light and night fills are independent generations; nothing checks
   that the bee's stripes or the blanket's pattern have the same *palette logic* across modes (the
-  ant's picnic blanket is red/white by day and teal/olive by night today). Nobody has complained; if
+  ant's picnic blanket is red/white by day and teal/navy by night today). Nobody has complained; if
   consistency ever matters, it needs a new scorer.
 
 ## Doc debt
