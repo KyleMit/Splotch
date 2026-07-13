@@ -6,7 +6,8 @@
 # tools/asset-gen/ - Asset-Generation Pipeline
 
 The AI/`sharp` tooling that produces Splotch's committed art. Layout: runnable entry points
-in `bin/`, shared helpers in `lib/`, all documentation in `docs/`.
+in `bin/`, shared helpers in `lib/`, committed regression fixtures in `golden/`, all
+documentation in `docs/`.
 
 ## The Docs
 
@@ -46,6 +47,19 @@ Decision records live here instead of `docs/adrs/`: `architecture.md`, `asset-na
 * Outputs are committed artifacts, reviewed by a human before shipping. Generators write
   shipped art into `web/static/` and review scratch into gitignored `.coloring-samples*/`.
   Never commit scratch dirs.
+* `golden/` holds the committed regression fixtures; keep them in sync with the assets.
+  After any pipeline or asset change, run `npm run gen:coloring-golden:diff` (offline, ~1
+  min; exit 1 = a page regressed) and, when the change is intentional, adopt it with
+  `npm run gen:coloring-golden:freeze` + `npm run gen:assets:manifest` in the same commit.
+  CI's `check:assets:manifest` fails on any asset byte that drifted from
+  `golden/asset-manifest.sha256`: golden scores catch quality drift, the sha256 manifest
+  catches byte swaps between score-identical renders.
+* Per-page generator levers live in the `fill-src/<cat>/notes.json` registry (schema in
+  `lib/page-notes.mjs`): the night, chalk, and normalize generators auto-apply a page's
+  registry `flags` (an explicit CLI flag always wins) and print `retry`/`review`/`why`/
+  `motifs`; `--dry-run` previews the resolution offline. When you discover a lever a page
+  needs, record it in the registry in the same commit that ships the asset, with a `why`
+  naming the provenance.
 * Read `docs/ISSUES.md` before regenerating a page or overriding a gate; update it when you
   fix or discover an issue.
 * Manual/on-demand only: Gemini generators need `GEMINI_API_KEY` and are never run in CI.

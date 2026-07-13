@@ -1,0 +1,51 @@
+{
+  "spider-tall": {
+    "night": {
+      "flags": {
+        "notes": "THE EYES ARE THE STAR OF THIS PAGE. The spider's body is dark, but every eye must stay lively: light sclera, deep near-black pupil, bright white catchlight. Do NOT flood the eyes with the body color or navy.",
+        "max-attempts": 6
+      },
+      "why": "Durable subject quirk: the dark-bodied spider tempts the model to flood the eyes — burned ~26 attempts before this note was discovered (commit d96ae6f; pipeline.md Stage 4 lever 4). Note text reconstructed from that prose. Re-validated on gemini-3.1: passed every gate FIRST take with this note auto-applied (ideas-exploration/idea-10)."
+    }
+  },
+  "ladybug-tall": {
+    "night": {
+      "flags": {
+        "notes": "Paint every shell circle DEEP NEAR-BLACK — the ladybug's spots are black, never white or light."
+      },
+      "why": "Canon fact, durable across models: shell spots are black (pipeline.md Stage 4 lever 4; regen in d96ae6f after a per-eye relaxation shipped a dead-sclera ladybug)."
+    },
+    "chalk": {
+      "flags": {
+        "notes": "The ladybug's shell spots are BLACK in canon — never fill a shell circle white. Whiten only the eye sclera and catchlights."
+      },
+      "why": "Canon fact: the 2.5-era chalk's one bad judgment call was white shell spots (commit e99fd22, fixed with this note at low temperature). The 3.1 wave chalked the page clean without it, so the paired -t 0.2 was dropped as a dead-model workaround; the note stays because the misfire is a judgment call no gate can see."
+    }
+  },
+  "caterpillar-tall": {
+    "normalize": {
+      "flags": {
+        "temperature": 0.2,
+        "notes": "CHANGE NOTHING ELSE ANYWHERE."
+      },
+      "why": "The faithful de-swirl took t 0.2 plus this note (commit 551ab52; pipeline.md Stage 1 gate 6 — the first redraw produced hypno-swirl eyes). 2.5-era values kept as the starting point: the normalizer has not been exercised on gemini-3.1 yet (ISSUES)."
+    }
+  },
+  "bee-tall": {
+    "normalize": {
+      "flags": {
+        "temperature": 0.7,
+        "notes": "Each eye must end as EXACTLY one thin pupil ring with one small catchlight circle inside it — redraw the small solid pupils as outlined rings; do not leave any solid ink in the eyes."
+      },
+      "why": "Small pupils under ~4px strokes ducked the fixed erosion radius; took an eye-specific note at t 0.7-0.8 (commit 6840bba; pipeline.md Stage 1 gate 6). Note text reconstructed. Normalizer not yet exercised on gemini-3.1 (ISSUES)."
+    }
+  },
+  "bee-wide": {
+    "normalize": {
+      "flags": {
+        "notes": "The sky has THREE CLOUDS — keep all three exactly where they are."
+      },
+      "why": "Durable motif guard: the first normalization silently DELETED a cloud (worst-tile keep 0% — pipeline.md Stage 1); the same deletion class hit objects/teddy-tall's star (idea-run #6)."
+    }
+  }
+}
