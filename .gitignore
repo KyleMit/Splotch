@@ -162,7 +162,11 @@ workbox-*.js.map
 ## Mac
 .DS_Store
 build/
+# The `build` skill (source + its ruler-generated copies, ADR-0058) must dodge
+# the blanket build/ ignore above.
+!.ruler/skills/build/
 !.claude/skills/build/
+!.agents/skills/build/
 .netlify/
 
 # Netlify CLI's Deno edge-bundler lockfile — no edge functions in this project, regenerable

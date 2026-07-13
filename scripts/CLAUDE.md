@@ -1,4 +1,9 @@
+<!-- Source: .ruler/AGENTS.md -->
+
 # scripts/ — repo automation
+
+> This directory's `CLAUDE.md` and `AGENTS.md` are generated from the `.ruler/AGENTS.md` beside them
+> — edit that source, then run `npm run ruler:apply` at the repo root (ADR-0058).
 
 * Every script must run on both Windows (`cmd.exe`) and macOS/Linux (ADR-0017): plain Node `.mjs`,
   no bash-isms, no shelling out to platform-specific tools without a per-platform branch. Scripts

@@ -39,6 +39,13 @@ jobs:
       - name: SVG audit
         run: npm run img:audit:check
 
+      # Drift guard: every CLAUDE.md/AGENTS.md and the .claude/skills/ +
+      # .agents/skills/ trees are generated from .ruler/ (ADR-0058). Fails if a
+      # .ruler edit wasn't applied or a generated file was edited directly.
+      # Fix with `npm run ruler:apply` and commit.
+      - name: Agent-file drift
+        run: npm run ruler:check
+
       # Build-time/transitive advisories are mostly unfixable; CI only
       # hard-fails on critical severities so the gate stays meaningful, not noisy.
       - name: Audit dependencies

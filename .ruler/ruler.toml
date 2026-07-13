@@ -1,0 +1,22 @@
+# Source of truth for every generated agent-instruction file (ADR-0058).
+# `npm run ruler:apply` regenerates; `npm run ruler:check` is the CI drift gate.
+
+# claude  -> CLAUDE.md            (Claude Code, incl. cloud sessions)
+# codex   -> AGENTS.md            (OpenAI Codex; also the cross-agent standard)
+default_agents = ["claude", "codex"]
+
+# Also process every nested <dir>/.ruler/ (web/src, scripts, android,
+# tools/asset-gen, docs/handoff) into sibling CLAUDE.md + AGENTS.md files.
+nested = true
+
+# Generated files are committed, not ignored — drift is caught in CI instead.
+[gitignore]
+enabled = false
+
+# No project-level MCP servers to propagate (keeps ruler from writing .codex/config.toml).
+[mcp]
+enabled = false
+
+# Outputs are tracked in git; .bak files would just be noise.
+[backup]
+enabled = false

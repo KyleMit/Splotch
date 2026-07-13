@@ -1,4 +1,9 @@
+<!-- Source: .ruler/AGENTS.md -->
+
 # src/ orientation
+
+> This directory's `CLAUDE.md` and `AGENTS.md` are generated from the `.ruler/AGENTS.md` beside them
+> — edit that source, then run `npm run ruler:apply` at the repo root (ADR-0058).
 
 Where things live (full file-by-file map: `architecture` skill):
 

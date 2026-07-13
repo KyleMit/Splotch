@@ -2,6 +2,12 @@
 
 **Status:** Active **Date:** 2026-06
 
+> **Amended by ADR-0058 (2026-07):** the tier structure below still holds, but the always-loaded and
+> on-demand tiers are now *generated*: `CLAUDE.md`/`AGENTS.md` files and the skills are authored in
+> `.ruler/` and propagated by ruler to `.claude/skills/` and `.agents/skills/`, which also closes
+> the "layout is Claude Code-specific" downside noted in Consequences. Path-scoped rules in
+> `.claude/rules/` are still edited in place.
+
 ## Context
 
 Project knowledge lived in four large reference docs (`docs/ARCHITECTURE.md`, `docs/API.md`,

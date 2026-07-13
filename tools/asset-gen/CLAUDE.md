@@ -1,4 +1,9 @@
+<!-- Source: .ruler/AGENTS.md -->
+
 # tools/asset-gen/ — asset-generation pipeline
+
+> This directory's `CLAUDE.md` and `AGENTS.md` are generated from the `.ruler/AGENTS.md` beside them
+> — edit that source, then run `npm run ruler:apply` at the repo root (ADR-0058).
 
 The AI/`sharp` tooling that produces Splotch's committed art. Layout: runnable entry points in
 `bin/`, shared helpers in `lib/`, all documentation in `docs/`.
