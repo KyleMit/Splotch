@@ -14,22 +14,30 @@ for await (const e of glob('**/*-{tall,wide}.outline.webp', { cwd: COLORING_DIR 
   pages.push(join(COLORING_DIR, e));
 pages.sort();
 const out = {
-  $schema: 'eye-annotations.draft — cores detected from the pen outline, measured on the committed light raw (reference) and the simulated night composite. A human flips `eye` where the draft guessed wrong and sets blessed=true; the night eye gate then trusts `eye` instead of re-deriving which cores are eyes.',
+  $schema:
+    'eye-annotations.draft — cores detected from the pen outline, measured on the committed light raw (reference) and the simulated night composite. A human flips `eye` where the draft guessed wrong and sets blessed=true; the night eye gate then trusts `eye` instead of re-deriving which cores are eyes.',
   pages: {},
 };
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '').replaceAll('\\', '/');
+  const rel = relative(COLORING_DIR, page)
+    .replace(/\.outline\.webp$/, '')
+    .replaceAll('\\', '/');
   const lightPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
   if (!existsSync(lightPath)) continue;
   const pen = await readFile(page);
   const light = await scoreEyeFill(await readFile(lightPath), pen);
-  if (!light.cores.length) { out.pages[rel] = { blessed: false, cores: [] }; continue; }
+  if (!light.cores.length) {
+    out.pages[rel] = { blessed: false, cores: [] };
+    continue;
+  }
   const chalkPath = page.replace(/\.outline\.webp$/, '.chalk.webp');
   const nightPath = join(FILL_SRC_DIR, `${rel}.night.raw.webp`);
   let night = { cores: [] };
   if (existsSync(nightPath)) {
     const raw = await readFile(nightPath);
-    const judged = existsSync(chalkPath) ? await compositeNight(raw, await readFile(chalkPath)) : raw;
+    const judged = existsSync(chalkPath)
+      ? await compositeNight(raw, await readFile(chalkPath))
+      : raw;
     night = await scoreEyeFill(judged, pen);
   }
   out.pages[rel] = {
@@ -40,7 +48,8 @@ for (const page of pages) {
       const bandBlind = L.annulusInkFrac > BAND_BLIND_INK_FRAC;
       const chalkWhiteNear = N ? Math.max(N.coreLuma, N.bandLight) >= CHALK_WHITE_MIN : null;
       return {
-        x: L.x, y: L.y,
+        x: L.x,
+        y: L.y,
         eye: isRef && !bandBlind && chalkWhiteNear !== false,
         draftReasons: { lightReference: isRef, bandBlind, chalkWhiteNear },
       };
@@ -49,4 +58,6 @@ for (const page of pages) {
 }
 await writeFile(process.argv[2], JSON.stringify(out, null, 1));
 const n = Object.values(out.pages);
-console.log(`${n.length} pages, ${n.reduce((s,p)=>s+p.cores.length,0)} cores, ${n.reduce((s,p)=>s+p.cores.filter(c=>c.eye).length,0)} draft eyes`);
+console.log(
+  `${n.length} pages, ${n.reduce((s, p) => s + p.cores.length, 0)} cores, ${n.reduce((s, p) => s + p.cores.filter((c) => c.eye).length, 0)} draft eyes`
+);

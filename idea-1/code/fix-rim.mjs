@@ -10,9 +10,9 @@
 //
 // Usage (repo root): node fix-rim.mjs <book/page-orient> [...more]
 // Writes composites + crops to IDEA_DIR and prints before/after rim stats.
-import { join } from "node:path";
-import { mkdirSync } from "node:fs";
-import { dilateMask } from "/home/user/Splotch/tools/asset-gen/lib/morphology.mjs";
+import { join } from 'node:path';
+import { mkdirSync } from 'node:fs';
+import { dilateMask } from '/home/user/Splotch/tools/asset-gen/lib/morphology.mjs';
 import {
   sharp,
   loadRgb,
@@ -23,27 +23,25 @@ import {
   lumaOf,
   saveRgb,
   saveCrop,
-} from "./rim-lib.mjs";
+} from './rim-lib.mjs';
 
-const REPO = "/home/user/Splotch";
-const FILL_SRC = join(REPO, "tools/asset-gen/fill-src");
-const COLORING = join(REPO, "web/static/coloring");
+const REPO = '/home/user/Splotch';
+const FILL_SRC = join(REPO, 'tools/asset-gen/fill-src');
+const COLORING = join(REPO, 'web/static/coloring');
 const IDEA_DIR =
-  "/tmp/claude-0/-home-user-Splotch/68ded56b-e7dd-5cff-b995-afd9f1565152/scratchpad/ideas/idea-1";
+  '/tmp/claude-0/-home-user-Splotch/68ded56b-e7dd-5cff-b995-afd9f1565152/scratchpad/ideas/idea-1';
 mkdirSync(IDEA_DIR, { recursive: true });
 
 const CROPS = {
-  "vehicles/train-wide": [
-    { left: 920, top: 400, width: 150, height: 150, name: "cheek" },
-    { left: 840, top: 600, width: 150, height: 150, name: "chin" },
+  'vehicles/train-wide': [
+    { left: 920, top: 400, width: 150, height: 150, name: 'cheek' },
+    { left: 840, top: 600, width: 150, height: 150, name: 'chin' },
   ],
-  "farm/cat-wide": [
-    { left: 176, top: 432, width: 160, height: 160, name: "bale" },
-    { left: 380, top: 340, width: 160, height: 160, name: "backstripe" },
+  'farm/cat-wide': [
+    { left: 176, top: 432, width: 160, height: 160, name: 'bale' },
+    { left: 380, top: 340, width: 160, height: 160, name: 'backstripe' },
   ],
-  "shapes/circle-wide": [
-    { left: 1344, top: 704, width: 160, height: 160, name: "control" },
-  ],
+  'shapes/circle-wide': [{ left: 1344, top: 704, width: 160, height: 160, name: 'control' }],
 };
 
 function rimShare(fillRgb, refRgb, bands) {
@@ -61,7 +59,7 @@ function rimShare(fillRgb, refRgb, bands) {
 }
 
 for (const page of process.argv.slice(2)) {
-  const slug = page.replace("/", "-");
+  const slug = page.replace('/', '-');
   const raw = join(FILL_SRC, `${page}.night.raw.webp`);
   const chalkPath = join(COLORING, `${page}.chalk.webp`);
   const { rgb: rawRgb, width: w, height: h } = await loadRgb(raw);
@@ -74,12 +72,7 @@ for (const page of process.argv.slice(2)) {
 
   // (c) blanket dilation.
   for (const r of [1, 2])
-    variants[`c-dilate${r}`] = punchWithMask(
-      rawRgb,
-      dilateMask(mask, w, h, r),
-      w,
-      h,
-    );
+    variants[`c-dilate${r}`] = punchWithMask(rawRgb, dilateMask(mask, w, h, r), w, h);
 
   // (a) selective: extend mask by band pixels whose rimDelta > 25.
   const selMask = mask.slice();
@@ -92,7 +85,7 @@ for (const page of process.argv.slice(2)) {
         selAdded++;
       }
     }
-  variants["a-selective"] = punchWithMask(rawRgb, selMask, w, h);
+  variants['a-selective'] = punchWithMask(rawRgb, selMask, w, h);
 
   // (a-white) same selection, painted white instead of inpainted (IDEAS.md wording).
   const white = Buffer.from(variants.before);
@@ -102,7 +95,7 @@ for (const page of process.argv.slice(2)) {
       white[p * 3 + 1] = 255;
       white[p * 3 + 2] = 255;
     }
-  variants["a-white"] = white;
+  variants['a-white'] = white;
 
   console.log(`\n=== ${page}  (selective added ${selAdded} px) ===`);
   for (const [name, fill] of Object.entries(variants)) {
@@ -110,16 +103,9 @@ for (const page of process.argv.slice(2)) {
     const { rgb: comp } = await compositePunched(fill, chalkPath, w, h);
     await saveRgb(comp, w, h, join(IDEA_DIR, `${slug}.${name}.full.webp`), 560);
     for (const box of CROPS[page] ?? [])
-      await saveCrop(
-        comp,
-        w,
-        h,
-        box,
-        join(IDEA_DIR, `${slug}.${name}.${box.name}.webp`),
-        560,
-      );
+      await saveCrop(comp, w, h, box, join(IDEA_DIR, `${slug}.${name}.${box.name}.webp`), 560);
     console.log(
-      `  ${name.padEnd(12)} rim(Δ>40) ${(s.rim * 100).toFixed(2)}%   over-bright(Δ<-40) ${(s.bright * 100).toFixed(2)}%`,
+      `  ${name.padEnd(12)} rim(Δ>40) ${(s.rim * 100).toFixed(2)}%   over-bright(Δ<-40) ${(s.bright * 100).toFixed(2)}%`
     );
   }
 }

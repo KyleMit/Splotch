@@ -35,13 +35,11 @@
 //
 // Standalone demo (run from the Splotch repo root):
 //     node punch-rim-erase.mjs vehicles/train-wide out.webp
-import { createRequire } from "node:module";
-import { join } from "node:path";
-import { dilateMask } from "/home/user/Splotch/tools/asset-gen/lib/morphology.mjs";
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
+import { dilateMask } from '/home/user/Splotch/tools/asset-gen/lib/morphology.mjs';
 
-const sharp = createRequire("/home/user/Splotch/tools/asset-gen/x.mjs")(
-  "sharp",
-);
+const sharp = createRequire('/home/user/Splotch/tools/asset-gen/x.mjs')('sharp');
 const RIM_R = 2;
 const RIM_DARK = 145;
 const RIM_PROTECT_BLACK = 55;
@@ -54,8 +52,7 @@ export function addRimOverhang(mask, rgb, width, height) {
   let added = 0;
   for (let p = 0; p < width * height; p++) {
     if (!grown[p] || mask[p]) continue;
-    const luma =
-      0.299 * rgb[p * 3] + 0.587 * rgb[p * 3 + 1] + 0.114 * rgb[p * 3 + 2];
+    const luma = 0.299 * rgb[p * 3] + 0.587 * rgb[p * 3 + 1] + 0.114 * rgb[p * 3 + 2];
     if (luma >= RIM_PROTECT_BLACK && luma < RIM_DARK) {
       mask[p] = 1;
       added++;
@@ -79,12 +76,7 @@ function bleedUnderMask(rgb, mask, width, height) {
         g = 0,
         b = 0,
         n = 0;
-      for (const q of [
-        x > 0 ? p - 1 : -1,
-        x < width - 1 ? p + 1 : -1,
-        p - width,
-        p + width,
-      ]) {
+      for (const q of [x > 0 ? p - 1 : -1, x < width - 1 ? p + 1 : -1, p - width, p + width]) {
         if (q < 0 || q >= width * height || pending[q]) continue;
         r += rgb[q * 3];
         g += rgb[q * 3 + 1];
@@ -107,25 +99,18 @@ function bleedUnderMask(rgb, mask, width, height) {
 }
 
 if (process.argv[2]) {
-  const REPO = "/home/user/Splotch";
+  const REPO = '/home/user/Splotch';
   const page = process.argv[2];
-  const out = process.argv[3] ?? "rim-erased.webp";
-  const rawPath = join(
-    REPO,
-    "tools/asset-gen/fill-src",
-    `${page}.night.raw.webp`,
-  );
-  const chalkPath = join(REPO, "web/static/coloring", `${page}.chalk.webp`);
+  const out = process.argv[3] ?? 'rim-erased.webp';
+  const rawPath = join(REPO, 'tools/asset-gen/fill-src', `${page}.night.raw.webp`);
+  const chalkPath = join(REPO, 'web/static/coloring', `${page}.chalk.webp`);
   const {
     data: fill,
     info: { width, height },
-  } = await sharp(rawPath)
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+  } = await sharp(rawPath).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   const { data: line } = await sharp(chalkPath)
     .removeAlpha()
-    .resize(width, height, { fit: "fill" })
+    .resize(width, height, { fit: 'fill' })
     .raw()
     .toBuffer({ resolveWithObject: true });
   const mask = new Uint8Array(width * height);
@@ -138,7 +123,5 @@ if (process.argv[2]) {
   await sharp(fill, { raw: { width, height, channels: 3 } })
     .webp({ quality: 85, effort: 6 })
     .toFile(out);
-  console.log(
-    `${page}: rim-erase added ${added} px to the punch mask -> ${out}`,
-  );
+  console.log(`${page}: rim-erase added ${added} px to the punch mask -> ${out}`);
 }

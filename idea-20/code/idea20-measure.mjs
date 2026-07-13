@@ -59,7 +59,10 @@ for (const p of profiles) {
   const dialog = page.locator('#coloring-book-dialog');
   await dialog.waitFor({ state: 'visible' });
   await dialog.getByRole('button', { name: /Creatures coloring book/i }).click();
-  await dialog.getByRole('button', { name: /Creatures coloring page/i }).first().click();
+  await dialog
+    .getByRole('button', { name: /Creatures coloring page/i })
+    .first()
+    .click();
   const overlay = page.locator('#coloringOverlay');
   await overlay.waitFor({ state: 'visible' });
   await page.waitForFunction(() => {
@@ -106,7 +109,4 @@ for (const p of profiles) {
 }
 
 await browser.close();
-writeFileSync(
-  process.env.IDEA_OUT || '/dev/null',
-  JSON.stringify(results, null, 2)
-);
+writeFileSync(process.env.IDEA_OUT || '/dev/null', JSON.stringify(results, null, 2));

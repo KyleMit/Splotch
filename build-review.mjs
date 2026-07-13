@@ -1,58 +1,58 @@
-import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import sharp from "sharp";
+import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const IDEAS_DIR = ROOT;
-const OUT = join(ROOT, "ideas-review.html");
+const OUT = join(ROOT, 'ideas-review.html');
 
 const esc = (s) =>
-  String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
 async function inlineImage(ideaDir, file) {
   const p = join(ideaDir, file);
   if (!existsSync(p)) return null;
   try {
     const buf = await sharp(p)
-      .resize(480, 480, { fit: "inside", withoutEnlargement: true })
+      .resize(480, 480, { fit: 'inside', withoutEnlargement: true })
       .webp({ quality: 65 })
       .toBuffer();
-    return `data:image/webp;base64,${buf.toString("base64")}`;
+    return `data:image/webp;base64,${buf.toString('base64')}`;
   } catch {
     return null;
   }
 }
 
-function list(title, items, cls = "") {
-  if (!items || !items.length) return "";
-  return `<div class="finding-group ${cls}"><h4>${esc(title)}</h4><ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul></div>`;
+function list(title, items, cls = '') {
+  if (!items || !items.length) return '';
+  return `<div class="finding-group ${cls}"><h4>${esc(title)}</h4><ul>${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></div>`;
 }
 
 const VERDICT_META = {
-  WORKED: { label: "Worked", cls: "v-worked" },
-  PARTIAL: { label: "Partial", cls: "v-partial" },
-  BLOCKED: { label: "Blocked", cls: "v-blocked" },
+  WORKED: { label: 'Worked', cls: 'v-worked' },
+  PARTIAL: { label: 'Partial', cls: 'v-partial' },
+  BLOCKED: { label: 'Blocked', cls: 'v-blocked' },
 };
 
 async function build() {
   const dirs = existsSync(IDEAS_DIR)
     ? readdirSync(IDEAS_DIR)
         .filter((d) => /^idea-\d+$/.test(d))
-        .sort((a, b) => Number(a.split("-")[1]) - Number(b.split("-")[1]))
+        .sort((a, b) => Number(a.split('-')[1]) - Number(b.split('-')[1]))
     : [];
   const ideas = [];
   for (const d of dirs) {
-    const metaPath = join(IDEAS_DIR, d, "meta.json");
+    const metaPath = join(IDEAS_DIR, d, 'meta.json');
     if (!existsSync(metaPath)) continue;
     try {
       ideas.push({
         dir: join(IDEAS_DIR, d),
-        meta: JSON.parse(readFileSync(metaPath, "utf8")),
+        meta: JSON.parse(readFileSync(metaPath, 'utf8')),
       });
     } catch (e) {
       console.error(`bad meta.json in ${d}: ${e.message}`);
@@ -61,40 +61,39 @@ async function build() {
 
   const rows = ideas
     .map(({ meta }) => {
-      const v = VERDICT_META[meta.verdict] ?? { label: meta.verdict, cls: "" };
-      return `<tr><td class="num">${meta.idea}</td><td><a href="#idea-${meta.idea}">${esc(meta.title)}</a></td><td><span class="chip ${v.cls}">${v.label}</span></td><td class="oneline">${esc(meta.oneline ?? "")}</td></tr>`;
+      const v = VERDICT_META[meta.verdict] ?? { label: meta.verdict, cls: '' };
+      return `<tr><td class="num">${meta.idea}</td><td><a href="#idea-${meta.idea}">${esc(meta.title)}</a></td><td><span class="chip ${v.cls}">${v.label}</span></td><td class="oneline">${esc(meta.oneline ?? '')}</td></tr>`;
     })
-    .join("\n");
+    .join('\n');
 
   const sections = [];
   for (const { dir, meta } of ideas) {
-    const v = VERDICT_META[meta.verdict] ?? { label: meta.verdict, cls: "" };
-    let comparisons = "";
+    const v = VERDICT_META[meta.verdict] ?? { label: meta.verdict, cls: '' };
+    let comparisons = '';
     for (const c of meta.comparisons ?? []) {
       const before = await inlineImage(dir, c.before);
       const after = await inlineImage(dir, c.after);
       if (!before && !after) continue;
       comparisons += `<figure class="compare">
-        <figcaption>${esc(c.label)}${c.note ? ` — <span class="note">${esc(c.note)}</span>` : ""}</figcaption>
+        <figcaption>${esc(c.label)}${c.note ? ` — <span class="note">${esc(c.note)}</span>` : ''}</figcaption>
         <div class="pair">
-          ${before ? `<div class="shot"><span class="tag">Before</span><img src="${before}" alt="Before: ${esc(c.label)}"></div>` : ""}
-          ${after ? `<div class="shot"><span class="tag tag-after">After</span><img src="${after}" alt="After: ${esc(c.label)}"></div>` : ""}
+          ${before ? `<div class="shot"><span class="tag">Before</span><img src="${before}" alt="Before: ${esc(c.label)}"></div>` : ''}
+          ${after ? `<div class="shot"><span class="tag tag-after">After</span><img src="${after}" alt="After: ${esc(c.label)}"></div>` : ''}
         </div>
       </figure>`;
     }
-    let singles = "";
+    let singles = '';
     for (const im of meta.images ?? []) {
       const src = await inlineImage(dir, im.file);
       if (!src) continue;
       singles += `<figure class="single"><img src="${src}" alt="${esc(im.caption)}"><figcaption>${esc(im.caption)}</figcaption></figure>`;
     }
-    let code = "";
+    let code = '';
     for (const c of meta.code ?? []) {
       const p = join(dir, c.file);
       if (!existsSync(p)) continue;
-      let content = readFileSync(p, "utf8");
-      if (content.length > 12000)
-        content = content.slice(0, 12000) + "\n… (truncated)";
+      let content = readFileSync(p, 'utf8');
+      if (content.length > 12000) content = content.slice(0, 12000) + '\n… (truncated)';
       code += `<details class="code"><summary>${esc(c.title)}</summary><div class="codewrap"><pre><code>${esc(content)}</code></pre></div></details>`;
     }
     sections.push(`<section class="idea" id="idea-${meta.idea}">
@@ -104,21 +103,20 @@ async function build() {
       </header>
       <p class="summary">${esc(meta.summary)}</p>
       <div class="findings">
-        ${list("Tried", meta.tried)}
-        ${list("Worked", meta.worked, "good")}
-        ${list("Didn't work", meta.failed, "bad")}
-        ${list("Limitations", meta.limitations, "warn")}
+        ${list('Tried', meta.tried)}
+        ${list('Worked', meta.worked, 'good')}
+        ${list("Didn't work", meta.failed, 'bad')}
+        ${list('Limitations', meta.limitations, 'warn')}
       </div>
       ${comparisons}
-      ${singles ? `<div class="singles">${singles}</div>` : ""}
+      ${singles ? `<div class="singles">${singles}</div>` : ''}
       ${code}
     </section>`);
   }
 
   const done = ideas.length;
   const counts = { WORKED: 0, PARTIAL: 0, BLOCKED: 0 };
-  for (const { meta } of ideas)
-    if (counts[meta.verdict] != null) counts[meta.verdict]++;
+  for (const { meta } of ideas) if (counts[meta.verdict] != null) counts[meta.verdict]++;
 
   const html = `<title>Splotch asset-gen — IDEAS.md burn-down</title>
 <style>
@@ -222,11 +220,11 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 3rem; }
     <thead><tr><th>#</th><th>Idea</th><th>Verdict</th><th>Outcome</th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div>
-  ${sections.join("\n")}
+  ${sections.join('\n')}
   <footer>Generated from per-idea reports in the session scratchpad. Repo state was reverted to baseline (8e471b8) after every attempt — nothing here is committed.</footer>
 </main>`;
 
-  writeFileSync(OUT, html.replace(/[\uFFFD\uD800-\uDFFF]/g, ""));
+  writeFileSync(OUT, html.replace(/[\uFFFD\uD800-\uDFFF]/g, ''));
   const kb = Math.round(Buffer.byteLength(html) / 1024);
   console.log(`wrote ${OUT} (${kb} KB, ${done} ideas)`);
 }

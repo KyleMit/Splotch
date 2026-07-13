@@ -7,10 +7,13 @@ import { COLORING_DIR, FILL_SRC_DIR } from './lib/paths.mjs';
 import { scoreEyeFill, BAND_BLIND_INK_FRAC, CHALK_WHITE_MIN } from './lib/eye-fill.mjs';
 import { compositeNight } from './lib/night-composite.mjs';
 
-const OUT = '/tmp/claude-0/-home-user-Splotch/68ded56b-e7dd-5cff-b995-afd9f1565152/scratchpad/ideas/idea-12/img';
+const OUT =
+  '/tmp/claude-0/-home-user-Splotch/68ded56b-e7dd-5cff-b995-afd9f1565152/scratchpad/ideas/idea-12/img';
 const STRONG = 180;
 const [rel, cx0, cy0, rad] = process.argv.slice(2);
-const X = +cx0, Y = +cy0, R = +rad;
+const X = +cx0,
+  Y = +cy0,
+  R = +rad;
 const pen = await readFile(join(COLORING_DIR, `${rel}.outline.webp`));
 const chalkPath = join(COLORING_DIR, `${rel}.chalk.webp`);
 const chalked = existsSync(chalkPath);
@@ -21,7 +24,8 @@ const night = await scoreEyeFill(judged, pen);
 const meta = await sharp(pen).metadata();
 const marks = [];
 for (let i = 0; i < light.cores.length; i++) {
-  const L = light.cores[i], N = night.cores[i];
+  const L = light.cores[i],
+    N = night.cores[i];
   const isRef = L.lively && Math.max(L.coreLuma, L.bandLight) >= STRONG;
   const firesBefore = isRef && N && !N.lively;
   const suppressed =
@@ -42,15 +46,31 @@ const svg = (which) =>
           return `<circle cx="${m.x}" cy="${m.y}" r="22" fill="none" stroke="${color}" stroke-width="6"/>`;
         })
         .join('') +
-    `</svg>`
+      `</svg>`
   );
-const region = { left: Math.max(0, X - R), top: Math.max(0, Y - R),
-  width: Math.min(2 * R, meta.width - Math.max(0, X - R)), height: Math.min(2 * R, meta.height - Math.max(0, Y - R)) };
+const region = {
+  left: Math.max(0, X - R),
+  top: Math.max(0, Y - R),
+  width: Math.min(2 * R, meta.width - Math.max(0, X - R)),
+  height: Math.min(2 * R, meta.height - Math.max(0, Y - R)),
+};
 const slug = rel.replace('/', '_');
 for (const which of ['before', 'after']) {
-  const full = await sharp(judged).removeAlpha().resize(meta.width, meta.height, { fit: 'fill' })
-    .composite([{ input: svg(which), top: 0, left: 0 }]).png().toBuffer();
-  await sharp(full).extract(region).resize(560, 560, { fit: 'inside' }).webp()
+  const full = await sharp(judged)
+    .removeAlpha()
+    .resize(meta.width, meta.height, { fit: 'fill' })
+    .composite([{ input: svg(which), top: 0, left: 0 }])
+    .png()
+    .toBuffer();
+  await sharp(full)
+    .extract(region)
+    .resize(560, 560, { fit: 'inside' })
+    .webp()
     .toFile(join(OUT, `${slug}.night-${which}.webp`));
 }
-console.log(slug, marks.filter(m=>m.firesBefore).length, '->', marks.filter(m=>m.firesAfter).length);
+console.log(
+  slug,
+  marks.filter((m) => m.firesBefore).length,
+  '->',
+  marks.filter((m) => m.firesAfter).length
+);
