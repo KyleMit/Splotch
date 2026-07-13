@@ -171,7 +171,7 @@ c334104bd0aecf5f207012cc14d139d184123b025cf796d0baf2cce1c6afdce9  tools/asset-ge
 9c623a9b48a7ae2baacfc3a025850fd5aa353687dda5a3245233c41b20419e11  tools/asset-gen/fill-src/vehicles/fire-wide.light.raw.webp
 d0a3265ac22bc3e7fa610684b89dd3a3d3fa7a782fa87aac36b3d6fd229d40a5  tools/asset-gen/fill-src/vehicles/fire-wide.night.raw.webp
 2738d343d808c1229a51460fa4ee5e0c395246f256e99821bc268fe8841231d6  tools/asset-gen/fill-src/vehicles/garbage-tall.light.raw.webp
-215fb3c2450ace50332656e4dd1ecf5a4b5a9b2d7e5fca0d225570685480925d  tools/asset-gen/fill-src/vehicles/garbage-tall.night.raw.webp
+dbaa7c095933c36b43f3091487493cacc94d0dffc6d27f1467d202e138a97f40  tools/asset-gen/fill-src/vehicles/garbage-tall.night.raw.webp
 7fc1a885a1407a6b1cf237ead0e954903a8257dd4298cf99d4fda9ddfe8f8dbf  tools/asset-gen/fill-src/vehicles/garbage-wide.light.raw.webp
 424396a2eea577bb773f17d1868cafdb5ff0996579944cffe990e2fb4e44aa6a  tools/asset-gen/fill-src/vehicles/garbage-wide.night.raw.webp
 8dd50421f4cf92b42412c61e4a9faff3340fff4fb2e6df4899224bb55dbefec6  tools/asset-gen/fill-src/vehicles/monster-tall.light.raw.webp
@@ -721,7 +721,7 @@ f44f9a8e034135aafbf824c7d4e187a0428e14a3e9084f30d63220971cc4a115  web/static/col
 7cb586d6c81897eb073d2a7cf9e7d448120dcae6f6ee8e28d465e910c6b5e8bf  web/static/coloring/vehicles/garbage-tall.chalk.thumb.webp
 df67268c9dfeb20300e02bdbde711a0d32ae134b0a8364dc6effe81f190dacef  web/static/coloring/vehicles/garbage-tall.chalk.webp
 e83a4f4750a15736ffa9c9de504ce9f0408928cf910daf5195df9b2b8537079b  web/static/coloring/vehicles/garbage-tall.light.webp
-e5afdaf1a1a5e40c0bffcb1dd16cc2adfb37a0ede2fa1bc2406dd9060e235710  web/static/coloring/vehicles/garbage-tall.night.webp
+976c0c0775556e88f8c6cd403e78e7c345036750e2c1a2a85c277bfa651c8f16  web/static/coloring/vehicles/garbage-tall.night.webp
 a37d0383e53ab25ff32b3cb59822591725b06c40dfe92f54b44e7f41dab0a3da  web/static/coloring/vehicles/garbage-tall.outline.webp
 d9205a6a6457c04f4d49b952c717f017324f177fea6f3d12e761324339b05dc4  web/static/coloring/vehicles/garbage-tall.thumb.webp
 26555f24aa4f0da43c87260251f6e6259dc2d6006e9d98e88241b8e7e1236135  web/static/coloring/vehicles/garbage-wide.chalk.thumb.webp
