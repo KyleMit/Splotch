@@ -1,10 +1,46 @@
 {
+  "apple-tall": {
+    "chalk": {
+      "retry": {
+        "notes": "This apple has NO FACE — the pen and the light fill are a plain faceless apple. Do NOT draw eyes, eyelids, a mouth, or any facial feature; redraw only the lines the pen has, whitening nothing but naturally-white features."
+      },
+      "review": "The shipped 2026-07 chalk INVENTED a pair of eerily human lidded eyes on the faceless apple and the night fill painted them in — dark mode has a face light mode doesn't. Confirm the apple is faceless on the chalk-over-night COMPOSITE (ISSUES Tier 1). After a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-13 dark-mode composite review — the eye-flavored chalk instruction invents eyes on faceless subjects (see house-wide's NO-EYES guard); the eye audit is light-referenced (0 cores here), so night-only invented eyes are structurally invisible to it."
+    }
+  },
+  "apple-wide": {
+    "chalk": {
+      "retry": {
+        "notes": "This apple has NO FACE — the pen and the light fill are a plain faceless apple. Do NOT draw eyes, eyelids, a mouth, or any facial feature; redraw only the lines the pen has, whitening nothing but naturally-white features."
+      },
+      "review": "The shipped 2026-07 chalk INVENTED googly cartoon eyes on the faceless apple and the night fill painted them in — dark mode has a face light mode doesn't. Confirm the apple is faceless on the chalk-over-night COMPOSITE (ISSUES Tier 1). After a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-13 dark-mode composite review — the eye-flavored chalk instruction invents eyes on faceless subjects (see house-wide's NO-EYES guard); the eye audit is light-referenced (0 cores here), so night-only invented eyes are structurally invisible to it."
+    }
+  },
+  "flower-wide": {
+    "night": {
+      "retry": {
+        "notes": "Center each pupil in its eye exactly as the light fill does — the pupils must NOT sit at the inner edge of the eyes (cross-eyed)."
+      },
+      "review": "The shipped 2026-07 night fill painted both pupils at the inner edge of the eyes, so the flower reads cross-eyed in dark mode (the light fill is centered and correct). Pupil PLACEMENT is invisible to every gate — cores lively, polarity fine — so judge placement by eye against the light fill (ISSUES Tier 1).",
+      "why": "2026-07-13 dark-mode composite review — all gates pass the cross-eyed take."
+    }
+  },
   "house-wide": {
     "chalk": {
       "flags": {
         "notes": "This scene has NO EYES — that is expected and correct, not a problem with the image. Do not look for eyes. Just redraw the drawing as a chalk line drawing, whitening only small naturally-white features if there are any."
       },
       "why": "Durable page quirk: the chalk instruction is eye-flavored and the eyeless scene made 2.5 REFUSE ('there are no eyes in the image to edit' — commits 46daba9 + 6f6e223; pipeline.md status-table lesson). Note text reconstructed. The 3.1 wave chalked it clean without the note, but the instruction is still eye-flavored, so the guard stays."
+    }
+  },
+  "teddy-tall": {
+    "chalk": {
+      "retry": {
+        "notes": "Keep the pupils exactly as the pen draws them — outlined rings with a small catchlight circle — and never fill a pupil with solid ink; solid chalk ink renders as glowing white in dark mode."
+      },
+      "review": "The pen is a 2026-07-13 FRESH drawing with healthy ringed pupils, but the shipped 2026-07 chalk solidified the eye interiors anyway, so the composited night eyes are hollow white rings with no legible pupil (ISSUES Tier 1). Judge on the chalk-over-night COMPOSITE; after a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-13 dark-mode composite review — the ISSUES chalk-whitening class introduced by the chalk itself; a fresh ringed pen does not protect the chalk stage, and every gate passes the defective take."
     }
   }
 }

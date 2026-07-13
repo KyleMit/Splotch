@@ -24,87 +24,106 @@ and the composite-review instruction.
    `dinosaur/velociraptor-wide`** *(shipped asset)*: both night fills painted the pupil interior the
    same navy as the night sky and oversized the white catchlight, so in the dark-mode composite (the
    chalk's white sclera + rings over the fill) the eye is a white ring around a hollow — no legible
-   dark pupil. This is the #8 contrast gap at eye scale: the audit judges the raw fill's eye cores,
+   dark pupil. This is the #9 contrast gap at eye scale: the audit judges the raw fill's eye cores,
    never the composited result. Cheapest fix in the pipeline: night-fill regen with the seeded
    "solid dark pupil clearly darker than the sky" notes + re-punch — no chalk or pen work.
 2. **`nature/ant-tall`'s night ant is green** *(shipped asset)*: the light fill is a proper
    reddish-brown ant; the night fill re-rolled the subject's identity color to green (green head and
-   body, tan face), which reads as a different bug entirely. This is #13's light↔night coherence gap
+   body, tan face), which reads as a different bug entirely. This is #14's light↔night coherence gap
    shipping its first real defect — not a hue nuance but a wrong subject color — and no gate checks
    subject-color plausibility. Same effort class as #1: night-fill regen with the seeded "stay
    reddish-brown like the light fill" notes + re-punch.
-3. **`farm/duck-wide`'s chalk invented human-like teeth** *(shipped asset)*: the pen outline and the
-   light fill have a clean, toothless open bill; the chalk drew a row of teeth inside it and the
-   night fill colored them in, so dark mode grins with teeth that light mode doesn't have. No gate
-   can see it — the invented-shapes audit (#9) only scans the open background, and the eye gates
-   don't look at mouths. Fix: chalk regen with the seeded erase-teeth notes, then night regen +
-   re-punch — mind #11's caveat (3.1 resists erase edits on solid ink; budget extra attempts/notes).
+3. **The chalk invents facial features — teeth on `farm/duck-wide`, whole faces on
+   `objects/apple-wide` + `objects/apple-tall`, an eyeball in `space/ship-tall`'s porthole**
+   *(shipped asset)*: in every case the pen and the light fill are clean — a toothless open bill,
+   two faceless apples, an empty riveted window — and the chalk drew the feature in (a row of
+   human-like teeth; googly cartoon eyes on the wide apple and eerily human lidded eyes on the tall
+   one; a solid pupil-disc-with-catchlight in the porthole), after which the night fill dutifully
+   painted it. Dark mode ships anthropomorphized subjects that light mode doesn't have. The likely
+   driver is already on file: the chalk instruction is EYE-FLAVORED (the `objects/house-wide`
+   registry guard exists because an eyeless scene once made 2.5 refuse), so on faceless subjects 3.1
+   helpfully supplies the eyes it was told to expect. Triple gate-blind: the invented-shapes audit
+   (#10) only scans the open background, the eye audit derives its reference cores from the LIGHT
+   fill so night-only eyes are structurally invisible to it, and on ship-tall the eye machinery
+   actively *rewards* the invention (8/8 cores lively, all gates green). Fix: chalk regen with the
+   seeded no-face notes (plus a house-wide-style NO-EYES guard), then night regen + re-punch — mind
+   #12's caveat (3.1 resists erase edits on solid ink; budget extra attempts/notes).
 4. **`farm/dog-wide` glows white at night — nose, eye whites, rump patch** *(shipped asset)*: the
    chalk solidified the pen's solid-ink nose **and** the pen's merely-outlined rump patch into solid
    ink, and solid chalk ink renders as glowing white in dark mode (the night fill actually painted
    the patch maroon — the chalk's white sits on top of it); the wide white scleras finish the manic
-   look. This is the #10 class escaping the eye: the chalk whitens *any* solid-pen region, and here
+   look. This is the #11 class escaping the eye: the chalk whitens *any* solid-pen region, and here
    it even promoted an outlined region to solid. Fix: chalk regen with the seeded keep-regions-open
    notes, then night regen + re-punch.
 5. **Chalk-whitened night eyes on `farm/horse-wide`, `farm/horse-tall`, `nature/caterpillar-wide`,
-   and hollow circle catchlights on `nature/bee-tall`** *(shipped asset)*: four more #10 composites
-   in the wild. The horses are textbook — their pens have solid-ink pupils, the chalks copied them,
-   and solid chalk ink renders white at night, leaving washed-out white eyes. Bee and caterpillar
-   are the more alarming variant: their pens have healthy RINGED pupils and their light fills are
-   fully lively (audit: 6/6 and 2/2 cores), yet the chalks *introduced* the solid/hollow treatment
-   on their own — the bee's chalk drew its catchlights as outlined hollow circles, which composite
-   as empty navy rings floating in the eye ("googly bubbles"). Fix: chalk regen per page with the
-   seeded eye notes (police-wide's erase-and-redraw recipe for the horses; keep-the-pen's-rings for
-   bee/caterpillar), then night regen + re-punch.
+   `objects/teddy-tall`, and hollow circle catchlights on `nature/bee-tall`** *(shipped asset)*:
+   five more #11 composites in the wild. The horses are textbook — their pens have solid-ink pupils,
+   the chalks copied them, and solid chalk ink renders white at night, leaving washed-out white
+   eyes. Bee, caterpillar, and teddy are the more alarming variant: their pens have healthy RINGED
+   pupils and lively light fills (audit: 6/6, 2/2, and 5-core pages), yet the chalks *introduced*
+   the solid/hollow treatment on their own — the bee's chalk drew its catchlights as outlined hollow
+   circles, which composite as empty navy rings floating in the eye ("googly bubbles"), and
+   teddy-tall's pen is a 2026-07-13 FRESH drawing, proving a brand-new ringed pen does not protect
+   the chalk stage. Fix: chalk regen per page with the seeded eye notes (police-wide's
+   erase-and-redraw recipe for the horses; keep-the-pen's-rings for bee/caterpillar/teddy), then
+   night regen + re-punch.
+6. **`objects/flower-wide`'s night face is cross-eyed** *(shipped asset)*: the night fill painted
+   both pupils at the inner edge of their eyes (the light fill's are centered), so the flower looks
+   cross-eyed in dark mode. Pupil *placement* is invisible to every gate — the cores are lively and
+   correctly polarized, just aimed at the nose. Night-fill regen with the seeded centered-pupils
+   notes + re-punch.
 
 ## Tier 2 — solid ratio, a bit more work
 
-6. **`judgeLightEyes` has no false-positive suppressions** *(gate blind spot)*. The IDEAS #12 fixes
+7. **`judgeLightEyes` has no false-positive suppressions** *(gate blind spot)*. The IDEAS #12 fixes
    (band-blind annulus, chalk-white-nearby) apply only to the night judge, so light-side flags still
    fire on side-profile eyes (`farm/duck-wide`, verified lively), band-blind solid-pupil pages, and
    non-face cores (windows, hubs — `objects/house-tall`). Options: port the band-blind rule, or
    bless per-page eye annotations (`ideas-exploration/idea-12/code/eye-annotations.draft.json`). Do
-   this before #11 — it de-noises the flat-eye list so the burn-down only spends API budget on real
+   this before #12 — it de-noises the flat-eye list so the burn-down only spends API budget on real
    offenders.
-7. **The orphan pages are still uncataloged (IDEAS #24)** *(shipped asset)*: `shapes/heart-wide` and
+8. **The orphan pages are still uncataloged (IDEAS #24)** *(shipped asset)*: `shapes/heart-wide` and
    `objects/umbrella-tall` have complete, gate-green suites sitting in `ideas-exploration/idea-24/`
    awaiting promotion into `web/static/coloring/` + `books.ts`. Promotion itself is cheap; they are
    2.5-era outputs, so consider regenerating on 3.1 when promoting (that part costs API budget).
-8. **Night subject/background contrast is unmeasured** *(gate blind spot)* (`shapes/circle-wide`
+9. **Night subject/background contrast is unmeasured** *(gate blind spot)* (`shapes/circle-wide`
    class): a fill can paint the hero region a color indistinguishable from the night sky and pass
    every gate. Caught by montage review this round; a "hero region ΔE vs background" scorer would
    close it, with a known-bad baseline (`circle-wide`'s navy take) to validate against.
    (`circle-wide` and `rectangle-wide` now carry contrast `--notes` in the registry, but nothing
    *measures* the result — the gate gap stands. Tier 1 #1 is this same gap at eye scale: a pupil
    painted sky-navy is invisible to every gate too.)
-9. **Colored-shape invention is only audited, not gated (IDEAS #13)** *(gate blind spot)*: the
-   detector that caught `objects/house-tall`'s two invented sky flowers is now a first-class audit
-   (`bin/audit-invented-shapes.mjs`, `npm run gen:coloring-fills:audit:shapes`) but still runs only
-   post-hoc. Until the fill generators score each take with it (fold into the keep-best ranking on
-   flagged-blob area — the idea-13 report's recommendation), a fill can ship an invented colored
-   shape that keep/white/eye gates cannot see, and only the audit-after-the-wave catches it.
+10. **Colored-shape invention is only audited, not gated (IDEAS #13)** *(gate blind spot)*: the
+    detector that caught `objects/house-tall`'s two invented sky flowers is now a first-class audit
+    (`bin/audit-invented-shapes.mjs`, `npm run gen:coloring-fills:audit:shapes`) but still runs only
+    post-hoc. Until the fill generators score each take with it (fold into the keep-best ranking on
+    flagged-blob area — the idea-13 report's recommendation), a fill can ship an invented colored
+    shape that keep/white/eye gates cannot see, and only the audit-after-the-wave catches it. And
+    its scope is the open background only — Tier 1 #3's invented teeth, apple faces, and porthole
+    eyeball all sit *inside* the subject, where neither this audit nor any gate looks.
 
 ## Tier 3 — high impact but expensive
 
-10. **Chalk whitening on solid-pen-eye pages is gate-blind** *(gate blind spot)* (proved by
+11. **Chalk whitening on solid-pen-eye pages is gate-blind** *(gate blind spot)* (proved by
     `vehicles/police-tall`, whose wave chalk whitened the pupils with the sclera — that page's
     2026-07-13 fresh pen has ringed pupils now, but the class persists on every remaining
     solid-pen-eye page: Tier 1 #5's horses are two of them). A solid pen pupil has no nested rings →
     `findEyeCores` finds nothing → the eye-polarity gate (Stage 1.5 gate 4) passes vacuously, and
     the night eye judge is silent too (its chalk-white-nearby rule trusts the chalk). Only composite
     review catches it. A candidate scorer: chalk-ink fraction inside pen solid regions that sit at
-    face positions. No ready patch — worth building before #11's burn-down, since that wave
+    face positions. No ready patch — worth building before #12's burn-down, since that wave
     regenerates exactly these pages. (The `vehicles/police-wide` registry entry carries the
     composite-review instruction and the wave's erase-note recipe for the meantime.) Two findings
     prove the class is wider than its name: Tier 1 #4 (`farm/dog-wide`) shows it isn't eye-shaped —
     the chalk whitened a solid nose and even solidified an *outlined* rump patch — and Tier 1 #5's
-    bee/caterpillar show it isn't pen-caused either: their pens have healthy ringed pupils, yet the
-    chalk solidified them anyway. So a scorer keyed to "pen solid regions" misses both extensions —
-    compare chalk ink against PEN ink per region, and flag chalk ink the pen doesn't have.
-11. **Light-mode eyes on accident-era pens are dead/solid** *(shipped asset; IDEAS #6 — the biggest
+    bee/caterpillar/teddy show it isn't pen-caused either: their pens have healthy ringed pupils
+    (teddy's a 2026-07-13 fresh drawing), yet the chalk solidified them anyway. So a scorer keyed to
+    "pen solid regions" misses both extensions — compare chalk ink against PEN ink per region, and
+    flag chalk ink the pen doesn't have (which would also catch Tier 1 #3's invented features).
+12. **Light-mode eyes on accident-era pens are dead/solid** *(shipped asset; IDEAS #6 — the biggest
     remaining light-theme lever)*. 35 pages carry a light-side flat-eye flag
     (`npm run gen:coloring-fills:audit:eyes` prints them; 53 before the 3.1 regen, 39 before the
-    2026-07-13 fresh-outline pass) — though some are detector noise, not defects, which is why #6
+    2026-07-13 fresh-outline pass) — though some are detector noise, not defects, which is why #7
     should land first. The list also has **false negatives**: `creatures/mermaid-tall`'s giant
     solid-black orb pupils (straight from the pen) sail through as light-ok because their two
     catchlight holes register as lively cores (2 of 8) — an offender the burn-down list will never
@@ -121,7 +140,7 @@ and the composite-review instruction.
     (police-tall took an explicit erase `--notes`; a 2.5-era chalk did the same edit unprompted).
     The pen normalizer is exactly this kind of edit and has NOT been exercised on 3.1 yet — budget
     extra attempts/notes the first time.
-12. **Style covers are still 2.5-era outputs** *(shipped asset)*. The 3.1 migration swapped the
+13. **Style covers are still 2.5-era outputs** *(shipped asset)*. The 3.1 migration swapped the
     model in `gen-style-covers.mjs` but did not regenerate covers — no gates exist for them, so a
     regen is an eyeball-only exercise (API cost plus per-cover review). The current covers look
     fine; this is polish.
@@ -130,16 +149,16 @@ and the composite-review instruction.
 
 Neither of these is worth a standalone pass as a *gate* — land them as conditioning/gates when the
 next mass regen happens. (The "nothing shipped looks wrong" framing died 2026-07-13: Tier 1 #2's
-green ant is #13's gap shipping a real defect. The page fix is Tier 1; the gate stays here.)
+green ant is #14's gap shipping a real defect. The page fix is Tier 1; the gate stays here.)
 
-13. **Light↔night and tall↔wide palette coherence are unenforced (IDEAS #8/#9)** *(gate blind
+14. **Light↔night and tall↔wide palette coherence are unenforced (IDEAS #8/#9)** *(gate blind
     spot)*: both fills of a page, and both orientations of a subject, are independent generations —
     the 3.1 wave re-rolled every palette, and in the worst shipped case re-rolled a subject's
     *identity* color (Tier 1 #2: the night ant turned green). The hue-flip scorers and conditioning
     recipes in `ideas-exploration/idea-8`/`idea-9` were validated but not promoted; none of them
     checks subject-color plausibility, so promotion alone would not have caught the ant — the light
     fill's subject hue is the natural reference.
-14. **Motif consistency across sibling pages is unenforced (IDEAS #2)** *(gate blind spot)*: the
+15. **Motif consistency across sibling pages is unenforced (IDEAS #2)** *(gate blind spot)*: the
     same motif can get different treatments per orientation — e.g. `dinosaur/pterodactyl-tall` now
     renders its sun warm gold while `-wide` has a crescent moon. Nothing looked wrong in the 3.1
     review, but every regen re-rolls these calls independently. The cheapest mitigation is partly in
