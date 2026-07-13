@@ -2,12 +2,14 @@
 
 > **2026-07-13 status:** every idea was empirically explored in
 > [`ideas-exploration/`](../ideas-exploration/README.md), and the `gemini-3.1-flash-image`
-> regeneration wave ([run record](gemini-3.1-migration.md)) **landed #11, #12, and #17**,
-> effectively resolved **#1** (re-inking gone), **#5** (both flat-pupil pages now lively without pen
-> surgery), and **#4** (night bgLuma tightened to 18–48 via `--night-luma-max 60`), and ran
-> **#7/#13** as post-regen audits (1 real invented shape caught and regenerated). The remaining
-> ideas below are still open leads. The living list of concrete outstanding defects and gate blind
-> spots (as opposed to these exploratory leads) is [`ISSUES.md`](ISSUES.md).
+> regeneration wave ([run record](gemini-3.1-migration.md)) **landed #11, #12, and #17** (the
+> page-thumbnail half of **#19** landed 2026-07-13 — chalk thumbs catalog-wide + the theme-aware
+> picker; chalk *covers* remain open), effectively resolved **#1** (re-inking gone), **#5** (both
+> flat-pupil pages now lively without pen surgery), and **#4** (night bgLuma tightened to 18–48 via
+> `--night-luma-max 60`), and ran **#7/#13** as post-regen audits (1 real invented shape caught and
+> regenerated). The remaining ideas below are still open leads. The living list of concrete
+> outstanding defects and gate blind spots (as opposed to these exploratory leads) is
+> [`ISSUES.md`](ISSUES.md).
 
 Brainstormed immediately after generating and reviewing the whole catalog (7 categories: 83 chalks +
 83 night fills, ~350 candidate images eyeballed). **Nothing here is empirically verified** — each
@@ -231,6 +233,10 @@ texture would go flat — maybe hybrid: deterministic base + one model pass for 
   `creatures/mermaid-tall`.
 
 ### 19. Chalk covers + dark-mode thumbnails **[gap in dark-mode UX]**
+
+> **Landed 2026-07-13 (page half):** every chalk ships a `.chalk.thumb.webp` and the picker's page
+> tiles are theme-aware (`pageThumb()` in `books.ts`). Covers still have no chalk — the book tiles
+> keep the inverted pen until the 8 cover chalks are generated (see `ideas-exploration/idea-19`).
 
 The picker still shows the *inverted pen* thumbnail in dark mode (`books.ts` comment), and covers
 have no chalk at all — so a child taps a blob-eyed inverted-pen owl thumb and gets a solid-sclera

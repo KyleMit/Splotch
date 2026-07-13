@@ -17,8 +17,9 @@ copy in the sibling `pipeline-assets/` — live assets regenerate, these don't.
 
 ```mermaid
 flowchart LR
-    O["pen outline<br/>(.outline.webp)"] -->|gen:coloring-thumbs| T[".thumb.webp<br/>(picker)"]
+    O["pen outline<br/>(.outline.webp)"] -->|gen:coloring-thumbs| T[".thumb.webp<br/>(picker, light)"]
     O -->|"gen:coloring-chalk<br/>(Gemini, gated)"| C["chalk outline<br/>(.chalk.webp)"]
+    C -->|gen:coloring-thumbs| CT[".chalk.thumb.webp<br/>(picker, dark)"]
     O -->|"gen:coloring-fills<br/>(Gemini, gated)"| LR2["light raw<br/>(fill-src/…light.raw.webp)"]
     C -->|"gen-coloring-fills-dark<br/>(Gemini, gated)"| NR["night raw<br/>(fill-src/…night.raw.webp)"]
     LR2 -->|gen:coloring-punch| LS["shipped .light.webp<br/>(fills-only)"]
@@ -43,7 +44,8 @@ the white-blob problem and two earlier generations of fixes — is chronicled in
 | ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | `{page}.outline.webp`           | `web/static/coloring/{book}/`      | yes — the PEN outline: light-mode overlay, source of all derivations                                                                   | hand-curated + `normalize-outline-strokes.mjs`           |
 | `{page}.chalk.webp`             | `web/static/coloring/{book}/`      | yes — the CHALK outline: dark-mode overlay + night punch mask, stored ink-on-white                                                     | `gen-coloring-chalk.mjs` from the pen                    |
-| `{page}.thumb.webp`             | `web/static/coloring/{book}/`      | yes — picker grid (from the pen; the picker inverts it in dark mode)                                                                   | `gen-coloring-thumbs.mjs`                                |
+| `{page}.thumb.webp`             | `web/static/coloring/{book}/`      | yes — light-mode picker grid (from the pen)                                                                                            | `gen-coloring-thumbs.mjs`                                |
+| `{page}.chalk.thumb.webp`       | `web/static/coloring/{book}/`      | yes — dark-mode picker grid (from the chalk, ink-on-white; the tile's invert renders it as white chalk)                                | `gen-coloring-thumbs.mjs`                                |
 | `{page}.{light,night}.raw.webp` | `tools/asset-gen/fill-src/{book}/` | no — committed source of truth for fills, keeps its own outlines so audits can score registration                                      | `gen-coloring-fills.mjs` / `gen-coloring-fills-dark.mjs` |
 | `{page}.{light,night}.webp`     | `web/static/coloring/{book}/`      | yes — magic-brush reveal, fills-only (outline pixels inpainted with bled fill color, opaque: pen mask for light, chalk mask for night) | `punch-fill-outlines.mjs` from the raw                   |
 
@@ -58,9 +60,10 @@ at the end.
 ## Stage 1 — Pen outlines
 
 The pen outline is the source of everything: the light overlay renders it, the light punch masks
-with it, the light-fill generator conditions on it, the chalk redraws from it, and the thumbnail is
-a resize of it. **Every downstream regeneration flows from a pen change**, so a pen edit means
-regenerating the page's whole suite (thumb + chalk + light + night + punch).
+with it, the light-fill generator conditions on it, the chalk redraws from it, and the light picker
+thumbnail is a resize of it (the dark tile's `.chalk.thumb` resizes the chalk). **Every downstream
+regeneration flows from a pen change**, so a pen edit means regenerating the page's whole suite
+(thumbs + chalk + light + night + punch).
 
 ### Outline quality, and the audit that measures it
 
@@ -161,8 +164,9 @@ Judgment-call misfires the gates can't see (a chalk that whitens something canon
 ladybug's first take gave it white shell spots) are caught only by human review of the
 `.display.webp`; the fix is a page `--notes` at low temperature.
 
-After applying a chalk, regenerate the page's **night fill** (it conditions on the chalk) and
-re-punch. Thumbs and light fills are untouched — they belong to the pen.
+After applying a chalk, regenerate the page's **night fill** (it conditions on the chalk), re-punch,
+and re-run `gen:coloring-thumbs` (the chalk's `.chalk.thumb.webp` is the dark-mode picker tile). Pen
+thumbs and light fills are untouched — they belong to the pen.
 
 ## Stage 2 — The punch
 
@@ -401,7 +405,7 @@ Hard-won process lessons:
 | `npm run gen:coloring-punch -- [pages…]`                    | re-derive shipped fills from raws (pen/chalk masks)                                             | no       |
 | `npm run gen:coloring-fills:audit -- [cat]`                 | registration drift on committed raws                                                            | no       |
 | `npm run gen:coloring-fills:audit:eyes -- [cat]`            | eye liveliness on committed raws (night judged as the chalk composite)                          | no       |
-| `npm run gen:coloring-thumbs -- [cat]`                      | picker thumbnails                                                                               | no       |
+| `npm run gen:coloring-thumbs -- [cat]`                      | picker thumbnails (pen `.thumb` + chalk `.chalk.thumb`)                                         | no       |
 | `npm run gen:contact-sheet -- <cat>`                        | the review sheet (publish as Artifact)                                                          | no       |
 
 ## Status and the next category
@@ -437,9 +441,10 @@ from the 2026-07 migration, all verified on overlays/composites before hand-ship
   adjudication.
 
 Next-category runbook: pen audit → normalize offenders if the light page warrants it (worst-first,
-`--apply`) → thumbs → light fills → **chalks** (`gen:coloring-chalk --apply`) → night fills (they
-condition on the chalk) → ship raws + punch → wire `books.ts` (`night` + `chalk` orientation lists)
-→ all three audits → contact sheet review in both themes → checks → commit.
+`--apply`) → light fills → **chalks** (`gen:coloring-chalk --apply`) → night fills (they condition
+on the chalk) → ship raws + punch → thumbs (pen + chalk, after the chalks exist) → wire `books.ts`
+(`night` + `chalk` orientation lists) → all three audits → contact sheet review in both themes →
+checks → commit.
 
 The Stage 4 model input — the chalk as dark mode displays it (negated, white-on-black), here the owl
 whose sclera the chalk owns:

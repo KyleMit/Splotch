@@ -60,7 +60,7 @@ npm run gen:coloring-outlines:fresh # brand-new pen outline from a text scene (s
 npm run gen:coloring-fills      # light colored fills  -> web/static/coloring/**/*.light.webp
 npm run gen:coloring-fills:audit # drift-check the raw fills in fill-src/ (no key/network)
 npm run gen:coloring-punch      # re-punch the shipped fills from fill-src/ raws (no key/network)
-npm run gen:coloring-thumbs     # picker thumbnails     -> web/static/coloring/**/*.thumb.webp
+npm run gen:coloring-thumbs     # picker thumbnails (pen + chalk) -> web/static/coloring/**/*.{thumb,chalk.thumb}.webp
 npm run gen:contact-sheet -- nature # HTML contact sheet of ONE category (gitignored) — publish as an Artifact
 ```
 
@@ -105,7 +105,8 @@ The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast wit
   `web/static/coloring/**/*-{tall,wide}.outline.webp` PEN outlines (the source of every derivation).
 * **Shipped outputs** (committed, read by the app): `*.chalk.webp` chalk outlines (dedicated
   dark-mode line art, stored ink-on-white — see `pipeline.md`), `*.light.webp` / `*.night.webp`
-  fills, `*.thumb.webp` thumbnails, `web/static/styles/*.webp` covers.
+  fills, `*.thumb.webp` / `*.chalk.thumb.webp` thumbnails (light / dark picker tiles),
+  `web/static/styles/*.webp` covers.
 * **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/`.
 
 Generate → review the scratch → copy the good outputs into `web/static/` → commit.

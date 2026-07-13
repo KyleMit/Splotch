@@ -46,7 +46,8 @@ line-color, and composite eye audits; light mode byte-stability does not apply (
 intentionally replaces light assets).
 
 Each fresh page also ships a `{page}.chalk.thumb.webp` (a plain resize of its chalk) as the first
-batch toward IDEAS #19 / ISSUES #1 — the app does not consume them yet.
+batch toward IDEAS #19 — since landed catalog-wide: every chalk has a `.chalk.thumb.webp` and the
+picker shows it in dark mode (`pageThumb()` in `books.ts`).
 
 ## What did NOT get a fresh drawing, and why
 
