@@ -2,19 +2,37 @@
   "apple-tall": {
     "chalk": {
       "retry": {
-        "notes": "This apple has NO FACE — the pen and the light fill are a plain faceless apple. Do NOT draw eyes, eyelids, a mouth, or any facial feature; redraw only the lines the pen has, whitening nothing but naturally-white features."
+        "temperature": 0.3,
+        "notes": "This apple has NO FACE — the pen and the light fill are a plain faceless apple. Do NOT draw eyes, eyelids, a mouth, or any facial feature. Also do NOT add catchlights, highlight dots, dew drops, or any white circles anywhere — not on the apple, not on the leaf. Redraw ONLY the lines the pen already has; add nothing new anywhere."
       },
-      "review": "The shipped 2026-07 chalk INVENTED a pair of eerily human lidded eyes on the faceless apple and the night fill painted them in — dark mode has a face light mode doesn't. Confirm the apple is faceless on the chalk-over-night COMPOSITE (ISSUES Tier 1). After a chalk regen, regenerate the night fill and re-punch.",
-      "why": "2026-07-13 dark-mode composite review — the eye-flavored chalk instruction invents eyes on faceless subjects (see house-wide's NO-EYES guard); the eye audit is light-referenced (0 cores here), so night-only invented eyes are structurally invisible to it."
+      "review": "Fixed 2026-07-13: the 2026-07 wave chalk had INVENTED a pair of eerily human lidded eyes on the faceless apple (this page's regen passed first take with the extended no-face + no-dots note; the sibling apple-wide needed the no-dots clause after inventing leaf dew-drop dots). Confirm the apple is faceless — no eyes, lids, mouth, or white dots anywhere — on the chalk-over-night COMPOSITE after any regen; every gate passes an invented face (the eye audit is light-referenced, 0 cores here).",
+      "why": "2026-07-13 ISSUES Tier 1 fix (chalk-invented facial features) — the eye-flavored chalk instruction invents eyes on faceless subjects (see house-wide's NO-EYES guard); regenerated chalk + night, re-punched."
+    },
+    "night": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "The apple has NO FACE — do not paint eyes, a mouth, or any facial mark on it; it is a plain apple. PALETTE: the apple stays its daytime identity DEEP RED dimmed for night — never navy, never purple; the leaf stays green, the stem brown, the grass mound deep green. The three flowers keep their daytime hues dimmed: the middle one dusty pink with a golden center, the two side ones soft periwinkle blue with golden centers — every flower must clearly stand out against the night sky, NEVER the same navy as the sky."
+      },
+      "review": "Conditions on the 2026-07-13 faceless chalk. Confirm on the composite: faceless deep-red apple matching the light fill's identity, all three flowers distinct from the navy sky. First pinned take shipped (drift 0.0000, bgLuma 28, lineW 255, haloScore 0.057).",
+      "why": "2026-07-13 ISSUES Tier 1 fix — night regenerated against the faceless chalk; palette pinned to the light identity per the ISSUES night-contrast trap."
     }
   },
   "apple-wide": {
     "chalk": {
       "retry": {
-        "notes": "This apple has NO FACE — the pen and the light fill are a plain faceless apple. Do NOT draw eyes, eyelids, a mouth, or any facial feature; redraw only the lines the pen has, whitening nothing but naturally-white features."
+        "temperature": 0.3,
+        "notes": "This apple has NO FACE — the pen and the light fill are a plain faceless apple. Do NOT draw eyes, eyelids, a mouth, or any facial feature. Also do NOT add catchlights, highlight dots, dew drops, or any white circles anywhere — not on the apple, not on the leaf. Redraw ONLY the lines the pen already has; add nothing new anywhere."
       },
-      "review": "The shipped 2026-07 chalk INVENTED googly cartoon eyes on the faceless apple and the night fill painted them in — dark mode has a face light mode doesn't. Confirm the apple is faceless on the chalk-over-night COMPOSITE (ISSUES Tier 1). After a chalk regen, regenerate the night fill and re-punch.",
-      "why": "2026-07-13 dark-mode composite review — the eye-flavored chalk instruction invents eyes on faceless subjects (see house-wide's NO-EYES guard); the eye audit is light-referenced (0 cores here), so night-only invented eyes are structurally invisible to it."
+      "review": "Fixed 2026-07-13: the 2026-07 wave chalk had INVENTED googly cartoon eyes on the faceless apple. The plain NO-FACE note was not enough — the first regen take was faceless but invented two white dew-drop/catchlight dots on the LEAF (white 0.3%, invented 0.0000: inside pen-bounded interiors the enclosure gate reads them as deliberate whitening); the no-dots clause in the retry notes is what cleared it. Confirm the apple AND leaf carry no invented marks on the chalk-over-night COMPOSITE after any regen; every gate passes an invented face.",
+      "why": "2026-07-13 ISSUES Tier 1 fix (chalk-invented facial features) — the eye-flavored chalk instruction invents eyes on faceless subjects (see house-wide's NO-EYES guard); regenerated chalk + night, re-punched."
+    },
+    "night": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "The apple has NO FACE — do not paint eyes, a mouth, or any facial mark on it; it is a plain apple. PALETTE: the apple stays its daytime identity DEEP RED dimmed for night — never navy, never purple; the leaf stays green, the stem brown; the picnic blanket keeps its red-and-cream checker pattern dimmed for night; the flowers keep their daytime hues (yellow on the left, purple on the right) dimmed. NEVER paint the apple or the flowers the same navy as the sky."
+      },
+      "review": "Conditions on the 2026-07-13 faceless chalk. Confirm on the composite: faceless deep-red apple matching the light fill's identity, red-and-cream checker blanket. First pinned take shipped (drift 0.0000, bgLuma 41, lineW 255, haloScore 0.192); its small left background flower re-rolled dusty pink vs the light fill's yellow — background-motif palette coherence is the known unenforced gap (ISSUES Tier 4), subject identity held.",
+      "why": "2026-07-13 ISSUES Tier 1 fix — night regenerated against the faceless chalk; palette pinned to the light identity per the ISSUES night-contrast trap."
     }
   },
   "flower-wide": {

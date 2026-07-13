@@ -35,10 +35,19 @@
     },
     "chalk": {
       "retry": {
-        "notes": "the open bill interior must stay toothless — the pen has a clean open bill with a tongue outline and no teeth; do not draw teeth"
+        "temperature": 0.3,
+        "notes": "the open bill interior must stay toothless — the pen has a clean open bill with a tongue outline and no teeth; do not draw teeth. The duck is drawn in side profile with exactly ONE eye, already present on the head — do NOT add a second eye, an extra eyeball, or any new facial mark anywhere (not above the bill, not on the bill); redraw ONLY the lines the pen already has"
       },
-      "review": "The shipped 2026-07 chalk INVENTED a row of human-like teeth inside the open bill (the pen and the light fill have none) and the night fill colored them in — dark mode grins with teeth light mode doesn't have. Check the bill interior on the chalk-over-night COMPOSITE (ISSUES Tier 1). 3.1 resists erase edits on solid ink — budget extra attempts/notes; after a chalk regen, regenerate the night fill and re-punch.",
-      "why": "2026-07-13 dark-mode composite review — no gate sees content invention inside the subject (the invented-shapes audit only scans the open background)."
+      "review": "Fixed 2026-07-13: the 2026-07 wave chalk had INVENTED a row of human-like teeth inside the open bill (the pen and light fill have none). The toothless note alone was not enough — the first regen take removed the teeth but invented a SECOND EYEBALL (sclera + pupil + catchlight) above the bill, inside the head interior where the enclosure gate reads whitening as deliberate; the one-eye guard in the retry notes is what cleared it (take 2). Check the bill interior AND the whole head for extra eyes on the chalk-over-night COMPOSITE after any regen; every gate passes an invented face.",
+      "why": "2026-07-13 ISSUES Tier 1 fix (chalk-invented facial features) — the eye-flavored chalk instruction invents features gate-blind inside the subject; regenerated chalk + night, re-punched."
+    },
+    "night": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "The open bill contains ONLY a tongue outline — do NOT paint teeth or any white shapes inside the bill; the mouth interior stays deep warm red-brown with the tongue slightly lighter. The duckling keeps its warm golden-yellow body with an orange bill and orange feet — never navy, never grey."
+      },
+      "review": "Conditions on the 2026-07-13 toothless chalk. Confirm on the composite: toothless open bill, golden-yellow duckling matching the light fill's identity, lively side-profile eye. First pinned take shipped (drift 0.0019, bgLuma 34, lineW 255, haloScore 0.026).",
+      "why": "2026-07-13 ISSUES Tier 1 fix — night regenerated against the de-toothed chalk; palette pinned to the light identity per the ISSUES night-contrast trap."
     }
   }
 }

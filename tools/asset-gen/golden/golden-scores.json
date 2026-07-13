@@ -1029,9 +1029,9 @@
         "eyesOk": false
       },
       "night": {
-        "drift": 0.00188,
-        "bgLuma": 47.9,
-        "lineWhite": 247,
+        "drift": 0.00182,
+        "bgLuma": 33.7,
+        "lineWhite": 249,
         "eyesFailed": 0,
         "driftOk": true,
         "moodOk": true,
@@ -1569,8 +1569,8 @@
       },
       "night": {
         "drift": 0,
-        "bgLuma": 31.4,
-        "lineWhite": 254,
+        "bgLuma": 27.9,
+        "lineWhite": 253,
         "eyesFailed": 0,
         "driftOk": true,
         "moodOk": true,
@@ -1599,9 +1599,9 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0.00029,
-        "bgLuma": 24.3,
-        "lineWhite": 253,
+        "drift": 0,
+        "bgLuma": 41,
+        "lineWhite": 250,
         "eyesFailed": 0,
         "driftOk": true,
         "moodOk": true,
