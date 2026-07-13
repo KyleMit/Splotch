@@ -52,7 +52,7 @@ Learned from prior runs:
 ## Shared audit conventions
 
 This is an audit skill. Follow the shared conventions in
-[`.claude/audit-conventions.md`](../../audit-conventions.md):
+[`audit-conventions`](../audit-conventions/SKILL.md):
 
 * **Merge into `docs/AUDIT.md`, don't overwrite** (§1) — the item format and the file header live
   there; enrich existing items, add new ones, drop fixed ones.

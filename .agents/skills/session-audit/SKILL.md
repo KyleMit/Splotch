@@ -1,13 +1,13 @@
 ---
 name: session-audit
-description: Retrospective on the current session that files durable, recurring friction (finding, understanding, running, or changing code) as audit findings in docs/AUDIT.md so the repo's Claude tooling gets sharper over time. Use near the end of a working session, before /clear, or when asked to reflect on session friction.
+description: Retrospective on the current session that files durable, recurring friction (finding, understanding, running, or changing code) as audit findings in docs/AUDIT.md so the repo's agent tooling gets sharper over time. Use near the end of a working session, before clearing context, or when asked to reflect on session friction.
 ---
 
 # Session Audit
 
 Reflect on the session I just had — the friction I hit finding, understanding, running, or changing
-code — and file the durable, recurring problems as audit findings, so the repo's Claude tooling
-(skills, rules, CLAUDE.md, ADRs) gets sharper over time.
+code — and file the durable, recurring problems as audit findings, so the repo's agent tooling
+(skills, scoped instructions, generated agent files, ADRs) gets sharper over time.
 
 This is a **retrospective on one session**, not a sweep of the codebase. Run it near the end of a
 working session, before `/clear`. Its whole value is aggregation across many runs, so honesty per
@@ -39,13 +39,13 @@ existing skill/rule already covers is **not** a finding. Be strict:
 
 * **An empty audit is a valid, honest result.** Do not invent findings to fill the file. Noise
   poisons the cross-session aggregate more than a blank run does.
-* Every finding's fix must be a **concrete, durable change to the repo's Claude tooling** — a
-  new/edited skill, a path-scoped rule in `.claude/rules/`, a CLAUDE.md note, a script, a clearer
-  error message, or an ADR. "Try harder / remember next time" is not a fix; if there's no artifact
-  to change, it's not a finding.
-* Before filing, check whether the gap is *already* covered — grep the skills/rules/CLAUDE.md for
-  the topic. Friction caused by not reading an existing doc is a signal about discoverability at
-  most, not a new doc to write.
+* Every finding's fix must be a **concrete, durable change to the repo's agent tooling** — a
+  new/edited `.ruler` skill, a nested `.ruler/AGENTS.md` note, a script, a clearer error message, or
+  an ADR. "Try harder / remember next time" is not a fix; if there's no artifact to change, it's not
+  a finding.
+* Before filing, check whether the gap is *already* covered — grep `.ruler/` and the generated agent
+  files for the topic. Friction caused by not reading an existing doc is a signal about
+  discoverability at most, not a new doc to write.
 
 ## Output
 
@@ -67,7 +67,7 @@ the canonical finding format. Map each friction point onto it:
   commands, and paths. Add a one-word cost tag — `blocked` / `slow` / `minor` — so the aggregate is
   sortable.
 * `#### Proposed solution` — the specific tooling change and exactly where it lives (which skill,
-  which rule file, which CLAUDE.md, or a new ADR), plus one line on what it should contain. A
+  which `.ruler` source, which rule file, or a new ADR), plus one line on what it should contain. A
   starting point for the fix agent, not a mandate.
 * `#### Verification` — how a future run confirms the fix landed (e.g. "the path is in the
   `architecture` skill's source map, so the next session finds it without a Grep sweep").
@@ -113,9 +113,9 @@ Learned from prior runs:
   transcript.
 * A **doc-prescribed command that hits an external hard limit** is recurrence-guaranteed even if
   this session's retry was cheap: the prescription itself is what fails, so every future follower
-  hits the same wall (e.g. the CLAUDE.md-prescribed `contact-sheet -- all --source shipped` publish
-  at 28.8 MB vs the Artifact tool's 16 MB cap). Weight it by "who follows this doc next," not by the
-  minutes lost this run.
+  hits the same wall (e.g. the agent-instruction-prescribed `contact-sheet -- all --source shipped`
+  publish at 28.8 MB vs the Artifact tool's 16 MB cap). Weight it by "who follows this doc next,"
+  not by the minutes lost this run.
 * **Verification steps inside skills are themselves audit surface.** When a skill's own check
   produces a false positive in this environment, the finding is against the check, not the env — a
   future run trusting it fails *silently*, which outranks the visible frictions. Tell: you had to
@@ -143,7 +143,7 @@ Learned from prior runs:
 ## Shared audit conventions
 
 This is an audit skill. Follow the shared conventions in
-[`.claude/audit-conventions.md`](../../audit-conventions.md):
+[`audit-conventions`](../audit-conventions/SKILL.md):
 
 * **Merge into `docs/AUDIT.md`, don't overwrite** (§1) — the finding format and the file header live
   there; enrich existing items, add new ones, drop items whose fix has landed.

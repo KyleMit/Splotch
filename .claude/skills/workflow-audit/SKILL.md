@@ -15,10 +15,10 @@ The two standing priorities are **token efficiency** and **reducing repetitive p
 ## What to look at
 
 1. **User config** — `~/.claude/settings.json` (model, hooks, theme, env).
-2. **Project config** — `.claude/settings.json`, `.claude/settings.local.json`, `.claude/rules/*`,
-   and the `.ruler/` sources (skills in `.ruler/skills/*`, root + nested instruction files —
-   generated into `CLAUDE.md`/`AGENTS.md` and the skill trees per ADR-0058; propose edits against
-   the sources, never the generated copies).
+2. **Project config** — `.ruler/**`, generated `AGENTS.md`/`CLAUDE.md` files,
+   `.claude/settings.json`, `.claude/settings.local.json`, generated `.claude/skills/*`, generated
+   `.agents/skills/*`, and Claude hooks/cloud files. Propose shared instruction and skill edits
+   against `.ruler/**`, never the generated copies.
 3. **Session history** — the JSONL transcripts under
    `~/.claude/projects/-Users-kylemit-Code-Splotch/`. Aggregate across sessions; do not read them
    one line at a time in the main context. Pull out:
@@ -59,9 +59,10 @@ Apply the changes I approve directly, and keep them reversible via git:
 * Deliberately keep prompting for anything mutating outside the repo, `rm`, non-localhost network
   calls, and `git commit`/`git push`.
 * Encode behavioral changes (prefer structured tools over shell, delegate fan-out search to a cheap
-  read-only subagent, `/clear` between unrelated tasks) in `CLAUDE.md`, not just the report.
+  read-only subagent, `/clear` between unrelated tasks) in `.ruler`, not just the report.
 
-Note every file you touched so `git diff .claude CLAUDE.md` tells the whole story.
+Note every file you touched so `git diff .ruler .claude .agents AGENTS.md CLAUDE.md` tells the whole
+story.
 
 ## Output format
 
@@ -91,7 +92,7 @@ Tool-usage table + Bash breakdown table + other signals.
 
 ## Benchmark vs. best-in-class
 
-Layer-by-layer table: CLAUDE.md · rules/skills · hooks · subagents · MCP.
+Layer-by-layer table: Ruler source · generated agent files · skills · hooks · subagents · MCP.
 
 ## Recommendations (prioritized)
 
@@ -112,7 +113,7 @@ End by printing a short summary of what changed and what's left as optional foll
 
 This is an audit skill. Its findings go in the dated `docs/claude-workflow-review-YYYY-MM-DD.md`
 report rather than `docs/AUDIT.md`, but the run-tracking conventions in
-[`.claude/audit-conventions.md`](../../audit-conventions.md) still apply:
+[`audit-conventions`](../audit-conventions/SKILL.md) still apply:
 
 * **Log the run** (§2) — add a row to `docs/AUDIT-LOG.md` linking the dated report and summarizing
   the headline findings in one line.

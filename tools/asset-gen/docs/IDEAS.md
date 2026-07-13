@@ -2,12 +2,19 @@
 
 > **2026-07-13 status:** every idea was empirically explored in
 > [`ideas-exploration/`](../ideas-exploration/README.md), and the `gemini-3.1-flash-image`
-> regeneration wave ([run record](gemini-3.1-migration.md)) **landed #11, #12, and #17**,
-> effectively resolved **#1** (re-inking gone), **#5** (both flat-pupil pages now lively without pen
-> surgery), and **#4** (night bgLuma tightened to 18–48 via `--night-luma-max 60`), and ran
-> **#7/#13** as post-regen audits (1 real invented shape caught and regenerated). The remaining
-> ideas below are still open leads. The living list of concrete outstanding defects and gate blind
-> spots (as opposed to these exploratory leads) is [`ISSUES.md`](ISSUES.md).
+> regeneration wave ([run record](gemini-3.1-migration.md)) **landed #11, #12, and #17** (the
+> page-thumbnail half of **#19** landed 2026-07-13 — chalk thumbs catalog-wide + the theme-aware
+> picker; chalk *covers* remain open), effectively resolved **#1** (re-inking gone), **#5** (both
+> flat-pupil pages now lively without pen surgery), and **#4** (night bgLuma tightened to 18–48 via
+> `--night-luma-max 60`), and ran **#7/#13** as post-regen audits (1 real invented shape caught and
+> regenerated); **both landed 2026-07-13 as first-class audit scripts**
+> (`gen:coloring-fills:audit:halo` / `gen:coloring-fills:audit:shapes`). **#23 and #25 landed
+> 2026-07-13** as the committed regression fixtures in `golden/`
+> (`gen:coloring-golden:freeze`/`diff` + `gen:assets:manifest`/`check:assets:manifest`). **#10
+> landed 2026-07-13** as the per-page notes registry (`fill-src/<cat>/notes.json` +
+> `lib/page-notes.mjs`, auto-loaded by the night/chalk/normalize generators). The remaining ideas
+> below are still open leads. The living list of concrete outstanding defects and gate blind spots
+> (as opposed to these exploratory leads) is [`ISSUES.md`](ISSUES.md).
 
 Brainstormed immediately after generating and reviewing the whole catalog (7 categories: 83 chalks +
 83 night fills, ~350 candidate images eyeballed). **Nothing here is empirically verified** — each
@@ -96,7 +103,10 @@ quality lever left.
 * Try on: `objects/teddy-tall` (blob 719), `vehicles/police-tall` (blob 1886), `creatures/owl-tall`
   (blob 1919 — also the riskiest, its chalk is perfect; light-only regen).
 
-### 7. Residual dark halo audit after the punch **[unknown]**
+### 7. Residual dark halo audit after the punch **[LANDED 2026-07-13]**
+
+> Validated in `ideas-exploration/idea-7/` (found 3 real halos the lineW gate missed), then landed
+> as `bin/audit-night-halo.mjs` (`gen:coloring-fills:audit:halo`).
 
 I only checked `train-wide` at 2× zoom by hand. Nobody has systematically looked for the
 dotted-dark-ring / halo failure at display scale across all 94 shipped night fills. Idea: automate
@@ -131,7 +141,14 @@ Idea: same region-hue scorer as #8 applied across orientations; or condition the
 
 * Try on: `creatures/dragon-tall` vs `dragon-wide`, `objects/balloon-tall` vs `balloon-wide`.
 
-### 10. Per-page notes registry so regens don't rediscover levers **[process]**
+### 10. Per-page notes registry so regens don't rediscover levers **[process — LANDED 2026-07-13]**
+
+> Validated in `ideas-exploration/idea-10/` (registry mined from history; spider-tall passed every
+> gate FIRST take with its registry note auto-injected), then landed as `lib/page-notes.mjs` +
+> per-category `fill-src/<cat>/notes.json`, auto-loaded by the night/chalk/normalize generators
+> (explicit CLI always wins; `--dry-run` previews). Seeded by reconciling the mined 2.5-era registry
+> with the 3.1 migration record — durable page quirks kept, dead-model-habit workarounds dropped.
+> See `pipeline.md` "The per-page notes registry".
 
 The levers that finally worked are buried in commit messages and pipeline.md prose (spider: "THE
 EYES ARE THE STAR", train-wide: composite-over-gate, house-wide: "this scene has no eyes"). Any
@@ -162,7 +179,12 @@ reference isn't strongly lit (already partially done — verify why hubs still f
 
 * Try on: `farm/duck-wide`, `vehicles/monster-wide`, `space/rover-wide`.
 
-### 13. Colored-shape invention isn't gated **[unknown]**
+### 13. Colored-shape invention isn't gated **[audit LANDED 2026-07-13; the gate half is ISSUES]**
+
+> Validated in `ideas-exploration/idea-13/` (11 pre-wave night fills carried confirmed inventions;
+> anchoring, not saturation, is the discriminator), then landed as `bin/audit-invented-shapes.mjs`
+> (`gen:coloring-fills:audit:shapes`). Wiring it as a generation-time gate is still open — see
+> `ISSUES.md`.
 
 `scoreDrift` only counts *white/low-chroma* pixels far from source lines — an invented **colored**
 shape (an extra saturated star or planet on the open background, with no white outline) slips every
@@ -232,6 +254,10 @@ texture would go flat — maybe hybrid: deterministic base + one model pass for 
 
 ### 19. Chalk covers + dark-mode thumbnails **[gap in dark-mode UX]**
 
+> **Landed 2026-07-13 (page half):** every chalk ships a `.chalk.thumb.webp` and the picker's page
+> tiles are theme-aware (`pageThumb()` in `books.ts`). Covers still have no chalk — the book tiles
+> keep the inverted pen until the 8 cover chalks are generated (see `ideas-exploration/idea-19`).
+
 The picker still shows the *inverted pen* thumbnail in dark mode (`books.ts` comment), and covers
 have no chalk at all — so a child taps a blob-eyed inverted-pen owl thumb and gets a solid-sclera
 chalk owl on canvas. Now that every page has a chalk, generate `*.chalk`-based thumbs (and chalk
@@ -270,7 +296,11 @@ every "should I override this gate?" call. (Doubles as the harness for ideas #7 
 
 * Try on: `vehicles/train-wide`, `farm/cat-tall`.
 
-### 23. Golden-set regression fixtures **[safety net for all of the above]**
+### 23. Golden-set regression fixtures **[safety net for all of the above — LANDED 2026-07-13]**
+
+> Landed as `bin/audit-golden.mjs` + the committed `golden/golden-scores.json`
+> (`gen:coloring-golden:freeze` / `gen:coloring-golden:diff`), with the night generation gates
+> extracted into `lib/night-scores.mjs` so the committed raws re-score offline.
 
 Before running down any regen-heavy idea, freeze the current shipped set's scores
 (keep/localKeep/drift/bgLuma/lineW/eye verdicts per page — all cheap and offline) into a committed
@@ -290,7 +320,10 @@ each through the standard suite, and wire both pages into `books.ts`.
 
 * Try on: `shapes/heart-wide` (new pen needed), `objects/umbrella-tall` (new pen needed).
 
-### 25. Light-mode byte-stability check in CI **[guard rail]**
+### 25. Light-mode byte-stability check in CI **[guard rail — LANDED 2026-07-13]**
+
+> Landed as `bin/gen-asset-manifest.mjs` + the committed `golden/asset-manifest.sha256`
+> (`gen:assets:manifest` / `check:assets:manifest`, verified in CI's Quality job and prerelease).
 
 Several ideas above regenerate *night* assets; the standing invariant is "light mode stays
 byte-identical through a night pass". Right now that's discipline, not a check. Idea: a tiny script
@@ -309,7 +342,9 @@ show up in the diff.
    first so the chalk gate stops fighting the same pages.
 2. **#16 recolor-edit night fills** bake-off on 3 pages — if it wins, it absorbs #1 and #8
    wholesale.
-3. **#23 golden-set fixtures** before any mass regen.
+3. ~~**#23 golden-set fixtures** before any mass regen.~~ Landed — `gen:coloring-golden:diff` is the
+   standard post-change check.
 4. **#19 dark-mode thumbs/covers** — cheap, user-visible, no model risk.
 5. **#7/#15 halo + inpaint crop-audits** — verify the punch quality story before building anything
-   else on top of it.
+   else on top of it. (#7 landed as `gen:coloring-fills:audit:halo`; #15's junction crop-audit
+   remains.)

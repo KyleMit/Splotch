@@ -5,10 +5,10 @@
 ## Context
 
 Project knowledge for coding agents lived in Claude Code-native files only: a root `CLAUDE.md`,
-nested `CLAUDE.md` files (`web/src/`, `scripts/`, `android/`, `tools/asset-gen/`, `docs/handoff/`),
-and skills in `.claude/skills/` (ADR-0018). Agents that follow the cross-vendor `AGENTS.md`
-convention — OpenAI Codex foremost — found nothing, so running them against this repo meant working
-blind or hand-maintaining a parallel `AGENTS.md` tree that would inevitably drift.
+nested `CLAUDE.md` files (`web/src/`, `web/tests/`, `scripts/`, `android/`, `tools/asset-gen/`,
+`docs/handoff/`), and skills in `.claude/skills/` (ADR-0018). Agents that follow the cross-vendor
+`AGENTS.md` convention — OpenAI Codex foremost — found nothing, so running them against this repo
+meant working blind or hand-maintaining a parallel `AGENTS.md` tree that would inevitably drift.
 
 Alternatives considered:
 
@@ -37,12 +37,13 @@ deliberate):
   contributors to run ruler.
 * **Config:** `.ruler/ruler.toml` — `default_agents = ["claude", "codex"]`, gitignore/MCP/backup all
   disabled (files are tracked; there are no project MCP servers; `.bak` files would be noise).
-* **Commands:** `npm run ruler:apply` regenerates and then runs `dprint fmt` (ruler's raw output
-  carries extra blank lines dprint collapses — formatting post-apply keeps the committed files
-  inside the ADR-0057 gate). `npm run ruler:check` (`scripts/ruler-check.mjs`) re-applies and fails
-  on any worktree change or untracked generated file; the Quality CI job runs it.
+* **Commands:** `npm run ruler:dry-run` previews generator changes without writing.
+  `npm run ruler:apply` regenerates and then runs `dprint fmt` (ruler's raw output carries extra
+  blank lines dprint collapses — formatting post-apply keeps the committed files inside the ADR-0057
+  gate). `npm run ruler:check` (`scripts/ruler-check.mjs`) re-applies and fails on any worktree
+  change or untracked generated file; the Quality CI job runs it.
 * **Not generated** (edited in place): `.claude/rules/` path-scoped rules, `.claude/hooks/`,
-  `.claude/settings.json`, `.claude/audit-conventions.md`, `.claude/cloud/`, and `docs/`.
+  `.claude/settings.json`, `.claude/cloud/`, and `docs/`.
 
 Gotchas encoded here: the blanket `build/` ignore needs negations for all three `skills/build/`
 locations (`.gitignore`); deleting a skill from `.ruler/skills/` makes the next apply delete its

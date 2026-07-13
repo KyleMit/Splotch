@@ -24,14 +24,13 @@ you delegate:
   test, a profile, a query) and verify with `npm run check` + the tests covering the touched files,
   exactly as the per-item loop describes.
 * **Tooling findings** — from `/session-audit` (categories `[Traversal]` / `[Execution]` / `[Docs]`
-  / `[Tooling]`), and any finding whose fix is a change to Splotch's **Claude Code tooling and
-  cloud-session workflow** rather than to production code: a skill under `.ruler/skills/`, a
-  path-scoped rule in `.claude/rules/`, an instruction note in the `.ruler/` sources (regenerate
-  `CLAUDE.md`/`AGENTS.md` with `npm run ruler:apply`, ADR-0058), a `docs/*` reference, an ADR,
-  `.claude/cloud/*`, or a small helper script in `scripts/`. These usually have **no product test to
-  turn green** — a Markdown edit has nothing to typecheck. Validate and verify against the *tooling
-  itself* (see the per-item loop), and do **not** fabricate or report a passing product suite as if
-  it validated a change that never touched product code.
+  / `[Tooling]`), and any finding whose fix is a change to Splotch's **agent tooling and
+  cloud-session workflow** rather than to production code: a skill under `.ruler/skills/`, a nested
+  `.ruler/AGENTS.md` note, a `docs/*` reference, an ADR, `.claude/cloud/*`, or a small helper script
+  in `scripts/`. These usually have **no product test to turn green** — a Markdown edit has nothing
+  to typecheck. Validate and verify against the *tooling itself* (see the per-item loop), and do
+  **not** fabricate or report a passing product suite as if it validated a change that never touched
+  product code.
 
 The two classes can coexist in one sweep; decide per item, not per run.
 
@@ -105,10 +104,10 @@ Process items **top to bottom** (they're ordered by impact). For each item:
       * Reuse before you add: check `scripts/lib/` (`utils.mjs`, `vite-server.mjs`, `smoke.mjs`,
         `android.mjs`) for glue that already exists rather than re-implementing it.
       * Name and document every new script per ADR-0019: a `namespace:variant` npm script with a
-        matching one-line `scripts-info` entry, plus a `scripts/CLAUDE.md` bullet where it earns
-        one. An undocumented helper is **not** a finished fix — if `npm run info` and the skill /
-        rule that will invoke it don't point at the new command, a future session can't find it, so
-        discoverability is part of the fix, not an extra.
+        matching one-line `scripts-info` entry, plus a `scripts/.ruler/AGENTS.md` bullet where it
+        earns one. An undocumented helper is **not** a finished fix — if `npm run info` and the
+        skill or scoped instruction that will invoke it don't point at the new command, a future
+        session can't find it, so discoverability is part of the fix, not an extra.
    3. **Implement the chosen fix, then verify it — matched to what the fix touched.**
       * If the fix changed **code or a script** (`.ts`, `.mjs`, config): run `npm run check` and the
         tests covering the touched files, and where the problem was reproduced empirically in step
@@ -167,7 +166,7 @@ When every item is either fixed or marked pending:
      proves nothing; skip it unless a commit touched code.
 2. If **no items remain**, delete `docs/AUDIT.md` and commit. If pending items remain, leave the
    file containing only the header and the pending items.
-3. Add one row to `docs/AUDIT-LOG.md` for this run per `.claude/audit-conventions.md` §2 (date ·
+3. Add one row to `docs/AUDIT-LOG.md` for this run per the `audit-conventions` skill §2 (date ·
    `fix-audits` · one-line summary with the PR link, or the branch name in Branch-only mode),
    committed and pushed with the completion changes.
 4. **In Draft-PR mode**, update the PR description (`gh pr edit --body`, or the GitHub MCP

@@ -15,7 +15,7 @@ const generatedPathspecs = [
   '*AGENTS.md',
   '.claude/skills',
   '.agents/skills',
-  ':(exclude).ruler',
+  ':(exclude,glob)**/.ruler/**',
 ];
 // Only worktree-side changes (second status column) and untracked files count
 // as drift — an entry that is merely staged means the apply changed nothing.

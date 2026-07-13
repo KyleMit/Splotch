@@ -5,7 +5,7 @@
 // there is no chromium-cli on this project.
 //
 // Usage:
-//   node .claude/skills/run-splotch/driver.mjs [options]
+//   node .ruler/skills/run-splotch/driver.mjs [options]
 //
 // Options:
 //   --route <path>     Route to open (default "/"). e.g. /admin, /privacy, /dev/engine

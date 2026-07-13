@@ -6,11 +6,11 @@ description: Write a session-to-session transfer packet to docs/handoff/ so anot
 # Handoff
 
 Write a **transfer packet** for the work in flight, so the next session can resume it cold. Read
-`docs/handoff/CLAUDE.md` first — it defines the folder conventions this skill produces.
+`docs/handoff/.ruler/AGENTS.md` first — it defines the folder conventions this skill produces.
 
 A handoff is transient. If what you're about to record is really a durable decision, a backlog item,
 or behavioural feedback, route it to `/create-adr`, `docs/BACKLOG.md`, or `memory/` instead — see
-the table in the root `CLAUDE.md`.
+the table in the root `.ruler/knowledge-map.md`.
 
 ## Steps
 
@@ -19,7 +19,7 @@ the table in the root `CLAUDE.md`.
    exists, update it in place rather than making a second file.
 
 2. **Write the packet** with the status line and the required sections from
-   `docs/handoff/CLAUDE.md`:
+   `docs/handoff/.ruler/AGENTS.md`:
    * Status line: `> <today> · branch \`<branch>\` · PR [#NN](url) ·
      <objective>`(get the date from the environment context, the branch from`git branch
      --show-current`; drop the PR segment if there's no PR).

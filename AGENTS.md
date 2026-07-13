@@ -43,16 +43,16 @@ ADR-0058.
   and `.agents/skills/` — including helper files (`driver.mjs`, extra `.md` references). When you
   delete a skill from `.ruler/skills/`, the next apply deletes the generated copies; commit those
   deletions too.
-* `npm run ruler:apply` regenerates everything and dprint-formats the output. `npm run ruler:check`
-  re-applies and fails if anything changed — the CI drift gate.
+* `npm run ruler:dry-run` previews Ruler's changes without writing. `npm run ruler:apply`
+  regenerates everything and dprint-formats the output. `npm run ruler:check` re-applies and fails
+  if anything changed — the CI drift gate.
 
 **If asked to update agent instructions, docs, or skills: change `.ruler/**` sources, never the
 generated files.** A generated file carries a `<!-- Source: ... -->` marker pointing back to its
 source.
 
 Not generated — edit in place: `.claude/rules/` (path-scoped rules), `.claude/hooks/`,
-`.claude/settings.json`, `.claude/audit-conventions.md`, `.claude/cloud/`, and everything under
-`docs/`.
+`.claude/settings.json`, `.claude/cloud/`, and everything under `docs/`.
 
 <!-- Source: .ruler/commands.md -->
 
@@ -61,6 +61,7 @@ Not generated — edit in place: `.claude/rules/` (path-scoped rules), `.claude/
 | Command                       | Purpose                                                                               |
 | ----------------------------- | ------------------------------------------------------------------------------------- |
 | `npm run info`                | List **every** npm script with its description — run this before guessing at a script |
+| `npm run ruler:dry-run`       | Preview Ruler's generated-file changes without writing to the worktree                |
 | `npm run dev`                 | Dev server at `localhost:5173` (no `/api` functions)                                  |
 | `npm run dev:netlify`         | Dev server **with** the `/api/*` serverless functions                                 |
 | `npm run check`               | svelte-check / type checking                                                          |
@@ -99,6 +100,7 @@ content):
 | `testing`                           | writing/running tests beyond the basics, or debugging CI failures                                                                                  |
 | `profiling`                         | measuring drawing/canvas performance, investigating jank, or checking for perf regressions (`npm run perf:*`)                                      |
 | `lighthouse-audit`                  | auditing page-load performance / Core Web Vitals on a throttled device (Lighthouse, first vs repeat visit)                                         |
+| `audit-conventions`                 | producing or consuming audit findings; shared inventory, file format, logging, and self-healing rules                                              |
 | `adrs`                              | proposing or discussing any architectural approach                                                                                                 |
 | `pr-screenshots`                    | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow                                     |
 | `create-handoff` / `resume-handoff` | pausing in-flight work for a later session (`create-handoff`), or picking it back up (`resume-handoff`) — transfer packets live in `docs/handoff/` |
@@ -114,21 +116,21 @@ skill instead before making one.
 
 Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
 agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,
-`testing.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`, `android/`, `scripts/`,
-`tools/asset-gen/`, and `docs/handoff/` cover those areas.
+`testing.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`, `web/tests/`, `android/`,
+`scripts/`, `tools/asset-gen/`, and `docs/handoff/` cover those areas.
 
 Remaining `docs/`:
 
-| File                    | When to read it                                                                                                                                                                                                            |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/COMPATIBILITY.md` | The supported browser/device floor, how it's enforced, and the per-API risk register — read before raising the floor, adding a modern web API, or changing a native min-OS target                                          |
-| `docs/CONTRIBUTING.md`  | Human onboarding doc — keep in sync when conventions change                                                                                                                                                                |
-| `docs/BACKLOG.md`       | When asked what to work on next                                                                                                                                                                                            |
-| `docs/AUDIT.md`         | Findings from the audit skills (`/code-audit`, `/extract-audit`, `lighthouse-audit`); consumed by `/fix-audits` and `/vet-audits`. See `.claude/audit-conventions.md` for the audit-skill inventory and shared conventions |
-| `docs/AUDIT-LOG.md`     | Committable history of every audit-skill run (date · audit · one-line summary)                                                                                                                                             |
-| `docs/PROMPTS.md`       | Reusable AI art prompts for assets                                                                                                                                                                                         |
-| `docs/CLOUD.md`         | Running/previewing the app in a Claude Code on the web cloud session, and its network constraints                                                                                                                          |
-| `docs/handoff/`         | Transient session-to-session transfer packets — see `docs/handoff/CLAUDE.md`. Written by `/create-handoff`, consumed by `/resume-handoff`                                                                                  |
+| File                    | When to read it                                                                                                                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/COMPATIBILITY.md` | The supported browser/device floor, how it's enforced, and the per-API risk register — read before raising the floor, adding a modern web API, or changing a native min-OS target                                   |
+| `docs/CONTRIBUTING.md`  | Human onboarding doc — keep in sync when conventions change                                                                                                                                                         |
+| `docs/BACKLOG.md`       | When asked what to work on next                                                                                                                                                                                     |
+| `docs/AUDIT.md`         | Findings from the audit skills (`/code-audit`, `/extract-audit`, `lighthouse-audit`); consumed by `/fix-audits` and `/vet-audits`. See the `audit-conventions` skill for the audit inventory and shared conventions |
+| `docs/AUDIT-LOG.md`     | Committable history of every audit-skill run (date · audit · one-line summary)                                                                                                                                      |
+| `docs/PROMPTS.md`       | Reusable AI art prompts for assets                                                                                                                                                                                  |
+| `docs/CLOUD.md`         | Running/previewing the app in a Claude Code on the web cloud session, and its network constraints                                                                                                                   |
+| `docs/handoff/`         | Transient session-to-session transfer packets — see `docs/handoff/.ruler/AGENTS.md`. Written by `/create-handoff`, consumed by `/resume-handoff`                                                                    |
 
 If you discover any doc, skill, or rule is out of date while working, update it as part of the same
 task — don't leave it stale.

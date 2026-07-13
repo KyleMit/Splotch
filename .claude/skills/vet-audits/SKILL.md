@@ -45,9 +45,9 @@ For these findings:
 
 1. Edit `docs/AUDIT.md` in place — remove the findings that don't hold up, enrich the ones that do.
    Each finding is a `### [Category] …` block with `#### Problem` / `#### Proposed solution` /
-   `#### Verification` inside (see `.claude/audit-conventions.md`); preserve each `## Source:`
+   `#### Verification` inside (see the `audit-conventions` skill); preserve each `## Source:`
    section and the file header.
-2. Add one row to `docs/AUDIT-LOG.md` for this run per `.claude/audit-conventions.md` §2 (date ·
+2. Add one row to `docs/AUDIT-LOG.md` for this run per the `audit-conventions` skill §2 (date ·
    `vet-audits` · one-line prune summary — what you kept/enriched vs removed).
 3. In your response, print two short lists:
    * **Kept / enriched** — one line each, noting what you sharpened or the verification you added.

@@ -1,0 +1,18 @@
+{
+  "police-tall": {
+    "chalk": {
+      "review": "The pen is a 2026-07-13 fresh drawing with RINGED pupils (fresh-outline-regen.md), so the eye-polarity gate is live again for this page. The 3.1 wave's erase-and-redraw --notes + -t 0.4 (gemini-3.1-migration.md) applied only to the OLD solid-pupil pen — do not re-apply it to the current pen.",
+      "why": "The wave's chalk whitened the pupils with the sclera (gate-blind on the old solid-pupil pen — no eye cores, vacuous pass); the pen replacement removed that class here. Recorded so the migration table's note is not blindly reused."
+    }
+  },
+  "police-wide": {
+    "chalk": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "Erase the solid white inside each pupil and redraw it: white sclera, a black outlined pupil, and a small white catchlight inside the pupil. Never leave a pupil as one solid white disc."
+      },
+      "review": "Solid-pen-eye page: the pen's pupils are solid ink, so findEyeCores finds nothing and the eye-polarity gate passes VACUOUSLY (the gate-blind class in ISSUES). Render the night composite and confirm the pupils stayed black before trusting any chalk of this page.",
+      "why": "Sibling police-tall's 3.1-wave chalk whitened both pupils exactly this way and only composite review caught it; an erase-and-redraw note + -t 0.4 fixed it (gemini-3.1-migration.md). Retry text reconstructed. 3.1 resists erase-style edits on solid ink — budget extra attempts."
+    }
+  }
+}

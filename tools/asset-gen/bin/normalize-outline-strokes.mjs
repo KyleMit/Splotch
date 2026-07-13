@@ -31,6 +31,10 @@
 //   ... -- nature/ant-tall --apply             copy the passing candidate over web/static
 //   ... -- nature/ant-tall --max-attempts 6    retry harder
 //   ... -- nature/ant-tall --notes "keep the picnic blanket check pattern as-is"
+//   ... -- nature/ant-tall --dry-run             print resolved levers per page (no API)
+//
+// Per-page levers auto-load from the fill-src/<category>/notes.json registry
+// (lib/page-notes.mjs); explicit CLI flags always override the registry.
 import { parseArgs } from 'node:util';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
@@ -38,6 +42,7 @@ import { existsSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
@@ -76,22 +81,34 @@ const { values, positionals } = parseArgs({
     notes: { type: 'string' },
     temperature: { type: 'string', short: 't' },
     'max-attempts': { type: 'string' },
+    'dry-run': { type: 'boolean' },
   },
 });
 if (!positionals.length) fail('give one or more pages, e.g. "nature/ant-tall"');
-if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
-const baseTemp = values.temperature === undefined ? 0.3 : Number(values.temperature);
-if (!(baseTemp >= 0 && baseTemp <= 2)) fail('--temperature must be between 0 and 2');
-const maxAttempts = values['max-attempts'] === undefined ? 4 : Number(values['max-attempts']);
-if (!(Number.isInteger(maxAttempts) && maxAttempts >= 1))
-  fail('--max-attempts must be a positive integer');
-const instruction = values.notes
-  ? `${INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${values.notes}`
-  : INSTRUCTION;
+if (!values['dry-run'] && !process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Per-page tuning resolves in the page loop — defaults, then the page's
+// fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
+function normalizeSettings(v, where) {
+  const s = {
+    baseTemp: v.temperature === undefined ? 0.3 : Number(v.temperature),
+    maxAttempts: v['max-attempts'] === undefined ? 4 : Number(v['max-attempts']),
+    notes: v.notes,
+  };
+  if (!(s.baseTemp >= 0 && s.baseTemp <= 2))
+    fail(`--temperature must be between 0 and 2 (${where})`);
+  if (!(Number.isInteger(s.maxAttempts) && s.maxAttempts >= 1))
+    fail(`--max-attempts must be a positive integer (${where})`);
+  s.instruction = s.notes ? `${INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${s.notes}` : INSTRUCTION;
+  return s;
+}
+normalizeSettings(values, 'cli');
 
-async function editLineArt(imageBytes, temperature) {
+const ai = process.env.GEMINI_API_KEY
+  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+  : null;
+
+async function editLineArt(imageBytes, temperature, instruction) {
   const response = await ai.models.generateContent({
     model: MODEL,
     contents: [
@@ -178,6 +195,25 @@ function eyesPreserved(srcCores, candCores) {
 
 let failures = 0;
 for (const arg of positionals) {
+  // Resolve this page's levers: defaults < fill-src/<cat>/notes.json < CLI.
+  const levers = pageLevers(arg, 'normalize');
+  const { merged, fromRegistry } = mergeFlags(values, levers);
+  const cfg = normalizeSettings(merged, `${arg} via notes.json`);
+  if (levers || values['dry-run'])
+    console.log(
+      describeLevers({
+        rel: arg,
+        levers,
+        fromRegistry,
+        cliValues: values,
+        settings: {
+          temperature: cfg.baseTemp,
+          'max-attempts': cfg.maxAttempts,
+          notes: cfg.notes,
+        },
+      })
+    );
+  if (values['dry-run']) continue;
   const src = join(COLORING_DIR, `${arg}.outline.webp`);
   if (!existsSync(src)) {
     console.warn(`(skip) no line art at ${src}`);
@@ -230,9 +266,9 @@ for (const arg of positionals) {
   );
   let best = null;
   try {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const temperature = Math.min(2, baseTemp + attempt * 0.15);
-      const edited = await editLineArt(source, temperature);
+    for (let attempt = 0; attempt < cfg.maxAttempts; attempt++) {
+      const temperature = Math.min(2, cfg.baseTemp + attempt * 0.15);
+      const edited = await editLineArt(source, temperature, cfg.instruction);
       const resized = await cleanRender(edited, width, height);
       const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
       const candidate = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();

@@ -29,13 +29,13 @@ required on macOS, where this was verified.)
 Launch the app, draw a stroke on the canvas, and screenshot the home route:
 
 ```bash
-node .claude/skills/run-splotch/driver.mjs --route / --draw --out screenshots/splotch-home.png
+node .ruler/skills/run-splotch/driver.mjs --route / --draw --out screenshots/splotch-home.png
 ```
 
 Screenshot another route (no `--draw`):
 
 ```bash
-node .claude/skills/run-splotch/driver.mjs --route /admin --out screenshots/splotch-admin.png
+node .ruler/skills/run-splotch/driver.mjs --route /admin --out screenshots/splotch-admin.png
 ```
 
 The driver starts its own server, waits for the route to become interactive, writes the PNG, then
@@ -67,7 +67,7 @@ and copy its three non-obvious pieces:
 
 ```bash
 # 1. Leave the driver's dev server running and note the URL it prints.
-node .claude/skills/run-splotch/driver.mjs --route / --keep
+node .ruler/skills/run-splotch/driver.mjs --route / --keep
 ```
 
 ```js
@@ -123,7 +123,7 @@ if ((await magic.getAttribute('aria-pressed')) !== 'true') await magic.click();
 
 > **Save the script file inside the repo, not the session scratchpad.** Node resolves
 > `import ... 'playwright'` by walking up from the script's own directory, so a `.mjs` under the
-> session scratchpad (per `CLAUDE.md`'s temp-file rule) dies with
+> session scratchpad (per the root agent instructions' temp-file rule) dies with
 > `ERR_MODULE_NOT_FOUND: Cannot find package 'playwright'`. Put it in the gitignored `screenshots/`
 > dir — inside the tree so imports resolve, and gitignored so the file doesn't trip the stop-hook
 > git check (same dir your shots go in). Delete it when done.

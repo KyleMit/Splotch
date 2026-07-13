@@ -17,13 +17,13 @@ writes JSON + HTML reports, and prints a summary table.
 
 ```bash
 # Full matrix (phone + tablet, first + repeat) against production:
-node .claude/skills/lighthouse-audit/run-audit.mjs
+node .ruler/skills/lighthouse-audit/run-audit.mjs
 
 # One device / one visit:
-node .claude/skills/lighthouse-audit/run-audit.mjs --device phone --visits first
+node .ruler/skills/lighthouse-audit/run-audit.mjs --device phone --visits first
 
 # Audit a branch preview before merge (see "Which target" below):
-node .claude/skills/lighthouse-audit/run-audit.mjs \
+node .ruler/skills/lighthouse-audit/run-audit.mjs \
   --url https://claude-my-branch--splotchy.netlify.app/
 ```
 
@@ -104,9 +104,9 @@ you pull `dom-size`, `largest-contentful-paint-element`, `mainthread-work-breakd
 ### 2. Merge findings into `docs/AUDIT.md` — combine, don't overwrite
 
 This is an audit skill; it follows the shared conventions in
-[`.claude/audit-conventions.md`](../../audit-conventions.md). Turn opportunities into
-`docs/AUDIT.md` findings under a `## Source: Lighthouse page-load audit` section, using the
-canonical finding format documented there. **Merge into that section — do not clobber it (§1):**
+[`audit-conventions`](../audit-conventions/SKILL.md). Turn opportunities into `docs/AUDIT.md`
+findings under a `## Source: Lighthouse page-load audit` section, using the canonical finding format
+documented there. **Merge into that section — do not clobber it (§1):**
 
 * **An existing item still stands** → keep it; *enrich* it with any sharper attribution this run
   gave you (e.g. a specific file/node the report now points at), and refresh its numbers.

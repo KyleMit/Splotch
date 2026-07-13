@@ -22,4 +22,4 @@ This guide is split into three files — **read the one that matches your task**
 
 Both platforms are active and committed (`android/`, `ios/`). Android builds on Windows or macOS;
 iOS requires macOS + Xcode. The `CAPACITOR=true` build env var is the single signal for all
-web-vs-native branching (see the root `CLAUDE.md`).
+web-vs-native branching (see the root `.ruler/AGENTS.md`).

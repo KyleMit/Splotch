@@ -3,6 +3,7 @@
 | Command                       | Purpose                                                                               |
 | ----------------------------- | ------------------------------------------------------------------------------------- |
 | `npm run info`                | List **every** npm script with its description — run this before guessing at a script |
+| `npm run ruler:dry-run`       | Preview Ruler's generated-file changes without writing to the worktree                |
 | `npm run dev`                 | Dev server at `localhost:5173` (no `/api` functions)                                  |
 | `npm run dev:netlify`         | Dev server **with** the `/api/*` serverless functions                                 |
 | `npm run check`               | svelte-check / type checking                                                          |

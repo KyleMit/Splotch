@@ -7,11 +7,11 @@ description: Pick up in-flight work from a transfer packet in docs/handoff/. Ver
 
 Pick up work from a handoff packet. Your first job is **not** to continue — it is to **verify the
 packet against the repo**, flag what's stale or missing, and only then proceed. Read
-`docs/handoff/CLAUDE.md` for the folder conventions.
+`docs/handoff/.ruler/AGENTS.md` for the folder conventions.
 
 ## Steps
 
-1. **Find the handoff.** List `docs/handoff/*.md` (ignore `CLAUDE.md`).
+1. **Find the handoff.** List `docs/handoff/*.md` (ignore generated `CLAUDE.md` and `AGENTS.md`).
    * **None** → tell the user there are no open handoffs and stop.
    * **One** → that's it.
    * **Several** → match the user's hint (if any) against each file's topic name *and* its

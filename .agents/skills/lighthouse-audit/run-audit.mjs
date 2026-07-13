@@ -14,7 +14,7 @@
 // runs a plain Lighthouse. See SKILL.md for the full story.
 //
 // Usage:
-//   node .claude/skills/lighthouse-audit/run-audit.mjs [--url <url>] [--out <dir>]
+//   node .ruler/skills/lighthouse-audit/run-audit.mjs [--url <url>] [--out <dir>]
 //        [--device phone|tablet|both] [--visits first|repeat|both]
 //
 // Defaults: --url https://splotch.art/  --out lighthouse-reports  --device both --visits both

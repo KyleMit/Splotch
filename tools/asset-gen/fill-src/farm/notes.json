@@ -1,0 +1,8 @@
+{
+  "duck-wide": {
+    "light": {
+      "review": "A flat-eye flag here is the known side-profile detector false positive — verified lively by eye in the 3.1 wave (gemini-3.1-migration.md). judgeLightEyes has no suppressions (ISSUES), so adjudicate visually before burning retries.",
+      "why": "The night judge's IDEAS #12 suppressions cleared this page's night-side flag; the light judge still re-derives cores and misreads the side-profile eye."
+    }
+  }
+}

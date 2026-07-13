@@ -9,8 +9,8 @@ Bring the project's dependencies up to date **deliberately**: one package at a t
 its migration guide, with every usage in the codebase checked and a clean commit per upgrade.
 
 There is **one root `package.json`** for the whole repo (web + Capacitor native); the SvelteKit app
-lives in `web/` but its dependencies are declared at the root (see `CLAUDE.md`). Run npm tooling
-from the repo root.
+lives in `web/` but its dependencies are declared at the root (see `.ruler/AGENTS.md`). Run npm
+tooling from the repo root.
 
 If an argument is given, scope the entire run to just that one package and skip straight to step 3
 for it.
@@ -98,8 +98,8 @@ own.
 ## Shared audit conventions
 
 This is an audit skill. It doesn't write to `docs/AUDIT.md` (its findings land as one commit per
-package), but the run-tracking conventions in
-[`.claude/audit-conventions.md`](../../audit-conventions.md) still apply:
+package), but the run-tracking conventions in [`audit-conventions`](../audit-conventions/SKILL.md)
+still apply:
 
 * **Log the run** (§2) — add a row to `docs/AUDIT-LOG.md` summarizing what was upgraded, deferred,
   or reverted.
