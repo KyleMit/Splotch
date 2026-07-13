@@ -1,4 +1,9 @@
+<!-- Source: .ruler/AGENTS.md -->
+
 # Handoff conventions
+
+> This directory's `CLAUDE.md` and `AGENTS.md` are generated from the `.ruler/AGENTS.md` beside them
+> — edit that source, then run `npm run ruler:apply` at the repo root (ADR-0058).
 
 This folder holds **transfer packets** — short, disposable notes that carry one piece of in-flight
 work from one Claude session to the next. A handoff answers "if I got hit by a bus mid-task, what

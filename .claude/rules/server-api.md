@@ -27,8 +27,9 @@ paths:
   Routes and other server modules go through the `AiImageProvider` seam
   (`src/lib/server/ai/provider.ts`) — never import the SDK or Gemini types outside that directory.
   (The dev-time asset scripts in `scripts/` are the one sanctioned exception.)
-* When adding or changing an endpoint, update the API reference in `.claude/skills/api/SKILL.md` as
-  part of the same change.
+* When adding or changing an endpoint, update the API reference in `.ruler/skills/api/SKILL.md` as
+  part of the same change (then `npm run ruler:apply` — the `.claude/skills/` and `.agents/skills/`
+  copies are generated, ADR-0058).
 * After changing an endpoint, run `npm run test:api:smoke` to validate the live `/api/*` contract
   (self-contained; boots its own test server). Extend the smoke script (`scripts/api-smoke.mjs`)
   when you add an endpoint or change a response shape.

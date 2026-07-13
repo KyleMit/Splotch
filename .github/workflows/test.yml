@@ -39,6 +39,13 @@ jobs:
       - name: SVG audit
         run: npm run img:audit:check
 
+      # Drift guard: every CLAUDE.md/AGENTS.md and the .claude/skills/ +
+      # .agents/skills/ trees are generated from .ruler/ (ADR-0058). Fails if a
+      # .ruler edit wasn't applied or a generated file was edited directly.
+      # Fix with `npm run ruler:apply` and commit.
+      - name: Agent-file drift
+        run: npm run ruler:check
+
       # Asset byte-stability guard: fails if any committed art asset (coloring
       # pages, style covers, fill-src raws) changed without regenerating
       # tools/asset-gen/golden/asset-manifest.sha256 — turns silent binary churn

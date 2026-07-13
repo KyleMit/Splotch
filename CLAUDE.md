@@ -1,4 +1,13 @@
-# Splotch – Claude Instructions
+<!-- Source: .ruler/AGENTS.md -->
+
+# Splotch – Agent Instructions
+
+> [!IMPORTANT]
+> Every `CLAUDE.md` and `AGENTS.md` in this repo, plus the `.claude/skills/` and `.agents/skills/`
+> trees, is **generated** by [ruler](https://github.com/intellectronica/ruler) — never edit those
+> files directly. Edit the sources in `.ruler/` (or the nested `<dir>/.ruler/`), then run
+> `npm run ruler:apply` and commit the regenerated output. CI fails on drift
+> (`npm run ruler:check`).
 
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
 
@@ -16,6 +25,36 @@ The `CAPACITOR=true` env var at build time is the **single signal** for all web-
 (`web/svelte.config.js`, `web/vite.config.ts`). Do not add runtime platform branches that could be
 build-time branches instead.
 
+<!-- Source: .ruler/agent-files.md -->
+
+## Agent instruction files (ruler)
+
+`.ruler/` is the single source of truth for the instructions coding agents load — Claude Code (local
+and cloud sessions) reads the generated `CLAUDE.md` files and `.claude/skills/`; OpenAI Codex and
+other AGENTS.md-standard agents read the generated `AGENTS.md` files and `.agents/skills/`. See
+ADR-0058.
+
+* Root instructions live in `.ruler/*.md` (concatenated in sorted order, `AGENTS.md` first); each
+  nested `<dir>/.ruler/AGENTS.md` holds that directory's orientation and generates the sibling
+  `<dir>/CLAUDE.md` + `<dir>/AGENTS.md`.
+* Skills are authored in `.ruler/skills/<name>/SKILL.md` and copied verbatim to `.claude/skills/`
+  and `.agents/skills/` — including helper files (`driver.mjs`, extra `.md` references). When you
+  delete a skill from `.ruler/skills/`, the next apply deletes the generated copies; commit those
+  deletions too.
+* `npm run ruler:apply` regenerates everything and dprint-formats the output. `npm run ruler:check`
+  re-applies and fails if anything changed — the CI drift gate. `npm run ruler:dry-run` previews
+  what an apply would regenerate without writing.
+
+**If asked to update agent instructions, docs, or skills: change `.ruler/**` sources, never the
+generated files.** A generated file carries a `<!-- Source: ... -->` marker pointing back to its
+source.
+
+Not generated — edit in place: `.claude/rules/` (path-scoped rules), `.claude/hooks/`,
+`.claude/settings.json`, `.claude/audit-conventions.md`, `.claude/cloud/`, and everything under
+`docs/`.
+
+<!-- Source: .ruler/commands.md -->
+
 ## Commands
 
 | Command                       | Purpose                                                                               |
@@ -31,6 +70,8 @@ Script naming and the `scripts-info` descriptions follow ADR-0019: `namespace:va
 (`dev:*`, `test:e2e:*`, `gen:*`, `android:*`, …), and every new or renamed script gets a matching
 one-line entry in the `scripts-info` block of `package.json`.
 
+<!-- Source: .ruler/conventions.md -->
+
 ## Conventions
 
 * **No comments** unless the WHY is non-obvious. Well-named identifiers are the documentation.
@@ -40,9 +81,14 @@ one-line entry in the `scripts-info` block of `package.json`.
   `cross-env`, and platform-specific tools (the Gradle wrapper, the file-manager opener) are invoked
   via Node helpers in `scripts/` rather than inline shell.
 
+<!-- Source: .ruler/knowledge-map.md -->
+
 ## Where knowledge lives
 
-On-demand **skills** (invoke when the topic comes up — don't guess from memory):
+On-demand **skills** (consult when the topic comes up — don't guess from memory). Claude Code
+auto-invokes them by description (or via `/name`); agents without skill support should read the
+skill's `SKILL.md` directly from `.agents/skills/<name>/` (or `.claude/skills/<name>/` — same
+content):
 
 | Skill                               | Read it before…                                                                                                                                    |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -56,16 +102,19 @@ On-demand **skills** (invoke when the topic comes up — don't guess from memory
 | `pr-screenshots`                    | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow                                     |
 | `create-handoff` / `resume-handoff` | pausing in-flight work for a later session (`create-handoff`), or picking it back up (`resume-handoff`) — transfer packets live in `docs/handoff/` |
 
-**Prefer skills over slash commands.** Every reusable Claude workflow in this repo lives as a skill
-in `.claude/skills/<name>/SKILL.md`, not as a command in `.claude/commands/`. A skill with a good
-`description` is both user-invocable (`/name`) *and* model-invocable, so Claude can reach for it on
-its own — a plain command can't. When authoring a new reusable workflow, create a skill: give it a
-`name` and a `description` that says both what it does and when to use it (add
-`disable-model-invocation: true` if it should stay user-only). If the user asks to create a
-*command*, ask whether they'd like a skill instead before making one.
+**Prefer skills over slash commands.** Every reusable agent workflow in this repo is authored as a
+skill in `.ruler/skills/<name>/SKILL.md` (ruler propagates it to `.claude/skills/` and
+`.agents/skills/`), not as a command in `.claude/commands/`. A skill with a good `description` is
+both user-invocable (`/name`) *and* model-invocable, so Claude can reach for it on its own — a plain
+command can't. When authoring a new reusable workflow, create a skill: give it a `name` and a
+`description` that says both what it does and when to use it (add `disable-model-invocation: true`
+if it should stay user-only). If the user asks to create a *command*, ask whether they'd like a
+skill instead before making one.
 
-Path-scoped **rules** in `.claude/rules/` (load automatically): `svelte.md`, `server-api.md`,
-`testing.md`. Nested CLAUDE.md files in `web/src/`, `android/`, and `scripts/` cover those areas.
+Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
+agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,
+`testing.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`, `web/tests/`, `android/`,
+`scripts/`, `tools/asset-gen/`, and `docs/handoff/` cover those areas.
 
 Remaining `docs/`:
 
@@ -100,9 +149,10 @@ briefly consider running `/update-adrs` to catch anything that changed.
 ADRs live in the repo and are committed alongside the code they describe. They are not internal
 memory — they're part of the project.
 
-## Memory vs. ADRs
+## Memory vs. ADRs (Claude Code)
 
-The auto-memory system (`memory/`) and `docs/adrs/` serve different purposes. Use the right one:
+Claude Code's auto-memory system (`memory/`) and `docs/adrs/` serve different purposes. Use the
+right one:
 
 | What it is                                                             | Where it goes                  |
 | ---------------------------------------------------------------------- | ------------------------------ |

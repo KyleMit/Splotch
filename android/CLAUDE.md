@@ -1,4 +1,9 @@
+<!-- Source: .ruler/AGENTS.md -->
+
 # android/ — Capacitor Android project
+
+> This directory's `CLAUDE.md` and `AGENTS.md` are generated from the `.ruler/AGENTS.md` beside them
+> — edit that source, then run `npm run ruler:apply` at the repo root (ADR-0058).
 
 * `app/src/main/assets/public/` is **generated** — `cap sync` copies it from `build/`. Never
   hand-edit it; change the web source and re-sync. Gradle files, `AndroidManifest.xml`, and `res/`
