@@ -42,7 +42,8 @@ ADR-0058.
   delete a skill from `.ruler/skills/`, the next apply deletes the generated copies; commit those
   deletions too.
 * `npm run ruler:apply` regenerates everything and dprint-formats the output. `npm run ruler:check`
-  re-applies and fails if anything changed — the CI drift gate.
+  re-applies and fails if anything changed — the CI drift gate. `npm run ruler:dry-run` previews
+  what an apply would regenerate without writing.
 
 **If asked to update agent instructions, docs, or skills: change `.ruler/**` sources, never the
 generated files.** A generated file carries a `<!-- Source: ... -->` marker pointing back to its
@@ -112,8 +113,8 @@ skill instead before making one.
 
 Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
 agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,
-`testing.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`, `android/`, `scripts/`,
-`tools/asset-gen/`, and `docs/handoff/` cover those areas.
+`testing.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`, `web/tests/`, `android/`,
+`scripts/`, `tools/asset-gen/`, and `docs/handoff/` cover those areas.
 
 Remaining `docs/`:
 

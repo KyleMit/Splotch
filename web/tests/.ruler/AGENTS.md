@@ -1,0 +1,14 @@
+# web/tests/ — Playwright E2E specs
+
+> This directory's `CLAUDE.md` and `AGENTS.md` are generated from the `.ruler/AGENTS.md` beside them
+> — edit that source, then run `npm run ruler:apply` at the repo root (ADR-0058).
+
+* The testing rules for this directory live in `.claude/rules/testing.md` (Claude Code loads them
+  automatically on path match; other agents: read that file before editing specs). The full guide —
+  commands, the three-tier strategy (ADR-0008), Maestro install, CI triggers — is the `testing`
+  skill.
+* Specs here are Playwright E2E (`*.spec.ts`). Unit tests are Vitest, colocated with source as
+  `web/src/**/*.test.ts`. Pick the lowest layer that can catch the regression.
+* Playwright builds the production artifact and serves it with `vite preview` by default; set
+  `DEV_SERVER=1` to iterate against `vite dev` instead. The admin specs rely on the web server
+  starting with `ADMIN_ACCESS_TOKEN=test-admin-secret` (`playwright.config.ts`).
