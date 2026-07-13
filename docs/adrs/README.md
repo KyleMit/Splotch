@@ -60,4 +60,5 @@ This directory records significant architectural decisions made in the Splotch p
 | 0054 | Uniform Dot-Separated Variant Suffixes for Coloring Assets (`{name}.{variant}.webp`) | Moved to [asset-gen docs](../../tools/asset-gen/docs/asset-naming.md) |
 | 0055 | The Magic-Brush Reveal Assets Are "Fills", Not "Twins" | Moved to [asset-gen docs](../../tools/asset-gen/docs/fill-vocabulary.md) |
 | 0056 | Fork the Line Art per Theme — Pen Outline (Light) + Gemini-Authored Chalk Outline (Dark) | Moved to [asset-gen docs](../../tools/asset-gen/docs/pen-chalk-fork.md) |
+| [0057](0057-dprint-markdown-formatter.md) | dprint Formats Markdown (Prettier Can't Match House Style) | Active |
 

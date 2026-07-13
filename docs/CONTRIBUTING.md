@@ -124,6 +124,8 @@ Set `PUBLIC_ENABLE_DEV_HARNESS=true` in `.env.local` to unlock:
 
 **No framework overhead in `platform.ts`.** The platform detection module reads the Capacitor global directly rather than importing `@capacitor/core`, so it evaluates safely during SSR without pulling in native code.
 
+**Formatting is enforced in CI** (ADR-0031, ADR-0057). Prettier formats source; dprint formats markdown (asterisk bullets and emphasis, hard wrap at 100 — `dprint.json`). Run `npm run format` before pushing, or install the recommended VS Code extensions (`.vscode/extensions.json`) to format on save.
+
 ## Adding a new icon
 
 1. Drop an SVG into `web/src/lib/icons/`.
