@@ -1,0 +1,18 @@
+{
+  "circle-wide": {
+    "night": {
+      "flags": {
+        "notes": "THE CIRCLE IS THE STAR OF THIS PAGE. Fill the disc with a color that clearly stands out against the deep navy night sky — never navy, indigo, or anything close to the background color."
+      },
+      "why": "3.1 wave: the disc rolled near-sky navy — no gate measures subject/background contrast (ISSUES) — and this contrast note landed the shipped dusty-rose take (gemini-3.1-migration.md per-page table). Note text expanded from the run record's quoted fragment."
+    }
+  },
+  "rectangle-wide": {
+    "night": {
+      "flags": {
+        "notes": "The rectangle character's body must clearly stand out against the deep navy night sky — give it a color distinct from the background, never indigo, navy, or anything close to it."
+      },
+      "why": "2026-07-13 fresh pen (fresh-outline-regen.md): the first night take rolled an indigo-on-navy body; a contrast --notes retry landed the ship. Note text reconstructed. The 3.1 wave's soap-bubble note (gemini-3.1-migration.md) applied to the OLD pen only — the fresh drawing has no bubbles; do not resurrect it."
+    }
+  }
+}

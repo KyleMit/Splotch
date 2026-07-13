@@ -44,6 +44,16 @@ one change flows to both tools that consume it — `check-assets.mjs` now valida
 its source. The thumbs match the PWA `globPatterns` `**/*.webp`, so they're precached and revisioned
 by content md5 exactly like the sources (ADR-0042) — no new cache bookkeeping.
 
+**Amendment (2026-07-13) — thumbnails are theme-forked like the line art.** Since the pen/chalk fork
+(ADR-0052; `tools/asset-gen/docs/pen-chalk-fork.md`), each page's dark-mode canvas overlay is a
+dedicated CHALK outline, so a pen-derived tile previewed different art than the canvas applied.
+`gen-coloring-thumbs.mjs` now also writes a `{name}.chalk.thumb.webp` beside every
+`{name}.chalk.webp`, `chalkThumbPath()` maps one to the other, and the picker's page tiles pick per
+theme via `pageThumb(page, orientation, resolvedTheme())` — dark mode shows the chalk thumb
+(ink-on-white, rendered as white chalk by the tile's existing `--lineart-*` treatment), falling back
+to the inverted pen thumb where no chalk exists. Covers have no chalk yet, so book tiles stay on
+`thumbPath(book.cover)`.
+
 ### 2. Prefetch along the path, not all at once
 
 `$lib/imagePrefetch.ts` warms URLs via a detached `Image()` (deduped per session, no-op under SSR).

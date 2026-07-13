@@ -1,0 +1,8 @@
+{
+  "pterodactyl-tall": {
+    "motifs": "Sky motif differs from the sibling: this page shipped a WARM GOLD SUN in the 3.1 wave while pterodactyl-wide has a CRESCENT MOON (gemini-3.1-migration.md). Nothing enforces motif consistency (ISSUES) — a regen of either page should decide deliberately whether to match."
+  },
+  "pterodactyl-wide": {
+    "motifs": "Sky motif differs from the sibling: this page has a CRESCENT MOON while pterodactyl-tall shipped a WARM GOLD SUN in the 3.1 wave (gemini-3.1-migration.md). Nothing enforces motif consistency (ISSUES) — a regen of either page should decide deliberately whether to match."
+  }
+}

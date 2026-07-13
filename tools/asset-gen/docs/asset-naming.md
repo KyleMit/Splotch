@@ -32,8 +32,10 @@ Every shipped coloring asset carries an explicit dot-separated variant suffix �
 `{name}.{variant}.webp`, where `{name}` is `cover` or `{page}-{tall,wide}`:
 
 ```
-web/static/coloring/{book}/{name}.outline.webp   line art (picker + canvas overlay)
-web/static/coloring/{book}/{name}.thumb.webp     picker grid thumbnail
+web/static/coloring/{book}/{name}.outline.webp   PEN line art (light picker + canvas overlay)
+web/static/coloring/{book}/{name}.chalk.webp     CHALK line art (dark canvas overlay, ink-on-white)
+web/static/coloring/{book}/{name}.thumb.webp     picker grid thumbnail (light, from the pen)
+web/static/coloring/{book}/{name}.chalk.thumb.webp  picker grid thumbnail (dark, from the chalk)
 web/static/coloring/{book}/{name}.light.webp     light magic-brush fill (fills-only)
 web/static/coloring/{book}/{name}.night.webp     dark magic-brush fill (fills-only)
 tools/asset-gen/fill-src/{book}/{name}.{light,night}.raw.webp   raw (lined) fills
@@ -42,10 +44,12 @@ tools/asset-gen/fill-src/{book}/{name}.{light,night}.raw.webp   raw (lined) fill
 Key implementation points:
 
 * `web/src/lib/state/books.ts` builds all catalog paths; `thumbPath()` swaps `.outline.webp` →
-  `.thumb.webp` and is deliberately a **no-op on non-outline paths** (only line art has thumbnails).
-* The asset-gen generators select line art positively by `.outline.webp` (`gen-coloring-thumbs.mjs`
-  `isSource`, the `*-{tall,wide}.outline.webp` globs in `gen-coloring-fills.mjs` /
-  `gen-coloring-fills-dark.mjs` / `check-coloring-drift.mjs`) — no exclusion lists.
+  `.thumb.webp`, `chalkThumbPath()` swaps `.chalk.webp` → `.chalk.thumb.webp`, and each is
+  deliberately a **no-op on other paths** (only line art has thumbnails).
+* The asset-gen generators select line art positively by suffix (`gen-coloring-thumbs.mjs`
+  `isSource` matches `.outline.webp` + `.chalk.webp`; the `*-{tall,wide}.outline.webp` globs in
+  `gen-coloring-fills.mjs` / `gen-coloring-fills-dark.mjs` / `check-coloring-drift.mjs`) — no
+  exclusion lists.
 * `lib/punch-fill.mjs` derives the shipped fill path from a raw by stripping `.raw`, and the mask
   path by swapping `.{light,night}` → `.outline`.
 * CLI page arguments stay suffix-free (`farm/dog-wide`); each script appends `.outline.webp` when

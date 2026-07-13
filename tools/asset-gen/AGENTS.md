@@ -8,7 +8,8 @@
 > — edit that source, then run `npm run ruler:apply` at the repo root (ADR-0058).
 
 The AI/`sharp` tooling that produces Splotch's committed art. Layout: runnable entry points in
-`bin/`, shared helpers in `lib/`, all documentation in `docs/`.
+`bin/`, shared helpers in `lib/`, committed regression fixtures in `golden/`, all documentation in
+`docs/`.
 
 ## The docs (`docs/`)
 
@@ -72,6 +73,20 @@ carve-out):
 * **Outputs are committed artifacts**, reviewed by a human before shipping. The generators write
   shipped art into `web/static/` and review scratch into the gitignored `.coloring-samples*/`. Never
   commit the scratch dirs.
+* **`golden/` holds the committed regression fixtures — keep them in sync with the assets.** After
+  any pipeline or asset change, run `npm run gen:coloring-golden:diff` (offline, ~1 min; exit 1 = a
+  page regressed) and, when the change is intentional, adopt it with
+  `npm run gen:coloring-golden:freeze` + `npm run gen:assets:manifest` in the same commit — CI's
+  `check:assets:manifest` fails on any asset byte that drifted from `golden/asset-manifest.sha256`.
+  The pair is deliberate: the golden scores catch quality drift, the sha256 manifest catches byte
+  swaps between score-identical renders (and enforces that a night-only pass never touches
+  light-side bytes).
+* **Per-page generator levers live in the `fill-src/<cat>/notes.json` registry** (schema in
+  `lib/page-notes.mjs`): the night, chalk, and normalize generators auto-apply a page's registry
+  `flags` (an explicit CLI flag always wins) and print `retry`/`review`/`why`/`motifs`; `--dry-run`
+  previews the resolution offline. When you discover a lever a page needs — a `--notes` string, a
+  temperature, a gate override, a review expectation — record it in the registry **in the same
+  commit that ships the asset**, with a `why` naming the provenance so it can be pruned later.
 * **`docs/ISSUES.md` is the living list of known defects, gate blind spots, and tooling gaps.** Read
   it before regenerating a page or overriding a gate (several failure classes are gate-blind and
   only caught by composite review); when you fix or discover an issue, update it in the same task.

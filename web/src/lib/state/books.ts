@@ -9,7 +9,8 @@
 //   static/coloring/{book}/{page}-wide.outline.webp   landscape PEN outline, 3:2
 //   static/coloring/{book}/{page}-tall.chalk.webp     portrait CHALK outline (dark mode)
 //   static/coloring/{book}/{page}-wide.chalk.webp     landscape CHALK outline (dark mode)
-//   static/coloring/{book}/{name}.thumb.webp          grid thumbnail of the line art
+//   static/coloring/{book}/{name}.thumb.webp          grid thumbnail of the pen line art
+//   static/coloring/{book}/{name}.chalk.thumb.webp    grid thumbnail of the chalk (dark mode)
 //   static/coloring/{book}/{page}-tall.light.webp     portrait colored fill
 //   static/coloring/{book}/{page}-wide.light.webp     landscape colored fill
 //   static/coloring/{book}/{page}-tall.night.webp     portrait night fill (dark mode)
@@ -23,10 +24,14 @@
 // (--lineart-filter: invert(1) + screen) renders it unchanged; orientations
 // without a chalk fall back to inverting the pen (tools/asset-gen/bin/gen-coloring-chalk.mjs).
 //
-// Each picker-facing line-art image (cover + pages) has a `.thumb.webp` sibling
-// (tools/asset-gen/bin/gen-coloring-thumbs.mjs): the picker grid shows the thumbnail, the
-// full-screen canvas overlay uses the full-res source. `thumbPath()` maps one to
-// the other. The colored `.light.webp` fill is a flat-colored, pixel-aligned
+// Each picker-facing line-art image (cover + pages, pen AND chalk) has a
+// thumbnail sibling (tools/asset-gen/bin/gen-coloring-thumbs.mjs): the picker grid
+// shows the thumbnail, the full-screen canvas overlay uses the full-res source.
+// `thumbPath()` maps a pen outline to its `.thumb.webp`, `chalkThumbPath()` a
+// chalk to its `.chalk.thumb.webp`, and `pageThumb()` picks per theme — dark
+// mode shows the chalk thumb so the tile previews the same art the canvas
+// applies (covers have no chalk yet, so book tiles stay on the pen thumb).
+// The colored `.light.webp` fill is a flat-colored, pixel-aligned
 // version of the line-art page (tools/asset-gen/bin/gen-coloring-fills.mjs) that the magic
 // brush reveals where the child paints (ADR-0043); it never appears in the grid,
 // so it has no thumbnail. `bookAssetPaths()` lists them all so check-assets
@@ -328,6 +333,26 @@ export function thumbPath(src: string): string {
   return src.replace(/\.outline\.webp$/, '.thumb.webp');
 }
 
+/** Grid-thumbnail path for a chalk outline (`x.chalk.webp` -> `x.chalk.thumb.webp`). */
+export function chalkThumbPath(src: string): string {
+  return src.replace(/\.chalk\.webp$/, '.chalk.thumb.webp');
+}
+
+/** Picker-tile thumbnail for a page, theme-aware: dark mode shows the CHALK
+    thumbnail where the orientation has a chalk (stored ink-on-white like every
+    line-art asset — the tile's --lineart-filter invert + screen renders it as
+    white chalk, the same treatment the canvas overlay gets), falling back to
+    the inverted pen thumbnail for un-forked pages. Covers have no chalk yet,
+    so book tiles keep `thumbPath(book.cover)`. */
+export function pageThumb(
+  page: ColoringPage,
+  orientation: BookOrientation,
+  theme: 'light' | 'dark'
+): string {
+  const chalk = theme === 'dark' ? page.chalkImages[orientation] : undefined;
+  return chalk ? chalkThumbPath(chalk) : thumbPath(page.images[orientation]);
+}
+
 export function bookAssetPaths(book: Book): string[] {
   // Line art shown in the picker (cover + both orientations of each page) — the
   // only images that get a grid thumbnail.
@@ -349,11 +374,18 @@ export function bookAssetPaths(book: Book): string[] {
       .filter((p): p is string => !!p)
   );
   // Chalk outlines exist only for forked orientations — the full-screen overlay
-  // swaps to them in dark mode; the picker keeps inverting the pen thumbnail.
+  // and the picker tile (via its .chalk.thumb sibling) swap to them in dark mode.
   const chalkOutlines = book.pages.flatMap((page) =>
     (['portrait', 'landscape'] as BookOrientation[])
       .map((o) => page.chalkImages[o])
       .filter((p): p is string => !!p)
   );
-  return [...lineArt, ...lightFills, ...nightFills, ...chalkOutlines, ...lineArt.map(thumbPath)];
+  return [
+    ...lineArt,
+    ...lightFills,
+    ...nightFills,
+    ...chalkOutlines,
+    ...lineArt.map(thumbPath),
+    ...chalkOutlines.map(chalkThumbPath),
+  ];
 }
