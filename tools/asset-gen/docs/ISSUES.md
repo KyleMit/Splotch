@@ -4,8 +4,9 @@ The living list of what's known-imperfect right now: defects in shipped assets, 
 and tooling gaps. Distinct from [`IDEAS.md`](IDEAS.md) (the exploratory quality backlog, mostly
 burned down in [`ideas-exploration/`](../ideas-exploration/README.md)) and `docs/AUDIT.md`
 (repo-wide engineering findings). Current as of the
-[`gemini-3.1-flash-image` migration](gemini-3.1-migration.md) and the
-[fresh-outline regeneration pass](fresh-outline-regen.md) (both 2026-07-13).
+[`gemini-3.1-flash-image` migration](gemini-3.1-migration.md), the
+[fresh-outline regeneration pass](fresh-outline-regen.md), and the dark-mode composite review that
+filed the Tier 1 items (all 2026-07-13).
 
 Items are ordered by **impact/effort** — the suggested burn-down order, best ratio first — and
 tagged by kind (*shipped asset*, *gate blind spot*, *tooling gap*). When you fix one, delete it
@@ -13,30 +14,54 @@ tagged by kind (*shipped asset*, *gate blind spot*, *tooling gap*). When you fix
 
 ## Tier 1 — high impact, low effort (do these first)
 
-*(currently empty — the per-page notes registry, IDEAS #10, landed 2026-07-13 as
-`fill-src/<cat>/notes.json` + `lib/page-notes.mjs`, auto-loaded by the night/chalk/normalize
-generators)*
+All three were filed by the 2026-07-13 dark-mode composite review (raws, shipped punches, and
+chalk-over-night composites cross-checked per layer); every one passes its night gates
+(`gen:coloring-fills:audit:eyes` → night ok), so nothing but composite review sees them. Each has a
+seeded registry entry in `fill-src/<cat>/notes.json` carrying the retry recipe and the
+composite-review instruction.
+
+1. **Night eyes read as blank white orbs on `dinosaur/stegosaurus-tall` and
+   `dinosaur/velociraptor-wide`** *(shipped asset)*: both night fills painted the pupil interior the
+   same navy as the night sky and oversized the white catchlight, so in the dark-mode composite (the
+   chalk's white sclera + rings over the fill) the eye is a white ring around a hollow — no legible
+   dark pupil. This is the #6 contrast gap at eye scale: the audit judges the raw fill's eye cores,
+   never the composited result. Cheapest fix in the pipeline: night-fill regen with the seeded
+   "solid dark pupil clearly darker than the sky" notes + re-punch — no chalk or pen work.
+2. **`farm/duck-wide`'s chalk invented human-like teeth** *(shipped asset)*: the pen outline and the
+   light fill have a clean, toothless open bill; the chalk drew a row of teeth inside it and the
+   night fill colored them in, so dark mode grins with teeth that light mode doesn't have. No gate
+   can see it — the invented-shapes audit (#7) only scans the open background, and the eye gates
+   don't look at mouths. Fix: chalk regen with the seeded erase-teeth notes, then night regen +
+   re-punch — mind #9's caveat (3.1 resists erase edits on solid ink; budget extra attempts/notes).
+3. **`farm/dog-wide` glows white at night — nose, eye whites, rump patch** *(shipped asset)*: the
+   chalk solidified the pen's solid-ink nose **and** the pen's merely-outlined rump patch into solid
+   ink, and solid chalk ink renders as glowing white in dark mode (the night fill actually painted
+   the patch maroon — the chalk's white sits on top of it); the wide white scleras finish the manic
+   look. This is the #8 class escaping the eye: the chalk whitens *any* solid-pen region, and here
+   it even promoted an outlined region to solid. Fix: chalk regen with the seeded keep-regions-open
+   notes, then night regen + re-punch.
 
 ## Tier 2 — solid ratio, a bit more work
 
-1. **`judgeLightEyes` has no false-positive suppressions** *(gate blind spot)*. The IDEAS #12 fixes
+4. **`judgeLightEyes` has no false-positive suppressions** *(gate blind spot)*. The IDEAS #12 fixes
    (band-blind annulus, chalk-white-nearby) apply only to the night judge, so light-side flags still
    fire on side-profile eyes (`farm/duck-wide`, verified lively), band-blind solid-pupil pages, and
    non-face cores (windows, hubs — `objects/house-tall`). Options: port the band-blind rule, or
    bless per-page eye annotations (`ideas-exploration/idea-12/code/eye-annotations.draft.json`). Do
-   this before #6 — it de-noises the flat-eye list so the burn-down only spends API budget on real
+   this before #9 — it de-noises the flat-eye list so the burn-down only spends API budget on real
    offenders.
-2. **The orphan pages are still uncataloged (IDEAS #24)** *(shipped asset)*: `shapes/heart-wide` and
+5. **The orphan pages are still uncataloged (IDEAS #24)** *(shipped asset)*: `shapes/heart-wide` and
    `objects/umbrella-tall` have complete, gate-green suites sitting in `ideas-exploration/idea-24/`
    awaiting promotion into `web/static/coloring/` + `books.ts`. Promotion itself is cheap; they are
    2.5-era outputs, so consider regenerating on 3.1 when promoting (that part costs API budget).
-3. **Night subject/background contrast is unmeasured** *(gate blind spot)* (`shapes/circle-wide`
+6. **Night subject/background contrast is unmeasured** *(gate blind spot)* (`shapes/circle-wide`
    class): a fill can paint the hero region a color indistinguishable from the night sky and pass
    every gate. Caught by montage review this round; a "hero region ΔE vs background" scorer would
    close it, with a known-bad baseline (`circle-wide`'s navy take) to validate against.
    (`circle-wide` and `rectangle-wide` now carry contrast `--notes` in the registry, but nothing
-   *measures* the result — the gate gap stands.)
-4. **Colored-shape invention is only audited, not gated (IDEAS #13)** *(gate blind spot)*: the
+   *measures* the result — the gate gap stands. Tier 1 #1 is this same gap at eye scale: a pupil
+   painted sky-navy is invisible to every gate too.)
+7. **Colored-shape invention is only audited, not gated (IDEAS #13)** *(gate blind spot)*: the
    detector that caught `objects/house-tall`'s two invented sky flowers is now a first-class audit
    (`bin/audit-invented-shapes.mjs`, `npm run gen:coloring-fills:audit:shapes`) but still runs only
    post-hoc. Until the fill generators score each take with it (fold into the keep-best ranking on
@@ -45,26 +70,32 @@ generators)*
 
 ## Tier 3 — high impact but expensive
 
-5. **Chalk whitening on solid-pen-eye pages is gate-blind** *(gate blind spot)* (proved by
+8. **Chalk whitening on solid-pen-eye pages is gate-blind** *(gate blind spot)* (proved by
    `vehicles/police-tall`, whose wave chalk whitened the pupils with the sclera — that page's
    2026-07-13 fresh pen has ringed pupils now, but the class persists on every remaining
    solid-pen-eye page). A solid pen pupil has no nested rings → `findEyeCores` finds nothing → the
    eye-polarity gate (Stage 1.5 gate 4) passes vacuously, and the night eye judge is silent too (its
    chalk-white-nearby rule trusts the chalk). Only composite review catches it. A candidate scorer:
    chalk-ink fraction inside pen solid regions that sit at face positions. No ready patch — worth
-   building before #6's burn-down, since that wave regenerates exactly these pages. (The
+   building before #9's burn-down, since that wave regenerates exactly these pages. (The
    `vehicles/police-wide` registry entry carries the composite-review instruction and the wave's
-   erase-note recipe for the meantime.)
-6. **Light-mode eyes on accident-era pens are dead/solid** *(shipped asset; IDEAS #6 — the biggest
+   erase-note recipe for the meantime.) Tier 1 #3 (`farm/dog-wide`) proves the class isn't
+   eye-shaped: the chalk whitened a solid nose and even solidified an *outlined* rump patch, so a
+   scorer scoped to face positions would still miss most of that page — measure chalk-ink fraction
+   over every pen region, not just eyes.
+9. **Light-mode eyes on accident-era pens are dead/solid** *(shipped asset; IDEAS #6 — the biggest
    remaining light-theme lever)*. 35 pages carry a light-side flat-eye flag
    (`npm run gen:coloring-fills:audit:eyes` prints them; 53 before the 3.1 regen, 39 before the
-   2026-07-13 fresh-outline pass) — though some are detector noise, not defects, which is why #1
-   should land first. The root cause is the pen: a solid-ink pupil gives the fill nothing to paint.
-   Two proven fixes: pen normalization (`gen:coloring-outlines:normalize`, worst-first) + light-fill
-   regen, or a brand-new drawing via `gen:coloring-outlines:fresh` + full-suite regen (the
-   2026-07-13 pass cleared the 4 worst real-face offenders — `farm/dog-tall`, `shapes/circle-tall`,
-   `vehicles/police-tall`, `objects/teddy-tall` — every one first-take through every downstream
-   gate; see `docs/fresh-outline-regen.md`). The biggest remaining real offender is
+   2026-07-13 fresh-outline pass) — though some are detector noise, not defects, which is why #4
+   should land first. The list also has **false negatives**: `creatures/mermaid-tall`'s giant
+   solid-black orb pupils (straight from the pen) sail through as light-ok because their two
+   catchlight holes register as lively cores (2 of 8) — an offender the burn-down list will never
+   print, confirmed by eye 2026-07-13. The root cause is the pen: a solid-ink pupil gives the fill
+   nothing to paint. Two proven fixes: pen normalization (`gen:coloring-outlines:normalize`,
+   worst-first) + light-fill regen, or a brand-new drawing via `gen:coloring-outlines:fresh` +
+   full-suite regen (the 2026-07-13 pass cleared the 4 worst real-face offenders — `farm/dog-tall`,
+   `shapes/circle-tall`, `vehicles/police-tall`, `objects/teddy-tall` — every one first-take through
+   every downstream gate; see `docs/fresh-outline-regen.md`). The biggest remaining real offender is
    `creatures/owl-tall` (blob 2908), deliberately left alone: its celebrated chalk derives from the
    current pen, so it should get a light-only treatment, not a fresh drawing. Night mode is
    unaffected (the chalk owns those whites). **Caveat:** 3.1 resists erase-style edits on solid pen
@@ -72,24 +103,24 @@ generators)*
    erase `--notes`; a 2.5-era chalk did the same edit unprompted). The pen normalizer is exactly
    this kind of edit and has NOT been exercised on 3.1 yet — budget extra attempts/notes the first
    time.
-7. **Style covers are still 2.5-era outputs** *(shipped asset)*. The 3.1 migration swapped the model
-   in `gen-style-covers.mjs` but did not regenerate covers — no gates exist for them, so a regen is
-   an eyeball-only exercise (API cost plus per-cover review). The current covers look fine; this is
-   polish.
+10. **Style covers are still 2.5-era outputs** *(shipped asset)*. The 3.1 migration swapped the
+    model in `gen-style-covers.mjs` but did not regenerate covers — no gates exist for them, so a
+    regen is an eyeball-only exercise (API cost plus per-cover review). The current covers look
+    fine; this is polish.
 
 ## Tier 4 — fold into the next regen wave
 
 Neither of these is worth a standalone pass — nothing shipped looks wrong. Land them as
 conditioning/gates when the next mass regen happens.
 
-8. **Light↔night and tall↔wide palette coherence are unenforced (IDEAS #8/#9)** *(gate blind spot)*:
-   both fills of a page, and both orientations of a subject, are independent generations — the 3.1
-   wave re-rolled every palette. The hue-flip scorers and conditioning recipes in
-   `ideas-exploration/idea-8`/`idea-9` were validated but not promoted.
-9. **Motif consistency across sibling pages is unenforced (IDEAS #2)** *(gate blind spot)*: the same
-   motif can get different treatments per orientation — e.g. `dinosaur/pterodactyl-tall` now renders
-   its sun warm gold while `-wide` has a crescent moon. Nothing looked wrong in the 3.1 review, but
-   every regen re-rolls these calls independently. The cheapest mitigation is partly in place: the
-   notes registry has a per-page `motifs` field and the pterodactyl case is seeded
-   (`fill-src/dinosaur/notes.json`) — the generators *print* it, but nothing conditions a regen on
-   it yet, so the item stays open until conditioning actually uses it.
+11. **Light↔night and tall↔wide palette coherence are unenforced (IDEAS #8/#9)** *(gate blind
+    spot)*: both fills of a page, and both orientations of a subject, are independent generations —
+    the 3.1 wave re-rolled every palette. The hue-flip scorers and conditioning recipes in
+    `ideas-exploration/idea-8`/`idea-9` were validated but not promoted.
+12. **Motif consistency across sibling pages is unenforced (IDEAS #2)** *(gate blind spot)*: the
+    same motif can get different treatments per orientation — e.g. `dinosaur/pterodactyl-tall` now
+    renders its sun warm gold while `-wide` has a crescent moon. Nothing looked wrong in the 3.1
+    review, but every regen re-rolls these calls independently. The cheapest mitigation is partly in
+    place: the notes registry has a per-page `motifs` field and the pterodactyl case is seeded
+    (`fill-src/dinosaur/notes.json`) — the generators *print* it, but nothing conditions a regen on
+    it yet, so the item stays open until conditioning actually uses it.

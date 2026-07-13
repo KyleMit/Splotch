@@ -4,5 +4,23 @@
   },
   "pterodactyl-wide": {
     "motifs": "Sky motif differs from the sibling: this page has a CRESCENT MOON while pterodactyl-tall shipped a WARM GOLD SUN in the 3.1 wave (gemini-3.1-migration.md). Nothing enforces motif consistency (ISSUES) — a regen of either page should decide deliberately whether to match."
+  },
+  "stegosaurus-tall": {
+    "night": {
+      "retry": {
+        "notes": "give the eye a solid dark pupil clearly darker than the night sky, with only a small white catchlight"
+      },
+      "review": "Judge the eye on the chalk-over-night COMPOSITE, not the raw fill: the 2026-07 take painted the pupil the same navy as the night sky with an oversized catchlight, so the composited eye reads as a blank white orb while every gate passes (ISSUES Tier 1 #1).",
+      "why": "2026-07-13 dark-mode composite review — audit-fill-eyes reports night ok on the defective shipped take."
+    }
+  },
+  "velociraptor-wide": {
+    "night": {
+      "retry": {
+        "notes": "give the eye a solid dark pupil clearly darker than the night sky, with only a small white catchlight"
+      },
+      "review": "Judge the eye on the chalk-over-night COMPOSITE, not the raw fill: the 2026-07 take painted the pupil the same navy as the night sky with an oversized catchlight, so the composited eye reads as a blank white orb while every gate passes (ISSUES Tier 1 #1).",
+      "why": "2026-07-13 dark-mode composite review — audit-fill-eyes reports night ok on the defective shipped take."
+    }
   }
 }

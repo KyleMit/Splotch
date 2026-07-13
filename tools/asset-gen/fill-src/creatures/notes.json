@@ -1,0 +1,15 @@
+{
+  "mermaid-tall": {
+    "light": {
+      "review": "The light eyes are giant solid-black orb pupils straight from the pen — dead in light mode — yet audit-fill-eyes reports light ok (the two catchlight holes register as lively cores, 2 of 8): a known false negative on the flat-eye burn-down list (ISSUES #9). Adjudicate by eye, not by the audit.",
+      "why": "2026-07-13 review — verified against the raw light fill and the pen outline; the accident-era solid-pupil class."
+    },
+    "normalize": {
+      "retry": {
+        "notes": "open the giant solid-black eye pupils into outlined pupils with room for an iris — keep the two catchlight holes"
+      },
+      "review": "Fixing this page's dead light eyes means fixing the pen first (ISSUES #9): the solid orb pupils give the light fill nothing to paint. After a normalize + light-fill regen, re-check the eyes by eye — the flat-eye audit passes the defective take.",
+      "why": "2026-07-13 review — see the mermaid-tall light entry; normalizer not yet exercised on 3.1 (ISSUES #9 caveat), budget extra attempts."
+    }
+  }
+}
