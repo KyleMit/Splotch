@@ -5,8 +5,8 @@
 # codex   -> AGENTS.md            (OpenAI Codex; also the cross-agent standard)
 default_agents = ["claude", "codex"]
 
-# Also process every nested <dir>/.ruler/ (web/src, scripts, android,
-# tools/asset-gen, docs/handoff) into sibling CLAUDE.md + AGENTS.md files.
+# Also process every nested <dir>/.ruler/ (web/src, web/tests, scripts,
+# android, tools/asset-gen, docs/handoff) into sibling CLAUDE.md + AGENTS.md files.
 nested = true
 
 # Generated files are committed, not ignored — drift is caught in CI instead.

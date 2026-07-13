@@ -115,8 +115,8 @@ skill instead before making one.
 
 Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
 agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,
-`testing.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`, `android/`, `scripts/`,
-`tools/asset-gen/`, and `docs/handoff/` cover those areas.
+`testing.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`, `web/tests/`, `android/`,
+`scripts/`, `tools/asset-gen/`, and `docs/handoff/` cover those areas.
 
 Remaining `docs/`:
 
