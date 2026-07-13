@@ -6,8 +6,8 @@ the fix of choice is a **brand-new drawing of the same subject**, generated text
 conditioning on the old image, followed by a full-suite regen (thumb → light → chalk → night →
 punch). The alternative (edit-style normalization of the existing pen,
 `gen:coloring-outlines:normalize`) stays available but is now the second choice for the worst pages:
-3.1's faithfulness resists erase-style edits on solid ink (ISSUES #10), while a fresh composition
-simply never draws the bad anatomy in the first place.
+3.1's faithfulness resists erase-style edits on solid ink (ISSUES #11 caveat), while a fresh
+composition simply never draws the bad anatomy in the first place.
 
 The tool is `gen:coloring-outlines:fresh` (`gen-coloring-outlines-fresh.mjs`): a fixed baseline
 **style prompt** describing the catalog's shipped look (medium-weight black pen outlines on white,
@@ -46,7 +46,7 @@ line-color, and composite eye audits; light mode byte-stability does not apply (
 intentionally replaces light assets).
 
 Each fresh page also ships a `{page}.chalk.thumb.webp` (a plain resize of its chalk) as the first
-batch toward IDEAS #19 / ISSUES #14 — the app does not consume them yet.
+batch toward IDEAS #19 / ISSUES #1 — the app does not consume them yet.
 
 ## What did NOT get a fresh drawing, and why
 
@@ -60,8 +60,8 @@ batch toward IDEAS #19 / ISSUES #14 — the app does not consume them yet.
 ## Caveats for the next pass
 
 * A fresh drawing re-rolls **everything** — composition, motifs, palette anchors.
-  Sibling-orientation consistency (ISSUES #2) gets worse, not better, unless the `--scene` names the
-  sibling's motifs.
+  Sibling-orientation consistency (ISSUES #14) gets worse, not better, unless the `--scene` names
+  the sibling's motifs.
 * The style prompt bans text; the model still tries letters on letter-bearing props (toy blocks).
   Say "no letters" in `--notes` when the scene contains any prop that conventionally carries them.
 * `--eyes` only asserts ≥ 1 detectable core. For a multi-eyed subject, check the printed core count
