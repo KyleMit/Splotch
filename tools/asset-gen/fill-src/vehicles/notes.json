@@ -2,10 +2,11 @@
   "excavator-tall": {
     "night": {
       "retry": {
-        "notes": "Draw crisp WHITE lines only — do NOT add dark outlines, rims, or drop shadows beside the white lines; each line sits directly on the flat fill colors with no darkening around it."
+        "temperature": 0.4,
+        "notes": "Keep the excavator's daytime identity colors, just moonlit-dimmed: warm YELLOW cab body, deep ORANGE digging arm and bucket (never teal, blue, or navy), and a warm light-peach face in the cab window so the eyes and smile read clearly. CRITICAL: every outline is a crisp WHITE line sitting DIRECTLY on the flat fill color — do NOT add dark outlines, dark rims, shading, or drop shadows beside or under the white lines anywhere; the flat fill color runs right up to the white line edge with no darkening."
       },
-      "review": "The shipped 2026-07 night raw re-inked dark rims beside its white lines (audit:halo rawScore 21.9, shipped haloScore 6.5 — #2 in the catalog); the punch can't remove ink the chalk never drew, so dark mode shows grainy static around every line. After a regen, re-run gen:coloring-fills:audit:halo and expect this page near the catalog floor (≤1), then re-punch (ISSUES Tier 1).",
-      "why": "2026-07-13 dark-mode composite review — the residual-halo class the halo auditor ranks but nothing reviews; user-visible at normal zoom on this page."
+      "review": "Fixed 2026-07-13: shipped haloScore 0.171 / rawScore 0.959 (was 6.5 / 21.9 — #2 in the catalog). After any regen re-run gen:coloring-fills:audit:halo and expect ≤1, then zoom the arm/bucket joints and cab-window edges at 3-4x — no dark rims beside the white lines. Also confirm identity colors: yellow cab, orange arm+bucket, light-peach cab face — unpinned takes re-roll them teal/navy (the night-contrast trap). bgLuma 51 was accepted (gate ≤60; golden re-frozen).",
+      "why": "2026-07-13 ISSUES Tier 1 fix (night regen + re-punch, this session): the seeded no-re-ink note ALONE cleared the halo (take-1 rawScore 0.6) but re-rolled the arm teal and the face navy; appending palette pins at the default -t 0.6 brought thin re-ink back (take-2 rawScore 5.8); the combined notes at -t 0.4 shipped clean on take 3. Lesson: when notes carry both a line instruction and palette pins, drop the temperature."
     }
   },
   "garbage-tall": {

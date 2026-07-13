@@ -163,7 +163,7 @@ af496816c9e38ea662066556b2028873dd964cb7aece9944ed5ff10ef68d17a1  tools/asset-ge
 30e61a99c4b111d1ed02cc361118c73c6eee805c4621b6f8901f75baa58a6acc  tools/asset-gen/fill-src/space/station-wide.light.raw.webp
 85fc512913e69d3041a7c5fd2a3184bcde9566aa21f1dea4bf95a2766137de1b  tools/asset-gen/fill-src/space/station-wide.night.raw.webp
 2f22b4ebe22291d82c7db6083ea56cbd4d271a148af0bdba5131917fd6c2fce8  tools/asset-gen/fill-src/vehicles/excavator-tall.light.raw.webp
-eb64997847617a7402e5212b83e57e542117e819b19df11947e2e2f8cca9d296  tools/asset-gen/fill-src/vehicles/excavator-tall.night.raw.webp
+faa2590cd7e7c42066848535b1a4620b918bb2c7950625cb751d0a799b829858  tools/asset-gen/fill-src/vehicles/excavator-tall.night.raw.webp
 c334104bd0aecf5f207012cc14d139d184123b025cf796d0baf2cce1c6afdce9  tools/asset-gen/fill-src/vehicles/excavator-wide.light.raw.webp
 5de51680888506f21f54a26719753f8f944bf21a5d091b4a8656e8867d63a0ef  tools/asset-gen/fill-src/vehicles/excavator-wide.night.raw.webp
 06e1bf3632d474dce345cb050957378e0b0ca4949291583fdc9f2df97d47b0b9  tools/asset-gen/fill-src/vehicles/fire-tall.light.raw.webp
@@ -697,7 +697,7 @@ c984840eddded2cadf7d7f18980ef27ecab3871a13825ad05d0d2e97e86903a7  web/static/col
 52d7d4f8340ccf6d80887660d7e618a0790202af63940b944e5753c88ac9fac9  web/static/coloring/vehicles/excavator-tall.chalk.thumb.webp
 c940ce4f80ecaf64a953f6341aa269b26d752871f1ca2605de96dea7842b3add  web/static/coloring/vehicles/excavator-tall.chalk.webp
 ba6231dc22498b975e0744d8903f6423680932b9e2d31d80daf2258c2c9b6d9b  web/static/coloring/vehicles/excavator-tall.light.webp
-789a7e95c8af68669a2cee8f72d8529b0ae504df1e3ef2446d565debb64b91b2  web/static/coloring/vehicles/excavator-tall.night.webp
+e73b4dd62f1eba546784de8f5e656b06413cb8bc6b9027678581d8307fb63f5c  web/static/coloring/vehicles/excavator-tall.night.webp
 0f8423cfcc7b45bf83ae4af2651e46d6247e5c462fa9a91132f01a4e60b1e51d  web/static/coloring/vehicles/excavator-tall.outline.webp
 a31def4a456ee67901647a12f2e545640fe3efed8fe4b665657205ba99bc1a13  web/static/coloring/vehicles/excavator-tall.thumb.webp
 c71524b484f3a5ac7239e70980f6803fc1a30ce96ce05be7909181ed6cd2a9db  web/static/coloring/vehicles/excavator-wide.chalk.thumb.webp

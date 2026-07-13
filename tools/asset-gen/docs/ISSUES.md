@@ -16,32 +16,20 @@ tagged by kind (*shipped asset*, *gate blind spot*, *tooling gap*). When you fix
 
 Every page in this tier was flagged by a human in the 2026-07-13 dark-mode review (four batches, 18
 pages) and then verified per layer — raws, shipped punches, and chalk-over-night composites
-cross-checked against the pen. Burn these down before any other tier: #1 is a night-fill-only regen
-(the cheapest fix in the pipeline), #2–#4 need a chalk regen first, and #5 is the one page needing
-pen work. With one exception (#1, which the halo auditor ranks but nothing reviews), every item
-passes all its gates (`gen:coloring-fills:audit:eyes` → ok on every listed page), so nothing but
-composite review sees them. Each page has a seeded registry entry in `fill-src/<cat>/notes.json`
-carrying the retry recipe and the composite-review instruction. (The tier originally opened with
-`vehicles/garbage-tall`'s night fill painting a translucent green leaf emblem on the trash can — the
-first confirmed FILL-side invention inside the subject, where no gate or audit looks; fixed
-2026-07-13 by a seeded-notes night regen + re-punch, recipe in `fill-src/vehicles/notes.json`.)
+cross-checked against the pen. Burn these down before any other tier: #1–#3 need a chalk regen
+first, and #4 is the one page needing pen work. Every item passes all its gates
+(`gen:coloring-fills:audit:eyes` → ok on every listed page), so nothing but composite review sees
+them. Each page has a seeded registry entry in `fill-src/<cat>/notes.json` carrying the retry recipe
+and the composite-review instruction. (The tier originally opened with two night-fill-only regens,
+both fixed 2026-07-13 by seeded-notes night regens + re-punch, recipes in
+`fill-src/vehicles/notes.json`: `vehicles/garbage-tall`'s fill painted a translucent green leaf
+emblem on the trash can — the first confirmed FILL-side invention inside the subject, where no gate
+or audit looks — and `vehicles/excavator-tall`'s fill re-inked dark rims beside its white lines,
+shipping grainy static around every line in dark mode, haloScore 6.5 → 0.171. The halo-ranking crop
+review the excavator item mandated is done; its verdicts and the proposed gate threshold live in
+Tier 2 #5.)
 
-1. **`vehicles/excavator-tall` ships noisy static around its night lines — and the halo auditor
-   already ranks it #2 in the catalog** *(shipped asset + unreviewed audit)*: the raw night fill
-   re-inked dark rims/drop-shadows beside its white lines (rawScore 21.9), the punch's chalk-keyed
-   mask can't remove ink the chalk never drew, and the crisped chalk overlay is thinner than the
-   dirty band — so grainy fringes show around every line in dark mode. This is precisely the class
-   `gen:coloring-fills:audit:halo` measures, and the shipped catalog's top of table is
-   `space/ship-tall` 8.5 (#2's porthole page — its regen covers this too), excavator-tall 6.5,
-   `shapes/rectangle-tall` 4.3, `shapes/heart-tall` 3.2, `nature/spider-tall` 2.8,
-   `objects/house-tall` 2.5, `vehicles/fire-tall` 2.4, `objects/house-wide` 2.2 — then a clean break
-   to ≤1.3. (`objects/flower-wide`, formerly 4.0 in this cluster, dropped to 0.2 with its 2026-07-13
-   chalk+night regen.) The auditor is deterministic and offline but "a ranking for crop review, not
-   a verdict": nothing reviews its top before shipping, which is how this page (and the since-fixed
-   garbage-tall leaf) shipped. Fix: night regen for excavator-tall (seeded no-re-inked-lines notes),
-   crop-review the rest of the ≥2.2 cluster, and decide a haloScore threshold so the next wave gates
-   on it.
-2. **The chalk invents facial features — teeth on `farm/duck-wide`, whole faces on
+1. **The chalk invents facial features — teeth on `farm/duck-wide`, whole faces on
    `objects/apple-wide` + `objects/apple-tall`, eyeballs in `space/ship-tall`'s porthole and all
    FOUR of `space/station-tall`'s windows** *(shipped asset)*: in every case the pen and the light
    fill are clean — a toothless open bill, two faceless apples, empty ring windows (the station's
@@ -58,14 +46,14 @@ first confirmed FILL-side invention inside the subject, where no gate or audit l
    gates green). Fix: chalk regen with the seeded no-face notes (plus a house-wide-style NO-EYES
    guard), then night regen + re-punch — mind #11's caveat (3.1 resists erase edits on solid ink;
    budget extra attempts/notes).
-3. **`farm/dog-wide` glows white at night — nose, eye whites, rump patch** *(shipped asset)*: the
+2. **`farm/dog-wide` glows white at night — nose, eye whites, rump patch** *(shipped asset)*: the
    chalk solidified the pen's solid-ink nose **and** the pen's merely-outlined rump patch into solid
    ink, and solid chalk ink renders as glowing white in dark mode (the night fill actually painted
    the patch maroon — the chalk's white sits on top of it); the wide white scleras finish the manic
    look. This is the #10 class escaping the eye: the chalk whitens *any* solid-pen region, and here
    it even promoted an outlined region to solid. Fix: chalk regen with the seeded keep-regions-open
    notes, then night regen + re-punch.
-4. **Chalk-whitened night eyes on `farm/horse-wide`, `farm/horse-tall`, `nature/caterpillar-wide`,
+3. **Chalk-whitened night eyes on `farm/horse-wide`, `farm/horse-tall`, `nature/caterpillar-wide`,
    `objects/teddy-tall`, and hollow circle catchlights on `nature/bee-tall`** *(shipped asset)*:
    five more #10 composites in the wild. The horses are textbook — their pens have solid-ink pupils,
    the chalks copied them, and solid chalk ink renders white at night, leaving washed-out white
@@ -77,7 +65,7 @@ first confirmed FILL-side invention inside the subject, where no gate or audit l
    the chalk stage. Fix: chalk regen per page with the seeded eye notes (police-wide's
    erase-and-redraw recipe for the horses; keep-the-pen's-rings for bee/caterpillar/teddy), then
    night regen + re-punch.
-5. **`creatures/mermaid-tall`'s light eyes are giant solid-black orbs** *(shipped asset)*: the pen
+4. **`creatures/mermaid-tall`'s light eyes are giant solid-black orbs** *(shipped asset)*: the pen
    draws each pupil as solid ink filling nearly the whole eye (only two catchlight holes), so the
    light fill has nothing to paint and the face reads dead-eyed in light mode. This is #11's
    accident-era class, but the flat-eye audit PASSES the page (the catchlight holes register as
@@ -89,6 +77,35 @@ first confirmed FILL-side invention inside the subject, where no gate or audit l
 
 ## Tier 2 — solid ratio, a bit more work
 
+5. **The halo ranking is crop-reviewed but still ungated — wire haloScore into the night generator**
+   *(tooling gap)*: `gen:coloring-fills:audit:halo` remains post-hoc, so the re-inked-lines class
+   that shipped `vehicles/excavator-tall` (fixed 2026-07-13, haloScore 6.5 → 0.171) can ship again.
+   The 2026-07-13 crop review of the whole shipped ≥2.2 cluster is DONE — verdicts (each judged on
+   4× chalk-over-night composite crops of the audit's hotspot tiles), so the next session doesn't
+   re-review these pages:
+   * `space/ship-tall` 8.5 — not reviewed here: its porthole regen belongs to Tier 1 #1 (the
+     chalk-invented-faces item), which covers this halo too.
+   * `shapes/rectangle-tall` 4.3 — hairline re-ink (a thin crisp dark ring the fill traced inside
+     the white lines of the pale bubbles/blocks); invisible at display scale, nothing like the
+     excavator's wide grainy band. Benign.
+   * `shapes/heart-tall` 3.2 — same hairline re-ink on the cream cloud edges; clean at 1×. Benign.
+   * `nature/spider-tall` 2.8 — an even navy shadow line under the white web strands on the sage
+     web; reads as deliberate depth shading. Deliberate art.
+   * `objects/house-tall` 2.5 — a wide, even maroon window-frame ring (deliberate) plus hairline
+     mullion edges; clean at 1×. Benign.
+   * `vehicles/fire-tall` 2.4 — thin dark edging around the grille bars and eye rings; reads as
+     crisp cartoon inking at 1×. Benign.
+   * `objects/house-wide` 2.2 — pane-top shading plus hairline mullion edges; clean at 1×. Benign.
+
+   The review calibrates a threshold: REAL user-visible halos sat at shipped haloScore ≥ 6.5
+   (excavator 6.5, ship-tall 8.5), the reviewed-benign band spans 2.2–4.3, and the clean catalog
+   floor is ≤ 1.3. Proposed gate for the next wave: score every NIGHT-take candidate with the halo
+   machinery before shipping (punch it against the chalk in scratch) and require haloScore ≤ 2,
+   ranking keep-best-of-N by it — the excavator regen's clean takes measured 0.008 and 0.175 while
+   its visibly re-inked rejects measured 1.97/rawScore 5.8 and 6.4/22.0, so pair the bar with a
+   rawScore > 5 crop-review flag. For the shipped-catalog audit, treat > 5 as actionable, 2.2–4.3 as
+   this reviewed-benign band, ≤ 1.3 as the floor. Remaining work: wire that scoring into
+   `gen-coloring-fills-dark.mjs`'s gates/ranking — nothing gates on it today.
 6. **`judgeLightEyes` has no false-positive suppressions** *(gate blind spot)*. The IDEAS #12 fixes
    (band-blind annulus, chalk-white-nearby) apply only to the night judge, so light-side flags still
    fire on side-profile eyes (`farm/duck-wide`, verified lively), band-blind solid-pupil pages, and
@@ -110,14 +127,16 @@ first confirmed FILL-side invention inside the subject, where no gate or audit l
    pupil painted sky-navy composited into a blank white orb and was invisible to every gate; those
    pages are fixed, the gap is not. The 2026-07-13 `objects/flower-wide` regen hit it again at motif
    scale — an unpinned take painted its two small background flowers sky-navy and passed every gate;
-   caught by eye and fixed with a palette pin, the gap stays.)
+   caught by eye and fixed with a palette pin, the gap stays. Ditto the 2026-07-13
+   `vehicles/excavator-tall` regen: its first take re-rolled the orange arm teal and the cab face
+   navy, caught only by eye and fixed with pinned identity colors.)
 9. **Colored-shape invention is only audited, not gated (IDEAS #13)** *(gate blind spot)*: the
    detector that caught `objects/house-tall`'s two invented sky flowers is now a first-class audit
    (`bin/audit-invented-shapes.mjs`, `npm run gen:coloring-fills:audit:shapes`) but still runs only
    post-hoc. Until the fill generators score each take with it (fold into the keep-best ranking on
    flagged-blob area — the idea-13 report's recommendation), a fill can ship an invented colored
    shape that keep/white/eye gates cannot see, and only the audit-after-the-wave catches it. And its
-   scope is the open background only — Tier 1 #2's invented teeth, apple faces, and porthole
+   scope is the open background only — Tier 1 #1's invented teeth, apple faces, and porthole
    eyeballs all sit *inside* the subject, where neither this audit nor any gate looks (and the
    since-fixed `vehicles/garbage-tall` leaf proved 2026-07-13 that fills invent inside the subject
    too, not just chalks).
@@ -127,14 +146,14 @@ first confirmed FILL-side invention inside the subject, where no gate or audit l
 10. **Chalk whitening on solid-pen-eye pages is gate-blind** *(gate blind spot)* (proved by
     `vehicles/police-tall`, whose wave chalk whitened the pupils with the sclera — that page's
     2026-07-13 fresh pen has ringed pupils now, but the class persists on every remaining
-    solid-pen-eye page: Tier 1 #4's horses are two of them). A solid pen pupil has no nested rings →
+    solid-pen-eye page: Tier 1 #3's horses are two of them). A solid pen pupil has no nested rings →
     `findEyeCores` finds nothing → the eye-polarity gate (Stage 1.5 gate 4) passes vacuously, and
     the night eye judge is silent too (its chalk-white-nearby rule trusts the chalk). Only composite
     review catches it. A candidate scorer: chalk-ink fraction inside pen solid regions that sit at
     face positions. No ready patch — worth building before #11's burn-down, since that wave
     regenerates exactly these pages. (The `vehicles/police-wide` registry entry carries the
     composite-review instruction and the wave's erase-note recipe for the meantime.) Three findings
-    prove the class is wider than its name: Tier 1 #3 (`farm/dog-wide`) shows it isn't eye-shaped —
+    prove the class is wider than its name: Tier 1 #2 (`farm/dog-wide`) shows it isn't eye-shaped —
     the chalk whitened a solid nose and even solidified an *outlined* rump patch; Tier 1 #4's
     bee/caterpillar/teddy show it isn't pen-caused either: their pens have healthy ringed pupils
     (teddy's a 2026-07-13 fresh drawing), yet the chalk solidified them anyway; and
@@ -143,7 +162,7 @@ first confirmed FILL-side invention inside the subject, where no gate or audit l
     edge (cross-eyed at night; originally misfiled as a night-fill defect, but the chalk's non-ink
     opening, not the fill, decides where a pupil can appear). So a scorer keyed to "pen solid
     regions" misses all three extensions — compare chalk ink against PEN ink per region, and flag
-    chalk ink the pen doesn't have (which would also catch Tier 1 #2's invented features).
+    chalk ink the pen doesn't have (which would also catch Tier 1 #1's invented features).
 11. **Light-mode eyes on accident-era pens are dead/solid** *(shipped asset; IDEAS #6 — the biggest
     remaining light-theme lever)*. 35 pages carry a light-side flat-eye flag
     (`npm run gen:coloring-fills:audit:eyes` prints them; 53 before the 3.1 regen, 39 before the
@@ -151,7 +170,7 @@ first confirmed FILL-side invention inside the subject, where no gate or audit l
     should land first. The list also has **false negatives**: `creatures/mermaid-tall`'s giant
     solid-black orb pupils sail through as light-ok because their two catchlight holes register as
     lively cores (2 of 8) — an offender the burn-down list will never print, confirmed by eye
-    2026-07-13 (its page fix is prioritized as Tier 1 #5). The root cause is the pen: a solid-ink
+    2026-07-13 (its page fix is prioritized as Tier 1 #4). The root cause is the pen: a solid-ink
     pupil gives the fill nothing to paint. Two proven fixes: pen normalization
     (`gen:coloring-outlines:normalize`, worst-first) + light-fill regen, or a brand-new drawing via
     `gen:coloring-outlines:fresh` + full-suite regen (the 2026-07-13 pass cleared the 4 worst
