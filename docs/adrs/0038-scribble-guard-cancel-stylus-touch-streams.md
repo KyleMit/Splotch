@@ -65,20 +65,20 @@ Scribble. Non-passive registration is load-bearing.
 
 ## Consequences
 
-- + The reported bug — first Pencil stroke after a color pick never renders — is fixed with Scribble
+- \+ The reported bug — first Pencil stroke after a color pick never renders — is fixed with Scribble
   left enabled, on the web app and (same WebKit) the iOS shell.
-- + `scribbleGuard` is a reusable action: any pointer-driven control a pen taps right before drawing
+- \+ `scribbleGuard` is a reusable action: any pointer-driven control a pen taps right before drawing
   can adopt it with one `use:`; click-driven controls pair it with `scribbleTap`.
-- - Pen taps on guarded controls lose iOS's tap-synthesized `:active` press feedback (the cancelled
+- − Pen taps on guarded controls lose iOS's tap-synthesized `:active` press feedback (the cancelled
   touchstart never arms it) — cosmetic, pen-only.
-- + The diagnosis toolchain this produced (schema-3 recorder with pixel probes + engine marks,
+- \+ The diagnosis toolchain this produced (schema-3 recorder with pixel probes + engine marks,
   `ipad-experiments.js` toggles) is reusable for future device-only input bugs.
-- - Scribble handwriting-to-text into the app is impossible on guarded surfaces — irrelevant here
+- − Scribble handwriting-to-text into the app is impossible on guarded surfaces — irrelevant here
   (there are no text inputs near the canvas), but a real constraint if one is ever added.
-- - The stylus/finger split rests on Safari-only `Touch.touchType`; if WebKit ever drops or changes
+- − The stylus/finger split rests on Safari-only `Touch.touchType`; if WebKit ever drops or changes
   it, the palette guard silently stops working (the canvas guard, which carries most of the fix,
   does not depend on it).
-- - Playwright/Chromium cannot construct stylus touches, so the discrimination logic and the
+- − Playwright/Chromium cannot construct stylus touches, so the discrimination logic and the
   `scribbleTap` activation/dedup rules are unit-tested (`scribbleGuard.test.ts`) while e2e covers
   only the canvas guard and the finger pass-through; full verification remains a manual on-device
   check.

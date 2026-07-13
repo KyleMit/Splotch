@@ -73,15 +73,15 @@ Documentation rules:
 
 ## Consequences
 
-* + `npm run info` is a single discoverable catalog of all scripts, usable by
+* \+ `npm run info` is a single discoverable catalog of all scripts, usable by
   contributors and by Claude without reading four documents.
-* + Consistent namespaces make scripts guessable (`test:e2e:` + tab) and group
+* \+ Consistent namespaces make scripts guessable (`test:e2e:` + tab) and group
   related commands together in listings.
-* - The renames break muscle memory and any uncommitted notes; all in-repo
+* − The renames break muscle memory and any uncommitted notes; all in-repo
   references (docs, skills, rules, code comments) were updated in the same
   change, but downstream habits like `npm run test:headed` now fail.
-* - The `scripts-info` block is a second list that can drift from `scripts`;
+* − The `scripts-info` block is a second list that can drift from `scripts`;
   a script showing its raw command in `npm run info` output is the visible
   signal of a missing entry, but nothing prevents the drift.
-* - Descriptions intentionally duplicate doc wording, so rewording a script's
+* − Descriptions intentionally duplicate doc wording, so rewording a script's
   purpose means touching both places.

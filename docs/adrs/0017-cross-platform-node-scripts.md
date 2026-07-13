@@ -63,15 +63,15 @@ Non-obvious invariants:
 
 ## Consequences
 
-- + Each script now contains only its own job; the ~100-line scripts dropped
+- \+ Each script now contains only its own job; the ~100-line scripts dropped
   by a third or more, and the two Playwright scripts share one driver.
-- + `android-setup` and `test:android` work on Windows, macOS, and Linux, with
+- \+ `android-setup` and `test:android` work on Windows, macOS, and Linux, with
   per-platform fix instructions when tools are missing.
-- + New scripts get cross-platform process handling for free instead of
+- \+ New scripts get cross-platform process handling for free instead of
   re-discovering the `.cmd`-shim and quoting pitfalls.
-- - Scripts are no longer copy-paste self-contained; moving one elsewhere means
+- − Scripts are no longer copy-paste self-contained; moving one elsewhere means
   bringing `scripts/lib/` along.
-- - `run()` exiting the process makes it unsuitable for cleanup-sensitive flows;
+- − `run()` exiting the process makes it unsuitable for cleanup-sensitive flows;
   authors must notice and use an async local runner (as the smoke test does).
-- - Shell-mediated spawning means argument quoting is centralized but still
+- − Shell-mediated spawning means argument quoting is centralized but still
   shell-dialect-sensitive; exotic arguments (embedded quotes) would need care.

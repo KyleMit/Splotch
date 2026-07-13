@@ -53,7 +53,7 @@ What was decided, and exactly how is it implemented? Cite the key files/lines. I
 
 ## Consequences
 
-Use + / - bullets. Be honest about the downsides — an ADR with only upsides is not credible and not useful.
+Use `\+` / `−` bullets — escape the plus (a bare `+` after the list marker parses as a nested list and dprint restructures it, ADR-0057) and use U+2212 `−` for minus. Be honest about the downsides — an ADR with only upsides is not credible and not useful.
 ```
 
 ## Status values

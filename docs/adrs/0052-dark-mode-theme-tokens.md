@@ -117,25 +117,25 @@ media query, so the duplication is the accepted cost; keep the blocks in sync.
 
 ## Consequences
 
-- + System mode is pure CSS — an OS theme switch recolors the app (paper included) live with
+- \+ System mode is pure CSS — an OS theme switch recolors the app (paper included) live with
     no JS listener; the only JS followers are the `theme-color` meta and the Notch Band.
-- + Prerendered HTML with no attribute renders the system default correctly even if the head
+- \+ Prerendered HTML with no attribute renders the system default correctly even if the head
     script never runs; explicit choices restore before first paint (no flash).
-- + One texture and one set of line-art assets serve both themes; coloring pages stay on the
+- \+ One texture and one set of line-art assets serve both themes; coloring pages stay on the
     same dark chalkboard as free-draw (one coherent dark surface, no light sheet spotlit on a
     dark desk), and exports match what the child saw.
-- + The night fills turn dark mode into a distinct experience rather than a compromise — a
+- \+ The night fills turn dark mode into a distinct experience rather than a compromise — a
     parallel set of cozy-night pictures under the same brush — while light mode is untouched.
-- - Black/dark strokes are nearly invisible on the dark paper (free-draw AND pen-coloring) — the
+- − Black/dark strokes are nearly invisible on the dark paper (free-draw AND pen-coloring) — the
     mirror image of white crayon on light paper today. A free-hand drawing made in one theme can
     look different (or partly vanish) when viewed in the other; the strokes themselves are never
     lost. Magic-brush reveals are unaffected (they carry the fill's colors).
-- - Night fills are a second asset set to generate and ship (~8 categories × 6 pages × 2
+- − Night fills are a second asset set to generate and ship (~8 categories × 6 pages × 2
     orientations), rolled out category by category; until an orientation/page has one, dark mode
     falls back to revealing the light fill under the brush.
-- - The dark token block is duplicated (attribute selector + media query) and the two copies
+- − The dark token block is duplicated (attribute selector + media query) and the two copies
     must be kept in sync by hand until the floor reaches `light-dark()`; `PAPER_COLORS` in
     `theme.ts` is a third copy of `--paper`.
-- - Every new chrome surface must remember to use tokens; a literal hex sneaks in as
+- − Every new chrome surface must remember to use tokens; a literal hex sneaks in as
     light-only and only shows up when eyeballing dark mode.
-- - `/admin` and `/privacy` are deliberately out of scope (self-contained light pages).
+- − `/admin` and `/privacy` are deliberately out of scope (self-contained light pages).

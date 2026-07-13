@@ -61,18 +61,18 @@ hardening wanted), not part of the shipped app's swap surface. The
 
 ## Consequences
 
-- + A model deprecation or vendor swap is contained to `lib/server/ai/`: one
+- \+ A model deprecation or vendor swap is contained to `lib/server/ai/`: one
   new adapter, one changed export. Route handlers, tests, and docs stay put.
-- + Route handlers read as pure HTTP orchestration; the vendor-specific safety
+- \+ Route handlers read as pure HTTP orchestration; the vendor-specific safety
   hardening and response-classification quirks live in one directory next to
   each other.
-- + The adapter's response/error mapping — previously inline route logic with
+- \+ The adapter's response/error mapping — previously inline route logic with
   no unit coverage — is now tested against a mocked SDK.
-- - One more indirection layer to step through when debugging a generation
+- − One more indirection layer to step through when debugging a generation
   failure, for an app with exactly one provider.
-- - The seam's result shape is modeled on Gemini's failure modes (prompt-level
+- − The seam's result shape is modeled on Gemini's failure modes (prompt-level
   block, policy finishReason, prose refusal). A future provider may not map
   cleanly onto `refusal` vs `error`, forcing the interface to evolve then.
-- - `refusal`/`error` reason strings still carry provider wording (e.g.
+- − `refusal`/`error` reason strings still carry provider wording (e.g.
   "Gemini request failed: …") into HTTP error bodies; fully neutral messages
   were not worth breaking log/message continuity for.

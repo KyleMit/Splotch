@@ -85,19 +85,19 @@ Non-obvious invariants:
 
 ## Consequences
 
-- + Zero migration cost: Netlify, CI, the `npm run`/`npx` graph, ADR-0011's
+- \+ Zero migration cost: Netlify, CI, the `npm run`/`npx` graph, ADR-0011's
   `postinstall`, and the SessionStart hook already work unchanged.
-- + Flat `node_modules` keeps `cap sync` and `patch-package` working without
+- \+ Flat `node_modules` keeps `cap sync` and `patch-package` working without
   extra configuration.
-- + One lockfile, one mental model; npm ships with Node, so no extra tool to
+- \+ One lockfile, one mental model; npm ships with Node, so no extra tool to
   install on any of the macOS/Linux/Windows dev paths (ADR-0017).
-- - Slowest installs of the three: ~55s cold and ~14s warm-CI, versus single-
+- − Slowest installs of the three: ~55s cold and ~14s warm-CI, versus single-
   digit seconds for bun. Acceptable because installs are infrequent relative to
   the Gradle/xcodebuild/Playwright work that dominates build and CI time, but
   it is a real, measured tax.
-- - Forgoes bun's large install-speed win. If cold/CI install time ever becomes
+- − Forgoes bun's large install-speed win. If cold/CI install time ever becomes
   the bottleneck, **bun** (not pnpm) is the documented upgrade path, paid for
   with the script-graph rewrite and Windows/native re-validation above.
-- - `npm audit` reports a large pre-existing vulnerability count from the
+- − `npm audit` reports a large pre-existing vulnerability count from the
   transitive tree; this is independent of the manager choice and is not a
   reason to switch.

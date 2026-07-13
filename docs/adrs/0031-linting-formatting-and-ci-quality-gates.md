@@ -68,12 +68,12 @@ audit on every push/PR, parallel to the existing `test` job.
 
 ## Consequences
 
-- + The runes-only / no-legacy-store rule and formatting are now enforced
+- \+ The runes-only / no-legacy-store rule and formatting are now enforced
   mechanically, not by reviewer memory — the question `BACKLOG.md` raised is
   resolved.
-- + CI type-checks every change; a `svelte-check` regression can no longer reach
+- \+ CI type-checks every change; a `svelte-check` regression can no longer reach
   `main`.
-- + Splitting ESLint (style/correctness) from svelte-check (types) keeps linting
+- \+ Splitting ESLint (style/correctness) from svelte-check (types) keeps linting
   fast and immune to TypeScript-version skew with typescript-eslint.
 - − A one-time Prettier reformat touched most source files; future `git blame`
   crosses that commit (isolated as a single `style:` commit to make it skippable).

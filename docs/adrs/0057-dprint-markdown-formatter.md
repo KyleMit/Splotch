@@ -57,10 +57,10 @@ rewrapped (e.g. ADR `**Status:**` / `**Date:**` lines join into one source line)
 
 ## Consequences
 
-- + Docs are now mechanically formatted and CI-gated in the exact house style — asterisk
+- \+ Docs are now mechanically formatted and CI-gated in the exact house style — asterisk
   bullets/emphasis, wrap at 100, aligned tables — which Prettier could never produce.
-- + Doc code samples are formatted to match real source style, so snippets can't drift.
-- + `npm run format` / `format:check` still mean "the whole repo"; contributors and CI didn't have
+- \+ Doc code samples are formatted to match real source style, so snippets can't drift.
+- \+ `npm run format` / `format:check` still mean "the whole repo"; contributors and CI didn't have
   to learn a new entry point.
 - − Two formatters, two configs, two editor extensions. The partition is clean (Prettier ignores
   `*.md`; dprint includes only `*.md`), but both scopes must be kept complementary by hand.

@@ -68,21 +68,21 @@ easiest thing to break when editing the ladder.
 
 ## Consequences
 
-+ Landscape phones now show the full rainbow (every family) with a few shades
+- \+ Landscape phones now show the full rainbow (every family) with a few shades
   each, instead of every shade of a few families.
-+ Correct on the prerendered first paint, no JS measurement or resize flash —
+- \+ Correct on the prerendered first paint, no JS measurement or resize flash —
   consistent with how `ColorPalette.svelte` trims.
-+ Trimmed layouts are always well-formed honeycombs; the light→dark gradient
+- \+ Trimmed layouts are always well-formed honeycombs; the light→dark gradient
   reads top-to-bottom (landscape) or left-to-right (portrait) at every size.
-- Both grids live in the DOM (162 hexes, one grid always `display:none`).
+- − Both grids live in the DOM (162 hexes, one grid always `display:none`).
   Harmless today — hidden hexes aren't focusable and the pointer snap logic
   already skips zero-width rects — but anything iterating `.hexagon` must
   tolerate the hidden copy.
-- The offset-restatement blocks are hand-derived from the drop ladder; editing
+- − The offset-restatement blocks are hand-derived from the drop ladder; editing
   the ladder without re-deriving them silently breaks the interlock (the E2E
   offset walk exists to catch exactly this).
-- A geometry change (hex size, padding, overlap) invalidates every threshold;
+- − A geometry change (hex size, padding, overlap) invalidates every threshold;
   the ladder comments carry the formulas to re-derive them.
-- Desktop/landscape users see families as columns while portrait shows them as
+- − Desktop/landscape users see families as columns while portrait shows them as
   rows — the full grid is the same 81 colors, but its orientation flips with
   the viewport.

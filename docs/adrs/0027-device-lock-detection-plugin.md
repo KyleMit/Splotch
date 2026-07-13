@@ -68,7 +68,7 @@ surface to one method, symmetric across platforms.
 - **+** Parents get the same confidence signal for the device lock as for PWA install: a ✓
   plus exit steps when the lock is on, instead of stale "enable" instructions.
 - **+** Establishes the repo's pattern for custom native plugins (iOS: `@objc` `CAPPlugin`
-  + `CAPBridgedPlugin` Swift class **explicitly registered** in a `CAPBridgeViewController`
+  \+ `CAPBridgedPlugin` Swift class **explicitly registered** in a `CAPBridgeViewController`
   subclass's `capacitorDidLoad()`; Android: `@CapacitorPlugin` + `registerPlugin`; JS: a
   typed `registerPlugin` facade with a web fallback loaded via an `__IS_CAPACITOR__`-gated
   lazy `import()`) —

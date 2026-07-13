@@ -57,9 +57,9 @@ Measured (`npm run perf:mount`, phone, 4× CPU + Slow-4G): load long task
 
 ## Consequences
 
-- + ~150–250 ms less main-thread blocking in the Lighthouse TBT window on a
+- \+ ~150–250 ms less main-thread blocking in the Lighthouse TBT window on a
   throttled phone; the canvas is stroke-ready sooner.
-- + A place to put the *next* boot-hidden overlay: add it to
+- \+ A place to put the *next* boot-hidden overlay: add it to
   `bootHiddenOverlays.ts` and the idle queue in `+page.svelte`, and it stays
   off the load path by construction. Re-importing one eagerly in
   `+page.svelte` silently reverts the win — `npm run perf:mount` is the

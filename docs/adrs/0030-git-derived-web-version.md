@@ -68,11 +68,11 @@ Tiered fallback, so the marker degrades informatively rather than silently:
 
 ## Consequences
 
-- + Every web deploy has a distinct, ordered, human-readable version; bug reports
+- \+ Every web deploy has a distinct, ordered, human-readable version; bug reports
   and the About tab pin the exact build.
-- + The `updates.ts` stuck-client recovery is live on every deploy, not just at
+- \+ The `updates.ts` stuck-client recovery is live on every deploy, not just at
   releases.
-- + Native store versions are untouched — same `package.json` value, same
+- \+ Native store versions are untouched — same `package.json` value, same
   `capacitor-set-version` flow.
 - − The web **patch** digit in `package.json` is now web-irrelevant (overwritten
   by the commit count); releases should move **major/minor**. Recorded in the
