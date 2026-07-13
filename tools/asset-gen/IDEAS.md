@@ -8,7 +8,9 @@
 > now lively without pen surgery), and **#4** (night bgLuma tightened to
 > 18–48 via `--night-luma-max 60`), and ran **#7/#13** as post-regen audits
 > (1 real invented shape caught and regenerated). The remaining ideas below
-> are still open leads.
+> are still open leads. The living list of concrete outstanding defects and
+> gate blind spots (as opposed to these exploratory leads) is
+> [`ISSUES.md`](ISSUES.md).
 
 Brainstormed immediately after generating and reviewing the whole catalog
 (7 categories: 83 chalks + 83 night fills, ~350 candidate images eyeballed).

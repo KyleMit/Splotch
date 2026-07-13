@@ -81,6 +81,9 @@ the stock prompt, `--max-attempts 5`, night `--night-luma-max 60`.)
 
 ## Outstanding issues after the wave
 
+> Frozen snapshot as of the wave — the **living, maintained list is
+> [`../ISSUES.md`](../ISSUES.md)**; check there for current status.
+
 - **Accident-era pens still cap light-mode eye quality** (IDEAS #6): the 39
   remaining light-side flat-eye flags are pen-owned (solid ink pupils give
   the fill nothing to paint) or detector noise on non-face cores. The
