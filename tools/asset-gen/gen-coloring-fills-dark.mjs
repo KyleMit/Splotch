@@ -462,7 +462,8 @@ async function generateCleanTake({
     const eyes = lightEyes
       ? judgeNightEyes(
           await scoreEyeFill(chalk ? await compositeNight(aligned, chalk) : aligned, pen),
-          lightEyes
+          lightEyes,
+          { chalked: !!chalk }
         )
       : { passes: true, failed: 0 };
     const take = { aligned, dx, dy, drift, night, line, eyes, attempt };
