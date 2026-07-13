@@ -37,6 +37,7 @@ import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
+import { pageLevers, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { scoreEyeFill, judgeLightEyes } from '../lib/eye-fill.mjs';
@@ -236,7 +237,16 @@ async function renderClean(source, width, height, slot) {
 
 let failures = 0;
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
+  const rel = relative(COLORING_DIR, page)
+    .replace(/\.outline\.webp$/, '')
+    .replace(/\\/g, '/');
+  // The registry's "light" entries are informational only for now — this
+  // generator has no --notes / gate-override flags to merge, so a page's
+  // review/why/motifs notes are printed but nothing is auto-applied
+  // (lib/page-notes.mjs documents the reserved key).
+  const levers = pageLevers(rel, 'light');
+  if (levers)
+    console.log(describeLevers({ rel, levers, fromRegistry: [], cliValues: values, settings: {} }));
   const source = await readFile(page);
   const { width, height } = await sharp(source).metadata();
 

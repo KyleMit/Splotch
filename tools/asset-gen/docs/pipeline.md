@@ -17,8 +17,9 @@ copy in the sibling `pipeline-assets/` — live assets regenerate, these don't.
 
 ```mermaid
 flowchart LR
-    O["pen outline<br/>(.outline.webp)"] -->|gen:coloring-thumbs| T[".thumb.webp<br/>(picker)"]
+    O["pen outline<br/>(.outline.webp)"] -->|gen:coloring-thumbs| T[".thumb.webp<br/>(picker, light)"]
     O -->|"gen:coloring-chalk<br/>(Gemini, gated)"| C["chalk outline<br/>(.chalk.webp)"]
+    C -->|gen:coloring-thumbs| CT[".chalk.thumb.webp<br/>(picker, dark)"]
     O -->|"gen:coloring-fills<br/>(Gemini, gated)"| LR2["light raw<br/>(fill-src/…light.raw.webp)"]
     C -->|"gen-coloring-fills-dark<br/>(Gemini, gated)"| NR["night raw<br/>(fill-src/…night.raw.webp)"]
     LR2 -->|gen:coloring-punch| LS["shipped .light.webp<br/>(fills-only)"]
@@ -43,7 +44,8 @@ the white-blob problem and two earlier generations of fixes — is chronicled in
 | ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | `{page}.outline.webp`           | `web/static/coloring/{book}/`      | yes — the PEN outline: light-mode overlay, source of all derivations                                                                   | hand-curated + `normalize-outline-strokes.mjs`           |
 | `{page}.chalk.webp`             | `web/static/coloring/{book}/`      | yes — the CHALK outline: dark-mode overlay + night punch mask, stored ink-on-white                                                     | `gen-coloring-chalk.mjs` from the pen                    |
-| `{page}.thumb.webp`             | `web/static/coloring/{book}/`      | yes — picker grid (from the pen; the picker inverts it in dark mode)                                                                   | `gen-coloring-thumbs.mjs`                                |
+| `{page}.thumb.webp`             | `web/static/coloring/{book}/`      | yes — light-mode picker grid (from the pen)                                                                                            | `gen-coloring-thumbs.mjs`                                |
+| `{page}.chalk.thumb.webp`       | `web/static/coloring/{book}/`      | yes — dark-mode picker grid (from the chalk, ink-on-white; the tile's invert renders it as white chalk)                                | `gen-coloring-thumbs.mjs`                                |
 | `{page}.{light,night}.raw.webp` | `tools/asset-gen/fill-src/{book}/` | no — committed source of truth for fills, keeps its own outlines so audits can score registration                                      | `gen-coloring-fills.mjs` / `gen-coloring-fills-dark.mjs` |
 | `{page}.{light,night}.webp`     | `web/static/coloring/{book}/`      | yes — magic-brush reveal, fills-only (outline pixels inpainted with bled fill color, opaque: pen mask for light, chalk mask for night) | `punch-fill-outlines.mjs` from the raw                   |
 
@@ -58,9 +60,10 @@ at the end.
 ## Stage 1 — Pen outlines
 
 The pen outline is the source of everything: the light overlay renders it, the light punch masks
-with it, the light-fill generator conditions on it, the chalk redraws from it, and the thumbnail is
-a resize of it. **Every downstream regeneration flows from a pen change**, so a pen edit means
-regenerating the page's whole suite (thumb + chalk + light + night + punch).
+with it, the light-fill generator conditions on it, the chalk redraws from it, and the light picker
+thumbnail is a resize of it (the dark tile's `.chalk.thumb` resizes the chalk). **Every downstream
+regeneration flows from a pen change**, so a pen edit means regenerating the page's whole suite
+(thumbs + chalk + light + night + punch).
 
 ### Outline quality, and the audit that measures it
 
@@ -82,7 +85,7 @@ solid regions are harmless noise.
 ### The normalizer
 
 `npm run gen:coloring-outlines:normalize -- <page…> [--apply] [--notes "…"]
-[-t F] [--max-attempts N]`
+[-t F] [--max-attempts N] [--dry-run]`
 — Gemini image-edit (`gemini-3.1-flash-image`) redraws solid regions as thin outlined shapes (eyes:
 exactly one pupil ring + one catchlight circle), keep-best-of-N with a rising temperature ladder,
 candidates land in `.coloring-samples-dark/normalize/`. Six gates per candidate:
@@ -103,7 +106,9 @@ candidates land in `.coloring-samples-dark/normalize/`. Six gates per candidate:
 
 The registration gate also catches semantic damage: the first bee-wide normalization silently
 **deleted a cloud** (worst-tile keep 0%), fixed with a `--notes` telling it the sky has three
-clouds.
+clouds. Those hard-won per-page levers (bee-wide's clouds, bee-tall's eye note, caterpillar-tall's
+low-temperature de-swirl) now auto-load from the [notes registry](#the-per-page-notes-registry) —
+`--dry-run` previews what a page will resolve to.
 
 ### The from-scratch alternative
 
@@ -120,7 +125,7 @@ five-page pass: [fresh-outline-regen.md](fresh-outline-regen.md).
 ## Stage 1.5 — Chalk outlines
 
 `npm run gen:coloring-chalk -- <page-or-category…> [--apply] [--notes "…"]
-[-t F] [--max-attempts N] [--force]`
+[-t F] [--max-attempts N] [--force] [--dry-run]`
 — Gemini image-edit redraws the inverted pen as a chalk line drawing (`gen-coloring-chalk.mjs`),
 keep-best-of-N with a rising temperature ladder, candidates in `.coloring-samples-dark/chalk/` (each
 with a `.display.webp` preview of what dark mode will show and a registration overlay). Four gates
@@ -159,10 +164,13 @@ line ([decision record](chalk-edge-crisping.md)).
 
 Judgment-call misfires the gates can't see (a chalk that whitens something canon says is dark — the
 ladybug's first take gave it white shell spots) are caught only by human review of the
-`.display.webp`; the fix is a page `--notes` at low temperature.
+`.display.webp`; the fix is a page `--notes` at low temperature, recorded in the
+[notes registry](#the-per-page-notes-registry) so the next regen starts from it (the ladybug's
+shell-spot note is seeded there).
 
-After applying a chalk, regenerate the page's **night fill** (it conditions on the chalk) and
-re-punch. Thumbs and light fills are untouched — they belong to the pen.
+After applying a chalk, regenerate the page's **night fill** (it conditions on the chalk), re-punch,
+and re-run `gen:coloring-thumbs` (the chalk's `.chalk.thumb.webp` is the dark-mode picker tile). Pen
+thumbs and light fills are untouched — they belong to the pen.
 
 ## Stage 2 — The punch
 
@@ -217,8 +225,9 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning \
 Targets: a category (`nature`), one orientation (`nature --tall` / `nature --wide`), or a single
 cell (`nature/ant-tall`). Tuning: `--samples N` (takes per page), `--max-attempts N` (default 3; 4–5
 is a better batch default), `-t F`, `--notes "…"`, plus per-gate bars (`--drift-threshold`,
-`--night-luma-max`, `--line-white-min`) and `--dilate-lines N`. Writes to the gitignored
-`.coloring-samples-dark/` — never to shipped assets.
+`--night-luma-max`, `--line-white-min`) and `--dilate-lines N`; `--dry-run` prints each page's
+resolved levers without an API call. Writes to the gitignored `.coloring-samples-dark/` — never to
+shipped assets.
 
 The model input is the **chalk outline as dark mode displays it** (white marks on near-black — the
 negation of the shipped ink-on-white chalk), falling back to the inverted pen for un-forked pages.
@@ -236,7 +245,7 @@ under):
 | Gate             | Catches                                                                           | Bar                                                                                                                                                                                                                                                            |
 | ---------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `scoreDrift`     | invented shapes (thin white strokes far from any source line)                     | ≤ 0.004 (clean ≈ 0)                                                                                                                                                                                                                                            |
-| `scoreNightness` | daytime "sky blue" background (median luma of the flood-filled true background)   | ≤ 100 (good ≈ 15–50). **Regens should pass `--night-luma-max 60`**: the whole catalog was regenerated at that bar in the 3.1 migration (shipped range 18–48, closing IDEAS #4's 4× mood spread), and a default-bar regen can reintroduce a dusk outlier        |
+| `scoreNightness` | daytime "sky blue" background (median luma of the flood-filled true background)   | ≤ 60 by default (good ≈ 15–50) — the bar the whole catalog was regenerated at in the 3.1 migration (shipped range 18–48, closing IDEAS #4's 4× mood spread); loosen per-run with `--night-luma-max` only as a deliberate escalation                            |
 | `scoreLineColor` | the model re-inking white outlines dark (they'd double against the chalk overlay) | median ≥ 150 (white ≈ 154–250)                                                                                                                                                                                                                                 |
 | `judgeNightEyes` | flat-flooded eyes (below)                                                         | every strong light-lively core stays lively — judged on the **simulated final composite** (`lib/night-composite.mjs`: chalk-punched fill + screened chalk over dark paper) when the page has a chalk, since the chalk owns the whites; cores keyed off the pen |
 
@@ -246,6 +255,8 @@ Since the 3.1 migration these are genuine escalations, not batch defaults: the f
 needed none of levers 1–3 on any page (94/94 nights at lineW 255; 72 first-take), and the only
 `--notes` were judgment calls, not gate fights (`docs/gemini-3.1-migration.md`). The list below
 documents 2.5-era case history — expect to reach for it again mainly after a future model change.
+Levers that prove out per page are recorded in the [notes registry](#the-per-page-notes-registry)
+and auto-apply on the next regen.
 
 1. **More attempts against a stricter gate** — the retry loop keeps hunting instead of settling at
    the boundary: `--max-attempts 8 --line-white-min 175` (fixed farm/dog-wide 70→219 and
@@ -263,6 +274,32 @@ On 3.1 expect near-zero flagged pages per category (the 2.5-era budget was rough
 `-wide` per category). Borderline-but-light pages (a dim moonlit rim, lineW ≈ 150) are fine. Gemini
 occasionally 503s ("high demand") — just re-run the failed page.
 
+### The per-page notes registry
+
+Known per-page levers live in **`fill-src/<cat>/notes.json`** and auto-load in the night, chalk, and
+normalize generators (`lib/page-notes.mjs` — the schema is documented there; IDEAS #10, landed
+2026-07-13), so a regen starts from the settings past sessions fought to discover instead of
+re-fighting the battle (the spider's "THE EYES ARE THE STAR" note took ~26 attempts to find; with
+the registry it applies on attempt one). Per entry and tool (`night`/`chalk`/`normalize`, plus a
+reserved `light` and a `"*"` category wildcard):
+
+* **`flags`** — exact CLI long-option values, auto-applied; **an explicit CLI flag always wins**
+  over the registry. Every applied value is printed tagged `[cli]` / `[notes.json]` / `[default]`,
+  and `--dry-run` previews the resolution per page with no key and no API call.
+* **`retry`** — an escalation recipe that is *printed, never auto-applied* (for levers that were
+  needed once but shouldn't silently change the model input on a clean pass).
+* **`review`** — what the human gate should expect (acceptable warnings, known false positives).
+* **`why`** — provenance (commit / doc / session), so entries can be pruned when a model change
+  makes them obsolete.
+* **`motifs`** (per page, cross-tool) — sibling-motif facts (the pterodactyl -wide's crescent moon
+  vs the -tall's gold sun) printed on every run; nothing conditions on them yet (`ISSUES.md`).
+
+**When a page needs a new lever, record it in the registry in the same commit that ships the asset**
+— the registry only stays alive if writing it is part of shipping. The seed entries were reconciled
+against the 3.1 migration: durable page quirks stayed (eyeless house-wide, the ladybug's black shell
+spots), 2.5-era model-habit workarounds (re-inking temperatures, `--dilate-lines` recipes,
+keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
+
 ### Shipping (manual on purpose — the human gate)
 
 1. Review the samples on the contact sheet (`--source samples`) — Combined view, both themes, zoom
@@ -277,12 +314,19 @@ occasionally 503s ("high demand") — just re-run the failed page.
    the punched (fills-only) derivation of the raw.
 3. Wire the catalog in `web/src/lib/state/books.ts` — the `night` and `chalk` orientation lists per
    page: `page('nature', 'ant', 'Ant', ['portrait', 'landscape'], ['portrait', 'landscape'])`.
-4. `npm run check:assets` + `npm run check` + `npm run test:unit`, rebuild the contact sheet
+4. Refresh the committed regression fixtures: `npm run gen:coloring-golden:diff` (review the report
+   — the changed pages should be exactly the ones you shipped), then
+   `npm run gen:coloring-golden:freeze` to adopt the new baseline and `npm run gen:assets:manifest`
+   to re-hash the changed bytes; commit both fixture updates with the assets (CI's
+   `check:assets:manifest` fails otherwise).
+5. `npm run check:assets` + `npm run check` + `npm run test:unit`, rebuild the contact sheet
    `--source shipped`, optionally verify live with the `run-splotch` skill (dark mode → apply page →
    magic-brush reveal), commit.
 
-Light mode must stay byte-identical throughout a night-fill pass. Night fills have no thumbnails
-(never in the picker grid); `bookAssetPaths()` lists them for check-assets automatically once wired.
+Light mode must stay byte-identical throughout a night-fill pass — enforced by
+`golden/asset-manifest.sha256`: the manifest diff for a night pass must contain only
+`*.night`/`*.chalk`/`*.chalk.thumb` lines. Night fills have no thumbnails (never in the picker
+grid); `bookAssetPaths()` lists them for check-assets automatically once wired.
 
 ## How the eye detector works
 
@@ -350,7 +394,10 @@ lie:
 The loop that has worked, per category:
 
 1. **Audit first** (`gen:coloring-outlines:audit`, `gen:coloring-fills:audit`,
-   `gen:coloring-fills:audit:eyes`) — all deterministic and free.
+   `gen:coloring-fills:audit:eyes`) — all deterministic and free. The whole-catalog baseline is
+   already frozen in `golden/golden-scores.json` (`gen:coloring-golden:freeze`), so there's no need
+   for ad-hoc score snapshots in a scratchpad — the 3.1 wave's approach before the golden set
+   landed.
 2. **Generate chalks** (`gen:coloring-chalk --apply`), eyeballing every `.display.webp` — gates have
    been fooled, each time by something no existing gate measured.
 3. **Regenerate the suite** for changed pages: thumbs → light fills → night fills → punch.
@@ -359,17 +406,23 @@ The loop that has worked, per category:
 
    ![contact sheet pair](pipeline-assets/review-contact-sheet-pair.webp)
 
-5. **After a regen wave, run the exploration auditors too** (proven in the 3.1 migration; not yet
-   promoted to first-class scripts — `ISSUES.md`): the invented-shape detector
-   (`ideas-exploration/idea-13/code/invented-shape-audit.mjs`) — the only thing that caught
-   house-tall's two invented sky flowers, invisible to every standard gate — and the residual-halo
-   auditor (`ideas-exploration/idea-7/code/audit-night-halo.mjs`). Both import `./lib/*.mjs`, so
-   copy them into `tools/asset-gen/` to run (the halo script's main-guard also expects its original
-   `idea7-…` filename). For gate-blind classes (solid-pen-eye chalks, subject/background contrast),
-   batch-render the night composites (`lib/night-composite.mjs`) into per-category montages and
-   eyeball them — that sweep is what caught police-tall's whitened pupils and circle-wide's
-   sky-colored disc.
-6. `check:assets` + `check` + `test:unit`, commit, push.
+5. **After a regen wave, run the invention + halo audits too** (proven in the 3.1 migration, since
+   promoted to first-class scripts): the invented-shape detector (`gen:coloring-fills:audit:shapes`)
+   — the only thing that caught house-tall's two invented sky flowers, invisible to every standard
+   gate — and the residual-halo ranker (`gen:coloring-fills:audit:halo`); both are offline and
+   deterministic, and the halo table's top scorers need a human crop review (deliberate mid-dark art
+   hugging lines scores like halo). For gate-blind classes (solid-pen-eye chalks, subject/background
+   contrast), batch-render the night composites (`lib/night-composite.mjs`) into per-category
+   montages and eyeball them — that sweep is what caught police-tall's whitened pupils and
+   circle-wide's sky-colored disc.
+6. **Diff against the golden set** (`gen:coloring-golden:diff`, ~1 min offline) — the safety net
+   that keeps "improved train-wide" from silently degrading the other 93 pages. Regressions exit
+   non-zero; the changed pages should be exactly the ones you touched. Re-freeze
+   (`gen:coloring-golden:freeze`, reviewing the printed known-fail list) and regenerate the byte
+   manifest (`gen:assets:manifest`) to adopt the intended changes — the two fixtures close each
+   other's blind spot (the golden set catches score drift; the manifest catches byte swaps between
+   score-identical renders).
+7. `check:assets` + `check` + `test:unit`, commit, push.
 
 Hard-won process lessons:
 
@@ -401,7 +454,12 @@ Hard-won process lessons:
 | `npm run gen:coloring-punch -- [pages…]`                    | re-derive shipped fills from raws (pen/chalk masks)                                             | no       |
 | `npm run gen:coloring-fills:audit -- [cat]`                 | registration drift on committed raws                                                            | no       |
 | `npm run gen:coloring-fills:audit:eyes -- [cat]`            | eye liveliness on committed raws (night judged as the chalk composite)                          | no       |
-| `npm run gen:coloring-thumbs -- [cat]`                      | picker thumbnails                                                                               | no       |
+| `npm run gen:coloring-fills:audit:shapes -- [cat]`          | invented colored shapes floating on the open background of committed raws                       | no       |
+| `npm run gen:coloring-fills:audit:halo -- [cat]`            | residual dark halo around chalk strokes in shipped night fills (ranking for crop review)        | no       |
+| `npm run gen:coloring-thumbs -- [cat]`                      | picker thumbnails (pen `.thumb` + chalk `.chalk.thumb`)                                         | no       |
+| `npm run gen:coloring-golden:diff`                          | re-score the catalog vs `golden/golden-scores.json`; exit 1 on regressions                      | no       |
+| `npm run gen:coloring-golden:freeze`                        | adopt the current scores as the new golden baseline                                             | no       |
+| `npm run gen:assets:manifest`                               | re-hash the committed art into `golden/asset-manifest.sha256` (CI-checked)                      | no       |
 | `npm run gen:contact-sheet -- <cat>`                        | the review sheet (publish as Artifact)                                                          | no       |
 
 ## Status and the next category
@@ -437,9 +495,10 @@ from the 2026-07 migration, all verified on overlays/composites before hand-ship
   adjudication.
 
 Next-category runbook: pen audit → normalize offenders if the light page warrants it (worst-first,
-`--apply`) → thumbs → light fills → **chalks** (`gen:coloring-chalk --apply`) → night fills (they
-condition on the chalk) → ship raws + punch → wire `books.ts` (`night` + `chalk` orientation lists)
-→ all three audits → contact sheet review in both themes → checks → commit.
+`--apply`) → light fills → **chalks** (`gen:coloring-chalk --apply`) → night fills (they condition
+on the chalk) → ship raws + punch → thumbs (pen + chalk, after the chalks exist) → wire `books.ts`
+(`night` + `chalk` orientation lists) → all three audits → contact sheet review in both themes →
+checks → commit.
 
 The Stage 4 model input — the chalk as dark mode displays it (negated, white-on-black), here the owl
 whose sclera the chalk owns:
@@ -460,7 +519,8 @@ whose sclera the chalk owns:
   wanted colored (a tooth on a dark face, a marking) is only caught by human review — no gate
   compares the chalk's whites to the fill's intent.
 * **Dark-bodied subjects at night** (spider precedent): the model wants to flood them; eyes and
-  markings vanish. Reach for `--notes` early.
+  markings vanish. Reach for `--notes` early (the spider's note is seeded in the notes registry and
+  auto-applies).
 * **The eye detector's anatomy assumptions.** Nested-circle eyes, cores ≥ 6 px, eye-scale area
   bands, and the 180 strong-reference bar were all calibrated on *nature*. New art styles
   (side-profile eyes, closed happy eyes `>‿<`, characters wearing glasses — the owl's witch hat

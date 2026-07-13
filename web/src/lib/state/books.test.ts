@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { BOOKS, bookAssetPaths, pageColorImage, pageImage, thumbPath } from './books';
+import {
+  BOOKS,
+  bookAssetPaths,
+  chalkThumbPath,
+  pageColorImage,
+  pageImage,
+  pageThumb,
+  thumbPath,
+} from './books';
 
 describe('thumbPath', () => {
   it('swaps the .outline variant suffix for .thumb', () => {
@@ -7,6 +15,32 @@ describe('thumbPath', () => {
     expect(thumbPath('/coloring/farm/cat-tall.outline.webp')).toBe(
       '/coloring/farm/cat-tall.thumb.webp'
     );
+  });
+});
+
+describe('chalkThumbPath', () => {
+  it('swaps the .chalk variant suffix for .chalk.thumb', () => {
+    expect(chalkThumbPath('/coloring/farm/cat-tall.chalk.webp')).toBe(
+      '/coloring/farm/cat-tall.chalk.thumb.webp'
+    );
+  });
+});
+
+describe('pageThumb', () => {
+  const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
+
+  it('light mode shows the pen thumbnail', () => {
+    expect(pageThumb(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.thumb.webp');
+  });
+
+  it('dark mode shows the chalk thumbnail where the orientation has a chalk', () => {
+    expect(pageThumb(cat, 'portrait', 'dark')).toBe('/coloring/farm/cat-tall.chalk.thumb.webp');
+    expect(pageThumb(cat, 'landscape', 'dark')).toBe('/coloring/farm/cat-wide.chalk.thumb.webp');
+  });
+
+  it('dark mode falls back to the pen thumbnail for un-forked orientations', () => {
+    const unforked = { ...cat, chalkImages: {} };
+    expect(pageThumb(unforked, 'portrait', 'dark')).toBe('/coloring/farm/cat-tall.thumb.webp');
   });
 });
 
@@ -35,14 +69,28 @@ describe('bookAssetPaths', () => {
     }
   });
 
+  it('gives every chalk outline a thumbnail sibling (the dark-mode picker tile)', () => {
+    const paths = bookAssetPaths(farm);
+    for (const page of farm.pages) {
+      for (const chalk of Object.values(page.chalkImages)) {
+        expect(paths).toContain(chalkThumbPath(chalk));
+      }
+    }
+  });
+
   it('does not thumbnail the colored fills (they never appear in the grid)', () => {
     const paths = bookAssetPaths(farm);
     // thumbPath derives only from `.outline.webp` line art — a fill path is a no-op.
     for (const page of farm.pages) {
       expect(thumbPath(pageColorImage(page, 'portrait'))).toBe(pageColorImage(page, 'portrait'));
     }
-    // Exactly the line-art images (cover + 2 orientations/page) get a .thumb.
-    const thumbs = paths.filter((p) => p.endsWith('.thumb.webp'));
-    expect(thumbs.length).toBe(1 + farm.pages.length * 2);
+    // Exactly the line art gets a thumb: pen (cover + 2 orientations/page) and
+    // chalk (2 orientations/page — no cover chalk yet).
+    const penThumbs = paths.filter(
+      (p) => p.endsWith('.thumb.webp') && !p.endsWith('.chalk.thumb.webp')
+    );
+    const chalkThumbs = paths.filter((p) => p.endsWith('.chalk.thumb.webp'));
+    expect(penThumbs.length).toBe(1 + farm.pages.length * 2);
+    expect(chalkThumbs.length).toBe(farm.pages.length * 2);
   });
 });
