@@ -1,4 +1,13 @@
 {
+  "station-tall": {
+    "chalk": {
+      "retry": {
+        "notes": "The station's four round openings are WINDOWS, not eyes — the pen draws them as empty double rings and the light fill colors them as plain amber portholes. Do NOT draw pupils, eyeballs, or catchlight discs inside any of them; leave every window interior empty."
+      },
+      "review": "The shipped 2026-07 chalk drew a solid pupil-disc-with-catchlight inside ALL FOUR windows (three head portholes + the big body hatch, pupils glancing sideways) and the night fill painted them as eyeballs — dark mode anthropomorphizes the station while the light side has plain windows. Confirm every window is empty on the chalk-over-night COMPOSITE (ISSUES Tier 1). After a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-13 dark-mode composite review — the eye-flavored chalk instruction invents eyes on faceless subjects (see objects/house-wide's NO-EYES guard); same class as ship-tall. The eye audit is light-referenced (0 cores), so the invented eyes are invisible to it."
+    }
+  },
   "ship-tall": {
     "chalk": {
       "retry": {

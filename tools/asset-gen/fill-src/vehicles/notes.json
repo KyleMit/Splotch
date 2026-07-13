@@ -1,4 +1,22 @@
 {
+  "excavator-tall": {
+    "night": {
+      "retry": {
+        "notes": "Draw crisp WHITE lines only — do NOT add dark outlines, rims, or drop shadows beside the white lines; each line sits directly on the flat fill colors with no darkening around it."
+      },
+      "review": "The shipped 2026-07 night raw re-inked dark rims beside its white lines (audit:halo rawScore 21.9, shipped haloScore 6.5 — #2 in the catalog); the punch can't remove ink the chalk never drew, so dark mode shows grainy static around every line. After a regen, re-run gen:coloring-fills:audit:halo and expect this page near the catalog floor (≤1), then re-punch (ISSUES Tier 1).",
+      "why": "2026-07-13 dark-mode composite review — the residual-halo class the halo auditor ranks but nothing reviews; user-visible at normal zoom on this page."
+    }
+  },
+  "garbage-tall": {
+    "night": {
+      "retry": {
+        "notes": "The trash can's body is plain slatted metal — do NOT paint a leaf, recycling emblem, or any logo on the can. Keep the leaves on the ground where the pen draws them."
+      },
+      "review": "The shipped 2026-07 night fill invented a translucent green leaf emblem across the can's slats (pen, chalk, and light fill all have a clean bin) — a FILL-side invention inside the subject that no gate or audit scans for (ISSUES Tier 1). Also note: this page's light fill is on the flat-eye list (cab face, light FAIL) — consult the ISSUES flat-eye item before a light-side regen.",
+      "why": "2026-07-13 dark-mode composite review — first confirmed fill-side subject-interior invention; the invented-shapes audit only scans the open background."
+    }
+  },
   "police-tall": {
     "chalk": {
       "review": "The pen is a 2026-07-13 fresh drawing with RINGED pupils (fresh-outline-regen.md), so the eye-polarity gate is live again for this page. The 3.1 wave's erase-and-redraw --notes + -t 0.4 (gemini-3.1-migration.md) applied only to the OLD solid-pupil pen — do not re-apply it to the current pen.",
