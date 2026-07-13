@@ -8,10 +8,10 @@
   "stegosaurus-tall": {
     "night": {
       "retry": {
-        "notes": "give the eye a solid dark pupil clearly darker than the night sky, with only a small white catchlight"
+        "notes": "the eye's pupil opening must be SOLID NEAR-BLACK, almost pure black, much darker than the dinosaur's green body and the night sky, with NO white catchlight painted inside the eye (the line art already provides the eye's white); keep the whole head and muzzle the same green as the body; paint the back plates, round back spots, and tail spikes plain flat warm amber-gold with no vein lines or patterns"
       },
-      "review": "Judge the eye on the chalk-over-night COMPOSITE, not the raw fill: the 2026-07 take painted the pupil the same navy as the night sky with an oversized catchlight, so the composited eye reads as a blank white orb while every gate passes (ISSUES Tier 1).",
-      "why": "2026-07-13 dark-mode composite review — audit-fill-eyes reports night ok on the defective shipped take."
+      "review": "Judge the eye on the chalk-over-night COMPOSITE, not the raw fill: this chalk whitens most of the eye (a solid sclera/shine teardrop that merges with the eye ring at the bottom) and leaves only a small pupil opening — exactly where fill takes like to paint a white catchlight. Expect the composited pupil to read as a solid dark crescent wrapping the chalk's white patch (a full dark disc is unreachable with this chalk); ANY white the fill paints inside the eye composites into a blank white orb. audit-fill-eyes passes both the defective and the fixed takes — only composite review judges this eye.",
+      "why": "2026-07-13 ISSUES Tier 1 #1 fix (this session): the previous seeded 'with only a small white catchlight' note made things worse — the model kept painting that catchlight in the chalk's only fillable pupil opening. The no-catchlight phrasing above, plus pinning the body/plate colors against re-rolls (teal plates, tan muzzle, plate veins appeared on unpinned takes), shipped on take 8 of 8 at default temperature."
     }
   },
   "velociraptor-wide": {
@@ -19,8 +19,8 @@
       "retry": {
         "notes": "give the eye a solid dark pupil clearly darker than the night sky, with only a small white catchlight"
       },
-      "review": "Judge the eye on the chalk-over-night COMPOSITE, not the raw fill: the 2026-07 take painted the pupil the same navy as the night sky with an oversized catchlight, so the composited eye reads as a blank white orb while every gate passes (ISSUES Tier 1).",
-      "why": "2026-07-13 dark-mode composite review — audit-fill-eyes reports night ok on the defective shipped take."
+      "review": "Judge the eye on the chalk-over-night COMPOSITE, not the raw fill: expect a solid dark-brown pupil around the white catchlight inside the white sclera ring. The pre-fix 2026-07 take painted the pupil the same navy as the night sky, which composited into a blank white orb while every gate passed — gates alone prove nothing here.",
+      "why": "2026-07-13 ISSUES Tier 1 #1 fix (this session): regenerated with the retry note above, first take shipped. audit-fill-eyes reported night ok on the defective take too, so keep judging this eye on the composite."
     }
   }
 }
