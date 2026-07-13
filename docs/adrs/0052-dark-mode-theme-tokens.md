@@ -74,7 +74,7 @@ the duplication is the accepted cost; keep the blocks in sync.
   tiles** (`ColoringBook.svelte`) carry the same `--lineart-*` tokens, so covers and page thumbnails
   preview as white-on-dark in dark mode, matching the chalkboard the page applies to. The magic
   brush then reveals a whole PARALLEL SET of pre-colored **night fills**
-  (`{page}-{orient}.night.webp`, `tools/asset-gen/gen-coloring-fills-dark.mjs`): deep-navy
+  (`{page}-{orient}.night.webp`, `tools/asset-gen/bin/gen-coloring-fills-dark.mjs`): deep-navy
   backgrounds with glowing, cozy-night fills, registered to the original outline. `DrawingCanvas`
   picks the fill by `resolvedTheme()` — the light fill (`.light.webp`) in light mode, the night fill
   in dark mode — reading it reactively so a live theme flip re-rasterizes the sheet. Where a night

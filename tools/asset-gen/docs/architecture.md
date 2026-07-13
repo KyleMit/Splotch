@@ -62,7 +62,8 @@ Structure:
 * `tools/asset-gen/lib/paths.mjs` centralizes repo-root + tree resolution (`REPO_ROOT`,
   `COLORING_DIR`, `STYLES_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`), so scripts don't hardcode
   `../../..` walks or import from `scripts/lib/`.
-* `README.md` (dedicated runbook) + `CLAUDE.md` (scoped rules).
+* Entry-point scripts in `bin/`, docs (the `README.md` runbook, `pipeline.md`, the decision records)
+  in `docs/`, plus `CLAUDE.md` (scoped rules) at the folder root.
 * A **dependency-free** `package.json` (`@splotch/asset-gen`, `private`) whose `scripts` block gives
   local aliases (`npm run coloring-fills` from inside the folder) for fast iteration — with no
   `dependencies`, so it never implies a second install and root `npm install` ignores it (not a

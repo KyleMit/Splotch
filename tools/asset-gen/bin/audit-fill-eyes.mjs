@@ -12,9 +12,9 @@ import { readFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { COLORING_DIR, FILL_SRC_DIR, fail } from './lib/paths.mjs';
-import { scoreEyeFill, judgeLightEyes, judgeNightEyes } from './lib/eye-fill.mjs';
-import { compositeNight } from './lib/night-composite.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, fail } from '../lib/paths.mjs';
+import { scoreEyeFill, judgeLightEyes, judgeNightEyes } from '../lib/eye-fill.mjs';
+import { compositeNight } from '../lib/night-composite.mjs';
 
 async function pagesUnder(sub = '') {
   const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;

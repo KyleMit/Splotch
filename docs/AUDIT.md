@@ -8,7 +8,7 @@
 
 ### [Tooling] Chalk keep gate rejects correct whitened-pupil chalks and offers no sanctioned apply path
 
-**File(s):** `tools/asset-gen/gen-coloring-chalk.mjs` (gate 1 keep/localKeep, apply block ~lines
+**File(s):** `tools/asset-gen/bin/gen-coloring-chalk.mjs` (gate 1 keep/localKeep, apply block ~lines
 409–421; `--force` at ~line 320 only skips the already-shipped check),
 `tools/asset-gen/lib/outline-match.mjs`
 
@@ -49,7 +49,7 @@ candidate): with the reference fix the shipped candidate's worst tile should sco
 
 ### [Tooling] gen-coloring-fills-dark result lines misreport gate outcomes ("ok" + warning = failed gate, "(N tries)" = kept attempt index)
 
-**File(s):** `tools/asset-gen/gen-coloring-fills-dark.mjs` (retry loop ~lines 444–486 and the
+**File(s):** `tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (retry loop ~lines 444–486 and the
 per-page result line)
 
 #### Problem
@@ -70,7 +70,7 @@ Make the result line say what happened: print `kept attempt 2/8` instead of `(2 
 gate never passed print its status as failed rather than folding it into a warning glyph (e.g.
 `line-gate FAILED (best 51 < 175) — kept least-bad take`). One-line change in how the take's
 metadata is formatted; alternatively (weaker) document the line format in
-`tools/asset-gen/pipeline.md` Stage 4 next to the levers list.
+`tools/asset-gen/docs/pipeline.md` Stage 4 next to the levers list.
 
 #### Verification
 
@@ -79,9 +79,9 @@ that all 2 attempts ran and that the line gate failed, without needing the sourc
 
 ### [Execution] Night-fill shipping step: samples dirs resolve to repo root, and `*.input.webp` debug siblings break batch cp/punch
 
-**File(s):** `tools/asset-gen/pipeline.md` (Stage 4 "Shipping" step), `tools/asset-gen/README.md`
-("Review scratch" line), `tools/asset-gen/lib/paths.mjs` (`SAMPLES_DARK_DIR`),
-`tools/asset-gen/lib/punch-fill.mjs` (~line 102)
+**File(s):** `tools/asset-gen/docs/pipeline.md` (Stage 4 "Shipping" step),
+`tools/asset-gen/docs/README.md` ("Review scratch" line), `tools/asset-gen/lib/paths.mjs`
+(`SAMPLES_DARK_DIR`), `tools/asset-gen/lib/punch-fill.mjs` (~line 102)
 
 #### Problem
 

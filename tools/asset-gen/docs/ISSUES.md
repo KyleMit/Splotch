@@ -2,10 +2,10 @@
 
 The living list of what's known-imperfect right now: defects in shipped assets, gate blind spots,
 and tooling gaps. Distinct from [`IDEAS.md`](IDEAS.md) (the exploratory quality backlog, mostly
-burned down in [`ideas-exploration/`](ideas-exploration/README.md)) and `docs/AUDIT.md` (repo-wide
-engineering findings). Current as of the
-[`gemini-3.1-flash-image` migration](docs/gemini-3.1-migration.md) and the
-[fresh-outline regeneration pass](docs/fresh-outline-regen.md) (both 2026-07-13). When you fix one,
+burned down in [`ideas-exploration/`](../ideas-exploration/README.md)) and `docs/AUDIT.md`
+(repo-wide engineering findings). Current as of the
+[`gemini-3.1-flash-image` migration](gemini-3.1-migration.md) and the
+[fresh-outline regeneration pass](fresh-outline-regen.md) (both 2026-07-13). When you fix one,
 delete it; when you find one, add it.
 
 ## Shipped-asset issues
@@ -79,8 +79,8 @@ delete it; when you find one, add it.
     baseline snapshots in a scratchpad instead; the next mass regen shouldn't have to.
 13. **No per-page notes registry (#10):** the 3.1 wave's customizations (police-tall's erase note,
     circle-wide's contrast note, rectangle-wide's bubble note) live only in the
-    [migration record](docs/gemini-3.1-migration.md) — a future regen of those pages will re-fight
-    the same battles unless it reads that doc. The validated registry design (auto-loaded
+    [migration record](gemini-3.1-migration.md) — a future regen of those pages will re-fight the
+    same battles unless it reads that doc. The validated registry design (auto-loaded
     `fill-src/<cat>/notes.json`) is in `ideas-exploration/idea-10`.
 14. **Dark-mode picker still shows inverted-pen thumbnails** (IDEAS #19): every page now has a
     chalk, but the app still derives thumbs from the pen, so a child taps an inverted-pen thumb and

@@ -24,10 +24,10 @@ import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from './lib/paths.mjs';
-import { scoreSolidity } from './lib/solid-regions.mjs';
-import { scoreEyeRings, findEyeCores } from './lib/eye-fill.mjs';
-import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
+import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
+import { scoreSolidity } from '../lib/solid-regions.mjs';
+import { scoreEyeRings, findEyeCores } from '../lib/eye-fill.mjs';
+import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 90;

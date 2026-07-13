@@ -17,8 +17,8 @@ import { parseArgs } from 'node:util';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
-import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, fail } from './lib/paths.mjs';
-import { punchFill } from './lib/punch-fill.mjs';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, fail } from '../lib/paths.mjs';
+import { punchFill } from '../lib/punch-fill.mjs';
 
 // Resolve args to raw fills (default: all). An arg is a category ("nature") or a
 // page ("nature/ant-wide" — both its light and night raws).

@@ -26,18 +26,18 @@
 // white so they sit under the app's white "chalk" line art in dark mode).
 //
 // Full workflow (generate → review contact sheet → ship → wire → verify), the prompt
-// lessons, and the remaining-category checklist: tools/asset-gen/pipeline.md (Stage 4).
+// lessons, and the remaining-category checklist: tools/asset-gen/docs/pipeline.md (Stage 4).
 //
 // Requires GEMINI_API_KEY. Writes candidates to .coloring-samples-dark/ for
 // review — it does NOT touch the shipped assets.
-//   node tools/asset-gen/gen-coloring-fills-dark.mjs space               whole category
-//   node tools/asset-gen/gen-coloring-fills-dark.mjs space/astronaut-tall one page
-//   node tools/asset-gen/gen-coloring-fills-dark.mjs space --tall         portrait pages only
-//   node tools/asset-gen/gen-coloring-fills-dark.mjs space --wide         landscape pages only
-//   node tools/asset-gen/gen-coloring-fills-dark.mjs space --samples 2    2 takes each
-//   node tools/asset-gen/gen-coloring-fills-dark.mjs space --max-attempts 4  retry harder
-//   node tools/asset-gen/gen-coloring-fills-dark.mjs space --line-white-min 150  dark-outline gate
-//   node tools/asset-gen/gen-coloring-fills-dark.mjs space --dilate-lines 2  thicken white input lines
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space               whole category
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space/astronaut-tall one page
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --tall         portrait pages only
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --wide         landscape pages only
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --samples 2    2 takes each
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --max-attempts 4  retry harder
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --line-white-min 150  dark-outline gate
+//   node tools/asset-gen/bin/gen-coloring-fills-dark.mjs space --dilate-lines 2  thicken white input lines
 import { parseArgs } from 'node:util';
 import { readFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
@@ -45,15 +45,15 @@ import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from './lib/paths.mjs';
-import { alignToSource } from './lib/align-to-source.mjs';
-import { dilateMask, erodeMask } from './lib/morphology.mjs';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import { alignToSource } from '../lib/align-to-source.mjs';
+import { dilateMask, erodeMask } from '../lib/morphology.mjs';
 // The eye gate judges the simulated FINAL render, not the raw fill: the chalk
 // owns the eye whites, so only the composite shows whether an eye reads as
 // white-sclera / dark-pupil / white-glint.
-import { compositeNight } from './lib/night-composite.mjs';
-import { scoreEyeFill, judgeNightEyes } from './lib/eye-fill.mjs';
-import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
+import { compositeNight } from '../lib/night-composite.mjs';
+import { scoreEyeFill, judgeNightEyes } from '../lib/eye-fill.mjs';
+import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 // --- Drift detection ----------------------------------------------------------
 // A night fill's white pixels are outlines; the model has drifted when it draws a

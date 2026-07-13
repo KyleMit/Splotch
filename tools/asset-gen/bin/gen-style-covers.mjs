@@ -13,11 +13,11 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { STYLES_DIR, fail } from './lib/paths.mjs';
-import { pixelate } from './lib/pixelate.mjs';
-import { STYLE_SUFFIXES, STYLE_NAMES } from '../../web/src/lib/ai/styles.ts';
-import { buildPromptForStyle } from '../../web/src/lib/ai/prompt.ts';
-import { classifyGeminiResponse } from '../../web/src/lib/server/ai/geminiSafety.ts';
+import { STYLES_DIR, fail } from '../lib/paths.mjs';
+import { pixelate } from '../lib/pixelate.mjs';
+import { STYLE_SUFFIXES, STYLE_NAMES } from '../../../web/src/lib/ai/styles.ts';
+import { buildPromptForStyle } from '../../../web/src/lib/ai/prompt.ts';
+import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
 const SOURCE_SVG = join(STYLES_DIR, 'source.svg');
