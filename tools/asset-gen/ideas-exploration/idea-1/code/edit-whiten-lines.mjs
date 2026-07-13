@@ -8,12 +8,12 @@
 // Run from the repo root:
 //   node --experimental-strip-types --disable-warning=ExperimentalWarning \
 //     <this file> <book/page-orient> <attempts>
-import { join } from "node:path";
-import { GoogleGenAI } from "/home/user/Splotch/node_modules/@google/genai/dist/node/index.mjs";
-import { classifyGeminiResponse } from "/home/user/Splotch/web/src/lib/server/ai/geminiSafety.ts";
-import { alignToSource } from "/home/user/Splotch/tools/asset-gen/lib/align-to-source.mjs";
-import { dilateMask } from "/home/user/Splotch/tools/asset-gen/lib/morphology.mjs";
-import { readFile, writeFile } from "node:fs/promises";
+import { join } from 'node:path';
+import { GoogleGenAI } from '/home/user/Splotch/node_modules/@google/genai/dist/node/index.mjs';
+import { classifyGeminiResponse } from '/home/user/Splotch/web/src/lib/server/ai/geminiSafety.ts';
+import { alignToSource } from '/home/user/Splotch/tools/asset-gen/lib/align-to-source.mjs';
+import { dilateMask } from '/home/user/Splotch/tools/asset-gen/lib/morphology.mjs';
+import { readFile, writeFile } from 'node:fs/promises';
 import {
   sharp,
   loadRgb,
@@ -23,12 +23,12 @@ import {
   lumaOf,
   saveRgb,
   saveCrop,
-} from "./rim-lib.mjs";
+} from './rim-lib.mjs';
 
-const REPO = "/home/user/Splotch";
+const REPO = '/home/user/Splotch';
 const IDEA_DIR =
-  "/tmp/claude-0/-home-user-Splotch/68ded56b-e7dd-5cff-b995-afd9f1565152/scratchpad/ideas/idea-1";
-const MODEL = "gemini-2.5-flash-image";
+  '/tmp/claude-0/-home-user-Splotch/68ded56b-e7dd-5cff-b995-afd9f1565152/scratchpad/ideas/idea-1';
+const MODEL = 'gemini-2.5-flash-image';
 
 const PROMPT = `This is a finished night-time coloring-page illustration. The line work (outlines) should be BRIGHT WHITE chalk lines, but some outlines are currently drawn in DARK ink — especially around the subject's dark or shaded parts.
 
@@ -42,23 +42,21 @@ CHANGE NOTHING ELSE ANYWHERE:
 The result must be the IDENTICAL image, except every outline is bright white.`;
 
 const CROPS = {
-  "vehicles/train-wide": [
-    { left: 855, top: 540, width: 140, height: 130, name: "mouth" },
-    { left: 908, top: 460, width: 130, height: 130, name: "eye" },
+  'vehicles/train-wide': [
+    { left: 855, top: 540, width: 140, height: 130, name: 'mouth' },
+    { left: 908, top: 460, width: 130, height: 130, name: 'eye' },
   ],
-  "farm/cat-wide": [
-    { left: 176, top: 432, width: 160, height: 160, name: "bale" },
-  ],
+  'farm/cat-wide': [{ left: 176, top: 432, width: 160, height: 160, name: 'bale' }],
 };
 
 async function lineW(fillBuf, chalkPath) {
   const s = await sharp(await readFile(chalkPath))
-    .resize(512, null, { fit: "inside" })
+    .resize(512, null, { fit: 'inside' })
     .grayscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
   const t = await sharp(fillBuf)
-    .resize(512, null, { fit: "inside" })
+    .resize(512, null, { fit: 'inside' })
     .grayscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -85,13 +83,9 @@ async function lineW(fillBuf, chalkPath) {
 
 const [page, attemptsArg] = process.argv.slice(2);
 const attempts = Number(attemptsArg ?? 1);
-const slug = page.replace("/", "-");
-const rawPath = join(
-  REPO,
-  "tools/asset-gen/fill-src",
-  `${page}.night.raw.webp`,
-);
-const chalkPath = join(REPO, "web/static/coloring", `${page}.chalk.webp`);
+const slug = page.replace('/', '-');
+const rawPath = join(REPO, 'tools/asset-gen/fill-src', `${page}.night.raw.webp`);
+const chalkPath = join(REPO, 'web/static/coloring', `${page}.chalk.webp`);
 const rawBuf = await readFile(rawPath);
 const { rgb: origRgb, width: W, height: H } = await loadRgb(rawPath);
 const mask = await chalkMask(chalkPath, W, H);
@@ -107,12 +101,12 @@ for (let i = 0; i < attempts; i++) {
       model: MODEL,
       contents: [
         {
-          role: "user",
+          role: 'user',
           parts: [
             {
               inlineData: {
-                mimeType: "image/webp",
-                data: rawBuf.toString("base64"),
+                mimeType: 'image/webp',
+                data: rawBuf.toString('base64'),
               },
             },
             { text: PROMPT },
@@ -122,17 +116,13 @@ for (let i = 0; i < attempts; i++) {
       config: { abortSignal: AbortSignal.timeout(120_000), temperature: 0.2 },
     });
     const classified = classifyGeminiResponse(response);
-    if (classified.kind !== "image")
-      throw new Error(`${classified.kind}: ${classified.reason}`);
-    bytes = Buffer.from(classified.data, "base64");
+    if (classified.kind !== 'image') throw new Error(`${classified.kind}: ${classified.reason}`);
+    bytes = Buffer.from(classified.data, 'base64');
   } catch (e) {
     console.log(`  FAILED: ${e.message}`);
     continue;
   }
-  const resized = await sharp(bytes)
-    .resize(W, H, { fit: "fill" })
-    .removeAlpha()
-    .toBuffer();
+  const resized = await sharp(bytes).resize(W, H, { fit: 'fill' }).removeAlpha().toBuffer();
   const {
     buffer: aligned,
     dx,
@@ -141,13 +131,10 @@ for (let i = 0; i < attempts; i++) {
     await sharp(resized).webp({ quality: 95 }).toBuffer(),
     await readFile(chalkPath),
     W,
-    H,
+    H
   );
   const editPath = join(IDEA_DIR, `${slug}.b-edit${i + 1}.raw.webp`);
-  await writeFile(
-    editPath,
-    await sharp(aligned).webp({ quality: 90 }).toBuffer(),
-  );
+  await writeFile(editPath, await sharp(aligned).webp({ quality: 90 }).toBuffer());
   const { rgb: editRgb } = await loadRgb(editPath);
 
   let sum = 0;
@@ -162,25 +149,12 @@ for (let i = 0; i < attempts; i++) {
   }
   const lw = await lineW(aligned, chalkPath);
   console.log(
-    `  nudge (${dx},${dy})  lineW ${lw}  fill-identity meanΔ=${(sum / n).toFixed(2)} px(Δ>40)=${((big / n) * 100).toFixed(2)}%`,
+    `  nudge (${dx},${dy})  lineW ${lw}  fill-identity meanΔ=${(sum / n).toFixed(2)} px(Δ>40)=${((big / n) * 100).toFixed(2)}%`
   );
 
   const punched = punchWithMask(editRgb, mask, W, H);
   const { rgb: comp } = await compositePunched(punched, chalkPath, W, H);
-  await saveRgb(
-    comp,
-    W,
-    H,
-    join(IDEA_DIR, `${slug}.b-edit${i + 1}.full.webp`),
-    560,
-  );
+  await saveRgb(comp, W, H, join(IDEA_DIR, `${slug}.b-edit${i + 1}.full.webp`), 560);
   for (const box of CROPS[page] ?? [])
-    await saveCrop(
-      comp,
-      W,
-      H,
-      box,
-      join(IDEA_DIR, `${slug}.b-edit${i + 1}.${box.name}.webp`),
-      560,
-    );
+    await saveCrop(comp, W, H, box, join(IDEA_DIR, `${slug}.b-edit${i + 1}.${box.name}.webp`), 560);
 }

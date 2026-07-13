@@ -1,12 +1,10 @@
 // Shared machinery for the idea-1 dark-rim experiments.
 // Run from the Splotch repo root so `sharp` resolves from the root node_modules.
-import { createRequire } from "node:module";
-import { dilateMask } from "/home/user/Splotch/tools/asset-gen/lib/morphology.mjs";
+import { createRequire } from 'node:module';
+import { dilateMask } from '/home/user/Splotch/tools/asset-gen/lib/morphology.mjs';
 
 // Resolve sharp from the Splotch repo root (this file lives outside the repo).
-export const sharp = createRequire("/home/user/Splotch/tools/asset-gen/x.mjs")(
-  "sharp",
-);
+export const sharp = createRequire('/home/user/Splotch/tools/asset-gen/x.mjs')('sharp');
 
 export const PUNCH_LUMA = 150; // lib/punch-fill.mjs OUTLINE_LUMA_THRESHOLD
 export const PAPER_DARK = [0x21, 0x1f, 0x29];
@@ -27,7 +25,7 @@ export function lumaOf(rgb, p) {
 export async function chalkMask(chalkPath, width, height) {
   const { data: line } = await sharp(chalkPath)
     .removeAlpha()
-    .resize(width, height, { fit: "fill" })
+    .resize(width, height, { fit: 'fill' })
     .raw()
     .toBuffer({ resolveWithObject: true });
   const mask = new Uint8Array(width * height);
@@ -66,12 +64,7 @@ export function bleedUnderMask(rgb, mask, width, height) {
         g = 0,
         b = 0,
         n = 0;
-      for (const q of [
-        x > 0 ? p - 1 : -1,
-        x < width - 1 ? p + 1 : -1,
-        p - width,
-        p + width,
-      ]) {
+      for (const q of [x > 0 ? p - 1 : -1, x < width - 1 ? p + 1 : -1, p - width, p + width]) {
         if (q < 0 || q >= width * height || pending[q]) continue;
         r += rgb[q * 3];
         g += rgb[q * 3 + 1];
@@ -107,7 +100,7 @@ export function punchWithMask(rawRgb, mask, w, h) {
 export async function compositePunched(fillRgb, chalkPath, w, h) {
   const { data: ink } = await sharp(chalkPath)
     .grayscale()
-    .resize(w, h, { fit: "fill" })
+    .resize(w, h, { fit: 'fill' })
     .raw()
     .toBuffer({ resolveWithObject: true });
   const out = Buffer.alloc(w * h * 3);
@@ -146,8 +139,7 @@ export function rimStats(fillRgb, bands, w, h) {
 
 export async function saveRgb(rgb, w, h, path, resizeLong) {
   let img = sharp(rgb, { raw: { width: w, height: h, channels: 3 } });
-  if (resizeLong)
-    img = img.resize(w >= h ? { width: resizeLong } : { height: resizeLong });
+  if (resizeLong) img = img.resize(w >= h ? { width: resizeLong } : { height: resizeLong });
   await img.webp({ quality: 90 }).toFile(path);
 }
 
@@ -158,11 +150,10 @@ export async function saveCrop(rgb, w, h, box, path, maxSide = 560) {
   for (let y = 0; y < height; y++)
     for (let x = 0; x < width; x++)
       for (let c = 0; c < 3; c++)
-        crop[(y * width + x) * 3 + c] =
-          rgb[((top + y) * w + (left + x)) * 3 + c];
+        crop[(y * width + x) * 3 + c] = rgb[((top + y) * w + (left + x)) * 3 + c];
   const scale = Math.max(1, Math.floor(maxSide / Math.max(width, height)));
   await sharp(crop, { raw: { width, height, channels: 3 } })
-    .resize(width * scale, height * scale, { kernel: "nearest" })
+    .resize(width * scale, height * scale, { kernel: 'nearest' })
     .webp({ quality: 92, effort: 5 })
     .toFile(path);
 }

@@ -5,11 +5,8 @@
 // opening, so it is protected.
 //   rim = darkRaw ∩ dilate_r(chalk) ∩ NOT opening(darkRaw, OPEN_R) ∩ NOT chalk
 // Usage (repo root): DARK=145 R=2 OPEN_R=2 node fix-rim-open.mjs <pages…>
-import { join } from "node:path";
-import {
-  dilateMask,
-  erodeMask,
-} from "/home/user/Splotch/tools/asset-gen/lib/morphology.mjs";
+import { join } from 'node:path';
+import { dilateMask, erodeMask } from '/home/user/Splotch/tools/asset-gen/lib/morphology.mjs';
 import {
   loadRgb,
   chalkMask,
@@ -19,25 +16,19 @@ import {
   lumaOf,
   saveRgb,
   saveCrop,
-} from "./rim-lib.mjs";
+} from './rim-lib.mjs';
 
-const REPO = "/home/user/Splotch";
+const REPO = '/home/user/Splotch';
 const IDEA_DIR =
-  "/tmp/claude-0/-home-user-Splotch/68ded56b-e7dd-5cff-b995-afd9f1565152/scratchpad/ideas/idea-1";
+  '/tmp/claude-0/-home-user-Splotch/68ded56b-e7dd-5cff-b995-afd9f1565152/scratchpad/ideas/idea-1';
 const DARK = Number(process.env.DARK ?? 145);
 const R = Number(process.env.R ?? 2);
 const OPEN_R = Number(process.env.OPEN_R ?? 2);
 
 const CROPS = {
-  "vehicles/train-wide": [
-    { left: 855, top: 540, width: 140, height: 130, name: "mouth" },
-  ],
-  "creatures/owl-tall": [
-    { left: 330, top: 660, width: 220, height: 180, name: "eye2" },
-  ],
-  "farm/cat-wide": [
-    { left: 176, top: 432, width: 160, height: 160, name: "bale" },
-  ],
+  'vehicles/train-wide': [{ left: 855, top: 540, width: 140, height: 130, name: 'mouth' }],
+  'creatures/owl-tall': [{ left: 330, top: 660, width: 220, height: 180, name: 'eye2' }],
+  'farm/cat-wide': [{ left: 176, top: 432, width: 160, height: 160, name: 'bale' }],
 };
 
 function rimShare(fillRgb, refRgb, bands) {
@@ -52,9 +43,9 @@ function rimShare(fillRgb, refRgb, bands) {
 }
 
 for (const page of process.argv.slice(2)) {
-  const slug = page.replace("/", "-");
-  const raw = join(REPO, "tools/asset-gen/fill-src", `${page}.night.raw.webp`);
-  const chalkPath = join(REPO, "web/static/coloring", `${page}.chalk.webp`);
+  const slug = page.replace('/', '-');
+  const raw = join(REPO, 'tools/asset-gen/fill-src', `${page}.night.raw.webp`);
+  const chalkPath = join(REPO, 'web/static/coloring', `${page}.chalk.webp`);
   const { rgb: rawRgb, width: w, height: h } = await loadRgb(raw);
   const mask = await chalkMask(chalkPath, w, h);
   const bands = ringBands(mask, w, h, 3);
@@ -89,15 +80,8 @@ for (const page of process.argv.slice(2)) {
   }
   await saveRgb(comp, w, h, join(IDEA_DIR, `${slug}.a-open.full.webp`), 560);
   for (const box of CROPS[page] ?? [])
-    await saveCrop(
-      comp,
-      w,
-      h,
-      box,
-      join(IDEA_DIR, `${slug}.a-open.${box.name}.webp`),
-      560,
-    );
+    await saveCrop(comp, w, h, box, join(IDEA_DIR, `${slug}.a-open.${box.name}.webp`), 560);
   console.log(
-    `${page}  added=${added}  rim(Δ>40) before=${(rimShare(before, refRgb, bands) * 100).toFixed(2)}% after=${(rimShare(fill, refRgb, bands) * 100).toFixed(2)}%  compositeΔ mean=${(sum / (w * h)).toFixed(3)} px(Δ>30)=${((big / (w * h)) * 100).toFixed(3)}%`,
+    `${page}  added=${added}  rim(Δ>40) before=${(rimShare(before, refRgb, bands) * 100).toFixed(2)}% after=${(rimShare(fill, refRgb, bands) * 100).toFixed(2)}%  compositeΔ mean=${(sum / (w * h)).toFixed(3)} px(Δ>30)=${((big / (w * h)) * 100).toFixed(3)}%`
   );
 }
