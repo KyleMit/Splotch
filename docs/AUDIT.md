@@ -75,29 +75,6 @@ just-under/over upload boundaries and against a deliberately delayed provider, c
 (not the platform) returns the timeout. Reconcile ADR-0006 and the API skill with the *measured*
 budget — do not hard-code the unverified 6 MB / 60 s numbers.
 
-### [Correctness] Treat drag-to-clear `pointercancel` as cancellation, not commit
-
-**File(s):** `web/src/lib/actions/dragToClear.ts` (`onPointerUp` and listener wiring, lines
-161–245), `web/src/lib/actions/dragToClear.test.ts` (cancel coverage, lines 92–105)
-
-#### Problem
-
-`pointercancel` is wired to the same release handler as `pointerup`. That handler recomputes
-distance and invokes `onClear()` when the pointer is beyond the accept radius. If the browser or OS
-cancels a drag after it crosses the threshold, Splotch deletes the drawing even though the gesture
-never completed. The current cancellation test keeps the pointer at its start coordinates, so it
-verifies teardown but misses the destructive case.
-
-#### Proposed solution
-
-Use a dedicated cancel handler that clears timers, capture/drag state, classes, progress, and audio,
-then returns the control home without tutorial dismissal, clear, ripple, or commit haptic behavior.
-
-#### Verification
-
-Add down → far move → `pointercancel`; assert `onClear` is never called and every gesture UI state
-resets. Keep the equivalent far `pointerup` case and assert it commits exactly once.
-
 ### [Correctness] Keep `canvasEmpty` false when undo replays an active stroke
 
 **File(s):** `web/src/lib/drawing/engine.ts` (stroke-group state and `undo`, lines 368–380 and
