@@ -1,0 +1,49 @@
+# Publishes the committed /artifacts folder to GitHub Pages (ADR-0059) so the
+# kept run outputs — contact sheets, Lighthouse reports, model & prompt tests —
+# render live at https://kylemit.github.io/Splotch/. The committed folder is the
+# source of truth; this just mirrors it. Classic branch-source Pages can only
+# serve root or /docs, so the Actions path is what lets us serve /artifacts.
+#
+# One-time setup: repo Settings → Pages → Source: GitHub Actions (configure-pages
+# below attempts to enable it, but org/repo policy may still require the manual
+# toggle on the first run).
+name: Deploy artifacts to Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['artifacts/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Serialize deploys; don't cancel an in-flight publish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & deploy Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      # Upload only the artifacts/ folder — it becomes the Pages site root.
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: artifacts
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

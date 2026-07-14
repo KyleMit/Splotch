@@ -17,6 +17,7 @@ export default tseslint.config(
       '**/node_modules/',
       'android/',
       'ios/',
+      'artifacts/',
       'web/src/lib/components/icon-names.d.ts',
       'web/src/lib/releases.json',
     ],

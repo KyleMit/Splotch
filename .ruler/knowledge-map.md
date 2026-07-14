@@ -44,6 +44,12 @@ Remaining `docs/`:
 | `docs/CLOUD.md`         | Running/previewing the app in a Claude Code on the web cloud session, and its network constraints                                                                                                                          |
 | `docs/handoff/`         | Transient session-to-session transfer packets — see `docs/handoff/CLAUDE.md`. Written by `/create-handoff`, consumed by `/resume-handoff`                                                                                  |
 
+Committed run outputs (contact sheets, Lighthouse reports, model/prompt tests) live in
+**`/artifacts`** — a keeper's home separate from `docs/`, published live via GitHub Pages. Promote
+one with `npm run artifacts:publish -- <source> <type>/<name>` (ephemeral tool scratch dirs stay
+gitignored); see `artifacts/README.md` and
+[ADR-0059](../docs/adrs/0059-committed-run-artifacts-github-pages.md).
+
 If you discover any doc, skill, or rule is out of date while working, update it as part of the same
 task — don't leave it stale.
 
