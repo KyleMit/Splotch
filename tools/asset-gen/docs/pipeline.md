@@ -304,16 +304,16 @@ keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
 
 1. Review the samples on the contact sheet (`--source samples`) — Combined view, both themes, zoom
    the eyes.
-2. Copy each approved take to its raw path and re-punch. The samples dirs live at the **repo
-   root** (`lib/paths.mjs` `SAMPLES_DARK_DIR`), not inside `tools/asset-gen/`:
+2. Copy each approved take to its raw path and re-punch. The samples dirs live at the **repo root**
+   (`lib/paths.mjs` `SAMPLES_DARK_DIR`), not inside `tools/asset-gen/`:
    ```bash
    cp .coloring-samples-dark/<cat>/<page>-<orient>.webp \
       tools/asset-gen/fill-src/<cat>/<page>-<orient>.night.raw.webp
    npm run gen:coloring-punch -- <cat>
    ```
-   Shipping a whole category? Every take sits beside its `<page>-<orient>.input.webp` debug
-   sibling (the negated model input), so a bare `*.webp` glob manufactures bogus
-   `*.input.night.raw.webp` raws — exclude them:
+   Shipping a whole category? Every take sits beside its `<page>-<orient>.input.webp` debug sibling
+   (the negated model input), so a bare `*.webp` glob manufactures bogus `*.input.night.raw.webp`
+   raws — exclude them:
    ```bash
    for f in .coloring-samples-dark/<cat>/*.webp; do
      case $f in *.input.webp) continue;; esac
@@ -321,10 +321,10 @@ keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
    done
    ```
    (Multi-take runs also leave `*.sample-N.webp` beside the pick — batch-copy only single-take
-   categories. The punch skips stray `*.input.*.raw.webp` files with a warning rather than
-   crashing, but don't rely on that: delete any it reports.)
-   Never copy a lined fill straight into `web/static/coloring/` — the shipped `.night.webp` must be
-   the punched (fills-only) derivation of the raw.
+   categories. The punch skips stray `*.input.*.raw.webp` files with a warning rather than crashing,
+   but don't rely on that: delete any it reports.) Never copy a lined fill straight into
+   `web/static/coloring/` — the shipped `.night.webp` must be the punched (fills-only) derivation of
+   the raw.
 3. Wire the catalog in `web/src/lib/state/books.ts` — the `night` and `chalk` orientation lists per
    page: `page('nature', 'ant', 'Ant', ['portrait', 'landscape'], ['portrait', 'landscape'])`.
 4. Refresh the committed regression fixtures: `npm run gen:coloring-golden:diff` (review the report
