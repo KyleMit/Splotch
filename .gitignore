@@ -191,8 +191,8 @@ ios/local.xcconfig
 
 # Image-model eval harness (scripts/model-eval-*). The local input corpus is
 # regenerable (npm run model-eval:fixtures) and run outputs are large, so both stay
-# local — but the Gemini-authored gen__* inputs (not reproducible) and the committed
-# reference report (web/tests/model-eval/reference/) are kept in git.
+# local — but the Gemini-authored gen__* inputs (not reproducible) are kept in git,
+# and the published reference report lives in artifacts/model-eval/ (ADR-0059).
 /web/tests/model-eval/inputs/*
 !/web/tests/model-eval/inputs/gen__*
 /web/tests/model-eval/output/

@@ -22,9 +22,23 @@ before changing it.
 - The harness: `scripts/model-eval-run.mjs`, `scripts/model-eval-fixtures.mjs`,
   `scripts/model-eval-gen-inputs.mjs`, `scripts/lib/model-eval.mjs`, `scripts/lib/model-eval-report.mjs`.
 - The Gemini-authored inputs (`inputs/gen__*.png`) — not reproducible, so committed.
-- One **reference report** under `reference/` so results are viewable without re-running.
+- The **reference report** lives in the committed `/artifacts` tree (ADR-0059), not here, so GitHub
+  Pages serves it rendered: [`artifacts/model-eval/report.html`](../../../artifacts/model-eval/report.html)
+  → <https://kylemit.github.io/Splotch/model-eval/report.html> (with its `results.json` +
+  `summary.json` alongside).
 
 The rest is gitignored: the regenerable local `inputs/` and every `output/<runId>/` run.
+
+## Promoting a new run to `/artifacts`
+
+A run writes its report to a gitignored `output/<runId>/`. To make a run the published reference,
+copy its report into the artifacts tree (ADR-0059) at the stable path so the URL never changes:
+
+```bash
+npm run artifacts:publish -- web/tests/model-eval/output/<runId>/report.html model-eval/report.html
+```
+
+then commit. The Pages deploy runs on merge to `main`.
 
 ## The corpus
 
