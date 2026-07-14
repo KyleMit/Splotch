@@ -1,32 +1,32 @@
 {
-  "runId": "2026-07-14T16-41-34-413Z-reference-partial",
+  "runId": "2026-07-14T16-41-34-413Z-reference",
   "agg": {
     "gemini-2.5-flash-image": {
-      "n": 22,
-      "images": 22,
+      "n": 50,
+      "images": 50,
       "refusals": 0,
       "errors": 0,
-      "meanMs": 8328,
-      "medianMs": 8133,
-      "minMs": 7267,
-      "maxMs": 10217,
+      "meanMs": 8112,
+      "medianMs": 7901,
+      "minMs": 6819,
+      "maxMs": 11201,
       "imageTokens": 1290,
-      "avgCost": 0.03890685909090909,
-      "avgBytes": 1073119,
+      "avgCost": 0.03891029399999997,
+      "avgBytes": 1174801,
       "fmt": "png"
     },
     "gemini-3.1-flash-image": {
-      "n": 22,
-      "images": 22,
+      "n": 50,
+      "images": 50,
       "refusals": 0,
       "errors": 0,
-      "meanMs": 8129,
-      "medianMs": 8127,
+      "meanMs": 8511,
+      "medianMs": 8499,
       "minMs": 6796,
-      "maxMs": 10482,
+      "maxMs": 10788,
       "imageTokens": 1120,
-      "avgCost": 0.06789765909090908,
-      "avgBytes": 392396,
+      "avgCost": 0.06790744,
+      "avgBytes": 393241,
       "fmt": "jpeg"
     }
   },
@@ -48,6 +48,42 @@
       "a": 7989,
       "b": 8279,
       "n": 7
+    },
+    {
+      "c": "coloring-outline",
+      "a": 7947,
+      "b": 8769,
+      "n": 6
+    },
+    {
+      "c": "gen",
+      "a": 8100,
+      "b": 8542,
+      "n": 5
+    },
+    {
+      "c": "magic-plain",
+      "a": 8484,
+      "b": 8972,
+      "n": 4
+    },
+    {
+      "c": "night",
+      "a": 7743,
+      "b": 8881,
+      "n": 6
+    },
+    {
+      "c": "safety",
+      "a": 8434,
+      "b": 8725,
+      "n": 1
+    },
+    {
+      "c": "scribble-1color",
+      "a": 7561,
+      "b": 8913,
+      "n": 6
     }
   ],
   "refusals": 0
