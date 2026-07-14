@@ -22,6 +22,14 @@ https://kylemit.github.io/Splotch/<type>/<name>
 The landing page ([`index.html`](./index.html), auto-generated) lists everything at
 `https://kylemit.github.io/Splotch/`.
 
+The coloring-book proof sheets have their own hub at
+`https://kylemit.github.io/Splotch/coloring-book-proof-sheets/` — one sheet per category
+(`coloring-book-proof-sheets/<category>.html`, built by
+`npm run gen:coloring-book-proof-sheet`) plus a hand-authored `index.html` that jumps between
+categories (tabs, prev/next arrows, ←/→ keys, hash deep links). The hub `index.html` is a keeper —
+`artifacts:publish`/`artifacts:index` only regenerate the **top-level** `index.html`, so republishing
+a category sheet never touches it.
+
 > HTML reports render because they're served by Pages. `raw.githubusercontent.com` would serve them
 > as `text/plain` (source, not a page) — that's why Pages, not a raw URL, is the mechanism here.
 
