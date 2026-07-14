@@ -2,30 +2,57 @@
   "dog-wide": {
     "chalk": {
       "retry": {
-        "notes": "keep the nose as an outlined region (not solid ink) and keep the rump patch an outlined fillable region exactly as the pen draws it — solid chalk ink renders as glowing white in dark mode"
+        "temperature": 0.4,
+        "notes": "Erase the solid white filling the nose and redraw the nose exactly as the pen outlines it: a thin chalk outline around the nose shape with a DARK fillable interior, tracing the shine ellipse as a thin outline too — never leave the nose a solid white shape. FIX THE EYES — the polarity inside each eye is currently backwards: the LARGE oval filling most of each eye is the PUPIL and it must be DARK, not white. Turn each large white pupil oval dark, keeping only a thin white outline around it, and paint the SMALL dot inside it (the catchlight, currently dark) SOLID WHITE instead. The thin crescent between the eye's outer ring and the pupil stays solid white as the pen leaves it. After the edit, the only white inside each eye is that thin crescent, the pupil's thin outline, and the tiny catchlight dot. Keep the rump patch on the dog's back an OUTLINED fillable region exactly as the pen draws it — trace its boundary as a thin line, never fill it solid white. The open mouth contains ONLY the tongue outline — do NOT draw teeth or any white shapes inside the mouth. Do not whiten or fill solid any other region and do not add any new marks anywhere."
       },
-      "review": "The shipped 2026-07 chalk solidified the pen's solid-ink nose AND the pen's merely-outlined rump patch, so both glow solid white in dark mode (the night fill painted the patch maroon — the chalk's white covers it), and the wide white scleras read manic. Judge on the chalk-over-night COMPOSITE (ISSUES Tier 1); after a chalk regen, regenerate the night fill and re-punch.",
-      "why": "2026-07-13 dark-mode composite review — audit-fill-eyes reports night ok on the defective shipped take; the ISSUES chalk-whitening class escaping the eye."
+      "review": "Fixed 2026-07-14 (ISSUES Tier 1): the 2026-07 wave chalk had solidified the pen's solid-ink nose AND the merely-outlined rump patch into solid white, whitened both solid pen pupils (white orbs, dark catchlight dots — the police-wide class), and INVENTED a row of teeth in the open mouth (the duck-wide class; the pen has only a tongue). All of that measures white 0.0% — chalk white sitting on pen solid ink is not 'new ink' — so every gate passes; the only machine signal is the 'eye whites not chalked' warning, whose ABSENCE marked the good take. The retry notes are the take-3 winner: 3.1 fixed nose/patch/mouth from erase-and-redraw phrasing on take 1 but resisted the eye edit until the note described the polarity swap geometrically (the LARGE oval is the PUPIL and must be dark); a shorter 'keep the nose…' paraphrase on take 2 regressed the nose back to solid — keep the full erase phrasing for every region. Judge on the chalk-over-night COMPOSITE, whole chalk vs pen, not just the reported regions; after a chalk regen, regenerate the night fill and re-punch. Good eye treatment matches sibling dog-tall: solid white eyeball, dark fillable pupil, white catchlight.",
+      "why": "2026-07-13 dark-mode composite review filed it; fixed 2026-07-14 ISSUES Tier 1 session (chalk take 3 of 3 at t 0.4, keep 100%/local 99.4%)."
+    },
+    "night": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "Keep the puppy's daytime identity colors, just moonlit-dimmed: a warm golden-brown coat (never navy, never grey), with the muzzle and the rump patch on its back a LIGHTER warm cream-tan clearly distinct from the coat and from the sky, a deep blue collar, a warm gold tag, and a dusky warm pink-red tongue inside the mouth. Paint the nose interior deep near-black and each eye's pupil interior deep near-black so the white catchlight reads clearly. No part of the dog may be painted the same navy as the sky."
+      },
+      "review": "Conditions on the 2026-07-14 fixed chalk (outlined nose, dark pupils, outlined patch, toothless mouth). Confirm on the composite: near-black nose and pupils, cream-tan rump patch and muzzle distinct from coat and sky, golden-brown coat matching the light identity, no teeth. First pinned take shipped (drift 0.0013, bgLuma 38, lineW 255, pre-ship haloScore 0.742 / rawScore 1.542 against the new chalk).",
+      "why": "2026-07-14 ISSUES Tier 1 fix — night regenerated against the fixed chalk; palette pinned to the light identity per the ISSUES night-contrast trap, t 0.4 because the notes combine region-darkness instructions with palette pins."
     }
   },
   "horse-tall": {
     "chalk": {
       "retry": {
         "temperature": 0.4,
-        "notes": "Erase the solid black inside each pupil and redraw it: white sclera, a black outlined pupil ring, and a small white catchlight inside the pupil. Never leave a pupil as solid ink — solid chalk ink renders as glowing white in dark mode."
+        "notes": "THE ONLY EDIT THAT MATTERS IS THE EYES — do it first: in each of the two eyes, the LARGE white-filled oval inside the eye ring is the PUPIL and its interior must become DARK, not solid white. Erase ALL the solid white chalk filling each large pupil oval and redraw each pupil as a thin white outline only, with a dark fillable interior. Then paint the SMALL dot inside each pupil (the catchlight, currently dark) SOLID WHITE. The thin crescent between each eye's outer ring and the pupil stays solid white as the pen leaves it. After the edit, the only white inside each eye is that thin crescent, the pupil's thin outline, and the tiny catchlight dot. Do not whiten or fill solid any other region and do not add any new marks anywhere.",
+        "max-attempts": 1
       },
-      "review": "Solid-pen-eye page: the pen's pupils are solid ink, the shipped 2026-07 chalk copied them, and the composited night eyes read washed-out white with no legible pupil (ISSUES Tier 1). findEyeCores finds nothing here, so the eye-polarity gate passes VACUOUSLY — render the chalk-over-night composite and confirm dark pupils before trusting any chalk of this page. After a chalk regen, regenerate the night fill and re-punch.",
-      "why": "2026-07-13 dark-mode composite review — same class and recipe as vehicles/police-wide. 3.1 resists erase-style edits on solid ink; budget extra attempts."
+      "review": "Fixed 2026-07-14 (ISSUES Tier 1): solid-pen-eye page — the pen's pupils are solid ink, the 2026-07 wave chalk copied them, and the composited night eyes read as washed-out white orbs. findEyeCores finds no chalk-gateable cores here, so the eye-polarity gate passes VACUOUSLY and every take scores green — render the chalk-over-night composite and confirm dark pupils before trusting any chalk of this page. The retry notes fixed it FIRST TAKE: the polarity swap must be described geometrically in the model's display-polarity view (the LARGE white-filled oval is the PUPIL and must become dark) with an erase-first lead; the 2026-07-13 seeded 'erase the solid black' phrasing (pen polarity) was never followed. IMPORTANT: the generator breaks on the first gate-passing candidate and this page passes vacuously, so every run is exactly one take — judge each take by eye and pixel-diff it against the previous chalk (the change must be confined to the eyes). After a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-13 dark-mode composite review filed it (police-wide class); fixed 2026-07-14 ISSUES Tier 1 session — chalk take 1 at t 0.4 with the dog-wide geometric-polarity phrasing (keep 100%/local 99.7%)."
+    },
+    "night": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "Keep the pony's daytime identity colors, just moonlit-dimmed: a warm medium-brown coat (never navy, never grey), a darker chocolate-brown mane and tail, with the muzzle and the blaze on its face a LIGHTER warm cream-tan clearly distinct from the coat and from the sky, warm brown hooves, warm cream clouds CLEARLY LIGHTER than the night sky, and purple, blue, and pink flowers in the grass. Paint each eye's pupil interior deep near-black so the white catchlight reads clearly. No part of the pony and no cloud may be painted the same navy as the sky. Fill every region one solid flat even color — do NOT paint any shine marks, sheen highlights, or light spots on the pony's coat or anywhere else. CRITICAL: every outline is a crisp WHITE line sitting DIRECTLY on the flat fill color — do NOT add dark outlines, dark rims, shading, or drop shadows beside or under the white lines anywhere; the flat fill color runs right up to the white line edge with no darkening."
+      },
+      "review": "Conditions on the 2026-07-14 fixed chalk (dark outlined pupils, white sclera + catchlights). Confirm on the composite: deep near-black pupils under the chalk whites, medium-brown coat / chocolate mane matching the light identity, cream clouds clearly lighter than the sky, no shine marks on the coat, no dark rims beside the white lines. This page re-rolls rims and cloud color stochastically at t 0.4: take 2 re-inked dark rims everywhere (pre-ship haloScore 3.674), take 3 (crisp-white-lines clause added) was clean but painted the clouds sky-navy, take 4 (cloud pin added) re-rolled the rims back (3.328), take 5 with the full notes shipped (drift 0.0003, bgLuma 33, lineW 252, pre-ship haloScore 0.151 / rawScore 1.195) — score every candidate with the halo machinery in scratch and hold the ≤2 bar; expect ~1 in 2 takes to fail it.",
+      "why": "2026-07-14 ISSUES Tier 1 fix — night regenerated against the fixed chalk; identity pinned from the light fill per the ISSUES night-contrast trap; shine-mark ban added after takes 1 (tall) and 1 (wide) painted specular highlights the FILL_PROMPT's flat-color rule forbids."
     }
   },
   "horse-wide": {
     "chalk": {
       "retry": {
         "temperature": 0.4,
-        "notes": "Erase the solid black inside the pupil and redraw it: white sclera, a black outlined pupil ring, and a small white catchlight inside the pupil. Never leave a pupil as solid ink — solid chalk ink renders as glowing white in dark mode."
+        "notes": "THE ONLY EDIT THAT MATTERS IS THE EYE — do it first: the LARGE white-filled oval inside the eye ring is the PUPIL and its interior must become DARK, not solid white. Erase ALL the solid white chalk filling that large pupil oval and redraw the pupil as a thin white outline only, with a dark fillable interior. Then paint the SMALL dot inside the pupil (the catchlight, currently dark) SOLID WHITE. The thin crescent between the eye's outer ring and the pupil stays solid white as the pen leaves it. After the edit, the only white inside the eye is that thin crescent, the pupil's thin outline, and the tiny catchlight dot. Do not whiten or fill solid any other region and do not add any new marks anywhere.",
+        "max-attempts": 1
       },
-      "review": "Solid-pen-eye page: the pen's pupil is solid ink, the shipped 2026-07 chalk copied it, and the composited night eye is a blank white orb (ISSUES Tier 1). findEyeCores finds nothing here (0 cores), so the eye-polarity gate passes VACUOUSLY — render the chalk-over-night composite and confirm a dark pupil before trusting any chalk of this page. After a chalk regen, regenerate the night fill and re-punch.",
-      "why": "2026-07-13 dark-mode composite review — same class and recipe as vehicles/police-wide. 3.1 resists erase-style edits on solid ink; budget extra attempts."
+      "review": "Fixed 2026-07-14 (ISSUES Tier 1): solid-pen-eye page — the pen's single pupil is solid ink, the 2026-07 wave chalk copied it, and the composited night eye was a blank white orb. findEyeCores finds nothing here (0 cores), so the eye-polarity gate passes VACUOUSLY and every take scores green — render the chalk-over-night composite and confirm a dark pupil before trusting any chalk of this page. Take 1 with a softer 'FIX THE EYE — the polarity is backwards' lead was a faithful non-edit at keep 100% (3.1 resisting the erase); the retry notes' erase-first geometric phrasing fixed it on take 2 (keep 99.7%/local 90.0% — the local drop IS the eye edit). The generator breaks on the first gate-passing candidate and this page passes vacuously, so every run is exactly one take — judge each take by eye and pixel-diff it against the previous chalk (the change must be confined to the eye). After a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-13 dark-mode composite review filed it (police-wide class); fixed 2026-07-14 ISSUES Tier 1 session — chalk take 2 at t 0.4 with the dog-wide geometric-polarity phrasing plus an erase-first lead."
+    },
+    "night": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "Keep the pony's daytime identity colors, just moonlit-dimmed: a warm golden-tan palomino coat (never navy, never grey), with the mane and tail a LIGHTER pale cream-blond clearly distinct from the coat and from the sky, a cream muzzle, warm brown hooves, and soft pink flowers in the grass. Paint the eye's pupil interior deep near-black so the white catchlight reads clearly. No part of the pony may be painted the same navy as the sky. Fill every region one solid flat even color — do NOT paint any shine marks, sheen highlights, or light spots on the pony's coat or anywhere else."
+      },
+      "review": "Conditions on the 2026-07-14 fixed chalk (dark outlined pupil, white sclera + catchlight). Confirm on the composite: deep near-black pupil (shipped take sampled 5,5,21 vs sky 24,36,80), palomino coat with a clearly lighter cream mane/tail matching the light identity, no shine marks on the coat. Take 1 painted three cream specular shine marks on the rump (the FILL_PROMPT forbids highlights); the shine-mark ban cleared it on take 2, which shipped (drift 0.0014, bgLuma 49, lineW 248, pre-ship haloScore 0.093 / rawScore 0.681). The shipped take draws a thin even dark ring around the eye — the reviewed-benign fire-tall crisp-inking class, not the excavator halo class.",
+      "why": "2026-07-14 ISSUES Tier 1 fix — night regenerated against the fixed chalk; identity pinned from the light fill per the ISSUES night-contrast trap; t 0.4 because the notes combine region-darkness instructions with palette pins."
     }
   },
   "duck-wide": {
@@ -35,10 +62,19 @@
     },
     "chalk": {
       "retry": {
-        "notes": "the open bill interior must stay toothless — the pen has a clean open bill with a tongue outline and no teeth; do not draw teeth"
+        "temperature": 0.3,
+        "notes": "the open bill interior must stay toothless — the pen has a clean open bill with a tongue outline and no teeth; do not draw teeth. The duck is drawn in side profile with exactly ONE eye, already present on the head — do NOT add a second eye, an extra eyeball, or any new facial mark anywhere (not above the bill, not on the bill); redraw ONLY the lines the pen already has"
       },
-      "review": "The shipped 2026-07 chalk INVENTED a row of human-like teeth inside the open bill (the pen and the light fill have none) and the night fill colored them in — dark mode grins with teeth light mode doesn't have. Check the bill interior on the chalk-over-night COMPOSITE (ISSUES Tier 1). 3.1 resists erase edits on solid ink — budget extra attempts/notes; after a chalk regen, regenerate the night fill and re-punch.",
-      "why": "2026-07-13 dark-mode composite review — no gate sees content invention inside the subject (the invented-shapes audit only scans the open background)."
+      "review": "Fixed 2026-07-13: the 2026-07 wave chalk had INVENTED a row of human-like teeth inside the open bill (the pen and light fill have none). The toothless note alone was not enough — the first regen take removed the teeth but invented a SECOND EYEBALL (sclera + pupil + catchlight) above the bill, inside the head interior where the enclosure gate reads whitening as deliberate; the one-eye guard in the retry notes is what cleared it (take 2). Check the bill interior AND the whole head for extra eyes on the chalk-over-night COMPOSITE after any regen; every gate passes an invented face.",
+      "why": "2026-07-13 ISSUES Tier 1 fix (chalk-invented facial features) — the eye-flavored chalk instruction invents features gate-blind inside the subject; regenerated chalk + night, re-punched."
+    },
+    "night": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "The open bill contains ONLY a tongue outline — do NOT paint teeth or any white shapes inside the bill; the mouth interior stays deep warm red-brown with the tongue slightly lighter. The duckling keeps its warm golden-yellow body with an orange bill and orange feet — never navy, never grey."
+      },
+      "review": "Conditions on the 2026-07-13 toothless chalk. Confirm on the composite: toothless open bill, golden-yellow duckling matching the light fill's identity, lively side-profile eye. First pinned take shipped (drift 0.0019, bgLuma 34, lineW 255, haloScore 0.026).",
+      "why": "2026-07-13 ISSUES Tier 1 fix — night regenerated against the de-toothed chalk; palette pinned to the light identity per the ISSUES night-contrast trap."
     }
   }
 }

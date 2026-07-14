@@ -553,8 +553,8 @@
       },
       "night": {
         "drift": 0,
-        "bgLuma": 36,
-        "lineWhite": 252,
+        "bgLuma": 27.1,
+        "lineWhite": 251,
         "eyesFailed": 0,
         "driftOk": true,
         "moodOk": true,
@@ -770,8 +770,8 @@
       },
       "night": {
         "drift": 0,
-        "bgLuma": 25.5,
-        "lineWhite": 248,
+        "bgLuma": 30.4,
+        "lineWhite": 249,
         "eyesFailed": 0,
         "driftOk": true,
         "moodOk": true,
@@ -967,8 +967,8 @@
         "eyesOk": false
       },
       "night": {
-        "drift": 0,
-        "bgLuma": 36.1,
+        "drift": 0.00056,
+        "bgLuma": 38.5,
         "lineWhite": 251,
         "eyesFailed": 0,
         "driftOk": true,
@@ -1029,9 +1029,9 @@
         "eyesOk": false
       },
       "night": {
-        "drift": 0.00188,
-        "bgLuma": 47.9,
-        "lineWhite": 247,
+        "drift": 0.00182,
+        "bgLuma": 33.7,
+        "lineWhite": 249,
         "eyesFailed": 0,
         "driftOk": true,
         "moodOk": true,
@@ -1060,8 +1060,8 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0,
-        "bgLuma": 33.6,
+        "drift": 0.00033,
+        "bgLuma": 32.8,
         "lineWhite": 252,
         "eyesFailed": 0,
         "driftOk": true,
@@ -1091,9 +1091,9 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0.00045,
-        "bgLuma": 34.7,
-        "lineWhite": 245,
+        "drift": 0.00189,
+        "bgLuma": 49.1,
+        "lineWhite": 248,
         "eyesFailed": 0,
         "driftOk": true,
         "moodOk": true,
@@ -1184,9 +1184,9 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0,
-        "bgLuma": 20.8,
-        "lineWhite": 253,
+        "drift": 0.00027,
+        "bgLuma": 10.7,
+        "lineWhite": 251,
         "eyesFailed": 0,
         "driftOk": true,
         "moodOk": true,
@@ -1569,8 +1569,8 @@
       },
       "night": {
         "drift": 0,
-        "bgLuma": 31.4,
-        "lineWhite": 254,
+        "bgLuma": 27.9,
+        "lineWhite": 253,
         "eyesFailed": 0,
         "driftOk": true,
         "moodOk": true,
@@ -1599,9 +1599,9 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0.00029,
-        "bgLuma": 24.3,
-        "lineWhite": 253,
+        "drift": 0,
+        "bgLuma": 41,
+        "lineWhite": 250,
         "eyesFailed": 0,
         "driftOk": true,
         "moodOk": true,
@@ -1735,8 +1735,8 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0.00033,
-        "bgLuma": 37.2,
+        "drift": 0,
+        "bgLuma": 31.4,
         "lineWhite": 252,
         "eyesFailed": 0,
         "driftOk": true,
@@ -2534,8 +2534,8 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0,
-        "bgLuma": 30.6,
+        "drift": 0.00027,
+        "bgLuma": 30.2,
         "lineWhite": 254,
         "eyesFailed": 0,
         "driftOk": true,
@@ -2596,7 +2596,7 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0.00042,
+        "drift": 0.00035,
         "bgLuma": 25.6,
         "lineWhite": 254,
         "eyesFailed": 0,
@@ -2671,7 +2671,7 @@
       },
       "night": {
         "drift": 0,
-        "bgLuma": 39.4,
+        "bgLuma": 51.2,
         "lineWhite": 253,
         "eyesFailed": 0,
         "driftOk": true,
@@ -2795,8 +2795,8 @@
       },
       "night": {
         "drift": 0,
-        "bgLuma": 30.2,
-        "lineWhite": 253,
+        "bgLuma": 17.3,
+        "lineWhite": 252,
         "eyesFailed": 0,
         "driftOk": true,
         "moodOk": true,

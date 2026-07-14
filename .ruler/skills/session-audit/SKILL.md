@@ -131,6 +131,16 @@ Learned from prior runs:
   not the pages. Count overrides like re-reads. Corollary: when the session already landed doc fixes
   for its own friction mid-run (the pipeline.md batch-lessons here), don't re-file the fixed doc gap
   — file only the residual tooling delta the docs could merely describe, and say so in the finding.
+* **The ESM-can't-resolve-repo-deps-from-scratchpad class keeps resurfacing under new triggers.**
+  Node resolves `node_modules` from the importing file's directory, and `NODE_PATH` is ESM-blind, so
+  any `.mjs` in the `/tmp` scratchpad that imports a repo dep (`sharp`, a `lib/*.mjs`) fails —
+  regardless of cwd. It's been "fixed" once per trigger (Playwright screenshots → `run-splotch`
+  keeps scripts in `screenshots/`; then asset-gen sharp analysis, 2026-07-14) because the fix lands
+  as a note under the *task that hit it*, not as a general rule. When a failed-import chain fires
+  and you find the same root cause already documented under a differently-framed skill, that's the
+  siloed-under-wrong-trigger tell — file the cross-reference from the trigger you actually used, and
+  don't be fooled that the sibling `bin/` script's identical bare import "works" (it lives in the
+  tree).
 * **Friction can predate your first tool call — audit the state the session *started* in.** A
   SessionStart hook that dies under `set -e` leaves no failed command in *your* record; the only
   tells are initial-state anomalies (empty `node_modules` despite a hook that promises

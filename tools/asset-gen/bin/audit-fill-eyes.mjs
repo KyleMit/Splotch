@@ -15,6 +15,10 @@ import { join, relative } from 'node:path';
 import { COLORING_DIR, FILL_SRC_DIR, fail } from '../lib/paths.mjs';
 import { scoreEyeFill, judgeLightEyes, judgeNightEyes } from '../lib/eye-fill.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
+// Whole-eye legibility on the composite: catches the blank white orb (chalk
+// sclera + fill catchlight stacking over a solid-pen pupil) that judgeNightEyes
+// is band-blind to. lib/composite-eye.mjs.
+import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
 
 async function pagesUnder(sub = '') {
   const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
@@ -38,13 +42,16 @@ const pages = (
 
 let audited = 0;
 let flagged = 0;
-console.log(`${'page'.padEnd(28)} ${'cores'.padStart(5)} ${'lively'.padStart(6)}  light  night`);
+console.log(
+  `${'page'.padEnd(28)} ${'cores'.padStart(5)} ${'lively'.padStart(6)}  light  ${'night'.padEnd(22)}  orb`
+);
 for (const page of pages) {
   const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
   const lightPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
   if (!existsSync(lightPath)) continue;
   const source = await readFile(page);
-  const light = await scoreEyeFill(await readFile(lightPath), source);
+  const lightBuf = await readFile(lightPath);
+  const light = await scoreEyeFill(lightBuf, source);
   const lightVerdict = judgeLightEyes(light);
   // With a chalk outline (pen/chalk fork, docs/pen-chalk-fork.md) the chalk owns the eye
   // whites and the punch enforces them, so the night raw is judged as the
@@ -52,19 +59,27 @@ for (const page of pages) {
   const nightPath = join(FILL_SRC_DIR, `${rel}.night.raw.webp`);
   const chalkPath = page.replace(/\.outline\.webp$/, '.chalk.webp');
   let night = null;
+  let orb = null;
   if (existsSync(nightPath)) {
     const raw = await readFile(nightPath);
     const chalked = existsSync(chalkPath);
     const judged = chalked ? await compositeNight(raw, await readFile(chalkPath)) : raw;
     night = judgeNightEyes(await scoreEyeFill(judged, source), light, { chalked });
+    // The whole-eye composite check only applies to the chalk-over-night render.
+    if (chalked) orb = await scoreCompositeEyes(judged, lightBuf, source);
   }
   audited++;
-  const bad = !lightVerdict.passes || (night && !night.passes);
+  const bad = !lightVerdict.passes || (night && !night.passes) || (orb && !orb.passes);
   if (bad) flagged++;
   const lively = light.cores.filter((c) => c.lively).length;
   const nightCol = night ? (night.passes ? 'ok' : `FAIL (${night.failed} eye(s) flat)`) : '-';
+  const orbCol = orb
+    ? orb.passes
+      ? 'ok'
+      : `BLANK-ORB (${orb.failed}, coreDark ${orb.worst?.coreDarkFrac})`
+    : '-';
   console.log(
-    `${rel.padEnd(28)} ${String(light.cores.length).padStart(5)} ${String(lively).padStart(6)}  ${(lightVerdict.passes ? 'ok' : 'FAIL').padEnd(5)}  ${nightCol}`
+    `${rel.padEnd(28)} ${String(light.cores.length).padStart(5)} ${String(lively).padStart(6)}  ${(lightVerdict.passes ? 'ok' : 'FAIL').padEnd(5)}  ${nightCol.padEnd(22)}  ${orbCol}`
   );
 }
 

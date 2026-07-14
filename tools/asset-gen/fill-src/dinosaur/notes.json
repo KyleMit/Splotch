@@ -6,21 +6,37 @@
     "motifs": "Sky motif differs from the sibling: this page has a CRESCENT MOON while pterodactyl-tall shipped a WARM GOLD SUN in the 3.1 wave (gemini-3.1-migration.md). Nothing enforces motif consistency (ISSUES) — a regen of either page should decide deliberately whether to match."
   },
   "stegosaurus-tall": {
+    "chalk": {
+      "retry": {
+        "temperature": 0.45,
+        "notes": "FIX THE EYE (most important): in this input the eye is a large SOLID WHITE disc — that is WRONG and renders as a blank white orb. Rebuild it as a LARGE DARK pupil: make the pupil interior BLACK (dark board) filling MOST of the eyeball, leaving only a THIN, EVEN white sclera rim (one to two line-widths) all the way around the pupil, plus ONE SMALL round white catchlight dot near the top. Do NOT let the white bulge into a lobe, crescent, or half-moon — the ONLY white in the eye is that thin even rim and the single tiny catchlight. The finished eye reads as a big BLACK pupil inside a thin white ring with one small white glint. Do not add teeth, extra dots, or any new marks."
+      },
+      "review": "Solid-pen-eye page: the pen paints the pupil as solid ink, so the 2026-07 chalk copied it and the composited night eye was a blank white orb (the police-wide/horse-wide class). Judge on the chalk-over-night COMPOSITE with the composite-eye gate (lib/composite-eye.mjs / audit-fill-eyes `orb` column), NOT the piece-wise judgeNightEyes, which is band-blind on this solid-pen eye. Expect the eye to read as a big dark pupil in a thin white ring with one small catchlight. After a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-14: the first erase-and-redraw chalk (this session) fixed polarity but left an oversized white sclera lobe, so with the fill's catchlight the composite still read half-white (composite-eye median ~183). Re-rolled at t 0.45 with the GEOMETRY note above — large centred dark pupil, thin even rim, one small catchlight (keep 99.8% / local 94.6%). The night fill's own catchlight was the other half of the problem — see the night note."
+    },
     "night": {
       "retry": {
-        "notes": "give the eye a solid dark pupil clearly darker than the night sky, with only a small white catchlight"
+        "notes": "paint each eye pupil interior UNIFORMLY deep near-black — do NOT paint any white, light, grey, or blue catchlight, glare, shine, or reflection inside the eye; the line art already provides the only white the eye needs. Keep the whole head and muzzle the same green as the body; paint the back plates, round back spots, and tail spikes plain flat warm amber-gold with no vein lines or patterns; the dinosaur body is green, never navy or blue"
       },
-      "review": "Judge the eye on the chalk-over-night COMPOSITE, not the raw fill: the 2026-07 take painted the pupil the same navy as the night sky with an oversized catchlight, so the composited eye reads as a blank white orb while every gate passes (ISSUES Tier 1).",
-      "why": "2026-07-13 dark-mode composite review — audit-fill-eyes reports night ok on the defective shipped take."
+      "review": "Conditions on the 2026-07-14 geometry-fixed chalk (large fillable dark pupil). The fill MUST NOT paint its own catchlight — the chalk owns the eye's only white; a fill catchlight stacks with the chalk sclera into a white orb. Confirm on the composite: a solid near-black pupil (composite-eye median < 60), green head/body/muzzle, flat amber-gold plates/spots/spikes, no navy body. Sample 4 of 4 shipped (drift 0.0000, bgLuma 27, lineW 255, composite-eye median 19 / white 0.16). The night generator now gates this via scoreCompositeEyes.",
+      "why": "2026-07-14 ISSUES fix — night regenerated against the geometry-fixed chalk with the no-fill-catchlight note and body/plate pins; the composite-eye gate rejected the first attempts (fill-painted catchlight) and kept a clean take. Earlier notes that only asked for a 'dark pupil under the catchlight the line art provides' let the model paint its own catchlight anyway; forbid it explicitly."
     }
   },
   "velociraptor-wide": {
+    "chalk": {
+      "retry": {
+        "temperature": 0.4,
+        "notes": "FIX THE EYES (most important): the pupil polarity is backwards in this input — the LARGE oval disc filling most of each eye reads SOLID WHITE, which is WRONG and renders as a glowing blank orb. Erase the white inside each pupil and make the pupil interior BLACK (the dark board showing through), keeping only a thin white outline ring around the pupil and the small round catchlight dot SOLID WHITE inside the pupil. Fill the sclera — the thin crescent between the eyeball outline and the pupil ring — SOLID WHITE. Never leave a pupil as one solid white disc: every finished eye must read as a white sclera around a BLACK pupil with a single small white catchlight. Do not add teeth, dots, or any other new marks."
+      },
+      "review": "Solid-pen-eye page: the pen paints the pupil as solid ink, so the 2026-07 chalk copied it. The pre-fix composite read as a brown ring around a white core — the fill could paint only the thin crescent the chalk left, while the chalk's solid-ink pupil centre still glowed white. findEyeCores finds no cores here, so the eye-polarity gate passes VACUOUSLY. Render the chalk-over-night COMPOSITE and confirm a legible dark pupil before trusting any chalk of this page. After a chalk regen, regenerate the night fill and re-punch.",
+      "why": "2026-07-14 ISSUES fix: PR #142's 2026-07-13 night-fill-only regen darkened the fillable crescent but left the chalk's solid-ink pupil centre white. The erase-and-redraw note above (t 0.4, 3 tries) rebuilt the chalk eye as white sclera + fillable dark pupil + small white catchlight (keep 99.9% / local 97.7%); night then regenerated against it + re-punched."
+    },
     "night": {
       "retry": {
-        "notes": "give the eye a solid dark pupil clearly darker than the night sky, with only a small white catchlight"
+        "notes": "paint each eye pupil interior deep near-black so it reads as a solid dark pupil under the white sclera and catchlight the line art already provides; keep the raptor a moonlit green body with its darker green stripes, never navy or blue; the open mouth interior is deep warm red with the teeth left white as the line art draws them"
       },
-      "review": "Judge the eye on the chalk-over-night COMPOSITE, not the raw fill: the 2026-07 take painted the pupil the same navy as the night sky with an oversized catchlight, so the composited eye reads as a blank white orb while every gate passes (ISSUES Tier 1).",
-      "why": "2026-07-13 dark-mode composite review — audit-fill-eyes reports night ok on the defective shipped take."
+      "review": "Conditions on the 2026-07-14 fixed chalk (fillable dark pupil). Confirm on the composite: a solid near-black pupil under the white sclera and centred catchlight, moonlit-green body with darker green stripes, warm-red open mouth with white teeth (not invented — the pen has them). Sample 2 of 3 shipped (drift 0.0000, bgLuma 30, lineW 255; night lineWhite golden 184 → 249, cleaner chalk lines). audit-fill-eyes passes regardless — judge on the composite.",
+      "why": "2026-07-14 ISSUES fix — night regenerated against the fixed chalk with identity color pins. The earlier 'solid dark pupil … with only a small white catchlight' note (2026-07-13) was aimed at the OLD solid-ink chalk and shipped a still-white-cored eye; superseded now that the chalk provides a real fillable pupil."
     }
   }
 }

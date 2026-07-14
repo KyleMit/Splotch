@@ -122,7 +122,7 @@ the worst 10 pages as crops. Same machinery doubles as a regression gate after a
 ### 8. Light↔night palette coherence **[systemic, by design]**
 
 The two fills are independent generations; nothing keeps the bee's stripes or the teddy's bow the
-same color family across modes (pipeline.md's known "ant blanket: red/white by day, teal/olive by
+same color family across modes (pipeline.md's known "ant blanket: red/white by day, teal/navy by
 night"). Idea: condition the night generation on the **light raw** as a second input image ("same
 scene at night — keep each object's hue family, dim and cool it") — the API takes multi-image input;
 the drift/registration gates all still apply. Cheaper retrofit: a region-hue scorer (segment regions
