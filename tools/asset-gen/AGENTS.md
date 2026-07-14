@@ -26,17 +26,17 @@ Runbooks and living lists:
 Decision records (un-numbered, live here instead of `docs/adrs/` — see the repo CLAUDE.md
 carve-out):
 
-| File                      | Decision                                                                                                                                                                      |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `architecture.md`         | Why the pipeline is an in-repo folder, not a workspace or separate repo (ex ADR-0053).                                                                                        |
-| `asset-naming.md`         | Uniform dot-separated variant suffixes — `{name}.{variant}.webp` (ex ADR-0054).                                                                                               |
-| `fill-vocabulary.md`      | The magic-brush reveal assets are "fills", not "twins" (ex ADR-0055).                                                                                                         |
-| `pen-chalk-fork.md`       | Fork the line art per theme — pen outline (light) + Gemini-authored chalk (dark) (ex ADR-0056).                                                                               |
-| `chalk-edge-crisping.md`  | Crisp the chalk's edges at render time, not in the punch or the app compositor.                                                                                               |
-| `inpainted-fill-punch.md` | Punch by inpainting — shipped fills stay opaque, outline pixels replaced by bled fill color.                                                                                  |
-| `fresh-outline-regen.md`  | Redraw a problem pen outline from scratch instead of editing it.                                                                                                              |
-| `gemini-3.1-migration.md` | Run record of the 2026-07 full-catalog regeneration on `gemini-3.1-flash-image`.                                                                                              |
-| `gate-redundancy.md`      | The fixtures×gates load-bearing matrix — which quality gates are independent, the one overlap, and the classes no gate catches. Enforced by `tests/gate-redundancy.test.mjs`. |
+| File                      | Decision                                                                                        |
+| ------------------------- | ----------------------------------------------------------------------------------------------- |
+| `architecture.md`         | Why the pipeline is an in-repo folder, not a workspace or separate repo (ex ADR-0053).          |
+| `asset-naming.md`         | Uniform dot-separated variant suffixes — `{name}.{variant}.webp` (ex ADR-0054).                 |
+| `fill-vocabulary.md`      | The magic-brush reveal assets are "fills", not "twins" (ex ADR-0055).                           |
+| `pen-chalk-fork.md`       | Fork the line art per theme — pen outline (light) + Gemini-authored chalk (dark) (ex ADR-0056). |
+| `chalk-edge-crisping.md`  | Crisp the chalk's edges at render time, not in the punch or the app compositor.                 |
+| `inpainted-fill-punch.md` | Punch by inpainting — shipped fills stay opaque, outline pixels replaced by bled fill color.    |
+| `fresh-outline-regen.md`  | Redraw a problem pen outline from scratch instead of editing it.                                |
+| `gemini-3.1-migration.md` | Run record of the 2026-07 full-catalog regeneration on `gemini-3.1-flash-image`.                |
+| `gate-redundancy.md`      | Which quality gates are load-bearing vs redundant — the fixtures×gates matrix.                  |
 
 ## Key rules when working in this folder
 
