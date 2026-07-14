@@ -11,6 +11,7 @@ import {
 import { settings } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api';
 import { exportCanvasBlob } from './engine';
+import { readAiImageResponse } from './aiImageResponse';
 import { getActiveOverlayImage } from './overlay';
 import { saveImageBlob } from './screenshot';
 
@@ -86,27 +87,21 @@ export async function generateAiImage({
       body: form,
       signal: controller.signal,
     });
-    if (!res.ok) {
-      const msg = await res.text().catch(() => '');
-      // 422 = Gemini refused the drawing on safety grounds (see ADR-0023). That's
-      // not a retry — guide the child to draw something else, in their language.
-      if (res.status === 422) {
+    const response = await readAiImageResponse(res);
+    switch (response.kind) {
+      case 'safety':
         failAiGeneration(runId, "Let's try drawing something else!", 'safety');
         return;
-      }
-      // 429 = rate-limited, so the same drawing will work in a moment. The
-      // body's error text is parent-facing copy — never show it to the child;
-      // the 'retry' kind's standard "try again" treatment covers it.
-      if (res.status === 429) {
+      case 'throttled':
         failAiGeneration(runId, undefined, 'retry');
         console.error(
-          `AI image request throttled (retry after ${res.headers.get('Retry-After')}s): ${msg}`
+          `AI image request throttled (retry after ${response.retryAfter}s): ${response.detail}`
         );
         return;
-      }
-      throw new Error(`AI image request failed (${res.status}): ${msg}`);
+      case 'error':
+        throw new Error(`AI image request failed (${response.status}): ${response.detail}`);
     }
-    const outBlob = await res.blob();
+    const outBlob = response.blob;
     const committed = finishAiGeneration(runId, URL.createObjectURL(outBlob));
     if (committed && settings.autoSaveAiEnabled) {
       await autoSaveImages(outBlob, imageBlob, () => isAiGenerationActive(runId));

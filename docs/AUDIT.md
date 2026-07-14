@@ -74,31 +74,3 @@ buffered-vs-stream invocation and the real request/time limits; run a deploy-pre
 just-under/over upload boundaries and against a deliberately delayed provider, confirming Splotch
 (not the platform) returns the timeout. Reconcile ADR-0006 and the API skill with the *measured*
 budget — do not hard-code the unverified 6 MB / 60 s numbers.
-
-## Source: Extract audit
-
-### [Extract] readAiImageResponse
-
-**File(s):** `web/src/lib/drawing/aiImage.ts` (`generateAiImage` response handling, lines 82–104)
-
-#### Problem
-
-The generation orchestrator decodes four HTTP outcomes inline while also owning export, request
-construction, timeout, UI state, and auto-save. Safety refusal and throttling are early-return UI
-side effects, generic errors throw with response text, and success reads the blob. That makes the
-client's API interpretation difficult to test as a response matrix and hides the intent of the
-happy-path call site.
-
-#### Proposed solution
-
-Extract `async function readAiImageResponse(response: Response): Promise<AiImageResponse>` in
-`aiImage.ts` or a nearby client-only module, returning a discriminated union such as `image`,
-`safety`, `throttled` (including `Retry-After` and diagnostic detail), or `error`. Keep the
-child-facing UI transition and logging in `generateAiImage`; the helper should only translate the
-HTTP contract into domain data.
-
-#### Verification
-
-Unit-test synthetic 200, 422, 429-with/without-`Retry-After`, generic non-OK, and unreadable-body
-responses. Assert the extracted function never mutates `ui`; then retain orchestration tests showing
-each union arm produces the same safety/retry/generic state and only the image arm can auto-save.

@@ -189,3 +189,92 @@ describe('generateAiImage request ownership', () => {
     expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('generateAiImage response handling', () => {
+  it('shows child-facing safety guidance without auto-saving a refusal', async () => {
+    mocks.settings.autoSaveAiEnabled = true;
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('blocked', { status: 422 })));
+
+    const { generateAiImage } = await import('./aiImage');
+    const { ui } = await import('$lib/state/ui.svelte');
+
+    await generateAiImage();
+
+    expect(ui.aiGenerating).toBe(false);
+    expect(ui.aiError).toBe(true);
+    expect(ui.aiErrorKind).toBe('safety');
+    expect(ui.aiErrorMessage).toBe("Let's try drawing something else!");
+    expect(mocks.saveImageBlob).not.toHaveBeenCalled();
+  });
+
+  it('shows retry state and logs throttling detail without auto-saving', async () => {
+    mocks.settings.autoSaveAiEnabled = true;
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response('Please wait', {
+          status: 429,
+          headers: { 'Retry-After': '12' },
+        })
+      )
+    );
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { generateAiImage } = await import('./aiImage');
+    const { ui } = await import('$lib/state/ui.svelte');
+
+    await generateAiImage();
+
+    expect(ui.aiGenerating).toBe(false);
+    expect(ui.aiError).toBe(true);
+    expect(ui.aiErrorKind).toBe('retry');
+    expect(ui.aiErrorMessage).toBeNull();
+    expect(console.error).toHaveBeenCalledWith(
+      'AI image request throttled (retry after 12s): Please wait'
+    );
+    expect(mocks.saveImageBlob).not.toHaveBeenCalled();
+  });
+
+  it('shows generic state and logs a generic response error without auto-saving', async () => {
+    mocks.settings.autoSaveAiEnabled = true;
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('Upstream unavailable', { status: 502 }))
+    );
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { generateAiImage } = await import('./aiImage');
+    const { ui } = await import('$lib/state/ui.svelte');
+
+    await generateAiImage();
+
+    expect(ui.aiGenerating).toBe(false);
+    expect(ui.aiError).toBe(true);
+    expect(ui.aiErrorKind).toBe('generic');
+    expect(ui.aiErrorMessage).toBeNull();
+    expect(console.error).toHaveBeenCalledOnce();
+    const logged = vi.mocked(console.error).mock.calls[0][0];
+    expect(logged).toBeInstanceOf(Error);
+    expect((logged as Error).message).toBe('AI image request failed (502): Upstream unavailable');
+    expect(mocks.saveImageBlob).not.toHaveBeenCalled();
+  });
+
+  it('commits and auto-saves only an image response', async () => {
+    mocks.settings.autoSaveAiEnabled = true;
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+
+    const { generateAiImage } = await import('./aiImage');
+    const { ui } = await import('$lib/state/ui.svelte');
+
+    await generateAiImage();
+
+    expect(ui.aiGenerating).toBe(false);
+    expect(ui.aiError).toBe(false);
+    expect(ui.aiResultUrl).toBe('blob:test-2');
+    expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
+  });
+});
