@@ -95,7 +95,8 @@ const cardHtml = (c) =>
   </div>
 </div>`;
 
-const html = `<h1>Composite blank-orb night eyes — ${cards.length} flagged</h1>
+const html = `<title>Blank-orb night eyes — ${cards.length} flagged</title>
+<h1>Composite blank-orb night eyes — ${cards.length} flagged</h1>
 <p>Each card is the whole-page night composite plus the zoomed eye(s) the composite-eye gate flagged, with median luma (0=black … 255=white) and white fraction. A real blank orb reads near-white; a false flag (a big catchlight over a small pupil) still looks like a legible dark pupil despite a high median. <strong>Decide which pages to fix.</strong></p>
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px">
 ${cards.map(cardHtml).join('')}
