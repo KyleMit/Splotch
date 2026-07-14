@@ -553,7 +553,7 @@
       },
       "night": {
         "drift": 0,
-        "bgLuma": 34.7,
+        "bgLuma": 39.4,
         "lineWhite": 252,
         "eyesFailed": 0,
         "driftOk": true,
@@ -770,8 +770,8 @@
       },
       "night": {
         "drift": 0,
-        "bgLuma": 31.7,
-        "lineWhite": 184,
+        "bgLuma": 30.4,
+        "lineWhite": 249,
         "eyesFailed": 0,
         "driftOk": true,
         "moodOk": true,

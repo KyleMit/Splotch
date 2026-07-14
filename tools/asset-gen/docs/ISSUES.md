@@ -109,14 +109,17 @@ folded into Tier 3 #8.)
    every gate. Caught by montage review this round; a "hero region ΔE vs background" scorer would
    close it, with a known-bad baseline (`circle-wide`'s navy take) to validate against.
    (`circle-wide` and `rectangle-wide` now carry contrast `--notes` in the registry, but nothing
-   *measures* the result — the gate gap stands. The 2026-07-13 night-eye fix on
-   `dinosaur/stegosaurus-tall` + `dinosaur/velociraptor-wide` was this same gap at eye scale — a
-   pupil painted sky-navy composited into a blank white orb and was invisible to every gate; those
-   pages are fixed, the gap is not. The 2026-07-13 `objects/flower-wide` regen hit it again at motif
-   scale — an unpinned take painted its two small background flowers sky-navy and passed every gate;
-   caught by eye and fixed with a palette pin, the gap stays. Ditto the 2026-07-13
-   `vehicles/excavator-tall` regen: its first take re-rolled the orange arm teal and the cab face
-   navy, caught only by eye and fixed with pinned identity colors.)
+   *measures* the result — the gate gap stands. The night-eye defect on
+   `dinosaur/stegosaurus-tall` + `dinosaur/velociraptor-wide` was this same gap at eye scale, but
+   its cause was the chalk's OWN solid-ink pupil (copied from a solid-ink pen — the #1 class), not
+   the fill: the 2026-07-13 night-fill-only regen (PR #142) left the blank white orb because no fill
+   can darken a solid-ink chalk pupil, and it took a chalk erase-and-redraw + night regen + re-punch
+   (2026-07-14, recipe in `fill-src/dinosaur/notes.json`) to fix them. Those pages are fixed now,
+   the gate gap is not. The 2026-07-13 `objects/flower-wide` regen hit it again at motif scale — an
+   unpinned take painted its two small background flowers sky-navy and passed every gate; caught by
+   eye and fixed with a palette pin, the gap stays. Ditto the 2026-07-13 `vehicles/excavator-tall`
+   regen: its first take re-rolled the orange arm teal and the cab face navy, caught only by eye and
+   fixed with pinned identity colors.)
 7. **Colored-shape invention is only audited, not gated (IDEAS #13)** *(gate blind spot)*: the
    detector that caught `objects/house-tall`'s two invented sky flowers is now a first-class audit
    (`bin/audit-invented-shapes.mjs`, `npm run gen:coloring-fills:audit:shapes`) but still runs only

@@ -31,7 +31,7 @@ afe1eb43f62d04034519c5a47db8d23ef2286a54dbed6c77070f0c52beabcc42  tools/asset-ge
 b95f4d1aa3a33743ad32e1b081eb65edfec60e6ebbeda55e25f9f8bcc0c6fce7  tools/asset-gen/fill-src/dinosaur/pterodactyl-wide.light.raw.webp
 2589b7c8b8ddd97472f32d491b0bddee644c9b10165b82aa0bb55708f1baaead  tools/asset-gen/fill-src/dinosaur/pterodactyl-wide.night.raw.webp
 1799c5ec17133a8758e8cc220d68e98880bb2a22e009572cf090de5fdd0fa69e  tools/asset-gen/fill-src/dinosaur/stegosaurus-tall.light.raw.webp
-92aaa28a56778aa866c6cd75fca31675de015b18bd9dbc39b1abf71f54b45831  tools/asset-gen/fill-src/dinosaur/stegosaurus-tall.night.raw.webp
+0e086a08930380934dbc6839b4a7e0dafa6eb8f2faef9ed6843562a7777eb0de  tools/asset-gen/fill-src/dinosaur/stegosaurus-tall.night.raw.webp
 b420bbeceae2d881c5a321bf7fc785c78ae9636902fab2ab3c85a563aab6045e  tools/asset-gen/fill-src/dinosaur/stegosaurus-wide.light.raw.webp
 5b5d69f94a2ff987abb615a0613bffe5e2bbf700c02163b680ec0c0f936e0977  tools/asset-gen/fill-src/dinosaur/stegosaurus-wide.night.raw.webp
 a824a8123c1ce19e4fdbdb24936e628c63d76cb4c9108109118bcde02c78c61a  tools/asset-gen/fill-src/dinosaur/trex-tall.light.raw.webp
@@ -45,7 +45,7 @@ fcfeab03658eaf39a54dfb30ba9f32d45b2fdce6c8f0671db43fadaef5edf61e  tools/asset-ge
 ca0d87eca753ab1b6b82c5a8439b4c4ff0a5e60e4945f75408cc146a9d1aaf4a  tools/asset-gen/fill-src/dinosaur/velociraptor-tall.light.raw.webp
 abcb96ca37abd71c38f0208f761fc3e2a6accad36d902463a14faec575438681  tools/asset-gen/fill-src/dinosaur/velociraptor-tall.night.raw.webp
 c3383122dd5e4755f23dd9a0364abe8cab7d42ecd2a20efcfc57350d339a528c  tools/asset-gen/fill-src/dinosaur/velociraptor-wide.light.raw.webp
-96bd61c826f8677dd6622485f80033c15bc87c342cd9bb0643dd11bc841050f4  tools/asset-gen/fill-src/dinosaur/velociraptor-wide.night.raw.webp
+34df7216c85a4a4889a19f59b76135e0e1d4d7bd9ae3ce8ff2841709f16763ea  tools/asset-gen/fill-src/dinosaur/velociraptor-wide.night.raw.webp
 1ae0cf7383b930335dee840c4f226a8b8e3b3ef20ef21946f28ea5ada4676ee2  tools/asset-gen/fill-src/farm/cat-tall.light.raw.webp
 ef3288ec7977b0023eaa55be989b3d3f26e99c241c9488148718dbbbc34b2383  tools/asset-gen/fill-src/farm/cat-tall.night.raw.webp
 e9debfffecef06389098fe17a08910b10cb89754762ebc8f8a638379044c6c74  tools/asset-gen/fill-src/farm/cat-wide.light.raw.webp
@@ -286,10 +286,10 @@ cbb6c8ec5277ee96117ed809c94830fb584b160094b9466376501a4877dacea6  web/static/col
 4ceb33f23d68f74bd9e813d3bf8ca8b7ddb00080f40251fdcec4894e9d18bb61  web/static/coloring/dinosaur/pterodactyl-wide.night.webp
 1a23ca0fa549009552e8848fa7b779f86557317b54da5408603566180f5dbcd6  web/static/coloring/dinosaur/pterodactyl-wide.outline.webp
 2478c80275ce7f6f105b532f69434608d59eebcbb88e636da52d8c0c5961f68a  web/static/coloring/dinosaur/pterodactyl-wide.thumb.webp
-25caa779151b84d493b519b668b099f5942f824681a6803dde9a97181a632379  web/static/coloring/dinosaur/stegosaurus-tall.chalk.thumb.webp
-d264b3bdeba7b9548b4a3a64c429c9828de80b60f039eb3a7dc8d43ebce49a37  web/static/coloring/dinosaur/stegosaurus-tall.chalk.webp
+1f0a7a3ff13759c2d1c28f13ffd467a84453976b0917e5fca2b8604f275e827c  web/static/coloring/dinosaur/stegosaurus-tall.chalk.thumb.webp
+dfa7f89b513c08085e11838d2188f8c6005a36cf75148361860938c32f26aac6  web/static/coloring/dinosaur/stegosaurus-tall.chalk.webp
 f6e520b24d4d5f469e652b40bcd983a8656082f480683146ae643c0901784925  web/static/coloring/dinosaur/stegosaurus-tall.light.webp
-ffe12ae2d6563673cab1f2a85b5bd41733967832a5a44641c8575d7040d3768d  web/static/coloring/dinosaur/stegosaurus-tall.night.webp
+8bf19ce191ba429decc8c40e168b8cb174d2ef41b68917783d4ce8884b22f28d  web/static/coloring/dinosaur/stegosaurus-tall.night.webp
 4e8f028748f1e3f30190400c1b02de8d021551ae0e09e1b87bbde093138462eb  web/static/coloring/dinosaur/stegosaurus-tall.outline.webp
 bfc0f1e65065cf80cdd8c6095ae1f79626afd8932daa2c814d7cbc2256ca9b44  web/static/coloring/dinosaur/stegosaurus-tall.thumb.webp
 5eb4a421c974f75e4617bc901ba58a174b9badaa965ac88f01b300ff3d94c180  web/static/coloring/dinosaur/stegosaurus-wide.chalk.thumb.webp
@@ -328,10 +328,10 @@ dc134cd86bce228e0204148849ca8a3401ffd6ffa049a0a630b5f40079d975e7  web/static/col
 afb5a9f78b736673161624782409a96c0c140c81c6a91d7be46fd96e86cd0ac1  web/static/coloring/dinosaur/velociraptor-tall.night.webp
 8ef6f5aa179d3e5d62e08e494784d91d5d33f33e1229f33ff55f5ab828d0b3f1  web/static/coloring/dinosaur/velociraptor-tall.outline.webp
 484deb878f6899dd973d29efb16f74cfdeb2ba747b8b3905420fc85a70dcaa4e  web/static/coloring/dinosaur/velociraptor-tall.thumb.webp
-b749259ce6598a82a709ac13079bee7b00011204f4d31231869bbcf2f066ac28  web/static/coloring/dinosaur/velociraptor-wide.chalk.thumb.webp
-8892886d2805f30c19a5c422e0b8b2f416770df555e295e0aa6879abaa19447c  web/static/coloring/dinosaur/velociraptor-wide.chalk.webp
+3c66120602bf90588058dd86789eb904e050807ae13711923e87f448ac788f87  web/static/coloring/dinosaur/velociraptor-wide.chalk.thumb.webp
+aaa831b1a1358b05108d4baec79c042e188eee70114a695153c5f61c7920ad71  web/static/coloring/dinosaur/velociraptor-wide.chalk.webp
 f63017a5b26678a94c8e3bdf40dc2fa5875bf942352837baad555c0587184430  web/static/coloring/dinosaur/velociraptor-wide.light.webp
-32ccc800d8203fe056c51fcde7d56479a647c5011d6f432330d8ed72e7260ec0  web/static/coloring/dinosaur/velociraptor-wide.night.webp
+65a5d0921a9102e87c807b116e8554f968cee78290beb9cd757506e29acf3f8c  web/static/coloring/dinosaur/velociraptor-wide.night.webp
 55d043ee04e09a29c08ac13e47b1b867db58eee7397df307edebea85c53e6f3c  web/static/coloring/dinosaur/velociraptor-wide.outline.webp
 136aa0a8b3a4d7196c2c7f321619fea84b218b9bc20341c511bb1d26f50c4e94  web/static/coloring/dinosaur/velociraptor-wide.thumb.webp
 8bc89b4ee938cc65eb2f2377e229e37acde63c45e85f19376f511833dddb43b6  web/static/coloring/farm/cat-tall.chalk.thumb.webp
