@@ -31,52 +31,9 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import sharp from 'sharp';
-import { dilateMask } from '../lib/morphology.mjs';
 import { COLORING_DIR, FILL_SRC_DIR, fail } from '../lib/paths.mjs';
-import { bleedUnderMask, OUTLINE_LUMA_THRESHOLD } from '../lib/punch-fill.mjs';
 import { scoreLineColor } from '../lib/night-scores.mjs';
-
-const DELTA_RIM = 40; // rimΔ above this = much darker than the true local fill
-const REF_DILATE = 4; // reference punch clears any plausible rim (bands 1..3 + slack)
-const MAX_BAND = 3; // hotspots count halo px out to this ring; the score uses 1..2
-const HALO_DARK = 145; // the mid-dark penumbra window: a visible halo pixel is
-const HALO_PROTECT_BLACK = 55; // luma in [55, 145) — legit near-black ink sits below
-
-async function loadRgb(buf) {
-  const { data, info } = await sharp(buf).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  return { rgb: data, width: info.width, height: info.height };
-}
-
-const lumaOf = (rgb, p) => 0.299 * rgb[p * 3] + 0.587 * rgb[p * 3 + 1] + 0.114 * rgb[p * 3 + 2];
-
-// The shipped punch's mask, rebuilt with lib/punch-fill.mjs's exact math.
-async function punchMask(lineArtBuf, width, height) {
-  const { data: line } = await sharp(lineArtBuf)
-    .removeAlpha()
-    .resize(width, height, { fit: 'fill' })
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  const mask = new Uint8Array(width * height);
-  for (let p = 0, i = 0; p < width * height; p++, i += 3) {
-    const luma = 0.299 * line[i] + 0.587 * line[i + 1] + 0.114 * line[i + 2];
-    if (luma < OUTLINE_LUMA_THRESHOLD) mask[p] = 1;
-  }
-  return mask;
-}
-
-function ringBands(mask, w, h, maxD) {
-  const bands = [];
-  let prev = mask;
-  for (let d = 1; d <= maxD; d++) {
-    const grown = dilateMask(mask, w, h, d);
-    const band = [];
-    for (let p = 0; p < w * h; p++) if (grown[p] && !prev[p]) band.push(p);
-    bands.push(band);
-    prev = grown;
-  }
-  return bands;
-}
+import { scoreNightHalo, DELTA_RIM, HALO_DARK, HALO_PROTECT_BLACK } from '../lib/night-halo.mjs';
 
 async function auditPage(page) {
   const rawBuf = await readFile(join(FILL_SRC_DIR, `${page}.night.raw.webp`));
@@ -86,75 +43,20 @@ async function auditPage(page) {
   const lineArtBuf = await readFile(existsSync(chalkPath) ? chalkPath : penPath);
   const shippedBuf = await readFile(join(COLORING_DIR, `${page}.night.webp`));
 
-  const { rgb: rawRgb, width: w, height: h } = await loadRgb(rawBuf);
-  const mask = await punchMask(lineArtBuf, w, h);
   const { lineWhite: lineW } = await scoreLineColor(rawBuf, lineArtBuf);
-  const { rgb: shipped } = await loadRgb(shippedBuf);
-
-  const refMask = dilateMask(mask, w, h, REF_DILATE);
-  const refRgb = Buffer.from(rawRgb);
-  bleedUnderMask(refRgb, refMask, w, h);
-
-  const bands = ringBands(mask, w, h, MAX_BAND);
-  const deltaAt = (p) => lumaOf(refRgb, p) - lumaOf(shipped, p);
-  const isHalo = (p) => {
-    if (deltaAt(p) <= DELTA_RIM) return false;
-    const l = lumaOf(shipped, p);
-    return l >= HALO_PROTECT_BLACK && l < HALO_DARK;
-  };
-
-  const bandStats = bands.map((band, i) => {
-    const deltas = band.map(deltaAt).sort((a, b) => a - b);
-    const q = (f) => deltas[Math.floor(f * (deltas.length - 1))] ?? NaN;
-    return {
-      d: i + 1,
-      n: deltas.length,
-      med: +q(0.5).toFixed(1),
-      p90: +q(0.9).toFixed(1),
-      p99: +q(0.99).toFixed(1),
-      rimShare: deltas.filter((x) => x > DELTA_RIM).length / (deltas.length || 1),
-      haloShare: band.filter(isHalo).length / (band.length || 1),
-    };
-  });
-
-  // haloScore: % of band-1..2 halo pixels (rimΔ + mid-dark window).
-  // rawScore: unwindowed rimΔ share, kept to show why the window matters.
-  const n12 = bandStats[0].n + bandStats[1].n;
-  const halo12 = bandStats[0].haloShare * bandStats[0].n + bandStats[1].haloShare * bandStats[1].n;
-  const rim12 = bandStats[0].rimShare * bandStats[0].n + bandStats[1].rimShare * bandStats[1].n;
-  const haloScore = +((100 * halo12) / (n12 || 1)).toFixed(3);
-  const rawScore = +((100 * rim12) / (n12 || 1)).toFixed(3);
-
-  // hotspots: 64px tiles ranked by count of band-1..3 halo px — page-level share
-  // dilutes a localized failure (train-wide's is ~6 face tiles), so an audit
-  // consumer should look at both columns
-  const counts = new Map();
-  for (const band of bands)
-    for (const p of band) {
-      if (!isHalo(p)) continue;
-      const k = Math.floor(Math.floor(p / w) / 64) * 1000 + Math.floor((p % w) / 64);
-      counts.set(k, (counts.get(k) || 0) + 1);
-    }
-  const hotspots = [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6)
-    .map(([k, n]) => ({
-      left: (k % 1000) * 64,
-      top: Math.floor(k / 1000) * 64,
-      haloPx: n,
-    }));
+  const core = await scoreNightHalo(rawBuf, lineArtBuf, shippedBuf);
 
   return {
     page,
-    w,
-    h,
+    w: core.w,
+    h: core.h,
     lineW,
-    haloScore,
-    rawScore,
-    haloPx12: Math.round(halo12),
-    rimPx12: Math.round(rim12),
-    bandStats,
-    hotspots,
+    haloScore: core.haloScore,
+    rawScore: core.rawScore,
+    haloPx12: core.haloPx12,
+    rimPx12: core.rimPx12,
+    bandStats: core.bandStats,
+    hotspots: core.hotspots,
   };
 }
 

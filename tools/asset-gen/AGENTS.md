@@ -36,6 +36,7 @@ carve-out):
 | `inpainted-fill-punch.md` | Punch by inpainting — shipped fills stay opaque, outline pixels replaced by bled fill color.    |
 | `fresh-outline-regen.md`  | Redraw a problem pen outline from scratch instead of editing it.                                |
 | `gemini-3.1-migration.md` | Run record of the 2026-07 full-catalog regeneration on `gemini-3.1-flash-image`.                |
+| `gate-redundancy.md`      | Which quality gates are load-bearing vs redundant — the fixtures×gates matrix.                  |
 
 ## Key rules when working in this folder
 
