@@ -24,6 +24,7 @@
 
   let delayMs = $state(10000);
   let pending: ReturnType<typeof setTimeout> | 0 = 0; // setTimeout id for the scheduled "finish"
+  let runId = 0;
 
   function clearPending() {
     if (pending) {
@@ -37,15 +38,15 @@
   function play(ms = delayMs) {
     clearPending();
     closeAiResult();
-    startAiGeneration(drawingInputUrl);
-    pending = setTimeout(() => finishAiGeneration(aiOutputUrl), ms);
+    runId = startAiGeneration(drawingInputUrl);
+    pending = setTimeout(() => finishAiGeneration(runId, aiOutputUrl), ms);
   }
 
   // Skip the wait and reveal immediately.
   function finishNow() {
     clearPending();
-    if (!ui.aiResultOpen) startAiGeneration(drawingInputUrl);
-    finishAiGeneration(aiOutputUrl);
+    if (!ui.aiResultOpen) runId = startAiGeneration(drawingInputUrl);
+    finishAiGeneration(runId, aiOutputUrl);
   }
 
   // Scaffold each real failure mode so the error UI can be reviewed without a
@@ -53,8 +54,8 @@
   // failAiGeneration() for a 422 safety refusal, a timeout, and a server error.
   function fail(message: string | undefined, kind: 'safety' | 'retry' | 'generic') {
     clearPending();
-    if (!ui.aiResultOpen) startAiGeneration(drawingInputUrl);
-    failAiGeneration(message, kind);
+    if (!ui.aiResultOpen) runId = startAiGeneration(drawingInputUrl);
+    failAiGeneration(runId, message, kind);
   }
   const triggerSafety = () => fail("Let's try drawing something else!", 'safety');
   const triggerTimeout = () => fail("That's taking too long — please try again.", 'retry');

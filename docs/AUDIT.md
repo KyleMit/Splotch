@@ -6,49 +6,6 @@
 
 ## Source: Code audit
 
-### [Correctness] Give every AI generation exclusive request ownership and cancellation
-
-**File(s):** `web/src/lib/drawing/aiImage.ts` (`generateAiImage`, lines 43–114),
-`web/src/lib/state/ui.svelte.ts` (AI result transitions, lines 99–161),
-`web/src/lib/components/AiImagePrompt.svelte` (`loadPreview`, lines 10–30)
-
-#### Problem
-
-Each generation owns only a local `AbortController`, created after canvas export. Closing the result
-modal cannot abort or invalidate that request. A user can start A, close it, start B, and then have
-A's late success or failure mutate B because `finishAiGeneration()` and `failAiGeneration()` accept
-any completion while *some* result modal is open. A can replace B's preview/result, clear B's
-generating state, or auto-save stale output.
-
-The style preview has the same ownership gap: closing or unmounting while `exportCanvasBlob()` is
-pending runs cleanup first, then the late continuation creates an object URL and writes state for a
-closed instance. Canvas export in `generateAiImage()` also happens outside its `try`, so a rejected
-export can leave the loading modal stuck.
-
-**Vet 2026-07-14 (confirmed against current code):** the only concurrency guard is the boolean
-`if (ui.aiGenerating) return;` (`aiImage.ts:47`), and `closeAiResult` (`ui.svelte.ts:154–162`)
-resets `aiGenerating = false` without touching A's controller — so start-A → close → start-B is not
-blocked and A can still write back. `finishAiGeneration`/`failAiGeneration` (`ui.svelte.ts:135–152`)
-gate only on `aiResultOpen`, which B has re-set true, so they can't tell A's completion from B's.
-**Rank the fixes by user impact:** the stuck-modal-on-rejected-export is the primary, deterministic
-dead-end (export at `aiImage.ts:56–57` sits *before* the `try` at `:67`); the A-clobbers-B race is a
-genuine but edge-case sequence (fast close+restart during one pending request), and the
-style-preview gap is minor (worst case a stale thumbnail). Fix the export-ownership boundary first.
-
-#### Proposed solution
-
-Create a monotonic run id and owned controller before export. Starting a replacement or closing the
-modal should abort and invalidate the current run; every preview, result, error, and auto-save
-commit must verify that it still owns the active id. Put export and request setup inside the guarded
-`try/finally`, and give style-preview loading the same disposed/run-id guard so late blobs are
-revoked instead of committed.
-
-#### Verification
-
-Unit-test deferred export and fetch promises: start A, close, start B, and resolve A/B in both
-orders. Only B may mutate UI or auto-save, and every late object URL must be revoked. Add
-rejected-export and close-during-style-preview cases; neither may leave a spinner or leaked URL.
-
 ### [Correctness] Don't silently discard a magic op that folds mid-sheet-decode
 
 **File(s):** `web/src/lib/drawing/strokeOps.ts` (`renderOp` null-pattern early return, lines
