@@ -57,6 +57,16 @@ pending runs cleanup first, then the late continuation creates an object URL and
 closed instance. Canvas export in `generateAiImage()` also happens outside its `try`, so a rejected
 export can leave the loading modal stuck.
 
+**Vet 2026-07-14 (confirmed against current code):** the only concurrency guard is the boolean
+`if (ui.aiGenerating) return;` (`aiImage.ts:47`), and `closeAiResult` (`ui.svelte.ts:154–162`)
+resets `aiGenerating = false` without touching A's controller — so start-A → close → start-B is not
+blocked and A can still write back. `finishAiGeneration`/`failAiGeneration` (`ui.svelte.ts:135–152`)
+gate only on `aiResultOpen`, which B has re-set true, so they can't tell A's completion from B's.
+**Rank the fixes by user impact:** the stuck-modal-on-rejected-export is the primary, deterministic
+dead-end (export at `aiImage.ts:56–57` sits *before* the `try` at `:67`); the A-clobbers-B race is a
+genuine but edge-case sequence (fast close+restart during one pending request), and the
+style-preview gap is minor (worst case a stale thumbnail). Fix the export-ownership boundary first.
+
 #### Proposed solution
 
 Create a monotonic run id and owned controller before export. Starting a replacement or closing the
@@ -71,41 +81,52 @@ Unit-test deferred export and fetch promises: start A, close, start B, and resol
 orders. Only B may mutate UI or auto-save, and every late object URL must be revoked. Add
 rejected-export and close-during-style-preview cases; neither may leave a spinner or leaked URL.
 
-### [Architecture] Preserve magic-brush source semantics beyond the raster-history boundary
+### [Correctness] Don't silently discard a magic op that folds mid-sheet-decode
 
-**File(s):** `web/src/lib/drawing/magicBrush.ts` (mutable sheet state and rasterization, lines 55–78
-and 241–350), `web/src/lib/drawing/strokeOps.ts` (`renderOp`, lines 102–120),
-`web/src/lib/drawing/undoHistory.ts` (fold/keyframe/replay, lines 120–125 and 180–252),
-`web/src/lib/drawing/engine.ts` (`clearCanvas`, lines 813–829)
+**File(s):** `web/src/lib/drawing/strokeOps.ts` (`renderOp` null-pattern early return, lines
+102–120), `web/src/lib/drawing/magicBrush.ts` (`sheetPatternFor`/`sheetReady`, lines 282–329),
+`web/src/lib/drawing/undoHistory.ts` (`foldOldestIntoBaseline`, lines 201–212; `maybeKeyframe`,
+lines 157–175)
+
+> **Scope note (vet 2026-07-14):** The original finding also claimed the broader "old vs. recent
+> magic ink resolves to different source images after a theme change / clear+undo recolors through a
+> new rainbow" symptom. That behavior is **intentional and documented** — ADR-0043 and the
+> `strokeOps.ts:14–18` comment state magic ops are ordinary command-log members that reveal the
+> module's *current* sheet, and resolving-at-replay is the design (pen ink in margins follows the
+> baseline the same way). The visible recoloring is cosmetic, its triggers are narrow (night fill +
+> magic across >10 commands + a *live* theme toggle, or clear-then-undo), and the proposed
+> snapshot-per-op fix is disproportionate. **Removed the broad architecture item; kept only the one
+> non-cosmetic bug below.**
 
 #### Problem
 
-A magic op stores only `magic: true`; replay resolves its paint from the module's *current*
-`sheetCanvas`. That deliberately lets a page/theme change rerasterize retained magic ops, but undo
-history eventually destroys their semantics: commands older than ten are folded into an ordinary
-raster baseline, and long commands can become raster keyframes with their ops dropped. Those pixels
-can no longer follow the new page/night fill, so old and recent magic ink can show different source
-images after the same theme change.
+`foldOldestIntoBaseline` (`undoHistory.ts:201–212`) bakes the oldest command's ops into the raster
+baseline via `renderOp` once the command count exceeds the retention window; `maybeKeyframe`
+(`157–175`) does the same for an over-long command. For a **magic** op, `renderOp`
+(`strokeOps.ts:112–118`) resolves paint from `sheetPatternFor(target)` and **returns painting
+nothing when the pattern is null**. `sheetPatternFor` returns null while `!sheetReady`
+(`magicBrush.ts:282–293`), and `setColorSheet` (`316–329`) sets `sheetReady = false` for the
+duration of an async fill decode (page change or night-fill toggle).
 
-If a color sheet is still decoding when a magic command folds, `sheetPatternFor()` returns null, the
-fold paints nothing, and the command is permanently discarded. Clearing introduces another
-inconsistency: it records the clear, chooses a new random rainbow when magic remains selected, and
-undo replays the prior magic ops through the new rainbow rather than restoring their original
-colors.
+So if the 11th+ command commits — triggering a fold — while a sheet decode is in flight, the folded
+magic op paints nothing and is **permanently discarded** (baked out of both the retained log and the
+baseline). Unlike the cosmetic recoloring above, this is silent loss of a committed drawing action.
+The trigger window is small (a commit landing inside the sub-second decode of a page/theme change)
+but the flow — draw many magic strokes, then change page — is realistic for an engaged child.
 
 #### Proposed solution
 
-Make source-dependent history explicit. Retain a bounded semantic mask/op representation that can be
-recomposited against the current sheet, or store immutable source identity with commands and clear
-operations and define when recoloring is allowed. Do not destructively fold a source-dependent op
-into the ordinary color raster until its future source-change behavior has been resolved.
+Don't fold/keyframe a command while it contains a magic op whose sheet is still decoding: either
+defer the fold until `sheetReady` (bounded), or detect the null-pattern case in
+`foldOldestIntoBaseline` and skip that fold cycle rather than baking an empty result. Keep it narrow
+— this is a data-preservation guard on the fold boundary, not the broader source-identity redesign.
 
 #### Verification
 
-Add browser pixel tests that: paint magic ink, commit more than ten commands, switch light/dark, and
-confirm old and recent regions update together; delay fill decode until after a fold and confirm the
-ink appears once ready; and paint a rainbow, clear, undo, then compare restored pixels with the
-pre-clear canvas.
+Unit-test `foldOldestIntoBaseline`: commit >10 magic commands, force `sheetReady = false` (mock an
+in-flight `setColorSheet` decode), trigger the fold, then let the sheet resolve and `replayAll`;
+assert the oldest magic ink is still present (not baked to nothing). A passing baseline requires the
+op to survive the fold that lands during the decode.
 
 ### [Architecture] Fit AI requests inside Netlify's deployed function envelope
 
@@ -140,12 +161,36 @@ invocation limit. Put the client deadline slightly beyond the server's so the se
 error contract. If deploy telemetry shows streaming invocation, the 10-second ceiling requires a
 different architecture for image-generation latency rather than another timeout adjustment.
 
+**Vet 2026-07-14 — split the concrete from the speculative; do the concrete first:**
+
+* **Actionable now (no deploy telemetry needed):**
+  * `verifyKey()` (`gemini.ts:82–95`) has **no upstream abort at all** — unlike `generateImage`
+    (`gemini.ts:61`, `AbortSignal.timeout(120_000)`). A rate-limited public probe can occupy an
+    invocation until the platform kills it. Add a bounded timeout. **Highest-value, lowest-cost
+    sub-fix.**
+  * The 120 s deadlines (`gemini.ts:61`, `aiImage.ts:41` `AI_TIMEOUT_MS = 120_000`) exceed **any**
+    plausible Netlify *synchronous* function ceiling (single-digit-to-low-tens of seconds), so on a
+    slow model call the platform, not Splotch, returns the error. Pull the server deadline under the
+    real ceiling and keep the client deadline just beyond it.
+* **Speculative — confirm before acting, don't implement blind:** the "6 MB buffered / ~4.5 MB
+  effective / 60 s sync" envelope rests on deploy behavior the repo can't prove (does the deployed
+  SvelteKit function buffer or stream its response?), and the specific **"60 s synchronous limit"
+  figure in the Problem above is unverified and likely wrong** — Netlify's sync ceiling is far
+  lower. The 15 MiB cap (`MAX_IMAGE_BYTES = 15 * 1024 * 1024`, `+server.ts:37`) also has **no
+  practical trigger for legitimate traffic**: the client only ever uploads a sub-1 MB canvas
+  screenshot, so the cap-exceeds-envelope concern is a DoS-surface note, not a functional bug.
+  Reject an oversized `Content-Length` early if cheap, but gate the byte-budget rewrite on measured
+  deploy limits.
+
 #### Verification
 
-Inspect the built function manifest and run a deploy-preview smoke at just-under/over upload
-boundaries. Exercise a deliberately delayed provider against the deployed invocation mode and
-confirm Splotch, not the platform, returns the timeout response. Add fake-timer provider tests for
-both generation and key verification. Reconcile ADR-0006 and the API skill with the measured budget.
+**Do first (unit, no deploy):** add a fake-timer test proving `verifyKey()` aborts on a hung
+provider, and one proving `generateImage`/`verifyKey` deadlines are set below the target ceiling.
+**Then, gated on deploy access:** inspect the built function manifest to determine
+buffered-vs-stream invocation and the real request/time limits; run a deploy-preview smoke at
+just-under/over upload boundaries and against a deliberately delayed provider, confirming Splotch
+(not the platform) returns the timeout. Reconcile ADR-0006 and the API skill with the *measured*
+budget — do not hard-code the unverified 6 MB / 60 s numbers.
 
 ### [Correctness] Fail closed when an environment seed loses an `onlyIfNew` race
 
@@ -164,6 +209,18 @@ while a newly added token can be denied. Mutations can also make decisions from 
 `onlyIfNew` prevents clobbering; it does not make the seed authoritative after `modified:false`.
 This violates the immediate-revocation intent in ADR-0006 and the stale-empty reasoning in ADR-0025.
 
+**Vet 2026-07-14 (confirmed, but downgrade severity):** `readStore()` (`tokens.ts:68–70`)
+destructures only `etag` from `setJSON(KEY, seeded, { onlyIfNew: true })` and unconditionally
+returns `{ store, list: seeded, etag }` — the `modified` flag is ignored, so a lost write still
+returns the env seed. Real. Two mitigating facts narrow the harm: (1) ADR-0025:122–123 **already
+accepts** brief post-write staleness of the token list ("Acceptable for this data"); (2) the
+"revoked token re-authorized" harm only fires if `ALLOWED_TOKENS_LIST` still contains that token —
+after migration that env var is typically empty, in which case `seedFromEnv()` returns `[]` and the
+code **already fails closed** (denies everyone briefly). The genuinely distinct, non-accepted harm
+is narrow: reverting to the *migration-time env list* rather than merely-stale Blobs data. Keep the
+fix (inspect `modified`; re-read on `modified:false`; fail closed if unconfirmed), but treat it as
+low-severity hardening, not an active auth hole.
+
 #### Proposed solution
 
 Inspect `modified`. Return the seed only when the write actually created the key. If the write lost,
@@ -177,37 +234,6 @@ Extend the fake store so `getWithMetadata()` returns null once while the underly
 different list, and `onlyIfNew` returns `modified:false`. Assert env-only tokens are never accepted,
 current tokens are not denied after retry, and mutations never persist a list derived from the stale
 seed. Test the exhausted-retry fail-closed path.
-
-### [Correctness] Score night composites with the same inpainted punch the app ships
-
-**File(s):** `tools/asset-gen/lib/night-composite.mjs` (`compositeNight`, lines 1–34),
-`tools/asset-gen/lib/punch-fill.mjs` (`bleedUnderMask`/`punchFill`, lines 11–19 and 43–136),
-`tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (composite eye gates, lines 303–323),
-`tools/asset-gen/bin/audit-fill-eyes.mjs` (night composite audit, lines 56–72)
-
-#### Problem
-
-The live punch now inpaints outline-mask pixels with neighboring fill color and ships fully opaque
-RGB. `compositeNight()` still simulates the retired transparent punch by replacing every chalk-ink
-pixel with dark paper before screening chalk on top. It also duplicates the luma threshold instead
-of importing `OUTLINE_LUMA_THRESHOLD`.
-
-Night-eye generation, the dedicated eye audit, and golden scoring therefore judge a composite the
-app no longer renders. Their answers can diverge around antialiased chalk edges—the exact area
-inpainting was introduced to fix—allowing false passes or failures on paper-dark pixels that are
-actually bled fill pixels in the shipped asset.
-
-#### Proposed solution
-
-Extract a pure buffer-level punch/inpaint primitive from `punch-fill.mjs`. Use it both for the file
-writer and `compositeNight()`, then screen the chalk over the inpainted RGB. Import the shared
-threshold and update the stale transparent-punch comments.
-
-#### Verification
-
-Add a soft antialias-edge fixture. Run the shared punch on raw fill plus chalk, independently screen
-the chalk over that result, and assert `compositeNight()` matches byte-for-byte or within the chosen
-rounding tolerance. The fixture should also prove the old paper-under-mask simulation differs.
 
 ### [Testing] Add the load-bearing blank-orb verdict to the golden catalog
 
@@ -307,6 +333,15 @@ from both `undone.wasEmpty` and whether the active group contains ink; alternati
 defer Undo until the current group commits. Keep `canUndo` and `canvasEmpty` based on the same
 committed-plus-active model.
 
+**Vet 2026-07-14 (confirmed; line refs corrected):** `undo()` sets
+`setCanvasEmptyState(undone.wasEmpty)` unconditionally at `engine.ts:806`. The "commit doesn't
+reassert false" fact lives at `commitStrokeGroup` (`engine.ts:446–452`) — **not** lines 368–380,
+which is `beginStrokeGroup`; emptiness is re-scanned on lift only for erase strokes (`~723–725`), so
+a pen/magic stroke leaves the flag stale. Trigger is credible: `ActionsPanel.svelte:130–132` fires
+Undo on a plain tap, and the canvas uses per-pointer capture (`engine.ts:~734`), so a second finger
+can tap Undo while finger 1 draws. The engine already has a stroke-straddling pattern to reuse —
+`resetActiveCommandForClear` called from `clearCanvas` (`~823–824`).
+
 #### Verification
 
 Commit one stroke, hold a second stroke down, invoke Undo, then release. Assert pixels remain,
@@ -334,6 +369,17 @@ Track `persistent` from every successful snapshot, validate the snapshot shape, 
 `AdminConsole`. Remove the stale comments and make web/native front doors present the same
 durability state.
 
+**Vet 2026-07-14 (real, but low priority — ADR-documented as optional):** confirmed — the snapshot
+response includes `persistent` (`+server.ts:42–44`), `applySnapshot` (`native/+page.svelte:46–63`)
+reads only `data.invites`, and `AdminConsole` is rendered without the prop so it defaults to `true`
+(`AdminConsole.svelte:38`). **But ADR-0025:99–103 explicitly documents this as a known, accepted
+state** ("the native console defaults the AdminConsole prop to `persistent = true` … and does not
+currently surface the banner, *but could* thread the field through") — so it's a documented optional
+enhancement, not a latent bug, and in production the native app hits the Blobs-backed hosted API
+where `persistent` is always `true`. The strongest concrete justification is that the E2E comment at
+`admin.spec.ts:60–61` ("JSON snapshot can't carry a persistence signal") is **factually wrong** —
+the snapshot does carry it. Keep as low-priority cleanup driven by correcting that misleading test.
+
 #### Verification
 
 The local E2E server has no Blobs and already returns `persistent:false`; invert the native test to
@@ -360,6 +406,18 @@ Give verification a request id/AbortController that is invalidated on close, reo
 Persist the verified key first and commit it to live state only if the save succeeds and the request
 still owns the active id; otherwise roll back. Distinguish secure-storage failure from network/key
 verification failure in parent-facing feedback.
+
+**Vet 2026-07-14 (confirmed; persistence-ordering is the meat, reopen race is secondary):**
+`setAiUserApiKey` (`settings.svelte.ts:219–222`) assigns `settings.aiUserApiKey = v`
+**synchronously** (`:220`) and only *then* returns the persistence promise (`:221`);
+`hasApiKey`/`aiLocked` (derived in `AiKeyManager.svelte:31–33`) flip immediately, and a `saveApiKey`
+rejection lands in the outer catch (`AiKeyManager.svelte:125–128`) that shows a network error
+**without rolling back** the live key. So the feature reads unlocked while the key vanishes on
+reload — the primary, deterministic fix is persist-then-flip (or roll back on rejection). The reopen
+race (the `$effect(open)` reset at `AiKeyManager.svelte:59–65` clears the `keyStatus === 'checking'`
+re-entrancy guard, letting a late verify A resolve after a reopened B) is real but narrow (submit →
+close → reopen → submit a different value inside one pending request) — fold it in as the secondary
+abort/request-id fix, not the headline.
 
 #### Verification
 
@@ -480,6 +538,19 @@ explicit-file support, ordering, default-all, and missing-target behavior—rath
 standardizing current CLI contracts. Each caller should then read as parse options → resolve targets
 → process targets.
 
+**Vet 2026-07-14 (confirmed across all seven callers; parameterize, don't unify):** the duplication
+is present in `gen-coloring-fills.mjs` (119–138), `gen-coloring-fills-dark.mjs` (195–210),
+`gen-coloring-chalk.mjs` (249–264), `check-coloring-drift.mjs` (39–57), `audit-outline-solidity.mjs`
+(17–28), `audit-fill-eyes.mjs` (23–36), and `review-orb-eyes.mjs` (28–39). The drift is
+**intentional policy, not accident** — `audit-outline-solidity.mjs` globs `**/*.outline.webp`
+(includes category covers) while the other six glob `**/*-{tall,wide}.outline.webp` (skip covers);
+sort happens inside `pagesUnder` for some and at the call site for others; missing targets return
+`[asFile]` (defer to ENOENT) in most but `fail()` in `audit-fill-eyes.mjs`. So the helper is only
+safe if parameterized — `resolveOutlineTargets(args, { includeCovers, onMissing, sort })`. A
+zero-arg "standardizing" helper would be **more** brittle by erasing those deliberate differences;
+the win is removing ~140 lines and preventing a future edit from silently un-syncing the six
+cover-skipping callers.
+
 #### Verification
 
 Add asset-tool unit coverage using a temporary category tree for no args, category, page id,
@@ -517,66 +588,6 @@ Unit-test limited guesses without an allowlist read, one failed guess consuming 
 valid managed traffic not consuming it, managed per-token throttling, BYOK per-IP throttling, and a
 missing server key. Then run `npm run test:api:smoke` to confirm the public 403/429/400 contract and
 `Retry-After` header are unchanged.
-
-### [Extract] processChalkPage
-
-**File(s):** `tools/asset-gen/bin/gen-coloring-chalk.mjs` (top-level page loop, lines 329–465)
-
-#### Problem
-
-One 130-line top-level loop owns every per-page concern: registry/CLI lever resolution, dry-run and
-already-shipped skips, pen/reference preparation, optional light-eye loading, candidate scoring,
-rescore vs. generate selection, review-artifact writes, warning construction, and guarded apply.
-`continue` statements encode several different outcomes, while `failures` is mutated from multiple
-branches. The CLI entry flow is therefore inseparable from the behavior for one page, which is the
-unit that needs fixture-based regression tests.
-
-#### Proposed solution
-
-Extract
-`async function processChalkPage(page: string, context: ChalkPageContext):
-Promise<'skipped' | 'passed' | 'failed'>`
-in an import-safe module, or add a main-module guard before exporting it from the CLI. Give it
-explicit parsed values and AI/file dependencies through `ChalkPageContext`; keep aggregate failure
-counting and the final summary in the entry loop. Smaller scoring/formatting helpers may remain
-local to `processChalkPage` where their inputs are page-specific.
-
-#### Verification
-
-Drive the function with temporary pen/light fixtures and stub generation/scorers. Cover dry-run,
-missing input, already-shipped skip, rescore, best-of-retries, failed gates refusing `--apply`, and
-passing gates writing the chalk. Run `npm run test:asset-gen` plus representative chalk `--dry-run`
-commands and compare output/status lines.
-
-### [Extract] processNightPage
-
-**File(s):** `tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (top-level page/sample loop, lines
-358–449)
-
-#### Problem
-
-The night generator's top-level loop combines page lever resolution, pen/chalk/light-reference
-loading, dark-input preparation, a nested sample loop, candidate generation, review-file naming,
-first-sample input output, four gate explanations, drift warnings, and failure accounting. The entry
-point cannot state its orchestration at a glance, and testing one page currently means executing the
-entire CLI with process globals and output directories.
-
-#### Proposed solution
-
-Extract
-`async function processNightPage(page: string, context: NightPageContext):
-Promise<{ renders: number; failures: number }>`
-in an import-safe module, or add a main-module guard before exporting it from the CLI. Let it own
-page-local inputs and samples, while the top level resolves/filter targets, constructs shared
-context, aggregates the returned counts, and decides the exit status. Pass filesystem/output and
-generation dependencies in the context so the function can be exercised without a real Gemini call.
-
-#### Verification
-
-Use temporary pen/chalk/light fixtures and a fake `generateCleanTake` to cover dry-run, single and
-multi-sample naming, first-sample input creation, accepted vs. least-bad results, and one failed
-sample not suppressing later samples. Run `npm run test:asset-gen` and compare a page-level
-`--dry-run` plus an offline stubbed invocation before/after extraction.
 
 ### [Extract] readAiImageResponse
 
