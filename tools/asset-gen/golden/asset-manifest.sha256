@@ -71,7 +71,7 @@ bd161099f052fb51571ae298295e8db248964a20d478c2a0b4f386387c0be95d  tools/asset-ge
 d72989c688b31567d874a7ca383828fb4f2512d39184978ba3acbf0360ea5aef  tools/asset-gen/fill-src/farm/pig-wide.light.raw.webp
 a6d33478571047c10caf823af54a536711f61f7724b69a5fb2dfbf8da6668e5d  tools/asset-gen/fill-src/farm/pig-wide.night.raw.webp
 0701b4dbb2d81dbff6db9c23c97228c06a6ad7eeaec0b208a7e2e60d48f7c398  tools/asset-gen/fill-src/nature/ant-tall.light.raw.webp
-f87bfb1249e9abca632c0903a19e0b730571be9fd93a1eb16110791bf597befa  tools/asset-gen/fill-src/nature/ant-tall.night.raw.webp
+c9ad485bbe844880c11663506ebaccbdb9f88d04f63e44ef594b32b05a022837  tools/asset-gen/fill-src/nature/ant-tall.night.raw.webp
 6705b1f7f9591d625d99fcac26268b8c3fe205bac448af6b5bb123d152161eed  tools/asset-gen/fill-src/nature/ant-wide.light.raw.webp
 cf72f275d428703b8fb7d6e6b94ff3b1729c9e37fca7aeb8c5034618bf54a7b1  tools/asset-gen/fill-src/nature/ant-wide.night.raw.webp
 8c33167b649955c49a5adf0a382ac0bb08831747a81130f995290a551b3609b8  tools/asset-gen/fill-src/nature/bee-tall.light.raw.webp
@@ -411,7 +411,7 @@ fbf3c287e2ab7033fc25ce719d01b2bf6eb49be7072ffc0750635dfaa1718cd4  web/static/col
 00176679a534b3e22cba3de607c9dbea8d87e18c628ab5ece0682e9e5388dd9d  web/static/coloring/nature/ant-tall.chalk.thumb.webp
 940ba745e7f6861f08f41026016c912ac4e37b2f8e7c8aefff8fc7ee960a3221  web/static/coloring/nature/ant-tall.chalk.webp
 fe956b518a5b65bc71905c15e7bb2d0666e378776c00b70e858fc460725df500  web/static/coloring/nature/ant-tall.light.webp
-78820261f9c3d49520922ca96f5e77a5010a9421cecf28224670ec16c4644d9b  web/static/coloring/nature/ant-tall.night.webp
+94783726e2a8f99d32f6c777804e706d15c2cc97bdf2e393ee99e0ee117a9f6e  web/static/coloring/nature/ant-tall.night.webp
 ff5f2abcedb804965415a9d6265ef18dab9c2e527e98c64d03a3ba20362d4eed  web/static/coloring/nature/ant-tall.outline.webp
 eb4d699b581118193fe082bb1c99277a4e5e3feee0b7e4de801e0f0be1ce7a56  web/static/coloring/nature/ant-tall.thumb.webp
 0956ae37ab8cee5c9cc3a8b76f82d39b39332d6d924f30ee878f0faddc5969a7  web/static/coloring/nature/ant-wide.chalk.thumb.webp
