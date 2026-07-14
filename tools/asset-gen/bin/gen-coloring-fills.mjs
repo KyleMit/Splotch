@@ -33,11 +33,10 @@
 import { parseArgs } from 'node:util';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
-import { glob } from 'node:fs/promises';
-import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
+import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
@@ -115,29 +114,6 @@ async function whiteFraction(buf) {
   return white / n;
 }
 
-// Colorable pages under a subdirectory: every *-tall / *-wide page, skipping the
-// category covers. `sub` = '' means the whole coloring tree.
-async function pagesUnder(sub = '') {
-  const out = [];
-  const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
-  for await (const entry of glob('**/*-{tall,wide}.outline.webp', { cwd })) {
-    out.push(join(cwd, entry));
-  }
-  return out.sort();
-}
-
-// Resolve one CLI argument to a list of source pages. An argument is either a
-// single page ("farm/dog-wide", with or without .outline.webp) or a category
-// directory ("creatures") that expands to every page inside it.
-async function resolveArg(arg) {
-  if (arg.endsWith('.webp')) return [join(COLORING_DIR, arg)];
-  const asFile = join(COLORING_DIR, `${arg}.outline.webp`);
-  if (existsSync(asFile)) return [asFile];
-  const asDir = join(COLORING_DIR, arg);
-  if (existsSync(asDir) && statSync(asDir).isDirectory()) return pagesUnder(arg);
-  return [asFile]; // let the later readFile surface a clear ENOENT
-}
-
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
@@ -158,9 +134,13 @@ if (baseTemp !== undefined && !(baseTemp >= 0 && baseTemp <= 2)) {
 }
 if (!process.env.GEMINI_API_KEY) fail('GEMINI_API_KEY is not set.');
 
-const pages = positionals.length
-  ? (await Promise.all(positionals.map(resolveArg))).flat()
-  : await pagesUnder();
+const pages = await resolveOutlineTargets(positionals, {
+  includeCovers: false,
+  explicitFiles: true,
+  sort: 'per-target',
+  defaultAll: true,
+  onMissing: 'defer',
+});
 const sampleMode = samples > 1;
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 

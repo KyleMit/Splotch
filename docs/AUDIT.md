@@ -77,54 +77,6 @@ budget — do not hard-code the unverified 6 MB / 60 s numbers.
 
 ## Source: Extract audit
 
-### [Extract] resolveOutlineTargets
-
-**File(s):** `tools/asset-gen/bin/gen-coloring-fills.mjs` (`pagesUnder` / `resolveArg`, lines
-119–140), `tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (`pagesUnder` / `resolveArg`, lines
-195–210), `tools/asset-gen/bin/gen-coloring-chalk.mjs` (`pagesUnder` / `resolveArg`, lines 249–264),
-`tools/asset-gen/bin/check-coloring-drift.mjs` (`pagesUnder` / `resolveArg`, lines 39–57),
-`tools/asset-gen/bin/audit-outline-solidity.mjs`, `tools/asset-gen/bin/audit-fill-eyes.mjs`, and
-`tools/asset-gen/bin/review-orb-eyes.mjs`
-
-#### Problem
-
-Seven asset commands independently glob the outline tree and resolve some combination of an explicit
-WebP, page id, or category directory. The copies have already drifted in observable ways: one
-intentionally includes cover art while the others select only tall/wide pages, some accept an
-explicit `.webp`, some sort in `pagesUnder`, some sort only after flattening, and missing targets
-are variously returned for a later file error or rejected immediately. Reading any command requires
-re-deriving that policy, and changes to page naming or argument behavior must be repeated across the
-whole toolset. Halo/punch tools use materially different target domains and should not be folded
-into this helper merely for a larger caller count.
-
-#### Proposed solution
-
-Add `resolveOutlineTargets` to a nearby `tools/asset-gen/lib/outline-targets.mjs`. Its options must
-make the real policy differences explicit—at minimum tall/wide-only versus cover-inclusive,
-explicit-file support, ordering, default-all, and missing-target behavior—rather than silently
-standardizing current CLI contracts. Each caller should then read as parse options → resolve targets
-→ process targets.
-
-**Vet 2026-07-14 (confirmed across all seven callers; parameterize, don't unify):** the duplication
-is present in `gen-coloring-fills.mjs` (119–138), `gen-coloring-fills-dark.mjs` (195–210),
-`gen-coloring-chalk.mjs` (249–264), `check-coloring-drift.mjs` (39–57), `audit-outline-solidity.mjs`
-(17–28), `audit-fill-eyes.mjs` (23–36), and `review-orb-eyes.mjs` (28–39). The drift is
-**intentional policy, not accident** — `audit-outline-solidity.mjs` globs `**/*.outline.webp`
-(includes category covers) while the other six glob `**/*-{tall,wide}.outline.webp` (skip covers);
-sort happens inside `pagesUnder` for some and at the call site for others; missing targets return
-`[asFile]` (defer to ENOENT) in most but `fail()` in `audit-fill-eyes.mjs`. So the helper is only
-safe if parameterized — `resolveOutlineTargets(args, { includeCovers, onMissing, sort })`. A
-zero-arg "standardizing" helper would be **more** brittle by erasing those deliberate differences;
-the win is removing ~140 lines and preventing a future edit from silently un-syncing the six
-cover-skipping callers.
-
-#### Verification
-
-Add asset-tool unit coverage using a temporary category tree for no args, category, page id,
-explicit WebP, cover inclusion/exclusion, missing page, stable ordering, and Windows-style path
-normalization. Run `npm run test:asset-gen` and compare target lists from all seven callers before
-and after extraction; do not use the semantically different halo tool as equivalence evidence.
-
 ### [Extract] authorizeGenerationRequest
 
 **File(s):** `web/src/routes/api/generate-image/+server.ts` (`POST`, lines 47–92)

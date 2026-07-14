@@ -7,30 +7,20 @@
 //   npm run gen:coloring-outlines:audit -- nature       one category
 //   npm run gen:coloring-outlines:audit -- nature/ant-tall
 import { readFile } from 'node:fs/promises';
-import { join, relative } from 'node:path';
-import { glob } from 'node:fs/promises';
-import { existsSync, statSync } from 'node:fs';
+import { relative } from 'node:path';
 import { COLORING_DIR, fail } from '../lib/paths.mjs';
 import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from '../lib/solid-regions.mjs';
 import { scoreEyeRings, EYE_RING_DEPTH_MAX } from '../lib/eye-fill.mjs';
-
-async function pagesUnder(sub = '') {
-  const out = [];
-  const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
-  for await (const entry of glob('**/*.outline.webp', { cwd })) out.push(join(cwd, entry));
-  return out.sort();
-}
-
-async function resolveArg(arg) {
-  const asFile = join(COLORING_DIR, `${arg}.outline.webp`);
-  if (existsSync(asFile)) return [asFile];
-  const asDir = join(COLORING_DIR, arg);
-  if (existsSync(asDir) && statSync(asDir).isDirectory()) return pagesUnder(arg);
-  fail(`no page or category "${arg}" under ${COLORING_DIR}`);
-}
+import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 
 const args = process.argv.slice(2);
-const pages = args.length ? (await Promise.all(args.map(resolveArg))).flat() : await pagesUnder();
+const pages = await resolveOutlineTargets(args, {
+  includeCovers: true,
+  explicitFiles: false,
+  sort: 'per-target',
+  defaultAll: true,
+  onMissing: (target) => fail(`no page or category "${target}" under ${COLORING_DIR}`),
+});
 
 const rows = [];
 for (const page of pages) {

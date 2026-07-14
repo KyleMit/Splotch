@@ -9,36 +9,25 @@
 //   npm run gen:coloring-fills:audit:eyes -- nature       one category
 //   npm run gen:coloring-fills:audit:eyes -- nature/bee-wide
 import { readFile } from 'node:fs/promises';
-import { glob } from 'node:fs/promises';
-import { existsSync, statSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { COLORING_DIR, FILL_SRC_DIR, fail } from '../lib/paths.mjs';
 import { scoreEyeFill, judgeLightEyes, judgeNightEyes } from '../lib/eye-fill.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
+import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 // Whole-eye legibility on the composite: catches the blank white orb (chalk
 // sclera + fill catchlight stacking over a solid-pen pupil) that judgeNightEyes
 // is band-blind to. lib/composite-eye.mjs.
 import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
 
-async function pagesUnder(sub = '') {
-  const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
-  const out = [];
-  for await (const entry of glob('**/*-{tall,wide}.outline.webp', { cwd }))
-    out.push(join(cwd, entry));
-  return out;
-}
-async function resolveArg(arg) {
-  const asFile = join(COLORING_DIR, `${arg}.outline.webp`);
-  if (existsSync(asFile)) return [asFile];
-  const asDir = join(COLORING_DIR, arg);
-  if (existsSync(asDir) && statSync(asDir).isDirectory()) return pagesUnder(arg);
-  fail(`no page or category "${arg}" under ${COLORING_DIR}`);
-}
-
 const args = process.argv.slice(2);
-const pages = (
-  args.length ? (await Promise.all(args.map(resolveArg))).flat() : await pagesUnder()
-).sort();
+const pages = await resolveOutlineTargets(args, {
+  includeCovers: false,
+  explicitFiles: false,
+  sort: 'all',
+  defaultAll: true,
+  onMissing: (target) => fail(`no page or category "${target}" under ${COLORING_DIR}`),
+});
 
 let audited = 0;
 let flagged = 0;
