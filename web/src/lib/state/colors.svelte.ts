@@ -11,6 +11,12 @@ export interface PaletteColor {
   bonus?: boolean;
 }
 
+// The near-black ink. On dark paper it vanishes, so in dark mode the palette
+// presents (and paints) this swatch as white instead — same position, same trim
+// priority, only the pixels change (see themedSwatchColor / ColorPalette).
+export const BLACK_INK = '#0a0b10';
+export const WHITE_INK = '#ffffff';
+
 export const PALETTE_COLORS: PaletteColor[] = [
   { hex: '#AB71E1', label: 'Purple' },
   { hex: '#62A2E9', label: 'Blue' },
@@ -21,8 +27,14 @@ export const PALETTE_COLORS: PaletteColor[] = [
   { hex: '#B5835A', label: 'Brown', bonus: true },
   { hex: '#EC534E', label: 'Red' },
   { hex: '#F47CB0', label: 'Pink', bonus: true },
-  { hex: '#0a0b10', label: 'Black' },
+  { hex: BLACK_INK, label: 'Black' },
 ];
+
+// The color a palette swatch actually shows and paints for the current theme:
+// the Black swatch flips to white on dark paper; every other swatch is itself.
+export function themedSwatchColor(hex: string, dark: boolean): string {
+  return dark && hex === BLACK_INK ? WHITE_INK : hex;
+}
 
 // Priority order (first listed → first to be hidden / last to appear). This is
 // independent of the display order above. The three bonus colors lead the list,
@@ -39,7 +51,7 @@ export const TRIM_ORDER: string[] = [
   '#F9D24F', // Yellow
   '#62A2E9', // Blue
   '#AB71E1', // Purple
-  '#0a0b10', // Black
+  BLACK_INK, // Black
 ];
 
 export const CUSTOM_SWATCH = 'custom';
@@ -51,9 +63,12 @@ export const colors = $state({
   customColorSelected: false,
 });
 
-export function selectPaletteColor(hex: string) {
+// `hex` is the swatch's stable identity (what activeSwatch/trim/keys compare
+// against); `paintColor` is what actually gets drawn, which differs only for the
+// Black swatch in dark mode (it paints white). Defaults to painting the identity.
+export function selectPaletteColor(hex: string, paintColor: string = hex) {
   colors.activeSwatch = hex;
-  colors.activeColor = hex;
+  colors.activeColor = paintColor;
 }
 
 export function selectCustomSwatch() {

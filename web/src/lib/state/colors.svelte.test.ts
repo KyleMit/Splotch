@@ -3,10 +3,13 @@ import {
   PALETTE_COLORS,
   TRIM_ORDER,
   CUSTOM_SWATCH,
+  BLACK_INK,
+  WHITE_INK,
   colors,
   selectPaletteColor,
   selectCustomSwatch,
   pickCustomColor,
+  themedSwatchColor,
   isWhite,
 } from './colors.svelte';
 
@@ -33,6 +36,29 @@ describe('selectPaletteColor', () => {
     selectPaletteColor('#62A2E9');
     expect(colors.activeSwatch).toBe('#62A2E9');
     expect(colors.activeColor).toBe('#62A2E9');
+  });
+
+  it('paints a distinct color while keeping the swatch identity (dark-mode Black)', () => {
+    selectPaletteColor(BLACK_INK, WHITE_INK);
+    // The last swatch stays the active one (its ring/position are unchanged)...
+    expect(colors.activeSwatch).toBe(BLACK_INK);
+    // ...but it draws white so it shows on dark paper.
+    expect(colors.activeColor).toBe(WHITE_INK);
+  });
+});
+
+describe('themedSwatchColor', () => {
+  it('flips only the Black swatch to white in dark mode', () => {
+    expect(themedSwatchColor(BLACK_INK, true)).toBe(WHITE_INK);
+    expect(themedSwatchColor(BLACK_INK, false)).toBe(BLACK_INK);
+  });
+
+  it('leaves every other palette color untouched in both themes', () => {
+    for (const { hex } of PALETTE_COLORS) {
+      if (hex === BLACK_INK) continue;
+      expect(themedSwatchColor(hex, true)).toBe(hex);
+      expect(themedSwatchColor(hex, false)).toBe(hex);
+    }
   });
 });
 
