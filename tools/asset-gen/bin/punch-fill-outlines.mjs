@@ -8,7 +8,10 @@
 // Outputs (committed, shipped):       web/static/coloring/{book}/{page}-{orient}.{light,night}.webp
 //
 // Offline + deterministic: pure sharp, no network, no GEMINI_API_KEY. Safe to
-// re-run anytime; a raw fill with no matching line art fails loudly.
+// re-run anytime; a raw fill with no matching line art fails loudly — except
+// *.input.{light,night}.raw.webp strays (a samples-dir *.input.webp debug sibling
+// swept up by a batch cp), which are skipped with a warning so one junk file
+// can't kill a whole-category run.
 //
 //   npm run gen:coloring-punch                     punch every raw fill
 //   npm run gen:coloring-punch -- nature farm      only these categories
@@ -45,7 +48,16 @@ async function resolveArg(arg) {
 const { positionals } = parseArgs({ allowPositionals: true });
 const raws = (
   positionals.length ? (await Promise.all(positionals.map(resolveArg))).flat() : await rawsUnder()
-).sort();
+)
+  .sort()
+  .filter((raw) => {
+    if (!/\.input\.(light|night)\.raw\.webp$/.test(raw)) return true;
+    console.warn(
+      `SKIPPING ${relative(FILL_SRC_DIR, raw)} — looks like a *.input.webp debug sibling ` +
+        `copied from the samples dir, not a real raw fill; delete it`
+    );
+    return false;
+  });
 if (!raws.length) fail(`No raw fills found under ${relative(REPO_ROOT, FILL_SRC_DIR)}/`);
 
 for (const raw of raws) {

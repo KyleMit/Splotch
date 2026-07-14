@@ -282,7 +282,9 @@ async function generateCleanTake({
   const { maxAttempts, nightLumaMax, lineWhiteMin, driftThreshold } = cfg;
   let best = null; // lowest drift overall (fallback)
   let bestAccept = null; // lowest drift among takes that pass mood + line + eyes
+  let attemptsRun = 0;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    attemptsRun = attempt;
     const temperature = Math.min(2, temp0 + (attempt - 1) * 0.15);
     const { bytes } = await generateDarkPage(ai, {
       imageBytes: darkInput,
@@ -336,7 +338,7 @@ async function generateCleanTake({
       bestAccept = take;
     if (drift.ratio <= driftThreshold && moodOk && lineOk && eyes.passes) break;
   }
-  return bestAccept ?? best;
+  return { ...(bestAccept ?? best), attemptsRun, accepted: bestAccept !== null };
 }
 
 let pages = positionals.length
@@ -422,17 +424,24 @@ for (const page of pages) {
       // Also stash the dark input beside it once, for the review montage.
       if (i === 0) await sharp(darkInput).toFile(join(dir, `${base}.input.webp`));
       const nudge = take.dx || take.dy ? `  shift ${take.dx},${take.dy}` : '';
-      const tries = take.attempt > 1 ? `  (${take.attempt} tries)` : '';
+      const status = take.accepted
+        ? `ok${take.attemptsRun > 1 ? `  kept attempt ${take.attempt}/${take.attemptsRun}` : ''}`
+        : `kept least-bad attempt ${take.attempt}/${take.attemptsRun}`;
       const stats = `  drift ${take.drift.ratio.toFixed(4)} bgLuma ${take.night.bgLuma.toFixed(0)} lineW ${take.line.lineWhite.toFixed(0)}`;
-      const warn =
-        (take.drift.ratio > cfg.driftThreshold ? '  ⚠ still drifting' : '') +
-        (take.night.bgLuma > cfg.nightLumaMax ? '  ⚠ too bright/daytime' : '') +
-        (take.line.lineWhite < cfg.lineWhiteMin ? '  ⚠ dark outlines' : '') +
-        (take.eyes.coreFailed ? `  ⚠ flat eyes (${take.eyes.coreFailed})` : '') +
-        (take.eyes.orbFailed
-          ? `  ⚠ blank-orb eyes (${take.eyes.orbFailed}, median ${take.eyes.worstOrb?.median})`
-          : '');
-      console.log(`ok${nudge}${tries}${stats}${warn}  -> ${relative(REPO_ROOT, out)}`);
+      const failed = take.accepted
+        ? ''
+        : (take.night.bgLuma > cfg.nightLumaMax
+            ? `  night-gate FAILED (bgLuma ${take.night.bgLuma.toFixed(0)} > max ${cfg.nightLumaMax})`
+            : '') +
+          (take.line.lineWhite < cfg.lineWhiteMin
+            ? `  line-gate FAILED (lineW ${take.line.lineWhite.toFixed(0)} < min ${cfg.lineWhiteMin})`
+            : '') +
+          (take.eyes.coreFailed ? `  eye-gate FAILED (${take.eyes.coreFailed} flat eyes)` : '') +
+          (take.eyes.orbFailed
+            ? `  orb-gate FAILED (${take.eyes.orbFailed} blank-orb eyes, median ${take.eyes.worstOrb?.median})`
+            : '');
+      const warn = take.drift.ratio > cfg.driftThreshold ? '  ⚠ still drifting' : '';
+      console.log(`${status}${nudge}${stats}${failed}${warn}  -> ${relative(REPO_ROOT, out)}`);
     } catch (err) {
       failures++;
       console.log(`FAILED (${err instanceof Error ? err.message : err})`);
