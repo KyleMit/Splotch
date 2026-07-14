@@ -6,38 +6,6 @@
 
 ## Source: Code audit
 
-### [Correctness] Refuse to ship light-fill candidates that failed their quality gates
-
-**File(s):** `tools/asset-gen/bin/gen-coloring-fills.mjs` (`renderClean` and main output loop, lines
-184–292)
-
-#### Problem
-
-`renderClean()` retries a candidate up to five times, but returns the least-bad candidate even when
-none passes outline registration, worst-tile registration, white-area, and eye gates. In the normal
-single-sample mode, the caller only prints a warning and immediately overwrites both the committed
-`fill-src/*.light.raw.webp` source and its shipped punched asset. Gate failure does not increment
-`failures`, so the command exits successfully after replacing a known-good asset with a candidate
-the generator itself classified as bad.
-
-This differs from the chalk, normalization, and fresh-outline generators, which stage candidates in
-scratch space and require an explicit apply step. A later golden freeze or manifest regeneration can
-make the accidental regression look intentional.
-
-#### Proposed solution
-
-Adopt the established scratch-and-apply workflow: always retain the best failed candidate for human
-review, but do not touch committed raw or shipped assets unless a candidate passes every required
-gate and the caller requested `--apply`. If an exceptional manual override is necessary, make it an
-explicit, loudly named flag such as `--accept-failing`; default gate exhaustion should exit nonzero.
-
-#### Verification
-
-Run the CLI against temporary roots with mocked generation/scorers that make every attempt fail.
-Assert the committed raw and shipped bytes remain unchanged and the process exits nonzero. Then
-return a passing candidate, add `--apply`, and assert both outputs change. Cover a multi-page run so
-one failed page cannot partially ship unnoticed.
-
 ### [Correctness] Give every AI generation exclusive request ownership and cancellation
 
 **File(s):** `web/src/lib/drawing/aiImage.ts` (`generateAiImage`, lines 43–114),

@@ -11,9 +11,9 @@
 // as the shipped .light.webp (lib/punch-fill.mjs; ADR-0043 "reveal fills only").
 //
 // Requires GEMINI_API_KEY. Run via npm so the .ts imports resolve:
-//   npm run gen:coloring-fills                                 all pages
-//   npm run gen:coloring-fills -- creatures dinosaur           whole categories
-//   npm run gen:coloring-fills -- farm/dog-wide                one page
+//   npm run gen:coloring-fills                                 all pages to review scratch
+//   npm run gen:coloring-fills -- creatures dinosaur           whole categories to scratch
+//   npm run gen:coloring-fills -- farm/dog-wide --apply        ship a passing candidate
 //   npm run gen:coloring-fills -- farm/dog-wide --samples 5    5 candidates
 //   npm run gen:coloring-fills -- farm/dog-wide -t 1.2         hotter retry
 //
@@ -26,9 +26,10 @@
 //      is the gate that catches a localized drift a high global keep would hide.
 //   3. whiteFraction reports how much of the page is left pure white; big blank
 //      areas would look uncolored under the child's brush, so they're rejected.
-// A candidate that fails any gate is retried (temperature nudged up); the best
-// attempt is kept if none fully pass. (See lib/outline-match.mjs; the same scoring
-// backs `npm run gen:coloring-fills:audit`, which flags already-shipped fills.)
+// A candidate that fails any gate is retried (temperature nudged up). Every best
+// attempt is retained in review scratch, but only a passing candidate can ship,
+// and shipping requires --apply. (See lib/outline-match.mjs; the same scoring backs
+// `npm run gen:coloring-fills:audit`, which flags already-shipped fills.)
 import { parseArgs } from 'node:util';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
@@ -140,6 +141,7 @@ async function resolveArg(arg) {
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
+    apply: { type: 'boolean' },
     samples: { type: 'string', short: 'n' },
     temperature: { type: 'string', short: 't' },
   },
@@ -149,6 +151,7 @@ const samples = values.samples === undefined ? 1 : Number(values.samples);
 if (!(Number.isInteger(samples) && samples >= 1)) {
   fail(`--samples must be a positive integer, got "${values.samples}"`);
 }
+if (values.apply && samples > 1) fail('--apply cannot be combined with --samples greater than 1.');
 const baseTemp = values.temperature === undefined ? undefined : Number(values.temperature);
 if (baseTemp !== undefined && !(baseTemp >= 0 && baseTemp <= 2)) {
   fail(`--temperature must be a number between 0 and 2, got "${values.temperature}"`);
@@ -236,6 +239,7 @@ async function renderClean(source, width, height, slot) {
 }
 
 let failures = 0;
+const passingCandidates = [];
 for (const page of pages) {
   const rel = relative(COLORING_DIR, page)
     .replace(/\.outline\.webp$/, '')
@@ -266,21 +270,13 @@ for (const page of pages) {
       const flag = warn.length ? `  ⚠ ${warn.join(' + ')}` : '';
       const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%${nudge}`;
 
-      let out;
-      if (sampleMode) {
-        const dir = join(SAMPLES_DIR, rel);
-        await mkdir(dir, { recursive: true });
-        out = join(dir, `sample-${i + 1}.webp`);
-        await sharp(colored).toFile(out);
-        await sharp(overlay).toFile(join(dir, `sample-${i + 1}.overlay.png`));
-      } else {
-        // Ship = the raw (lined) fill into fill-src/ as the committed source of
-        // truth, then its fills-only punch into web/static (lib/punch-fill.mjs).
-        const rawOut = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
-        await mkdir(dirname(rawOut), { recursive: true });
-        await writeFile(rawOut, colored);
-        ({ out } = await punchFill(rawOut));
-      }
+      const dir = join(SAMPLES_DIR, rel);
+      await mkdir(dir, { recursive: true });
+      const out = join(dir, `sample-${i + 1}.webp`);
+      await writeFile(out, colored);
+      await sharp(overlay).toFile(join(dir, `sample-${i + 1}.overlay.png`));
+      if (passes(cand)) passingCandidates.push({ rel, colored });
+      else failures++;
       console.log(`${score}${tries}${flag}  -> ${relative(REPO_ROOT, out)}`);
     } catch (err) {
       failures++;
@@ -290,4 +286,15 @@ for (const page of pages) {
 }
 
 if (failures) fail(`${failures} render(s) failed.`);
+if (values.apply) {
+  for (const { rel, colored } of passingCandidates) {
+    const rawOut = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
+    await mkdir(dirname(rawOut), { recursive: true });
+    await writeFile(rawOut, colored);
+    const { out } = await punchFill(rawOut);
+    console.log(`  ✓ applied -> ${relative(REPO_ROOT, out)}`);
+  }
+} else if (!sampleMode) {
+  console.log('Review the candidate, then re-run with --apply to ship it.');
+}
 console.log('Done.');

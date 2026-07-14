@@ -58,7 +58,7 @@ From the **repo root** (the discoverable entry points — ADR-0019):
 npm run gen:style-covers        # AI style thumbnails  -> web/static/styles/
 npm run gen:coloring-chalk      # chalk outlines (dark-mode line art) -> web/static/coloring/**/*.chalk.webp
 npm run gen:coloring-outlines:fresh # brand-new pen outline from a text scene (same subject, new drawing)
-npm run gen:coloring-fills      # light colored fills  -> web/static/coloring/**/*.light.webp
+npm run gen:coloring-fills      # light fill candidates -> .coloring-samples/ (--apply to ship)
 npm run gen:coloring-fills:audit # drift-check the raw fills in fill-src/ (no key/network)
 npm run gen:coloring-fills:audit:shapes # invented colored shapes on the open background of the raws (no key/network)
 npm run gen:coloring-fills:audit:halo # rank shipped night fills by residual dark halo after the punch (no key/network)
@@ -93,8 +93,10 @@ lines. `gen-coloring-fills` scores every candidate two ways (`lib/outline-match.
 outline coverage (`keep`) and the **worst grid tile** (`localKeep`). The local bar is the important
 one — a large aligned subject can hold a 93% global keep while one small feature (a flower) sits at
 34%, which is exactly how `nature/ant-wide` shipped drifted. `alignToSource` only corrects a single
-global nudge, so a self-drifted feature can't be aligned away; a failing candidate is retried, and
-if none pass, regenerate.
+global nudge, so a self-drifted feature can't be aligned away. Every best candidate and registration
+overlay lands in `.coloring-samples/` for review. Committed raws and their punched shipped assets
+change only with `--apply`, only after every requested page passes all gates; exhausted gates exit
+nonzero without partially applying the batch.
 
 `gen:coloring-fills:audit` runs the same scoring over the **committed raw fills** in `fill-src/` (it
 reads committed assets only — no key, no network) and prints the pages that fail, with a
