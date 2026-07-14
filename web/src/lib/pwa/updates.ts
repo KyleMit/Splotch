@@ -14,6 +14,7 @@
 import { canvasState } from '$lib/state/canvas.svelte';
 
 let initialized = false;
+let refreshState: 'idle' | 'activating' | 'deferred' = 'idle';
 
 export function initPWAUpdates(): (() => void) | undefined {
   if (import.meta.env.DEV) return;
@@ -73,17 +74,41 @@ export async function checkVersionMismatch(attemptedVersion: string | null = nul
 
 export async function checkForUpdates() {
   try {
+    if (refreshState === 'deferred') {
+      if (canvasState.canvasEmpty) {
+        refreshState = 'idle';
+        window.location.reload();
+      }
+      return;
+    }
+    if (refreshState === 'activating') return;
+
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) return;
 
     await registration.update();
 
     const activateWaitingSW = (sw: ServiceWorker) => {
-      if (!canvasState.canvasEmpty) return;
-      sw.postMessage({ type: 'SKIP_WAITING' });
-      navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload(), {
+      if (refreshState !== 'idle' || !canvasState.canvasEmpty) return;
+      const onControllerChange = () => {
+        if (!canvasState.canvasEmpty) {
+          refreshState = 'deferred';
+          return;
+        }
+        refreshState = 'idle';
+        window.location.reload();
+      };
+      navigator.serviceWorker.addEventListener('controllerchange', onControllerChange, {
         once: true,
       });
+      refreshState = 'activating';
+      try {
+        sw.postMessage({ type: 'SKIP_WAITING' });
+      } catch (error) {
+        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+        refreshState = 'idle';
+        throw error;
+      }
     };
 
     if (registration.waiting) {

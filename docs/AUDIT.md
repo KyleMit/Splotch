@@ -75,32 +75,6 @@ just-under/over upload boundaries and against a deliberately delayed provider, c
 (not the platform) returns the timeout. Reconcile ADR-0006 and the API skill with the *measured*
 budget — do not hard-code the unverified 6 MB / 60 s numbers.
 
-### [Correctness] Recheck canvas emptiness when a service worker actually takes control
-
-**File(s):** `web/src/lib/pwa/updates.ts` (`activateWaitingSW`, lines 81–101),
-`web/src/lib/pwa/updates.test.ts` (waiting-worker coverage, lines 132–182)
-
-#### Problem
-
-The update lifecycle checks `canvasState.canvasEmpty` before sending `SKIP_WAITING`, then registers
-an unconditional `controllerchange` reload. A child can begin a stroke during the activation gap
-(the installing-worker path adds another 100 ms), after which `controllerchange` reloads and erases
-the new drawing. That contradicts the module and ADR-0022 invariant that updates reload only while
-the canvas is blank.
-
-#### Proposed solution
-
-Recheck the live canvas state inside the `controllerchange` handler. If ink appeared, leave the new
-worker controlling the page but defer the document refresh to a later safe launch/check. Keep the
-handler one-shot and make the deferred state explicit so multiple update checks cannot register
-competing reloads.
-
-#### Verification
-
-Capture the registered `controllerchange` callback in the existing worker tests. Flip canvas state
-from blank to nonempty before invoking it and assert no reload; retain the blank case and assert one
-reload. Cover the delayed installing-worker path too.
-
 ### [Correctness] Treat drag-to-clear `pointercancel` as cancellation, not commit
 
 **File(s):** `web/src/lib/actions/dragToClear.ts` (`onPointerUp` and listener wiring, lines
