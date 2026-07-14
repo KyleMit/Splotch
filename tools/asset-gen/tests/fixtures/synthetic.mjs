@@ -171,7 +171,10 @@ export function nightSource() {
 // A night FILL over nightSource(): deep-evening background, a colored subject,
 // white outlines tracing the source. `bg` sets the background mood; `opts` injects
 // exactly one defect so each fill is caught by exactly one gate.
-function nightFill(bg, { invented = false, reinked = false, foreignBlob = false } = {}) {
+function nightFill(
+  bg,
+  { invented = false, subBlobDrift = false, reinked = false, foreignBlob = false } = {}
+) {
   const c = canvas(600, 600);
   fillAll(c, bg[0], bg[1], bg[2]);
   discRGB(c, 300, 300, 118, 60, 40, 90); // subject interior
@@ -179,6 +182,13 @@ function nightFill(bg, { invented = false, reinked = false, foreignBlob = false 
   ringRGB(c, 300, 300, 120, 5, ...line);
   ringRGB(c, 300, 300, 40, 4, ...line);
   if (invented) vlineRGB(c, 90, 200, 400, 3, 255, 255, 255); // thin white stroke off any source line
+  if (subBlobDrift)
+    // three SHORT thin white strokes, each below detectInventedShapes' size floor
+    // (they read as speckle there) but together clearing scoreDrift's ratio — the
+    // fixture that proves drift is not redundant with the invented-shape detector.
+    for (const sy of [180, 300, 420])
+      for (let y = sy; y < sy + 11; y++)
+        for (let x = 90; x < 93; x++) setRGB(c, x, y, 255, 255, 255);
   if (foreignBlob) discRGB(c, 130, 130, 16, 220, 40, 40); // a floating red flower on the open bg
   return encode(c);
 }
@@ -186,7 +196,8 @@ function nightFill(bg, { invented = false, reinked = false, foreignBlob = false 
 export const nightFillGood = () => nightFill([18, 20, 40]);
 // BROKEN, one class each:
 export const nightFillDaytime = () => nightFill([150, 200, 235]); // scoreNightness
-export const nightFillDrift = () => nightFill([18, 20, 40], { invented: true }); // scoreDrift
+export const nightFillDrift = () => nightFill([18, 20, 40], { invented: true }); // scoreDrift (also trips inventedShapes)
+export const nightFillDriftSubBlob = () => nightFill([18, 20, 40], { subBlobDrift: true }); // scoreDrift ONLY
 export const nightFillReinked = () => nightFill([18, 20, 40], { reinked: true }); // scoreLineColor
 export const nightFillForeignShape = () => nightFill([18, 20, 40], { foreignBlob: true }); // detectInventedShapes
 
