@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { StrokeGroupCommand, PathOp } from './strokeOps';
 
+const magicSheet = vi.hoisted(() => ({ ready: true }));
+
+vi.mock('./magicBrush', () => ({
+  isMagicSheetDecoding: () => !magicSheet.ready,
+  sheetPatternFor: () => (magicSheet.ready ? '#magic' : null),
+}));
+
 // happy-dom's <canvas> has no 2D context, so install a recording stub: each
 // canvas's "content" is the ordered list of stroke colors painted onto it,
 // drawImage copies a source canvas's content, and clearRect empties it. Giving
@@ -10,6 +17,7 @@ import type { StrokeGroupCommand, PathOp } from './strokeOps';
 let origGetContext: typeof HTMLCanvasElement.prototype.getContext;
 
 beforeEach(() => {
+  magicSheet.ready = true;
   origGetContext = HTMLCanvasElement.prototype.getContext;
   (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = function (
     this: HTMLCanvasElement,
@@ -64,7 +72,7 @@ afterEach(() => {
 
 // A single-stroke command in a unique color. `segs` controls its replay cost so
 // the caller can push it over the keyframe threshold on demand.
-function cmd(color: string, segs: number): StrokeGroupCommand {
+function cmd(color: string, segs: number, magic = false): StrokeGroupCommand {
   const s = Array.from({ length: segs }, (_, i) => ({ cx: i, cy: i, x: i + 1, y: i + 1 }));
   const op: PathOp = {
     kind: 'path',
@@ -75,6 +83,7 @@ function cmd(color: string, segs: number): StrokeGroupCommand {
     color,
     lineWidth: 8,
     erase: false,
+    magic,
   };
   return { ops: [op], wasEmpty: false };
 }
@@ -167,5 +176,33 @@ describe('undo correctness after folding through a keyframe', () => {
     for (const c of colors) m.pushCommand(cmd(c, PATHOLOGICAL));
     expect(m.getHistoryDebug().keyframes).toBeLessThanOrEqual(1);
     expect(rebuiltContent(m)).toEqual(expected);
+  });
+});
+
+describe('folding while the magic sheet decodes', () => {
+  it('retains an oldest magic command until its paint can be replayed', async () => {
+    const m = await freshHistory();
+    m.setKeyframeSegmentThreshold(Infinity);
+    magicSheet.ready = false;
+    m.pushCommand(cmd('#ignored', CHEAP, true));
+    const solidColors = Array.from({ length: 10 }, (_, i) => `#solid${i}`);
+    for (const color of solidColors) m.pushCommand(cmd(color, CHEAP));
+
+    magicSheet.ready = true;
+
+    expect(rebuiltContent(m)).toEqual(['#magic', ...solidColors]);
+  });
+
+  it('does not build a cumulative keyframe that omits pending magic ink', async () => {
+    const m = await freshHistory();
+    m.setKeyframeSegmentThreshold(2);
+    magicSheet.ready = false;
+    m.pushCommand(cmd('#ignored', CHEAP, true));
+    m.pushCommand(cmd('#solid', PATHOLOGICAL));
+
+    magicSheet.ready = true;
+
+    expect(m.getHistoryDebug().keyframes).toBe(0);
+    expect(rebuiltContent(m)).toEqual(['#magic', '#solid']);
   });
 });

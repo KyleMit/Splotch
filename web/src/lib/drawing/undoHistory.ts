@@ -21,6 +21,7 @@ import {
   type StrokeOp,
 } from './strokeOps';
 import { simplifyCommandOps } from './commandSimplify';
+import { isMagicSheetDecoding } from './magicBrush';
 import { PERF_MARKS } from './perf';
 
 // The retained command log; commands older than this fold into the baseline.
@@ -120,7 +121,9 @@ export function commitActiveCommand(): boolean {
 export function pushCommand(cmd: StrokeGroupCommand) {
   commandLog.push(cmd);
   cmd.ops = simplifyCommandOps(cmd.ops);
-  if (commandLog.length > MAX_UNDO_STACK_SIZE) foldOldestIntoBaseline();
+  while (commandLog.length > MAX_UNDO_STACK_SIZE) {
+    if (!foldOldestIntoBaseline()) break;
+  }
   maybeKeyframe(cmd);
 }
 
@@ -159,6 +162,7 @@ function maybeKeyframe(cmd: StrokeGroupCommand) {
   if (commandSegmentCount(cmd) <= keyframeSegmentThreshold || !size) return;
   const index = commandLog.indexOf(cmd);
   if (index < 0) return;
+  if (hasMagicAwaitingDecodeThrough(index)) return;
   const kf = document.createElement('canvas');
   kf.width = size.width;
   kf.height = size.height;
@@ -183,7 +187,7 @@ function maybeKeyframe(cmd: StrokeGroupCommand) {
 // only for pathological outliers, so real sessions never reach this.
 function capKeyframeMemory() {
   while (keyframeCount() > MAX_KEYFRAMES && commandLog.length > 0) {
-    foldOldestIntoBaseline();
+    if (!foldOldestIntoBaseline()) break;
   }
 }
 
@@ -198,9 +202,11 @@ function keyframeCount(): number {
 // cumulative state through itself, so it becomes the new baseline wholesale;
 // otherwise replay its ops in order (keeping eraser destination-out ops hitting
 // exactly the pixels they originally did).
-function foldOldestIntoBaseline() {
-  const oldest = commandLog.shift();
-  if (!oldest || !baselineCtx || !baselineCanvas) return;
+function foldOldestIntoBaseline(): boolean {
+  const oldest = commandLog[0];
+  if (!oldest || !baselineCtx || !baselineCanvas) return false;
+  if (commandHasMagic(oldest) && isMagicSheetDecoding()) return false;
+  commandLog.shift();
   if (PERF_MARKS) performance.mark('engine.foldBaseline:start');
   if (oldest.keyframe) {
     baselineCtx.clearRect(0, 0, baselineCanvas.width, baselineCanvas.height);
@@ -209,6 +215,21 @@ function foldOldestIntoBaseline() {
     for (const op of oldest.ops) renderOp(baselineCtx, op);
   }
   if (PERF_MARKS) performance.measure('engine.foldBaseline', 'engine.foldBaseline:start');
+  return true;
+}
+
+function commandHasMagic(command: StrokeGroupCommand): boolean {
+  return command.ops.some((op) => op.kind !== 'clear' && op.magic);
+}
+
+// A pending fill makes renderOp intentionally paint no magic pixels. Rasterizing
+// and then dropping any command in that state would make the omission permanent.
+function hasMagicAwaitingDecodeThrough(index: number): boolean {
+  if (!isMagicSheetDecoding()) return false;
+  for (let i = 0; i <= index; i++) {
+    if (commandHasMagic(commandLog[i])) return true;
+  }
+  return false;
 }
 
 // Paint the drawing state through commandLog[upToIndex] (inclusive) onto a

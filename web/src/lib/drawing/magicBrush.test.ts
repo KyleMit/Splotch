@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { createRainbowGradient, MAGIC_GRADIENT_COUNT, edgeMargins } from './magicBrush';
+import {
+  createRainbowGradient,
+  MAGIC_GRADIENT_COUNT,
+  edgeMargins,
+  isMagicSheetDecoding,
+  setColorSheet,
+} from './magicBrush';
 
 // A deterministic pseudo-random sequence so gradient generation is reproducible
 // in the test (the module defaults to Math.random in the app).
@@ -37,6 +43,16 @@ describe('rainbow gradient generation', () => {
     const a = createRainbowGradient(seededRand(1));
     const b = createRainbowGradient(seededRand(99));
     expect(JSON.stringify(a)).not.toBe(JSON.stringify(b));
+  });
+});
+
+describe('fill decode state', () => {
+  it('is pending only while a requested fill is unresolved', () => {
+    setColorSheet('/coloring/test.light.webp');
+    expect(isMagicSheetDecoding()).toBe(true);
+
+    setColorSheet(null);
+    expect(isMagicSheetDecoding()).toBe(false);
   });
 });
 

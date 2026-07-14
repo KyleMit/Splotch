@@ -6,53 +6,6 @@
 
 ## Source: Code audit
 
-### [Correctness] Don't silently discard a magic op that folds mid-sheet-decode
-
-**File(s):** `web/src/lib/drawing/strokeOps.ts` (`renderOp` null-pattern early return, lines
-102–120), `web/src/lib/drawing/magicBrush.ts` (`sheetPatternFor`/`sheetReady`, lines 282–329),
-`web/src/lib/drawing/undoHistory.ts` (`foldOldestIntoBaseline`, lines 201–212; `maybeKeyframe`,
-lines 157–175)
-
-> **Scope note (vet 2026-07-14):** The original finding also claimed the broader "old vs. recent
-> magic ink resolves to different source images after a theme change / clear+undo recolors through a
-> new rainbow" symptom. That behavior is **intentional and documented** — ADR-0043 and the
-> `strokeOps.ts:14–18` comment state magic ops are ordinary command-log members that reveal the
-> module's *current* sheet, and resolving-at-replay is the design (pen ink in margins follows the
-> baseline the same way). The visible recoloring is cosmetic, its triggers are narrow (night fill +
-> magic across >10 commands + a *live* theme toggle, or clear-then-undo), and the proposed
-> snapshot-per-op fix is disproportionate. **Removed the broad architecture item; kept only the one
-> non-cosmetic bug below.**
-
-#### Problem
-
-`foldOldestIntoBaseline` (`undoHistory.ts:201–212`) bakes the oldest command's ops into the raster
-baseline via `renderOp` once the command count exceeds the retention window; `maybeKeyframe`
-(`157–175`) does the same for an over-long command. For a **magic** op, `renderOp`
-(`strokeOps.ts:112–118`) resolves paint from `sheetPatternFor(target)` and **returns painting
-nothing when the pattern is null**. `sheetPatternFor` returns null while `!sheetReady`
-(`magicBrush.ts:282–293`), and `setColorSheet` (`316–329`) sets `sheetReady = false` for the
-duration of an async fill decode (page change or night-fill toggle).
-
-So if the 11th+ command commits — triggering a fold — while a sheet decode is in flight, the folded
-magic op paints nothing and is **permanently discarded** (baked out of both the retained log and the
-baseline). Unlike the cosmetic recoloring above, this is silent loss of a committed drawing action.
-The trigger window is small (a commit landing inside the sub-second decode of a page/theme change)
-but the flow — draw many magic strokes, then change page — is realistic for an engaged child.
-
-#### Proposed solution
-
-Don't fold/keyframe a command while it contains a magic op whose sheet is still decoding: either
-defer the fold until `sheetReady` (bounded), or detect the null-pattern case in
-`foldOldestIntoBaseline` and skip that fold cycle rather than baking an empty result. Keep it narrow
-— this is a data-preservation guard on the fold boundary, not the broader source-identity redesign.
-
-#### Verification
-
-Unit-test `foldOldestIntoBaseline`: commit >10 magic commands, force `sheetReady = false` (mock an
-in-flight `setColorSheet` decode), trigger the fold, then let the sheet resolve and `replayAll`;
-assert the oldest magic ink is still present (not baked to nothing). A passing baseline requires the
-op to survive the fold that lands during the decode.
-
 ### [Architecture] Fit AI requests inside Netlify's deployed function envelope
 
 **File(s):** `web/src/routes/api/generate-image/+server.ts` (`MAX_IMAGE_BYTES`, multipart parsing,

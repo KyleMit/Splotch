@@ -58,6 +58,7 @@ let host: MagicBrushHost | null = null;
 // already transparent, punched at build time), so it's drawn into the sheet directly.
 let fillImage: HTMLImageElement | null = null;
 let fillUrl: string | null = null;
+let fillDecodePending = false;
 
 // Source 2: the generated rainbow. The pool is built lazily and reused; the active
 // gradient is the one currently revealed, held until the canvas is cleared.
@@ -292,6 +293,10 @@ export function sheetPatternFor(target: CanvasRenderingContext2D): CanvasPattern
   return pattern;
 }
 
+export function isMagicSheetDecoding(): boolean {
+  return fillDecodePending;
+}
+
 // Load the fill image, guarding against a page change that happened while it
 // decoded. On success stash it, then re-rasterize and repaint so already-recorded
 // magic ops pick up the colours.
@@ -301,11 +306,14 @@ function loadSheetImage(url: string) {
   img.onload = () => {
     // A newer page may have been requested while this one decoded — drop stale.
     if (fillUrl !== forFillUrl) return;
+    fillDecodePending = false;
     fillImage = img;
     rasterizeSheet();
     host?.repaint();
   };
-  img.onerror = () => {};
+  img.onerror = () => {
+    if (fillUrl === forFillUrl) fillDecodePending = false;
+  };
   img.src = url;
 }
 
@@ -317,6 +325,7 @@ export function setColorSheet(colorUrl: string | null) {
   if (colorUrl === fillUrl) return;
   fillUrl = colorUrl;
   fillImage = null;
+  fillDecodePending = colorUrl !== null;
   if (!colorUrl) {
     // Page removed — the sheet reverts to the gradient source if one exists.
     rasterizeSheet();
