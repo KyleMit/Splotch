@@ -6,12 +6,13 @@ category without re-deriving any of it. The approaches that were tried and retir
 retouching, thin-stroke normalization as the dark-mode fix, the rejected alternatives, and the
 eye-failure gallery that produced today's gates) live in [`legacy/README.md`](../legacy/README.md).
 
-Companion docs: `README.md` (runbook), `contact-sheet.md` (review surface), the decision records in
-[`docs/`]() — [pen/chalk fork](pen-chalk-fork.md), [chalk edge crisping](chalk-edge-crisping.md),
-[inpainted fill punch](inpainted-fill-punch.md), [asset naming](asset-naming.md),
-[fill vocabulary](fill-vocabulary.md), [asset-gen architecture](architecture.md) — plus ADR-0043
-(magic-brush reveal) and ADR-0052 (dark mode) in `docs/adrs/`. Every illustration here is a frozen
-copy in the sibling `pipeline-assets/` — live assets regenerate, these don't.
+Companion docs: `README.md` (runbook), `coloring-book-proof-sheet.md` (review surface), the decision
+records in [`docs/`]() — [pen/chalk fork](pen-chalk-fork.md),
+[chalk edge crisping](chalk-edge-crisping.md), [inpainted fill punch](inpainted-fill-punch.md),
+[asset naming](asset-naming.md), [fill vocabulary](fill-vocabulary.md),
+[asset-gen architecture](architecture.md) — plus ADR-0043 (magic-brush reveal) and ADR-0052 (dark
+mode) in `docs/adrs/`. Every illustration here is a frozen copy in the sibling `pipeline-assets/` —
+live assets regenerate, these don't.
 
 ## The pipeline at a glance
 
@@ -302,8 +303,8 @@ keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
 
 ### Shipping (manual on purpose — the human gate)
 
-1. Review the samples on the contact sheet (`--source samples`) — Combined view, both themes, zoom
-   the eyes.
+1. Review the samples on the coloring-book proof sheet (`--source samples`) — Combined view, both
+   themes, zoom the eyes.
 2. Copy each approved take to its raw path and re-punch. The samples dirs live at the **repo root**
    (`lib/paths.mjs` `SAMPLES_DARK_DIR`), not inside `tools/asset-gen/`:
    ```bash
@@ -332,9 +333,9 @@ keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
    `npm run gen:coloring-golden:freeze` to adopt the new baseline and `npm run gen:assets:manifest`
    to re-hash the changed bytes; commit both fixture updates with the assets (CI's
    `check:assets:manifest` fails otherwise).
-5. `npm run check:assets` + `npm run check` + `npm run test:unit`, rebuild the contact sheet
-   `--source shipped`, optionally verify live with the `run-splotch` skill (dark mode → apply page →
-   magic-brush reveal), commit.
+5. `npm run check:assets` + `npm run check` + `npm run test:unit`, rebuild the coloring-book proof
+   sheet `--source shipped`, optionally verify live with the `run-splotch` skill (dark mode → apply
+   page → magic-brush reveal), commit.
 
 Light mode must stay byte-identical throughout a night-fill pass — enforced by
 `golden/asset-manifest.sha256`: the manifest diff for a night pass must contain only
@@ -414,10 +415,11 @@ The loop that has worked, per category:
 2. **Generate chalks** (`gen:coloring-chalk --apply`), eyeballing every `.display.webp` — gates have
    been fooled, each time by something no existing gate measured.
 3. **Regenerate the suite** for changed pages: thumbs → light fills → night fills → punch.
-4. **Rebuild the contact sheet and publish it as an Artifact** — judge on the Combined view in BOTH
-   themes; zoom the eyes. The sheet is the review surface of record (`contact-sheet.md`):
+4. **Rebuild the coloring-book proof sheet and publish it as an Artifact** — judge on the Combined
+   view in BOTH themes; zoom the eyes. The sheet is the review surface of record
+   (`coloring-book-proof-sheet.md`):
 
-   ![contact sheet pair](pipeline-assets/review-contact-sheet-pair.webp)
+   ![coloring-book proof sheet pair](pipeline-assets/review-proof-sheet-pair.webp)
 
 5. **After a regen wave, run the invention + halo audits too** (proven in the 3.1 migration, since
    promoted to first-class scripts): the invented-shape detector (`gen:coloring-fills:audit:shapes`)
@@ -473,7 +475,7 @@ Hard-won process lessons:
 | `npm run gen:coloring-golden:diff`                          | re-score the catalog vs `golden/golden-scores.json`; exit 1 on regressions                      | no       |
 | `npm run gen:coloring-golden:freeze`                        | adopt the current scores as the new golden baseline                                             | no       |
 | `npm run gen:assets:manifest`                               | re-hash the committed art into `golden/asset-manifest.sha256` (CI-checked)                      | no       |
-| `npm run gen:contact-sheet -- <cat>`                        | the review sheet (publish as Artifact)                                                          | no       |
+| `npm run gen:coloring-book-proof-sheet -- <cat>`            | the review sheet (publish as Artifact)                                                          | no       |
 
 ## Status and the next category
 
@@ -510,8 +512,8 @@ from the 2026-07 migration, all verified on overlays/composites before hand-ship
 Next-category runbook: pen audit → normalize offenders if the light page warrants it (worst-first,
 `--apply`) → light fills → **chalks** (`gen:coloring-chalk --apply`) → night fills (they condition
 on the chalk) → ship raws + punch → thumbs (pen + chalk, after the chalks exist) → wire `books.ts`
-(`night` + `chalk` orientation lists) → all three audits → contact sheet review in both themes →
-checks → commit.
+(`night` + `chalk` orientation lists) → all three audits → coloring-book proof sheet review in both
+themes → checks → commit.
 
 The Stage 4 model input — the chalk as dark mode displays it (negated, white-on-black), here the owl
 whose sclera the chalk owns:

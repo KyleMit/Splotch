@@ -155,7 +155,7 @@ export async function scoreDrift(fillBuf, sourceBuf) {
 // the highest cut that still clears the good set's floor). A pale, patchy subject
 // (a mostly-white dog with a few dark contours) is the hard case — it can land near
 // the boundary, so a flagged page may need a targeted low-temp regen to come back
-// cleanly white; eyeball borderline pages in the contact sheet.
+// cleanly white; eyeball borderline pages in the coloring-book proof sheet.
 const LINE_W = 512;
 const LINE_SRC_DARK = 110; // source pixel darker than this = an outline
 export const LINE_WHITE_MIN_DEFAULT = 150; // median outline brightness below this = dark outlines
