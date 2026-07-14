@@ -128,3 +128,98 @@ function matchScene(flowerCx, flowerCy) {
 }
 export const matchSource = () => matchScene(200, 460);
 export const matchDrifted = () => matchScene(214, 474);
+
+// ---- color drawing primitives (the night gates score RGB, not just ink) ----
+function setRGB({ d, w }, x, y, r, g, b) {
+  const i = (y * w + x) * 3;
+  d[i] = r;
+  d[i + 1] = g;
+  d[i + 2] = b;
+}
+function fillAll(c, r, g, b) {
+  for (let y = 0; y < c.h; y++) for (let x = 0; x < c.w; x++) setRGB(c, x, y, r, g, b);
+}
+function ringRGB(c, cx, cy, r, t, rr, gg, bb) {
+  const rin = r - t;
+  for (let y = Math.max(0, cy - r); y <= Math.min(c.h - 1, cy + r); y++)
+    for (let x = Math.max(0, cx - r); x <= Math.min(c.w - 1, cx + r); x++) {
+      const dd = (x - cx) ** 2 + (y - cy) ** 2;
+      if (dd <= r * r && dd >= rin * rin) setRGB(c, x, y, rr, gg, bb);
+    }
+}
+function discRGB(c, cx, cy, r, rr, gg, bb) {
+  for (let y = Math.max(0, cy - r); y <= Math.min(c.h - 1, cy + r); y++)
+    for (let x = Math.max(0, cx - r); x <= Math.min(c.w - 1, cx + r); x++)
+      if ((x - cx) ** 2 + (y - cy) ** 2 <= r * r) setRGB(c, x, y, rr, gg, bb);
+}
+function vlineRGB(c, x0, y0, y1, t, rr, gg, bb) {
+  for (let y = y0; y <= y1; y++) for (let x = x0; x < x0 + t; x++) setRGB(c, x, y, rr, gg, bb);
+}
+
+// ===== NIGHT-FILL GATES (lib/night-scores.mjs, lib/invented-shapes.mjs) =====
+// One shared night line-art source: a subject ring with an inner detail, framed
+// by lots of open (white) background so the flood-based checks have something to
+// judge. Black ink on white — the polarity the source side of every night gate
+// expects.
+export function nightSource() {
+  const c = canvas(600, 600);
+  ring(c, 300, 300, 120, 5); // subject outline
+  ring(c, 300, 300, 40, 4); // inner detail
+  return encode(c);
+}
+
+// A night FILL over nightSource(): deep-evening background, a colored subject,
+// white outlines tracing the source. `bg` sets the background mood; `opts` injects
+// exactly one defect so each fill is caught by exactly one gate.
+function nightFill(bg, { invented = false, reinked = false, foreignBlob = false } = {}) {
+  const c = canvas(600, 600);
+  fillAll(c, bg[0], bg[1], bg[2]);
+  discRGB(c, 300, 300, 118, 60, 40, 90); // subject interior
+  const line = reinked ? [70, 70, 70] : [255, 255, 255]; // re-inked dark vs proper white
+  ringRGB(c, 300, 300, 120, 5, ...line);
+  ringRGB(c, 300, 300, 40, 4, ...line);
+  if (invented) vlineRGB(c, 90, 200, 400, 3, 255, 255, 255); // thin white stroke off any source line
+  if (foreignBlob) discRGB(c, 130, 130, 16, 220, 40, 40); // a floating red flower on the open bg
+  return encode(c);
+}
+// GOOD: deep evening sky, white lines, nothing invented.
+export const nightFillGood = () => nightFill([18, 20, 40]);
+// BROKEN, one class each:
+export const nightFillDaytime = () => nightFill([150, 200, 235]); // scoreNightness
+export const nightFillDrift = () => nightFill([18, 20, 40], { invented: true }); // scoreDrift
+export const nightFillReinked = () => nightFill([18, 20, 40], { reinked: true }); // scoreLineColor
+export const nightFillForeignShape = () => nightFill([18, 20, 40], { foreignBlob: true }); // detectInventedShapes
+
+// ===================== NIGHT HALO (lib/night-halo.mjs) =====================
+// A ranking scorer, not a pass/fail gate: it detects a mid-dark rim hugging the
+// lines that the punch's reference bleed does not. Line art = nightSource(); the
+// raw carries a mid fill with dark outlines; the shipped fill is the punch (fill
+// color over the outline positions), optionally with a mid-dark halo rim added.
+const HALO_FILL = [160, 150, 120];
+function haloRawCanvas() {
+  const c = canvas(600, 600);
+  fillAll(c, ...HALO_FILL);
+  discRGB(c, 300, 300, 118, 150, 140, 110);
+  ringRGB(c, 300, 300, 120, 5, 30, 30, 30); // dark outlines in the raw
+  ringRGB(c, 300, 300, 40, 4, 30, 30, 30);
+  return c;
+}
+export const haloRaw = () => encode(haloRawCanvas());
+export const haloLineArt = () => nightSource();
+function haloShipped(halo) {
+  const c = haloRawCanvas();
+  ringRGB(c, 300, 300, 120, 5, ...HALO_FILL); // punch: fill color over the lines
+  ringRGB(c, 300, 300, 40, 4, ...HALO_FILL);
+  if (halo) {
+    for (const [r, t] of [
+      [123, 3],
+      [117, 3],
+      [43, 2],
+      [37, 2],
+    ])
+      ringRGB(c, 300, 300, r, t, 95, 90, 80); // mid-dark rim in the 1-2px band
+  }
+  return encode(c);
+}
+export const haloShippedClean = () => haloShipped(false);
+export const haloShippedHaloed = () => haloShipped(true);
