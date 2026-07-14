@@ -66,6 +66,8 @@ page: cost, latency (overall + per category), format/safety, and a per-category 
 | `CONCURRENCY` | `1`     | parallel calls; keep at 1 for clean latency numbers                  |
 | `OUT_TAG`     | —       | suffix on the run-dir name                                           |
 | `SKIP_REPORT` | —       | skip the HTML report (results.json only)                             |
+| `RESUME`      | —       | `=<run dir>`: fill only the missing/failed cells, keeping images already on disk |
+| `REPORT_FROM` | —       | `=<run dir>`: rebuild `report.html` from an existing `results.json`, no API calls (pair with `VERDICT_FILE`) |
 
 ```bash
 FILTER=coloring npm run model-eval                       # just the coloring categories

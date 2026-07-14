@@ -39,6 +39,10 @@ const IN = join(BASE, 'inputs');
 const SAMPLES = Number(process.env.SAMPLES ?? 1);
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 1);
 const FILTER = process.env.FILTER || '';
+// RESUME=<existing run dir>: fill only the cells that don't already have an image
+// (failed/missing), merging into that dir's results.json. Never re-runs a cell that
+// already produced an image, so existing outputs are preserved as-is.
+const RESUME = process.env.RESUME || '';
 // A fixed, filesystem-safe run id. Date.now() is fine in plain Node; kept simple.
 const runId =
   new Date().toISOString().replace(/[:.]/g, '-') +
@@ -146,29 +150,50 @@ async function main() {
     console.error(`No inputs matched FILTER="${FILTER}".`);
     process.exit(1);
   }
-  mkdirSync(OUT, { recursive: true });
+  // Resume: reuse the given dir + its runId, keep every cell that already has an
+  // image on disk, and only run the missing/failed ones.
+  const outDir = RESUME || OUT;
+  let effRunId = runId;
+  let effSamples = SAMPLES;
+  const results = [];
+  const doneCells = new Set();
+  if (RESUME) {
+    const prev = JSON.parse(readFileSync(join(outDir, 'results.json'), 'utf8'));
+    effRunId = prev.runId;
+    effSamples = prev.samples ?? SAMPLES;
+    for (const r of prev.results) {
+      if (r.kind === 'image' && r.outFile && existsSync(join(outDir, r.outFile))) {
+        results.push(r);
+        doneCells.add(`${r.id}::${r.model}::${r.sample}`);
+      }
+    }
+    console.log(`Resuming ${effRunId}: ${doneCells.size} existing images kept, filling the rest.`);
+  }
+  mkdirSync(outDir, { recursive: true });
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-  console.log(
-    `Run ${runId}\n  ${inputs.length} inputs × ${MODELS.length} models × ${SAMPLES} sample(s) = ${inputs.length * MODELS.length * SAMPLES} calls · concurrency ${CONCURRENCY}\n`
-  );
-
-  // Build the flat task list.
+  // Build the flat task list, skipping cells already satisfied on a resume.
   const tasks = [];
   for (const file of inputs) {
     const id = file.replace(/\.png$/, '');
     const bytes = readFileSync(join(IN, file));
     const image = { base64: bytes.toString('base64'), mimeType: 'image/png' };
     for (const model of MODELS) {
-      for (let s = 1; s <= SAMPLES; s++) tasks.push({ id, file, image, model, s });
+      for (let s = 1; s <= effSamples; s++) {
+        if (doneCells.has(`${id}::${model.id}::${s}`)) continue;
+        tasks.push({ id, file, image, model, s });
+      }
     }
   }
 
-  const results = [];
+  console.log(
+    `Run ${effRunId}\n  ${tasks.length} call(s) to make${RESUME ? ` (${doneCells.size} kept)` : ''} · concurrency ${CONCURRENCY}\n`
+  );
+
   const save = () =>
     writeFileSync(
-      join(OUT, 'results.json'),
-      JSON.stringify({ runId, samples: SAMPLES, results }, null, 2)
+      join(outDir, 'results.json'),
+      JSON.stringify({ runId: effRunId, samples: effSamples, results }, null, 2)
     );
   let done = 0;
   const thunks = tasks.map((t) => async () => {
@@ -180,7 +205,7 @@ async function main() {
     if (r.kind === 'image') {
       const ob = Buffer.from(r.data, 'base64');
       outFile = `${t.id}__${t.model.id}__${t.s}.${imageFormat(ob) === 'jpeg' ? 'jpg' : 'png'}`;
-      writeFileSync(join(OUT, outFile), ob);
+      writeFileSync(join(outDir, outFile), ob);
       outSize = imageDims(ob);
       outBytes = ob.length;
       outFmt = imageFormat(ob);
@@ -227,11 +252,14 @@ async function main() {
     const browser = await chromium.launch({ executablePath: CHROMIUM_PATH });
     try {
       const htmlPath = await buildReport({
-        runId,
-        outDir: OUT,
+        runId: effRunId,
+        outDir,
         inputsDir: IN,
+        verdictHtml: process.env.VERDICT_FILE
+          ? readFileSync(process.env.VERDICT_FILE, 'utf8')
+          : undefined,
         results,
-        samples: SAMPLES,
+        samples: effSamples,
         browser,
       });
       console.log(`\nReport: ${pathToFileURL(htmlPath).href}`);
