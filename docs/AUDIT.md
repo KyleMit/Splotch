@@ -75,37 +75,6 @@ just-under/over upload boundaries and against a deliberately delayed provider, c
 (not the platform) returns the timeout. Reconcile ADR-0006 and the API skill with the *measured*
 budget — do not hard-code the unverified 6 MB / 60 s numbers.
 
-### [Performance] Split the eager SVG registry so late overlays do not inflate startup
-
-**File(s):** `web/src/lib/components/Icon.svelte` (eager glob/map, lines 4–14 and 47–55),
-`web/src/lib/components/bootHiddenOverlays.ts`, `web/src/lib/components/InstallBanner.svelte`
-(`splotchy` usage, lines 88 and 99), `web/src/lib/components/parent/AboutTab.svelte` (`splotchy`
-usage, line 42)
-
-#### Problem
-
-Every `Icon` instance imports a single eager glob containing all SVG markup, and the runtime
-`icons[name]` lookup prevents per-call-site tree-shaking. The icon directory is about 178 KB raw;
-`splotchy.svg` alone is about 88 KB raw/~32 KB gzip and is used only in late-mounted Install Banner
-and Parent Center/About UI. The current production build places the registry in an approximately 181
-KB raw/65 KB gzip chunk imported by the initial drawing route, partially undermining ADR-0049's
-dynamic overlay split.
-
-ADR-0044 recognized that every byte ships and optimized the SVGs, but it does not require all icons
-to share the entry chunk.
-
-#### Proposed solution
-
-Generate typed per-icon imports/components, or split a small eager/common registry from one or more
-lazy overlay registries. Preserve `IconName`, first-party `{@html}` safety, color-icon metadata, and
-the dynamic-icon hydration convention.
-
-#### Verification
-
-Compare production bundle composition and `npm run perf:mount` before/after. The initial route chunk
-should no longer contain `splotchy` markup, while every icon state still renders and the late
-overlay chunk remains service-worker cached.
-
 ## Source: Extract audit
 
 ### [Extract] resolveOutlineTargets

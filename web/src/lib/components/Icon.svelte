@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { IconName } from './icon-names';
+  import type { CommonIconName } from './iconTypes';
 
-  const modules = import.meta.glob('../icons/*.svg', {
+  const modules = import.meta.glob(['../icons/*.svg', '!../icons/splotchy.svg'], {
     eager: true,
     query: '?raw',
     import: 'default',
@@ -24,7 +24,6 @@
     'magic-brush',
     'palette',
     'shapes',
-    'splotchy',
     'sweep-icon',
     'undo',
     'wand-stars',
@@ -38,7 +37,7 @@
   ]);
 
   interface Props {
-    name: IconName;
+    name: CommonIconName;
     class?: string;
     [key: string]: unknown;
   }

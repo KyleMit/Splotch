@@ -559,6 +559,14 @@ test('parent center panels can be changed by tab buttons and native scrolling', 
 
   await scrollToPanel(3);
   await expect(page.locator('.tab-button.active')).toContainText('About');
+  await expect(page.locator('.tab-button.active [data-icon="splotchy"] img')).toBeVisible();
+  const aboutMascot = page.locator('.about-brand [data-icon="splotchy"]');
+  const aboutMascotImage = aboutMascot.locator('img');
+  await expect(aboutMascotImage).toBeVisible();
+  await expect
+    .poll(() => aboutMascotImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBeGreaterThan(0);
+  await expect(aboutMascot).toHaveClass(/icon-color/);
 
   await page.getByRole('button', { name: /Setup/ }).click();
   await expect(page.locator('.tab-button.active')).toContainText('Setup');
