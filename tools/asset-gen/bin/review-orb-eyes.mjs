@@ -1,7 +1,7 @@
 // Build a self-contained HTML review of the composite-eye audit's BLANK-ORB
 // flags: one card per flagged page with the whole-page night composite plus the
-// zoomed eye crop(s) the gate flagged, each labelled with its median luma and
-// white fraction. The single human-review surface for the composite blank-orb
+// zoomed eye crop(s) the gate flagged, each labelled with its core dark-fraction
+// (≈0 for a real blank orb). The single human-review surface for the composite blank-orb
 // gate (lib/composite-eye.mjs) — publish the output with the Artifact tool and
 // mark which pages are real defects vs. an over-flagged big-catchlight eye
 // before burning them down. Deterministic, no API key/network.
@@ -76,7 +76,7 @@ for (const page of pages) {
       .resize(200, 200, { kernel: 'nearest' })
       .png()
       .toBuffer();
-    crops.push({ img: b64(crop), median: p.median, white: p.whiteFrac });
+    crops.push({ img: b64(crop), coreDark: p.coreDarkFrac });
   }
   cards.push({ rel, full, crops });
 }
@@ -89,7 +89,7 @@ const cardHtml = (c) =>
     ${c.crops
       .map(
         (k) =>
-          `<figure style="margin:0"><img src="${k.img}" style="width:120px;border-radius:6px"/><figcaption style="font-family:monospace;font-size:12px;text-align:center">med ${k.median} · w ${k.white}</figcaption></figure>`
+          `<figure style="margin:0"><img src="${k.img}" style="width:120px;border-radius:6px"/><figcaption style="font-family:monospace;font-size:12px;text-align:center">coreDark ${k.coreDark}</figcaption></figure>`
       )
       .join('')}
   </div>
@@ -97,7 +97,7 @@ const cardHtml = (c) =>
 
 const html = `<title>Blank-orb night eyes — ${cards.length} flagged</title>
 <h1>Composite blank-orb night eyes — ${cards.length} flagged</h1>
-<p>Each card is the whole-page night composite plus the zoomed eye(s) the composite-eye gate flagged, with median luma (0=black … 255=white) and white fraction. A real blank orb reads near-white; a false flag (a big catchlight over a small pupil) still looks like a legible dark pupil despite a high median. <strong>Decide which pages to fix.</strong></p>
+<p>Each card is the whole-page night composite plus the zoomed eye(s) the composite-eye gate flagged, with the core dark-fraction (fraction of a small disc at the catchlight core that is dark). A real blank orb reads ≈0 — the catchlight sits in white with no pupil around it; a legible eye has its dark pupil at the core. <strong>Decide which pages to fix.</strong></p>
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px">
 ${cards.map(cardHtml).join('')}
 </div>`;

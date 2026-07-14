@@ -438,7 +438,7 @@ for (const page of pages) {
             : '') +
           (take.eyes.coreFailed ? `  eye-gate FAILED (${take.eyes.coreFailed} flat eyes)` : '') +
           (take.eyes.orbFailed
-            ? `  orb-gate FAILED (${take.eyes.orbFailed} blank-orb eyes, median ${take.eyes.worstOrb?.median})`
+            ? `  orb-gate FAILED (${take.eyes.orbFailed} blank-orb eyes, coreDark ${take.eyes.worstOrb?.coreDarkFrac})`
             : '');
       const warn = take.drift.ratio > cfg.driftThreshold ? '  ⚠ still drifting' : '';
       console.log(`${status}${nudge}${stats}${failed}${warn}  -> ${relative(REPO_ROOT, out)}`);

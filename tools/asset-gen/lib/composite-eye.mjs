@@ -12,13 +12,26 @@
 //   2. On a SOLID-pen eye the annulus around the catchlight is the solid-ink
 //      pupil, so it is "band-blind" (annulusInkFrac > 0.5) and skipped outright.
 //
-// This check measures the WHOLE pupil on the composite. Eyes are LOCATED by the
-// pen's nested eye cores (findEyeCores finds the catchlight at every eye, solid
-// or ringed) and CONFIRMED by the light fill's eye signature — a dark pupil AND
-// a bright sclera near the core, sampled geometrically (not through the
-// ink-excluding annulus, which is what goes blind on solid pens). The pupil the
-// light fill paints dark must stay dark in the night composite; if it composites
-// mostly white it is a blank orb, no matter how the pieces score.
+// Eyes are LOCATED by the pen's nested eye cores (findEyeCores finds the
+// catchlight at every eye, solid or ringed) and CONFIRMED by the light fill's
+// eye signature — a dark pupil AND a bright sclera near the core.
+//
+// WHAT WE MEASURE (and why the first attempt over-flagged). The first version
+// measured the light fill's whole pupil FOOTPRINT on the composite and failed
+// it when that footprint read white. That over-flagged every eye whose dark-mode
+// art legitimately draws a SMALL pupil inside a BIG white sclera: the light
+// footprint (large light-mode pupil) then lands on the night sclera, reading
+// white=1 — indistinguishable from a real blank orb, which also reads white=1.
+// Seventeen shipped pages (owl, unicorn, the shape faces, …) tripped it while
+// looking perfectly legible.
+//
+// The distinguishing invariant is local, not footprint-wide: a LEGIBLE eye has a
+// dark pupil sitting AT the catchlight core; a BLANK ORB has white there (the
+// catchlight bled into the whole orb, no pupil to enclose it). So we sample a
+// small disc centred on the core in the composite and ask what fraction is dark.
+// Calibrated on two recovered pre-fix true positives (stego 0.03, horse 0.05)
+// vs. all 17 over-flags (≥ 0.10) and the good band-blind controls (≥ 0.46):
+// coreDarkFrac < CORE_DARK_FRAC_MIN ⇔ blank orb. See tools/asset-gen/tests.
 import sharp from 'sharp';
 import { BAND_BLIND_INK_FRAC, scoreEyeFill } from './eye-fill.mjs';
 
@@ -44,21 +57,25 @@ const WHITE = 200; // luma above this is "sclera/catchlight white"
 const PUPIL_MIN_FRAC = 0.00002;
 const PUPIL_MAX_FRAC = 0.01;
 
-// Strip this many pixels off the pupil mask before measuring, to drop the
-// light↔night registration rim: the two fills align to the pen only within
-// ~1-2px, so the exact mask leaks onto the white sclera and reads a good dark
-// pupil as "lit". Eroding removes that edge rim while keeping interior white — a
-// real defect (white intruding INTO the pupil as a lobe or ring) still reads
-// white, an edge-only rim clears.
+// The pupil-legibility test: sample a disc centred on the catchlight core in the
+// composite, radius CORE_DISC_PUPIL_FRAC × the light pupil's radius, and take the
+// fraction of it that is dark. A legible eye has its pupil right there (high
+// darkFrac); a blank orb has white there (≈ 0). The disc is deliberately smaller
+// than the pupil so it stays inside the pupil for a real eye yet never reaches
+// out to unrelated facial darks; a floor keeps it usable on tiny pupils.
+const CORE_DISC_PUPIL_FRAC = 0.6;
+const CORE_DISC_MIN_PX = 3;
+
+// A real pupil disc keeps most of its mass through this many steps of erosion; a
+// thin outline stroke (also dark in the light fill) erodes away. Used only to
+// reject stroke-ink blobs from being treated as pupils, not to measure them.
 const PUPIL_ERODE_PX = 2;
 
-// Pass bars for a composited pupil. A blank-orb pupil is dominated by white
-// (whiteFrac) and its eroded bulk reads light (median). Calibrated on the
-// catalog: good pupils read median ≤ ~65 / white ≤ ~0.2 (velo, dog, ship,
-// police, monster all clear with margin); the shipped failures read median ≥ 245
-// / white ≥ 0.55 (stego, bee, teddy, caterpillar, horse-tall).
-export const PUPIL_COMPOSITE_LUMA_MAX = 150;
-export const PUPIL_WHITE_FRAC_MAX = 0.5;
+// Below this core dark-fraction the pupil is a blank orb. Calibrated on two
+// recovered pre-fix true positives (stego-tall 0.03, horse-tall 0.05) sitting
+// well below every one of the 17 legible over-flags (min 0.10) and the good
+// band-blind controls (≥ 0.46). See tools/asset-gen/tests/composite-eye.test.mjs.
+export const CORE_DARK_FRAC_MIN = 0.07;
 
 async function grayResized(buf, w, h) {
   const { data } = await sharp(buf)
@@ -118,6 +135,22 @@ function darkBlob(light, w, h, sx, sy) {
   return px;
 }
 
+// Stats of a filled disc of radius R centred on (cx, cy) in a gray buffer.
+function discStats(g, w, h, cx, cy, R) {
+  const R2 = R * R;
+  const vals = [];
+  for (let y = Math.max(0, cy - R); y <= Math.min(h - 1, cy + R); y++)
+    for (let x = Math.max(0, cx - R); x <= Math.min(w - 1, cx + R); x++)
+      if ((x - cx) ** 2 + (y - cy) ** 2 <= R2) vals.push(g[y * w + x]);
+  if (!vals.length) return { median: 255, whiteFrac: 1, darkFrac: 0 };
+  vals.sort((a, b) => a - b);
+  return {
+    median: vals[vals.length >> 1],
+    whiteFrac: vals.filter((v) => v > WHITE).length / vals.length,
+    darkFrac: vals.filter((v) => v < DARK).length / vals.length,
+  };
+}
+
 // Score every eye pupil on the night composite. `compBuf` is the simulated final
 // render (compositeNight), `lightBuf` the committed light raw, `penBuf` the pen
 // outline that locates the eyes. Returns one entry per confirmed pupil plus a
@@ -172,51 +205,55 @@ export async function scoreCompositeEyes(compBuf, lightBuf, penBuf) {
     if (blob.length / (bw * bh) < 0.4) continue; // not a filled disc
     if (Math.max(bw, bh) / Math.min(bw, bh) > 2.5) continue; // not roundish
 
-    let mask = new Set(blob);
+    // A filled pupil disc keeps most of its mass through erosion; a thin outline
+    // stroke (also dark in the light fill) erodes away. If little survives, this
+    // blob is stroke ink, not a pupil — the shape pages false-positived here.
+    let eroded = new Set(blob);
     for (let step = 0; step < PUPIL_ERODE_PX; step++) {
       const next = new Set();
-      for (const p of mask) {
+      for (const p of eroded) {
         const x = p % w;
         const y = (p / w) | 0;
         if (
           x > 0 &&
-          mask.has(p - 1) &&
+          eroded.has(p - 1) &&
           x < w - 1 &&
-          mask.has(p + 1) &&
+          eroded.has(p + 1) &&
           y > 0 &&
-          mask.has(p - w) &&
+          eroded.has(p - w) &&
           y < h - 1 &&
-          mask.has(p + w)
+          eroded.has(p + w)
         ) {
           next.add(p);
         }
       }
-      mask = next;
+      eroded = next;
     }
-    // A filled pupil disc keeps most of its mass through erosion; a thin outline
-    // stroke (also dark in the light fill) erodes away. If little survives, this
-    // blob is stroke ink, not a pupil — the shape pages false-positived here.
-    if (mask.size < Math.max(12, blob.length * 0.3)) continue;
+    if (eroded.size < Math.max(12, blob.length * 0.3)) continue;
     for (const p of blob) claimed[p] = 1;
 
     const bx = blob.reduce((s, p) => s + (p % w), 0) / blob.length;
     const by = blob.reduce((s, p) => s + ((p / w) | 0), 0) / blob.length;
-    const vals = [...mask].map((p) => comp[p]).sort((a, b) => a - b);
-    const median = vals[vals.length >> 1];
-    const whiteFrac = vals.filter((v) => v > WHITE).length / vals.length;
-    const darkFrac = vals.filter((v) => v < DARK).length / vals.length;
-    const blankOrb = median >= PUPIL_COMPOSITE_LUMA_MAX || whiteFrac >= PUPIL_WHITE_FRAC_MAX;
+    // Measure the composite in a small disc AT the catchlight core — not over the
+    // light pupil's footprint, which lands on the (legitimately larger) night
+    // sclera and reads white for legible and blank eyes alike. A real pupil sits
+    // at the core (dark); a blank orb is white there.
+    const pupilRadius = Math.sqrt(blob.length / Math.PI);
+    const R = Math.max(CORE_DISC_MIN_PX, Math.round(pupilRadius * CORE_DISC_PUPIL_FRAC));
+    const { median, whiteFrac, darkFrac } = discStats(comp, w, h, cx, cy, R);
+    const blankOrb = darkFrac < CORE_DARK_FRAC_MIN;
     pupils.push({
       x: Math.round((bx / w) * 100) / 100,
       y: Math.round((by / h) * 100) / 100,
       px: blob.length,
       median,
       whiteFrac: Math.round(whiteFrac * 100) / 100,
-      darkFrac: Math.round(darkFrac * 100) / 100,
+      coreDarkFrac: Math.round(darkFrac * 100) / 100,
       blankOrb,
     });
   }
+  // Worst = the emptiest pupil (least dark at the core).
   const failed = pupils.filter((p) => p.blankOrb);
-  const worst = failed.sort((a, b) => b.median - a.median)[0] ?? null;
+  const worst = failed.sort((a, b) => a.coreDarkFrac - b.coreDarkFrac)[0] ?? null;
   return { pupils, passes: failed.length === 0, worst, failed: failed.length };
 }

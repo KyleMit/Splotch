@@ -76,7 +76,7 @@ for (const page of pages) {
   const orbCol = orb
     ? orb.passes
       ? 'ok'
-      : `BLANK-ORB (${orb.failed}, med ${orb.worst?.median})`
+      : `BLANK-ORB (${orb.failed}, coreDark ${orb.worst?.coreDarkFrac})`
     : '-';
   console.log(
     `${rel.padEnd(28)} ${String(light.cores.length).padStart(5)} ${String(lively).padStart(6)}  ${(lightVerdict.passes ? 'ok' : 'FAIL').padEnd(5)}  ${nightCol.padEnd(22)}  ${orbCol}`

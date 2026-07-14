@@ -47,18 +47,25 @@ folded into Tier 3 #8.)
    teddy-tall's pen is a 2026-07-13 FRESH drawing, proving a brand-new ringed pen does not protect
    the chalk stage. Fix: chalk regen per page with the seeded eye notes (police-wide's
    erase-and-redraw recipe for the horses; keep-the-pen's-rings for bee/caterpillar/teddy), then
-   night regen + re-punch. **Now machine-detectable:** the 2026-07-14 composite-eye gate
-   (`lib/composite-eye.mjs`, the `orb` column of `gen:coloring-fills:audit:eyes`) scores the whole
-   pupil on the chalk-over-night composite and flags this class by number. Beyond the pages above it
-   surfaced more shipped blank-orb night eyes — `creatures/owl-{tall,wide}` (confirmed: white pupil,
-   tiny catchlight ring), `creatures/unicorn-{tall,wide}`, `creatures/dragon-{tall,wide}`,
-   `creatures/mermaid-tall`, `dinosaur/triceratops-tall`, `dinosaur/velociraptor-tall`,
-   `farm/cat-tall`, `farm/cow-tall`, `space/moon-tall`, and the shape faces
-   `shapes/{square-tall,square-wide,star-tall,triangle-tall,triangle-wide}` — all the same
-   solid-pen-pupil class, fixable with the same chalk-geometry + no-fill-catchlight recipe proven on
-   `dinosaur/stegosaurus-tall` (`fill-src/dinosaur/notes.json`). Confirm each on the composite
-   before regen: the gate can over-flag an eye whose catchlight is large relative to a small pupil,
-   so a few shape/moon faces may be borderline rather than broken.
+   night regen + re-punch. **Machine-detectable, and now regression-tested:** the composite-eye gate
+   (`lib/composite-eye.mjs`, the `orb` column of `gen:coloring-fills:audit:eyes`) flags this class
+   by number. Its FIRST cut (2026-07-14) measured the light pupil's whole FOOTPRINT on the composite
+   and over-flagged 17 shipped-but-legible eyes — `creatures/owl-{tall,wide}`,
+   `unicorn-{tall,wide}`, `dragon-{tall,wide}`, `mermaid-tall`,
+   `dinosaur/{triceratops,velociraptor}-tall`, `farm/{cat,cow}-tall`, `space/moon-tall`, and the
+   shape faces `shapes/{square-tall,square-wide,star-tall,triangle-tall,triangle-wide}` — because a
+   legible dark-mode eye draws a SMALL pupil inside a BIG white sclera, so the light footprint lands
+   on the sclera and reads white just like a real orb. Human review (2026-07-14) confirmed all 17
+   legible; the gate was retuned to the invariant that actually separates the classes: it samples a
+   small disc AT the catchlight core and takes its dark-fraction — a legible eye has its pupil there
+   (dark), a blank orb has white there (`coreDarkFrac < CORE_DARK_FRAC_MIN`, 0.07). Calibrated on
+   two recovered pre-fix true positives (stego 0.04, horse 0.05) vs. all 17 over-flags (min 0.14)
+   and the good band-blind controls (≥ 0.46), and locked in by
+   `tools/asset-gen/tests/composite-eye.test.mjs` (`npm run test:asset-gen`), which carries both
+   true positives and three of the over-flags as committed fixtures. No shipped page is currently
+   flagged, so there is nothing here to burn down — the recipe (chalk-geometry + no-fill-catchlight,
+   proven on `dinosaur/stegosaurus-tall`, `fill-src/dinosaur/notes.json`) stands ready if the gate
+   flags a genuinely new orb.
 2. **`creatures/mermaid-tall`'s light eyes are giant solid-black orbs** *(shipped asset)*: the pen
    draws each pupil as solid ink filling nearly the whole eye (only two catchlight holes), so the
    light fill has nothing to paint and the face reads dead-eyed in light mode. This is #9's
@@ -126,8 +133,9 @@ folded into Tier 3 #8.)
    the fill: the 2026-07-13 night-fill-only regen (PR #142) left the blank white orb because no fill
    can darken a solid-ink chalk pupil, and it took a chalk erase-and-redraw + night regen + re-punch
    (2026-07-14, recipe in `fill-src/dinosaur/notes.json`) to fix them. The EYE-scale slice of this
-   gap is now MEASURED and gated: `lib/composite-eye.mjs` (`scoreCompositeEyes`) scores the whole
-   pupil on the chalk-over-night composite and flags a blank white orb — wired into the night
+   gap is now MEASURED and gated: `lib/composite-eye.mjs` (`scoreCompositeEyes`) samples a small
+   disc at each eye's catchlight core on the chalk-over-night composite and flags a blank white orb
+   when that core is not dark (`coreDarkFrac < CORE_DARK_FRAC_MIN`) — wired into the night
    generator's gate and reported as the `orb` column of `gen:coloring-fills:audit:eyes`. It closes
    the solid-pen band-blind class `judgeNightEyes` cannot see (see new item below); the broader
    non-eye ΔE gap (a hero region matched to the sky) still stands. The 2026-07-13
