@@ -75,30 +75,6 @@ just-under/over upload boundaries and against a deliberately delayed provider, c
 (not the platform) returns the timeout. Reconcile ADR-0006 and the API skill with the *measured*
 budget — do not hard-code the unverified 6 MB / 60 s numbers.
 
-### [Testing] Run asset-pipeline unit tests in CI
-
-**File(s):** `package.json` (`test`/`test:asset-gen`, lines 37 and 49–52),
-`tools/asset-gen/vitest.config.mjs` (ten-suite config, lines 1–15), `.github/workflows/test.yml`
-(test job, lines 62–115)
-
-#### Problem
-
-The root `npm test` includes `test:asset-gen`, and the pipeline now has ten suites/45 tests for its
-load-bearing image-analysis gates. The CI workflow does not run `npm test`; it manually runs only
-`test:unit` and `test:e2e`, so asset-gate regressions can merge without executing those tests. The
-testing skill and script description also still claimed CI matched the old two-suite command.
-
-#### Proposed solution
-
-Add `npm run test:asset-gen` to the CI test job (before browser setup, since it needs no browser),
-or centralize CI on a script whose suite list cannot drift from `npm test`. Keep expensive
-native/manual tests explicitly separate.
-
-#### Verification
-
-Temporarily make one asset-gate assertion fail and confirm the CI test job fails before Playwright.
-Restore it and confirm all 10 files/45 tests run. A local `npm run test:asset-gen` currently passes.
-
 ### [Accessibility] Make palette and hex buttons activate from keyboard and assistive technology
 
 **File(s):** `web/src/lib/components/ColorPalette.svelte` (handlers/buttons, lines 49–80 and

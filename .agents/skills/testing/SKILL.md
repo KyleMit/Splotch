@@ -7,24 +7,26 @@ description: Full testing guide — the three-tier strategy (Vitest unit, Playwr
 
 # Splotch — Testing Guide
 
-Splotch has three layers of automated tests. The first two run on every push/PR; the third (a real
-device launch) is heavy, so it runs only on tagged releases and on demand.
+Splotch has four core automated suites across three test layers. The app-unit, asset-pipeline, and
+E2E suites run on every push/PR; real-device launch tests are heavy, so they run only on tagged
+releases and on demand.
 
-| Layer           | Tool                | Command                | Runs in CI                              |
-| --------------- | ------------------- | ---------------------- | --------------------------------------- |
-| Unit            | Vitest (happy-dom)  | `npm run test:unit`    | every push / PR                         |
-| E2E (web)       | Playwright          | `npm run test:e2e`     | every push / PR                         |
-| Smoke (Android) | Maestro + emulator  | `npm run test:android` | **tagged releases only**                |
-| Smoke (iOS)     | Maestro + simulator | `npm run test:ios`     | **tagged releases only** (macOS runner) |
+| Layer                 | Tool                | Command                  | Runs in CI                              |
+| --------------------- | ------------------- | ------------------------ | --------------------------------------- |
+| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit`      | every push / PR                         |
+| Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen` | every push / PR                         |
+| E2E (web)             | Playwright          | `npm run test:e2e`       | every push / PR                         |
+| Smoke (Android)       | Maestro + emulator  | `npm run test:android`   | **tagged releases only**                |
+| Smoke (iOS)           | Maestro + simulator | `npm run test:ios`       | **tagged releases only** (macOS runner) |
 
 A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
 `npm audit --audit-level=critical`) also runs on every push/PR alongside the tests — see Continuous
-integration below. | Smoke (API contract) | Node fetch + throwaway `vite dev` |
-`npm run test:api:smoke` | on demand | | Smoke (deployed Blobs) | Node fetch vs a real deploy |
-`npm run test:blobs:smoke` | on demand (PR preview / prod) |
+integration below. Two additional server-contract smoke tests, `test:api:smoke` and
+`test:blobs:smoke`, run on demand rather than on every push.
 
-`npm test` runs the first two (`test:unit` + `test:e2e`). The native smoke tests are intentionally
-**not** part of `npm test` — they need an emulator/simulator and the native toolchains.
+`npm test` runs the first three (`test:unit` + `test:asset-gen` + `test:e2e`). The native smoke
+tests are intentionally **not** part of `npm test` — they need an emulator/simulator and the native
+toolchains.
 
 ## Deploy smoke tests — `test:api:smoke`, `test:blobs:smoke`
 
@@ -56,6 +58,17 @@ npm run test:unit:watch    # watch mode
 Configured in `web/vitest.config.ts`. Environment is **happy-dom** (not jsdom). Covers the pure
 logic + state modules (`colorRing`, `state/*`, `storage`, including the native dual-layer hydrate
 via a mocked `@capacitor/preferences`).
+
+## Asset-pipeline unit tests — Vitest
+
+```bash
+npm run test:asset-gen
+```
+
+Configured in `tools/asset-gen/vitest.config.mjs`. These run in Node against committed fixtures and
+mocked generator workflows, with no Gemini calls or network access. CI runs them immediately after
+the app-unit suite and before installing Playwright's browser dependencies, so image-analysis gate
+regressions fail fast.
 
 ## E2E web tests — Playwright
 
@@ -203,12 +216,12 @@ npm run test:android:device     # re-run as often as you like
 
 ## Continuous integration
 
-| Workflow                               | Trigger                                                          | What it runs                                                              |
-| -------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `.github/workflows/test.yml`           | every push to `main`, every PR                                   | `quality` (type-check, lint, format:check, audit) + unit + Playwright E2E |
-| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | Android Maestro smoke test                                                |
-| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`                   | iOS Maestro smoke test (macOS runner)                                     |
-| `.github/workflows/blobs-smoke.yml`    | Netlify `deployment_status` success + manual `workflow_dispatch` | Netlify Blobs persistence round-trip (ADR-0025)                           |
+| Workflow                               | Trigger                                                          | What it runs                                                                        |
+| -------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `.github/workflows/test.yml`           | every push to `main`, every PR                                   | `quality` (type-check, lint, format:check, audit) + app/asset unit + Playwright E2E |
+| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | Android Maestro smoke test                                                          |
+| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`                   | iOS Maestro smoke test (macOS runner)                                               |
+| `.github/workflows/blobs-smoke.yml`    | Netlify `deployment_status` success + manual `workflow_dispatch` | Netlify Blobs persistence round-trip (ADR-0025)                                     |
 
 The `blobs-smoke` workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching the deploy's admin
 secret; without it the job fails at the login step. The iOS smoke mirrors Android but on a

@@ -16,16 +16,18 @@ Splotch has three distinct layers of testable behavior that require different to
 
 ## Decision
 
-Three separate test suites:
+Three testing tiers, with separate unit-test commands for the app and asset pipeline:
 
-| Tier          | Tool                          | Command                                                | What it covers                                                                                     |
-| ------------- | ----------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Unit          | Vitest + happy-dom            | `npm run test:unit`                                    | Pure functions, `$state` modules, storage layer, color ring math                                   |
-| E2E web       | Playwright (production build) | `npm run test:e2e`                                     | Real browser flows on `/`, drawing engine harness, palette CSS trim, AI route (mocked), multitouch |
-| Android smoke | Maestro                       | `npm run test:android` / `npm run test:android:device` | App boots on real emulator, "Parent Center" button visible                                         |
+| Tier                | Tool                          | Command                                                | What it covers                                                                                     |
+| ------------------- | ----------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Unit (app)          | Vitest + happy-dom            | `npm run test:unit`                                    | Pure functions, `$state` modules, storage layer, color ring math                                   |
+| Unit (asset)        | Vitest + Node                 | `npm run test:asset-gen`                               | Image-analysis gates and mocked asset-generator workflows against committed fixtures               |
+| E2E web             | Playwright (production build) | `npm run test:e2e`                                     | Real browser flows on `/`, drawing engine harness, palette CSS trim, AI route (mocked), multitouch |
+| Native launch smoke | Maestro                       | `npm run test:android` / `npm run test:android:device` | App boots on real emulator, "Parent Center" button visible                                         |
 
-`npm test` runs unit + E2E sequentially; the Android smoke is a separate opt-in command because it
-requires an emulator.
+`npm test` runs app unit + asset-pipeline unit + E2E sequentially; the native smoke tests are
+separate opt-in commands because they require an emulator or simulator. CI runs both unit commands
+before setting up Playwright, then runs E2E.
 
 The Playwright E2E suite runs against the **production build** (not dev server) to catch build-time
 issues. A `global-setup.ts` warms each route with a cold Vite load before workers start to avoid

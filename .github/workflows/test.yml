@@ -77,6 +77,9 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
 
+      - name: Run asset-pipeline tests
+        run: npm run test:asset-gen
+
       - name: Resolve Playwright version
         id: playwright-version
         run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
