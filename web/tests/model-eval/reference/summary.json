@@ -1,0 +1,54 @@
+{
+  "runId": "2026-07-14T16-41-34-413Z-reference-partial",
+  "agg": {
+    "gemini-2.5-flash-image": {
+      "n": 22,
+      "images": 22,
+      "refusals": 0,
+      "errors": 0,
+      "meanMs": 8328,
+      "medianMs": 8133,
+      "minMs": 7267,
+      "maxMs": 10217,
+      "imageTokens": 1290,
+      "avgCost": 0.03890685909090909,
+      "avgBytes": 1073119,
+      "fmt": "png"
+    },
+    "gemini-3.1-flash-image": {
+      "n": 22,
+      "images": 22,
+      "refusals": 0,
+      "errors": 0,
+      "meanMs": 8129,
+      "medianMs": 8127,
+      "minMs": 6796,
+      "maxMs": 10482,
+      "imageTokens": 1120,
+      "avgCost": 0.06789765909090908,
+      "avgBytes": 392396,
+      "fmt": "jpeg"
+    }
+  },
+  "catRows": [
+    {
+      "c": "art-detail",
+      "a": 8509,
+      "b": 7873,
+      "n": 9
+    },
+    {
+      "c": "coloring-magic",
+      "a": 8452,
+      "b": 8337,
+      "n": 6
+    },
+    {
+      "c": "coloring-manual",
+      "a": 7989,
+      "b": 8279,
+      "n": 7
+    }
+  ],
+  "refusals": 0
+}
