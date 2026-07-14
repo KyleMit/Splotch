@@ -1060,8 +1060,8 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0,
-        "bgLuma": 33.6,
+        "drift": 0.00033,
+        "bgLuma": 32.8,
         "lineWhite": 252,
         "eyesFailed": 0,
         "driftOk": true,
@@ -1091,9 +1091,9 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0.00045,
-        "bgLuma": 34.7,
-        "lineWhite": 245,
+        "drift": 0.00189,
+        "bgLuma": 49.1,
+        "lineWhite": 248,
         "eyesFailed": 0,
         "driftOk": true,
         "moodOk": true,
