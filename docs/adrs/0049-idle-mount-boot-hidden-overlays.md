@@ -43,7 +43,11 @@ before the chunk arrives still shows the dialog the moment it mounts. An overlay
 events or reads DOM at mount time would break under this pattern.
 
 Measured (`npm run perf:mount`, phone, 4× CPU + Slow-4G): load long task 471–508 ms → 256–325 ms,
-DCL 785 ms → ~400 ms, and no long tasks after load.
+DCL 785 ms → ~400 ms, and no overlay-mount long tasks after load. A 2026-07-14 regression run
+recorded two separate post-load tasks (67 ms and 110 ms, about 77 ms blocking total), dominated by
+the intentionally idle `AudioContext` warm-up that keeps the first stroke audible; the canvas's
+measured resize was 9.2 ms. That is outside this overlay decision and remains preferable to moving
+context creation onto the child's first pointerdown.
 
 ## Consequences
 

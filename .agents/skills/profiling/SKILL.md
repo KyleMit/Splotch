@@ -27,11 +27,15 @@ re-runnable on any saved trace.
 
 Flags (web/ios): `--device=phone\|tablet\|desktop`, `--no-build` (reuse the last build); web also
 `--throttle=N`. Android: `--no-build` (profile the installed app as-is). `perf:undo` takes
-`--throttle=N` / `--no-throttle` / `--no-build`. Each run writes
-`perf-profiles/<timestamp>-<target>-…/` containing `trace.json`, `metrics.json`, `summary.json`,
+`--throttle=N` / `--no-throttle` / `--no-build`. Interaction runs write
+`perf-profiles/<timestamp>-<target>-…/` with `trace.json`, `metrics.json`, `summary.json`,
 `report.md`, and `screenshot.png`; `perf:undo` also writes `undo-scenarios.json` /
-`undo-scenarios.md` (the per-scenario keyframe/op/ undo-cost/memory tables). `perf-profiles/` is
-gitignored.
+`undo-scenarios.md` (the per-scenario keyframe/op/undo-cost/memory tables). `perf:mount` initially
+writes only `trace.json` and `mount-summary.json`; running `perf:analyze` on that trace adds
+`summary.json` and `report.md`. The raw mount trace does not retain the harness settings metadata,
+so the regenerated report's Settings table can say `n/a` / `none`; use the command and
+output-directory suffix (for example, `mount-phone-4x`) for the actual capture profile.
+`perf-profiles/` is gitignored.
 
 **Undo/keyframe memory caveat:** history rasters (keyframes, the baseline, and the old snapshot
 stack) live in **canvas backing stores, not the JS heap** — so `performance.memory` / the heap table
