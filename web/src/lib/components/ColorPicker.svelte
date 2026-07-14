@@ -102,6 +102,10 @@
     e.preventDefault();
     e.stopPropagation();
   }
+
+  function handleHexClick(e: MouseEvent, hex: string) {
+    if (e.detail === 0) selectColor(hex);
+  }
 </script>
 
 <svelte:window onresize={() => (hexCenters = null)} />
@@ -153,6 +157,7 @@
                 style="--color: {hex};"
                 data-color={hex}
                 aria-label={hex}
+                onclick={(e) => handleHexClick(e, hex)}
               ></button>
             {/each}
           </div>

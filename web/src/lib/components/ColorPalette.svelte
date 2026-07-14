@@ -11,7 +11,7 @@
   } from '$lib/state/colors.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
-  import { scribbleGuard } from '$lib/actions/scribbleGuard';
+  import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
   import { openColorPicker, buttonCenter } from '$lib/state/ui.svelte';
   import { toolState, selectPen } from '$lib/state/tool.svelte';
   import { layout } from '$lib/state/layout.svelte';
@@ -61,22 +61,18 @@
     return `0 0 0 0.5px white, 0 0 0 4.5px ${color}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
   }
 
-  function handleSwatchUp(e: PointerEvent, hex: string, paint: string) {
+  function selectSwatch(hex: string, paint: string) {
     selectPen();
     selectPaletteColor(hex, paint);
     ringAnimateKey = hex + ':' + Date.now();
     releaseAllPointers();
-    e.preventDefault();
-    e.stopPropagation();
   }
 
-  function handleCustomUp(e: PointerEvent) {
+  function selectCustomColor() {
     selectPen();
     selectCustomSwatch();
     openColorPicker(swatchEls[CUSTOM_SWATCH] ? buttonCenter(swatchEls[CUSTOM_SWATCH]) : null);
     releaseAllPointers();
-    e.preventDefault();
-    e.stopPropagation();
   }
 
   function handlePaletteDown(e: PointerEvent) {
@@ -124,7 +120,7 @@
         ? `box-shadow: ${ringShadow(shown)}; --ring-color: ${getRingColor(shown)};`
         : ''}"
       aria-label={shown === hex ? label : 'White'}
-      onpointerup={(e) => handleSwatchUp(e, hex, shown)}
+      use:scribbleTap={() => selectSwatch(hex, shown)}
       onpointerdown={handlePaletteDown}
       onpointercancel={handleSwatchCancel}
       bind:this={swatchEls[hex]}
@@ -139,7 +135,7 @@
     style={!toolState.eraser && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected
       ? `box-shadow: ${gradientRingShadow(colors.customColor)};`
       : ''}
-    onpointerup={handleCustomUp}
+    use:scribbleTap={selectCustomColor}
     onpointerdown={handlePaletteDown}
     onpointercancel={handleSwatchCancel}
     bind:this={swatchEls[CUSTOM_SWATCH]}

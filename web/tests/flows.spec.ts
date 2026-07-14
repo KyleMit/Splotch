@@ -128,6 +128,67 @@ test('selecting a palette color activates it and paints in that color', async ({
   expect(px![2]).toBeGreaterThan(px![0]);
 });
 
+test('palette colors and custom hexagons activate from the keyboard', async ({ page }) => {
+  await gotoApp(page);
+
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Purple' })).toBeFocused();
+  await page.keyboard.press('Tab');
+  const blue = page.getByRole('button', { name: 'Blue' });
+  await expect(blue).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(blue).toHaveClass(/active/);
+
+  const red = page.getByRole('button', { name: 'Red' });
+  await red.focus();
+  await page.keyboard.press('Space');
+  await expect(red).toHaveClass(/active/);
+
+  const custom = page.getByRole('button', { name: 'Custom Color' });
+  await custom.focus();
+  await page.keyboard.press('Enter');
+  const dialog = page.locator('#color-picker');
+  await expect(dialog).toBeVisible();
+
+  const green = dialog.locator('.grid.landscape .hexagon[data-color="#2ECC71"]');
+  await green.focus();
+  await page.keyboard.press('Space');
+  await expect(dialog).not.toBeVisible();
+  await expect(green).toHaveClass(/selected/);
+});
+
+test('pointer exploration still snaps a hexagon gap and commits the highlighted color', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await page.getByRole('button', { name: 'Custom Color' }).click();
+
+  const dialog = page.locator('#color-picker');
+  await expect(dialog).toBeVisible();
+  const start = dialog.locator('.grid.landscape .row.r5 .hexagon.c3');
+  const target = dialog.locator('.grid.landscape .row.r5 .hexagon.c1');
+
+  await start.hover();
+  await page.mouse.down();
+  await target.hover();
+  await expect(target).toHaveClass(/hover/);
+
+  const targetBox = (await target.boundingBox())!;
+  const gap = {
+    x: targetBox.x + targetBox.width / 2 - 39,
+    y: targetBox.y + targetBox.height / 2,
+  };
+  expect(
+    await page.evaluate(({ x, y }) => !document.elementFromPoint(x, y)?.closest('.hexagon'), gap)
+  ).toBe(true);
+  await page.mouse.move(gap.x, gap.y);
+  await expect(target).toHaveClass(/hover/);
+  await page.mouse.up();
+
+  await expect(dialog).not.toBeVisible();
+  await expect(target).toHaveClass(/selected/);
+});
+
 // Recorded on-device (perf-profiles/recordings/pencil-color-tap.json): an Apple
 // Pencil tap on a sidebar swatch followed ~440ms later by a stroke lost the
 // whole stroke, while identical strokes ~900ms+ after the tap painted fine. The

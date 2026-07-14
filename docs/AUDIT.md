@@ -75,34 +75,6 @@ just-under/over upload boundaries and against a deliberately delayed provider, c
 (not the platform) returns the timeout. Reconcile ADR-0006 and the API skill with the *measured*
 budget — do not hard-code the unverified 6 MB / 60 s numbers.
 
-### [Accessibility] Make palette and hex buttons activate from keyboard and assistive technology
-
-**File(s):** `web/src/lib/components/ColorPalette.svelte` (handlers/buttons, lines 49–80 and
-91–130), `web/src/lib/components/ColorPicker.svelte` (delegated handlers/buttons, lines 33–104 and
-128–160), `web/src/lib/actions/scribbleGuard.ts` (`scribbleTap`, lines 37–79)
-
-#### Problem
-
-Both controls render semantic `<button>` elements but activate exclusively from pointer events.
-Keyboard Enter/Space and assistive-technology activation emit `click`, not `pointerup`, so focusable
-swatches and hexagons do nothing. The codebase already has `scribbleTap`, which preserves stylus
-pointer-up behavior while accepting detail-zero keyboard/AT clicks without double firing.
-
-#### Proposed solution
-
-Add a detail-zero `click` activation path for palette swatches and focused hexagons while retaining
-the existing pointer paths for touch/stylus exploration. `scribbleTap` can supply that behavior for
-the palette; the delegated hex grid needs either a keyboard-only button handler or a factored
-pointer-independent selection function so adding per-button pointer handling does not double-fire
-the bubbled delegated gesture. Ensure a pointer gesture still commits once and gap-snapping remains
-unchanged.
-
-#### Verification
-
-Add Playwright coverage that tabs to a palette color and activates it with Enter/Space, then opens
-Custom Color, focuses a hex button, activates it, and observes the chosen color plus dialog close.
-Retain pointer/stylus tests to catch double activation.
-
 ### [Performance] Split the eager SVG registry so late overlays do not inflate startup
 
 **File(s):** `web/src/lib/components/Icon.svelte` (eager glob/map, lines 4–14 and 47–55),
