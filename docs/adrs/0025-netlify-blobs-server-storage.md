@@ -98,9 +98,8 @@ where `persistent = (store !== null)` — false whenever Blobs is unconfigured *
 `/admin` renders a warning banner when `persistent` is false. This banner is also the canary that
 caught (and, once misread, masked) the V1-function bug: **if it shows in production, the function is
 not getting the Blobs context — check the adapter major first.** The JSON `/api/admin/tokens`
-snapshot also carries `persistent` (added so the deploy smoke test can assert it); the native
-console defaults the `AdminConsole` prop to `persistent = true` when the field is absent and does
-not currently surface the banner, but could thread the field through to do so.
+snapshot also carries `persistent`, so the deploy smoke test can assert it and the native console
+can surface the same warning after every successful snapshot.
 
 ## Consequences
 

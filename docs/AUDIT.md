@@ -75,44 +75,6 @@ just-under/over upload boundaries and against a deliberately delayed provider, c
 (not the platform) returns the timeout. Reconcile ADR-0006 and the API skill with the *measured*
 budget — do not hard-code the unverified 6 MB / 60 s numbers.
 
-### [Correctness] Surface the API's persistence status in the native admin console
-
-**File(s):** `web/src/routes/api/admin/tokens/+server.ts` (snapshot response, lines 32–45),
-`web/src/routes/admin/native/+page.svelte` (snapshot state/application, lines 15–63 and 122–134),
-`web/src/lib/components/admin/AdminConsole.svelte` (`persistent` prop/warning, lines 38–51 and
-207–213), `web/tests/admin.spec.ts` (native expectation, lines 58–63)
-
-#### Problem
-
-Every JSON snapshot already carries `persistent`, and the shared console already has the correct
-warning UI. The native page discards the field and does not pass the prop, so it defaults to true.
-Its E2E test even asserts the stale claim that JSON cannot carry the signal. During a Blobs outage
-or deployment misconfiguration, an on-device admin sees successful in-memory adds/removes with no
-warning; the changes disappear on a cold start.
-
-#### Proposed solution
-
-Track `persistent` from every successful snapshot, validate the snapshot shape, and pass it into
-`AdminConsole`. Remove the stale comments and make web/native front doors present the same
-durability state.
-
-**Vet 2026-07-14 (real, but low priority — ADR-documented as optional):** confirmed — the snapshot
-response includes `persistent` (`+server.ts:42–44`), `applySnapshot` (`native/+page.svelte:46–63`)
-reads only `data.invites`, and `AdminConsole` is rendered without the prop so it defaults to `true`
-(`AdminConsole.svelte:38`). **But ADR-0025:99–103 explicitly documents this as a known, accepted
-state** ("the native console defaults the AdminConsole prop to `persistent = true` … and does not
-currently surface the banner, *but could* thread the field through") — so it's a documented optional
-enhancement, not a latent bug, and in production the native app hits the Blobs-backed hosted API
-where `persistent` is always `true`. The strongest concrete justification is that the E2E comment at
-`admin.spec.ts:60–61` ("JSON snapshot can't carry a persistence signal") is **factually wrong** —
-the snapshot does carry it. Keep as low-priority cleanup driven by correcting that misleading test.
-
-#### Verification
-
-The local E2E server has no Blobs and already returns `persistent:false`; invert the native test to
-require the fallback warning. Add a mocked `persistent:true` snapshot to prove the warning remains
-hidden for durable storage and that later snapshots update the state.
-
 ### [Correctness] Commit AI credentials only after the current request persists them
 
 **File(s):** `web/src/lib/components/parent/AiKeyManager.svelte` (verification flows, lines 31–37

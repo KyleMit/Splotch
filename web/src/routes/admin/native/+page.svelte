@@ -15,6 +15,7 @@
   let session = $state('');
   let authed = $state(false);
   let invites = $state<Invite[]>([]);
+  let persistent = $state(true);
   let flash = $state<Flash | null>(null);
   let loginError = $state<string | null>(null);
   // Don't flash the login form while the stored session is still being checked.
@@ -24,6 +25,7 @@
     session = '';
     authed = false;
     invites = [];
+    persistent = true;
     loginError = message;
     setAdminLinkVisible(false);
     void clearAdminSession();
@@ -40,7 +42,34 @@
     });
   }
 
-  // Every /api/admin/tokens response carries the full { tokens, invites }
+  function isInvite(value: unknown): value is Invite {
+    if (typeof value !== 'object' || value === null) return false;
+    const invite = value as Record<string, unknown>;
+    return typeof invite.token === 'string' && typeof invite.url === 'string';
+  }
+
+  function isSnapshot(
+    value: unknown
+  ): value is { ok: true; tokens: string[]; invites: Invite[]; persistent: boolean } {
+    if (typeof value !== 'object' || value === null) return false;
+    const snapshot = value as Record<string, unknown>;
+    return (
+      snapshot.ok === true &&
+      Array.isArray(snapshot.tokens) &&
+      snapshot.tokens.every((token) => typeof token === 'string') &&
+      Array.isArray(snapshot.invites) &&
+      snapshot.invites.every(isInvite) &&
+      typeof snapshot.persistent === 'boolean'
+    );
+  }
+
+  function responseError(value: unknown) {
+    if (typeof value !== 'object' || value === null) return null;
+    const error = (value as Record<string, unknown>).error;
+    return typeof error === 'string' ? error : null;
+  }
+
+  // Every /api/admin/tokens response carries the full { tokens, invites, persistent }
   // snapshot, so one handler covers list/add/remove. A 401 means the session
   // was invalidated server-side (secret rotated) — drop back to the login form.
   async function applySnapshot(response: Response) {
@@ -49,8 +78,8 @@
       return false;
     }
     const data = await response.json().catch(() => null);
-    if (!response.ok || !data?.ok) {
-      const text = data?.error ?? 'Something went wrong. Please try again.';
+    if (!response.ok || !isSnapshot(data)) {
+      const text = responseError(data) ?? 'Something went wrong. Please try again.';
       // The console renders `flash` only when authed; before then (the stored-
       // session check and the post-login snapshot) only `loginError` is visible.
       if (authed) flash = { kind: 'error', text };
@@ -58,6 +87,7 @@
       return false;
     }
     invites = data.invites;
+    persistent = data.persistent;
     authed = true;
     return true;
   }
@@ -123,6 +153,7 @@
   <AdminConsole
     {authed}
     {invites}
+    {persistent}
     {flash}
     {loginError}
     onlogin={login}
