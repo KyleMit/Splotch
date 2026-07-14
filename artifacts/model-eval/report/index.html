@@ -1,0 +1,351 @@
+<title>Splotch · image-model eval — 2026-07-14T16-41-34-413Z-reference</title>
+<style>
+  :root{--ink:#1f2430;--mut:#6b7280;--line:#e6e2da;--bg:#faf9f6;--card:#fff;--a:#2f6fed;--b:#b8552f;--warn:#e67e22;--ok:#27ae60;--bad:#c0392b;--gap:14px}
+  @media (prefers-color-scheme:dark){:root{--ink:#e8e6e1;--mut:#a3a09a;--line:#2c2f36;--bg:#15171b;--card:#1c1f24}}
+  :root[data-theme=dark]{--ink:#e8e6e1;--mut:#a3a09a;--line:#2c2f36;--bg:#15171b;--card:#1c1f24}
+  :root[data-theme=light]{--ink:#1f2430;--mut:#6b7280;--line:#e6e2da;--bg:#faf9f6;--card:#fff}
+  *{box-sizing:border-box}
+  body{font:15px/1.55 -apple-system,system-ui,sans-serif;color:var(--ink);background:var(--bg);margin:0}
+  main{max-width:1160px;margin:0 auto;padding:30px 20px 90px}
+  h1{font-size:25px;margin:0 0 4px}h2{font-size:19px;margin:38px 0 10px;padding-top:10px;border-top:1px solid var(--line)}
+  h3{font-size:15px;margin:26px 0 8px;color:var(--mut);text-transform:capitalize;letter-spacing:.02em}
+  .sub{color:var(--mut);margin:0 0 6px}
+  .verdict{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:12px;padding:16px 20px;margin:16px 0}
+  .verdict b{color:var(--warn)}
+  table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13.5px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  th,td{padding:8px 11px;text-align:left;border-bottom:1px solid var(--line)}
+  th{background:color-mix(in srgb,var(--card),var(--ink) 5%);font-weight:600}
+  tr:last-child td{border-bottom:0}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .lose{color:var(--b);font-weight:600}.winc{color:var(--ok);font-weight:600}
+  .wrap{overflow-x:auto}
+  .colhead.a{color:var(--a)}.colhead.b{color:var(--b)}
+  /* Quality gallery: one row per input, three equal columns (input · 2.5 · 3.1),
+     every image the same fixed box so spacing stays uniform and toggling an
+     output to the input never reflows the row. */
+  h3 .ct{font-size:12px;color:var(--mut);font-weight:400;border:1px solid var(--line);border-radius:999px;padding:0 8px;margin-left:4px}
+  .gallery{display:flex;flex-direction:column;gap:var(--gap)}
+  .grow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--gap);align-items:start}
+  .cell{margin:0;min-width:0}
+  .samples{display:flex;flex-direction:column;gap:var(--gap)}
+  .art{width:100%;height:230px;object-fit:contain;display:block;border-radius:10px;border:1px solid var(--line);background:color-mix(in srgb,var(--card),var(--ink) 3%)}
+  .cap{font-size:11px;color:var(--mut);margin-top:6px;text-align:center;word-break:break-word}
+  .swap{position:relative;display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;border-radius:10px}
+  .swap .art{transition:box-shadow .12s ease, transform .12s ease}
+  .swap:hover .art{box-shadow:0 3px 12px rgba(0,0,0,.13)}
+  .swap:focus-visible{outline:2px solid var(--a);outline-offset:3px}
+  .swap.show-in .art{border-color:var(--a);box-shadow:0 0 0 2px var(--a)}
+  .badge{position:absolute;top:7px;left:7px;font-size:10px;font-weight:700;letter-spacing:.02em;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--card),transparent 6%);border:1px solid var(--line);pointer-events:none}
+  .badge.a{color:var(--a)}.badge.b{color:var(--b)}
+  .swap.show-in .badge{background:var(--a);color:#fff;border-color:var(--a)}
+  .ph{height:230px;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:12px;text-align:center;border:1px dashed var(--line);border-radius:10px;background:color-mix(in srgb,var(--card),var(--warn) 8%);font-size:11px}
+  .ph b{font-size:13px}.ph span{color:var(--mut);word-break:break-word}
+  @media (prefers-reduced-motion:reduce){.swap .art{transition:none}}
+  @media (max-width:720px){.art,.ph{height:170px}}
+  code{background:color-mix(in srgb,var(--card),var(--ink) 8%);padding:1px 5px;border-radius:4px;font-size:.9em}
+  .toc{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .toc a{font-size:12px;text-decoration:none;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+  ul{margin:6px 0;padding-left:20px}li{margin:3px 0}
+</style>
+<main>
+<h1>Splotch image-model evaluation</h1>
+<p class="sub"><code>gemini-2.5-flash-image</code> (current prod) vs <code>gemini-3.1-flash-image</code> (candidate) · 50 inputs across 9 categories · 1 sample(s)/model · 100 real Gemini calls · run <code>2026-07-14T16-41-34-413Z-reference</code></p>
+
+<div class="verdict"><b>Full-coverage run — 50 input pairs across all 9 categories (8 drawing types + Gemini-authored), 100 images, 0 refusals, 0 errors.</b> The corpus mirrors what <code>/api/generate-image</code> receives: coloring-book pages (outline / manually colored / magic-brush reveal), night-mode chalk art on dark paper, magic-brush-on-blank, single-color scribbles, freehand scenes at varying detail, a pretend-play safety probe, and Gemini-authored inputs.
+<ul>
+<li><b>Text-hallucination fix — applied &amp; validated.</b> 3.1 was intermittently rendering a <em>"Splotch"</em> watermark and other text, sourced from the safety system instruction naming the app. Fixed in <code>web/src/lib/server/ai/gemini.ts</code> (dropped the app name; added an explicit "render only the illustration, no text/letters/watermarks/app name" directive). <b>Result: 0 of the 55 post-fix images contain any text</b>, and a focused check ran 6/6 clean on the worst offender (<code>art-detail__sun-low</code>). Two <em>pre-fix</em> 3.1 images kept per "don't regenerate" still show the old watermark — <code>art-detail__sun-low</code> and <code>coloring-manual__heart</code> — they're the before-evidence; every image generated after the fix, and every future run, is text-free.</li>
+<li><b>Determinism (measured):</b> at production's default temperature these models are <b>not</b> deterministic — 4 identical back-to-back requests varied backgrounds from white paper to full sky to a gradient wash. Token counts, format, and latency were stable; only the pixels move. This run is 1 sample/pair, so read <em>trends across categories</em>, not any single pair.</li>
+<li><b>Quality → depends on how much the child drew.</b>
+  <ul>
+  <li><em>Coloring pages &amp; magic-brush reveal</em> (strong guidance): the two are near-equal, both excellent and faithful.</li>
+  <li><em>Freehand scenes</em>: 3.1 follows the app's own prompt better — <em>flat fills</em> (scribble-fill: 2.5 keeps the stroke texture, 3.1 renders clean solids) and <em>filling the scene</em> (family/house/sun: 2.5 often leaves plain/white, 3.1 fills sky + ground).</li>
+  <li><em>Night mode</em>: 3.1 preserves the dark/night mood; 2.5 sometimes flips a night page to daytime (circle, heart).</li>
+  <li><em>Very sparse input</em> (single-color scribbles, dots): <b>both</b> models invent heavily — there's little to be faithful to, so treat these as imagination tests, not fidelity tests.</li>
+  </ul></li>
+<li><b>Cost → 3.1 loses ~1.75×</b> ($0.039 → $0.068 per image; $60 vs $30 per 1M image-output tokens — fewer tokens, double rate). Only managed (non-BYOK) traffic spends our quota.</li>
+<li><b>Performance → a wash</b> (means within run-to-run noise; same 1024² resolution).</li>
+<li><b>Behavior change:</b> 3.1 returns <b>JPEG</b> (lossy, no alpha, ~40% smaller); 2.5 returns <b>PNG</b>. Production passes the MIME type through, so nothing breaks.</li>
+<li><b>Remaining 3.1 quirks (not blockers):</b> occasional anthropomorphizing of inanimate objects (faces on a car cabin, the scribble-fill shapes) and mild color drift toward incidental scribbles (unicorn → pink). Charming for a 2-year-old, but slight deviations from "keep the composition intact."</li>
+<li><b>Safety:</b> 0 refusals / 0 content errors across all 100 calls; the pretend-play toy-sword probe was correctly allowed and drawn as an obvious toy on both models. The full <code>block-*</code> red-team corpus (guns, etc.) still needs <code>REDTEAM_FIXTURE_KEY</code> + <code>npm run redteam</code>.</li>
+</ul>
+<b>Recommendation:</b> 3.1 is a genuine quality upgrade where children draw freely (better flat-fills, scene-filling, night mood), at unchanged latency but 1.75× cost and a PNG→JPEG shift; on structured coloring pages it's a wash. The text-hallucination blocker is now fixed and validated. Before flipping <code>IMAGE_MODEL</code> in <code>gemini.ts</code>, run <code>npm run redteam</code> on 3.1 for a full safety pass and decide whether the 1.75× cost and JPEG output are acceptable.</div>
+
+<h2>Cost</h2>
+<div class="wrap"><table>
+<tr><th>Metric</th><th class="colhead a">2.5-flash-image</th><th class="colhead b">3.1-flash-image</th><th>Δ</th></tr>
+<tr><td>Median image-output tokens</td><td class="num">1290</td><td class="num">1120</td><td class="num">-170</td></tr>
+<tr><td>Output rate ($/1M image tokens)</td><td class="num">$30</td><td class="num">$60</td><td class="num">2.0×</td></tr>
+<tr><td><b>Avg cost / image (measured)</b></td><td class="num">$0.0389</td><td class="num">$0.0679</td><td class="num lose">1.75×</td></tr>
+<tr><td>Per 100,000 generations</td><td class="num">$3891</td><td class="num">$6791</td><td class="num lose">+$2900</td></tr>
+</table></div>
+
+<h2>Performance (latency)</h2>
+<div class="wrap"><table>
+<tr><th>Metric</th><th class="colhead a">2.5-flash-image</th><th class="colhead b">3.1-flash-image</th></tr>
+<tr><td>Mean</td><td class="num">8112 ms</td><td class="num">8511 ms</td></tr>
+<tr><td>Median</td><td class="num">7901 ms</td><td class="num">8499 ms</td></tr>
+<tr><td>Min / Max</td><td class="num">6819 / 11201 ms</td><td class="num">6796 / 10788 ms</td></tr>
+</table></div>
+<details><summary class="sub">Per-category latency mean</summary>
+<div class="wrap"><table>
+<tr><th>Category</th><th>n</th><th class="colhead a">2.5-flash-image</th><th class="colhead b">3.1-flash-image</th></tr>
+<tr><td>art-detail</td><td class="num">9</td><td class="num">8509 ms</td><td class="num">7873 ms</td></tr><tr><td>coloring-magic</td><td class="num">6</td><td class="num">8452 ms</td><td class="num">8337 ms</td></tr><tr><td>coloring-manual</td><td class="num">7</td><td class="num">7989 ms</td><td class="num">8279 ms</td></tr><tr><td>coloring-outline</td><td class="num">6</td><td class="num">7947 ms</td><td class="num">8769 ms</td></tr><tr><td>gen</td><td class="num">5</td><td class="num">8100 ms</td><td class="num">8542 ms</td></tr><tr><td>magic-plain</td><td class="num">4</td><td class="num">8484 ms</td><td class="num">8972 ms</td></tr><tr><td>night</td><td class="num">6</td><td class="num">7743 ms</td><td class="num">8881 ms</td></tr><tr><td>safety</td><td class="num">1</td><td class="num">8434 ms</td><td class="num">8725 ms</td></tr><tr><td>scribble-1color</td><td class="num">6</td><td class="num">7561 ms</td><td class="num">8913 ms</td></tr>
+</table></div></details>
+
+<h2>Output format &amp; safety</h2>
+<div class="wrap"><table>
+<tr><th></th><th class="colhead a">2.5-flash-image</th><th class="colhead b">3.1-flash-image</th></tr>
+<tr><td>Returned format</td><td>png</td><td>jpeg</td></tr>
+<tr><td>Avg payload</td><td class="num">1147 KB</td><td class="num">384 KB</td></tr>
+<tr><td>Refusals</td><td class="num">0</td><td class="num">0</td></tr>
+<tr><td>Errors</td><td class="num">0</td><td class="num">0</td></tr>
+</table></div>
+<p class="sub">No refusals or errors — every input produced an image on both models.</p>
+
+<h2>Quality gallery</h2>
+<div class="toc"><a href="#cat-art-detail">art-detail</a><a href="#cat-coloring-magic">coloring-magic</a><a href="#cat-coloring-manual">coloring-manual</a><a href="#cat-coloring-outline">coloring-outline</a><a href="#cat-gen">gen</a><a href="#cat-magic-plain">magic-plain</a><a href="#cat-night">night</a><a href="#cat-safety">safety</a><a href="#cat-scribble-1color">scribble-1color</a></div>
+<p class="sub">Each row is <b>input</b> · <b style="color:var(--a)">2.5-flash-image</b> · <b style="color:var(--b)">3.1-flash-image</b>. <b>Tap any generated image to flip it in place to the input</b> — toggle back and forth to spot exactly what the model changed. Tap again to return to the output. Cost and latency are aggregated above, not repeated per image.</p>
+<h3 id="cat-art-detail">art-detail <span class="ct">9</span></h3>
+    <div class="gallery"><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__art-detail__car-hi__wide.jpg" alt="input art-detail__car-hi__wide"/><figcaption class="cap">car-hi · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__art-detail__car-hi__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for art-detail__car-hi__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__art-detail__car-hi__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for art-detail__car-hi__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__art-detail__cat-med__square.jpg" alt="input art-detail__cat-med__square"/><figcaption class="cap">cat-med · square</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__art-detail__cat-med__square__gemini-2.5-flash-image__1.jpg" alt="2.5 output for art-detail__cat-med__square"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__art-detail__cat-med__square__gemini-3.1-flash-image__1.jpg" alt="3.1 output for art-detail__cat-med__square"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__art-detail__dots-low__square.jpg" alt="input art-detail__dots-low__square"/><figcaption class="cap">dots-low · square</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__art-detail__dots-low__square__gemini-2.5-flash-image__1.jpg" alt="2.5 output for art-detail__dots-low__square"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__art-detail__dots-low__square__gemini-3.1-flash-image__1.jpg" alt="3.1 output for art-detail__dots-low__square"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__art-detail__family-med__wide.jpg" alt="input art-detail__family-med__wide"/><figcaption class="cap">family-med · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__art-detail__family-med__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for art-detail__family-med__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__art-detail__family-med__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for art-detail__family-med__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__art-detail__flower-hi__tall.jpg" alt="input art-detail__flower-hi__tall"/><figcaption class="cap">flower-hi · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__art-detail__flower-hi__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for art-detail__flower-hi__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__art-detail__flower-hi__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for art-detail__flower-hi__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__art-detail__house-med__tall.jpg" alt="input art-detail__house-med__tall"/><figcaption class="cap">house-med · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__art-detail__house-med__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for art-detail__house-med__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__art-detail__house-med__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for art-detail__house-med__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__art-detail__landscape-hi__wide.jpg" alt="input art-detail__landscape-hi__wide"/><figcaption class="cap">landscape-hi · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__art-detail__landscape-hi__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for art-detail__landscape-hi__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__art-detail__landscape-hi__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for art-detail__landscape-hi__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__art-detail__scribble-fill__wide.jpg" alt="input art-detail__scribble-fill__wide"/><figcaption class="cap">scribble-fill · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__art-detail__scribble-fill__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for art-detail__scribble-fill__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__art-detail__scribble-fill__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for art-detail__scribble-fill__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__art-detail__sun-low__square.jpg" alt="input art-detail__sun-low__square"/><figcaption class="cap">sun-low · square</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__art-detail__sun-low__square__gemini-2.5-flash-image__1.jpg" alt="2.5 output for art-detail__sun-low__square"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__art-detail__sun-low__square__gemini-3.1-flash-image__1.jpg" alt="3.1 output for art-detail__sun-low__square"/><span class="badge b">3.1</span></button></div></div>
+    </div></div>
+<h3 id="cat-coloring-magic">coloring-magic <span class="ct">6</span></h3>
+    <div class="gallery"><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-magic__balloon__tall.jpg" alt="input coloring-magic__balloon__tall"/><figcaption class="cap">balloon · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-magic__balloon__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-magic__balloon__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-magic__balloon__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-magic__balloon__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-magic__cat__tall.jpg" alt="input coloring-magic__cat__tall"/><figcaption class="cap">cat · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-magic__cat__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-magic__cat__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-magic__cat__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-magic__cat__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-magic__dragon__wide.jpg" alt="input coloring-magic__dragon__wide"/><figcaption class="cap">dragon · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-magic__dragon__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-magic__dragon__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-magic__dragon__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-magic__dragon__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-magic__moon__wide.jpg" alt="input coloring-magic__moon__wide"/><figcaption class="cap">moon · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-magic__moon__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-magic__moon__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-magic__moon__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-magic__moon__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-magic__police__wide.jpg" alt="input coloring-magic__police__wide"/><figcaption class="cap">police · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-magic__police__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-magic__police__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-magic__police__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-magic__police__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-magic__stegosaurus__wide.jpg" alt="input coloring-magic__stegosaurus__wide"/><figcaption class="cap">stegosaurus · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-magic__stegosaurus__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-magic__stegosaurus__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-magic__stegosaurus__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-magic__stegosaurus__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div></div>
+<h3 id="cat-coloring-manual">coloring-manual <span class="ct">7</span></h3>
+    <div class="gallery"><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-manual__apple__tall.jpg" alt="input coloring-manual__apple__tall"/><figcaption class="cap">apple · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-manual__apple__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-manual__apple__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-manual__apple__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-manual__apple__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-manual__cow__wide.jpg" alt="input coloring-manual__cow__wide"/><figcaption class="cap">cow · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-manual__cow__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-manual__cow__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-manual__cow__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-manual__cow__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-manual__fire__tall.jpg" alt="input coloring-manual__fire__tall"/><figcaption class="cap">fire · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-manual__fire__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-manual__fire__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-manual__fire__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-manual__fire__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-manual__flower__tall.jpg" alt="input coloring-manual__flower__tall"/><figcaption class="cap">flower · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-manual__flower__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-manual__flower__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-manual__flower__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-manual__flower__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-manual__heart__tall.jpg" alt="input coloring-manual__heart__tall"/><figcaption class="cap">heart · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-manual__heart__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-manual__heart__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-manual__heart__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-manual__heart__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-manual__ship__wide.jpg" alt="input coloring-manual__ship__wide"/><figcaption class="cap">ship · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-manual__ship__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-manual__ship__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-manual__ship__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-manual__ship__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-manual__unicorn__tall.jpg" alt="input coloring-manual__unicorn__tall"/><figcaption class="cap">unicorn · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-manual__unicorn__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-manual__unicorn__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-manual__unicorn__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-manual__unicorn__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div></div>
+<h3 id="cat-coloring-outline">coloring-outline <span class="ct">6</span></h3>
+    <div class="gallery"><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-outline__astronaut__tall.jpg" alt="input coloring-outline__astronaut__tall"/><figcaption class="cap">astronaut · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-outline__astronaut__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-outline__astronaut__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-outline__astronaut__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-outline__astronaut__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-outline__ladybug__tall.jpg" alt="input coloring-outline__ladybug__tall"/><figcaption class="cap">ladybug · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-outline__ladybug__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-outline__ladybug__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-outline__ladybug__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-outline__ladybug__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-outline__owl__wide.jpg" alt="input coloring-outline__owl__wide"/><figcaption class="cap">owl · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-outline__owl__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-outline__owl__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-outline__owl__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-outline__owl__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-outline__star__tall.jpg" alt="input coloring-outline__star__tall"/><figcaption class="cap">star · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-outline__star__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-outline__star__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-outline__star__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-outline__star__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-outline__train__wide.jpg" alt="input coloring-outline__train__wide"/><figcaption class="cap">train · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-outline__train__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-outline__train__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-outline__train__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-outline__train__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__coloring-outline__trex__wide.jpg" alt="input coloring-outline__trex__wide"/><figcaption class="cap">trex · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__coloring-outline__trex__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for coloring-outline__trex__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__coloring-outline__trex__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for coloring-outline__trex__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div></div>
+<h3 id="cat-gen">gen <span class="ct">5</span></h3>
+    <div class="gallery"><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__gen__boat-pond__square.jpg" alt="input gen__boat-pond__square"/><figcaption class="cap">boat-pond · square</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__gen__boat-pond__square__gemini-2.5-flash-image__1.jpg" alt="2.5 output for gen__boat-pond__square"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__gen__boat-pond__square__gemini-3.1-flash-image__1.jpg" alt="3.1 output for gen__boat-pond__square"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__gen__butterfly-flowers__wide.jpg" alt="input gen__butterfly-flowers__wide"/><figcaption class="cap">butterfly-flowers · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__gen__butterfly-flowers__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for gen__butterfly-flowers__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__gen__butterfly-flowers__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for gen__butterfly-flowers__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__gen__dog-ball__square.jpg" alt="input gen__dog-ball__square"/><figcaption class="cap">dog-ball · square</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__gen__dog-ball__square__gemini-2.5-flash-image__1.jpg" alt="2.5 output for gen__dog-ball__square"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__gen__dog-ball__square__gemini-3.1-flash-image__1.jpg" alt="3.1 output for gen__dog-ball__square"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__gen__rainbow-cloud__wide.jpg" alt="input gen__rainbow-cloud__wide"/><figcaption class="cap">rainbow-cloud · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__gen__rainbow-cloud__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for gen__rainbow-cloud__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__gen__rainbow-cloud__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for gen__rainbow-cloud__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__gen__rocket-stars__tall.jpg" alt="input gen__rocket-stars__tall"/><figcaption class="cap">rocket-stars · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__gen__rocket-stars__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for gen__rocket-stars__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__gen__rocket-stars__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for gen__rocket-stars__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div></div>
+<h3 id="cat-magic-plain">magic-plain <span class="ct">4</span></h3>
+    <div class="gallery"><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__magic-plain__dense__square.jpg" alt="input magic-plain__dense__square"/><figcaption class="cap">dense · square</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__magic-plain__dense__square__gemini-2.5-flash-image__1.jpg" alt="2.5 output for magic-plain__dense__square"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__magic-plain__dense__square__gemini-3.1-flash-image__1.jpg" alt="3.1 output for magic-plain__dense__square"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__magic-plain__loops__square.jpg" alt="input magic-plain__loops__square"/><figcaption class="cap">loops · square</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__magic-plain__loops__square__gemini-2.5-flash-image__1.jpg" alt="2.5 output for magic-plain__loops__square"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__magic-plain__loops__square__gemini-3.1-flash-image__1.jpg" alt="3.1 output for magic-plain__loops__square"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__magic-plain__swirl__square.jpg" alt="input magic-plain__swirl__square"/><figcaption class="cap">swirl · square</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__magic-plain__swirl__square__gemini-2.5-flash-image__1.jpg" alt="2.5 output for magic-plain__swirl__square"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__magic-plain__swirl__square__gemini-3.1-flash-image__1.jpg" alt="3.1 output for magic-plain__swirl__square"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__magic-plain__zigzag__square.jpg" alt="input magic-plain__zigzag__square"/><figcaption class="cap">zigzag · square</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__magic-plain__zigzag__square__gemini-2.5-flash-image__1.jpg" alt="2.5 output for magic-plain__zigzag__square"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__magic-plain__zigzag__square__gemini-3.1-flash-image__1.jpg" alt="3.1 output for magic-plain__zigzag__square"/><span class="badge b">3.1</span></button></div></div>
+    </div></div>
+<h3 id="cat-night">night <span class="ct">6</span></h3>
+    <div class="gallery"><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__night__circle__tall.jpg" alt="input night__circle__tall"/><figcaption class="cap">circle · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__night__circle__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for night__circle__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__night__circle__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for night__circle__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__night__heart__tall.jpg" alt="input night__heart__tall"/><figcaption class="cap">heart · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__night__heart__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for night__heart__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__night__heart__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for night__heart__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__night__owl__tall.jpg" alt="input night__owl__tall"/><figcaption class="cap">owl · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__night__owl__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for night__owl__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__night__owl__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for night__owl__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__night__rover__wide.jpg" alt="input night__rover__wide"/><figcaption class="cap">rover · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__night__rover__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for night__rover__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__night__rover__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for night__rover__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__night__star__wide.jpg" alt="input night__star__wide"/><figcaption class="cap">star · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__night__star__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for night__star__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__night__star__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for night__star__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__night__triceratops__wide.jpg" alt="input night__triceratops__wide"/><figcaption class="cap">triceratops · wide</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__night__triceratops__wide__gemini-2.5-flash-image__1.jpg" alt="2.5 output for night__triceratops__wide"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__night__triceratops__wide__gemini-3.1-flash-image__1.jpg" alt="3.1 output for night__triceratops__wide"/><span class="badge b">3.1</span></button></div></div>
+    </div></div>
+<h3 id="cat-safety">safety <span class="ct">1</span></h3>
+    <div class="gallery"><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__safety__toysword__tall.jpg" alt="input safety__toysword__tall"/><figcaption class="cap">toysword · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__safety__toysword__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for safety__toysword__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__safety__toysword__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for safety__toysword__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div></div>
+<h3 id="cat-scribble-1color">scribble-1color <span class="ct">6</span></h3>
+    <div class="gallery"><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__scribble-1color__black__tall.jpg" alt="input scribble-1color__black__tall"/><figcaption class="cap">black · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__scribble-1color__black__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for scribble-1color__black__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__scribble-1color__black__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for scribble-1color__black__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__scribble-1color__blue__tall.jpg" alt="input scribble-1color__blue__tall"/><figcaption class="cap">blue · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__scribble-1color__blue__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for scribble-1color__blue__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__scribble-1color__blue__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for scribble-1color__blue__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__scribble-1color__brown__tall.jpg" alt="input scribble-1color__brown__tall"/><figcaption class="cap">brown · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__scribble-1color__brown__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for scribble-1color__brown__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__scribble-1color__brown__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for scribble-1color__brown__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__scribble-1color__green__tall.jpg" alt="input scribble-1color__green__tall"/><figcaption class="cap">green · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__scribble-1color__green__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for scribble-1color__green__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__scribble-1color__green__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for scribble-1color__green__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__scribble-1color__purple__tall.jpg" alt="input scribble-1color__purple__tall"/><figcaption class="cap">purple · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__scribble-1color__purple__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for scribble-1color__purple__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__scribble-1color__purple__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for scribble-1color__purple__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div><div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="assets/in__scribble-1color__red__tall.jpg" alt="input scribble-1color__red__tall"/><figcaption class="cap">red · tall</figcaption></figure>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 2.5 ↔ input" data-label="2.5"><img class="art" loading="lazy" src="assets/out__scribble-1color__red__tall__gemini-2.5-flash-image__1.jpg" alt="2.5 output for scribble-1color__red__tall"/><span class="badge a">2.5</span></button></div></div>
+      <div class="cell"><div class="samples"><button class="swap" type="button" aria-pressed="false" title="Tap to flip 3.1 ↔ input" data-label="3.1"><img class="art" loading="lazy" src="assets/out__scribble-1color__red__tall__gemini-3.1-flash-image__1.jpg" alt="3.1 output for scribble-1color__red__tall"/><span class="badge b">3.1</span></button></div></div>
+    </div></div>
+
+<h2>Method</h2>
+<ul>
+<li>Inputs mirror what <code>/api/generate-image</code> receives — a flattened canvas of paper + coloring line art + the child's pen / magic-brush marks — built from the real <code>web/static/coloring</code> assets and the app's 10-color palette on the true paper colors. Regenerate with <code>npm run model-eval:fixtures</code>. Gemini-authored inputs carry a <code>gen</code> prefix.</li>
+<li>Each call uses the exact production request: <code>DEFAULT_PROMPT</code>, <code>SAFETY_SYSTEM_INSTRUCTION</code>, and <code>SAFETY_SETTINGS</code>, asserted byte-for-byte against the app source at runtime; default temperature.</li>
+<li>Cost = measured <code>usageMetadata</code> tokens × published rates ($30 vs $60 per 1M image-output tokens).</li>
+<li>Full safety re-validation of the <em>block-*</em> corpus still needs <code>REDTEAM_FIXTURE_KEY</code> and <code>npm run redteam</code>; this harness covers quality/cost/latency + a pretend-play false-positive probe.</li>
+</ul>
+</main>
+<script>
+  // Click a generated image to flip that slot in place between the model's output
+  // and the input; click again to flip back. The input is read from the row's first
+  // image and the output is cached on first toggle, so no image data is duplicated.
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.swap');
+    if (!btn) return;
+    var img = btn.querySelector('img.art');
+    var badge = btn.querySelector('.badge');
+    if (!btn._out) btn._out = img.getAttribute('src');
+    var inputImg = btn.closest('.grow').querySelector('figure.cell .art');
+    var showIn = btn.classList.toggle('show-in');
+    img.setAttribute('src', showIn ? inputImg.getAttribute('src') : btn._out);
+    badge.textContent = showIn ? 'input' : btn.dataset.label;
+    btn.setAttribute('aria-pressed', String(showIn));
+  });
+</script>
