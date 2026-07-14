@@ -10,10 +10,14 @@ import { join, relative } from 'node:path';
 const SCAFFOLDING = new Set(['index.html', 'README.md', '.nojekyll', '.gitkeep']);
 
 // Every file under `dir`, depth-first, as { rel, mtime } relative to `dir`.
+// An `assets/` directory holds a report's support files (thumbnails, css) — its
+// contents back a sibling page and aren't standalone artifacts, so it's skipped
+// to keep the index to one row per report rather than hundreds of image links.
 function walk(dir, base = dir) {
   const out = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (base === dir && SCAFFOLDING.has(entry.name)) continue;
+    if (entry.isDirectory() && entry.name === 'assets') continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
       out.push(...walk(full, base));

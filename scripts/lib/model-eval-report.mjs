@@ -1,8 +1,11 @@
-// Builds the self-contained model-eval report (report.html) from a run's results.
-// Thumbnails are downscaled with the provided Playwright browser so the report
-// embeds everything as data URIs and stays portable and reasonably small.
+// Builds the model-eval report from a run's results. The report is a `report/`
+// bundle — `index.html` plus a sibling `assets/` folder of downscaled thumbnails
+// (referenced by relative path, not base64-inlined) so the committed/Pages copy
+// stays a small HTML file with readable diffs and thumbnails that dedupe in git
+// across re-publishes (ADR-0059). The whole `report/` folder is what gets
+// published to artifacts/model-eval/report/.
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { MODELS, RATES } from './model-eval.mjs';
 
@@ -14,13 +17,16 @@ const esc = (s) =>
 const usd = (n) => (n == null ? '—' : '$' + n.toFixed(4));
 const kb = (n) => (n == null ? '—' : (n / 1024).toFixed(0) + ' KB');
 
-async function makeThumber(browser, max = 380) {
+// Downscales images with the browser and writes each as a JPEG into `assetsDir`,
+// returning the `assets/<name>.jpg` path to reference from the HTML.
+async function makeThumber(browser, assetsDir, max = 380) {
   const page = await browser.newPage();
+  mkdirSync(assetsDir, { recursive: true });
   return {
-    async thumb(absPath) {
+    async thumb(absPath, name) {
       if (!absPath || !existsSync(absPath)) return null;
       const uri = `data:image/*;base64,${readFileSync(absPath).toString('base64')}`;
-      return page.evaluate(
+      const dataUrl = await page.evaluate(
         async ({ uri, max }) => {
           const img = new Image();
           await new Promise((res, rej) => {
@@ -40,6 +46,9 @@ async function makeThumber(browser, max = 380) {
         },
         { uri, max }
       );
+      const rel = `assets/${name}.jpg`;
+      writeFileSync(join(assetsDir, `${name}.jpg`), Buffer.from(dataUrl.split(',')[1], 'base64'));
+      return rel;
     },
     close: () => page.close(),
   };
@@ -84,15 +93,22 @@ export async function buildReport({
   browser,
   verdictHtml,
 }) {
-  const th = await makeThumber(browser);
+  // The report is a self-contained folder: <outDir>/report/{index.html, assets/, *.json}.
+  const bundleDir = join(outDir, 'report');
+  const assetsDir = join(bundleDir, 'assets');
+  mkdirSync(bundleDir, { recursive: true });
+  const th = await makeThumber(browser, assetsDir);
   const ids = [...new Set(results.map((r) => r.id))];
   const cats = [...new Set(results.map((r) => r.category))];
   const modelIds = MODELS.map((m) => m.id);
 
-  // Thumbnails.
+  // Thumbnails, written as files under assets/ and referenced by relative path.
   const inThumb = {};
-  for (const id of ids) inThumb[id] = await th.thumb(join(inputsDir, `${id}.png`));
-  for (const r of results) r._thumb = r.outFile ? await th.thumb(join(outDir, r.outFile)) : null;
+  for (const id of ids) inThumb[id] = await th.thumb(join(inputsDir, `${id}.png`), `in__${id}`);
+  for (const r of results)
+    r._thumb = r.outFile
+      ? await th.thumb(join(outDir, r.outFile), `out__${r.id}__${r.model}__${r.sample}`)
+      : null;
   await th.close();
 
   const agg = Object.fromEntries(modelIds.map((m) => [m, statsFor(results, m)]));
@@ -286,11 +302,15 @@ ${cats.map(categorySection).join('\n')}
   });
 </script>`;
 
-  const htmlPath = join(outDir, 'report.html');
+  const htmlPath = join(bundleDir, 'index.html');
   writeFileSync(htmlPath, html);
   writeFileSync(
-    join(outDir, 'summary.json'),
+    join(bundleDir, 'summary.json'),
     JSON.stringify({ runId, agg, catRows, refusals: refusalRows.length }, null, 2)
   );
+  // Keep the run's raw results alongside the report so the published bundle carries
+  // its own provenance.
+  const resultsSrc = join(outDir, 'results.json');
+  if (existsSync(resultsSrc)) copyFileSync(resultsSrc, join(bundleDir, 'results.json'));
   return htmlPath;
 }
