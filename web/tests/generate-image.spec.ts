@@ -41,7 +41,7 @@ function managedForm(buffer: Buffer, mimeType: string, token: string, fileName =
   };
 }
 
-// Mirrors of GENERATE_LIMIT / BYOK_LIMIT in src/routes/api/generate-image/+server.ts.
+// Mirrors of GENERATE_LIMIT / BYOK_LIMIT in src/lib/server/generationAuthorization.ts.
 const GENERATE_LIMIT = 15;
 const BYOK_LIMIT = 30;
 

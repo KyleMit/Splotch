@@ -77,37 +77,6 @@ budget — do not hard-code the unverified 6 MB / 60 s numbers.
 
 ## Source: Extract audit
 
-### [Extract] authorizeGenerationRequest
-
-**File(s):** `web/src/routes/api/generate-image/+server.ts` (`POST`, lines 47–92)
-
-#### Problem
-
-The route handler embeds a security-sensitive state machine before its image work: select BYOK vs.
-managed credentials, blind rate-limited token guesses before the allowlist read, charge only failed
-managed guesses to the shared verification bucket, then apply a different generation bucket for
-valid managed traffic or BYOK. The intertwined early `Response`, thrown HTTP errors, and derived key
-make the handler hard to read and make this auth contract difficult to unit-test independently of
-multipart/image/provider behavior.
-
-#### Proposed solution
-
-Extract
-`async function authorizeGenerationRequest(input: { apiKey: FormDataEntryValue | null;
-token: FormDataEntryValue | null; clientAddress: string }): Promise<GenerationAuthorization |
-Response>`
-in the same route module (or a small server-only neighbor). `GenerationAuthorization` should carry
-`usingByok`, `effectiveKey`, and a validated managed token when present; the `Response` arm should
-be only the standard throttled response. Preserve the failure-only guess budget and the separate
-valid-token/BYOK buckets exactly.
-
-#### Verification
-
-Unit-test limited guesses without an allowlist read, one failed guess consuming the shared bucket,
-valid managed traffic not consuming it, managed per-token throttling, BYOK per-IP throttling, and a
-missing server key. Then run `npm run test:api:smoke` to confirm the public 403/429/400 contract and
-`Retry-After` header are unchanged.
-
 ### [Extract] readAiImageResponse
 
 **File(s):** `web/src/lib/drawing/aiImage.ts` (`generateAiImage` response handling, lines 82–104)
