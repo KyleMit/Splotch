@@ -75,49 +75,6 @@ just-under/over upload boundaries and against a deliberately delayed provider, c
 (not the platform) returns the timeout. Reconcile ADR-0006 and the API skill with the *measured*
 budget — do not hard-code the unverified 6 MB / 60 s numbers.
 
-### [Correctness] Fail closed when an environment seed loses an `onlyIfNew` race
-
-**File(s):** `web/src/lib/server/tokens.ts` (`readStore`, lines 52–80; `isAllowedToken`, lines
-117–121), `web/src/lib/server/tokens.test.ts` (Blob fake and seeding coverage, lines 9–35 and
-85–194)
-
-#### Problem
-
-An eventual-consistency read can report the token-list key as absent even though it exists. The
-subsequent `setJSON(..., { onlyIfNew: true })` correctly avoids overwriting the real list, but
-`readStore()` ignores the returned `modified` flag and returns the environment seed anyway. During
-replica lag, a revoked token still present in `ALLOWED_TOKENS_LIST` can therefore be re-authorized,
-while a newly added token can be denied. Mutations can also make decisions from the stale seed.
-
-`onlyIfNew` prevents clobbering; it does not make the seed authoritative after `modified:false`.
-This violates the immediate-revocation intent in ADR-0006 and the stale-empty reasoning in ADR-0025.
-
-**Vet 2026-07-14 (confirmed, but downgrade severity):** `readStore()` (`tokens.ts:68–70`)
-destructures only `etag` from `setJSON(KEY, seeded, { onlyIfNew: true })` and unconditionally
-returns `{ store, list: seeded, etag }` — the `modified` flag is ignored, so a lost write still
-returns the env seed. Real. Two mitigating facts narrow the harm: (1) ADR-0025:122–123 **already
-accepts** brief post-write staleness of the token list ("Acceptable for this data"); (2) the
-"revoked token re-authorized" harm only fires if `ALLOWED_TOKENS_LIST` still contains that token —
-after migration that env var is typically empty, in which case `seedFromEnv()` returns `[]` and the
-code **already fails closed** (denies everyone briefly). The genuinely distinct, non-accepted harm
-is narrow: reverting to the *migration-time env list* rather than merely-stale Blobs data. Keep the
-fix (inspect `modified`; re-read on `modified:false`; fail closed if unconfirmed), but treat it as
-low-severity hardening, not an active auth hole.
-
-#### Proposed solution
-
-Inspect `modified`. Return the seed only when the write actually created the key. If the write lost,
-perform bounded rereads for the current list; if it cannot be confirmed, fail closed for
-authorization and surface a transient persistence/conflict error to admin callers. Keep the local
-`MissingBlobsEnvironment` fallback as a separate, explicit provenance.
-
-#### Verification
-
-Extend the fake store so `getWithMetadata()` returns null once while the underlying key contains a
-different list, and `onlyIfNew` returns `modified:false`. Assert env-only tokens are never accepted,
-current tokens are not denied after retry, and mutations never persist a list derived from the stale
-seed. Test the exhausted-retry fail-closed path.
-
 ### [Testing] Add the load-bearing blank-orb verdict to the golden catalog
 
 **File(s):** `tools/asset-gen/bin/audit-golden.mjs` (imports/scoring/verdicts, lines 31–46, 108–124,

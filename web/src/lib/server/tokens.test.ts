@@ -77,6 +77,21 @@ async function freshTokensWithBlobs(list: string[]) {
   return import('./tokens');
 }
 
+async function freshTokensWithSeedRace(seed: string, list: string[], hiddenReads: number) {
+  vi.resetModules();
+  envState.ALLOWED_TOKENS_LIST = seed;
+  blobsState.stores = new Map();
+  const store = storeFor('access-tokens');
+  await store.setJSON('list', list);
+  const read = store.getWithMetadata.bind(store);
+  let reads = 0;
+  store.getWithMetadata = async (key: string, options?: unknown) => {
+    if (reads++ < hiddenReads) return null;
+    return read(key, options);
+  };
+  return import('./tokens');
+}
+
 beforeEach(() => {
   // Silence the expected "Blobs unavailable" warning from openStore.
   vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -108,6 +123,32 @@ describe('isAllowedToken', () => {
     expect(await isAllowedToken('bad')).toBe(false);
     expect(await isAllowedToken(undefined)).toBe(false);
     expect(await isAllowedToken(123)).toBe(false);
+  });
+});
+
+describe('stale-empty seed races', () => {
+  it('authorizes only the persisted list after a lost seed race', async () => {
+    const { isAllowedToken } = await freshTokensWithSeedRace('legacy', ['current'], 1);
+    expect(await isAllowedToken('legacy')).toBe(false);
+    expect(await isAllowedToken('current')).toBe(true);
+  });
+
+  it('bases mutations on the persisted list after a lost seed race', async () => {
+    const { addToken } = await freshTokensWithSeedRace('legacy', ['current'], 1);
+    expect(await addToken('mine')).toEqual({ ok: true, tokens: ['current', 'mine'] });
+    expect(await storeFor('access-tokens').get('list')).toEqual(['current', 'mine']);
+  });
+
+  it('fails closed and rejects mutations when the winning list cannot be confirmed', async () => {
+    const { isAllowedToken, addToken, TOKEN_CONFLICT_ERROR } = await freshTokensWithSeedRace(
+      'legacy',
+      ['current'],
+      Number.POSITIVE_INFINITY
+    );
+    expect(await isAllowedToken('legacy')).toBe(false);
+    expect(await isAllowedToken('current')).toBe(false);
+    expect(await addToken('mine')).toEqual({ ok: false, error: TOKEN_CONFLICT_ERROR });
+    expect(await storeFor('access-tokens').get('list')).toEqual(['current']);
   });
 });
 
