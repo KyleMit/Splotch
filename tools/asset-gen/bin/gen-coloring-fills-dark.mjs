@@ -68,6 +68,9 @@ import {
 // white-sclera / dark-pupil / white-glint.
 import { compositeNight } from '../lib/night-composite.mjs';
 import { scoreEyeFill, judgeNightEyes } from '../lib/eye-fill.mjs';
+// Whole-eye legibility on the composite — catches the blank white orb that the
+// core-vs-annulus eye gate misses on solid-pen eyes (lib/composite-eye.mjs).
+import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
@@ -269,6 +272,7 @@ async function generateCleanTake({
   source,
   pen,
   chalk,
+  lightRaw,
   width,
   height,
   temp0,
@@ -297,13 +301,24 @@ async function generateCleanTake({
     // Eye cores always come from the PEN outline (the chalk's solid sclera has
     // no nested rings to find); with a chalk the measured pixels are the
     // simulated final composite rather than the raw fill.
-    const eyes = lightEyes
-      ? judgeNightEyes(
-          await scoreEyeFill(chalk ? await compositeNight(aligned, chalk) : aligned, pen),
-          lightEyes,
-          { chalked: !!chalk }
-        )
+    const composite = chalk ? await compositeNight(aligned, chalk) : aligned;
+    const eyeCore = lightEyes
+      ? judgeNightEyes(await scoreEyeFill(composite, pen), lightEyes, { chalked: !!chalk })
       : { passes: true, failed: 0 };
+    // Whole-eye check on the composite: a blank white orb where the chalk sclera
+    // and the fill's catchlight stack over a solid-pen pupil. judgeNightEyes is
+    // band-blind there (the annulus is solid pupil ink), so this owns that class.
+    const orb =
+      chalk && lightRaw
+        ? await scoreCompositeEyes(composite, lightRaw, pen)
+        : { passes: true, failed: 0 };
+    const eyes = {
+      passes: eyeCore.passes && orb.passes,
+      failed: eyeCore.failed + orb.failed,
+      coreFailed: eyeCore.failed,
+      orbFailed: orb.failed,
+      worstOrb: orb.worst ?? null,
+    };
     const take = { aligned, dx, dy, drift, night, line, eyes, attempt };
     // Fallback ranking: fewest dead eyes first, then least drift — a take with
     // living eyes and a hair more drift beats a drift-perfect take whose eyes
@@ -378,9 +393,8 @@ for (const page of pages) {
   // eyes — cores keyed off the PEN outline on both sides of the comparison.
   // Absent (page has no light raw yet) the eye gate is skipped.
   const lightRawPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
-  const lightEyes = existsSync(lightRawPath)
-    ? await scoreEyeFill(await readFile(lightRawPath), pen)
-    : null;
+  const lightRaw = existsSync(lightRawPath) ? await readFile(lightRawPath) : null;
+  const lightEyes = lightRaw ? await scoreEyeFill(lightRaw, pen) : null;
 
   for (let i = 0; i < samples; i++) {
     const label = samples > 1 ? `${rel}  ${i + 1}/${samples}` : rel;
@@ -391,6 +405,7 @@ for (const page of pages) {
         source,
         pen,
         chalk,
+        lightRaw,
         width,
         height,
         temp0: cfg.baseTemp + i * 0.12,
@@ -413,7 +428,10 @@ for (const page of pages) {
         (take.drift.ratio > cfg.driftThreshold ? '  ⚠ still drifting' : '') +
         (take.night.bgLuma > cfg.nightLumaMax ? '  ⚠ too bright/daytime' : '') +
         (take.line.lineWhite < cfg.lineWhiteMin ? '  ⚠ dark outlines' : '') +
-        (take.eyes.passes ? '' : `  ⚠ flat eyes (${take.eyes.failed})`);
+        (take.eyes.coreFailed ? `  ⚠ flat eyes (${take.eyes.coreFailed})` : '') +
+        (take.eyes.orbFailed
+          ? `  ⚠ blank-orb eyes (${take.eyes.orbFailed}, median ${take.eyes.worstOrb?.median})`
+          : '');
       console.log(`ok${nudge}${tries}${stats}${warn}  -> ${relative(REPO_ROOT, out)}`);
     } catch (err) {
       failures++;

@@ -47,7 +47,18 @@ folded into Tier 3 #8.)
    teddy-tall's pen is a 2026-07-13 FRESH drawing, proving a brand-new ringed pen does not protect
    the chalk stage. Fix: chalk regen per page with the seeded eye notes (police-wide's
    erase-and-redraw recipe for the horses; keep-the-pen's-rings for bee/caterpillar/teddy), then
-   night regen + re-punch.
+   night regen + re-punch. **Now machine-detectable:** the 2026-07-14 composite-eye gate
+   (`lib/composite-eye.mjs`, the `orb` column of `gen:coloring-fills:audit:eyes`) scores the whole
+   pupil on the chalk-over-night composite and flags this class by number. Beyond the pages above it
+   surfaced more shipped blank-orb night eyes — `creatures/owl-{tall,wide}` (confirmed: white pupil,
+   tiny catchlight ring), `creatures/unicorn-{tall,wide}`, `creatures/dragon-{tall,wide}`,
+   `creatures/mermaid-tall`, `dinosaur/triceratops-tall`, `dinosaur/velociraptor-tall`,
+   `farm/cat-tall`, `farm/cow-tall`, `space/moon-tall`, and the shape faces
+   `shapes/{square-tall,square-wide,star-tall,triangle-tall,triangle-wide}` — all the same
+   solid-pen-pupil class, fixable with the same chalk-geometry + no-fill-catchlight recipe proven on
+   `dinosaur/stegosaurus-tall` (`fill-src/dinosaur/notes.json`). Confirm each on the composite
+   before regen: the gate can over-flag an eye whose catchlight is large relative to a small pupil,
+   so a few shape/moon faces may be borderline rather than broken.
 2. **`creatures/mermaid-tall`'s light eyes are giant solid-black orbs** *(shipped asset)*: the pen
    draws each pupil as solid ink filling nearly the whole eye (only two catchlight holes), so the
    light fill has nothing to paint and the face reads dead-eyed in light mode. This is #9's
@@ -114,12 +125,16 @@ folded into Tier 3 #8.)
    its cause was the chalk's OWN solid-ink pupil (copied from a solid-ink pen — the #1 class), not
    the fill: the 2026-07-13 night-fill-only regen (PR #142) left the blank white orb because no fill
    can darken a solid-ink chalk pupil, and it took a chalk erase-and-redraw + night regen + re-punch
-   (2026-07-14, recipe in `fill-src/dinosaur/notes.json`) to fix them. Those pages are fixed now,
-   the gate gap is not. The 2026-07-13 `objects/flower-wide` regen hit it again at motif scale — an
-   unpinned take painted its two small background flowers sky-navy and passed every gate; caught by
-   eye and fixed with a palette pin, the gap stays. Ditto the 2026-07-13 `vehicles/excavator-tall`
-   regen: its first take re-rolled the orange arm teal and the cab face navy, caught only by eye and
-   fixed with pinned identity colors.)
+   (2026-07-14, recipe in `fill-src/dinosaur/notes.json`) to fix them. The EYE-scale slice of this
+   gap is now MEASURED and gated: `lib/composite-eye.mjs` (`scoreCompositeEyes`) scores the whole
+   pupil on the chalk-over-night composite and flags a blank white orb — wired into the night
+   generator's gate and reported as the `orb` column of `gen:coloring-fills:audit:eyes`. It closes
+   the solid-pen band-blind class `judgeNightEyes` cannot see (see new item below); the broader
+   non-eye ΔE gap (a hero region matched to the sky) still stands. The 2026-07-13
+   `objects/flower-wide` regen hit it again at motif scale — an unpinned take painted its two small
+   background flowers sky-navy and passed every gate; caught by eye and fixed with a palette pin,
+   the gap stays. Ditto the 2026-07-13 `vehicles/excavator-tall` regen: its first take re-rolled the
+   orange arm teal and the cab face navy, caught only by eye and fixed with pinned identity colors.)
 7. **Colored-shape invention is only audited, not gated (IDEAS #13)** *(gate blind spot)*: the
    detector that caught `objects/house-tall`'s two invented sky flowers is now a first-class audit
    (`bin/audit-invented-shapes.mjs`, `npm run gen:coloring-fills:audit:shapes`) but still runs only
