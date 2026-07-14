@@ -120,41 +120,48 @@ export async function buildReport({
 
   const refusalRows = results.filter((r) => r.kind !== 'image');
 
-  function sampleCell(id, model) {
+  // Short model tag for the on-image badge ("2.5-flash-image" -> "2.5").
+  const shortLabel = (label) => label.replace('-flash-image', '');
+
+  // A generated image is a button that flips in place between the model's output
+  // and the input, so a shift is spotted by toggling the same slot. A refusal/error
+  // renders a static placeholder instead.
+  function outputButton(s) {
+    if (s.kind !== 'image') {
+      return `<div class="ph"><b>${esc(s.kind)}</b><span>${esc((s.reason || s.finishReason || '').slice(0, 100))}</span></div>`;
+    }
+    const tag = shortLabel(s.modelLabel);
+    const cls = s.model === modelIds[0] ? 'a' : 'b';
+    // No data-in/data-out: the toggle reads the input from the row and caches the
+    // output in JS, so no image data URI is duplicated (keeps the file small).
+    return `<button class="swap" type="button" aria-pressed="false" title="Tap to flip ${esc(tag)} ↔ input" data-label="${esc(tag)}"><img class="art" loading="lazy" src="${s._thumb}" alt="${esc(tag)} output for ${esc(s.id)}"/><span class="badge ${cls}">${esc(tag)}</span></button>`;
+  }
+
+  function modelCell(id, model) {
     const ss = results
       .filter((r) => r.id === id && r.model === model)
       .sort((a, b) => a.sample - b.sample);
-    return ss
-      .map((s) =>
-        s.kind === 'image'
-          ? `<figure class="s"><img loading="lazy" src="${s._thumb}" alt=""/><figcaption>${s.ms}ms · ${usd(s.cost)}${samples > 1 ? ` · #${s.sample}` : ''}</figcaption></figure>`
-          : `<figure class="s bad"><div class="ref"><b>${esc(s.kind)}</b><span>${esc((s.reason || s.finishReason || '').slice(0, 100))}</span></div><figcaption>${s.ms}ms</figcaption></figure>`
-      )
-      .join('');
+    return `<div class="samples">${ss.map(outputButton).join('')}</div>`;
   }
 
   function galleryRow(id) {
-    const cells = modelIds
-      .map((m) => `<td class="mcell"><div class="samples">${sampleCell(id, m)}</div></td>`)
-      .join('');
-    return `<tr><td class="inputcell"><figure><img loading="lazy" src="${inThumb[id]}" alt=""/><figcaption>${esc(id.replace(/__/g, ' · '))}</figcaption></figure></td>${cells}</tr>`;
+    const label = esc(id.split('__').slice(1).join(' · ')) || esc(id);
+    return `<div class="grow">
+      <figure class="cell"><img class="art" loading="lazy" src="${inThumb[id]}" alt="input ${esc(id)}"/><figcaption class="cap">${label}</figcaption></figure>
+      <div class="cell">${modelCell(id, modelIds[0])}</div>
+      <div class="cell">${modelCell(id, modelIds[1])}</div>
+    </div>`;
   }
 
   function categorySection(cat) {
-    const rows = ids
-      .filter((id) => id.startsWith(cat + '__'))
-      .map(galleryRow)
-      .join('\n');
-    return `<h3 id="cat-${esc(cat)}">${esc(cat)}</h3>
-    <div class="wrap"><table class="gallery">
-      <tr><th class="inputcell">input</th><th class="colhead a">${esc(MODELS[0].label)}</th><th class="colhead b">${esc(MODELS[1].label)}</th></tr>
-      ${rows}
-    </table></div>`;
+    const rowIds = ids.filter((id) => id.startsWith(cat + '__'));
+    return `<h3 id="cat-${esc(cat)}">${esc(cat)} <span class="ct">${rowIds.length}</span></h3>
+    <div class="gallery">${rowIds.map(galleryRow).join('')}</div>`;
   }
 
   const html = `<title>Splotch · image-model eval — ${esc(runId)}</title>
 <style>
-  :root{--ink:#1f2430;--mut:#6b7280;--line:#e6e2da;--bg:#faf9f6;--card:#fff;--a:#2f6fed;--b:#b8552f;--warn:#e67e22;--ok:#27ae60;--bad:#c0392b}
+  :root{--ink:#1f2430;--mut:#6b7280;--line:#e6e2da;--bg:#faf9f6;--card:#fff;--a:#2f6fed;--b:#b8552f;--warn:#e67e22;--ok:#27ae60;--bad:#c0392b;--gap:14px}
   @media (prefers-color-scheme:dark){:root{--ink:#e8e6e1;--mut:#a3a09a;--line:#2c2f36;--bg:#15171b;--card:#1c1f24}}
   :root[data-theme=dark]{--ink:#e8e6e1;--mut:#a3a09a;--line:#2c2f36;--bg:#15171b;--card:#1c1f24}
   :root[data-theme=light]{--ink:#1f2430;--mut:#6b7280;--line:#e6e2da;--bg:#faf9f6;--card:#fff}
@@ -173,13 +180,29 @@ export async function buildReport({
   .num{text-align:right;font-variant-numeric:tabular-nums}
   .lose{color:var(--b);font-weight:600}.winc{color:var(--ok);font-weight:600}
   .wrap{overflow-x:auto}
-  .gallery{border-spacing:0 8px;border-collapse:separate}
-  .gallery td{vertical-align:top;padding:5px}
-  .gallery img{width:100%;max-width:250px;border-radius:8px;border:1px solid var(--line);display:block;background:#fff}
-  .gallery figure{margin:0}.gallery figcaption{font-size:10.5px;color:var(--mut);margin-top:3px;text-align:center;word-break:break-word}
-  .inputcell{width:220px}.samples{display:flex;gap:6px}.s{flex:1}
-  .s.bad .ref{min-height:120px;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:8px;border:1px dashed var(--line);border-radius:8px;background:color-mix(in srgb,var(--card),var(--warn) 8%);font-size:11px}
   .colhead.a{color:var(--a)}.colhead.b{color:var(--b)}
+  /* Quality gallery: one row per input, three equal columns (input · 2.5 · 3.1),
+     every image the same fixed box so spacing stays uniform and toggling an
+     output to the input never reflows the row. */
+  h3 .ct{font-size:12px;color:var(--mut);font-weight:400;border:1px solid var(--line);border-radius:999px;padding:0 8px;margin-left:4px}
+  .gallery{display:flex;flex-direction:column;gap:var(--gap)}
+  .grow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--gap);align-items:start}
+  .cell{margin:0;min-width:0}
+  .samples{display:flex;flex-direction:column;gap:var(--gap)}
+  .art{width:100%;height:230px;object-fit:contain;display:block;border-radius:10px;border:1px solid var(--line);background:color-mix(in srgb,var(--card),var(--ink) 3%)}
+  .cap{font-size:11px;color:var(--mut);margin-top:6px;text-align:center;word-break:break-word}
+  .swap{position:relative;display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;border-radius:10px}
+  .swap .art{transition:box-shadow .12s ease, transform .12s ease}
+  .swap:hover .art{box-shadow:0 3px 12px rgba(0,0,0,.13)}
+  .swap:focus-visible{outline:2px solid var(--a);outline-offset:3px}
+  .swap.show-in .art{border-color:var(--a);box-shadow:0 0 0 2px var(--a)}
+  .badge{position:absolute;top:7px;left:7px;font-size:10px;font-weight:700;letter-spacing:.02em;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--card),transparent 6%);border:1px solid var(--line);pointer-events:none}
+  .badge.a{color:var(--a)}.badge.b{color:var(--b)}
+  .swap.show-in .badge{background:var(--a);color:#fff;border-color:var(--a)}
+  .ph{height:230px;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:12px;text-align:center;border:1px dashed var(--line);border-radius:10px;background:color-mix(in srgb,var(--card),var(--warn) 8%);font-size:11px}
+  .ph b{font-size:13px}.ph span{color:var(--mut);word-break:break-word}
+  @media (prefers-reduced-motion:reduce){.swap .art{transition:none}}
+  @media (max-width:720px){.art,.ph{height:170px}}
   code{background:color-mix(in srgb,var(--card),var(--ink) 8%);padding:1px 5px;border-radius:4px;font-size:.9em}
   .toc{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
   .toc a{font-size:12px;text-decoration:none;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
@@ -234,7 +257,7 @@ ${
 
 <h2>Quality gallery</h2>
 <div class="toc">${cats.map((c) => `<a href="#cat-${esc(c)}">${esc(c)}</a>`).join('')}</div>
-<p class="sub"><span style="color:var(--a)">middle = ${esc(MODELS[0].label)}</span> · <span style="color:var(--b)">right = ${esc(MODELS[1].label)}</span> · captions show latency · cost${samples > 1 ? ' · sample #' : ''}</p>
+<p class="sub">Each row is <b>input</b> · <b style="color:var(--a)">${esc(MODELS[0].label)}</b> · <b style="color:var(--b)">${esc(MODELS[1].label)}</b>. <b>Tap any generated image to flip it in place to the input</b> — toggle back and forth to spot exactly what the model changed. Tap again to return to the output. Cost and latency are aggregated above, not repeated per image.</p>
 ${cats.map(categorySection).join('\n')}
 
 <h2>Method</h2>
@@ -244,7 +267,24 @@ ${cats.map(categorySection).join('\n')}
 <li>Cost = measured <code>usageMetadata</code> tokens × published rates ($${RATES[modelIds[0]].imgOutPerM.toFixed(0)} vs $${RATES[modelIds[1]].imgOutPerM.toFixed(0)} per 1M image-output tokens).</li>
 <li>Full safety re-validation of the <em>block-*</em> corpus still needs <code>REDTEAM_FIXTURE_KEY</code> and <code>npm run redteam</code>; this harness covers quality/cost/latency + a pretend-play false-positive probe.</li>
 </ul>
-</main>`;
+</main>
+<script>
+  // Click a generated image to flip that slot in place between the model's output
+  // and the input; click again to flip back. The input is read from the row's first
+  // image and the output is cached on first toggle, so no image data is duplicated.
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.swap');
+    if (!btn) return;
+    var img = btn.querySelector('img.art');
+    var badge = btn.querySelector('.badge');
+    if (!btn._out) btn._out = img.getAttribute('src');
+    var inputImg = btn.closest('.grow').querySelector('figure.cell .art');
+    var showIn = btn.classList.toggle('show-in');
+    img.setAttribute('src', showIn ? inputImg.getAttribute('src') : btn._out);
+    badge.textContent = showIn ? 'input' : btn.dataset.label;
+    btn.setAttribute('aria-pressed', String(showIn));
+  });
+</script>`;
 
   const htmlPath = join(outDir, 'report.html');
   writeFileSync(htmlPath, html);
