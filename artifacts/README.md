@@ -60,8 +60,8 @@ Binaries and base64-inlined HTML live in git history forever, so:
   `profile-*` dirs and other scratch.
 * For image-heavy reports, prefer an external **`assets/`** subfolder over base64-inlining: publish
   a `<name>/` folder whose `index.html` references `assets/*` by relative path. The thumbnails then
-  dedupe in git across re-publishes (base64 rewrites the whole blob every time), diffs stay readable,
-  and the index skips `assets/` dirs so it lists one row per report, not every image (e.g.
+  dedupe in git across re-publishes (base64 rewrites the whole blob every time), diffs stay
+  readable, and the index skips `assets/` dirs so it lists one row per report, not every image (e.g.
   `model-eval/report/`).
 * Only publish keepers. Everything regenerable and uninteresting stays in its gitignored scratch
   dir.
