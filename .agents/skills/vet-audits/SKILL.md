@@ -71,5 +71,18 @@ Learned from past runs — check each, not just "does the cited code still look 
 * **Check ADRs and test configs for intentional design** before keeping an architecture item: what
   reads as "missing cleanup" may be a documented singleton (ADR), and what reads as "redundant
   runtime check" may be a deliberate test seam (e.g. `vitest.config.ts` compile-time defines).
+* **A finding can be mechanically real yet immaterial to the consumer it feeds.** Don't stop at
+  "yes, the code does diverge/duplicate as described" — trace the divergence to whatever *reads* it
+  and check it actually changes that outcome. A composite that simulates a retired render path was a
+  true divergence, but the only gates it fed sampled pixels the difference never touched (the eye
+  gates read un-punched pupil fill; the screen blend whitened chalk pixels regardless of the
+  substituted base), so the "scores judge the wrong image" framing collapsed to a one-line DRY nit.
+  Remove when the payoff evaporates at the consumer even though the mechanism is exactly as claimed.
+* **Price in the prerequisite refactor for an extraction candidate.** An "extract this loop into a
+  testable function" item is only worth it if the module can actually be imported and the extracted
+  unit carries real logic. If the CLI runs everything at top level with no main-module guard,
+  extraction first needs that guard added; and if the loop is just I/O orchestration around pure
+  helpers that already live in `lib/` (Gemini calls + file writes), the testability win is small.
+  Weigh the guard-plus-thread-a-context cost against that thin payoff before keeping it.
 * Findings' line numbers may cite the wrong span even when the claim is right (state declarations vs
   the function body) — re-cite from the current code.
