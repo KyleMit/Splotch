@@ -75,45 +75,6 @@ just-under/over upload boundaries and against a deliberately delayed provider, c
 (not the platform) returns the timeout. Reconcile ADR-0006 and the API skill with the *measured*
 budget — do not hard-code the unverified 6 MB / 60 s numbers.
 
-### [Correctness] Commit AI credentials only after the current request persists them
-
-**File(s):** `web/src/lib/components/parent/AiKeyManager.svelte` (verification flows, lines 31–37
-and 59–128), `web/src/lib/state/settings.svelte.ts` (`setAiUserApiKey`, lines 217–222),
-`web/src/lib/secureStorage.ts` (secret persistence, lines 117–170)
-
-#### Problem
-
-Opening/closing Parent Center resets visible key status but does not abort or invalidate in-flight
-verification. A late request A can announce or persist its credential after a reopened request B.
-Separately, `setAiUserApiKey()` mutates live memory before awaiting secure persistence. If the save
-rejects, the UI's catch reports a network failure while `hasApiKey` has already flipped true and the
-feature uses a key that will disappear on reload.
-
-#### Proposed solution
-
-Give verification a request id/AbortController that is invalidated on close, reopen, or replacement.
-Persist the verified key first and commit it to live state only if the save succeeds and the request
-still owns the active id; otherwise roll back. Distinguish secure-storage failure from network/key
-verification failure in parent-facing feedback.
-
-**Vet 2026-07-14 (confirmed; persistence-ordering is the meat, reopen race is secondary):**
-`setAiUserApiKey` (`settings.svelte.ts:219–222`) assigns `settings.aiUserApiKey = v`
-**synchronously** (`:220`) and only *then* returns the persistence promise (`:221`);
-`hasApiKey`/`aiLocked` (derived in `AiKeyManager.svelte:31–33`) flip immediately, and a `saveApiKey`
-rejection lands in the outer catch (`AiKeyManager.svelte:125–128`) that shows a network error
-**without rolling back** the live key. So the feature reads unlocked while the key vanishes on
-reload — the primary, deterministic fix is persist-then-flip (or roll back on rejection). The reopen
-race (the `$effect(open)` reset at `AiKeyManager.svelte:59–65` clears the `keyStatus === 'checking'`
-re-entrancy guard, letting a late verify A resolve after a reopened B) is real but narrow (submit →
-close → reopen → submit a different value inside one pending request) — fold it in as the secondary
-abort/request-id fix, not the headline.
-
-#### Verification
-
-Use deferred A/B verification responses across close/reopen and assert only B can commit. Mock
-`saveApiKey` rejection and assert live key state remains empty, the locked UI remains visible, and a
-storage-specific error appears.
-
 ### [Testing] Run asset-pipeline unit tests in CI
 
 **File(s):** `package.json` (`test`/`test:asset-gen`, lines 37 and 49–52),

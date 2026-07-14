@@ -214,11 +214,37 @@ export function setAiAccessToken(v: string) {
   settings.aiAccessToken = v;
   writeString(AI_ACCESS_TOKEN_KEY, v);
 }
-// Update the live value immediately (so the UI reacts at once), then persist to
-// secure storage. Returns the persistence promise so callers can await it.
-export function setAiUserApiKey(v: string) {
-  settings.aiUserApiKey = v;
-  return v ? saveApiKey(v) : clearApiKey();
+let aiKeyWriteVersion = 0;
+// Keep secure writes ordered so an older save already in flight cannot finish
+// after a replacement and become the credential restored on the next launch.
+let aiKeyWriteQueue = Promise.resolve();
+
+async function persistAiUserApiKey(v: string) {
+  if (v) await saveApiKey(v);
+  else await clearApiKey();
+}
+
+export function setAiUserApiKey(v: string, ownsRequest: () => boolean = () => true) {
+  const writeVersion = ++aiKeyWriteVersion;
+  const operation = aiKeyWriteQueue.then(async () => {
+    if (writeVersion !== aiKeyWriteVersion || !ownsRequest()) return false;
+
+    await persistAiUserApiKey(v);
+
+    if (writeVersion !== aiKeyWriteVersion) return false;
+    if (!ownsRequest()) {
+      await persistAiUserApiKey(settings.aiUserApiKey);
+      return false;
+    }
+
+    settings.aiUserApiKey = v;
+    return true;
+  });
+  aiKeyWriteQueue = operation.then(
+    () => undefined,
+    () => undefined
+  );
+  return operation;
 }
 
 // Re-read every persisted setting into the live store. Used after the durable

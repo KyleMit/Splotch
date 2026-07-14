@@ -30,7 +30,9 @@ import {
   setTheme,
   reloadSettings,
   hydrateApiKey,
+  setAiUserApiKey,
 } from './settings.svelte';
+import { saveApiKey } from '../secureStorage';
 
 const SOUND_KEY = 'splotch-sound-enabled';
 const SOUND_VOLUME_KEY = 'splotch-sound-volume';
@@ -45,6 +47,11 @@ beforeEach(() => {
   localStorage.clear();
   secureStore.apiKey = null;
   settings.aiUserApiKey = '';
+  vi.mocked(saveApiKey)
+    .mockReset()
+    .mockImplementation(async (value: string) => {
+      secureStore.apiKey = value;
+    });
 });
 
 describe('boolean setters', () => {
@@ -119,6 +126,40 @@ describe('setAiAccessToken', () => {
     setAiAccessToken('abc123');
     expect(settings.aiAccessToken).toBe('abc123');
     expect(localStorage.getItem(AI_ACCESS_TOKEN_KEY)).toBe('abc123');
+  });
+});
+
+describe('setAiUserApiKey', () => {
+  it('commits the live key only after secure persistence succeeds', async () => {
+    let finishSave!: () => void;
+    vi.mocked(saveApiKey).mockImplementationOnce(
+      (value: string) =>
+        new Promise<void>((resolve) => {
+          finishSave = () => {
+            secureStore.apiKey = value;
+            resolve();
+          };
+        })
+    );
+
+    const saving = setAiUserApiKey('AIza-persisted');
+    await vi.waitFor(() => expect(saveApiKey).toHaveBeenCalledOnce());
+
+    expect(settings.aiUserApiKey).toBe('');
+    finishSave();
+    await saving;
+
+    expect(settings.aiUserApiKey).toBe('AIza-persisted');
+    expect(secureStore.apiKey).toBe('AIza-persisted');
+  });
+
+  it('keeps the live key empty when secure persistence rejects', async () => {
+    vi.mocked(saveApiKey).mockRejectedValueOnce(new Error('secure storage unavailable'));
+
+    await expect(setAiUserApiKey('AIza-rejected')).rejects.toThrow('secure storage unavailable');
+
+    expect(settings.aiUserApiKey).toBe('');
+    expect(secureStore.apiKey).toBeNull();
   });
 });
 

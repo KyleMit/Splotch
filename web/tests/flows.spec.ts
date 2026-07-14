@@ -29,6 +29,27 @@ async function openDrawer(page: Page) {
   }).toPass({ timeout: 20_000 });
 }
 
+async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
+  const modal = page.locator('#parentHelpModal');
+  await expect(async () => {
+    if (!(await modal.isVisible().catch(() => false))) {
+      await page.getByRole('button', { name: 'Parent Center' }).click({ timeout: 3000 });
+    }
+    await expect(modal).toBeVisible({ timeout: 1500 });
+  }).toPass({ timeout: 10_000 });
+  await page.getByRole('button', { name: /AI/ }).click();
+  await expect(page.locator(expectedField)).toBeVisible();
+}
+
+async function submitAiKey(page: Page, value: string) {
+  const save = page.getByRole('button', { name: 'Save' });
+  await expect(async () => {
+    await page.locator('#aiKeyInput').fill(value);
+    await expect(save).toBeEnabled({ timeout: 1000 });
+  }).toPass({ timeout: 5000 });
+  await save.click();
+}
+
 // Open the stroke-width flyout robustly. The button is a toggle, so we click
 // only when the menu isn't already open, and retry — this rides out the action
 // panel repositioning/re-rendering right after a reload without ever toggling a
@@ -481,6 +502,75 @@ test('parent center panels can be changed by tab buttons and native scrolling', 
   await page.getByRole('button', { name: /Setup/ }).click();
   await expect(page.locator('.tab-button.active')).toContainText('Setup');
   await expect(setupDetails).toHaveAttribute('open', '');
+});
+
+test('an API key stays locked with storage-specific feedback when secure saving fails', async ({
+  page,
+}) => {
+  await page.route('**/api/verify-key', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    })
+  );
+  await gotoApp(page);
+  await openAiSettings(page);
+
+  await page.evaluate(() => {
+    const transaction = IDBDatabase.prototype.transaction;
+    IDBDatabase.prototype.transaction = function (storeNames, mode, options) {
+      if (this.name === 'splotch-secure') throw new Error('forced secure storage failure');
+      return transaction.call(this, storeNames, mode, options);
+    };
+  });
+
+  await submitAiKey(page, 'AIza-storage-failure');
+
+  await expect(page.getByRole('alert')).toContainText('could not be saved securely');
+  await expect(page.locator('#aiKeyInput')).toBeVisible();
+  await expect(page.locator('#aiKeyActive')).toHaveCount(0);
+});
+
+test('only the current API key verification can persist across a close and reopen', async ({
+  page,
+}) => {
+  let requestCount = 0;
+  let releaseFirst!: () => void;
+  const firstResponse = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  await page.route('**/api/verify-key', async (route) => {
+    requestCount += 1;
+    if (requestCount === 1) await firstResponse;
+    await route
+      .fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true }),
+      })
+      .catch(() => undefined);
+  });
+  await gotoApp(page);
+  await openAiSettings(page);
+
+  await submitAiKey(page, 'AIza-credential-AAAA');
+  await expect.poll(() => requestCount).toBe(1);
+
+  await page.getByRole('button', { name: 'Close' }).click();
+  await expect(page.locator('#parentHelpModal')).toBeHidden();
+  await openAiSettings(page);
+  await submitAiKey(page, 'AIza-credential-BBBB');
+
+  await expect(page.locator('#aiKeyActive')).toHaveValue(/BBBB$/);
+  releaseFirst();
+  await page.waitForTimeout(300);
+  await expect(page.locator('#aiKeyActive')).toHaveValue(/BBBB$/);
+
+  await page.reload();
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  await openAiSettings(page, '#aiKeyActive');
+  await expect(page.locator('#aiKeyActive')).toHaveValue(/BBBB$/);
 });
 
 // ── AI generation flow (mocked endpoint) ────────────────────────────────────
