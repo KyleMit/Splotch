@@ -38,6 +38,11 @@ async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
     await expect(modal).toBeVisible({ timeout: 1500 });
   }).toPass({ timeout: 10_000 });
   await page.getByRole('button', { name: /AI/ }).click();
+  const panels = page.locator('.tab-panels');
+  await expect
+    .poll(() => panels.evaluate((el) => Math.round(el.scrollLeft / el.clientWidth)))
+    .toBe(1);
+  await expect(page.locator('.tab-button.active')).toContainText('AI');
   await expect(page.locator(expectedField)).toBeVisible();
 }
 
