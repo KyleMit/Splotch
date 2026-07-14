@@ -142,7 +142,11 @@ The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast wit
   dark-mode line art, stored ink-on-white — see `pipeline.md`), `*.light.webp` / `*.night.webp`
   fills, `*.thumb.webp` / `*.chalk.thumb.webp` thumbnails (light / dark picker tiles),
   `web/static/styles/*.webp` covers.
-* **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/`.
+* **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/` — at the
+  **repo root** (`lib/paths.mjs` `SAMPLES_DIR` / `SAMPLES_DARK_DIR`), not under `tools/asset-gen/`.
+  (The gitignore pattern is unanchored, so the `tools/asset-gen/.coloring-samples/` dir used as the
+  ad-hoc analysis-script drop spot is also ignored — that's a different directory; generator
+  outputs land at the root.)
 
 Generate → review the scratch → copy the good outputs into `web/static/` → commit.
 
