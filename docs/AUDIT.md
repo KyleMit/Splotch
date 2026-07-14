@@ -8,6 +8,11 @@
 
 ### [Architecture] Fit AI requests inside Netlify's deployed function envelope
 
+**⏸ Pending decision:** Production metadata confirms `sveltekit-render` runs in streaming mode
+with a 10-second ceiling. Choose an asynchronous job flow, a suitable buffered runtime, or another
+host before setting generation, verification, upload, and output budgets; a timeout-only change
+would either preserve uncontrolled termination or make legitimate image generation unusable.
+
 **File(s):** `web/src/routes/api/generate-image/+server.ts` (`MAX_IMAGE_BYTES`, multipart parsing,
 and response buffering, lines 35–41 and 112–130), `web/src/lib/server/ai/gemini.ts`
 (`generateImage`/`verifyKey`, lines 44–95), `web/src/lib/drawing/aiImage.ts` (client deadline, lines
