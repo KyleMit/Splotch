@@ -81,6 +81,25 @@ one-line entry in the `scripts-info` block of `package.json`.
   `cross-env`, and platform-specific tools (the Gradle wrapper, the file-manager opener) are invoked
   via Node helpers in `scripts/` rather than inline shell.
 
+<!-- Source: .ruler/github.md -->
+
+## Writing on GitHub
+
+GitHub auto-links a `#` followed by digits (`#12`) into a reference to the issue or pull request
+with that number. So a plain list like "#1 done, #2 pass" in a PR body or comment silently turns
+into links to unrelated issues/PRs.
+
+**When you write a PR body or a GitHub comment, escape any `#`-number that isn't a deliberate
+issue/PR reference.** Prefer one of:
+
+* Backslash-escape the hash: `\#1 done, \#2 pass`.
+* Wrap it in backticks: `` `#1` done, `#2` pass ``.
+* Reword so no bare `#`-number appears: "item 1 done, item 2 pass".
+
+This applies everywhere agent-authored text lands on GitHub — PR descriptions, PR comments, review
+comments, and issue comments. A `#`-number you *do* mean as a reference (e.g. "fixes #123") should
+stay unescaped.
+
 <!-- Source: .ruler/knowledge-map.md -->
 
 ## Where knowledge lives
@@ -128,6 +147,12 @@ Remaining `docs/`:
 | `docs/PROMPTS.md`       | Reusable AI art prompts for assets                                                                                                                                                                                         |
 | `docs/CLOUD.md`         | Running/previewing the app in a Claude Code on the web cloud session, and its network constraints                                                                                                                          |
 | `docs/handoff/`         | Transient session-to-session transfer packets — see `docs/handoff/CLAUDE.md`. Written by `/create-handoff`, consumed by `/resume-handoff`                                                                                  |
+
+Committed run outputs (contact sheets, Lighthouse reports, model/prompt tests) live in
+**`/artifacts`** — a keeper's home separate from `docs/`, published live via GitHub Pages. Promote
+one with `npm run artifacts:publish -- <source> <type>/<name>` (ephemeral tool scratch dirs stay
+gitignored); see `artifacts/README.md` and
+[ADR-0059](../docs/adrs/0059-committed-run-artifacts-github-pages.md).
 
 If you discover any doc, skill, or rule is out of date while working, update it as part of the same
 task — don't leave it stale.

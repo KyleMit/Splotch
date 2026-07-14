@@ -3,10 +3,13 @@
     PALETTE_COLORS,
     TRIM_ORDER,
     CUSTOM_SWATCH,
+    BLACK_INK,
     colors,
     selectPaletteColor,
     selectCustomSwatch,
+    themedSwatchColor,
   } from '$lib/state/colors.svelte';
+  import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
   import { openColorPicker, buttonCenter } from '$lib/state/ui.svelte';
@@ -18,6 +21,18 @@
 
   let paletteEl: HTMLDivElement;
   let swatchEls = $state<Record<string, HTMLButtonElement>>({});
+
+  const dark = $derived(resolvedTheme() === 'dark');
+
+  // A live theme flip (e.g. the OS switching while in system mode) must repaint
+  // the Black swatch's ink — white on dark paper, black on light — even when the
+  // selection doesn't change. The swatch identity (activeSwatch) stays put; only
+  // the drawn color follows the theme.
+  $effect(() => {
+    if (colors.activeSwatch === BLACK_INK) {
+      colors.activeColor = themedSwatchColor(BLACK_INK, dark);
+    }
+  });
 
   // Publish our rendered width so ActionsPanel can offset past it in landscape
   // without reaching in via querySelector. A ResizeObserver keeps it current as
@@ -46,9 +61,9 @@
     return `0 0 0 0.5px white, 0 0 0 4.5px ${color}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
   }
 
-  function handleSwatchUp(e: PointerEvent, hex: string) {
+  function handleSwatchUp(e: PointerEvent, hex: string, paint: string) {
     selectPen();
-    selectPaletteColor(hex);
+    selectPaletteColor(hex, paint);
     ringAnimateKey = hex + ':' + Date.now();
     releaseAllPointers();
     e.preventDefault();
@@ -97,6 +112,7 @@
   onpointerup={handlePaletteUp}
 >
   {#each PALETTE_COLORS as { hex, label, bonus } (hex)}
+    {@const shown = themedSwatchColor(hex, dark)}
     <button
       class="color-swatch"
       class:bonus
@@ -104,11 +120,11 @@
       class:ring-animate={ringAnimateKey?.startsWith(hex + ':')}
       data-color={hex}
       data-trim-rank={trimRank.get(hex)}
-      style="background-color: {hex}; {!toolState.eraser && colors.activeSwatch === hex
-        ? `box-shadow: ${ringShadow(hex)}; --ring-color: ${getRingColor(hex)};`
+      style="background-color: {shown}; {!toolState.eraser && colors.activeSwatch === hex
+        ? `box-shadow: ${ringShadow(shown)}; --ring-color: ${getRingColor(shown)};`
         : ''}"
-      aria-label={label}
-      onpointerup={(e) => handleSwatchUp(e, hex)}
+      aria-label={shown === hex ? label : 'White'}
+      onpointerup={(e) => handleSwatchUp(e, hex, shown)}
       onpointerdown={handlePaletteDown}
       onpointercancel={handleSwatchCancel}
       bind:this={swatchEls[hex]}

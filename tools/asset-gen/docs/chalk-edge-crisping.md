@@ -15,7 +15,7 @@ cuts the fill with a **binary** threshold (luma 150) that lands mid-ramp. Lossy 
 which edge pixels cross that threshold, and every spuriously punched fill pixel shows dark paper
 that the screened mid-grey chalk above it cannot re-brighten: `screen(#211f29, inv(150)) ≈ 133`
 against a ~200+ fill and a 255 line. The combined dark-mode image wore a dirty ring of dark specks
-around every chalk line (first reported on nature's contact sheet, 2026-07).
+around every chalk line (first reported on nature's proof sheet, 2026-07).
 
 ## Decision
 

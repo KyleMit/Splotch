@@ -52,7 +52,7 @@ treatments inside one category. Seen: bubbles are thin rings on
 solid white (moon-like, arguably great) on `dinosaur/pterodactyl-tall`. Idea: a "motif consistency"
 review pass — group pages sharing a motif (bubbles, clouds, sun, stars, flowers), eyeball the chalk
 treatment side by side, and re-chalk the outliers with a `--notes` naming the sibling's treatment.
-Could be a small contact-sheet mode (`--motif bubbles`?) or just a documented checklist.
+Could be a small proof-sheet mode (`--motif bubbles`?) or just a documented checklist.
 
 * Try on: `shapes/rectangle-wide` (donut bubbles vs `shapes/square-wide`),
   `dinosaur/pterodactyl-wide` (does its sun match -tall?).
@@ -137,7 +137,7 @@ just those with a palette note.
 Each orientation is a separate drawing *and* separate fills — the same character can wear different
 colors in portrait vs landscape (does the dragon stay the same green? the teddy the same brown?).
 Idea: same region-hue scorer as #8 applied across orientations; or condition the -wide fill on the
--tall fill. Worth one contact-sheet pass just to inventory how bad it is.
+-tall fill. Worth one proof-sheet pass just to inventory how bad it is.
 
 * Try on: `creatures/dragon-tall` vs `dragon-wide`, `objects/balloon-tall` vs `balloon-wide`.
 
@@ -279,11 +279,11 @@ resolution (model supports it — cost check) or lanczos/AI-upscale the committe
 
 ## E. Review & process tooling
 
-### 21. Before/after contact sheet from git history **[review speed]**
+### 21. Before/after proof sheet from git history **[review speed]**
 
 The pre-fork night fills are one `git show` away. For the user's set-by-set cleanup pass, a
-`--source git:<ref>` mode on `gen-contact-sheet.mjs` (or a tiny wrapper) rendering old-vs-new pairs
-would turn "is the regen better?" from memory into a side-by-side.
+`--source git:<ref>` mode on `gen-coloring-book-proof-sheet.mjs` (or a tiny wrapper) rendering
+old-vs-new pairs would turn "is the regen better?" from memory into a side-by-side.
 
 * Try on: `farm` (first migrated category), `creatures/owl-tall` (the "target to preserve" case).
 

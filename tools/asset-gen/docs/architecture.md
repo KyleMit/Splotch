@@ -50,8 +50,9 @@ in the repo-root `package.json`**; Node resolves them by walking up into the fla
 layout is unchanged.
 
 What moved: `gen-style-covers`, `gen-coloring-fills`, `gen-coloring-fills-dark`, `retouch-line-art`,
-`gen-coloring-thumbs`, `gen-coloring-sheet` (since retired — its review role folded into the contact
-sheet), `gen-contact-sheet`, `png-to-webp`, `lib/pixelate.mjs`, and the `night-fills.md` runbook.
+`gen-coloring-thumbs`, `gen-coloring-sheet` (since retired — its review role folded into the
+coloring-book proof sheet), `gen-coloring-book-proof-sheet`, `png-to-webp`, `lib/pixelate.mjs`, and
+the `night-fills.md` runbook.
 
 What stayed in `scripts/`: build-path codegen (`gen:icons`, `gen:releases`) and the app-driving
 Playwright generators (`gen:shots`/`store-shots.mjs`, `gen:large-image`) — those drive the live app

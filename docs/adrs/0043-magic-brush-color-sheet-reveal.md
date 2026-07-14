@@ -250,8 +250,9 @@ rather than the single-axis one.
 
 The fills-only fix above ran at **runtime**: the app downloaded the lined fill and `buildFillsSheet`
 punched its outlines out on every page apply. But the lined fill was never shown — every consumer
-(the reveal, and the contact sheet's Combined view, which duplicated the same mask logic) punched it
-first. So the punch is now a **build-time post-process** and the app ships the final image:
+(the reveal, and the coloring-book proof sheet's Combined view, which duplicated the same mask
+logic) punched it first. So the punch is now a **build-time post-process** and the app ships the
+final image:
 
 * The lined fills ("raws") moved out of `web/static` into
   `tools/asset-gen/fill-src/{book}/{page}-{orient}.{light,night}.raw.webp` — committed as the source
@@ -271,9 +272,10 @@ first. So the punch is now a **build-time post-process** and the app ships the f
 * **Done:** with fills shipped fills-only, the runtime masking in `magicBrush.ts`
   (`buildFillsSheet`, `OUTLINE_LUMA_THRESHOLD`, the line-art load and its `getImageData` readback)
   was deleted — the app always loads a shipped fills-only fill, so the reveal is now a plain image
-  load and `setColorSheet` takes just the color URL. The contact sheet's `buildFills` **stays**: its
-  Combined view still reviews `--source samples`, whose fresh Gemini takes are raw lined fills that
-  need the punch to preview the shipped look (on already-punched shipped fills it's a no-op).
+  load and `setColorSheet` takes just the color URL. The coloring-book proof sheet's `buildFills`
+  **stays**: its Combined view still reviews `--source samples`, whose fresh Gemini takes are raw
+  lined fills that need the punch to preview the shipped look (on already-punched shipped fills it's
+  a no-op).
 
 ## Follow-up (2026-07): the punch now inpaints instead of cutting to transparency
 
@@ -281,6 +283,6 @@ The build-time punch's mechanics changed: outline pixels are replaced by the sur
 bled inward and the shipped fills are fully opaque (no alpha plane). The transparent holes resampled
 against the paper at display scale into a dotted dark ring around every line in dark mode. "Reveal
 fills only" is unchanged — the fill still carries no copy of the outlines. Details and the
-review-surface consequences (the contact sheet's `buildFills` now runs only for `--source samples`)
-live in
+review-surface consequences (the coloring-book proof sheet's `buildFills` now runs only for
+`--source samples`) live in
 [`tools/asset-gen/docs/inpainted-fill-punch.md`](../../tools/asset-gen/docs/inpainted-fill-punch.md).

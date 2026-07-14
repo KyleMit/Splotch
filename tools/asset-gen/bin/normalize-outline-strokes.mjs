@@ -25,7 +25,7 @@
 // shipped assets are only touched with --apply, and --apply only copies a
 // candidate that passed every gate. After applying, regenerate the WHOLE suite
 // from the new outline (thumbs, light fill, night fill, punch) and re-review the
-// contact sheet in BOTH themes — see tools/asset-gen/docs/pipeline.md.
+// proof sheet in BOTH themes — see tools/asset-gen/docs/pipeline.md.
 //
 //   npm run gen:coloring-outlines:normalize -- nature/ant-tall nature/ant-wide
 //   ... -- nature/ant-tall --apply             copy the passing candidate over web/static

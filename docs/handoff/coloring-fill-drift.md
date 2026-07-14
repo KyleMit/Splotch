@@ -83,9 +83,9 @@ same global-average blind spot for localized drift, in dark mode.
 ### 3. PR #104 visuals + watching (offered, awaiting your call)
 
 * **Add visuals to the PR body** — I have the ant before/after registration overlay and the
-  Light+Combined contact sheet of all 5 regenerated fills (the `pr-screenshots` skill wants these
-  for a UI-asset PR). I did not touch your PR description; say the word and I'll add a before/after
-  section.
+  Light+Combined coloring-book proof sheet of all 5 regenerated fills (the `pr-screenshots` skill
+  wants these for a UI-asset PR). I did not touch your PR description; say the word and I'll add a
+  before/after section.
 * **Watch the PR** — I can subscribe to #104 and handle CI failures / review comments. Not currently
   subscribed.
 * Interactive review artifact (published this session):
@@ -105,7 +105,7 @@ git fetch origin && git checkout claude/coloring-outline-ghosting-regression-4e2
 npm run gen:coloring-fills:audit            # confirm 0 flagged
 # regenerate any page:  npm run gen:coloring-fills -- <cat>/<page>   (GEMINI_API_KEY is in the env)
 # focused review sheet (light + night side by side):
-npm run gen:contact-sheet -- nature/ant-wide --source shipped --out /tmp/review.html
+npm run gen:coloring-book-proof-sheet -- nature/ant-wide --source shipped --out /tmp/review.html
 # then publish /tmp/review.html with the Artifact tool (don't headless-screenshot it)
 ```
 
