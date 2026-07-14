@@ -8,10 +8,10 @@
 
 ### [Architecture] Fit AI requests inside Netlify's deployed function envelope
 
-**⏸ Pending decision:** Production metadata confirms `sveltekit-render` runs in streaming mode
-with a 10-second ceiling. Choose an asynchronous job flow, a suitable buffered runtime, or another
-host before setting generation, verification, upload, and output budgets; a timeout-only change
-would either preserve uncontrolled termination or make legitimate image generation unusable.
+**⏸ Pending decision:** Production metadata confirms `sveltekit-render` runs in streaming mode with
+a 10-second ceiling. Choose an asynchronous job flow, a suitable buffered runtime, or another host
+before setting generation, verification, upload, and output budgets; a timeout-only change would
+either preserve uncontrolled termination or make legitimate image generation unusable.
 
 **File(s):** `web/src/routes/api/generate-image/+server.ts` (`MAX_IMAGE_BYTES`, multipart parsing,
 and response buffering, lines 35–41 and 112–130), `web/src/lib/server/ai/gemini.ts`
@@ -74,33 +74,6 @@ buffered-vs-stream invocation and the real request/time limits; run a deploy-pre
 just-under/over upload boundaries and against a deliberately delayed provider, confirming Splotch
 (not the platform) returns the timeout. Reconcile ADR-0006 and the API skill with the *measured*
 budget — do not hard-code the unverified 6 MB / 60 s numbers.
-
-### [Testing] Add the load-bearing blank-orb verdict to the golden catalog
-
-**File(s):** `tools/asset-gen/bin/audit-golden.mjs` (imports/scoring/verdicts, lines 31–46, 108–124,
-and 170–194), `tools/asset-gen/bin/audit-fill-eyes.mjs` (orb verdict, lines 18–21 and 56–80),
-`tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (generation gate, lines 310–323),
-`tools/asset-gen/golden/golden-scores.json`
-
-#### Problem
-
-Generation and `audit-fill-eyes` both enforce `scoreCompositeEyes()` because the older band-based
-eye judge cannot see the blank-white-orb failure class. The gate-redundancy matrix explicitly calls
-that composite gate load-bearing, but `audit-golden.mjs` neither runs it nor stores an orb verdict.
-`gen:coloring-golden:diff` therefore cannot detect an asset or scorer regression that restores a
-blank orb unless another, structurally different eye gate happens to fire.
-
-#### Proposed solution
-
-Build the chalk composite once during golden page scoring, run both eye judges, and persist an orb
-verdict plus stable supporting metrics. Add the verdict to `VERDICTS`, version the golden schema if
-needed, and intentionally refreeze the catalog.
-
-#### Verification
-
-Use the committed good and recovered blank-orb fixtures in a golden-diff test. Good → blank must be
-a regression even when the existing `night.eyesOk` remains true; blank → good should report an
-improvement.
 
 ### [Correctness] Recheck canvas emptiness when a service worker actually takes control
 

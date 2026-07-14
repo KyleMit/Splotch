@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "thresholds": {
     "keep": 0.92,
     "localKeep": 0.8,
@@ -48,10 +48,13 @@
         "bgLuma": 40.5,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.23,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "creatures/dragon-wide": {
@@ -79,10 +82,13 @@
         "bgLuma": 24.4,
         "lineWhite": 247,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.27,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "creatures/fairy-tall": {
@@ -110,10 +116,13 @@
         "bgLuma": 33.9,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "creatures/fairy-wide": {
@@ -141,10 +150,13 @@
         "bgLuma": 33.6,
         "lineWhite": 242,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "creatures/mermaid-tall": {
@@ -172,10 +184,13 @@
         "bgLuma": 35.1,
         "lineWhite": 247,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.58,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "creatures/mermaid-wide": {
@@ -203,10 +218,13 @@
         "bgLuma": 32.4,
         "lineWhite": 246,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.51,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "creatures/owl-tall": {
@@ -234,10 +252,13 @@
         "bgLuma": 18.5,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.25,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "creatures/owl-wide": {
@@ -265,10 +286,13 @@
         "bgLuma": 24.4,
         "lineWhite": 249,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.19,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "creatures/pegasus-tall": {
@@ -296,10 +320,13 @@
         "bgLuma": 38.4,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.66,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "creatures/pegasus-wide": {
@@ -327,10 +354,13 @@
         "bgLuma": 29.2,
         "lineWhite": 248,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.37,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "creatures/unicorn-tall": {
@@ -358,10 +388,13 @@
         "bgLuma": 45.5,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.35,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "creatures/unicorn-wide": {
@@ -389,10 +422,13 @@
         "bgLuma": 42.9,
         "lineWhite": 246,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.18,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "dinosaur/brachiosaurus-tall": {
@@ -420,10 +456,13 @@
         "bgLuma": 32.8,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "dinosaur/brachiosaurus-wide": {
@@ -451,10 +490,13 @@
         "bgLuma": 39.4,
         "lineWhite": 250,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "dinosaur/cover": {
@@ -494,10 +536,13 @@
         "bgLuma": 25.7,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "dinosaur/pterodactyl-wide": {
@@ -525,10 +570,13 @@
         "bgLuma": 25.3,
         "lineWhite": 251,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "dinosaur/stegosaurus-tall": {
@@ -556,10 +604,13 @@
         "bgLuma": 27.1,
         "lineWhite": 251,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.46,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "dinosaur/stegosaurus-wide": {
@@ -587,10 +638,13 @@
         "bgLuma": 47.9,
         "lineWhite": 250,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "dinosaur/trex-tall": {
@@ -618,10 +672,13 @@
         "bgLuma": 25.7,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.6,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "dinosaur/trex-wide": {
@@ -649,10 +706,13 @@
         "bgLuma": 21,
         "lineWhite": 251,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "dinosaur/triceratops-tall": {
@@ -680,10 +740,13 @@
         "bgLuma": 32.6,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.29,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "dinosaur/triceratops-wide": {
@@ -711,10 +774,13 @@
         "bgLuma": 24.3,
         "lineWhite": 245,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "dinosaur/velociraptor-tall": {
@@ -742,10 +808,13 @@
         "bgLuma": 47.8,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.42,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "dinosaur/velociraptor-wide": {
@@ -773,10 +842,13 @@
         "bgLuma": 30.4,
         "lineWhite": 249,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "farm/cat-tall": {
@@ -804,10 +876,13 @@
         "bgLuma": 41.9,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.21,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "farm/cat-wide": {
@@ -835,10 +910,13 @@
         "bgLuma": 26.7,
         "lineWhite": 248,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "farm/cover": {
@@ -878,10 +956,13 @@
         "bgLuma": 32.7,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.14,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "farm/cow-wide": {
@@ -909,10 +990,13 @@
         "bgLuma": 32.7,
         "lineWhite": 247,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "farm/dog-tall": {
@@ -940,10 +1024,13 @@
         "bgLuma": 27.7,
         "lineWhite": 254,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "farm/dog-wide": {
@@ -971,10 +1058,13 @@
         "bgLuma": 38.5,
         "lineWhite": 251,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "farm/duck-tall": {
@@ -1002,10 +1092,13 @@
         "bgLuma": 27.1,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.68,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "farm/duck-wide": {
@@ -1033,10 +1126,13 @@
         "bgLuma": 33.7,
         "lineWhite": 249,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "farm/horse-tall": {
@@ -1064,10 +1160,13 @@
         "bgLuma": 32.8,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.52,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "farm/horse-wide": {
@@ -1095,10 +1194,13 @@
         "bgLuma": 49.1,
         "lineWhite": 248,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "farm/pig-tall": {
@@ -1126,10 +1228,13 @@
         "bgLuma": 27.9,
         "lineWhite": 251,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "farm/pig-wide": {
@@ -1157,10 +1262,13 @@
         "bgLuma": 39.8,
         "lineWhite": 250,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "nature/ant-tall": {
@@ -1188,10 +1296,13 @@
         "bgLuma": 10.7,
         "lineWhite": 251,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "nature/ant-wide": {
@@ -1219,10 +1330,13 @@
         "bgLuma": 25.7,
         "lineWhite": 250,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "nature/bee-tall": {
@@ -1250,10 +1364,13 @@
         "bgLuma": 26.9,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "nature/bee-wide": {
@@ -1281,10 +1398,13 @@
         "bgLuma": 33.9,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "nature/caterpillar-tall": {
@@ -1312,10 +1432,13 @@
         "bgLuma": 46.8,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "nature/caterpillar-wide": {
@@ -1343,10 +1466,13 @@
         "bgLuma": 40.7,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "nature/cover": {
@@ -1386,10 +1512,13 @@
         "bgLuma": 39.7,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "nature/ladybug-wide": {
@@ -1417,10 +1546,13 @@
         "bgLuma": 36,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "nature/snail-tall": {
@@ -1448,10 +1580,13 @@
         "bgLuma": 17.4,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "nature/snail-wide": {
@@ -1479,10 +1614,13 @@
         "bgLuma": 33.8,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "nature/spider-tall": {
@@ -1510,10 +1648,13 @@
         "bgLuma": 25.6,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "nature/spider-wide": {
@@ -1541,10 +1682,13 @@
         "bgLuma": 41.7,
         "lineWhite": 247,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "objects/apple-tall": {
@@ -1572,10 +1716,13 @@
         "bgLuma": 27.9,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "objects/apple-wide": {
@@ -1603,10 +1750,13 @@
         "bgLuma": 41,
         "lineWhite": 250,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "objects/balloon-tall": {
@@ -1634,10 +1784,13 @@
         "bgLuma": 25.8,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "objects/balloon-wide": {
@@ -1665,10 +1818,13 @@
         "bgLuma": 38.4,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "objects/cover": {
@@ -1708,10 +1864,13 @@
         "bgLuma": 18.8,
         "lineWhite": 254,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "objects/flower-wide": {
@@ -1739,10 +1898,13 @@
         "bgLuma": 31.4,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "objects/house-tall": {
@@ -1770,10 +1932,13 @@
         "bgLuma": 27,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "objects/house-wide": {
@@ -1801,10 +1966,13 @@
         "bgLuma": 40.7,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "objects/teddy-tall": {
@@ -1832,10 +2000,13 @@
         "bgLuma": 37.7,
         "lineWhite": 251,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "objects/teddy-wide": {
@@ -1863,10 +2034,13 @@
         "bgLuma": 24.5,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "objects/umbrella-wide": {
@@ -1894,10 +2068,13 @@
         "bgLuma": 26.9,
         "lineWhite": 251,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "shapes/circle-tall": {
@@ -1925,10 +2102,13 @@
         "bgLuma": 42,
         "lineWhite": 254,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "shapes/circle-wide": {
@@ -1956,10 +2136,13 @@
         "bgLuma": 33.8,
         "lineWhite": 251,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "shapes/cover": {
@@ -1999,10 +2182,13 @@
         "bgLuma": 31.2,
         "lineWhite": 254,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "shapes/rectangle-tall": {
@@ -2030,10 +2216,13 @@
         "bgLuma": 35,
         "lineWhite": 254,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "shapes/rectangle-wide": {
@@ -2061,10 +2250,13 @@
         "bgLuma": 31.1,
         "lineWhite": 250,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "shapes/square-tall": {
@@ -2092,10 +2284,13 @@
         "bgLuma": 23.5,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.24,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "shapes/square-wide": {
@@ -2123,10 +2318,13 @@
         "bgLuma": 25.7,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.23,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "shapes/star-tall": {
@@ -2154,10 +2352,13 @@
         "bgLuma": 22.2,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.27,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "shapes/star-wide": {
@@ -2185,10 +2386,13 @@
         "bgLuma": 17.7,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "shapes/triangle-tall": {
@@ -2216,10 +2420,13 @@
         "bgLuma": 32.9,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.24,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "shapes/triangle-wide": {
@@ -2247,10 +2454,13 @@
         "bgLuma": 32.5,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.42,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "space/astronaut-tall": {
@@ -2278,10 +2488,13 @@
         "bgLuma": 28,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "space/astronaut-wide": {
@@ -2309,10 +2522,13 @@
         "bgLuma": 20.8,
         "lineWhite": 250,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "space/cover": {
@@ -2352,10 +2568,13 @@
         "bgLuma": 32.3,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "space/meteor-wide": {
@@ -2383,10 +2602,13 @@
         "bgLuma": 23.6,
         "lineWhite": 249,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "space/moon-tall": {
@@ -2414,10 +2636,13 @@
         "bgLuma": 26.7,
         "lineWhite": 254,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.25,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "space/moon-wide": {
@@ -2445,10 +2670,13 @@
         "bgLuma": 20.1,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "space/rover-tall": {
@@ -2476,10 +2704,13 @@
         "bgLuma": 23.2,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.76,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "space/rover-wide": {
@@ -2507,10 +2738,13 @@
         "bgLuma": 21.4,
         "lineWhite": 250,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "space/ship-tall": {
@@ -2538,10 +2772,13 @@
         "bgLuma": 30.2,
         "lineWhite": 254,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "space/ship-wide": {
@@ -2569,10 +2806,13 @@
         "bgLuma": 34.9,
         "lineWhite": 254,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "space/station-tall": {
@@ -2600,10 +2840,13 @@
         "bgLuma": 25.6,
         "lineWhite": 254,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "space/station-wide": {
@@ -2631,10 +2874,13 @@
         "bgLuma": 27.9,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "vehicles/cover": {
@@ -2674,10 +2920,13 @@
         "bgLuma": 51.2,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.74,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "vehicles/excavator-wide": {
@@ -2705,10 +2954,13 @@
         "bgLuma": 24.4,
         "lineWhite": 251,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.67,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "vehicles/fire-tall": {
@@ -2736,10 +2988,13 @@
         "bgLuma": 40.6,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.4,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "vehicles/fire-wide": {
@@ -2767,10 +3022,13 @@
         "bgLuma": 23.3,
         "lineWhite": 248,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "vehicles/garbage-tall": {
@@ -2798,10 +3056,13 @@
         "bgLuma": 17.3,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.68,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "vehicles/garbage-wide": {
@@ -2829,10 +3090,13 @@
         "bgLuma": 26.8,
         "lineWhite": 249,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.57,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "vehicles/monster-tall": {
@@ -2860,10 +3124,13 @@
         "bgLuma": 31.5,
         "lineWhite": 252,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.48,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "vehicles/monster-wide": {
@@ -2891,10 +3158,13 @@
         "bgLuma": 29.2,
         "lineWhite": 246,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "vehicles/police-tall": {
@@ -2922,10 +3192,13 @@
         "bgLuma": 26.4,
         "lineWhite": 253,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "vehicles/police-wide": {
@@ -2953,10 +3226,13 @@
         "bgLuma": 26.7,
         "lineWhite": 251,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.57,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "vehicles/train-tall": {
@@ -2984,10 +3260,13 @@
         "bgLuma": 34.1,
         "lineWhite": 248,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": 0.71,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     },
     "vehicles/train-wide": {
@@ -3015,10 +3294,13 @@
         "bgLuma": 32.6,
         "lineWhite": 251,
         "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "eyesOk": true
+        "eyesOk": true,
+        "orbOk": true
       }
     }
   }
