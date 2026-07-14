@@ -6,8 +6,10 @@ description: Run a Lighthouse page-load audit of the Splotch web app emulated on
 # Splotch — Lighthouse page-load audit
 
 Measures **page load** (how fast the app becomes usable) on a throttled device, as opposed to the
-`profiling` skill, which measures **drawing interaction** once loaded. The LCP element is always
-`<canvas#drawingCanvas>` — "loaded" means the drawing surface has painted.
+`profiling` skill, which measures **drawing interaction** once loaded. The LCP element is the full
+drawing surface (currently `.paper-sheet`; earlier builds used `<canvas#drawingCanvas>`) — "loaded"
+means that surface has painted. Confirm the element from each report instead of assuming it stayed
+the same across UI changes.
 
 The driver [`run-audit.mjs`](run-audit.mjs) runs Lighthouse via `npx lighthouse@12` (no install
 needed) for two form factors × two visit types under a fixed slow-device/slow-internet profile,
@@ -99,7 +101,10 @@ summary covers the headline scores. For attribution beyond the headline (which n
 size, LCP phase breakdown, main-thread cost by category) read the JSON — e.g.
 `node -e 'const a=require("./lighthouse-reports/phone-portrait-first.report.json").audits; …'` lets
 you pull `dom-size`, `largest-contentful-paint-element`, `mainthread-work-breakdown`, and
-`bootup-time` `details.items` without opening the 464 KB HTML.
+`bootup-time` `details.items` without opening the 464 KB HTML. Always inspect `long-tasks` too. If
+every item is attributed to `_lighthouse-eval.js`, the reported TBT and derived performance score
+include Lighthouse's own injected work; the driver marks those TBT values with `*`. Do not turn that
+value into an app finding — use `npm run perf:mount` for an independent startup trace first.
 
 ### 2. Merge findings into `docs/AUDIT.md` — combine, don't overwrite
 
@@ -133,17 +138,25 @@ the numbers*; `docs/AUDIT.md` carries *what's currently wrong*.
 
 ## Interpretation caveats
 
-**False positive — don't file an audit item for it:** the `lcp-discovery-insight` audit flags
-*"`fetchpriority=high` should be applied: false"* on first visit. Splotch's LCP element is
-`<canvas#drawingCanvas>` — a *painted* surface, not a fetched resource — so
-`fetchpriority`/`preload`/lazy-loading hints don't apply to it. The insight is written for image
-LCPs; ignore it here. (The canvas's LCP "Load Delay" ~830 ms is really main-thread/bundle-eval time
-before first paint — that's the TBT item above, not a discovery problem.)
+**False positive — Lighthouse's own work can dominate TBT:** Lighthouse labels its
+`Runtime.evaluate` scripts `_lighthouse-eval.js`. With simulated CPU throttling, that injected task
+can be scaled and counted in TBT even though Lighthouse excludes the same URL from `bootup-time`.
+This reproduced in both Lighthouse 12.8.2 and 13.4.0. When every `long-tasks` item has that URL,
+treat TBT and the derived Perf score as contaminated, inspect the observed `main-thread-tasks`, and
+confirm any startup concern with `npm run perf:mount` before filing it. If an app URL also appears,
+investigate that app-attributed work normally.
+
+**False positive — don't file an audit item for it:** the `lcp-discovery-insight` audit currently
+flags *"`fetchpriority=high` should be applied: false"*. The LCP is `.paper-sheet`, whose tiny CSS
+background texture is already discoverable in the initial document and requested at high priority;
+the `<div>` cannot itself take `fetchpriority`. Earlier builds used the painted canvas and had no
+LCP resource at all. Confirm the current LCP node plus `lcp-breakdown-insight` and request priority;
+only file this if a future LCP resource has meaningful discovery delay.
 
 **Variance:** `simulate` mode is not deterministic — Perf can swing ±15 points and TBT can double
 between identical runs (observed: phone-first Perf 84↔91, TBT 360↔560 ms across two production
-audits). Judge trends and medians across a few runs, not a single number; don't treat a one-off
-swing as a regression.
+audits). After ruling out the self-attribution artifact above, judge trends and medians across a few
+runs, not a single number; don't treat a one-off swing as a regression.
 
 Reports are large; the output dir is gitignored. **Do not commit them** — attach the HTML (zipped;
 GitHub rejects raw `.html`) to the PR instead.

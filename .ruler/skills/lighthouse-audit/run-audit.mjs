@@ -204,23 +204,29 @@ function resolveChrome() {
 
 function printSummary() {
   const rows = [];
+  const selfAttributedTbtRuns = [];
   for (const f of readdirSync(OUT).filter((f) => f.endsWith('.report.json'))) {
     try {
       const r = JSON.parse(readFileSync(join(OUT, f), 'utf8'));
       if (r.runtimeError) continue;
       const a = r.audits;
+      const name = f.replace('.report.json', '');
       const cat = (k) => (r.categories[k] ? Math.round(r.categories[k].score * 100) : '—');
       const nr = a['network-requests']?.details?.items ?? [];
       const kb = Math.round(nr.reduce((s, i) => s + (i.transferSize || 0), 0) / 1024);
+      const longTasks = a['long-tasks']?.details?.items ?? [];
+      const selfAttributedTbt =
+        longTasks.length > 0 && longTasks.every((task) => task.url === '_lighthouse-eval.js');
+      if (selfAttributedTbt) selfAttributedTbtRuns.push(name);
       rows.push([
-        f.replace('.report.json', ''),
+        name,
         cat('performance'),
         cat('accessibility'),
         cat('best-practices'),
         cat('seo'),
         a['first-contentful-paint']?.displayValue ?? '',
         a['largest-contentful-paint']?.displayValue ?? '',
-        a['total-blocking-time']?.displayValue ?? '',
+        `${a['total-blocking-time']?.displayValue ?? ''}${selfAttributedTbt ? '*' : ''}`,
         `${kb} KB`,
       ]);
     } catch {
@@ -234,6 +240,12 @@ function printSummary() {
   const fmt = (r) => r.map((c, i) => String(c).padEnd(widths[i])).join('  ');
   console.log('  ' + fmt(head));
   for (const r of rows) console.log('  ' + fmt(r));
+  if (selfAttributedTbtRuns.length) {
+    console.log(
+      `\n  * TBT (and therefore Perf) is contaminated by Lighthouse's own _lighthouse-eval.js ` +
+        `in: ${selfAttributedTbtRuns.join(', ')}. Do not file an app finding from those values.`
+    );
+  }
   console.log(
     `\nReports written to ${OUT} (JSON + HTML). Do not commit them — attach to the PR instead.`
   );
