@@ -75,43 +75,6 @@ just-under/over upload boundaries and against a deliberately delayed provider, c
 (not the platform) returns the timeout. Reconcile ADR-0006 and the API skill with the *measured*
 budget — do not hard-code the unverified 6 MB / 60 s numbers.
 
-### [Correctness] Keep `canvasEmpty` false when undo replays an active stroke
-
-**File(s):** `web/src/lib/drawing/engine.ts` (stroke-group state and `undo`, lines 368–380 and
-798–810), `web/src/lib/drawing/undoHistory.ts` (`replayAll`, lines 243–252),
-`web/src/lib/components/ActionsPanel.svelte` (undo activation, lines 130–136)
-
-#### Problem
-
-A second pointer can activate Undo while a stroke remains down. `undo()` pops a committed command
-and `replayAll()` correctly paints retained history *plus* the active command, so ink remains
-visible. It then unconditionally sets `canvasEmpty = undone.wasEmpty`. If the popped command began
-on blank paper, the flag becomes true despite the active stroke. Committing that stroke does not
-reassert false, leaving screenshot/save gating, paper locking, PWA update safety, and other
-empty-state consumers inconsistent with visible pixels.
-
-#### Proposed solution
-
-Define active-stroke undo semantics explicitly. The smallest fix is to derive the final empty state
-from both `undone.wasEmpty` and whether the active group contains ink; alternatively, disable or
-defer Undo until the current group commits. Keep `canUndo` and `canvasEmpty` based on the same
-committed-plus-active model.
-
-**Vet 2026-07-14 (confirmed; line refs corrected):** `undo()` sets
-`setCanvasEmptyState(undone.wasEmpty)` unconditionally at `engine.ts:806`. The "commit doesn't
-reassert false" fact lives at `commitStrokeGroup` (`engine.ts:446–452`) — **not** lines 368–380,
-which is `beginStrokeGroup`; emptiness is re-scanned on lift only for erase strokes (`~723–725`), so
-a pen/magic stroke leaves the flag stale. Trigger is credible: `ActionsPanel.svelte:130–132` fires
-Undo on a plain tap, and the canvas uses per-pointer capture (`engine.ts:~734`), so a second finger
-can tap Undo while finger 1 draws. The engine already has a stroke-straddling pattern to reuse —
-`resetActiveCommandForClear` called from `clearCanvas` (`~823–824`).
-
-#### Verification
-
-Commit one stroke, hold a second stroke down, invoke Undo, then release. Assert pixels remain,
-`canvasEmpty` stays false, screenshot/save remains enabled, and the active stroke is still one undo
-unit.
-
 ### [Correctness] Surface the API's persistence status in the native admin console
 
 **File(s):** `web/src/routes/api/admin/tokens/+server.ts` (snapshot response, lines 32–45),

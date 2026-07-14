@@ -127,8 +127,7 @@ export function pushCommand(cmd: StrokeGroupCommand) {
   maybeKeyframe(cmd);
 }
 
-// Remove and return the most recent command (the caller repaints and restores
-// the empty flag from `wasEmpty`), or null when nothing is undoable.
+// Remove and return the most recent command, or null when nothing is undoable.
 export function popCommand(): StrokeGroupCommand | null {
   return commandLog.pop() ?? null;
 }
@@ -148,6 +147,15 @@ export function resetActiveCommandForClear(): boolean {
   if (!activeCommand) return false;
   activeCommand.ops.length = 0;
   activeCommand.wasEmpty = true;
+  return true;
+}
+
+// Undo can change the committed drawing beneath an open stroke. Rebase its
+// captured pre-stroke state so undoing that stroke after commit restores the
+// new underlying state. Returns whether a live stroke still counts as content.
+export function rebaseActiveCommand(wasEmpty: boolean): boolean {
+  if (!activeCommand) return false;
+  activeCommand.wasEmpty = wasEmpty;
   return true;
 }
 

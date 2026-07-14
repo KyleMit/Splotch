@@ -51,6 +51,7 @@ import {
   getHistoryDebug,
   popCommand,
   pushCommand,
+  rebaseActiveCommand,
   recordOp,
   replayAll,
   resetActiveCommandForClear,
@@ -802,8 +803,9 @@ export function undo() {
 
   const undone = popCommand();
   if (!undone) return;
+  const strokeStillLive = rebaseActiveCommand(undone.wasEmpty);
   replayAll(ctx);
-  setCanvasEmptyState(undone.wasEmpty);
+  setCanvasEmptyState(undone.wasEmpty && !strokeStillLive);
 
   setCanUndo(commandCount() > 0);
 
