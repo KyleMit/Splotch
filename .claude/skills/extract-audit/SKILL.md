@@ -28,6 +28,11 @@ Common patterns worth flagging:
 * DOM operations or canvas work that forms a coherent sub-operation
 * Repeated structurally-similar blocks that differ only in inputs
 
+Before flagging an extraction inside browser-automation code, check whether the containing function
+is passed to `page.evaluate` or an equivalent serializer. Ordinary outer/module helpers are not
+carried into the browser with a serialized callback; only propose a boundary that remains
+self-contained, is explicitly injected, or moves the whole browser-side operation together.
+
 ## Output
 
 Write findings to `docs/AUDIT.md` under a `## Source: Extract audit` section, using the canonical

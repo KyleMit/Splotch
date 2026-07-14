@@ -444,3 +444,293 @@ the dynamic-icon hydration convention.
 Compare production bundle composition and `npm run perf:mount` before/after. The initial route chunk
 should no longer contain `splotchy` markup, while every icon state still renders and the late
 overlay chunk remains service-worker cached.
+
+## Source: Extract audit
+
+### [Extract] resolveOutlineTargets
+
+**File(s):** `tools/asset-gen/bin/gen-coloring-fills.mjs` (`pagesUnder` / `resolveArg`, lines
+119–140), `tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (`pagesUnder` / `resolveArg`, lines
+195–210), `tools/asset-gen/bin/gen-coloring-chalk.mjs` (`pagesUnder` / `resolveArg`, lines 249–264),
+`tools/asset-gen/bin/check-coloring-drift.mjs` (`pagesUnder` / `resolveArg`, lines 39–57), and four
+sibling audit/review CLIs
+
+#### Problem
+
+At least eight asset commands independently glob the same tall/wide outline tree and resolve a CLI
+argument as an explicit WebP, page id, or category directory. The copies have already drifted in
+observable ways: some accept an explicit `.webp`, some sort in `pagesUnder`, some sort only after
+flattening, and missing targets are variously returned for a later file error or rejected
+immediately. Reading any command requires re-deriving that policy, and changes to page naming or
+argument behavior must be repeated across the whole toolset.
+
+#### Proposed solution
+
+Add
+`async function resolveOutlineTargets(args: string[], options?: { defaultAll?: boolean;
+missing?: 'return' | 'fail' }): Promise<string[]>`
+to a nearby `tools/asset-gen/lib/outline-targets.mjs`. Keep the one canonical glob and
+page/category/explicit-file resolution there, with options only for the intentional missing/default
+behaviors; each CLI should read as parse options → resolve targets → process targets.
+
+#### Verification
+
+Add asset-tool unit coverage using a temporary category tree for no args, category, page id,
+explicit WebP, missing page, and Windows-style path normalization. Run `npm run test:asset-gen` and
+compare `--dry-run` target lists from the light, night, chalk, drift, eye, halo, and solidity tools
+before and after extraction.
+
+### [Extract] authorizeGenerationRequest
+
+**File(s):** `web/src/routes/api/generate-image/+server.ts` (`POST`, lines 47–92)
+
+#### Problem
+
+The route handler embeds a security-sensitive state machine before its image work: select BYOK vs.
+managed credentials, blind rate-limited token guesses before the allowlist read, charge only failed
+managed guesses to the shared verification bucket, then apply a different generation bucket for
+valid managed traffic or BYOK. The intertwined early `Response`, thrown HTTP errors, and derived key
+make the handler hard to read and make this auth contract difficult to unit-test independently of
+multipart/image/provider behavior.
+
+#### Proposed solution
+
+Extract
+`async function authorizeGenerationRequest(input: { apiKey: FormDataEntryValue | null;
+token: FormDataEntryValue | null; clientAddress: string }): Promise<GenerationAuthorization |
+Response>`
+in the same route module (or a small server-only neighbor). `GenerationAuthorization` should carry
+`usingByok`, `effectiveKey`, and a validated managed token when present; the `Response` arm should
+be only the standard throttled response. Preserve the failure-only guess budget and the separate
+valid-token/BYOK buckets exactly.
+
+#### Verification
+
+Unit-test limited guesses without an allowlist read, one failed guess consuming the shared bucket,
+valid managed traffic not consuming it, managed per-token throttling, BYOK per-IP throttling, and a
+missing server key. Then run `npm run test:api:smoke` to confirm the public 403/429/400 contract and
+`Retry-After` header are unchanged.
+
+### [Extract] processChalkPage
+
+**File(s):** `tools/asset-gen/bin/gen-coloring-chalk.mjs` (top-level page loop, lines 329–465)
+
+#### Problem
+
+One 130-line top-level loop owns every per-page concern: registry/CLI lever resolution, dry-run and
+already-shipped skips, pen/reference preparation, optional light-eye loading, candidate scoring,
+rescore vs. generate selection, review-artifact writes, warning construction, and guarded apply.
+`continue` statements encode several different outcomes, while `failures` is mutated from multiple
+branches. The CLI entry flow is therefore inseparable from the behavior for one page, which is the
+unit that needs fixture-based regression tests.
+
+#### Proposed solution
+
+Extract
+`async function processChalkPage(page: string, context: ChalkPageContext):
+Promise<'skipped' | 'passed' | 'failed'>`
+in the same file. Give it explicit parsed values and AI/file dependencies through
+`ChalkPageContext`; keep aggregate failure counting and the final summary in the entry loop. Smaller
+scoring/formatting helpers may remain local to `processChalkPage` where their inputs are
+page-specific.
+
+#### Verification
+
+Drive the function with temporary pen/light fixtures and stub generation/scorers. Cover dry-run,
+missing input, already-shipped skip, rescore, best-of-retries, failed gates refusing `--apply`, and
+passing gates writing the chalk. Run `npm run test:asset-gen` plus representative chalk `--dry-run`
+commands and compare output/status lines.
+
+### [Extract] processNightPage
+
+**File(s):** `tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (top-level page/sample loop, lines
+358–449)
+
+#### Problem
+
+The night generator's top-level loop combines page lever resolution, pen/chalk/light-reference
+loading, dark-input preparation, a nested sample loop, candidate generation, review-file naming,
+first-sample input output, four gate explanations, drift warnings, and failure accounting. The entry
+point cannot state its orchestration at a glance, and testing one page currently means executing the
+entire CLI with process globals and output directories.
+
+#### Proposed solution
+
+Extract
+`async function processNightPage(page: string, context: NightPageContext):
+Promise<{ renders: number; failures: number }>`
+in the same file. Let it own page-local inputs and samples, while the top level resolves/filter
+targets, constructs shared context, aggregates the returned counts, and decides the exit status.
+Pass filesystem/output and generation dependencies in the context so the function can be exercised
+without a real Gemini call.
+
+#### Verification
+
+Use temporary pen/chalk/light fixtures and a fake `generateCleanTake` to cover dry-run, single and
+multi-sample naming, first-sample input creation, accepted vs. least-bad results, and one failed
+sample not suppressing later samples. Run `npm run test:asset-gen` and compare a page-level
+`--dry-run` plus an offline stubbed invocation before/after extraction.
+
+### [Extract] chooseBestGeneratedCandidate
+
+**File(s):** `tools/asset-gen/bin/gen-coloring-fills.mjs` (`renderClean`, lines 200–235),
+`tools/asset-gen/bin/gen-coloring-chalk.mjs` (attempt loop, lines 410–422),
+`tools/asset-gen/bin/normalize-outline-strokes.mjs` (attempt loop, lines 269–297),
+`tools/asset-gen/bin/gen-coloring-outlines-fresh.mjs` (attempt loop, lines 162–219)
+
+#### Problem
+
+Four generators repeat the same load-bearing retry policy inline: build and score attempt N, retain
+the highest-ranked fallback, and stop early on the first fully passing candidate. The generation and
+score details differ, but the selection policy is duplicated; a future change such as retaining
+attempt counts, skipping a failed render, or refusing a null winner can land in only some tools.
+Because the policy sits inside image/API loops, it has no cheap deterministic test of its own.
+
+#### Proposed solution
+
+Add
+`async function chooseBestGeneratedCandidate<T>(options: { maxAttempts: number;
+attempt: (index: number) => Promise<T | null>; rank: (candidate: T) => number;
+passes: (candidate: T) => boolean }): Promise<T | null>`
+to `tools/asset-gen/lib/generation-attempts.mjs`. Keep all image-specific work in each `attempt`
+callback; the helper should only skip null attempts, retain the best score, and stop on a pass. The
+night generator's two-tier acceptable/fallback ranking is intentionally different and should stay
+outside unless the abstraction can express it without obscuring that policy.
+
+#### Verification
+
+Unit-test immediate pass, later pass, no pass choosing the highest rank, null/failed attempts, and a
+zero-result run. Run `npm run test:asset-gen`, then use deterministic scorer/generator stubs to show
+the light, chalk, normalize, and fresh-outline tools keep the same winner and attempt count.
+
+### [Extract] readAiImageResponse
+
+**File(s):** `web/src/lib/drawing/aiImage.ts` (`generateAiImage` response handling, lines 82–104)
+
+#### Problem
+
+The generation orchestrator decodes four HTTP outcomes inline while also owning export, request
+construction, timeout, UI state, and auto-save. Safety refusal and throttling are early-return UI
+side effects, generic errors throw with response text, and success reads the blob. That makes the
+client's API interpretation difficult to test as a response matrix and hides the intent of the
+happy-path call site.
+
+#### Proposed solution
+
+Extract `async function readAiImageResponse(response: Response): Promise<AiImageResponse>` in
+`aiImage.ts` or a nearby client-only module, returning a discriminated union such as `image`,
+`safety`, `throttled` (including `Retry-After` and diagnostic detail), or `error`. Keep the
+child-facing UI transition and logging in `generateAiImage`; the helper should only translate the
+HTTP contract into domain data.
+
+#### Verification
+
+Unit-test synthetic 200, 422, 429-with/without-`Retry-After`, generic non-OK, and unreadable-body
+responses. Assert the extracted function never mutates `ui`; then retain orchestration tests showing
+each union arm produces the same safety/retry/generic state and only the image arm can auto-save.
+
+### [Extract] planDurableStorageReconciliation
+
+**File(s):** `web/src/lib/storage.ts` (`hydrateDurableStorage`, lines 158–178)
+
+#### Problem
+
+The native hydration function fetches every durable value and then performs a three-way merge inline
+inside `forEach`: restore local storage when only Preferences has a value, back up to Preferences
+when only local storage has one, and do nothing otherwise. Decision logic, browser writes, bridge
+writes, the `restored` flag, and concurrency collection are fused, so the full merge matrix can only
+be tested by mocking both storage systems and plugin loading.
+
+#### Proposed solution
+
+Extract
+`function planDurableStorageReconciliation(entries: readonly { key: string;
+local: string | null; durable: string | null }[]): { restores: KeyValue[]; backups: KeyValue[] }`
+into the same module or a pure nearby utility. `hydrateDurableStorage` should read both stores,
+apply the returned restores synchronously, dispatch backups concurrently, and return
+`restores.length > 0`.
+
+#### Verification
+
+Add a table-driven unit test for both absent, both equal, both different, local-only, and
+durable-only entries, including multiple keys in one plan. Keep an integration test with mocked
+Preferences confirming bridge reads/backups remain concurrent and the returned boolean changes only
+when local storage was restored.
+
+### [Extract] bindDrawingInputListeners
+
+**File(s):** `web/src/lib/drawing/engine.ts` (`initDrawingCanvas`, lines 893–938; teardown, lines
+944–960)
+
+#### Problem
+
+Canvas initialization contains a local listener registry followed by 15 window, orientation,
+pointer, touch, and stray-pen subscriptions. Its cleanup is separated in the returned teardown and
+depends on the captured remover array. The list obscures the higher-level initialization sequence,
+and listener symmetry, capture/passive options, and the optional Screen Orientation subscription
+cannot be verified without exercising the entire engine mount.
+
+#### Proposed solution
+
+Extract `function bindDrawingInputListeners(canvas: HTMLCanvasElement): () => void` in `engine.ts`.
+Keep the typed local `listen` helper and all registrations inside it, returning one cleanup function
+that removes everything. `initDrawingCanvas` should call it once and invoke the returned cleanup at
+the start of teardown before clearing timers/pointer state.
+
+#### Verification
+
+With fake `EventTarget`s, assert each expected event, capture flag, and non-passive touch option is
+registered; provide and omit `screen.orientation.addEventListener`; call cleanup twice and confirm
+no handler remains. Retain an engine mount/teardown test proving a remount does not double-handle a
+pointer stream.
+
+### [Extract] formatNightTakeResult
+
+**File(s):** `tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (sample result formatting, lines
+426–444)
+
+#### Problem
+
+The sample loop assembles one status line from nested branches for accepted/least-bad selection,
+kept-attempt counts, registration shift, drift/mood/line scores, four independent gate failures, the
+worst blank-orb detail, and a residual drift warning. This pure reporting policy is buried between
+filesystem writes and error accounting, making result wording easy to regress and costly to exercise
+without generation.
+
+#### Proposed solution
+
+Extract `function formatNightTakeResult(take: NightTake, cfg: NightSettings, out: string): string`
+in the same file (or a small reporting helper beside the generator). Keep it pure: it should return
+the complete line, while the sample loop only writes artifacts and logs the returned string.
+
+#### Verification
+
+Use table-driven cases for accepted first/later attempts, least-bad mood failure, line failure,
+flat-eye failure, blank-orb failure with worst-core detail, registration shift, and drift warning.
+Snapshot exact text so `ok` can never accompany an unmet acceptance gate and attempt X/Y retains its
+documented meaning.
+
+### [Extract] getClearTutorialLayout
+
+**File(s):** `web/src/lib/components/ClearButton.svelte` (`showTutorial`, lines 32–54)
+
+#### Problem
+
+`showTutorial` calculates the button center, ring box, ghost-button box, and diagonal overshoot,
+then immediately writes each value into two elements' inline styles. Geometry is mixed with
+visibility, animation restart, and timer state, so the toddler-facing coachmark cannot be tested
+across button sizes/orientations without mounting the component and reading DOM styles.
+
+#### Proposed solution
+
+Extract
+`function getClearTutorialLayout(buttonRect: Rect, radius: number): { ring: Box;
+ghost: Box & { tx: number; ty: number } }`
+into a small pure nearby TypeScript module. Keep `showTutorial` responsible for reading the live
+rect, applying the returned styles, restarting the animation, and scheduling dismissal.
+
+#### Verification
+
+Unit-test centered ring placement, ghost size/origin, and the 1.18-radius 45-degree travel for
+representative portrait and landscape rectangles. Visually run the tutorial in both orientations and
+confirm its start, threshold overshoot, animation restart, and six-second dismissal are unchanged.
