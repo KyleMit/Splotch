@@ -6,8 +6,8 @@
 
 The build-time punch (ADR-0043 follow-up) cut a fill's outline pixels to **transparency**: alpha 0
 where the line art is ink-dark, 255 elsewhere. That is exact at native resolution — the overlay line
-covers every hole — but the app and the contact sheet always display fills **downscaled** (a
-1024×1536 page on a ~390px-wide phone), and resampling breaks the covering in two ways:
+covers every hole — but the app and the proof sheet always display fills **downscaled** (a 1024×1536
+page on a ~390px-wide phone), and resampling breaks the covering in two ways:
 
 * **The alpha edge blends with the paper.** A downscaled boundary pixel is part fill, part hole;
   over the dark board the hole contributes near-black, and the screened chalk above it cannot
@@ -15,7 +15,7 @@ covers every hole — but the app and the contact sheet always display fills **d
   clouds, the bee's yellow) grew a dark rim where it met a line.
 * **Independent resample phases.** The fill's alpha edge and the line art's ink edge are resampled
   as two unrelated images; where their subpixel phases disagree the rim becomes a **dotted dark
-  ring** stitched around the line. The contact-sheet client made this worse by re-cutting shipped
+  ring** stitched around the line. The proof-sheet client made this worse by re-cutting shipped
   fills with a binary destination-out mask at render resolution (fixed in the same change: the
   in-browser punch now runs only for `--source samples`, whose raw takes genuinely carry outlines).
 

@@ -1,10 +1,10 @@
-// Builds the coloring-fill contact sheet for ONE category. Read
-// ../docs/contact-sheet.md before changing this file or anything under contact-sheet-assets/
-// — it holds the CLI contract, the layer/compositing model, and the size
-// constraints that shape this generator.
+// Builds the coloring-book proof sheet for ONE category. Read
+// ../docs/coloring-book-proof-sheet.md before changing this file or anything under
+// coloring-book-proof-sheet-assets/ — it holds the CLI contract, the layer/compositing
+// model, and the size constraints that shape this generator.
 //
 //   node --experimental-strip-types --disable-warning=ExperimentalWarning \
-//     tools/asset-gen/bin/gen-contact-sheet.mjs <category>[/page[-orient]] \
+//     tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs <category>[/page[-orient]] \
 //       [--source shipped|samples] [--out FILE]
 import { parseArgs } from 'node:util';
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -48,7 +48,7 @@ if (!book) fail(`no book "${catId}" — categories: ${BOOKS.map((b) => b.id).joi
 const wantsCell = (id, orient) =>
   !pageFilter || pageFilter === `${catId}/${id}` || pageFilter === `${catId}/${id}-${orient}`;
 
-const OUT = values.out ?? join(SAMPLES_DIR, 'contact-sheet.html');
+const OUT = values.out ?? join(SAMPLES_DIR, 'coloring-book-proof-sheet.html');
 
 // The night fill: the shipped .night.webp (default), or a fresh ungated take from
 // .coloring-samples-dark/ (--source samples — the human review gate before commit).
@@ -104,16 +104,16 @@ for (const p of book.pages) {
 if (!cells.length) fail(`no pages matched "${target}"`);
 
 // The look (CSS) and interactive runtime (client JS) live in real files under
-// contact-sheet-assets/ so they get editor highlighting, Prettier, and ESLint. The
-// generator only assembles the shell and injects the cell data as a JSON global
+// coloring-book-proof-sheet-assets/ so they get editor highlighting, Prettier, and ESLint.
+// The generator only assembles the shell and injects the cell data as a JSON global
 // — no build-time string interpolation reaches the runtime.
-const SHEET_DIR = join(ASSET_GEN_DIR, 'contact-sheet-assets');
-const css = readFileSync(join(SHEET_DIR, 'contact-sheet.css'), 'utf8');
-const clientJs = readFileSync(join(SHEET_DIR, 'contact-sheet.client.js'), 'utf8');
+const SHEET_DIR = join(ASSET_GEN_DIR, 'coloring-book-proof-sheet-assets');
+const css = readFileSync(join(SHEET_DIR, 'coloring-book-proof-sheet.css'), 'utf8');
+const clientJs = readFileSync(join(SHEET_DIR, 'coloring-book-proof-sheet.client.js'), 'utf8');
 
 const bootData = JSON.stringify({ cells, source });
 
-const html = `<title>Splotch contact sheet — ${book.name} · ${source}</title>
+const html = `<title>Splotch coloring-book proof sheet — ${book.name} · ${source}</title>
 <style>
 ${css}</style>
 <div class="wrap">
@@ -141,7 +141,7 @@ ${css}</style>
   </nav>
   <div id="pairs"></div>
 </div>
-<script>window.__CONTACT_SHEET__ = ${bootData};</script>
+<script>window.__COLORING_BOOK_PROOF_SHEET__ = ${bootData};</script>
 <script>
 ${clientJs}</script>`;
 

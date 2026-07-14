@@ -25,7 +25,7 @@
 // scoreLineColor() (the model re-inked the white outlines DARK — they must stay
 // white so they sit under the app's white "chalk" line art in dark mode).
 //
-// Full workflow (generate → review contact sheet → ship → wire → verify), the prompt
+// Full workflow (generate → review proof sheet → ship → wire → verify), the prompt
 // lessons, and the remaining-category checklist: tools/asset-gen/docs/pipeline.md (Stage 4).
 //
 // Requires GEMINI_API_KEY. Writes candidates to .coloring-samples-dark/ for

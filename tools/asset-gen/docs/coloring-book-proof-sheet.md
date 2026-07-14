@@ -1,12 +1,13 @@
-# The contact sheet — `bin/gen-contact-sheet.mjs`
+# The coloring-book proof sheet — `bin/gen-coloring-book-proof-sheet.mjs`
 
-**Read this before modifying `bin/gen-contact-sheet.mjs` or anything under
-`contact-sheet-assets/`.** It is the single review surface for the coloring fills — the review-sheet
-role previously split across `gen-coloring-sheet.mjs` lives here now.
+**Read this before modifying `bin/gen-coloring-book-proof-sheet.mjs` or anything under
+`coloring-book-proof-sheet-assets/`.** It is the single review surface for the coloring-book assets
+— the pen line art, the chalk outline, the day/night fills, and the composited page — the
+review-sheet role previously split across `gen-coloring-sheet.mjs` lives here now.
 
 ## What it builds
 
-A **self-contained HTML contact sheet** of the coloring fills for **one category**, so they can be
+A **self-contained HTML proof sheet** of the coloring assets for **one category**, so they can be
 reviewed in a browser and published as an Artifact. Images are embedded as base64 data URIs (no
 external file refs), so the page renders anywhere — including the Artifact sandbox, whose CSP blocks
 linking to local files.
@@ -20,7 +21,7 @@ capped), so the images simply grow with the viewport until they hit that cap.
 
 ```bash
 node --experimental-strip-types --disable-warning=ExperimentalWarning \
-  tools/asset-gen/bin/gen-contact-sheet.mjs <category>[/page[-orient]] \
+  tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs <category>[/page[-orient]] \
     [--source shipped|samples] [--out FILE]
 ```
 
@@ -29,7 +30,7 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning \
 | `<category>`       | Exactly **one** category per sheet (`nature`), optionally focused to a page (`nature/ant` — both orientations) or a single cell (`nature/ant-wide`). `all` is rejected: a whole-catalog sheet exceeds the 16 MB Artifact upload cap — build one sheet per category. |
 | `--source shipped` | (default) read the committed assets — the live `web/static/coloring/**/*.night.webp` night fills.                                                                                                                                                                   |
 | `--source samples` | read fresh night-fill takes from the gitignored `.coloring-samples-dark/` instead — the human review gate before a take is punched and committed. Line art and light fills always come from `web/static` either way.                                                |
-| `--out FILE`       | output path (default `.coloring-samples/contact-sheet.html`, gitignored).                                                                                                                                                                                           |
+| `--out FILE`       | output path (default `.coloring-samples/coloring-book-proof-sheet.html`, gitignored).                                                                                                                                                                               |
 
 Page IDs come from the real catalog (`web/src/lib/state/books.ts` — one of the four sanctioned
 `web/src` imports), so the sheet always matches what will ship. A missing image renders as a
@@ -69,12 +70,12 @@ outlines, which the dark-ink mask can't read. Badge colors: green ≥ 99, yellow
 
 ## Where the code lives
 
-* `bin/gen-contact-sheet.mjs` — assembles the HTML shell, embeds the images, scores the badges, and
-  injects the cell data as a JSON global (`window.__CONTACT_SHEET__`). No build-time string
-  interpolation reaches the runtime.
-* `contact-sheet-assets/contact-sheet.css` — the entire look.
-* `contact-sheet-assets/contact-sheet.client.js` — the in-browser render/interaction runtime (canvas
-  compositing, view toggle, per-tile cycling).
+* `bin/gen-coloring-book-proof-sheet.mjs` — assembles the HTML shell, embeds the images, scores the
+  badges, and injects the cell data as a JSON global (`window.__COLORING_BOOK_PROOF_SHEET__`). No
+  build-time string interpolation reaches the runtime.
+* `coloring-book-proof-sheet-assets/coloring-book-proof-sheet.css` — the entire look.
+* `coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js` — the in-browser
+  render/interaction runtime (canvas compositing, view toggle, per-tile cycling).
 
 Change look or behavior in those two real files (they get editor highlighting, Prettier, and ESLint)
 — never by interpolating strings in the generator.

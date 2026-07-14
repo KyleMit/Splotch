@@ -1,8 +1,9 @@
-// Client runtime for the contact sheet. The generator injects the cell data as
-// `window.__CONTACT_SHEET__` (a JSON blob) ahead of this script, so nothing here
-// is string-interpolated at build time — this file is plain, lintable JS that
-// reads its inputs from that global. See ../contact-sheet.md for the layer model.
-const { cells: CELLS, source: SOURCE } = window.__CONTACT_SHEET__;
+// Client runtime for the coloring-book proof sheet. The generator injects the cell
+// data as `window.__COLORING_BOOK_PROOF_SHEET__` (a JSON blob) ahead of this script,
+// so nothing here is string-interpolated at build time — this file is plain, lintable
+// JS that reads its inputs from that global. See ../docs/coloring-book-proof-sheet.md
+// for the layer model.
+const { cells: CELLS, source: SOURCE } = window.__COLORING_BOOK_PROOF_SHEET__;
 const RENDER_MAX = 640;
 const OUTLINE_LUMA = 150; // asset-gen's punch threshold (lib/punch-fill.mjs)
 const PAPER = { dark: '#211f29', light: '#fcfbf8' };

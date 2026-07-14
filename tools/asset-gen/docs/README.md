@@ -11,8 +11,8 @@ Architecture and the "why a folder, not a workspace/repo" decision:
 
 Layout: the runnable entry points live in `bin/`, shared helpers in `lib/`, the committed regression
 fixtures (`golden-scores.json`, `asset-manifest.sha256`) in `golden/`, and every doc — this runbook,
-`pipeline.md`, `contact-sheet.md`, `ISSUES.md`, `IDEAS.md`, and the decision records — in `docs/`
-(paths in prose below are relative to the `tools/asset-gen/` folder root).
+`pipeline.md`, `coloring-book-proof-sheet.md`, `ISSUES.md`, `IDEAS.md`, and the decision records —
+in `docs/` (paths in prose below are relative to the `tools/asset-gen/` folder root).
 
 ## Where it sits in the repo
 
@@ -43,12 +43,12 @@ The AI generators reuse the app's single source of truth rather than duplicating
 prompts/safety/catalog. This is the **entire** sanctioned import surface from `web/src` — keep it to
 these four modules (ADR-0047 keeps `geminiSafety.ts` dependency-free precisely so this stays clean):
 
-| Import                                  | Used by                |
-| --------------------------------------- | ---------------------- |
-| `web/src/lib/ai/styles.ts`              | `gen-style-covers`     |
-| `web/src/lib/ai/prompt.ts`              | `gen-style-covers`     |
-| `web/src/lib/server/ai/geminiSafety.ts` | every Gemini generator |
-| `web/src/lib/state/books.ts`            | `gen-contact-sheet`    |
+| Import                                  | Used by                         |
+| --------------------------------------- | ------------------------------- |
+| `web/src/lib/ai/styles.ts`              | `gen-style-covers`              |
+| `web/src/lib/ai/prompt.ts`              | `gen-style-covers`              |
+| `web/src/lib/server/ai/geminiSafety.ts` | every Gemini generator          |
+| `web/src/lib/state/books.ts`            | `gen-coloring-book-proof-sheet` |
 
 ## Running
 
@@ -67,7 +67,7 @@ npm run gen:coloring-thumbs     # picker thumbnails (pen + chalk) -> web/static/
 npm run gen:coloring-golden:diff # re-score the catalog vs the frozen golden/golden-scores.json (no key/network, ~1 min)
 npm run gen:coloring-golden:freeze # adopt the current catalog scores as the new golden baseline
 npm run gen:assets:manifest     # re-hash the committed art -> golden/asset-manifest.sha256 (CI drift guard)
-npm run gen:contact-sheet -- nature # HTML contact sheet of ONE category (gitignored) — publish as an Artifact
+npm run gen:coloring-book-proof-sheet -- nature # HTML proof sheet of ONE category (gitignored) — publish as an Artifact
 ```
 
 **Whenever you touch an asset — generate, retouch, regenerate, or ship a fill — rebuild the contact
@@ -127,7 +127,7 @@ Or, from **inside this folder**, the local aliases (same flags, resolve the same
 ```bash
 npm run coloring-fills -- farm/dog-wide --samples 3
 npm run coloring-fills-dark -- space --max-attempts 4   # not exposed as a root gen:* script
-npm run contact-sheet -- space --source samples
+npm run coloring-book-proof-sheet -- space --source samples
 npm run png-to-webp
 ```
 
@@ -150,23 +150,24 @@ The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast wit
 
 Generate → review the scratch → copy the good outputs into `web/static/` → commit.
 
-### Viewing the contact sheet
+### Viewing the coloring-book proof sheet
 
-The contact sheet is the **single review surface** for the coloring fills — self-contained HTML
-(images inlined as base64 data URIs), built to render anywhere. Full reference — CLI, the
-side-by-side light/night layout, the three views, the outline-% badge, size constraints — lives in
-[`contact-sheet.md`](./contact-sheet.md); **read it before modifying `bin/gen-contact-sheet.mjs` or
-`contact-sheet-assets/`**. The essentials:
+The coloring-book proof sheet is the **single review surface** for the coloring assets — line art,
+chalk, fills, and the composited page — as self-contained HTML (images inlined as base64 data URIs),
+built to render anywhere. Full reference — CLI, the side-by-side light/night layout, the three
+views, the outline-% badge, size constraints — lives in
+[`coloring-book-proof-sheet.md`](./coloring-book-proof-sheet.md); **read it before modifying
+`bin/gen-coloring-book-proof-sheet.mjs` or `coloring-book-proof-sheet-assets/`**. The essentials:
 
 * **Rebuild the sheet every time you touch an asset**, then **publish it with the Artifact tool**
   instead of hand-rolling a headless screenshot — same steps as the pipeline's shipping runbook
   ([`pipeline.md`](./pipeline.md)). Show the URL.
-* **One category per sheet** (`gen:contact-sheet -- nature`); `all` is rejected because a
-  whole-catalog sheet exceeds the Artifact tool's 16 MB upload cap. For a catalog-wide review, build
-  and publish one sheet per category. The default `--source shipped` reads only committed assets, so
-  any session rebuilds the identical sheet in seconds with no key or network; `--source samples`
-  reviews fresh, uncommitted night-fill takes from `.coloring-samples-dark/` — the human gate before
-  committing.
+* **One category per sheet** (`gen:coloring-book-proof-sheet -- nature`); `all` is rejected because
+  a whole-catalog sheet exceeds the Artifact tool's 16 MB upload cap. For a catalog-wide review,
+  build and publish one sheet per category. The default `--source shipped` reads only committed
+  assets, so any session rebuilds the identical sheet in seconds with no key or network;
+  `--source samples` reviews fresh, uncommitted night-fill takes from `.coloring-samples-dark/` —
+  the human gate before committing.
 * For a **focused** pass, target a page or cell within the category (`nature/ant`,
   `nature/ant-wide`).
 * Every page shows its light and night fills **side by side**, each with an Outline / Color /
