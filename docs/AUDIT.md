@@ -6,44 +6,6 @@
 
 ## Source: Session audit
 
-### [Execution] Ad-hoc asset-gen analysis scripts can't resolve repo deps (`sharp`, `lib/*.mjs`) from the scratchpad
-
-**File(s):** `tools/asset-gen/CLAUDE.md` (its source `.ruler/AGENTS.md`), cross-ref
-`.claude/skills/run-splotch/` (which already documents the same class for Playwright scripts)
-
-#### Problem
-
-Asset-gen work is heavily visual-analysis-driven — compositing a night render, cropping an eye,
-measuring pupil luma — and the natural move is a throwaway `.mjs` in the session scratchpad
-(`/tmp/.../scratchpad`) that imports `sharp` and the asset-gen libs. But an ESM script under `/tmp`
-cannot resolve the repo's `node_modules`: Node resolves from the **script file's** directory upward,
-not the cwd, and `NODE_PATH` is ESM-blind. This session that cost the opening ~4 tool calls —
-`import sharp from 'sharp'` → `ERR_MODULE_NOT_FOUND`, then two wrong guesses at the package entry
-(`node_modules/sharp/lib/index.js`) before `node -e "require.resolve('sharp')"` revealed
-`node_modules/sharp/dist/index.cjs` — and every subsequent analysis script had to hard-code absolute
-paths for `sharp` **and** each `tools/asset-gen/lib/*.mjs` import. The `bin/` scripts import all of
-these bare and work (they live in the tree), so the failing form looks correct. The same root cause
-was fixed for Playwright scripts on 2026-07-08 ("repo `screenshots/`, not scratchpad; `NODE_PATH` is
-ESM-blind", in `run-splotch`) — but that fix is siloed under "screenshot the app," unreachable from
-the "analyze an asset with sharp" trigger. Cost: **slow**, and recurrence is near-term — the
-blank-orb burndown handoff (`docs/handoff/blank-orb-eye-burndown.md`) sends the next session
-straight back into this analysis pattern.
-
-#### Proposed solution
-
-Add a short note to the asset-gen `CLAUDE.md` (via `.ruler/AGENTS.md`): ad-hoc analysis scripts that
-import `sharp` or `tools/asset-gen/lib/*.mjs` must live **inside the repo** (drop them in
-`tools/asset-gen/` or a gitignored path there), not the session scratchpad, because ESM resolves
-`node_modules` from the script's own directory and ignores `NODE_PATH` — the same reason
-`run-splotch` keeps Playwright scripts in `screenshots/`. Give the one-liner escape hatch for a
-scratchpad script (`import sharp from '<repo>/node_modules/sharp/dist/index.cjs'`) for when moving
-the file isn't worth it.
-
-#### Verification
-
-A fresh session writing an asset-analysis script from the docs alone resolves `sharp` and the lib
-imports on the first run — no `ERR_MODULE_NOT_FOUND`, no `require.resolve` probe.
-
 ### [Tooling] Chalk keep gate rejects correct whitened-pupil chalks and offers no sanctioned apply path
 
 **File(s):** `tools/asset-gen/bin/gen-coloring-chalk.mjs` (gate 1 keep/localKeep, apply block ~lines

@@ -60,6 +60,15 @@ carve-out):
   prompts/safety/catalog. Don't reach into anything else under `web/src`.
 * **Cross-platform (ADR-0017):** plain Node `.mjs`, no bash-isms, forward-slash glob patterns with a
   resolved `cwd` (not `join`-built patterns).
+* **Ad-hoc analysis scripts go inside this folder, not the session scratchpad.** A throwaway `.mjs`
+  that imports `sharp` or `lib/*.mjs` cannot run from `/tmp/...`: Node's ESM loader resolves
+  `node_modules` upward from the **script file's** directory — cwd doesn't matter, and `NODE_PATH`
+  is ignored by `import` (same root cause the `run-splotch` skill documents for Playwright scripts).
+  Drop it in the gitignored `tools/asset-gen/.coloring-samples/` (in the tree, so bare `sharp` and
+  relative `../lib/*.mjs` imports resolve; ignored, so it doesn't dirty the tree) and delete it when
+  done. Escape hatch when moving the file isn't worth it: import by absolute path —
+  `import sharp from '<repo>/node_modules/sharp/dist/index.cjs'` — and likewise absolute paths for
+  each `lib/*.mjs`.
 * **sharp alpha gotcha:** never `joinChannel` an alpha plane and encode — sharp tags the 4th band as
   a generic extra channel, not alpha, so the webp/png encoder *silently* flattens it (output decodes
   `channels: 3, hasAlpha: false`, no error). Interleave an explicit RGBA buffer and construct
