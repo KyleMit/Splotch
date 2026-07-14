@@ -57,7 +57,7 @@ a6f23a674c2e253aa974de9ddd3d9f7bfcebdb1ac20537bf36157ca4c6f253a2  tools/asset-ge
 48c6388c765b4cbc8f1c9f98f85915257099fd1f4a1ba49fa93abdbcbc398096  tools/asset-gen/fill-src/farm/dog-tall.light.raw.webp
 7cf068b490dc4740477b7de4772d5d37b9299eb0e0409a820dadb928662ebbb4  tools/asset-gen/fill-src/farm/dog-tall.night.raw.webp
 fcd258fd1ec04ee666780fa9e145af4a054429ff5ea95beecb9ebd95e6768424  tools/asset-gen/fill-src/farm/dog-wide.light.raw.webp
-e90c235d902dc5a584a44136323c5beb29a6ee30ba01286d317a2067627f34ba  tools/asset-gen/fill-src/farm/dog-wide.night.raw.webp
+19fdc86df0824d94d247eb94af3f61d8209a3f38ecef13b43e6dba286fe3783a  tools/asset-gen/fill-src/farm/dog-wide.night.raw.webp
 f3cf30c9862495161a8763dca3dc9bce70fbeca4e9c90bd14c875dccd16d7172  tools/asset-gen/fill-src/farm/duck-tall.light.raw.webp
 dbfa329bdedbcfe21383e03eae94227a7ffaeed635fac1759f743bf86a6bb751  tools/asset-gen/fill-src/farm/duck-tall.night.raw.webp
 c1db2047c3a6134ec4ab752889224545bc56956f46f3b91e7bb5cf24e5fd3036  tools/asset-gen/fill-src/farm/duck-wide.light.raw.webp
@@ -366,10 +366,10 @@ def9b0bd2c940861098f66a892ed772e1bdb8e0170ddeea0d9d3688c22acfd69  web/static/col
 8f2a0f33ee2b52e35a849435ee92cbb788b7af0e83bd122880cef4bc91c106e4  web/static/coloring/farm/dog-tall.night.webp
 40b06e19756236f0dd8162b6b03be9865000cd755c1a4f49edb8ee7b215755eb  web/static/coloring/farm/dog-tall.outline.webp
 3390edcfae700aac543832a150494e00beb1e3244f0243805513ebe5d40a1ca4  web/static/coloring/farm/dog-tall.thumb.webp
-40eb65e7bf0af5d45a2caf8cac653199498c9e0e677142fd39e9bcd99e5392a1  web/static/coloring/farm/dog-wide.chalk.thumb.webp
-010a4761e148c590166cbe35fc4490523cda824236849a37d42456a6ffb65bb5  web/static/coloring/farm/dog-wide.chalk.webp
+a6a144a678663fa3d3324adc5b1ba0557af76e3f957b699564804e4f7da5ee58  web/static/coloring/farm/dog-wide.chalk.thumb.webp
+b2ea8f8ca4541379c0a6f32b0e946506e85fb605361f392a91312626f8fadc8b  web/static/coloring/farm/dog-wide.chalk.webp
 588d21154975f953c9b6ce3e06861d123cd8b94832560bec76719353a5a2ad2b  web/static/coloring/farm/dog-wide.light.webp
-a2b11b7ea4d0a8bd4b76add8f00723c4eecc63df5a16d756746d193a843acbf4  web/static/coloring/farm/dog-wide.night.webp
+6ea83443932fab2cea93f4c29ed6c3fcf18cb09897d8d7cf9c3563bf290bb0a5  web/static/coloring/farm/dog-wide.night.webp
 d3abc3971b40e5e08064b421c20e1322b87c2fce44cb87d0cfccc6501264a0d7  web/static/coloring/farm/dog-wide.outline.webp
 f8ae01c5e201a66d8d250ad6aedb693f0446e8395f83c5b02c428623bb9b868a  web/static/coloring/farm/dog-wide.thumb.webp
 a491225a66729b855472af1117b4991cd16f66d4956b0e482cf6eddda977c03f  web/static/coloring/farm/duck-tall.chalk.thumb.webp
