@@ -6,47 +6,6 @@
 
 ## Source: Session audit
 
-### [Tooling] Chalk keep gate rejects correct whitened-pupil chalks and offers no sanctioned apply path
-
-**File(s):** `tools/asset-gen/bin/gen-coloring-chalk.mjs` (gate 1 keep/localKeep, apply block ~lines
-409–421; `--force` at ~line 320 only skips the already-shipped check),
-`tools/asset-gen/lib/outline-match.mjs`
-
-#### Problem
-
-The worst-tile keep gate scores the chalk against the raw pen, so a chalk that *correctly* whitens a
-big solid pen pupil into sclera + outlined pupil — the judgment call the pen/chalk fork exists to
-make — reads as "untraced ink" in that tile and fails. During the 2026-07 full-catalog migration
-this fired **13 times across 6 categories** (`objects/flower-tall` 75.4%, both `vehicles/police-*`
-62.9/77.0%, seven `shapes/*` pages 49.7–77.8%, `farm/cat-tall`+`dog-tall`,
-`dinosaur/pterodactyl-tall`+`trex-tall`, `creatures/owl-*`+`dragon-tall`+`unicorn-tall`,
-`space/moon-tall`), each printing `✗ NOT applied — gates unmet` on a candidate whose overlay showed
-the miss confined to the deliberately whitened regions. There is **no CLI path to apply a reviewed
-candidate**: `--force` only bypasses the already-shipped skip (discovered by reading the source
-mid-run), so every one of the 13 was shipped by hand-`cp` from `.coloring-samples-dark/chalk/` —
-byte-identical to what `--apply` writes, but undocumented and easy to get wrong. Retries don't help:
-the failure is structural (the model *should* whiten), so extra attempts just burn API calls
-(flower-tall wasted 6+8 attempts before the pattern was recognized). Cost: **slow**, and guaranteed
-to recur on any future page with solid pen pupils while pens stay un-normalized (the audit counts 72
-solid outlines catalog-wide).
-
-#### Proposed solution
-
-Preferred: whiten solid pen interiors out of the keep **reference** before scoring, exactly the way
-`normalize-outline-strokes.mjs` gate 4 whitens solid interiors and over-ringed eye interiors out of
-*its* reference — removing them is the goal, not drift (pipeline.md already sketches this under the
-2026-07 batch lessons). The machinery exists in `lib/solid-regions.mjs`. Fallback (or complement):
-an explicit `--apply-reviewed <page>` flag that applies the best candidate despite a failed keep
-gate while still enforcing enclosure/white budget/eye polarity, printing the overlay path so the
-human step stays in the loop.
-
-#### Verification
-
-Re-run `npm run gen:coloring-chalk -- shapes/circle-tall --rescore` (offline, re-gates the saved
-candidate): with the reference fix the shipped candidate's worst tile should score ≥ 80% instead of
-49.7%. Durable check: the next new-category run ships a big-pupil chalk via `--apply` (or
-`--apply-reviewed`) with zero hand-`cp` steps.
-
 ### [Tooling] gen-coloring-fills-dark result lines misreport gate outcomes ("ok" + warning = failed gate, "(N tries)" = kept attempt index)
 
 **File(s):** `tools/asset-gen/bin/gen-coloring-fills-dark.mjs` (retry loop ~lines 444–486 and the
