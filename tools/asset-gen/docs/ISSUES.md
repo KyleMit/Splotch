@@ -25,8 +25,8 @@ carrying the retry recipe and the composite-review instruction.
 
 1. **The night eye reads as a blank white orb on `dinosaur/velociraptor-wide`** *(shipped asset)*:
    the night fill painted the pupil interior the same navy as the night sky and oversized the white
-   catchlight, so in the dark-mode composite (the chalk's white sclera + rings over the fill) the eye
-   is a white ring around a hollow — no legible dark pupil. This is the #12 contrast gap at eye
+   catchlight, so in the dark-mode composite (the chalk's white sclera + rings over the fill) the
+   eye is a white ring around a hollow — no legible dark pupil. This is the #12 contrast gap at eye
    scale: the audit judges the raw fill's eye cores, never the composited result. A five-generation
    retry pass with the seeded "solid dark pupil clearly darker than the sky" note still produced
    blank-white composites while the automated gates stayed green. Night-fill regen + re-punch — no
