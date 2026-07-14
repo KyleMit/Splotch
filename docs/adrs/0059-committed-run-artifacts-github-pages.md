@@ -56,9 +56,9 @@ Implementation:
   just the index.
 * **`.github/workflows/pages.yml`** uploads `artifacts/` as the Pages artifact and deploys it on
   push to `main` under `paths: ['artifacts/**']` (plus `workflow_dispatch`). `configure-pages` sets
-  `enablement: true`, but **one-time repo setup is required** the first run: Settings → Pages →
-  Source: **GitHub Actions**. The site root is the `artifacts/` folder, e.g.
-  `artifacts/contact-sheets/nature.html` →
+  `enablement: true`. The one-time repo setup (Settings → Pages → Source: **GitHub Actions**) was
+  completed on merge, and the site is **live** at <https://kylemit.github.io/Splotch/>. The site
+  root is the `artifacts/` folder, e.g. `artifacts/contact-sheets/nature.html` →
   `https://kylemit.github.io/Splotch/contact-sheets/nature.html`.
 * **`artifacts/.nojekyll`** so Pages serves the self-contained HTML verbatim (no Jekyll pass).
 
@@ -83,7 +83,8 @@ that render inline in GitHub Markdown). ADR-0059 is for reports meant to be *vie
 * − Committed binaries and base64-inlined HTML live in `main`'s history forever and grow the clone —
   mitigated by the overwrite-in-place / keeper-only / report-not-whole-dir conventions, not
   eliminated. Git LFS is the escape hatch if it ever hurts, at the cost of the live URLs.
-* − Requires a one-time manual Pages enablement (Settings → Pages → GitHub Actions); the first
-  deploy fails until it's set.
+* − Required a one-time manual Pages enablement (Settings → Pages → GitHub Actions) before the first
+  deploy could succeed. This is now done and the site is live at
+  <https://kylemit.github.io/Splotch/>.
 * − Public-repo-specific for unauthenticated viewing, same caveat as ADR-0046: if Splotch goes
   private, Pages access follows the repo's visibility.

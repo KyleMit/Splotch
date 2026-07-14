@@ -19,8 +19,8 @@ at:
 https://kylemit.github.io/Splotch/<type>/<name>
 ```
 
-The landing page ([`index.html`](./index.html), auto-generated) lists everything at
-`https://kylemit.github.io/Splotch/`.
+The landing page ([`index.html`](./index.html), auto-generated) lists everything and is **live now**
+at <https://kylemit.github.io/Splotch/>.
 
 The coloring-book proof sheets have their own hub at
 `https://kylemit.github.io/Splotch/coloring-book-proof-sheets/` — one sheet per category
