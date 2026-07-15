@@ -64,6 +64,15 @@ export default tseslint.config(
     linterOptions: { reportUnusedDisableDirectives: 'off' },
   },
   {
+    // Plain-Node ESM tooling (no TypeScript to resolve identifiers). Re-enable no-undef here so a
+    // used-but-unimported binding — e.g. dropping `import { existsSync } from 'node:fs'` while a
+    // call remains — fails lint instead of throwing ReferenceError only at CLI runtime.
+    files: ['tools/asset-gen/**/*.mjs'],
+    rules: {
+      'no-undef': 'error',
+    },
+  },
+  {
     // Project conventions (CLAUDE.md, ADR-0002): Svelte 5 runes only — no legacy stores.
     files: ['web/src/**/*.{ts,svelte}'],
     rules: {
