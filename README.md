@@ -1,7 +1,11 @@
-# ideas-exploration — empirical burn-down of IDEAS.md (2026-07-13)
+# ideas-exploration — empirical burn-down of the image-quality backlog (2026-07-13)
 
-A frozen snapshot of a 25-subagent exploration session that ran down **every idea in
-[`../IDEAS.md`](../IDEAS.md)**, one subagent at a time, from baseline commit `8e471b8`. Each
+> The image-quality backlog these subagents ran down used to be `../IDEAS.md`; its still-open items
+> now live in GitHub issues labeled `area:asset-gen`. This folder is a frozen historical record —
+> the `idea-N` numbers below refer to that original list, and later reports reference it by name.
+
+A frozen snapshot of a 25-subagent exploration session that ran down **every idea in the then
+`../IDEAS.md` image-quality backlog**, one subagent at a time, from baseline commit `8e471b8`. Each
 subagent actually attempted its idea's proposed approach (Gemini calls included where needed),
 captured before/after evidence, and **reverted the repo to pristine before exiting** — so nothing
 from these experiments is live in the pipeline. This folder is the complete record, intended for a
