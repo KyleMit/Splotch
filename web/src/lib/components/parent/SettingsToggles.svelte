@@ -27,7 +27,7 @@
     forgetSaveFolder,
   } from '$lib/state/settings.svelte';
   import type { ThemePreference } from '$lib/theme';
-  import type { IconName } from '../icon-names';
+  import type { CommonIconName } from '../iconTypes';
   import { setResizingActionButtons } from '$lib/state/ui.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { supportsOrientationLock } from '$lib/platform';
@@ -42,7 +42,7 @@
   // On every other browser the row is hidden and saves stay as downloads.
   const showFolderSave = folderSaveSupported();
 
-  const themeOptions: { value: ThemePreference; label: string; icon: IconName }[] = [
+  const themeOptions: { value: ThemePreference; label: string; icon: CommonIconName }[] = [
     { value: 'light', label: 'Light', icon: 'theme-light' },
     { value: 'dark', label: 'Dark', icon: 'theme-dark' },
     { value: 'system', label: 'System', icon: 'theme-auto' },

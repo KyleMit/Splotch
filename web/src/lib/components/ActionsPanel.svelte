@@ -214,7 +214,10 @@
               aria-pressed={activeStrokeSize() === size}
               use:scribbleTap={() => handleStrokeSizeClick(size)}
             >
-              <Icon name={`size-${size}` as import('./icon-names').IconName} class="action-icon" />
+              <Icon
+                name={`size-${size}` as import('./iconTypes').CommonIconName}
+                class="action-icon"
+              />
             </button>
           {/each}
         </div>

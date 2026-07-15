@@ -15,8 +15,8 @@ paths:
   by Android and iOS). Pick the lowest layer that can catch the regression.
 * Unit tests cover pure logic and state modules only; UI flows belong in Playwright. The Vitest
   environment is **happy-dom**, not jsdom (ADR-0009).
-* `npm test` = `test:unit` + `test:e2e`; the native smoke tests (`test:android`, `test:ios`) are
-  deliberately excluded (need an emulator/simulator + native toolchain).
+* `npm test` = `test:unit` + `test:asset-gen` + `test:e2e`; the native smoke tests (`test:android`,
+  `test:ios`) are deliberately excluded (need an emulator/simulator + native toolchain).
 * Playwright builds the production artifact and serves it with `vite preview` by default; set
   `DEV_SERVER=1` to iterate against `vite dev` instead.
 * The admin specs rely on the Playwright web server starting with

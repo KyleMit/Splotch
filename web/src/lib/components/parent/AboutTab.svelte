@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from '../Icon.svelte';
+  import SplotchyIcon from '../SplotchyIcon.svelte';
   import { settings, setAdminLinkVisible } from '$lib/state/settings.svelte';
   // Generated at build time from releases/*.md (see scripts/generate-releases.mjs).
   import releases from '$lib/releases.json';
@@ -39,7 +40,7 @@
 
 <section class="setting-group">
   <div class="about-brand">
-    <Icon name="splotchy" class="about-icon" aria-label="Splotch" role="img" />
+    <SplotchyIcon class="about-icon" aria-label="Splotch" role="img" />
     <p class="about-tagline">
       A joyful, kid-friendly drawing app — no ads, no tracking, no accounts.
     </p>

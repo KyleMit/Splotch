@@ -2,6 +2,7 @@
   import { fly, fade } from 'svelte/transition';
   import { backOut, cubicIn } from 'svelte/easing';
   import Icon from './Icon.svelte';
+  import SplotchyIcon from './SplotchyIcon.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { install, promptInstall, dismissInstall } from '$lib/state/install.svelte';
 
@@ -85,7 +86,7 @@
     {#if parting}
       <div class="install-parting" in:fade={{ duration: 200 }}>
         <span class="install-mascot" aria-hidden="true">
-          <Icon name="splotchy" class="install-mascot-icon" />
+          <SplotchyIcon class="install-mascot-icon" />
         </span>
         <p>
           No rush — these steps are always in the
@@ -96,7 +97,7 @@
     {:else}
       <div class="install-main">
         <span class="install-mascot" aria-hidden="true">
-          <Icon name="splotchy" class="install-mascot-icon" />
+          <SplotchyIcon class="install-mascot-icon" />
         </span>
         <div class="install-copy">
           <strong>Add Splotch to your home screen</strong>

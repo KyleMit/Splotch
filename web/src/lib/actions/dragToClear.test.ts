@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { stopDrawSound } from '$lib/audio/drawingSound';
+import { impactThreshold } from '$lib/haptics';
 import { dragToClear, type DragToClearOptions } from './dragToClear';
 
 vi.mock('$lib/drawing/engine', () => ({ releaseAllPointers: vi.fn() }));
@@ -20,6 +22,8 @@ const clearProgress = () => document.documentElement.style.getPropertyValue('--c
 
 function setup() {
   const node = document.createElement('button');
+  node.setPointerCapture = vi.fn();
+  node.releasePointerCapture = vi.fn();
   document.body.appendChild(node);
   const options: DragToClearOptions = {
     containerEl: document.createElement('div'),
@@ -29,6 +33,8 @@ function setup() {
     onClear: vi.fn(),
     onTutorialShow: vi.fn(),
     onTutorialDismiss: vi.fn(),
+    onDragStart: vi.fn(),
+    onDragEnd: vi.fn(),
   };
   const action = dragToClear(node, () => options);
   return { node, options, action };
@@ -39,6 +45,8 @@ describe('dragToClear pointer identity', () => {
   afterEach(() => {
     cleanup?.();
     cleanup = null;
+    vi.useRealTimers();
+    vi.clearAllMocks();
     document.documentElement.style.removeProperty('--clear-progress');
   });
 
@@ -89,18 +97,54 @@ describe('dragToClear pointer identity', () => {
     expect(options.onClear).toHaveBeenCalledTimes(1);
   });
 
-  it('cancel from another pointer does not end the drag', () => {
+  it('cancels a drag past the accept radius without committing and resets its UI state', () => {
+    vi.useFakeTimers();
     const { node, options, action } = setup();
     cleanup = () => action.destroy();
+    const far = 100 + acceptRadius() + 10;
 
     node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
     node.dispatchEvent(pointerEvent('pointercancel', 2, 100, 100));
 
     expect(node.classList.contains('dragging')).toBe(true);
 
-    node.dispatchEvent(pointerEvent('pointercancel', 1, 100, 100));
+    vi.advanceTimersByTime(16);
+    node.dispatchEvent(pointerEvent('pointermove', 1, far, 100));
 
-    expect(node.classList.contains('dragging')).toBe(false);
+    expect(options.containerEl.classList.contains('dragging-active')).toBe(true);
+    expect(options.containerEl.style.transform).not.toBe('');
+    expect(node.classList.contains('delete-ready')).toBe(true);
+    expect(options.acceptZoneEl.classList.contains('visible')).toBe(true);
+    expect(options.acceptZoneEl.classList.contains('threshold-reached')).toBe(true);
+    expect(options.clearPreviewEl.classList.contains('committed')).toBe(true);
+    expect(clearProgress()).toBe('1');
+
+    vi.mocked(options.onTutorialDismiss).mockClear();
+    vi.mocked(impactThreshold).mockClear();
+    node.dispatchEvent(pointerEvent('pointercancel', 1, far, 100));
+
     expect(options.onClear).not.toHaveBeenCalled();
+    expect(options.onTutorialDismiss).not.toHaveBeenCalled();
+    expect(impactThreshold).not.toHaveBeenCalled();
+    expect(stopDrawSound).toHaveBeenCalledTimes(1);
+    expect(options.onDragEnd).toHaveBeenCalledTimes(1);
+    expect(node.releasePointerCapture).toHaveBeenCalledWith(1);
+    expect(options.containerEl.classList.contains('dragging-active')).toBe(false);
+    expect(options.containerEl.style.transform).toBe('');
+    expect(node.classList.contains('dragging')).toBe(false);
+    expect(node.classList.contains('delete-ready')).toBe(false);
+    expect(node.style.transition).toBe('');
+    expect(node.style.opacity).toBe('');
+    expect(node.style.transform).toBe('');
+    expect(options.acceptZoneEl.classList.contains('visible')).toBe(false);
+    expect(options.acceptZoneEl.classList.contains('threshold-reached')).toBe(false);
+    expect(options.clearPreviewEl.classList.contains('committed')).toBe(false);
+    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(false);
+    expect(clearProgress()).toBe('0');
+
+    vi.advanceTimersByTime(250);
+
+    expect(options.acceptZoneEl.style.display).toBe('none');
+    expect(options.acceptZoneEl.classList.contains('visible')).toBe(false);
   });
 });

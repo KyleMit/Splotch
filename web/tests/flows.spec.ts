@@ -29,6 +29,32 @@ async function openDrawer(page: Page) {
   }).toPass({ timeout: 20_000 });
 }
 
+async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
+  const modal = page.locator('#parentHelpModal');
+  await expect(async () => {
+    if (!(await modal.isVisible().catch(() => false))) {
+      await page.getByRole('button', { name: 'Parent Center' }).click({ timeout: 3000 });
+    }
+    await expect(modal).toBeVisible({ timeout: 1500 });
+  }).toPass({ timeout: 10_000 });
+  await page.getByRole('button', { name: /AI/ }).click();
+  const panels = page.locator('.tab-panels');
+  await expect
+    .poll(() => panels.evaluate((el) => Math.round(el.scrollLeft / el.clientWidth)))
+    .toBe(1);
+  await expect(page.locator('.tab-button.active')).toContainText('AI');
+  await expect(page.locator(expectedField)).toBeVisible();
+}
+
+async function submitAiKey(page: Page, value: string) {
+  const save = page.getByRole('button', { name: 'Save' });
+  await expect(async () => {
+    await page.locator('#aiKeyInput').fill(value);
+    await expect(save).toBeEnabled({ timeout: 1000 });
+  }).toPass({ timeout: 5000 });
+  await save.click();
+}
+
 // Open the stroke-width flyout robustly. The button is a toggle, so we click
 // only when the menu isn't already open, and retry — this rides out the action
 // panel repositioning/re-rendering right after a reload without ever toggling a
@@ -105,6 +131,67 @@ test('selecting a palette color activates it and paints in that color', async ({
   expect(px).not.toBeNull();
   // #62A2E9 is blue-dominant — the painted pixel should be more blue than red.
   expect(px![2]).toBeGreaterThan(px![0]);
+});
+
+test('palette colors and custom hexagons activate from the keyboard', async ({ page }) => {
+  await gotoApp(page);
+
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Purple' })).toBeFocused();
+  await page.keyboard.press('Tab');
+  const blue = page.getByRole('button', { name: 'Blue' });
+  await expect(blue).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(blue).toHaveClass(/active/);
+
+  const red = page.getByRole('button', { name: 'Red' });
+  await red.focus();
+  await page.keyboard.press('Space');
+  await expect(red).toHaveClass(/active/);
+
+  const custom = page.getByRole('button', { name: 'Custom Color' });
+  await custom.focus();
+  await page.keyboard.press('Enter');
+  const dialog = page.locator('#color-picker');
+  await expect(dialog).toBeVisible();
+
+  const green = dialog.locator('.grid.landscape .hexagon[data-color="#2ECC71"]');
+  await green.focus();
+  await page.keyboard.press('Space');
+  await expect(dialog).not.toBeVisible();
+  await expect(green).toHaveClass(/selected/);
+});
+
+test('pointer exploration still snaps a hexagon gap and commits the highlighted color', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await page.getByRole('button', { name: 'Custom Color' }).click();
+
+  const dialog = page.locator('#color-picker');
+  await expect(dialog).toBeVisible();
+  const start = dialog.locator('.grid.landscape .row.r5 .hexagon.c3');
+  const target = dialog.locator('.grid.landscape .row.r5 .hexagon.c1');
+
+  await start.hover();
+  await page.mouse.down();
+  await target.hover();
+  await expect(target).toHaveClass(/hover/);
+
+  const targetBox = (await target.boundingBox())!;
+  const gap = {
+    x: targetBox.x + targetBox.width / 2 - 39,
+    y: targetBox.y + targetBox.height / 2,
+  };
+  expect(
+    await page.evaluate(({ x, y }) => !document.elementFromPoint(x, y)?.closest('.hexagon'), gap)
+  ).toBe(true);
+  await page.mouse.move(gap.x, gap.y);
+  await expect(target).toHaveClass(/hover/);
+  await page.mouse.up();
+
+  await expect(dialog).not.toBeVisible();
+  await expect(target).toHaveClass(/selected/);
 });
 
 // Recorded on-device (perf-profiles/recordings/pencil-color-tap.json): an Apple
@@ -477,10 +564,87 @@ test('parent center panels can be changed by tab buttons and native scrolling', 
 
   await scrollToPanel(3);
   await expect(page.locator('.tab-button.active')).toContainText('About');
+  await expect(page.locator('.tab-button.active [data-icon="splotchy"] img')).toBeVisible();
+  const aboutMascot = page.locator('.about-brand [data-icon="splotchy"]');
+  const aboutMascotImage = aboutMascot.locator('img');
+  await expect(aboutMascotImage).toBeVisible();
+  await expect
+    .poll(() => aboutMascotImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBeGreaterThan(0);
+  await expect(aboutMascot).toHaveClass(/icon-color/);
 
   await page.getByRole('button', { name: /Setup/ }).click();
   await expect(page.locator('.tab-button.active')).toContainText('Setup');
   await expect(setupDetails).toHaveAttribute('open', '');
+});
+
+test('an API key stays locked with storage-specific feedback when secure saving fails', async ({
+  page,
+}) => {
+  await page.route('**/api/verify-key', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    })
+  );
+  await gotoApp(page);
+  await openAiSettings(page);
+
+  await page.evaluate(() => {
+    const transaction = IDBDatabase.prototype.transaction;
+    IDBDatabase.prototype.transaction = function (storeNames, mode, options) {
+      if (this.name === 'splotch-secure') throw new Error('forced secure storage failure');
+      return transaction.call(this, storeNames, mode, options);
+    };
+  });
+
+  await submitAiKey(page, 'AIza-storage-failure');
+
+  await expect(page.getByRole('alert')).toContainText('could not be saved securely');
+  await expect(page.locator('#aiKeyInput')).toBeVisible();
+  await expect(page.locator('#aiKeyActive')).toHaveCount(0);
+});
+
+test('only the current API key verification can persist across a close and reopen', async ({
+  page,
+}) => {
+  let requestCount = 0;
+  let releaseFirst!: () => void;
+  const firstResponse = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  await page.route('**/api/verify-key', async (route) => {
+    requestCount += 1;
+    if (requestCount === 1) await firstResponse;
+    await route
+      .fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true }),
+      })
+      .catch(() => undefined);
+  });
+  await gotoApp(page);
+  await openAiSettings(page);
+
+  await submitAiKey(page, 'AIza-credential-AAAA');
+  await expect.poll(() => requestCount).toBe(1);
+
+  await page.getByRole('button', { name: 'Close' }).click();
+  await expect(page.locator('#parentHelpModal')).toBeHidden();
+  await openAiSettings(page);
+  await submitAiKey(page, 'AIza-credential-BBBB');
+
+  await expect(page.locator('#aiKeyActive')).toHaveValue(/BBBB$/);
+  releaseFirst();
+  await page.waitForTimeout(300);
+  await expect(page.locator('#aiKeyActive')).toHaveValue(/BBBB$/);
+
+  await page.reload();
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  await openAiSettings(page, '#aiKeyActive');
+  await expect(page.locator('#aiKeyActive')).toHaveValue(/BBBB$/);
 });
 
 // ── AI generation flow (mocked endpoint) ────────────────────────────────────

@@ -5,10 +5,13 @@ import {
   finishAiGeneration,
   failAiGeneration,
   closeAiResult,
+  isAiGenerationActive,
+  endAiGeneration,
 } from '$lib/state/ui.svelte';
 import { settings } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api';
 import { exportCanvasBlob } from './engine';
+import { readAiImageResponse } from './aiImageResponse';
 import { getActiveOverlayImage } from './overlay';
 import { saveImageBlob } from './screenshot';
 
@@ -29,12 +32,19 @@ async function blobSignature(blob: Blob): Promise<string | null> {
 // Drop the finished AI image into the gallery (a download on the web), and tuck
 // the child's own drawing in alongside it — but only when the drawing actually
 // changed since the last AI run, so duplicates don't pile up.
-async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob) {
+async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, ownsRun: () => boolean) {
+  if (!ownsRun()) return;
   await saveImageBlob(aiBlob, 'splotch-ai');
+  if (!ownsRun()) return;
   const sig = await blobSignature(drawingBlob);
+  if (!ownsRun()) return;
   if (sig === null || sig !== lastSavedDrawingSig) {
     await saveImageBlob(drawingBlob, 'splotch');
   }
+  // Record the signature of the drawing we just saved even if ownership was lost
+  // during that save: the drawing is already in the gallery, so a later owning run
+  // on the same unchanged drawing must dedupe against it. Returning here (the old
+  // post-save ownership check) left the signature stale and re-saved a duplicate.
   lastSavedDrawingSig = sig;
 }
 
@@ -46,25 +56,26 @@ export async function generateAiImage({
 }: { blob?: Blob | null; style?: string } = {}) {
   if (ui.aiGenerating) return;
 
+  const controller = new AbortController();
+
   // Launch the loading modal the instant the button is tapped. When the caller
   // already has the drawing (the style picker hands us a blob), show it blurred
   // behind the dial straight away; otherwise open with the dial alone and slot
   // the preview in once the canvas export finishes — so the spinner never waits
   // on the export, even when customization is off and we skip the picker.
-  startAiGeneration(blob ? URL.createObjectURL(blob) : null);
-
-  const imageBlob =
-    blob ?? (await exportCanvasBlob(getActiveOverlayImage(), { includePaperTexture: false }));
-  if (!imageBlob) {
-    closeAiResult();
-    return;
-  }
-  if (!blob) setAiPreview(URL.createObjectURL(imageBlob));
-
-  const controller = new AbortController();
+  const runId = startAiGeneration(blob ? URL.createObjectURL(blob) : null, controller);
   const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
 
   try {
+    const imageBlob =
+      blob ?? (await exportCanvasBlob(getActiveOverlayImage(), { includePaperTexture: false }));
+    if (!isAiGenerationActive(runId)) return;
+    if (!imageBlob) {
+      closeAiResult();
+      return;
+    }
+    if (!blob) setAiPreview(runId, URL.createObjectURL(imageBlob));
+
     const form = new FormData();
     // Prefer the parent's own Gemini key (BYOK); fall back to a managed access
     // token. The server uses whichever it receives — a key bills the parent's
@@ -79,37 +90,36 @@ export async function generateAiImage({
       body: form,
       signal: controller.signal,
     });
-    if (!res.ok) {
-      const msg = await res.text().catch(() => '');
-      // 422 = Gemini refused the drawing on safety grounds (see ADR-0023). That's
-      // not a retry — guide the child to draw something else, in their language.
-      if (res.status === 422) {
-        failAiGeneration("Let's try drawing something else!", 'safety');
+    const response = await readAiImageResponse(res);
+    switch (response.kind) {
+      case 'safety':
+        failAiGeneration(runId, "Let's try drawing something else!", 'safety');
         return;
-      }
-      // 429 = rate-limited, so the same drawing will work in a moment. The
-      // body's error text is parent-facing copy — never show it to the child;
-      // the 'retry' kind's standard "try again" treatment covers it.
-      if (res.status === 429) {
-        failAiGeneration(undefined, 'retry');
+      case 'throttled':
+        failAiGeneration(runId, undefined, 'retry');
         console.error(
-          `AI image request throttled (retry after ${res.headers.get('Retry-After')}s): ${msg}`
+          `AI image request throttled (retry after ${response.retryAfter}s): ${response.detail}`
         );
         return;
-      }
-      throw new Error(`AI image request failed (${res.status}): ${msg}`);
+      case 'error':
+        throw new Error(`AI image request failed (${response.status}): ${response.detail}`);
     }
-    const outBlob = await res.blob();
-    finishAiGeneration(URL.createObjectURL(outBlob));
-    if (settings.autoSaveAiEnabled) await autoSaveImages(outBlob, imageBlob);
+    const outBlob = response.blob;
+    const committed = finishAiGeneration(runId, URL.createObjectURL(outBlob));
+    if (committed && settings.autoSaveAiEnabled) {
+      await autoSaveImages(outBlob, imageBlob, () => isAiGenerationActive(runId));
+    }
   } catch (err) {
+    if (!isAiGenerationActive(runId)) return;
     const timedOut = err instanceof DOMException && err.name === 'AbortError';
     failAiGeneration(
+      runId,
       timedOut ? "That's taking too long — please try again." : undefined,
       timedOut ? 'retry' : 'generic'
     );
     console.error(err);
   } finally {
     clearTimeout(timeoutId);
+    endAiGeneration(runId);
   }
 }

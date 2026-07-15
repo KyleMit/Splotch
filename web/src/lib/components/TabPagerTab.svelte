@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getContext } from 'svelte';
   import Icon from './Icon.svelte';
+  import SplotchyIcon from './SplotchyIcon.svelte';
   import type { IconName } from './icon-names';
   import { tabPagerContextKey, type TabPagerContext } from './tabPagerContext';
 
@@ -31,6 +32,10 @@
   class:active={pager.state.activeTab === id}
   onclick={() => pager.setActiveTab(id)}
 >
-  <Icon name={icon} class="tab-icon" />
+  {#if icon === 'splotchy'}
+    <SplotchyIcon class="tab-icon" />
+  {:else}
+    <Icon name={icon} class="tab-icon" />
+  {/if}
   <span>{label}</span>
 </button>

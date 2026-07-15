@@ -10,8 +10,9 @@
 // child sees under the magic brush, while the global score stayed above the bar.
 //
 // This flags those already-committed fills so they can be regenerated
-// (`npm run gen:coloring-fills -- <page>`), and re-run afterwards to confirm the
-// fix. It reads committed assets only — no network, no GEMINI_API_KEY — so it's
+// (`npm run gen:coloring-fills -- <page> --apply`; the bare command only writes a
+// review candidate to scratch), and re-run afterwards to confirm the fix. It reads
+// committed assets only — no network, no GEMINI_API_KEY — so it's
 // safe to run anytime.
 //
 //   npm run gen:coloring-fills:audit                 audit every fill
@@ -22,39 +23,25 @@
 // Exits non-zero if any fill fails, so it doubles as a check.
 import { parseArgs } from 'node:util';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
-import { glob } from 'node:fs/promises';
-import { existsSync, statSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, fail } from '../lib/paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
+import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: { overlay: { type: 'boolean' } },
 });
 
-// Resolve args to a list of source line-art pages (default: the whole tree). An arg
-// is a single page ("nature/ant-wide") or a category dir ("nature").
-async function pagesUnder(sub = '') {
-  const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
-  const out = [];
-  for await (const entry of glob('**/*-{tall,wide}.outline.webp', { cwd }))
-    out.push(join(cwd, entry));
-  return out;
-}
-async function resolveArg(arg) {
-  if (arg.endsWith('.webp')) return [join(COLORING_DIR, arg)];
-  const asFile = join(COLORING_DIR, `${arg}.outline.webp`);
-  if (existsSync(asFile)) return [asFile];
-  const asDir = join(COLORING_DIR, arg);
-  if (existsSync(asDir) && statSync(asDir).isDirectory()) return pagesUnder(arg);
-  return [asFile];
-}
-
-const pages = (
-  positionals.length ? (await Promise.all(positionals.map(resolveArg))).flat() : await pagesUnder()
-).sort();
+const pages = await resolveOutlineTargets(positionals, {
+  includeCovers: false,
+  explicitFiles: true,
+  sort: 'all',
+  defaultAll: true,
+  onMissing: 'defer',
+});
 
 const overlayDir = join(SAMPLES_DIR, 'drift');
 if (values.overlay) await mkdir(overlayDir, { recursive: true });
@@ -97,6 +84,8 @@ if (values.overlay && bad.length) {
   );
 }
 if (bad.length) {
-  console.log(`Regenerate: npm run gen:coloring-fills -- ${bad.map((r) => r.rel).join(' ')}`);
+  console.log(
+    `Regenerate: npm run gen:coloring-fills -- ${bad.map((r) => r.rel).join(' ')} --apply`
+  );
   process.exitCode = 1;
 }

@@ -57,9 +57,9 @@ test('web /admin signs in via cookie session, manages tokens, signs out', async 
 
 test('native console /admin/native signs in via the API and manages tokens', async ({ page }) => {
   await signIn(page, '/admin/native');
-  // The native door's JSON snapshot can't carry a persistence signal, so it
-  // never shows the Blobs-fallback warning (the prop defaults to persistent).
-  await expect(page.getByText('Netlify Blobs is unavailable')).toBeHidden();
+  // The preview server has no Netlify Blobs, and the API snapshot carries that
+  // fallback status to the native console just as the web page data does.
+  await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
   await addsAndRemovesToken(page, `e2e-native-${Date.now()}`);
 
   // The bearer session persists in secure storage, so a reload stays signed in.
@@ -68,6 +68,30 @@ test('native console /admin/native signs in via the API and manages tokens', asy
 
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+});
+
+test('native console updates persistence status from every API snapshot', async ({ page }) => {
+  const token = `e2e-native-persistent-${Date.now()}`;
+  await page.route('**/api/admin/tokens', async (route) => {
+    const isInitialSnapshot = route.request().method() === 'GET';
+    await route.fulfill({
+      json: {
+        ok: true,
+        tokens: isInitialSnapshot ? [] : [token],
+        invites: isInitialSnapshot
+          ? []
+          : [{ token, url: `http://localhost:4173/?ai_access_token=${token}` }],
+        persistent: isInitialSnapshot,
+      },
+    });
+  });
+
+  await signIn(page, '/admin/native');
+  await expect(page.getByText('Netlify Blobs is unavailable')).toBeHidden();
+
+  await page.getByPlaceholder('Add a code…').fill(token);
+  await page.getByRole('button', { name: 'Add code' }).click();
+  await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
 });
 
 test('web /admin surfaces a network failure instead of failing silently', async ({ page }) => {

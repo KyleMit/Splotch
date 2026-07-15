@@ -6,19 +6,26 @@
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { STYLE_NAMES } from '$lib/ai/styles';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import { createAiPreviewLoader } from './aiPreview';
 
   let previewUrl = $state<string | null>(null);
   let drawingBlob: Blob | null = null;
 
+  const previewLoader = createAiPreviewLoader(
+    () => exportCanvasBlob(getActiveOverlayImage(), { includePaperTexture: false }),
+    (blob, url) => {
+      drawingBlob = blob;
+      previewUrl = url;
+    }
+  );
+
   async function loadPreview() {
     cleanupPreview();
-    const blob = await exportCanvasBlob(getActiveOverlayImage(), { includePaperTexture: false });
-    if (!blob) return;
-    drawingBlob = blob;
-    previewUrl = URL.createObjectURL(blob);
+    await previewLoader.load();
   }
 
   function cleanupPreview() {
+    previewLoader.invalidate();
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     previewUrl = null;
     drawingBlob = null;

@@ -51,12 +51,12 @@
 // (lib/page-notes.mjs); explicit CLI flags always override the registry.
 import { parseArgs } from 'node:util';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
-import { glob } from 'node:fs/promises';
-import { existsSync, statSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
@@ -246,23 +246,6 @@ function chalkSettings(v, where) {
 }
 chalkSettings(values, 'cli');
 
-async function pagesUnder(sub = '') {
-  const out = [];
-  const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
-  for await (const entry of glob('**/*-{tall,wide}.outline.webp', { cwd }))
-    out.push(join(cwd, entry));
-  return out.sort();
-}
-
-async function resolveArg(arg) {
-  if (arg.endsWith('.webp')) return [join(COLORING_DIR, arg)];
-  const asFile = join(COLORING_DIR, `${arg}.outline.webp`);
-  if (existsSync(asFile)) return [asFile];
-  const asDir = join(COLORING_DIR, arg);
-  if (existsSync(asDir) && statSync(asDir).isDirectory()) return pagesUnder(arg);
-  return [asFile];
-}
-
 const ai = process.env.GEMINI_API_KEY
   ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
   : null;
@@ -324,7 +307,13 @@ const rank = (c, cfg) =>
   c.keep * 100 -
   c.eyes.whitesMissed * 10;
 
-const pages = (await Promise.all(positionals.map(resolveArg))).flat();
+const pages = await resolveOutlineTargets(positionals, {
+  includeCovers: false,
+  explicitFiles: true,
+  sort: 'per-target',
+  defaultAll: false,
+  onMissing: 'defer',
+});
 
 let failures = 0;
 for (const page of pages) {

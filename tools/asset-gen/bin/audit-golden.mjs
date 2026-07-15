@@ -1,7 +1,7 @@
 // Golden-set regression fixtures for the coloring catalog. Every cheap offline
 // audit score the pipeline computes — outline solidity + eye-ring depth
 // (audit-outline-solidity.mjs), light-fill outline keep/localKeep
-// (check-coloring-drift.mjs), light/night eye verdicts (audit-fill-eyes.mjs),
+// (check-coloring-drift.mjs), light/night eye + blank-orb verdicts (audit-fill-eyes.mjs),
 // and the night fill's drift/bgLuma/lineWhite generation gates
 // (lib/night-scores.mjs) — frozen into one committed JSON
 // (golden/golden-scores.json), so any pipeline change can re-run the audits and
@@ -33,9 +33,9 @@ import {
   EYE_RING_DEPTH_MAX,
   scoreEyeFill,
   judgeLightEyes,
-  judgeNightEyes,
 } from '../lib/eye-fill.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
+import { diffGoldenPage, GOLDEN_VERDICTS, scoreGoldenNightEyes } from '../lib/golden-catalog.mjs';
 import {
   scoreDrift,
   scoreNightness,
@@ -76,9 +76,10 @@ async function scorePage(outlinePath) {
   const entry = { outline };
 
   const lightPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
+  let lightRaw = null;
   let lightEyes = null;
   if (existsSync(lightPath)) {
-    const lightRaw = await readFile(lightPath);
+    lightRaw = await readFile(lightPath);
     const { keep, localKeep, worstTile } = await outlineMatch(pen, lightRaw);
     lightEyes = await scoreEyeFill(lightRaw, pen);
     entry.light = {
@@ -110,17 +111,22 @@ async function scorePage(outlinePath) {
     let eyes = null;
     if (lightEyes) {
       const judged = chalk ? await compositeNight(nightRaw, chalk) : nightRaw;
-      eyes = judgeNightEyes(await scoreEyeFill(judged, pen), lightEyes, { chalked: !!chalk });
+      eyes = await scoreGoldenNightEyes(judged, lightRaw, pen, lightEyes, {
+        chalked: !!chalk,
+      });
     }
     entry.night = {
       drift: round(drift.ratio, 5),
       bgLuma: round(night.bgLuma, 1),
       lineWhite: round(line.lineWhite, 1),
-      eyesFailed: eyes ? eyes.failed : null,
+      eyesFailed: eyes?.eyesFailed ?? null,
+      orbFailed: eyes?.orbFailed ?? null,
+      orbMinCoreDark: eyes?.orbMinCoreDark ?? null,
       driftOk: drift.ratio <= DRIFT_THRESHOLD_DEFAULT,
       moodOk: night.bgLuma <= NIGHT_BG_LUMA_MAX_DEFAULT,
       lineOk: line.lineWhite >= LINE_WHITE_MIN_DEFAULT,
-      eyesOk: eyes ? eyes.passes : null,
+      eyesOk: eyes?.eyesOk ?? null,
+      orbOk: eyes?.orbOk ?? null,
     };
   }
 
@@ -149,7 +155,7 @@ async function scoreCatalog() {
   const pages = {};
   for (const rel of [...results.keys()].sort()) pages[rel] = results.get(rel);
   return {
-    version: 1,
+    version: 2,
     thresholds: {
       keep: KEEP_THRESHOLD,
       localKeep: LOCAL_KEEP_THRESHOLD,
@@ -164,60 +170,7 @@ async function scoreCatalog() {
   };
 }
 
-// Numeric fields: how much movement is noise, and which direction is WORSE.
-// Verdict (boolean) fields always gate on ok->fail regardless of these.
-const METRICS = {
-  'outline.darkPx': { noise: 0, worse: null },
-  'outline.interiorPx': { noise: 15, worse: 'up' },
-  'outline.solidPx': { noise: 30, worse: null },
-  'outline.biggestBlob': { noise: 15, worse: 'up' },
-  'outline.strokeWidth': { noise: 0, worse: null },
-  'outline.ringDepth': { noise: 0, worse: 'up' },
-  'light.keep': { noise: 0.005, worse: 'down' },
-  'light.localKeep': { noise: 0.005, worse: 'down' },
-  'light.eyeCores': { noise: 0, worse: null },
-  'light.eyeLively': { noise: 0, worse: 'down' },
-  'night.drift': { noise: 0.001, worse: 'up' },
-  'night.bgLuma': { noise: 3, worse: 'up' },
-  'night.lineWhite': { noise: 3, worse: 'down' },
-  'night.eyesFailed': { noise: 0, worse: 'up' },
-};
-const VERDICTS = [
-  'outline.solidOk',
-  'outline.ringsOk',
-  'light.driftOk',
-  'light.eyesOk',
-  'night.driftOk',
-  'night.moodOk',
-  'night.lineOk',
-  'night.eyesOk',
-];
 const get = (obj, path) => path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
-
-function diffPage(rel, golden, current, out) {
-  for (const path of VERDICTS) {
-    const was = get(golden, path);
-    const now = get(current, path);
-    if (was === now || was === undefined || now === undefined) continue;
-    if (was === null || now === null) {
-      out.info.push(`${rel}  ${path} ${was} -> ${now} (scoreability changed)`);
-    } else if (was && !now) {
-      out.regressions.push(`${rel}  ${path} ok -> FAIL`);
-    } else {
-      out.improvements.push(`${rel}  ${path} FAIL -> ok`);
-    }
-  }
-  for (const [path, spec] of Object.entries(METRICS)) {
-    const was = get(golden, path);
-    const now = get(current, path);
-    if (was == null || now == null || was === now) continue;
-    const delta = now - was;
-    if (Math.abs(delta) <= spec.noise) continue;
-    const line = `${rel}  ${path} ${was} -> ${now}`;
-    const worse = spec.worse === 'up' ? delta > 0 : spec.worse === 'down' ? delta < 0 : false;
-    (worse ? out.regressions : out.info).push(line + (worse ? '' : ' (moved)'));
-  }
-}
 
 const mode = process.argv[2];
 if (mode !== '--freeze' && mode !== '--diff' && mode !== undefined)
@@ -232,7 +185,7 @@ if (mode === '--freeze') {
   await mkdir(dirname(GOLDEN_PATH), { recursive: true });
   await writeFile(GOLDEN_PATH, JSON.stringify(current, null, 2) + '\n');
   const fails = Object.entries(current.pages).flatMap(([rel, p]) =>
-    VERDICTS.filter((v) => get(p, v) === false).map((v) => `${rel}  ${v}`)
+    GOLDEN_VERDICTS.filter((v) => get(p, v) === false).map((v) => `${rel}  ${v}`)
   );
   console.log(
     `Froze ${pageCount} page(s) in ${elapsed}s -> ${relative(process.cwd(), GOLDEN_PATH)}`
@@ -246,9 +199,13 @@ if (mode === '--freeze') {
     fail(`no golden file at ${GOLDEN_PATH} — run gen:coloring-golden:freeze first`);
   const golden = JSON.parse(await readFile(GOLDEN_PATH, 'utf8'));
   const out = { regressions: [], improvements: [], info: [] };
+  if (golden.version !== current.version)
+    out.regressions.push(
+      `catalog schema version ${golden.version} -> ${current.version} (re-freeze required)`
+    );
   for (const rel of Object.keys(golden.pages)) {
     if (!current.pages[rel]) out.regressions.push(`${rel}  page missing (was in golden set)`);
-    else diffPage(rel, golden.pages[rel], current.pages[rel], out);
+    else diffGoldenPage(rel, golden.pages[rel], current.pages[rel], out);
   }
   for (const rel of Object.keys(current.pages))
     if (!golden.pages[rel])

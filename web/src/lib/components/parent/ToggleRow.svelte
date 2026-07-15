@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { IconName } from '../icon-names';
+  import type { CommonIconName } from '../iconTypes';
   import Icon from '../Icon.svelte';
 
   // A single iOS-style toggle row: an icon + label on the left, a switch on the
@@ -7,7 +7,7 @@
   // so the visible text and the accessible name can never diverge. `onToggle`
   // receives the next boolean value.
   interface Props {
-    icon: IconName;
+    icon: CommonIconName;
     label: string;
     id: string;
     checked: boolean;

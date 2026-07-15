@@ -35,7 +35,7 @@
   let {
     authed,
     invites,
-    persistent = true,
+    persistent,
     flash = null,
     loginError = null,
     onlogin,
@@ -47,8 +47,7 @@
     invites: Invite[];
     // `false` = Netlify Blobs is unavailable, so this list is the per-instance
     // in-memory copy seeded from env vars and edits won't survive a restart.
-    // Defaults to `true` so the native door (which can't know) never warns.
-    persistent?: boolean;
+    persistent: boolean;
     flash?: Flash | null;
     loginError?: string | null;
     onlogin: (key: string) => Promise<boolean>;

@@ -202,9 +202,10 @@ and verify outputs with `sharp(out).metadata()` → `hasAlpha: true`.
 
 ## Stage 3 — Light fills
 
-`npm run gen:coloring-fills -- <pages…>` sends the pen outline to Gemini with `FILL_PROMPT` ("color
-it in neatly… keep every black outline exactly where it is… flat colors, no blank white, pupils
-solid black with a white catchlight"). Post-processing and gates, keep-best-of-5:
+`npm run gen:coloring-fills -- <pages…> [--apply]` sends the pen outline to Gemini with
+`FILL_PROMPT` ("color it in neatly… keep every black outline exactly where it is… flat colors, no
+blank white, pupils solid black with a white catchlight"). Post-processing and gates,
+keep-best-of-5:
 
 * `alignToSource` (`lib/align-to-source.mjs`) — edge-map correlation undoes the few-pixel global
   nudge the model tends to add;
@@ -214,7 +215,10 @@ solid black with a white catchlight"). Post-processing and gates, keep-best-of-5
 * **eyes** — at least one eye core reads lively (`judgeLightEyes`); zero lively cores means the
   outline itself is broken.
 
-Passing output writes the raw to `fill-src/` and punches the shipped fill in one step.
+Each best candidate and its registration overlay land in `.coloring-samples/`, including the best
+failed take for diagnosis. Gate exhaustion exits nonzero. `--apply` writes the raws to `fill-src/`
+and punches their shipped fills only after every requested page passes, so one failed page cannot
+partially apply a batch. `--samples N` remains review-only and cannot be combined with `--apply`.
 
 ## Stage 4 — Night fills
 
@@ -464,7 +468,7 @@ Hard-won process lessons:
 | `npm run gen:coloring-outlines:normalize -- <page…>`        | thin-stroke pen redraw, 6 gates, `--apply` to ship                                              | yes      |
 | `npm run gen:coloring-outlines:fresh -- <page> --scene "…"` | brand-new pen from a text scene (same subject, new drawing), 5 offline gates, `--apply` to ship | yes      |
 | `npm run gen:coloring-chalk -- <page-or-cat…>`              | chalk-outline redraw from the pen, 4 gates, `--apply` to ship, `--rescore` offline              | yes      |
-| `npm run gen:coloring-fills -- <pages…>`                    | light fills (gated) + auto-punch                                                                | yes      |
+| `npm run gen:coloring-fills -- <pages…>`                    | gated light-fill candidates → scratch; `--apply` ships an all-passing batch                     | yes      |
 | `node … gen-coloring-fills-dark.mjs <pages…>`               | night fills (gated) → samples                                                                   | yes      |
 | `npm run gen:coloring-punch -- [pages…]`                    | re-derive shipped fills from raws (pen/chalk masks)                                             | no       |
 | `npm run gen:coloring-fills:audit -- [cat]`                 | registration drift on committed raws                                                            | no       |

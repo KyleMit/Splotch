@@ -30,6 +30,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   let homeButtonCenter = { x: 0, y: 0 };
   let clearReady = false;
   let holdTimer: ReturnType<typeof setTimeout> | null = null;
+  let acceptZoneFrame: number | null = null;
   let holdStartX = 0;
   let holdStartY = 0;
   let clickCount = 0;
@@ -100,7 +101,10 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     o.acceptZoneEl.style.width = `${radius * 2}px`;
     o.acceptZoneEl.style.height = `${radius * 2}px`;
     o.acceptZoneEl.style.display = 'block';
-    requestAnimationFrame(() => o.acceptZoneEl.classList.add('visible'));
+    acceptZoneFrame = requestAnimationFrame(() => {
+      acceptZoneFrame = null;
+      o.acceptZoneEl.classList.add('visible');
+    });
 
     o.onDragStart?.();
 
@@ -158,17 +162,38 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     e.stopPropagation();
   }
 
-  function onPointerUp(e: PointerEvent) {
-    if (!isDragging || e.pointerId !== activePointerId) return;
-
-    const o = getOptions();
-
+  function finishDrag(o: DragToClearOptions, pointerId: number) {
     if (holdTimer) {
       clearTimeout(holdTimer);
       holdTimer = null;
     }
+    if (acceptZoneFrame !== null) {
+      cancelAnimationFrame(acceptZoneFrame);
+      acceptZoneFrame = null;
+    }
     isDragging = false;
     activePointerId = null;
+    try {
+      node.releasePointerCapture(pointerId);
+    } catch {}
+
+    o.acceptZoneEl.classList.remove('visible');
+    o.acceptZoneEl.classList.remove('threshold-reached');
+    scheduleReset(() => {
+      if (!isDragging) o.acceptZoneEl.style.display = 'none';
+    }, 250);
+
+    clearReady = false;
+    o.clearPreviewEl.classList.remove('committed');
+    document.documentElement.style.setProperty('--clear-progress', '0');
+
+    node.classList.remove('delete-ready');
+  }
+
+  function onPointerUp(e: PointerEvent) {
+    if (!isDragging || e.pointerId !== activePointerId) return;
+
+    const o = getOptions();
 
     const clientX = e.clientX;
     const clientY = e.clientY;
@@ -177,19 +202,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const distance = Math.sqrt(dx * dx + dy * dy);
     const threshold = getAcceptRadius();
 
-    o.acceptZoneEl.classList.remove('visible');
-    o.acceptZoneEl.classList.remove('threshold-reached');
-    scheduleReset(() => {
-      if (!isDragging) o.acceptZoneEl.style.display = 'none';
-    }, 250);
-
-    // Retract the radial wash. On commit the canvas is already blank, so this
-    // reveals fresh paper just as the confirmation ripple sweeps over it.
-    clearReady = false;
-    o.clearPreviewEl.classList.remove('committed');
-    document.documentElement.style.setProperty('--clear-progress', '0');
-
-    node.classList.remove('delete-ready');
+    finishDrag(o, e.pointerId);
 
     if (distance >= threshold) {
       o.onTutorialDismiss();
@@ -232,18 +245,39 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     e.stopPropagation();
   }
 
+  function onPointerCancel(e: PointerEvent) {
+    if (!isDragging || e.pointerId !== activePointerId) return;
+
+    const o = getOptions();
+    finishDrag(o, e.pointerId);
+
+    o.containerEl.classList.remove('dragging-active');
+    o.containerEl.style.transform = '';
+    node.classList.remove('dragging');
+    node.style.transition = '';
+    node.style.opacity = '';
+    node.style.transform = '';
+    o.pageTurnOverlayEl.classList.remove('animating');
+    stopDrawSound();
+    o.onDragEnd?.();
+
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
   node.addEventListener('pointerdown', onPointerDown);
   node.addEventListener('pointermove', onPointerMove);
   node.addEventListener('pointerup', onPointerUp);
-  node.addEventListener('pointercancel', onPointerUp);
+  node.addEventListener('pointercancel', onPointerCancel);
 
   return {
     destroy() {
       node.removeEventListener('pointerdown', onPointerDown);
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);
-      node.removeEventListener('pointercancel', onPointerUp);
+      node.removeEventListener('pointercancel', onPointerCancel);
       if (holdTimer) clearTimeout(holdTimer);
+      if (acceptZoneFrame !== null) cancelAnimationFrame(acceptZoneFrame);
       for (const id of resetTimers) clearTimeout(id);
       resetTimers.clear();
     },

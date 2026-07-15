@@ -16,6 +16,22 @@ let memoryTokens: string[] | null = null;
 let blobsUnavailable = false;
 
 type TokenStore = ReturnType<typeof getStore>;
+type StoreRead =
+  | { source: 'blobs'; store: TokenStore; list: string[]; etag?: string }
+  | { source: 'memory'; store: null; list: string[]; etag?: undefined }
+  | { source: 'unconfirmed'; store: TokenStore; list: []; etag?: undefined };
+
+const SEED_CONFIRMATION_ATTEMPTS = 3;
+// Backoff before each confirmation reread. A `modified: false` means the write
+// landed on a replica this one hasn't caught up to yet, so rereading instantly
+// just re-hits the same lag; a short, growing pause gives eventual consistency a
+// moment to converge. A strong-consistency read would confirm deterministically,
+// but it throws BlobsConsistencyError in this SSR Blobs context (ADR-0025) — which
+// would make every lost seed race fail to confirm, strictly worse than pacing
+// eventual reads — so we stay on eventual and just space the attempts.
+const SEED_CONFIRMATION_BACKOFF_MS = 50;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function seedFromEnv(): string[] {
   const raw = env.ALLOWED_TOKENS_LIST || '';
@@ -43,13 +59,12 @@ function openStore(): TokenStore | null {
 
 /**
  * Resolve the current token list and the backing store (if available).
- * Returns `{ store, list, etag }` where `store` is null when Blobs is
- * unavailable. `etag` identifies the exact blob version the list came from so
- * mutations can compare-and-set against it; read-only callers ignore it. An
- * undefined etag with a live store means the key didn't exist at read time
- * (persist then uses `onlyIfNew`).
+ * `source` distinguishes confirmed Blobs data, the explicit local-memory
+ * fallback, and a lost seed race whose winning value could not be confirmed.
+ * `etag` identifies the exact blob version the list came from so mutations can
+ * compare-and-set against it; read-only callers ignore it.
  */
-async function readStore(): Promise<{ store: TokenStore | null; list: string[]; etag?: string }> {
+async function readStore(): Promise<StoreRead> {
   const store = openStore();
   if (store) {
     try {
@@ -60,14 +75,29 @@ async function readStore(): Promise<{ store: TokenStore | null; list: string[]; 
       // so it can never clobber an existing list.
       const existing = await store.getWithMetadata(KEY, { type: 'json' });
       if (existing && Array.isArray(existing.data)) {
-        return { store, list: existing.data, etag: existing.etag };
+        return { source: 'blobs', store, list: existing.data, etag: existing.etag };
       }
       // First run against Blobs (or a stale-empty read): seed from the env var,
       // but only if the key truly doesn't exist yet, so a lagging replica can't
       // overwrite tokens the admin already saved.
       const seeded = seedFromEnv();
-      const { etag } = await store.setJSON(KEY, seeded, { onlyIfNew: true });
-      return { store, list: seeded, etag };
+      const seededWrite = await store.setJSON(KEY, seeded, { onlyIfNew: true });
+      if (seededWrite.modified) {
+        return { source: 'blobs', store, list: seeded, etag: seededWrite.etag };
+      }
+      for (let attempt = 1; attempt <= SEED_CONFIRMATION_ATTEMPTS; attempt++) {
+        await sleep(SEED_CONFIRMATION_BACKOFF_MS * attempt);
+        try {
+          const winner = await store.getWithMetadata(KEY, { type: 'json' });
+          if (winner && Array.isArray(winner.data)) {
+            return { source: 'blobs', store, list: winner.data, etag: winner.etag };
+          }
+        } catch {
+          // Keep trying so a single transient read failure does not deny a current token.
+        }
+      }
+      console.warn('[tokens] Lost env-seed race but could not confirm the current list');
+      return { source: 'unconfirmed', store, list: [] };
     } catch (err) {
       // Transient Blobs error: degrade to memory for THIS request only. Do not
       // latch blobsUnavailable, or one blip would make the warm instance
@@ -77,7 +107,7 @@ async function readStore(): Promise<{ store: TokenStore | null; list: string[]; 
     }
   }
   if (memoryTokens === null) memoryTokens = seedFromEnv();
-  return { store: null, list: memoryTokens };
+  return { source: 'memory', store: null, list: memoryTokens };
 }
 
 // Compare-and-set write, same pattern as usage.ts's recordTokenUsage: two
@@ -110,15 +140,15 @@ export async function getTokens() {
  * a banner so an operator isn't fooled by env-seeded data that looks live.
  */
 export async function getTokensStatus(): Promise<{ tokens: string[]; persistent: boolean }> {
-  const { store, list } = await readStore();
-  return { tokens: [...list], persistent: store !== null };
+  const read = await readStore();
+  return { tokens: [...read.list], persistent: read.source === 'blobs' };
 }
 
 /** Whether `token` is currently allowed. */
 export async function isAllowedToken(token: unknown) {
   if (typeof token !== 'string') return false;
-  const { list } = await readStore();
-  return list.includes(token);
+  const read = await readStore();
+  return read.source !== 'unconfirmed' && read.list.includes(token);
 }
 
 // Each attempt re-runs the whole read-modify cycle (dup-check/filter included)
@@ -138,7 +168,9 @@ export async function addToken(token: unknown): Promise<MutationResult> {
   const t = String(token ?? '').trim();
   if (!t) return { ok: false, error: 'Token cannot be empty' };
   for (let attempt = 1; attempt <= MUTATION_ATTEMPTS; attempt++) {
-    const { store, list, etag } = await readStore();
+    const read = await readStore();
+    if (read.source === 'unconfirmed') return { ok: false, error: TOKEN_CONFLICT_ERROR };
+    const { store, list, etag } = read;
     if (list.includes(t)) return { ok: false, error: 'Token already exists' };
     const next = [...list, t];
     if (await persist(store, next, etag)) return { ok: true, tokens: next };
@@ -150,7 +182,9 @@ export async function addToken(token: unknown): Promise<MutationResult> {
 export async function removeToken(token: unknown): Promise<MutationResult> {
   const t = String(token ?? '').trim();
   for (let attempt = 1; attempt <= MUTATION_ATTEMPTS; attempt++) {
-    const { store, list, etag } = await readStore();
+    const read = await readStore();
+    if (read.source === 'unconfirmed') return { ok: false, error: TOKEN_CONFLICT_ERROR };
+    const { store, list, etag } = read;
     const next = list.filter((x: string) => x !== t);
     // A no-op remove must not rewrite the blob: under eventual consistency the
     // list may be a stale replica read, and persisting it would clobber a token

@@ -6,7 +6,7 @@
 | `npm run dev`                 | Dev server at `localhost:5173` (no `/api` functions)                                  |
 | `npm run dev:netlify`         | Dev server **with** the `/api/*` serverless functions                                 |
 | `npm run check`               | svelte-check / type checking                                                          |
-| `npm test`                    | Unit (Vitest) + E2E (Playwright) — what CI runs                                       |
+| `npm test`                    | Unit (Vitest) + asset-pipeline + E2E (Playwright) — what CI runs                      |
 | `npm run build` / `build:cap` | Web build / native static build                                                       |
 
 Script naming and the `scripts-info` descriptions follow ADR-0019: `namespace:variant` names

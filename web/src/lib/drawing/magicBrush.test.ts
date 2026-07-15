@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { createRainbowGradient, MAGIC_GRADIENT_COUNT, edgeMargins } from './magicBrush';
+import {
+  createRainbowGradient,
+  MAGIC_GRADIENT_COUNT,
+  edgeMargins,
+  isMagicSheetUnready,
+  setColorSheet,
+} from './magicBrush';
 
 // A deterministic pseudo-random sequence so gradient generation is reproducible
 // in the test (the module defaults to Math.random in the app).
@@ -37,6 +43,22 @@ describe('rainbow gradient generation', () => {
     const a = createRainbowGradient(seededRand(1));
     const b = createRainbowGradient(seededRand(99));
     expect(JSON.stringify(a)).not.toBe(JSON.stringify(b));
+  });
+});
+
+describe('magic sheet readiness gate', () => {
+  it('stays unready whenever the sheet cannot paint, not only while decoding', () => {
+    // Requesting a page starts an async decode; the sheet is not ready to paint.
+    setColorSheet('/coloring/test.light.webp');
+    expect(isMagicSheetUnready()).toBe(true);
+
+    // Detaching the page settles the decode (fillDecodePending clears), but with no
+    // gradient source and no host the sheet re-rasterizes to nothing and stays
+    // unready — sheetReady is false while nothing is decoding. This is exactly the
+    // state a fillDecodePending-only signal missed: a magic op folded now would
+    // render nothing, so the gate must stay closed and the fold defer.
+    setColorSheet(null);
+    expect(isMagicSheetUnready()).toBe(true);
   });
 });
 

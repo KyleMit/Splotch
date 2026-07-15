@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { initPWAUpdates, checkVersionMismatch, checkForUpdates } from './updates';
+import {
+  initPWAUpdates,
+  checkVersionMismatch,
+  checkForUpdates,
+  resetUpdatesForTests,
+  ACTIVATION_RECOVERY_MS,
+} from './updates';
 
 const canvasState = vi.hoisted(() => ({ canvasEmpty: true }));
 vi.mock('$lib/state/canvas.svelte', () => ({ canvasState }));
@@ -31,6 +37,7 @@ function stubServiceWorker(reg?: ServiceWorkerRegistration) {
     ready: new Promise(() => {}), // never resolves — keeps test side-effect-free
     getRegistration: vi.fn().mockResolvedValue(reg),
     addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   };
   Object.defineProperty(navigator, 'serviceWorker', {
     value: container,
@@ -38,6 +45,12 @@ function stubServiceWorker(reg?: ServiceWorkerRegistration) {
     writable: true,
   });
   return container;
+}
+
+function registeredListener(addEventListener: ReturnType<typeof vi.fn>, type: string) {
+  const call = addEventListener.mock.calls.find(([eventType]) => eventType === type);
+  expect(call).toBeDefined();
+  return call?.[1] as EventListener;
 }
 
 // --- checkVersionMismatch ---
@@ -133,26 +146,57 @@ describe('checkVersionMismatch', () => {
 
 describe('checkForUpdates — canvas-empty guard', () => {
   beforeEach(() => {
+    // refreshState is a module singleton; reset it so a leftover 'activating' or
+    // 'deferred' from a prior test can't couple these cases to execution order.
+    resetUpdatesForTests();
     canvasState.canvasEmpty = true;
+    Object.defineProperty(window, 'location', {
+      value: { href: 'https://splotch.art/', reload: vi.fn() },
+      writable: true,
+      configurable: true,
+    });
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('posts SKIP_WAITING and wires controllerchange when canvas is empty and a SW is waiting', async () => {
+  it('reloads on controllerchange when the canvas remains empty', async () => {
     const worker = makeWorker();
     const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
-    stubServiceWorker(reg);
+    const container = stubServiceWorker(reg);
 
     await checkForUpdates();
 
+    const onControllerChange = registeredListener(container.addEventListener, 'controllerchange');
+    onControllerChange(new Event('controllerchange'));
+
     expect(worker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
-    expect(navigator.serviceWorker.addEventListener).toHaveBeenCalledWith(
+    expect(container.addEventListener).toHaveBeenCalledWith(
       'controllerchange',
       expect.any(Function),
       { once: true }
     );
+    expect(window.location.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('defers reload when ink appears before controllerchange', async () => {
+    const worker = makeWorker();
+    const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
+    const container = stubServiceWorker(reg);
+
+    await checkForUpdates();
+    canvasState.canvasEmpty = false;
+
+    const onControllerChange = registeredListener(container.addEventListener, 'controllerchange');
+    onControllerChange(new Event('controllerchange'));
+
+    expect(window.location.reload).not.toHaveBeenCalled();
+
+    canvasState.canvasEmpty = true;
+    await checkForUpdates();
+
+    expect(window.location.reload).toHaveBeenCalledTimes(1);
   });
 
   it('does not post SKIP_WAITING when the canvas has content', async () => {
@@ -181,6 +225,93 @@ describe('checkForUpdates — canvas-empty guard', () => {
 
     expect(worker.addEventListener).toHaveBeenCalledWith('statechange', expect.any(Function));
   });
+
+  it('registers only one reload while a waiting worker activates', async () => {
+    const worker = makeWorker();
+    const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
+    const container = stubServiceWorker(reg);
+
+    await checkForUpdates();
+    await checkForUpdates();
+
+    expect(worker.postMessage).toHaveBeenCalledTimes(1);
+    expect(container.addEventListener).toHaveBeenCalledTimes(1);
+
+    registeredListener(
+      container.addEventListener,
+      'controllerchange'
+    )(new Event('controllerchange'));
+  });
+
+  it('recovers from a stuck activation when controllerchange never fires', async () => {
+    vi.useFakeTimers();
+    try {
+      const worker = makeWorker();
+      const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
+      stubServiceWorker(reg);
+
+      await checkForUpdates();
+      expect(worker.postMessage).toHaveBeenCalledTimes(1); // entered 'activating'
+
+      // The new worker never takes control, so no controllerchange arrives. Before
+      // the recovery timer, a fresh check is short-circuited by the 'activating'
+      // guard and posts nothing — the session-long lockout.
+      const stuckReg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
+      stubServiceWorker(stuckReg);
+      await checkForUpdates();
+      expect(worker.postMessage).toHaveBeenCalledTimes(1);
+
+      // After the grace period the lifecycle releases back to idle...
+      await vi.advanceTimersByTimeAsync(ACTIVATION_RECOVERY_MS);
+
+      // ...so the next check re-attempts activation instead of no-oping forever.
+      const freshReg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
+      stubServiceWorker(freshReg);
+      await checkForUpdates();
+      expect(worker.postMessage).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('rechecks canvas state after an installing worker takes control', async () => {
+    vi.useFakeTimers();
+    try {
+      const installingWorker = makeWorker();
+      const waitingWorker = makeWorker();
+      const reg = makeRegistration({
+        installing: installingWorker as unknown as ServiceWorker,
+      });
+      const container = stubServiceWorker(reg);
+
+      await checkForUpdates();
+      Object.defineProperty(reg, 'waiting', {
+        value: waitingWorker,
+        configurable: true,
+      });
+      registeredListener(installingWorker.addEventListener, 'statechange').call(
+        installingWorker,
+        new Event('statechange')
+      );
+      await vi.advanceTimersByTimeAsync(100);
+      canvasState.canvasEmpty = false;
+
+      registeredListener(
+        container.addEventListener,
+        'controllerchange'
+      )(new Event('controllerchange'));
+
+      expect(waitingWorker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+      expect(window.location.reload).not.toHaveBeenCalled();
+
+      canvasState.canvasEmpty = true;
+      await checkForUpdates();
+
+      expect(window.location.reload).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 // --- initPWAUpdates: URL cleanup, cache-bust loop guard, lifecycle ---
@@ -203,6 +334,7 @@ describe('initPWAUpdates', () => {
   const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
 
   beforeEach(() => {
+    resetUpdatesForTests();
     originalFetch = globalThis.fetch;
     replaceStateSpy = vi.spyOn(history, 'replaceState').mockImplementation(() => {});
     // Prevent checkForUpdates / checkVersionMismatch from doing real work
