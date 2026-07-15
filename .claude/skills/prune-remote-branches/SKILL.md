@@ -1,17 +1,18 @@
 ---
 name: prune-remote-branches
-description: Triage and delete stale remote branches on origin. Use when asked to clean up, prune, or delete old remote branches — the leftover branches from cloud sessions and merged PRs that never auto-deleted. Kills the obviously-dead ones and reports the ambiguous ones for a keep/kill decision.
+description: Triage stale remote branches on origin and produce a deletion script for the user to run. Use when asked to clean up, prune, or delete old remote branches — the leftover branches from cloud sessions and merged PRs that never auto-deleted. Flags the obviously-dead ones, reports the ambiguous ones for a keep/kill decision, then hands back an approved script (it never deletes branches itself).
 ---
 
 # Prune Remote Branches
 
 `origin` accumulates branches faster than they get deleted — every cloud session spins one up, and
 plenty of merged PRs never had "delete branch on merge" turned on. This skill triages every remote
-branch, deletes the ones that are provably dead, and hands back the judgment calls for the user to
-decide.
+branch, sorts the provably-dead ones from the judgment calls, gets the user's approval, and then
+produces a deletion script for the user to run.
 
-**Scope: remote branches on `origin` only.** This never touches local branches, and it never deletes
-anything until the user has seen the plan and approved it.
+**Scope: remote branches on `origin` only.** This never touches local branches. It also never
+deletes anything itself — deletion is not automatic. After the user approves the plan it emits a
+script they run from a local clone (see Step 4 for why).
 
 ## Never delete
 
@@ -64,9 +65,9 @@ Batch these lookups — you only need PR state for branches with `ahead > 0`.
 other way — the same idea is often explored across several branches, and once one lands the siblings
 are dead. If you can't tell, it's bucket D, not C.
 
-## Step 3 — Present the plan, then delete
+## Step 3 — Present the plan, then hand off a deletion script
 
-Show the user a single consolidated plan before deleting anything:
+Show the user a single consolidated plan before touching anything:
 
 1. **Auto-kill list (buckets A, B, C)** — a compact table: branch · age/last-active · one-line
    reason (`no unique commits`, `PR #123 merged`, `superseded by #140`). This is the batch you
@@ -75,27 +76,46 @@ Show the user a single consolidated plan before deleting anything:
    summary of the changes**. Default every row to *kill*; ask the user which to **preserve**. Keep
    the summary to a sentence — enough to decide without opening the diff.
 
-Get one explicit approval, then delete. Batch the deletions (a handful per command keeps output
-readable and errors attributable):
+## Step 4 — Produce the script; the user runs it
 
+**Do NOT delete branches yourself — you can't, and you shouldn't.** This skill never runs
+`git push origin --delete`. There are two reasons, and both point to the same workflow:
+
+* **You can't, in a cloud session.** In a Claude Code on the web session the git relay permits
+  creating/updating refs but returns `HTTP 403` on ref *deletion*, and the GitHub MCP server has no
+  delete-branch tool — so the push fails. The 403 is a policy denial; don't retry it or route around
+  it.
+* **You shouldn't, regardless.** Deleting ~150 remote branches is outward-facing and effectively
+  irreversible (the refs are gone from origin). The user pulls that trigger, not you.
+
+So after the user approves the plan, **write the final kill list to an executable script and hand it
+back for them to run from a local clone with push rights.** Emit the script to the scratch dir and
+deliver it as a file. Shape:
+
+```bash
+#!/usr/bin/env bash
+# Delete N stale remote branches on origin (triaged by prune-remote-branches).
+# Preserved: main, pr-assets, and any open-PR branch. Run from a local clone with push rights.
+set -euo pipefail
+branches=(
+  <branch-1>
+  <branch-2>
+  # …
+)
+for ((i=0; i<${#branches[@]}; i+=40)); do
+  git push origin --delete "${branches[@]:i:40}"   # batched so output stays readable
+done
+git ls-remote --heads origin | wc -l                # remaining count
 ```
-git push origin --delete <branch-1> <branch-2> <branch-3>
-```
 
-If a delete is rejected by branch protection, report it and move on — don't fight it.
-
-**Cloud sessions can't delete remote branches.** In a Claude Code on the web session the git relay
-permits creating/updating refs but returns `HTTP 403` on ref *deletion*, and the GitHub MCP server
-has no delete-branch tool — so `git push origin --delete` fails there. Don't retry the 403 (it's a
-policy denial). Instead, after the user approves the plan, write the approved kill list to a
-`git push origin --delete …` script and hand it to the user to run from a local clone with push
-rights. Deletions only work from a normal local checkout.
+Tell the user they can spare any branch at the last second by deleting its line from the array
+before running. If a delete is rejected by branch protection when they run it, that's theirs to
+resolve — note it in the script's comments if you know a branch is protected.
 
 ## Notes
 
-* Deleting a remote branch is outward-facing and effectively irreversible for the user (the ref is
-  gone from origin). Always land Step 3's approval first — never delete straight off the gathered
-  table.
+* **Approval is mandatory and deletion is never automatic** — always land the Step 3 plan, then
+  produce the Step 4 script. Never emit a script the user didn't approve the contents of.
 * A closed-unmerged PR still means the branch is dead (the work was rejected) — bucket B, kill.
-* Re-run `gather.mjs --no-fetch` after a pass to confirm the count dropped and nothing unexpected
-  survived.
+* After the user reports running the script, re-run `gather.mjs` (fetches with `--prune`) to confirm
+  the count dropped and nothing unexpected survived.
