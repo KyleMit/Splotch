@@ -92,6 +92,13 @@ async function freshTokensWithSeedRace(seed: string, list: string[], hiddenReads
   return import('./tokens');
 }
 
+async function freshTokensWithEmptyBlobs(seed: string) {
+  vi.resetModules();
+  envState.ALLOWED_TOKENS_LIST = seed;
+  blobsState.stores = new Map(); // Blobs configured, key not yet written
+  return import('./tokens');
+}
+
 beforeEach(() => {
   // Silence the expected "Blobs unavailable" warning from openStore.
   vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -126,6 +133,16 @@ describe('isAllowedToken', () => {
   });
 });
 
+describe('first seed into empty Blobs', () => {
+  it('writes the env seed on a genuine first run and reports it durable', async () => {
+    const { getTokensStatus } = await freshTokensWithEmptyBlobs('seeded');
+    // Empty store + key absent → the onlyIfNew write actually creates the key
+    // (modified: true), so the seed is returned as blobs-backed, not memory.
+    expect(await getTokensStatus()).toEqual({ tokens: ['seeded'], persistent: true });
+    expect(await storeFor('access-tokens').get('list')).toEqual(['seeded']);
+  });
+});
+
 describe('stale-empty seed races', () => {
   it('authorizes only the persisted list after a lost seed race', async () => {
     const { isAllowedToken } = await freshTokensWithSeedRace('legacy', ['current'], 1);
@@ -137,6 +154,26 @@ describe('stale-empty seed races', () => {
     const { addToken } = await freshTokensWithSeedRace('legacy', ['current'], 1);
     expect(await addToken('mine')).toEqual({ ok: true, tokens: ['current', 'mine'] });
     expect(await storeFor('access-tokens').get('list')).toEqual(['current', 'mine']);
+  });
+
+  it('confirms the current list when a transient reread failure precedes success', async () => {
+    vi.resetModules();
+    envState.ALLOWED_TOKENS_LIST = 'legacy';
+    blobsState.stores = new Map();
+    const store = storeFor('access-tokens');
+    await store.setJSON('list', ['current']);
+    const read = store.getWithMetadata.bind(store);
+    let calls = 0;
+    store.getWithMetadata = async (key: string, options?: unknown) => {
+      calls++;
+      if (calls === 1) return null; // initial read lags → seed branch, modified:false
+      if (calls === 2) throw new Error('transient blobs read failure'); // first reread blips
+      return read(key, options); // second reread sees the real list
+    };
+    const { isAllowedToken } = await import('./tokens');
+    // A single transient blip must not collapse to unconfirmed/deny.
+    expect(await isAllowedToken('current')).toBe(true);
+    expect(await isAllowedToken('legacy')).toBe(false);
   });
 
   it('fails closed and rejects mutations when the winning list cannot be confirmed', async () => {
