@@ -36,6 +36,9 @@ export default defineConfig({
   testDir: './tests',
   globalSetup: './tests/global-setup.ts',
   fullyParallel: true,
+  // Use all CI cores. Playwright otherwise defaults to ~50% of logical cores,
+  // leaving half the runner idle even though every spec is parallel-safe.
+  workers: process.env.CI ? '100%' : undefined,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
