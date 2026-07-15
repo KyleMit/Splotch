@@ -2,88 +2,15 @@
 
 ## TODO
 
-* Dark Mode
-  * [ ] Finish generating night time coloring variants - note large black sections don't translate
-        well to white
-  * [ ] In dark mode, default the black color to the white color
-  * [ ] In dark mode, the painters palette should have a dark background
-  * [ ] In dark mode, regenerate the AI images and test how generation performs
-  * [ ] In dark mode, make sure that dark canvas layer is passed to the AI image generation
-  * [ ] Come up with a fun toggle for light mode dark mode for kids to play with
-  * [ ] Consider dark mode specific pallette of colors
+> Most former backlog items have moved to the top-level [`IDEAS.md`](../IDEAS.md), which expands them
+> into implementable specs (what/why/where/done-when). Only items not yet captured there remain below.
+
 * AI Art
-  * [ ] Default ai mode should be called magical
-  * [ ] Replace pixel mode with something else
   * [ ] Add new cover photo and throw it through the ringer again
-* [ ] Make color palette resizable with button size
-* [ ] Allow dragging from a color selection straight onto the canvas
-* [ ] When drawing with a pen, also show the area of impact ring. The magic brush should have a
-      rainbow gradient ring
-* [ ] If saving screenshots is disabled by browser, update the UI and warn the user and allow them
-      to reset
-* [ ] ipad landscape bottom row can sit flush. top status bar should have notch band
-* [ ] returned AI preview should be much bigger and allow pinch to zoom
-* [ ] include GHA versions in update-dependencies skill
-* [ ] Possibly add "Check for updates" button on about parent center tab
-* [ ] inefficent layout on iphone at tops and bottom
-* [ ] Add sound effects when deleting
-* [ ] Add even more color for extra tall landscape view
-* [ ] Generate more fun store screenshots
-* [ ] AI instruction for tiny marginal improvement (leave overlaid?)
-* [ ] Parent center window should not bounce around in height so much when the height of content
-      changes. set min height.
-* Icons
-  * [ ] Document https://fonts.google.com/icons?icon.style=Rounded as icon source
-  * [ ] Hand draw icons
-  * [ ] Parent center control to increase button size
-  * [ ] Make icons bigger on an ipad pro
-* AI Art
-  * [ ] If AI call fails and you need to try again, enable a way to do so immediately
-  * [ ] AI Style buttons should use custom image and then generate corresponding output for each.
-  * [ ] Build custom AI Prompts in the parent center. Generate a logo for them from the base style
-        and then enable. Save logo locally
-* Native build
-  * [ ] Add /about page for marketing page with download links
-  * [ ] Once ios and android stores ship, link to native downloads in parent center
-  * [ ] Setup fastlane to automate store deployments
-* Loading Spinner
-  * [ ] Fun loading sound while AI is loading
-  * [ ] Increase default timer
-  * [ ] Increase size of pulsations when overtime
-  * [ ] Start adding crazier and crazier animations if time goes super long
-  * [ ] Add sparkles to AI Customization screen
 * Coloring Book
-  * [ ] Make sure book selection screen is scrollable.
-  * [ ] Come up with other book selections
-  * [ ] Pages should be able to be favorited. First book should be favorites
-  * [ ] Delete should wipe the page (or first book should be to clear the background)
-  * [ ] Add ability for users to upload color book bundles (IP hidden from iOS store release)
   * [ ] Generate coloring book workflow
-  * [ ] Save to device.
-  * [ ] Export/import
-* Bugs
-  * [ ] Sometimes it doesn't register clicks on color changes
 * Controls
   * [ ] Brush type (blend mode with previous drawing)
-* Feature ideas
-  * [ ] Stamps — third tool alongside pen/eraser: tap to plop a shape (stars, hearts, animals,
-        dinosaurs) with a satisfying sound and a little scale-bounce animation; stamps recorded as
-        ops in the command log so undo works automatically; unlocks the youngest users who can tap
-        long before they can draw
-  * [ ] Tap-to-fill (paint bucket) — flood fill enclosed areas, especially coloring book pages;
-        gives the "I colored the whole elephant!" payoff when coloring inside the lines is still
-        motorically hard, and works on the child's own color choices (unlike the magic brush's
-        pre-colored fill)
-  * [ ] Photo → coloring page — parent snaps a photo (the family dog, the kid's bike) and the
-        existing Gemini pipeline turns it into line art that drops straight into the coloring book
-        overlay slot; personalization families will tell other families about, and sidesteps the
-        coloring-book IP problem on iOS
-  * [ ] In-app gallery ("the fridge door") — revisit saved masterpieces inside the app (big
-        thumbnails, tap for full screen, maybe a slideshow mode) instead of only the photo
-        library/downloads; adds pride-of-ownership and a reason to come back, and pairs naturally
-        with save-on-delete which already captures the art
-  * [ ] Left-handed layout flip — Parent Center setting that mirrors the landscape layout so the
-        palette column moves to the right edge (a lefty's arm covers it on the left)
 
 ## DONE
 
