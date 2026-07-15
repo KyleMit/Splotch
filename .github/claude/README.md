@@ -24,6 +24,8 @@ assumes the model can be prompt-injected and makes that harmless:
 
 ## Files
 
+* `WORKFLOW.md` — end-to-end flow diagram, the two human gates, and a who-does-what-when-where
+  table.
 * `triage-prompt.md` — the analysis instructions and verdict schema Claude follows.
 * `apply-triage.sh` — deterministic comment + label enforcement (observe/assist).
 * `enforce-triage.sh` — deterministic gated close (autonomous only).
