@@ -2,8 +2,9 @@
 
 ## TODO
 
-> Most former backlog items have moved to the top-level [`IDEAS.md`](../IDEAS.md), which expands them
-> into implementable specs (what/why/where/done-when). Only items not yet captured there remain below.
+> Most former backlog items have moved to the top-level [`IDEAS.md`](../IDEAS.md), which expands
+> them into implementable specs (what/why/where/done-when). Only items not yet captured there remain
+> below.
 
 * AI Art
   * [ ] Add new cover photo and throw it through the ringer again
