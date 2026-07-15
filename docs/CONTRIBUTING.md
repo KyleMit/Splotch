@@ -1,5 +1,14 @@
 # Contributing to Splotch
 
+## Where the backlog lives
+
+Planned work — features, bugs, chores, tests — lives in
+[GitHub Issues](https://github.com/kylemit/splotch/issues), the project's single backlog. To find
+something to work on, filter open issues by label (`area:*`, `type:*`, `priority:*`). The issue
+format, the full label glossary, and the triage/won't-do flow are documented in
+[ISSUE-WORKFLOW.md](ISSUE-WORKFLOW.md). Reference the issue from your PR (`fixes #NN`) so it closes
+on merge.
+
 ## Prerequisites
 
 * **Node 22** via [nvm-windows](https://github.com/coreybutler/nvm-windows) (or nvm on macOS/Linux).

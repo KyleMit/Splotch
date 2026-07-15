@@ -18,8 +18,11 @@ Runbooks and living lists:
 | `README.md`                    | The runbook — where the folder sits in the repo, every `gen:*` command, the drift audit, and the review workflow. Start here.                                                                                                                                                                                             |
 | `pipeline.md`                  | The END-TO-END picture — outline normalization, the punch, day/night fills, every quality gate and the shipped regression that motivated it, iteration methods, and where future categories will likely break. Its illustrations are frozen copies in `docs/pipeline-assets/`; keep both updated as the pipeline evolves. |
 | `coloring-book-proof-sheet.md` | The coloring-book proof sheet's CLI contract, layer/compositing model, and size constraints — read before modifying `bin/gen-coloring-book-proof-sheet.mjs` or anything under `coloring-book-proof-sheet-assets/`.                                                                                                        |
-| `ISSUES.md`                    | Living list of known defects, gate blind spots, and tooling gaps.                                                                                                                                                                                                                                                         |
-| `IDEAS.md`                     | Image-quality backlog from the 2026-07 migration — mostly burned down empirically in `ideas-exploration/`.                                                                                                                                                                                                                |
+
+The image-quality backlog and the living list of known defects / gate blind spots / tooling gaps now
+live in **GitHub issues**, label `area:asset-gen` (they used to be `IDEAS.md` + `ISSUES.md` in this
+folder). Filter the tracker by that label before regenerating a page or overriding a gate; file new
+asset-pipeline defects or leads as issues. See `docs/ISSUE-WORKFLOW.md`.
 
 Decision records (un-numbered, live here instead of `docs/adrs/` — see the repo CLAUDE.md
 carve-out):
@@ -95,9 +98,10 @@ carve-out):
   previews the resolution offline. When you discover a lever a page needs — a `--notes` string, a
   temperature, a gate override, a review expectation — record it in the registry **in the same
   commit that ships the asset**, with a `why` naming the provenance so it can be pruned later.
-* **`docs/ISSUES.md` is the living list of known defects, gate blind spots, and tooling gaps.** Read
-  it before regenerating a page or overriding a gate (several failure classes are gate-blind and
-  only caught by composite review); when you fix or discover an issue, update it in the same task.
+* **Known defects, gate blind spots, and tooling gaps live in GitHub issues (label
+  `area:asset-gen`).** Read them before regenerating a page or overriding a gate (several failure
+  classes are gate-blind and only caught by composite review); when you fix or discover one, close
+  or file an issue in the same task.
 * **Manual/on-demand only** — the Gemini generators need `GEMINI_API_KEY` and are never run in CI
   (real API cost). The app never runs any of this at build time.
 * **The coloring-book proof sheet is the single asset-review surface — read
@@ -116,8 +120,9 @@ carve-out):
   `night-fills.md` runbook and `retouch-line-art.mjs`, plus the history chronicle in
   `legacy/README.md`). Nothing in there is part of the current pipeline — `docs/pipeline.md` is the
   live runbook; borrow from legacy, don't follow it.
-* **`ideas-exploration/` is the frozen 2026-07 empirical burn-down of `docs/IDEAS.md`** — one
-  report, evidence set, and (mostly) re-appliable patch per idea, plus a self-contained review
-  dashboard (`ideas-review.html`). Read its README before working any IDEAS.md item: 24 of 25 ideas
+* **`ideas-exploration/` is the frozen 2026-07 empirical burn-down of the old image-quality
+  backlog** (then `docs/IDEAS.md`, now GitHub issues labeled `area:asset-gen`) — one report,
+  evidence set, and (mostly) re-appliable patch per idea, plus a self-contained review dashboard
+  (`ideas-review.html`). Read its README before working an `area:asset-gen` issue: 24 of 25 ideas
   were validated there, and several carry finished patches/assets waiting to be promoted. Like
   `legacy/`, nothing in it is live pipeline code.

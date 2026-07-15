@@ -11,8 +11,9 @@ Architecture and the "why a folder, not a workspace/repo" decision:
 
 Layout: the runnable entry points live in `bin/`, shared helpers in `lib/`, the committed regression
 fixtures (`golden-scores.json`, `asset-manifest.sha256`) in `golden/`, and every doc — this runbook,
-`pipeline.md`, `coloring-book-proof-sheet.md`, `ISSUES.md`, `IDEAS.md`, and the decision records —
-in `docs/` (paths in prose below are relative to the `tools/asset-gen/` folder root).
+`pipeline.md`, `coloring-book-proof-sheet.md`, and the decision records — in `docs/` (paths in prose
+below are relative to the `tools/asset-gen/` folder root). The image-quality backlog and known
+defects/gate gaps live in GitHub issues (label `area:asset-gen`), not in this folder.
 
 ## Where it sits in the repo
 
@@ -184,9 +185,11 @@ views, the outline-% badge, size constraints — lives in
 * **The coloring-page pipeline** (pen/chalk outlines → fills → punch, gates, per-category runbook):
   [`pipeline.md`](./pipeline.md). Decision records: the sibling `*.md` files in this `docs/` folder.
   Retired techniques + history: [`legacy/`](../legacy/).
-* **Known outstanding issues** (shipped-asset defects, gate blind spots, tooling gaps):
-  [`ISSUES.md`](./ISSUES.md) — check it before regenerating a page or trusting a gate on an
-  unfamiliar failure class; update it when you fix or find one.
+* **Known outstanding issues** (shipped-asset defects, gate blind spots, tooling gaps): GitHub
+  issues labeled
+  [`area:asset-gen`](https://github.com/kylemit/splotch/issues?q=is%3Aissue+is%3Aopen+label%3Aarea%3Aasset-gen)
+  — check them before regenerating a page or trusting a gate on an unfamiliar failure class; close
+  or file one when you fix or find a defect.
 * **AI art prompts** for authoring new source drawings / icons: the repo-root `docs/PROMPTS.md`.
 
 ## Not here

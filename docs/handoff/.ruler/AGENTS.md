@@ -8,8 +8,8 @@ work from one Claude session to the next. A handoff answers "if I got hit by a b
 would the next session need to pick this up without re-deriving it?"
 
 Handoffs are **transient**, not documentation. A durable decision belongs in an ADR (`/create-adr`);
-a durable TODO belongs in `docs/BACKLOG.md`; behavioural feedback belongs in `memory/`. A handoff is
-deleted the moment it's consumed.
+a durable TODO belongs in a **GitHub issue** (the live backlog — see `docs/ISSUE-WORKFLOW.md`);
+behavioural feedback belongs in `memory/`. A handoff is deleted the moment it's consumed.
 
 Write one with the `create-handoff` skill (`/create-handoff`); consume one with the `resume-handoff`
 skill (`/resume-handoff`).
