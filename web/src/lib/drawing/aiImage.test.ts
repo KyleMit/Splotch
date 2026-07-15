@@ -262,6 +262,29 @@ describe('generateAiImage response handling', () => {
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
   });
 
+  it('saves the child drawing once across re-rolls of the same unchanged drawing', async () => {
+    mocks.settings.autoSaveAiEnabled = true;
+    // Same drawing bytes on every roll → the signature matches, so the drawing
+    // copy dedupes while each fresh AI image still saves.
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['same-drawing']));
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(okResponse(new Blob(['result-1'])))
+        .mockResolvedValueOnce(okResponse(new Blob(['result-2'])))
+    );
+
+    const { generateAiImage } = await import('./aiImage');
+
+    await generateAiImage();
+    await generateAiImage();
+
+    const tags = mocks.saveImageBlob.mock.calls.map((call) => call[1]);
+    expect(tags.filter((tag) => tag === 'splotch-ai')).toHaveLength(2);
+    expect(tags.filter((tag) => tag === 'splotch')).toHaveLength(1);
+  });
+
   it('commits and auto-saves only an image response', async () => {
     mocks.settings.autoSaveAiEnabled = true;
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
