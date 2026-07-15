@@ -103,7 +103,7 @@ export async function checkForUpdates() {
 
     const activateWaitingSW = (sw: ServiceWorker) => {
       if (refreshState !== 'idle' || !canvasState.canvasEmpty) return;
-      let recoveryTimer: ReturnType<typeof setTimeout> | undefined;
+      let recoveryTimer: ReturnType<typeof setTimeout> | undefined = undefined;
       const onControllerChange = () => {
         clearTimeout(recoveryTimer);
         if (!canvasState.canvasEmpty) {

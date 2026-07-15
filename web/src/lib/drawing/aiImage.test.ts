@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   exportCanvasBlob: vi.fn(),
-  saveImageBlob: vi.fn(async () => {}),
+  saveImageBlob: vi.fn(async (_blob: Blob, _tag: string) => {}),
   settings: {
     aiUserApiKey: '',
     aiAccessToken: 'test-token',
