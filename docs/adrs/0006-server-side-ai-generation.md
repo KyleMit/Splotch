@@ -14,7 +14,7 @@ Options:
   user, allowing quota abuse.
 * **Server-side (Netlify function)** — the key stays in server environment variables; the endpoint
   can enforce token-gating and rate limiting.
-* **BYO Key (native only)** — allow power users to supply their own Gemini API key via secure
+* **BYO Key** — allow parents on web or native to supply their own Gemini API key via secure
   storage.
 
 ## Decision
@@ -38,9 +38,10 @@ The model is `gemini-2.5-flash-image` (flash tier: lower cost and latency vs. Pr
 quality for children's coloring-book style transformations).
 
 **Native apps** send requests to the hosted endpoint (`https://splotch.art/api/generate-image`)
-using the `__NATIVE_API_BASE__` compile-time constant. The BYO Key flow (for users who supply their
-own Gemini key) bypasses the token gate and rate limit entirely — those requests consume the user's
-own quota.
+using the `__NATIVE_API_BASE__` compile-time constant. The BYO Key flow works on web and native,
+bypasses the managed-token allowlist, and consumes the parent's own Gemini quota. Because any
+non-empty key makes the endpoint a key-validity oracle, BYOK requests are rate-limited per IP with a
+deliberately generous limit (30/minute).
 
 ## Consequences
 
