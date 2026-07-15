@@ -76,6 +76,9 @@
   description: "Nice to have, no rush"
 
 # --- meta: workflow signals ---
+- name: "user-report"
+  color: "0e8a16"
+  description: "Filed from the in-app Report form (Parent Center → About)"
 - name: "needs-scoping"
   color: "fef2c0"
   description: "Rough spec — investigate and firm up (often an ADR) before significant work"

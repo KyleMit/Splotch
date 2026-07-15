@@ -43,11 +43,10 @@
       child, does not sell or share any information, and does not show advertising of any kind.
     </p>
 
-    <h2>The one time the internet is used</h2>
+    <h2>When the internet is used</h2>
     <p>
       Splotch has an optional “magic image” button that re-imagines a child's drawing as a polished
-      illustration. It's the <em>only</em> feature that uses the internet, and it only runs when someone
-      taps it.
+      illustration. It only runs when someone taps it.
     </p>
     <ul>
       <li>
@@ -66,6 +65,16 @@
         If your device is offline, this button is hidden and the rest of the app works normally.
       </li>
     </ul>
+
+    <h2>Sending feedback</h2>
+    <p>
+      Grown-ups can report a bug or suggest a feature from the Parent Center. When you tap “Send
+      report”, only what you type is sent, so we can post it to our public issue tracker on GitHub.
+      For a bug, you can <em>optionally</em> tick a box to include basic device details (like your app
+      version, operating system, and screen size) to help us reproduce the problem — it's off by default,
+      and you can expand it to see exactly what will be sent first. We never include your name, account,
+      or location, because Splotch doesn't have any of those.
+    </p>
 
     <h2>Saving pictures</h2>
     <p>

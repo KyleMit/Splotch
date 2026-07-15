@@ -1,6 +1,6 @@
 ---
 name: api
-description: HTTP API reference for the /api/* endpoints — generate-image, verify-access-code, verify-key, and the admin bearer-session endpoints, plus the CORS, rate-limiting, and auth model. Use before adding, changing, or calling any /api endpoint.
+description: HTTP API reference for the /api/* endpoints — generate-image, verify-access-code, verify-key, report, and the admin bearer-session endpoints, plus the CORS, rate-limiting, and auth model. Use before adding, changing, or calling any /api endpoint.
 ---
 
 # Splotch HTTP API
@@ -90,6 +90,45 @@ Verifies a parent-supplied Gemini API key with a minimal live call. Rate-limited
 
 ---
 
+## Feedback
+
+### `POST /api/report`
+
+Opens a GitHub issue from the in-app "report a bug / suggest a feature" form (Parent Center → About
+→ Send Feedback). Unauthenticated and a *write*, so it is rate-limited per IP with a deliberately
+tight budget (5/min, vs the oracles' 10). Every issue is labelled `user-report` plus `type:bug` /
+`type:feature` (`docs/ISSUE-WORKFLOW.md`; both labels also live in `.github/labels.yml`).
+
+```json
+// request
+{
+  "kind": "bug",                 // "bug" | "feature" — required
+  "message": "The undo button…", // required, trimmed, capped at 4000 chars
+  "device": {                    // optional; only sent when the parent opts in (bugs only)
+    "app": "1.3.45", "platform": "iOS", "os": "iOS 17.2", "device": "Apple iPhone15,2", "…": "…"
+  },
+  "hp": ""                       // honeypot — a filled value is quietly accepted with no issue
+}
+// 200
+{ "ok": true, "url": "https://github.com/KyleMit/Splotch/issues/123" }
+// 400 — missing/invalid kind or empty message
+{ "ok": false, "error": "Please type a short description." }
+// 503 — GITHUB_ISSUE_TOKEN not configured on this instance
+{ "ok": false, "error": "Reporting is not available right now. Please try again later." }
+// 502 — GitHub rejected the create
+{ "ok": false, "error": "Could not send your report. Please try again later." }
+```
+
+The GitHub REST call is isolated behind a server seam, `web/src/lib/server/github.ts` (mirroring the
+AI provider seam, ADR-0047) — route code never touches the token or the REST shape. Auth is a
+fine-grained PAT in `GITHUB_ISSUE_TOKEN` (scope: *Issues: Read and write* on the target repo), read
+via `$env/dynamic/private`; `GITHUB_ISSUE_REPO` overrides the default `KyleMit/Splotch`. The
+optional `device` payload is shaped by the shared, dependency-free `web/src/lib/deviceReport.ts`
+(also used client-side to preview exactly what will be sent) and re-sanitized server-side (known
+keys only, single-line, length-capped) before it reaches the issue body. See ADR-0060.
+
+---
+
 ## Admin (access-token management)
 
 JSON twin of the server-rendered `/admin` console, used by the native apps' `/admin/native` page
@@ -176,12 +215,13 @@ curl -s https://splotch.art/api/admin/tokens \
 Run `npm run test:api:smoke` to check the live `/api/*` contract end-to-end. It's self-contained —
 it boots a throwaway `vite dev` with a test `ADMIN_ACCESS_TOKEN`, exercises the admin auth flow
 (login success/failure, the bearer gate, and a token add/remove round-trip), the
-`verify-access-code` shape, and `generate-image`'s auth gate (invalid token → 403, then the shared
-per-IP 429 once the verify budget is burned; valid token minus image → 400 — every case is rejected
-before the model call), then tears the server down. No Gemini key or Netlify Blobs needed;
-successful generation and `verify-key` (which make live model calls) are out of scope. Use it to
-sanity-check the contract after changing any endpoint — it's the cheap counterpart to the Playwright
-admin E2E in `tests/admin.spec.ts`.
+`verify-access-code` shape, `report`'s validation + honeypot + graceful-unconfigured path (no
+`GITHUB_ISSUE_TOKEN` in the smoke env, so no real issue is created), and `generate-image`'s auth
+gate (invalid token → 403, then the shared per-IP 429 once the verify budget is burned; valid token
+minus image → 400 — every case is rejected before the model call), then tears the server down. No
+Gemini key or Netlify Blobs needed; successful generation and `verify-key` (which make live model
+calls) are out of scope. Use it to sanity-check the contract after changing any endpoint — it's the
+cheap counterpart to the Playwright admin E2E in `tests/admin.spec.ts`.
 
 `test:api:smoke` deliberately runs against `vite dev`, which has **no** Blobs, so it can't catch the
 failure mode of ADR-0025 (a deployed function without the Blobs context). For that, run
