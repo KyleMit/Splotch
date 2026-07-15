@@ -40,8 +40,11 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, ownsRun: () => bo
   if (!ownsRun()) return;
   if (sig === null || sig !== lastSavedDrawingSig) {
     await saveImageBlob(drawingBlob, 'splotch');
-    if (!ownsRun()) return;
   }
+  // Record the signature of the drawing we just saved even if ownership was lost
+  // during that save: the drawing is already in the gallery, so a later owning run
+  // on the same unchanged drawing must dedupe against it. Returning here (the old
+  // post-save ownership check) left the signature stale and re-saved a duplicate.
   lastSavedDrawingSig = sig;
 }
 

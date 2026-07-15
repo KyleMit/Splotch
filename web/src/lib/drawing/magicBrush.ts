@@ -293,8 +293,16 @@ export function sheetPatternFor(target: CanvasRenderingContext2D): CanvasPattern
   return pattern;
 }
 
-export function isMagicSheetDecoding(): boolean {
-  return fillDecodePending;
+// True whenever the sheet cannot currently paint magic ink — i.e. sheetPatternFor
+// would return null. That is any time there is no rasterized sheet: an in-flight
+// fill decode, or a rasterizeSheet that early-returned on an unmounted/zero-size
+// canvas or an absent source (fillDecodePending is false in that second case, which
+// a decode-only signal would miss). sheetReady is set true only after sheetCanvas
+// exists, so !sheetReady is exactly the pattern-null condition. Folding or
+// keyframing a magic op in this state would bake it to nothing, so the undo history
+// defers until the sheet is ready again.
+export function isMagicSheetUnready(): boolean {
+  return !sheetReady;
 }
 
 // Load the fill image, guarding against a page change that happened while it

@@ -45,6 +45,7 @@
 // from the known-good settings; explicit CLI flags always override the registry.
 import { parseArgs } from 'node:util';
 import { readFile, mkdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';

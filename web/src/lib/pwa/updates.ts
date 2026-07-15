@@ -16,6 +16,19 @@ import { canvasState } from '$lib/state/canvas.svelte';
 let initialized = false;
 let refreshState: 'idle' | 'activating' | 'deferred' = 'idle';
 
+// Grace period after posting SKIP_WAITING before we give up waiting for the new
+// worker to take control. If controllerchange never arrives, the lifecycle must
+// not stay pinned in 'activating' — see activateWaitingSW.
+export const ACTIVATION_RECOVERY_MS = 10_000;
+
+// Reset the module's lifecycle singletons. Exported for unit tests, which share a
+// single module instance across cases; without it a leftover refreshState (or
+// initialized) leaks state between tests and couples them to execution order.
+export function resetUpdatesForTests() {
+  refreshState = 'idle';
+  initialized = false;
+}
+
 export function initPWAUpdates(): (() => void) | undefined {
   if (import.meta.env.DEV) return;
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
@@ -90,7 +103,9 @@ export async function checkForUpdates() {
 
     const activateWaitingSW = (sw: ServiceWorker) => {
       if (refreshState !== 'idle' || !canvasState.canvasEmpty) return;
+      let recoveryTimer: ReturnType<typeof setTimeout> | undefined = undefined;
       const onControllerChange = () => {
+        clearTimeout(recoveryTimer);
         if (!canvasState.canvasEmpty) {
           refreshState = 'deferred';
           return;
@@ -109,6 +124,17 @@ export async function checkForUpdates() {
         refreshState = 'idle';
         throw error;
       }
+      // A dropped SKIP_WAITING — or an activation that never emits controllerchange —
+      // must not pin the lifecycle in 'activating' for the rest of the session: that
+      // short-circuits every later checkForUpdates (line: `if (refreshState ===
+      // 'activating') return`) and the deferred-reload path, silently blocking all
+      // future updates. Release back to idle after a grace period so a later check
+      // re-attempts; controllerchange clears this the moment it fires.
+      recoveryTimer = setTimeout(() => {
+        if (refreshState !== 'activating') return;
+        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+        refreshState = 'idle';
+      }, ACTIVATION_RECOVERY_MS);
     };
 
     if (registration.waiting) {

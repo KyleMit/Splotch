@@ -256,7 +256,10 @@ for (const page of pages) {
       await writeFile(out, colored);
       await sharp(overlay).toFile(join(dir, `sample-${i + 1}.overlay.png`));
       if (passes(cand)) passingCandidates.push({ rel, colored });
-      else failures++;
+      // Multi-sample runs are review-only (--apply is rejected above): individual
+      // candidates routinely miss a gate while exploring palettes, so a gate miss
+      // there must not fail the run. A thrown error below always counts.
+      else if (!sampleMode) failures++;
       console.log(`${score}${tries}${flag}  -> ${relative(REPO_ROOT, out)}`);
     } catch (err) {
       failures++;

@@ -10,8 +10,9 @@
 // child sees under the magic brush, while the global score stayed above the bar.
 //
 // This flags those already-committed fills so they can be regenerated
-// (`npm run gen:coloring-fills -- <page>`), and re-run afterwards to confirm the
-// fix. It reads committed assets only — no network, no GEMINI_API_KEY — so it's
+// (`npm run gen:coloring-fills -- <page> --apply`; the bare command only writes a
+// review candidate to scratch), and re-run afterwards to confirm the fix. It reads
+// committed assets only — no network, no GEMINI_API_KEY — so it's
 // safe to run anytime.
 //
 //   npm run gen:coloring-fills:audit                 audit every fill
@@ -83,6 +84,8 @@ if (values.overlay && bad.length) {
   );
 }
 if (bad.length) {
-  console.log(`Regenerate: npm run gen:coloring-fills -- ${bad.map((r) => r.rel).join(' ')}`);
+  console.log(
+    `Regenerate: npm run gen:coloring-fills -- ${bad.map((r) => r.rel).join(' ')} --apply`
+  );
   process.exitCode = 1;
 }

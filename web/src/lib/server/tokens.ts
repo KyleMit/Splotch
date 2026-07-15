@@ -22,6 +22,16 @@ type StoreRead =
   | { source: 'unconfirmed'; store: TokenStore; list: []; etag?: undefined };
 
 const SEED_CONFIRMATION_ATTEMPTS = 3;
+// Backoff before each confirmation reread. A `modified: false` means the write
+// landed on a replica this one hasn't caught up to yet, so rereading instantly
+// just re-hits the same lag; a short, growing pause gives eventual consistency a
+// moment to converge. A strong-consistency read would confirm deterministically,
+// but it throws BlobsConsistencyError in this SSR Blobs context (ADR-0025) — which
+// would make every lost seed race fail to confirm, strictly worse than pacing
+// eventual reads — so we stay on eventual and just space the attempts.
+const SEED_CONFIRMATION_BACKOFF_MS = 50;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function seedFromEnv(): string[] {
   const raw = env.ALLOWED_TOKENS_LIST || '';
@@ -76,6 +86,7 @@ async function readStore(): Promise<StoreRead> {
         return { source: 'blobs', store, list: seeded, etag: seededWrite.etag };
       }
       for (let attempt = 1; attempt <= SEED_CONFIRMATION_ATTEMPTS; attempt++) {
+        await sleep(SEED_CONFIRMATION_BACKOFF_MS * attempt);
         try {
           const winner = await store.getWithMetadata(KEY, { type: 'json' });
           if (winner && Array.isArray(winner.data)) {

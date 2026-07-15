@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { initPWAUpdates, checkVersionMismatch, checkForUpdates } from './updates';
+import {
+  initPWAUpdates,
+  checkVersionMismatch,
+  checkForUpdates,
+  resetUpdatesForTests,
+  ACTIVATION_RECOVERY_MS,
+} from './updates';
 
 const canvasState = vi.hoisted(() => ({ canvasEmpty: true }));
 vi.mock('$lib/state/canvas.svelte', () => ({ canvasState }));
@@ -31,6 +37,7 @@ function stubServiceWorker(reg?: ServiceWorkerRegistration) {
     ready: new Promise(() => {}), // never resolves — keeps test side-effect-free
     getRegistration: vi.fn().mockResolvedValue(reg),
     addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   };
   Object.defineProperty(navigator, 'serviceWorker', {
     value: container,
@@ -139,6 +146,9 @@ describe('checkVersionMismatch', () => {
 
 describe('checkForUpdates — canvas-empty guard', () => {
   beforeEach(() => {
+    // refreshState is a module singleton; reset it so a leftover 'activating' or
+    // 'deferred' from a prior test can't couple these cases to execution order.
+    resetUpdatesForTests();
     canvasState.canvasEmpty = true;
     Object.defineProperty(window, 'location', {
       value: { href: 'https://splotch.art/', reload: vi.fn() },
@@ -233,6 +243,37 @@ describe('checkForUpdates — canvas-empty guard', () => {
     )(new Event('controllerchange'));
   });
 
+  it('recovers from a stuck activation when controllerchange never fires', async () => {
+    vi.useFakeTimers();
+    try {
+      const worker = makeWorker();
+      const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
+      stubServiceWorker(reg);
+
+      await checkForUpdates();
+      expect(worker.postMessage).toHaveBeenCalledTimes(1); // entered 'activating'
+
+      // The new worker never takes control, so no controllerchange arrives. Before
+      // the recovery timer, a fresh check is short-circuited by the 'activating'
+      // guard and posts nothing — the session-long lockout.
+      const stuckReg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
+      stubServiceWorker(stuckReg);
+      await checkForUpdates();
+      expect(worker.postMessage).toHaveBeenCalledTimes(1);
+
+      // After the grace period the lifecycle releases back to idle...
+      await vi.advanceTimersByTimeAsync(ACTIVATION_RECOVERY_MS);
+
+      // ...so the next check re-attempts activation instead of no-oping forever.
+      const freshReg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
+      stubServiceWorker(freshReg);
+      await checkForUpdates();
+      expect(worker.postMessage).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('rechecks canvas state after an installing worker takes control', async () => {
     vi.useFakeTimers();
     try {
@@ -293,6 +334,7 @@ describe('initPWAUpdates', () => {
   const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
 
   beforeEach(() => {
+    resetUpdatesForTests();
     originalFetch = globalThis.fetch;
     replaceStateSpy = vi.spyOn(history, 'replaceState').mockImplementation(() => {});
     // Prevent checkForUpdates / checkVersionMismatch from doing real work
