@@ -25,14 +25,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Fast-fail the cheapest, most-common failure first: a formatting-only
+      # red PR should not wait through svelte-check + eslint to surface.
+      - name: Format check
+        run: npm run format:check
+
       - name: Type check
         run: npm run check
 
       - name: Lint
         run: npm run lint
-
-      - name: Format check
-        run: npm run format:check
 
       # Drift guard: fails if any shipped SVG under web/ isn't SVGO-optimized
       # (a new icon landed un-optimized). Fix with `npm run img:audit`.
