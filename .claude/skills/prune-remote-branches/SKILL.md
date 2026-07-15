@@ -84,6 +84,13 @@ git push origin --delete <branch-1> <branch-2> <branch-3>
 
 If a delete is rejected by branch protection, report it and move on — don't fight it.
 
+**Cloud sessions can't delete remote branches.** In a Claude Code on the web session the git relay
+permits creating/updating refs but returns `HTTP 403` on ref *deletion*, and the GitHub MCP server
+has no delete-branch tool — so `git push origin --delete` fails there. Don't retry the 403 (it's a
+policy denial). Instead, after the user approves the plan, write the approved kill list to a
+`git push origin --delete …` script and hand it to the user to run from a local clone with push
+rights. Deletions only work from a normal local checkout.
+
 ## Notes
 
 * Deleting a remote branch is outward-facing and effectively irreversible for the user (the ref is
