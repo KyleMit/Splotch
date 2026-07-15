@@ -21,7 +21,7 @@ import {
   type StrokeOp,
 } from './strokeOps';
 import { simplifyCommandOps } from './commandSimplify';
-import { isMagicSheetDecoding } from './magicBrush';
+import { isMagicSheetUnready } from './magicBrush';
 import { PERF_MARKS } from './perf';
 
 // The retained command log; commands older than this fold into the baseline.
@@ -213,7 +213,7 @@ function keyframeCount(): number {
 function foldOldestIntoBaseline(): boolean {
   const oldest = commandLog[0];
   if (!oldest || !baselineCtx || !baselineCanvas) return false;
-  if (commandHasMagic(oldest) && isMagicSheetDecoding()) return false;
+  if (commandHasMagic(oldest) && isMagicSheetUnready()) return false;
   commandLog.shift();
   if (PERF_MARKS) performance.mark('engine.foldBaseline:start');
   if (oldest.keyframe) {
@@ -230,10 +230,11 @@ function commandHasMagic(command: StrokeGroupCommand): boolean {
   return command.ops.some((op) => op.kind !== 'clear' && op.magic);
 }
 
-// A pending fill makes renderOp intentionally paint no magic pixels. Rasterizing
-// and then dropping any command in that state would make the omission permanent.
+// An unready sheet makes renderOp intentionally paint no magic pixels (a pending
+// fill decode, or a sheet that hasn't rasterized). Keyframing and dropping any
+// command's ops in that state would make the omission permanent.
 function hasMagicAwaitingDecodeThrough(index: number): boolean {
-  if (!isMagicSheetDecoding()) return false;
+  if (!isMagicSheetUnready()) return false;
   for (let i = 0; i <= index; i++) {
     if (commandHasMagic(commandLog[i])) return true;
   }

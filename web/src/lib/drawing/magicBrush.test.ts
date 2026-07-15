@@ -3,7 +3,7 @@ import {
   createRainbowGradient,
   MAGIC_GRADIENT_COUNT,
   edgeMargins,
-  isMagicSheetDecoding,
+  isMagicSheetUnready,
   setColorSheet,
 } from './magicBrush';
 
@@ -46,13 +46,19 @@ describe('rainbow gradient generation', () => {
   });
 });
 
-describe('fill decode state', () => {
-  it('is pending only while a requested fill is unresolved', () => {
+describe('magic sheet readiness gate', () => {
+  it('stays unready whenever the sheet cannot paint, not only while decoding', () => {
+    // Requesting a page starts an async decode; the sheet is not ready to paint.
     setColorSheet('/coloring/test.light.webp');
-    expect(isMagicSheetDecoding()).toBe(true);
+    expect(isMagicSheetUnready()).toBe(true);
 
+    // Detaching the page settles the decode (fillDecodePending clears), but with no
+    // gradient source and no host the sheet re-rasterizes to nothing and stays
+    // unready — sheetReady is false while nothing is decoding. This is exactly the
+    // state a fillDecodePending-only signal missed: a magic op folded now would
+    // render nothing, so the gate must stay closed and the fold defer.
     setColorSheet(null);
-    expect(isMagicSheetDecoding()).toBe(false);
+    expect(isMagicSheetUnready()).toBe(true);
   });
 });
 

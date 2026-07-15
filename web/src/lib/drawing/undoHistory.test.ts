@@ -3,8 +3,12 @@ import type { StrokeGroupCommand, PathOp } from './strokeOps';
 
 const magicSheet = vi.hoisted(() => ({ ready: true }));
 
+// The real isMagicSheetUnready is `!sheetReady`, the exact condition under which
+// sheetPatternFor returns null — so here both derive from the same `ready` flag.
+// That equivalence is what magicBrush.test.ts verifies against the real module;
+// these tests only assert that undoHistory defers folding while the gate is closed.
 vi.mock('./magicBrush', () => ({
-  isMagicSheetDecoding: () => !magicSheet.ready,
+  isMagicSheetUnready: () => !magicSheet.ready,
   sheetPatternFor: () => (magicSheet.ready ? '#magic' : null),
 }));
 
