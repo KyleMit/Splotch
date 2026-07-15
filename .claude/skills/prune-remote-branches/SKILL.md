@@ -20,6 +20,9 @@ Exclude these before triaging anything — they are off-limits regardless of wha
 * **`main`** (the default branch).
 * **The current checkout** — the branch this session is working on. `gather.mjs` marks it with `*`.
 * **Any branch with an OPEN pull request.** An open PR is active work; its branch stays.
+* **`pr-assets`** — the long-lived orphan branch that stores before/after screenshots and other
+  image assets for PRs. It shares no history with `main` and is updated continuously, so it always
+  looks like a stale outlier — never propose it for deletion.
 
 ## Step 1 — Gather the facts
 
