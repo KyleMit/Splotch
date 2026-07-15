@@ -1,0 +1,133 @@
+# First-pass agentic triage for newly opened issues.
+#
+# When an issue is opened, Claude does a rough first pass: classifies it
+# (bug/feature/question), assesses priority, drafts a summary + clarifying
+# questions, suggests labels, and flags likely duplicates/spam. It runs on the
+# repo owner's Claude subscription (CLAUDE_CODE_OAUTH_TOKEN from `claude
+# setup-token`) — $0 metered API cost.
+#
+# SECURITY MODEL (this is a PUBLIC repo, so issue text is attacker-controlled):
+#   - Claude runs strictly READ-ONLY. Its only mutating capability is Write, and
+#     the only write that matters is triage-verdict.json. It has NO Bash and NO
+#     network (WebFetch/WebSearch disallowed), so a prompt-injected issue body
+#     cannot exfiltrate secrets or run arbitrary commands.
+#   - The deterministic apply/enforce scripts are the ONLY things that mutate the
+#     issue. They target the issue number from the event payload (never from the
+#     model), and only ever apply labels from a hardcoded allowlist.
+#   - Least-privilege permissions: issues:write + contents:read only.
+#   - Graduated autonomy via the TRIAGE_MODE repo variable:
+#       observe    -> comment only, applies nothing (default)
+#       assist     -> comment + apply allowlisted labels, never closes
+#       autonomous -> also runs the `enforce` job, which can close
+#                     duplicates/spam but is gated behind the `triage-actions`
+#                     environment's required-reviewer approval ("safe verdict").
+#   - TRIAGE_ENABLED repo variable is a kill switch.
+#
+# Setup (repo Settings): add secret CLAUDE_CODE_OAUTH_TOKEN; add variables
+# TRIAGE_ENABLED=true and TRIAGE_MODE=observe; create the triage labels (see
+# .github/labels.md); for autonomous mode create a `triage-actions` environment
+# with yourself as a required reviewer.
+name: Issue Triage
+
+on:
+  issues:
+    types: [opened]
+
+concurrency:
+  group: issue-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write # the action fetches a GitHub OIDC token during auth
+
+jobs:
+  triage:
+    name: First-pass triage
+    if: ${{ vars.TRIAGE_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TRIAGE_MODE: ${{ vars.TRIAGE_MODE || 'observe' }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Untrusted issue fields go through env + jq --arg (never inline into a
+      # run: script) so a crafted title/body can't inject shell or GHA syntax.
+      - name: Dump issue payload
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+        run: |
+          jq -n \
+            --argjson n "$ISSUE_NUMBER" \
+            --arg t "$ISSUE_TITLE" \
+            --arg b "$ISSUE_BODY" \
+            --arg a "$ISSUE_AUTHOR" \
+            '{number: $n, title: $t, body: $b, author: $a}' > issue.json
+
+      # Read-only dedup context: give Claude the open-issue list as a file so it
+      # never needs a network or gh tool of its own.
+      - name: Collect open issues for dedup context
+        run: gh issue list --state open --limit 100 --json number,title,labels > existing-issues.json
+
+      - name: Analyze issue
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Follow the instructions in .github/claude/triage-prompt.md exactly.
+            The newly opened issue is in issue.json. The repo's currently open
+            issues are in existing-issues.json. Write your triage verdict to
+            triage-verdict.json in the repo root, matching the schema in the
+            instructions. Do not take any other action.
+          # Hard capability boundary: Claude may only read the repo and write the
+          # verdict. No Bash, no Edit of existing files, no network.
+          claude_args: >-
+            --max-turns 12
+            --allowedTools "Read,Write,Glob,Grep"
+            --disallowedTools "Bash,Edit,WebFetch,WebSearch"
+
+      - name: Upload verdict
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: triage-verdict
+          path: triage-verdict.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # The ONLY step that mutates the issue in observe/assist mode.
+      - name: Apply verdict (comment + labels)
+        run: bash .github/claude/apply-triage.sh
+
+  # Phase-3 destructive actions. Skipped unless TRIAGE_MODE=autonomous, and the
+  # `triage-actions` environment pauses the job for a human "approve" before any
+  # close runs — the human-gated safe verdict.
+  enforce:
+    name: Enforce (gated close)
+    needs: triage
+    if: ${{ vars.TRIAGE_ENABLED == 'true' && vars.TRIAGE_MODE == 'autonomous' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: triage-actions
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download verdict
+        uses: actions/download-artifact@v7
+        with:
+          name: triage-verdict
+      - name: Enforce close for duplicates/spam
+        run: bash .github/claude/enforce-triage.sh
