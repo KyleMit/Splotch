@@ -159,6 +159,47 @@ test('does not ship a passing candidate without apply', async () => {
   );
 });
 
+test('surfaces sample drift for review without failing the run', async () => {
+  await addPage('page-tall');
+  state.gateResults = []; // every attempt misses a gate
+
+  // A multi-sample run is review-only (--apply is rejected with --samples > 1), so
+  // gate misses while exploring palettes must not exit nonzero.
+  await expect(runCli('test/page-tall', '--samples', '2')).resolves.toBeTruthy();
+
+  // Both candidates land in scratch for the reviewer...
+  await expect(
+    readFile(join(state.roots.samples, 'test/page-tall/sample-1.webp'))
+  ).resolves.toBeTruthy();
+  await expect(
+    readFile(join(state.roots.samples, 'test/page-tall/sample-2.webp'))
+  ).resolves.toBeTruthy();
+
+  // ...and the committed raw + shipped bytes are never touched.
+  expect(await readFile(join(state.roots.fillSrc, 'test/page-tall.light.raw.webp'), 'utf8')).toBe(
+    'known-raw-page-tall'
+  );
+  expect(await readFile(join(state.roots.coloring, 'test/page-tall.light.webp'), 'utf8')).toBe(
+    'known-shipped-page-tall'
+  );
+});
+
+test('fails closed when a single review render misses every gate', async () => {
+  await addPage('page-tall');
+  state.gateResults = []; // the one candidate misses every gate
+
+  // A single render (no --samples) is not review-exploration: gate exhaustion must
+  // exit nonzero rather than silently pass, even without --apply.
+  await expect(runCli('test/page-tall')).rejects.toThrow('1 render(s) failed.');
+
+  expect(await readFile(join(state.roots.fillSrc, 'test/page-tall.light.raw.webp'), 'utf8')).toBe(
+    'known-raw-page-tall'
+  );
+  expect(await readFile(join(state.roots.coloring, 'test/page-tall.light.webp'), 'utf8')).toBe(
+    'known-shipped-page-tall'
+  );
+});
+
 test('ships both raw and punched outputs when a candidate passes with apply', async () => {
   await addPage('page-tall');
   state.gateResults = [true];
