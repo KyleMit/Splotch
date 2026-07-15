@@ -48,4 +48,26 @@ describe('golden catalog blank-orb verdict', () => {
     expect(out.improvements).toContain('fixture/page  night.orbOk FAIL -> ok');
     expect(out.regressions).toEqual([]);
   });
+
+  it('treats a min-core-dark drop that stays above the blank threshold as diagnostic, not a regression', () => {
+    // Both frames pass the orb gate; only the supporting metric moved (0.4 -> 0.2,
+    // still far above CORE_DARK_FRAC_MIN 0.07) — a benign asset shift, not a blank.
+    const was = { night: { orbOk: true, orbFailed: 0, orbMinCoreDark: 0.4 } };
+    const now = { night: { orbOk: true, orbFailed: 0, orbMinCoreDark: 0.2 } };
+
+    const out = diff(was, now);
+    expect(out.regressions).toEqual([]);
+    expect(out.info).toContain('fixture/page  night.orbMinCoreDark 0.4 -> 0.2 (moved)');
+  });
+
+  it('still regresses when a min-core-dark collapse actually blanks an orb', () => {
+    // The verdict and the failed-pupil counter — not the diagnostic metric — carry
+    // the regression when the core genuinely goes blank.
+    const was = { night: { orbOk: true, orbFailed: 0, orbMinCoreDark: 0.4 } };
+    const now = { night: { orbOk: false, orbFailed: 1, orbMinCoreDark: 0.03 } };
+
+    const out = diff(was, now);
+    expect(out.regressions).toContain('fixture/page  night.orbOk ok -> FAIL');
+    expect(out.regressions).toContain('fixture/page  night.orbFailed 0 -> 1');
+  });
 });

@@ -31,7 +31,13 @@ export const GOLDEN_METRICS = {
   'night.lineWhite': { noise: 3, worse: 'down' },
   'night.eyesFailed': { noise: 0, worse: 'up' },
   'night.orbFailed': { noise: 0, worse: 'up' },
-  'night.orbMinCoreDark': { noise: 0, worse: 'down' },
+  // Supporting diagnostic, not a gate. A real blank orb is already caught by the
+  // night.orbOk verdict and the night.orbFailed counter; this is the min core-dark
+  // fraction across pupils (0.14–0.76 in the catalog, blank threshold 0.07). A
+  // legitimate asset change can lower it well clear of the threshold, so gating on
+  // any decrease (worse:'down', noise:0) fired false regressions while orbOk stayed
+  // true. Report movement as info; let the verdict + counter gate the real failure.
+  'night.orbMinCoreDark': { noise: 0.02, worse: null },
 };
 
 export const GOLDEN_VERDICTS = [
