@@ -1,34 +1,66 @@
-# Automated issue triage — security model
+# Agentic issue pipeline — security model
 
-Files here power `.github/workflows/issue-triage.yml`, which does a first-pass triage of every newly
-opened issue using Claude (on the repo owner's Claude subscription via `CLAUDE_CODE_OAUTH_TOKEN`).
+These files power a four-stage pipeline that carries a user report from "just filed" to "reviewed
+fix PR," with **one hard human gate** in the middle. Everything runs on the repo owner's Claude
+subscription (`CLAUDE_CODE_OAUTH_TOKEN`) at $0 metered API cost. See `WORKFLOW.md` for the flow
+diagram and a who-does-what table; `../labels.md` for the labels.
 
-This is a **public** repo, so issue text is attacker-controlled input fed to an LLM. The design
-assumes the model can be prompt-injected and makes that harmless:
+## The stages
 
-| Risk                                              | Guard                                                                                                                                                                                                                                 |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Secret exfiltration / arbitrary command execution | Claude runs **read-only**: `--allowedTools "Read,Write,Glob,Grep"`, `--disallowedTools "Bash,Edit,WebFetch,WebSearch"`. No shell, no network — nothing to exfiltrate *with*.                                                          |
-| Privilege escalation (push code, open PRs)        | Workflow `permissions:` is `issues:write` + `contents:read` only. A fully-hijacked agent still can't push or touch other repos.                                                                                                       |
-| Weaponized labels/comments                        | Claude never calls GitHub. It only **writes `triage-verdict.json`**; the deterministic `apply-triage.sh` is the sole mutator. It targets the issue number from the event payload (not the model) and applies only allowlisted labels. |
-| Weaponized closing                                | Closing lives in a separate `enforce` job that runs only in `autonomous` mode and is gated behind the `triage-actions` environment's required-reviewer approval.                                                                      |
-| Instruction/data confusion                        | `triage-prompt.md` marks issue text as untrusted data, never instructions.                                                                                                                                                            |
-| Quota/compute abuse                               | `--max-turns`, job `timeout-minutes`, `concurrency`, and the `TRIAGE_ENABLED` kill switch.                                                                                                                                            |
-| Expression injection (crafted title/body)         | Untrusted fields are passed via `env:` + `jq --arg`, never interpolated inline into a `run:` script.                                                                                                                                  |
+| # | Workflow           | Trigger                              | Autonomy                            | What it does                                                                 |
+| - | ------------------ | ------------------------------------ | ----------------------------------- | ---------------------------------------------------------------------------- |
+| ① | `issue-intake.yml` | issue labeled `user-report`          | **low** (read-only + deterministic) | Comments findings; closes+locks spam/injection; else applies `needs-triage`. |
+| — | *human gate*       | maintainer adds `backlog`            | —                                   | Verifies the report and promotes it. Only a human can.                       |
+| ③ | `issue-fix.yml`    | issue labeled `backlog` (by a human) | **high** (writes code)              | Branches, implements a fix, opens a draft PR.                                |
+| ④ | `pr-review.yml`    | PR opened from `claude/fix-*`        | **high** (writes code)              | Adversarially reviews; opens a suggestions PR against the fix branch.        |
 
-## Graduated autonomy (`TRIAGE_MODE` repo variable)
+## The gate — the whole security story in one line
 
-* `observe` (default) — comment only, applies nothing.
-* `assist` — comment + apply allowlisted labels, never closes.
-* `autonomous` — also runs the gated `enforce` job (close duplicates/spam after human approval).
+**Autonomy escalates only across the `backlog` label, and only a human can apply it.** Stages ①
+before the gate can't touch code; stages ③–④ after it can. The gate holds because:
+
+* No agent has `backlog` in any allowlist — nothing automated can promote an issue.
+* Stage ③ additionally checks `github.event.sender.type == 'User'` **and** that the promoter has
+  `write`/`admin`/`maintain` permission on the repo.
+
+## Injection hardening (public repo — issue text is attacker-controlled)
+
+* **Stage ① runs read-only.** `--allowedTools "Read,Write,Glob,Grep"`,
+  `--disallowedTools
+  "Bash,Edit,WebFetch,WebSearch"` — no shell, no network. Its only output is
+  `triage-verdict.json`; `apply-intake.sh` is the sole mutator, applies only allowlisted labels, and
+  its one destructive action (close+lock) targets the reporting issue itself, so a hijacked
+  verdict's blast radius is nil.
+* **Untrusted fields** are passed via `env:` + `jq --arg`, never interpolated into a `run:` script.
+* **Stages ③–④ do get Bash and write access** — but only after a human vetted the issue, and they
+  operate on an isolated branch that lands as a **draft PR** a human still reviews and merges.
+  Rulesets requiring review on `main` (free on public repos) are the recommended backstop.
+* **Loop guards:** intake only fires on the `user-report` signal (not when it adds `needs-triage`);
+  the review agent only fires on `claude/fix-*` PRs, so its own `claude/review-*` PR can't
+  re-trigger it; fork PRs are skipped.
+
+## Enabling / disabling (repo variables)
+
+Each stage has its own kill switch, so you can light them up one at a time as you gain trust:
+
+* `INTAKE_ENABLED=true` — stage ①
+* `FIX_ENABLED=true` — stage ③ (leave off until you're ready for code-writing autonomy)
+* `REVIEW_ENABLED=true` — stage ④
+
+Set at **Settings → Secrets and variables → Actions → Variables**. Same place holds the
+`CLAUDE_CODE_OAUTH_TOKEN` secret (from `claude setup-token`).
 
 ## Files
 
-* `WORKFLOW.md` — end-to-end flow diagram, the two human gates, and a who-does-what-when-where
-  table.
-* `triage-prompt.md` — the analysis instructions and verdict schema Claude follows.
-* `apply-triage.sh` — deterministic comment + label enforcement (observe/assist).
-* `enforce-triage.sh` — deterministic gated close (autonomous only).
+* `WORKFLOW.md` — flow diagram, the human gate, and a who-does-what-when-where table.
+* `intake-prompt.md` / `apply-intake.sh` — stage ① analysis + deterministic enforcement.
+* `fix-prompt.md` / `open-fix-pr.sh` — stage ③ fix instructions + deterministic push/PR.
+* `review-prompt.md` / `open-review-pr.sh` — stage ④ review instructions + deterministic push/PR.
 
-See `../labels.md` for the label allowlist and one-time creation commands, and the header of
-`../workflows/issue-triage.yml` for the full setup checklist.
+## Future upgrade: drag-to-column instead of a label
+
+The `backlog` **label** is the stable gate contract. If you later move the repo + Project to a
+GitHub **organization**, you can add a `projects_v2_item` webhook bridge that applies the `backlog`
+label when a card is dragged to a Backlog column — the fix/review agents don't change, only the
+promoter's identity check flips from "is a human" to "is the bridge app." Not available for
+personal-account projects, so this pipeline uses the label directly.

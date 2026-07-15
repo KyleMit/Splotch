@@ -1,0 +1,102 @@
+# Stage ① — Intake agent. First agentic pass on a newly reported issue.
+#
+# Fires when an issue carries the `user-report` label (applied by the issue
+# template or a maintainer). Claude does a rough first pass; then a deterministic
+# step either destroys spam/prompt-injection (close + lock) or, if the report
+# looks valid, applies `needs-triage` so it lands in the review column for a
+# human to promote.
+#
+# SECURITY (public repo — issue text is attacker-controlled):
+#   - Claude runs strictly READ-ONLY (Read/Write/Glob/Grep; no Bash, no network),
+#     so a prompt-injected body can't exfiltrate secrets or run commands. Its only
+#     output is triage-verdict.json.
+#   - apply-intake.sh is the ONLY mutator. It targets the issue number from the
+#     event (never the model), applies only allowlisted labels, and the only
+#     destructive action it can take — closing — targets THIS issue (the attacker's
+#     own), so the blast radius of a hijacked verdict is nil.
+#   - This stage NEVER promotes to `backlog`; only a human does that (see the fix
+#     agent). Least-privilege: issues:write + contents:read.
+#
+# Setup: secret CLAUDE_CODE_OAUTH_TOKEN; variable INTAKE_ENABLED=true; create the
+# labels in .github/labels.md.
+name: Issue Intake
+
+on:
+  issues:
+    types: [opened, labeled]
+
+concurrency:
+  group: issue-intake-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write # the action fetches a GitHub OIDC token during auth
+
+jobs:
+  intake:
+    name: First-pass intake
+    # Run only when the `user-report` signal is what triggered us: either the
+    # issue opened already carrying the label, or the label was just added.
+    # (Guards against re-triggering when we ourselves add `needs-triage`.)
+    if: >-
+      ${{ vars.INTAKE_ENABLED == 'true' && (
+        (github.event.action == 'opened' && contains(github.event.issue.labels.*.name, 'user-report')) ||
+        (github.event.action == 'labeled' && github.event.label.name == 'user-report')
+      ) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Untrusted issue fields go through env + jq --arg (never inline into a
+      # run: script) so a crafted title/body can't inject shell or GHA syntax.
+      - name: Dump issue payload
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+        run: |
+          jq -n \
+            --argjson n "$ISSUE_NUMBER" \
+            --arg t "$ISSUE_TITLE" \
+            --arg b "$ISSUE_BODY" \
+            --arg a "$ISSUE_AUTHOR" \
+            '{number: $n, title: $t, body: $b, author: $a}' > issue.json
+
+      # Read-only dedup context so Claude never needs a network or gh tool.
+      - name: Collect open issues for dedup context
+        run: gh issue list --state open --limit 100 --json number,title,labels > existing-issues.json
+
+      - name: Analyze issue
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Follow the instructions in .github/claude/intake-prompt.md exactly.
+            The newly reported issue is in issue.json. The repo's currently open
+            issues are in existing-issues.json. Write your verdict to
+            triage-verdict.json in the repo root. Do not take any other action.
+          # Hard capability boundary: read the repo, write the verdict. Nothing else.
+          claude_args: >-
+            --max-turns 12
+            --allowedTools "Read,Write,Glob,Grep"
+            --disallowedTools "Bash,Edit,WebFetch,WebSearch"
+
+      - name: Upload verdict
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: triage-verdict
+          path: triage-verdict.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # The ONLY step that mutates the issue.
+      - name: Apply verdict
+        run: bash .github/claude/apply-intake.sh

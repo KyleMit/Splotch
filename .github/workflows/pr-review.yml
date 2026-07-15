@@ -1,0 +1,76 @@
+# Stage ④ — Adversarial review agent. Reviews a fix-agent PR and opens a
+# follow-up PR against its branch with concrete suggested changes.
+#
+# Fires when a PR is opened from a `claude/fix-*` branch (the fix agent's output).
+# It reviews the diff adversarially, and if it finds real improvements it commits
+# them to `claude/review-<pr>` and opens a PR targeting the fix branch, so you can
+# merge the suggestions into the fix before merging the fix into main.
+#
+# Loop guard: it only triggers on `claude/fix-*` heads, so the review PR it opens
+# (head `claude/review-*`) never re-triggers it. Fork PRs are skipped (they carry
+# no secrets and aren't from the fix agent).
+#
+# Setup: secret CLAUDE_CODE_OAUTH_TOKEN; variable REVIEW_ENABLED=true.
+name: PR Review Agent
+
+on:
+  pull_request:
+    types: [opened]
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  review:
+    name: Adversarial review + suggestions PR
+    if: >-
+      ${{ vars.REVIEW_ENABLED == 'true'
+          && startsWith(github.event.pull_request.head.ref, 'claude/fix-')
+          && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      FIX_BRANCH: ${{ github.event.pull_request.head.ref }}
+      REVIEW_BRANCH: claude/review-${{ github.event.pull_request.number }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create review branch
+        run: git switch -c "$REVIEW_BRANCH"
+
+      - name: Adversarial review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            Follow .github/claude/review-prompt.md exactly. Adversarially review
+            PR #${{ github.event.pull_request.number }} (the diff of
+            ${{ env.FIX_BRANCH }} against origin/main) on the current branch
+            (${{ env.REVIEW_BRANCH }}). Commit any concrete improvements, but do
+            NOT push or open a pull request — the workflow does that.
+          claude_args: >-
+            --max-turns 40
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash"
+
+      - name: Push suggestions and open PR against the fix branch
+        run: bash .github/claude/open-review-pr.sh

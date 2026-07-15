@@ -1,0 +1,92 @@
+# Stage ③ — Fix agent. Attempts a fix and opens a draft PR.
+#
+# Fires when a HUMAN maintainer promotes a triaged issue by adding the `backlog`
+# label — the one hard gate in the pipeline. From here on the agent has real
+# autonomy (writes code, pushes a branch, opens a PR), so entry is deliberately
+# restricted:
+#   - triggers only on the exact `backlog` label being added,
+#   - `github.event.sender.type == 'User'` (never a bot/agent), and
+#   - a hard check that the promoter actually has write/admin on the repo.
+# No agent has `backlog` in its allowlist, so nothing automated can reach this
+# stage — only a person can.
+#
+# Setup: secret CLAUDE_CODE_OAUTH_TOKEN; variable FIX_ENABLED=true (defaults off,
+# so the high-autonomy stage stays dark until you switch it on).
+name: Issue Fix Agent
+
+on:
+  issues:
+    types: [labeled]
+
+concurrency:
+  group: issue-fix-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  fix:
+    name: Attempt fix + open draft PR
+    if: >-
+      ${{ vars.FIX_ENABLED == 'true'
+          && github.event.label.name == 'backlog'
+          && github.event.sender.type == 'User' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      GH_REPO: ${{ github.repository }}
+      FIX_BRANCH: claude/fix-${{ github.event.issue.number }}
+    steps:
+      # Defense in depth: confirm the promoter really is a maintainer, not just
+      # any account that managed to attach a label. Passed via env, not inline
+      # interpolation, so a hostile login string can't inject shell.
+      - name: Verify promoter is a maintainer
+        env:
+          PROMOTER: ${{ github.event.sender.login }}
+        run: |
+          perm=$(gh api "repos/$GH_REPO/collaborators/$PROMOTER/permission" --jq '.permission' 2>/dev/null || echo none)
+          echo "Promoter $PROMOTER has permission: $perm"
+          case "$perm" in
+            admin | write | maintain) echo "authorized" ;;
+            *) echo "::error::$PROMOTER is not a maintainer (permission: $perm); refusing." && exit 1 ;;
+          esac
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create fix branch
+        run: git switch -c "$FIX_BRANCH"
+
+      - name: Implement fix
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            Follow .github/claude/fix-prompt.md exactly. Implement a fix for
+            issue #${{ github.event.issue.number }} on the current branch
+            (${{ env.FIX_BRANCH }}). Commit your work, but do NOT push or open a
+            pull request — the workflow does that.
+          claude_args: >-
+            --max-turns 40
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash"
+
+      # Deterministic push + PR so branch/title/link conventions stay consistent
+      # and an unfixable issue never produces an empty PR.
+      - name: Push branch and open draft PR
+        run: bash .github/claude/open-fix-pr.sh
