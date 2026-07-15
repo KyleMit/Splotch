@@ -36,11 +36,11 @@ screenshots — all bundled on-device (fonts via `@fontsource-variable/quicksand
 The **only** online feature is the **AI "magic image" button**. On native it calls the hosted
 endpoint `https://splotch.art/api/generate-image` (`__NATIVE_API_BASE__`, injected at build time in
 `web/vite.config.ts`). When the device is offline the AI button is **hidden** automatically
-(`web/src/lib/state/network.svelte.js` + `@capacitor/network`).
+(`web/src/lib/state/network.svelte.ts` + `@capacitor/network`).
 
 ### Storage
 
-`web/src/lib/storage.js` is dual-layer:
+`web/src/lib/storage.ts` is dual-layer:
 
 * Synchronous **localStorage** for fast reads (web + native WebView).
 * On native, every write is also mirrored to **Capacitor Preferences** (durable
