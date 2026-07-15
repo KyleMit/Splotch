@@ -83,8 +83,8 @@ regression-locked by its own broken/good fixtures:
 ## The negative space — classes NO gate catches
 
 The matrix proves the gates don't overlap wastefully; it does **not** claim the gates are complete.
-`docs/ISSUES.md` is the living list of gate blind spots — the failure classes only human composite
-review catches today. The load-bearing ones as of the 2026-07 migration:
+GitHub issues labeled `area:asset-gen` are the living list of gate blind spots — the failure classes
+only human composite review catches today. The load-bearing ones as of the 2026-07 migration:
 
 * **Invention *inside* the subject** (ISSUES #7, #8): `detectInventedShapes` scans only the open
   background; a colored shape or a chalk-invented face inside a pen-bounded interior is unseen.

@@ -9,8 +9,8 @@ Write a **transfer packet** for the work in flight, so the next session can resu
 `docs/handoff/CLAUDE.md` first — it defines the folder conventions this skill produces.
 
 A handoff is transient. If what you're about to record is really a durable decision, a backlog item,
-or behavioural feedback, route it to `/create-adr`, `docs/BACKLOG.md`, or `memory/` instead — see
-the table in the root `CLAUDE.md`.
+or behavioural feedback, route it to `/create-adr`, a **GitHub issue** (the live backlog — see
+`docs/ISSUE-WORKFLOW.md`), or `memory/` instead — see the table in the root `CLAUDE.md`.
 
 ## Steps
 

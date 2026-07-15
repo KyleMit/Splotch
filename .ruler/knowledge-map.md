@@ -31,18 +31,23 @@ agents: read the matching rule before editing those paths): `svelte.md`, `server
 `testing.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`, `web/tests/`, `android/`,
 `scripts/`, `tools/asset-gen/`, and `docs/handoff/` cover those areas.
 
+The **live backlog is GitHub Issues** — when asked what to work on next, list the open issues and
+filter by label (`area:*`, `type:*`, `priority:*`); don't look for a backlog file. Capture a durable
+TODO by opening an issue, not by editing a Markdown list. The issue format, the full label glossary,
+and the triage/won't-do flow live in `docs/ISSUE-WORKFLOW.md`.
+
 Remaining `docs/`:
 
-| File                    | When to read it                                                                                                                                                                                                            |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/COMPATIBILITY.md` | The supported browser/device floor, how it's enforced, and the per-API risk register — read before raising the floor, adding a modern web API, or changing a native min-OS target                                          |
-| `docs/CONTRIBUTING.md`  | Human onboarding doc — keep in sync when conventions change                                                                                                                                                                |
-| `docs/BACKLOG.md`       | When asked what to work on next                                                                                                                                                                                            |
-| `docs/AUDIT.md`         | Findings from the audit skills (`/code-audit`, `/extract-audit`, `lighthouse-audit`); consumed by `/fix-audits` and `/vet-audits`. See `.claude/audit-conventions.md` for the audit-skill inventory and shared conventions |
-| `docs/AUDIT-LOG.md`     | Committable history of every audit-skill run (date · audit · one-line summary)                                                                                                                                             |
-| `docs/PROMPTS.md`       | Reusable AI art prompts for assets                                                                                                                                                                                         |
-| `docs/CLOUD.md`         | Running/previewing the app in a Claude Code on the web cloud session, and its network constraints                                                                                                                          |
-| `docs/handoff/`         | Transient session-to-session transfer packets — see `docs/handoff/CLAUDE.md`. Written by `/create-handoff`, consumed by `/resume-handoff`                                                                                  |
+| File                     | When to read it                                                                                                                                                                                                            |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/COMPATIBILITY.md`  | The supported browser/device floor, how it's enforced, and the per-API risk register — read before raising the floor, adding a modern web API, or changing a native min-OS target                                          |
+| `docs/CONTRIBUTING.md`   | Human onboarding doc — keep in sync when conventions change                                                                                                                                                                |
+| `docs/ISSUE-WORKFLOW.md` | How the GitHub issue tracker is organized — issue format, label glossary (`type:*`/`area:*`/`priority:*`/meta), and the triage + won't-do flow                                                                             |
+| `docs/AUDIT.md`          | Findings from the audit skills (`/code-audit`, `/extract-audit`, `lighthouse-audit`); consumed by `/fix-audits` and `/vet-audits`. See `.claude/audit-conventions.md` for the audit-skill inventory and shared conventions |
+| `docs/AUDIT-LOG.md`      | Committable history of every audit-skill run (date · audit · one-line summary)                                                                                                                                             |
+| `docs/PROMPTS.md`        | Reusable AI art prompts for assets                                                                                                                                                                                         |
+| `docs/CLOUD.md`          | Running/previewing the app in a Claude Code on the web cloud session, and its network constraints                                                                                                                          |
+| `docs/handoff/`          | Transient session-to-session transfer packets — see `docs/handoff/CLAUDE.md`. Written by `/create-handoff`, consumed by `/resume-handoff`                                                                                  |
 
 Committed run outputs (contact sheets, Lighthouse reports, model/prompt tests) live in
 **`/artifacts`** — a keeper's home separate from `docs/`, published live via GitHub Pages. Promote

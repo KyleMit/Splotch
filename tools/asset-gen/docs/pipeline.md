@@ -156,7 +156,7 @@ change):
    CORES to exist.** A solid-ink pen pupil has no nested rings, so `findEyeCores` finds nothing and
    the gate passes vacuously — vehicles/police-tall's 3.1 chalk whitened both pupils this way and
    only composite review caught it (fixed with an erase-and-redraw `--notes`). On any solid-pen-eye
-   page, render the night composite before trusting a chalk (`ISSUES.md`).
+   page, render the night composite before trusting a chalk (GitHub issues, label `area:asset-gen`).
 
 Candidates render to ink polarity through a **crisping S-curve** (`lib/crisp-ink.mjs`) instead of
 the pen tools' gentle contrast: on the dark board the invert + screen render and the binary night
@@ -297,7 +297,8 @@ reserved `light` and a `"*"` category wildcard):
 * **`why`** — provenance (commit / doc / session), so entries can be pruned when a model change
   makes them obsolete.
 * **`motifs`** (per page, cross-tool) — sibling-motif facts (the pterodactyl -wide's crescent moon
-  vs the -tall's gold sun) printed on every run; nothing conditions on them yet (`ISSUES.md`).
+  vs the -tall's gold sun) printed on every run; nothing conditions on them yet (GitHub issues,
+  label `area:asset-gen`).
 
 **When a page needs a new lever, record it in the registry in the same commit that ships the asset**
 — the registry only stays alive if writing it is part of shipping. The seed entries were reconciled
@@ -394,7 +395,7 @@ noisy:
   is silent too — chalk review has to catch those (Stage 1.5 gate 4's blind-spot note).
 
 `judgeLightEyes` has NO such suppressions — light-side flat-eye flags on side-profile or band-blind
-pages are known false-positive noise (`ISSUES.md`).
+pages are known false-positive noise (GitHub issues, label `area:asset-gen`).
 
 Debugging technique that keeps resolving disputes between scores and eyes: **ASCII luma maps**. When
 a crop and a score disagree, dump the region as characters — it's diffable, zoomable, and doesn't
