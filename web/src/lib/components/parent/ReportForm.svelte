@@ -142,6 +142,11 @@
         : "Describe the feature or change you'd love to see…"}
       bind:value={message}></textarea>
 
+    <p class="report-public-note">
+      Heads up: your report is posted <strong>publicly</strong> on our GitHub issue tracker, so please
+      don't include personal details like names or email addresses.
+    </p>
+
     {#if kind === 'bug'}
       <div class="report-device" transition:slide={{ duration: 180 }}>
         <label class="report-check">
@@ -290,6 +295,17 @@
   .report-textarea:focus {
     outline: none;
     border-color: var(--brand);
+  }
+
+  .report-public-note {
+    margin: -2px 0 0 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--text-muted);
+  }
+
+  .report-public-note strong {
+    color: var(--text);
   }
 
   .report-device {
