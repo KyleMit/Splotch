@@ -10,7 +10,7 @@
     setStrokeSize,
     activeStrokeSize,
   } from '$lib/state/strokeWidth.svelte';
-  import { toolState, selectEraser, selectPen, toggleMagic } from '$lib/state/tool.svelte';
+  import { toolState, selectEraser, toggleMagic } from '$lib/state/tool.svelte';
   import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { network } from '$lib/state/network.svelte';
   import { layout } from '$lib/state/layout.svelte';
@@ -140,10 +140,10 @@
   }
 
   function handleEraserClick() {
-    // Tapping the eraser again toggles back to the pen. selectPen only flips the
-    // tool flag — colors.activeColor is untouched, so the previous color resumes.
-    if (toolState.eraser) selectPen();
-    else selectEraser();
+    // Tapping the eraser keeps it selected rather than toggling off (issue #276):
+    // repeated taps are idempotent. The child leaves the eraser by picking a color
+    // (ColorPalette calls selectPen), which resumes drawing with that color.
+    selectEraser();
   }
 
   function handleStrokeSizeClick(size: number) {
