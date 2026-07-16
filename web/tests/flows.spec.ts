@@ -360,6 +360,25 @@ test('picking a color exits eraser mode', async ({ page }) => {
   await expect(page.locator('#drawingCanvas')).not.toHaveClass(/erasing/);
 });
 
+// Issue #276: a toddler mashing the eraser button should keep erasing, not toggle
+// the tool off and on. Repeated taps are idempotent — you leave the eraser by
+// picking a color, not by tapping the eraser again.
+test('tapping the eraser repeatedly keeps it selected', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const eraser = page.locator('#eraserButton');
+  await expect(async () => {
+    await eraser.click({ timeout: 1000 });
+    await expect(eraser).toHaveAttribute('aria-pressed', 'true', { timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
+
+  await eraser.click();
+  await eraser.click();
+  await expect(eraser).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
+});
+
 // ── undo / empty-state gating ───────────────────────────────────────────────
 
 test('the undo button enables on a stroke and reverts it', async ({ page }) => {
