@@ -4,9 +4,10 @@ import { toolState } from './tool.svelte';
 export const STROKE_SIZES = [1, 2, 3, 4, 5];
 export const DEFAULT_SIZE = 3;
 
-// The eraser runs a bit larger than the pen at the same stroke level — matching
-// the pen exactly makes precise erasing frustrating.
-export const ERASER_SIZE_MULTIPLIER = 1.4;
+// The eraser runs noticeably larger than the pen at the same stroke level — a
+// toddler erasing wants big sweeps, not precision, and 1.4× was too subtle to
+// feel. Matching the pen exactly makes precise erasing frustrating.
+export const ERASER_SIZE_MULTIPLIER = 2;
 
 // Pen and eraser each remember their own level, persisted separately, so
 // switching tools restores the size the child last used for that tool.
