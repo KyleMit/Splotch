@@ -37,12 +37,10 @@ async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
     }
     await expect(modal).toBeVisible({ timeout: 1500 });
   }).toPass({ timeout: 10_000 });
-  await page.getByRole('button', { name: /AI/ }).click();
-  const panels = page.locator('.tab-panels');
-  await expect
-    .poll(() => panels.evaluate((el) => Math.round(el.scrollLeft / el.clientWidth)))
-    .toBe(1);
-  await expect(page.locator('.tab-button.active')).toContainText('AI');
+  // The Parent Center is a section list — a sidebar item on tablet/desktop, a
+  // hub row on phone. Either way the control carries the section label; opening
+  // it (sidebar select or phone drill-in) reveals the section content.
+  await page.getByRole('button', { name: 'AI Art' }).click();
   await expect(page.locator(expectedField)).toBeVisible();
 }
 
@@ -518,53 +516,29 @@ test('the drawer open state persists across a reload', async ({ page }) => {
   await expect(page.locator('#undoButton')).toBeVisible();
 });
 
-test('parent center panels can be changed by tab buttons and native scrolling', async ({
-  page,
-}) => {
+test('parent center sidebar switches the content pane (tablet layout)', async ({ page }) => {
   await gotoApp(page);
 
   await page.getByRole('button', { name: 'Parent Center' }).click();
-  await expect(page.locator('#parentHelpModal')).toBeVisible();
-  await expect(page.locator('.tab-button.active')).toContainText('Settings');
-  await page.waitForTimeout(400); // let the fly-in transform finish before measuring coordinates
+  const modal = page.locator('#parentHelpModal');
+  await expect(modal).toBeVisible();
+  // The default Playwright viewport is desktop-width, so the two-pane shell with
+  // a persistent sidebar renders and the first section is selected.
+  await expect(modal).toHaveClass(/wide/);
+  await expect(page.getByRole('button', { name: 'Appearance & Display' })).toHaveClass(/active/);
 
-  const panels = page.locator('.tab-panels');
+  // Selecting a section highlights it in the sidebar and swaps the pane content.
+  await page.getByRole('button', { name: 'Controls & Buttons' }).click();
+  await expect(page.getByRole('button', { name: 'Controls & Buttons' })).toHaveClass(/active/);
+  await expect(page.locator('#advancedControlsToggle')).toBeVisible();
 
-  // The panels are a horizontal CSS scroll-snap container (TabPager): swiping is
-  // native momentum scrolling, and the active tab is derived from scroll position.
-  // Mouse-button drags don't scroll such containers, so we drive the scroll the
-  // same way a touch/trackpad fling ultimately does — by moving scrollLeft to a
-  // snap point — and assert the wiring updates the active tab.
-  const scrollToPanel = (index: number) =>
-    panels.evaluate((el, i) => {
-      el.scrollTo({ left: i * el.clientWidth, behavior: 'instant' as ScrollBehavior });
-    }, index);
-
-  // Tab buttons scroll the active panel into view.
-  await page.getByRole('button', { name: /AI/ }).click();
-  await expect(page.locator('.tab-button.active')).toContainText('AI');
-  await expect
-    .poll(() => panels.evaluate((el) => Math.round(el.scrollLeft / el.clientWidth)))
-    .toBe(1);
-
-  // Scrolling the container (as a swipe does) drives the active tab back.
-  await scrollToPanel(0);
-  await expect(page.locator('.tab-button.active')).toContainText('Settings');
-
-  // Scrolling forward to the third panel commits to that tab.
-  await scrollToPanel(2);
-  await expect(page.locator('.tab-button.active')).toContainText('Setup');
-
-  // An open <details> in a panel keeps its state across tab changes.
+  // The Setup section keeps its own <details> accordions inside the pane.
+  await page.getByRole('button', { name: 'Setup Guide' }).click();
   const setupDetails = page.locator('.help-section').first();
-  const setupSummary = setupDetails.locator('summary');
-  await expect(setupSummary).toBeVisible();
-  await setupSummary.click();
-  await expect(setupDetails).toHaveAttribute('open', '');
+  await expect(setupDetails.locator('summary')).toBeVisible();
 
-  await scrollToPanel(3);
-  await expect(page.locator('.tab-button.active')).toContainText('About');
-  await expect(page.locator('.tab-button.active [data-icon="splotchy"] img')).toBeVisible();
+  // About holds the identity block — the mascot renders in full color.
+  await page.getByRole('button', { name: 'About' }).click();
   const aboutMascot = page.locator('.about-brand [data-icon="splotchy"]');
   const aboutMascotImage = aboutMascot.locator('img');
   await expect(aboutMascotImage).toBeVisible();
@@ -572,10 +546,30 @@ test('parent center panels can be changed by tab buttons and native scrolling', 
     .poll(() => aboutMascotImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBeGreaterThan(0);
   await expect(aboutMascot).toHaveClass(/icon-color/);
+});
 
-  await page.getByRole('button', { name: /Setup/ }).click();
-  await expect(page.locator('.tab-button.active')).toContainText('Setup');
-  await expect(setupDetails).toHaveAttribute('open', '');
+test('parent center hub drills into a section and back (phone layout)', async ({ page }) => {
+  await page.setViewportSize({ width: 460, height: 852 });
+  await gotoApp(page);
+
+  await page.getByRole('button', { name: 'Parent Center' }).click();
+  const modal = page.locator('#parentHelpModal');
+  await expect(modal).toBeVisible();
+  // Below the breakpoint the hub renders instead of the sidebar.
+  await expect(modal).not.toHaveClass(/wide/);
+  await expect(page.locator('.hub-list')).toBeVisible();
+  // Nothing is drilled in yet, so a section's own controls aren't mounted.
+  await expect(page.locator('#advancedControlsToggle')).toHaveCount(0);
+
+  // Tapping a row opens the full-page section.
+  await page.getByRole('button', { name: 'Controls & Buttons' }).click();
+  await expect(page.locator('#advancedControlsToggle')).toBeVisible();
+  await expect(page.locator('.hub-list')).toHaveCount(0);
+
+  // The back arrow returns to the hub.
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.locator('.hub-list')).toBeVisible();
+  await expect(page.locator('#advancedControlsToggle')).toHaveCount(0);
 });
 
 test('an API key stays locked with storage-specific feedback when secure saving fails', async ({

@@ -1,31 +1,15 @@
 <script lang="ts">
   import Icon from '../Icon.svelte';
   import SplotchyIcon from '../SplotchyIcon.svelte';
-  import ReportForm from './ReportForm.svelte';
   import { settings, setAdminLinkVisible } from '$lib/state/settings.svelte';
-  // Generated at build time from releases/*.md (see scripts/generate-releases.mjs).
-  import releases from '$lib/releases.json';
-
-  interface Props {
-    // Forwarded from the Parent Center modal so the report form resets on reopen.
-    open?: boolean;
-  }
-  let { open = false }: Props = $props();
 
   const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
-
-  // The most recent release powers the "What's New" block.
-  const latestRelease = releases[0];
-  const RELEASES_URL = 'https://github.com/KyleMit/Splotch/releases';
 
   // Hidden admin unlock: tapping the version text 5 times reveals the link to
   // the admin console. The reveal is persisted (so it survives a refresh) and
   // stays put for anyone holding an admin session; the console resets it on
   // logout / failed login / leaving without signing in. The secret itself is
   // collected by the console's login form, so it never touches the client.
-  // The web console (/admin) is server-rendered with a cookie session; the
-  // native build is a static export with no server, so it gets /admin/native,
-  // which manages the same tokens through the hosted /api/admin endpoints.
   //
   // This is a build-time choice, not a runtime one: the native bundle has no
   // /admin route at all (it's server-only, excluded from the static export),
@@ -53,24 +37,7 @@
     </p>
   </div>
 
-  {#if latestRelease}
-    <div class="whats-new">
-      <h3 class="whats-new-heading">
-        What's New <span class="whats-new-version">v{latestRelease.version}</span>
-      </h3>
-      <!-- eslint-disable-next-line svelte/no-at-html-tags bodyHtml is our own first-party Markdown rendered to HTML at build time -->
-      <div class="whats-new-body">{@html latestRelease.bodyHtml}</div>
-      <p class="all-releases">
-        <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer">See all releases →</a>
-      </p>
-    </div>
-  {/if}
-</section>
-
-<ReportForm {open} />
-
-<section class="setting-group">
-  <div class="parent-help-footer">
+  <div class="about-links">
     <p><a href="/privacy">Privacy Policy</a> — no ads, no tracking, no accounts.</p>
     <p class="github-link">
       <a
@@ -96,7 +63,6 @@
 </section>
 
 <style>
-  /* About tab branding */
   .about-brand {
     display: flex;
     flex-direction: column;
@@ -119,77 +85,7 @@
     max-width: 320px;
   }
 
-  .whats-new {
-    margin-bottom: 24px;
-    padding: 16px;
-    background: var(--surface-2);
-    border-radius: 12px;
-  }
-
-  .whats-new-heading {
-    margin: 0 0 10px 0;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text-strong);
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-  }
-
-  .whats-new-version {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-faint);
-  }
-
-  /* Content is build-time-rendered Markdown, so style its tags globally. */
-  .whats-new-body :global(h2),
-  .whats-new-body :global(h3) {
-    margin: 12px 0 6px 0;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text-strong);
-  }
-
-  .whats-new-body :global(h2:first-child),
-  .whats-new-body :global(h3:first-child) {
-    margin-top: 0;
-  }
-
-  .whats-new-body :global(ul) {
-    margin: 0;
-    padding-left: 20px;
-  }
-
-  .whats-new-body :global(li) {
-    font-size: 14px;
-    color: var(--text);
-    line-height: 1.5;
-    margin-bottom: 4px;
-  }
-
-  .whats-new-body :global(a) {
-    color: var(--brand-text);
-  }
-
-  .all-releases {
-    margin: 12px 0 0 0;
-    font-size: 13px;
-  }
-
-  .all-releases a {
-    color: var(--brand-text);
-    text-decoration: none;
-    font-weight: 600;
-  }
-
-  @media (hover: hover) {
-    .all-releases a:hover {
-      text-decoration: underline;
-    }
-  }
-
-  .parent-help-footer {
+  .about-links {
     padding-top: 20px;
     border-top: 1px solid var(--border);
     text-align: center;
@@ -197,18 +93,18 @@
     font-size: 14px;
   }
 
-  .parent-help-footer p {
+  .about-links p {
     margin: 0 0 8px 0;
   }
 
-  .parent-help-footer a {
+  .about-links a {
     color: var(--brand);
     text-decoration: none;
     font-weight: 500;
   }
 
   @media (hover: hover) {
-    .parent-help-footer a:hover {
+    .about-links a:hover {
       text-decoration: underline;
     }
   }
