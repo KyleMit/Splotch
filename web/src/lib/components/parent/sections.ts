@@ -28,7 +28,7 @@ export const SECTIONS: SectionMeta[] = [
   { id: 'controls', label: 'Controls & Buttons', icon: 'dashboard-customize' },
   { id: 'ai', label: 'AI Art', icon: 'wand-stars' },
   { id: 'setup', label: 'Setup Guide', icon: 'pin' },
-  { id: 'whatsnew', label: "What's New", icon: 'magic-brush' },
+  { id: 'whatsnew', label: 'Updates', icon: 'magic-brush' },
   { id: 'feedback', label: 'Submit Feedback', icon: 'more-horiz' },
   { id: 'about', label: 'About', icon: 'splotchy' },
 ];
@@ -64,7 +64,7 @@ export function sectionSubtitle(id: SectionId): string {
     case 'setup':
       return 'Install & lock the app';
     case 'whatsnew':
-      return 'Latest updates';
+      return "See what's changed";
     case 'feedback':
       return 'Report a bug or share an idea';
     case 'about':

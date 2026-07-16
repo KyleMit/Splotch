@@ -3,16 +3,29 @@
   import releases from '$lib/releases.json';
 
   // The most recent release powers the top card; the rest stack below it so the
-  // section reads as a short changelog (New / Improved / Fixed per version).
+  // section reads as a short changelog (New / Improved / Fixed per release).
+  // Cards lead with the release date — version numbers are dev-facing and live
+  // in GitHub releases, behind the "See all releases" link.
   const RELEASES_URL = 'https://github.com/KyleMit/Splotch/releases';
   const recent = releases.slice(0, 5);
+
+  // Dates in releases.json are plain YYYY-MM-DD; parse the parts directly so
+  // formatting never shifts a day across timezones.
+  function formatReleaseDate(isoDate: string): string {
+    const [year, month, day] = isoDate.split('-').map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
 </script>
 
 <section class="setting-group">
   {#each recent as release (release.version)}
     <div class="whats-new">
       <h3 class="whats-new-heading">
-        <span class="whats-new-version">v{release.version}</span>
+        <span class="whats-new-date">{formatReleaseDate(release.date)}</span>
       </h3>
       <!-- eslint-disable-next-line svelte/no-at-html-tags bodyHtml is our own first-party Markdown rendered to HTML at build time -->
       <div class="whats-new-body">{@html release.bodyHtml}</div>
@@ -39,7 +52,7 @@
     gap: 8px;
   }
 
-  .whats-new-version {
+  .whats-new-date {
     font-size: 15px;
     font-weight: 700;
     color: var(--text-strong);
