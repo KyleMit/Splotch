@@ -152,7 +152,7 @@
               <button
                 class="hexagon c{c + 1}"
                 class:hover={hoveredHex === hex}
-                class:border={hex === '#ffffff'}
+                class:border={hex === '#ffffff' || hex === '#1A1F24'}
                 class:selected={colors.customColor.toLowerCase() === hex.toLowerCase()}
                 style="--color: {hex};"
                 data-color={hex}
@@ -419,6 +419,10 @@
     }
   }
 
+  /* Outline for the swatches that blend into the picker surface: white in
+     light mode, near-black (#1A1F24) in dark mode. Both carry the class in
+     both themes — --icon-ink flips with the theme, so the outline is only
+     visible on the swatch that needs it and near-invisible on the other. */
   .hexagon.border {
     background-color: var(--icon-ink);
   }
