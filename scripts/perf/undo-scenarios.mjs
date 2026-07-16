@@ -88,7 +88,8 @@ function shortMark(i, width, height) {
   const cols = 4;
   const rows = Math.ceil(STROKES / cols);
   const x = MARGIN + ((width - 2 * MARGIN) * (i % cols)) / (cols - 1);
-  const y = MARGIN + ((height - 2 * MARGIN) * Math.floor(i / cols)) / (rows - 1);
+  // Clamp the divisor: a single-row run (--strokes ≤ 4) would otherwise be 0/0.
+  const y = MARGIN + ((height - 2 * MARGIN) * Math.floor(i / cols)) / Math.max(rows - 1, 1);
   if (i % 2 === 0) return [{ x, y }]; // dot
   return [0, 1, 2, 3].map((k) => ({ x: x + k * 12, y })); // dash
 }
