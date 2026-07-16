@@ -5,7 +5,7 @@
 # (src/lib/components/ParentCenter.svelte), so seeing it means real UI painted,
 # not just that the process launched.
 #
-# It also opens the admin console from the About tab. That guards a native-only
+# It also opens the admin console from the About section. That guards a native-only
 # regression the web/Playwright suite can't see: the admin link must resolve to
 # the static /admin/native page, never the server-only /admin route (which has
 # no file in the static bundle, so a full navigation white-screens in the
@@ -32,29 +32,16 @@ appId: art.splotch.app
 # codes" subtitle renders offline (it's above the login form), so this needs no
 # network — only that /admin/native loaded and rendered instead of a blank.
 - tapOn: 'Parent Center'
-# Navigate to the About tab (Settings → AI → Setup → About). In the iOS WKWebView
-# a tap on the tab button doesn't register as a click, and the app's programmatic
-# tab nav (scrollTo on the scroll-snap-x pager, TabPager.svelte) is a no-op there
-# too — so drive the manual horizontal swipe the tab pager is built around.
-# scroll-snap-stop:always advances at most one panel per swipe and the scroller
-# clamps at the last panel, so a few left swipes land on About and any extra are
-# harmless no-ops. assertVisible (About-only, above-the-fold tagline) then both
-# waits for the snap to settle and proves we landed on the right tab.
-- repeat:
-    times: 5
-    commands:
-      - swipe:
-          start: 85%, 45%
-          end: 15%, 45%
-          duration: 400
+# The Parent Center is a flat section list (ParentCenter.svelte): a hub row on a
+# phone-width WebView, a sidebar item on a tablet. Tapping "About" opens that
+# section either way — no horizontal tab swipe anymore — and the tagline proves
+# we landed on it.
+- tapOn: 'About'
 - assertVisible: 'A joyful.*'
 - takeScreenshot: .maestro/screenshots/smoke-about
 
 # The version-unlock button lives in the About footer, below the fold inside the
-# dialog's vertical scroller. Maestro's built-in scrollUntilVisible swipe gets
-# swallowed by the horizontal scroll-snap tab pager in the iOS WKWebView (it
-# works on Android) — so pan the dialog with explicit, purely-vertical swipes
-# (constant x, so the pager can't read them as a sideways tab change). A small
+# section's own vertical scroller. Pan it up with plain vertical swipes; a small
 # fixed count reaches the short footer and is a no-op once scrolled to the
 # bottom; assertVisible then fails fast with a clear error if it didn't.
 - repeat:

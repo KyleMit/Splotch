@@ -86,7 +86,7 @@ const BOOL_SETTINGS = {
   // Whether the hidden link to the /admin console is shown in the About tab.
   // Unlocked by the version-tap easter egg and kept visible for anyone who has
   // an admin_session cookie; reset to hidden on logout / failed login / leaving
-  // the admin page without signing in (see /admin and AboutTab).
+  // the admin page without signing in (see /admin and AboutSection).
   adminLinkVisible: [ADMIN_LINK_VISIBLE_KEY, false],
   // Parent device-orientation controls. The force-landscape default is filled
   // in below from the viewport so phones start portrait while tablet-class

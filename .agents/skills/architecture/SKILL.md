@@ -88,7 +88,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `state/layout.svelte.ts`        | Viewport and orientation state.                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `state/fullscreen.svelte.ts`    | Immersive-fullscreen support + active state and the toggle action, backing the Fullscreen Toggle button. Android web only; dismisses the mobile URL bar.                                                                                                                                                                                                                                                                                  |
 | `state/network.svelte.ts`       | Online/offline state via `@capacitor/network`. Controls AI button visibility on native.                                                                                                                                                                                                                                                                                                                                                   |
-| `state/install.svelte.ts`       | PWA install state (ADR-0039). Captures Chromium's `beforeinstallprompt` for one-tap install, falls back to iOS/Android guided hints; drives the Install Banner and the Parent Center Setup tab. Web-only; inert in the native shell.                                                                                                                                                                                                      |
+| `state/install.svelte.ts`       | PWA install state (ADR-0039). Captures Chromium's `beforeinstallprompt` for one-tap install, falls back to iOS/Android guided hints; drives the Install Banner and the Parent Center Setup Guide section. Web-only; inert in the native shell.                                                                                                                                                                                            |
 | `state/coloringBook.svelte.ts`  | Selected coloring book and page.                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `state/books.ts`                | Static catalog of available coloring books and pages.                                                                                                                                                                                                                                                                                                                                                                                     |
 | `actions/dragToClear.ts`        | Svelte action that implements the drag-to-clear gesture (pointer tracking, threshold detection, animations). Keeps all gesture logic out of the component.                                                                                                                                                                                                                                                                                |
@@ -112,7 +112,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `server/admin.ts`               | Server-only: admin auth core (secret check, derived session token, invite building) shared by the `/admin` page actions and the `/api/admin/*` endpoints.                                                                                                                                                                                                                                                                                 |
 | `server/rateLimit.ts`           | Server-only: per-token rate limiting for the image generation endpoint.                                                                                                                                                                                                                                                                                                                                                                   |
 | `icons/`                        | SVG icon assets. `npm run gen:icons` generates `components/icon-names.d.ts` from them — the typed `IconName` union used by `<Icon>`. `<Icon>` inlines the raw SVG via `{@html}` (so the icon name lives only in a `data-icon` attribute, not the SVG), which means dynamic icons carry a hydration caveat — see `.claude/rules/svelte.md`.                                                                                                |
-| `releases.json`                 | Auto-generated from `releases/*.md` by `npm run gen:releases`; consumed by the About tab in Parent Center.                                                                                                                                                                                                                                                                                                                                |
+| `releases.json`                 | Auto-generated from `releases/*.md` by `npm run gen:releases`; consumed by the What's New section in Parent Center.                                                                                                                                                                                                                                                                                                                       |
 
 ### `web/src/routes/`
 
@@ -207,22 +207,31 @@ media queries + the head-script stamp in `app.html`).
   shown on web after the child has drawn a few strokes. One-tap native install on Chromium/Android;
   guided Share-sheet hint on iOS. Dismissible and remembered. See ADR-0039.
 * **Parent Help Button** - Floating button that opens the Parent Center
-  * **Parent Center** - Modal with platform install guides and app settings
-    * **Install Guide** - iOS / Android tabs with step-by-step PWA setup, plus the one-tap install
-      button when the browser supports it (Setup tab)
-    * **Settings** - Tab for app preferences (Appearance, Drawing Sounds, Save on Delete, Screenshot
-      Button, Stroke Width Control, Coloring Books). Under Advanced Controls, a **Button Size**
-      slider rescales the Actions Panel buttons; dragging it hides the rest of the Parent Center so
-      the buttons resize in full view.
-      * **Appearance Control** - Light / Dark / System segmented control at the top of the Settings
-        tab. Dark mode themes the chrome (app background, palette bar, modals, Install Banner), the
-        paper (a near-black warm tone under the same low-alpha texture), and the paper-floating
-        controls (Actions Panel/flyout on `--float-surface` with a `--float-border` edge; near-black
-        ink gets a `--dark-ink-keyline` ring) via the tokens in `app.css`. **Coloring pages stay on
-        the dark paper** — the line art inverts to white "chalk" lines via
-        `--lineart-filter`/`--lineart-blend`, and the magic brush reveals a parallel set of
-        pre-colored **night fills** (`{page}-{orient}.night.webp`; light fill in light mode, night
-        fill in dark, picked by `resolvedTheme()`, falling back to the light fill where a night
-        asset isn't generated yet). Exports follow the resolved theme (a dark save is the night
-        version). Only the Clear Button keeps its literal red chrome. System (the default) follows
-        the OS via `prefers-color-scheme` with no `data-theme` attribute stamped. See ADR-0052.
+  * **Parent Center** - Modal for app settings, install guides, and about info. Its body is one flat
+    list of **Sections** (ADR-0061), not tabs: Appearance & Display, Sound, Saving, Controls &
+    Buttons, AI Art, Setup Guide, What's New, Submit Feedback, About. Both shells render from the
+    same `SECTIONS` list in `parent/sections.ts`, chosen by viewport width (`ParentCenter.svelte`):
+    below ~700px a **Hub** list drills into a full-page section with a back arrow; at/above ~700px a
+    persistent **Sidebar** (nav never scrolls) sits beside a scrolling content **Pane**. Each
+    section component lives in `parent/` (`AppearanceSection`, `SoundSection`, `SavingSection`,
+    `ControlsSection`, `AiKeyManager`, `SetupInstructions`, `WhatsNewSection`, `ReportForm`,
+    `AboutSection`).
+    * **Install Guide** - iOS / Android step-by-step PWA setup inside the **Setup Guide** section,
+      plus the one-tap install button when the browser supports it
+    * **Controls & Buttons Section** - Enable Advanced Controls toggle, a **Button Size** slider
+      that rescales the Actions Panel buttons (dragging it melts the rest of the Parent Center away
+      so the buttons resize in full view), and a 2-column **button chip grid** ("Show these
+      buttons") that toggles each Actions Panel button on/off.
+      * **Appearance Control** - Light / Dark / System segmented control at the top of the
+        **Appearance & Display** section. Dark mode themes the chrome (app background, palette bar,
+        modals, Install Banner), the paper (a near-black warm tone under the same low-alpha
+        texture), and the paper-floating controls (Actions Panel/flyout on `--float-surface` with a
+        `--float-border` edge; near-black ink gets a `--dark-ink-keyline` ring) via the tokens in
+        `app.css`. **Coloring pages stay on the dark paper** — the line art inverts to white "chalk"
+        lines via `--lineart-filter`/`--lineart-blend`, and the magic brush reveals a parallel set
+        of pre-colored **night fills** (`{page}-{orient}.night.webp`; light fill in light mode,
+        night fill in dark, picked by `resolvedTheme()`, falling back to the light fill where a
+        night asset isn't generated yet). Exports follow the resolved theme (a dark save is the
+        night version). Only the Clear Button keeps its literal red chrome. System (the default)
+        follows the OS via `prefers-color-scheme` with no `data-theme` attribute stamped. See
+        ADR-0052.
