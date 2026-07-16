@@ -6,6 +6,7 @@ import {
   selectMagic,
   toggleEraser,
   toggleMagic,
+  resetToolAfterClear,
 } from './tool.svelte';
 
 describe('tool state', () => {
@@ -61,5 +62,26 @@ describe('tool state', () => {
     selectPen();
     expect(toolState.magic).toBe(false);
     expect(toolState.eraser).toBe(false);
+  });
+
+  it('resetToolAfterClear switches back to the pen when erasing', () => {
+    selectEraser();
+    resetToolAfterClear();
+    expect(toolState.eraser).toBe(false);
+    expect(toolState.magic).toBe(false);
+  });
+
+  it('resetToolAfterClear switches back to the pen when using the magic brush', () => {
+    selectMagic();
+    resetToolAfterClear();
+    expect(toolState.eraser).toBe(false);
+    expect(toolState.magic).toBe(false);
+  });
+
+  it('resetToolAfterClear leaves the pen active unchanged', () => {
+    selectPen();
+    resetToolAfterClear();
+    expect(toolState.eraser).toBe(false);
+    expect(toolState.magic).toBe(false);
   });
 });

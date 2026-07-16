@@ -5,6 +5,7 @@
   import { saveDrawingIfEnabled } from '$lib/drawing/saveOnDelete';
   import { dragToClear } from '$lib/actions/dragToClear';
   import { layout } from '$lib/state/layout.svelte';
+  import { resetToolAfterClear } from '$lib/state/tool.svelte';
 
   let containerEl: HTMLDivElement;
   let buttonEl: HTMLButtonElement;
@@ -109,6 +110,7 @@
       onClear: () => {
         saveDrawingIfEnabled();
         clearCanvas();
+        resetToolAfterClear();
       },
       onTutorialShow: showTutorial,
       onTutorialDismiss: dismissTutorial,

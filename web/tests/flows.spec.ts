@@ -1019,10 +1019,15 @@ test('the magic brush reveals a rainbow gradient when no coloring page is applie
   ]);
   await expect.poll(() => distinctOpaqueColors(page), { timeout: 4000 }).toBeGreaterThan(4);
 
-  // Clearing releases the rainbow; the brush stays selected and a fresh stroke
-  // still reveals colors (a newly picked gradient).
+  // Clearing releases the rainbow and drops the magic brush back to the pen (#281),
+  // so the child isn't left holding a non-drawing tool on a blank page.
   await clearViaGesture(page);
+  await expect(magic).toHaveAttribute('aria-pressed', 'false');
   await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
+
+  // Re-selecting the brush and drawing still reveals colors (a newly picked gradient).
+  await magic.click();
+  await expect(magic).toHaveAttribute('aria-pressed', 'true');
   await draw(page, [
     { x: 120, y: 160 },
     { x: 300, y: 260 },
