@@ -32,13 +32,11 @@
 <section class="setting-group">
   <div class="about-brand">
     <SplotchyIcon class="about-icon" aria-label="Splotch" role="img" />
-    <p class="about-tagline">
-      A joyful, kid-friendly drawing app — no ads, no tracking, no accounts.
-    </p>
+    <p class="about-tagline">A joyful, kid-friendly drawing app</p>
   </div>
 
   <div class="about-links">
-    <p><a href="/privacy">Privacy Policy</a> — no ads, no tracking, no accounts.</p>
+    <p><a href="/privacy">Privacy Policy</a></p>
     <p class="github-link">
       <a
         href="https://github.com/KyleMit/Splotch"
