@@ -214,19 +214,24 @@
           class="stroke-width-menu"
           class:white-stroke={whiteStroke}
           class:dark-stroke={darkStroke}
+          class:eraser-mode={toolState.eraser}
           hidden={!strokeState.menuOpen}
           style:color={strokeMenuColor}
         >
+          <!-- The previews change shape with the tool, not just color (a pink pen
+               would otherwise look identical to the eraser): the pen shows ink
+               strokes; the eraser shows round dots at its true effective size
+               (the eraser wipes at ERASER_SIZE_MULTIPLIER × the pen's width). -->
           {#each STROKE_SIZES as size (size)}
             <button
               class="stroke-size-button"
               class:active={activeStrokeSize() === size}
-              aria-label="Size {size}"
+              aria-label={toolState.eraser ? `Eraser size ${size}` : `Size ${size}`}
               aria-pressed={activeStrokeSize() === size}
               use:scribbleTap={() => handleStrokeSizeClick(size)}
             >
               <Icon
-                name={`size-${size}` as import('./iconTypes').CommonIconName}
+                name={`${toolState.eraser ? 'eraser-size' : 'size'}-${size}` as import('./iconTypes').CommonIconName}
                 class="action-icon"
               />
             </button>
@@ -673,6 +678,14 @@
 
   .stroke-width-menu[hidden] {
     display: none;
+  }
+
+  /* Eraser mode washes the flyout surface with the eraser pink (currentColor
+     here — see strokeMenuColor) so the whole panel reads as eraser context,
+     not just the previews. Browsers without color-mix keep the plain surface;
+     the dot-shaped previews still carry the distinction. */
+  .stroke-width-menu.eraser-mode {
+    background: color-mix(in srgb, currentColor 12%, var(--float-surface));
   }
 
   .stroke-size-button {
