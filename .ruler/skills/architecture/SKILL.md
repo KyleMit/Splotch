@@ -112,7 +112,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `server/admin.ts`               | Server-only: admin auth core (secret check, derived session token, invite building) shared by the `/admin` page actions and the `/api/admin/*` endpoints.                                                                                                                                                                                                                                                                                 |
 | `server/rateLimit.ts`           | Server-only: per-token rate limiting for the image generation endpoint.                                                                                                                                                                                                                                                                                                                                                                   |
 | `icons/`                        | SVG icon assets. `npm run gen:icons` generates `components/icon-names.d.ts` from them — the typed `IconName` union used by `<Icon>`. `<Icon>` inlines the raw SVG via `{@html}` (so the icon name lives only in a `data-icon` attribute, not the SVG), which means dynamic icons carry a hydration caveat — see `.claude/rules/svelte.md`.                                                                                                |
-| `releases.json`                 | Auto-generated from `releases/*.md` by `npm run gen:releases`; consumed by the What's New section in Parent Center.                                                                                                                                                                                                                                                                                                                       |
+| `releases.json`                 | Auto-generated from `releases/*.md` by `npm run gen:releases`; consumed by the What's New section in Parent Center (drill-in header "Updates"; dated release cards, no version numbers).                                                                                                                                                                                                                                                  |
 
 ### `web/src/routes/`
 
@@ -209,13 +209,13 @@ media queries + the head-script stamp in `app.html`).
 * **Parent Help Button** - Floating button that opens the Parent Center
   * **Parent Center** - Modal for app settings, install guides, and about info. Its body is one flat
     list of **Sections** (ADR-0061), not tabs: Appearance & Display, Sound, Saving, Controls &
-    Buttons, AI Art, Setup Guide, What's New, Submit Feedback, About. Both shells render from the
-    same `SECTIONS` list in `parent/sections.ts`, chosen by viewport width (`ParentCenter.svelte`):
-    below ~700px a **Hub** list drills into a full-page section with a back arrow; at/above ~700px a
-    persistent **Sidebar** (nav never scrolls) sits beside a scrolling content **Pane**. Each
-    section component lives in `parent/` (`AppearanceSection`, `SoundSection`, `SavingSection`,
-    `ControlsSection`, `AiKeyManager`, `SetupInstructions`, `WhatsNewSection`, `ReportForm`,
-    `AboutSection`).
+    Buttons, AI Art, Setup Guide, What's New (drilled-in header: "Updates"), Submit Feedback, About.
+    Both shells render from the same `SECTIONS` list in `parent/sections.ts`, chosen by viewport
+    width (`ParentCenter.svelte`): below ~700px a **Hub** list drills into a full-page section with
+    a back arrow; at/above ~700px a persistent **Sidebar** (nav never scrolls) sits beside a
+    scrolling content **Pane**. Each section component lives in `parent/` (`AppearanceSection`,
+    `SoundSection`, `SavingSection`, `ControlsSection`, `AiKeyManager`, `SetupInstructions`,
+    `WhatsNewSection`, `ReportForm`, `AboutSection`).
     * **Install Guide** - iOS / Android step-by-step PWA setup inside the **Setup Guide** section,
       plus the one-tap install button when the browser supports it
     * **Controls & Buttons Section** - Enable Advanced Controls toggle, a **Button Size** slider

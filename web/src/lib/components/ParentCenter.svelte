@@ -201,7 +201,7 @@
           {/each}
         </nav>
         <div class="pc-pane">
-          <h3 class="pc-pane-title">{activeMeta.label}</h3>
+          <h3 class="pc-pane-title">{activeMeta.title ?? activeMeta.label}</h3>
           {@render sectionContent(activeSection)}
         </div>
       </div>
@@ -238,7 +238,7 @@
         <button class="pc-back" onclick={backToHub} aria-label="Back">
           <Icon name="chevron-left" class="pc-back-icon" />
         </button>
-        <h2>{activeMeta.label}</h2>
+        <h2>{activeMeta.title ?? activeMeta.label}</h2>
       </header>
       <div class="pc-scroll">
         {@render sectionContent(activeSection)}
