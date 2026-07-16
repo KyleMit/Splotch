@@ -139,7 +139,7 @@
     onpointerdown={handlePaletteDown}
     onpointercancel={handleSwatchCancel}
     bind:this={swatchEls[CUSTOM_SWATCH]}
-    ><Icon name="palette" class="palette-icon" aria-hidden="true" /></button
+    ><Icon name="more-colors" class="more-colors-icon" aria-hidden="true" /></button
   >
 </div>
 
@@ -190,7 +190,7 @@
 
   /* Selection-confirmation flourish: a ring that expands from the center
      out to the resting selection-ring position. Skipped on the gradient
-     swatch (which has its own ::after content). */
+     swatch (whose confirmation is the picker opening). */
   .color-swatch:not(.gradient-swatch)::before {
     content: '';
     position: absolute;
@@ -221,23 +221,23 @@
     }
   }
 
-  /* The custom-color swatch is the artist's palette icon rather than a flat
-     color. White fill keeps it reading as a swatch alongside the others. */
+  /* The custom-color swatch is a honeycomb of palette-color dots (echoing the
+     picker's hexagon swatches) on the bar's own surface color, so it reads as
+     "more colors" beside the flat swatches and follows the theme in dark mode. */
   .gradient-swatch {
-    background: white !important;
+    background: var(--surface);
     position: relative;
-    border-color: white !important;
   }
 
   /* Centered absolutely (not via flex) so it survives the display:block/none
      toggling on each swatch. The SVG keeps its aspect ratio. */
-  .gradient-swatch :global(.palette-icon) {
+  .gradient-swatch :global(.more-colors-icon) {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 104%;
-    height: 104%;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
   }
 

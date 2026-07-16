@@ -22,7 +22,7 @@
     'line-weight',
     'line-weight-eraser',
     'magic-brush',
-    'palette',
+    'more-colors',
     'shapes',
     'sweep-icon',
     'undo',
