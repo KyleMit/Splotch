@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { rateLimit } from '$lib/server/rateLimit';
 import { readJsonBody, throttled } from '$lib/server/http';
-import { createIssue, isReportingConfigured } from '$lib/server/github';
+import { createIssue, escapeIssueMarkdown, isReportingConfigured } from '$lib/server/github';
 import { describeDeviceInfo, sanitizeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
 import type { RequestHandler } from './$types';
 
@@ -25,12 +25,21 @@ function titleFor(kind: Kind, message: string): string {
 
 function bodyFor(kind: Kind, message: string, device: DeviceInfo | null): string {
   const source = kind === 'bug' ? 'bug report' : 'feature request';
-  const lines = [message, '', '---', `_Submitted from the Splotch app's ${source} form._`];
+  // The message and every device value are attacker-controlled and rendered as
+  // Markdown, so neutralize mentions/refs/embeds before they reach the issue.
+  const lines = [
+    escapeIssueMarkdown(message),
+    '',
+    '---',
+    `_Submitted from the Splotch app's ${source} form._`,
+  ];
 
   const rows = device ? describeDeviceInfo(device) : [];
   if (rows.length) {
     lines.push('', '**Device info** (shared with the reporter’s permission):', '');
-    for (const { label, value } of rows) lines.push(`- **${label}:** ${value}`);
+    for (const { label, value } of rows) {
+      lines.push(`- **${label}:** ${escapeIssueMarkdown(value)}`);
+    }
   }
   return lines.join('\n');
 }

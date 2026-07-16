@@ -39,6 +39,12 @@ A new `POST /api/report` endpoint (`web/src/routes/api/report/+server.ts`) recei
   accepted with no issue created, a required non-empty `message` capped at 4000 chars, and `kind`
   restricted to `bug | feature`. Issues are labelled `user-report` + `type:bug`/`type:feature`
   (added to `.github/labels.yml`) so submissions are triageable and filterable.
+* **Markdown neutralization.** The message and every device value are attacker-controlled and
+  rendered as GitHub-flavoured Markdown, so both are run through `escapeIssueMarkdown()` before
+  embedding — it backslash-escapes `@`-mentions, `#`-references, image embeds (`![…]`), and raw `<`
+  HTML, so a submitter can't make the created issue notify arbitrary users/teams, back-reference
+  other issues, or load remote/tracking content. Plain `[text](url)` links are left intact, and
+  issue *titles* need no escaping (GitHub renders them as inert plain text).
 * **Opt-in, non-identifying device info.** For bugs only, the parent may tick a box (off by default)
   to attach a small snapshot, and expand a chevron to see exactly what will be sent first. The shape
   lives in a shared, dependency-free `web/src/lib/deviceReport.ts` (one ordered field/label map used

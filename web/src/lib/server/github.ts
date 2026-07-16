@@ -15,6 +15,30 @@ export function isReportingConfigured(): boolean {
   return Boolean(env.GITHUB_ISSUE_TOKEN);
 }
 
+/**
+ * Neutralize GitHub-flavoured Markdown in untrusted text before it is embedded
+ * in an issue body. `/api/report` is unauthenticated, so a submitter must not be
+ * able to make the issue notify people or embed remote content: we backslash-
+ * escape the trigger characters (all ASCII-punctuation escapes GitHub honours),
+ * which renders the literal text the user typed, minus the powers:
+ *
+ *  - `@name` / `@org/team` → no user or team mention (which would fire a notification)
+ *  - `#123`               → no issue/PR back-reference (also a notification)
+ *  - `![alt](url)`        → no image embed (plain `[text](url)` links are left intact)
+ *  - `<img …>` / `<a …>`  → no raw HTML tags at all
+ *
+ * Applied to the free-text message and to every device value (both fully
+ * attacker-controlled). Issue *titles* need no escaping — GitHub renders them as
+ * plain text, so a mention or ref there neither links nor notifies.
+ */
+export function escapeIssueMarkdown(text: string): string {
+  return text
+    .replace(/</g, '\\<')
+    .replace(/@(?=[A-Za-z0-9_-])/g, '\\@')
+    .replace(/#(?=\d)/g, '\\#')
+    .replace(/!(?=\[)/g, '\\!');
+}
+
 export interface CreateIssueInput {
   title: string;
   body: string;
