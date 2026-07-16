@@ -153,6 +153,7 @@
                 class="hexagon c{c + 1}"
                 class:hover={hoveredHex === hex}
                 class:border={hex === '#ffffff'}
+                class:border-dim={hex === '#1A1F24'}
                 class:selected={colors.customColor.toLowerCase() === hex.toLowerCase()}
                 style="--color: {hex};"
                 data-color={hex}
@@ -419,11 +420,21 @@
     }
   }
 
+  /* Outlines for the swatches that blend into the picker surface: white in
+     light mode (ink ring via --icon-ink), near-black #1A1F24 in dark mode
+     (constant dim grey ring — deliberately quieter than --icon-ink, just
+     enough to find the swatch without spotlighting it; against light mode's
+     white surface the same grey reads as part of the black swatch). */
   .hexagon.border {
     background-color: var(--icon-ink);
   }
 
-  .hexagon.border::after {
+  .hexagon.border-dim {
+    background-color: #4d4d5b;
+  }
+
+  .hexagon.border::after,
+  .hexagon.border-dim::after {
     inset: 2px;
   }
 
