@@ -572,6 +572,45 @@ test('parent center hub drills into a section and back (phone layout)', async ({
   await expect(page.locator('#advancedControlsToggle')).toHaveCount(0);
 });
 
+// A landscape phone has the width of the tablet shell but almost none of its
+// height, so the full section list is unusably cramped there. The Parent Center
+// collapses to a strip of quick toggles plus a pointer to portrait; a landscape
+// tablet (height ≥ 600px, e.g. the default desktop viewport above) keeps the
+// two-pane shell.
+test('parent center shows quick toggles on a landscape phone', async ({ page }) => {
+  await page.setViewportSize({ width: 852, height: 390 });
+  await gotoApp(page);
+
+  await page.getByRole('button', { name: 'Parent Center' }).click();
+  const modal = page.locator('#parentHelpModal');
+  await expect(modal).toBeVisible();
+  await expect(modal).toHaveClass(/compact/);
+
+  // Quick toggles render instead of the hub list or the sidebar.
+  await expect(page.locator('.hub-list')).toHaveCount(0);
+  await expect(page.locator('.pc-nav')).toHaveCount(0);
+  await expect(page.locator('#quickSoundToggle')).toBeVisible();
+  await expect(page.locator('#quickNightToggle')).toBeVisible();
+  await expect(page.locator('#quickLockRotationToggle')).toBeVisible();
+  await expect(page.locator('#quickAdvancedControlsToggle')).toBeVisible();
+  await expect(page.getByText('Turn your device to portrait')).toBeVisible();
+
+  // A quick toggle drives the same persisted setting as the full section...
+  await page.locator('#quickAdvancedControlsToggle').click();
+  await expect(page.locator('#quickAdvancedControlsToggle')).toHaveAttribute(
+    'aria-checked',
+    'false'
+  );
+
+  // ...and rotating to portrait swaps in the full hub shell live, where the
+  // Controls section reflects the change made from the quick toggle.
+  await page.setViewportSize({ width: 390, height: 852 });
+  await expect(page.locator('.hub-list')).toBeVisible();
+  await expect(page.locator('#quickSoundToggle')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Controls & Buttons' }).click();
+  await expect(page.locator('#advancedControlsToggle')).toHaveAttribute('aria-checked', 'false');
+});
+
 test('an API key stays locked with storage-specific feedback when secure saving fails', async ({
   page,
 }) => {
