@@ -86,8 +86,9 @@ function longSquiggle(row, width, height, points = LONG_OPS) {
 // under the threshold, so these stay cheap replayable ops and never keyframe.
 function shortMark(i, width, height) {
   const cols = 4;
+  const rows = Math.ceil(STROKES / cols);
   const x = MARGIN + ((width - 2 * MARGIN) * (i % cols)) / (cols - 1);
-  const y = MARGIN + ((height - 2 * MARGIN) * Math.floor(i / cols)) / 3;
+  const y = MARGIN + ((height - 2 * MARGIN) * Math.floor(i / cols)) / (rows - 1);
   if (i % 2 === 0) return [{ x, y }]; // dot
   return [0, 1, 2, 3].map((k) => ({ x: x + k * 12, y })); // dash
 }
@@ -112,25 +113,34 @@ function multiFingerGesture(gi, width, height, perFinger = MULTI_OPS_PER_FINGER)
   return { multi: fingers };
 }
 
+// Two strokes past MAX_UNDO_STACK_SIZE, so every scenario fills the retained
+// log AND exercises the fold-into-baseline path (mirrors the original 12 vs
+// the old cap of 10).
+const STROKES = Number(flag('strokes', '22'));
+
 function buildScenarios(width, height) {
-  const longs = Array.from({ length: 12 }, (_, i) => longSquiggle(i % 6, width, height));
-  const shorts = Array.from({ length: 12 }, (_, i) => shortMark(i, width, height));
-  // Alternating long/short, 12 total.
-  const mixed = Array.from({ length: 12 }, (_, i) =>
+  const longs = Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6, width, height));
+  const shorts = Array.from({ length: STROKES }, (_, i) => shortMark(i, width, height));
+  // Alternating long/short.
+  const mixed = Array.from({ length: STROKES }, (_, i) =>
     i % 2 === 0 ? longSquiggle(i % 6, width, height) : shortMark(i, width, height)
   );
-  const multi = Array.from({ length: 12 }, (_, i) => multiFingerGesture(i, width, height));
+  const multi = Array.from({ length: STROKES }, (_, i) => multiFingerGesture(i, width, height));
   return [
     {
       key: 'long-squiggles',
-      label: `12 long squiggles (~${LONG_OPS} ops each @ ${HZ}Hz), then undo all`,
+      label: `${STROKES} long squiggles (~${LONG_OPS} ops each @ ${HZ}Hz), then undo all`,
       strokes: longs,
     },
-    { key: 'short-marks', label: '12 short dot/dash strokes, then undo all', strokes: shorts },
-    { key: 'mixed', label: '12 mixed long+short strokes, then undo all', strokes: mixed },
+    {
+      key: 'short-marks',
+      label: `${STROKES} short dot/dash strokes, then undo all`,
+      strokes: shorts,
+    },
+    { key: 'mixed', label: `${STROKES} mixed long+short strokes, then undo all`, strokes: mixed },
     {
       key: 'multi-finger',
-      label: `12 five-finger drags (~${MULTI_FINGERS * MULTI_OPS_PER_FINGER} ops/command), then undo all`,
+      label: `${STROKES} five-finger drags (~${MULTI_FINGERS * MULTI_OPS_PER_FINGER} ops/command), then undo all`,
       strokes: multi,
     },
   ];
@@ -184,7 +194,7 @@ async function drawStrokes(page, strokes) {
 async function undoAll(page) {
   return page.evaluate(async () => {
     let steps = 0;
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 40; i++) {
       if (!window.__engineState.canUndo) break;
       window.__engine.undo();
       steps++;

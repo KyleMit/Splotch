@@ -25,7 +25,12 @@ import { isMagicSheetUnready } from './magicBrush';
 import { PERF_MARKS } from './perf';
 
 // The retained command log; commands older than this fold into the baseline.
-const MAX_UNDO_STACK_SIZE = 10;
+// Depth is cheap in memory — retained commands hold simplified op lists
+// (kilobytes), and rasters are bounded separately by the single baseline +
+// MAX_KEYFRAMES — so the cap trades only worst-case replay time (undo/resize
+// rebuilds). 20 keeps a child from hitting the wall mid-correction (raised
+// from 10 after user feedback). Exported as the fold-boundary test seam.
+export const MAX_UNDO_STACK_SIZE = 20;
 // Each keyframe is a full baseline-sized raster (a max(w,h) square at up to 2×
 // DPR ≈ 30 MB on an iPad), so the ≤ MAX_UNDO_STACK_SIZE retained commands could
 // otherwise pin hundreds of MB — enough to get a WKWebView killed on older

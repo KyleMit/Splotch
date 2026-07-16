@@ -33,9 +33,11 @@ Replace the snapshot stack with a **command log replayed over a single baseline 
   command. `undo()` = redraw the baseline, then replay the surviving log on top. (As first landed
   this replayed onto both the visible and virtual canvases; **ADR-0034** then removed the virtual
   canvas, so replay targets the visible canvas alone and resize rebuilds the same way.)
-* The log is capped at `MAX_UNDO_STACK_SIZE` (kept at 10). On commit past the cap, the **oldest
-  command folds into the baseline** — replayed once onto the baseline raster, then dropped. In-order
-  folding keeps eraser `destination-out` ops hitting exactly the pixels they originally did.
+* The log is capped at `MAX_UNDO_STACK_SIZE` (kept at 10 as landed; raised to 20 in 2026-07 once
+  simplification (ADR-0036) + keyframing (ADR-0035) had bounded per-command replay cost — user
+  feedback hit the 10-deep wall). On commit past the cap, the **oldest command folds into the
+  baseline** — replayed once onto the baseline raster, then dropped. In-order folding keeps eraser
+  `destination-out` ops hitting exactly the pixels they originally did.
 * `clearCanvas()` is itself a `clear` command, so clearing is undoable and folds like any other.
 
 The single shared `renderOp(targetCtx, op)` paints an op live (target = visible ctx), during fold
@@ -74,8 +76,9 @@ context inherits the round line cap/join the live stroking relies on.
 * **−** A per-commit fold (one stroke render) runs once the log passes the cap — at `pointerup`, off
   the drawing frame; instrumented via `engine.foldBaseline`.
 * **−** Does **not** reduce the ADR-0015 DPR fill-rate cost (~4970 ms/session raster/paint on
-  Android): that is live stroking against the 4× backing store, independent of undo. `K = 10` is
-  unchanged for now and can be raised cheaply once the change is validated on-device.
+  Android): that is live stroking against the 4× backing store, independent of undo. `K = 10` was
+  kept for the initial landing and raised to `K = 20` in 2026-07, once ADR-0035/0036 were validated
+  on-device.
 
 Supersedes the undo-snapshot mechanism in ADR-0004; updates the memory consequence in ADR-0015 and
 the instrumented-marks list in ADR-0032.

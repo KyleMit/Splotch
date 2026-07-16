@@ -127,8 +127,19 @@
     };
   });
 
+  // End-of-history nudge: taps that can't undo any further shake the undo
+  // button instead of going silent (the history folds older strokes into the
+  // baseline, so the wall is invisible otherwise). Cleared on animationend;
+  // re-triggered through a frame so back-to-back taps restart the shake.
+  let undoNudge = $state(false);
+
   function handleUndoClick() {
-    if (canvasState.canUndo) undo();
+    if (canvasState.canUndo) {
+      undo();
+      return;
+    }
+    undoNudge = false;
+    requestAnimationFrame(() => (undoNudge = true));
   }
 
   function handleScreenshotClick() {
@@ -288,12 +299,17 @@
         <Icon name={ui.aiGenerating ? 'loading' : 'wand-stars'} class="action-icon" />
       </button>
 
+      <!-- aria-disabled (not the disabled attribute) so the button still
+           receives taps at the end of history and can answer with the
+           end-of-history shake; handleUndoClick guards the actual undo. -->
       <button
         class="action-button"
         class:disabled={!canvasState.canUndo}
+        class:end-of-history={undoNudge}
         id="undoButton"
         aria-label="Undo"
-        disabled={!canvasState.canUndo}
+        aria-disabled={!canvasState.canUndo}
+        onanimationend={() => (undoNudge = false)}
         use:scribbleTap={handleUndoClick}
       >
         <Icon name="undo" class="action-icon" />
@@ -512,9 +528,11 @@
 
   /* Guard hover behind a real pointer: iOS WebKit applies :hover on tap and
      keeps it sticky until the user taps elsewhere, which left the eraser
-     looking active (purple border) after deselecting. */
+     looking active (purple border) after deselecting. The .disabled exclusion
+     mirrors :disabled for the undo button, which stays interactive
+     (aria-disabled) so it can play the end-of-history shake. */
   @media (hover: hover) {
-    .action-button:hover:not(:disabled) {
+    .action-button:hover:not(:disabled):not(.disabled) {
       background: var(--float-surface-hover);
       border-color: var(--brand);
       box-shadow: 0 4px 12px rgba(171, 113, 225, 0.3);
@@ -522,9 +540,36 @@
     }
   }
 
-  .action-button:active:not(:disabled) {
+  .action-button:active:not(:disabled):not(.disabled) {
     transform: scale(0.95);
     background: var(--brand-wash);
+  }
+
+  /* End-of-history shake: a tap on the dimmed undo button wobbles it side to
+     side — a wordless "that's as far back as I can go" for pre-readers. */
+  .action-button.end-of-history {
+    animation: undo-nudge 0.4s ease-in-out;
+  }
+
+  @keyframes undo-nudge {
+    20% {
+      transform: translateX(-5px) rotate(-4deg);
+    }
+    40% {
+      transform: translateX(5px) rotate(4deg);
+    }
+    60% {
+      transform: translateX(-3px) rotate(-2deg);
+    }
+    80% {
+      transform: translateX(3px) rotate(2deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .action-button.end-of-history {
+      animation: none;
+    }
   }
 
   /* Selected tool (e.g. eraser): purple ring + tinted fill, matching the

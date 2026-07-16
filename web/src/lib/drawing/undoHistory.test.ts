@@ -122,8 +122,9 @@ describe('keyframe memory bound', () => {
     m.setKeyframeSegmentThreshold(2);
     const colors = Array.from({ length: 30 }, (_, i) => `#kf${i}`);
     for (const c of colors) m.pushCommand(cmd(c, PATHOLOGICAL));
-    // Without the cap all ten retained commands would hold a baseline-sized
-    // keyframe (~300 MB worst case); the cap keeps it at one.
+    // Without the cap every retained command (up to MAX_UNDO_STACK_SIZE) would
+    // hold a baseline-sized keyframe (~600 MB worst case); the cap keeps it at
+    // one.
     expect(m.getHistoryDebug().keyframes).toBeLessThanOrEqual(1);
     // Bounding memory must not lose pixels: the surviving keyframe accumulates
     // the whole drawing, so a rebuild still shows every command in order.
@@ -136,6 +137,38 @@ describe('keyframe memory bound', () => {
     for (let i = 0; i < 5; i++) m.pushCommand(cmd(`#c${i}`, CHEAP));
     expect(m.getHistoryDebug().keyframes).toBe(0);
     expect(m.getHistoryDebug().commands).toBe(5);
+  });
+});
+
+describe('fold boundary at the undo cap', () => {
+  it('retains exactly MAX_UNDO_STACK_SIZE commands and folds the overflow into the baseline', async () => {
+    const m = await freshHistory();
+    const colors = Array.from({ length: m.MAX_UNDO_STACK_SIZE + 3 }, (_, i) => `#s${i}`);
+    for (const c of colors) m.pushCommand(cmd(c, CHEAP));
+    expect(m.getHistoryDebug().commands).toBe(m.MAX_UNDO_STACK_SIZE);
+    // Folding is invisible: the rebuild still shows every command in order.
+    expect(rebuiltContent(m)).toEqual(colors);
+  });
+
+  it('a log exactly at the cap folds nothing — undoing everything reaches blank', async () => {
+    const m = await freshHistory();
+    const colors = Array.from({ length: m.MAX_UNDO_STACK_SIZE }, (_, i) => `#s${i}`);
+    for (const c of colors) m.pushCommand(cmd(c, CHEAP));
+    expect(m.getHistoryDebug().commands).toBe(m.MAX_UNDO_STACK_SIZE);
+    while (m.popCommand());
+    expect(rebuiltContent(m)).toEqual([]);
+  });
+
+  it('undoing past the cap stops at the folded baseline, not a blank canvas', async () => {
+    const m = await freshHistory();
+    const colors = Array.from({ length: m.MAX_UNDO_STACK_SIZE + 2 }, (_, i) => `#s${i}`);
+    for (const c of colors) m.pushCommand(cmd(c, CHEAP));
+    let undos = 0;
+    while (m.popCommand()) undos++;
+    expect(undos).toBe(m.MAX_UNDO_STACK_SIZE);
+    // The two overflow commands survive in the baseline — that's the wall the
+    // undo button hits.
+    expect(rebuiltContent(m)).toEqual(colors.slice(0, 2));
   });
 });
 
@@ -189,7 +222,9 @@ describe('folding while the magic sheet decodes', () => {
     m.setKeyframeSegmentThreshold(Infinity);
     magicSheet.ready = false;
     m.pushCommand(cmd('#ignored', CHEAP, true));
-    const solidColors = Array.from({ length: 10 }, (_, i) => `#solid${i}`);
+    // Enough solid commands to push the magic one past the cap, so a fold is
+    // attempted (and must be deferred) while the sheet is still decoding.
+    const solidColors = Array.from({ length: m.MAX_UNDO_STACK_SIZE }, (_, i) => `#solid${i}`);
     for (const color of solidColors) m.pushCommand(cmd(color, CHEAP));
 
     magicSheet.ready = true;
