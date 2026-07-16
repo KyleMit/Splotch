@@ -107,13 +107,13 @@ test('undo preserves and rebases a stroke that is still in progress', async ({ p
   expect(s.canUndo).toBe(false);
 });
 
-test('the undo stack caps at 10 — you cannot undo all the way past the cap', async ({ page }) => {
+test('the undo stack caps at 20 — you cannot undo all the way past the cap', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
-  // 12 distinct strokes → 12 commands, but only the last 10 are retained
+  // 22 distinct strokes → 22 commands, but only the last 20 are retained
   // (MAX_UNDO_STACK_SIZE); the older two fold into the baseline.
-  for (let i = 0; i < 12; i++) {
-    const y = 20 + i * 20;
+  for (let i = 0; i < 22; i++) {
+    const y = 14 + i * 12;
     await drawStroke(page, box, [
       { x: 30, y },
       { x: 270, y },
@@ -124,10 +124,10 @@ test('the undo stack caps at 10 — you cannot undo all the way past the cap', a
   while (await page.evaluate(() => window.__engineState.canUndo)) {
     await page.evaluate(() => window.__engine.undo());
     undos++;
-    if (undos > 20) break; // safety net against an unbounded stack regression
+    if (undos > 30) break; // safety net against an unbounded stack regression
   }
 
-  expect(undos).toBe(10);
+  expect(undos).toBe(20);
   // Two strokes folded into the baseline, so the canvas can't reach blank.
   expect(await count(page)).toBeGreaterThan(0);
 });

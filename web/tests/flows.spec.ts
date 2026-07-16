@@ -398,6 +398,19 @@ test('the undo button enables on a stroke and reverts it', async ({ page }) => {
   // The single pre-stroke snapshot is consumed, so the canvas is blank again.
   await expect(undo).toBeDisabled();
   expect(await firstOpaquePixel(page)).toBeNull();
+
+  // The button is aria-disabled (not attribute-disabled), so a tap at the end
+  // of history still lands and answers with the end-of-history shake. force:
+  // Playwright's actionability check refuses to click aria-disabled elements,
+  // but dispatching the real pointer events is exactly the toddler tap under
+  // test. The class lives only for the animation's 400ms, so retry the tap if
+  // the assertion misses the window.
+  await expect(async () => {
+    await undo.click({ force: true });
+    await expect(undo).toHaveClass(/end-of-history/, { timeout: 350 });
+  }).toPass({ timeout: 10_000 });
+  // The shake is an affordance, not an action — the canvas stayed blank.
+  expect(await firstOpaquePixel(page)).toBeNull();
 });
 
 test('the screenshot button is gated on the canvas being non-empty', async ({ page }) => {
