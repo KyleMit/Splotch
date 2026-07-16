@@ -44,6 +44,36 @@
       : `calc(${layout.paletteWidth + 8}px + env(safe-area-inset-left))`
   );
 
+  // Landscape: size the buttons so the expanded row always stops short of the
+  // bottom-right Parent Help Button (8px inset + 48px button + 8px breathing
+  // room = 64px reserve). Without a cap the row clamps at the viewport edge and
+  // the drawer toggle lands on top of the parent button on small screens at
+  // larger button scales. An explicit equal per-button width — rather than
+  // letting the row flex-shrink — keeps the buttons identical (flex distributes
+  // by inner base size, which padding skews) and keeps their positions stable
+  // while the drawer's expand animation sweeps the row's width through zero.
+  // The other fixed row costs are the drawer→toggle margin (8px) and the toggle
+  // (48px). Portrait stacks up the left edge and never nears the parent button,
+  // so it keeps the plain scaled size.
+  // Keep in sync with the .actions-drawer-inner gap below.
+  const BUTTON_GAP = 12;
+
+  const visibleButtonCount = $derived(
+    1 + // magic brush, always shown
+      (settings.strokeWidthControlEnabled ? 1 : 0) +
+      (settings.eraserEnabled ? 1 : 0) +
+      (settings.coloringBookEnabled ? 1 : 0) +
+      (settings.screenshotEnabled ? 1 : 0) +
+      (settings.aiAccessToken && settings.aiImageEnabled && network.online ? 1 : 0) +
+      (settings.undoButtonEnabled ? 1 : 0)
+  );
+
+  const buttonSize = $derived(
+    isPortrait
+      ? null
+      : `min(calc(60px * var(--action-btn-scale, 1)), calc((100vw - ${layout.paletteWidth + 8}px - env(safe-area-inset-left) - env(safe-area-inset-right) - 64px - 8px - 48px - ${(visibleButtonCount - 1) * BUTTON_GAP}px) / ${visibleButtonCount}))`
+  );
+
   // When advanced controls are disabled the chevron is hidden and the drawer
   // can't expand, simplifying the UI. When enabled, the chevron shows and the
   // drawer expands per its remembered open state. Dragging the button-size
@@ -187,7 +217,12 @@
      Scribble against the next stroke (ADR-0038); that also suppresses the tap's
      synthesized click, so every button here activates via use:scribbleTap
      (pointerup for pointers, click only for keyboard/AT) instead of onclick. -->
-<div class="actions-panel" style:left={leftOffset} use:scribbleGuard>
+<div
+  class="actions-panel"
+  style:left={leftOffset}
+  style:--action-btn-size={buttonSize}
+  use:scribbleGuard
+>
   <!-- Always rendered; the drawer's open/closed state and each control's Parent
        Center on/off toggle are driven purely by CSS keyed off <html> attributes
        (see the publish effect above and app.html), so a returning user's stored
@@ -373,7 +408,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     min-width: 0;
     min-height: 0;
     /* Clip the buttons to the collapsing track. Flipped to visible once open so
@@ -498,8 +533,11 @@
      for small hands. The parent can rescale them from the Parent Center via
      --action-btn-scale (defaults to 1 when unset). */
   .action-button {
-    width: calc(60px * var(--action-btn-scale, 1));
-    height: calc(60px * var(--action-btn-scale, 1));
+    /* --action-btn-size (inline, landscape only) caps the scaled size so the
+       row clears the Parent Help Button; square via width = height so a capped
+       button shrinks like a smaller scale instead of squishing. */
+    width: var(--action-btn-size, calc(60px * var(--action-btn-scale, 1)));
+    height: var(--action-btn-size, calc(60px * var(--action-btn-scale, 1)));
     background: var(--float-surface);
     border: 2px solid var(--float-border);
     border-radius: 18px;
