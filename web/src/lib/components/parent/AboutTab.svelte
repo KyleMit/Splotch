@@ -1,9 +1,16 @@
 <script lang="ts">
   import Icon from '../Icon.svelte';
   import SplotchyIcon from '../SplotchyIcon.svelte';
+  import ReportForm from './ReportForm.svelte';
   import { settings, setAdminLinkVisible } from '$lib/state/settings.svelte';
   // Generated at build time from releases/*.md (see scripts/generate-releases.mjs).
   import releases from '$lib/releases.json';
+
+  interface Props {
+    // Forwarded from the Parent Center modal so the report form resets on reopen.
+    open?: boolean;
+  }
+  let { open = false }: Props = $props();
 
   const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
@@ -58,15 +65,12 @@
       </p>
     </div>
   {/if}
+</section>
 
+<ReportForm {open} />
+
+<section class="setting-group">
   <div class="parent-help-footer">
-    <p>
-      Having issues? <a
-        href="https://github.com/KyleMit/Splotch/issues/new/choose"
-        target="_blank"
-        rel="noopener noreferrer">Report a problem</a
-      >
-    </p>
     <p><a href="/privacy">Privacy Policy</a> — no ads, no tracking, no accounts.</p>
     <p class="github-link">
       <a

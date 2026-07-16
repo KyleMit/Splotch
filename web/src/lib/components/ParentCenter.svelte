@@ -46,7 +46,7 @@
         {:else if tabId === 'install'}
           <SetupInstructions open={ui.parentCenterOpen} />
         {:else if tabId === 'about'}
-          <AboutTab />
+          <AboutTab open={ui.parentCenterOpen} />
         {/if}
       {/snippet}
     </TabPager>

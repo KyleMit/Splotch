@@ -124,6 +124,58 @@ async function run() {
     `got ${goodCode.status} ${JSON.stringify(goodCodeBody)}`
   );
 
+  // --- report: validation + honeypot + graceful-unconfigured (no GITHUB token
+  // in the smoke env, so no real issue is ever created) ---
+  const report = (payload) =>
+    fetch(`${BASE}/api/report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+  const emptyReport = await report({ kind: 'bug', message: '   ' });
+  const emptyReportBody = await json(emptyReport);
+  check(
+    'report empty message → 400 {ok:false, error}',
+    emptyReport.status === 400 &&
+      emptyReportBody?.ok === false &&
+      typeof emptyReportBody?.error === 'string',
+    `got ${emptyReport.status} ${JSON.stringify(emptyReportBody)}`
+  );
+
+  const badKind = await report({ kind: 'nope', message: 'hi' });
+  check('report invalid kind → 400', badKind.status === 400, `got ${badKind.status}`);
+
+  const honeypot = await report({ kind: 'bug', message: 'spam', hp: 'iam-a-bot' });
+  const honeypotBody = await json(honeypot);
+  check(
+    'report with filled honeypot → 200 {ok:true} and no issue',
+    honeypot.status === 200 && honeypotBody?.ok === true && honeypotBody?.url === undefined,
+    `got ${honeypot.status} ${JSON.stringify(honeypotBody)}`
+  );
+
+  const unconfigured = await report({ kind: 'feature', message: 'A stamps tool please' });
+  const unconfiguredBody = await json(unconfigured);
+  check(
+    'report valid but no GITHUB_ISSUE_TOKEN → 503 {ok:false, error}',
+    unconfigured.status === 503 &&
+      unconfiguredBody?.ok === false &&
+      typeof unconfiguredBody?.error === 'string',
+    `got ${unconfigured.status} ${JSON.stringify(unconfiguredBody)}`
+  );
+
+  // report has its own tighter per-IP bucket (5/min); burst past it.
+  let reportLimited = null;
+  for (let i = 0; i < 8 && !reportLimited; i++) {
+    const res = await report({ kind: 'bug', message: `burst ${i}` });
+    if (res.status === 429) reportLimited = res;
+  }
+  check(
+    'report throttled → 429 with Retry-After',
+    reportLimited !== null && Boolean(reportLimited.headers.get('retry-after')),
+    reportLimited ? 'saw 429' : 'never saw a 429'
+  );
+
   // --- generate-image auth gate (every case rejected before the model call) ---
   const genRequest = (fields) => {
     const form = new FormData();

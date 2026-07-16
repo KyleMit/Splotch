@@ -1,9 +1,12 @@
 <script lang="ts">
-  // Friendly, plain-language privacy policy. Splotch collects nothing, so this
-  // mostly exists to *prove* that — and it's required by the app stores (see
-  // MOBILE.md). Keep the tone simple enough for a parent to skim in 30 seconds.
+  // Friendly, plain-language privacy policy. Splotch collects nothing
+  // automatically — the only data it ever receives is what a grown-up
+  // deliberately types into the optional feedback form (see "Sending feedback"),
+  // and this page exists mostly to *prove* that. It's required by the app stores
+  // (see MOBILE.md). Keep the tone simple enough for a parent to skim in 30
+  // seconds. Bump EFFECTIVE_DATE whenever the wording changes.
 
-  const EFFECTIVE_DATE = 'June 1, 2026';
+  const EFFECTIVE_DATE = 'July 16, 2026';
   // Splotch has no email; questions/concerns go through GitHub issues.
   const CONTACT_URL = 'https://github.com/KyleMit/Splotch/issues/new/choose';
 </script>
@@ -12,7 +15,7 @@
   <title>Privacy Policy · Splotch</title>
   <meta
     name="description"
-    content="Splotch's privacy policy: no ads, no tracking, no accounts, no data collection."
+    content="Splotch's privacy policy: no ads, no tracking, no accounts, and no analytics."
   />
 </svelte:head>
 
@@ -33,7 +36,10 @@
       <li><strong>🙈 No tracking.</strong> We don't follow you around the internet.</li>
       <li><strong>👤 No accounts.</strong> No sign-up, no login, no passwords.</li>
       <li><strong>📊 No analytics.</strong> No third-party trackers or SDKs.</li>
-      <li><strong>🗂️ No data collection.</strong> We don't gather personal information.</li>
+      <li>
+        <strong>🗂️ No background collection.</strong> The only info we ever receive is what a grown-up
+        chooses to send us (like a bug report).
+      </li>
       <li><strong>✈️ Works offline.</strong> Drawing happens entirely on your device.</li>
     </ul>
 
@@ -43,11 +49,10 @@
       child, does not sell or share any information, and does not show advertising of any kind.
     </p>
 
-    <h2>The one time the internet is used</h2>
+    <h2>When the internet is used</h2>
     <p>
       Splotch has an optional “magic image” button that re-imagines a child's drawing as a polished
-      illustration. It's the <em>only</em> feature that uses the internet, and it only runs when someone
-      taps it.
+      illustration. It only runs when someone taps it.
     </p>
     <ul>
       <li>
@@ -67,6 +72,21 @@
       </li>
     </ul>
 
+    <h2>Sending feedback</h2>
+    <p>
+      Grown-ups can report a bug or suggest a feature from the Parent Center. When you tap “Send
+      report”, only what you type is sent, so we can post it as an issue on our
+      <strong>public</strong> issue tracker on GitHub, where anyone can read it. Please don't type personal
+      details (like a name or email address) into a report — the form reminds you of this too.
+    </p>
+    <p>
+      For a bug, you can <em>optionally</em> tick a box to include basic device details (like your app
+      version, operating system, browser, and screen size) to help us reproduce the problem. It's off
+      by default, you can expand it to see exactly what will be sent first, and some of those details
+      (such as your browser's user-agent) can be somewhat identifying — so it's entirely your choice.
+      We never include your name, account, or location, because Splotch doesn't have any of those.
+    </p>
+
     <h2>Saving pictures</h2>
     <p>
       When you save a drawing, it's stored <strong>locally</strong> in your device's own photo gallery.
@@ -81,10 +101,12 @@
 
     <h2>Children's privacy</h2>
     <p>
-      Splotch is designed for young children. Because we collect no personal information from
-      anyone, including children under 13, we comply with children's privacy laws such as the
-      Children's Online Privacy Protection Act (COPPA) and the GDPR's protections for children.
-      There are no social features, comments, links out, or in-app purchases.
+      Splotch is designed for young children. It has no accounts, ads, tracking, or analytics, and
+      gathers nothing on its own. The one place any information is sent is the grown-ups' feedback
+      form above, which a child can't reach — so we collect no personal information from children,
+      and we comply with children's privacy laws such as the Children's Online Privacy Protection
+      Act (COPPA) and the GDPR's protections for children. There are no social features, comments,
+      links out, or in-app purchases.
     </p>
 
     <h2>Changes to this policy</h2>
