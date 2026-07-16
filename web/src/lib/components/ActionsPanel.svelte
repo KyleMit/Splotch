@@ -82,9 +82,11 @@
     el.toggleAttribute('data-off-undo', !settings.undoButtonEnabled);
   });
 
-  // The stroke-size lines preview what you'll lay down: the pen color, or the
-  // eraser's pink while erasing. Inherited by the icons via currentColor.
-  const strokeMenuColor = $derived(toolState.eraser ? '#fb3675' : colors.activeColor);
+  // The stroke-size lines preview the ink you'll lay down, tinted via
+  // currentColor. Only the pen uses it — the eraser previews are theme-driven
+  // "holes in the paper" (--paper / --hole-stroke), never color-tinted, so
+  // they stay distinct from every pen color (including pink).
+  const strokeMenuColor = $derived(colors.activeColor);
 
   // A white brush color vanishes against the light icon buttons, so the brush
   // icon and stroke-weight lines get a black outline while white is active.
@@ -220,8 +222,9 @@
         >
           <!-- The previews change shape with the tool, not just color (a pink pen
                would otherwise look identical to the eraser): the pen shows ink
-               strokes; the eraser shows round dots at its true effective size
-               (the eraser wipes at ERASER_SIZE_MULTIPLIER × the pen's width). -->
+               strokes; the eraser shows dashed "holes in the paper" at its true
+               effective size (ERASER_SIZE_MULTIPLIER × the pen's width), filled
+               with --paper so the hole shows the canvas through the flyout. -->
           {#each STROKE_SIZES as size (size)}
             <button
               class="stroke-size-button"
@@ -680,12 +683,12 @@
     display: none;
   }
 
-  /* Eraser mode washes the flyout surface with the eraser pink (currentColor
-     here — see strokeMenuColor) so the whole panel reads as eraser context,
-     not just the previews. Browsers without color-mix keep the plain surface;
-     the dot-shaped previews still carry the distinction. */
-  .stroke-width-menu.eraser-mode {
-    background: color-mix(in srgb, currentColor 12%, var(--float-surface));
+  /* Eraser mode drops the button padding so the hole previews render at the
+     eraser's true pixel sizes: the icons' 56-unit viewBox maps 1:1 onto the
+     56px content box (60px button − 2px borders, border-box), making the
+     level-5 hole exactly the 44px the eraser actually wipes. */
+  .stroke-width-menu.eraser-mode .stroke-size-button {
+    padding: 0;
   }
 
   .stroke-size-button {
