@@ -683,12 +683,23 @@
     display: none;
   }
 
-  /* Eraser mode drops the button padding so the hole previews render at the
-     eraser's true pixel sizes: the icons' 56-unit viewBox maps 1:1 onto the
-     56px content box (60px button − 2px borders, border-box), making the
-     level-5 hole exactly the 44px the eraser actually wipes. */
+  /* Eraser mode renders the hole previews at the eraser's true pixel sizes:
+     the button padding drops and the icon viewport is pinned at 56px (the
+     unscaled 60px button minus its 2px borders), so the icons' 56-unit
+     viewBox maps 1:1 to CSS px — the level-5 hole is exactly the 44px the
+     eraser actually wipes. Pinning (not 100%) keeps that mapping when the
+     touch target shrinks or grows — the portrait 55px buttons and the Parent
+     Center's --action-btn-scale (70–130%) must never rescale the holes. The
+     SVG is transparent outside the hole, so on the smallest buttons the
+     level-5 hole pokes a couple px past the button edge — honestly. */
   .stroke-width-menu.eraser-mode .stroke-size-button {
     padding: 0;
+  }
+
+  .stroke-width-menu.eraser-mode .stroke-size-button :global(.action-icon) {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
   }
 
   .stroke-size-button {
