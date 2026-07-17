@@ -6,7 +6,7 @@
 > it was checked. This file records analysis only — upgrades are applied by
 > `/dependency-update-audit`, and replacements are tracked as GitHub issues.
 
-**Last refresh:** 2026-07-17 at `e2812b3` · 18 prod + 32 dev direct · 1179 total installed
+**Last refresh:** 2026-07-17 at `e2812b3` · 18 prod + 30 dev direct · 1167 total installed
 (package-lock entries) · plus dev-lifecycle deps outside `package.json` (GitHub Actions,
 runtime-fetched CLIs, system toolchains — see the final section)
 
