@@ -48,45 +48,37 @@ the Google Play release checklist. For the general build model and shared assets
    ```
 
    For an emulator instead: run `npm run android:setup` after installing Command-line Tools — it
-   installs the API 33 system image, creates the `Pixel_7_Pro_API_33` AVD, and (on macOS/Linux)
-   installs the Maestro smoke-test CLI automatically. It's idempotent — re-run it any time.
+   installs the API 33 system image, creates the `Pixel_7_Pro_API_33` AVD, and installs the Maestro
+   smoke-test CLI automatically. It's idempotent — re-run it any time.
 
 5. **Run the app** — two flows:
    * **Web dev server over USB** (fastest iteration): `npm run dev`, then `npm run adb:reverse`,
      then open `http://localhost:5173` in Chrome on the phone. See "Running the web app on a real
      device" below.
-   * **Native debug build**: `npm run android:run` (cap:sync + build + install) works on macOS and
-     Windows alike — the `android:*` scripts go through `scripts/gradle.mjs`, which resolves the
-     right Gradle wrapper per platform (ADR-0017). You can also use Capacitor's runner:
+   * **Native debug build**: `npm run android:run` (cap:sync + build + install) uses the committed
+     Gradle wrapper through `scripts/gradle.mjs`. You can also use Capacitor's runner:
      `npx cap run android`.
 
 6. **Debug with Chrome DevTools**: on desktop Chrome open `chrome://inspect/#devices` and click
    **Inspect** on the phone's tab — see "Performance profiling with Chrome DevTools" below for the
    full flow.
 
-### Windows
+### Linux
 
-* [x] **Android Studio** + Android SDK installed (SDK at `%LOCALAPPDATA%\Android\Sdk`; platforms 34
-      & 36, build-tools 34/35, `adb`, emulator, several AVDs).
-* [x] **Node 22** (via nvm-windows) — Capacitor 8 requires Node ≥ 22. The repo's default node was
-      18; run `nvm use 22.11.0` in an **elevated** terminal once to make 22 the persistent default
-      (the symlink swap needs admin).
-* [x] **Android SDK `platform-tools` on PATH** — Android Studio installs `adb` at
-      `%LOCALAPPDATA%\Android\Sdk\platform-tools` but does not add it to PATH automatically. Add it
-      once (user scope, new terminal required to take effect):
-  ```powershell
-  [Environment]::SetEnvironmentVariable(
-    "Path",
-    [Environment]::GetEnvironmentVariable("Path","User") + ";$env:LOCALAPPDATA\Android\Sdk\platform-tools",
-    "User"
-  )
-  ```
-* [x] **Full JDK 21** at `%USERPROFILE%\.jdks\jdk-21.0.11+10` — Capacitor 8 plugins need a Java
-      **21** toolchain, and Android Studio's bundled JBR is only 17. `JAVA_HOME` (user scope) points
-      here. NOTE: it must be a *full* JDK (with `jlink`/`jmods`); a JetBrains JBR will fail AGP's
-      `JdkImageTransform`.
-  * In **Android Studio**: Settings → Build → Build Tools → Gradle → set **Gradle JDK** to this JDK
-    21 (or "JAVA_HOME"), else in-IDE builds fail.
+1. **Install Android Studio** (or the Android SDK command-line tools) and ensure the SDK, `adb`, and
+   emulator are installed. The default SDK path is `~/Android/Sdk`.
+2. **Install a full JDK 21** with your distribution package manager, then set `JAVA_HOME` to its
+   installation directory. Android Studio's bundled JBR is not sufficient for AGP.
+3. **Wire up your shell environment** by adding the following to your shell profile:
+
+   ```bash
+   export ANDROID_HOME="$HOME/Android/Sdk"
+   export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+   export JAVA_HOME="/path/to/jdk-21"
+   ```
+
+4. Follow the device, emulator, build, and DevTools steps in the macOS section above; the same npm
+   commands work on Linux.
 
 ## 2. Build / sign / run commands
 
@@ -101,15 +93,13 @@ npm run android:clean   # gradle clean (no cap:sync)
 
 > **Prerequisites for the `android:*` scripts** (one-time, see §1):
 >
-> 1. **Node 22** active (`nvm use 22.11.0` — needs an elevated shell to stick).
-> 2. **`JAVA_HOME`** pointing at the **full JDK 21** — Gradle reads it. It's set at user scope, so a
->    freshly-opened terminal already has it (an *already-open* terminal from before setup won't —
->    reopen it).
+> 1. **Node 22** active.
+> 2. **`JAVA_HOME`** pointing at the **full JDK 21** — Gradle reads it. Reopen the terminal after
+>    changing your shell profile.
 > 3. For `android:bundle`, `android/keystore.properties` must exist (see §4).
 >
-> These scripts run the Gradle wrapper through `scripts/gradle.mjs`, which picks `gradlew.bat` on
-> Windows and `./gradlew` on macOS/Linux (ADR-0017), so the same `npm run android:*` command works
-> on every platform — no `.\gradlew` vs `./gradlew` footgun.
+> These scripts run the committed `./gradlew` wrapper through `scripts/gradle.mjs` on macOS and
+> Linux.
 
 From Android Studio: **Run ▶** to test on emulator/device; **Build → Generate Signed Bundle/APK** to
 produce a release `.aab`.

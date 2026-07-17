@@ -112,15 +112,6 @@ test('supports no-op defaults and both existing sort policies', async () => {
   ]);
 });
 
-test('normalizes Windows-style target separators', async () => {
-  await expect(resolveOutlineTargets(['nature\\ant-tall'], options())).resolves.toEqual([
-    join(root, 'nature/ant-tall.outline.webp'),
-  ]);
-  await expect(
-    resolveOutlineTargets(['nature\\ant-tall.outline.webp'], options())
-  ).resolves.toEqual([join(root, 'nature/ant-tall.outline.webp')]);
-});
-
 describe('configuration', () => {
   test('requires callers to state every behavior-changing policy', async () => {
     await expect(resolveOutlineTargets([], { root })).rejects.toThrow(

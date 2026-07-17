@@ -1,6 +1,6 @@
 # ADR-0017: Cross-Platform Node Scripts with Shared Helpers in scripts/lib/
 
-**Status:** Active **Date:** 2026-06
+**Status:** Superseded by ADR-0062 **Date:** 2026-06
 
 ## Context
 

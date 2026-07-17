@@ -38,7 +38,7 @@ Apple's recommended default for a single-developer project.
   `ios/App/ExportOptions.plist`, both with `-allowProvisioningUpdates` so automatic signing works
   headlessly), and `test:ios` (`scripts/ios-simulator-smoke.mjs`, the simulator twin of the Android
   emulator smoke test, sharing `.maestro/smoke.yaml`). These scripts are macOS-only by nature and
-  say so in `scripts-info` — the inverse of the Windows-only `android:*` Gradle scripts.
+  say so in `scripts-info`; Android tooling supports macOS and Linux.
 * **Automatic signing, nothing committed.** `ExportOptions.plist` uses `signingStyle: automatic` +
   method `app-store-connect`; the developer's `DEVELOPMENT_TEAM` is deliberately kept out of the
   committed `project.pbxproj` (committing it churns for other contributors and bakes a personal ID
@@ -63,5 +63,6 @@ Apple's recommended default for a single-developer project.
 * **-** Automatic signing means releases can only be built by someone signed into Xcode with the
   team account — there is no CI-friendly secret to inject until a manual-signing or App Store
   Connect API-key setup is added.
-* **-** Every `ios:*`/`test:ios` script is unusable on Windows; iOS work is hard-gated on a Mac with
-  full Xcode (the repo's other Capacitor tooling, including `cap sync ios`, still runs anywhere).
+* **-** Every `ios:*`/`test:ios` script is unavailable on Linux; iOS work is hard-gated on a Mac
+  with full Xcode (the repo's other Capacitor tooling, including `cap sync ios`, still runs
+  anywhere).

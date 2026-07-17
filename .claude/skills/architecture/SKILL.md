@@ -45,10 +45,6 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
   capability).
 * **[`@fontsource-variable/quicksand`](https://fontsource.org/fonts/quicksand)** — self-hosted
   variable font, bundled for offline use.
-* **[`patch-package`](https://github.com/ds300/patch-package)** — applies a patch to fix `gradlew`
-  invocation inside Capacitor on Windows (`patches/`).
-* **[`cross-env`](https://github.com/kentcdodds/cross-env)** — cross-platform env var injection for
-  the `CAPACITOR=true` build scripts.
 
 ### Testing
 

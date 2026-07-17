@@ -76,10 +76,10 @@ does stop the crash.
 
 Rejected because it fixes the symptom, not the cause, and isn't committable config. It would have to
 be set in every contributor's shell and every CI runner *before* `dev:netlify`, and silently
-regresses the first time someone forgets. Decisively, our npm scripts must run on Windows `cmd.exe`
-(ADR-0017), which has no `ulimit` concept at all — so there is no cross-platform way to even express
-it as part of the script. We'd be telling the watcher it may open 7,400 descriptors to watch trees
-we never edit, instead of not watching them.
+regresses the first time someone forgets. The project supports macOS and Linux, but encoding an
+`ulimit` change in a contributor shell would still be uncommittable and easy to forget. We'd be
+telling the watcher it may open 7,400 descriptors to watch trees we never edit, instead of not
+watching them.
 
 ### Add a watch-ignore to `netlify.toml`
 

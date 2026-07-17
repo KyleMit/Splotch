@@ -265,12 +265,7 @@ function writeReport(results) {
 // Open a file in the OS default browser (cross-platform, best-effort).
 function openInBrowser(file) {
   if (process.env.REDTEAM_NO_OPEN) return false;
-  const [cmd, args] =
-    process.platform === 'darwin'
-      ? ['open', [file]]
-      : process.platform === 'win32'
-        ? ['cmd', ['/c', 'start', '', file]]
-        : ['xdg-open', [file]];
+  const [cmd, args] = process.platform === 'darwin' ? ['open', [file]] : ['xdg-open', [file]];
   try {
     spawn(cmd, args, { detached: true, stdio: 'ignore' }).unref();
     return true;

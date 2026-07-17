@@ -11,7 +11,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { hasCommand, fail, isWindows, ROOT } from './lib/utils.mjs';
+import { hasCommand, fail, ROOT } from './lib/utils.mjs';
 
 if (!hasCommand('netlify')) {
   fail(
@@ -27,7 +27,7 @@ if (!hasCommand('netlify')) {
 // capture its output instead of inheriting it so the check stays quiet on the
 // happy path. The CLI exits 0 even when logged out or unlinked, so match on the
 // message text rather than the exit code.
-const status = spawnSync(isWindows ? 'netlify.cmd' : 'netlify', ['status'], {
+const status = spawnSync('netlify', ['status'], {
   cwd: join(ROOT, 'web'),
   encoding: 'utf8',
 });

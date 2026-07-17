@@ -8,7 +8,7 @@ store-listing assets, and cross-platform follow-ups. For platform-specific build
 see **[android.md](android.md)** and **[ios.md](ios.md)**.
 
 > Both platforms are active: the `android/` and `ios/` projects live in the repo. Android
-> development works on Windows or macOS; iOS builds require macOS + Xcode.
+> development works on macOS or Linux; iOS builds require macOS + Xcode.
 
 ## 1. How the native build works
 

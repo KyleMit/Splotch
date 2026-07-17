@@ -18,7 +18,6 @@ Non-`keep` rows first.
 | ----------------------------------- | -------- | ---------------------------------- |
 | capacitor-set-version               | dev      | **investigate replacement**        |
 | @capacitor/assets                   | dev      | **monitor** (dormant + vuln chain) |
-| cross-env                           | dev      | **monitor** (upstream archived)    |
 | idb                                 | prod     | **monitor** (single maintainer)    |
 | scripts-info                        | dev      | **monitor** (bus factor)           |
 | @aparajita/capacitor-secure-storage | prod     | keep                               |
@@ -54,7 +53,6 @@ Non-`keep` rows first.
 | globals                             | dev      | keep                               |
 | happy-dom                           | dev      | keep                               |
 | marked                              | dev      | keep                               |
-| patch-package                       | dev      | keep                               |
 | prettier                            | dev      | keep                               |
 | prettier-plugin-svelte              | dev      | keep                               |
 | sharp                               | dev      | keep                               |
@@ -137,10 +135,8 @@ Non-`keep` rows first.
 * **Health** (checked 2026-07-17): [16.1k stars](https://github.com/ionic-team/capacitor) · latest
   8.4.2 on 2026-07-14 · last push 2026-07-14 · frequent releases
 * **Maintenance:** active
-* **Concerns:** **patched via patch-package** (`patches/@capacitor+cli+8.4.1.patch`, ADR-0011 —
-  Windows gradlew fix); floating or replacing it must re-verify the patch applies. Bundles
-  `tar@7.5.17`, flagged high by `npm audit` (path-traversal advisories, no upstream fix); the CLI
-  runs locally against trusted project files, so exposure is low.
+* **Concerns:** Bundles `tar@7.5.17`, flagged high by `npm audit` (path-traversal advisories, no
+  upstream fix); the CLI runs locally against trusted project files, so exposure is low.
 * **Alternatives:** none needed
 * **Verdict:** keep — required native toolchain; watch the patch across CLI bumps
 
@@ -554,27 +550,6 @@ Non-`keep` rows first.
 * **Verdict:** investigate replacement — upstream is archived; scope the in-repo helper (proposed
   backlog item above). Not urgent (release-only, not shipped), but the clearest replace candidate.
 
-### cross-env
-
-* **Version:** `^10.1.0` declared · 10.1.0 locked · dev
-* **Used for:** Cross-platform env-var setting in npm scripts (ADR-0017 requires Windows `cmd.exe`
-  support) — used throughout `package.json` (`CAPACITOR=true`, `PERF_MARKS=true`, etc.).
-* **Source:** npm · [github.com/kentcdodds/cross-env](https://github.com/kentcdodds/cross-env) ·
-  published by Kent C. Dodds
-* **License:** MIT
-* **Health** (checked 2026-07-17): [6.5k stars](https://github.com/kentcdodds/cross-env) · latest
-  10.1.0 on 2025-09-29 · **repo archived (read-only)** · last push 2025-11-16 · 1 open issue
-* **Maintenance:** done-not-dead → now archived — a tiny, stable, effectively-finished utility, but
-  the maintainer has archived the repo, so no future fixes ship
-* **Concerns:** load-bearing (every cross-platform script) yet upstream is frozen. Zero open-issue
-  backlog and no advisories, so risk is low today; the exposure is a future Node/Windows change the
-  frozen package can't adapt to.
-* **Alternatives:** Node 20+ can set env vars inline in many shells, but not portably in `cmd.exe`,
-  which ADR-0017 mandates — so no drop-in replacement without changing that constraint. `dotenvx` or
-  a small in-repo wrapper are options if it ever breaks.
-* **Verdict:** monitor — keep (no viable replacement under the cmd.exe constraint); watch for a
-  Node/Windows change that the archived package can't follow
-
 ### dprint
 
 * **Version:** `^0.55.1` declared · 0.55.1 locked (latest 0.55.2) · dev
@@ -679,22 +654,6 @@ Non-`keep` rows first.
 * **Concerns:** none (build-time only, trusted input)
 * **Alternatives:** `markdown-it` if features are ever needed; none needed
 * **Verdict:** keep — build-time Markdown rendering; healthy
-
-### patch-package
-
-* **Version:** `^8.0.1` declared · 8.0.1 locked · dev
-* **Used for:** Applying the `@capacitor/cli` Windows gradlew patch on `postinstall` (ADR-0011).
-* **Source:** npm · [github.com/ds300/patch-package](https://github.com/ds300/patch-package) ·
-  published by David Sheldrick (ds300)
-* **License:** MIT
-* **Health** (checked 2026-07-17): [11.2k stars](https://github.com/ds300/patch-package) · latest
-  8.0.1 on 2025-09-29 · last push 2025-09-30 · 280 open issues
-* **Maintenance:** done-not-dead — mature, stable, single-maintainer; slow cadence but the tool is
-  feature-complete and widely relied on
-* **Concerns:** single maintainer and a large open-issue backlog, but the core function is stable
-* **Alternatives:** npm's native `overrides` cannot patch file contents; `pnpm patch` is
-  package-manager-specific. No drop-in for the gradlew patch.
-* **Verdict:** keep — required for the ADR-0011 patch; healthy enough
 
 ### prettier
 
@@ -965,14 +924,14 @@ tag pins are conventional. No action pins to a SHA today.
 
 ### System toolchains (native builds & tests — no npm range)
 
-| Toolchain                    | Where                                              | Provisioning / pin                                                                                                                                      | Verdict                                                                                                                                                                                                                                                                |
-| ---------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Node.js                      | all CI jobs, all local dev                         | `actions/setup-node@v6` pins **node-version: 24** in CI                                                                                                 | keep — pinned in CI; keep local dev aligned                                                                                                                                                                                                                            |
-| JDK (Temurin)                | `android-deploy.yml`, Gradle builds                | `actions/setup-java@v5`, **temurin / java-version: 21**                                                                                                 | keep — Android build requirement, pinned                                                                                                                                                                                                                               |
-| Gradle                       | `android:*` scripts, Android CI                    | the committed **Gradle wrapper** (`android/gradlew`), invoked via `scripts/gradle.mjs` (ADR-0017); patched into `@capacitor/cli` for Windows (ADR-0011) | keep — wrapper-pinned; version lives in the native project                                                                                                                                                                                                             |
-| Android SDK / emulator / adb | `android:*`, `test:android`, `android-deploy.yml`  | `reactivecircus/android-emulator-runner@v2` (**api-level: 33, google_apis, x86_64**) in CI; local Android Studio SDK otherwise                          | keep — API 33 emulator target pinned in CI                                                                                                                                                                                                                             |
-| Xcode / `xcodebuild`         | `ios:*` scripts, `ios-deploy.yml`                  | macOS runner's system Xcode (image-provided); no explicit version pin in the workflow                                                                   | monitor — iOS builds float on the runner's default Xcode; pin the Xcode version if a toolchain bump ever breaks a release build                                                                                                                                        |
-| Maestro                      | `test:android:device`, `test:ios`, native smoke CI | installed via `curl -fsSL https://get.maestro.mobile.dev \| bash` in `android-deploy.yml` / `ios-deploy.yml` (unpinned — installs latest)               | monitor — [14.9k stars](https://github.com/mobile-dev-inc/Maestro) · active · Apache-2.0, healthy upstream, but the CI install is **unpinned** (`get.maestro.mobile.dev` → latest); pin a Maestro version for reproducible native smoke runs. See the `testing` skill. |
+| Toolchain                    | Where                                              | Provisioning / pin                                                                                                                        | Verdict                                                                                                                                                                                                                                                                |
+| ---------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node.js                      | all CI jobs, all local dev                         | `actions/setup-node@v6` pins **node-version: 24** in CI                                                                                   | keep — pinned in CI; keep local dev aligned                                                                                                                                                                                                                            |
+| JDK (Temurin)                | `android-deploy.yml`, Gradle builds                | `actions/setup-java@v5`, **temurin / java-version: 21**                                                                                   | keep — Android build requirement, pinned                                                                                                                                                                                                                               |
+| Gradle                       | `android:*` scripts, Android CI                    | the committed **Gradle wrapper** (`android/gradlew`), invoked via `scripts/gradle.mjs`                                                    | keep — wrapper-pinned; version lives in the native project                                                                                                                                                                                                             |
+| Android SDK / emulator / adb | `android:*`, `test:android`, `android-deploy.yml`  | `reactivecircus/android-emulator-runner@v2` (**api-level: 33, google_apis, x86_64**) in CI; local Android Studio SDK otherwise            | keep — API 33 emulator target pinned in CI                                                                                                                                                                                                                             |
+| Xcode / `xcodebuild`         | `ios:*` scripts, `ios-deploy.yml`                  | macOS runner's system Xcode (image-provided); no explicit version pin in the workflow                                                     | monitor — iOS builds float on the runner's default Xcode; pin the Xcode version if a toolchain bump ever breaks a release build                                                                                                                                        |
+| Maestro                      | `test:android:device`, `test:ios`, native smoke CI | installed via `curl -fsSL https://get.maestro.mobile.dev \| bash` in `android-deploy.yml` / `ios-deploy.yml` (unpinned — installs latest) | monitor — [14.9k stars](https://github.com/mobile-dev-inc/Maestro) · active · Apache-2.0, healthy upstream, but the CI install is **unpinned** (`get.maestro.mobile.dev` → latest); pin a Maestro version for reproducible native smoke runs. See the `testing` skill. |
 
 **Method note:** these live outside the lockfile, so refresh them by re-reading
 `.github/workflows/`, the `package.json` scripts, and `scripts/*.mjs` — not `npm view`. Version

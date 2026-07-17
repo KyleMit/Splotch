@@ -1,6 +1,6 @@
 # ADR-0011: patch-package for Capacitor CLI Windows gradlew Bug
 
-**Status:** Active\
+**Status:** Deprecated\
 **Date:** 2026-06
 
 ## Context

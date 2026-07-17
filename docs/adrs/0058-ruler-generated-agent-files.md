@@ -14,9 +14,8 @@ Alternatives considered:
 
 * **Hand-maintain `AGENTS.md` beside each `CLAUDE.md`.** No tooling, but every edit must be made
   twice and nothing catches a missed copy; guaranteed drift.
-* **Symlink `AGENTS.md` → `CLAUDE.md`.** Zero duplication, but symlinks are unreliable on Windows
-  checkouts (ADR-0017 makes Windows a first-class platform) and can't cover the skills tree, where
-  Codex reads `.agents/skills/` rather than `.claude/skills/`.
+* **Symlink `AGENTS.md` → `CLAUDE.md`.** Zero duplication, but symlinks cannot cover the skills
+  tree, where Codex reads `.agents/skills/` rather than `.claude/skills/`.
 * **[ruler](https://github.com/intellectronica/ruler)** (chosen): one source tree, a generator, and
   a CI gate. Ruler concatenates `.ruler/*.md` into each agent's native instruction file and copies
   `.ruler/skills/` to each agent's native skills directory.

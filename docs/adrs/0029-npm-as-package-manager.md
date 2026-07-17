@@ -18,11 +18,11 @@ The decision is constrained by four deploy/automation targets, all currently npm
 * **Capacitor** (`cap sync`) copies native plugin code straight out of a **flat** `node_modules`.
 * The **script graph** is npm-flavored: 21 internal `npm run …` calls in `package.json` and
   hardcoded `npx` in `scripts/web.mjs`, `api-smoke.mjs`, `cloud-tunnel.mjs`, `redteam-run.mjs`, and
-  `release.mjs`. A root `postinstall: patch-package` applies the Capacitor CLI patch (ADR-0011).
+  `release.mjs`.
 
 Alternatives were benchmarked on this exact dependency set (isolated cache/store per manager,
-lifecycle scripts disabled to isolate the resolve+fetch+link machinery — the native `sharp` build
-and `patch-package` are identical post-steps for all three):
+lifecycle scripts disabled to isolate the resolve+fetch+link machinery — the native `sharp` build is
+an identical post-step for all three):
 
 | Scenario                                        | npm   | pnpm          | bun    |
 | ----------------------------------------------- | ----- | ------------- | ------ |
@@ -38,27 +38,26 @@ and `patch-package` are identical post-steps for all three):
   tree, so pnpm needs `node-linker=hoisted`, which gives back much of the speed/disk advantage.
   Wrong tradeoff for a Capacitor app.
 * **bun** — dramatically fastest (≈9× cold, ≈33× warm) and produces a flat `node_modules`
-  (Capacitor-safe); verified that it runs the root `postinstall` and applies the Capacitor patch.
-  But its win is **install** speed, not **run** speed: scripts spawn their real work (`vite`,
-  `svelte-check`, Playwright, Gradle, xcodebuild) as subprocesses, so bun only shaves launcher
-  overhead (`npm run` ~170ms → `bun run` ~37ms; `npx` ~0.5–0.9s → `bunx` ~0.22s) — noise next to
-  multi-second/multi-minute builds. Capturing even that requires rewriting the `npx`/`npm run` graph
-  to `bunx`/`bun run`, dropping the Node-only `--experimental-strip-types`/`--disable-warning` flags
-  in `build:cap` and `check:assets` (bun rejects them), and re-validating the Windows + native
-  matrix (ADR-0017). bun also skips *dependency* lifecycle scripts unless allowlisted in
-  `trustedDependencies`.
+  (Capacitor-safe); verified that it runs the root lifecycle scripts. But its win is **install**
+  speed, not **run** speed: scripts spawn their real work (`vite`, `svelte-check`, Playwright,
+  Gradle, xcodebuild) as subprocesses, so bun only shaves launcher overhead (`npm run` ~170ms →
+  `bun run` ~37ms; `npx` ~0.5–0.9s → `bunx` ~0.22s) — noise next to multi-second/multi-minute
+  builds. Capturing even that requires rewriting the `npx`/`npm run` graph to `bunx`/`bun run`,
+  dropping the Node-only `--experimental-strip-types`/`--disable-warning` flags in `build:cap` and
+  `check:assets` (bun rejects them), and re-validating the macOS/Linux native matrix. bun also skips
+  *dependency* lifecycle scripts unless allowlisted in `trustedDependencies`.
 * **yarn** — no advantage that pnpm/bun don't beat; Berry's PnP is even more hostile to Capacitor's
   flat-`node_modules` assumption. Not benchmarked.
 
 ## Decision
 
 Stay on **npm** with a committed `package-lock.json` as the single lockfile. `npm ci` is the install
-command in CI and on Netlify; `npm install` locally. The root `postinstall: patch-package`
-(ADR-0011) and the `npm run`/`npx` script graph assume npm on `PATH`.
+command in CI and on Netlify; `npm install` locally. The `npm run`/`npx` script graph assumes npm on
+`PATH`.
 
 Switching managers is a deliberate, documented migration — not something to do ad hoc — because it
-touches all four targets above plus ADR-0017 (cross-platform scripts), ADR-0019 (script naming), and
-the `scripts/CLAUDE.md` note about `--experimental-strip-types`.
+touches all four targets above plus ADR-0019 (script naming), and the `scripts/CLAUDE.md` note about
+`--experimental-strip-types`.
 
 Non-obvious invariants:
 
@@ -71,16 +70,16 @@ Non-obvious invariants:
 
 ## Consequences
 
-* \+ Zero migration cost: Netlify, CI, the `npm run`/`npx` graph, ADR-0011's `postinstall`, and the
-  SessionStart hook already work unchanged.
-* \+ Flat `node_modules` keeps `cap sync` and `patch-package` working without extra configuration.
+* \+ Zero migration cost: Netlify, CI, the `npm run`/`npx` graph, and the SessionStart hook already
+  work unchanged.
+* \+ Flat `node_modules` keeps `cap sync` working without extra configuration.
 * \+ One lockfile, one mental model; npm ships with Node, so no extra tool to install on any of the
-  macOS/Linux/Windows dev paths (ADR-0017).
+  macOS/Linux development paths.
 * − Slowest installs of the three: ~55s cold and ~14s warm-CI, versus single- digit seconds for bun.
   Acceptable because installs are infrequent relative to the Gradle/xcodebuild/Playwright work that
   dominates build and CI time, but it is a real, measured tax.
 * − Forgoes bun's large install-speed win. If cold/CI install time ever becomes the bottleneck,
   **bun** (not pnpm) is the documented upgrade path, paid for with the script-graph rewrite and
-  Windows/native re-validation above.
+  macOS/Linux native re-validation above.
 * − `npm audit` reports a large pre-existing vulnerability count from the transitive tree; this is
   independent of the manager choice and is not a reason to switch.

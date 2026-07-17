@@ -63,9 +63,7 @@ each package:
    — see the environment notes). For a major jump, read every intermediate major's breaking-changes
    list, not just the latest. Summarize the breaking changes that could plausibly touch this repo.
 7. **Bump the version.** Update the range in `package.json` and install
-   (`npm install <pkg>@<version>`). Let `postinstall` (`patch-package`) run; if a patch fails to
-   apply, stop and resolve it (regenerate the patch or hold the upgrade) — do not commit a broken
-   patch.
+   (`npm install <pkg>@<version>`)..
 8. **Audit every usage.** Grep the whole codebase (`web/src/`, `scripts/`, config files, `android/`
    & `ios/` only where they consume the JS package) for imports and API calls of the package.
    Confirm each call site is still valid against the new API; apply the codemod / manual edits the
