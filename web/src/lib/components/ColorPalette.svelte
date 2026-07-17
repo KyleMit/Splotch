@@ -52,13 +52,16 @@
   // only on the actual selection (not on every reactivity change).
   let ringAnimateKey = $state<string | null>(null);
 
+  // The selected-state gap (border + seam) is surface-colored, not white, so in
+  // dark mode it reads as bar background and the colored ring floats around the
+  // swatch. Light mode is unchanged (surface is white there).
   function ringShadow(color: string) {
     const ringColor = getRingColor(color);
-    return `0 0 0 0.5px white, 0 0 0 4.5px ${ringColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
+    return `0 0 0 0.5px var(--surface), 0 0 0 4.5px ${ringColor}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
   }
 
   function gradientRingShadow(color: string) {
-    return `0 0 0 0.5px white, 0 0 0 4.5px ${color}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
+    return `0 0 0 0.5px var(--surface), 0 0 0 4.5px ${color}, 0 4px 8px rgba(0, 0, 0, 0.2)`;
   }
 
   function selectSwatch(hex: string, paint: string) {
@@ -130,6 +133,9 @@
   <button
     class="color-swatch gradient-swatch"
     class:active={!toolState.eraser && colors.activeSwatch === CUSTOM_SWATCH}
+    class:ringed={!toolState.eraser &&
+      colors.activeSwatch === CUSTOM_SWATCH &&
+      colors.customColorSelected}
     data-color="custom"
     aria-label="Custom Color"
     style={!toolState.eraser && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected
@@ -184,7 +190,7 @@
   }
 
   .color-swatch.active {
-    border-color: white;
+    border-color: var(--surface);
     /* Selection Ring is set dynamically via JavaScript to match swatch color */
   }
 
@@ -239,6 +245,16 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
+    transition: transform 150ms ease-out;
+  }
+
+  /* Selection pop: the hexagon cluster scales toward the ring. Keyed on .ringed
+     (ring visible), not .active — tapping the swatch arms it before a color is
+     picked, and the cluster shouldn't pop ringless. 1.12 × the 52px content box
+     stays inside the 60px button, so nothing clips against the palette's
+     overflow: hidden. */
+  .gradient-swatch.ringed :global(.more-colors-icon) {
+    transform: translate(-50%, -50%) scale(1.12);
   }
 
   /* Landscape prefers a single column (1 bar) and trims swatches one at a time,
