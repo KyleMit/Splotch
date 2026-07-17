@@ -19,13 +19,18 @@ export interface PinchZoomOptions {
 // The argument is a *getter* read inside a $effect (like modalDialog), so the
 // runes it touches — `enabled`, `resetKey`, the bound `target` — stay reactive.
 export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions) {
+  // The surface stays at scale 1, so its rect is constant for the length of a
+  // gesture — snapshot it on the first finger down and reuse it for every move,
+  // instead of re-measuring (a layout read) on each pointer event.
+  let rect: DOMRect | null = null;
+
   const zoom = createPinchZoom(() => {
-    const r = node.getBoundingClientRect();
+    const r = rect ?? node.getBoundingClientRect();
     return { width: r.width, height: r.height };
   });
 
   function local(e: PointerEvent): Point {
-    const r = node.getBoundingClientRect();
+    const r = rect ?? node.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
 
@@ -50,6 +55,7 @@ export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions)
 
   function onPointerDown(e: PointerEvent) {
     if (!getOptions().enabled) return;
+    if (zoom.pointerCount === 0) rect = node.getBoundingClientRect();
     zoom.down(e.pointerId, local(e));
     try {
       node.setPointerCapture(e.pointerId);
@@ -74,6 +80,7 @@ export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions)
       node.releasePointerCapture(e.pointerId);
     } catch {}
     apply(getOptions().target);
+    if (zoom.pointerCount === 0) rect = null;
   }
 
   node.addEventListener('pointerdown', onPointerDown);

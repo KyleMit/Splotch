@@ -145,10 +145,9 @@ export function createPinchZoom(getBounds: () => Bounds) {
       rebase();
     },
     move(id: number, p: Point) {
-      if (!pointers.has(id)) return transform;
+      if (!pointers.has(id)) return;
       pointers.set(id, p);
       recompute();
-      return transform;
     },
     up(id: number) {
       if (!pointers.delete(id)) return;
@@ -158,7 +157,6 @@ export function createPinchZoom(getBounds: () => Bounds) {
       pointers.clear();
       base = null;
       transform = { ...IDENTITY_TRANSFORM };
-      return transform;
     },
   };
 }

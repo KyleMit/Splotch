@@ -130,7 +130,8 @@ describe('createPinchZoom', () => {
     expect(zoom.transform.x).toBeLessThanOrEqual(0);
     expect(zoom.transform.x).toBeGreaterThanOrEqual(-200);
 
-    expect(zoom.reset()).toEqual({ scale: 1, x: 0, y: 0 });
+    zoom.reset();
+    expect(zoom.transform).toEqual({ scale: 1, x: 0, y: 0 });
     expect(zoom.pointerCount).toBe(0);
     expect(zoom.isZoomed).toBe(false);
   });
