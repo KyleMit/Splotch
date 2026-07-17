@@ -20,9 +20,9 @@ async function gotoApp(page: Page, path = '/') {
 async function openDrawer(page: Page) {
   const undo = page.locator('#undoButton');
   if (await undo.isVisible().catch(() => false)) return; // already open (e.g. persisted)
-  // The chevron rides the panel's `left` transition (it repositions next to the
-  // palette on mount), so it can be briefly non-stable; under parallel load the
-  // dev server is also slow to hydrate. Give the click room and retry.
+  // The chevron snaps next to the palette once its width is measured on mount, so
+  // it can shift position on the first frame; under parallel load the dev server
+  // is also slow to hydrate. Give the click room and retry.
   await expect(async () => {
     await page.locator('button[aria-label="Expand controls"]').click({ timeout: 3000 });
     await expect(undo).toBeVisible({ timeout: 1500 });

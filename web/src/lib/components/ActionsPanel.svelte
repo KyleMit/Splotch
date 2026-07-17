@@ -66,26 +66,24 @@
   // inner base size, which padding skews) and keeps their positions stable
   // while the drawer's expand animation sweeps the row's width through zero.
   //
-  // During prerender the real button count is unknowable (a stored AI token or
-  // toggle state only exists client-side), so SSR bakes the worst case — the
-  // cap can only be tighter than needed at first paint, never looser, which is
-  // what guarantees no Parent Help Button overlap before hydration. Same story
-  // for paletteWidth/Height (0 until measured): the baked left offset and cap
-  // derive from the same value, so they stay mutually consistent.
+  // This precise, measured cap is only set once we're in the browser. During
+  // prerender there's no orientation (SSR is always landscape) and no measured
+  // palette, so baking a value here would force the landscape formula onto
+  // portrait phones — which painted the buttons "incredibly small" until
+  // hydration swapped in the real size (issue #317). Instead we leave
+  // --action-btn-size unset at SSR and let the CSS --action-btn-fallback own
+  // first paint: it's the same worst-case cap but expressed per-orientation via
+  // media query, so it's correct in both. Once hydrated this value overrides it,
+  // and CSS keeps size out of `transition` so the swap snaps rather than
+  // animating.
   //
-  // Viewport units: landscape uses 100vw — the URL bar doesn't affect width,
-  // and SSR needs a CSS-native unit (layout.viewportWidth is 0 at prerender).
-  // Portrait bakes layout.viewportHeight instead of 100vh: on mobile web 100vh
-  // is the *large* viewport (URL bar collapsed), which overestimates the
-  // vertical budget while the browser chrome is visible — and the app.css
-  // 100vh→100dvh declaration-order fallback can't be reused inside a custom
-  // property (an unsupported dvh wouldn't be dropped at parse time; it would
-  // make `width: var(...)` invalid at computed-value time, i.e. width: auto).
-  // viewportHeight is the same visible-viewport number the slider ceiling uses
-  // (kept live by the shared resize listener, which fires on URL-bar
-  // show/hide), so the render cap and the ceiling can't disagree. Portrait is
-  // never prerendered (SSR is always landscape), so its 0-at-SSR value is
-  // unreachable here.
+  // Viewport units: landscape uses 100vw — the URL bar doesn't affect width.
+  // Portrait uses layout.viewportHeight (not 100vh): on mobile web 100vh is the
+  // *large* viewport (URL bar collapsed), which overestimates the vertical
+  // budget while the browser chrome is visible. viewportHeight is the same
+  // visible-viewport number the slider ceiling uses (kept live by the shared
+  // resize listener, which fires on URL-bar show/hide), so the render cap and
+  // the ceiling can't disagree.
   const buttonCount = $derived(browser ? visibleActionButtonCount() : MAX_ACTION_BUTTON_COUNT);
 
   const buttonSpread = $derived(
@@ -93,9 +91,11 @@
   );
 
   const buttonSize = $derived(
-    isPortrait
-      ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - layout.paletteHeight - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
-      : `min(calc(${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)), calc((100vw - ${layout.paletteWidth + PARENT_BUTTON_RESERVE}px - env(safe-area-inset-left) - env(safe-area-inset-right) - ${buttonSpread}px) / ${buttonCount}))`
+    !browser
+      ? undefined
+      : isPortrait
+        ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - layout.paletteHeight - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
+        : `min(calc(${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)), calc((100vw - ${layout.paletteWidth + PARENT_BUTTON_RESERVE}px - env(safe-area-inset-left) - env(safe-area-inset-right) - ${buttonSpread}px) / ${buttonCount}))`
   );
 
   // When advanced controls are disabled the chevron is hidden and the drawer
@@ -403,7 +403,6 @@
     flex-direction: row;
     align-items: center;
     z-index: 901;
-    transition: left 0.3s ease;
   }
 
   @media (orientation: portrait) {
@@ -566,12 +565,23 @@
      for small hands. The parent can rescale them from the Parent Center via
      --action-btn-scale (defaults to 1 when unset). */
   .action-button {
-    /* --action-btn-size (inline) caps the scaled size so the row clears the
-       Parent Help Button (landscape) / the palette bar (portrait); square via
-       width = height so a capped button shrinks like a smaller scale instead
-       of squishing. */
-    width: var(--action-btn-size, calc(60px * var(--action-btn-scale, 1)));
-    height: var(--action-btn-size, calc(60px * var(--action-btn-scale, 1)));
+    /* --action-btn-size (inline) is the precise measured cap ActionsPanel sets
+       once hydrated, so the row clears the Parent Help Button (landscape) / the
+       palette bar (portrait). Until then it's unset and --action-btn-fallback
+       owns first paint: the same worst-case cap (all 7 buttons, palette not yet
+       measured) but expressed in CSS so the media query picks the right
+       orientation — the old inline SSR bake was always the landscape formula, so
+       portrait phones painted tiny buttons that jumped to full size (issue #317).
+       Square via width = height so a capped button shrinks like a smaller scale
+       instead of squishing. Landscape 100vw (unaffected by the URL bar); the
+       200px = PARENT_BUTTON_RESERVE 64 + worst-case chrome 136 (6·12 gap + 8
+       inset + 8 toggle margin + 48 toggle). */
+    --action-btn-fallback: min(
+      calc(60px * var(--action-btn-scale, 1)),
+      calc((100vw - 200px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 7)
+    );
+    width: var(--action-btn-size, var(--action-btn-fallback));
+    height: var(--action-btn-size, var(--action-btn-fallback));
     background: var(--float-surface);
     border: 2px solid var(--float-border);
     border-radius: 18px;
@@ -580,15 +590,30 @@
     align-items: center;
     justify-content: center;
     box-shadow: var(--float-shadow);
-    transition: all 0.2s ease;
+    /* Animate interaction feedback only. Width/height/padding change when the
+       panel re-measures on load or the parent drags the Button Size slider;
+       those must snap, never animate (issue #317). */
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease,
+      opacity 0.2s ease;
     touch-action: manipulation;
     padding: calc(10px * var(--action-btn-scale, 1));
   }
 
   @media (orientation: portrait) {
     .action-button {
-      width: var(--action-btn-size, calc(55px * var(--action-btn-scale, 1)));
-      height: var(--action-btn-size, calc(55px * var(--action-btn-scale, 1)));
+      /* Portrait first-paint cap: the column stops short of the palette bar.
+         100vh is the large viewport (overestimates while the URL bar shows), but
+         this is only the pre-hydration fallback — --action-btn-size swaps in the
+         exact visible height right after hydration. 144px = 8px palette clearance
+         + 136px worst-case chrome (see landscape note). */
+      --action-btn-fallback: min(
+        calc(55px * var(--action-btn-scale, 1)),
+        calc((100vh - 144px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 7)
+      );
       padding: calc(9px * var(--action-btn-scale, 1));
     }
   }
@@ -811,7 +836,13 @@
     align-items: center;
     justify-content: center;
     padding: calc(7px * var(--action-btn-scale, 1));
-    transition: all 0.15s ease;
+    /* Interaction feedback only — the width/height track --action-btn-scale and
+       must snap when the parent drags the Button Size slider (issue #317). */
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      transform 0.15s ease;
     touch-action: manipulation;
   }
 
