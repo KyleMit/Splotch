@@ -37,6 +37,14 @@ Keep `npm ci` in maintenance even when a branch is based on `main`: a cached con
 dependencies from another branch, and `npm ci` removes that drift before installing exactly the
 checked-out lockfile.
 
+Both scripts are best-effort: they run without `set -e`, so a failed step prints a loud
+`CODEX SETUP WARNING` / `CODEX MAINTENANCE WARNING` banner (plus an end-of-run summary) and the
+script continues to exit 0 rather than aborting the whole environment build. This keeps a single bad
+step — most often a `package-lock.json`/npm-version disagreement — from leaving the container
+unusable, while still surfacing the failure in the log for the chat session to act on. Watch the
+setup/maintenance log for those banners; an `npm ci` banner usually means the lockfile needs an
+`npm install` and a commit.
+
 ## Initial acceptance check
 
 After creating a fresh environment, run:
