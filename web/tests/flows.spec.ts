@@ -764,6 +764,44 @@ test('parent center shows quick toggles on a landscape phone', async ({ page }) 
   await expect(page.locator('#advancedControlsToggle')).toHaveAttribute('aria-checked', 'false');
 });
 
+// A lock-incapable device (tablet-class native — supportsOrientationLock) hides
+// the Lock Rotation quick toggle, which used to leave a 3-cell hole in the
+// compact 2×2; a mini About cell (Splotch icon + version) fills the fourth slot
+// instead. supportsOrientationLock reads the *physical screen's* smaller side
+// while COMPACT_QUERY reads the window, so the stubbed screen stays
+// tablet-sized (min side ≥ 600) while the window height drops under 600 — the
+// small-tablet-in-landscape combination from the report. (The screen getters
+// are stubbed directly because Playwright's `screen` context option only takes
+// effect in mobile emulation, where Chromium honors screen-size overrides.)
+test('a lock-incapable device fills the empty quick-toggle slot with a mini About cell', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1133, height: 560 });
+  // The web build never loads Capacitor plugins (__IS_CAPACITOR__ is false),
+  // so a stub global is enough to flip isNative() without breaking anything.
+  await page.addInitScript(() => {
+    (globalThis as { Capacitor?: unknown }).Capacitor = {
+      isNativePlatform: () => true,
+      getPlatform: () => 'ios',
+    };
+    Object.defineProperty(Screen.prototype, 'width', { get: () => 1133 });
+    Object.defineProperty(Screen.prototype, 'height', { get: () => 744 });
+  });
+  await gotoApp(page);
+
+  await page.getByRole('button', { name: 'Parent Center' }).click();
+  const modal = page.locator('#parentHelpModal');
+  await expect(modal).toBeVisible();
+  await expect(modal).toHaveClass(/compact/);
+
+  // Lock Rotation is gone, and the About cell keeps the grid at four cells.
+  await expect(page.locator('#quickLockRotationToggle')).toHaveCount(0);
+  const aboutCell = modal.locator('.about-cell');
+  await expect(aboutCell).toBeVisible();
+  await expect(aboutCell).toContainText(/Version \d+\.\d+\.\d+/);
+  await expect(page.locator('.quick-toggles > .setting')).toHaveCount(4);
+});
+
 test('an API key stays locked with storage-specific feedback when secure saving fails', async ({
   page,
 }) => {

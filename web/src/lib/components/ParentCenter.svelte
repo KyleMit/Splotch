@@ -45,6 +45,8 @@
 
   const showOrientationControls = supportsOrientationLock();
 
+  const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
+
   // 'hub' = the phone top-level list; a section id = that section is open.
   let view = $state<'hub' | SectionId>('hub');
 
@@ -161,6 +163,14 @@
               checked={settings.lockRotationEnabled}
               onToggle={setLockRotation}
             />
+          </div>
+        {:else}
+          <!-- Lock-incapable devices (tablet-class native — see
+               supportsOrientationLock) would leave a hole in the 2×2, so a mini
+               About cell keeps the grid flush. -->
+          <div class="setting about-cell">
+            <SplotchyIcon class="about-cell-icon" aria-label="Splotch" role="img" />
+            <span class="about-cell-version">Version {APP_VERSION}</span>
           </div>
         {/if}
         <div class="setting">
@@ -347,6 +357,26 @@
     gap: 8px;
     align-content: start;
     padding: 0 24px;
+  }
+
+  /* Non-toggle fourth cell: mirrors ToggleRow's icon + label left edge so the
+     grid reads as one family. */
+  .about-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  :global(.about-cell-icon) {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .about-cell-version {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
   }
 
   .portrait-note {
