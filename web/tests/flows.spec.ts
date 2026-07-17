@@ -58,7 +58,8 @@ async function submitAiKey(page: Page, value: string) {
 // panel repositioning/re-rendering right after a reload without ever toggling a
 // just-opened menu back shut.
 async function openStrokeMenu(page: Page) {
-  const sentinel = page.locator('button[aria-label="Size 3"]'); // present whenever the menu is open
+  // Present whenever the menu is open — the label is tool-aware (issue #286).
+  const sentinel = page.locator('button[aria-label="Size 3"], button[aria-label="Eraser size 3"]');
   await expect(async () => {
     if (!(await sentinel.isVisible().catch(() => false))) {
       await page.locator('#strokeWidthButton').click({ timeout: 1000 });
@@ -443,10 +444,10 @@ test('pen and eraser keep independent stroke sizes that persist across reload', 
   await openStrokeMenu(page);
   await page.locator('button[aria-label="Size 5"]').click();
 
-  // Eraser → size 1.
+  // Eraser → size 1 (the flyout re-labels to the eraser context).
   await page.locator('#eraserButton').click();
   await openStrokeMenu(page);
-  await page.locator('button[aria-label="Size 1"]').click();
+  await page.locator('button[aria-label="Eraser size 1"]').click();
 
   await page.reload();
   await expect(page.locator('#drawingCanvas')).toBeVisible();
@@ -460,7 +461,10 @@ test('pen and eraser keep independent stroke sizes that persist across reload', 
   // Switch to the eraser — its independent size 1 is restored.
   await page.locator('#eraserButton').click();
   await openStrokeMenu(page);
-  await expect(page.locator('button[aria-label="Size 1"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('button[aria-label="Eraser size 1"]')).toHaveAttribute(
+    'aria-pressed',
+    'true'
+  );
 });
 
 // The home route is prerendered (ADR-0040), so its static HTML renders from

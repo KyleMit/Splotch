@@ -82,9 +82,11 @@
     el.toggleAttribute('data-off-undo', !settings.undoButtonEnabled);
   });
 
-  // The stroke-size lines preview what you'll lay down: the pen color, or the
-  // eraser's pink while erasing. Inherited by the icons via currentColor.
-  const strokeMenuColor = $derived(toolState.eraser ? '#fb3675' : colors.activeColor);
+  // The stroke-size lines preview the ink you'll lay down, tinted via
+  // currentColor. Only the pen uses it — the eraser previews are theme-driven
+  // "holes in the paper" (--paper / --hole-stroke), never color-tinted, so
+  // they stay distinct from every pen color (including pink).
+  const strokeMenuColor = $derived(colors.activeColor);
 
   // A white brush color vanishes against the light icon buttons, so the brush
   // icon and stroke-weight lines get a black outline while white is active.
@@ -214,19 +216,25 @@
           class="stroke-width-menu"
           class:white-stroke={whiteStroke}
           class:dark-stroke={darkStroke}
+          class:eraser-mode={toolState.eraser}
           hidden={!strokeState.menuOpen}
           style:color={strokeMenuColor}
         >
+          <!-- The previews change shape with the tool, not just color (a pink pen
+               would otherwise look identical to the eraser): the pen shows ink
+               strokes; the eraser shows dashed "holes in the paper" at its true
+               effective size (ERASER_SIZE_MULTIPLIER × the pen's width), filled
+               with --paper so the hole shows the canvas through the flyout. -->
           {#each STROKE_SIZES as size (size)}
             <button
               class="stroke-size-button"
               class:active={activeStrokeSize() === size}
-              aria-label="Size {size}"
+              aria-label={toolState.eraser ? `Eraser size ${size}` : `Size ${size}`}
               aria-pressed={activeStrokeSize() === size}
               use:scribbleTap={() => handleStrokeSizeClick(size)}
             >
               <Icon
-                name={`size-${size}` as import('./iconTypes').CommonIconName}
+                name={`${toolState.eraser ? 'eraser-size' : 'size'}-${size}` as import('./iconTypes').CommonIconName}
                 class="action-icon"
               />
             </button>
@@ -673,6 +681,25 @@
 
   .stroke-width-menu[hidden] {
     display: none;
+  }
+
+  /* Eraser mode renders the hole previews at the eraser's true pixel sizes:
+     the button padding drops and the icon viewport is pinned at 56px (the
+     unscaled 60px button minus its 2px borders), so the icons' 56-unit
+     viewBox maps 1:1 to CSS px — the level-5 hole is exactly the 44px the
+     eraser actually wipes. Pinning (not 100%) keeps that mapping when the
+     touch target shrinks or grows — the portrait 55px buttons and the Parent
+     Center's --action-btn-scale (70–130%) must never rescale the holes. The
+     SVG is transparent outside the hole, so on the smallest buttons the
+     level-5 hole pokes a couple px past the button edge — honestly. */
+  .stroke-width-menu.eraser-mode .stroke-size-button {
+    padding: 0;
+  }
+
+  .stroke-width-menu.eraser-mode .stroke-size-button :global(.action-icon) {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
   }
 
   .stroke-size-button {

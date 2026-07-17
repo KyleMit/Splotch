@@ -27,13 +27,20 @@
     'sweep-icon',
     'undo',
     'wand-stars',
-    // Stroke-size lines use currentColor (driven by the active pen/eraser color),
+    // Stroke-size previews carry their own coloring — the pen sizes via
+    // currentColor (the active ink color), the eraser sizes and its
+    // line-weight-eraser trigger via theme vars (--paper / --hole-stroke) —
     // so they must skip the monochrome tint filter too.
     'size-1',
     'size-2',
     'size-3',
     'size-4',
     'size-5',
+    'eraser-size-1',
+    'eraser-size-2',
+    'eraser-size-3',
+    'eraser-size-4',
+    'eraser-size-5',
   ]);
 
   interface Props {
