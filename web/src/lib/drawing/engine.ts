@@ -137,6 +137,10 @@ let paper = { pxW: 0, pxH: 0, cssW: 0, cssH: 0 };
 // Screen Orientation angle when the paper was adopted, so a later resize can
 // tell an actual rotation (angle delta ≠ 0) from a plain viewport resize.
 let paperAngle = 0;
+// Screen Orientation angle the last resizeCanvas ran against. Unlike
+// paperAngle it advances even when the paper stays locked, so the re-entry
+// re-sync can tell whether the device rotated while the document was hidden.
+let resizedAngle = 0;
 let paperView: PaperView = IDENTITY_PAPER_VIEW;
 
 // Dev/test seam (mirrors setSimplifyParams): pin the screen angle the engine
@@ -318,6 +322,7 @@ function resizeCanvas() {
   if (PERF_MARKS) performance.mark('engine.resize:start');
   const rect = canvas.getBoundingClientRect();
   const lockPaper = adoptPaperUnlessLocked(rect);
+  resizedAngle = currentScreenAngle();
 
   // The undo baseline is a max(w,h) square of the paper so it covers both
   // orientations and rotation never loses pixels; anything larger (e.g. a
@@ -364,6 +369,24 @@ function handleResize() {
     resizeSettleTimer = null;
     resizeCanvas();
   }, RESIZE_SETTLE_MS);
+}
+
+// A hidden document gets no resize/orientationchange, so rotating the device
+// while the app is backgrounded leaves the backing store, the cached rect, and
+// the paper view stale until some later event happens to fire. On re-entry
+// (visibilitychange → visible; the native WebViews hide the document while the
+// app is backgrounded, so this covers Capacitor resume too) rebuild
+// synchronously — but only when the geometry actually moved while away, so a
+// plain tab switch doesn't pay the backing-store wipe + full replay.
+function resyncOnReentry() {
+  if (document.visibilityState !== 'visible') return;
+  const rect = canvas.getBoundingClientRect();
+  const stale =
+    canvas.width !== Math.round(rect.width * renderScale) ||
+    canvas.height !== Math.round(rect.height * renderScale) ||
+    resizedAngle !== currentScreenAngle();
+  if (stale) resizeCanvas();
+  else refreshCanvasRect();
 }
 
 // --- Stroke rendering -------------------------------------------------------
@@ -940,6 +963,9 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   const screenOrientation = window.screen?.orientation;
   if (typeof screenOrientation?.addEventListener === 'function')
     listen(screenOrientation, 'change', handleResize);
+  // Rotation while backgrounded fires none of the listeners above (the document
+  // is hidden) — catch up on re-entry instead (issue #305).
+  listen(document, 'visibilitychange', resyncOnReentry);
 
   listen(canvas, 'pointerdown', startDrawing);
   listen(canvas, 'pointermove', draw);

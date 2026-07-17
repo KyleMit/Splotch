@@ -56,6 +56,7 @@ declare global {
       nonTransparentCount(): number;
       pixelAt(x: number, y: number): number[];
       resizeTo(w: number, h: number): Promise<void>;
+      resumeTo(w: number, h: number): void;
       strokeSync(points: { x: number; y: number }[], pointerType?: string): void;
       multiStrokeSync(
         strokes: { pointerId: number; points: { x: number; y: number }[] }[],

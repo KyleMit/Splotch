@@ -56,6 +56,21 @@ describe('viewport tracking', () => {
     expect(layout.safeArea.top).toBe(44);
   });
 
+  it('re-measures on re-entry when the device rotated while backgrounded', async () => {
+    const { layout } = await freshModule();
+    expect(layout.orientation).toBe('landscape');
+
+    // A hidden document fires no resize/orientationchange, so the rotation
+    // reaches the app only via the visibilitychange on return.
+    mocks.portrait = true;
+    mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    expect(layout.orientation).toBe('portrait');
+    expect(layout.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
+    expect(document.documentElement.dataset.orientation).toBe('portrait');
+  });
+
   it('follows the cutout inset from the top to a side edge across a rotation', async () => {
     mocks.portrait = true;
     mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };

@@ -148,6 +148,16 @@
         return new Promise<void>((resolve) => setTimeout(resolve, RESIZE_SETTLE_MS + 50));
       },
 
+      // Rotation-while-backgrounded seam (issue #305): a hidden document fires
+      // no resize/orientationchange, so apply the new box silently and fire
+      // only the visibilitychange that re-entry produces. The engine's re-sync
+      // rebuilds synchronously — no settle wait.
+      resumeTo(w: number, h: number) {
+        wrapperEl.style.width = `${w}px`;
+        wrapperEl.style.height = `${h}px`;
+        document.dispatchEvent(new Event('visibilitychange'));
+      },
+
       // Synchronous synthetic stroke — used only by the color-change debounce
       // test, where the < 100ms timing must be deterministic (real Playwright
       // input can't reliably hit a sub-100ms window). Goes through the same
