@@ -258,30 +258,35 @@
      picker's hexagon swatches) on the bar's own surface color, so it reads as
      "more colors" beside the flat swatches and follows the theme in dark mode. */
   .gradient-swatch {
+    --pop-scale: 1.12;
     background: var(--surface);
     position: relative;
   }
 
   /* Centered absolutely (not via flex) so it survives the display:block/none
-     toggling on each swatch. The SVG keeps its aspect ratio. */
+     toggling on each swatch. The SVG keeps its aspect ratio. Resting size is
+     the content box divided by the selection pop, so the popped cluster lands
+     exactly on the content box — the same circle an active swatch's disc fills
+     inside the Selection Ring — giving the ringed hexagon the same width of
+     white band as a ringed round swatch (issue #310). */
   .gradient-swatch :global(.more-colors-icon) {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 100%;
-    height: 100%;
+    width: calc(100% / var(--pop-scale));
+    height: calc(100% / var(--pop-scale));
     pointer-events: none;
     transition: transform 150ms ease-out;
   }
 
   /* Selection pop: the hexagon cluster scales toward the ring. Keyed on .ringed
      (ring visible), not .active — tapping the swatch arms it before a color is
-     picked, and the cluster shouldn't pop ringless. 1.12 × the 52px content box
-     stays inside the 60px button, so nothing clips against the palette's
-     overflow: hidden. */
+     picked, and the cluster shouldn't pop ringless. Popped it spans exactly the
+     content box (52px at 60px), well inside the button, so nothing clips
+     against the palette's overflow: hidden. */
   .gradient-swatch.ringed :global(.more-colors-icon) {
-    transform: translate(-50%, -50%) scale(1.12);
+    transform: translate(-50%, -50%) scale(var(--pop-scale));
   }
 
   /* Landscape prefers a single column (1 bar) and trims swatches one at a time,
