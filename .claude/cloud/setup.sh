@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Code on the web — environment Setup script (committed; see docs/CLOUD.md, ADR-0021).
+# Claude Code on the web — environment Setup script (committed; see docs/CLOUD/Claude.md, ADR-0021).
 #
 # The env-config "Setup script" field can't be version-controlled, so keep it a one-liner
 # that execs this file, and edit the real logic here under review:
@@ -35,7 +35,7 @@ npx --yes "playwright@${PW_VERSION:-1.61.1}" install --with-deps chromium \
   || echo "playwright browser install skipped — allowlist cdn.playwright.dev?"
 
 # Phone-preview reverse-tunnel client (ADR-0021). Cached into the snapshot at a persisted
-# path so later sessions skip the download. Pinned to the version docs/CLOUD.md references.
+# path so later sessions skip the download. Pinned to the version docs/CLOUD/Claude.md references.
 CHISEL_VERSION=1.10.1
 if ! command -v chisel >/dev/null 2>&1; then
   curl -sSL "https://github.com/jpillora/chisel/releases/download/v${CHISEL_VERSION}/chisel_${CHISEL_VERSION}_linux_amd64.gz" \
