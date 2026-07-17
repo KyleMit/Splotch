@@ -14,7 +14,6 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { STYLES_DIR, fail } from '../lib/paths.mjs';
-import { pixelate } from '../lib/pixelate.mjs';
 import { STYLE_SUFFIXES, STYLE_NAMES } from '../../../web/src/lib/ai/styles.ts';
 import { buildPromptForStyle } from '../../../web/src/lib/ai/prompt.ts';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
@@ -23,9 +22,6 @@ const MODEL = 'gemini-3.1-flash-image';
 const SOURCE_SVG = join(STYLES_DIR, 'source.svg');
 const THUMB_SIZE = 448;
 const WEBP_QUALITY = 75;
-// The Pixel cover renders a plain illustration and pixelates that (lib/pixelate.mjs)
-// because the model can't reliably render a whole scene as clean pixel art.
-const PIXEL_BASE_STYLE = 'Default';
 
 // Generate one styled render of a drawing. Returns raw image bytes + mime type,
 // or throws with the refusal/empty reason. Kept free of file/CLI concerns so it
@@ -87,16 +83,16 @@ for (const style of styles) {
   const out = join(STYLES_DIR, `${style.toLowerCase()}.webp`);
   process.stdout.write(`${style} ... `);
   try {
-    const isPixel = style === 'Pixel';
     const { bytes } = await generateStyledImage(ai, {
       imageBytes: sourcePng,
       mimeType: 'image/png',
-      style: isPixel ? PIXEL_BASE_STYLE : style,
+      style,
       temperature,
     });
-    let pipeline = sharp(bytes).resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover' });
-    if (isPixel) pipeline = await pixelate(await pipeline.png().toBuffer(), THUMB_SIZE);
-    await pipeline.webp({ quality: WEBP_QUALITY }).toFile(out);
+    await sharp(bytes)
+      .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover' })
+      .webp({ quality: WEBP_QUALITY })
+      .toFile(out);
     console.log(`saved ${out}`);
   } catch (err) {
     failures++;
