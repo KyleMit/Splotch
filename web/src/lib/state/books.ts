@@ -223,6 +223,7 @@ export const BOOKS: Book[] = [
       page('objects', 'flower', 'Flower', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page('objects', 'house', 'House', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page('objects', 'teddy', 'Teddy', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('objects', 'umbrella', 'Umbrella', ['portrait', 'landscape'], ['portrait', 'landscape']),
     ],
   },
   {
@@ -234,6 +235,7 @@ export const BOOKS: Book[] = [
       // Night fills + chalk outlines shipped for both orientations (ADR-0052;
       // pen/chalk fork — see tools/asset-gen/docs/pipeline.md).
       page('shapes', 'circle', 'Circle', ['portrait', 'landscape'], ['portrait', 'landscape']),
+      page('shapes', 'heart', 'Heart', ['portrait', 'landscape'], ['portrait', 'landscape']),
       page(
         'shapes',
         'rectangle',

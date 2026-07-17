@@ -1,5 +1,39 @@
 # Prompts
 
+## Coloring-page pen outlines (missing orientation)
+
+Recipe proven by the idea-24 orphan-page run (`tools/asset-gen/ideas-exploration/idea-24/`): when a
+page has one orientation and needs the other, condition Gemini on the **existing sibling
+orientation** as an image input (far stronger style anchoring than any text description) and request
+the target aspect ratio explicitly via `config.imageConfig.aspectRatio` (`'3:2'` wide / `'2:3'`
+tall). Normalize the output to the pen contract afterwards: resize to exact page dims (1536x1024 /
+1024x1536), `b-w` colourspace + normalise, webp q90.
+
+```md
+This image is one page of a toddler coloring book: clean black pen outlines on a pure white
+background, medium line weight, no shading, no grey, no color, no text.
+
+Draw a NEW page of the SAME coloring book showing the SAME subject, recomposed for a {LANDSCAPE
+(wider than tall) | PORTRAIT (taller than wide)} page ({3:2 | 2:3} aspect ratio).
+
+RULES:
+
+* Keep the identical drawing style: the same pen stroke weight, the same simple rounded shapes, the
+  same level of detail (very simple — this is for a 2-year-old).
+* Keep the same subject and supporting elements, rearranged naturally to fill the {LANDSCAPE |
+  PORTRAIT} composition with generous margins.
+* Every shape must be a closed thin outline that can be colored in. NO solid black regions, no
+  filled areas, no shading, no cross-hatching.
+* Pure white background, pure black lines only. No text, letters, numbers, signature, or border
+  frame.
+```
+
+Lesson from the run: the model defaults to reproducing the *reference's* composition even on a
+differently shaped canvas (big empty side margins). Append an explicit fill-the-axis note from the
+start, e.g. "FILL THE WHOLE LANDSCAPE WIDTH … flowers across the ENTIRE bottom edge". The reference
+script is `tools/asset-gen/ideas-exploration/idea-24/code/gen-pen-idea24.mjs` — a candidate for
+promotion to a real `gen:coloring-pen` script.
+
 ## Drawings
 
 ```md

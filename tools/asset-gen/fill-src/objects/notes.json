@@ -60,6 +60,18 @@
       "why": "Durable page quirk: the chalk instruction is eye-flavored and the eyeless scene made 2.5 REFUSE ('there are no eyes in the image to edit' — commits 46daba9 + 6f6e223; pipeline.md status-table lesson). Note text reconstructed. The 3.1 wave chalked it clean without the note, but the instruction is still eye-flavored, so the guard stays."
     }
   },
+  "umbrella-tall": {
+    "chalk": {
+      "flags": {
+        "notes": "This page has NO eyes and NO faces anywhere - that is expected and correct, not a problem with the image. Do not look for eyes. Just redraw the drawing as a chalk line drawing, whitening only small naturally-white features if there are any."
+      },
+      "why": "idea-24 orphan-page completion (ideas-exploration/idea-24/report.md): the eye-flavored chalk instruction can refuse eyeless scenes (house-wide precedent); this preemptive note cleared the 2.5-era chalk in one attempt (keep 99.9%). Kept for future regens."
+    },
+    "light": {
+      "review": "The shipped 2.5-era light fill leaves the raindrop interiors a near-white pale tint — passes the white gate (0.0%) but a reviewer may want them bluer. The pen also carries slightly larger top/bottom margins than umbrella-wide; a regenerate-with-note is ~1 call if that bothers review (idea-24 report §6).",
+      "why": "idea-24 orphan-page completion — the light fill took 4 attempts to clear the gates; these are the accepted take's known cosmetic quirks."
+    }
+  },
   "teddy-tall": {
     "chalk": {
       "retry": {

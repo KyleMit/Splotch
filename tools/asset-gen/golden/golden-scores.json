@@ -2043,6 +2043,40 @@
         "orbOk": true
       }
     },
+    "objects/umbrella-tall": {
+      "outline": {
+        "darkPx": 47960,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 4.828000068664551,
+        "ringDepth": 0,
+        "solidOk": true,
+        "ringsOk": true
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 32.8,
+        "lineWhite": 248,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
     "objects/umbrella-wide": {
       "outline": {
         "darkPx": 99932,
@@ -2181,6 +2215,40 @@
         "drift": 0,
         "bgLuma": 31.2,
         "lineWhite": 254,
+        "eyesFailed": 0,
+        "orbFailed": 0,
+        "orbMinCoreDark": null,
+        "driftOk": true,
+        "moodOk": true,
+        "lineOk": true,
+        "eyesOk": true,
+        "orbOk": true
+      }
+    },
+    "shapes/heart-wide": {
+      "outline": {
+        "darkPx": 52859,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
+        "strokeWidth": 4.828000068664551,
+        "ringDepth": 0,
+        "solidOk": true,
+        "ringsOk": true
+      },
+      "light": {
+        "keep": 1,
+        "localKeep": 1,
+        "worstTile": null,
+        "eyeCores": 0,
+        "eyeLively": 0,
+        "driftOk": true,
+        "eyesOk": true
+      },
+      "night": {
+        "drift": 0,
+        "bgLuma": 24.5,
+        "lineWhite": 240,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
