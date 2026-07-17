@@ -114,6 +114,8 @@ b63ec2ae6a1a6c9a9322f05ed32575034517efbf824dd390b577b9186e219e72  tools/asset-ge
 58b0ccc0b4356f29d25596a4b820158e7d628c7ffe88c4cdd23e7e6c2bdfe24e  tools/asset-gen/fill-src/objects/teddy-tall.night.raw.webp
 fe0040dc77bd8ce60c3b68c67ea1162f97f9a6eaf4dc2be51e6abb1ccc0cdb6f  tools/asset-gen/fill-src/objects/teddy-wide.light.raw.webp
 dce445d1dcdb9c14b3bb5ffeaa3be8bae2fe3857433fde6ffc7cb7e365d2f33b  tools/asset-gen/fill-src/objects/teddy-wide.night.raw.webp
+cc3d7c36cb27300a247fd76dd82bda870cd51f9ddd6393ef5a52b4772c9cc42a  tools/asset-gen/fill-src/objects/umbrella-tall.light.raw.webp
+e34ccf892f7723cb45f2a3372bea1b9d7d39a9beec309cf2c5b359e53268c7e3  tools/asset-gen/fill-src/objects/umbrella-tall.night.raw.webp
 03acf9f7c746e563b57450cd5051e315f6ec4283cc262d915f59f5ed7e1f228a  tools/asset-gen/fill-src/objects/umbrella-wide.light.raw.webp
 feccaf8f4b3c93b0cfdc1037d861db837269c3d1270518e108938bf232f1f3b6  tools/asset-gen/fill-src/objects/umbrella-wide.night.raw.webp
 7e363c152a46c6f3439d80027e5667586c34110b34c304d1c330edbd77e8590a  tools/asset-gen/fill-src/shapes/circle-tall.light.raw.webp
@@ -122,6 +124,8 @@ ae0fd18703275b98fe8d3c42670f268ee9c5ade2ed265a555a2b4c82cb0a0aa1  tools/asset-ge
 a174697d972b474ae0c66a2d9b9b3666aeb41df70995ece79f48298623d1ed52  tools/asset-gen/fill-src/shapes/circle-wide.night.raw.webp
 4e1f26dd4a0dbbaf0c8fc3c59962e7b6877c57de3e8dcb2865145ecb9e8fa4fb  tools/asset-gen/fill-src/shapes/heart-tall.light.raw.webp
 5a629c62bdb76b11f8cacb8f33e0ab5544373f5fd85bb9233bc2238bad7179c5  tools/asset-gen/fill-src/shapes/heart-tall.night.raw.webp
+7ebb7099b85f3923329928bdbd0d640809138525f37d36e829bb8da126886cb7  tools/asset-gen/fill-src/shapes/heart-wide.light.raw.webp
+c0894124de3f2d6e0ff473432f32566c6fb84140fc22f4765c343b5c35d7e526  tools/asset-gen/fill-src/shapes/heart-wide.night.raw.webp
 7e8461174dabff6fab4e2cbf6b7cb0acbcbb6e4f119606da7434c2ac14e50b8f  tools/asset-gen/fill-src/shapes/rectangle-tall.light.raw.webp
 d16013f14ff61ad27255da496228ea256ab7987786186a19c4fd00b1a4634ca1  tools/asset-gen/fill-src/shapes/rectangle-tall.night.raw.webp
 0dfb7ca33140fc62dc1b9175a03bd442b3ef285cf40eff812cc84f357d71091e  tools/asset-gen/fill-src/shapes/rectangle-wide.light.raw.webp
@@ -544,6 +548,12 @@ ae941b0e8e8a90e3af81003bfa211026c248acd37eb2602d7a88636616b67ae8  web/static/col
 31be7ce75c7cf2508412b39c772ef08c8a1a5f641dca196fb737e0f8055bfe22  web/static/coloring/objects/teddy-wide.night.webp
 9b753e334391e7aa31fe11e5b3774dd6141ea1a10ccbbabb1effc2b616cd2593  web/static/coloring/objects/teddy-wide.outline.webp
 e7b8fba016bb3be906e1bf7ec51ffcc3af6b40acffa39f04d44d781491cacd6f  web/static/coloring/objects/teddy-wide.thumb.webp
+06605b2639804a5ee99b402a25f88a3c679c80eabfb30e224c537dcdcb3d1da3  web/static/coloring/objects/umbrella-tall.chalk.thumb.webp
+8b732597bb9db035d8701bdb568fc462981d6560491e234680cc1c70cc3556aa  web/static/coloring/objects/umbrella-tall.chalk.webp
+0064fe09e381595fac3295bed48b80d2e31ad339c927b4b4e5086314a597ac78  web/static/coloring/objects/umbrella-tall.light.webp
+55a01ecb93fa6d22b35c42e9514eda12f21841392c948599ea530f53a413e36f  web/static/coloring/objects/umbrella-tall.night.webp
+9235a56eef023d82893628822e1a47d8a3ccc10c6920da6e57056167c84dafc8  web/static/coloring/objects/umbrella-tall.outline.webp
+6da190fb4fdc1ddec29875cb2fc2585fc8c499a1473cae5241d25ca5a7a37806  web/static/coloring/objects/umbrella-tall.thumb.webp
 b512660597b0acaeeb267e39c3b6688c90830c85932a604c97bd331f39d8155a  web/static/coloring/objects/umbrella-wide.chalk.thumb.webp
 8eaeb14524ecf4dbaa23e0ff01f48987e3909f43f14cc1f6118b9aa14ae5ef5b  web/static/coloring/objects/umbrella-wide.chalk.webp
 3bcebdf347ae1225000872827c1672b46c93231fc7d07a39c9daa96acbeee345  web/static/coloring/objects/umbrella-wide.light.webp
@@ -570,6 +580,12 @@ dd8e713e0cd8afb59c21918f0b130971548e09b7023e3d7ebc09119f01ffa3e0  web/static/col
 cdee0f7f15a40f68272cb54f5c5e9628b0a03fe0633ddd8626536eacf73d328e  web/static/coloring/shapes/heart-tall.night.webp
 a1d9b2a51b8803dface7ad5b4b041909b336fb130c02959f887f73adf64de2dc  web/static/coloring/shapes/heart-tall.outline.webp
 0f8a9a8a1d9964db79d2ad43a8cf139bf32dbc2bf3cc74e1850355e246fa44a6  web/static/coloring/shapes/heart-tall.thumb.webp
+1074dae1f5649d9aaea4aaef230fedf12e84d868f066bf784b8cb70768283e36  web/static/coloring/shapes/heart-wide.chalk.thumb.webp
+5824e4c2102c9da4b70ff946e7159dac8f28465af3d9fa6a620efcba7c56faab  web/static/coloring/shapes/heart-wide.chalk.webp
+61dfccaaa542e1ad3f1f4582c64ec2cb03ec12d9262dbab795a5e79bd7cc005f  web/static/coloring/shapes/heart-wide.light.webp
+a9cf91ef66eec52a0274e5579c425aaa9db78dfa882e014659ac8c99d89163a0  web/static/coloring/shapes/heart-wide.night.webp
+843a104eb6421f4976812dde296603a4976ba7fc81ea91c4fde933e88f83e454  web/static/coloring/shapes/heart-wide.outline.webp
+7833676270a6ca458f88608915466ea061e012a9a95f6e8ccdd9970334a1ab06  web/static/coloring/shapes/heart-wide.thumb.webp
 0554fc271013d8e7bba2344810a352f7587ded6729769f8db5042dd12c153845  web/static/coloring/shapes/rectangle-tall.chalk.thumb.webp
 8ff6d36dde117e60672ae6c661b1038527dc5386716568077821b08709b433fc  web/static/coloring/shapes/rectangle-tall.chalk.webp
 28d87864e8757ec23196c2070c030b1068ca1b2b44baf71d1697596b715db0de  web/static/coloring/shapes/rectangle-tall.light.webp
