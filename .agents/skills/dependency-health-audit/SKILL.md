@@ -112,6 +112,37 @@ Promote a transitive to a full direct-style entry only when it's individually lo
 individually risky (patched, overridden, vulnerable with no upstream fix, or deprecated with no
 parent fix released).
 
+## Phase 4b — Development-lifecycle dependencies (outside `package.json`)
+
+`package.json` isn't the whole dependency surface. The dev/CI lifecycle also relies on things no npm
+range governs, and they carry the same provenance/health/pinning questions. Inventory them in their
+own report section (`## Development lifecycle dependencies (outside package.json)`). Their versions
+come from **workflow/script pins, not `package-lock.json`** — refresh them by re-reading the files,
+not `npm view`. Three kinds:
+
+* **GitHub Actions** — every `uses:` in `.github/workflows/*.yml`
+  (`grep -rhoE "uses: [^ ]+@[^ ]+"`). Note the pin (tag/SHA), publisher (first-party `actions/*` vs.
+  third-party), and for third-party actions the repo health (stars/last-push/archived/latest tag via
+  the GitHub API) + whether the pinned major is behind latest. Flag **inconsistent pins** of the
+  same action across workflows, and that GitHub's hardening guidance prefers SHA pins for
+  third-party actions.
+* **Runtime-fetched CLIs** — tools invoked by npm scripts that aren't deps: `npx <tool>` (often
+  unpinned → runs latest each time), and globally-installed CLIs deliberately kept out of the tree
+  (e.g. `netlify-cli`, guarded by a `scripts/check-*.mjs`). Grep `package.json` scripts and
+  `scripts/*.mjs` for `npx`, and bare tool names (`netlify`, `cap`, `maestro`, `adb`, `emulator`,
+  `xcodebuild`, `gradle`). Confirm a tool is genuinely absent from the lockfile before listing it
+  here (`node -e` over `package-lock.json`).
+* **System toolchains** — the language/SDK layer native builds and tests need: Node (`setup-node`
+  `node-version`), JDK (`setup-java` `distribution`/`java-version`), the Gradle wrapper, the Android
+  SDK/emulator/adb (`android-emulator-runner` `api-level`), and Xcode/`xcodebuild` (usually the
+  runner's default — an **unpinned** float worth flagging). Record where each is pinned, or that it
+  floats.
+
+Assign the same verdicts (keep/monitor/investigate/replace). Typical monitor triggers here: unpinned
+`npx`/`curl | bash` installs (Maestro, kill-port), a third-party action a major behind, an unpinned
+Xcode. A version-bump-only finding (e.g. an action `@v5` → `@v6`) is a hand-off to
+`/dependency-update-audit`, same as an npm minor.
+
 ## Phase 5 — Write the report
 
 Write `docs/DEPENDENCIES.md`, **refreshed in place** — one stable file, so `git log -p` gives a
@@ -139,8 +170,10 @@ File header (create the file if missing — its absence just means the first aud
 ```
 
 Then: a **verdict summary table** (`| Package | Prod/Dev | Verdict |`, non-`keep` rows first), a
-`## Direct dependencies — production` section, `## Direct dependencies — development`, and
-`## Transitive dependencies` (Phase 4 content). Per-package entry format:
+`## Direct dependencies — production` section, `## Direct dependencies — development`,
+`## Transitive dependencies` (Phase 4 content), and
+`## Development lifecycle dependencies (outside package.json)` (Phase 4b content — a table per kind:
+GitHub Actions, runtime-fetched CLIs, system toolchains). Per-package entry format:
 
 ```markdown
 ### package-name

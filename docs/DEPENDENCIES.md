@@ -7,7 +7,8 @@
 > `/dependency-update-audit`, and replacements are tracked as GitHub issues.
 
 **Last refresh:** 2026-07-17 at `e2812b3` · 18 prod + 32 dev direct · 1179 total installed
-(package-lock entries)
+(package-lock entries) · plus dev-lifecycle deps outside `package.json` (GitHub Actions,
+runtime-fetched CLIs, system toolchains — see the final section)
 
 ## Verdict summary
 
@@ -922,6 +923,60 @@ are well-known, org- or foundation-backed packages; none are anomalous.
   the root direct `sharp`, because `@capacitor/assets`' own sharp tries a proxy-blocked libvips
   download in cloud sessions. Covered in the `sharp` and `@capacitor/assets` entries; keep the two
   coherent on any bump.
+
+## Development lifecycle dependencies (outside `package.json`)
+
+Not every dependency the project relies on is an npm package. CI workflows pull in **GitHub
+Actions** (pinned by tag, resolved from the Actions marketplace, not the lockfile), several npm
+scripts fetch **CLIs at runtime** (`npx …`, or a globally-installed tool), and the native builds
+need **system toolchains** that no npm range governs. These carry the same provenance/health/pinning
+questions as npm deps, so they're inventoried here — but versions come from workflow/script pins,
+not `package-lock.json`.
+
+### GitHub Actions (CI — `.github/workflows/`)
+
+| Action                                   | Pin                             | Publisher                  | Health (checked 2026-07-17)                                                                                                                 | Verdict                                                                                                   |
+| ---------------------------------------- | ------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `actions/checkout`                       | v7 · **v4** in `label-sync.yml` | GitHub (official)          | first-party, maintained                                                                                                                     | keep — **align the pin**: `label-sync.yml` is on `@v4` while every other workflow uses `@v7`              |
+| `actions/setup-node`                     | v6                              | GitHub (official)          | first-party, maintained                                                                                                                     | keep                                                                                                      |
+| `actions/setup-java`                     | v5                              | GitHub (official)          | first-party (used by `android-deploy.yml`, `distribution: temurin`, `java-version: 21`)                                                     | keep                                                                                                      |
+| `actions/cache`                          | v6                              | GitHub (official)          | first-party, maintained                                                                                                                     | keep                                                                                                      |
+| `actions/configure-pages`                | v5                              | GitHub (official)          | first-party (Pages deploy, `pages.yml`)                                                                                                     | keep                                                                                                      |
+| `actions/upload-pages-artifact`          | v3                              | GitHub (official)          | first-party                                                                                                                                 | keep                                                                                                      |
+| `actions/deploy-pages`                   | v4                              | GitHub (official)          | first-party                                                                                                                                 | keep                                                                                                      |
+| `actions/upload-artifact`                | v7                              | GitHub (official)          | first-party                                                                                                                                 | keep                                                                                                      |
+| `reactivecircus/android-emulator-runner` | v2                              | ReactiveCircus (3rd-party) | [1.3k stars](https://github.com/ReactiveCircus/android-emulator-runner) · last push 2026-07-05 · not archived · latest v2.38.0 · Apache-2.0 | keep — the de-facto standard emulator action; floating `@v2` tracks patches                               |
+| `crazy-max/ghaction-github-labeler`      | v5                              | crazy-max (3rd-party)      | [166 stars](https://github.com/crazy-max/ghaction-github-labeler) · last push 2026-07-06 · not archived · **latest v6.0.0** · MIT           | monitor — well-maintained, but pinned `@v5` while `@v6` is out; evaluate the major bump (label-sync only) |
+
+**Concerns:** the two third-party actions run with repo-write scope (emulator action executes build
+steps; the labeler writes labels via `label-sync.yml`). Both are actively maintained and floated by
+major tag. GitHub's own hardening advice is to pin third-party actions to a full commit SHA rather
+than a moving tag — worth considering for `reactivecircus/*` and `crazy-max/*`, though the current
+tag pins are conventional. No action pins to a SHA today.
+
+### Runtime-fetched CLIs (npm scripts, not in `package.json`)
+
+| Tool                           | Where                                                       | Source / provisioning                                                                                                                        | Verdict                                                                                                                                               |
+| ------------------------------ | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `netlify-cli`                  | `dev:netlify` (`netlify dev --cwd web`)                     | **global install** (`npm i -g netlify-cli`), deliberately not a project dep — `scripts/check-netlify-cli.mjs` guards its presence/login/link | keep — kept out of the tree on purpose (heavy CLI); the guard documents the requirement                                                               |
+| `kill-port`                    | `dev:kill` (`npx kill-port 5173 8888`)                      | fetched on demand via `npx` (unpinned)                                                                                                       | monitor — unpinned `npx` fetch runs latest each time; a small dev-only convenience, but pin a version or vendor it if supply-chain strictness matters |
+| `update-browserslist-db`       | `update:browserslist` (`npx update-browserslist-db@latest`) | fetched on demand via `npx`, explicitly `@latest`                                                                                            | keep — official browserslist maintenance tool; `@latest` is the documented invocation                                                                 |
+| Playwright browsers (Chromium) | `test.yml` (`npx playwright install --with-deps chromium`)  | browser **binaries** downloaded by the `@playwright/test` package (in `package.json`); cached by lockfile version in CI                      | keep — versioned by the npm package; the binaries are a separate download, not a separate dep                                                         |
+
+### System toolchains (native builds & tests — no npm range)
+
+| Toolchain                    | Where                                              | Provisioning / pin                                                                                                                                      | Verdict                                                                                                                                                                                                                                                                |
+| ---------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node.js                      | all CI jobs, all local dev                         | `actions/setup-node@v6` pins **node-version: 24** in CI                                                                                                 | keep — pinned in CI; keep local dev aligned                                                                                                                                                                                                                            |
+| JDK (Temurin)                | `android-deploy.yml`, Gradle builds                | `actions/setup-java@v5`, **temurin / java-version: 21**                                                                                                 | keep — Android build requirement, pinned                                                                                                                                                                                                                               |
+| Gradle                       | `android:*` scripts, Android CI                    | the committed **Gradle wrapper** (`android/gradlew`), invoked via `scripts/gradle.mjs` (ADR-0017); patched into `@capacitor/cli` for Windows (ADR-0011) | keep — wrapper-pinned; version lives in the native project                                                                                                                                                                                                             |
+| Android SDK / emulator / adb | `android:*`, `test:android`, `android-deploy.yml`  | `reactivecircus/android-emulator-runner@v2` (**api-level: 33, google_apis, x86_64**) in CI; local Android Studio SDK otherwise                          | keep — API 33 emulator target pinned in CI                                                                                                                                                                                                                             |
+| Xcode / `xcodebuild`         | `ios:*` scripts, `ios-deploy.yml`                  | macOS runner's system Xcode (image-provided); no explicit version pin in the workflow                                                                   | monitor — iOS builds float on the runner's default Xcode; pin the Xcode version if a toolchain bump ever breaks a release build                                                                                                                                        |
+| Maestro                      | `test:android:device`, `test:ios`, native smoke CI | installed via `curl -fsSL https://get.maestro.mobile.dev \| bash` in `android-deploy.yml` / `ios-deploy.yml` (unpinned — installs latest)               | monitor — [14.9k stars](https://github.com/mobile-dev-inc/Maestro) · active · Apache-2.0, healthy upstream, but the CI install is **unpinned** (`get.maestro.mobile.dev` → latest); pin a Maestro version for reproducible native smoke runs. See the `testing` skill. |
+
+**Method note:** these live outside the lockfile, so refresh them by re-reading
+`.github/workflows/`, the `package.json` scripts, and `scripts/*.mjs` — not `npm view`. Version
+facts above are the pins as found in those files on the refresh date.
 
 ---
 
