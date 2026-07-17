@@ -97,7 +97,6 @@
   }
 
   function handlePointerDown(e: PointerEvent) {
-    nudgeBlendLayer(e);
     if (toolState.eraser) {
       updateEraserCursor(e);
       return;
@@ -111,7 +110,6 @@
   }
 
   function handlePointerMove(e: PointerEvent) {
-    nudgeBlendLayer(e);
     if (toolState.eraser) {
       updateEraserCursor(e);
       return;
@@ -309,6 +307,21 @@
     blendNudge = !blendNudge;
   }
 
+  // The nudge wraps the ring handlers at the template level instead of living
+  // inside them: an adopted stroke's first move routes handlePointerMove into
+  // handlePointerDown to grow its missing ring, and a nudge inside each would
+  // toggle twice before Svelte flushes — a net no-op that would leave exactly
+  // that first adopted frame on the stale backdrop.
+  function handleCanvasPointerDown(e: PointerEvent) {
+    nudgeBlendLayer(e);
+    handlePointerDown(e);
+  }
+
+  function handleCanvasPointerMove(e: PointerEvent) {
+    nudgeBlendLayer(e);
+    handlePointerMove(e);
+  }
+
   const paperViewTransform = $derived(
     `${paperTransform} translateZ(${blendNudge ? '0.01px' : '0'})`
   );
@@ -350,8 +363,8 @@
     bind:this={canvasEl}
     id="drawingCanvas"
     class:erasing={toolState.eraser}
-    onpointerdown={handlePointerDown}
-    onpointermove={handlePointerMove}
+    onpointerdown={handleCanvasPointerDown}
+    onpointermove={handleCanvasPointerMove}
     onpointerenter={updateEraserCursor}
     onpointerleave={handlePointerLeave}
     onpointerup={removeBrushRing}
