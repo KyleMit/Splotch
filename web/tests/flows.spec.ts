@@ -763,14 +763,14 @@ test('parent center shows quick toggles on a landscape phone', async ({ page }) 
   await expect(page.locator('.pc-nav')).toHaveCount(0);
   await expect(page.locator('#quickSoundToggle')).toBeVisible();
   await expect(page.locator('#quickNightToggle')).toBeVisible();
-  await expect(page.locator('#quickLockRotationToggle')).toBeVisible();
   await expect(page.locator('#quickAdvancedControlsToggle')).toBeVisible();
-  // Lock Rotation holds the device-varying bottom-right (last) slot, so the
-  // other three toggles sit in the same place on lock-incapable devices too.
-  await expect(
-    page.locator('.quick-toggles > .setting').nth(3).locator('#quickLockRotationToggle')
-  ).toBeVisible();
-  await expect(page.getByText('Turn your device to portrait')).toBeVisible();
+  // The orientation lock selector holds the device-varying bottom-right (last)
+  // slot, so the other three toggles sit in the same place on lock-incapable
+  // devices too.
+  const orientationCell = page.locator('.quick-toggles > .setting').nth(3);
+  await expect(orientationCell.locator('#quickLockPortrait')).toBeVisible();
+  await expect(orientationCell.locator('#quickLockLandscape')).toBeVisible();
+  await expect(page.getByText('Switch to portrait for the full settings')).toBeVisible();
 
   // A quick toggle drives the same persisted setting as the full section...
   await page.locator('#quickAdvancedControlsToggle').click();
@@ -779,6 +779,26 @@ test('parent center shows quick toggles on a landscape phone', async ({ page }) 
     'false'
   );
 
+  // A phone-sized screen defaults to a portrait lock, so Portrait starts active.
+  await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#quickLockLandscape')).toHaveAttribute('aria-pressed', 'false');
+
+  // Choosing the other side moves the lock to it.
+  await page.locator('#quickLockLandscape').click();
+  await expect(page.locator('#quickLockLandscape')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'false');
+
+  // Tapping the active side again releases the lock — neither side stays active,
+  // so the phone is free to rotate again.
+  await page.locator('#quickLockLandscape').click();
+  await expect(page.locator('#quickLockLandscape')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'false');
+
+  // Re-select Portrait to carry a portrait lock into the rotation check below,
+  // where the full Appearance section should reflect it.
+  await page.locator('#quickLockPortrait').click();
+  await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'true');
+
   // ...and rotating to portrait swaps in the full hub shell live, where the
   // Controls section reflects the change made from the quick toggle.
   await page.setViewportSize({ width: 390, height: 852 });
@@ -786,6 +806,12 @@ test('parent center shows quick toggles on a landscape phone', async ({ page }) 
   await expect(page.locator('#quickSoundToggle')).toHaveCount(0);
   await page.getByRole('button', { name: 'Controls & Buttons' }).click();
   await expect(page.locator('#advancedControlsToggle')).toHaveAttribute('aria-checked', 'false');
+
+  // The Appearance section shows the lock we set, now forced to portrait.
+  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Appearance & Display' }).click();
+  await expect(page.locator('#lockRotationToggle')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('#forceLandscapeToggle')).toHaveAttribute('aria-checked', 'false');
 });
 
 // A lock-incapable device (tablet-class native — supportsOrientationLock) hides
@@ -820,9 +846,10 @@ test('a lock-incapable device fills the empty quick-toggle slot with a mini Abou
   await expect(modal).toBeVisible();
   await expect(modal).toHaveClass(/compact/);
 
-  // Lock Rotation is gone, and the About cell keeps the grid at four cells,
-  // sitting in the bottom-right (last) slot where Lock Rotation would be.
-  await expect(page.locator('#quickLockRotationToggle')).toHaveCount(0);
+  // The orientation lock selector is gone, and the About cell keeps the grid at
+  // four cells, sitting in the bottom-right (last) slot where it would be.
+  await expect(page.locator('#quickLockPortrait')).toHaveCount(0);
+  await expect(page.locator('#quickLockLandscape')).toHaveCount(0);
   const cells = page.locator('.quick-toggles > .setting');
   await expect(cells).toHaveCount(4);
   const aboutCell = cells.nth(3);

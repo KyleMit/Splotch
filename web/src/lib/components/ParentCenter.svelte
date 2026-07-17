@@ -19,11 +19,13 @@
     settings,
     setSound,
     setLockRotation,
+    setForceLandscapeOrientation,
     setAdvancedControls,
     setTheme,
   } from '$lib/state/settings.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { supportsOrientationLock } from '$lib/platform';
+  import type { CommonIconName } from './iconTypes';
 
   // Two shells, one section list (ADR-0061). Below the breakpoint it's a hub
   // that drills into a full-page section; at or above it's a persistent sidebar
@@ -44,6 +46,43 @@
   let compact = $state(browser ? matchMedia(COMPACT_QUERY).matches : false);
 
   const showOrientationControls = supportsOrientationLock();
+
+  // Compact orientation control: a two-way Portrait / Landscape selector that
+  // replaces the old single Lock Rotation switch. Picking a side is what enables
+  // the lock (and sets the orientation) — so a phone with rotation *unlocked*
+  // keeps free-rotating until the parent taps a side, and neither segment reads
+  // as active. When locked, the active segment mirrors forceLandscapeOrientation,
+  // and tapping it again releases the lock back to free rotation. This is also
+  // the escape hatch from a landscape lock: tapping Portrait flips the lock
+  // upright, which rotates the device out of this cramped shell and back to the
+  // full settings — the old switch could only *remove* the lock.
+  type LockedOrientation = 'portrait' | 'landscape';
+  const orientationOptions: {
+    value: LockedOrientation;
+    label: string;
+    icon: CommonIconName;
+    id: string;
+  }[] = [
+    { value: 'portrait', label: 'Portrait', icon: 'mobile-portrait', id: 'quickLockPortrait' },
+    { value: 'landscape', label: 'Landscape', icon: 'mobile-landscape', id: 'quickLockLandscape' },
+  ];
+  const lockedOrientation = $derived<LockedOrientation | null>(
+    settings.lockRotationEnabled
+      ? settings.forceLandscapeOrientation
+        ? 'landscape'
+        : 'portrait'
+      : null
+  );
+  function lockOrientation(value: LockedOrientation) {
+    // Tapping the already-locked side releases the lock — the only way back to
+    // free rotation from the compact shell.
+    if (lockedOrientation === value) {
+      setLockRotation(false);
+      return;
+    }
+    setForceLandscapeOrientation(value === 'landscape');
+    setLockRotation(true);
+  }
 
   const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
@@ -164,18 +203,26 @@
           />
         </div>
         <!-- The bottom-right cell is the only one that varies by device: the
-             Lock Rotation toggle, or — where the OS owns orientation (see
+             orientation lock selector, or — where the OS owns orientation (see
              supportsOrientationLock) — a mini About cell so the 2×2 stays
              flush instead of leaving a hole. -->
         {#if showOrientationControls}
-          <div class="setting">
-            <ToggleRow
-              icon={settings.lockRotationEnabled ? 'mobile-lock' : 'mobile-rotate'}
-              label="Lock Rotation"
-              id="quickLockRotationToggle"
-              checked={settings.lockRotationEnabled}
-              onToggle={setLockRotation}
-            />
+          <div class="setting orientation-cell">
+            <div class="orient-seg" role="group" aria-label="Lock screen orientation">
+              {#each orientationOptions as option (option.value)}
+                <button
+                  type="button"
+                  class="orient-opt"
+                  class:active={lockedOrientation === option.value}
+                  id={option.id}
+                  aria-pressed={lockedOrientation === option.value}
+                  onclick={() => lockOrientation(option.value)}
+                >
+                  <Icon name={option.icon} class="orient-opt-icon" />
+                  <span>{option.label}</span>
+                </button>
+              {/each}
+            </div>
           </div>
         {:else}
           <div class="setting about-cell">
@@ -186,7 +233,7 @@
       </div>
       <p class="portrait-note">
         <Icon name="mobile-portrait" class="portrait-note-icon" />
-        Turn your device to portrait for the full settings.
+        Switch to portrait for the full settings.
       </p>
     {:else if wide}
       <!-- Tablet / desktop: persistent sidebar + scrolling content pane. -->
@@ -358,6 +405,65 @@
     gap: 8px;
     align-content: start;
     padding: 0 24px;
+  }
+
+  /* Orientation fourth cell: a Portrait / Landscape segmented control in place
+     of ToggleRow's switch. Tighter padding than a switch cell so the segments
+     fill it and its height lines up with the toggle rows beside it. */
+  .setting.orientation-cell {
+    padding: 6px;
+  }
+
+  /* iOS-style segmented control, matching the Theme picker in AppearanceSection.
+     No segment is active while rotation is unlocked, so the pair reads as "off"
+     until the parent picks a side. */
+  .orient-seg {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--slider-track);
+    border-radius: 10px;
+  }
+
+  .orient-opt {
+    flex: 1;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 4px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-mid);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  @media (hover: hover) {
+    .orient-opt:not(.active):hover {
+      color: var(--text-strong);
+    }
+  }
+
+  .orient-opt.active {
+    background: var(--surface);
+    color: var(--text-strong);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  }
+
+  :global(.orient-opt-icon) {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
   }
 
   /* Non-toggle fourth cell: mirrors ToggleRow's icon + label left edge so the
