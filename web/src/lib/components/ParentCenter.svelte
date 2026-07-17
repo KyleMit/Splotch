@@ -390,6 +390,11 @@
   .pc-header-compact {
     padding: 14px 24px 10px;
     padding-right: 64px;
+    /* Reserve the close button's full vertical extent (top:12 + 44px height =
+       56px, plus a little breathing room) so the top-right toggle cell starts
+       below it instead of sliding up under the button. Mirrors the padding-right
+       that clears it horizontally. */
+    min-height: 62px;
   }
 
   .pc-header-compact h2 {
