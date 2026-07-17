@@ -779,11 +779,25 @@ test('parent center shows quick toggles on a landscape phone', async ({ page }) 
     'false'
   );
 
-  // Picking Portrait enables the lock in that orientation, which the full
-  // Appearance section reflects once we rotate back to the portrait shell.
-  await page.locator('#quickLockPortrait').click();
+  // A phone-sized screen defaults to a portrait lock, so Portrait starts active.
   await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#quickLockLandscape')).toHaveAttribute('aria-pressed', 'false');
+
+  // Choosing the other side moves the lock to it.
+  await page.locator('#quickLockLandscape').click();
+  await expect(page.locator('#quickLockLandscape')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'false');
+
+  // Tapping the active side again releases the lock — neither side stays active,
+  // so the phone is free to rotate again.
+  await page.locator('#quickLockLandscape').click();
+  await expect(page.locator('#quickLockLandscape')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'false');
+
+  // Re-select Portrait to carry a portrait lock into the rotation check below,
+  // where the full Appearance section should reflect it.
+  await page.locator('#quickLockPortrait').click();
+  await expect(page.locator('#quickLockPortrait')).toHaveAttribute('aria-pressed', 'true');
 
   // ...and rotating to portrait swaps in the full hub shell live, where the
   // Controls section reflects the change made from the quick toggle.

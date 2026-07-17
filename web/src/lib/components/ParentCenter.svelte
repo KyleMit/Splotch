@@ -51,10 +51,11 @@
   // replaces the old single Lock Rotation switch. Picking a side is what enables
   // the lock (and sets the orientation) — so a phone with rotation *unlocked*
   // keeps free-rotating until the parent taps a side, and neither segment reads
-  // as active. When locked, the active segment mirrors forceLandscapeOrientation.
-  // This is also the escape hatch from a landscape lock: tapping Portrait flips
-  // the lock upright, which rotates the device out of this cramped shell and
-  // back to the full settings — the old switch could only *remove* the lock.
+  // as active. When locked, the active segment mirrors forceLandscapeOrientation,
+  // and tapping it again releases the lock back to free rotation. This is also
+  // the escape hatch from a landscape lock: tapping Portrait flips the lock
+  // upright, which rotates the device out of this cramped shell and back to the
+  // full settings — the old switch could only *remove* the lock.
   type LockedOrientation = 'portrait' | 'landscape';
   const orientationOptions: {
     value: LockedOrientation;
@@ -73,6 +74,12 @@
       : null
   );
   function lockOrientation(value: LockedOrientation) {
+    // Tapping the already-locked side releases the lock — the only way back to
+    // free rotation from the compact shell.
+    if (lockedOrientation === value) {
+      setLockRotation(false);
+      return;
+    }
     setForceLandscapeOrientation(value === 'landscape');
     setLockRotation(true);
   }
