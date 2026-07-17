@@ -132,6 +132,61 @@ test('selecting a palette color activates it and paints in that color', async ({
   expect(px![2]).toBeGreaterThan(px![0]);
 });
 
+// Issue #185: a press that starts on a swatch and drags onto the canvas selects
+// that color and becomes a live stroke — ink flows from where the pointer
+// crosses on, and releasing over the canvas commits it (no 100ms color-change
+// debounce: that guard is for tap fallout, and this drag IS the intended
+// stroke). Plain taps keep behaving as today (covered above).
+test('dragging a color from a swatch onto the canvas selects it and draws', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const swatch = page.locator('button.color-swatch[data-color="#62A2E9"]');
+  const box = (await swatch.boundingBox())!;
+  const canvasBox = (await page.locator('#drawingCanvas').boundingBox())!;
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  // Step across the palette edge so a pointermove lands over the canvas
+  // mid-drag (the handoff point), then keep dragging to draw.
+  await page.mouse.move(canvasBox.x + 200, canvasBox.y + 160, { steps: 12 });
+  await page.mouse.move(canvasBox.x + 360, canvasBox.y + 240, { steps: 6 });
+  await page.mouse.up();
+
+  // The dragged color is now the active selection…
+  await expect(swatch).toHaveClass(/active/);
+  // …the drag painted a committed stroke (undo arms)…
+  await expect(page.locator('#undoButton')).toBeEnabled();
+  // …and the ink is the dragged color. #62A2E9 is blue-dominant.
+  const px = await firstOpaquePixel(page);
+  expect(px).not.toBeNull();
+  expect(px![2]).toBeGreaterThan(px![0]);
+});
+
+// The drag handoff must only fire on the canvas: a press that wanders within
+// the palette and releases there is not a selection (same as today's
+// slide-off-a-swatch behavior) and must not draw.
+test('a swatch drag that never reaches the canvas neither selects nor draws', async ({ page }) => {
+  await gotoApp(page);
+
+  const purple = page.locator('button.color-swatch[data-color="#AB71E1"]');
+  const blue = page.locator('button.color-swatch[data-color="#62A2E9"]');
+  await expect(purple).toHaveClass(/active/); // the default selection
+
+  const blueBox = (await blue.boundingBox())!;
+  const purpleBox = (await purple.boundingBox())!;
+  await page.mouse.move(blueBox.x + blueBox.width / 2, blueBox.y + blueBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(purpleBox.x + purpleBox.width / 2, purpleBox.y + purpleBox.height / 2, {
+    steps: 8,
+  });
+  await page.mouse.up();
+
+  await expect(purple).toHaveClass(/active/);
+  await expect(blue).not.toHaveClass(/active/);
+  expect(await firstOpaquePixel(page)).toBeNull();
+});
+
 test('palette colors and custom hexagons activate from the keyboard', async ({ page }) => {
   await gotoApp(page);
 

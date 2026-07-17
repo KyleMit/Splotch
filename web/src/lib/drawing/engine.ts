@@ -515,10 +515,12 @@ let safeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 // edge is never guarded. Only touch input is affected; pen and mouse never
 // trigger the gesture. Children who want to draw at a guarded edge draw away.
 // The band/decision/inset thresholds and the geometry live in ./strokeMath.
-function startDrawing(e: PointerEvent) {
-  const timeSinceColorChange = Date.now() - lastColorChangeTime;
-  const requiredDelay = e.pointerType === 'pen' ? 0 : COLOR_CHANGE_DEBOUNCE_MS;
-  if (timeSinceColorChange < requiredDelay) return;
+function startDrawing(e: PointerEvent, ignoreColorDebounce = false) {
+  if (!ignoreColorDebounce) {
+    const timeSinceColorChange = Date.now() - lastColorChangeTime;
+    const requiredDelay = e.pointerType === 'pen' ? 0 : COLOR_CHANGE_DEBOUNCE_MS;
+    if (timeSinceColorChange < requiredDelay) return;
+  }
 
   const screen = pointerToScreen(e);
   const { x, y } = screenToPaper(screen);
@@ -754,6 +756,18 @@ export function releaseAllPointers() {
   });
 
   activePointerIds.clear();
+}
+
+// Adopt a live pointer mid-gesture as a stroke start — the drag-a-color-onto-
+// the-canvas handoff (the palette's dragColorToCanvas action). The press began
+// on a swatch, so the canvas never saw a pointerdown; the caller selects the
+// color, then hands the stream here the moment it crosses onto exposed canvas,
+// and startDrawing's capture retargets the rest of the stream to the canvas.
+// The color-change debounce exists to absorb the stray stroke a TAP's fallout
+// could start — this stream IS the intended stroke, so it starts unconditionally.
+export function adoptPointerStroke(e: PointerEvent) {
+  if (!ctx || activePointers.has(e.pointerId)) return;
+  startDrawing(e, true);
 }
 
 // --- WebKit merged-stream pen quirks ---------------------------------------
