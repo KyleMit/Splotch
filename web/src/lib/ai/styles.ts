@@ -2,8 +2,6 @@
 // in the order these keys are defined, and the server appends the matching
 // suffix to the base prompt. "Magical" is the lead style: a light sprinkle of
 // enchantment over the base prompt so the plain option still feels like magic.
-// NOTE: Clay and Realistic are both candidates to replace the retired Pixel
-// style — only one ships; the loser is removed after cover/sample review.
 export const STYLE_SUFFIXES: Record<string, string> = {
   Magical:
     'Add a gentle storybook enchantment: a few soft golden sparkles drifting through the air, a subtle warm glow around the main characters, and dreamy, inviting light across the scene.',
@@ -19,8 +17,6 @@ export const STYLE_SUFFIXES: Record<string, string> = {
   Cartoon:
     'Render the final image as a clean digital cartoon and comic book illustration with bold lines, smooth shading, and crisp edges.',
   Clay: 'Render the final image as a handmade claymation scene: every element sculpted from soft modeling clay with rounded edges, gentle thumbprint texture, and a subtle sheen, lit like a stop-motion film set. Each sculpted piece is smooth, solid clay in one even color, with no drawn, scratched, or engraved lines on its surface. Fill the whole frame edge to edge with the clay scene, with no surrounding border, table, or backdrop visible.',
-  Realistic:
-    'Render the final image as a realistic photograph of the real scene the drawing depicts: every drawn element becomes its true real-world counterpart with genuine materials, natural textures, real-world proportions, and natural light, as if captured with a camera. If the scene could not exist in a real photograph, render it as a breathtaking photorealistic movie still of the scene actually happening, never as a photo of toys, crafts, or wall art. Keep the original composition and colors recognizable, include every element from the drawing, and make the result look truly photographic, not illustrated or cartoonish.',
 };
 
 export const STYLE_NAMES = Object.keys(STYLE_SUFFIXES);
