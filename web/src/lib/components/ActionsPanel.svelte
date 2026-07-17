@@ -72,6 +72,20 @@
   // what guarantees no Parent Help Button overlap before hydration. Same story
   // for paletteWidth/Height (0 until measured): the baked left offset and cap
   // derive from the same value, so they stay mutually consistent.
+  //
+  // Viewport units: landscape uses 100vw — the URL bar doesn't affect width,
+  // and SSR needs a CSS-native unit (layout.viewportWidth is 0 at prerender).
+  // Portrait bakes layout.viewportHeight instead of 100vh: on mobile web 100vh
+  // is the *large* viewport (URL bar collapsed), which overestimates the
+  // vertical budget while the browser chrome is visible — and the app.css
+  // 100vh→100dvh declaration-order fallback can't be reused inside a custom
+  // property (an unsupported dvh wouldn't be dropped at parse time; it would
+  // make `width: var(...)` invalid at computed-value time, i.e. width: auto).
+  // viewportHeight is the same visible-viewport number the slider ceiling uses
+  // (kept live by the shared resize listener, which fires on URL-bar
+  // show/hide), so the render cap and the ceiling can't disagree. Portrait is
+  // never prerendered (SSR is always landscape), so its 0-at-SSR value is
+  // unreachable here.
   const buttonCount = $derived(browser ? visibleActionButtonCount() : MAX_ACTION_BUTTON_COUNT);
 
   const buttonSpread = $derived(
@@ -80,7 +94,7 @@
 
   const buttonSize = $derived(
     isPortrait
-      ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((100vh - ${layout.paletteHeight + PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
+      ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - layout.paletteHeight - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
       : `min(calc(${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)), calc((100vw - ${layout.paletteWidth + PARENT_BUTTON_RESERVE}px - env(safe-area-inset-left) - env(safe-area-inset-right) - ${buttonSpread}px) / ${buttonCount}))`
   );
 
