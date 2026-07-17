@@ -132,6 +132,123 @@ test('selecting a palette color activates it and paints in that color', async ({
   expect(px![2]).toBeGreaterThan(px![0]);
 });
 
+// Issue #185: a press that starts on a swatch and drags onto the canvas selects
+// that color and becomes a live stroke — ink flows from where the pointer
+// crosses on, and releasing over the canvas commits it (no 100ms color-change
+// debounce: that guard is for tap fallout, and this drag IS the intended
+// stroke). Plain taps keep behaving as today (covered above).
+test('dragging a color from a swatch onto the canvas selects it and draws', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const swatch = page.locator('button.color-swatch[data-color="#62A2E9"]');
+  const box = (await swatch.boundingBox())!;
+  const canvasBox = (await page.locator('#drawingCanvas').boundingBox())!;
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  // Step across the palette edge so a pointermove lands over the canvas
+  // mid-drag (the handoff point), then keep dragging to draw.
+  await page.mouse.move(canvasBox.x + 200, canvasBox.y + 160, { steps: 12 });
+  await page.mouse.move(canvasBox.x + 360, canvasBox.y + 240, { steps: 6 });
+  await page.mouse.up();
+
+  // The dragged color is now the active selection…
+  await expect(swatch).toHaveClass(/active/);
+  // …the drag painted a committed stroke (undo arms)…
+  await expect(page.locator('#undoButton')).toBeEnabled();
+  // …and the ink is the dragged color. #62A2E9 is blue-dominant.
+  const px = await firstOpaquePixel(page);
+  expect(px).not.toBeNull();
+  expect(px![2]).toBeGreaterThan(px![0]);
+});
+
+// The touch flavor of the drag handoff, synthesized because one Playwright
+// mouse can't be a touch pointer. What it pins down: in landscape the drag
+// enters the canvas through the LEFT edge band — for a plain touch pointerdown
+// that band is an OS-gesture guard zone (guardedEdgeAt), and the drag's inward
+// motion is exactly the signature advanceEdgeSwipeCandidate discards — so the
+// adopted swatch drag must bypass the edge-swipe guard (adoptPointerStroke) or
+// it selects the color but silently paints nothing on touch devices.
+test('a touch drag from a swatch paints through the landscape edge-swipe band', async ({
+  page,
+}) => {
+  await gotoApp(page);
+
+  const painted = await page.evaluate(async () => {
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const swatch = document.querySelector(
+      'button.color-swatch[data-color="#62A2E9"]'
+    ) as HTMLElement;
+    const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    const fire = (target: Element, type: string, x: number, y: number, buttons: number) =>
+      target.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: 55,
+          pointerType: 'touch',
+          buttons,
+          clientX: x,
+          clientY: y,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+
+    const s = swatch.getBoundingClientRect();
+    const sy = s.top + s.height / 2;
+    // Press the swatch, then drag onto the canvas 4px inside its left edge —
+    // deep in the 24px edge-swipe band. The window-level move triggers the
+    // handoff (a touch press stays targeted on the swatch via implicit capture;
+    // synthetic dispatch on it models that).
+    fire(swatch, 'pointerdown', s.left + s.width / 2, sy, 1);
+    await sleep(30);
+    fire(swatch, 'pointermove', rect.left + 4, sy, 1);
+    // The rest of the stream is the engine's (captured to the canvas): move
+    // INWARD, the direction the guard would misread as the OS gesture.
+    for (let i = 1; i <= 8; i++) {
+      await sleep(16);
+      fire(canvas, 'pointermove', rect.left + 4 + i * 30, sy + i * 4, 1);
+    }
+    fire(canvas, 'pointerup', rect.left + 244, sy + 32, 0);
+    await new Promise(requestAnimationFrame);
+
+    const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
+    }
+    return null;
+  });
+
+  expect(painted).not.toBeNull();
+  // #62A2E9 is blue-dominant — the adopted touch stroke painted in the dragged color.
+  expect(painted![2]).toBeGreaterThan(painted![0]);
+});
+
+// The drag handoff must only fire on the canvas: a press that wanders within
+// the palette and releases there is not a selection (same as today's
+// slide-off-a-swatch behavior) and must not draw.
+test('a swatch drag that never reaches the canvas neither selects nor draws', async ({ page }) => {
+  await gotoApp(page);
+
+  const purple = page.locator('button.color-swatch[data-color="#AB71E1"]');
+  const blue = page.locator('button.color-swatch[data-color="#62A2E9"]');
+  await expect(purple).toHaveClass(/active/); // the default selection
+
+  const blueBox = (await blue.boundingBox())!;
+  const purpleBox = (await purple.boundingBox())!;
+  await page.mouse.move(blueBox.x + blueBox.width / 2, blueBox.y + blueBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(purpleBox.x + purpleBox.width / 2, purpleBox.y + purpleBox.height / 2, {
+    steps: 8,
+  });
+  await page.mouse.up();
+
+  await expect(purple).toHaveClass(/active/);
+  await expect(blue).not.toHaveClass(/active/);
+  expect(await firstOpaquePixel(page)).toBeNull();
+});
+
 test('palette colors and custom hexagons activate from the keyboard', async ({ page }) => {
   await gotoApp(page);
 

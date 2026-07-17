@@ -116,14 +116,16 @@
     }
     const ring = brushRings[e.pointerId];
     if (!ring) {
-      // WebKit can merge a fast pen tap-then-stroke into one down-less stream:
-      // the engine adopts the stroke mid-move (see isOrphanPenContact) and
-      // captures the pointer to the canvas, so no pointerdown ever reaches this
-      // handler. Pressed pen buttons + the engine's capture is that adopted
-      // stroke's signature — grow its missing ring here. The capture check also
-      // keeps a stroke the engine already ended (releaseAllPointers) from
-      // regrowing its ring on later moves.
-      if (e.pointerType === 'pen' && e.buttons !== 0 && canvasEl.hasPointerCapture(e.pointerId)) {
+      // Strokes the engine starts without a canvas pointerdown still deserve a
+      // ring: WebKit can merge a fast pen tap-then-stroke into one down-less
+      // stream the engine adopts mid-move (see isOrphanPenContact), and a drag
+      // from a palette swatch hands its pointer over mid-gesture
+      // (adoptPointerStroke). Both capture the pointer to the canvas, so
+      // pressed buttons + the engine's capture is the adopted stroke's
+      // signature — grow its missing ring here. The capture check also keeps a
+      // stroke the engine already ended (releaseAllPointers) from regrowing its
+      // ring on later moves.
+      if (e.buttons !== 0 && canvasEl.hasPointerCapture(e.pointerId)) {
         handlePointerDown(e);
       }
       return;

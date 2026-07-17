@@ -10,8 +10,9 @@
     themedSwatchColor,
   } from '$lib/state/colors.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { releaseAllPointers } from '$lib/drawing/engine';
+  import { releaseAllPointers, setColor, setEraserMode, setMagicMode } from '$lib/drawing/engine';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
+  import { dragColorToCanvas } from '$lib/actions/dragColorToCanvas';
   import { openColorPicker, buttonCenter } from '$lib/state/ui.svelte';
   import { toolState, selectPen } from '$lib/state/tool.svelte';
   import { layout } from '$lib/state/layout.svelte';
@@ -75,6 +76,23 @@
     releaseAllPointers();
   }
 
+  // A drag from a swatch that crosses onto the canvas (dragColorToCanvas)
+  // selects like a tap, with two differences: the engine must be painting in
+  // this swatch's color and tool from the stroke's very first dot — the
+  // reactive bridges in DrawingCanvas ($effect → setColor/setEraserMode/
+  // setMagicMode) flush after this handler, so push directly here; they re-push
+  // the same values harmlessly — and no releaseAllPointers: the press already
+  // released everything (handlePaletteDown), and releasing again now would kill
+  // a stroke a sibling finger started during the drag.
+  function dragSelectSwatch(hex: string, paint: string) {
+    selectPen();
+    selectPaletteColor(hex, paint);
+    ringAnimateKey = hex + ':' + Date.now();
+    setEraserMode(false);
+    setMagicMode(false);
+    setColor(paint);
+  }
+
   function selectCustomColor() {
     selectPen();
     selectCustomSwatch();
@@ -128,6 +146,7 @@
         : ''}"
       aria-label={shown === hex ? label : 'White'}
       use:scribbleTap={() => selectSwatch(hex, shown)}
+      use:dragColorToCanvas={() => dragSelectSwatch(hex, shown)}
       onpointerdown={handlePaletteDown}
       onpointercancel={handleSwatchCancel}
       bind:this={swatchEls[hex]}
@@ -180,7 +199,11 @@
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    touch-action: manipulation; /* Prevent iOS gesture delays */
+    /* none (not manipulation): a swatch press can become a drag onto the canvas
+       (dragColorToCanvas), so the browser must never claim the gesture as a
+       pan/scroll mid-drag. Also prevents iOS gesture delays, like the palette's
+       own manipulation. */
+    touch-action: none;
   }
 
   /* Bonus colors are extras: hidden everywhere by default, revealed only on a
