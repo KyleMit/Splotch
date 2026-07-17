@@ -35,6 +35,18 @@
   // Bubble that previews the eraser footprint at the pointer while erasing.
   let eraserCursor = $state({ visible: false, x: 0, y: 0 });
 
+  // Impact rings that track each drawing pointer while a stroke is live (pen and
+  // magic brush; the eraser has its own bubble above). One ring per active
+  // pointer — toddlers draw with several fingers at once — sized to the stroke
+  // width so the area of impact is visible around the fingertip. The magic
+  // brush's ring is a rainbow so its reveal behavior is legible (issue #187);
+  // whether a ring is rainbow is captured at pointerdown, matching how the
+  // engine stamps `magic` onto ops at stroke start. Rings die with the stroke:
+  // up/cancel/leave, plus lostpointercapture for strokes the engine ends itself
+  // (releaseAllPointers — a second finger pressing a swatch or dragging the
+  // clear button never sends this canvas a pointerup).
+  let brushRings = $state<Record<number, { x: number; y: number; magic: boolean }>>({});
+
   // The engine's paper view (ADR-0050): identity in normal use; after a device
   // rotation with ink on the canvas it presents the locked paper upright,
   // contain-fit and centered (scaled down when it doesn't fit). The overlay
@@ -64,6 +76,12 @@
     getEraserWidthPx(strokeState.eraserSize) * (paperView.active ? paperView.scale : 1)
   );
 
+  // Pen and magic strokes share the pen width (the engine applies no multiplier
+  // to magic ops), so both ring flavors share this size.
+  const brushRingSizePx = $derived(
+    getStrokeWidthPx(strokeState.penSize) * (paperView.active ? paperView.scale : 1)
+  );
+
   function updateEraserCursor(e: PointerEvent) {
     if (!toolState.eraser) return;
     // The canvas fills the container, so its cached client rect shares the
@@ -76,6 +94,52 @@
 
   function hideEraserCursor() {
     eraserCursor.visible = false;
+  }
+
+  function handlePointerDown(e: PointerEvent) {
+    if (toolState.eraser) {
+      updateEraserCursor(e);
+      return;
+    }
+    const rect = getCanvasRect();
+    brushRings[e.pointerId] = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      magic: toolState.magic,
+    };
+  }
+
+  function handlePointerMove(e: PointerEvent) {
+    if (toolState.eraser) {
+      updateEraserCursor(e);
+      return;
+    }
+    const ring = brushRings[e.pointerId];
+    if (!ring) {
+      // WebKit can merge a fast pen tap-then-stroke into one down-less stream:
+      // the engine adopts the stroke mid-move (see isOrphanPenContact) and
+      // captures the pointer to the canvas, so no pointerdown ever reaches this
+      // handler. Pressed pen buttons + the engine's capture is that adopted
+      // stroke's signature — grow its missing ring here. The capture check also
+      // keeps a stroke the engine already ended (releaseAllPointers) from
+      // regrowing its ring on later moves.
+      if (e.pointerType === 'pen' && e.buttons !== 0 && canvasEl.hasPointerCapture(e.pointerId)) {
+        handlePointerDown(e);
+      }
+      return;
+    }
+    const rect = getCanvasRect();
+    ring.x = e.clientX - rect.left;
+    ring.y = e.clientY - rect.top;
+  }
+
+  function removeBrushRing(e: PointerEvent) {
+    delete brushRings[e.pointerId];
+  }
+
+  function handlePointerLeave(e: PointerEvent) {
+    hideEraserCursor();
+    removeBrushRing(e);
   }
 
   onMount(() => {
@@ -157,7 +221,8 @@
 
   $effect(() => {
     setEraserMode(toolState.eraser);
-    if (!toolState.eraser) hideEraserCursor();
+    if (toolState.eraser) brushRings = {};
+    else hideEraserCursor();
   });
 
   // The magic brush reveals the active page's colored fill (ADR-0043), theme-
@@ -258,11 +323,23 @@
     bind:this={canvasEl}
     id="drawingCanvas"
     class:erasing={toolState.eraser}
-    onpointerdown={updateEraserCursor}
-    onpointermove={updateEraserCursor}
+    onpointerdown={handlePointerDown}
+    onpointermove={handlePointerMove}
     onpointerenter={updateEraserCursor}
-    onpointerleave={hideEraserCursor}
+    onpointerleave={handlePointerLeave}
+    onpointerup={removeBrushRing}
+    onpointercancel={removeBrushRing}
+    onlostpointercapture={removeBrushRing}
   ></canvas>
+  {#each Object.entries(brushRings) as [id, ring] (id)}
+    <div
+      class="brush-ring"
+      class:magic={ring.magic}
+      style:transform="translate3d({ring.x}px, {ring.y}px, 0) translate(-50%, -50%)"
+      style:width="{brushRingSizePx}px"
+      style:height="{brushRingSizePx}px"
+    ></div>
+  {/each}
   {#if eraserCursor.visible}
     <div
       class="eraser-bubble"
@@ -332,6 +409,38 @@
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
     pointer-events: none;
     z-index: 3;
+  }
+
+  /* content-box puts the ring line just OUTSIDE the stroke footprint (the
+     element's width/height), so even the thinnest stroke keeps a visible ring
+     around the fingertip. The faint white halo keeps the grey line legible on
+     the dark paper too. */
+  .brush-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    box-sizing: content-box;
+    border: 2px solid rgba(80, 80, 80, 0.35);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  /* Magic-brush flavor: a conic rainbow masked down to the outer band (the
+     padding takes the border's place outside the footprint). The -webkit-
+     duplicate is load-bearing — Chrome only unprefixed `mask` in 120, above
+     the Chrome 111 floor (docs/COMPATIBILITY.md). */
+  .brush-ring.magic {
+    border: none;
+    padding: 3px;
+    background: conic-gradient(#ff5e5e, #ffa94d, #ffe066, #69db7c, #4dabf7, #b197fc, #ff5e5e);
+    -webkit-mask: radial-gradient(
+      farthest-side,
+      transparent calc(100% - 3.5px),
+      #000 calc(100% - 3px)
+    );
+    mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
   }
 
   /* The blend lives on the wrapper (not the img): the transform makes the
