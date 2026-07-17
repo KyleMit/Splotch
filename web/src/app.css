@@ -224,6 +224,13 @@ body {
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+  /* Paint those inset strips with the palette bar's surface, not the darker
+     --app-bg, so the top safe-area band reads as a seamless extension of the
+     bar instead of a dark line above it (stark in dark mode: --app-bg #17171d
+     vs --surface #23232b). On true-notch devices the Notch Band (fixed,
+     z-index 1000) still paints the active color over this region; this only
+     recolors the shallow status-bar strip it leaves transparent. */
+  background: var(--surface);
 }
 
 @media (orientation: portrait) {
