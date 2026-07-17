@@ -1,5 +1,5 @@
 ---
-name: dependency-audit
+name: dependency-update-audit
 description: Audit package.json dependencies for updates (incl. majors), then upgrade them one at a time — read the migration guide, fix all usage, verify, and commit each on its own
 argument-hint: "[package-name] (optional — limit the run to a single dependency)"
 disable-model-invocation: true
