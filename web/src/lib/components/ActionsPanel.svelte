@@ -12,8 +12,21 @@
   } from '$lib/state/strokeWidth.svelte';
   import { toolState, selectEraser, toggleMagic } from '$lib/state/tool.svelte';
   import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
+  import { browser } from '$app/environment';
   import { network } from '$lib/state/network.svelte';
   import { layout } from '$lib/state/layout.svelte';
+  import {
+    ACTION_BUTTON_GAP,
+    ACTION_BUTTON_BASE_LANDSCAPE,
+    ACTION_BUTTON_BASE_PORTRAIT,
+    PARENT_BUTTON_RESERVE,
+    PANEL_INSET,
+    DRAWER_TOGGLE_MARGIN,
+    DRAWER_TOGGLE_SIZE,
+    PALETTE_CLEARANCE,
+    MAX_ACTION_BUTTON_COUNT,
+    visibleActionButtonCount,
+  } from '$lib/state/actionButtonLayout.svelte';
   import { undo } from '$lib/drawing/engine';
   import { saveScreenshot } from '$lib/drawing/screenshot';
   import { generateAiImage } from '$lib/drawing/aiImage';
@@ -42,6 +55,47 @@
     isPortrait
       ? 'calc(8px + env(safe-area-inset-left))'
       : `calc(${layout.paletteWidth + 8}px + env(safe-area-inset-left))`
+  );
+
+  // Cap the button size so the expanded panel always fits the screen —
+  // landscape: the row stops short of the bottom-right Parent Help Button;
+  // portrait: the column stops short of the palette bar at the top. Constants
+  // and the mirror JS formula (the Parent Center slider's dynamic max) live in
+  // actionButtonLayout. An explicit equal per-button size — rather than letting
+  // the row flex-shrink — keeps the buttons identical (flex distributes by
+  // inner base size, which padding skews) and keeps their positions stable
+  // while the drawer's expand animation sweeps the row's width through zero.
+  //
+  // During prerender the real button count is unknowable (a stored AI token or
+  // toggle state only exists client-side), so SSR bakes the worst case — the
+  // cap can only be tighter than needed at first paint, never looser, which is
+  // what guarantees no Parent Help Button overlap before hydration. Same story
+  // for paletteWidth/Height (0 until measured): the baked left offset and cap
+  // derive from the same value, so they stay mutually consistent.
+  //
+  // Viewport units: landscape uses 100vw — the URL bar doesn't affect width,
+  // and SSR needs a CSS-native unit (layout.viewportWidth is 0 at prerender).
+  // Portrait bakes layout.viewportHeight instead of 100vh: on mobile web 100vh
+  // is the *large* viewport (URL bar collapsed), which overestimates the
+  // vertical budget while the browser chrome is visible — and the app.css
+  // 100vh→100dvh declaration-order fallback can't be reused inside a custom
+  // property (an unsupported dvh wouldn't be dropped at parse time; it would
+  // make `width: var(...)` invalid at computed-value time, i.e. width: auto).
+  // viewportHeight is the same visible-viewport number the slider ceiling uses
+  // (kept live by the shared resize listener, which fires on URL-bar
+  // show/hide), so the render cap and the ceiling can't disagree. Portrait is
+  // never prerendered (SSR is always landscape), so its 0-at-SSR value is
+  // unreachable here.
+  const buttonCount = $derived(browser ? visibleActionButtonCount() : MAX_ACTION_BUTTON_COUNT);
+
+  const buttonSpread = $derived(
+    (buttonCount - 1) * ACTION_BUTTON_GAP + PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE
+  );
+
+  const buttonSize = $derived(
+    isPortrait
+      ? `min(calc(${ACTION_BUTTON_BASE_PORTRAIT}px * var(--action-btn-scale, 1)), calc((${layout.viewportHeight - layout.paletteHeight - PALETTE_CLEARANCE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - ${buttonSpread}px) / ${buttonCount}))`
+      : `min(calc(${ACTION_BUTTON_BASE_LANDSCAPE}px * var(--action-btn-scale, 1)), calc((100vw - ${layout.paletteWidth + PARENT_BUTTON_RESERVE}px - env(safe-area-inset-left) - env(safe-area-inset-right) - ${buttonSpread}px) / ${buttonCount}))`
   );
 
   // When advanced controls are disabled the chevron is hidden and the drawer
@@ -189,7 +243,12 @@
      Scribble against the next stroke (ADR-0038); that also suppresses the tap's
      synthesized click, so every button here activates via use:scribbleTap
      (pointerup for pointers, click only for keyboard/AT) instead of onclick. -->
-<div class="actions-panel" style:left={leftOffset} use:scribbleGuard>
+<div
+  class="actions-panel"
+  style:left={leftOffset}
+  style:--action-btn-size={buttonSize}
+  use:scribbleGuard
+>
   <!-- Always rendered; the drawer's open/closed state and each control's Parent
        Center on/off toggle are driven purely by CSS keyed off <html> attributes
        (see the publish effect above and app.html), so a returning user's stored
@@ -381,7 +440,8 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 8px;
+    /* Keep in sync with ACTION_BUTTON_GAP in actionButtonLayout.svelte.ts. */
+    gap: 12px;
     min-width: 0;
     min-height: 0;
     /* Clip the buttons to the collapsing track. Flipped to visible once open so
@@ -506,8 +566,12 @@
      for small hands. The parent can rescale them from the Parent Center via
      --action-btn-scale (defaults to 1 when unset). */
   .action-button {
-    width: calc(60px * var(--action-btn-scale, 1));
-    height: calc(60px * var(--action-btn-scale, 1));
+    /* --action-btn-size (inline) caps the scaled size so the row clears the
+       Parent Help Button (landscape) / the palette bar (portrait); square via
+       width = height so a capped button shrinks like a smaller scale instead
+       of squishing. */
+    width: var(--action-btn-size, calc(60px * var(--action-btn-scale, 1)));
+    height: var(--action-btn-size, calc(60px * var(--action-btn-scale, 1)));
     background: var(--float-surface);
     border: 2px solid var(--float-border);
     border-radius: 18px;
@@ -523,8 +587,8 @@
 
   @media (orientation: portrait) {
     .action-button {
-      width: calc(55px * var(--action-btn-scale, 1));
-      height: calc(55px * var(--action-btn-scale, 1));
+      width: var(--action-btn-size, calc(55px * var(--action-btn-scale, 1)));
+      height: var(--action-btn-size, calc(55px * var(--action-btn-scale, 1)));
       padding: calc(9px * var(--action-btn-scale, 1));
     }
   }

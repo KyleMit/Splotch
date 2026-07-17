@@ -10,8 +10,11 @@ export type Orientation = 'portrait' | 'landscape';
 // value reactively here removes both.
 interface LayoutState {
   paletteWidth: number;
+  paletteHeight: number;
   orientation: Orientation;
   safeArea: SafeAreaInsets;
+  viewportWidth: number;
+  viewportHeight: number;
 }
 
 function readOrientation(): Orientation {
@@ -24,10 +27,13 @@ function readOrientation(): Orientation {
 }
 
 export const layout: LayoutState = $state({
-  // Rendered width of the color palette bar. ActionsPanel sits just past it
-  // (paletteWidth + gap) in landscape so it clears the palette. 0 until the
-  // palette has measured itself, so dependents settle once it lays out.
+  // Rendered size of the color palette bar. ActionsPanel sits just past its
+  // width (paletteWidth + gap) in landscape so it clears the palette, and the
+  // action-button sizing math clears its height in portrait (the top bar).
+  // 0 until the palette has measured itself, so dependents settle once it
+  // lays out.
   paletteWidth: 0,
+  paletteHeight: 0,
 
   // Viewport orientation and the measured env(safe-area-inset-*) values, kept
   // fresh by the single resize/orientationchange listener pair below so
@@ -37,6 +43,12 @@ export const layout: LayoutState = $state({
   orientation: browser ? readOrientation() : 'landscape',
 
   safeArea: { ...ZERO_INSETS },
+
+  // Viewport dimensions in CSS px, for JS-side layout math (e.g. the Parent
+  // Center's dynamic Button Size ceiling). 0 during prerender; synced from
+  // module load on the client.
+  viewportWidth: 0,
+  viewportHeight: 0,
 });
 
 function syncViewport() {
@@ -46,6 +58,8 @@ function syncViewport() {
   document.documentElement.dataset.orientation = next;
   // Per-field assign so equal re-measurements don't wake dependents.
   Object.assign(layout.safeArea, measureSafeAreaInsets());
+  layout.viewportWidth = window.innerWidth;
+  layout.viewportHeight = window.innerHeight;
 }
 
 // Installed at module load (not from a component) so the values are live before

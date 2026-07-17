@@ -8,7 +8,6 @@
     settings,
     setActionButtonScale,
     ACTION_BUTTON_SCALE_MIN,
-    ACTION_BUTTON_SCALE_MAX,
     ACTION_BUTTON_SCALE_DEFAULT,
     setScreenshot,
     setUndoButton,
@@ -20,6 +19,17 @@
   } from '$lib/state/settings.svelte';
   import { setResizingActionButtons } from '$lib/state/ui.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
+  import { maxActionButtonScale } from '$lib/state/actionButtonLayout.svelte';
+
+  // Ceiling the Button Size slider at what the current screen can actually
+  // fit, so the parent can't pick a size the Actions Panel would have to cap
+  // anyway (landscape: the row would hit the Parent Help Button; portrait: the
+  // column would hit the palette). Recomputed reactively from the shared
+  // layout state, so it tracks rotation while the Parent Center is open. A
+  // stored value above today's ceiling (e.g. set on a wider screen) is only
+  // displayed clamped — it isn't rewritten unless the parent drags the slider.
+  const scaleCeiling = $derived(maxActionButtonScale());
+  const displayedScale = $derived(Math.min(settings.actionButtonScale, scaleCeiling));
 
   // Side-effect on top of the persisted setting: disabling the coloring book
   // should also clear any active overlay page.
@@ -102,15 +112,15 @@
           <Icon name="photo-size-select-small" class="setting-icon" />
           Button Size
         </span>
-        <span>{settings.actionButtonScale}%</span>
+        <span>{displayedScale}%</span>
       </div>
       <Slider
-        value={settings.actionButtonScale}
+        value={displayedScale}
         min={ACTION_BUTTON_SCALE_MIN}
-        max={ACTION_BUTTON_SCALE_MAX}
-        snap={ACTION_BUTTON_SCALE_DEFAULT}
+        max={scaleCeiling}
+        snap={scaleCeiling > ACTION_BUTTON_SCALE_DEFAULT ? ACTION_BUTTON_SCALE_DEFAULT : undefined}
         labelId="actionButtonScaleLabel"
-        valueText="{settings.actionButtonScale}%"
+        valueText="{displayedScale}%"
         onInput={setActionButtonScale}
         onActiveChange={onScaleActive}
       />

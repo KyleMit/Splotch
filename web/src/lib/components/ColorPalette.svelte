@@ -34,17 +34,21 @@
     }
   });
 
-  // Publish our rendered width so ActionsPanel can offset past it in landscape
-  // without reaching in via querySelector. A ResizeObserver keeps it current as
-  // the palette trims swatches at breakpoints.
+  // Publish our rendered size so ActionsPanel can offset past our width in
+  // landscape (and the action-button sizing math can clear our height in
+  // portrait) without reaching in via querySelector. A ResizeObserver keeps it
+  // current as the palette trims swatches at breakpoints.
   onMount(() => {
     const ro = new ResizeObserver(() => {
-      layout.paletteWidth = paletteEl.getBoundingClientRect().width;
+      const rect = paletteEl.getBoundingClientRect();
+      layout.paletteWidth = rect.width;
+      layout.paletteHeight = rect.height;
     });
     ro.observe(paletteEl);
     return () => {
       ro.disconnect();
       layout.paletteWidth = 0;
+      layout.paletteHeight = 0;
     };
   });
 
