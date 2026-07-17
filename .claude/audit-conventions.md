@@ -12,6 +12,7 @@ a shared rule, change it **here** — the skills point at this file on purpose.
 | **extract-audit**           | `/extract-audit`           | Inline code blocks worth extracting into standalone, named, testable functions                            | `docs/AUDIT.md`                                   |
 | **lighthouse-audit**        | skill (`lighthouse-audit`) | Page-load / Core Web Vitals opportunities on a throttled device                                           | `docs/AUDIT.md`                                   |
 | **dependency-update-audit** | `/dependency-update-audit` | Out-of-date dependencies, upgraded one at a time with a migration guide                                   | one commit per package                            |
+| **dependency-health-audit** | `/dependency-health-audit` | Inventory + health of every third-party dependency (provenance, license, maintenance, keep/replace)       | `docs/DEPENDENCIES.md`, refreshed in place        |
 | **session-audit**           | `/session-audit`           | Recurring friction from the just-finished session (code traversal / execution) + the tooling fix for each | `docs/AUDIT.md`                                   |
 | **workflow-audit**          | `/workflow-audit`          | Claude Code config + session-history review vs. current best practice                                     | dated `docs/claude-workflow-review-YYYY-MM-DD.md` |
 
