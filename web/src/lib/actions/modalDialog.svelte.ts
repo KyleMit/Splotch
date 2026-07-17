@@ -27,8 +27,11 @@
 //                   return true to swallow a tap in that region without dismissing.
 //
 // On each open the action also arms a short-lived launch dead zone around
-// `origin` (see launchGuard) so a toddler's repeat taps on the just-vacated
-// button spot are swallowed instead of dismissing the modal they just opened.
+// `origin` (see launchGuard) that swallows every tap and click at the
+// just-vacated button spot — backdrop AND dialog content alike. That covers a
+// toddler's repeat taps (which would dismiss the modal they just opened) and
+// the opening tap's own trailing synthesized click (which would activate
+// whatever content painted under the finger — issue #308).
 import { guardLaunchZone, isPointInLaunchZone, clearLaunchZones } from './launchGuard';
 
 interface ModalOptions {
@@ -48,6 +51,15 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
   }
 
   function onPointerDown(e: PointerEvent) {
+    // Within the launch window, a tap where the opening button sat is a stray
+    // toddler repeat — swallow it whether it landed on the backdrop or on
+    // content that painted under the finger (capture phase, so content
+    // handlers never see it).
+    if (isPointInLaunchZone(e.clientX, e.clientY)) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     // Taps on the content fall through to the dialog's own controls.
     if (isInsideDialog(e.clientX, e.clientY)) return;
     // Tap landed on the backdrop. Always swallow it so it can't leak to the
@@ -55,12 +67,24 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
     e.preventDefault();
     e.stopPropagation();
     const o = getOptions();
-    // Within the launch window, a tap where the opening button sat is a stray
-    // toddler repeat — swallow it without dismissing.
-    if (isPointInLaunchZone(e.clientX, e.clientY)) return;
     if (o.blockBackdropAt?.(e.clientX, e.clientY)) return;
     if (o.allowDismiss && o.allowDismiss() === false) return;
     o.onRequestClose?.();
+  }
+
+  // The opening tap itself activates on pointerup, so its trailing synthesized
+  // click dispatches after showModal() and is hit-tested against the
+  // freshly-painted dialog — landing on whatever control sits at the launch
+  // point (issue #308: the coloring book picker opened drilled into a "random"
+  // book). Its pointerdown/up targeted the launcher, so the launch-zone check
+  // above never sees it; swallow the click itself. detail 0 is keyboard/AT
+  // activation, which has no meaningful coordinates and is never a ghost.
+  function onClick(e: MouseEvent) {
+    if (e.detail === 0) return;
+    if (isPointInLaunchZone(e.clientX, e.clientY)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   }
 
   function onCancel(e: Event) {
@@ -80,7 +104,8 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
     if (o.open) o.onRequestClose?.();
   }
 
-  node.addEventListener('pointerdown', onPointerDown);
+  node.addEventListener('pointerdown', onPointerDown, true);
+  node.addEventListener('click', onClick, true);
   node.addEventListener('cancel', onCancel);
   node.addEventListener('close', onClose);
 
@@ -103,7 +128,8 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
 
   return {
     destroy() {
-      node.removeEventListener('pointerdown', onPointerDown);
+      node.removeEventListener('pointerdown', onPointerDown, true);
+      node.removeEventListener('click', onClick, true);
       node.removeEventListener('cancel', onCancel);
       node.removeEventListener('close', onClose);
     },

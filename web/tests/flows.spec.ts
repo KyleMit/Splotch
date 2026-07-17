@@ -1365,6 +1365,33 @@ test('a repeat tap where the launch button sat does not dismiss the just-opened 
   await expect(dialog).toBeHidden();
 });
 
+// A touch tap activates the launcher on pointerup (scribbleTap), so the dialog
+// is already open and painted when the tap's trailing synthesized click
+// dispatches — and that click is hit-tested at dispatch time, landing on
+// whatever book tile sits under the finger. Unless the launch dead zone also
+// guards dialog *content*, the picker opens pre-drilled into a "random" book
+// (issue #308). Mouse clicks can't reproduce this (a click targets the common
+// ancestor of its down/up targets, which is never inside the dialog), so this
+// spec taps with a real touchscreen.
+test.describe('coloring book picker via touch', () => {
+  test.use({ hasTouch: true });
+
+  test('a touch tap on the launcher opens the picker at the root book list', async ({ page }) => {
+    await gotoApp(page);
+    await openDrawer(page);
+
+    await page.locator('#coloringBookButton').tap();
+
+    const dialog = page.locator('#coloring-book-dialog');
+    await expect(dialog).toBeVisible();
+    // A book tile paints exactly where the finger was (that's what makes the
+    // ghost click land); the picker must still show the root book list, not a
+    // drilled-in page grid.
+    await expect(dialog.getByRole('heading', { name: 'Coloring Books' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
+  });
+});
+
 test('rotating the viewport swaps the coloring overlay to the matching art', async ({ page }) => {
   // Rotation reaches the overlay through the shared layout module (one
   // resize/orientationchange listener pair feeding every component), so this
