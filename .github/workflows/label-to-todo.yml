@@ -1,3 +1,5 @@
+# Moves an issue into KyleMit's actionable project queue when the `reviewed`
+# label is applied. Requires a PROJECT_PAT secret with project write access.
 name: Move reviewed issue to ToDo
 
 on:
@@ -25,7 +27,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set project status
         run: .github/scripts/label-to-todo.sh

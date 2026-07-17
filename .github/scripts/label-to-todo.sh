@@ -11,14 +11,11 @@ PROJECT_DATA="$(
   gh api graphql \
     -f query='
       query($owner: String!, $number: Int!, $issue: ID!) {
-        user(login: $owner) {
-          projectV2(number: $number) {
-            ...ProjectDetails
-          }
-        }
-        organization(login: $owner) {
-          projectV2(number: $number) {
-            ...ProjectDetails
+        repositoryOwner(login: $owner) {
+          ... on ProjectV2Owner {
+            projectV2(number: $number) {
+              ...ProjectDetails
+            }
           }
         }
         node(id: $issue) {
@@ -59,8 +56,7 @@ PROJECT_DATA="$(
 
 PROJECT_JSON="$(
   jq -c '
-    .data.user.projectV2
-    // .data.organization.projectV2
+    .data.repositoryOwner.projectV2
     // empty
   ' <<< "$PROJECT_DATA"
 )"
@@ -73,42 +69,46 @@ fi
 PROJECT_ID="$(jq -r '.id' <<< "$PROJECT_JSON")"
 PROJECT_TITLE="$(jq -r '.title' <<< "$PROJECT_JSON")"
 
-STATUS_FIELD_ID="$(
-  jq -r --arg field "$STATUS_FIELD_NAME" '
-    .fields.nodes[]
-    | select(.name == $field)
-    | .id
-  ' <<< "$PROJECT_JSON" | head -n 1
+STATUS_FIELD_JSON="$(
+  jq -c --arg field "$STATUS_FIELD_NAME" '
+    [.fields.nodes[] | select(.name == $field)][0] // empty
+  ' <<< "$PROJECT_JSON"
 )"
 
-STATUS_OPTION_ID="$(
-  jq -r \
-    --arg field "$STATUS_FIELD_NAME" \
-    --arg status "$TARGET_STATUS" '
-      .fields.nodes[]
-      | select(.name == $field)
-      | .options[]
-      | select(.name == $status)
-      | .id
-    ' <<< "$PROJECT_JSON" | head -n 1
-)"
-
-if [[ -z "$STATUS_FIELD_ID" ]]; then
+if [[ -z "$STATUS_FIELD_JSON" ]]; then
   echo "::error::Project '$PROJECT_TITLE' has no single-select field named '$STATUS_FIELD_NAME'."
   exit 1
 fi
 
-if [[ -z "$STATUS_OPTION_ID" ]]; then
-  echo "::error::Field '$STATUS_FIELD_NAME' has no option named '$TARGET_STATUS'."
+STATUS_FIELD_ID="$(jq -r '.id' <<< "$STATUS_FIELD_JSON")"
+STATUS_OPTION_JSON="$(
+  jq -c --arg status "$TARGET_STATUS" '
+    [
+      .options[]
+      | select(
+          (.name | ascii_downcase | gsub("\\s"; ""))
+            == ($status | ascii_downcase | gsub("\\s"; ""))
+        )
+    ][0] // empty
+  ' <<< "$STATUS_FIELD_JSON"
+)"
+
+if [[ -z "$STATUS_OPTION_JSON" ]]; then
+  echo "::error::Field '$STATUS_FIELD_NAME' has no option named '$TARGET_STATUS' (case-insensitive)."
   exit 1
 fi
 
+STATUS_OPTION_ID="$(jq -r '.id' <<< "$STATUS_OPTION_JSON")"
+STATUS_OPTION_NAME="$(jq -r '.name' <<< "$STATUS_OPTION_JSON")"
+
 ITEM_ID="$(
   jq -r --arg project "$PROJECT_ID" '
-    .data.node.projectItems.nodes[]
-    | select(.project.id == $project)
-    | .id
-  ' <<< "$PROJECT_DATA" | head -n 1
+    [
+      .data.node.projectItems.nodes[]
+      | select(.project.id == $project)
+      | .id
+    ][0] // empty
+  ' <<< "$PROJECT_DATA"
 )"
 
 if [[ -z "$ITEM_ID" ]]; then
@@ -166,4 +166,4 @@ gh api graphql \
   -f option="$STATUS_OPTION_ID" \
   --silent
 
-echo "Moved issue $ISSUE_NUMBER to '$TARGET_STATUS' in '$PROJECT_TITLE'."
+echo "Moved issue $ISSUE_NUMBER to '$STATUS_OPTION_NAME' in '$PROJECT_TITLE'."
