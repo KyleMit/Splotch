@@ -63,7 +63,20 @@ inventing a number.
 **Every externally gathered fact must carry the date it was checked and a link to its source.**
 Stars, release dates, and activity all drift — an undated snapshot is misinformation six months from
 now. The entry format below bakes this in: external facts live on `(checked YYYY-MM-DD)` lines whose
-values link to the page that proves them (repo page, releases page, npm package page).
+values link to the page that proves them (repo page, releases page, npm package page). Minimum
+linking so runs grade consistently: link the star count to the repo and the latest-release fact to
+the `/releases` page; same-repo facts on the same line (last commit, open issues) are covered by
+those two links and needn't each carry their own. A `Health` line with only the star count linked
+and bare release/commit dates is under-sourced — add the releases link.
+
+**The GitHub upstream pass is mandatory, per package — not optional colour.** The whole point of
+this skill over a plain SBOM is the maintenance judgement, and that judgement is only as good as the
+per-repo facts behind it. The tell of a skipped Phase 2 is a `Maintenance` line that reads
+*identically* across many entries (e.g. the same "upstream activity not sampled this run" disclaimer
+everywhere) — that is a failed run, not a style choice. Each `Maintenance` verdict must cite
+package-specific evidence: a real last-commit date and an observed release cadence. If a repo
+genuinely can't be reached (403/archived), disclose the reason **on that package's line**, never as
+a blanket excuse across the report.
 
 Batch the network work: these lookups are independent, so run them concurrently (parallel tool calls
 or subagents per chunk of packages) instead of one at a time.
@@ -86,6 +99,17 @@ advisories. Distinguish **done** from **dead**: a small, stable, zero-dep utilit
 and no open issues is often finished, not abandoned — low activity plus low churn plus no bug
 backlog can be a *good* sign.
 
+**A stale release is not "active."** A multi-year gap since the last publish is an abandonment
+signal for anything that isn't a finished zero-dep utility — do not write `Maintenance: active` off
+npm *publish* metadata alone (that a version exists on npm says nothing about whether the repo still
+moves). Cross-check the repo's last commit before calling a package active; a live repo with an old
+release is "slowing," an archived repo with an old release is at least `investigate replacement`.
+
+**Version drift is a currency signal, not an action for this skill.** When the locked version trails
+the latest by a major (or sits several minors behind for months), note it in `Concerns` — it feeds
+the verdict and is explicitly handed to `/dependency-update-audit`. Do not silently write
+`Concerns: none` on a package that is a full major behind, and do not apply the bump here.
+
 For security/ecosystem concerns, check `npm audit --json` (map advisories to the package),
 `deprecated` flags, install scripts, and anything notable about the publisher (org-backed vs.
 individual, provenance/attestations if published with them).
@@ -102,7 +126,11 @@ Do **not** write per-package entries for transitives. Instead report, in one sec
 
 * Total installed package count (from the lockfile) vs. direct count.
 * `npm audit` summary: advisory counts by severity, and for each advisory the transitive → direct
-  parent chain (`npm ls <pkg>`) so the fix owner is obvious.
+  parent chain (`npm ls <pkg>`) so the fix owner is obvious. **The table must reconcile with the
+  summary:** the per-row severities have to sum back to the stated by-severity counts. When you
+  collapse a group into one row (e.g. five `@opentelemetry/*` advisories sharing a parent), put the
+  count in that row (`… (moderate ×5)`) so the totals still add up and no advisory silently drops
+  out of the chain-mapping.
 * Deprecated packages surfaced by install warnings or spot `npm view` checks.
 * Packages with install scripts (scan `package-lock.json` for `hasInstallScript`) — the
   supply-chain-relevant subset worth naming.
@@ -159,7 +187,10 @@ Then: a **verdict summary table** (`| Package | Prod/Dev | Verdict |`, non-`keep
 ```
 
 Omit a line only when the fact is genuinely unavailable (say why: "repo 403s through proxy, checked
-2026-07-17"). `Maintenance` takes active / slowing / dormant / done-not-dead / abandoned.
+2026-07-17"). `Maintenance` takes active / slowing / dormant / done-not-dead / abandoned, and must
+carry package-specific evidence (see Phase 2) — the same `Maintenance` sentence repeated verbatim
+across entries means the upstream pass was skipped. Optionally record the deprecation check inline
+per package (`not deprecated (npm, checked …)`) so each entry shows the check actually ran.
 
 ## Shared audit conventions
 
