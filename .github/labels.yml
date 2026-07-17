@@ -76,6 +76,9 @@
   description: "Nice to have, no rush"
 
 # --- meta: workflow signals ---
+- name: "reviewed"
+  color: "1f883d"
+  description: "Review pass complete — ready for the project ToDo queue"
 - name: "user-report"
   color: "0e8a16"
   description: "Filed from the in-app Report form (Parent Center → About)"

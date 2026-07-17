@@ -1,0 +1,37 @@
+# Moves an issue into KyleMit's actionable project queue when the `reviewed`
+# label is applied. Requires a PROJECT_PAT secret with project write access.
+name: Move reviewed issue to ToDo
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: label-to-todo-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  move-to-todo:
+    if: github.event.label.name == 'reviewed'
+    runs-on: ubuntu-latest
+
+    env:
+      GH_TOKEN: ${{ secrets.PROJECT_PAT }}
+      # https://github.com/users/KyleMit/projects/1
+      PROJECT_OWNER: KyleMit
+      PROJECT_NUMBER: '1'
+      # The target project's single-select field and option.
+      STATUS_FIELD_NAME: Status
+      TARGET_STATUS: ToDo
+      ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set project status
+        run: .github/scripts/label-to-todo.sh

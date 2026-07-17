@@ -143,7 +143,9 @@ agents: read the matching rule before editing those paths): `svelte.md`, `server
 The **live backlog is GitHub Issues** — when asked what to work on next, list the open issues and
 filter by label (`area:*`, `type:*`, `priority:*`); don't look for a backlog file. Capture a durable
 TODO by opening an issue, not by editing a Markdown list. The issue format, the full label glossary,
-and the triage/won't-do flow live in `docs/ISSUE-WORKFLOW.md`.
+and the triage/won't-do flow live in `docs/ISSUE-WORKFLOW.md`. After completing an issue review
+pass, apply `reviewed` only when the issue is clear, actionable, and correctly labeled; automation
+then moves it to the project's `ToDo` status.
 
 Remaining `docs/`:
 
