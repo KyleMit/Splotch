@@ -2,6 +2,12 @@
 // in static/large-image.svg onto the live Splotch canvas.
 // The output is 1920x1080 (16:9 landscape, same as Google Play tablet spec).
 //
+// This PNG is also the social/link-preview image: app.html points og:image and
+// twitter:image at /large-image.png. If you change the output dimensions here,
+// update og:image:width / og:image:height in web/src/app.html to match (an E2E
+// test in web/tests/page.spec.ts asserts the two agree), then re-scrape via the
+// Facebook Sharing Debugger since scrapers cache the old card for weeks.
+//
 // A dev server is started automatically (or reused if one is already on 4173):
 //   node scripts/gen-large-image.mjs
 
