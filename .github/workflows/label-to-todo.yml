@@ -4,7 +4,8 @@ on:
   issues:
     types: [labeled]
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   move-to-todo:
@@ -20,175 +21,11 @@ jobs:
       STATUS_FIELD_NAME: Status
       TARGET_STATUS: ToDo
       ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
       - name: Set project status
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [[ -z "${GH_TOKEN:-}" ]]; then
-            echo "::error::The PROJECT_PAT repository secret is missing."
-            exit 1
-          fi
-
-          PROJECT_DATA="$(
-            gh api graphql \
-              -f query='
-                query($owner: String!, $number: Int!, $issue: ID!) {
-                  user(login: $owner) {
-                    projectV2(number: $number) {
-                      ...ProjectDetails
-                    }
-                  }
-                  organization(login: $owner) {
-                    projectV2(number: $number) {
-                      ...ProjectDetails
-                    }
-                  }
-                  node(id: $issue) {
-                    ... on Issue {
-                      projectItems(first: 100) {
-                        nodes {
-                          id
-                          project {
-                            id
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-
-                fragment ProjectDetails on ProjectV2 {
-                  id
-                  title
-                  fields(first: 100) {
-                    nodes {
-                      ... on ProjectV2SingleSelectField {
-                        id
-                        name
-                        options {
-                          id
-                          name
-                        }
-                      }
-                    }
-                  }
-                }
-              ' \
-              -f owner="$PROJECT_OWNER" \
-              -F number="$PROJECT_NUMBER" \
-              -f issue="$ISSUE_NODE_ID"
-          )"
-
-          PROJECT_JSON="$(
-            jq -c '
-              .data.user.projectV2
-              // .data.organization.projectV2
-              // empty
-            ' <<< "$PROJECT_DATA"
-          )"
-
-          if [[ -z "$PROJECT_JSON" ]]; then
-            echo "::error::Could not find project #$PROJECT_NUMBER for owner '$PROJECT_OWNER', or PROJECT_PAT cannot access it."
-            exit 1
-          fi
-
-          PROJECT_ID="$(jq -r '.id' <<< "$PROJECT_JSON")"
-          PROJECT_TITLE="$(jq -r '.title' <<< "$PROJECT_JSON")"
-
-          STATUS_FIELD_ID="$(
-            jq -r --arg field "$STATUS_FIELD_NAME" '
-              .fields.nodes[]
-              | select(.name == $field)
-              | .id
-            ' <<< "$PROJECT_JSON" | head -n 1
-          )"
-
-          STATUS_OPTION_ID="$(
-            jq -r \
-              --arg field "$STATUS_FIELD_NAME" \
-              --arg status "$TARGET_STATUS" '
-                .fields.nodes[]
-                | select(.name == $field)
-                | .options[]
-                | select(.name == $status)
-                | .id
-              ' <<< "$PROJECT_JSON" | head -n 1
-          )"
-
-          if [[ -z "$STATUS_FIELD_ID" ]]; then
-            echo "::error::Project '$PROJECT_TITLE' has no single-select field named '$STATUS_FIELD_NAME'."
-            exit 1
-          fi
-
-          if [[ -z "$STATUS_OPTION_ID" ]]; then
-            echo "::error::Field '$STATUS_FIELD_NAME' has no option named '$TARGET_STATUS'."
-            exit 1
-          fi
-
-          ITEM_ID="$(
-            jq -r --arg project "$PROJECT_ID" '
-              .data.node.projectItems.nodes[]
-              | select(.project.id == $project)
-              | .id
-            ' <<< "$PROJECT_DATA" | head -n 1
-          )"
-
-          if [[ -z "$ITEM_ID" ]]; then
-            echo "Issue is not in '$PROJECT_TITLE'; adding it now."
-
-            ITEM_ID="$(
-              gh api graphql \
-                -f query='
-                  mutation($project: ID!, $issue: ID!) {
-                    addProjectV2ItemById(
-                      input: {
-                        projectId: $project
-                        contentId: $issue
-                      }
-                    ) {
-                      item {
-                        id
-                      }
-                    }
-                  }
-                ' \
-                -f project="$PROJECT_ID" \
-                -f issue="$ISSUE_NODE_ID" \
-                --jq '.data.addProjectV2ItemById.item.id'
-            )"
-          fi
-
-          if [[ -z "$ITEM_ID" ]]; then
-            echo "::error::Could not find or create the Project item."
-            exit 1
-          fi
-
-          gh api graphql \
-            -f query='
-              mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
-                updateProjectV2ItemFieldValue(
-                  input: {
-                    projectId: $project
-                    itemId: $item
-                    fieldId: $field
-                    value: {
-                      singleSelectOptionId: $option
-                    }
-                  }
-                ) {
-                  projectV2Item {
-                    id
-                  }
-                }
-              }
-            ' \
-            -f project="$PROJECT_ID" \
-            -f item="$ITEM_ID" \
-            -f field="$STATUS_FIELD_ID" \
-            -f option="$STATUS_OPTION_ID" \
-            --silent
-
-          echo "Moved issue ${{ github.event.issue.number }} to '$TARGET_STATUS' in '$PROJECT_TITLE'."
+        run: .github/scripts/label-to-todo.sh
