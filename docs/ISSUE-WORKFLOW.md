@@ -63,6 +63,7 @@ deliberate triage call, not a default — most of the migrated backlog is intent
 
 | Label              | Meaning                                                                     |
 | ------------------ | --------------------------------------------------------------------------- |
+| `reviewed`         | Review pass complete; automation moves the issue to Project status `ToDo`   |
 | `needs-scoping`    | Rough spec — investigate and firm up (often an ADR) before significant work |
 | `needs-adr`        | Needs an architectural decision record before or alongside implementation   |
 | `wont-do`          | Considered and declined (see "Closing" below)                               |
@@ -71,6 +72,9 @@ deliberate triage call, not a default — most of the migrated backlog is intent
 ## Triage & lifecycle
 
 * **New issues** land untriaged (no `priority:*`). Triage adds a priority and confirms labels.
+* **Reviewing issues** — after a review pass confirms that an issue is clear, actionable, and
+  correctly labeled, add `reviewed`. The label workflow ensures the issue is in the project and sets
+  its Status to `ToDo`.
 * **Picking work** — filter open issues by `area:*` / `type:*` / `priority:*`; prefer high
   value-to-effort for your context. Order is not implied by issue number.
 * **Starting work** — assign yourself; reference the issue from the PR ("fixes #NN") so it closes on
@@ -80,9 +84,19 @@ deliberate triage call, not a default — most of the migrated backlog is intent
   **not planned** (a one-line note on why keeps the record useful). Won't-do is a first-class
   outcome, not a failure.
 
+### Project automation
+
+The `Move reviewed issue to ToDo` workflow runs when `reviewed` is applied. It adds the issue to
+[KyleMit's Splotch project](https://github.com/users/KyleMit/projects/1) if needed, then sets the
+`Status` field to `ToDo`. The repository must have an Actions secret named `PROJECT_PAT` containing
+a classic personal access token with the `project` scope (`repo` is also required if the repository
+becomes private). The normal `GITHUB_TOKEN` cannot update a user-owned project.
+
 ## For coding agents
 
 The backlog is the tracker, not a file. When asked what to work on next, list open issues and filter
 by label. When you capture a durable TODO, open an issue (don't add it to a Markdown backlog). Use
 the GitHub MCP tools (`list_issues`, `search_issues`, `issue_write`) — and search existing issues
-before filing a new one to avoid duplicates.
+before filing a new one to avoid duplicates. After completing an issue review pass, apply the
+`reviewed` label only when the issue is clear, actionable, and correctly labeled; that label moves
+the issue to the project's `ToDo` status.
