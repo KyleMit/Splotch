@@ -23,14 +23,20 @@ tooling from the repo root. **Direct** dependencies are the entries in its `depe
 full per-package treatment below; transitives get the lighter aggregate pass — a human review of ~50
 direct packages is tractable and high-value, one of ~1100 transitives is neither.
 
-If an argument names a package, refresh only that entry (plus the report header's date line) and
-skip the rest.
+If an argument names a package, refresh only that entry — but a scoped run still feeds report-level
+sections: update the package's row in the verdict summary table if its verdict changed, and mark the
+header as a **scoped** refresh (e.g. `**Last refresh:** … · scoped: package-name`) rather than
+bumping the full-run date line, so the report doesn't falsely read as freshly re-verified end to
+end. Skip every other entry.
 
 ## Phase 1 — Inventory (local facts, no network)
 
-1. **Enumerate.** Read `package.json` for the direct prod/dev split and declared ranges;
-   `npm ls --depth=0` for installed versions; count the lockfile's `packages` entries for the total
-   installed footprint (`node -e` over `package-lock.json`).
+1. **Enumerate.** Read `package.json` for the direct prod/dev split and declared ranges. Take the
+   **locked** version of each package from `package-lock.json` — it's always present and needs no
+   install, whereas `npm ls --depth=0` errors with `ELSPROBLEMS` on a fresh checkout where
+   `node_modules` isn't installed (and this skill installs nothing). Use `npm ls --depth=0` only as
+   optional confirmation *when* `node_modules` exists. Count the lockfile's `packages` entries for
+   the total installed footprint (`node -e` over `package-lock.json`).
 2. **Attribute usage.** For each direct dep, establish *why and where* Splotch uses it: grep
    `web/src/`, `web/*.config.*`, `scripts/`, `tools/`, and the npm scripts for imports and
    invocations. A package with no findable usage is itself a finding (candidate for removal — but
@@ -139,7 +145,7 @@ Then: a **verdict summary table** (`| Package | Prod/Dev | Verdict |`, non-`keep
 ```markdown
 ### package-name
 
-* **Version:** `^1.2.3` declared · 1.2.5 installed · prod
+* **Version:** `^1.2.3` declared · 1.2.5 locked (per `package-lock.json`) · prod
 * **Used for:** what it does for Splotch, and where (`web/src/…`, config, npm scripts)
 * **Source:** npm · [github.com/owner/repo](https://github.com/owner/repo) · published by Org/person
 * **License:** MIT
