@@ -77,7 +77,7 @@
 
 # --- meta: workflow signals ---
 - name: "reviewed"
-  color: "0e8a16"
+  color: "1f883d"
   description: "Review pass complete — ready for the project ToDo queue"
 - name: "user-report"
   color: "0e8a16"

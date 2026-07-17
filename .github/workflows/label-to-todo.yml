@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: label-to-todo-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
 jobs:
   move-to-todo:
     if: github.event.label.name == 'reviewed'

@@ -7,7 +7,7 @@ if [[ -z "${GH_TOKEN:-}" ]]; then
   exit 1
 fi
 
-PROJECT_DATA="$(
+if ! PROJECT_DATA="$(
   gh api graphql \
     -f query='
       query($owner: String!, $number: Int!, $issue: ID!) {
@@ -52,7 +52,10 @@ PROJECT_DATA="$(
     -f owner="$PROJECT_OWNER" \
     -F number="$PROJECT_NUMBER" \
     -f issue="$ISSUE_NODE_ID"
-)"
+)"; then
+  echo "::error::Could not access project #$PROJECT_NUMBER for owner '$PROJECT_OWNER'. Check that PROJECT_PAT has project access."
+  exit 1
+fi
 
 PROJECT_JSON="$(
   jq -c '
