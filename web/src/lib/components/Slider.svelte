@@ -47,9 +47,12 @@
   let dragStartValue = 0;
   let active = false;
 
-  const fillPercent = $derived(((value - min) / (max - min)) * 100);
+  // `|| 1` so a degenerate range (min === max, e.g. a dynamically capped max
+  // clamped down to the min) yields a 0% fill instead of NaN.
+  const range = $derived(max - min || 1);
+  const fillPercent = $derived(((value - min) / range) * 100);
   // Position of the snap detent along the track, so we can mark it with a tick.
-  const snapPercent = $derived(snap == null ? null : ((snap - min) / (max - min)) * 100);
+  const snapPercent = $derived(snap == null ? null : ((snap - min) / range) * 100);
 
   function clamp(v: number) {
     return Math.round(Math.min(max, Math.max(min, v)));
