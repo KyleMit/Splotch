@@ -66,12 +66,13 @@ Non-`keep` rows first.
 | vite-plugin-pwa                     | dev      | keep                               |
 | vitest                              | dev      | keep                               |
 
-**Proposed backlog items** (autonomous run — listed, not filed; see Phase 3 note at the end):
+**Backlog items filed:**
 
-* `type:chore` + `area:infra` — *Replace archived `capacitor-set-version` in the release script.*
-  Upstream repo is archived (read-only, last commit 2023-09-27, single maintainer); the package only
-  edits native version numbers in `scripts/release.mjs`. Investigation question: is a small in-repo
-  helper (edit `android/app/build.gradle` `versionName`/`versionCode` + iOS `MARKETING_VERSION`/
+* [`#332`](https://github.com/KyleMit/Splotch/issues/332) — `type:chore` + `area:infra` — *Replace
+  archived `capacitor-set-version` in the release script.* Upstream repo is archived (read-only,
+  last commit 2023-09-27, single maintainer); the package only edits native version numbers in
+  `scripts/release.mjs`. Investigation question: is a small in-repo helper (edit
+  `android/app/build.gradle` `versionName`/`versionCode` + iOS `MARKETING_VERSION`/
   `CURRENT_PROJECT_VERSION`) cheaper to own than a dormant dependency?
 
 ## Direct dependencies — production
@@ -924,7 +925,7 @@ are well-known, org- or foundation-backed packages; none are anomalous.
 
 ---
 
-**Phase 3 note (autonomous run):** This audit ran non-interactively, so action-required verdicts are
-listed as **Proposed backlog items** above rather than filed as GitHub issues. To file the
-`capacitor-set-version` replacement chore (`type:chore` + `area:infra`, per
-`docs/ISSUE-WORKFLOW.md`), confirm and it can be opened.
+**Phase 3 note:** The one action-required verdict (`capacitor-set-version`, investigate replacement)
+was filed as [`#332`](https://github.com/KyleMit/Splotch/issues/332) (`type:chore` + `area:infra`,
+per `docs/ISSUE-WORKFLOW.md`). The `cookie` (low) advisory under `@sveltejs/kit` is an ordinary
+version bump — hand it to `/dependency-update-audit` rather than the backlog.
