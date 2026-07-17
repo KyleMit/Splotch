@@ -531,6 +531,25 @@ test('the undo button enables on a stroke and reverts it', async ({ page }) => {
   expect(await firstOpaquePixel(page)).toBeNull();
 });
 
+test('the end-of-history cue still plays with reduced motion enabled', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await gotoApp(page);
+  await openDrawer(page);
+
+  // A blank canvas already has no history, so the very first tap hits the wall.
+  const undo = page.locator('#undoButton');
+  await expect(undo).toBeDisabled();
+
+  await expect(async () => {
+    await undo.click({ force: true });
+    await expect(undo).toHaveClass(/end-of-history/, { timeout: 350 });
+  }).toPass({ timeout: 10_000 });
+  // Reduced motion swaps the shake for the non-positional flash rather than
+  // removing the cue: an animation still runs, so its animationend clears the
+  // class — proving a real cue played instead of the class sitting inert.
+  await expect(undo).not.toHaveClass(/end-of-history/, { timeout: 2000 });
+});
+
 test('the screenshot button is gated on the canvas being non-empty', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
