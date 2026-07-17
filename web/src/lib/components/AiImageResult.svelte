@@ -5,9 +5,11 @@
   import { ui, closeAiResult } from '$lib/state/ui.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
   import { timestamp, triggerDownload } from '$lib/drawing/screenshot';
 
   let dialogEl: HTMLDialogElement;
+  let zoomLayerEl = $state<HTMLDivElement | undefined>();
 
   let revealed = $state(false);
   let progress = $state(0);
@@ -106,44 +108,59 @@
         {/if}
       </div>
     {:else}
-      <div class="ai-stage" style="--confetti-ry: {confettiMaskRy};">
-        <!-- Hidden in-flow sizer: a real <img> drives the stage size from the
-             image's own dimensions (capped by max-width/max-height). Replaced
-             elements size identically in every browser — unlike an
-             aspect-ratio + max-width box, which WebKit collapses/distorts. The
-             visible images below overlay it. Uses the result once it's here, or
-             the preview while loading (same aspect, so no resize on reveal). -->
-        {#if ui.aiResultUrl || ui.aiPreviewUrl}
-          <img
-            class="stage-sizer"
-            src={ui.aiResultUrl || ui.aiPreviewUrl}
-            alt=""
-            aria-hidden="true"
-            onload={handleImgLoad}
-          />
-        {:else}
-          <!-- Modal opened ahead of the export: reserve a drawing-shaped box so
-               the dial has a home until the blurred preview slots in. -->
-          <div
-            class="stage-sizer placeholder-sizer"
-            style="aspect-ratio: {imgAspect};"
-            aria-hidden="true"
-          ></div>
-        {/if}
+      <div
+        class="ai-stage"
+        style="--confetti-ry: {confettiMaskRy};"
+        use:pinchZoom={() => ({
+          target: zoomLayerEl!,
+          // Only once the finished picture is on screen — the loading dial and
+          // blurred preview shouldn't zoom.
+          enabled: revealed && !!ui.aiResultUrl && !exiting,
+          // A fresh result resets the zoom back to fit.
+          resetKey: ui.aiResultUrl,
+        })}
+      >
+        <!-- The zoom layer holds only the picture; the dial and confetti stay
+             outside it so they never scale with a pinch. -->
+        <div class="zoom-layer" bind:this={zoomLayerEl}>
+          <!-- Hidden in-flow sizer: a real <img> drives the stage size from the
+               image's own dimensions (capped by max-width/max-height). Replaced
+               elements size identically in every browser — unlike an
+               aspect-ratio + max-width box, which WebKit collapses/distorts. The
+               visible images below overlay it. Uses the result once it's here, or
+               the preview while loading (same aspect, so no resize on reveal). -->
+          {#if ui.aiResultUrl || ui.aiPreviewUrl}
+            <img
+              class="stage-sizer"
+              src={ui.aiResultUrl || ui.aiPreviewUrl}
+              alt=""
+              aria-hidden="true"
+              onload={handleImgLoad}
+            />
+          {:else}
+            <!-- Modal opened ahead of the export: reserve a drawing-shaped box so
+                 the dial has a home until the blurred preview slots in. -->
+            <div
+              class="stage-sizer placeholder-sizer"
+              style="aspect-ratio: {imgAspect};"
+              aria-hidden="true"
+            ></div>
+          {/if}
 
-        {#if ui.aiPreviewUrl}
-          <img
-            class="stage-img preview"
-            class:gone={revealed}
-            style="filter: blur({previewBlur}) saturate(1.1);"
-            src={ui.aiPreviewUrl}
-            alt=""
-          />
-        {/if}
+          {#if ui.aiPreviewUrl}
+            <img
+              class="stage-img preview"
+              class:gone={revealed}
+              style="filter: blur({previewBlur}) saturate(1.1);"
+              src={ui.aiPreviewUrl}
+              alt=""
+            />
+          {/if}
 
-        {#if ui.aiResultUrl}
-          <img class="stage-img result" class:shown={revealed} src={ui.aiResultUrl} alt="" />
-        {/if}
+          {#if ui.aiResultUrl}
+            <img class="stage-img result" class:shown={revealed} src={ui.aiResultUrl} alt="" />
+          {/if}
+        </div>
 
         {#if !revealed}
           <AiConfetti />
@@ -170,18 +187,18 @@
     /* A definite width (not shrink-to-fit, which browsers resolve differently
        for a transform-centered fixed dialog). The image is centered inside with
        side spacing, so a tall render reads as a framed card rather than a strip. */
-    width: min(92vw, 420px);
-    max-height: 94vh;
+    width: min(96vw, 560px);
+    max-height: 96vh;
     overflow: hidden;
   }
 
   .ai-result-content {
-    padding: 24px;
+    padding: 16px;
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
   }
 
   .ai-result-close {
@@ -197,7 +214,24 @@
     overflow: hidden;
     background: #fcfbf8;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    /* Size comes from .stage-sizer below — the modal shrink-wraps this box. */
+    /* Own the touch gesture so the scoped pinch-zoom (use:pinchZoom) drives the
+       preview instead of the browser — the page stays zoom-locked (ADR-0041).
+       Size comes from .stage-sizer below — the modal shrink-wraps this box. */
+    touch-action: none;
+  }
+
+  /* The pinch target: a top-left-anchored layer holding just the picture. The
+     surrounding .ai-stage stays at scale 1 so its rect is a stable reference,
+     and its overflow:hidden clips the zoomed image to the preview's own bounds. */
+  .zoom-layer {
+    position: relative;
+    display: block;
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+  /* `.zoomed` is toggled imperatively by the pinchZoom action (via classList). */
+  .ai-stage:global(.zoomed) {
+    cursor: grab;
   }
 
   /* The invisible sizer: fits the image's natural aspect within the max width
@@ -213,20 +247,20 @@
        around the whole card. Width is capped to the content box; a tall image
        is limited by the height reserve (padding + gap + download + some air). */
     max-width: 100%;
-    max-height: calc(88vh - 130px);
+    max-height: calc(94vh - 96px);
   }
 
   /* Auto-save on: no Download button, so the freed vertical space goes to the
      image — only a slim "Saved" caption is reserved below it. */
   .ai-result-modal.autosave .stage-sizer {
-    max-height: calc(92vh - 86px);
+    max-height: calc(96vh - 70px);
   }
 
   /* No image yet (modal opened before the export finished): a definite width so
      the aspect-ratio resolves a height, giving the dial a stable box to sit in.
      A tall portrait drawing is reined in by max-height (width then follows). */
   .placeholder-sizer {
-    width: min(78vw, 340px);
+    width: min(84vw, 460px);
   }
 
   .stage-img {
