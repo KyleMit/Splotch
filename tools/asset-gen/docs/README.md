@@ -178,7 +178,7 @@ views, the outline-% badge, size constraints — lives in
   badge scored from the `fill-src/` raw.
 * If a raw PNG is genuinely needed, **don't launch Chromium directly** — the cloud env's Chromium
   revision drifts from Playwright's pin. Reuse `run-splotch`'s `chromiumExecutablePath()` fallback
-  or set `PLAYWRIGHT_CHROMIUM` (`.claude/skills/run-splotch/SKILL.md`, `docs/CLOUD.md`).
+  or set `PLAYWRIGHT_CHROMIUM` (`.claude/skills/run-splotch/SKILL.md`, `docs/CLOUD/Claude.md`).
 
 ## Runbooks
 

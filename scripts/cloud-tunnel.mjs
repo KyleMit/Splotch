@@ -2,7 +2,7 @@
 // Cloud session only: bring up the phone-preview reverse tunnel in one command (ADR-0021).
 // Starts `vite dev` (localhost:5173) and a chisel client that reverse-forwards the Fly relay
 // to it, waits for the public URL to answer 200, prints it, and holds both processes open
-// until Ctrl-C. Off-cloud you don't need this — any quick tunnel works (see docs/CLOUD.md).
+// until Ctrl-C. Off-cloud you don't need this — any quick tunnel works (see docs/CLOUD/Claude.md).
 //
 // Requires TUNNEL_AUTH (the chisel shared secret) in the environment. TUNNEL_HOST defaults to
 // the relay hostname from ADR-0021 and can be overridden. The chisel binary is resolved from

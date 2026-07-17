@@ -4,8 +4,8 @@ description: Claude Code Cloud session only — start the dev server + reverse t
 ---
 
 Start the live phone-preview tunnel for this **Claude Code Cloud** session (ADR-0021,
-`docs/CLOUD.md`). This is *only* for cloud sessions — on localhost there are simpler ways to view
-the app, so don't use this there.
+`docs/CLOUD/Claude.md`). This is *only* for cloud sessions — on localhost there are simpler ways to
+view the app, so don't use this there.
 
 `npm run dev:tunnel` is a **long-running** process: it starts `vite dev` on `localhost:5173`, brings
 up the chisel reverse tunnel to the Fly relay, waits for the public URL to answer 200, prints it,

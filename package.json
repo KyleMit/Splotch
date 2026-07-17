@@ -128,7 +128,7 @@
     "dev:netlify": "Dev server with the /api/* serverless functions (Netlify Dev)",
     "dev:host": "Dev server exposed on the local network (for phones and other devices)",
     "dev:cap": "Dev server in native mode (CAPACITOR=true) on the network, for android:live",
-    "dev:tunnel": "Cloud session only: start dev + a chisel reverse tunnel and print the public phone-preview URL (needs TUNNEL_AUTH; see docs/CLOUD.md, ADR-0021)",
+    "dev:tunnel": "Claude Code Cloud only: start dev + a chisel reverse tunnel and print the public phone-preview URL (needs TUNNEL_AUTH; see docs/CLOUD/Claude.md, ADR-0021)",
     "dev:kill": "Kill any stale dev servers holding the dev ports (vite 5173, netlify dev 8888)",
     "prebuild": "svelte-kit sync + gen:icons + gen:releases before build",
     "build": "Web build (adapter-netlify) for splotch.art",
