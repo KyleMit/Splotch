@@ -746,6 +746,11 @@ test('parent center shows quick toggles on a landscape phone', async ({ page }) 
   await expect(page.locator('#quickNightToggle')).toBeVisible();
   await expect(page.locator('#quickLockRotationToggle')).toBeVisible();
   await expect(page.locator('#quickAdvancedControlsToggle')).toBeVisible();
+  // Lock Rotation holds the device-varying bottom-right (last) slot, so the
+  // other three toggles sit in the same place on lock-incapable devices too.
+  await expect(
+    page.locator('.quick-toggles > .setting').nth(3).locator('#quickLockRotationToggle')
+  ).toBeVisible();
   await expect(page.getByText('Turn your device to portrait')).toBeVisible();
 
   // A quick toggle drives the same persisted setting as the full section...
@@ -766,13 +771,15 @@ test('parent center shows quick toggles on a landscape phone', async ({ page }) 
 
 // A lock-incapable device (tablet-class native — supportsOrientationLock) hides
 // the Lock Rotation quick toggle, which used to leave a 3-cell hole in the
-// compact 2×2; a mini About cell (Splotch icon + version) fills the fourth slot
-// instead. supportsOrientationLock reads the *physical screen's* smaller side
-// while COMPACT_QUERY reads the window, so the stubbed screen stays
-// tablet-sized (min side ≥ 600) while the window height drops under 600 — the
-// small-tablet-in-landscape combination from the report. (The screen getters
-// are stubbed directly because Playwright's `screen` context option only takes
-// effect in mobile emulation, where Chromium honors screen-size overrides.)
+// compact 2×2; a mini About cell (Splotch icon + version) fills the bottom-right
+// slot instead — the one device-varying cell, so the other three toggles sit in
+// the same place on every device. supportsOrientationLock reads the *physical
+// screen's* smaller side while COMPACT_QUERY reads the window, so the stubbed
+// screen stays tablet-sized (min side ≥ 600) while the window height drops
+// under 600 — the small-tablet-in-landscape combination from the report. (The
+// screen getters are stubbed directly because Playwright's `screen` context
+// option only takes effect in mobile emulation, where Chromium honors
+// screen-size overrides.)
 test('a lock-incapable device fills the empty quick-toggle slot with a mini About cell', async ({
   page,
 }) => {
@@ -794,12 +801,15 @@ test('a lock-incapable device fills the empty quick-toggle slot with a mini Abou
   await expect(modal).toBeVisible();
   await expect(modal).toHaveClass(/compact/);
 
-  // Lock Rotation is gone, and the About cell keeps the grid at four cells.
+  // Lock Rotation is gone, and the About cell keeps the grid at four cells,
+  // sitting in the bottom-right (last) slot where Lock Rotation would be.
   await expect(page.locator('#quickLockRotationToggle')).toHaveCount(0);
-  const aboutCell = modal.locator('.about-cell');
+  const cells = page.locator('.quick-toggles > .setting');
+  await expect(cells).toHaveCount(4);
+  const aboutCell = cells.nth(3);
+  await expect(aboutCell).toHaveClass(/about-cell/);
   await expect(aboutCell).toBeVisible();
   await expect(aboutCell).toContainText(/Version \d+\.\d+\.\d+/);
-  await expect(page.locator('.quick-toggles > .setting')).toHaveCount(4);
 });
 
 test('an API key stays locked with storage-specific feedback when secure saving fails', async ({

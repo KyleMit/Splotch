@@ -154,6 +154,19 @@
             onToggle={(next) => setTheme(next ? 'dark' : 'light')}
           />
         </div>
+        <div class="setting">
+          <ToggleRow
+            icon="dashboard-customize"
+            label="Advanced Controls"
+            id="quickAdvancedControlsToggle"
+            checked={settings.advancedControlsEnabled}
+            onToggle={setAdvancedControls}
+          />
+        </div>
+        <!-- The bottom-right cell is the only one that varies by device: the
+             Lock Rotation toggle, or — where the OS owns orientation (see
+             supportsOrientationLock) — a mini About cell so the 2×2 stays
+             flush instead of leaving a hole. -->
         {#if showOrientationControls}
           <div class="setting">
             <ToggleRow
@@ -165,23 +178,11 @@
             />
           </div>
         {:else}
-          <!-- Lock-incapable devices (tablet-class native — see
-               supportsOrientationLock) would leave a hole in the 2×2, so a mini
-               About cell keeps the grid flush. -->
           <div class="setting about-cell">
             <SplotchyIcon class="about-cell-icon" aria-label="Splotch" role="img" />
             <span class="about-cell-version">Version {APP_VERSION}</span>
           </div>
         {/if}
-        <div class="setting">
-          <ToggleRow
-            icon="dashboard-customize"
-            label="Advanced Controls"
-            id="quickAdvancedControlsToggle"
-            checked={settings.advancedControlsEnabled}
-            onToggle={setAdvancedControls}
-          />
-        </div>
       </div>
       <p class="portrait-note">
         <Icon name="mobile-portrait" class="portrait-note-icon" />
