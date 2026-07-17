@@ -177,7 +177,7 @@ assuming a local pass covers Safari.
 
 There is **no** official as-code or CLI provisioning for these environments — the allowed domains,
 env vars, and setup script are edited only in the web dialog. The committed record of how to fill
-that dialog lives in [`.claude/cloud/environment.example`](../.claude/cloud/environment.example);
+that dialog lives in [`.claude/cloud/environment.example`](../../.claude/cloud/environment.example);
 paste from it. Secret **values** stay in the dialog and are never committed.
 
 ### Allowlist additions for E2E
@@ -212,7 +212,7 @@ host you can allowlist, reached by a Go client that trusts the system CA. We use
    Fly secret `AUTH`.
 2. **Env settings (Claude web env dialog — take effect next session):** allowlist `<app>.fly.dev`
    and set `TUNNEL_AUTH` to the Fly `AUTH` (full config in
-   [`.claude/cloud/environment.example`](../.claude/cloud/environment.example)).
+   [`.claude/cloud/environment.example`](../../.claude/cloud/environment.example)).
 3. **Sandbox, each session — one command:**
    ```bash
    npm run dev:tunnel
