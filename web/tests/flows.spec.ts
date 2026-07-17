@@ -885,6 +885,43 @@ test('the magic brush is always available and paints the coloring page colors', 
   await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
 });
 
+// Issue #187: while a stroke is live, an area-of-impact ring tracks the pointer —
+// subtle grey for the pen, rainbow for the magic brush so its reveal behavior is
+// legible. The ring exists only between pointerdown and pointerup.
+test('drawing shows a brush impact ring, rainbow-flavored for the magic brush', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const ring = page.locator('.brush-ring');
+  await expect(ring).toHaveCount(0);
+
+  const box = await page.locator('#drawingCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+
+  // Pen: ring appears on pointerdown, follows the stroke, and leaves on lift.
+  await page.mouse.move(box.x + 150, box.y + 120);
+  await page.mouse.down();
+  await expect(ring).toHaveCount(1);
+  await expect(ring).not.toHaveClass(/magic/);
+  await page.mouse.move(box.x + 250, box.y + 180);
+  await expect(ring).toHaveCount(1);
+  await page.mouse.up();
+  await expect(ring).toHaveCount(0);
+
+  // Magic brush: same ring, rainbow-flavored.
+  const magic = page.locator('#magicBrushButton');
+  await magic.click();
+  await expect(magic).toHaveAttribute('aria-pressed', 'true');
+  await page.mouse.move(box.x + 150, box.y + 120);
+  await page.mouse.down();
+  await expect(ring).toHaveCount(1);
+  await expect(ring).toHaveClass(/magic/);
+  await page.mouse.up();
+  await expect(ring).toHaveCount(0);
+});
+
 // Fraction of opaque canvas pixels that are near-black — the fill's own outlines,
 // which the reveal must NOT paint. The overlay <img> (a separate element, not on
 // the canvas) is the only source of line work; revealing the fill's copy on the
