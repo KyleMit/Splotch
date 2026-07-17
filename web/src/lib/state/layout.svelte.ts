@@ -36,8 +36,9 @@ export const layout: LayoutState = $state({
   paletteHeight: 0,
 
   // Viewport orientation and the measured env(safe-area-inset-*) values, kept
-  // fresh by the single resize/orientationchange listener pair below so
-  // components can $derive off them instead of each wiring its own listeners.
+  // fresh by the single shared listener set below (resize, orientationchange,
+  // and a visibility re-entry re-sync) so components can $derive off them
+  // instead of each wiring its own listeners.
   // Seeded from the head-script stamp on the client so JS-driven consumers never
   // see the SSR 'landscape' default; stays 'landscape' during prerender (no DOM).
   orientation: browser ? readOrientation() : 'landscape',
@@ -63,9 +64,16 @@ function syncViewport() {
 }
 
 // Installed at module load (not from a component) so the values are live before
-// the first component renders, and so five consumers share one listener pair.
+// the first component renders, and so five consumers share one listener set.
 if (browser) {
   syncViewport();
   window.addEventListener('resize', syncViewport);
   window.addEventListener('orientationchange', syncViewport);
+  // Neither event fires while the document is hidden, so a rotation while the
+  // app is backgrounded would otherwise stay stale on re-entry. Re-measure when
+  // the document becomes visible again (the native WebViews hide the document
+  // while the app is backgrounded, so this covers Capacitor resume too).
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') syncViewport();
+  });
 }

@@ -1120,6 +1120,84 @@ test('rotating an empty canvas adopts the new viewport (no lock, no letterbox)',
   expect(await page.evaluate(() => window.__engine.pixelAt(350, 150)[3])).toBeGreaterThan(0);
 });
 
+// ── re-entry re-sync (rotation while backgrounded) ───────────────────────────
+// A hidden document fires no resize/orientationchange, so a rotation while the
+// app is backgrounded reaches the engine only via the visibilitychange on
+// re-entry. The harness's resumeTo applies the new box silently (no resize
+// event) and fires just that visibilitychange.
+
+async function hiddenRotateTo(page: Page, angle: number, w: number, h: number) {
+  await page.evaluate(
+    ({ angle, w, h }) => {
+      window.__engine.setScreenAngleOverride(angle);
+      window.__engine.resumeTo(w, h);
+    },
+    { angle, w, h }
+  );
+}
+
+test('a rotation while backgrounded re-syncs the empty canvas on re-entry', async ({ page }) => {
+  await hiddenRotateTo(page, 90, 400, 300);
+
+  // The blank canvas adopts the new viewport immediately — no letterbox, and
+  // the space beyond the old paper is drawable.
+  const view = await page.evaluate(() => window.__engine.getViewState());
+  expect(view.active).toBe(false);
+  expect(view.paperCssWidth).toBe(400);
+  expect(view.paperOrientation).toBe('landscape');
+
+  await page.evaluate(() => {
+    window.__engine.strokeSync(
+      [
+        { x: 320, y: 150 },
+        { x: 380, y: 150 },
+      ],
+      'touch'
+    );
+  });
+  expect(await page.evaluate(() => window.__engine.pixelAt(350, 150)[3])).toBeGreaterThan(0);
+});
+
+test('a rotation while backgrounded with ink locks the paper on re-entry (ADR-0050)', async ({
+  page,
+}) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+
+  await drawStroke(page, box, [
+    { x: 40, y: 60 },
+    { x: 200, y: 60 },
+  ]);
+  expect(await count(page)).toBeGreaterThan(0);
+
+  await hiddenRotateTo(page, 90, 400, 300);
+
+  // Same lock + upright contain-fit the live rotation path produces: the
+  // stroke stays horizontal, shifted into the centered paper (tx = 50).
+  const view = await page.evaluate(() => window.__engine.getViewState());
+  expect(view.active).toBe(true);
+  expect(view.rotate).toBe(0);
+  expect(view.scale).toBe(1);
+  expect(view.tx).toBe(50);
+  expect(await page.evaluate(() => window.__engine.pixelAt(140, 60)[3])).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(170, 150)[3])).toBe(0);
+});
+
+test('a visibility flip with unchanged geometry leaves the drawing untouched', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+
+  await drawStroke(page, box, [
+    { x: 40, y: 60 },
+    { x: 200, y: 60 },
+  ]);
+  const before = await count(page);
+
+  // Same box, same angle — the plain tab-switch return path.
+  await page.evaluate(() => window.__engine.resumeTo(300, 300));
+
+  expect(await count(page)).toBe(before);
+  expect((await page.evaluate(() => window.__engine.getViewState())).active).toBe(false);
+});
+
 // ── teardown / re-init lifecycle (ADR-0004) ──────────────────────────────────
 // Client-side navigation (`/` → `/privacy` → `/`) tears the engine down and
 // re-inits it on a fresh canvas. Drawing state (command log, baseline) persists
