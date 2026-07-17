@@ -40,10 +40,12 @@ export function toggleMagic() {
   else selectMagic();
 }
 
-// After the canvas is cleared, an active eraser or magic brush would strand the
-// child holding a non-drawing tool on a blank page — switch back to the pen.
-// Returning to the pen also restores the last-used pen color for free, since
-// neither modifier touches colors.activeColor.
+// After the canvas is cleared, an active eraser would strand the child holding
+// a non-drawing tool on a blank page — switch back to the pen. Returning to the
+// pen also restores the last-used pen color for free, since the modifier never
+// touches colors.activeColor. The magic brush survives the clear: it draws on a
+// fresh page too, and the engine re-locks a new magic sheet during clearCanvas()
+// while the brush stays selected.
 export function resetToolAfterClear() {
-  if (toolState.eraser || toolState.magic) selectPen();
+  if (toolState.eraser) selectPen();
 }

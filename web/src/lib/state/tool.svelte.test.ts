@@ -71,11 +71,11 @@ describe('tool state', () => {
     expect(toolState.magic).toBe(false);
   });
 
-  it('resetToolAfterClear switches back to the pen when using the magic brush', () => {
+  it('resetToolAfterClear keeps the magic brush selected', () => {
     selectMagic();
     resetToolAfterClear();
+    expect(toolState.magic).toBe(true);
     expect(toolState.eraser).toBe(false);
-    expect(toolState.magic).toBe(false);
   });
 
   it('resetToolAfterClear leaves the pen active unchanged', () => {
