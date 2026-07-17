@@ -287,6 +287,44 @@
   const paperCssHeight = $derived(
     paperView.paperCssHeight ? `${paperView.paperCssHeight}px` : '100%'
   );
+
+  // The line-art overlay's mix-blend-mode composites against a STALE snapshot
+  // of the canvas while a stroke is live: painting into the 2D canvas doesn't
+  // invalidate the blend layer above it, so the blend only re-evaluates when
+  // something else repaints — which used to be the pointerup Svelte writes,
+  // making dark-mode ink under the chalk lines look dim until the finger
+  // lifted (issue #307). Toggling an imperceptible translateZ epsilon on the
+  // wrapper damages the blend layer once per input event (pointermoves are
+  // coalesced to ~one per frame), forcing the screen/multiply blend to
+  // recompute against the current canvas pixels mid-stroke. The two transform
+  // values must differ NUMERICALLY — alternating `translateZ(0)` with nothing
+  // flattens to the same matrix and the compositor would skip the damage.
+  let blendNudge = $state(false);
+
+  function nudgeBlendLayer(e: PointerEvent) {
+    if (!coloringBookState.overlayUrl) return;
+    if (e.type === 'pointermove' && e.buttons === 0) return;
+    blendNudge = !blendNudge;
+  }
+
+  // The nudge wraps the ring handlers at the template level instead of living
+  // inside them: an adopted stroke's first move routes handlePointerMove into
+  // handlePointerDown to grow its missing ring, and a nudge inside each would
+  // toggle twice before Svelte flushes — a net no-op that would leave exactly
+  // that first adopted frame on the stale backdrop.
+  function handleCanvasPointerDown(e: PointerEvent) {
+    nudgeBlendLayer(e);
+    handlePointerDown(e);
+  }
+
+  function handleCanvasPointerMove(e: PointerEvent) {
+    nudgeBlendLayer(e);
+    handlePointerMove(e);
+  }
+
+  const paperViewTransform = $derived(
+    `${paperTransform} translateZ(${blendNudge ? '0.01px' : '0'})`
+  );
 </script>
 
 <div class="canvas-container">
@@ -309,7 +347,7 @@
     class="paper-view"
     style:width={paperCssWidth}
     style:height={paperCssHeight}
-    style:transform={paperTransform}
+    style:transform={paperViewTransform}
     hidden={!coloringBookState.overlayUrl}
   >
     <img
@@ -325,8 +363,8 @@
     bind:this={canvasEl}
     id="drawingCanvas"
     class:erasing={toolState.eraser}
-    onpointerdown={handlePointerDown}
-    onpointermove={handlePointerMove}
+    onpointerdown={handleCanvasPointerDown}
+    onpointermove={handleCanvasPointerMove}
     onpointerenter={updateEraserCursor}
     onpointerleave={handlePointerLeave}
     onpointerup={removeBrushRing}
@@ -451,7 +489,9 @@
      Light: black lines multiply over the light paper. Dark: the img's
      --lineart-filter inverts the art to white-on-black and screen makes the
      black transparent-equivalent — white "chalk" lines over the dark paper
-     (ADR-0052 direction B). */
+     (ADR-0052 direction B). will-change keeps the wrapper on its own
+     compositor layer so the mid-stroke blend nudge (see nudgeBlendLayer) is a
+     composite-only update — no per-frame repaint of the line art. */
   .paper-view {
     position: absolute;
     top: 0;
@@ -460,6 +500,7 @@
     pointer-events: none;
     z-index: 2;
     mix-blend-mode: var(--lineart-blend);
+    will-change: transform;
   }
 
   .paper-view[hidden] {
