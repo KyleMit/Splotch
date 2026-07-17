@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import Icon from './Icon.svelte';
   import { clearCanvas } from '$lib/drawing/engine';
   import { saveDrawingIfEnabled } from '$lib/drawing/saveOnDelete';
@@ -84,9 +84,12 @@
 
   // Send the button home when the orientation flips (its docked corner moved);
   // plain same-orientation resizes leave a mid-drag or settled position alone.
+  // untrack the reset so this fires only on an orientation change — without it,
+  // resetButtonPosition's read of tutorialVisible subscribes the effect to that
+  // state, so showing the tutorial re-runs the effect and instantly dismisses it.
   $effect(() => {
     layout.orientation;
-    resetButtonPosition();
+    untrack(resetButtonPosition);
   });
 
   onMount(() => {
