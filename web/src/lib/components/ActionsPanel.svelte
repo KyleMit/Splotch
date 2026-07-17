@@ -617,30 +617,61 @@
     background: var(--brand-wash);
   }
 
-  /* End-of-history shake: a tap on the dimmed undo button wobbles it side to
-     side — a wordless "that's as far back as I can go" for pre-readers. */
+  /* The exhausted undo button keeps press feedback (it's aria-disabled, not
+     disabled, so :active still matches): the tap that triggers the
+     end-of-history cue should also feel like a tap, not a dead surface. */
+  #undoButton.disabled:active {
+    transform: scale(0.95);
+    background: var(--brand-wash);
+  }
+
+  /* End-of-history cue: a tap on the dimmed undo button answers with a shake
+     plus a whole-button flash — a wordless "that's as far back as I can go"
+     for pre-readers. The pair matters: a fingertip fully occludes the 55–60px
+     button, so the positional wobble alone is invisible mid-tap (issue #304);
+     the flash's glow ring spreads past the finger. Equal durations so the
+     first animationend (which clears the class) doesn't cut the other short. */
   .action-button.end-of-history {
-    animation: undo-nudge 0.4s ease-in-out;
+    animation:
+      undo-nudge 0.4s ease-in-out,
+      undo-flash 0.4s ease-in-out;
   }
 
   @keyframes undo-nudge {
     20% {
-      transform: translateX(-5px) rotate(-4deg);
+      transform: translateX(-8px) rotate(-6deg);
     }
     40% {
-      transform: translateX(5px) rotate(4deg);
+      transform: translateX(8px) rotate(6deg);
     }
     60% {
-      transform: translateX(-3px) rotate(-2deg);
+      transform: translateX(-5px) rotate(-3deg);
     }
     80% {
-      transform: translateX(3px) rotate(2deg);
+      transform: translateX(5px) rotate(3deg);
     }
   }
 
+  /* The occlusion-proof half: pulse from the disabled dim to full opacity
+     behind a brand glow ring that spreads well beyond the button's edge, so
+     the cue reads around a covering fingertip in both themes. */
+  @keyframes undo-flash {
+    15%,
+    70% {
+      opacity: 1;
+      border-color: var(--brand);
+      background: var(--brand-wash);
+      box-shadow: 0 0 0 10px rgba(171, 113, 225, 0.5);
+      box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 50%, transparent);
+    }
+  }
+
+  /* Reduced motion drops the positional shake but keeps the flash — an
+     opacity/color pulse, not motion — so the end-of-history cue never
+     disappears entirely (and animationend still fires to clear the class). */
   @media (prefers-reduced-motion: reduce) {
     .action-button.end-of-history {
-      animation: none;
+      animation: undo-flash 0.4s ease-in-out;
     }
   }
 
