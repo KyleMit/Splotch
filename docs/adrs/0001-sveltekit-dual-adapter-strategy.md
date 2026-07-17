@@ -38,8 +38,8 @@ Capacitor shell provides equivalent offline capability).
 * **+** One codebase, one set of routes and components, shipped to both targets.
 * **+** Server-side routes (`/api/*`, `/admin`) are silently excluded from the native bundle at
   build time without any runtime branching.
-* **-** Two separate build commands (`vite build` vs `cross-env CAPACITOR=true vite build`) must be
-  run and kept aligned — the native bundle bakes a snapshot of the web build's output format, so
-  adapter API changes require attention.
+* **-** Two separate build commands (`vite build` vs `CAPACITOR=true vite build`) must be run and
+  kept aligned — the native bundle bakes a snapshot of the web build's output format, so adapter API
+  changes require attention.
 * **-** `strict: false` means misconfigured static routes fail silently at runtime instead of at
   build time.

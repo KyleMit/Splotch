@@ -149,14 +149,14 @@ npm run test:android:device   # run against an emulator you already have running
 npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcode)
 ```
 
-| Script                | What happens                                                                                                                                                                                                                                                                                                   |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test:android`        | Runs `scripts/android-emulator-smoke.mjs`: boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`), builds + installs (`cap:sync` then the platform's `gradlew :app:installDebug`), runs Maestro, and **always** kills the emulator afterward — even on failure. Self-contained and self-cleaning. |
-| `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected. Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses.                                                                                                                              |
-| `test:ios`            | Runs `scripts/ios-simulator-smoke.mjs`: reuses a booted iPhone simulator (or boots the newest available one), builds the debug app with `xcodebuild`, installs via `simctl`, runs the same Maestro flow, and shuts the simulator down if the script booted it. No signing required.                            |
+| Script                | What happens                                                                                                                                                                                                                                                                                      |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test:android`        | Runs `scripts/android-emulator-smoke.mjs`: boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`), builds + installs (`cap:sync` then `./gradlew :app:installDebug`), runs Maestro, and **always** kills the emulator afterward — even on failure. Self-contained and self-cleaning. |
+| `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected. Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses.                                                                                                                 |
+| `test:ios`            | Runs `scripts/ios-simulator-smoke.mjs`: reuses a booted iPhone simulator (or boots the newest available one), builds the debug app with `xcodebuild`, installs via `simctl`, runs the same Maestro flow, and shuts the simulator down if the script booted it. No signing required.               |
 
 > The smoke scripts are device-lifecycle glue only — Maestro does the actual assertions, and both
-> platforms run the **same flow file**. The Android helper works on Windows and macOS (AVD name and
+> platforms run the **same flow file**. The Android helper works on macOS and Linux (AVD name and
 > SDK locations resolve per-platform in `scripts/lib/android.mjs`; override the SDK with
 > `ANDROID_HOME`); the iOS helper is macOS-only and fails fast elsewhere. Maestro's install location
 > resolves in `scripts/lib/utils.mjs`.
@@ -189,17 +189,6 @@ curl -fsSL "https://get.maestro.mobile.dev" | bash
 >
 > The smoke scripts resolve Maestro via `scripts/lib/utils.mjs` (PATH first, then `~/.maestro/bin`),
 > so they run even before you reopen your shell to pick up the PATH entry the installer adds.
-
-**Windows (native, no WSL):**
-
-1. Download `maestro.zip` from the
-   [Maestro releases](https://github.com/mobile-dev-inc/maestro/releases).
-2. Extract it (e.g. to `%USERPROFILE%\maestro`).
-3. Add `…\maestro\bin` to your **User** `PATH`.
-4. Open a **new** terminal and verify: `maestro --version`.
-
-> Gotcha: already-open terminals won't see the new `PATH`. Open a fresh one (or, for the current
-> session, `$env:Path += ';C:\Users\<you>\maestro\bin'`).
 
 ### Running it locally
 

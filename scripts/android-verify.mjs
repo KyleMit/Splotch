@@ -12,7 +12,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { ROOT, isWindows, fail } from './lib/utils.mjs';
+import { ROOT, fail } from './lib/utils.mjs';
 
 const AAB = join(
   ROOT,
@@ -27,7 +27,7 @@ const AAB = join(
 
 if (!process.env.JAVA_HOME)
   fail('[android-verify] JAVA_HOME is not set — cannot locate jarsigner.');
-const jarsigner = join(process.env.JAVA_HOME, 'bin', isWindows ? 'jarsigner.exe' : 'jarsigner');
+const jarsigner = join(process.env.JAVA_HOME, 'bin', 'jarsigner');
 
 const {
   stdout = '',

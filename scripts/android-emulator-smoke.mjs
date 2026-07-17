@@ -12,7 +12,7 @@
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
-import { ROOT, isWindows, sleep, sh, maestroPath } from './lib/utils.mjs';
+import { ROOT, sleep, sh, maestroPath } from './lib/utils.mjs';
 import { ADB, EMULATOR, AVD_NAME } from './lib/android.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -75,7 +75,7 @@ console.log(`Emulator booted: ${serial}`);
 // 4. Build + install, run the flow, and always tear the emulator down.
 try {
   await sh('npm run cap:sync');
-  const gradlew = join(ROOT, 'android', isWindows ? 'gradlew.bat' : 'gradlew');
+  const gradlew = join(ROOT, 'android', 'gradlew');
   await sh(`"${gradlew}" :app:installDebug`, join(ROOT, 'android'));
   await sh(`"${maestroPath()}" test .maestro/smoke.yaml`);
 } finally {

@@ -10,8 +10,6 @@ import { fileURLToPath } from 'node:url';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-export const isWindows = process.platform === 'win32';
-
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function fail(message) {
@@ -19,9 +17,9 @@ export function fail(message) {
   process.exit(1);
 }
 
-// Commands go through the shell so Windows .cmd/.bat shims (npm, npx, gh,
-// sdkmanager) resolve — which means args that aren't plain words need quoting.
-const quoteArg = (arg) => (/^[\w./:\\=-]+$/.test(arg) ? arg : `"${arg}"`);
+// Commands go through the shell so PATH shims (npm, npx, gh, sdkmanager)
+// resolve — which means args that aren't plain words need quoting.
+const quoteArg = (arg) => (/^[\w./:=-]+$/.test(arg) ? arg : `"${arg}"`);
 const shellJoin = (cmd, args) => [cmd, ...args.map(quoteArg)].join(' ');
 
 // Run a command with live output; exits the script with the command's exit
@@ -101,15 +99,11 @@ export function chromiumExecutablePath(chromium) {
   return undefined;
 }
 
-export const hasCommand = (cmd) =>
-  spawnSync(isWindows ? 'where' : 'which', [cmd], { stdio: 'ignore' }).status === 0;
+export const hasCommand = (cmd) => spawnSync('which', [cmd], { stdio: 'ignore' }).status === 0;
 
-// Maestro's default install location when it isn't on PATH (curl installer on
-// macOS/Linux drops it in ~/.maestro/bin; Windows users extract it themselves).
-const maestroDefaultPath = () =>
-  isWindows
-    ? join(process.env.USERPROFILE ?? '', 'maestro', 'bin', 'maestro.bat')
-    : join(homedir(), '.maestro', 'bin', 'maestro');
+// Maestro's default install location when it isn't on PATH (the curl installer
+// drops it in ~/.maestro/bin).
+const maestroDefaultPath = () => join(homedir(), '.maestro', 'bin', 'maestro');
 
 // Prefer Maestro from PATH; fall back to its default install location.
 // Shared by the Android and iOS smoke tests.

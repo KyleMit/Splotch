@@ -1,10 +1,9 @@
-// Reveals a path in the OS file manager, cross-platform (ADR-0017): `open` on
-// macOS, `start` on Windows, `xdg-open` on Linux. The path argument is resolved
-// relative to the repo root. Used by android:open to show the release bundle
-// folder after a build.
+// Reveals a path in the OS file manager (ADR-0017): `open` on macOS,
+// `xdg-open` on Linux. The path argument is resolved relative to the repo root.
+// Used by android:open to show the release bundle folder after a build.
 
 import { join } from 'node:path';
-import { ROOT, isWindows, run, fail } from './lib/utils.mjs';
+import { ROOT, run, fail } from './lib/utils.mjs';
 
 const target = process.argv[2];
 if (!target)
@@ -14,8 +13,4 @@ if (!target)
 
 const path = join(ROOT, target);
 
-if (isWindows) {
-  run('start', ['', path]);
-} else {
-  run(process.platform === 'darwin' ? 'open' : 'xdg-open', [path]);
-}
+run(process.platform === 'darwin' ? 'open' : 'xdg-open', [path]);

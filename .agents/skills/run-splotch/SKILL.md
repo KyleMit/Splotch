@@ -146,8 +146,8 @@ magic-brush E2E test, `web/tests/flows.spec.ts`.
 >   5199). Your script should only manage the *browser*, never the server.
 > * **If you truly must spawn one**, use `spawnViteServer(port, env)` from
 >   `scripts/lib/vite-server.mjs` — it launches vite in a **detached process group** and its
->   `stop()` kills the whole group (`process.kill(-pid)` / `taskkill /T`), so nothing is orphaned.
->   `freePort(port)` clears a stale listener first.
+>   `stop()` kills the whole group (`process.kill(-pid)`), so nothing is orphaned. `freePort(port)`
+>   clears a stale listener first.
 >
 > Either way, **reap what you spawned before ending**: kill the script/browser, run
 > `npx kill-port <n>`, and confirm with `ps`/`ss -ltnp` that no `vite dev` or headless Chromium is

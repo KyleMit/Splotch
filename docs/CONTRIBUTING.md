@@ -11,8 +11,8 @@ on merge.
 
 ## Prerequisites
 
-* **Node 22** via [nvm-windows](https://github.com/coreybutler/nvm-windows) (or nvm on macOS/Linux).
-  Capacitor 8 requires Node ≥ 22.
+* **Node 22** via [nvm](https://github.com/nvm-sh/nvm) (or your version manager of choice).
+  Capacitor 8 requires Node ≥ 22. Development is supported on macOS and Linux (ADR-0062).
   ```bash
   nvm use 22
   ```

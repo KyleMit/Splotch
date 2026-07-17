@@ -40,9 +40,9 @@ carve-out):
 ## Key rules when working in this folder
 
 * **Not a workspace, not separately installed.** Deps (`sharp`, `@google/genai`) live in the
-  repo-root `package.json` so the root `node_modules` stays flat for `cap sync` + `patch-package`
-  (ADR-0029). Never add a `dependencies` block here or `npm install` in this folder — binaries
-  resolve upward from the root tree.
+  repo-root `package.json` so the root `node_modules` stays flat for `cap sync` (ADR-0029). Never
+  add a `dependencies` block here or `npm install` in this folder — binaries resolve upward from the
+  root tree.
 * **Paths go through `lib/paths.mjs`.** Use its exported constants (`REPO_ROOT`, `COLORING_DIR`,
   `STYLES_DIR`, `FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) — don't hardcode `../../..` walks
   or import from the repo-root `scripts/lib/`.
@@ -60,8 +60,8 @@ carve-out):
 * **The only sanctioned imports from `web/src`** are the four modules listed in `docs/README.md`
   (styles, prompt, geminiSafety, books) — the app's single source of truth for
   prompts/safety/catalog. Don't reach into anything else under `web/src`.
-* **Cross-platform (ADR-0017):** plain Node `.mjs`, no bash-isms, forward-slash glob patterns with a
-  resolved `cwd` (not `join`-built patterns).
+* **macOS/Linux (ADR-0017):** plain Node `.mjs`, forward-slash glob patterns with a resolved `cwd`
+  (not `join`-built patterns).
 * **Ad-hoc analysis scripts go inside this folder, not the session scratchpad.** A throwaway `.mjs`
   that imports `sharp` or `lib/*.mjs` cannot run from `/tmp/...`: Node's ESM loader resolves
   `node_modules` upward from the **script file's** directory — cwd doesn't matter, and `NODE_PATH`
