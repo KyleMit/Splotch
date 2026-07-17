@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Cloud (Claude Code on the web) only — local sessions manage their own deps.
-# See docs/CLOUD.md.
+# See docs/CLOUD/Claude.md.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
@@ -28,7 +28,7 @@ if git diff --quiet -- package-lock.json 2>/dev/null; then lock_was_clean=true; 
 # deps at all. Fall back to skipping lifecycle scripts: patch-package is the
 # only one the repo needs, so re-running it by hand reproduces the working tree.
 if ! npm install; then
-  echo "session-start.sh: npm install failed — retrying with --ignore-scripts + patch-package (docs/CLOUD.md 'Getting dependencies ready')"
+  echo "session-start.sh: npm install failed — retrying with --ignore-scripts + patch-package (docs/CLOUD/Claude.md 'Getting dependencies ready')"
   npm install --ignore-scripts
   npx patch-package
 fi

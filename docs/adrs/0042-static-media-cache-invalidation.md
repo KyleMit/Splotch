@@ -98,8 +98,8 @@ instantly for correctness rather than freshness.
 ## Verification
 
 Verified empirically against a live Netlify branch deploy (real CDN + generated SW, which
-`vite preview` / `netlify dev` cannot reproduce — see `docs/CLOUD.md`). For each step the asset was
-changed, pushed, and the deploy polled until its `sw.js` precache revision flipped:
+`vite preview` / `netlify dev` cannot reproduce — see `docs/CLOUD/Claude.md`). For each step the
+asset was changed, pushed, and the deploy polled until its `sw.js` precache revision flipped:
 
 | Step     | Commit    | `pixel.webp` md5 = **precache revision** | Netlify `ETag`  | `Content-Length` |
 | -------- | --------- | ---------------------------------------- | --------------- | ---------------- |
@@ -130,7 +130,7 @@ Observations:
   for the `max-age` in the first place).
 * **+** The two-layer behavior and the "revision == content md5" fact are now written down, so the
   one-week `max-age` isn't mistaken for a hard lock, and the branch-deploy verification recipe is
-  repeatable (`docs/CLOUD.md`).
+  repeatable (`docs/CLOUD/Claude.md`).
 * **−** A **non-SW-controlled** fetch (first load, or SW absent/cleared) can serve a stale copy for
   up to one week. Bounded and accepted; fingerprinting is the escalation if it ever matters.
 * **−** Invalidation depends on the SW update lifecycle (ADR-0022): a mid-drawing user sees the

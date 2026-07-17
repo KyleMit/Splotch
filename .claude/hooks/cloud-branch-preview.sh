@@ -4,7 +4,7 @@ set -euo pipefail
 # Cloud (Claude Code on the web) only — a local session already runs on a branch
 # the developer chose, and has no Netlify branch preview to point at. On a cloud
 # session, SessionStart stdout is injected into Claude's context, so this prints
-# the per-session branching + preview-URL convention. See docs/CLOUD.md.
+# the per-session branching + preview-URL convention. See docs/CLOUD/Claude.md.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
@@ -22,7 +22,7 @@ Cloud-session workflow (Claude Code on the web) — follow this for every sessio
      git push -u origin feat/<feature>
 
 2. Netlify preview mode. The "splotchy" site runs in one of two modes (see
-   docs/CLOUD.md "Two preview modes"):
+   docs/CLOUD/Claude.md "Two preview modes"):
      - Full: PR deploy previews + branch previews on every branch.
      - Restricted: PR previews off; branch previews build ONLY for feature/*
        branches. Every other branch (including feat/* and claude/*) is pushed

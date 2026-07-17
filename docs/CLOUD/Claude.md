@@ -1,4 +1,4 @@
-# Cloud sessions (Claude Code on the web)
+# Cloud environments — Claude Code on the web
 
 How to run and preview Splotch from a
 [Claude Code on the web](https://code.claude.com/docs/en/claude-code-on-the-web) cloud session, and
@@ -104,8 +104,8 @@ no CDN headers and no built service worker):
   static-asset change propagates: change an asset, push, poll `<branch-url>/sw.js` until that
   asset's `revision` flips (and its `ETag` / `Content-Length` change), push a second change to
   confirm updates keep flowing, then revert. This is exactly how the strategy in
-  [ADR-0042](adrs/0042-static-media-cache-invalidation.md) was verified — see it for the mechanism
-  and the recorded run.
+  [ADR-0042](../adrs/0042-static-media-cache-invalidation.md) was verified — see it for the
+  mechanism and the recorded run.
 
 Deploys take a minute or two after each push, so poll rather than checking once.
 
@@ -146,7 +146,7 @@ repo-independent installs — the job of the environment's **Setup script** fiel
 dialog), which is snapshotted so later sessions skip it.
 
 That field can't be version-controlled, so keep it a one-line bootstrap and commit the real logic in
-[`.claude/cloud/setup.sh`](../.claude/cloud/setup.sh):
+[`.claude/cloud/setup.sh`](../../.claude/cloud/setup.sh):
 
 ```bash
 bash .claude/cloud/setup.sh
@@ -159,8 +159,8 @@ a cloud container, so the `android:*` / `ios:*` / `test:android` scripts can't r
 
 Only Playwright's **Chromium** is installed in a cloud session (no WebKit/Firefox), so
 engine-divergent CSS (containment as a containing block, top-layer, `:has` edge cases) can't be
-tested here — check the `docs/COMPATIBILITY.md` risk register instead of assuming a local pass
-covers Safari.
+tested here — check the [`docs/COMPATIBILITY.md`](../COMPATIBILITY.md) risk register instead of
+assuming a local pass covers Safari.
 
 > **Chromium revision must match `@playwright/test`.** The setup script derives the browser version
 > from `package.json` for exactly this reason: Playwright pins a specific Chromium *revision* (e.g.
@@ -177,7 +177,7 @@ covers Safari.
 
 There is **no** official as-code or CLI provisioning for these environments — the allowed domains,
 env vars, and setup script are edited only in the web dialog. The committed record of how to fill
-that dialog lives in [`.claude/cloud/environment.example`](../.claude/cloud/environment.example);
+that dialog lives in [`.claude/cloud/environment.example`](../../.claude/cloud/environment.example);
 paste from it. Secret **values** stay in the dialog and are never committed.
 
 ### Allowlist additions for E2E
@@ -197,8 +197,8 @@ tunnel — but the cloud egress is a TLS-terminating, HTTP-only MITM gateway (An
 "Egress Gateway"), not the SNI pass-through we once assumed. That rules out **every** turnkey
 tunnel: Cloudflare's quick tunnel targets a non-443 edge, and ngrok dies on the gateway's cert
 pinning and ALPN re-origination. The full proof, the reproducible probe, and the list of dead ends
-are in [ADR-0021](adrs/0021-cloud-session-tunneling.md) — **read it before trying any other tunnel
-here.**
+are in [ADR-0021](../adrs/0021-cloud-session-tunneling.md) — **read it before trying any other
+tunnel here.**
 
 The one shape that works is a **self-hosted HTTP/WebSocket reverse tunnel**: a relay you run on a
 host you can allowlist, reached by a Go client that trusts the system CA. We use
@@ -212,7 +212,7 @@ host you can allowlist, reached by a Go client that trusts the system CA. We use
    Fly secret `AUTH`.
 2. **Env settings (Claude web env dialog — take effect next session):** allowlist `<app>.fly.dev`
    and set `TUNNEL_AUTH` to the Fly `AUTH` (full config in
-   [`.claude/cloud/environment.example`](../.claude/cloud/environment.example)).
+   [`.claude/cloud/environment.example`](../../.claude/cloud/environment.example)).
 3. **Sandbox, each session — one command:**
    ```bash
    npm run dev:tunnel

@@ -173,7 +173,7 @@ Off-cloud, any quick tunnel works (e.g. `cloudflared tunnel
 --url http://localhost:5173`, or
 `ngrok http 5173`). From a Claude Code cloud session the egress is a TLS-terminating, HTTP-only MITM
 gateway and those tools fail — the working path is a self-hosted chisel reverse tunnel. See
-**[docs/CLOUD.md](../../../docs/CLOUD.md)** and
+**[docs/CLOUD/Claude.md](../../../docs/CLOUD/Claude.md)** and
 **[ADR-0021](../../../docs/adrs/0021-cloud-session-tunneling.md)**.
 
 ## 3. Testing

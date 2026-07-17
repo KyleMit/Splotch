@@ -1,4 +1,4 @@
-# Claude Code on the web — environment configuration (reference; see docs/CLOUD.md, ADR-0021).
+# Claude Code on the web — environment configuration (reference; see docs/CLOUD/Claude.md, ADR-0021).
 #
 # There is NO official as-code / CLI provisioning for these environments — allowed domains,
 # env vars, and the setup script are stateful cloud objects edited only in the web dialog

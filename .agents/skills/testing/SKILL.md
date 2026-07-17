@@ -104,7 +104,7 @@ Android smoke test is for.
   `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`). Override the pick with
   `PLAYWRIGHT_CHROMIUM=/path/to/chrome`. **Never** run `npx playwright install` in a cloud session.
   The permanent fix is keeping `.claude/cloud/setup.sh`'s browser install pinned to this package's
-  `@playwright/test` version (it now derives it from `package.json`). See `docs/CLOUD.md`.
+  `@playwright/test` version (it now derives it from `package.json`). See `docs/CLOUD/Claude.md`.
 * **`DEV_SERVER=1` is unreliable in cloud** — global-setup has hit `window is not defined` (SSR) /
   `/dev/engine never became ready` there. Use the default production-build path (just
   `npm run test:e2e`); it's slower per run but works.

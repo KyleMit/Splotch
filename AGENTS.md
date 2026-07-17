@@ -157,7 +157,8 @@ Remaining `docs/`:
 | `docs/AUDIT.md`          | Findings from the audit skills (`/code-audit`, `/extract-audit`, `lighthouse-audit`); consumed by `/fix-audits` and `/vet-audits`. See `.claude/audit-conventions.md` for the audit-skill inventory and shared conventions |
 | `docs/AUDIT-LOG.md`      | Committable history of every audit-skill run (date · audit · one-line summary)                                                                                                                                             |
 | `docs/PROMPTS.md`        | Reusable AI art prompts for assets                                                                                                                                                                                         |
-| `docs/CLOUD.md`          | Running/previewing the app in a Claude Code on the web cloud session, and its network constraints                                                                                                                          |
+| `docs/CLOUD/Claude.md`   | Running/previewing the app in a Claude Code on the web cloud session, and its network constraints                                                                                                                          |
+| `docs/CLOUD/Codex.md`    | Configuring the Codex Cloud environment, including the manually synced setup and maintenance scripts                                                                                                                       |
 | `docs/handoff/`          | Transient session-to-session transfer packets — see `docs/handoff/CLAUDE.md`. Written by `/create-handoff`, consumed by `/resume-handoff`                                                                                  |
 
 Committed run outputs (contact sheets, Lighthouse reports, model/prompt tests) live in
