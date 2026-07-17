@@ -41,7 +41,10 @@
   // width so the area of impact is visible around the fingertip. The magic
   // brush's ring is a rainbow so its reveal behavior is legible (issue #187);
   // whether a ring is rainbow is captured at pointerdown, matching how the
-  // engine stamps `magic` onto ops at stroke start.
+  // engine stamps `magic` onto ops at stroke start. Rings die with the stroke:
+  // up/cancel/leave, plus lostpointercapture for strokes the engine ends itself
+  // (releaseAllPointers — a second finger pressing a swatch or dragging the
+  // clear button never sends this canvas a pointerup).
   let brushRings = $state<Record<number, { x: number; y: number; magic: boolean }>>({});
 
   // The engine's paper view (ADR-0050): identity in normal use; after a device
@@ -112,7 +115,19 @@
       return;
     }
     const ring = brushRings[e.pointerId];
-    if (!ring) return;
+    if (!ring) {
+      // WebKit can merge a fast pen tap-then-stroke into one down-less stream:
+      // the engine adopts the stroke mid-move (see isOrphanPenContact) and
+      // captures the pointer to the canvas, so no pointerdown ever reaches this
+      // handler. Pressed pen buttons + the engine's capture is that adopted
+      // stroke's signature — grow its missing ring here. The capture check also
+      // keeps a stroke the engine already ended (releaseAllPointers) from
+      // regrowing its ring on later moves.
+      if (e.pointerType === 'pen' && e.buttons !== 0 && canvasEl.hasPointerCapture(e.pointerId)) {
+        handlePointerDown(e);
+      }
+      return;
+    }
     const rect = getCanvasRect();
     ring.x = e.clientX - rect.left;
     ring.y = e.clientY - rect.top;
@@ -314,6 +329,7 @@
     onpointerleave={handlePointerLeave}
     onpointerup={removeBrushRing}
     onpointercancel={removeBrushRing}
+    onlostpointercapture={removeBrushRing}
   ></canvas>
   {#each Object.entries(brushRings) as [id, ring] (id)}
     <div
