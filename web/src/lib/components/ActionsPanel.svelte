@@ -608,11 +608,15 @@
       /* Portrait first-paint cap: the column stops short of the palette bar.
          100vh is the large viewport (overestimates while the URL bar shows), but
          this is only the pre-hydration fallback — --action-btn-size swaps in the
-         exact visible height right after hydration. 144px = 8px palette clearance
-         + 136px worst-case chrome (see landscape note). */
+         exact visible height right after hydration. 220px = 8px palette clearance
+         + 136px worst-case chrome (see landscape note) + 76px palette bar. The
+         hydrated formula subtracts the measured palette height; reserving the
+         same ~76px here (it's a stable bar height across portrait widths) keeps
+         the column off the palette on short screens instead of relying on the
+         slack from the worst-case /7 divisor. */
       --action-btn-fallback: min(
         calc(55px * var(--action-btn-scale, 1)),
-        calc((100vh - 144px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 7)
+        calc((100vh - 220px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 7)
       );
       padding: calc(9px * var(--action-btn-scale, 1));
     }
