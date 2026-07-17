@@ -163,6 +163,68 @@ test('dragging a color from a swatch onto the canvas selects it and draws', asyn
   expect(px![2]).toBeGreaterThan(px![0]);
 });
 
+// The touch flavor of the drag handoff, synthesized because one Playwright
+// mouse can't be a touch pointer. What it pins down: in landscape the drag
+// enters the canvas through the LEFT edge band — for a plain touch pointerdown
+// that band is an OS-gesture guard zone (guardedEdgeAt), and the drag's inward
+// motion is exactly the signature advanceEdgeSwipeCandidate discards — so the
+// adopted swatch drag must bypass the edge-swipe guard (adoptPointerStroke) or
+// it selects the color but silently paints nothing on touch devices.
+test('a touch drag from a swatch paints through the landscape edge-swipe band', async ({
+  page,
+}) => {
+  await gotoApp(page);
+
+  const painted = await page.evaluate(async () => {
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const swatch = document.querySelector(
+      'button.color-swatch[data-color="#62A2E9"]'
+    ) as HTMLElement;
+    const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    const fire = (target: Element, type: string, x: number, y: number, buttons: number) =>
+      target.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: 55,
+          pointerType: 'touch',
+          buttons,
+          clientX: x,
+          clientY: y,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+
+    const s = swatch.getBoundingClientRect();
+    const sy = s.top + s.height / 2;
+    // Press the swatch, then drag onto the canvas 4px inside its left edge —
+    // deep in the 24px edge-swipe band. The window-level move triggers the
+    // handoff (a touch press stays targeted on the swatch via implicit capture;
+    // synthetic dispatch on it models that).
+    fire(swatch, 'pointerdown', s.left + s.width / 2, sy, 1);
+    await sleep(30);
+    fire(swatch, 'pointermove', rect.left + 4, sy, 1);
+    // The rest of the stream is the engine's (captured to the canvas): move
+    // INWARD, the direction the guard would misread as the OS gesture.
+    for (let i = 1; i <= 8; i++) {
+      await sleep(16);
+      fire(canvas, 'pointermove', rect.left + 4 + i * 30, sy + i * 4, 1);
+    }
+    fire(canvas, 'pointerup', rect.left + 244, sy + 32, 0);
+    await new Promise(requestAnimationFrame);
+
+    const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
+    }
+    return null;
+  });
+
+  expect(painted).not.toBeNull();
+  // #62A2E9 is blue-dominant — the adopted touch stroke painted in the dragged color.
+  expect(painted![2]).toBeGreaterThan(painted![0]);
+});
+
 // The drag handoff must only fire on the canvas: a press that wanders within
 // the palette and releases there is not a selection (same as today's
 // slide-off-a-swatch behavior) and must not draw.
