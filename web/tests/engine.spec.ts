@@ -24,6 +24,18 @@ async function drawStroke(
 const state = (page: Page) => page.evaluate(() => window.__engineState);
 const count = (page: Page) => page.evaluate(() => window.__engine.nonTransparentCount());
 
+const alphaSum = (page: Page, x: number, y: number, width: number, height: number) =>
+  page.evaluate(
+    ([x, y, width, height]) => {
+      const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+      const data = canvas.getContext('2d')!.getImageData(x, y, width, height).data;
+      let total = 0;
+      for (let i = 3; i < data.length; i += 4) total += data[i];
+      return total;
+    },
+    [x, y, width, height] as const
+  );
+
 test.beforeEach(async ({ page }) => {
   // Navigate ONCE, then poll for readiness. The harness sets window.__engineReady
   // in onMount. Against the default `vite preview` build this settles on the
@@ -54,6 +66,30 @@ test('a stroke paints pixels and flips canvasEmpty false', async ({ page }) => {
   const s = await state(page);
   expect(s.canvasEmpty).toBe(false);
   expect(s.canUndo).toBe(true);
+});
+
+test('a second crayon pass fills tooth live while preserving its hue', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+  await page.evaluate(() => window.__engine.setStrokeWidth(24));
+
+  const line = [
+    { x: 60, y: 150 },
+    { x: 240, y: 150 },
+  ];
+  await drawStroke(page, box, line);
+  const firstPass = await alphaSum(page, 70, 138, 70, 24);
+
+  await page.mouse.move(box.x + line[0].x, box.y + line[0].y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 140, box.y + 150);
+
+  expect(await alphaSum(page, 70, 138, 70, 24)).toBeGreaterThan(firstPass);
+  const pixel = await page.evaluate(() => window.__engine.pixelAt(100, 150));
+  expect(pixel[0]).toBeGreaterThan(200);
+  expect(pixel[1]).toBe(0);
+  expect(pixel[2]).toBe(0);
+  await page.mouse.up();
 });
 
 test('undo reverts a stroke back to an empty canvas', async ({ page }) => {

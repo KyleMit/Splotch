@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { toothAlphaAt, toothSize, type CrayonVariant } from './crayon';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -25,6 +26,8 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: CrayonVariant;
+      crayonPass?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +46,8 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: CrayonVariant;
+      crayonPass?: number;
     }
   | { kind: 'clear' };
 
@@ -87,6 +92,41 @@ function paintOpShape(
   }
 }
 
+const crayonPatterns = new WeakMap<CanvasRenderingContext2D, Map<string, CanvasPattern>>();
+
+function crayonPatternFor(
+  target: CanvasRenderingContext2D,
+  color: string,
+  pass: number
+): CanvasPattern | null {
+  let patterns = crayonPatterns.get(target);
+  if (!patterns) {
+    patterns = new Map();
+    crayonPatterns.set(target, patterns);
+  }
+  const key = `${color}:${pass}`;
+  const cached = patterns.get(key);
+  if (cached) return cached;
+
+  const tile = document.createElement('canvas');
+  const size = toothSize();
+  tile.width = size;
+  tile.height = size;
+  const tileCtx = tile.getContext('2d');
+  if (!tileCtx) return null;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      tileCtx.globalAlpha = toothAlphaAt(x, y, pass);
+      tileCtx.fillStyle = color;
+      tileCtx.fillRect(x, y, 1, 1);
+    }
+  }
+  const pattern = target.createPattern(tile, 'repeat');
+  if (!pattern) return null;
+  patterns.set(key, pattern);
+  return pattern;
+}
+
 // Clear everything a target could be showing. The visible ctx's user space is
 // PAPER coordinates whenever the paper view is active — and with the margins
 // drawable, ink can sit at negative paper coordinates that a rect from (0,0)
@@ -117,7 +157,11 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
+  const paint =
+    op.crayon === 'phase-tooth' && !op.erase
+      ? crayonPatternFor(target, op.color, op.crayonPass ?? 0) || op.color
+      : op.color;
+  paintOpShape(target, op, paint);
   target.globalCompositeOperation = 'source-over';
 }
 

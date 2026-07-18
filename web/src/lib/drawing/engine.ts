@@ -61,6 +61,7 @@ import { getSimplifyCounters, setSimplifyOptions, type SimplifyOptions } from '.
 import { scanCanvasIsEmpty } from './emptyScan';
 import { exportDrawing, warmPaperTextureWhenIdle, type ExportOptions } from './exportDrawing';
 import { PERF_MARKS } from './perf';
+import { type CrayonVariant } from './crayon';
 
 export { setColorSheet };
 
@@ -87,6 +88,8 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonVariant: CrayonVariant = 'phase-tooth';
+const crayonPassesByColor = new Map<string, number>();
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +425,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    crayonPass: ps.crayonPass,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +454,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    crayonPass: ps.crayonPass,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +501,8 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayon: CrayonVariant;
+  crayonPass: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -569,6 +578,8 @@ function startDrawing(e: PointerEvent, adopted = false) {
       : null;
 
   const now = Date.now();
+  const crayonPass = crayonPassesByColor.get(currentColor) ?? 0;
+  crayonPassesByColor.set(currentColor, crayonPass + 1);
   const pointerState: PointerState = {
     id: e.pointerId,
     x,
@@ -582,6 +593,8 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayon: crayonVariant,
+    crayonPass,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -872,6 +885,7 @@ export function clearCanvas() {
   // A cleared canvas releases the held rainbow so the next magic use picks a fresh
   // one; if the brush is still selected, lock the new one in right away.
   clearMagicGradient();
+  crayonPassesByColor.clear();
   if (magicActive) ensureMagicSheet();
 }
 
@@ -900,6 +914,10 @@ export function getUndoDebug(): {
 export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?: number }) {
   if (params.keyframeThreshold !== undefined) setKeyframeSegmentThreshold(params.keyframeThreshold);
   setSimplifyOptions(params);
+}
+
+export function setCrayonVariant(variant: CrayonVariant) {
+  crayonVariant = variant;
 }
 
 // --- Mount / unmount ---------------------------------------------------------
