@@ -10,7 +10,7 @@
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { masthead, page, siteFooter } from '../../../scripts/lib/artifact-chrome.mjs';
+import { chromeStyle, masthead, page, siteFooter } from '../../../scripts/lib/artifact-chrome.mjs';
 import { SAMPLES } from './samples.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -120,3 +120,20 @@ await writeFile(
   page({ title: 'Crayon brush — reference strokes', extraCss, body })
 );
 console.log(`Wrote ${join(OUT, 'index.html')} with ${present} samples.`);
+
+// Body-only fragment for the Claude Artifact tool, which supplies its own
+// <head>/<body> skeleton. Written wherever --artifact points (a scratchpad
+// path); not committed. The chrome CSS already carries data-theme overrides,
+// so the Artifact viewer's light/dark toggle works.
+const artifactOut = process.argv
+  .find((a) => a.startsWith('--artifact='))
+  ?.slice('--artifact='.length);
+if (artifactOut) {
+  // The hosted Artifact has no sibling files, so the "open full image" links
+  // would 404 — drop the anchors (the images are inlined and full-res anyway).
+  const artifactBody = body
+    .replace(/<a href="[^"]+" class="shot">/g, '<div class="shot">')
+    .replace(/<\/a>(\s*<figcaption)/g, '</div>$1');
+  await writeFile(artifactOut, `${chromeStyle(extraCss)}\n${artifactBody}`);
+  console.log(`Wrote Artifact fragment ${artifactOut}.`);
+}
