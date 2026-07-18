@@ -677,6 +677,189 @@ function crayonV7(target: CanvasRenderingContext2D, op: InkOp) {
   target.restore();
 }
 
+// v8 "waxy stipple": opaque waxy body + crisp directional paper-tooth grain,
+// ragged clamped edge, no halo/blur/beads/spray. A solid base is laid by the op's
+// exact geometry (0.78× width), then canvas-cell-hashed stipple on top — every
+// mark's keep/jitter/size/shade is a pure hash of its quantized canvas cell, so
+// overlapping per-frame ops paint identical, non-periodic marks (seam-free, no
+// beads; bit-identical replay, ADR-0033). Interior cells mottle; rim cells fray
+// with a coverage falloff, clamped to <= hw so nothing sprays past the edge.
+// Marks are hard-edged ellipses elongated along the tangent (dragged wax, not
+// spatter). Self-contained source-over; SSR-safe; no Math.random.
+const C8_G = 1;
+const C8_LSTEP = 1.4;
+const C8_JIT = 0.45;
+const C8_CORE = 0.72;
+const C8_BASE_SCALE = 0.78;
+const C8_SHADES = 14;
+const C8_MAX_MARKS = 6000;
+const C8_TAU = Math.PI * 2;
+const C8_S_COV = 0x1b56c4f9;
+const C8_S_JX = 0x7feb352d;
+const C8_S_JY = 0x846ca68b;
+const C8_S_R = 0xc2b2ae35;
+const C8_S_A = 0x9e3779b1;
+const C8_S_SH = 0x85ebca77;
+const C8_S_EL = 0x2545f4d1;
+function c8cell(qx: number, qy: number): number {
+  let h = Math.imul((qx | 0) ^ 0x9e3779b9, 0x85ebca77);
+  h = Math.imul(h ^ (qy | 0) ^ 0xc2b2ae3d, 0x27d4eb2f);
+  h ^= h >>> 15;
+  return h >>> 0;
+}
+function c8chan(base: number, salt: number): number {
+  let h = Math.imul(base ^ salt, 0x2545f491);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0x27d4eb2f);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+function c8shades(color: string): string[] {
+  const [r, g, b] = rgbOf(color);
+  const out = new Array<string>(C8_SHADES);
+  for (let i = 0; i < C8_SHADES; i++) {
+    const f = 0.74 + (i / (C8_SHADES - 1)) * 0.42;
+    out[i] =
+      `rgb(${Math.min(255, r * f) | 0},${Math.min(255, g * f) | 0},${Math.min(255, b * f) | 0})`;
+  }
+  return out;
+}
+function c8Core(op: InkOp, scale: number): InkOp {
+  return op.kind === 'dot'
+    ? { ...op, radius: Math.max(0.5, op.radius * scale) }
+    : { ...op, lineWidth: Math.max(0.5, op.lineWidth * scale) };
+}
+function crayonV8(target: CanvasRenderingContext2D, op: InkOp) {
+  target.save();
+  target.globalCompositeOperation = 'source-over';
+  target.globalAlpha = 1;
+  target.lineCap = 'round';
+  target.lineJoin = 'round';
+  paintOpShape(target, c8Core(op, C8_BASE_SCALE), op.color);
+
+  const shades = c8shades(op.color);
+  const visited = new Set<number>();
+  let drawn = 0;
+  let full = false;
+  const drawCell = (px: number, py: number, u: number, tx: number, ty: number) => {
+    if (full) return;
+    const qx = Math.round(px / C8_G);
+    const qy = Math.round(py / C8_G);
+    const key = ((qx & 0xffff) << 16) | (qy & 0xffff);
+    if (visited.has(key)) return;
+    visited.add(key);
+    const base = c8cell(qx, qy);
+    let cov, ry, elong, aMin, aSpan;
+    if (u >= C8_CORE) {
+      const t = Math.min(1, (u - C8_CORE) / (1.12 - C8_CORE));
+      cov = 0.12 + 0.72 * (1 - t);
+      ry = 0.55 + 0.55 * (1 - t) + c8chan(base, C8_S_R) * 0.35;
+      elong = 2.4 + c8chan(base, C8_S_EL) * 1.0;
+      aMin = 0.66;
+      aSpan = 0.3;
+    } else {
+      cov = 0.4;
+      ry = 0.85 + c8chan(base, C8_S_R) * 0.85;
+      elong = 1.8 + c8chan(base, C8_S_EL) * 0.9;
+      aMin = 0.32;
+      aSpan = 0.3;
+    }
+    if (c8chan(base, C8_S_COV) >= cov) return;
+    const jx = (c8chan(base, C8_S_JX) * 2 - 1) * C8_JIT;
+    const jy = (c8chan(base, C8_S_JY) * 2 - 1) * C8_JIT;
+    const a = aMin + c8chan(base, C8_S_A) * aSpan;
+    const sh = (c8chan(base, C8_S_SH) * C8_SHADES) | 0;
+    target.globalAlpha = a;
+    target.fillStyle = shades[sh];
+    target.beginPath();
+    target.ellipse(qx * C8_G + jx, qy * C8_G + jy, ry * elong, ry, Math.atan2(ty, tx), 0, C8_TAU);
+    target.fill();
+    if (++drawn >= C8_MAX_MARKS) full = true;
+  };
+  if (op.kind === 'dot') {
+    const hw = Math.max(0.5, op.radius);
+    const R = hw + 0.2;
+    const J = Math.ceil(R / C8_LSTEP);
+    for (let gx = -J; gx <= J && !full; gx++) {
+      for (let gy = -J; gy <= J; gy++) {
+        const lx = gx * C8_LSTEP;
+        const ly = gy * C8_LSTEP;
+        const d = Math.hypot(lx, ly);
+        if (d > R) continue;
+        const inv = d > 1e-6 ? 1 / d : 0;
+        drawCell(op.x + lx, op.y + ly, Math.min(1.1, d / hw), -ly * inv || 1, lx * inv);
+        if (full) break;
+      }
+    }
+  } else {
+    const hw = Math.max(0.5, op.lineWidth / 2);
+    const latMax = hw + 0.2;
+    const J = Math.ceil(latMax / C8_LSTEP);
+    const scatter = (px: number, py: number, nx: number, ny: number, tx: number, ty: number) => {
+      for (let j = -J; j <= J; j++) {
+        const lat = j * C8_LSTEP;
+        if (Math.abs(lat) > latMax) continue;
+        drawCell(px + nx * lat, py + ny * lat, Math.min(1.1, Math.abs(lat) / hw), tx, ty);
+        if (full) return;
+      }
+    };
+    let x0 = op.startX;
+    let y0 = op.startY;
+    for (const seg of op.segs) {
+      const cx = seg.cx;
+      const cy = seg.cy;
+      const x1 = seg.x;
+      const y1 = seg.y;
+      const cubic = seg.c2x !== undefined;
+      const c2x = cubic ? seg.c2x! : 0;
+      const c2y = cubic ? seg.c2y! : 0;
+      const approx = cubic
+        ? Math.hypot(cx - x0, cy - y0) +
+          Math.hypot(c2x - cx, c2y - cy) +
+          Math.hypot(x1 - c2x, y1 - c2y)
+        : Math.hypot(cx - x0, cy - y0) + Math.hypot(x1 - cx, y1 - cy);
+      const steps = Math.max(1, Math.ceil(approx / C8_LSTEP));
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const mt = 1 - t;
+        let px, py, dx, dy;
+        if (cubic) {
+          const a = mt * mt * mt;
+          const b = 3 * mt * mt * t;
+          const c = 3 * mt * t * t;
+          const dd = t * t * t;
+          px = a * x0 + b * cx + c * c2x + dd * x1;
+          py = a * y0 + b * cy + c * c2y + dd * y1;
+          dx = 3 * mt * mt * (cx - x0) + 6 * mt * t * (c2x - cx) + 3 * t * t * (x1 - c2x);
+          dy = 3 * mt * mt * (cy - y0) + 6 * mt * t * (c2y - cy) + 3 * t * t * (y1 - c2y);
+        } else {
+          const a = mt * mt;
+          const b = 2 * mt * t;
+          const c = t * t;
+          px = a * x0 + b * cx + c * x1;
+          py = a * y0 + b * cy + c * y1;
+          dx = 2 * mt * (cx - x0) + 2 * t * (x1 - cx);
+          dy = 2 * mt * (cy - y0) + 2 * t * (y1 - cy);
+        }
+        let tl = Math.hypot(dx, dy);
+        if (tl < 1e-6) {
+          dx = x1 - x0;
+          dy = y1 - y0;
+          tl = Math.hypot(dx, dy) || 1;
+        }
+        const txn = dx / tl;
+        const tyn = dy / tl;
+        scatter(px, py, -tyn, txn, txn, tyn);
+        if (full) break;
+      }
+      x0 = x1;
+      y0 = y1;
+      if (full) break;
+    }
+  }
+  target.restore();
+}
+
 // --- Watercolor -------------------------------------------------------------
 
 // v1: plain solid stroke — the pen-equivalent baseline the bench compares against.
@@ -879,6 +1062,7 @@ const CRAYON_VARIANTS: Record<number, OpRenderer> = {
   5: crayonV5,
   6: crayonV6,
   7: crayonV7,
+  8: crayonV8,
 };
 
 const WATERCOLOR_VARIANTS: Record<number, OpRenderer> = {
