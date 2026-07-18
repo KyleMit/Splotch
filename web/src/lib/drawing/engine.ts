@@ -61,6 +61,7 @@ import { getSimplifyCounters, setSimplifyOptions, type SimplifyOptions } from '.
 import { scanCanvasIsEmpty } from './emptyScan';
 import { exportDrawing, warmPaperTextureWhenIdle, type ExportOptions } from './exportDrawing';
 import { PERF_MARKS } from './perf';
+import type { CrayonVariant } from './crayonBrush';
 
 export { setColorSheet };
 
@@ -87,6 +88,8 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonVariant: CrayonVariant = 'wax';
+let nextCrayonSeed = 1;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +425,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayonSeed: ps.crayonSeed,
+    crayonVariant: ps.crayonVariant,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +454,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayonSeed: ps.crayonSeed,
+    crayonVariant: ps.crayonVariant,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -483,6 +490,8 @@ function commitStrokeGroup() {
 // pointerToScreen(). A committed candidate maps its buffered points to paper.
 interface PointerState {
   id: number;
+  crayonSeed: number;
+  crayonVariant: CrayonVariant;
   x: number;
   y: number;
   midX: number;
@@ -571,6 +580,8 @@ function startDrawing(e: PointerEvent, adopted = false) {
   const now = Date.now();
   const pointerState: PointerState = {
     id: e.pointerId,
+    crayonSeed: nextCrayonSeed++,
+    crayonVariant,
     x,
     y,
     midX: x,
@@ -1037,6 +1048,10 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+export function setCrayonVariant(variant: CrayonVariant) {
+  crayonVariant = variant;
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

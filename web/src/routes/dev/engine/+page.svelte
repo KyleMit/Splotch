@@ -4,6 +4,7 @@
     initDrawingCanvas,
     setColor,
     setStrokeWidth,
+    setCrayonVariant,
     setEraserMode,
     setSafeAreaInsets,
     undo,
@@ -57,6 +58,7 @@
     win.__engine = {
       setColor,
       setStrokeWidth,
+      setCrayonVariant,
       setEraserMode,
       setSafeAreaInsets,
       undo,
@@ -135,6 +137,20 @@
       pixelAt(x: number, y: number) {
         const ctx = canvasEl.getContext('2d')!;
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
+      },
+
+      alphaStats(x: number, y: number, width: number, height: number) {
+        const { data } = canvasEl.getContext('2d')!.getImageData(x, y, width, height);
+        let transparent = 0;
+        let partial = 0;
+        let alphaSum = 0;
+        for (let i = 3; i < data.length; i += 4) {
+          const alpha = data[i];
+          alphaSum += alpha;
+          if (alpha === 0) transparent++;
+          else if (alpha < 255) partial++;
+        }
+        return { transparent, partial, alphaSum };
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,

@@ -10,6 +10,7 @@ declare global {
     __engine: {
       setColor(color: string): void;
       setStrokeWidth(width: number): void;
+      setCrayonVariant(variant: 'wax' | 'solid'): void;
       setEraserMode(active: boolean): void;
       setSafeAreaInsets(insets: { top: number; right: number; bottom: number; left: number }): void;
       undo(): void;
@@ -55,6 +56,12 @@ declare global {
       blobRedPixelCount(blob: Blob | null): Promise<number>;
       nonTransparentCount(): number;
       pixelAt(x: number, y: number): number[];
+      alphaStats(
+        x: number,
+        y: number,
+        width: number,
+        height: number
+      ): { transparent: number; partial: number; alphaSum: number };
       resizeTo(w: number, h: number): Promise<void>;
       resumeTo(w: number, h: number): void;
       strokeSync(points: { x: number; y: number }[], pointerType?: string): void;
