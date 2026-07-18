@@ -14,12 +14,20 @@ const ABI = process.arch === 'arm64' ? 'arm64-v8a' : 'x86_64';
 const SYSTEM_IMAGE = `system-images;android-33;google_apis_playstore;${ABI}`;
 const DEVICE_ID = 'pixel_7_pro';
 
-const addToPath = (subdir) => `Add to ~/.zshrc:  export PATH="$ANDROID_HOME/${subdir}:$PATH"`;
+const isMac = process.platform === 'darwin';
+const shellRc = isMac ? '~/.zshrc' : '~/.bashrc';
 
-const javaFix = [
-  'Install JDK 21:  brew install --cask temurin@21',
-  'Then add to ~/.zshrc:  export JAVA_HOME="$(/usr/libexec/java_home -v 21)"',
-];
+const addToPath = (subdir) => `Add to ${shellRc}:  export PATH="$ANDROID_HOME/${subdir}:$PATH"`;
+
+const javaFix = isMac
+  ? [
+      'Install JDK 21:  brew install --cask temurin@21',
+      `Then add to ${shellRc}:  export JAVA_HOME="$(/usr/libexec/java_home -v 21)"`,
+    ]
+  : [
+      'Install JDK 21 (Adoptium Temurin, or your distro package manager, e.g. apt install openjdk-21-jdk)',
+      `Then add to ${shellRc}:  export JAVA_HOME=/path/to/jdk-21`,
+    ];
 
 const cmdlineToolsFix = [
   'Android Studio → SDK Manager → SDK Tools → Android SDK Command-line Tools (latest) → Apply',
@@ -38,7 +46,7 @@ const missing = REQUIRED.filter(({ cmd }) => !hasCommand(cmd));
 if (missing.length > 0) {
   const lines = ['[android-setup] Missing tools — not found on PATH:', ''];
   for (const { cmd, fix } of missing) lines.push(`  ${cmd}:`, ...fix.map((f) => `    ${f}`));
-  lines.push('', 'After fixing, open a new terminal or run: source ~/.zshrc');
+  lines.push('', `After fixing, open a new terminal or run: source ${shellRc}`);
   fail(lines.join('\n'));
 }
 

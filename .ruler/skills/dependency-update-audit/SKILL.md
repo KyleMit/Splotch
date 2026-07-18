@@ -25,10 +25,8 @@ for it.
    * **Major** (`latest` > `wanted`, crosses a major) — needs a migration guide and a usage audit.
 3. **Flag the landmines** before touching anything. Call out packages where an upgrade is known to
    be entangled with this repo's setup:
-   * **`@capacitor/*` and `@capacitor/cli`** — `@capacitor/cli` is patched via `patch-package`
-     (`patches/`, ADR-0011, see the `postinstall` script). A major Capacitor bump can break that
-     patch and the native build. Treat the whole `@capacitor/*` family as a coordinated set, not
-     independent bumps.
+   * **`@capacitor/*` and `@capacitor/cli`** — a major Capacitor bump can break the native build.
+     Treat the whole `@capacitor/*` family as a coordinated set, not independent bumps.
    * **`svelte` / `@sveltejs/*` / `vite` / `vite-plugin-*`** — these move together; a Svelte or
      SvelteKit major usually pins a Vite/plugin range. Don't bump one in isolation.
    * **`typescript`, `svelte-check`, `vitest`, `@playwright/test`, `happy-dom`** — toolchain; a
@@ -53,19 +51,16 @@ for it.
 
 ## Phase 3 — Execute, one package at a time (autonomous)
 
-**Start from a clean tree.** Run `git status` first; if anything unrelated is uncommitted (e.g. a
-lockfile the `postinstall` hook reconciled), commit or revert it before touching dependencies, so no
-upgrade commit picks up stray changes. Then work through the approved list **sequentially**. For
-each package:
+**Start from a clean tree.** Run `git status` first; if anything unrelated is uncommitted, commit or
+revert it before touching dependencies, so no upgrade commit picks up stray changes. Then work
+through the approved list **sequentially**. For each package:
 
 6. **Read the migration guide.** Use `WebSearch` / `WebFetch` to find the release notes / changelog
    / upgrade guide for the target version (the project's outbound HTTPS goes through the agent proxy
    — see the environment notes). For a major jump, read every intermediate major's breaking-changes
    list, not just the latest. Summarize the breaking changes that could plausibly touch this repo.
 7. **Bump the version.** Update the range in `package.json` and install
-   (`npm install <pkg>@<version>`). Let `postinstall` (`patch-package`) run; if a patch fails to
-   apply, stop and resolve it (regenerate the patch or hold the upgrade) — do not commit a broken
-   patch.
+   (`npm install <pkg>@<version>`).
 8. **Audit every usage.** Grep the whole codebase (`web/src/`, `scripts/`, config files, `android/`
    & `ios/` only where they consume the JS package) for imports and API calls of the package.
    Confirm each call site is still valid against the new API; apply the codemod / manual edits the
@@ -75,8 +70,8 @@ each package:
    If the upgrade can't be made green within reason, **revert that package** (restore
    `package.json` + `package-lock.json`, reinstall), note why, and move on — don't leave the tree
    broken.
-10. **Commit just this upgrade.** Stage `package.json`, `package-lock.json`, any `patches/` change,
-    and the source edits this upgrade required — nothing from other packages. Review the staged diff
+10. **Commit just this upgrade.** Stage `package.json`, `package-lock.json`, and the source edits
+    this upgrade required — nothing from other packages. Review the staged diff
     (`git diff --cached`) to confirm it's scoped to this one package before committing. Use a plain
     imperative subject matching the repo's style, e.g. `Upgrade vitest to 4.x` or
     `Bump @capacitor/* to 8.4`. Mention the notable breaking change handled in the body if it's
