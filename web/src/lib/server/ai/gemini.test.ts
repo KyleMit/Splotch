@@ -91,4 +91,11 @@ describe('geminiProvider.verifyKey', () => {
       reason: 'API key invalid',
     });
   });
+
+  it('bounds the probe with an abort signal so a hung provider cannot occupy the invocation', async () => {
+    generateContent.mockResolvedValue({});
+    await geminiProvider.verifyKey('good-key');
+    const config = generateContent.mock.calls[0][0].config;
+    expect(config.abortSignal).toBeInstanceOf(AbortSignal);
+  });
 });
