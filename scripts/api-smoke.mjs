@@ -177,10 +177,19 @@ async function run() {
   );
 
   // --- generate-image auth gate (every case rejected before the model call) ---
-  const genRequest = (fields) => {
-    const form = new FormData();
-    for (const [key, value] of Object.entries(fields)) form.set(key, value);
-    return fetch(`${BASE}/api/generate-image`, { method: 'POST', body: form });
+  // The contract is a raw image body: credentials ride in headers (secrets stay
+  // out of the query string), the style enum is a query param, the body is the
+  // image bytes. `image: null` sends no body — the valid-token-but-no-image case.
+  const genRequest = ({ token, apiKey, image } = {}) => {
+    const headers = {};
+    if (token) headers['X-Access-Token'] = token;
+    if (apiKey) headers['X-Api-Key'] = apiKey;
+    if (image) headers['Content-Type'] = 'image/png';
+    return fetch(`${BASE}/api/generate-image`, {
+      method: 'POST',
+      headers,
+      body: image ?? undefined,
+    });
   };
 
   const badToken = await genRequest({ token: 'not-a-real-token' });

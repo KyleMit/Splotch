@@ -89,13 +89,13 @@ async function sendCase(c) {
   const bytes = readFileSync(inPath);
   writeFileSync(join(OUT_DIR, `${c.id}.in.png`), bytes);
 
-  const form = new FormData();
-  form.append('token', TOKEN);
-  form.append('image', new Blob([bytes], { type: 'image/png' }), `${c.id}.png`);
-
   let res;
   try {
-    res = await fetch(`${BASE}/api/generate-image`, { method: 'POST', body: form });
+    res = await fetch(`${BASE}/api/generate-image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/png', 'X-Access-Token': TOKEN },
+      body: bytes,
+    });
   } catch (err) {
     return { ...c, outcome: 'error', status: 0, detail: String(err) };
   }

@@ -11,11 +11,11 @@ endpoints cross-origin via `apiUrl()` (`web/src/lib/api.ts`, base injected at bu
 `__NATIVE_API_BASE__`).
 
 **CORS:** `hooks.server.ts` answers preflights and adds `Access-Control-Allow-Origin: *` to every
-`/api/*` response, with `GET, POST, DELETE, OPTIONS` and the `Content-Type` / `Authorization`
-headers allowed, plus `Access-Control-Max-Age: 86400` so native clients cache the preflight instead
-of paying an OPTIONS round trip per request. The wildcard is safe because every endpoint is gated by
-a credential the caller must already hold (access token, Gemini key, or admin session) and nothing
-under `/api` uses cookies. See ADR-0007.
+`/api/*` response, with `GET, POST, DELETE, OPTIONS` and the `Content-Type` / `Authorization` /
+`X-Access-Token` / `X-Api-Key` headers allowed, plus `Access-Control-Max-Age: 86400` so native
+clients cache the preflight instead of paying an OPTIONS round trip per request. The wildcard is
+safe because every endpoint is gated by a credential the caller must already hold (access token,
+Gemini key, or admin session) and nothing under `/api` uses cookies. See ADR-0007.
 
 **Rate limiting:** unauthenticated oracles are throttled per IP with a sliding window (default 10
 hits/min, `web/src/lib/server/rateLimit.ts`, ADR-0014). Every throttled response uses one standard
@@ -42,14 +42,22 @@ where valid traffic is deliberately keyed per token, not per IP) throttles just 
 
 ### `POST /api/generate-image`
 
-Generates a stylized image from a drawing. `multipart/form-data` with the PNG, style prompt, and
-either an allow-listed access token or a BYO Gemini key. Managed tokens are rate-limited per token
-(15/min); BYOK requests are rate-limited per IP with a deliberately generous limit (30/min), because
-the branch is otherwise unauthenticated and its 502-vs-200 result is a key-validity oracle. Invalid
-managed tokens are an access-code oracle, so failed guesses share `/api/verify-access-code`'s per-IP
-budget: a limited IP gets the standard 429 before the token is even checked (no allowlist read),
-while valid tokens never touch that bucket. See `web/src/routes/api/generate-image` and ADR-0006 /
-ADR-0014.
+Generates a stylized image from a drawing. The request is the **raw image bytes as the body**
+(`Content-Type: image/png | image/jpeg | image/webp`; an absent type defaults to PNG) — no multipart
+envelope for the buffered function to parse and copy (ADR-0064). The credential rides in a header,
+**never** the query string, because both are secrets that would otherwise leak into access logs,
+browser history, and `Referer`: send `X-Access-Token: <allow-listed access token>` **or**
+`X-Api-Key: <BYO Gemini key>` (mutually exclusive; a key takes the BYOK path). The non-secret style
+enum is the one field in the URL — `?style=Magical` (any value not in `STYLE_SUFFIXES` is ignored
+and the base prompt is used). The body is capped at 15 MiB (`413`); a present, non-allow-listed
+`Content-Type` is `415`; an empty body is `400`.
+
+Managed tokens are rate-limited per token (15/min); BYOK requests are rate-limited per IP with a
+deliberately generous limit (30/min), because the branch is otherwise unauthenticated and its
+502-vs-200 result is a key-validity oracle. Invalid managed tokens are an access-code oracle, so
+failed guesses share `/api/verify-access-code`'s per-IP budget: a limited IP gets the standard 429
+before the token is even checked (no allowlist read), while valid tokens never touch that bucket.
+See `web/src/routes/api/generate-image` and ADR-0006 / ADR-0014.
 
 On success returns the image bytes. Failure modes are split so the client can guide the child
 correctly (ADR-0023): a **`422`** means Gemini refused the drawing on **safety** grounds — the child

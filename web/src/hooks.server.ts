@@ -32,7 +32,9 @@ function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    // Authorization: admin bearer sessions. X-Access-Token / X-Api-Key: the
+    // generate-image credentials (secrets kept out of the query string).
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Access-Token, X-Api-Key',
     // Let native clients cache the preflight for a day instead of paying an
     // extra OPTIONS round trip on every cross-origin JSON request.
     'Access-Control-Max-Age': '86400',

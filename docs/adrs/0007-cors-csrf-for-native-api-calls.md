@@ -1,7 +1,15 @@
 # ADR-0007: CORS and CSRF Strategy for Native-to-Web API Calls
 
-**Status:** Active\
+**Status:** Active (amended by [ADR-0064](0064-generate-image-raw-body-header-credentials.md))\
 **Date:** 2026-06-01 (committed in 4370205)
+
+> **Amendment (ADR-0064):** `/api/generate-image` no longer sends `multipart/form-data` — it now
+> posts a raw `image/*` body, which SvelteKit's CSRF guard ignores, so that route no longer depends
+> on the `trustedOrigins` allow-list below. The origins are kept as defense-in-depth for any future
+> cross-origin form POST. The CORS allow-list also gained `X-Access-Token` / `X-Api-Key` (the
+> generate-image credentials, kept out of the query string). The `curl` verification at the bottom
+> should now use `-H "X-Access-Token: x" --data-binary @tiny.png -H "Content-Type: image/png"`
+> instead of the `-F` multipart form fields.
 
 ## Context
 

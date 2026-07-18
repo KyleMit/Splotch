@@ -940,7 +940,13 @@ test('the AI button posts the drawing and reveals the generated result', async (
   let postedImage = false;
   await page.route('**/api/generate-image', async (route) => {
     const req = route.request();
-    postedImage = req.method() === 'POST' && (req.postData() ?? '').includes('drawing.png');
+    // The client now sends the raw image bytes as the body with an image/*
+    // Content-Type (no multipart envelope) and the credential in a header.
+    postedImage =
+      req.method() === 'POST' &&
+      (req.headers()['content-type'] ?? '').startsWith('image/') &&
+      Boolean(req.headers()['x-access-token'] ?? req.headers()['x-api-key']) &&
+      Boolean(req.postDataBuffer()?.length);
     await route.fulfill({ status: 200, contentType: 'image/png', body: png });
   });
 
