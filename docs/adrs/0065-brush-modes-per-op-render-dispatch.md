@@ -118,14 +118,11 @@ bar every brush is measured against first, is per-op self-contained rendering.
 Each brush's variants live in `brushRender.ts` behind the dev seam; the shipped default is the one
 picked below via `perf:brush` (4× CPU throttle) + visual review.
 
-* **Crayon → v2 "jittered multi-pass"** (a darker narrow core + lighter, offset, deterministically
-  wobbled feather passes). ~0.13 ms avg / 1.1 ms max draw per op, ~15 ms full-battery undo replay —
-  all within budget. The two grain-texture candidates were rejected: **v3 "grain-stamp"** (offscreen
-  fill + destination-out grain + blit per op) was 20–70× slower (3.3 ms avg draw, a 64 ms jank
-  frame, ~300 ms undo) *and* its grain read as near-solid at real stroke widths; **v4 "tinted-grain
-  strokeStyle"** was the cheapest (0.07 ms) but its grain was invisible at a 10 px stroke, so it
-  looked like the plain pen. v2 is the only performant variant that reads as a distinct, waxy,
-  non-pen mark. v3/v4 are retained behind the dev seam as tuning starting points.
+* **Crayon → v11 "coarse position-hashed wax"** (an opaque core + coarse cells whose kind/shade/
+  jitter are a pure hash of the quantized canvas cell — a non-tiling procedural grain). ~0.4 ms avg
+  draw, ~3 ms undo (with the raster cache below). v2–v11 were an **adversarial design iteration**
+  (see next section): the first shipped grain (**v2 "jittered multi-pass"**) drew user complaints —
+  periodic beads at op joints and a blurry, non-waxy edge — which drove the redesign.
 
 * **Watercolor → v3 "feathered wet edge"** (concentric translucent bands from a wide faint halo to a
   narrow core — a cheap deterministic gaussian). ~0.06 ms avg / 1.0 ms max draw, ~27 ms undo — the
@@ -135,5 +132,41 @@ picked below via `perf:brush` (4× CPU throttle) + visual review.
   colour and expects it back; **v4 "blurred soft stamp"** (offscreen `shadowBlur` — deliberately not
   `ctx.filter`, which the iOS 16.4 floor lacks until Safari 17) gave the most diffuse edge but was
   30–40× slower (3.4 ms avg draw, an 84 ms jank frame, ~330 ms undo), the same offscreen-per-op cost
-  that sank crayon v3. Confirms the ADR's stance: a per-op approximation with gentle pooling is the
-  right call for a toddler brush; the whole-stroke buffer (Option B) stays unbuilt.
+  that sank an early crayon variant. A per-op approximation with gentle pooling is the right call
+  for a toddler brush.
+
+## Follow-up: crayon redesign (adversarial iteration) + wax buildup
+
+The first crayon (v2) shipped, then drew two user complaints: **"little round dots at particular
+intervals"** and **"the texture looks blurry, not crayon-like."** The dots were per-op round-cap
+beads from offsetting whole passes; the blur was the soft translucent feather. Fixing this ran as a
+loop of **designer subagents → adversarial critic subagents** (several rounds):
+
+* **The tiling trap.** Cheap grain via a repeating `CanvasPattern` (v5/v9/v10) is *inherently
+  periodic*: a critic's autocorrelation found a clean harmonic ladder at the tile size (v9 ~0.21 at
+  96 px; v10, which naïvely overlaid two coprime tiles, was *worse* at ~0.55/87 px — overlaying
+  tiles does not cancel each tile's own period). Any short repeat is the same family as the original
+  "periodic dots" complaint, so it's disqualifying.
+* **The winner (v11)** abandons tiling for **per-position procedural hashing**: each coarse cell's
+  mark is a pure hash of its quantized *canvas* coordinate. That is continuous across the many
+  per-frame ops of one stroke (no op-boundary beads), non-periodic (autocorrelation broadband,
+  flatter than the old approved look at every periodic lag), and crisp (hard-edged, not blurred).
+  Two independent critics scored it a convincing crayon and passed the tile-repeat test.
+
+**Wax buildup.** A follow-on request: drawing a *new* crayon stroke over existing crayon should
+**darken** it (layered wax), not re-assert the same colour. This is the ADR's Option B/C, scoped to
+crayon:
+
+* **Per-command `multiply`, never per-op.** A crayon command composites onto the canvas with
+  `multiply` so it darkens earlier ink — but the whole stroke is composited *as a unit* (never op by
+  op), so a single stroke can't self-darken at its joints and re-create the bead artifact. This is
+  why buildup is per-command (= per gesture = the undo unit), not per-op.
+* **Cheap by construction.** Live drawing stays opaque (unchanged hot path); on lift the stroke
+  *settles* into its multiply composite. Each buildup command **bakes its stroke into a bbox raster
+  once at commit** (`bakeBuildupRaster`), so every replay/undo/export **multiply-blits the raster**
+  (`renderCommand`) instead of re-rendering the expensive stipple — keeping undo at ~3 ms. Per-op or
+  full-canvas-buffer compositing were both tried and rejected on cost (16 ms/op live; ~460 ms undo).
+* `renderCommand` is the single command renderer every replay path now shares; pen/watercolor/magic
+  commands are unaffected (op-by-op, identical to before), so their bit-identity (`perf:units`)
+  holds. The one accepted trade-off is a subtle "settle on lift" — repeatedly darkening the *same*
+  spot shows the deepening on lift rather than continuously mid-drag.
