@@ -860,6 +860,124 @@ function crayonV8(target: CanvasRenderingContext2D, op: InkOp) {
   target.restore();
 }
 
+// v9 "fast waxy pattern": reproduce v8's approved look (opaque body + crisp broken
+// paper-tooth + ragged rim) at v5's cost — an opaque core stroke plus ONE grain
+// overstroke with a per-color baked pattern, stroked slightly WIDER than the core so
+// the rim is grain-only (its clumped transparent holes fray the silhouette). Tiles are
+// baked once from a seeded PRNG and cached per color; the pattern rides the target's
+// user transform (anchored at the paper origin), so grain is seamless across ops and
+// bit-identical on replay (ADR-0033). Self-contained source-over; SSR-safe (lazy alloc).
+const C9_TILE = 96;
+const C9_MAX_TILES = 24;
+const C9_CORE = 0.8;
+const C9_GRAIN = 1.05;
+const C9_PAPER: [number, number, number] = [244, 242, 234];
+// Shared classification lattice, baked once: kind (0 hole / 1 body / 2 dark / 3 light)
+// + a jittered near-opaque alpha per texel. Holes clump via two coarse cell fields so
+// the bite reads as varied waxy tooth, not a uniform dot-grid. Per-color tiles only
+// re-tint this field, so caching a new colour is one cheap loop.
+let c9Kind: Uint8Array | null = null;
+let c9Alpha: Uint8ClampedArray | null = null;
+function c9BuildField() {
+  const rand = mulberry32(0x1a2b3c4d);
+  const n = C9_TILE * C9_TILE;
+  const kind = new Uint8Array(n);
+  const alpha = new Uint8ClampedArray(n);
+  const cells = C9_TILE >> 3;
+  const coarse = new Float32Array(cells * cells);
+  for (let i = 0; i < coarse.length; i++) coarse[i] = rand();
+  const cells2 = C9_TILE >> 4;
+  const coarse2 = new Float32Array(cells2 * cells2);
+  for (let i = 0; i < coarse2.length; i++) coarse2[i] = rand();
+  for (let y = 0; y < C9_TILE; y++) {
+    for (let x = 0; x < C9_TILE; x++) {
+      const cb = coarse[(y >> 3) * cells + (x >> 3)];
+      const cb2 = coarse2[(y >> 4) * cells2 + (x >> 4)];
+      const o = y * C9_TILE + x;
+      const roll = rand();
+      const holeP = 0.13 + 0.19 * (1 - cb) * (1 - cb2);
+      if (roll < holeP) {
+        kind[o] = 0;
+        alpha[o] = 0;
+      } else if (roll < holeP + 0.17) {
+        kind[o] = 2;
+        alpha[o] = (190 + rand() * 65) | 0;
+      } else if (roll < holeP + 0.28) {
+        kind[o] = 3;
+        alpha[o] = (185 + rand() * 70) | 0;
+      } else {
+        kind[o] = 1;
+        alpha[o] = (232 + rand() * 23) | 0;
+      }
+    }
+  }
+  c9Kind = kind;
+  c9Alpha = alpha;
+}
+const c9Tiles = new Map<string, HTMLCanvasElement>();
+function c9Tile(color: string): HTMLCanvasElement {
+  const cached = c9Tiles.get(color);
+  if (cached) {
+    c9Tiles.delete(color);
+    c9Tiles.set(color, cached);
+    return cached;
+  }
+  if (!c9Kind) c9BuildField();
+  const kind = c9Kind!;
+  const alpha = c9Alpha!;
+  const canvas = document.createElement('canvas');
+  canvas.width = C9_TILE;
+  canvas.height = C9_TILE;
+  const ctx = canvas.getContext('2d')!;
+  const img = ctx.createImageData(C9_TILE, C9_TILE);
+  const d = img.data;
+  const [br, bg, bb] = rgbOf(color);
+  const dr = (br * 0.62) | 0;
+  const dg = (bg * 0.62) | 0;
+  const db = (bb * 0.62) | 0;
+  const lr = (br + (C9_PAPER[0] - br) * 0.62) | 0;
+  const lg = (bg + (C9_PAPER[1] - bg) * 0.62) | 0;
+  const lb = (bb + (C9_PAPER[2] - bb) * 0.62) | 0;
+  for (let i = 0; i < kind.length; i++) {
+    const o = i * 4;
+    const k = kind[i];
+    if (k === 1) {
+      d[o] = br;
+      d[o + 1] = bg;
+      d[o + 2] = bb;
+    } else if (k === 2) {
+      d[o] = dr;
+      d[o + 1] = dg;
+      d[o + 2] = db;
+    } else if (k === 3) {
+      d[o] = lr;
+      d[o + 1] = lg;
+      d[o + 2] = lb;
+    }
+    d[o + 3] = alpha[i];
+  }
+  ctx.putImageData(img, 0, 0);
+  c9Tiles.set(color, canvas);
+  if (c9Tiles.size > C9_MAX_TILES) c9Tiles.delete(c9Tiles.keys().next().value!);
+  return canvas;
+}
+function c9Scale(op: InkOp, scale: number): InkOp {
+  return op.kind === 'dot'
+    ? { ...op, radius: Math.max(0.5, op.radius * scale) }
+    : { ...op, lineWidth: Math.max(0.5, op.lineWidth * scale) };
+}
+function crayonV9(target: CanvasRenderingContext2D, op: InkOp) {
+  target.save();
+  target.globalCompositeOperation = 'source-over';
+  target.globalAlpha = 1;
+  target.lineCap = 'round';
+  target.lineJoin = 'round';
+  paintOpShape(target, c9Scale(op, C9_CORE), op.color);
+  const pattern = target.createPattern(c9Tile(op.color), 'repeat');
+  if (pattern) paintOpShape(target, c9Scale(op, C9_GRAIN), pattern);
+  target.restore();
+}
+
 // --- Watercolor -------------------------------------------------------------
 
 // v1: plain solid stroke — the pen-equivalent baseline the bench compares against.
@@ -1063,6 +1181,7 @@ const CRAYON_VARIANTS: Record<number, OpRenderer> = {
   6: crayonV6,
   7: crayonV7,
   8: crayonV8,
+  9: crayonV9,
 };
 
 const WATERCOLOR_VARIANTS: Record<number, OpRenderer> = {
