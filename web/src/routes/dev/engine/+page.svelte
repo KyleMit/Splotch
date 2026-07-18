@@ -5,6 +5,7 @@
     setColor,
     setStrokeWidth,
     setEraserMode,
+    setBrush,
     setSafeAreaInsets,
     undo,
     clearCanvas,
@@ -16,6 +17,7 @@
     getViewState,
     RESIZE_SETTLE_MS,
   } from '$lib/drawing/engine';
+  import { setBrushVariant } from '$lib/drawing/brushRender';
 
   let canvasEl: HTMLCanvasElement;
   let wrapperEl: HTMLDivElement;
@@ -58,6 +60,11 @@
       setColor,
       setStrokeWidth,
       setEraserMode,
+      // Brush seams (ADR-0065): pick the active brush, and pin which candidate
+      // variant a textured brush renders with, so the brush-bench can A/B every
+      // implementation from one build (mirrors setSimplifyParams).
+      setBrush,
+      setBrushVariant,
       setSafeAreaInsets,
       undo,
       clearCanvas,

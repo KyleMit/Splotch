@@ -343,7 +343,7 @@
 
       <!-- Brush selector: the trigger shows the active brush and opens a flyout of
            every brush (pen, crayon, watercolor, magic). The chosen brush persists
-           back into this single button (ADR-0063). Always shown — a brush is
+           back into this single button (ADR-0065). Always shown — a brush is
            always selected. The magic brush reveals colors as the child paints
            (ADR-0043); crayon and watercolor are textured brushes (brushRender.ts). -->
       <div class="brush-wrapper" bind:this={brushWrapperEl}>
@@ -788,7 +788,7 @@
     animation: aiSpin 1s linear infinite;
   }
 
-  /* Brush selector: trigger button wrapper + flyout menu (ADR-0063). Mirrors the
+  /* Brush selector: trigger button wrapper + flyout menu (ADR-0065). Mirrors the
      stroke-width flyout's geometry so the two flyouts feel identical — pops up as
      a horizontal row in landscape, out to the right in portrait, and stacks into
      a column on narrow portrait so it clears the Parent Help Button. */
