@@ -4,7 +4,10 @@
 // same renderOp() so every surface is bit-identical.
 
 import type { PathSeg } from './strokeSimplify';
+import { crayonPattern } from './crayonBrush';
 import { sheetPatternFor } from './magicBrush';
+
+export type BrushVariant = 'solid' | 'wax';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -25,6 +28,8 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      brush?: BrushVariant;
+      textureSeed?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +48,8 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      brush?: BrushVariant;
+      textureSeed?: number;
     }
   | { kind: 'clear' };
 
@@ -87,6 +94,14 @@ function paintOpShape(
   }
 }
 
+function paintFor(
+  target: CanvasRenderingContext2D,
+  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
+) {
+  if (op.brush !== 'wax' || op.erase || op.magic || op.textureSeed === undefined) return op.color;
+  return crayonPattern(target, { color: op.color, textureSeed: op.textureSeed }) ?? op.color;
+}
+
 // Clear everything a target could be showing. The visible ctx's user space is
 // PAPER coordinates whenever the paper view is active — and with the margins
 // drawable, ink can sit at negative paper coordinates that a rect from (0,0)
@@ -117,7 +132,7 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
+  paintOpShape(target, op, paintFor(target, op));
   target.globalCompositeOperation = 'source-over';
 }
 

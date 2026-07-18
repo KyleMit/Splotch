@@ -42,7 +42,7 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { renderOp, clearAllOf, type BrushVariant, type StrokeOp } from './strokeOps';
 import {
   beginCommand,
   commandCount,
@@ -87,6 +87,8 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let brushVariant: BrushVariant = 'wax';
+let nextTextureSeed = 1;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +424,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    brush: ps.brush,
+    textureSeed: ps.textureSeed,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +453,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    brush: ps.brush,
+    textureSeed: ps.textureSeed,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +500,8 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  brush: BrushVariant;
+  textureSeed: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +590,8 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    brush: brushVariant,
+    textureSeed: nextTextureSeed++,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -1028,6 +1038,10 @@ export function setStrokeWidth(widthPx: number) {
 
 export function setEraserMode(active: boolean) {
   eraserActive = active;
+}
+
+export function setBrushVariant(variant: BrushVariant) {
+  brushVariant = variant;
 }
 
 // Magic brush on/off (ADR-0043). Mutually exclusive with the eraser at the UI

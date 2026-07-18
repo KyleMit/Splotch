@@ -5,6 +5,7 @@
     setColor,
     setStrokeWidth,
     setEraserMode,
+    setBrushVariant,
     setSafeAreaInsets,
     undo,
     clearCanvas,
@@ -58,6 +59,7 @@
       setColor,
       setStrokeWidth,
       setEraserMode,
+      setBrushVariant,
       setSafeAreaInsets,
       undo,
       clearCanvas,
@@ -135,6 +137,21 @@
       pixelAt(x: number, y: number) {
         const ctx = canvasEl.getContext('2d')!;
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
+      },
+
+      crayonMetrics(x: number, y: number, width: number, height: number) {
+        const ctx = canvasEl.getContext('2d')!;
+        const { data } = ctx.getImageData(x, y, width, height);
+        let covered = 0;
+        let dense = 0;
+        let nonRed = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] > 0) covered++;
+          if (data[i + 3] > 210) dense++;
+          if (data[i + 3] > 0 && (data[i] !== 255 || data[i + 1] !== 0 || data[i + 2] !== 0))
+            nonRed++;
+        }
+        return { covered, dense, nonRed };
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,
