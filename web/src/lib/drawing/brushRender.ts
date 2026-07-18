@@ -36,7 +36,7 @@ export type TexturedBrush = 'crayon' | 'watercolor';
 //     (multiply) pooled harder but shifted the colour to navy; v4 (blurred stamp)
 //     was 30–40× slower (an 84 ms jank frame, ~330 ms undo).
 const activeVariant: Record<TexturedBrush, number> = {
-  crayon: 2,
+  crayon: 9,
   watercolor: 3,
 };
 
