@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { crayonPatternFor } from './crayonBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -16,6 +17,12 @@ import { sheetPatternFor } from './magicBrush';
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
+// `brush`, when 'crayon', renders the op as waxy crayon: its shape is stroked
+// with a paper-anchored, colour-tinted tooth pattern instead of a solid fill, so
+// it reads as textured wax and overdrawn same-colour passes build up (ADR-0065,
+// crayonBrush.ts). Like `magic` it's an ordinary member of the command log, so
+// undo, eraser, and simplification all fall out of the existing replay. Absent
+// (or the eraser/magic paths) means the flat solid-colour stroke.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -25,6 +32,7 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      brush?: 'crayon';
     }
   | {
       kind: 'path';
@@ -43,6 +51,7 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      brush?: 'crayon';
     }
   | { kind: 'clear' };
 
@@ -114,6 +123,15 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
+    return;
+  }
+  if (op.brush === 'crayon' && !op.erase) {
+    // The tinted tooth pattern already carries the wax deposit's alpha, so
+    // painting it source-over builds up over an earlier same-colour pass. A flat
+    // variant returns no pattern, falling back to the solid colour (A/B baseline).
+    const pattern = crayonPatternFor(target, op.color);
+    target.globalCompositeOperation = 'source-over';
+    paintOpShape(target, op, pattern ?? op.color);
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';

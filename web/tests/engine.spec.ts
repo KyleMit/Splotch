@@ -1303,3 +1303,76 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
   expect(s.canvasEmpty).toBe(true);
   expect(s.canUndo).toBe(false);
 });
+
+// A dense horizontal crayon stroke at canvas-y `y`, from x0 to x1.
+function crayonBar(y: number, x0: number, x1: number) {
+  const pts = [];
+  for (let x = x0; x <= x1; x += 10) pts.push({ x, y });
+  return pts;
+}
+
+test('a crayon stroke reads as textured wax, not a flat fill (ADR-0065)', async ({ page }) => {
+  // Free-draw is the crayon by default. A single pass must be visibly broken by
+  // the paper tooth — its mean alpha well under a solid fill — while the flat
+  // A/B variant lays down (near-)solid colour. The engine renders both through
+  // the same op path; only the tooth pattern differs.
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await page.evaluate(() => {
+    window.__engine.setColor('#62a2e9');
+    window.__engine.setStrokeWidth(20);
+    window.__engine.setCrayonVariant('wax');
+  });
+  await page.waitForTimeout(160); // ride out the colour-change debounce
+  await drawStroke(page, box, crayonBar(90, 60, 300));
+  const crayon = await page.evaluate(() => window.__engine.inkStats(60, 82, 240, 16));
+
+  await page.evaluate(() => {
+    window.__engine.clearCanvas();
+    window.__engine.setCrayonVariant('flat');
+  });
+  await drawStroke(page, box, crayonBar(90, 60, 300));
+  const flat = await page.evaluate(() => window.__engine.inkStats(60, 82, 240, 16));
+
+  // The crayon leaves paper showing through the tooth, so it's meaningfully less
+  // opaque than the flat marker over the same shape.
+  expect(crayon.alpha).toBeLessThan(flat.alpha - 0.15);
+  expect(flat.alpha).toBeGreaterThan(0.8);
+  // …but it's still a dense body of colour, not a faint wash.
+  expect(crayon.alpha).toBeGreaterThan(0.3);
+});
+
+test('same-colour crayon builds up: denser, hue held, live along the second stroke (ADR-0065)', async ({
+  page,
+}) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await page.evaluate(() => {
+    window.__engine.setColor('#62a2e9');
+    window.__engine.setStrokeWidth(20);
+    window.__engine.setCrayonVariant('wax');
+  });
+  await page.waitForTimeout(160);
+
+  // First pass across the whole bar.
+  await drawStroke(page, box, crayonBar(90, 60, 320));
+  const pass1 = await page.evaluate(() => window.__engine.inkStats(70, 82, 240, 16));
+
+  // A SECOND same-colour pass over only the LEFT half. Because each per-frame op
+  // composites source-over as the finger moves, the left half must build up
+  // where the second stroke actually travelled, while the untouched right half
+  // stays at pass one — buildup is live and positional, never a post-stroke snap.
+  await drawStroke(page, box, crayonBar(90, 60, 190));
+  const leftAfter = await page.evaluate(() => window.__engine.inkStats(70, 82, 110, 16));
+  const rightAfter = await page.evaluate(() => window.__engine.inkStats(210, 82, 110, 16));
+
+  // The twice-drawn left is denser than the once-drawn right (grain filling in).
+  expect(leftAfter.alpha).toBeGreaterThan(rightAfter.alpha + 0.05);
+  // And denser than the same region was after pass one.
+  expect(leftAfter.alpha).toBeGreaterThan(pass1.alpha + 0.05);
+
+  // Hue is invariant: the mean colour of the inked pixels barely moves between
+  // one and two passes — buildup fills the tooth toward the SAME crayon colour,
+  // it does not darken/muddy it (the opposite of a multiply blend).
+  expect(Math.abs(leftAfter.r - pass1.r)).toBeLessThan(8);
+  expect(Math.abs(leftAfter.g - pass1.g)).toBeLessThan(8);
+  expect(Math.abs(leftAfter.b - pass1.b)).toBeLessThan(8);
+});

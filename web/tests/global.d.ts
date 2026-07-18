@@ -36,6 +36,15 @@ declare global {
         split?: 'none' | 'corner';
       }): void;
       setScreenAngleOverride(angle: number | null): void;
+      setCrayonMode(active: boolean): void;
+      setCrayonVariant(name: string): void;
+      setCrayonParams(partial: Record<string, number | string | boolean>): void;
+      inkStats(
+        x: number,
+        y: number,
+        w: number,
+        h: number
+      ): { coverage: number; alpha: number; r: number; g: number; b: number };
       remount(): void;
       getViewState(): {
         active: boolean;
