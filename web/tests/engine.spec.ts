@@ -624,6 +624,52 @@ test('an export started just before a clear still captures the drawing (save-on-
   expect(await count(page)).toBe(0); // the clear itself still landed
 });
 
+test('a second same-colour crayon pass fills paper tooth live without changing hue', async ({
+  page,
+}) => {
+  const buildup = await page.evaluate(() =>
+    window.__engine.crayonBuildupSync([
+      { x: 40, y: 150 },
+      { x: 90, y: 150 },
+      { x: 140, y: 150 },
+      { x: 190, y: 150 },
+      { x: 240, y: 150 },
+    ])
+  );
+
+  expect(buildup.finalCount).toBeGreaterThan(buildup.firstPass);
+  expect(buildup.liveCounts[1]).toBeGreaterThan(buildup.liveCounts[0]);
+  expect(buildup.liveCounts.at(-1)).toBeLessThanOrEqual(buildup.finalCount);
+
+  const pixels = await page.evaluate(() => {
+    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+    const colors = new Set<string>();
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] !== 0) colors.add(`${data[i]},${data[i + 1]},${data[i + 2]}`);
+    }
+    return [...colors];
+  });
+  expect(pixels).toEqual(['255,0,0']);
+});
+
+test('crayon coverage is bit-identical after a resize replay', async ({ page }) => {
+  await page.evaluate(() =>
+    window.__engine.strokeSync([
+      { x: 35, y: 55 },
+      { x: 80, y: 140 },
+      { x: 155, y: 75 },
+      { x: 240, y: 220 },
+    ])
+  );
+  const before = await page.evaluate(() => window.__engine.pixelHash());
+  await page.evaluate(async () => {
+    await window.__engine.resizeTo(400, 300);
+    await window.__engine.resizeTo(300, 300);
+  });
+  expect(await page.evaluate(() => window.__engine.pixelHash())).toBe(before);
+});
+
 test('undoing an eraser stroke replays the erased pixels back', async ({ page }) => {
   // The command-replay undo (ADR-0033) must reproduce destination-out ops in
   // order: undoing the erase rebuilds from the baseline and replays only the

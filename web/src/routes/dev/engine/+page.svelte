@@ -12,6 +12,7 @@
     exportCanvasBlob,
     getUndoDebug,
     setSimplifyParams,
+    setCrayonVariant,
     setScreenAngleOverride,
     getViewState,
     RESIZE_SETTLE_MS,
@@ -65,6 +66,7 @@
       exportCanvasBlob,
       getUndoDebug,
       setSimplifyParams,
+      setCrayonVariant,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).
@@ -137,6 +139,15 @@
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
       },
 
+      pixelHash() {
+        const { data } = canvasEl
+          .getContext('2d')!
+          .getImageData(0, 0, canvasEl.width, canvasEl.height);
+        let hash = 2166136261;
+        for (const value of data) hash = Math.imul(hash ^ value, 16777619);
+        return hash >>> 0;
+      },
+
       // Resize the canvas box and fire the resize event the engine listens for,
       // so the spec can verify the drawing (rebuilt from the baseline + command
       // log) survives a resize. The engine debounces the rebuild until the size
@@ -178,6 +189,43 @@
         ev('pointerdown', points[0]);
         for (let i = 1; i < points.length; i++) ev('pointermove', points[i]);
         ev('pointerup', points[points.length - 1]);
+      },
+
+      crayonBuildupSync(points: { x: number; y: number }[]) {
+        const rect = canvasEl.getBoundingClientRect();
+        const ev = (type: string, p: { x: number; y: number }) =>
+          canvasEl.dispatchEvent(
+            new PointerEvent(type, {
+              pointerId: 1,
+              pointerType: 'mouse',
+              clientX: rect.left + p.x,
+              clientY: rect.top + p.y,
+              bubbles: true,
+              cancelable: true,
+            })
+          );
+        const count = () => {
+          const { data } = canvasEl
+            .getContext('2d')!
+            .getImageData(0, 0, canvasEl.width, canvasEl.height);
+          let total = 0;
+          for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) total++;
+          return total;
+        };
+
+        ev('pointerdown', points[0]);
+        for (let i = 1; i < points.length; i++) ev('pointermove', points[i]);
+        ev('pointerup', points[points.length - 1]);
+        const firstPass = count();
+
+        ev('pointerdown', points[0]);
+        const liveCounts = [count()];
+        for (let i = 1; i < points.length; i++) {
+          ev('pointermove', points[i]);
+          liveCounts.push(count());
+        }
+        ev('pointerup', points[points.length - 1]);
+        return { firstPass, liveCounts, finalCount: count() };
       },
 
       // Synchronous synthetic multi-touch — drives several pointers at once

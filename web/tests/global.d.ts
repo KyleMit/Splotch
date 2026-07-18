@@ -11,6 +11,7 @@ declare global {
       setColor(color: string): void;
       setStrokeWidth(width: number): void;
       setEraserMode(active: boolean): void;
+      setCrayonVariant(variant: 'wax' | 'solid'): void;
       setSafeAreaInsets(insets: { top: number; right: number; bottom: number; left: number }): void;
       undo(): void;
       clearCanvas(): void;
@@ -54,6 +55,12 @@ declare global {
       ): Promise<Blob | null>;
       blobRedPixelCount(blob: Blob | null): Promise<number>;
       nonTransparentCount(): number;
+      crayonBuildupSync(points: { x: number; y: number }[]): {
+        firstPass: number;
+        liveCounts: number[];
+        finalCount: number;
+      };
+      pixelHash(): number;
       pixelAt(x: number, y: number): number[];
       resizeTo(w: number, h: number): Promise<void>;
       resumeTo(w: number, h: number): void;

@@ -43,6 +43,7 @@ import {
   setColorSheet,
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { nextDepositLevel, type CrayonVariant } from './crayon';
 import {
   beginCommand,
   commandCount,
@@ -87,6 +88,8 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonVariant: CrayonVariant = 'wax';
+const crayonPassesByColor = new Map<string, number>();
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +425,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    depositLevel: ps.depositLevel,
+    crayonVariant: ps.crayonVariant,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +454,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    depositLevel: ps.depositLevel,
+    crayonVariant: ps.crayonVariant,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +501,8 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  depositLevel?: number;
+  crayonVariant?: CrayonVariant;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +591,11 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    depositLevel:
+      eraserActive || magicActive
+        ? undefined
+        : nextDepositLevel(crayonPassesByColor.get(currentColor) ?? 0),
+    crayonVariant: eraserActive || magicActive ? undefined : crayonVariant,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -591,6 +605,9 @@ function startDrawing(e: PointerEvent, adopted = false) {
     pendingPoints: [],
   };
   activePointers.set(e.pointerId, pointerState);
+  if (pointerState.depositLevel !== undefined) {
+    crayonPassesByColor.set(currentColor, (crayonPassesByColor.get(currentColor) ?? 0) + 1);
+  }
   activePointerIds.add(e.pointerId);
 
   // A candidate paints nothing yet — renderStrokeStart runs later, on commit.
@@ -872,6 +889,7 @@ export function clearCanvas() {
   // A cleared canvas releases the held rainbow so the next magic use picks a fresh
   // one; if the brush is still selected, lock the new one in right away.
   clearMagicGradient();
+  crayonPassesByColor.clear();
   if (magicActive) ensureMagicSheet();
 }
 
@@ -1037,6 +1055,12 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+// Dev/test A/B seam. Production always starts on wax; every op still stores its
+// coverage level, so changing the variant never changes replay of existing wax ops.
+export function setCrayonVariant(variant: CrayonVariant) {
+  crayonVariant = variant;
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system
