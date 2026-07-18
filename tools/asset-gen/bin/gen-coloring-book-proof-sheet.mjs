@@ -122,6 +122,7 @@ ${css}</style>
       <span style="background:var(--c-red)"></span><span style="background:var(--c-orange)"></span>
       <span style="background:var(--c-yellow)"></span><span style="background:var(--c-green)"></span>
       <span style="background:var(--c-blue)"></span><span style="background:var(--c-purple)"></span>
+      <span style="background:var(--c-pink)"></span>
     </div>
     <h1>Coloring fills &mdash; ${book.name} <span class="accent">${source}</span></h1>
     <p class="lede">Every page <b>light</b> and <b>night</b> side by side, each page&rsquo;s wide row

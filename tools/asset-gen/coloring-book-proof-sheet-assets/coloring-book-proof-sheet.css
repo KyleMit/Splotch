@@ -1,16 +1,21 @@
+/* Palette kept in sync by eye with the shared artifact chrome
+   (scripts/lib/artifact-chrome.mjs) — asset-gen can't import across that boundary.
+   --accent is the site's interactive blue; --gold is the warm "shipped/source" tag. */
 :root {
-  --paper: #f7f5f0;
-  --card: #fff;
+  --paper: #f5f3ee;
+  --card: #fdfbf6;
   --ink: #24222b;
   --muted: #6c6875;
-  --hair: #e4e0d7;
-  --accent: #b1780a;
+  --hair: #e6e1d8;
+  --accent: #2f6fed;
+  --gold: #b1780a;
   --c-red: #ec534e;
   --c-orange: #f89c45;
   --c-yellow: #f9d24f;
   --c-green: #8cc864;
   --c-blue: #62a2e9;
   --c-purple: #ab71e1;
+  --c-pink: #f47cb0;
   --shadow: 0 1px 2px rgba(30, 28, 40, 0.06), 0 8px 24px rgba(30, 28, 40, 0.07);
 }
 * {
@@ -40,12 +45,12 @@ header {
 }
 .crayons {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 16px;
 }
 .crayons span {
-  width: 26px;
-  height: 8px;
+  width: 22px;
+  height: 7px;
   border-radius: 99px;
 }
 h1 {
@@ -55,12 +60,18 @@ h1 {
   text-wrap: balance;
 }
 .accent {
-  color: var(--accent);
-  font-size: 0.55em;
-  font-weight: 600;
+  display: inline-block;
+  color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+  border-radius: 999px;
+  padding: 0.15em 0.7em;
+  font-size: 0.5em;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   vertical-align: middle;
+  transform: translateY(-0.15em);
 }
 .lede {
   color: var(--muted);
