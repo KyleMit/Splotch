@@ -42,7 +42,8 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { renderOp, clearAllOf, type CrayonVariant, type StrokeOp } from './strokeOps';
+export { setCrayonVariant, type CrayonVariant } from './strokeOps';
 import {
   beginCommand,
   commandCount,
@@ -103,6 +104,7 @@ let onViewChange: ((view: EngineViewState) => void) | null = null;
 // every pixel surface (visible canvas, baseline) rescaled in place.
 const MAX_RENDER_SCALE = 2;
 let renderScale = 1;
+let nextGrain = 0;
 
 let canUndo = false;
 
@@ -407,6 +409,12 @@ function beginStrokeGroup() {
 // Paint the round dot that anchors a stroke at its start point, and kick the
 // drawing sound. Used both for a normal pointerdown and when a deferred
 // edge-swipe candidate commits.
+function depositFor(speed: number, pressure: number): number {
+  const normalizedPressure = Math.min(1, Math.max(0, pressure || 0.5));
+  const speedLift = Math.min(0.24, Math.max(0, speed) * 0.1);
+  return Math.min(0.9, Math.max(0.5, 0.62 + normalizedPressure * 0.22 - speedLift));
+}
+
 function renderStrokeStart(ps: PointerState) {
   beginStrokeGroup();
 
@@ -422,6 +430,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    deposit: depositFor(0, ps.pressure),
+    grain: nextGrain++,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -437,7 +447,12 @@ function renderStrokeStart(ps: PointerState) {
 // and the stroke curves smoothly instead of showing straight-chord corners.
 // Each call is captured as one path op (matching its own beginPath/stroke
 // boundary) so undo replay reproduces identical pixels and anti-aliasing.
-function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
+function strokeSmoothSegments(
+  ps: PointerState,
+  points: { x: number; y: number }[],
+  speed: number,
+  pressure: number
+) {
   if (points.length === 0) return;
   const op: StrokeOp = {
     kind: 'path',
@@ -449,6 +464,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    deposit: depositFor(speed, pressure),
+    grain: nextGrain++,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +511,7 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  pressure: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +600,7 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    pressure: e.pressure,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -613,7 +632,7 @@ function commitEdgeSwipe(ps: PointerState) {
   ps.edgeSwipeGuard = null;
   renderStrokeStart(ps);
   if (ps.pendingPoints.length > 0) {
-    strokeSmoothSegments(ps, ps.pendingPoints.map(screenToPaper));
+    strokeSmoothSegments(ps, ps.pendingPoints.map(screenToPaper), 0, ps.pressure);
     ps.pendingPoints = [];
   }
   // Restart speed sampling from the commit point so the buffered span doesn't
@@ -724,7 +743,9 @@ function draw(e: PointerEvent) {
   restartStrokeIfResumed(pointerState, points[0], now);
   const speed = strokeSpeed(pointerState, points[points.length - 1], now);
 
-  strokeSmoothSegments(pointerState, points);
+  const pressure = events[events.length - 1].pressure;
+  pointerState.pressure = pressure;
+  strokeSmoothSegments(pointerState, points, speed, pressure);
 
   pointerState.lastTime = now;
 

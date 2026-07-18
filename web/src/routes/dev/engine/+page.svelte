@@ -12,6 +12,7 @@
     exportCanvasBlob,
     getUndoDebug,
     setSimplifyParams,
+    setCrayonVariant,
     setScreenAngleOverride,
     getViewState,
     RESIZE_SETTLE_MS,
@@ -65,6 +66,7 @@
       exportCanvasBlob,
       getUndoDebug,
       setSimplifyParams,
+      setCrayonVariant,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).
@@ -135,6 +137,23 @@
       pixelAt(x: number, y: number) {
         const ctx = canvasEl.getContext('2d')!;
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
+      },
+
+      inkStats(x: number, y: number, width: number, height: number) {
+        const ctx = canvasEl.getContext('2d')!;
+        const { data } = ctx.getImageData(x, y, width, height);
+        let covered = 0;
+        let dense = 0;
+        let alpha = 0;
+        let wrongHue = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] < 20) continue;
+          covered++;
+          if (data[i + 3] > 180) dense++;
+          alpha += data[i + 3];
+          if (data[i] < 220 || data[i + 1] > 20 || data[i + 2] > 20) wrongHue++;
+        }
+        return { covered, dense, alpha, wrongHue };
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,

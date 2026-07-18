@@ -25,6 +25,8 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      deposit?: number;
+      grain?: number;
     }
   | {
       kind: 'path';
@@ -43,10 +45,67 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      deposit?: number;
+      grain?: number;
     }
   | { kind: 'clear' };
 
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
+
+export type CrayonVariant = 'wax-tooth' | 'flat';
+
+let crayonVariant: CrayonVariant = 'wax-tooth';
+
+export function setCrayonVariant(variant: CrayonVariant) {
+  crayonVariant = variant;
+}
+
+const grainPatterns = new WeakMap<CanvasRenderingContext2D, Map<string, CanvasPattern>>();
+
+function grainPattern(
+  target: CanvasRenderingContext2D,
+  color: string,
+  grain: number
+): CanvasPattern {
+  let patterns = grainPatterns.get(target);
+  if (!patterns) {
+    patterns = new Map();
+    grainPatterns.set(target, patterns);
+  }
+  const key = `${color}:${grain & 15}`;
+  const cached = patterns.get(key);
+  if (cached) return cached;
+
+  const tile = document.createElement('canvas');
+  tile.width = 24;
+  tile.height = 24;
+  const tileCtx = tile.getContext('2d')!;
+  const pixels = tileCtx.createImageData(tile.width, tile.height);
+  const rgb = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(color);
+  const r = rgb ? Number.parseInt(rgb[1], 16) : 0;
+  const g = rgb ? Number.parseInt(rgb[2], 16) : 0;
+  const b = rgb ? Number.parseInt(rgb[3], 16) : 0;
+  for (let y = 0; y < tile.height; y++) {
+    for (let x = 0; x < tile.width; x++) {
+      const i = (y * tile.width + x) * 4;
+      let noise =
+        Math.imul(x + 1, 0x1f123bb5) ^
+        Math.imul(y + 1, 0x5f356495) ^
+        Math.imul((grain & 15) + 1, 0x6c8e9cf5);
+      noise ^= noise >>> 16;
+      noise = Math.imul(noise, 0x45d9f3b);
+      const tooth = (noise ^ (noise >>> 16)) >>> 29;
+      pixels.data[i] = r;
+      pixels.data[i + 1] = g;
+      pixels.data[i + 2] = b;
+      pixels.data[i + 3] = tooth === 0 ? 132 : tooth < 3 ? 190 : 235;
+    }
+  }
+  tileCtx.putImageData(pixels, 0, 0);
+  const pattern = target.createPattern(tile, 'repeat')!;
+  patterns.set(key, pattern);
+  return pattern;
+}
 
 // One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is
 // the canvas-empty state before the group drew, so undo can restore the flag
@@ -117,7 +176,13 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
+  if (op.erase || crayonVariant === 'flat') {
+    paintOpShape(target, op, op.color);
+  } else {
+    target.globalAlpha = op.deposit ?? 0.72;
+    paintOpShape(target, op, grainPattern(target, op.color, op.grain ?? 0));
+    target.globalAlpha = 1;
+  }
   target.globalCompositeOperation = 'source-over';
 }
 
