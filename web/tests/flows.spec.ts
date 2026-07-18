@@ -1091,6 +1091,51 @@ function distinctOpaqueColors(page: Page, bits = 4): Promise<number> {
   }, bits);
 }
 
+// The brush selector offers pen, crayon, watercolor, and magic; picking one
+// persists it into the trigger button and it lays down ink (ADR-0065). Crayon
+// and watercolor are textured brushes, so they draw with a non-pen appearance —
+// here we just assert the flyout→brush→ink pipeline end-to-end (their exact
+// pixels are covered by the perf:brush fidelity harness, not this flow).
+test('the brush selector switches brushes and each one draws', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  // Count any inked pixel (alpha > 10) — crayon/watercolor are translucent, so a
+  // strict opaque count would miss watercolor's wash.
+  const inked = () =>
+    page.evaluate(() => {
+      const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+      let n = 0;
+      for (let i = 3; i < data.length; i += 4) if (data[i] > 10) n++;
+      return n;
+    });
+
+  // Each brush draws in its own horizontal band, so total ink strictly grows as
+  // we switch brushes — proving the flyout→brush→ink pipeline without depending
+  // on a clear-to-empty step.
+  let prev = 0;
+  let band = 0;
+  for (const [label, icon] of [
+    ['Crayon', 'brush-crayon'],
+    ['Watercolor', 'brush-watercolor'],
+    ['Pen', 'brush-pen'],
+  ] as const) {
+    await selectBrush(page, label);
+    // The chosen brush persists into the single trigger button.
+    await expect(page.locator(`#brushButton [data-icon="${icon}"]`)).toBeVisible();
+    const y = 140 + band * 120;
+    await draw(page, [
+      { x: 140, y },
+      { x: 340, y: y + 40 },
+      { x: 520, y },
+    ]);
+    await expect.poll(inked, { timeout: 4000 }).toBeGreaterThan(prev);
+    prev = await inked();
+    band++;
+  }
+});
+
 test('the magic brush is always available and paints the coloring page colors', async ({
   page,
 }) => {
