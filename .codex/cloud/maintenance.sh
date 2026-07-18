@@ -26,6 +26,12 @@ warn() {
 
 export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-/opt/pw-browsers}"
 
+# Pin npm to the major/patch that authors package-lock.json (see setup.sh for the full rationale):
+# the Codex image ships npm 11.4.2, which disagrees with local dev / Claude Cloud (npm 11.13+) on
+# optional-peer lockfile entries and fails `npm ci`. Matching npm@11 (latest 11.x) removes the drift.
+npx -y npm@11 install -g npm@11 \
+  || warn "npm 11 pin skipped — npm ci may fail on a package-lock.json/npm-version optional-peer mismatch."
+
 npm ci --prefer-offline --no-audit --fund=false \
   || warn "npm ci failed — dependencies may be stale or incomplete. Usually a package-lock.json/npm-version mismatch; run 'npm install' locally and commit the refreshed lockfile."
 node scripts/web.mjs playwright install chromium \

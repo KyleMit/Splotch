@@ -34,6 +34,15 @@ node -e '
 
 export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-/opt/pw-browsers}"
 
+# Pin npm to the major/patch that authors package-lock.json (local dev runs npm 11.13+, Claude
+# Cloud 11.18; the Codex image ships npm 11.4.2, an older 11.x patch that disagrees on optional-peer
+# lockfile entries — it demands a nested svelte-check/node_modules/picomatch entry that newer npm
+# omits, so `npm ci` fails with "Missing: picomatch@… from lock file"). Matching npm@11 (latest 11.x)
+# removes the disagreement. Mirrors .claude/cloud/setup.sh; see docs/CLOUD/Codex.md.
+# Via npx so the installer isn't the npm being replaced (an in-place self-update can die halfway).
+npx -y npm@11 install -g npm@11 \
+  || warn "npm 11 pin skipped — npm ci may fail on a package-lock.json/npm-version optional-peer mismatch."
+
 npm ci --prefer-offline --no-audit --fund=false \
   || warn "npm ci failed — dependencies are incomplete. Usually a package-lock.json/npm-version mismatch; run 'npm install' locally and commit the refreshed lockfile."
 node scripts/web.mjs playwright install --with-deps chromium \
