@@ -5,32 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Splotch coloring-book proof sheets</title>
     <style>
+      /* Kept in sync by eye with the shared artifact chrome
+         (scripts/lib/artifact-chrome.mjs) — this hand-authored hub can't import it. */
       :root {
         color-scheme: light dark;
-        --fg: #1a1a1a;
-        --muted: #6a6a6a;
-        --bg: #fff;
-        --bar: #faf7f2;
-        --line: #e6e2da;
-        --accent: #0b5fff;
-        --tab-bg: #f0ece4;
-        --tab-fg: #4a4a4a;
-        --c-red: #ff5a5a;
-        --c-orange: #ff9a3d;
-        --c-yellow: #ffd23d;
-        --c-green: #52c26b;
-        --c-blue: #4d8dff;
-        --c-purple: #a06bff;
+        --fg: #23212a;
+        --muted: #6b6774;
+        --faint: #948f9c;
+        --bg: #f5f3ee;
+        --bar: #f6f3ec;
+        --line: #e6e1d8;
+        --accent: #2f6fed;
+        --accent-ink: #1e50c4;
+        --tab-bg: #efeae1;
+        --tab-fg: #4a4650;
+        --c-red: #ec534e;
+        --c-orange: #f89c45;
+        --c-yellow: #f9d24f;
+        --c-green: #8cc864;
+        --c-blue: #62a2e9;
+        --c-purple: #ab71e1;
+        --c-pink: #f47cb0;
       }
       @media (prefers-color-scheme: dark) {
         :root {
-          --fg: #e8e8e8;
-          --muted: #9a9a9a;
-          --bg: #16171a;
-          --bar: #1d1f24;
-          --line: #33363d;
-          --accent: #6ea8ff;
-          --tab-bg: #262932;
+          --fg: #e9e7e2;
+          --muted: #a8a4af;
+          --faint: #807d89;
+          --bg: #131418;
+          --bar: #181a20;
+          --line: #34373f;
+          --accent: #7aa8ff;
+          --accent-ink: #a9c6ff;
+          --tab-bg: #24262d;
           --tab-fg: #c4c8d0;
         }
       }
@@ -42,28 +49,46 @@
         flex-direction: column;
         background: var(--bg);
         color: var(--fg);
-        font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font: 16px/1.5 ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       }
       header {
         flex: 0 0 auto;
         background: var(--bar);
         border-bottom: 1px solid var(--line);
+        box-shadow: 0 1px 0 rgba(20, 18, 26, 0.06), 0 6px 16px rgba(20, 18, 26, 0.05);
       }
       .titlebar {
         display: flex;
         align-items: center;
-        gap: .75rem;
-        padding: .55rem 1rem .5rem;
+        gap: .55rem;
+        padding: .6rem 1rem .55rem;
+        flex-wrap: wrap;
       }
-      .crayons { display: inline-flex; gap: 3px; }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        color: var(--fg);
+        font-weight: 700;
+        font-size: .92rem;
+        letter-spacing: -.01em;
+        text-decoration: none;
+      }
+      .brand:hover { color: var(--accent-ink); }
+      .brand .sub { color: var(--muted); font-weight: 600; }
+      .crayons { display: inline-flex; gap: 4px; }
       .crayons span {
-        width: 9px;
-        height: 20px;
-        border-radius: 3px;
+        width: 16px;
+        height: 6px;
+        border-radius: 99px;
         display: inline-block;
       }
-      h1 { font-size: 1.05rem; margin: 0; font-weight: 700; }
-      .count { color: var(--muted); font-size: .8rem; margin-left: auto; white-space: nowrap; }
+      .crumbs { margin-left: auto; display: flex; align-items: center; gap: 2px; font-size: .82rem; color: var(--muted); }
+      .crumbs a { color: var(--muted); text-decoration: none; }
+      .crumbs a:hover { color: var(--accent-ink); }
+      .crumbs .sep { color: var(--faint); margin: 0 5px; }
+      .crumbs .here { color: var(--fg); font-weight: 650; }
+      .count { color: var(--muted); font-size: .78rem; white-space: nowrap; }
       nav {
         display: flex;
         align-items: center;
@@ -124,21 +149,27 @@
   <body>
     <header>
       <div class="titlebar">
-        <span class="crayons">
-          <span style="background: var(--c-red)"></span>
-          <span style="background: var(--c-orange)"></span>
-          <span style="background: var(--c-yellow)"></span>
-          <span style="background: var(--c-green)"></span>
-          <span style="background: var(--c-blue)"></span>
-          <span style="background: var(--c-purple)"></span>
-        </span>
-        <h1>Coloring-book proof sheets</h1>
-        <span class="count" id="count"></span>
+        <a class="brand" href="../index.html">
+          <span class="crayons">
+            <span style="background: var(--c-red)"></span>
+            <span style="background: var(--c-orange)"></span>
+            <span style="background: var(--c-yellow)"></span>
+            <span style="background: var(--c-green)"></span>
+            <span style="background: var(--c-blue)"></span>
+            <span style="background: var(--c-purple)"></span>
+            <span style="background: var(--c-pink)"></span>
+          </span>
+          <span>Splotch <span class="sub">/ Artifacts</span></span>
+        </a>
+        <nav class="crumbs" aria-label="Breadcrumb">
+          <a href="../index.html">Artifacts</a><span class="sep" aria-hidden="true">/</span><span class="here">Coloring-book proof sheets</span>
+        </nav>
       </div>
-      <nav>
+      <nav class="tabsrow">
         <button class="nudge" id="prev" title="Previous category (←)" aria-label="Previous category">&#8592;</button>
         <div class="tabs" id="tabs"></div>
         <button class="nudge" id="next" title="Next category (→)" aria-label="Next category">&#8594;</button>
+        <span class="count" id="count"></span>
       </nav>
     </header>
     <main>

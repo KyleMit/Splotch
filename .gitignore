@@ -205,3 +205,7 @@ ios/local.xcconfig
 # scratch copies under tools/asset-gen/ stay ignored too.
 .coloring-samples/
 .coloring-samples-dark/
+
+# Scratch output for the icon-gallery generator (gen:icons-sheet) and other
+# artifact-page dry runs; promote a keeper into artifacts/ with artifacts:publish.
+.artifacts-scratch/
