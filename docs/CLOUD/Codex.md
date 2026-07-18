@@ -33,6 +33,17 @@ libraries. Maintenance reconciles dependencies after a checkout, ensures the req
 revision exists in the cache, and refreshes SvelteKit's generated types. It intentionally omits the
 system-library installation because the cached container already has it.
 
+Both scripts pin npm to `npm@11` (latest 11.x) before `npm ci`. The Codex image ships npm 11.4.2, an
+older 11.x patch that disagrees with the npm that authors `package-lock.json` (local dev runs
+11.13+, Claude Cloud 11.18) over transitive **optional-peer** entries: 11.4.2 materializes and
+*requires* a nested `node_modules/svelte-check/node_modules/picomatch` entry that newer npm omits,
+so a lockfile generated locally makes Codex's `npm ci` fail with
+`Missing: picomatch@… from lock file`. Pinning npm up to a matching major/patch removes the
+disagreement, so the lockfile a local `npm install` produces installs cleanly on Codex — no
+per-entry lockfile patching required. This mirrors the pin in
+[`.claude/cloud/setup.sh`](../../.claude/cloud/setup.sh). Without the pin, the same drift regresses
+every time the lockfile is regenerated under the newer npm.
+
 Keep `npm ci` in maintenance even when a branch is based on `main`: a cached container may retain
 dependencies from another branch, and `npm ci` removes that drift before installing exactly the
 checked-out lockfile.
@@ -66,8 +77,9 @@ environment unless a task demonstrates a need for them.
 
 Codex Cloud and Claude Code Cloud are separate environments with separate setup mechanisms. For
 Claude's proxy, preview, branching, and tunnel workflow, see [Claude Code Cloud](Claude.md). Its
-setup source remains [`.claude/cloud/setup.sh`](../../.claude/cloud/setup.sh); do not copy its npm
-version pinning or Chisel installation into Codex unless Codex specifically needs them.
+setup source remains [`.claude/cloud/setup.sh`](../../.claude/cloud/setup.sh). Both environments now
+share the `npm@11` pin for the lockfile-dialect reason described above; do not copy Claude's Chisel
+installation or preview tunnelling into Codex, which does not need them.
 
 ## Related files
 
