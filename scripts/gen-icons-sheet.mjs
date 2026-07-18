@@ -56,9 +56,23 @@ function isSpot(svg) {
   });
 }
 
-// Inline-ready copy: strip the root width/height (CSS sizes it, viewBox scales),
-// tag it, and for plain icons rewrite fixed black ink to currentColor so it
-// follows the theme in the gallery.
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// The concrete fill/stroke colors an SVG paints, as lowercased tokens — hex or
+// the `white`/`black` keywords — ignoring `none`/`transparent`/`currentColor`
+// and any color tucked inside a `var(...)` fallback (those stay theme-driven).
+function inkColors(svg) {
+  const set = new Set();
+  for (const m of svg.matchAll(/(?:fill|stroke)\s*[:=]\s*"?\s*(#[0-9a-fA-F]{3,8}|white|black)\b/gi))
+    set.add(m[1].toLowerCase());
+  return set;
+}
+
+// Inline-ready copy: strip the root width/height (CSS sizes it, viewBox scales)
+// and tag it. A plain glyph painted in a SINGLE ink color — whatever that color
+// is (black `#1f1f1f`, or a white Material export like trash.svg) — has that one
+// ink remapped to currentColor so it follows the theme and stays legible on the
+// card. Two-tone plain icons (e.g. the grey eraser-size rings) keep their colors.
 function inlineSvg(svg, spot) {
   let out = svg.replace(/<svg\b[^>]*>/, (tag) => {
     let t = tag.replace(/\s(width|height)="[^"]*"/g, '');
@@ -67,11 +81,13 @@ function inlineSvg(svg, spot) {
     return t;
   });
   if (!spot) {
-    out = out
-      .replace(/(fill|stroke)="#1f1f1f"/gi, '$1="currentColor"')
-      .replace(/(fill|stroke)="#000000"/gi, '$1="currentColor"')
-      .replace(/(fill|stroke)="#000"/gi, '$1="currentColor"')
-      .replace(/(fill|stroke):\s*#1f1f1f/gi, '$1:currentColor');
+    const inks = inkColors(out);
+    if (inks.size === 1) {
+      const ink = escapeRe([...inks][0]);
+      out = out
+        .replace(new RegExp(`((?:fill|stroke)\\s*=\\s*")${ink}(")`, 'gi'), '$1currentColor$2')
+        .replace(new RegExp(`((?:fill|stroke)\\s*:\\s*)${ink}\\b`, 'gi'), '$1currentColor');
+    }
   }
   return out;
 }
