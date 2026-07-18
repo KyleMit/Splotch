@@ -112,3 +112,17 @@ bar every brush is measured against first, is per-op self-contained rendering.
   wrong, Option B is the escape hatch, scoped to the one brush that needs it.
 * `perf:brush` is a reusable A/B harness for any future brush, keeping brush work measured rather
   than vibes-based.
+
+## Follow-up: brush winners
+
+Each brush's variants live in `brushRender.ts` behind the dev seam; the shipped default is the one
+picked below via `perf:brush` (4× CPU throttle) + visual review.
+
+* **Crayon → v2 "jittered multi-pass"** (a darker narrow core + lighter, offset, deterministically
+  wobbled feather passes). ~0.13 ms avg / 1.1 ms max draw per op, ~15 ms full-battery undo replay —
+  all within budget. The two grain-texture candidates were rejected: **v3 "grain-stamp"** (offscreen
+  fill + destination-out grain + blit per op) was 20–70× slower (3.3 ms avg draw, a 64 ms jank
+  frame, ~300 ms undo) *and* its grain read as near-solid at real stroke widths; **v4 "tinted-grain
+  strokeStyle"** was the cheapest (0.07 ms) but its grain was invisible at a 10 px stroke, so it
+  looked like the plain pen. v2 is the only performant variant that reads as a distinct, waxy,
+  non-pen mark. v3/v4 are retained behind the dev seam as tuning starting points.
