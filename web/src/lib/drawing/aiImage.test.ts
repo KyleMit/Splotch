@@ -341,9 +341,15 @@ describe('generateAiImage upload format', () => {
     });
   }
 
-  function uploadedImage(): File {
-    const body = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as FormData;
-    return body.get('image') as File;
+  // The raw-body contract (ADR-0064) sends the image bytes as the request body,
+  // so the uploaded blob is the body itself and its MIME type is the request's
+  // Content-Type header — assert the two agree.
+  function uploadedImage(): Blob {
+    const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
+    const body = init.body as Blob;
+    const contentType = (init.headers as Record<string, string>)['Content-Type'];
+    expect(contentType).toBe(body.type);
+    return body;
   }
 
   it('uploads a WebP copy while keeping the PNG for the preview and gallery', async () => {
@@ -358,8 +364,7 @@ describe('generateAiImage upload format', () => {
     const { generateAiImage } = await import('./aiImage');
     await generateAiImage();
 
-    // The server dispatches on the blob's MIME type; assert that rather than the
-    // append filename, which happy-dom's FormData doesn't preserve.
+    // The server dispatches on the request Content-Type (the blob's MIME type).
     expect(uploadedImage().type).toBe('image/webp');
 
     // The child's own drawing is still saved to the gallery as the lossless PNG.

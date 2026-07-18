@@ -940,7 +940,14 @@ test('the AI button posts the drawing and reveals the generated result', async (
   let postedImage = false;
   await page.route('**/api/generate-image', async (route) => {
     const req = route.request();
-    postedImage = req.method() === 'POST' && (req.postData() ?? '').includes('drawing.webp');
+    // The client sends the raw image bytes as the body (no multipart envelope)
+    // with the credential in a header — and a WebP upload (issue #345), which
+    // Chromium encodes, so the Content-Type is image/webp.
+    postedImage =
+      req.method() === 'POST' &&
+      req.headers()['content-type'] === 'image/webp' &&
+      Boolean(req.headers()['x-access-token'] ?? req.headers()['x-api-key']) &&
+      Boolean(req.postDataBuffer()?.length);
     await route.fulfill({ status: 200, contentType: 'image/png', body: png });
   });
 

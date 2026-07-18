@@ -116,22 +116,23 @@ export async function generateAiImage({
     // encode WebP we fall back to the PNG.
     const uploadBlob = (await encodeWebpUpload(imageBlob)) ?? imageBlob;
 
-    const form = new FormData();
-    // Prefer the parent's own Gemini key (BYOK); fall back to a managed access
-    // token. The server uses whichever it receives — a key bills the parent's
-    // Google account, a token uses ours.
-    if (settings.aiUserApiKey) form.append('apiKey', settings.aiUserApiKey);
-    else form.append('token', settings.aiAccessToken);
-    form.append(
-      'image',
-      uploadBlob,
-      uploadBlob.type === 'image/webp' ? 'drawing.webp' : 'drawing.png'
-    );
-    if (style) form.append('style', style);
+    // Send the raw image bytes as the body — no multipart envelope for the server
+    // to buffer and parse (ADR-0064). Prefer the parent's own Gemini key (BYOK);
+    // fall back to a managed access token. Both are secrets, so they ride in
+    // headers, never the query string (which leaks into logs/history). The
+    // non-secret style enum is a query param.
+    const headers: Record<string, string> = {
+      'Content-Type': uploadBlob.type || 'image/png',
+    };
+    if (settings.aiUserApiKey) headers['X-Api-Key'] = settings.aiUserApiKey;
+    else headers['X-Access-Token'] = settings.aiAccessToken;
 
-    const res = await fetch(apiUrl('/api/generate-image'), {
+    const endpoint =
+      apiUrl('/api/generate-image') + (style ? `?style=${encodeURIComponent(style)}` : '');
+    const res = await fetch(endpoint, {
       method: 'POST',
-      body: form,
+      headers,
+      body: uploadBlob,
       signal: controller.signal,
     });
     const response = await readAiImageResponse(res);

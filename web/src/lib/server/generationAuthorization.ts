@@ -13,8 +13,8 @@ export type GenerationAuthorization =
   | { usingByok: false; effectiveKey: string | undefined; managedToken: string };
 
 export async function authorizeGenerationRequest(input: {
-  apiKey: FormDataEntryValue | null;
-  token: FormDataEntryValue | null;
+  apiKey: string | null;
+  token: string | null;
   clientAddress: string;
 }): Promise<GenerationAuthorization | Response> {
   const userKey = typeof input.apiKey === 'string' ? input.apiKey.trim() : '';

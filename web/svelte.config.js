@@ -25,12 +25,16 @@ const config = {
     // element's own border-radius transition animates the square->round "snap"
     // (FOUC). Infinity inlines every CSS file regardless of size.
     inlineStyleThreshold: Infinity,
-    // The native apps load from a WebView origin and call the hosted
-    // /api/generate-image cross-origin. SvelteKit's CSRF guard otherwise rejects
-    // that multipart POST with a 403 ("Cross-site form submissions are forbidden")
-    // *before* hooks.server.js can add CORS headers, so the WebView surfaces it as
-    // a CORS failure. Trust the Capacitor origins (Android: https://localhost,
-    // iOS: capacitor://localhost). Safe here: the AI route is token-gated, and
+    // The native apps load from a WebView origin and call the hosted /api/*
+    // endpoints cross-origin. SvelteKit's CSRF guard rejects a cross-site POST
+    // with a form content-type (multipart/form-data, urlencoded, text/plain)
+    // with a 403 *before* hooks.server.js can add CORS headers, so the WebView
+    // would surface it as a CORS failure. The current generate-image contract
+    // sends a raw image body (Content-Type: image/*), which the guard ignores —
+    // but shipped native builds still send the legacy multipart form (ADR-0064),
+    // and that DOES trip the guard, so trusting the Capacitor origins (Android:
+    // https://localhost, iOS: capacitor://localhost) is still required until
+    // those old clients age out. Safe here: the AI route is credential-gated, and
     // /admin's only cookie is SameSite=strict, so it's never sent on the
     // cross-site requests these trusted origins make.
     csrf: { trustedOrigins: ['https://localhost', 'capacitor://localhost'] },
