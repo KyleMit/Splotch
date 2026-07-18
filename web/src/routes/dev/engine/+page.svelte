@@ -13,6 +13,7 @@
     getUndoDebug,
     setSimplifyParams,
     setScreenAngleOverride,
+    setCrayonRenderVariant,
     getViewState,
     RESIZE_SETTLE_MS,
   } from '$lib/drawing/engine';
@@ -69,6 +70,7 @@
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).
       setScreenAngleOverride,
+      setCrayonRenderVariant,
       getViewState,
 
       // Teardown + re-init on the same canvas — the client-side-navigation

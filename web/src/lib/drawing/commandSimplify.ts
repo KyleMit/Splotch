@@ -179,6 +179,7 @@ function reducePathRun(run: PathOp[]): PathOp[] {
     startY: span.startY,
     segs: span.segs,
     color: first.color,
+    textureSeed: first.textureSeed,
     lineWidth: first.lineWidth,
     erase: first.erase,
     magic: first.magic,

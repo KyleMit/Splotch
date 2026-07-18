@@ -42,7 +42,8 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { renderOp, clearAllOf, setCrayonVariant, type StrokeOp } from './strokeOps';
+import type { CrayonVariant } from './crayon';
 import {
   beginCommand,
   commandCount,
@@ -87,6 +88,7 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let nextTextureSeed = 1;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -420,6 +422,7 @@ function renderStrokeStart(ps: PointerState) {
     y: ps.y,
     radius: ps.lineWidth / 2,
     color: ps.color,
+    textureSeed: ps.textureSeed,
     erase: ps.erase,
     magic: ps.magic,
   };
@@ -446,6 +449,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     startY: ps.midY,
     segs: [],
     color: ps.color,
+    textureSeed: ps.textureSeed,
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
@@ -494,6 +498,7 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  textureSeed: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +587,7 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    textureSeed: nextTextureSeed++,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -1037,6 +1043,13 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+// Dev A/B seam for evaluating crayon texture against a flat control. The
+// selected variant is captured by neither app state nor time; every recorded
+// op carries its texture seed, so replay remains deterministic.
+export function setCrayonRenderVariant(variant: CrayonVariant) {
+  setCrayonVariant(variant);
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

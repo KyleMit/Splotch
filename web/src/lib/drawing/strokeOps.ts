@@ -5,6 +5,13 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { crayonPaint, type CrayonVariant } from './crayon';
+
+let crayonVariant: CrayonVariant = 'paper-tooth';
+
+export function setCrayonVariant(variant: CrayonVariant) {
+  crayonVariant = variant;
+}
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -23,6 +30,7 @@ export type StrokeOp =
       y: number;
       radius: number;
       color: string;
+      textureSeed?: number;
       erase: boolean;
       magic?: boolean;
     }
@@ -40,6 +48,7 @@ export type StrokeOp =
       // the diagnostic 'spline' mode. See strokeSimplify.ts.
       segs: PathSeg[];
       color: string;
+      textureSeed?: number;
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
@@ -117,7 +126,11 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
+  paintOpShape(
+    target,
+    op,
+    op.erase ? op.color : crayonPaint(target, op.color, op.textureSeed ?? 0, crayonVariant)
+  );
   target.globalCompositeOperation = 'source-over';
 }
 

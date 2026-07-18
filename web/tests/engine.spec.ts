@@ -56,6 +56,52 @@ test('a stroke paints pixels and flips canvasEmpty false', async ({ page }) => {
   expect(s.canUndo).toBe(true);
 });
 
+test('a same-colour crayon pass fills paper tooth live without changing hue', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+  const stroke = [
+    { x: 45, y: 120 },
+    { x: 255, y: 120 },
+  ];
+
+  await drawStroke(page, box, stroke);
+  const first = await page.evaluate(() => {
+    const ctx = document.querySelector<HTMLCanvasElement>('#engineCanvas')!.getContext('2d')!;
+    return Array.from(ctx.getImageData(50, 114, 200, 13).data);
+  });
+
+  await page.mouse.move(box.x + stroke[0].x, box.y + stroke[0].y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + stroke[1].x, box.y + stroke[1].y);
+  const secondWhileDrawing = await page.evaluate(() => {
+    const ctx = document.querySelector<HTMLCanvasElement>('#engineCanvas')!.getContext('2d')!;
+    return Array.from(ctx.getImageData(50, 114, 200, 13).data);
+  });
+  await page.mouse.up();
+
+  const coverage = (data: number[]) => {
+    let opaque = 0;
+    let alpha = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] > 0) {
+        opaque++;
+        expect(data[i]).toBe(255);
+        expect(data[i + 1]).toBe(0);
+        expect(data[i + 2]).toBe(0);
+      }
+      alpha += data[i + 3];
+    }
+    return { opaque, alpha };
+  };
+  const before = coverage(first);
+  const during = coverage(secondWhileDrawing);
+
+  expect(before.opaque).toBeGreaterThan(0);
+  expect(before.opaque).toBeLessThan(200 * 13);
+  expect(during.opaque).toBeGreaterThan(before.opaque);
+  expect(during.alpha).toBeGreaterThan(before.alpha);
+});
+
 test('undo reverts a stroke back to an empty canvas', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
