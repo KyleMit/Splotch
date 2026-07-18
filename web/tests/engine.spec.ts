@@ -24,6 +24,18 @@ async function drawStroke(
 const state = (page: Page) => page.evaluate(() => window.__engineState);
 const count = (page: Page) => page.evaluate(() => window.__engine.nonTransparentCount());
 
+// True when any pixel within `r` of (x, y) is inked. The pen renders the waxy
+// crayon brush by default, whose paper-tooth grain leaves gaps, so a single
+// exact-pixel presence probe is flaky — a geometry assertion ("ink landed
+// here") checks a small neighbourhood instead. Blank-area checks stay
+// exact-pixel: grain only ever makes an empty spot emptier.
+async function inkNear(page: Page, x: number, y: number, r = 5): Promise<boolean> {
+  return page.evaluate(
+    ({ x, y, r }) => window.__engine.regionInkStats(x - r, y - r, 2 * r + 1, 2 * r + 1).covered > 0,
+    { x, y, r }
+  );
+}
+
 test.beforeEach(async ({ page }) => {
   // Navigate ONCE, then poll for readiness. The harness sets window.__engineReady
   // in onMount. Against the default `vite preview` build this settles on the
@@ -90,7 +102,7 @@ test('undo preserves and rebases a stroke that is still in progress', async ({ p
   await page.evaluate(() => window.__engine.undo());
 
   expect(await page.evaluate(() => window.__engine.pixelAt(60, 40)[3])).toBe(0);
-  expect(await page.evaluate(() => window.__engine.pixelAt(220, 180)[3])).toBeGreaterThan(0);
+  expect(await inkNear(page, 220, 180)).toBe(true);
   expect((await state(page)).canvasEmpty).toBe(false);
 
   await page.mouse.up();
@@ -868,8 +880,7 @@ test('the drawing survives a canvas resize (virtual-canvas preservation)', async
 
   // Pixels near the origin (where the stroke is) must persist after the resize.
   expect(await count(page)).toBeGreaterThan(0);
-  const alpha = await page.evaluate(() => window.__engine.pixelAt(70, 30)[3]);
-  expect(alpha).toBeGreaterThan(0);
+  expect(await inkNear(page, 70, 30)).toBe(true);
 });
 
 // ── device rotation / the paper view (ADR-0050) ─────────────────────────────
@@ -918,8 +929,8 @@ test('rotating with ink locks the paper and keeps the whole drawing visible upri
   // centered paper (the smoothed path spans paper x ∈ [40, 120] → screen
   // x ∈ [90, 170]): paper (90, 60) → screen (140, 60).
   expect(await count(page)).toBeGreaterThan(0);
-  expect(await page.evaluate(() => window.__engine.pixelAt(140, 60)[3])).toBeGreaterThan(0);
-  expect(await page.evaluate(() => window.__engine.pixelAt(170, 60)[3])).toBeGreaterThan(0);
+  expect(await inkNear(page, 140, 60)).toBe(true);
+  expect(await inkNear(page, 170, 60)).toBe(true);
   // Below the stroke line stays blank — it did not rotate to vertical.
   expect(await page.evaluate(() => window.__engine.pixelAt(170, 150)[3])).toBe(0);
 
@@ -950,7 +961,7 @@ test('a rotation the paper does not fit scales it down uniformly, fully visible'
   expect(view.scale).toBeCloseTo(2 / 3, 5);
 
   // Paper (120, 60) → screen (80, 90); the whole stroke fits on screen.
-  expect(await page.evaluate(() => window.__engine.pixelAt(80, 90)[3])).toBeGreaterThan(0);
+  expect(await inkNear(page, 80, 90)).toBe(true);
   const bounds = await page.evaluate(() => window.__engine.inkBounds());
   if (!bounds) throw new Error('rotation lost the drawing');
   expect(bounds.maxX).toBeLessThanOrEqual(200);
@@ -972,7 +983,7 @@ test('rotating back restores the exact original layout', async ({ page }) => {
 
   const view = await page.evaluate(() => window.__engine.getViewState());
   expect(view.active).toBe(false);
-  expect(await page.evaluate(() => window.__engine.pixelAt(120, 60)[3])).toBeGreaterThan(0);
+  expect(await inkNear(page, 120, 60)).toBe(true);
   expect(await count(page)).toBe(before);
 });
 
@@ -1000,7 +1011,7 @@ test('strokes drawn while rotated land on the paper and survive rotating back', 
   });
   await rotateTo(page, 0, 300, 300);
 
-  expect(await page.evaluate(() => window.__engine.pixelAt(200, 150)[3])).toBeGreaterThan(0);
+  expect(await inkNear(page, 200, 150)).toBe(true);
 });
 
 test('the margins around the rotated paper are drawable, and crop on rotating back', async ({
@@ -1027,19 +1038,19 @@ test('the margins around the rotated paper are drawable, and crop on rotating ba
     );
   });
   expect(await count(page)).toBeGreaterThan(before);
-  expect(await page.evaluate(() => window.__engine.pixelAt(25, 150)[3])).toBeGreaterThan(0);
+  expect(await inkNear(page, 25, 150)).toBe(true);
 
   // Rotating back crops the margin ink (the paper never contained it): the
   // original stroke is restored and nothing renders left of it.
   await rotateTo(page, 0, 300, 300);
-  expect(await page.evaluate(() => window.__engine.pixelAt(120, 60)[3])).toBeGreaterThan(0);
+  expect(await inkNear(page, 120, 60)).toBe(true);
   const bounds = await page.evaluate(() => window.__engine.inkBounds());
   if (!bounds) throw new Error('rotation lost the drawing');
   expect(bounds.minX).toBeGreaterThanOrEqual(30);
 
   // The margin ops are retained, so rotating forward again brings the ink back.
   await rotateTo(page, 90, 400, 300);
-  expect(await page.evaluate(() => window.__engine.pixelAt(25, 150)[3])).toBeGreaterThan(0);
+  expect(await inkNear(page, 25, 150)).toBe(true);
 });
 
 test('clearing while rotated wipes margin ink too', async ({ page }) => {
@@ -1117,7 +1128,7 @@ test('rotating an empty canvas adopts the new viewport (no lock, no letterbox)',
       'touch'
     );
   });
-  expect(await page.evaluate(() => window.__engine.pixelAt(350, 150)[3])).toBeGreaterThan(0);
+  expect(await inkNear(page, 350, 150)).toBe(true);
 });
 
 // ── re-entry re-sync (rotation while backgrounded) ───────────────────────────
@@ -1155,7 +1166,7 @@ test('a rotation while backgrounded re-syncs the empty canvas on re-entry', asyn
       'touch'
     );
   });
-  expect(await page.evaluate(() => window.__engine.pixelAt(350, 150)[3])).toBeGreaterThan(0);
+  expect(await inkNear(page, 350, 150)).toBe(true);
 });
 
 test('a rotation while backgrounded with ink locks the paper on re-entry (ADR-0050)', async ({
@@ -1178,7 +1189,7 @@ test('a rotation while backgrounded with ink locks the paper on re-entry (ADR-00
   expect(view.rotate).toBe(0);
   expect(view.scale).toBe(1);
   expect(view.tx).toBe(50);
-  expect(await page.evaluate(() => window.__engine.pixelAt(140, 60)[3])).toBeGreaterThan(0);
+  expect(await inkNear(page, 140, 60)).toBe(true);
   expect(await page.evaluate(() => window.__engine.pixelAt(170, 150)[3])).toBe(0);
 });
 
@@ -1289,7 +1300,7 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
   await page.evaluate(() => window.__engine.resizeTo(500, 400));
 
   // The portion drawn before the resize is still on the canvas.
-  expect(await page.evaluate(() => window.__engine.pixelAt(40, 40)[3])).toBeGreaterThan(0);
+  expect(await inkNear(page, 40, 40)).toBe(true);
 
   await page.mouse.move(box.x + 150, box.y + 150);
   await page.mouse.up();

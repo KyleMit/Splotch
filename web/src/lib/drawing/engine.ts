@@ -43,6 +43,7 @@ import {
   setColorSheet,
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { warmCrayonTilesWhenIdle, type BrushVariant } from './crayonBrush';
 import {
   beginCommand,
   commandCount,
@@ -88,6 +89,17 @@ let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
 let lastColorChangeTime = 0;
+
+// The pen's brush texture. 'crayon' (default) renders waxy paper-tooth strokes
+// that build up per pass; 'flat' is the old solid stroke, kept for A/B through
+// the dev seam (setBrushVariant). The eraser and the magic brush are never
+// crayon — their ops keep their own render paths.
+let brushVariant: BrushVariant = 'crayon';
+// Monotonic per-stroke seed: each stroke start claims the next value and stamps
+// it on every op of that stroke, so a new stroke picks a different tooth tile
+// and overlapping same-colour strokes build up (crayonBrush.ts). Only its
+// distinctness between consecutive strokes matters, so it never needs resetting.
+let crayonStrokeSeed = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
 let onDrawStopCallback: (() => void) | null = null;
@@ -422,6 +434,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    seed: ps.seed,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +463,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    seed: ps.seed,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +510,8 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayon: boolean;
+  seed: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +600,10 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    // Crayon texture applies to the pen only — never the eraser or magic brush.
+    // Each stroke claims a fresh seed so overlapping same-colour strokes build up.
+    crayon: brushVariant === 'crayon' && !eraserActive && !magicActive,
+    seed: crayonStrokeSeed++,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -902,6 +924,20 @@ export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?
   setSimplifyOptions(params);
 }
 
+// Dev-selectable render variant (mirrors setSimplifyParams): switch the pen
+// between the waxy 'crayon' brush (the shipping default) and the old solid
+// 'flat' stroke so a single build can A/B them. Wired onto window.__engine only
+// on the /dev/engine page (PUBLIC_ENABLE_DEV_HARNESS); production keeps 'crayon'.
+// Only affects strokes started after the call — already-recorded ops replay with
+// the brush they stored.
+export function setBrushVariant(variant: BrushVariant) {
+  brushVariant = variant;
+}
+
+export function getBrushVariant(): BrushVariant {
+  return brushVariant;
+}
+
 // --- Mount / unmount ---------------------------------------------------------
 
 export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
@@ -934,6 +970,10 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   currentColor = options.initialColor || '#AB71E1';
 
   renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
+
+  // Build the crayon tooth tiles off the critical path so the first stroke
+  // doesn't pay the one-time cost mid-gesture.
+  warmCrayonTilesWhenIdle();
 
   resizeCanvas();
 

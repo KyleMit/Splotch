@@ -12,6 +12,15 @@ import { expect, test, type Page } from '@playwright/test';
 const count = (page: Page) => page.evaluate(() => window.__engine.nonTransparentCount());
 const alphaAt = (page: Page, x: number, y: number) =>
   page.evaluate(([px, py]) => window.__engine.pixelAt(px, py)[3], [x, y] as const);
+// The pen renders the waxy crayon brush by default, whose paper-tooth grain
+// leaves gaps, so "this line painted" is a neighbourhood check, not one exact
+// pixel. Blank-gap checks stay exact-pixel (grain only makes a gap emptier).
+const inkNear = (page: Page, x: number, y: number, r = 5) =>
+  page.evaluate(
+    ([px, py, pr]) =>
+      window.__engine.regionInkStats(px - pr, py - pr, 2 * pr + 1, 2 * pr + 1).covered > 0,
+    [x, y, r] as const
+  );
 
 /** Horizontal stroke at a fixed y, sampled every 10px from x0 toward x1. */
 function horizontalStroke(pointerId: number, y: number, x0: number, x1: number) {
@@ -58,7 +67,7 @@ test('five simultaneous touch pointers each paint an independent line', async ({
 
   // Every line painted: its midpoint pixel is opaque.
   for (const s of SAMPLES) {
-    expect(await alphaAt(page, s.x, s.y), `expected paint at (${s.x}, ${s.y})`).toBeGreaterThan(0);
+    expect(await inkNear(page, s.x, s.y), `expected paint at (${s.x}, ${s.y})`).toBe(true);
   }
 
   // The lines are independent, not a merged blob — a gap between two lines stays
@@ -116,6 +125,6 @@ test('a pinch/spread across five pointers does not zoom or scale the canvas', as
   // Content maps 1:1 to where the fingers actually went — a zoom would have
   // displaced the spread pair's strokes off their sampled coordinates.
   for (const s of SAMPLES) {
-    expect(await alphaAt(page, s.x, s.y), `expected paint at (${s.x}, ${s.y})`).toBeGreaterThan(0);
+    expect(await inkNear(page, s.x, s.y), `expected paint at (${s.x}, ${s.y})`).toBe(true);
   }
 });

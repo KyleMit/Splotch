@@ -12,6 +12,8 @@
     exportCanvasBlob,
     getUndoDebug,
     setSimplifyParams,
+    setBrushVariant,
+    getBrushVariant,
     setScreenAngleOverride,
     getViewState,
     RESIZE_SETTLE_MS,
@@ -65,6 +67,11 @@
       exportCanvasBlob,
       getUndoDebug,
       setSimplifyParams,
+      // Brush render-variant seam: A/B the waxy 'crayon' brush (default) vs the
+      // old solid 'flat' stroke from a single build. Affects strokes started
+      // after the call.
+      setBrushVariant,
+      getBrushVariant,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).
@@ -135,6 +142,41 @@
       pixelAt(x: number, y: number) {
         const ctx = canvasEl.getContext('2d')!;
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
+      },
+
+      // Ink coverage + mean colour inside a canvas-space rectangle. `inked` counts
+      // pixels at/above `alphaMin` (the solid wax body — hard-alpha tooth is a=255,
+      // so this skips only the thin geometry-edge AA); `covered` counts any
+      // non-transparent pixel. `r/g/b` are the mean channel over the inked pixels.
+      // Used by the crayon build-up spec: a second same-colour pass raises
+      // coverage (fills tooth) while the mean colour holds constant (no darkening).
+      regionInkStats(x: number, y: number, w: number, h: number, alphaMin = 128) {
+        const ctx = canvasEl.getContext('2d')!;
+        const { data } = ctx.getImageData(x, y, w, h);
+        let inked = 0;
+        let covered = 0;
+        let sr = 0;
+        let sg = 0;
+        let sb = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          const a = data[i + 3];
+          if (a === 0) continue;
+          covered++;
+          if (a >= alphaMin) {
+            inked++;
+            sr += data[i];
+            sg += data[i + 1];
+            sb += data[i + 2];
+          }
+        }
+        return {
+          inked,
+          covered,
+          total: w * h,
+          r: inked ? sr / inked : 0,
+          g: inked ? sg / inked : 0,
+          b: inked ? sb / inked : 0,
+        };
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,

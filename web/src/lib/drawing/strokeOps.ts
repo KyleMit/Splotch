@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { crayonPatternFor, crayonTileIndex, CRAYON_HALO_SCALE } from './crayonBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -25,6 +26,8 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      seed?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +46,8 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      seed?: number;
     }
   | { kind: 'clear' };
 
@@ -87,6 +92,48 @@ function paintOpShape(
   }
 }
 
+// Paint a crayon op: a wider SPARSE edge-halo pass then the dense BODY pass,
+// each the op's bare geometry filled/stroked with a repeating tooth pattern
+// (crayonBrush.ts). Hard-alpha tooth => idempotent under self-overlap, so a
+// live stroke's many ops and the few ops it simplifies into paint the same
+// pixels, and overlapping the same colour never darkens. The tile phase comes
+// from the op's stroke seed, so a new same-colour stroke fills tooth the first
+// pass missed (build-up). Falls back to a solid shape if the pattern can't be
+// made (e.g. a zero-size context), so a crayon op is never invisible.
+function paintCrayonOp(
+  target: CanvasRenderingContext2D,
+  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
+) {
+  const index = crayonTileIndex(op.seed ?? 0);
+  const passes: { layer: 'edge' | 'body'; scale: number }[] = [
+    { layer: 'edge', scale: CRAYON_HALO_SCALE },
+    { layer: 'body', scale: 1 },
+  ];
+  for (const { layer, scale } of passes) {
+    const pattern = crayonPatternFor(target, layer, op.color, index);
+    if (!pattern) {
+      if (layer === 'body') paintOpShape(target, op, op.color);
+      continue;
+    }
+    if (op.kind === 'dot') {
+      target.fillStyle = pattern;
+      target.beginPath();
+      target.arc(op.x, op.y, op.radius * scale, 0, Math.PI * 2);
+      target.fill();
+    } else {
+      target.strokeStyle = pattern;
+      target.lineWidth = op.lineWidth * scale;
+      target.beginPath();
+      target.moveTo(op.startX, op.startY);
+      for (const s of op.segs) {
+        if (s.c2x !== undefined) target.bezierCurveTo(s.cx, s.cy, s.c2x, s.c2y!, s.x, s.y);
+        else target.quadraticCurveTo(s.cx, s.cy, s.x, s.y);
+      }
+      target.stroke();
+    }
+  }
+}
+
 // Clear everything a target could be showing. The visible ctx's user space is
 // PAPER coordinates whenever the paper view is active — and with the margins
 // drawable, ink can sit at negative paper coordinates that a rect from (0,0)
@@ -114,6 +161,11 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
+    return;
+  }
+  if (op.crayon && !op.erase) {
+    target.globalCompositeOperation = 'source-over';
+    paintCrayonOp(target, op);
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';

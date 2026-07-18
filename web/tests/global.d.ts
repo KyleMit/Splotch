@@ -35,6 +35,8 @@ declare global {
         reduce?: boolean;
         split?: 'none' | 'corner';
       }): void;
+      setBrushVariant(variant: 'crayon' | 'flat'): void;
+      getBrushVariant(): 'crayon' | 'flat';
       setScreenAngleOverride(angle: number | null): void;
       remount(): void;
       getViewState(): {
@@ -48,6 +50,13 @@ declare global {
         paperOrientation: 'portrait' | 'landscape';
       };
       inkBounds(): { minX: number; minY: number; maxX: number; maxY: number } | null;
+      regionInkStats(
+        x: number,
+        y: number,
+        w: number,
+        h: number,
+        alphaMin?: number
+      ): { inked: number; covered: number; total: number; r: number; g: number; b: number };
       exportCanvasBlob(
         overlayImage?: HTMLImageElement | null,
         options?: { includePaperTexture?: boolean }

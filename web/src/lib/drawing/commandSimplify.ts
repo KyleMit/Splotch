@@ -119,7 +119,9 @@ function pathStyleMatches(a: PathOp, b: PathOp): boolean {
     a.color === b.color &&
     a.lineWidth === b.lineWidth &&
     a.erase === b.erase &&
-    !!a.magic === !!b.magic
+    !!a.magic === !!b.magic &&
+    !!a.crayon === !!b.crayon &&
+    a.seed === b.seed
   );
 }
 
@@ -165,6 +167,19 @@ export function splitIntoContinuousRuns(ops: PathOp[]): PathOp[][] {
 // run's style to each returned span, and track the lifetime raw/kept counters.
 function reducePathRun(run: PathOp[]): PathOp[] {
   const first = run[0];
+  // Crayon strokes are NOT geometrically reduced. Reduction shifts a curve's
+  // path by up to ~1px (ADR-0036), which is invisible on a solid stroke but
+  // decorrelates the crayon's paper-anchored high-frequency grain — live drawing
+  // and the rebuilt-from-log render would then differ by several pixels at the
+  // stroke edge, breaking the exact-replay invariant (ADR-0033, perf:units). So
+  // crayon ops replay verbatim; their unbounded op count is instead capped by
+  // keyframing (ADR-0035), same as the pre-simplification engine.
+  if (first.crayon) {
+    const segs = run.reduce((n, op) => n + op.segs.length, 0);
+    rawPoints += segs;
+    keptPoints += segs;
+    return run;
+  }
   const opts = { epsilon: epsilonFor(first.lineWidth), cornerCos, reduce };
   const { spans, rawCount, keptCount } =
     mode === 'samples'
@@ -182,6 +197,8 @@ function reducePathRun(run: PathOp[]): PathOp[] {
     lineWidth: first.lineWidth,
     erase: first.erase,
     magic: first.magic,
+    crayon: first.crayon,
+    seed: first.seed,
   }));
 }
 
