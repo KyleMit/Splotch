@@ -71,6 +71,11 @@ export interface StrokeGroupCommand {
   ops: StrokeOp[];
   wasEmpty: boolean;
   keyframe?: HTMLCanvasElement | null;
+  // A crayon buildup command bakes its whole stroke into a bbox raster once at
+  // commit (ADR-0065), so every replay multiply-blits that raster instead of
+  // re-rendering the expensive stipple — undo/resize stay cheap. Paper-space
+  // origin (x,y); blitted through the target's transform like a keyframe.
+  buildupRaster?: { canvas: HTMLCanvasElement; x: number; y: number } | null;
 }
 
 // A dot or path op — the two ops that carry brush geometry. Shared by renderOp
@@ -150,6 +155,183 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   }
   target.globalCompositeOperation = 'source-over';
   paintOpShape(target, op, op.color);
+}
+
+// A command is a "buildup" unit when its drawing ops are the crayon brush and not
+// erasing: the whole command composites onto the canvas with `multiply`, so a NEW
+// crayon stroke over existing ink DARKENS it (wax buildup, ADR-0065). A command is
+// homogeneous in brush (the brush can't change mid-gesture), so the first drawing
+// op decides. Crucially this is per-command, not per-op: rendering a single
+// stroke's many per-frame ops into a buffer FIRST (below) then multiplying once
+// means the stroke never self-darkens at its op joints — which would otherwise
+// re-create the periodic-bead artifact the crayon redesign fixed.
+export function commandIsBuildup(ops: StrokeOp[]): boolean {
+  for (const op of ops) {
+    if (op.kind === 'clear') continue;
+    return op.brush === 'crayon' && !op.erase;
+  }
+  return false;
+}
+
+// The device-space rectangle a command's ops cover (under `m`, the target's
+// current transform), padded for the crayon grain + clamped to the canvas — so
+// the buffer compositing below only touches the strokes' region, not the whole
+// canvas. Null when the command has no drawable ops.
+function commandDeviceRect(ops: StrokeOp[], m: DOMMatrix, cw: number, ch: number) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  const ext = (x: number, y: number, r: number) => {
+    if (x - r < minX) minX = x - r;
+    if (x + r > maxX) maxX = x + r;
+    if (y - r < minY) minY = y - r;
+    if (y + r > maxY) maxY = y + r;
+  };
+  for (const op of ops) {
+    if (op.kind === 'dot') ext(op.x, op.y, op.radius + 5);
+    else if (op.kind === 'path') {
+      const r = op.lineWidth / 2 + 5;
+      ext(op.startX, op.startY, r);
+      for (const s of op.segs) {
+        ext(s.cx, s.cy, r);
+        ext(s.x, s.y, r);
+        if (s.c2x !== undefined) ext(s.c2x, s.c2y!, r);
+      }
+    }
+  }
+  if (maxX < minX) return null;
+  let dminX = Infinity;
+  let dminY = Infinity;
+  let dmaxX = -Infinity;
+  let dmaxY = -Infinity;
+  for (const [px, py] of [
+    [minX, minY],
+    [maxX, minY],
+    [minX, maxY],
+    [maxX, maxY],
+  ]) {
+    const dx = m.a * px + m.c * py + m.e;
+    const dy = m.b * px + m.d * py + m.f;
+    if (dx < dminX) dminX = dx;
+    if (dx > dmaxX) dmaxX = dx;
+    if (dy < dminY) dminY = dy;
+    if (dy > dmaxY) dmaxY = dy;
+  }
+  const x = Math.max(0, Math.floor(dminX));
+  const y = Math.max(0, Math.floor(dminY));
+  const w = Math.min(cw, Math.ceil(dmaxX)) - x;
+  const h = Math.min(ch, Math.ceil(dmaxY)) - y;
+  return w <= 0 || h <= 0 ? null : { x, y, w, h };
+}
+
+// One shared buffer for buildup compositing, allocated lazily (SSR-safety).
+let cmdBuf: HTMLCanvasElement | null = null;
+let cmdBufCtx: CanvasRenderingContext2D | null = null;
+
+// Paper-space bbox of a command's ops (no transform), padded for the grain.
+function opsPaperBounds(ops: StrokeOp[]) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  const ext = (x: number, y: number, r: number) => {
+    if (x - r < minX) minX = x - r;
+    if (x + r > maxX) maxX = x + r;
+    if (y - r < minY) minY = y - r;
+    if (y + r > maxY) maxY = y + r;
+  };
+  for (const op of ops) {
+    if (op.kind === 'dot') ext(op.x, op.y, op.radius + 5);
+    else if (op.kind === 'path') {
+      const r = op.lineWidth / 2 + 5;
+      ext(op.startX, op.startY, r);
+      for (const s of op.segs) {
+        ext(s.cx, s.cy, r);
+        ext(s.x, s.y, r);
+        if (s.c2x !== undefined) ext(s.c2x, s.c2y!, r);
+      }
+    }
+  }
+  if (maxX < minX) return null;
+  const x = Math.floor(minX);
+  const y = Math.floor(minY);
+  return { x, y, w: Math.ceil(maxX) - x, h: Math.ceil(maxY) - y };
+}
+
+// Bake a buildup command's whole stroke into a bbox raster (paper coords, full
+// opacity) once at commit, so replay multiply-blits it instead of re-rendering
+// the stipple. Origin is the paper-space bbox corner; the raster blits through
+// the target's transform (like a keyframe).
+export function bakeBuildupRaster(ops: StrokeOp[]) {
+  const b = opsPaperBounds(ops);
+  if (!b || b.w <= 0 || b.h <= 0) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = b.w;
+  canvas.height = b.h;
+  const c = canvas.getContext('2d');
+  if (!c) return null;
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  c.translate(-b.x, -b.y);
+  for (const op of ops) renderOp(c, op);
+  return { canvas, x: b.x, y: b.y };
+}
+
+// Render one command onto a target — the single entry point every replay path
+// uses (undoHistory, export, live settle). A normal command renders op-by-op
+// through renderOp (identical to before). A crayon BUILDUP command multiply-blits
+// its pre-baked stroke raster (so it darkens whatever earlier commands laid down
+// without self-darkening at op joints), falling back to a live buffer render if
+// the raster is somehow absent.
+export function renderCommand(target: CanvasRenderingContext2D, cmd: StrokeGroupCommand) {
+  if (cmd.buildupRaster) {
+    target.globalCompositeOperation = 'multiply';
+    target.globalAlpha = 1;
+    target.drawImage(cmd.buildupRaster.canvas, cmd.buildupRaster.x, cmd.buildupRaster.y);
+    target.globalCompositeOperation = 'source-over';
+    return;
+  }
+  renderCommandOps(target, cmd.ops);
+}
+
+// Fallback buffer path for a buildup command with no baked raster: render its ops
+// into a scratch buffer at full opacity, then multiply that region onto the
+// target. Also the non-buildup path (op-by-op renderOp).
+export function renderCommandOps(target: CanvasRenderingContext2D, ops: StrokeOp[]) {
+  if (ops.length === 0) return;
+  if (!commandIsBuildup(ops)) {
+    for (const op of ops) renderOp(target, op);
+    return;
+  }
+  const cw = target.canvas.width;
+  const ch = target.canvas.height;
+  const m = target.getTransform();
+  const rect = commandDeviceRect(ops, m, cw, ch);
+  if (!rect) return;
+  if (!cmdBuf) {
+    cmdBuf = document.createElement('canvas');
+    cmdBufCtx = cmdBuf.getContext('2d');
+  }
+  if (!cmdBufCtx || !cmdBuf) return;
+  if (cmdBuf.width < cw) cmdBuf.width = cw;
+  if (cmdBuf.height < ch) cmdBuf.height = ch;
+  const b = cmdBufCtx;
+  b.setTransform(1, 0, 0, 1, 0, 0);
+  b.globalCompositeOperation = 'source-over';
+  b.globalAlpha = 1;
+  b.clearRect(rect.x, rect.y, rect.w, rect.h);
+  b.setTransform(m);
+  b.lineCap = 'round';
+  b.lineJoin = 'round';
+  for (const op of ops) renderOp(b, op);
+  b.setTransform(1, 0, 0, 1, 0, 0);
+  target.save();
+  target.setTransform(1, 0, 0, 1, 0, 0);
+  target.globalCompositeOperation = 'multiply';
+  target.globalAlpha = 1;
+  target.drawImage(cmdBuf, rect.x, rect.y, rect.w, rect.h, rect.x, rect.y, rect.w, rect.h);
+  target.restore();
 }
 
 // Total quadratic segments a command will re-stroke on replay — the keyframe

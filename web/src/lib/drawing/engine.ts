@@ -42,13 +42,14 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp, type BrushKind } from './strokeOps';
+import { renderOp, renderCommand, clearAllOf, type StrokeOp, type BrushKind } from './strokeOps';
 import {
   beginCommand,
   commandCount,
   commitActiveCommand,
   ensureBaselineCovers,
   getHistoryDebug,
+  peekCommand,
   popCommand,
   pushCommand,
   rebaseActiveCommand,
@@ -342,6 +343,11 @@ function resizeCanvas() {
   rasterizeSheet();
   replayAll(ctx);
 
+  // A buildup stroke in flight during a resize (device rotation) had its snapshot
+  // sized to the old backing store — re-snapshot at the new size so commit can
+  // still settle it (the committed strokes it replays are already multiplied).
+  if (groupIsBuildup) snapshotForBuildup();
+
   refreshCanvasRect();
   notifyViewChange();
 
@@ -397,11 +403,73 @@ function resyncOnReentry() {
 // stack or the empty flag. Reset when the last finger lifts.
 let groupHasDrawn = false;
 
+// --- Crayon wax buildup (ADR-0065) ------------------------------------------
+// A crayon command composites with `multiply` so a NEW stroke darkens existing
+// ink (wax buildup). A single stroke must NOT self-darken at its per-frame op
+// joints, which would re-create the periodic-bead artifact — so the multiply is
+// per-command, not per-op (renderCommandOps buffers the whole stroke, then
+// multiplies once). Live, the stroke draws OPAQUE for a cheap hot path (the same
+// v11 render as before); on lift, commitStrokeGroup restores the pre-stroke
+// snapshot and re-composites just this stroke through renderCommandOps — the
+// exact result undo/export rebuild, so they stay identical. The visible effect:
+// the wax "deepens" where it crosses earlier ink as the stroke settles.
+let groupIsBuildup = false;
+let buildupSnap: HTMLCanvasElement | null = null;
+let buildupSnapCtx: CanvasRenderingContext2D | null = null;
+
+function activeStrokeIsBuildup(): boolean {
+  return activeBrush === 'crayon' && !eraserActive;
+}
+
+// Snapshot the committed canvas (device pixels) before a buildup stroke draws, so
+// commit can restore it and multiply the finished stroke onto it.
+function snapshotForBuildup() {
+  if (!buildupSnap) {
+    buildupSnap = document.createElement('canvas');
+    buildupSnapCtx = buildupSnap.getContext('2d');
+  }
+  if (!buildupSnapCtx || !buildupSnap) return;
+  if (buildupSnap.width !== canvas.width) buildupSnap.width = canvas.width;
+  if (buildupSnap.height !== canvas.height) buildupSnap.height = canvas.height;
+  buildupSnapCtx.setTransform(1, 0, 0, 1, 0, 0);
+  buildupSnapCtx.globalCompositeOperation = 'source-over';
+  buildupSnapCtx.globalAlpha = 1;
+  buildupSnapCtx.clearRect(0, 0, buildupSnap.width, buildupSnap.height);
+  buildupSnapCtx.drawImage(canvas, 0, 0);
+}
+
+// A clear mid-buildup-stroke (drag-to-clear straddle) blanks the snapshot so the
+// continuing stroke settles over nothing, not the pre-clear ink.
+function resetBuildupForClear() {
+  if (!groupIsBuildup || !buildupSnapCtx || !buildupSnap) return;
+  buildupSnapCtx.setTransform(1, 0, 0, 1, 0, 0);
+  buildupSnapCtx.clearRect(0, 0, buildupSnap.width, buildupSnap.height);
+}
+
+// Settle the just-committed buildup stroke: restore the pre-stroke pixels, then
+// composite the whole stroke with `multiply` (renderCommandOps), so it darkens
+// the ink it crosses. One full-canvas restore + one stroke composite — no full
+// replay.
+function settleBuildupStroke() {
+  const last = peekCommand();
+  if (!last || !buildupSnap || !buildupSnapCtx) return;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 1;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(buildupSnap, 0, 0);
+  ctx.restore();
+  renderCommand(ctx, last);
+}
+
 function beginStrokeGroup() {
   if (groupHasDrawn) return;
   beginCommand(canvasEmpty);
   setCanvasEmptyState(false);
   groupHasDrawn = true;
+  groupIsBuildup = activeStrokeIsBuildup();
+  if (groupIsBuildup) snapshotForBuildup();
 }
 
 // Paint the round dot that anchors a stroke at its start point, and kick the
@@ -469,8 +537,13 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
 // work while a finger is mid-stroke.
 function commitStrokeGroup() {
   if (PERF_MARKS) performance.mark('engine.commit:start');
+  const wasBuildup = groupIsBuildup;
+  groupIsBuildup = false;
   if (!commitActiveCommand()) return;
   setCanUndo(true);
+  // Settle the crayon stroke into its `multiply` composite so it darkens the ink
+  // it crosses — the same result undo/export rebuild via renderCommandOps.
+  if (wasBuildup && ctx) settleBuildupStroke();
   if (onStrokeEnd) onStrokeEnd();
   if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
 }
@@ -863,6 +936,7 @@ export function clearCanvas() {
   pushCommand({ ops: [{ kind: 'clear' }], wasEmpty: canvasEmpty });
   setCanUndo(true);
   clearAllOf(ctx);
+  resetBuildupForClear();
   // A stroke can straddle the clear (e.g. a second finger drawing while
   // drag-to-clear completes) — see resetActiveCommandForClear. The continuing
   // stroke counts as content (same as beginStrokeGroup), so the empty flag only
