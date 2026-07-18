@@ -319,3 +319,64 @@ describe('generateAiImage response handling', () => {
     expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
   });
 });
+
+// The upload is a WebP transcode of the drawing (issue #345) — smaller payload
+// for the buffered generate-image function — while the pristine PNG is what we
+// preview and hand to the gallery auto-save.
+describe('generateAiImage upload format', () => {
+  function stubWebpEncoder() {
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async () => ({ width: 8, height: 8, close: vi.fn() }))
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (
+      this: HTMLCanvasElement,
+      cb: BlobCallback,
+      type?: string
+    ) {
+      cb(new Blob(['webp'], { type: type ?? 'image/png' }));
+    });
+  }
+
+  function uploadedImage(): File {
+    const body = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as FormData;
+    return body.get('image') as File;
+  }
+
+  it('uploads a WebP copy while keeping the PNG for the preview and gallery', async () => {
+    mocks.settings.autoSaveAiEnabled = true;
+    // A roomy PNG so the tiny stubbed WebP is genuinely smaller and gets used.
+    mocks.exportCanvasBlob.mockResolvedValueOnce(
+      new Blob(['P'.repeat(200)], { type: 'image/png' })
+    );
+    stubWebpEncoder();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+
+    const { generateAiImage } = await import('./aiImage');
+    await generateAiImage();
+
+    // The server dispatches on the blob's MIME type; assert that rather than the
+    // append filename, which happy-dom's FormData doesn't preserve.
+    expect(uploadedImage().type).toBe('image/webp');
+
+    // The child's own drawing is still saved to the gallery as the lossless PNG.
+    const drawingSave = mocks.saveImageBlob.mock.calls.find((call) => call[1] === 'splotch');
+    expect(drawingSave?.[0].type).toBe('image/png');
+  });
+
+  it('falls back to the PNG upload when the platform cannot encode WebP', async () => {
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['png'], { type: 'image/png' }));
+    // No WebP encoder stubbed: createImageBitmap is absent, so encodeWebpUpload
+    // throws and we upload the original PNG.
+    vi.stubGlobal('createImageBitmap', undefined);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+
+    const { generateAiImage } = await import('./aiImage');
+    await generateAiImage();
+
+    expect(uploadedImage().type).toBe('image/png');
+  });
+});
