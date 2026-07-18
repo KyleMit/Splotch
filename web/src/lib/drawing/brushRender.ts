@@ -1100,6 +1100,169 @@ function crayonV10(target: CanvasRenderingContext2D, op: InkOp) {
   target.restore();
 }
 
+// v11 "coarse hashed wax": NON-TILING procedural tooth. Any repeating CanvasPattern
+// is inherently periodic (v9/v10's measurable tile-repeat — the family of the
+// original "periodic" complaint), so the grain is instead position-hashed: a solid
+// opaque core plus COARSE cells whose kind/shade/jitter are a pure hash of the
+// quantized CANVAS cell — no tile, so no periodic autocorrelation peak — yet
+// continuous across ops (adjacent ops hit the same cells → identical marks → no
+// beads) and bit-identical on replay (ADR-0033). Coarse cells read as chunky broken
+// wax; the rim frays (coverage falloff) for a ragged edge clamped to the stroke (no
+// spray). Cheap: one solid stroke + a bounded count of small circle marks per op.
+const C11_CORE = 0.78;
+const C11_CELL = 3;
+const C11_STEP = 2.3;
+const C11_MARK = 2.2;
+const C11_JIT = 1.1;
+const C11_MAX = 4200;
+const C11_PAPER: [number, number, number] = [244, 242, 234];
+function c11cell(qx: number, qy: number): number {
+  let h = Math.imul((qx | 0) ^ 0x9e3779b9, 0x85ebca77);
+  h = Math.imul(h ^ (qy | 0) ^ 0xc2b2ae3d, 0x27d4eb2f);
+  h ^= h >>> 15;
+  return h >>> 0;
+}
+function c11chan(base: number, salt: number): number {
+  let h = Math.imul(base ^ salt, 0x2545f491);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0x27d4eb2f);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+function c11Scale(op: InkOp, scale: number): InkOp {
+  return op.kind === 'dot'
+    ? { ...op, radius: Math.max(0.5, op.radius * scale) }
+    : { ...op, lineWidth: Math.max(0.5, op.lineWidth * scale) };
+}
+function crayonV11(target: CanvasRenderingContext2D, op: InkOp) {
+  target.save();
+  target.globalCompositeOperation = 'source-over';
+  target.globalAlpha = 1;
+  target.lineCap = 'round';
+  target.lineJoin = 'round';
+  paintOpShape(target, c11Scale(op, C11_CORE), op.color);
+
+  const [br, bg, bb] = rgbOf(op.color);
+  const darkC = `rgb(${(br * 0.58) | 0},${(bg * 0.58) | 0},${(bb * 0.58) | 0})`;
+  const lightC = `rgb(${(br + (C11_PAPER[0] - br) * 0.62) | 0},${(bg + (C11_PAPER[1] - bg) * 0.62) | 0},${(bb + (C11_PAPER[2] - bb) * 0.62) | 0})`;
+  const visited = new Set<number>();
+  let drawn = 0;
+  let full = false;
+  const mark = (px: number, py: number, u: number) => {
+    if (full) return;
+    const qx = Math.round(px / C11_CELL);
+    const qy = Math.round(py / C11_CELL);
+    const key = ((qx & 0xffff) << 16) | (qy & 0xffff);
+    if (visited.has(key)) return;
+    visited.add(key);
+    const base = c11cell(qx, qy);
+    // Core: sparse dark/light tooth accents over the solid body. Rim: body specks
+    // with a coverage falloff → ragged broken edge (paper shows through).
+    let cov: number;
+    let color: string;
+    let a: number;
+    if (u < 0.72) {
+      cov = 0.46;
+      const kr = c11chan(base, 0x33);
+      color = kr < 0.5 ? darkC : lightC;
+      a = 0.42 + c11chan(base, 0x55) * 0.22;
+    } else {
+      const t = Math.min(1, (u - 0.72) / (1.08 - 0.72));
+      cov = 0.66 * (1 - t);
+      color = op.color;
+      a = 0.85;
+    }
+    if (c11chan(base, 0x11) >= cov) return;
+    const jx = (c11chan(base, 0x7feb352d) * 2 - 1) * C11_JIT;
+    const jy = (c11chan(base, 0x846ca68b) * 2 - 1) * C11_JIT;
+    const r = C11_MARK * (0.78 + c11chan(base, 0x99) * 0.5);
+    target.globalAlpha = a;
+    target.fillStyle = color;
+    target.beginPath();
+    target.arc(qx * C11_CELL + jx, qy * C11_CELL + jy, r, 0, Math.PI * 2);
+    target.fill();
+    if (++drawn >= C11_MAX) full = true;
+  };
+  if (op.kind === 'dot') {
+    const hw = Math.max(0.5, op.radius);
+    const J = Math.ceil((hw + 1) / C11_STEP);
+    for (let gx = -J; gx <= J && !full; gx++) {
+      for (let gy = -J; gy <= J; gy++) {
+        const lx = gx * C11_STEP;
+        const ly = gy * C11_STEP;
+        const d = Math.hypot(lx, ly);
+        if (d > hw + 1) continue;
+        mark(op.x + lx, op.y + ly, Math.min(1.12, d / hw));
+        if (full) break;
+      }
+    }
+  } else {
+    const hw = Math.max(0.5, op.lineWidth / 2);
+    const latMax = hw + 1;
+    const J = Math.ceil(latMax / C11_STEP);
+    const scatter = (px: number, py: number, nx: number, ny: number) => {
+      for (let j = -J; j <= J; j++) {
+        const lat = j * C11_STEP;
+        if (Math.abs(lat) > latMax) continue;
+        mark(px + nx * lat, py + ny * lat, Math.min(1.12, Math.abs(lat) / hw));
+        if (full) return;
+      }
+    };
+    let x0 = op.startX;
+    let y0 = op.startY;
+    for (const seg of op.segs) {
+      const cx = seg.cx;
+      const cy = seg.cy;
+      const x1 = seg.x;
+      const y1 = seg.y;
+      const cubic = seg.c2x !== undefined;
+      const c2x = cubic ? seg.c2x! : 0;
+      const c2y = cubic ? seg.c2y! : 0;
+      const approx = cubic
+        ? Math.hypot(cx - x0, cy - y0) +
+          Math.hypot(c2x - cx, c2y - cy) +
+          Math.hypot(x1 - c2x, y1 - c2y)
+        : Math.hypot(cx - x0, cy - y0) + Math.hypot(x1 - cx, y1 - cy);
+      const steps = Math.max(1, Math.ceil(approx / C11_STEP));
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const mt = 1 - t;
+        let px, py, dx, dy;
+        if (cubic) {
+          const a = mt * mt * mt;
+          const b = 3 * mt * mt * t;
+          const c = 3 * mt * t * t;
+          const dd = t * t * t;
+          px = a * x0 + b * cx + c * c2x + dd * x1;
+          py = a * y0 + b * cy + c * c2y + dd * y1;
+          dx = 3 * mt * mt * (cx - x0) + 6 * mt * t * (c2x - cx) + 3 * t * t * (x1 - c2x);
+          dy = 3 * mt * mt * (cy - y0) + 6 * mt * t * (c2y - cy) + 3 * t * t * (y1 - c2y);
+        } else {
+          const a = mt * mt;
+          const b = 2 * mt * t;
+          const c = t * t;
+          px = a * x0 + b * cx + c * x1;
+          py = a * y0 + b * cy + c * y1;
+          dx = 2 * mt * (cx - x0) + 2 * t * (x1 - cx);
+          dy = 2 * mt * (cy - y0) + 2 * t * (y1 - cy);
+        }
+        let tl = Math.hypot(dx, dy);
+        if (tl < 1e-6) {
+          dx = x1 - x0;
+          dy = y1 - y0;
+          tl = Math.hypot(dx, dy) || 1;
+        }
+        scatter(px, py, -dy / tl, dx / tl);
+        if (full) break;
+      }
+      x0 = x1;
+      y0 = y1;
+      if (full) break;
+    }
+  }
+  target.restore();
+}
+
 // --- Watercolor -------------------------------------------------------------
 
 // v1: plain solid stroke — the pen-equivalent baseline the bench compares against.
@@ -1305,6 +1468,7 @@ const CRAYON_VARIANTS: Record<number, OpRenderer> = {
   8: crayonV8,
   9: crayonV9,
   10: crayonV10,
+  11: crayonV11,
 };
 
 const WATERCOLOR_VARIANTS: Record<number, OpRenderer> = {
