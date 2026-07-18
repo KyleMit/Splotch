@@ -3,20 +3,22 @@
 > This directory's `CLAUDE.md` and `AGENTS.md` are generated from the `.ruler/AGENTS.md` beside them
 > — edit that source, then run `npm run ruler:apply` at the repo root (ADR-0058).
 
-* Every script must run on both Windows (`cmd.exe`) and macOS/Linux (ADR-0017): plain Node `.mjs`,
-  no bash-isms, no shelling out to platform-specific tools without a per-platform branch. Scripts
-  bound to one platform by nature (`ios-simulator-smoke.mjs` needs Xcode) must fail fast with a
-  clear message elsewhere.
+* Every script must run on macOS and Linux (ADR-0017) — the project dropped Windows dev support
+  (ADR-0062). Keep them plain Node `.mjs` for consistency, and put the macOS-vs-Linux differences
+  that remain (SDK paths, `open` vs `xdg-open`) behind a branch in `scripts/lib/` rather than
+  scattering them. Scripts bound to one platform by nature (`ios-simulator-smoke.mjs` needs Xcode)
+  must fail fast with a clear message elsewhere.
 * Shared helpers live in `scripts/lib/` — `android.mjs` resolves the SDK and AVD locations per
   platform (override the SDK with `ANDROID_HOME` or `ANDROID_SDK_ROOT`); `utils.mjs` has the common
   run/log helpers (including `sh()` for a rejecting, shell-based command runner, and `waitForUrl()`
   for polling a URL until ready) plus the Maestro location; `vite-server.mjs` spawns a throwaway
-  vite dev/preview server in a detached process group so `stop()` can't orphan the vite grandchild
-  (Windows uses `taskkill /T`); `smoke.mjs` has the `check()`/`fatal()`/`summarize()` pass-fail
-  reporter shared by the smoke tests. Check there before writing new glue.
+  vite dev/preview server in a detached process group so `stop()` can't orphan the vite grandchild;
+  `smoke.mjs` has the `check()`/`fatal()`/`summarize()` pass-fail reporter shared by the smoke
+  tests. Check there before writing new glue.
 * TypeScript-flavored scripts run via `node --experimental-strip-types` (see the `check:assets` npm
   script).
-* Env vars in npm scripts go through `cross-env` so they work on Windows.
+* Env vars in npm scripts are set inline (`VAR=value cmd`) — no `cross-env`, since scripts run only
+  on macOS/Linux.
 * **The AI/`sharp` asset-generation pipeline moved to `tools/asset-gen/`**
   (`tools/asset-gen/docs/architecture.md`): the AI style covers, light/dark coloring-page fills,
   thumbnails, and format/line-art utilities (`gen-style-covers`, `gen-coloring-chalk`,

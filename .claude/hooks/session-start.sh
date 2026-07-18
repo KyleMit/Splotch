@@ -25,12 +25,11 @@ if git diff --quiet -- package-lock.json 2>/dev/null; then lock_was_clean=true; 
 # sharp's libvips download from GitHub releases was one — see the sharp entry in
 # package.json `overrides`) 403s through the session's egress proxy, and under
 # `set -e` that used to kill this hook silently, leaving the session with no
-# deps at all. Fall back to skipping lifecycle scripts: patch-package is the
-# only one the repo needs, so re-running it by hand reproduces the working tree.
+# deps at all. Fall back to skipping lifecycle scripts — the repo itself defines
+# none, so an --ignore-scripts install still reproduces the working tree.
 if ! npm install; then
-  echo "session-start.sh: npm install failed — retrying with --ignore-scripts + patch-package (docs/CLOUD/Claude.md 'Getting dependencies ready')"
+  echo "session-start.sh: npm install failed — retrying with --ignore-scripts (docs/CLOUD/Claude.md 'Getting dependencies ready')"
   npm install --ignore-scripts
-  npx patch-package
 fi
 
 if [ "$lock_was_clean" = true ] && ! git diff --quiet -- package-lock.json; then

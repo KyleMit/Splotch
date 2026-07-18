@@ -3,28 +3,16 @@
 // vite parents helper processes (esbuild), and wrapper spawns (`npx vite`)
 // would add another layer — so a plain child.kill() can orphan the process
 // that actually holds the port. spawnViteServer() therefore runs vite's bin
-// directly with node (no npx/shell wrapper, which also avoids the Windows
-// `npx` ENOENT — ADR-0017) in a detached process group, and stop() kills the
-// whole group (`taskkill /T` on Windows).
+// directly with node (no npx/shell wrapper) in a detached process group, and
+// stop() kills the whole group.
 
 import { spawn, spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { ROOT, isWindows } from './utils.mjs';
+import { ROOT } from './utils.mjs';
 
 // Best-effort: kill whatever is listening on `port` so strictPort doesn't fail
 // and we never reuse a stale server from a previous run.
 export function freePort(port) {
-  if (isWindows) {
-    spawnSync(
-      'cmd',
-      [
-        '/c',
-        `for /f "tokens=5" %a in ('netstat -ano ^| findstr :${port} ^| findstr LISTENING') do taskkill /F /PID %a`,
-      ],
-      { stdio: 'ignore' }
-    );
-    return;
-  }
   const out = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
   for (const pid of (out.stdout || '')
     .split('\n')
@@ -44,14 +32,12 @@ export function spawnViteServer(port, env = {}, command = 'dev') {
     cwd: join(ROOT, 'web'),
     env: { ...process.env, ...env },
     stdio: ['ignore', 'ignore', 'inherit'],
-    detached: !isWindows,
+    detached: true,
   });
 
   const stop = () => {
     try {
-      if (isWindows)
-        spawnSync('taskkill', ['/pid', String(server.pid), '/T', '/F'], { stdio: 'ignore' });
-      else process.kill(-server.pid, 'SIGTERM');
+      process.kill(-server.pid, 'SIGTERM');
     } catch {
       try {
         server.kill();

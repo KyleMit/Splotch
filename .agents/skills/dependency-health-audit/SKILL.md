@@ -43,8 +43,6 @@ end. Skip every other entry.
    check `overrides`, `postinstall`, config-file plugin references, and CLI-only use before calling
    it dead).
 3. **Note repo entanglements.** Known ones to carry into entries (verify, don't assume):
-   * `@capacitor/cli` is patched via `patch-package` (`patches/`, ADR-0011) — its entry must flag
-     that replacing or floating it interacts with the patch.
    * `package.json` `overrides` pins `@capacitor/assets`' transitive `sharp` to the root `$sharp`
      (proxy-blocked libvips download in cloud sessions) — an entanglement for both packages.
    * The Svelte/Vite family and `@capacitor/*` move as coordinated sets (see

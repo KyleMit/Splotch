@@ -126,10 +126,10 @@ this — it pins sharp 0.32, whose postinstall downloads libvips from GitHub rel
 the hook's install silently and left sessions with an **empty `node_modules`**. Two layers now
 prevent that: the `overrides` entry in `package.json` lifts the nested sharp to the root `sharp`
 (0.33+ ships its binaries as `@img/*` npm packages, no download step), and if any future dep
-reintroduces the pattern the hook falls back to `npm install --ignore-scripts && npx patch-package`
-— which reproduces the full working tree, since patch-package is the only lifecycle script the repo
-needs — printing a loud line into context instead of dying silently. Those same two commands are the
-manual recovery if `node_modules` ever turns up empty or half-installed.
+reintroduces the pattern the hook falls back to `npm install --ignore-scripts` — which reproduces
+the full working tree, since the repo itself defines no lifecycle scripts — printing a loud line
+into context instead of dying silently. That command is the manual recovery if `node_modules` ever
+turns up empty or half-installed.
 
 **npm-version note:** `package-lock.json` is authored by npm 11 (local dev), but the container image
 ships npm 10, and the two majors rewrite lockfile metadata in incompatible dialects (they disagree

@@ -7,26 +7,26 @@
 
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, isWindows, hasCommand, run, capture, fail, maestroInstalled } from './lib/utils.mjs';
+import { ROOT, hasCommand, run, capture, fail, maestroInstalled } from './lib/utils.mjs';
 import { ANDROID_HOME, AVD_NAME } from './lib/android.mjs';
 
 const ABI = process.arch === 'arm64' ? 'arm64-v8a' : 'x86_64';
 const SYSTEM_IMAGE = `system-images;android-33;google_apis_playstore;${ABI}`;
 const DEVICE_ID = 'pixel_7_pro';
 
-const addToPath = (subdir) =>
-  isWindows
-    ? `Add to PATH (System Properties → Environment Variables):  %LOCALAPPDATA%\\Android\\Sdk\\${subdir.replaceAll('/', '\\')}`
-    : `Add to ~/.zshrc:  export PATH="$ANDROID_HOME/${subdir}:$PATH"`;
+const isMac = process.platform === 'darwin';
+const shellRc = isMac ? '~/.zshrc' : '~/.bashrc';
 
-const javaFix = isWindows
+const addToPath = (subdir) => `Add to ${shellRc}:  export PATH="$ANDROID_HOME/${subdir}:$PATH"`;
+
+const javaFix = isMac
   ? [
-      'Install JDK 21:  winget install EclipseAdoptium.Temurin.21.JDK',
-      'Then set JAVA_HOME to the install directory (System Properties → Environment Variables)',
+      'Install JDK 21:  brew install --cask temurin@21',
+      `Then add to ${shellRc}:  export JAVA_HOME="$(/usr/libexec/java_home -v 21)"`,
     ]
   : [
-      'Install JDK 21:  brew install --cask temurin@21',
-      'Then add to ~/.zshrc:  export JAVA_HOME="$(/usr/libexec/java_home -v 21)"',
+      'Install JDK 21 (Adoptium Temurin, or your distro package manager, e.g. apt install openjdk-21-jdk)',
+      `Then add to ${shellRc}:  export JAVA_HOME=/path/to/jdk-21`,
     ];
 
 const cmdlineToolsFix = [
@@ -46,12 +46,7 @@ const missing = REQUIRED.filter(({ cmd }) => !hasCommand(cmd));
 if (missing.length > 0) {
   const lines = ['[android-setup] Missing tools — not found on PATH:', ''];
   for (const { cmd, fix } of missing) lines.push(`  ${cmd}:`, ...fix.map((f) => `    ${f}`));
-  lines.push(
-    '',
-    isWindows
-      ? 'After fixing, open a new terminal.'
-      : 'After fixing, open a new terminal or run: source ~/.zshrc'
-  );
+  lines.push('', `After fixing, open a new terminal or run: source ${shellRc}`);
   fail(lines.join('\n'));
 }
 
@@ -88,21 +83,9 @@ if (!existsSync(localProps)) {
 // Maestro drives the native smoke test (npm run test:android). It's a
 // standalone JVM CLI, not an npm package, so it installs separately. The JDK 21
 // checked above satisfies its Java requirement. macOS/Linux have a one-line
-// installer; Windows has no clean CLI installer, so point the user at the
-// manual steps instead of failing silently later in the smoke test.
+// installer.
 if (maestroInstalled()) {
   console.log('[android-setup] Maestro already installed.');
-} else if (isWindows) {
-  fail(
-    [
-      '[android-setup] Maestro is not installed (needed for "npm run test:android").',
-      '  Install it manually on Windows:',
-      '    1. Download maestro.zip from https://github.com/mobile-dev-inc/maestro/releases',
-      '    2. Extract it to %USERPROFILE%\\maestro',
-      '    3. Add %USERPROFILE%\\maestro\\bin to your User PATH',
-      '    4. Open a new terminal and verify:  maestro --version',
-    ].join('\n')
-  );
 } else {
   console.log('[android-setup] Installing Maestro (https://get.maestro.mobile.dev) …');
   run('bash', ['-c', 'curl -fsSL https://get.maestro.mobile.dev | bash']);

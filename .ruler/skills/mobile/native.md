@@ -8,7 +8,7 @@ store-listing assets, and cross-platform follow-ups. For platform-specific build
 see **[android.md](android.md)** and **[ios.md](ios.md)**.
 
 > Both platforms are active: the `android/` and `ios/` projects live in the repo. Android
-> development works on Windows or macOS; iOS builds require macOS + Xcode.
+> development works on macOS or Linux; iOS builds require macOS + Xcode.
 
 ## 1. How the native build works
 
@@ -156,7 +156,7 @@ These produce the static web bundle and copy it into both native projects; the p
 Gradle/Xcode commands build on top of them (see the platform files).
 
 ```bash
-npm run build:cap     # static build into build/ (CAPACITOR=true, via cross-env)
+npm run build:cap     # static build into build/ (CAPACITOR=true)
 npm run cap:sync      # build:cap + copy web assets & plugins into native projects
 npm run cap:android   # cap:sync + open the Android project in Android Studio
 npm run cap:ios       # cap:sync + open the iOS project in Xcode (macOS-only)

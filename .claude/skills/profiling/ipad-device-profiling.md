@@ -55,7 +55,7 @@ The engine's `performance.mark/measure` calls only exist when built with `PERF_M
 when `PUBLIC_ENABLE_DEV_HARNESS=true`:
 
 ```sh
-npx cross-env PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run build
+PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run build
 ```
 
 ### A2. Serve it on the LAN — **[Mac]**
@@ -150,7 +150,7 @@ counts).
 Build once, then serve (same as A1–A2):
 
 ```sh
-npx cross-env PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run build
+PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run build
 npm run perf:serve
 ```
 
@@ -202,8 +202,8 @@ those, profile the replay or your live drawing on the iPad via Approach A/B).
 
 Use only to confirm the app shell behaves like Safari.
 
-1. **[Mac]** Build + run the native app with marks on: `npx cross-env PERF_MARKS=true npm run ios`
-   (see the `mobile` skill for the iOS toolchain and Simulator-vs-device specifics).
+1. **[Mac]** Build + run the native app with marks on: `PERF_MARKS=true npm run ios` (see the
+   `mobile` skill for the iOS toolchain and Simulator-vs-device specifics).
 2. **[iPad]** Launch the Splotch app; draw something so the canvas is live.
 3. **[Mac]** **Develop → [your iPad's name] → [the app's WebView entry]** to attach Web Inspector to
    the app (not Safari).

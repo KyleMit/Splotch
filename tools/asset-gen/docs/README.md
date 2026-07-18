@@ -19,9 +19,9 @@ defects/gate gaps live in GitHub issues (label `area:asset-gen`), not in this fo
 
 This is a self-contained project, **not** an npm workspace and **not** separately installed. Its
 dependencies (`sharp`, `@google/genai`) live in the **repo-root** `package.json` so the root
-`node_modules` stays flat for `cap sync` + `patch-package` (ADR-0029). Node resolves those binaries
-by walking up from here into the root `node_modules`, so there is nothing to install in this folder
-— **do not run `npm install` here.**
+`node_modules` stays flat for `cap sync` (ADR-0029). Node resolves those binaries by walking up from
+here into the root `node_modules`, so there is nothing to install in this folder — **do not run
+`npm install` here.**
 
 Path/tree resolution is centralized in `lib/paths.mjs` (`REPO_ROOT`, `COLORING_DIR`, `STYLES_DIR`,
 `FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) so the scripts never hardcode `../../..` walks or

@@ -1,6 +1,7 @@
 # ADR-0011: patch-package for Capacitor CLI Windows gradlew Bug
 
-**Status:** Active\
+**Status:** Superseded by [ADR-0062](0062-drop-windows-dev-support.md) — Windows development is no
+longer supported, so the patch (and `patch-package`) were removed. This record is kept for history.\
 **Date:** 2026-06
 
 ## Context

@@ -6,7 +6,7 @@ iOS-specific toolchain (macOS + Xcode only), build/run commands, Safari Web Insp
 Store release checklist. For the general build model and shared assets see
 **[native.md](native.md)**; Android lives in **[android.md](android.md)**.
 
-> iOS cannot be built on Windows — Xcode and the simulators are macOS-only. No CocoaPods anywhere:
+> iOS can only be built on macOS — Xcode and the simulators are macOS-only. No CocoaPods anywhere:
 > the iOS project uses Swift Package Manager (ADR-0020). Minimum supported OS: **iOS 16.4**
 > (`IPHONEOS_DEPLOYMENT_TARGET` in `App.xcodeproj`), aligned with the web bundle's floor — see
 > [docs/COMPATIBILITY.md](../../../docs/COMPATIBILITY.md). It MUST stay ≤ the web `build.target` iOS
