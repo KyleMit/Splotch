@@ -42,7 +42,8 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { renderOp, clearAllOf, type StrokeOp, type BrushKind } from './strokeOps';
+import { setCrayonRenderScale } from './crayonBrush';
 import {
   beginCommand,
   commandCount,
@@ -87,6 +88,11 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+// The pen's texture. Undefined = the flat 'marker' pen (the engine's built-in
+// default, so the /dev/engine harness and its pixel-exact specs stay flat); the
+// app pushes 'crayon' via setBrush() from DrawingCanvas, making it the shipped
+// default. Stamped onto each laid-down op so replay is texture-stable.
+let currentBrush: BrushKind | undefined = undefined;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +428,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    brush: ps.brush,
+    seed: ps.seed,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +457,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    brush: ps.brush,
+    seed: ps.seed,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +504,12 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  // The brush + per-stroke crayon seed, fixed at pointerdown and stamped onto
+  // every op of this stroke (constant seed within a stroke → seamless grain;
+  // different between strokes → same-colour overlap builds up). Undefined brush
+  // when the pen is the flat marker or when erasing/magic (they ignore it).
+  brush: BrushKind | undefined;
+  seed: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +598,13 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    // Crayon only applies to a laid-down pen stroke; erasing/magic ignore it. The
+    // seed derives from the (rounded) start point, so it's deterministic — the
+    // same stroke always seeds the same grain — yet two strokes that begin at
+    // different spots decorrelate, which is exactly what makes an overlapping
+    // second pass fill the first's tooth.
+    brush: eraserActive || magicActive ? undefined : currentBrush,
+    seed: crayonSeed(x, y),
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -934,6 +957,9 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   currentColor = options.initialColor || '#AB71E1';
 
   renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
+  // The crayon tooth is sized per renderScale so its physical grain is the same at
+  // 1× and 2× backing stores.
+  setCrayonRenderScale(renderScale);
 
   resizeCanvas();
 
@@ -1024,6 +1050,22 @@ export function setColor(color: string) {
 
 export function setStrokeWidth(widthPx: number) {
   currentLineWidth = widthPx;
+}
+
+// The pen texture ('crayon' | undefined = flat marker). Pushed by DrawingCanvas
+// from the brush-style state so the app ships crayon while the engine's own
+// default stays flat (keeping the /dev/engine pixel specs stable). Stamped onto
+// ops at draw time, so switching mid-drawing only affects new strokes; old ones
+// replay with the brush they were drawn under.
+export function setBrush(brush: BrushKind | undefined) {
+  currentBrush = brush;
+}
+
+// Deterministic per-stroke crayon seed from the start point (paper px).
+function crayonSeed(x: number, y: number): number {
+  let h = (Math.imul(Math.round(x) | 0, 374761393) + Math.imul(Math.round(y) | 0, 668265263)) >>> 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
+  return (h ^ (h >>> 16)) >>> 0;
 }
 
 export function setEraserMode(active: boolean) {

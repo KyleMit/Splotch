@@ -1303,3 +1303,136 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
   expect(s.canvasEmpty).toBe(true);
   expect(s.canUndo).toBe(false);
 });
+
+// ── crayon brush (waxy tooth + same-colour buildup) ──────────────────────────
+// The crayon deposits waxy colour that catches on the paper tooth, so a stroke
+// is not a solid fill (tooth valleys stay open) and drawing a SECOND same-colour
+// stroke over the first fills those valleys — denser coverage — while never
+// shifting the hue (the deposit is the pure colour, so C-over-C = C). These drive
+// the real engine on /dev/engine with the crayon opted in via setBrush.
+
+const CRAYON_RED = '#EC534E'; // [236, 83, 78]
+
+// Density/texture stats over a canvas-space rectangle. Wax density lives in the
+// ALPHA channel (the tooth valleys keep a thin-wax floor, so they're low-alpha,
+// not transparent), so buildup shows as rising mean alpha + shrinking tooth. And
+// on the (transparent) dev canvas every deposited pixel carries the PURE crayon
+// RGB, so `maxDev` (worst deviation from the crayon colour over covered pixels)
+// stays ~0 unless the colour was darkened/muddied — which buildup must NOT do.
+async function crayonRegion(page: Page, x: number, y: number, w: number, h: number) {
+  return page.evaluate(
+    ({ x, y, w, h }) => {
+      const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+      const ctx = canvas.getContext('2d')!;
+      const { data } = ctx.getImageData(x, y, w, h);
+      const target = [236, 83, 78];
+      let covered = 0;
+      let alphaSum = 0;
+      let tooth = 0; // covered but clearly below full wax → paper tooth showing
+      let maxDev = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const a = data[i + 3];
+        if (a === 0) continue;
+        covered++;
+        alphaSum += a;
+        if (a < 170) tooth++;
+        for (let c = 0; c < 3; c++) maxDev = Math.max(maxDev, Math.abs(data[i + c] - target[c]));
+      }
+      const px = w * h;
+      return { covered, meanAlpha: alphaSum / px, toothFraction: tooth / px, maxDev };
+    },
+    { x, y, w, h }
+  );
+}
+
+test('a second same-colour crayon pass builds up density without shifting hue', async ({
+  page,
+}) => {
+  await page.evaluate((color) => {
+    window.__engine.setBrush('crayon');
+    window.__engine.setColor(color);
+    window.__engine.setStrokeWidth(22);
+  }, CRAYON_RED);
+
+  // One fat horizontal crayon stroke. Pen input bypasses the colour-change
+  // debounce, so it paints immediately.
+  await page.evaluate(() =>
+    window.__engine.strokeSync(
+      [
+        { x: 60, y: 150 },
+        { x: 120, y: 150 },
+        { x: 180, y: 150 },
+        { x: 240, y: 150 },
+      ],
+      'pen'
+    )
+  );
+
+  // A sampling window well inside both strokes' footprints.
+  const first = await crayonRegion(page, 80, 144, 140, 12);
+  // Waxy, not a flat fill: a real fraction of the wax is below full opacity —
+  // paper tooth showing through — and the colour is the pure crayon hue.
+  expect(first.meanAlpha).toBeLessThan(248);
+  expect(first.toothFraction).toBeGreaterThan(0.05);
+  expect(first.maxDev).toBeLessThanOrEqual(8);
+
+  // A SECOND crayon stroke of the SAME colour over the same band, started a few
+  // pixels away so it seeds a different grain phase (this is what lets it fill
+  // the first pass's tooth instead of landing on the identical pixels).
+  await page.evaluate(() =>
+    window.__engine.strokeSync(
+      [
+        { x: 63, y: 152 },
+        { x: 123, y: 152 },
+        { x: 183, y: 152 },
+        { x: 243, y: 152 },
+      ],
+      'pen'
+    )
+  );
+
+  const second = await crayonRegion(page, 80, 144, 140, 12);
+  // Buildup: the second pass fills tooth the first left open — mean wax density
+  // rises and the tooth shrinks…
+  expect(second.meanAlpha).toBeGreaterThan(first.meanAlpha + 4);
+  expect(second.toothFraction).toBeLessThan(first.toothFraction);
+  // …but the hue never darkens or muddies — every covered pixel is still the pure
+  // crayon colour (a multiply-style darken would push these far off-target).
+  expect(second.maxDev).toBeLessThanOrEqual(8);
+});
+
+test('a crayon stroke replays bit-identically across rebuilds', async ({ page }) => {
+  // Crayon texture is a pure function of stored op data (colour + per-stroke seed),
+  // so every rebuild-from-the-command-log reproduces the exact same pixels — the
+  // drift invariant the flat pen upholds (ADR-0033). Compare two rebuilds at the
+  // same size (not the live render vs a rebuild — the commit-time simplification
+  // shifts antialiased edges by <1px either way, ADR-0036).
+  await page.evaluate((color) => {
+    window.__engine.setBrush('crayon');
+    window.__engine.setColor(color);
+    window.__engine.setStrokeWidth(18);
+  }, CRAYON_RED);
+
+  await page.evaluate(() =>
+    window.__engine.strokeSync(
+      [
+        { x: 50, y: 90 },
+        { x: 140, y: 120 },
+        { x: 230, y: 90 },
+      ],
+      'pen'
+    )
+  );
+  expect(await count(page)).toBeGreaterThan(0);
+
+  // Two rebuilds at 300×300 with a different size in between, so each is a fresh
+  // replay of the stored crayon ops. Deterministic texture → identical pixels.
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  const rebuildA = await count(page);
+  await page.evaluate(() => window.__engine.resizeTo(500, 400));
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  const rebuildB = await count(page);
+
+  expect(rebuildA).toBeGreaterThan(0);
+  expect(rebuildB).toBe(rebuildA);
+});

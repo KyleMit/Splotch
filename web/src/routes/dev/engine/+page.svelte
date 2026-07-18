@@ -5,6 +5,7 @@
     setColor,
     setStrokeWidth,
     setEraserMode,
+    setBrush,
     setSafeAreaInsets,
     undo,
     clearCanvas,
@@ -58,6 +59,10 @@
       setColor,
       setStrokeWidth,
       setEraserMode,
+      // Dev A/B seam for the pen texture: 'crayon' | undefined (flat marker). The
+      // engine defaults to the flat pen so the pixel-exact specs here stay stable;
+      // the crayon buildup spec opts in per-test.
+      setBrush,
       setSafeAreaInsets,
       undo,
       clearCanvas,

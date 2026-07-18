@@ -6,6 +6,7 @@
     setStrokeWidth,
     setEraserMode,
     setMagicMode,
+    setBrush,
     setColorSheet,
     setSafeAreaInsets,
     getCanvasRect,
@@ -15,6 +16,9 @@
   import { layout } from '$lib/state/layout.svelte';
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
+  import { brushState, engineBrushFor } from '$lib/state/brush.svelte';
+  import { PALETTE_COLORS } from '$lib/state/colors.svelte';
+  import { warmCrayonTiles } from '$lib/drawing/crayonBrush';
   import { canvasState } from '$lib/state/canvas.svelte';
   import {
     strokeState,
@@ -166,6 +170,11 @@
 
     setStrokeWidth(getStrokeWidthPx(activeStrokeSize()));
 
+    // Pre-build the crayon tooth tiles for the palette off the hot path (after the
+    // engine has set the render scale), so the first stroke of a colour doesn't
+    // pay the tile's pixel loop mid-draw.
+    const cancelCrayonWarm = scheduleIdle(() => warmCrayonTiles(PALETTE_COLORS.map((c) => c.hex)));
+
     // Apple Pencil double-tap → toggle eraser (iOS native only). Not needed for the
     // first paint or first stroke (a toddler draws with a finger, and even a pencil
     // user won't double-tap in the opening frames), so its chunk load + native bridge
@@ -187,6 +196,7 @@
 
     return () => {
       engine.teardown();
+      cancelCrayonWarm();
       cancelPencilIdle?.();
       pencilCleanup?.();
     };
@@ -225,6 +235,13 @@
     setEraserMode(toolState.eraser);
     if (toolState.eraser) brushRings = {};
     else hideEraserCursor();
+  });
+
+  // Push the pen's texture (crayon by default) into the engine. Old strokes keep
+  // the brush they were drawn with — the stamp lives on each op — so this only
+  // affects strokes drawn after a change.
+  $effect(() => {
+    setBrush(engineBrushFor(brushState.style));
   });
 
   // The magic brush reveals the active page's colored fill (ADR-0043), theme-

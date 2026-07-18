@@ -5,6 +5,13 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { renderCrayonOp } from './crayonBrush';
+
+// Which brush laid down a stroke op. Absent = the flat 'marker' (the original
+// solid pen); 'crayon' means the waxy-tooth renderer in crayonBrush.ts. Stored on
+// the op so replay/undo/resize/export reproduce the same texture regardless of the
+// live brush setting (ADR-0033).
+export type BrushKind = 'crayon';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -25,6 +32,11 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      brush?: BrushKind;
+      // Per-stroke texture seed for the crayon brush (constant across one stroke's
+      // ops, different between strokes → same-colour overlap builds up). Ignored by
+      // every other op kind.
+      seed?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +55,8 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      brush?: BrushKind;
+      seed?: number;
     }
   | { kind: 'clear' };
 
@@ -114,6 +128,12 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
+    return;
+  }
+  // The crayon brush only applies to laid-down colour; erasing stays a plain
+  // destination-out below (the eraser is never a crayon).
+  if (op.brush === 'crayon' && !op.erase) {
+    renderCrayonOp(target, op);
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';

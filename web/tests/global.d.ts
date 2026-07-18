@@ -11,6 +11,7 @@ declare global {
       setColor(color: string): void;
       setStrokeWidth(width: number): void;
       setEraserMode(active: boolean): void;
+      setBrush(brush: 'crayon' | undefined): void;
       setSafeAreaInsets(insets: { top: number; right: number; bottom: number; left: number }): void;
       undo(): void;
       clearCanvas(): void;
