@@ -1136,6 +1136,48 @@ test('the brush selector switches brushes and each one draws', async ({ page }) 
   }
 });
 
+// Crayon is a wax buildup brush (ADR-0065): drawing a NEW crayon stroke over
+// existing crayon darkens it, and undo lifts the added layer back off.
+test('crayon builds up — a second stroke darkens the first, and undo lifts it', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await selectBrush(page, 'Crayon');
+  await page.locator('button.color-swatch[data-color="#62A2E9"]').click();
+  await page.waitForTimeout(150); // color-change debounce
+
+  // Mean luminance of the strongly-inked pixels — buildup lowers it (darker).
+  const inkLuminance = () =>
+    page.evaluate(() => {
+      const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+      let sum = 0;
+      let n = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] < 150) continue;
+        sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        n++;
+      }
+      return n === 0 ? 0 : sum / n;
+    });
+
+  const line = [
+    { x: 160, y: 220 },
+    { x: 560, y: 220 },
+  ];
+  await draw(page, line);
+  await expect.poll(inkLuminance, { timeout: 4000 }).toBeGreaterThan(0);
+  const oneLayer = await inkLuminance();
+
+  await draw(page, line); // second crayon stroke over the same line
+  await expect.poll(inkLuminance).toBeLessThan(oneLayer * 0.95); // darker (wax built up)
+  const twoLayers = await inkLuminance();
+
+  await page.locator('#undoButton').click();
+  await expect.poll(inkLuminance).toBeGreaterThan(twoLayers * 1.03); // lifted back lighter
+});
+
 test('the magic brush is always available and paints the coloring page colors', async ({
   page,
 }) => {
