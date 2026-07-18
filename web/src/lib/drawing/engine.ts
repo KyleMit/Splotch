@@ -43,6 +43,7 @@ import {
   setColorSheet,
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { setCrayonVariant, type CrayonVariant } from './crayonBrush';
 import {
   beginCommand,
   commandCount,
@@ -63,6 +64,12 @@ import { exportDrawing, warmPaperTextureWhenIdle, type ExportOptions } from './e
 import { PERF_MARKS } from './perf';
 
 export { setColorSheet };
+
+// Dev-harness seam for visual A/B comparison. The selected variant is sampled
+// when each op renders and is deliberately not a user-facing runtime setting.
+export function setCrayonRenderVariant(variant: CrayonVariant) {
+  setCrayonVariant(variant);
+}
 
 // --- Canvas, tool, and callback state -------------------------------------
 
@@ -422,6 +429,7 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    depositLevel: ps.erase || ps.magic ? 1 : 0.42,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,8 +457,10 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    depositLevel: ps.erase || ps.magic ? 1 : 0.42,
   };
   for (const { x, y } of points) {
+    ps.depositDistance += Math.hypot(x - ps.x, y - ps.y);
     const midX = (ps.x + x) / 2;
     const midY = (ps.y + y) / 2;
     op.segs.push({ cx: ps.x, cy: ps.y, x: midX, y: midY });
@@ -459,6 +469,12 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     ps.midX = midX;
     ps.midY = midY;
   }
+  // A longer continuous rub carries more wax. Quantizing keeps simplification
+  // runs compact while still making the increase visible as the finger moves.
+  op.depositLevel =
+    ps.erase || ps.magic
+      ? 1
+      : Math.min(0.82, 0.42 + Math.floor(ps.depositDistance / (ps.lineWidth * 1.5)) * 0.05);
   renderOp(ctx, op);
   recordOp(op);
 }
@@ -494,6 +510,9 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  // Wax load rises in fixed arc-length bands, so every live path op carries
+  // the exact density it rendered with and rebuilds cannot snap at commit.
+  depositDistance: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +601,7 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    depositDistance: 0,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to

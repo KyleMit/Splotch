@@ -4,6 +4,7 @@
 // same renderOp() so every surface is bit-identical.
 
 import type { PathSeg } from './strokeSimplify';
+import { crayonPaint } from './crayonBrush';
 import { sheetPatternFor } from './magicBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
@@ -25,6 +26,7 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      depositLevel?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +45,9 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      // Quantized wax load recorded at live-render granularity. This keeps
+      // replay, resize, undo, and export pixel-identical to the live stroke.
+      depositLevel?: number;
     }
   | { kind: 'clear' };
 
@@ -117,8 +122,16 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
-  target.globalCompositeOperation = 'source-over';
+  if (op.depositLevel === undefined) {
+    paintOpShape(target, op, op.color);
+    target.globalCompositeOperation = 'source-over';
+    return;
+  }
+  target.save();
+  target.globalAlpha = op.erase ? 1 : op.depositLevel;
+  if (!op.erase) target.lineCap = 'butt';
+  paintOpShape(target, op, crayonPaint(target, op.color));
+  target.restore();
 }
 
 // Total quadratic segments a command will re-stroke on replay — the keyframe

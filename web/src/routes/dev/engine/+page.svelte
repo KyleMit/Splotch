@@ -12,6 +12,7 @@
     exportCanvasBlob,
     getUndoDebug,
     setSimplifyParams,
+    setCrayonRenderVariant,
     setScreenAngleOverride,
     getViewState,
     RESIZE_SETTLE_MS,
@@ -65,6 +66,7 @@
       exportCanvasBlob,
       getUndoDebug,
       setSimplifyParams,
+      setCrayonRenderVariant,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).
@@ -135,6 +137,25 @@
       pixelAt(x: number, y: number) {
         const ctx = canvasEl.getContext('2d')!;
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
+      },
+
+      // Mean RGBA for a rectangle. Used by crayon tests to check that a second
+      // pass fills paper tooth gradually without changing the chosen hue.
+      pixelStats(x: number, y: number, width: number, height: number) {
+        const ctx = canvasEl.getContext('2d')!;
+        const { data } = ctx.getImageData(x, y, width, height);
+        const total = width * height;
+        let red = 0;
+        let green = 0;
+        let blue = 0;
+        let alpha = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          red += data[i];
+          green += data[i + 1];
+          blue += data[i + 2];
+          alpha += data[i + 3];
+        }
+        return { red: red / total, green: green / total, blue: blue / total, alpha: alpha / total };
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,

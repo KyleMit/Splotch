@@ -1303,3 +1303,54 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
   expect(s.canvasEmpty).toBe(true);
   expect(s.canUndo).toBe(false);
 });
+
+test('crayon wax buildup is live, remains red, and becomes denser on a second pass', async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    window.__engine.setCrayonRenderVariant('wax');
+    window.__engine.setColor('#e53935');
+    window.__engine.setStrokeWidth(24);
+  });
+
+  const first = await page.evaluate(() => {
+    window.__engine.strokeSync(
+      [
+        { x: 35, y: 150 },
+        { x: 90, y: 150 },
+        { x: 145, y: 150 },
+        { x: 200, y: 150 },
+        { x: 265, y: 150 },
+      ],
+      'pen'
+    );
+    return {
+      early: window.__engine.pixelStats(100, 142, 25, 16),
+      late: window.__engine.pixelStats(185, 142, 25, 16),
+      whole: window.__engine.pixelStats(45, 142, 210, 16),
+    };
+  });
+
+  // Load rises during the live gesture: the latter portion is visibly denser
+  // before the pointer lifts and before any commit-time simplification happens.
+  expect(first.late.alpha).toBeGreaterThan(first.early.alpha + 5);
+
+  const second = await page.evaluate(() => {
+    window.__engine.strokeSync(
+      [
+        { x: 35, y: 150 },
+        { x: 90, y: 150 },
+        { x: 145, y: 150 },
+        { x: 200, y: 150 },
+        { x: 265, y: 150 },
+      ],
+      'pen'
+    );
+    return window.__engine.pixelStats(45, 142, 210, 16);
+  });
+
+  expect(second.alpha).toBeGreaterThan(first.whole.alpha + 20);
+  // Same-colour source-over buildup changes coverage, not the crayon's hue.
+  expect(second.red).toBeGreaterThan(second.green + 80);
+  expect(second.red).toBeGreaterThan(second.blue + 80);
+});
