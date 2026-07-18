@@ -1136,9 +1136,11 @@ test('the brush selector switches brushes and each one draws', async ({ page }) 
   }
 });
 
-// Crayon is a wax buildup brush (ADR-0065): drawing a NEW crayon stroke over
-// existing crayon darkens it, and undo lifts the added layer back off.
-test('crayon builds up — a second stroke darkens the first, and undo lifts it', async ({
+// Crayon is a wax buildup brush (ADR-0065): a single stroke leaves paper-tooth
+// holes; drawing a NEW crayon stroke over it fills those holes (its tooth is
+// phased differently), so the region gets DENSER at the same hue — less paper
+// shows through — and undo lifts the added layer back off.
+test('crayon builds up — a second stroke fills the paper tooth, and undo lifts it', async ({
   page,
 }) => {
   await gotoApp(page);
@@ -1147,19 +1149,27 @@ test('crayon builds up — a second stroke darkens the first, and undo lifts it'
   await page.locator('button.color-swatch[data-color="#62A2E9"]').click();
   await page.waitForTimeout(150); // color-change debounce
 
-  // Mean luminance of the strongly-inked pixels — buildup lowers it (darker).
-  const inkLuminance = () =>
+  // Inked coverage inside the stroke's bounding box (unpainted canvas is
+  // transparent; the wax tooth punches holes to transparent too). A second wax
+  // layer fills those holes, so coverage RISES; undo lifts it back off.
+  const inkedFraction = () =>
     page.evaluate(() => {
       const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-      const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-      let sum = 0;
-      let n = 0;
+      const rect = c.getBoundingClientRect();
+      const sx = c.width / rect.width;
+      const sy = c.height / rect.height;
+      const x0 = Math.floor(150 * sx);
+      const y0 = Math.floor(205 * sy);
+      const w = Math.ceil(420 * sx);
+      const h = Math.ceil(30 * sy);
+      const { data } = c.getContext('2d')!.getImageData(x0, y0, w, h);
+      let inked = 0;
+      let total = 0;
       for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] < 150) continue;
-        sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-        n++;
+        total++;
+        if (data[i + 3] >= 150) inked++;
       }
-      return n === 0 ? 0 : sum / n;
+      return total === 0 ? 0 : inked / total;
     });
 
   const line = [
@@ -1167,15 +1177,15 @@ test('crayon builds up — a second stroke darkens the first, and undo lifts it'
     { x: 560, y: 220 },
   ];
   await draw(page, line);
-  await expect.poll(inkLuminance, { timeout: 4000 }).toBeGreaterThan(0);
-  const oneLayer = await inkLuminance();
+  await expect.poll(inkedFraction, { timeout: 4000 }).toBeGreaterThan(0);
+  const oneLayer = await inkedFraction();
 
   await draw(page, line); // second crayon stroke over the same line
-  await expect.poll(inkLuminance).toBeLessThan(oneLayer * 0.95); // darker (wax built up)
-  const twoLayers = await inkLuminance();
+  await expect.poll(inkedFraction).toBeGreaterThan(oneLayer * 1.05); // tooth filled in (denser)
+  const twoLayers = await inkedFraction();
 
   await page.locator('#undoButton').click();
-  await expect.poll(inkLuminance).toBeGreaterThan(twoLayers * 1.03); // lifted back lighter
+  await expect.poll(inkedFraction).toBeLessThan(twoLayers * 0.95); // lifted back (tooth returns)
 });
 
 test('the magic brush is always available and paints the coloring page colors', async ({

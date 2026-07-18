@@ -14,11 +14,8 @@
 // (ADR-0004).
 
 import {
-  bakeBuildupRaster,
   clearAllOf,
-  commandIsBuildup,
   commandSegmentCount,
-  renderCommand,
   renderOp,
   type StrokeGroupCommand,
   type StrokeOp,
@@ -129,9 +126,6 @@ export function commitActiveCommand(): boolean {
 export function pushCommand(cmd: StrokeGroupCommand) {
   commandLog.push(cmd);
   cmd.ops = simplifyCommandOps(cmd.ops);
-  // Bake the buildup stroke into a raster once, so every replay multiply-blits it
-  // instead of re-rendering the stipple (ADR-0065).
-  if (commandIsBuildup(cmd.ops)) cmd.buildupRaster = bakeBuildupRaster(cmd.ops);
   while (commandLog.length > MAX_UNDO_STACK_SIZE) {
     if (!foldOldestIntoBaseline()) break;
   }
@@ -141,12 +135,6 @@ export function pushCommand(cmd: StrokeGroupCommand) {
 // Remove and return the most recent command, or null when nothing is undoable.
 export function popCommand(): StrokeGroupCommand | null {
   return commandLog.pop() ?? null;
-}
-
-// The most recent command without removing it — the engine settles a crayon
-// buildup stroke by re-compositing this (just-pushed) command with multiply.
-export function peekCommand(): StrokeGroupCommand | null {
-  return commandLog[commandLog.length - 1] ?? null;
 }
 
 export function commandCount(): number {
@@ -199,7 +187,6 @@ function maybeKeyframe(cmd: StrokeGroupCommand) {
   paintStateThrough(kfCtx, index);
   cmd.keyframe = kf;
   cmd.ops = [];
-  cmd.buildupRaster = null;
   if (PERF_MARKS) performance.measure('engine.keyframe', 'engine.keyframe:start');
   capKeyframeMemory();
 }
@@ -238,7 +225,7 @@ function foldOldestIntoBaseline(): boolean {
     baselineCtx.clearRect(0, 0, baselineCanvas.width, baselineCanvas.height);
     baselineCtx.drawImage(oldest.keyframe, 0, 0);
   } else {
-    renderCommand(baselineCtx, oldest);
+    for (const op of oldest.ops) renderOp(baselineCtx, op);
   }
   if (PERF_MARKS) performance.measure('engine.foldBaseline', 'engine.foldBaseline:start');
   return true;
@@ -284,7 +271,7 @@ export function paintStateThrough(target: CanvasRenderingContext2D, upToIndex: n
     begin = 0;
   }
   for (let i = begin; i <= upToIndex; i++) {
-    renderCommand(target, commandLog[i]);
+    for (const op of commandLog[i].ops) renderOp(target, op);
   }
 }
 

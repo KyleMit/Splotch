@@ -118,11 +118,17 @@ bar every brush is measured against first, is per-op self-contained rendering.
 Each brush's variants live in `brushRender.ts` behind the dev seam; the shipped default is the one
 picked below via `perf:brush` (4× CPU throttle) + visual review.
 
-* **Crayon → v11 "coarse position-hashed wax"** (an opaque core + coarse cells whose kind/shade/
-  jitter are a pure hash of the quantized canvas cell — a non-tiling procedural grain). ~0.4 ms avg
-  draw, ~3 ms undo (with the raster cache below). v2–v11 were an **adversarial design iteration**
-  (see next section): the first shipped grain (**v2 "jittered multi-pass"**) drew user complaints —
-  periodic beads at op joints and a blurry, non-waxy edge — which drove the redesign.
+* **Crayon → v12 "wax body, tooth holes"** (an opaque wax body with a canvas-anchored, seed-phased
+  paper-tooth mask bitten out of it in a small per-op offscreen buffer, blitted source-over). ~1.1
+  ms avg / 5 ms max draw, ~185 ms undo for a heavy battery under 4× throttle (a small-bbox blit per
+  op, not a full-canvas one; the keyframe safety net (ADR-0035) bounds undo on large drawings).
+  Because holes only ever REMOVE from the body, nothing exists outside the stroke outline — the edge
+  frays into connected tooth-sized bites (never a spray of loose dots) and the interior shows fine
+  grain. v2–v12 were an **adversarial design iteration** (see next section): the first shipped grain
+  (**v2 "jittered multi-pass"**) drew user complaints — periodic beads at op joints and a blurry,
+  non-waxy edge — and its successors (v3–v11, incl. the once-shipped v11 stamp field) drew a further
+  round — "too gritty, a starburst past the path, and buildup that snaps in dark on lift" — which
+  drove the final redesign.
 
 * **Watercolor → v3 "feathered wet edge"** (concentric translucent bands from a wide faint halo to a
   narrow core — a cheap deterministic gaussian). ~0.06 ms avg / 1.0 ms max draw, ~27 ms undo — the
@@ -137,36 +143,61 @@ picked below via `perf:brush` (4× CPU throttle) + visual review.
 
 ## Follow-up: crayon redesign (adversarial iteration) + wax buildup
 
-The first crayon (v2) shipped, then drew two user complaints: **"little round dots at particular
-intervals"** and **"the texture looks blurry, not crayon-like."** The dots were per-op round-cap
-beads from offsetting whole passes; the blur was the soft translucent feather. Fixing this ran as a
-loop of **designer subagents → adversarial critic subagents** (several rounds):
+The first crayon (v2) shipped, then drew complaints: **"little round dots at particular intervals"**
+and **"the texture looks blurry, not crayon-like."** The dots were per-op round-cap beads from
+offsetting whole passes; the blur was the soft translucent feather. Fixing this ran as a loop of
+**designer subagents → adversarial critic subagents** (several rounds):
 
-* **The tiling trap.** Cheap grain via a repeating `CanvasPattern` (v5/v9/v10) is *inherently
-  periodic*: a critic's autocorrelation found a clean harmonic ladder at the tile size (v9 ~0.21 at
-  96 px; v10, which naïvely overlaid two coprime tiles, was *worse* at ~0.55/87 px — overlaying
-  tiles does not cancel each tile's own period). Any short repeat is the same family as the original
-  "periodic dots" complaint, so it's disqualifying.
-* **The winner (v11)** abandons tiling for **per-position procedural hashing**: each coarse cell's
-  mark is a pure hash of its quantized *canvas* coordinate. That is continuous across the many
-  per-frame ops of one stroke (no op-boundary beads), non-periodic (autocorrelation broadband,
-  flatter than the old approved look at every periodic lag), and crisp (hard-edged, not blurred).
-  Two independent critics scored it a convincing crayon and passed the tile-repeat test.
+* **The tiling trap.** Cheap grain via a *visible* repeating `CanvasPattern` of chunky marks
+  (v5/v9/v10) is inherently periodic: a critic's autocorrelation found a clean harmonic ladder at
+  the tile size (v9 ~0.21 at 96 px; v10, which naïvely overlaid two coprime tiles, was *worse* at
+  ~0.55/87 px — overlaying tiles does not cancel each tile's own period). Any short repeat of a
+  chunky mark is the same family as the "periodic dots" complaint. (A *fine* paper-tooth mask that
+  is smaller than the grain the eye resolves, sampled at canvas coordinates, is a different case —
+  see v12 below.)
+* **v11 "coarse position-hashed wax"** (once shipped) abandoned tiling for per-position hashing, but
+  as an **additive stamp field** it drew a next round of feedback: **"too gritty, an almost
+  starburst pattern that extends beyond the stroke path,"** and a buildup (then per-command
+  `multiply`) that **"snaps in after the stroke finishes, all at once and much darker"** instead of
+  gently filling paper grain. Additive dots scattered around a thin core inevitably read as an
+  airbrush spray, and the multiply settle-on-lift was the visible snap.
 
-**Wax buildup.** A follow-on request: drawing a *new* crayon stroke over existing crayon should
-**darken** it (layered wax), not re-assert the same colour. This is the ADR's Option B/C, scoped to
-crayon:
+**The reference/judge harness.** To break the subjective loop, we generated real-crayon reference
+images with the Gemini image model (`gemini-2.5-flash-image`) — a single stroke, a same-colour
+overlap, a scribble — and used a vision model (`gemini-2.5-flash`) as an automated adversarial judge
+scoring each render against them (waxy / grain / containment / buildup). The judge is harsh and
+unreliable on absolute realism (it anchors on a macro photo, and its buildup detection is weak), but
+one axis — **containment** — tracked the real regression cleanly (2 → 7 as the spray was fixed), and
+the references made the target look concrete. Final calls were made by direct visual comparison, not
+the judge's score. The lab lives outside the app (git-excluded) and is not shipped.
 
-* **Per-command `multiply`, never per-op.** A crayon command composites onto the canvas with
-  `multiply` so it darkens earlier ink — but the whole stroke is composited *as a unit* (never op by
-  op), so a single stroke can't self-darken at its joints and re-create the bead artifact. This is
-  why buildup is per-command (= per gesture = the undo unit), not per-op.
-* **Cheap by construction.** Live drawing stays opaque (unchanged hot path); on lift the stroke
-  *settles* into its multiply composite. Each buildup command **bakes its stroke into a bbox raster
-  once at commit** (`bakeBuildupRaster`), so every replay/undo/export **multiply-blits the raster**
-  (`renderCommand`) instead of re-rendering the expensive stipple — keeping undo at ~3 ms. Per-op or
-  full-canvas-buffer compositing were both tried and rejected on cost (16 ms/op live; ~460 ms undo).
-* `renderCommand` is the single command renderer every replay path now shares; pen/watercolor/magic
-  commands are unaffected (op-by-op, identical to before), so their bit-identity (`perf:units`)
-  holds. The one accepted trade-off is a subtle "settle on lift" — repeatedly darkening the *same*
-  spot shows the deepening on lift rather than continuously mid-drag.
+* **The winner (v12 "wax body, tooth holes").** Instead of adding dots, draw a **solid opaque wax
+  body** and **bite paper-tooth holes out of it** (`destination-out`) in a small per-op offscreen
+  bbox, then blit source-over. Holes only remove, so nothing exists outside the stroke — the edge
+  frays into connected tooth-sized bites (no spray), the interior shows fine grain, and a subtle
+  colour-independent black/white mottle (`source-atop`) adds waxy pigment density. The tooth mask is
+  a baked clumped value-noise texture sampled at *canvas* coordinates so it is continuous across a
+  stroke's per-frame ops.
+
+**Wax buildup — coverage, not multiply.** The follow-on request was that a *new* crayon stroke over
+existing crayon should keep darkening — but the corrected spec is that redrawing "does little to
+change the actual colour and more to fill in the paper grain in new locations." v12 delivers exactly
+that with **pure per-op Option A — no multiply, buffer-settle, or raster cache:**
+
+* Every op carries a per-stroke **`seed`** (stamped by the engine, constant across one gesture,
+  preserved through simplification). The tooth mask is **phased by the seed**, so:
+  * within one stroke every op shares the seed → the same holes land in the same canvas places →
+    overlapping per-frame ops are idempotent (opaque body over opaque body): **no joint beads, and
+    bit-identical replay** (`perf:units` still 0-px);
+  * a **later** stroke has a different seed → its wax covers the holes the first pass left → the
+    overlap **fills toward solid at the same hue**. The body is opaque `op.color`, so overlap never
+    darkens past it — coverage buildup, not pigment multiply.
+* It is **live and gradual** (each op composites immediately as the finger moves) — there is no
+  settle-on-lift snap, and no darker-than-the-crayon artefact. Undo/resize/export need no per-brush
+  awareness: they already loop `renderOp` over the stored ops, which reproduce the same seed-phased
+  holes. This removed the previous `commandIsBuildup` / `bakeBuildupRaster` / `renderCommand` /
+  snapshot-settle machinery entirely — buildup is now a property of the renderer, not the history.
+* The one inherent trade-off of per-op state-free rendering: buildup needs *separate* strokes (a new
+  seed). A single continuous back-and-forth scribble reuses one seed, so it fills its area but its
+  self-overlaps stay idempotent (which is what keeps a smooth stroke bead-free — the same property,
+  seen from the other side).
