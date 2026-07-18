@@ -27,12 +27,17 @@ export type TexturedBrush = 'crayon' | 'watercolor';
 
 // The candidate implementation to use for each textured brush. Production
 // defaults to the winner picked after profiling; the /dev harness overrides it.
-// Winners picked via perf:brush (ADR-0065): crayon → v2 (jittered multi-pass —
-// the only performant variant with a visibly waxy, non-pen edge; the grain-based
-// v3/v4 read as near-solid at real stroke widths, and v3 was 20–70× slower).
+// Winners picked via perf:brush (ADR-0065):
+//   crayon → v2 (jittered multi-pass) — the only performant variant with a
+//     visibly waxy, non-pen edge; grain-based v3/v4 read as near-solid at real
+//     stroke widths, and v3 was 20–70× slower.
+//   watercolor → v3 (feathered wet edge) — soft translucent edge that keeps the
+//     picked colour with gentle overlap-pooling, and the cheapest variant. v2
+//     (multiply) pooled harder but shifted the colour to navy; v4 (blurred stamp)
+//     was 30–40× slower (an 84 ms jank frame, ~330 ms undo).
 const activeVariant: Record<TexturedBrush, number> = {
   crayon: 2,
-  watercolor: 1,
+  watercolor: 3,
 };
 
 // Dev/profiling seam (mirrors engine.setSimplifyParams): pin which candidate a
@@ -280,10 +285,194 @@ function crayonV4(target: CanvasRenderingContext2D, op: InkOp) {
 
 // --- Watercolor -------------------------------------------------------------
 
-// Placeholder until the watercolor exploration lands (see crayonV1).
+// v1: plain solid stroke — the pen-equivalent baseline the bench compares against.
 function watercolorV1(target: CanvasRenderingContext2D, op: InkOp) {
   target.globalCompositeOperation = 'source-over';
   paintOpShape(target, op, op.color);
+}
+
+// v2: multiply wash. Two concentric 'multiply' passes (a wide faint bleed under a
+// narrower denser core) give a soft translucent wash that darkens — pools —
+// wherever the child crosses earlier ink, like layered watercolor. Each op is a
+// single stroke() per pass, so there's no within-op accumulation; the passes stay
+// on the target (no offscreen blit) to keep the pointermove path cheap. multiply
+// on the transparent paper acts like source-over on untouched pixels, so the first
+// wash isn't darkened against nothing. A few granulation specks are hashed from op
+// geometry, so replay is bit-identical (ADR-0033). (WATER_HASH_SEED / waterSignedUnit
+// are shared with v3, declared below.)
+const WATER_PASSES = [
+  { widthScale: 1.75, alpha: 0.18 },
+  { widthScale: 1.0, alpha: 0.5 },
+];
+const WATER_SPECK_ALPHA = 0.1;
+function waterHash(h: number, v: number): number {
+  h = Math.imul(h ^ (v | 0), 0x27d4eb2d);
+  h ^= h >>> 15;
+  return h >>> 0;
+}
+function waterDarken(hex: string, factor: number): string {
+  const [r, g, b] = rgbOf(hex);
+  return `rgb(${(r * factor) | 0},${(g * factor) | 0},${(b * factor) | 0})`;
+}
+function waterSized(op: InkOp, scale: number): InkOp {
+  return op.kind === 'dot'
+    ? { ...op, radius: op.radius * scale }
+    : { ...op, lineWidth: op.lineWidth * scale };
+}
+function waterGranulate(target: CanvasRenderingContext2D, op: InkOp, size: number) {
+  if (size < 6) return;
+  const speck = size * 0.14;
+  target.globalAlpha = WATER_SPECK_ALPHA;
+  target.fillStyle = waterDarken(op.color, 0.7);
+  const stamp = (px: number, py: number, seed: number) => {
+    const jx = waterSignedUnit(waterHash(seed, 1)) * size * 0.35;
+    const jy = waterSignedUnit(waterHash(seed, 2)) * size * 0.35;
+    target.beginPath();
+    target.arc(px + jx, py + jy, speck, 0, Math.PI * 2);
+    target.fill();
+  };
+  if (op.kind === 'dot') {
+    stamp(op.x, op.y, waterHash(WATER_HASH_SEED, (op.x + op.y) * 8));
+  } else {
+    const n = op.segs.length;
+    const step = Math.max(1, Math.floor(n / 3));
+    for (let i = 0; i < n; i += step) {
+      const s = op.segs[i];
+      stamp(s.x, s.y, waterHash(waterHash(WATER_HASH_SEED, s.x * 8), s.y * 8));
+    }
+  }
+}
+function watercolorV2(target: CanvasRenderingContext2D, op: InkOp) {
+  target.globalCompositeOperation = 'multiply';
+  const base = op.kind === 'dot' ? op.radius : op.lineWidth;
+  for (const p of WATER_PASSES) {
+    target.globalAlpha = p.alpha;
+    paintOpShape(target, p.widthScale === 1 ? op : waterSized(op, p.widthScale), op.color);
+  }
+  waterGranulate(target, op, base);
+  target.globalAlpha = 1;
+}
+
+// v3: feathered wet edge. Stroke the op's geometry several times from a wide,
+// faint outer halo down to a narrow, stronger core; the stacked translucent
+// source-over bands fake a soft gaussian falloff (a wet, bleeding edge) far
+// cheaper than a real blur. Per-band alphas stay low so a lone stroke reads as a
+// watery wash and self-crossings pool without hard beads. A sub-pixel edge wobble
+// hashed from op geometry keeps the edge from being a perfect ellipse; every
+// offset/width is a deterministic hash of the op's fields, so replay is
+// bit-identical (ADR-0033). No offscreen canvas, source-over only.
+const WATER_HASH_SEED = 0x632be5ab;
+function waterMix(h: number, v: number): number {
+  h = Math.imul(h ^ (v | 0), 0x2c1b3c6d);
+  h ^= h >>> 13;
+  return h >>> 0;
+}
+function waterOpSeed(op: InkOp): number {
+  if (op.kind === 'dot')
+    return waterMix(waterMix(waterMix(WATER_HASH_SEED, op.x * 8), op.y * 8), op.radius * 8);
+  const last = op.segs.length ? op.segs[op.segs.length - 1] : { x: op.startX, y: op.startY };
+  let h = waterMix(WATER_HASH_SEED, op.startX * 8);
+  h = waterMix(h, op.startY * 8);
+  h = waterMix(h, last.x * 8);
+  h = waterMix(h, last.y * 8);
+  return waterMix(h, op.segs.length);
+}
+const waterSignedUnit = (h: number) => (h & 0xffff) / 0x8000 - 1;
+const WATER_BANDS = [
+  { widthScale: 1.55, alpha: 0.09, wobble: 0.6 },
+  { widthScale: 1.2, alpha: 0.11, wobble: 0.45 },
+  { widthScale: 0.85, alpha: 0.13, wobble: 0.3 },
+  { widthScale: 0.55, alpha: 0.16, wobble: 0.2 },
+];
+function watercolorV3(target: CanvasRenderingContext2D, op: InkOp) {
+  target.globalCompositeOperation = 'source-over';
+  const seed = waterOpSeed(op);
+  const base = op.kind === 'dot' ? op.radius : op.lineWidth;
+  for (let i = 0; i < WATER_BANDS.length; i++) {
+    const b = WATER_BANDS[i];
+    const jx = waterSignedUnit(waterMix(seed, i * 2 + 1)) * b.wobble;
+    const jy = waterSignedUnit(waterMix(seed, i * 2 + 2)) * b.wobble;
+    const size = Math.max(0.5, base * b.widthScale);
+    const bandOp: InkOp = op.kind === 'dot' ? { ...op, radius: size } : { ...op, lineWidth: size };
+    target.globalAlpha = b.alpha;
+    target.save();
+    target.translate(jx, jy);
+    paintOpShape(target, bandOp, op.color);
+    target.restore();
+  }
+  target.globalAlpha = 1;
+}
+
+// v4: blurred soft stamp. Render the op as a diffuse blob on the scratch canvas —
+// via shadowBlur (NOT ctx.filter, which the iOS 16.4 floor lacks — Safari added it
+// in 17): the op is drawn off-box and its blurred, op.color shadow is offset back
+// into view, so only the soft halo lands. Then blit onto the target translucently
+// with 'multiply', so a single wash stays soft but crossing strokes pool/darken.
+// Pure function of the op's fields (the scratch is redrawn per op), so bit-identical
+// on replay. The heaviest candidate — a real per-op blur.
+const WC_BLUR_FRAC = 0.35;
+const WC_BLUR_MIN = 1.5;
+const WC_BLUR_MAX = 7;
+const WC_WASH_ALPHA = 0.62;
+function wcBlurRadius(op: InkOp): number {
+  const base = op.kind === 'dot' ? op.radius : op.lineWidth;
+  return Math.min(WC_BLUR_MAX, base * WC_BLUR_FRAC + WC_BLUR_MIN);
+}
+function wcBounds(op: InkOp): [number, number, number, number] {
+  const blur = wcBlurRadius(op);
+  if (op.kind === 'dot') {
+    const pad = op.radius + blur + 2;
+    return [op.x - pad, op.y - pad, op.x + pad, op.y + pad];
+  }
+  const pad = op.lineWidth / 2 + blur + 2;
+  let minX = op.startX;
+  let minY = op.startY;
+  let maxX = op.startX;
+  let maxY = op.startY;
+  const grow = (x: number, y: number) => {
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  };
+  for (const s of op.segs) {
+    grow(s.cx, s.cy);
+    grow(s.x, s.y);
+    if (s.c2x !== undefined) grow(s.c2x, s.c2y!);
+  }
+  return [minX - pad, minY - pad, maxX + pad, maxY + pad];
+}
+function watercolorV4(target: CanvasRenderingContext2D, op: InkOp) {
+  const [minX, minY, maxX, maxY] = wcBounds(op);
+  const w = Math.max(1, Math.ceil(maxX - minX));
+  const h = Math.max(1, Math.ceil(maxY - minY));
+  const sctx = ensureScratch(w, h);
+
+  sctx.setTransform(1, 0, 0, 1, 0, 0);
+  sctx.globalAlpha = 1;
+  sctx.globalCompositeOperation = 'source-over';
+  sctx.clearRect(0, 0, w, h);
+  sctx.lineCap = 'round';
+  sctx.lineJoin = 'round';
+
+  // Draw the shape off the left of the box (shifted by -off) and offset its
+  // blurred shadow back by +off, so only the soft op.color halo lands in-box.
+  const off = w + 64;
+  sctx.shadowColor = op.color;
+  sctx.shadowBlur = wcBlurRadius(op);
+  sctx.shadowOffsetX = off;
+  sctx.translate(-minX - off, -minY);
+  paintOpShape(sctx, op, op.color);
+  sctx.shadowColor = 'transparent';
+  sctx.shadowBlur = 0;
+  sctx.shadowOffsetX = 0;
+  sctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  target.globalCompositeOperation = 'multiply';
+  target.globalAlpha = WC_WASH_ALPHA;
+  target.drawImage(scratch!, 0, 0, w, h, minX, minY, w, h);
+  target.globalCompositeOperation = 'source-over';
+  target.globalAlpha = 1;
 }
 
 // --- Dispatch ---------------------------------------------------------------
@@ -297,6 +486,9 @@ const CRAYON_VARIANTS: Record<number, OpRenderer> = {
 
 const WATERCOLOR_VARIANTS: Record<number, OpRenderer> = {
   1: watercolorV1,
+  2: watercolorV2,
+  3: watercolorV3,
+  4: watercolorV4,
 };
 
 const VARIANTS: Record<TexturedBrush, Record<number, OpRenderer>> = {

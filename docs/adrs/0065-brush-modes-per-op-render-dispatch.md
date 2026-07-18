@@ -126,3 +126,14 @@ picked below via `perf:brush` (4× CPU throttle) + visual review.
   strokeStyle"** was the cheapest (0.07 ms) but its grain was invisible at a 10 px stroke, so it
   looked like the plain pen. v2 is the only performant variant that reads as a distinct, waxy,
   non-pen mark. v3/v4 are retained behind the dev seam as tuning starting points.
+
+* **Watercolor → v3 "feathered wet edge"** (concentric translucent bands from a wide faint halo to a
+  narrow core — a cheap deterministic gaussian). ~0.06 ms avg / 1.0 ms max draw, ~27 ms undo — the
+  cheapest of the four. It keeps the picked colour with a soft translucent edge and gentle
+  overlap-pooling. Rejected: **v2 "multiply wash"** (two `multiply` passes) pooled harder but
+  `multiply`-against-itself dragged a single blue stroke toward navy — bad when a toddler picks a
+  colour and expects it back; **v4 "blurred soft stamp"** (offscreen `shadowBlur` — deliberately not
+  `ctx.filter`, which the iOS 16.4 floor lacks until Safari 17) gave the most diffuse edge but was
+  30–40× slower (3.4 ms avg draw, an 84 ms jank frame, ~330 ms undo), the same offscreen-per-op cost
+  that sank crayon v3. Confirms the ADR's stance: a per-op approximation with gentle pooling is the
+  right call for a toddler brush; the whole-stroke buffer (Option B) stays unbuilt.
