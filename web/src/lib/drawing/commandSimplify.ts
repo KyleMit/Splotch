@@ -164,6 +164,10 @@ export function splitIntoContinuousRuns(ops: PathOp[]): PathOp[][] {
 // the geometry pipeline for the active mode (strokeSimplify.ts), re-attach the
 // run's style to each returned span, and track the lifetime raw/kept counters.
 function reducePathRun(run: PathOp[]): PathOp[] {
+  // Crayon records a unique paper-tooth phase for every live path op. Merging
+  // those ops would change the sequence of translucent deposits on replay, so
+  // retain them exactly; this is the renderer's bit-identical replay contract.
+  if (run[0].crayon) return run;
   const first = run[0];
   const opts = { epsilon: epsilonFor(first.lineWidth), cornerCos, reduce };
   const { spans, rawCount, keptCount } =
@@ -182,6 +186,8 @@ function reducePathRun(run: PathOp[]): PathOp[] {
     lineWidth: first.lineWidth,
     erase: first.erase,
     magic: first.magic,
+    crayon: first.crayon,
+    texturePhase: first.texturePhase,
   }));
 }
 

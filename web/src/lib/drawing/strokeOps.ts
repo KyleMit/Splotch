@@ -6,6 +6,13 @@
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
 
+export type CrayonVariant = 'dense-rim' | 'flat';
+
+interface CrayonStyle {
+  crayon?: CrayonVariant;
+  texturePhase?: number;
+}
+
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
 // bit-identical to its op; the stored ops are then simplified once at commit
@@ -17,7 +24,7 @@ import { sheetPatternFor } from './magicBrush';
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
 export type StrokeOp =
-  | {
+  | ({
       kind: 'dot';
       x: number;
       y: number;
@@ -25,8 +32,8 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
-    }
-  | {
+    } & CrayonStyle)
+  | ({
       kind: 'path';
       // Which pointer drew this op, so commit-time simplification (ADR-0036) can
       // regroup a multi-touch command's interleaved per-frame ops back into one
@@ -43,7 +50,7 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
-    }
+    } & CrayonStyle)
   | { kind: 'clear' };
 
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
@@ -87,6 +94,82 @@ function paintOpShape(
   }
 }
 
+const CRAYON_TILE_SIZE = 12;
+const crayonPatterns = new WeakMap<CanvasRenderingContext2D, Map<number, CanvasPattern>>();
+
+function hash32(value: number): number {
+  let x = value | 0;
+  x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+  x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+  return (x ^ (x >>> 16)) >>> 0;
+}
+
+function crayonPattern(target: CanvasRenderingContext2D, phase: number): CanvasPattern {
+  const key = phase & 15;
+  let patterns = crayonPatterns.get(target);
+  if (!patterns) {
+    patterns = new Map();
+    crayonPatterns.set(target, patterns);
+  }
+  const cached = patterns.get(key);
+  if (cached) return cached;
+
+  const tile = document.createElement('canvas');
+  tile.width = CRAYON_TILE_SIZE;
+  tile.height = CRAYON_TILE_SIZE;
+  const tileCtx = tile.getContext('2d')!;
+  const image = tileCtx.createImageData(CRAYON_TILE_SIZE, CRAYON_TILE_SIZE);
+  for (let y = 0; y < CRAYON_TILE_SIZE; y++) {
+    for (let x = 0; x < CRAYON_TILE_SIZE; x++) {
+      const n = hash32((x + key * 19) * 374761393 + (y + key * 43) * 668265263);
+      const alpha = 88 + (n & 63);
+      const i = (y * CRAYON_TILE_SIZE + x) * 4;
+      image.data[i] = 255;
+      image.data[i + 1] = 255;
+      image.data[i + 2] = 255;
+      image.data[i + 3] = alpha;
+    }
+  }
+  tileCtx.putImageData(image, 0, 0);
+  const pattern = target.createPattern(tile, 'repeat')!;
+  patterns.set(key, pattern);
+  return pattern;
+}
+
+function paintCrayon(
+  target: CanvasRenderingContext2D,
+  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
+) {
+  const variant = op.crayon ?? 'dense-rim';
+  target.globalCompositeOperation = 'source-over';
+  target.globalAlpha = variant === 'flat' ? 0.86 : 0.68;
+  paintOpShape(target, op, op.color);
+  if (variant === 'dense-rim') {
+    target.globalAlpha = 0.32;
+    paintOpShape(target, op, crayonPattern(target, op.texturePhase ?? 0));
+    target.globalAlpha = 0.78;
+    if (op.kind === 'dot') {
+      if (op.radius > 1.5) {
+        target.fillStyle = op.color;
+        target.beginPath();
+        target.arc(op.x, op.y, op.radius - 1.25, 0, Math.PI * 2);
+        target.fill();
+      }
+    } else if (op.lineWidth > 3) {
+      target.strokeStyle = op.color;
+      target.lineWidth = op.lineWidth - 2.5;
+      target.beginPath();
+      target.moveTo(op.startX, op.startY);
+      for (const s of op.segs) {
+        if (s.c2x !== undefined) target.bezierCurveTo(s.cx, s.cy, s.c2x, s.c2y!, s.x, s.y);
+        else target.quadraticCurveTo(s.cx, s.cy, s.x, s.y);
+      }
+      target.stroke();
+    }
+  }
+  target.globalAlpha = 1;
+}
+
 // Clear everything a target could be showing. The visible ctx's user space is
 // PAPER coordinates whenever the paper view is active — and with the margins
 // drawable, ink can sit at negative paper coordinates that a rect from (0,0)
@@ -114,6 +197,10 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
+    return;
+  }
+  if (!op.erase && op.crayon) {
+    paintCrayon(target, op);
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';

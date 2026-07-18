@@ -42,7 +42,7 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { renderOp, clearAllOf, type CrayonVariant, type StrokeOp } from './strokeOps';
 import {
   beginCommand,
   commandCount,
@@ -87,6 +87,8 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonVariant: CrayonVariant = 'dense-rim';
+let crayonTexturePhase = 0;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +424,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.erase || ps.magic ? undefined : crayonVariant,
+    texturePhase: ps.erase || ps.magic ? undefined : crayonTexturePhase++,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +453,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.erase || ps.magic ? undefined : crayonVariant,
+    texturePhase: ps.erase || ps.magic ? undefined : crayonTexturePhase++,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -900,6 +906,12 @@ export function getUndoDebug(): {
 export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?: number }) {
   if (params.keyframeThreshold !== undefined) setKeyframeSegmentThreshold(params.keyframeThreshold);
   setSimplifyOptions(params);
+}
+
+// Dev comparison seam: records the chosen recipe on each op, so a drawing made
+// with either recipe replays independently of whichever recipe is selected next.
+export function setCrayonVariant(variant: CrayonVariant) {
+  crayonVariant = variant;
 }
 
 // --- Mount / unmount ---------------------------------------------------------
