@@ -35,6 +35,7 @@ declare global {
         reduce?: boolean;
         split?: 'none' | 'corner';
       }): void;
+      setCrayonRenderVariant(variant: 'wax' | 'solid'): void;
       setScreenAngleOverride(angle: number | null): void;
       remount(): void;
       getViewState(): {
@@ -55,6 +56,12 @@ declare global {
       blobRedPixelCount(blob: Blob | null): Promise<number>;
       nonTransparentCount(): number;
       pixelAt(x: number, y: number): number[];
+      inkStats(
+        x: number,
+        y: number,
+        width: number,
+        height: number
+      ): { alpha: number; covered: number; dense: number; red: number };
       resizeTo(w: number, h: number): Promise<void>;
       resumeTo(w: number, h: number): void;
       strokeSync(points: { x: number; y: number }[], pointerType?: string): void;

@@ -61,6 +61,7 @@ import { getSimplifyCounters, setSimplifyOptions, type SimplifyOptions } from '.
 import { scanCanvasIsEmpty } from './emptyScan';
 import { exportDrawing, warmPaperTextureWhenIdle, type ExportOptions } from './exportDrawing';
 import { PERF_MARKS } from './perf';
+import { setCrayonVariant, type CrayonVariant } from './crayon';
 
 export { setColorSheet };
 
@@ -88,6 +89,7 @@ let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
 let lastColorChangeTime = 0;
+let strokeSequence = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
 let onDrawStopCallback: (() => void) | null = null;
@@ -422,6 +424,7 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayonSeed: ps.crayonSeed,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +452,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayonSeed: ps.crayonSeed,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +498,7 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayonSeed: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +587,7 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayonSeed: strokeSeed(++strokeSequence, e.pointerId, x, y, currentColor),
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -900,6 +906,24 @@ export function getUndoDebug(): {
 export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?: number }) {
   if (params.keyframeThreshold !== undefined) setKeyframeSegmentThreshold(params.keyframeThreshold);
   setSimplifyOptions(params);
+}
+
+// Dev-only harness seam: variants share the same stored op vocabulary, so a
+// reviewer can A/B the wax texture without changing replay semantics.
+export function setCrayonRenderVariant(variant: CrayonVariant) {
+  setCrayonVariant(variant);
+}
+
+function strokeSeed(
+  sequence: number,
+  pointerId: number,
+  x: number,
+  y: number,
+  color: string
+): number {
+  let h = sequence ^ pointerId ^ Math.round(x * 31) ^ Math.round(y * 131);
+  for (let i = 0; i < color.length; i++) h = Math.imul(h ^ color.charCodeAt(i), 16777619);
+  return h >>> 0;
 }
 
 // --- Mount / unmount ---------------------------------------------------------
