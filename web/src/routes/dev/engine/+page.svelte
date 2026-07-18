@@ -13,6 +13,9 @@
     getUndoDebug,
     setSimplifyParams,
     setScreenAngleOverride,
+    setCrayonMode,
+    setCrayonVariant,
+    setCrayonParams,
     getViewState,
     RESIZE_SETTLE_MS,
   } from '$lib/drawing/engine';
@@ -69,7 +72,46 @@
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).
       setScreenAngleOverride,
+      // Crayon A/B seam: toggle the waxy crayon default off (flat marker) and
+      // switch between crayon looks (crayonBrush CRAYON_VARIANTS) for tuning and
+      // the buildup spec.
+      setCrayonMode,
+      setCrayonVariant,
+      setCrayonParams,
       getViewState,
+
+      // Coverage + mean colour of the non-transparent pixels in a backing-store
+      // rect: `coverage` is the inked fraction (grain fill-in), `alpha` the mean
+      // deposit, and r/g/b the mean hue over covered pixels. The buildup spec
+      // asserts a second same-colour pass raises coverage/alpha while r/g/b (hue)
+      // holds — wax filling the tooth, not darkening.
+      inkStats(x: number, y: number, w: number, h: number) {
+        const ctx = canvasEl.getContext('2d')!;
+        const { data } = ctx.getImageData(x, y, w, h);
+        let covered = 0;
+        let sr = 0,
+          sg = 0,
+          sb = 0,
+          sa = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          const a = data[i + 3];
+          sa += a;
+          if (a !== 0) {
+            covered++;
+            sr += data[i];
+            sg += data[i + 1];
+            sb += data[i + 2];
+          }
+        }
+        const total = data.length / 4;
+        return {
+          coverage: covered / total,
+          alpha: sa / total / 255,
+          r: covered ? sr / covered : 0,
+          g: covered ? sg / covered : 0,
+          b: covered ? sb / covered : 0,
+        };
+      },
 
       // Teardown + re-init on the same canvas — the client-side-navigation
       // lifecycle (`/` → `/privacy` → `/`, ADR-0004). Drawing state persists

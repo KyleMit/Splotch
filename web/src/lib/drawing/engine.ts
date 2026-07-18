@@ -43,6 +43,8 @@ import {
   setColorSheet,
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { setCrayonVariant, setCrayonParams, warmCrayonTooth } from './crayonBrush';
+import { scheduleIdle } from '../idle';
 import {
   beginCommand,
   commandCount,
@@ -87,6 +89,10 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+// Free-draw renders as waxy crayon by default (ADR-0065). The flag is the single
+// signal stamped onto each ordinary (non-eraser, non-magic) op; a dev A/B can
+// turn it off to compare against the flat marker.
+let crayonActive = true;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +428,7 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    brush: ps.brush,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +456,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    brush: ps.brush,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +502,9 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  // Captured at stroke start so a mid-stroke tool flip can't split one drag's
+  // ops between brushes (matches how color/erase/magic are pinned per stroke).
+  brush: 'crayon' | undefined;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +593,7 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    brush: crayonActive && !eraserActive && !magicActive ? 'crayon' : undefined,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -988,8 +1000,10 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   listen(window, 'pointermove', adoptStrayPenStream, true);
 
   // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
-  // first export.
+  // first export, and the crayon tooth tile so its one-time fbm build doesn't
+  // land on the first drawing frame.
   warmPaperTextureWhenIdle();
+  scheduleIdle(() => warmCrayonTooth());
 
   return {
     teardown() {
@@ -1038,6 +1052,19 @@ export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
 }
+
+// Free-draw crayon on/off. On (the default) stamps `brush: 'crayon'` onto every
+// ordinary op so it renders as waxy crayon; off reverts free-draw to the flat
+// marker. The eraser and magic brush are unaffected (they never carry `brush`).
+export function setCrayonMode(active: boolean) {
+  crayonActive = active;
+}
+
+// Pick the crayon look (see crayonBrush CRAYON_VARIANTS) for dev A/B; 'flat'
+// lays down solid colour as the marker baseline. setCrayonParams is the live
+// tuning seam (like setSimplifyParams). Re-exported so the dev harness and the
+// app's dev seam can switch/tune without a rebuild.
+export { setCrayonVariant, setCrayonParams };
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system
 // gesture zone (see the edge-swipe notes at startDrawing). Pushed by the
