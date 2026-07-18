@@ -1,0 +1,9 @@
+# Splotch — https://splotch.art
+# Served statically from the CDN so legit crawlers never invoke the SSR function.
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Disallow: /dev/
+
+Sitemap: https://splotch.art/sitemap.xml
