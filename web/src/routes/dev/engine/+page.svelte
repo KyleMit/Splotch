@@ -13,6 +13,8 @@
     getUndoDebug,
     setSimplifyParams,
     setScreenAngleOverride,
+    setCrayonMode,
+    setCrayonForced,
     getViewState,
     RESIZE_SETTLE_MS,
   } from '$lib/drawing/engine';
@@ -65,6 +67,10 @@
       exportCanvasBlob,
       getUndoDebug,
       setSimplifyParams,
+      // Crayon brush (crayonTexture.ts): setCrayonMode toggles the tool;
+      // setCrayonForced is the perf/A-B seam that renders pen strokes as crayon.
+      setCrayonMode,
+      setCrayonForced,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).

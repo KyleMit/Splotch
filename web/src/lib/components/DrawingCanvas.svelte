@@ -6,6 +6,7 @@
     setStrokeWidth,
     setEraserMode,
     setMagicMode,
+    setCrayonMode,
     setColorSheet,
     setSafeAreaInsets,
     getCanvasRect,
@@ -241,6 +242,11 @@
 
   $effect(() => {
     setMagicMode(toolState.magic);
+  });
+
+  // The crayon brush paints a waxy paper-tooth texture (crayonTexture.ts).
+  $effect(() => {
+    setCrayonMode(toolState.crayon);
   });
 
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK

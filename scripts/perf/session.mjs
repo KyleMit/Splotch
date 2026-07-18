@@ -135,6 +135,17 @@ export async function driveSession(page, cdp, { outDir, settings }) {
   const box = await canvasBox(page);
   if (!box) throw new Error('drawing canvas not found / not visible');
 
+  // Measure the crayon brush (crayonTexture.ts) instead of the pen when asked, so
+  // the whole toddler session draws its paper-tooth pattern on the hot path.
+  if (process.argv.includes('--crayon')) {
+    const crayonBtn = page.locator('#crayonButton');
+    if (await crayonBtn.count()) {
+      await crayonBtn.click();
+      await sleep(150);
+      console.log('Crayon brush selected for this session.');
+    }
+  }
+
   await beat(page, 'boot-settle', () => sleep(700));
   await beat(page, 'draw-single', async () => {
     await pickColor(page, COLORS[0]);

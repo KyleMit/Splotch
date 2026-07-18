@@ -20,6 +20,10 @@ const build = !args.includes('--no-build');
 const filter = (args.find((a) => a.startsWith('--filter=')) || '').split('=')[1] || '';
 const mode = (args.find((a) => a.startsWith('--mode=')) || '').split('=')[1] || 'samples';
 const reduce = !args.includes('--no-reduce');
+// Verify the crayon brush (crayonTexture.ts) instead of the pen: force every stroke
+// to render as crayon via the dev seam, so the strict live-vs-rebuild diff proves
+// the paper-tooth pattern + per-group phase replay bit-identically.
+const crayon = args.includes('--crayon');
 const split = (args.find((a) => a.startsWith('--split=')) || '').split('=')[1] || 'corner';
 const epsArg = (args.find((a) => a.startsWith('--eps=')) || '').split('=')[1];
 const minArg = (args.find((a) => a.startsWith('--min=')) || '').split('=')[1];
@@ -197,6 +201,7 @@ async function main() {
       const res = await page.evaluate(runStroke, {
         stroke,
         sizePx: SIZE_PX,
+        crayon,
         css: { w: cssW, h: cssH },
         // Default verifies the SHIPPING config ('samples' rebuild, ADR-0036).
         // --mode / --eps / --no-reduce / --disabled sweep the alternatives.
@@ -250,11 +255,12 @@ async function main() {
 }
 
 // Runs in the page: draw one stroke live, snapshot, rebuild, snapshot, strict diff.
-async function runStroke({ stroke, sizePx, css, params }) {
+async function runStroke({ stroke, sizePx, crayon, css, params }) {
   const E = window.__engine;
   const cv = document.querySelector('#engineCanvas');
   const ctx = cv.getContext('2d', { willReadFrequently: true });
   E.setSimplifyParams(params);
+  if (crayon) E.setCrayonForced(true);
   E.setStrokeWidth(sizePx[stroke.brush] || 8);
   E.strokeSync(stroke.points, 'touch');
   const W = cv.width,

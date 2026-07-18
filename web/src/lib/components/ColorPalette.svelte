@@ -14,7 +14,7 @@
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
   import { dragColorToCanvas } from '$lib/actions/dragColorToCanvas';
   import { openColorPicker, buttonCenter } from '$lib/state/ui.svelte';
-  import { toolState, selectPen } from '$lib/state/tool.svelte';
+  import { toolState, exitToDrawing } from '$lib/state/tool.svelte';
   import { layout } from '$lib/state/layout.svelte';
   import { getRingColor } from '$lib/colorRing';
   import { onMount } from 'svelte';
@@ -70,7 +70,7 @@
   }
 
   function selectSwatch(hex: string, paint: string) {
-    selectPen();
+    exitToDrawing();
     selectPaletteColor(hex, paint);
     ringAnimateKey = hex + ':' + Date.now();
     releaseAllPointers();
@@ -85,7 +85,7 @@
   // released everything (handlePaletteDown), and releasing again now would kill
   // a stroke a sibling finger started during the drag.
   function dragSelectSwatch(hex: string, paint: string) {
-    selectPen();
+    exitToDrawing();
     selectPaletteColor(hex, paint);
     ringAnimateKey = hex + ':' + Date.now();
     setEraserMode(false);
@@ -94,7 +94,7 @@
   }
 
   function selectCustomColor() {
-    selectPen();
+    exitToDrawing();
     selectCustomSwatch();
     openColorPicker(swatchEls[CUSTOM_SWATCH] ? buttonCenter(swatchEls[CUSTOM_SWATCH]) : null);
     releaseAllPointers();

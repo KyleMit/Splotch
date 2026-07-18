@@ -119,7 +119,11 @@ function pathStyleMatches(a: PathOp, b: PathOp): boolean {
     a.color === b.color &&
     a.lineWidth === b.lineWidth &&
     a.erase === b.erase &&
-    !!a.magic === !!b.magic
+    !!a.magic === !!b.magic &&
+    // A crayon run keeps its own phase seed; a seed change (or crayon↔pen change)
+    // breaks the run so the reduced op carries a single, correct seed.
+    !!a.crayon === !!b.crayon &&
+    (a.seed ?? 0) === (b.seed ?? 0)
   );
 }
 
@@ -182,6 +186,8 @@ function reducePathRun(run: PathOp[]): PathOp[] {
     lineWidth: first.lineWidth,
     erase: first.erase,
     magic: first.magic,
+    crayon: first.crayon,
+    seed: first.seed,
   }));
 }
 

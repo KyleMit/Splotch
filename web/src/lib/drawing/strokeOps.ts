@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { crayonPatternFor } from './crayonTexture';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -16,6 +17,11 @@ import { sheetPatternFor } from './magicBrush';
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
+// `crayon`, when true, paints the op's shape with a paper-tooth pattern tinted
+// `color` instead of a solid fill (crayonTexture.ts) — like `magic`, an ordinary
+// op that inherits undo/eraser/override for free. `seed` is the crayon op's
+// stroke-group phase (deterministic, stored so replay reproduces the exact tooth
+// and buildup); unused by other ops.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -25,6 +31,8 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      seed?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +51,8 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      seed?: number;
     }
   | { kind: 'clear' };
 
@@ -115,6 +125,15 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
     return;
+  }
+  if (op.crayon && !op.erase) {
+    const pattern = crayonPatternFor(target, op.color, op.seed ?? 0);
+    if (pattern) {
+      target.globalCompositeOperation = 'source-over';
+      paintOpShape(target, op, pattern);
+      return;
+    }
+    // Fall through to a solid stroke if the pattern couldn't be created.
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
   paintOpShape(target, op, op.color);

@@ -87,6 +87,16 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+// The crayon brush (crayonTexture.ts): a selectable tool that paints the paper-tooth
+// pattern instead of a solid fill. `crayonForced` is the dev/perf A/B seam — it makes
+// pen strokes render as crayon regardless of the tool, so the perf harness can measure
+// the crayon on the standard stroke battery and a spec/tool can compare it to the pen.
+let crayonActive = false;
+let crayonForced = false;
+// Monotonic per-stroke phase seed, stored on each crayon op so separate strokes'
+// tooth peaks interleave (buildup) and replay reproduces the exact texture. Bumped
+// once per crayon stroke start; render reads the stored value, never this counter.
+let crayonSeedCounter = 0;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +432,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    seed: ps.seed,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +461,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    seed: ps.seed,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +508,8 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayon: boolean;
+  seed: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -568,6 +584,12 @@ function startDrawing(e: PointerEvent, adopted = false) {
         })
       : null;
 
+  // A crayon stroke is any non-erase, non-magic stroke while the crayon tool is
+  // active (or the dev A/B seam forces it). Each gets a fresh phase seed so
+  // overlapping strokes build up (crayonTexture.ts).
+  const crayon = (crayonActive || crayonForced) && !eraserActive && !magicActive;
+  const seed = crayon ? crayonSeedCounter++ : 0;
+
   const now = Date.now();
   const pointerState: PointerState = {
     id: e.pointerId,
@@ -582,6 +604,8 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayon,
+    seed,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -1037,6 +1061,21 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+// Crayon brush on/off (crayonTexture.ts). Mutually exclusive with the eraser and
+// magic brush at the UI level; the engine just tracks the flag and stamps it onto
+// each non-erase op.
+export function setCrayonMode(active: boolean) {
+  crayonActive = active;
+}
+
+// Dev/perf A/B seam (mirrors setSimplifyParams): force every pen stroke to render
+// as crayon regardless of the active tool, so one build can measure the crayon on
+// the standard perf battery and compare pen↔crayon on identical input. Wired onto
+// window.__engine only on /dev/engine; production never calls it.
+export function setCrayonForced(forced: boolean) {
+  crayonForced = forced;
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

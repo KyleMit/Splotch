@@ -10,7 +10,7 @@
     setStrokeSize,
     activeStrokeSize,
   } from '$lib/state/strokeWidth.svelte';
-  import { toolState, selectEraser, toggleMagic } from '$lib/state/tool.svelte';
+  import { toolState, selectEraser, toggleMagic, toggleCrayon } from '$lib/state/tool.svelte';
   import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
   import { network } from '$lib/state/network.svelte';
@@ -227,6 +227,10 @@
     toggleMagic();
   }
 
+  function handleCrayonClick() {
+    toggleCrayon();
+  }
+
   async function handleAiImageClick() {
     if (ui.aiGenerating || canvasState.canvasEmpty || !aiBtnEl) return;
 
@@ -334,6 +338,20 @@
         use:scribbleTap={handleMagicClick}
       >
         <Icon name="magic-brush" class="action-icon" />
+      </button>
+
+      <!-- Crayon brush: lays down a waxy paper-tooth texture that builds up where
+           strokes overlap (crayonTexture.ts). A drawing tool like the pen, so it's
+           always shown. -->
+      <button
+        class="action-button"
+        class:active={toolState.crayon}
+        id="crayonButton"
+        aria-label="Crayon"
+        aria-pressed={toolState.crayon}
+        use:scribbleTap={handleCrayonClick}
+      >
+        <Icon name="crayon" class="action-icon" />
       </button>
 
       <button
