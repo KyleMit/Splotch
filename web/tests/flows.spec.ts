@@ -29,6 +29,24 @@ async function openDrawer(page: Page) {
   }).toPass({ timeout: 20_000 });
 }
 
+// The brush selector is a flyout: the trigger (#brushButton) opens a menu of
+// brushes, and picking one persists it back into the trigger (ADR-0063). Selects
+// a brush by its menu label ("Pen" | "Crayon" | "Watercolor" | "Magic brush").
+// Assumes the drawer is already open.
+async function selectBrush(page: Page, label: string) {
+  await page.locator('#brushButton').click();
+  const option = page.getByRole('menuitemradio', { name: label });
+  await expect(option).toBeVisible();
+  await option.click();
+  await expect(option).toBeHidden(); // the flyout closes on selection
+}
+
+// True when the brush selector currently has the magic brush chosen — the
+// trigger button shows the magic-brush icon.
+function magicBrushSelected(page: Page) {
+  return page.locator('#brushButton [data-icon="magic-brush"]');
+}
+
 async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
   const modal = page.locator('#parentHelpModal');
   await expect(async () => {
@@ -472,7 +490,7 @@ test('picking a color exits eraser mode', async ({ page }) => {
   }).toPass({ timeout: 10_000 });
   await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
 
-  // Tapping a swatch should switch back to the pen (selectPen in handleSwatchUp).
+  // Tapping a swatch should leave the eraser (selectColorBrush in the swatch handler).
   await page.locator('button.color-swatch[data-color="#EC534E"]').click();
   await expect(eraser).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#drawingCanvas')).not.toHaveClass(/erasing/);
@@ -1079,14 +1097,12 @@ test('the magic brush is always available and paints the coloring page colors', 
   await gotoApp(page);
   await openDrawer(page);
 
-  const magic = page.locator('#magicBrushButton');
-  await expect(magic).toBeVisible(); // available even before a page is applied
+  // The brush selector is always available, even before a page is applied.
+  await expect(page.locator('#brushButton')).toBeVisible();
 
   await applyFarmPage(page);
-  await expect(magic).toBeVisible();
-
-  await magic.click();
-  await expect(magic).toHaveAttribute('aria-pressed', 'true');
+  await selectBrush(page, 'Magic brush');
+  await expect(magicBrushSelected(page)).toBeVisible();
 
   // Paint across the picture: the reveal should show many of the fill's fill
   // colors, not one flat pen color.
@@ -1129,9 +1145,8 @@ test('drawing shows a brush impact ring, rainbow-flavored for the magic brush', 
   await expect(ring).toHaveCount(0);
 
   // Magic brush: same ring, rainbow-flavored.
-  const magic = page.locator('#magicBrushButton');
-  await magic.click();
-  await expect(magic).toHaveAttribute('aria-pressed', 'true');
+  await selectBrush(page, 'Magic brush');
+  await expect(magicBrushSelected(page)).toBeVisible();
   await page.mouse.move(box.x + 150, box.y + 120);
   await page.mouse.down();
   await expect(ring).toHaveCount(1);
@@ -1237,7 +1252,7 @@ test('the magic brush reveals fills only, never the fill outlines (no double lin
   await gotoApp(page);
   await openDrawer(page);
   await applyFarmPage(page);
-  await page.locator('#magicBrushButton').click();
+  await selectBrush(page, 'Magic brush');
 
   // Sweep across the picture, crossing many black outlines (clouds, cattails,
   // duck, water). Before the outline-masking fix the reveal painted the fill's
@@ -1278,7 +1293,7 @@ test('the magic brush paints the letterbox margin by extending the edge colour',
   await gotoApp(page);
   await openDrawer(page);
   await applyFarmPage(page);
-  await page.locator('#magicBrushButton').click();
+  await selectBrush(page, 'Magic brush');
 
   // Hug the far-left edge, well inside the letterbox band, sweeping top to bottom.
   await draw(page, [
@@ -1330,7 +1345,7 @@ test('the magic brush paints the rotation-lock letterbox margin', async ({ page 
   // The wide paper stays, lifted into the letterboxed sheet with top/bottom margins.
   await expect(page.locator('.paper-sheet.paper-lifted')).toBeVisible();
 
-  await page.locator('#magicBrushButton').click();
+  await selectBrush(page, 'Magic brush');
   // Sweep along the very top of the canvas — inside the rotation-lock top margin.
   await draw(page, [
     { x: 40, y: 6 },
@@ -1347,10 +1362,8 @@ test('the magic brush reveals a rainbow gradient when no coloring page is applie
   await gotoApp(page);
   await openDrawer(page);
 
-  const magic = page.locator('#magicBrushButton');
-  await expect(magic).toBeVisible();
-  await magic.click();
-  await expect(magic).toHaveAttribute('aria-pressed', 'true');
+  await selectBrush(page, 'Magic brush');
+  await expect(magicBrushSelected(page)).toBeVisible();
 
   // Drawing across the blank canvas reveals the pre-generated rainbow — a long
   // stroke crosses many hues, so it lays down many distinct colors, not one.
@@ -1365,7 +1378,7 @@ test('the magic brush reveals a rainbow gradient when no coloring page is applie
   // Clearing releases the held rainbow but keeps the magic brush selected (#309)
   // — it draws on a fresh page too, so the child picks up right where they were.
   await clearViaGesture(page);
-  await expect(magic).toHaveAttribute('aria-pressed', 'true');
+  await expect(magicBrushSelected(page)).toBeVisible();
   await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
 
   // Drawing again still reveals colors (a newly picked gradient).
@@ -1393,7 +1406,7 @@ test('the eraser removes magic-brush strokes and later colors override them', as
   await openDrawer(page);
   await applyFarmPage(page);
 
-  await page.locator('#magicBrushButton').click();
+  await selectBrush(page, 'Magic brush');
   // A diagonal that crosses several fill regions, so the reveal is real ink.
   const line = [
     { x: 120, y: 120 },
@@ -1412,7 +1425,7 @@ test('the eraser removes magic-brush strokes and later colors override them', as
 
   // A solid color drawn afterward overrides the reveal: paint magic, then a
   // single palette color on top, and confirm that flat color is present.
-  await page.locator('#magicBrushButton').click(); // re-select magic (clears eraser)
+  await selectBrush(page, 'Magic brush'); // re-select magic (clears eraser)
   await draw(page, line);
   const red = page.locator('.color-swatch[data-color="#EC534E"]');
   await red.click();

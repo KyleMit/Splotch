@@ -5,7 +5,7 @@
     setColor,
     setStrokeWidth,
     setEraserMode,
-    setMagicMode,
+    setBrush,
     setColorSheet,
     setSafeAreaInsets,
     getCanvasRect,
@@ -105,7 +105,7 @@
     brushRings[e.pointerId] = {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
-      magic: toolState.magic,
+      magic: toolState.brush === 'magic',
     };
   }
 
@@ -240,7 +240,7 @@
   });
 
   $effect(() => {
-    setMagicMode(toolState.magic);
+    setBrush(toolState.brush);
   });
 
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK

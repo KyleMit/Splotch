@@ -42,7 +42,7 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { renderOp, clearAllOf, type StrokeOp, type BrushKind } from './strokeOps';
 import {
   beginCommand,
   commandCount,
@@ -86,7 +86,7 @@ let ctx!: CanvasRenderingContext2D;
 let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
-let magicActive = false;
+let activeBrush: BrushKind = 'pen';
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -421,7 +421,7 @@ function renderStrokeStart(ps: PointerState) {
     radius: ps.lineWidth / 2,
     color: ps.color,
     erase: ps.erase,
-    magic: ps.magic,
+    brush: ps.brush,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -448,7 +448,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     color: ps.color,
     lineWidth: ps.lineWidth,
     erase: ps.erase,
-    magic: ps.magic,
+    brush: ps.brush,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -493,7 +493,7 @@ interface PointerState {
   color: string;
   lineWidth: number;
   erase: boolean;
-  magic: boolean;
+  brush: BrushKind;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -581,7 +581,7 @@ function startDrawing(e: PointerEvent, adopted = false) {
     color: currentColor,
     lineWidth,
     erase: eraserActive,
-    magic: magicActive,
+    brush: activeBrush,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -870,9 +870,9 @@ export function clearCanvas() {
   const strokeStillLive = resetActiveCommandForClear();
   setCanvasEmptyState(!strokeStillLive);
   // A cleared canvas releases the held rainbow so the next magic use picks a fresh
-  // one; if the brush is still selected, lock the new one in right away.
+  // one; if the magic brush is still selected, lock the new one in right away.
   clearMagicGradient();
-  if (magicActive) ensureMagicSheet();
+  if (activeBrush === 'magic') ensureMagicSheet();
 }
 
 export function isCanvasEmpty(): boolean {
@@ -1030,13 +1030,15 @@ export function setEraserMode(active: boolean) {
   eraserActive = active;
 }
 
-// Magic brush on/off (ADR-0043). Mutually exclusive with the eraser at the UI
-// level; the engine just tracks the flag and stamps it onto each op. Selecting the
-// brush over a blank canvas locks in a random rainbow to reveal (a no-op when a
-// coloring page is applied, or when a rainbow is already held from before).
-export function setMagicMode(active: boolean) {
-  magicActive = active;
-  if (active) ensureMagicSheet();
+// The active brush, pushed in by the component's reactive bridge. The engine
+// tracks it and stamps it onto each op so undo/replay repaint through the same
+// brush (ADR-0033). Mutually exclusive with the eraser at the UI level.
+// Selecting the magic brush over a blank canvas locks in a random rainbow to
+// reveal (a no-op when a coloring page is applied, or a rainbow is already held;
+// ADR-0043).
+export function setBrush(brush: BrushKind) {
+  activeBrush = brush;
+  if (brush === 'magic') ensureMagicSheet();
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

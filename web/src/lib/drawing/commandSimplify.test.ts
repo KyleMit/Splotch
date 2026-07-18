@@ -99,9 +99,9 @@ describe('splitIntoContinuousRuns', () => {
     expect(runs.map((r) => r.length)).toEqual([2, 2]);
   });
 
-  it('splits when the eraser or magic flag flips', () => {
+  it('splits when the eraser or brush changes', () => {
     const ops = liveOps(1, line(5));
-    const flipped = ops.map((op, i) => (i >= 3 ? { ...op, magic: true } : op));
+    const flipped = ops.map((op, i) => (i >= 3 ? { ...op, brush: 'magic' as const } : op));
     expect(splitIntoContinuousRuns(flipped).map((r) => r.length)).toEqual([3, 1]);
   });
 });

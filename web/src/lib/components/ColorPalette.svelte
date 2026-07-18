@@ -10,11 +10,11 @@
     themedSwatchColor,
   } from '$lib/state/colors.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { releaseAllPointers, setColor, setEraserMode, setMagicMode } from '$lib/drawing/engine';
+  import { releaseAllPointers, setColor, setEraserMode, setBrush } from '$lib/drawing/engine';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
   import { dragColorToCanvas } from '$lib/actions/dragColorToCanvas';
   import { openColorPicker, buttonCenter } from '$lib/state/ui.svelte';
-  import { toolState, selectPen } from '$lib/state/tool.svelte';
+  import { toolState, selectColorBrush } from '$lib/state/tool.svelte';
   import { layout } from '$lib/state/layout.svelte';
   import { getRingColor } from '$lib/colorRing';
   import { onMount } from 'svelte';
@@ -70,7 +70,7 @@
   }
 
   function selectSwatch(hex: string, paint: string) {
-    selectPen();
+    selectColorBrush();
     selectPaletteColor(hex, paint);
     ringAnimateKey = hex + ':' + Date.now();
     releaseAllPointers();
@@ -80,21 +80,21 @@
   // selects like a tap, with two differences: the engine must be painting in
   // this swatch's color and tool from the stroke's very first dot — the
   // reactive bridges in DrawingCanvas ($effect → setColor/setEraserMode/
-  // setMagicMode) flush after this handler, so push directly here; they re-push
+  // setBrush) flush after this handler, so push directly here; they re-push
   // the same values harmlessly — and no releaseAllPointers: the press already
   // released everything (handlePaletteDown), and releasing again now would kill
   // a stroke a sibling finger started during the drag.
   function dragSelectSwatch(hex: string, paint: string) {
-    selectPen();
+    selectColorBrush();
     selectPaletteColor(hex, paint);
     ringAnimateKey = hex + ':' + Date.now();
     setEraserMode(false);
-    setMagicMode(false);
+    setBrush(toolState.brush);
     setColor(paint);
   }
 
   function selectCustomColor() {
-    selectPen();
+    selectColorBrush();
     selectCustomSwatch();
     openColorPicker(swatchEls[CUSTOM_SWATCH] ? buttonCenter(swatchEls[CUSTOM_SWATCH]) : null);
     releaseAllPointers();

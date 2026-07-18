@@ -4,6 +4,8 @@ import {
   selectPen,
   selectEraser,
   selectMagic,
+  selectBrush,
+  selectColorBrush,
   toggleEraser,
   toggleMagic,
   resetToolAfterClear,
@@ -27,26 +29,34 @@ describe('tool state', () => {
     expect(toolState.eraser).toBe(false);
   });
 
-  it('eraser and magic are mutually exclusive', () => {
+  it('selectEraser keeps the remembered brush; selecting a brush leaves the eraser', () => {
+    selectBrush('crayon');
     selectEraser();
     expect(toolState.eraser).toBe(true);
-    expect(toolState.magic).toBe(false);
+    expect(toolState.brush).toBe('crayon'); // remembered under the eraser
 
     selectMagic();
-    expect(toolState.magic).toBe(true);
+    expect(toolState.brush).toBe('magic');
     expect(toolState.eraser).toBe(false);
 
     selectEraser();
     expect(toolState.eraser).toBe(true);
-    expect(toolState.magic).toBe(false);
+    expect(toolState.brush).toBe('magic');
+  });
+
+  it('selectBrush sets the active brush and leaves the eraser', () => {
+    selectEraser();
+    selectBrush('watercolor');
+    expect(toolState.brush).toBe('watercolor');
+    expect(toolState.eraser).toBe(false);
   });
 
   it('toggleMagic flips between pen and magic, and always leaves magic for the pen', () => {
-    expect(toolState.magic).toBe(false);
+    expect(toolState.brush).toBe('pen');
     toggleMagic();
-    expect(toolState.magic).toBe(true);
+    expect(toolState.brush).toBe('magic');
     toggleMagic();
-    expect(toolState.magic).toBe(false);
+    expect(toolState.brush).toBe('pen');
     expect(toolState.eraser).toBe(false);
   });
 
@@ -54,27 +64,40 @@ describe('tool state', () => {
     selectMagic();
     toggleEraser();
     expect(toolState.eraser).toBe(true);
-    expect(toolState.magic).toBe(false);
+    expect(toolState.brush).toBe('magic'); // remembered, but the eraser is the live tool
   });
 
-  it('selectPen clears both modifiers', () => {
+  it('selectPen resets to the pen and clears the eraser', () => {
     selectMagic();
+    selectEraser();
     selectPen();
-    expect(toolState.magic).toBe(false);
+    expect(toolState.brush).toBe('pen');
     expect(toolState.eraser).toBe(false);
   });
 
-  it('resetToolAfterClear switches back to the pen when erasing', () => {
+  it('selectColorBrush keeps a color-using brush but leaves the magic brush for the pen', () => {
+    selectBrush('crayon');
+    selectColorBrush();
+    expect(toolState.brush).toBe('crayon'); // texture kept with the new color
+    expect(toolState.eraser).toBe(false);
+
+    selectMagic();
+    selectColorBrush();
+    expect(toolState.brush).toBe('pen'); // magic ignores color → fall back to the pen
+  });
+
+  it('resetToolAfterClear switches off the eraser (falling back to the brush)', () => {
+    selectBrush('watercolor');
     selectEraser();
     resetToolAfterClear();
     expect(toolState.eraser).toBe(false);
-    expect(toolState.magic).toBe(false);
+    expect(toolState.brush).toBe('watercolor');
   });
 
   it('resetToolAfterClear keeps the magic brush selected', () => {
     selectMagic();
     resetToolAfterClear();
-    expect(toolState.magic).toBe(true);
+    expect(toolState.brush).toBe('magic');
     expect(toolState.eraser).toBe(false);
   });
 
@@ -82,6 +105,6 @@ describe('tool state', () => {
     selectPen();
     resetToolAfterClear();
     expect(toolState.eraser).toBe(false);
-    expect(toolState.magic).toBe(false);
+    expect(toolState.brush).toBe('pen');
   });
 });

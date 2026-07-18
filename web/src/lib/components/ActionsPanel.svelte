@@ -10,7 +10,9 @@
     setStrokeSize,
     activeStrokeSize,
   } from '$lib/state/strokeWidth.svelte';
-  import { toolState, selectEraser, toggleMagic } from '$lib/state/tool.svelte';
+  import { toolState, selectEraser, selectBrush, BRUSHES, brushDef } from '$lib/state/tool.svelte';
+  import type { BrushKind } from '$lib/state/tool.svelte';
+  import type { CommonIconName } from './iconTypes';
   import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
   import { network } from '$lib/state/network.svelte';
@@ -33,8 +35,14 @@
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
 
   let strokeWrapperEl: HTMLDivElement | undefined = $state();
+  let brushWrapperEl: HTMLDivElement | undefined = $state();
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
   let aiBtnEl: HTMLButtonElement | undefined = $state();
+
+  // The brush the selector trigger button shows, and whether the trigger reads
+  // as "active" — i.e. a non-default brush is the live tool (not while erasing).
+  const activeBrushDef = $derived(brushDef(toolState.brush));
+  const brushActive = $derived(!toolState.eraser && toolState.brush !== 'pen');
 
   // Orientation drives the landscape palette-clearing offset below, which needs
   // the measured palette width in JS. Everything else orientation-dependent here
@@ -157,14 +165,20 @@
     const next = !settings.drawerOpen;
     setDrawerOpen(next);
     // Tidy up any open flyout as the controls tuck away.
-    if (!next) strokeState.menuOpen = false;
+    if (!next) {
+      strokeState.menuOpen = false;
+      toolState.brushMenuOpen = false;
+    }
   }
 
   onMount(() => {
-    // Click outside closes stroke menu
+    // Click outside closes the stroke-width and brush-selector flyouts.
     const onDocPointerDown = (e: PointerEvent) => {
       if (strokeState.menuOpen && strokeWrapperEl && !strokeWrapperEl.contains(e.target as Node)) {
         strokeState.menuOpen = false;
+      }
+      if (toolState.brushMenuOpen && brushWrapperEl && !brushWrapperEl.contains(e.target as Node)) {
+        toolState.brushMenuOpen = false;
       }
     };
     document.addEventListener('pointerdown', onDocPointerDown);
@@ -223,8 +237,13 @@
     openColoringBook(buttonCenter(coloringBtnEl));
   }
 
-  function handleMagicClick() {
-    toggleMagic();
+  function handleBrushBtnClick() {
+    toolState.brushMenuOpen = !toolState.brushMenuOpen;
+  }
+
+  function handleBrushSelect(kind: BrushKind) {
+    selectBrush(kind);
+    toolState.brushMenuOpen = false;
   }
 
   async function handleAiImageClick() {
@@ -322,19 +341,38 @@
         <Icon name="shapes" class="action-icon" />
       </button>
 
-      <!-- Magic brush: reveals colors as the child paints (ADR-0043) — the applied
-           coloring page's colors when one is set, otherwise a random rainbow. Works
-           on any canvas, so it's always shown. -->
-      <button
-        class="action-button"
-        class:active={toolState.magic}
-        id="magicBrushButton"
-        aria-label="Magic brush"
-        aria-pressed={toolState.magic}
-        use:scribbleTap={handleMagicClick}
-      >
-        <Icon name="magic-brush" class="action-icon" />
-      </button>
+      <!-- Brush selector: the trigger shows the active brush and opens a flyout of
+           every brush (pen, crayon, watercolor, magic). The chosen brush persists
+           back into this single button (ADR-0063). Always shown — a brush is
+           always selected. The magic brush reveals colors as the child paints
+           (ADR-0043); crayon and watercolor are textured brushes (brushRender.ts). -->
+      <div class="brush-wrapper" bind:this={brushWrapperEl}>
+        <button
+          class="action-button"
+          class:active={brushActive}
+          id="brushButton"
+          aria-label="Brush: {activeBrushDef.label}"
+          aria-haspopup="menu"
+          aria-expanded={toolState.brushMenuOpen}
+          use:scribbleTap={handleBrushBtnClick}
+        >
+          <Icon name={activeBrushDef.icon as CommonIconName} class="action-icon" />
+        </button>
+        <div class="brush-menu" role="menu" hidden={!toolState.brushMenuOpen}>
+          {#each BRUSHES as brush (brush.id)}
+            <button
+              class="action-button brush-option"
+              class:active={toolState.brush === brush.id}
+              role="menuitemradio"
+              aria-label={brush.label}
+              aria-checked={toolState.brush === brush.id}
+              use:scribbleTap={() => handleBrushSelect(brush.id)}
+            >
+              <Icon name={brush.icon as CommonIconName} class="action-icon" />
+            </button>
+          {/each}
+        </div>
+      </div>
 
       <button
         class="action-button"
@@ -748,6 +786,53 @@
      aiSpin keyframe lives in app.css since it's shared with AiImagePrompt. */
   .action-button.loading :global(.action-icon) {
     animation: aiSpin 1s linear infinite;
+  }
+
+  /* Brush selector: trigger button wrapper + flyout menu (ADR-0063). Mirrors the
+     stroke-width flyout's geometry so the two flyouts feel identical — pops up as
+     a horizontal row in landscape, out to the right in portrait, and stacks into
+     a column on narrow portrait so it clears the Parent Help Button. */
+  .brush-wrapper {
+    position: relative;
+  }
+
+  .brush-menu {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 8px);
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    padding: 6px;
+    background: var(--float-surface);
+    border: none;
+    border-radius: 16px;
+    box-shadow: var(--float-shadow-flyout);
+    z-index: 901;
+  }
+
+  @media (orientation: portrait) {
+    .brush-menu {
+      left: calc(100% + 8px);
+      bottom: 0;
+    }
+  }
+
+  @media (orientation: portrait) and (max-width: 540px) {
+    .brush-menu {
+      flex-direction: column;
+    }
+  }
+
+  .brush-menu[hidden] {
+    display: none;
+  }
+
+  /* Flyout options size to the same measured cap as the row buttons (they reuse
+     .action-button), so the flyout matches the panel; only the corner radius is
+     softened to read as a menu tile. */
+  .brush-option {
+    border-radius: 14px;
   }
 
   /* Stroke width: trigger button wrapper + flyout menu. Visibility is gated by

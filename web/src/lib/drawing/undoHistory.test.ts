@@ -87,7 +87,7 @@ function cmd(color: string, segs: number, magic = false): StrokeGroupCommand {
     color,
     lineWidth: 8,
     erase: false,
-    magic,
+    brush: magic ? 'magic' : 'pen',
   };
   return { ops: [op], wasEmpty: false };
 }

@@ -5,16 +5,28 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { renderBrushOp } from './brushRender';
+
+// The brush that laid down an op. Each brush is a distinct way of turning the
+// op's bare geometry into pixels, dispatched by renderOp() below:
+//   pen        solid stroke in `color` — the default (ADR-0004).
+//   magic      reveals the coloring page's colored fill / rainbow (ADR-0043).
+//   crayon     textured, waxy stroke (see brushRender.ts).
+//   watercolor soft, translucent stroke that pools where it overlaps.
+// Stored on the op (not just the tool state) so undo/resize/export replay each
+// op through the same brush and stay bit-identical to live drawing (ADR-0033).
+// The eraser is orthogonal (`erase`), so it isn't a brush — it removes pixels
+// under whatever brush was selected.
+export type BrushKind = 'pen' | 'magic' | 'crayon' | 'watercolor';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
 // bit-identical to its op; the stored ops are then simplified once at commit
 // (ADR-0036) so replay re-strokes far fewer segments without a visible change. A
 // 'clear' op wipes the target.
-// `magic`, when true, means the op reveals the coloring page's colored fill
-// instead of laying down `color` — its shape samples the pre-rendered color sheet
-// (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
-// undo, eraser (destination-out clears revealed pixels too), and later solid
+// `brush` selects how the op paints (see BrushKind). A missing value means the
+// default pen. Non-pen brushes are otherwise ordinary members of the command
+// log, so undo, eraser (destination-out clears their pixels too), and later
 // strokes overriding them all fall out of the existing replay for free.
 export type StrokeOp =
   | {
@@ -24,7 +36,7 @@ export type StrokeOp =
       radius: number;
       color: string;
       erase: boolean;
-      magic?: boolean;
+      brush?: BrushKind;
     }
   | {
       kind: 'path';
@@ -42,7 +54,7 @@ export type StrokeOp =
       color: string;
       lineWidth: number;
       erase: boolean;
-      magic?: boolean;
+      brush?: BrushKind;
     }
   | { kind: 'clear' };
 
@@ -61,12 +73,17 @@ export interface StrokeGroupCommand {
   keyframe?: HTMLCanvasElement | null;
 }
 
+// A dot or path op — the two ops that carry brush geometry. Shared by renderOp
+// and the per-brush renderers in brushRender.ts.
+export type InkOp = Extract<StrokeOp, { kind: 'dot' | 'path' }>;
+
 // Stroke or dot the op's bare geometry onto a target using `paint` as the
 // fill/stroke style — a solid colour for a normal op, the sheet pattern for a
-// magic one.
-function paintOpShape(
+// magic one. Exported so the per-brush renderers can reuse the exact same path
+// geometry (keeping live and replay bit-identical).
+export function paintOpShape(
   target: CanvasRenderingContext2D,
-  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>,
+  op: InkOp,
   paint: string | CanvasPattern
 ) {
   if (op.kind === 'dot') {
@@ -101,24 +118,38 @@ export function clearAllOf(target: CanvasRenderingContext2D) {
 
 // Paint one recorded op onto a target context. Used both live (target = the
 // visible ctx) and during undo/resize replay (target = the visible or baseline
-// surface). Erasing composites destination-out; a magic op reveals the color
-// sheet (source-over, its shape filled with the sheet pattern) and paints
-// nothing until the sheet has decoded; everything else lays down its solid color.
+// surface). The brush dispatch is the single point every surface shares, so a
+// crayon or watercolor stroke replays exactly as it was drawn (ADR-0033):
+//   - erasing composites destination-out (a modifier orthogonal to the brush);
+//   - a magic op reveals the color sheet (source-over, filled with the sheet
+//     pattern) and paints nothing until the sheet has decoded;
+//   - crayon/watercolor delegate to their renderers in brushRender.ts;
+//   - the pen (default) lays down its solid color.
 export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   if (op.kind === 'clear') {
     clearAllOf(target);
     return;
   }
-  if (op.magic) {
+  if (op.erase) {
+    target.globalCompositeOperation = 'destination-out';
+    paintOpShape(target, op, op.color);
+    target.globalCompositeOperation = 'source-over';
+    return;
+  }
+  const brush = op.brush ?? 'pen';
+  if (brush === 'magic') {
     const pattern = sheetPatternFor(target);
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
     return;
   }
-  target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
+  if (brush === 'crayon' || brush === 'watercolor') {
+    renderBrushOp(target, op, brush);
+    return;
+  }
   target.globalCompositeOperation = 'source-over';
+  paintOpShape(target, op, op.color);
 }
 
 // Total quadratic segments a command will re-stroke on replay — the keyframe

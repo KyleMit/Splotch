@@ -232,7 +232,7 @@ function foldOldestIntoBaseline(): boolean {
 }
 
 function commandHasMagic(command: StrokeGroupCommand): boolean {
-  return command.ops.some((op) => op.kind !== 'clear' && op.magic);
+  return command.ops.some((op) => op.kind !== 'clear' && op.brush === 'magic');
 }
 
 // An unready sheet makes renderOp intentionally paint no magic pixels (a pending
