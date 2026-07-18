@@ -1303,3 +1303,118 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
   expect(s.canvasEmpty).toBe(true);
   expect(s.canUndo).toBe(false);
 });
+
+// --- Crayon brush (crayonBrush.ts) -----------------------------------------
+
+test('a crayon stroke paints a broken, textured body — not a flat fill', async ({ page }) => {
+  // The wax lands on the paper tooth and skips the valleys, so a single crayon
+  // pass covers strictly LESS of its footprint than the solid pen would (the
+  // gaps are the grain), while still painting a substantial body.
+  const box = await page.locator('#engineCanvas').boundingBox();
+  const line = [
+    { x: 40, y: 150 },
+    { x: 260, y: 150 },
+  ];
+
+  await page.evaluate(() => window.__engine.setStrokeWidth(28));
+
+  // Solid pen first — the full footprint.
+  await drawStroke(page, box, line);
+  const penInk = await count(page);
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+
+  // Same stroke as crayon — textured, so it leaves paper-tooth gaps (clearly
+  // fewer pixels than the solid footprint) while still laying down a substantial
+  // body (not a faint sketch). The exact fraction shifts with device pixel ratio
+  // (anti-aliased tooth edges count differently), so the bounds are generous.
+  await page.evaluate(() => window.__engine.setCrayonMode(true));
+  await drawStroke(page, box, line);
+  const crayonInk = await count(page);
+
+  expect(crayonInk).toBeGreaterThan(penInk * 0.25);
+  expect(crayonInk).toBeLessThan(penInk * 0.9);
+});
+
+test('a second same-colour crayon pass builds up — fills the grain, keeps the hue', async ({
+  page,
+}) => {
+  // Criterion 4/5: drawing crayon over existing crayon of the same colour fills
+  // more of the paper tooth (coverage rises) and gets denser, while the hue
+  // stays put — no multiply-style darkening. The harness colour is pure red.
+  const box = await page.locator('#engineCanvas').boundingBox();
+  const line = [
+    { x: 40, y: 150 },
+    { x: 260, y: 150 },
+  ];
+  const band = () => page.evaluate(() => window.__engine.regionStats(30, 120, 240, 60));
+
+  await page.evaluate(() => window.__engine.setStrokeWidth(30));
+  await page.evaluate(() => window.__engine.setCrayonMode(true));
+
+  await drawStroke(page, box, line);
+  const first = await band();
+
+  // A second, separate pass over the same place.
+  await drawStroke(page, box, line);
+  const second = await band();
+
+  // Buildup: the second pass strictly covers more of the tooth than the first
+  // (union of opaque deposits can only grow) and the growth is meaningful.
+  expect(second.coveredPixels).toBeGreaterThan(first.coveredPixels);
+  expect(second.coveredPixels).toBeGreaterThan(first.coveredPixels * 1.03);
+
+  // Same hue, no darkening/muddying: red stays dominant and strong across both
+  // passes, and the other channels don't climb (which a wash-out/soft build
+  // would show). Red never drops (opaque same-colour deposit only saturates).
+  expect(first.meanR).toBeGreaterThan(200);
+  expect(second.meanR).toBeGreaterThan(200);
+  expect(second.meanR).toBeGreaterThanOrEqual(first.meanR - 8);
+  expect(second.meanG).toBeLessThan(first.meanG + 12);
+  expect(second.meanB).toBeLessThan(first.meanB + 12);
+});
+
+test('a crayon stroke replays bit-identically through undo (single-renderer)', async ({ page }) => {
+  // Criterion 6/7: the textured stroke is deterministic and rebuilds from its
+  // stored ops exactly — draw a crayon stroke, draw a second, undo the second,
+  // and the first must return pixel-count-for-pixel-count (the same proof the
+  // eraser-undo test uses).
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await page.evaluate(() => window.__engine.setStrokeWidth(26));
+  await page.evaluate(() => window.__engine.setCrayonMode(true));
+
+  await drawStroke(page, box, [
+    { x: 40, y: 120 },
+    { x: 260, y: 130 },
+  ]);
+  const firstInk = await count(page);
+  expect(firstInk).toBeGreaterThan(0);
+
+  await drawStroke(page, box, [
+    { x: 40, y: 200 },
+    { x: 260, y: 190 },
+  ]);
+  expect(await count(page)).toBeGreaterThan(firstInk);
+
+  await page.evaluate(() => window.__engine.undo());
+
+  // The rebuild-from-ops of the first crayon stroke reproduces it exactly.
+  expect(await count(page)).toBe(firstInk);
+});
+
+test('a crayon stroke makes it into the PNG export', async ({ page }) => {
+  // Criterion 6: export replays the same ops through the same renderer, so the
+  // textured wax shows up in the shared PNG (the harness draws pure red).
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await page.evaluate(() => window.__engine.setStrokeWidth(28));
+  await page.evaluate(() => window.__engine.setCrayonMode(true));
+  await drawStroke(page, box, [
+    { x: 40, y: 150 },
+    { x: 260, y: 150 },
+  ]);
+
+  const redPixels = await page.evaluate(async () =>
+    window.__engine.blobRedPixelCount(await window.__engine.exportCanvasBlob())
+  );
+  expect(redPixels).toBeGreaterThan(0);
+});

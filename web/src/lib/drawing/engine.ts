@@ -44,6 +44,12 @@ import {
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
 import {
+  nextCrayonGrain,
+  setCrayonParams,
+  warmCrayonFields,
+  type CrayonParams,
+} from './crayonBrush';
+import {
   beginCommand,
   commandCount,
   commitActiveCommand,
@@ -87,6 +93,7 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonActive = false;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +429,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    grain: ps.grain,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +458,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    grain: ps.grain,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +505,11 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  // Crayon brush: the wax-on-tooth render (crayonBrush.ts). `grain`, chosen once
+  // per stroke, is stamped onto every op so overlapping same-colour strokes
+  // build up and replay reproduces the texture exactly.
+  crayon: boolean;
+  grain: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +598,8 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayon: crayonActive && !eraserActive && !magicActive,
+    grain: crayonActive && !eraserActive && !magicActive ? nextCrayonGrain() : 0,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -1037,6 +1055,23 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+// Crayon brush on/off (crayonBrush.ts). Like the eraser/magic modifiers it sits
+// on top of the pen — the engine just tracks the flag and stamps it (plus a
+// per-stroke grain) onto each op so renderOp lays the wax-on-tooth texture.
+export function setCrayonMode(active: boolean) {
+  crayonActive = active;
+  // Bake the tooth/jitter fields now (on the selection tap) so the one-time
+  // build never spikes a drawing frame.
+  if (active) warmCrayonFields();
+}
+
+// Dev seam (mirrors setSimplifyParams): A/B the crayon's tooth/coverage/buildup
+// tunables at runtime from the /dev/engine harness (PUBLIC_ENABLE_DEV_HARNESS).
+// Production never calls it, so the tuned defaults in crayonBrush.ts stand.
+export function setCrayonBrushParams(params: Partial<CrayonParams>) {
+  setCrayonParams(params);
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

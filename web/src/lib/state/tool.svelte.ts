@@ -4,26 +4,37 @@
 // coloring page's colored fill when one is applied, otherwise a random rainbow —
 // so it works on any canvas.
 //
-// `eraser` and `magic` are mutually exclusive modifiers on top of the pen — at
-// most one is ever true. Pen is the state where both are false.
+// `eraser`, `magic`, and `crayon` are mutually exclusive modifiers on top of the
+// pen — at most one is ever true. Pen is the state where all three are false;
+// the crayon is a wax-on-tooth flavour of the pen (crayonBrush.ts).
 export const toolState = $state({
   eraser: false,
   magic: false,
+  crayon: false,
 });
 
 export function selectEraser() {
   toolState.eraser = true;
   toolState.magic = false;
+  toolState.crayon = false;
 }
 
 export function selectPen() {
   toolState.eraser = false;
   toolState.magic = false;
+  toolState.crayon = false;
 }
 
 export function selectMagic() {
   toolState.magic = true;
   toolState.eraser = false;
+  toolState.crayon = false;
+}
+
+export function selectCrayon() {
+  toolState.crayon = true;
+  toolState.eraser = false;
+  toolState.magic = false;
 }
 
 // Flip between pen and eraser. Shared by the on-screen eraser button's tap handler
@@ -38,6 +49,12 @@ export function toggleEraser() {
 export function toggleMagic() {
   if (toolState.magic) selectPen();
   else selectMagic();
+}
+
+// Flip between the crayon and the plain pen. Leaving the crayon lands on the pen.
+export function toggleCrayon() {
+  if (toolState.crayon) selectPen();
+  else selectCrayon();
 }
 
 // After the canvas is cleared, an active eraser would strand the child holding

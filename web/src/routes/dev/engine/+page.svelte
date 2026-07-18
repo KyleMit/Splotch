@@ -5,6 +5,9 @@
     setColor,
     setStrokeWidth,
     setEraserMode,
+    setMagicMode,
+    setCrayonMode,
+    setCrayonBrushParams,
     setSafeAreaInsets,
     undo,
     clearCanvas,
@@ -58,6 +61,11 @@
       setColor,
       setStrokeWidth,
       setEraserMode,
+      setMagicMode,
+      // Crayon brush (crayonBrush.ts): select it, and A/B its tooth/coverage/
+      // buildup tunables the way setSimplifyParams sweeps simplification.
+      setCrayonMode,
+      setCrayonParams: setCrayonBrushParams,
       setSafeAreaInsets,
       undo,
       clearCanvas,
@@ -135,6 +143,36 @@
       pixelAt(x: number, y: number) {
         const ctx = canvasEl.getContext('2d')!;
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
+      },
+
+      // Coverage + average ink colour over a canvas-space rect. `covered` is the
+      // fraction of pixels with any alpha (the wax's tooth coverage); meanR/G/B
+      // are averaged over the covered pixels only (their hue). Used by the crayon
+      // buildup spec to assert a second same-colour pass raises coverage without
+      // shifting hue, and by the visual-judge harness.
+      regionStats(x: number, y: number, w: number, h: number) {
+        const ctx = canvasEl.getContext('2d')!;
+        const { data } = ctx.getImageData(x, y, w, h);
+        let covered = 0;
+        let sr = 0;
+        let sg = 0;
+        let sb = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] === 0) continue;
+          covered++;
+          sr += data[i];
+          sg += data[i + 1];
+          sb += data[i + 2];
+        }
+        const total = w * h || 1;
+        const n = covered || 1;
+        return {
+          covered: covered / total,
+          coveredPixels: covered,
+          meanR: sr / n,
+          meanG: sg / n,
+          meanB: sb / n,
+        };
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,

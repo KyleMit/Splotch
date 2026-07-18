@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { crayonPaintFor } from './crayonBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -16,6 +17,11 @@ import { sheetPatternFor } from './magicBrush';
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
+// `crayon`, when true, lays `color` down through the procedural paper-tooth
+// pattern (crayonBrush.ts) instead of as a flat fill; `grain` (0..1, stamped
+// once per stroke) selects the jitter field that lets overlapping same-colour
+// strokes build up. Both are deterministic and stored on the op, so replay
+// reproduces the textured stroke exactly.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -25,6 +31,8 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      grain?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +51,8 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      grain?: number;
     }
   | { kind: 'clear' };
 
@@ -114,6 +124,14 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
+    return;
+  }
+  if (op.crayon && !op.erase) {
+    // Lay the wax through the paper-tooth pattern. Falls back to a solid fill
+    // only if the pattern can't be built (e.g. OOM) — never silently blank.
+    const pattern = crayonPaintFor(target, op.color, op.grain ?? 0.5);
+    target.globalCompositeOperation = 'source-over';
+    paintOpShape(target, op, pattern ?? op.color);
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
