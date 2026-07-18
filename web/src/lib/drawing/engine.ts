@@ -43,6 +43,7 @@ import {
   setColorSheet,
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import type { CrayonVariant } from './crayonBrush';
 import {
   beginCommand,
   commandCount,
@@ -396,6 +397,14 @@ function resyncOnReentry() {
 // buffered edge-swipe candidate that's later discarded never pollutes the undo
 // stack or the empty flag. Reset when the last finger lifts.
 let groupHasDrawn = false;
+let crayonVariant: CrayonVariant = 'wax';
+
+// Dev harness seam for comparing the wax texture with the previous solid ink.
+// The selected variant is captured in every op, so changing it never alters
+// replay, export, undo, or resize output for strokes already drawn.
+export function setCrayonVariant(variant: CrayonVariant) {
+  crayonVariant = variant;
+}
 
 function beginStrokeGroup() {
   if (groupHasDrawn) return;
@@ -422,6 +431,7 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: crayonVariant,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +459,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: crayonVariant,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;

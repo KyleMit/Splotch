@@ -56,6 +56,41 @@ test('a stroke paints pixels and flips canvasEmpty false', async ({ page }) => {
   expect(s.canUndo).toBe(true);
 });
 
+test('a second same-colour crayon pass fills the tooth without changing its hue', async ({
+  page,
+}) => {
+  const points = [
+    { x: 36, y: 150 },
+    { x: 264, y: 150 },
+  ];
+
+  await page.evaluate((p) => window.__engine.strokeSync(p), points);
+  const once = await page.evaluate(() => window.__engine.pixelsInRect(40, 147, 220, 6));
+
+  await page.evaluate((p) => window.__engine.strokeSync(p), points);
+  const twice = await page.evaluate(() => window.__engine.pixelsInRect(40, 147, 220, 6));
+
+  let texturedPixels = 0;
+  let denserPixels = 0;
+  for (let i = 0; i < once.length; i += 4) {
+    const [r, g, b, alpha] = once.slice(i, i + 4);
+    const nextAlpha = twice[i + 3];
+    if (alpha > 0 && alpha < 250) {
+      texturedPixels++;
+      expect(r).toBe(255);
+      expect(g).toBe(0);
+      expect(b).toBe(0);
+      expect(twice[i]).toBe(255);
+      expect(twice[i + 1]).toBe(0);
+      expect(twice[i + 2]).toBe(0);
+      if (nextAlpha > alpha) denserPixels++;
+    }
+  }
+
+  expect(texturedPixels).toBeGreaterThan(100);
+  expect(denserPixels).toBe(texturedPixels);
+});
+
 test('undo reverts a stroke back to an empty canvas', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
