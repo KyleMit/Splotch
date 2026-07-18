@@ -283,6 +283,400 @@ function crayonV4(target: CanvasRenderingContext2D, op: InkOp) {
   paintOpShape(target, op, pattern ?? op.color);
 }
 
+// v5: canvas-anchored crisp grain, source-over overlay. A continuous opaque wax
+// base (op.color, shared round caps → no per-op beads) overstroked with the SAME
+// geometry using a CanvasPattern of baked crisp speckles. The pattern keeps the
+// target's transform, so the grain lattice tiles from the paper origin — seamless
+// across ops and bit-identical on replay (ADR-0033). Per-color tiles are baked once
+// from a seeded PRNG and cached (LRU); no Math.random / offscreen dest-out at render.
+const C5_TILE = 64;
+const C5_MAX_TILES = 24;
+const C5_GRAIN_ALPHA = 0.92;
+
+function c5Tint(
+  base: [number, number, number],
+  to: [number, number, number],
+  t: number,
+  a: number
+) {
+  const r = (base[0] + (to[0] - base[0]) * t) | 0;
+  const g = (base[1] + (to[1] - base[1]) * t) | 0;
+  const b = (base[2] + (to[2] - base[2]) * t) | 0;
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+interface C5Speckle {
+  x: number;
+  y: number;
+  r: number;
+  a: number;
+}
+
+// Baked once: irregular (not gridded) speckle fields — a denser darker-wax mottle
+// and a lighter paper-tooth fleck field. Positions/sizes/alphas are fixed so every
+// per-color tile shares one lattice and caching only re-tints.
+let c5Fields: { dark: C5Speckle[]; light: C5Speckle[] } | null = null;
+function c5SpeckleFields() {
+  if (c5Fields) return c5Fields;
+  const rand = mulberry32(0x1a2b3c4d);
+  const make = (count: number, aMin: number, aSpan: number): C5Speckle[] => {
+    const out: C5Speckle[] = [];
+    for (let i = 0; i < count; i++) {
+      out.push({
+        x: rand() * C5_TILE,
+        y: rand() * C5_TILE,
+        r: 0.8 + rand() * 2.0,
+        a: aMin + rand() * aSpan,
+      });
+    }
+    return out;
+  };
+  c5Fields = { dark: make(150, 0.3, 0.5), light: make(132, 0.35, 0.5) };
+  return c5Fields;
+}
+
+// Draw one speckle plus wrapped copies so the tile repeats seamlessly.
+function c5Stamp(ctx: CanvasRenderingContext2D, s: C5Speckle) {
+  for (let dx = -C5_TILE; dx <= C5_TILE; dx += C5_TILE) {
+    for (let dy = -C5_TILE; dy <= C5_TILE; dy += C5_TILE) {
+      ctx.beginPath();
+      ctx.arc(s.x + dx, s.y + dy, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+const c5Tiles = new Map<string, HTMLCanvasElement>();
+function c5Tile(color: string): HTMLCanvasElement {
+  const cached = c5Tiles.get(color);
+  if (cached) {
+    c5Tiles.delete(color);
+    c5Tiles.set(color, cached);
+    return cached;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = C5_TILE;
+  canvas.height = C5_TILE;
+  const ctx = canvas.getContext('2d')!;
+  const base = rgbOf(color);
+  const { dark, light } = c5SpeckleFields();
+  for (const s of dark) {
+    ctx.fillStyle = c5Tint(base, [0, 0, 0], 0.34, s.a);
+    c5Stamp(ctx, s);
+  }
+  for (const s of light) {
+    ctx.fillStyle = c5Tint(base, [255, 255, 255], 0.6, s.a);
+    c5Stamp(ctx, s);
+  }
+  c5Tiles.set(color, canvas);
+  if (c5Tiles.size > C5_MAX_TILES) c5Tiles.delete(c5Tiles.keys().next().value!);
+  return canvas;
+}
+
+function crayonV5(target: CanvasRenderingContext2D, op: InkOp) {
+  target.globalCompositeOperation = 'source-over';
+  target.globalAlpha = 1;
+  paintOpShape(target, op, op.color);
+  const pattern = target.createPattern(c5Tile(op.color), 'repeat');
+  if (pattern) {
+    target.globalAlpha = C5_GRAIN_ALPHA;
+    paintOpShape(target, op, pattern);
+    target.globalAlpha = 1;
+  }
+}
+
+// v6: offscreen ragged-edge wax. Paint the op as a solid wax body on a private
+// scratch, then punch canvas-anchored hard grain out of it (crisp broken tooth +
+// ragged rim), keep the spine dense, and mottle within the shape's alpha. All
+// grain is baked once from a seeded PRNG and sampled in op-space (the scratch is
+// translated by -minX,-minY), so replay is bit-identical and continuous across
+// ops (ADR-0033). Blit source-over (never corrupts other strokes).
+const C6_TILE = 96;
+function c6Bounds(op: InkOp): [number, number, number, number] {
+  if (op.kind === 'dot') {
+    const pad = op.radius + 2;
+    return [op.x - pad, op.y - pad, op.x + pad, op.y + pad];
+  }
+  const pad = op.lineWidth / 2 + 2;
+  let minX = op.startX;
+  let minY = op.startY;
+  let maxX = op.startX;
+  let maxY = op.startY;
+  const grow = (x: number, y: number) => {
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  };
+  for (const seg of op.segs) {
+    grow(seg.cx, seg.cy);
+    grow(seg.x, seg.y);
+    if (seg.c2x !== undefined) grow(seg.c2x, seg.c2y!);
+  }
+  return [minX - pad, minY - pad, maxX + pad, maxY + pad];
+}
+let c6Scratch: HTMLCanvasElement | null = null;
+let c6Ctx: CanvasRenderingContext2D | null = null;
+function c6EnsureScratch(w: number, h: number): CanvasRenderingContext2D {
+  if (!c6Scratch) {
+    c6Scratch = document.createElement('canvas');
+    c6Ctx = c6Scratch.getContext('2d')!;
+  }
+  if (c6Scratch.width < w) c6Scratch.width = w;
+  if (c6Scratch.height < h) c6Scratch.height = h;
+  return c6Ctx!;
+}
+// Hard-edged holes with clustered coverage (8px coarse cells) so the bite reads as
+// waxy tooth, not per-pixel noise. Only alpha matters (dest-out).
+function c6HoleTile(
+  seed: number,
+  coverage: number,
+  aMin: number,
+  aRange: number
+): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = C6_TILE;
+  c.height = C6_TILE;
+  const g = c.getContext('2d')!;
+  const img = g.createImageData(C6_TILE, C6_TILE);
+  const rand = mulberry32(seed);
+  const cells = C6_TILE >> 3;
+  const coarse = new Float32Array(cells * cells);
+  for (let i = 0; i < coarse.length; i++) coarse[i] = rand();
+  const d = img.data;
+  for (let y = 0; y < C6_TILE; y++) {
+    for (let x = 0; x < C6_TILE; x++) {
+      const cb = coarse[(y >> 3) * cells + (x >> 3)];
+      const p = coverage * (0.35 + 1.35 * cb);
+      const o = (y * C6_TILE + x) * 4;
+      d[o + 3] = rand() < p ? (aMin + rand() * aRange) | 0 : 0;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+// Dark pressure specks composited source-atop (stays inside the wax alpha).
+function c6MottleTile(seed: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = C6_TILE;
+  c.height = C6_TILE;
+  const g = c.getContext('2d')!;
+  const img = g.createImageData(C6_TILE, C6_TILE);
+  const rand = mulberry32(seed);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    d[i + 3] = rand() < 0.42 ? (20 + rand() * 55) | 0 : 0;
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+function c6Core(op: InkOp, scale: number): InkOp {
+  return op.kind === 'dot'
+    ? { ...op, radius: Math.max(0.5, op.radius * scale) }
+    : { ...op, lineWidth: Math.max(0.5, op.lineWidth * scale) };
+}
+let c6Coarse: HTMLCanvasElement | null = null;
+let c6Fine: HTMLCanvasElement | null = null;
+let c6Mottle: HTMLCanvasElement | null = null;
+let c6CoarsePat: CanvasPattern | null = null;
+let c6FinePat: CanvasPattern | null = null;
+let c6MottlePat: CanvasPattern | null = null;
+function crayonV6(target: CanvasRenderingContext2D, op: InkOp) {
+  const [minX, minY, maxX, maxY] = c6Bounds(op);
+  const w = Math.max(1, Math.ceil(maxX - minX));
+  const h = Math.max(1, Math.ceil(maxY - minY));
+  const s = c6EnsureScratch(w, h);
+  if (!c6Coarse) {
+    c6Coarse = c6HoleTile(0x1a2b3c4d, 0.42, 120, 135);
+    c6Fine = c6HoleTile(0x51ed270b, 0.2, 70, 120);
+    c6Mottle = c6MottleTile(0x9e3779b9);
+  }
+  if (!c6CoarsePat) c6CoarsePat = s.createPattern(c6Coarse, 'repeat');
+  if (!c6FinePat) c6FinePat = s.createPattern(c6Fine!, 'repeat');
+  if (!c6MottlePat) c6MottlePat = s.createPattern(c6Mottle!, 'repeat');
+
+  s.save();
+  s.setTransform(1, 0, 0, 1, 0, 0);
+  s.globalAlpha = 1;
+  s.globalCompositeOperation = 'source-over';
+  s.clearRect(0, 0, w, h);
+  s.translate(-minX, -minY);
+  s.lineCap = 'round';
+  s.lineJoin = 'round';
+  paintOpShape(s, op, op.color);
+  s.globalCompositeOperation = 'destination-out';
+  s.fillStyle = c6CoarsePat!;
+  s.fillRect(minX, minY, w, h);
+  s.globalCompositeOperation = 'source-over';
+  paintOpShape(s, c6Core(op, 0.6), op.color);
+  s.globalCompositeOperation = 'destination-out';
+  s.fillStyle = c6FinePat!;
+  s.fillRect(minX, minY, w, h);
+  s.globalCompositeOperation = 'source-atop';
+  s.fillStyle = c6MottlePat!;
+  s.fillRect(minX, minY, w, h);
+  s.restore();
+  s.globalCompositeOperation = 'source-over';
+
+  target.save();
+  target.globalCompositeOperation = 'source-over';
+  target.globalAlpha = 1;
+  target.drawImage(c6Scratch!, 0, 0, w, h, minX, minY, w, h);
+  target.restore();
+}
+
+// v7: stippled scumble. Rasterise the op's coverage region into a fixed paper-space
+// cell grid; each covered cell paints ONE crisp filled circle whose jitter/size/
+// shade/alpha and keep-decision are a pure hash of its quantized (canvas-space) cell
+// coordinate. Because a mark is a function of the cell — not the op — overlapping ops
+// paint identical marks (seam-free, no cap beads), the surviving rim specks form no
+// periodic pattern, and dense overlapping opaque cores read as crisp wax, not blur.
+// A coverage falloff toward the rim leaves a ragged, broken-pigment edge. source-over.
+const C7_G = 2;
+const C7_LSTEP = 1.6;
+const C7_JIT = C7_G * 0.55;
+const C7_MARK_MIN = 1.0;
+const C7_MARK_SPAN = 0.9;
+const C7_A_MIN = 0.72;
+const C7_A_SPAN = 0.26;
+const C7_SHADES = 12;
+const C7_MAX_MARKS = 5000;
+const C7_S_COV = 0x1b56c4f9;
+const C7_S_JX = 0x7feb352d;
+const C7_S_JY = 0x846ca68b;
+const C7_S_R = 0xc2b2ae35;
+const C7_S_A = 0x9e3779b1;
+const C7_S_S = 0x85ebca77;
+function c7cell(qx: number, qy: number): number {
+  let h = Math.imul((qx | 0) ^ 0x9e3779b9, 0x85ebca77);
+  h = Math.imul(h ^ (qy | 0) ^ 0xc2b2ae3d, 0x27d4eb2f);
+  h ^= h >>> 15;
+  return h >>> 0;
+}
+function c7chan(base: number, salt: number): number {
+  let h = Math.imul(base ^ salt, 0x2545f491);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0x27d4eb2f);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+function c7shades(color: string): string[] {
+  const [r, g, b] = rgbOf(color);
+  const out = new Array<string>(C7_SHADES);
+  for (let i = 0; i < C7_SHADES; i++) {
+    const f = 0.8 + (i / (C7_SHADES - 1)) * 0.36;
+    out[i] =
+      `rgb(${Math.min(255, r * f) | 0},${Math.min(255, g * f) | 0},${Math.min(255, b * f) | 0})`;
+  }
+  return out;
+}
+function crayonV7(target: CanvasRenderingContext2D, op: InkOp) {
+  target.save();
+  target.globalCompositeOperation = 'source-over';
+  const shades = c7shades(op.color);
+  const visited = new Set<number>();
+  let drawn = 0;
+  let full = false;
+  const drawCell = (bx: number, by: number, u: number) => {
+    if (full) return;
+    const qx = Math.round(bx / C7_G);
+    const qy = Math.round(by / C7_G);
+    const key = ((qx & 0xffff) << 16) | (qy & 0xffff);
+    if (visited.has(key)) return;
+    visited.add(key);
+    const base = c7cell(qx, qy);
+    const cov = 1.18 - 1.05 * u * u;
+    if (c7chan(base, C7_S_COV) >= cov) return;
+    const jx = (c7chan(base, C7_S_JX) * 2 - 1) * C7_JIT;
+    const jy = (c7chan(base, C7_S_JY) * 2 - 1) * C7_JIT;
+    const r = C7_MARK_MIN + c7chan(base, C7_S_R) * C7_MARK_SPAN;
+    const a = C7_A_MIN + c7chan(base, C7_S_A) * C7_A_SPAN;
+    const idx = (c7chan(base, C7_S_S) * C7_SHADES) | 0;
+    target.globalAlpha = a;
+    target.fillStyle = shades[idx];
+    target.beginPath();
+    target.arc(qx * C7_G + jx, qy * C7_G + jy, r, 0, Math.PI * 2);
+    target.fill();
+    if (++drawn >= C7_MAX_MARKS) full = true;
+  };
+  if (op.kind === 'dot') {
+    const hw = Math.max(0.5, op.radius);
+    const Jr = Math.ceil(hw / C7_LSTEP);
+    for (let gx = -Jr; gx <= Jr && !full; gx++) {
+      for (let gy = -Jr; gy <= Jr; gy++) {
+        const lx = gx * C7_LSTEP;
+        const ly = gy * C7_LSTEP;
+        const d = Math.hypot(lx, ly);
+        if (d > hw + C7_G) continue;
+        drawCell(op.x + lx, op.y + ly, Math.min(1.05, d / hw));
+        if (full) break;
+      }
+    }
+  } else {
+    const hw = Math.max(0.5, op.lineWidth / 2);
+    const J = Math.ceil(hw / C7_LSTEP);
+    const scatter = (px: number, py: number, nx: number, ny: number) => {
+      for (let j = -J; j <= J; j++) {
+        const lat = j * C7_LSTEP;
+        drawCell(px + nx * lat, py + ny * lat, Math.min(1.05, Math.abs(lat) / hw));
+        if (full) return;
+      }
+    };
+    let x0 = op.startX;
+    let y0 = op.startY;
+    for (const seg of op.segs) {
+      const cx = seg.cx;
+      const cy = seg.cy;
+      const x1 = seg.x;
+      const y1 = seg.y;
+      const cubic = seg.c2x !== undefined;
+      const c2x = cubic ? seg.c2x! : 0;
+      const c2y = cubic ? seg.c2y! : 0;
+      const approx = cubic
+        ? Math.hypot(cx - x0, cy - y0) +
+          Math.hypot(c2x - cx, c2y - cy) +
+          Math.hypot(x1 - c2x, y1 - c2y)
+        : Math.hypot(cx - x0, cy - y0) + Math.hypot(x1 - cx, y1 - cy);
+      const steps = Math.max(1, Math.ceil(approx / C7_LSTEP));
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const mt = 1 - t;
+        let px, py, dx, dy;
+        if (cubic) {
+          const a = mt * mt * mt;
+          const b = 3 * mt * mt * t;
+          const c = 3 * mt * t * t;
+          const dd = t * t * t;
+          px = a * x0 + b * cx + c * c2x + dd * x1;
+          py = a * y0 + b * cy + c * c2y + dd * y1;
+          dx = 3 * mt * mt * (cx - x0) + 6 * mt * t * (c2x - cx) + 3 * t * t * (x1 - c2x);
+          dy = 3 * mt * mt * (cy - y0) + 6 * mt * t * (c2y - cy) + 3 * t * t * (y1 - c2y);
+        } else {
+          const a = mt * mt;
+          const b = 2 * mt * t;
+          const c = t * t;
+          px = a * x0 + b * cx + c * x1;
+          py = a * y0 + b * cy + c * y1;
+          dx = 2 * mt * (cx - x0) + 2 * t * (x1 - cx);
+          dy = 2 * mt * (cy - y0) + 2 * t * (y1 - cy);
+        }
+        let tl = Math.hypot(dx, dy);
+        if (tl < 1e-6) {
+          dx = x1 - x0;
+          dy = y1 - y0;
+          tl = Math.hypot(dx, dy) || 1;
+        }
+        scatter(px, py, -dy / tl, dx / tl);
+        if (full) break;
+      }
+      x0 = x1;
+      y0 = y1;
+      if (full) break;
+    }
+  }
+  target.restore();
+}
+
 // --- Watercolor -------------------------------------------------------------
 
 // v1: plain solid stroke — the pen-equivalent baseline the bench compares against.
@@ -482,6 +876,9 @@ const CRAYON_VARIANTS: Record<number, OpRenderer> = {
   2: crayonV2,
   3: crayonV3,
   4: crayonV4,
+  5: crayonV5,
+  6: crayonV6,
+  7: crayonV7,
 };
 
 const WATERCOLOR_VARIANTS: Record<number, OpRenderer> = {
