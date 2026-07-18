@@ -19,6 +19,31 @@
   # but adapter-netlify writes it under web/.netlify, so stage-netlify.mjs copies that one tree up.
   publish = "web/build"
 
+# Edge deny-rules (issue #347). The site is one catch-all SSR function
+# (adapter-netlify emits `config.path = ["/*"]`), so every junk path a scanner
+# probes — `/.env`, `/.git/config` — otherwise invokes (and bills) the function
+# just to 404. These `[[redirects]]` are user rules in netlify.toml, which
+# Netlify evaluates BEFORE the framework's function catch-all, so a matching
+# probe short-circuits to the static `deny.html` (served from the CDN, zero
+# invocation) with the same 404 the function used to return.
+#
+# Deliberately narrow: only unambiguous credential/VCS dotfile probes. Do NOT
+# blanket-block `*.json` — the app serves `/version.json` and the webmanifest.
+[[redirects]]
+  from = "/.env*"
+  to = "/deny.html"
+  status = 404
+
+[[redirects]]
+  from = "/.git"
+  to = "/deny.html"
+  status = 404
+
+[[redirects]]
+  from = "/.git/*"
+  to = "/deny.html"
+  status = 404
+
 [[headers]]
   for = "/*"
   [headers.values]
