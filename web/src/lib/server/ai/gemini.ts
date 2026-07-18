@@ -1,5 +1,6 @@
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import { classifyGeminiResponse, isSafetyError } from './geminiSafety';
+import { GENERATE_DEADLINE_MS, VERIFY_KEY_DEADLINE_MS } from '$lib/ai/limits';
 import type { AiImageProvider } from './provider';
 
 // The Gemini implementation of the AiImageProvider seam (ADR-0047). This module
@@ -60,7 +61,7 @@ export const geminiProvider: AiImageProvider = {
           },
         ],
         config: {
-          abortSignal: AbortSignal.timeout(120_000),
+          abortSignal: AbortSignal.timeout(GENERATE_DEADLINE_MS),
           systemInstruction: SAFETY_SYSTEM_INSTRUCTION,
           safetySettings: SAFETY_SETTINGS,
         },
@@ -87,8 +88,14 @@ export const geminiProvider: AiImageProvider = {
       await ai.models.generateContent({
         model: KEY_CHECK_MODEL,
         contents: 'ping',
-        // Keep the probe as small as possible — no thinking, one output token.
-        config: { thinkingConfig: { thinkingBudget: 0 }, maxOutputTokens: 1 },
+        // Keep the probe as small as possible — no thinking, one output token —
+        // and bound it: without this abort a hung provider would occupy the
+        // whole invocation until Netlify kills it (ADR-0063).
+        config: {
+          thinkingConfig: { thinkingBudget: 0 },
+          maxOutputTokens: 1,
+          abortSignal: AbortSignal.timeout(VERIFY_KEY_DEADLINE_MS),
+        },
       });
     } catch (err) {
       return { ok: false, reason: err instanceof Error ? err.message : String(err) };

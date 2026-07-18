@@ -49,7 +49,8 @@ deliberately generous limit (30/minute).
 * **+** Token revocation is immediate (no app update needed).
 * **+** Usage audit trail without a managed database.
 * **-** Adds a server round-trip; generation latency is network-bound in addition to model latency
-  (a 120-second timeout is in place).
+  (the server aborts the model call with headroom below Netlify's measured 26-second
+  synchronous-function ceiling so Splotch, not the platform, owns the timeout — ADR-0063).
 * **-** In-memory rate limiting resets on Netlify cold starts and does not coordinate across
   concurrent instances — it's a cost guardrail, not a hard boundary.
 * **-** Netlify Blobs is only available in the Netlify runtime; under local `vite dev` token edits

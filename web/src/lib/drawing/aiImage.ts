@@ -14,6 +14,7 @@ import { exportCanvasBlob } from './engine';
 import { readAiImageResponse } from './aiImageResponse';
 import { getActiveOverlayImage } from './overlay';
 import { saveImageBlob } from './screenshot';
+import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 
 // Signature of the drawing saved on the previous AI run. Lets us skip re-saving
 // the child's artwork when they re-roll a new style on an unchanged drawing —
@@ -48,8 +49,6 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, ownsRun: () => bo
   lastSavedDrawingSig = sig;
 }
 
-const AI_TIMEOUT_MS = 120_000;
-
 export async function generateAiImage({
   blob = null,
   style = '',
@@ -64,7 +63,7 @@ export async function generateAiImage({
   // the preview in once the canvas export finishes — so the spinner never waits
   // on the export, even when customization is off and we skip the picker.
   const runId = startAiGeneration(blob ? URL.createObjectURL(blob) : null, controller);
-  const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
 
   try {
     const imageBlob =
@@ -102,7 +101,14 @@ export async function generateAiImage({
         );
         return;
       case 'error':
-        throw new Error(`AI image request failed (${response.status}): ${response.detail}`);
+        // A 5xx is transient — an upstream Gemini failure or the server aborting
+        // a too-slow call under Netlify's 26s ceiling (ADR-0063) — so offer the
+        // same drawing again rather than a dead-end generic error. A 4xx (a
+        // malformed/oversized request the client never actually sends) stays
+        // generic.
+        console.error(`AI image request failed (${response.status}): ${response.detail}`);
+        failAiGeneration(runId, undefined, response.status >= 500 ? 'retry' : 'generic');
+        return;
     }
     const outBlob = response.blob;
     const committed = finishAiGeneration(runId, URL.createObjectURL(outBlob));

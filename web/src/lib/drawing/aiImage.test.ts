@@ -237,7 +237,7 @@ describe('generateAiImage response handling', () => {
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
   });
 
-  it('shows generic state and logs a generic response error without auto-saving', async () => {
+  it('shows the retry state on a 5xx (transient upstream/timeout) without auto-saving', async () => {
     mocks.settings.autoSaveAiEnabled = true;
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
     vi.stubGlobal(
@@ -253,12 +253,30 @@ describe('generateAiImage response handling', () => {
 
     expect(ui.aiGenerating).toBe(false);
     expect(ui.aiError).toBe(true);
-    expect(ui.aiErrorKind).toBe('generic');
+    expect(ui.aiErrorKind).toBe('retry');
     expect(ui.aiErrorMessage).toBeNull();
-    expect(console.error).toHaveBeenCalledOnce();
-    const logged = vi.mocked(console.error).mock.calls[0][0];
-    expect(logged).toBeInstanceOf(Error);
-    expect((logged as Error).message).toBe('AI image request failed (502): Upstream unavailable');
+    expect(console.error).toHaveBeenCalledWith(
+      'AI image request failed (502): Upstream unavailable'
+    );
+    expect(mocks.saveImageBlob).not.toHaveBeenCalled();
+  });
+
+  it('shows the generic state on a 4xx (client-side) response', async () => {
+    mocks.settings.autoSaveAiEnabled = true;
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('Image is too large', { status: 413 }))
+    );
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { generateAiImage } = await import('./aiImage');
+    const { ui } = await import('$lib/state/ui.svelte');
+
+    await generateAiImage();
+
+    expect(ui.aiErrorKind).toBe('generic');
+    expect(console.error).toHaveBeenCalledWith('AI image request failed (413): Image is too large');
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
   });
 
