@@ -118,7 +118,8 @@
     "prerelease": "npm run check:assets && npm run check:assets:manifest",
     "release": "node scripts/release.mjs",
     "perf:units": "PERF_MARKS=true node scripts/perf/stroke-units.mjs",
-    "perf:brush": "PERF_MARKS=true node scripts/perf/brush-bench.mjs"
+    "perf:brush": "PERF_MARKS=true node scripts/perf/brush-bench.mjs",
+    "perf:brush:sheet": "node scripts/perf/brush-contact-sheet.mjs"
   },
   "scripts-info": {
     "info": "Lists every npm script with its description (this output)",
@@ -236,7 +237,8 @@
     "prerelease": "check:assets + check:assets:manifest gates before release",
     "release": "Cut a release from releases/<version>.md: bump versions, commit, tag, push (use the /release command to draft notes first)",
     "perf:units": "Per-stroke fidelity unit tests for the drawing engine: draws each of a battery of strokes (synthetic primitives dot→scribble + every stroke extracted from the saved real sessions) live, forces one rebuild-from-stored-ops, and STRICTLY diffs (0px exact ink mismatch, worst coherent shift distance, extent delta), writing per-stroke live/rebuilt/diff PNGs and a pass/fail table. Verifies undo is pixel-identical. npm run perf:units [-- --no-build --filter=<name> --enabled --mode=midpoint|spline --no-reduce]",
-    "perf:brush": "A/B the textured-brush render variants (ADR-0063) from ONE build: drives /dev/engine through a fixed synthetic battery (long squiggles + an overlapping cluster + short dashes) for each variant of a brush, reporting per-variant draw cost (total/avg/max engine.draw), rebuild cost (one undo replay), opaque-pixel count, and a canvas screenshot for visual comparison. npm run perf:brush -- --brush=crayon|watercolor --variants=1,2,3 [--no-build --throttle=N]. Writes brush-bench.json + <brush>-v<n>.png to perf-profiles/"
+    "perf:brush": "A/B the textured-brush render variants (ADR-0065) from ONE build: drives /dev/engine through a fixed synthetic battery (long squiggles + an overlapping cluster + short dashes) for each variant of a brush, reporting per-variant draw cost (total/avg/max engine.draw), rebuild cost (one undo replay), opaque-pixel count, and a canvas screenshot for visual comparison. npm run perf:brush -- --brush=crayon|watercolor --variants=1,2,3 [--no-build --throttle=N]. Writes brush-bench.json + <brush>-v<n>.png to perf-profiles/",
+    "perf:brush:sheet": "Visual contact sheet of the brush-render variants (ADR-0065): renders every variant of crayon and watercolor across a battery of small multi-colour example drawings (some with overlapping strokes of different colours, some without) through the real engine on paper, then composites a labelled grid (rows = variants, columns = drawings) per brush. npm run perf:brush:sheet [-- --no-build]. Writes contact-<brush>.png to perf-profiles/"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
