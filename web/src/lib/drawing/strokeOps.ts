@@ -16,6 +16,8 @@ import { sheetPatternFor } from './magicBrush';
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
+export type CrayonVariant = 'wax' | 'solid';
+
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -25,6 +27,10 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      // A stroke-local seed makes the wax tooth deterministic while giving a
+      // later pass a different set of translucent paper pores to fill.
+      textureSeed?: number;
+      crayonVariant?: CrayonVariant;
     }
   | {
       kind: 'path';
@@ -43,6 +49,8 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      textureSeed?: number;
+      crayonVariant?: CrayonVariant;
     }
   | { kind: 'clear' };
 
@@ -61,9 +69,32 @@ export interface StrokeGroupCommand {
   keyframe?: HTMLCanvasElement | null;
 }
 
-// Stroke or dot the op's bare geometry onto a target using `paint` as the
-// fill/stroke style — a solid colour for a normal op, the sheet pattern for a
-// magic one.
+// A tiny, seeded translucent pattern is the crayon's paper tooth. Its opacity is
+// deliberately varied rather than binary: individual passes look waxy, while an
+// overlapping same-colour pass fills lighter pores without changing hue.
+function crayonPattern(
+  target: CanvasRenderingContext2D,
+  seed: number,
+  color: string
+): CanvasPattern | null {
+  const tile = document.createElement('canvas');
+  tile.width = 8;
+  tile.height = 8;
+  const texture = tile.getContext('2d');
+  if (!texture || !texture.fillRect || !texture.getImageData || !texture.putImageData) return null;
+  texture.fillStyle = color;
+  texture.fillRect(0, 0, 8, 8);
+  const image = texture.getImageData(0, 0, 8, 8);
+  let state = seed >>> 0;
+  for (let i = 0; i < image.data.length; i += 4) {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    // Fine, non-binary tooth: no harsh holes and no soft blur.
+    image.data[i + 3] = 132 + ((state >>> 24) % 105);
+  }
+  texture.putImageData(image, 0, 0);
+  return target.createPattern(tile, 'repeat');
+}
+
 function paintOpShape(
   target: CanvasRenderingContext2D,
   op: Extract<StrokeOp, { kind: 'dot' | 'path' }>,
@@ -85,6 +116,28 @@ function paintOpShape(
     }
     target.stroke();
   }
+}
+
+function paintCrayon(
+  target: CanvasRenderingContext2D,
+  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
+) {
+  const pattern = crayonPattern(target, op.textureSeed ?? 0, op.color);
+  if (!pattern) {
+    paintOpShape(target, op, op.color);
+    return;
+  }
+  // The texture is pre-tinted with op.color, so source-over buildup cannot
+  // darken or muddy same-colour wax.
+  target.save();
+  target.globalCompositeOperation = 'source-over';
+  target.globalAlpha = 0.5;
+  target.fillStyle = op.color;
+  target.strokeStyle = op.color;
+  paintOpShape(target, op, op.color);
+  target.globalAlpha = 0.7;
+  paintOpShape(target, op, pattern);
+  target.restore();
 }
 
 // Clear everything a target could be showing. The visible ctx's user space is
@@ -117,7 +170,8 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
+  if (op.erase || op.crayonVariant === 'solid') paintOpShape(target, op, op.color);
+  else paintCrayon(target, op);
   target.globalCompositeOperation = 'source-over';
 }
 

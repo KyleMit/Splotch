@@ -1303,3 +1303,41 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
   expect(s.canvasEmpty).toBe(true);
   expect(s.canUndo).toBe(false);
 });
+
+test('a second same-colour crayon pass builds wax density without changing hue', async ({
+  page,
+}) => {
+  const first = await page.evaluate(() => {
+    window.__engine.setStrokeWidth(32);
+    window.__engine.strokeSync(
+      [
+        { x: 50, y: 150 },
+        { x: 250, y: 150 },
+      ],
+      'pen'
+    );
+    return Array.from({ length: 160 }, (_, offset) => window.__engine.pixelAt(70 + offset, 150));
+  });
+
+  const second = await page.evaluate(() => {
+    window.__engine.strokeSync(
+      [
+        { x: 50, y: 150 },
+        { x: 250, y: 150 },
+      ],
+      'pen'
+    );
+    return Array.from({ length: 160 }, (_, offset) => window.__engine.pixelAt(70 + offset, 150));
+  });
+
+  const meanAlpha = (pixels: number[][]) =>
+    pixels.reduce((total, [, , , alpha]) => total + alpha, 0) / pixels.length;
+  expect(meanAlpha(second)).toBeGreaterThan(meanAlpha(first) + 20);
+
+  for (const [red, green, blue, alpha] of second) {
+    if (alpha === 0) continue;
+    expect(red).toBeGreaterThan(240);
+    expect(green).toBeLessThan(8);
+    expect(blue).toBeLessThan(8);
+  }
+});

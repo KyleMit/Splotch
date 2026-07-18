@@ -42,7 +42,7 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { renderOp, clearAllOf, type CrayonVariant, type StrokeOp } from './strokeOps';
 import {
   beginCommand,
   commandCount,
@@ -396,6 +396,14 @@ function resyncOnReentry() {
 // buffered edge-swipe candidate that's later discarded never pollutes the undo
 // stack or the empty flag. Reset when the last finger lifts.
 let groupHasDrawn = false;
+let crayonPassOrdinal = 0;
+let crayonVariant: CrayonVariant = 'wax';
+
+// Dev-harness A/B seam. Each op stores the active choice, so replay never
+// depends on mutable renderer state.
+export function setCrayonVariant(variant: CrayonVariant) {
+  crayonVariant = variant;
+}
 
 function beginStrokeGroup() {
   if (groupHasDrawn) return;
@@ -422,6 +430,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    textureSeed: ps.textureSeed,
+    crayonVariant: ps.crayonVariant,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +459,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    textureSeed: ps.textureSeed,
+    crayonVariant: ps.crayonVariant,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +506,8 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  textureSeed: number;
+  crayonVariant: CrayonVariant;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +596,13 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayonVariant,
+    textureSeed:
+      ((Math.round(x) * 73856093) ^
+        (Math.round(y) * 19349663) ^
+        (e.pointerId * 83492791) ^
+        (++crayonPassOrdinal * 2654435761)) >>>
+      0,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
