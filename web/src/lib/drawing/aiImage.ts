@@ -16,6 +16,37 @@ import { getActiveOverlayImage } from './overlay';
 import { saveImageBlob } from './screenshot';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 
+const UPLOAD_WEBP_QUALITY = 0.85;
+
+// Transcode the composited drawing to WebP for the upload only. Decoding the PNG
+// and re-encoding is exact on the source pixels, so the model sees the same
+// image at a fraction of the bytes. Returns null (caller falls back to the PNG)
+// if the platform can't decode/encode or the encoder declines.
+async function encodeWebpUpload(png: Blob): Promise<Blob | null> {
+  try {
+    const bitmap = await createImageBitmap(png);
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      bitmap.close();
+      return null;
+    }
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    const webp = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/webp', UPLOAD_WEBP_QUALITY)
+    );
+    // A platform without WebP encoding hands back a PNG (or null) here; only take
+    // the result when it's genuinely smaller WebP, so we never upload a fatter
+    // re-encode than the original.
+    return webp && webp.type === 'image/webp' && webp.size < png.size ? webp : null;
+  } catch {
+    return null;
+  }
+}
+
 // Signature of the drawing saved on the previous AI run. Lets us skip re-saving
 // the child's artwork when they re-roll a new style on an unchanged drawing —
 // the AI image is always fresh, but the drawing copy would just be a duplicate.
@@ -75,13 +106,27 @@ export async function generateAiImage({
     }
     if (!blob) setAiPreview(runId, URL.createObjectURL(imageBlob));
 
+    // Upload a high-quality WebP rather than the PNG: a flat-color toddler drawing
+    // encodes to a fraction of the bytes, so the single buffered generate-image
+    // function (ADR-0063) copies and base64s far less, and the smaller upload eats
+    // less of the 26s budget. Lossy is a non-issue — the model reinterprets the
+    // drawing anyway, and q0.85 is visually lossless on this input (issue #345). We
+    // keep imageBlob (the pristine PNG) for the preview and the gallery auto-save,
+    // and encode a throwaway WebP copy purely for the wire; if the platform can't
+    // encode WebP we fall back to the PNG.
+    const uploadBlob = (await encodeWebpUpload(imageBlob)) ?? imageBlob;
+
     const form = new FormData();
     // Prefer the parent's own Gemini key (BYOK); fall back to a managed access
     // token. The server uses whichever it receives — a key bills the parent's
     // Google account, a token uses ours.
     if (settings.aiUserApiKey) form.append('apiKey', settings.aiUserApiKey);
     else form.append('token', settings.aiAccessToken);
-    form.append('image', imageBlob, 'drawing.png');
+    form.append(
+      'image',
+      uploadBlob,
+      uploadBlob.type === 'image/webp' ? 'drawing.webp' : 'drawing.png'
+    );
     if (style) form.append('style', style);
 
     const res = await fetch(apiUrl('/api/generate-image'), {

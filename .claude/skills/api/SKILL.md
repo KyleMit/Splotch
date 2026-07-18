@@ -42,14 +42,15 @@ where valid traffic is deliberately keyed per token, not per IP) throttles just 
 
 ### `POST /api/generate-image`
 
-Generates a stylized image from a drawing. `multipart/form-data` with the PNG, style prompt, and
-either an allow-listed access token or a BYO Gemini key. Managed tokens are rate-limited per token
-(15/min); BYOK requests are rate-limited per IP with a deliberately generous limit (30/min), because
-the branch is otherwise unauthenticated and its 502-vs-200 result is a key-validity oracle. Invalid
-managed tokens are an access-code oracle, so failed guesses share `/api/verify-access-code`'s per-IP
-budget: a limited IP gets the standard 429 before the token is even checked (no allowlist read),
-while valid tokens never touch that bucket. See `web/src/routes/api/generate-image` and ADR-0006 /
-ADR-0014.
+Generates a stylized image from a drawing. `multipart/form-data` with the drawing image (the client
+uploads a high-quality WebP to keep the payload small — the allowlist is `image/png`, `image/jpeg`,
+`image/webp`), style prompt, and either an allow-listed access token or a BYO Gemini key. Managed
+tokens are rate-limited per token (15/min); BYOK requests are rate-limited per IP with a
+deliberately generous limit (30/min), because the branch is otherwise unauthenticated and its
+502-vs-200 result is a key-validity oracle. Invalid managed tokens are an access-code oracle, so
+failed guesses share `/api/verify-access-code`'s per-IP budget: a limited IP gets the standard 429
+before the token is even checked (no allowlist read), while valid tokens never touch that bucket.
+See `web/src/routes/api/generate-image` and ADR-0006 / ADR-0014.
 
 On success returns the image bytes. Failure modes are split so the client can guide the child
 correctly (ADR-0023): a **`422`** means Gemini refused the drawing on **safety** grounds — the child

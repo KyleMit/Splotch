@@ -940,7 +940,7 @@ test('the AI button posts the drawing and reveals the generated result', async (
   let postedImage = false;
   await page.route('**/api/generate-image', async (route) => {
     const req = route.request();
-    postedImage = req.method() === 'POST' && (req.postData() ?? '').includes('drawing.png');
+    postedImage = req.method() === 'POST' && (req.postData() ?? '').includes('drawing.webp');
     await route.fulfill({ status: 200, contentType: 'image/png', body: png });
   });
 
