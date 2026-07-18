@@ -56,6 +56,40 @@ test('a stroke paints pixels and flips canvasEmpty false', async ({ page }) => {
   expect(s.canUndo).toBe(true);
 });
 
+test('a second same-colour crayon pass progressively fills tooth without changing hue', async ({
+  page,
+}) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  const stroke = [
+    { x: 40, y: 150 },
+    { x: 260, y: 150 },
+  ];
+
+  await drawStroke(page, box, stroke);
+  const first = await page.evaluate(() => window.__engine.coverageIn(70, 142, 160, 16));
+  const firstLiveRegion = await page.evaluate(() => window.__engine.coverageIn(70, 142, 70, 16));
+
+  // A second pass must paint immediately, rather than deferring accumulation to
+  // stroke end. Hold it down halfway across the first stroke before sampling.
+  if (!box) throw new Error('canvas has no bounding box');
+  await page.mouse.move(box.x + 40, box.y + 150);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 150, box.y + 150);
+  const live = await page.evaluate(() => window.__engine.coverageIn(70, 142, 70, 16));
+  await page.mouse.move(box.x + 260, box.y + 150);
+  await page.mouse.up();
+  const second = await page.evaluate(() => window.__engine.coverageIn(70, 142, 160, 16));
+
+  expect(first.alpha).toBeGreaterThan(0);
+  expect(live.alpha).toBeGreaterThan(firstLiveRegion.alpha);
+  expect(second.alpha).toBeGreaterThan(first.alpha * 1.12);
+  // Readback is premultiplied by coverage, so compare the colour-to-alpha ratio:
+  // density rises while the red wax hue stays clean.
+  expect(second.red / second.alpha).toBeGreaterThan(0.98);
+  expect(second.green).toBeLessThan(15);
+  expect(second.blue).toBeLessThan(15);
+});
+
 test('undo reverts a stroke back to an empty canvas', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 

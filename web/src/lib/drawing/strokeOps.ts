@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { crayonCompositeOperation, crayonPaint } from './crayonBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -25,6 +26,7 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayonSeed?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +45,7 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayonSeed?: number;
     }
   | { kind: 'clear' };
 
@@ -116,8 +119,14 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     paintOpShape(target, op, pattern);
     return;
   }
-  target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
+  target.globalCompositeOperation = op.erase ? 'destination-out' : crayonCompositeOperation();
+  paintOpShape(
+    target,
+    op,
+    op.erase || op.crayonSeed === undefined
+      ? op.color
+      : crayonPaint(target, op.color, op.crayonSeed)
+  );
   target.globalCompositeOperation = 'source-over';
 }
 

@@ -11,6 +11,7 @@
     isCanvasEmpty,
     exportCanvasBlob,
     getUndoDebug,
+    setCrayonRenderVariant,
     setSimplifyParams,
     setScreenAngleOverride,
     getViewState,
@@ -27,7 +28,7 @@
     __engine: Record<string, unknown>;
     __engineReady: boolean;
   }
-  const win = window as unknown as Window & EngineHarnessWindow;
+  let win: Window & EngineHarnessWindow;
 
   // Mirrors how the app wires the engine (see DrawingCanvas.svelte), but routes
   // the undo/empty callbacks into a window object the Playwright spec inspects,
@@ -46,6 +47,7 @@
   }
 
   onMount(() => {
+    win = window as unknown as Window & EngineHarnessWindow;
     wireEngine();
 
     win.__engineState = { canUndo: false, canvasEmpty: true };
@@ -64,6 +66,7 @@
       isCanvasEmpty,
       exportCanvasBlob,
       getUndoDebug,
+      setCrayonRenderVariant,
       setSimplifyParams,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
@@ -135,6 +138,28 @@
       pixelAt(x: number, y: number) {
         const ctx = canvasEl.getContext('2d')!;
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
+      },
+
+      coverageIn(x: number, y: number, width: number, height: number) {
+        const ctx = canvasEl.getContext('2d')!;
+        const { data } = ctx.getImageData(x, y, width, height);
+        let alpha = 0;
+        let red = 0;
+        let green = 0;
+        let blue = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          alpha += data[i + 3];
+          red += data[i];
+          green += data[i + 1];
+          blue += data[i + 2];
+        }
+        const pixels = data.length / 4;
+        return {
+          alpha: alpha / pixels,
+          red: red / pixels,
+          green: green / pixels,
+          blue: blue / pixels,
+        };
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,

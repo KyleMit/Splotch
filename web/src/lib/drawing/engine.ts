@@ -43,6 +43,7 @@ import {
   setColorSheet,
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { nextCrayonSeed, setCrayonVariant, type CrayonVariant } from './crayonBrush';
 import {
   beginCommand,
   commandCount,
@@ -422,6 +423,7 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayonSeed: ps.crayonSeed,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +451,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayonSeed: ps.crayonSeed,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +497,7 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayonSeed: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +586,7 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayonSeed: nextCrayonSeed(),
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -900,6 +905,12 @@ export function getUndoDebug(): {
 export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?: number }) {
   if (params.keyframeThreshold !== undefined) setKeyframeSegmentThreshold(params.keyframeThreshold);
   setSimplifyOptions(params);
+}
+
+// Dev visual-comparison seam. Production keeps the waxy tooth-coverage variant;
+// /dev/engine can temporarily switch to the legacy flat renderer for A/B review.
+export function setCrayonRenderVariant(variant: CrayonVariant) {
+  setCrayonVariant(variant);
 }
 
 // --- Mount / unmount ---------------------------------------------------------
