@@ -30,41 +30,88 @@ const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const ACCESS_TOKEN_HEADER = 'x-access-token';
 const API_KEY_HEADER = 'x-api-key';
 
+const contentTypeOf = (request: Request) =>
+  (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+
+const asString = (value: FormDataEntryValue | null): string | null =>
+  typeof value === 'string' ? value : null;
+
+interface GenerationRequest {
+  token: string | null;
+  apiKey: string | null;
+  style: string | null;
+  // Deferred so the ≤15 MB body isn't buffered until authorization succeeds — an
+  // unauthorized request never costs us the read. (The multipart shape has
+  // already buffered by necessity; only the raw path actually saves the read.)
+  readImage: () => Promise<{ bytes: Buffer; mimeType: string }>;
+}
+
+// Two request shapes are accepted (ADR-0064):
+//   • raw body  — the current contract: image bytes as the body, credentials in
+//                 headers, style in the query string. One arrayBuffer read, no
+//                 multipart parse or copy.
+//   • multipart — the legacy contract (token/apiKey/image/style form fields).
+//                 Shipped native builds and PWA clients on a stale service worker
+//                 predate the raw-body switch and still send this; native apps
+//                 can't be updated in lockstep with a server deploy, so we keep
+//                 accepting it rather than 403 them for missing credential
+//                 headers. Remove this branch once the oldest supported client
+//                 sends the raw body.
+async function readGenerationRequest(request: Request, url: URL): Promise<GenerationRequest> {
+  if (contentTypeOf(request) === 'multipart/form-data') {
+    // Credentials live in the body here, so the whole envelope is buffered and
+    // parsed up front — the cost the raw path exists to skip.
+    const form = await request.formData();
+    const imageFile = form.get('image');
+    return {
+      token: asString(form.get('token')),
+      apiKey: asString(form.get('apiKey')),
+      style: asString(form.get('style')),
+      readImage: async () => {
+        if (!(imageFile instanceof Blob)) throw error(400, 'Missing image');
+        if (imageFile.size > MAX_IMAGE_BYTES) throw error(413, 'Image is too large');
+        return { bytes: Buffer.from(await imageFile.arrayBuffer()), mimeType: imageFile.type };
+      },
+    };
+  }
+  return {
+    token: request.headers.get(ACCESS_TOKEN_HEADER),
+    apiKey: request.headers.get(API_KEY_HEADER),
+    style: url.searchParams.get('style'),
+    readImage: async () => {
+      // Reject an oversized body before buffering it. Content-Length can be
+      // absent or wrong, so the byte length is re-checked after the read.
+      const declaredLength = Number(request.headers.get('content-length'));
+      if (Number.isFinite(declaredLength) && declaredLength > MAX_IMAGE_BYTES) {
+        throw error(413, 'Image is too large');
+      }
+      // Buffer.from(ArrayBuffer) wraps without copying (unlike the TypedArray
+      // overload), so the upload is only held in memory once.
+      const bytes = Buffer.from(await request.arrayBuffer());
+      if (bytes.byteLength === 0) throw error(400, 'Missing image');
+      if (bytes.byteLength > MAX_IMAGE_BYTES) throw error(413, 'Image is too large');
+      return { bytes, mimeType: contentTypeOf(request) };
+    },
+  };
+}
+
 export const POST: RequestHandler = async ({ request, url, platform, getClientAddress }) => {
-  const token = request.headers.get(ACCESS_TOKEN_HEADER);
-  const apiKey = request.headers.get(API_KEY_HEADER);
-  const style = url.searchParams.get('style');
+  const source = await readGenerationRequest(request, url);
 
   const authorization = await authorizeGenerationRequest({
-    apiKey,
-    token,
+    apiKey: source.apiKey,
+    token: source.token,
     clientAddress: getClientAddress(),
   });
   if (authorization instanceof Response) return authorization;
 
-  // Reject an oversized body before buffering it. Content-Length can be absent
-  // or wrong, so the actual byte length is still checked after the read.
-  const declaredLength = Number(request.headers.get('content-length'));
-  if (Number.isFinite(declaredLength) && declaredLength > MAX_IMAGE_BYTES) {
-    throw error(413, 'Image is too large');
-  }
+  const { bytes: inputBytes, mimeType } = await source.readImage();
   // An empty type is fine (default to PNG below); only reject a type that's
-  // present and not on the allowlist. Strip any `; charset=…` parameter first.
-  const mimeType = (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+  // present and not on the allowlist.
   if (mimeType && !ALLOWED_IMAGE_TYPES.includes(mimeType)) {
     throw error(415, 'Unsupported image type');
   }
-
-  // Buffer.from(ArrayBuffer) wraps without copying (unlike the TypedArray
-  // overload), so the ≤15 MB upload is only held in memory once — and reading
-  // the raw body skips the multipart parse + copy the old FormData path paid.
-  const inputBytes = Buffer.from(await request.arrayBuffer());
-  if (inputBytes.byteLength === 0) {
-    throw error(400, 'Missing image');
-  }
-  if (inputBytes.byteLength > MAX_IMAGE_BYTES) {
-    throw error(413, 'Image is too large');
-  }
+  const style = source.style;
   const effectiveKey = requireEffectiveGenerationKey(authorization);
 
   const finalPrompt = buildPromptForStyle(style, STYLE_SUFFIXES);

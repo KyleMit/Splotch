@@ -61,6 +61,47 @@ test('lets a normal-sized, allowed upload past the guards', async ({ request }) 
   expect(res.status()).not.toBe(415);
 });
 
+// Legacy multipart POST — the shape shipped native builds (and PWA clients on a
+// stale service worker) still send after the raw-body switch (ADR-0064). The
+// server must keep accepting it so a deploy doesn't 403 clients that can't be
+// updated in lockstep. A multipart form IS a form submission, so the production
+// build's CSRF guard needs a matching Origin (which the real cross-origin native
+// request sends and `trustedOrigins` allows) — mirror that here.
+function postLegacyMultipart(
+  request: APIRequestContext,
+  baseURL: string | undefined,
+  fields: { apiKey?: string; token?: string; buffer: Buffer; mimeType: string; fileName?: string }
+) {
+  const multipart: Record<string, string | { name: string; mimeType: string; buffer: Buffer }> = {
+    image: {
+      name: fields.fileName ?? 'drawing.png',
+      mimeType: fields.mimeType,
+      buffer: fields.buffer,
+    },
+  };
+  if (fields.apiKey) multipart.apiKey = fields.apiKey;
+  if (fields.token) multipart.token = fields.token;
+  return request.post('/api/generate-image', { multipart, headers: { origin: baseURL ?? '' } });
+}
+
+test('still accepts the legacy multipart contract (shipped native clients)', async ({
+  request,
+  baseURL,
+}) => {
+  // A valid BYOK request in the old multipart shape must reach the model call —
+  // i.e. the credential is read from the form field, not a header — so it is NOT
+  // rejected by the auth gate (403) or the guards. The throwaway key fails
+  // downstream (≈502), which is past every check that matters here.
+  const res = await postLegacyMultipart(request, baseURL, {
+    apiKey: 'byok-test-key',
+    buffer: TINY_PNG,
+    mimeType: 'image/png',
+  });
+  expect(res.status()).not.toBe(403);
+  expect(res.status()).not.toBe(413);
+  expect(res.status()).not.toBe(415);
+});
+
 test('throttles a managed token hammered in a burst', async ({ request, baseURL }, testInfo) => {
   // Use a deliberately unsupported type (gif → 415) so each request is rejected
   // *before* the Gemini call — the per-token rate limiter counts the hit first,

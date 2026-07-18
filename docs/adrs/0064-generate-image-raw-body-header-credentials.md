@@ -25,7 +25,7 @@ input is the `style` **enum key**, which the server maps through an allowlist in
 
 ## Decision
 
-The request contract for `POST /api/generate-image` is:
+The **client** contract for `POST /api/generate-image` is:
 
 * **Body:** the raw image bytes. `Content-Type: image/png | image/jpeg | image/webp` carries the
   type (an absent type defaults to PNG); the server validates it against the same allowlist and
@@ -36,33 +36,44 @@ The request contract for `POST /api/generate-image` is:
 * **Style — a query param:** `?style=Magical`. It is a short, non-secret, allow-listed enum, so the
   one field that lands in the URL is the only one that is safe there.
 
+The **server** accepts that raw shape **and the legacy `multipart/form-data` shape**
+(`token`/`apiKey`/`image`/`style` fields) it replaced. This backward-compat window is not optional:
+the native apps are a static export that calls the **hosted** API and can only be updated through an
+app-store release, and PWA web clients can run a cached service-worker bundle across a deploy — so a
+server rollout is never atomic with its clients. If the server accepted only the raw shape, every
+already-installed client would post multipart with no credential headers, read `null` credentials,
+and get a `403` before the body is even inspected — breaking AI generation until each user updated.
+The handler branches on `Content-Type`: multipart requests are parsed as before (credentials from
+form fields), everything else is read as a raw body. The multipart branch is a labelled shim to
+delete once the oldest supported client sends the raw body.
+
 Supporting changes: the CORS allow-list (`hooks.server.ts`) adds `X-Access-Token, X-Api-Key` so the
-native apps' cross-origin preflight passes. The oversized-body guard now checks `Content-Length` up
-front (cheap reject) and re-checks the actual byte length after the read, since `Content-Length` can
-be absent or wrong. The `15 MiB` `MAX_IMAGE_BYTES` cap and the 400/413/415 failure codes are
-unchanged.
+native apps' cross-origin preflight passes. The raw path checks `Content-Length` up front (cheap
+reject) and re-checks the actual byte length after the read, since `Content-Length` can be absent or
+wrong. The `15 MiB` `MAX_IMAGE_BYTES` cap and the 400/413/415 failure codes are unchanged on both
+paths.
 
 ### CSRF
 
 SvelteKit's CSRF guard only rejects a cross-site POST whose `Content-Type` is a form type
 (`multipart/form-data`, `application/x-www-form-urlencoded`, `text/plain`). A raw `image/*` body is
-none of those, so the guard no longer fires on this route at all — the native cross-origin call
-stops depending on the `csrf.trustedOrigins` allow-list it previously needed. We **keep**
-`trustedOrigins: ['https://localhost', 'capacitor://localhost']` anyway as cheap defense-in-depth so
-any future cross-origin form POST from the real apps keeps working; the comment in
-`svelte.config.js` was rewritten to state that current reality rather than the now-gone multipart
-reason.
+none of those, so the guard never fires on the new contract. But the retained legacy multipart shape
+**is** a form type, and shipped native builds send it cross-origin, so
+`csrf.trustedOrigins: ['https://localhost', 'capacitor://localhost']` (ADR-0007) is **still actively
+required** — not merely defense-in-depth — until those clients age out. Once the multipart branch is
+removed, the route stops depending on `trustedOrigins`.
 
 ## Consequences
 
-* **+** One `arrayBuffer()` read replaces buffer-parse-copy: no multipart parse, one fewer image
-  copy, lower peak memory on the buffered function.
+* **+** For the raw path, one `arrayBuffer()` read replaces buffer-parse-copy: no multipart parse,
+  one fewer image copy, lower peak memory on the buffered function. New clients get this
+  immediately; legacy multipart clients keep the old cost until they update.
 * **+** The two secrets never touch a URL, so they can't leak through access logs, browser history,
   or `Referer`. Only the non-secret style enum is in the query string.
-* **+** The route no longer relies on the CSRF `trustedOrigins` allow-list (kept only as
-  defense-in-depth).
-* **-** A breaking change to the request contract: web client (`aiImage.ts`), the api smoke test,
-  the E2E guards (`generate-image.spec.ts`), the manual red-team runner, and the `api` skill all had
-  to move in lockstep. Any out-of-tree caller of the endpoint must update too.
+* **+** No flag-day break: shipped native builds and stale-SW PWA clients keep generating across the
+  deploy because the server still speaks multipart.
+* **-** The endpoint carries two request shapes (a `Content-Type` branch) until the legacy shim is
+  removed; the CSRF `trustedOrigins` dependency and the multipart parse both live on for that
+  window.
 * **-** Absolute bytes saved are small (sub-1 MB screenshots), so the win is cleanliness and a
   smaller memory footprint, not a latency change the child would feel.

@@ -16,6 +16,12 @@ const BASE = `http://localhost:${PORT}`;
 const ADMIN_SECRET = randomUUID();
 const SEED_TOKENS = 'alpha,beta';
 
+// 1x1 transparent PNG — a tiny, allow-listed image for the legacy multipart case.
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64'
+);
+
 async function run() {
   // --- admin/login ---
   const wrong = await fetch(`${BASE}/api/admin/login`, {
@@ -204,6 +210,35 @@ async function run() {
     'generate-image with valid token but no image → 400',
     noImage.status === 400,
     `got ${noImage.status}`
+  );
+
+  // Legacy multipart contract (token/apiKey/image/style form fields) — still
+  // accepted so shipped native builds and stale-service-worker PWA clients keep
+  // working across the raw-body switch (ADR-0064). Reads the credential from the
+  // form field: a valid token + gif reaches the type guard (415), an invalid one
+  // is rejected at the auth gate (403) — both prove the field was parsed.
+  const legacyMultipart = ({ token, mimeType }) => {
+    const form = new FormData();
+    if (token) form.set('token', token);
+    form.set('image', new Blob([TINY_PNG], { type: mimeType }), 'drawing');
+    return fetch(`${BASE}/api/generate-image`, { method: 'POST', body: form });
+  };
+
+  const legacyBadToken = await legacyMultipart({
+    token: 'not-a-real-token',
+    mimeType: 'image/png',
+  });
+  check(
+    'generate-image legacy multipart invalid token → 403',
+    legacyBadToken.status === 403,
+    `got ${legacyBadToken.status}`
+  );
+
+  const legacyValidToken = await legacyMultipart({ token: 'alpha', mimeType: 'image/gif' });
+  check(
+    'generate-image legacy multipart valid token, bad type → 415',
+    legacyValidToken.status === 415,
+    `got ${legacyValidToken.status}`
   );
 
   // --- standard 429 contract (throttled() in src/lib/server/http.ts) ---

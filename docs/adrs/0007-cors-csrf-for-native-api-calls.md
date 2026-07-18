@@ -3,13 +3,14 @@
 **Status:** Active (amended by [ADR-0064](0064-generate-image-raw-body-header-credentials.md))\
 **Date:** 2026-06-01 (committed in 4370205)
 
-> **Amendment (ADR-0064):** `/api/generate-image` no longer sends `multipart/form-data` — it now
-> posts a raw `image/*` body, which SvelteKit's CSRF guard ignores, so that route no longer depends
-> on the `trustedOrigins` allow-list below. The origins are kept as defense-in-depth for any future
-> cross-origin form POST. The CORS allow-list also gained `X-Access-Token` / `X-Api-Key` (the
-> generate-image credentials, kept out of the query string). The `curl` verification at the bottom
-> should now use `-H "X-Access-Token: x" --data-binary @tiny.png -H "Content-Type: image/png"`
-> instead of the `-F` multipart form fields.
+> **Amendment (ADR-0064):** the current `/api/generate-image` contract posts a raw `image/*` body
+> (credentials in `X-Access-Token` / `X-Api-Key` headers), which SvelteKit's CSRF guard ignores. But
+> the server still accepts the **legacy `multipart/form-data`** shape that shipped native builds
+> send (they can't update in lockstep with a deploy), and that shape **does** trip the guard — so
+> the `trustedOrigins` allow-list below is still actively required until those old clients age out,
+> not merely defense-in-depth. The CORS allow-list also gained `X-Access-Token` / `X-Api-Key`. The
+> `curl` verification at the bottom still works as-is against the legacy path; the raw-body
+> equivalent is `-H "X-Access-Token: x" -H "Content-Type: image/png" --data-binary @tiny.png`.
 
 ## Context
 
