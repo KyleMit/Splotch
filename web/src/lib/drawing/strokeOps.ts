@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { paintCrayonOp } from './crayonGroup';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -16,6 +17,9 @@ import { sheetPatternFor } from './magicBrush';
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
+// `crayon`, when true, strokes `color` through the paper-tooth texture (ADR-0065)
+// — a source-over pattern fill, so it's likewise an ordinary op that undo, erase,
+// and buildup fall out of for free.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -25,6 +29,7 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
     }
   | {
       kind: 'path';
@@ -43,6 +48,7 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
     }
   | { kind: 'clear' };
 
@@ -114,6 +120,14 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
+    return;
+  }
+  if (op.crayon && !op.erase) {
+    // Crayon composites per stroke-group (idempotent within a stroke, building up
+    // across strokes), so it goes through crayonGroup rather than a plain fill.
+    // The command's ops are bracketed by beginCrayonGroup() in the replay/live
+    // callers, which reset the group's coverage mask.
+    paintCrayonOp(target, op);
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';

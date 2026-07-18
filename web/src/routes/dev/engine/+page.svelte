@@ -5,6 +5,7 @@
     setColor,
     setStrokeWidth,
     setEraserMode,
+    setCrayonMode,
     setSafeAreaInsets,
     undo,
     clearCanvas,
@@ -27,7 +28,10 @@
     __engine: Record<string, unknown>;
     __engineReady: boolean;
   }
-  const win = window as unknown as Window & EngineHarnessWindow;
+  // `globalThis` (=== window in the browser) rather than `window` so the module
+  // script doesn't throw during SSR — the harness is client-only (onMount wires
+  // everything), but the dev server still server-renders the route.
+  const win = globalThis as unknown as Window & EngineHarnessWindow;
 
   // Mirrors how the app wires the engine (see DrawingCanvas.svelte), but routes
   // the undo/empty callbacks into a window object the Playwright spec inspects,
@@ -58,6 +62,7 @@
       setColor,
       setStrokeWidth,
       setEraserMode,
+      setCrayonMode,
       setSafeAreaInsets,
       undo,
       clearCanvas,

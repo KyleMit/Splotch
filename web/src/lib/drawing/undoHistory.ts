@@ -22,6 +22,7 @@ import {
 } from './strokeOps';
 import { simplifyCommandOps } from './commandSimplify';
 import { isMagicSheetUnready } from './magicBrush';
+import { beginCrayonGroup } from './crayonGroup';
 import { PERF_MARKS } from './perf';
 
 // The retained command log; commands older than this fold into the baseline.
@@ -225,6 +226,7 @@ function foldOldestIntoBaseline(): boolean {
     baselineCtx.clearRect(0, 0, baselineCanvas.width, baselineCanvas.height);
     baselineCtx.drawImage(oldest.keyframe, 0, 0);
   } else {
+    beginCrayonGroup(baselineCtx);
     for (const op of oldest.ops) renderOp(baselineCtx, op);
   }
   if (PERF_MARKS) performance.measure('engine.foldBaseline', 'engine.foldBaseline:start');
@@ -271,6 +273,9 @@ export function paintStateThrough(target: CanvasRenderingContext2D, upToIndex: n
     begin = 0;
   }
   for (let i = begin; i <= upToIndex; i++) {
+    // Each command is one crayon stroke group — reset the coverage mask so it
+    // deposits a single tooth layer, then builds up over the commands before it.
+    beginCrayonGroup(target);
     for (const op of commandLog[i].ops) renderOp(target, op);
   }
 }
@@ -283,6 +288,7 @@ export function paintStateThrough(target: CanvasRenderingContext2D, upToIndex: n
 export function replayAll(target: CanvasRenderingContext2D) {
   paintStateThrough(target, commandLog.length - 1);
   if (activeCommand) {
+    beginCrayonGroup(target);
     for (const op of activeCommand.ops) renderOp(target, op);
   }
 }

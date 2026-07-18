@@ -44,6 +44,13 @@ import {
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
 import {
+  setCrayonParams,
+  getCrayonParams,
+  warmCrayonTile,
+  type CrayonParams,
+} from './crayonTexture';
+import { beginCrayonGroup } from './crayonGroup';
+import {
   beginCommand,
   commandCount,
   commitActiveCommand,
@@ -87,6 +94,7 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonActive = false;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -402,6 +410,10 @@ function beginStrokeGroup() {
   beginCommand(canvasEmpty);
   setCanvasEmptyState(false);
   groupHasDrawn = true;
+  // One crayon stroke group = one tooth layer: reset the coverage mask so this
+  // group's self-overlap stays idempotent while it still builds up over earlier
+  // strokes. Harmless for non-crayon groups (only a flag until a crayon op).
+  beginCrayonGroup(ctx);
 }
 
 // Paint the round dot that anchors a stroke at its start point, and kick the
@@ -422,6 +434,7 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +462,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +508,7 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayon: boolean;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +597,7 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayon: crayonActive,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -1020,6 +1036,8 @@ export function setColor(color: string) {
   if (color === currentColor) return;
   currentColor = color;
   lastColorChangeTime = Date.now();
+  // Warm the new colour's tooth tile off the draw hot path while the crayon is up.
+  if (crayonActive) warmCrayonTile(color);
 }
 
 export function setStrokeWidth(widthPx: number) {
@@ -1037,6 +1055,28 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+// Crayon brush on/off (ADR-0065). Like the eraser/magic flags the engine just
+// tracks it and stamps it onto each op; the tooth texture and its buildup are a
+// property of how strokeOps renders a crayon op. Mutually exclusive with the
+// eraser and magic at the UI level.
+export function setCrayonMode(active: boolean) {
+  crayonActive = active;
+  // Build the colour's tooth tile now (a tap, not the draw hot path) so the first
+  // stroke doesn't pay for it.
+  if (active && currentColor) warmCrayonTile(currentColor);
+}
+
+// Dev/test seam (mirrors setSimplifyParams): sweep the crayon's tooth-coverage
+// variant live from the /dev/crayon harness so a single build can A/B the look.
+// Production never calls the setter. Re-exported from crayonTexture so the
+// engine stays the single public surface.
+export function setCrayonVariant(params: Partial<CrayonParams>) {
+  setCrayonParams(params);
+}
+export function getCrayonVariant(): CrayonParams {
+  return getCrayonParams();
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

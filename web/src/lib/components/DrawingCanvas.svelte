@@ -6,6 +6,7 @@
     setStrokeWidth,
     setEraserMode,
     setMagicMode,
+    setCrayonMode,
     setColorSheet,
     setSafeAreaInsets,
     getCanvasRect,
@@ -241,6 +242,10 @@
 
   $effect(() => {
     setMagicMode(toolState.magic);
+  });
+
+  $effect(() => {
+    setCrayonMode(toolState.crayon);
   });
 
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK

@@ -9,6 +9,7 @@ export type IconName =
   | 'chevron-right'
   | 'chevron-up'
   | 'close'
+  | 'crayon'
   | 'customize'
   | 'dashboard-customize'
   | 'download'

@@ -167,6 +167,31 @@ export async function driveSession(page, cdp, { outDir, settings }) {
     await setStrokeSize(page, 1);
     await drawStroke(page, box, zigzag(box.width * 0.2, box.height * 0.5, box.width * 0.8, 20, 20));
   });
+  await beat(page, 'crayon-draw', async () => {
+    // Colour first — a swatch tap reselects the pen — then the crayon (ADR-0065).
+    await pickColor(page, COLORS[1]);
+    const crayon = page.locator('#crayonButton');
+    if (await crayon.count()) await crayon.click();
+    await sleep(150);
+    await setStrokeSize(page, 4);
+    // A fill scribble plus a second overlapping pass — the crayon's per-group
+    // buildup is the heaviest draw path, so it's the one worth profiling.
+    await drawStroke(
+      page,
+      box,
+      zigzag(box.width * 0.2, box.height * 0.35, box.width * 0.8, 40, 22)
+    );
+    await drawStroke(
+      page,
+      box,
+      zigzag(box.width * 0.2, box.height * 0.35, box.width * 0.8, 40, 22)
+    );
+    await drawStroke(
+      page,
+      box,
+      circlePts(box.width * 0.5, box.height * 0.55, Math.min(box.width, box.height) * 0.2, 3)
+    );
+  });
   await beat(page, 'erase', async () => {
     const eraser = page.locator('#eraserButton');
     if (await eraser.count()) await eraser.click();
