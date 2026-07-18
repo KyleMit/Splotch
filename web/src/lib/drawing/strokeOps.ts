@@ -6,6 +6,18 @@
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
 
+export type CrayonRenderVariant = 'tooth' | 'solid';
+
+let crayonRenderVariant: CrayonRenderVariant = 'tooth';
+
+const WAX_ALPHA = 0.82;
+const TOOTH_TILE_SIZE = 24;
+const toothPatterns = new Map<number, CanvasPattern>();
+
+export function setCrayonRenderVariant(variant: CrayonRenderVariant) {
+  crayonRenderVariant = variant;
+}
+
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
 // bit-identical to its op; the stored ops are then simplified once at commit
@@ -87,6 +99,73 @@ function paintOpShape(
   }
 }
 
+function hashCrayonOp(op: Extract<StrokeOp, { kind: 'dot' | 'path' }>) {
+  let hash = op.kind === 'dot' ? 0x9e3779b9 : op.pid;
+  const add = (value: number) => {
+    hash = Math.imul(hash ^ Math.round(value * 16), 0x45d9f3b);
+    hash ^= hash >>> 16;
+  };
+  if (op.kind === 'dot') add(op.x + op.y + op.radius);
+  else {
+    add(op.startX + op.startY + op.lineWidth);
+    for (const s of op.segs) add(s.cx + s.cy + s.x + s.y);
+  }
+  return hash >>> 0;
+}
+
+function nextTooth(seed: number) {
+  let value = seed || 1;
+  return () => {
+    value ^= value << 13;
+    value ^= value >>> 17;
+    value ^= value << 5;
+    return (value >>> 0) / 0x100000000;
+  };
+}
+
+function toothPatternFor(
+  target: CanvasRenderingContext2D,
+  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
+) {
+  const seed = hashCrayonOp(op) & 7;
+  const cached = toothPatterns.get(seed);
+  if (cached) return cached;
+  const tile = document.createElement('canvas');
+  tile.width = TOOTH_TILE_SIZE;
+  tile.height = TOOTH_TILE_SIZE;
+  const tileCtx = tile.getContext('2d');
+  if (!tileCtx) return null;
+  const random = nextTooth(seed);
+  tileCtx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+  for (let i = 0; i < 28; i++) {
+    const size = random() < 0.82 ? 1 : 2;
+    tileCtx.fillRect(
+      Math.floor(random() * TOOTH_TILE_SIZE),
+      Math.floor(random() * TOOTH_TILE_SIZE),
+      size,
+      1
+    );
+  }
+  const pattern = target.createPattern(tile, 'repeat');
+  if (pattern) toothPatterns.set(seed, pattern);
+  return pattern;
+}
+
+function paintCrayonOp(
+  target: CanvasRenderingContext2D,
+  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
+) {
+  target.globalAlpha = WAX_ALPHA;
+  paintOpShape(target, op, op.color);
+  target.globalAlpha = 1;
+  if (crayonRenderVariant === 'solid') return;
+  const tooth = toothPatternFor(target, op);
+  if (!tooth) return;
+  target.globalCompositeOperation = 'destination-out';
+  paintOpShape(target, op, tooth);
+  target.globalCompositeOperation = 'source-over';
+}
+
 // Clear everything a target could be showing. The visible ctx's user space is
 // PAPER coordinates whenever the paper view is active — and with the margins
 // drawable, ink can sit at negative paper coordinates that a rect from (0,0)
@@ -117,7 +196,8 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
+  if (op.erase) paintOpShape(target, op, op.color);
+  else paintCrayonOp(target, op);
   target.globalCompositeOperation = 'source-over';
 }
 

@@ -42,7 +42,7 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { renderOp, clearAllOf, setCrayonRenderVariant, type StrokeOp } from './strokeOps';
 import {
   beginCommand,
   commandCount,
@@ -901,6 +901,8 @@ export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?
   if (params.keyframeThreshold !== undefined) setKeyframeSegmentThreshold(params.keyframeThreshold);
   setSimplifyOptions(params);
 }
+
+export { setCrayonRenderVariant };
 
 // --- Mount / unmount ---------------------------------------------------------
 

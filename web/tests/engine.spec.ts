@@ -56,6 +56,36 @@ test('a stroke paints pixels and flips canvasEmpty false', async ({ page }) => {
   expect(s.canUndo).toBe(true);
 });
 
+test('a same-colour crayon pass gradually fills tooth without changing its hue', async ({
+  page,
+}) => {
+  await page.evaluate(() => window.__engine.setStrokeWidth(32));
+  const box = await page.locator('#engineCanvas').boundingBox();
+  const points = [
+    { x: 45, y: 150 },
+    { x: 255, y: 150 },
+  ];
+
+  await drawStroke(page, box, points);
+  const firstPass = await page.evaluate(() =>
+    Array.from({ length: 180 }, (_, i) => window.__engine.pixelAt(i + 60, 150))
+  );
+
+  await drawStroke(page, box, points);
+  const secondPass = await page.evaluate(() =>
+    Array.from({ length: 180 }, (_, i) => window.__engine.pixelAt(i + 60, 150))
+  );
+
+  const toothPixel = firstPass.findIndex((pixel) => pixel[3] > 10 && pixel[3] < 230);
+  expect(toothPixel).toBeGreaterThanOrEqual(0);
+  const first = firstPass[toothPixel];
+  const second = secondPass[toothPixel];
+  expect(second[3]).toBeGreaterThan(first[3]);
+  expect(second[0]).toBeGreaterThan(240);
+  expect(second[1]).toBeLessThan(10);
+  expect(second[2]).toBeLessThan(10);
+});
+
 test('undo reverts a stroke back to an empty canvas', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
