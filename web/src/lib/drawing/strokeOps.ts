@@ -4,6 +4,7 @@
 // same renderOp() so every surface is bit-identical.
 
 import type { PathSeg } from './strokeSimplify';
+import { crayonPaint } from './crayonBrush';
 import { sheetPatternFor } from './magicBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
@@ -25,6 +26,8 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      textureSeed?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +46,8 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      textureSeed?: number;
     }
   | { kind: 'clear' };
 
@@ -117,7 +122,11 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
+  paintOpShape(
+    target,
+    op,
+    op.crayon ? crayonPaint(target, op.color, op.textureSeed ?? 0) : op.color
+  );
   target.globalCompositeOperation = 'source-over';
 }
 

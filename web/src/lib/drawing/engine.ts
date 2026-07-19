@@ -87,6 +87,9 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+type BrushVariant = 'crayon' | 'solid';
+let brushVariant: BrushVariant = 'crayon';
+let nextTextureSeed = 1;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +425,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    textureSeed: ps.textureSeed,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +454,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    textureSeed: ps.textureSeed,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +501,8 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayon: boolean;
+  textureSeed: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +591,8 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayon: brushVariant === 'crayon' && !eraserActive && !magicActive,
+    textureSeed: nextTextureSeed++,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -900,6 +911,10 @@ export function getUndoDebug(): {
 export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?: number }) {
   if (params.keyframeThreshold !== undefined) setKeyframeSegmentThreshold(params.keyframeThreshold);
   setSimplifyOptions(params);
+}
+
+export function setBrushVariant(variant: BrushVariant) {
+  brushVariant = variant;
 }
 
 // --- Mount / unmount ---------------------------------------------------------
