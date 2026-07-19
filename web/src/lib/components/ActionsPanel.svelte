@@ -10,7 +10,13 @@
     setStrokeSize,
     activeStrokeSize,
   } from '$lib/state/strokeWidth.svelte';
-  import { toolState, selectEraser, toggleMagic } from '$lib/state/tool.svelte';
+  import {
+    toolState,
+    selectEraser,
+    toggleMagic,
+    toggleCrayon,
+    crayonSelected,
+  } from '$lib/state/tool.svelte';
   import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
   import { network } from '$lib/state/network.svelte';
@@ -312,6 +318,21 @@
         <Icon name="eraser" class="action-icon" />
       </button>
 
+      <!-- Crayon: swaps the pen's smooth round tip for a wax-crayon tip
+           (ADR-0065). A pen-tip style rather than a separate tool — it stays
+           selected across color picks, and eraser/magic detours return to it.
+           Works with every color, so it's always shown (like the magic brush). -->
+      <button
+        class="action-button"
+        class:active={crayonSelected()}
+        id="crayonButton"
+        aria-label="Crayon"
+        aria-pressed={crayonSelected()}
+        use:scribbleTap={toggleCrayon}
+      >
+        <Icon name="crayon" class="action-icon" />
+      </button>
+
       <button
         class="action-button"
         id="coloringBookButton"
@@ -568,17 +589,17 @@
     /* --action-btn-size (inline) is the precise measured cap ActionsPanel sets
        once hydrated, so the row clears the Parent Help Button (landscape) / the
        palette bar (portrait). Until then it's unset and --action-btn-fallback
-       owns first paint: the same worst-case cap (all 7 buttons, palette not yet
+       owns first paint: the same worst-case cap (all 8 buttons, palette not yet
        measured) but expressed in CSS so the media query picks the right
        orientation — the old inline SSR bake was always the landscape formula, so
        portrait phones painted tiny buttons that jumped to full size (issue #317).
        Square via width = height so a capped button shrinks like a smaller scale
        instead of squishing. Landscape 100vw (unaffected by the URL bar); the
-       200px = PARENT_BUTTON_RESERVE 64 + worst-case chrome 136 (6·12 gap + 8
+       212px = PARENT_BUTTON_RESERVE 64 + worst-case chrome 148 (7·12 gap + 8
        inset + 8 toggle margin + 48 toggle). */
     --action-btn-fallback: min(
       calc(60px * var(--action-btn-scale, 1)),
-      calc((100vw - 200px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 7)
+      calc((100vw - 212px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 8)
     );
     width: var(--action-btn-size, var(--action-btn-fallback));
     height: var(--action-btn-size, var(--action-btn-fallback));
@@ -608,15 +629,15 @@
       /* Portrait first-paint cap: the column stops short of the palette bar.
          100vh is the large viewport (overestimates while the URL bar shows), but
          this is only the pre-hydration fallback — --action-btn-size swaps in the
-         exact visible height right after hydration. 220px = 8px palette clearance
-         + 136px worst-case chrome (see landscape note) + 76px palette bar. The
+         exact visible height right after hydration. 232px = 8px palette clearance
+         + 148px worst-case chrome (see landscape note) + 76px palette bar. The
          hydrated formula subtracts the measured palette height; reserving the
          same ~76px here (it's a stable bar height across portrait widths) keeps
          the column off the palette on short screens instead of relying on the
-         slack from the worst-case /7 divisor. */
+         slack from the worst-case /8 divisor. */
       --action-btn-fallback: min(
         calc(55px * var(--action-btn-scale, 1)),
-        calc((100vh - 220px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 7)
+        calc((100vh - 232px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 8)
       );
       padding: calc(9px * var(--action-btn-scale, 1));
     }

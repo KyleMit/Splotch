@@ -5,6 +5,7 @@
     setColor,
     setStrokeWidth,
     setEraserMode,
+    setCrayonMode,
     setSafeAreaInsets,
     undo,
     clearCanvas,
@@ -58,6 +59,7 @@
       setColor,
       setStrokeWidth,
       setEraserMode,
+      setCrayonMode,
       setSafeAreaInsets,
       undo,
       clearCanvas,
@@ -96,6 +98,21 @@
           if (data[i] > 200 && data[i + 1] < 100 && data[i + 2] < 100) n++;
         }
         return n;
+      },
+
+      // FNV-1a hash of every RGBA byte on the visible canvas — the
+      // exact-replay assertion: two states with equal hashes are pixel-identical,
+      // so a spec can prove undo/resize rebuilds changed NOTHING (the crayon's
+      // 0-pixel-drift contract, ADR-0065) without shipping the bitmap out.
+      canvasHash() {
+        const ctx = canvasEl.getContext('2d')!;
+        const { data } = ctx.getImageData(0, 0, canvasEl.width, canvasEl.height);
+        let hash = 0x811c9dc5;
+        for (let i = 0; i < data.length; i++) {
+          hash ^= data[i];
+          hash = Math.imul(hash, 0x01000193);
+        }
+        return hash >>> 0;
       },
 
       // Count of non-transparent pixels on the visible canvas.

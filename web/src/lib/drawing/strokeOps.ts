@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { crayonPatternFor, type CrayonPoint } from './crayonBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -16,6 +17,14 @@ import { sheetPatternFor } from './magicBrush';
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
+// A 'crayon' op is one deposition PASS of a crayon gesture (ADR-0065): a raw
+// polyline rendered by a single translucent-pattern stroke(), whose path-union
+// semantics deposit the tooth tile exactly once over the swept area. The
+// engine splits a gesture into passes only where the physical crayon re-covers
+// paper (reversal / re-entry), so consecutive passes compositing source-over
+// IS the wax buildup. Crayon ops are deliberately non-idempotent, so they
+// bypass commit-time simplification (they aren't 'path' ops) and rely on
+// ADR-0035 keyframes to bound replay; commandSegmentCount counts their points.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -25,6 +34,13 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+    }
+  | {
+      kind: 'crayon';
+      pid: number;
+      points: CrayonPoint[];
+      color: string;
+      lineWidth: number;
     }
   | {
       kind: 'path';
@@ -47,6 +63,39 @@ export type StrokeOp =
   | { kind: 'clear' };
 
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
+export type CrayonOp = Extract<StrokeOp, { kind: 'crayon' }>;
+
+// Stroke one crayon pass: the whole polyline in a single stroke() call, so the
+// deposit is the union of the swept strip — internal joins and pointer-frame
+// boundaries share geometry instead of stacking translucent caps. Midpoint
+// smoothing matches the live pen's curve family; a single-point pass (a tap,
+// or a split landing immediately) is the bare tip disk.
+function paintCrayonPass(target: CanvasRenderingContext2D, op: CrayonOp) {
+  const pattern = crayonPatternFor(target, op.color);
+  if (!pattern) return;
+  const pts = op.points;
+  if (pts.length === 1) {
+    target.fillStyle = pattern;
+    target.beginPath();
+    target.arc(pts[0].x, pts[0].y, op.lineWidth / 2, 0, Math.PI * 2);
+    target.fill();
+    return;
+  }
+  target.strokeStyle = pattern;
+  target.lineWidth = op.lineWidth;
+  target.beginPath();
+  target.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length - 1; i++) {
+    target.quadraticCurveTo(
+      pts[i].x,
+      pts[i].y,
+      (pts[i].x + pts[i + 1].x) / 2,
+      (pts[i].y + pts[i + 1].y) / 2
+    );
+  }
+  target.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+  target.stroke();
+}
 
 // One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is
 // the canvas-empty state before the group drew, so undo can restore the flag
@@ -109,6 +158,11 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     clearAllOf(target);
     return;
   }
+  if (op.kind === 'crayon') {
+    target.globalCompositeOperation = 'source-over';
+    paintCrayonPass(target, op);
+    return;
+  }
   if (op.magic) {
     const pattern = sheetPatternFor(target);
     if (!pattern) return;
@@ -125,6 +179,11 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
 // safety net's trigger (ADR-0035), measured after simplification.
 export function commandSegmentCount(cmd: StrokeGroupCommand): number {
   let n = 0;
-  for (const op of cmd.ops) if (op.kind === 'path') n += op.segs.length;
+  for (const op of cmd.ops) {
+    if (op.kind === 'path') n += op.segs.length;
+    // Crayon passes skip simplification, so their raw points ARE the replay
+    // cost — count them so a long crayon scribble still trips the keyframe.
+    else if (op.kind === 'crayon') n += op.points.length;
+  }
   return n;
 }

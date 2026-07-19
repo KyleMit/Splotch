@@ -35,26 +35,26 @@ function resetState() {
 beforeEach(resetState);
 
 describe('visibleActionButtonCount', () => {
-  it('counts the six always-available buttons by default (no AI token)', () => {
-    expect(visibleActionButtonCount()).toBe(6);
+  it('counts the seven always-available buttons by default (no AI token)', () => {
+    expect(visibleActionButtonCount()).toBe(7);
   });
 
   it('adds the AI button only when token + toggle + connectivity all hold', () => {
     setAiAccessToken('tok');
-    expect(visibleActionButtonCount()).toBe(7);
+    expect(visibleActionButtonCount()).toBe(8);
 
     network.online = false;
-    expect(visibleActionButtonCount()).toBe(6);
+    expect(visibleActionButtonCount()).toBe(7);
 
     network.online = true;
     setAiImage(false);
-    expect(visibleActionButtonCount()).toBe(6);
+    expect(visibleActionButtonCount()).toBe(7);
   });
 
   it('drops buttons the parent switched off', () => {
     setEraser(false);
     setUndoButton(false);
-    expect(visibleActionButtonCount()).toBe(4);
+    expect(visibleActionButtonCount()).toBe(5);
   });
 });
 
@@ -69,23 +69,23 @@ describe('maxActionButtonScale', () => {
   it('caps below 100% on a small landscape phone', () => {
     layout.viewportWidth = 667;
     layout.viewportHeight = 375;
-    // (667 − 156 − 64 − 124) / 6 = 53.83px per button → 89% of the 60px base.
-    expect(maxActionButtonScale()).toBe(89);
+    // (667 − 156 − 64 − 136) / 7 = 44.43px per button → 74% of the 60px base.
+    expect(maxActionButtonScale()).toBe(74);
   });
 
   it('never drops below the slider minimum', () => {
     layout.viewportWidth = 568;
     layout.viewportHeight = 320;
-    // 37.3px per button would be 62% — clamped to the static minimum.
+    // 30.3px per button would be 50% — clamped to the static minimum.
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MIN);
   });
 
   it('uses the vertical budget and 55px base in portrait', () => {
     layout.orientation = 'portrait';
     layout.viewportWidth = 360;
-    layout.viewportHeight = 480;
-    // (480 − 76 − 8 − 124) / 6 = 45.33px per button → 82% of the 55px base.
-    expect(maxActionButtonScale()).toBe(82);
+    layout.viewportHeight = 520;
+    // (520 − 76 − 8 − 136) / 7 = 42.86px per button → 77% of the 55px base.
+    expect(maxActionButtonScale()).toBe(77);
   });
 
   it('portrait tall screens clear the static max', () => {
@@ -100,6 +100,7 @@ describe('maxActionButtonScale', () => {
     layout.viewportHeight = 375;
     setEraser(false);
     setUndoButton(false);
+    setColoringBook(false);
     // n=4: (667 − 156 − 64 − 100) / 4 = 86.75px per button → over the max.
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
@@ -108,15 +109,15 @@ describe('maxActionButtonScale', () => {
     layout.viewportWidth = 740;
     layout.viewportHeight = 360;
     setAiAccessToken('tok');
-    // n=7: (740 − 156 − 64 − 136) / 7 = 54.86px per button → 91%.
-    expect(maxActionButtonScale()).toBe(91);
+    // n=8: (740 − 156 − 64 − 148) / 8 = 46.5px per button → 77%.
+    expect(maxActionButtonScale()).toBe(77);
   });
 
   it('subtracts safe-area insets from the budget', () => {
-    layout.viewportWidth = 667;
+    layout.viewportWidth = 740;
     layout.viewportHeight = 375;
     Object.assign(layout.safeArea, { left: 30, right: 30 });
-    // 60px of insets off the 323px budget: 263 / 6 = 43.83px → 73%.
-    expect(maxActionButtonScale()).toBe(73);
+    // 60px of insets off the 384px budget: 324 / 7 = 46.29px → 77%.
+    expect(maxActionButtonScale()).toBe(77);
   });
 });

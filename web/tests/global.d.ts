@@ -11,6 +11,7 @@ declare global {
       setColor(color: string): void;
       setStrokeWidth(width: number): void;
       setEraserMode(active: boolean): void;
+      setCrayonMode(active: boolean): void;
       setSafeAreaInsets(insets: { top: number; right: number; bottom: number; left: number }): void;
       undo(): void;
       clearCanvas(): void;
@@ -53,6 +54,7 @@ declare global {
         options?: { includePaperTexture?: boolean }
       ): Promise<Blob | null>;
       blobRedPixelCount(blob: Blob | null): Promise<number>;
+      canvasHash(): number;
       nonTransparentCount(): number;
       pixelAt(x: number, y: number): number[];
       resizeTo(w: number, h: number): Promise<void>;

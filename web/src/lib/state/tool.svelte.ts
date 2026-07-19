@@ -6,10 +6,35 @@
 //
 // `eraser` and `magic` are mutually exclusive modifiers on top of the pen — at
 // most one is ever true. Pen is the state where both are false.
+//
+// `crayon` (ADR-0065) is a different axis: a pen-tip STYLE, not a modifier. It
+// stays latched through color picks (changing colors is a crayon's core loop)
+// and through eraser/magic detours — those win while selected (the engine
+// gates the tip at stroke start), and leaving them lands back on the crayon.
 export const toolState = $state({
   eraser: false,
   magic: false,
+  crayon: false,
 });
+
+// Whether a stroke drawn right now would use the crayon tip: the latch, minus
+// any modifier currently overriding it. Drives the Crayon Button's lit state.
+export function crayonSelected(): boolean {
+  return toolState.crayon && !toolState.eraser && !toolState.magic;
+}
+
+// Flip between the crayon tip and the plain pen. Tapping while a modifier
+// holds the pen (eraser/magic) selects the crayon rather than silently
+// unlatching it — the child's tap means "draw with the crayon now".
+export function toggleCrayon() {
+  if (crayonSelected()) {
+    toolState.crayon = false;
+    return;
+  }
+  toolState.crayon = true;
+  toolState.eraser = false;
+  toolState.magic = false;
+}
 
 export function selectEraser() {
   toolState.eraser = true;

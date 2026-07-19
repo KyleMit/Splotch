@@ -17,7 +17,7 @@
 //   emptyScan.ts        cheap blank-canvas detection
 //   exportDrawing.ts    PNG composition for save/share
 
-import { ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte';
+import { CRAYON_SIZE_MULTIPLIER, ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte';
 import {
   calculateStrokeSpeed,
   edgeSwipeIsOsGesture,
@@ -42,7 +42,13 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { renderOp, clearAllOf, type StrokeOp, type CrayonOp } from './strokeOps';
+import {
+  CrayonPassTracker,
+  setCrayonRenderScale,
+  warmCrayonTileWhenIdle,
+  type CrayonPoint,
+} from './crayonBrush';
 import {
   beginCommand,
   commandCount,
@@ -87,6 +93,7 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonActive = false;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -315,6 +322,9 @@ function applyPaperView(lockPaper: boolean) {
     : IDENTITY_PAPER_VIEW;
   if (!isIdentityView(paperView)) {
     ctx.setTransform(...viewMatrix(paperView));
+    // The crayon overlay paints in the same paper coordinates as the visible
+    // ctx, so it presents open passes through the identical view.
+    overlayCtx?.setTransform(...viewMatrix(paperView));
   }
 }
 
@@ -335,12 +345,21 @@ function resizeCanvas() {
   canvas.height = Math.round(rect.height * renderScale);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+  if (overlayCanvas && overlayCtx) {
+    overlayCanvas.width = canvas.width;
+    overlayCanvas.height = canvas.height;
+    overlayCtx.lineCap = 'round';
+    overlayCtx.lineJoin = 'round';
+  }
   applyPaperView(lockPaper);
 
   // The magic sheet is sized to the paper, so re-rasterize before replaying any
   // magic ops against it.
   rasterizeSheet();
   replayAll(ctx);
+  // A mid-gesture resize must keep the still-open crayon passes visible: they
+  // aren't recorded until they close, so replayAll can't restore them.
+  redrawCrayonOverlay();
 
   refreshCanvasRect();
   notifyViewChange();
@@ -410,6 +429,14 @@ function beginStrokeGroup() {
 function renderStrokeStart(ps: PointerState) {
   beginStrokeGroup();
 
+  // A crayon gesture records no start dot: its first pass carries the real
+  // start cap, and a separate dot would double-deposit the translucent tip.
+  if (ps.crayon) {
+    beginCrayonStroke(ps);
+    if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0 });
+    return;
+  }
+
   // Erasing clears pixels via destination-out; the stroke color is irrelevant
   // there, only its (opaque) alpha matters. A magic op ignores `color` too — it
   // reveals the sheet — but carries it so a mid-stroke tool flip keeps a stable
@@ -463,6 +490,143 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
   recordOp(op);
 }
 
+// --- Crayon swept passes (ADR-0065) ----------------------------------------
+
+// A crayon gesture deposits translucent wax, so the per-frame incremental ops
+// the pen records would stack a visible extra deposit at every frame boundary
+// (overlapping round caps). Instead the gesture is split into PASSES: each
+// pass is one polyline stroked in a single call — union semantics, one deposit
+// over its swept area — and a new pass starts only where the physical crayon
+// re-covers paper (reversal / re-entry, see CrayonPassTracker). While a pass
+// is open it grows, so it can't be painted incrementally on the main canvas;
+// it renders on a replaceable overlay canvas above, and is stamped onto the
+// main canvas via the shared renderOp exactly once, when it closes. Replay
+// performs the identical stamps in the identical order, so live pixels and
+// every rebuild agree by construction.
+let overlayCanvas: HTMLCanvasElement | null = null;
+let overlayCtx: CanvasRenderingContext2D | null = null;
+
+interface CrayonLiveStroke {
+  op: CrayonOp;
+  tracker: CrayonPassTracker;
+}
+
+const crayonStrokes = new Map<number, CrayonLiveStroke>();
+
+// The overlay sits directly above the drawing canvas (same box: the canvas
+// fills its positioned container in both the app and the dev harness) and
+// below the coloring-page overlay and floating controls, exactly where freshly
+// stamped ink lands. Presentation-only: pointer events pass through, and no
+// pixel ever moves from it to the main canvas.
+function mountCrayonOverlay() {
+  overlayCanvas = document.createElement('canvas');
+  const style = overlayCanvas.style;
+  style.position = 'absolute';
+  style.inset = '0';
+  style.width = '100%';
+  style.height = '100%';
+  style.pointerEvents = 'none';
+  style.zIndex = '1';
+  canvas.insertAdjacentElement('afterend', overlayCanvas);
+  overlayCtx = overlayCanvas.getContext('2d');
+}
+
+function unmountCrayonOverlay() {
+  overlayCanvas?.remove();
+  overlayCanvas = null;
+  overlayCtx = null;
+}
+
+// Repaint every open pass from scratch. Cheap: at most one growing polyline
+// per active pointer, restroked once per pointer frame.
+function redrawCrayonOverlay() {
+  if (!overlayCtx) return;
+  clearAllOf(overlayCtx);
+  for (const live of crayonStrokes.values()) renderOp(overlayCtx, live.op);
+}
+
+// Deposit a closed pass permanently: paint it through the one shared renderer
+// and record it for replay — the same op object, so undo/resize/export rebuild
+// the exact live pixels.
+function stampCrayonPass(op: CrayonOp) {
+  renderOp(ctx, op);
+  recordOp(op);
+}
+
+function beginCrayonStroke(ps: PointerState) {
+  crayonStrokes.set(ps.id, {
+    op: {
+      kind: 'crayon',
+      pid: ps.id,
+      points: [{ x: ps.x, y: ps.y }],
+      color: ps.color,
+      lineWidth: ps.lineWidth,
+    },
+    tracker: new CrayonPassTracker(ps.x, ps.y, ps.lineWidth),
+  });
+  redrawCrayonOverlay();
+}
+
+// Feed new paper-space points into the open pass. A split closes the current
+// pass and starts the next one at the shared point, so the polyline stays
+// visually continuous while the overlapping stretch composites source-over —
+// that overlap IS the mid-gesture buildup.
+function advanceCrayonStroke(ps: PointerState, points: CrayonPoint[]) {
+  const live = crayonStrokes.get(ps.id);
+  if (!live) return;
+  for (const p of points) {
+    if (live.tracker.advance(p) === 'split') {
+      stampCrayonPass(live.op);
+      const from = live.op.points[live.op.points.length - 1];
+      live.op = {
+        kind: 'crayon',
+        pid: ps.id,
+        points: [
+          { x: from.x, y: from.y },
+          { x: p.x, y: p.y },
+        ],
+        color: ps.color,
+        lineWidth: ps.lineWidth,
+      };
+      live.tracker = new CrayonPassTracker(from.x, from.y, ps.lineWidth);
+      live.tracker.advance(p);
+    } else {
+      live.op.points.push({ x: p.x, y: p.y });
+    }
+    ps.x = p.x;
+    ps.y = p.y;
+  }
+  redrawCrayonOverlay();
+}
+
+// A WebKit merged-stream resume is a genuine lift + re-touch: close the pass
+// where the finger left and open a fresh one at the resumed point, with no
+// bridging geometry.
+function restartCrayonStroke(ps: PointerState) {
+  const live = crayonStrokes.get(ps.id);
+  if (!live) return;
+  stampCrayonPass(live.op);
+  live.op = {
+    kind: 'crayon',
+    pid: ps.id,
+    points: [{ x: ps.x, y: ps.y }],
+    color: ps.color,
+    lineWidth: ps.lineWidth,
+  };
+  live.tracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
+}
+
+// Close the gesture's final pass (a never-moved gesture is a single-point pass
+// — the tip disk a tap leaves) and drop it from the overlay: the stamp has
+// just made those pixels part of the main canvas.
+function finishCrayonStroke(pointerId: number) {
+  const live = crayonStrokes.get(pointerId);
+  if (!live) return;
+  stampCrayonPass(live.op);
+  crayonStrokes.delete(pointerId);
+  redrawCrayonOverlay();
+}
+
 // Push the finished stroke group onto the undo log (once per group, when the
 // last finger lifts) and tell reactive consumers. onStrokeEnd fires at stroke
 // end, not start, so consumers (e.g. mounting the install banner) never do DOM
@@ -494,6 +658,7 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayon: boolean;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -548,10 +713,19 @@ function startDrawing(e: PointerEvent, adopted = false) {
   const screen = pointerToScreen(e);
   const { x, y } = screenToPaper(screen);
 
-  // The eraser runs a bit larger than the pen at the same stroke level. Stroke
-  // widths are authored in CSS pixels, so they scale to backing-store pixels.
-  const lineWidth =
-    (eraserActive ? currentLineWidth * ERASER_SIZE_MULTIPLIER : currentLineWidth) * renderScale;
+  // The crayon is a latched pen-tip style: an eraser or magic detour wins
+  // while selected, and the pen comes back as a crayon afterwards.
+  const crayon = crayonActive && !eraserActive && !magicActive;
+
+  // The eraser runs a bit larger — and the crayon tip a bit fatter — than the
+  // pen at the same stroke level. Stroke widths are authored in CSS pixels, so
+  // they scale to backing-store pixels.
+  const widthMultiplier = eraserActive
+    ? ERASER_SIZE_MULTIPLIER
+    : crayon
+      ? CRAYON_SIZE_MULTIPLIER
+      : 1;
+  const lineWidth = currentLineWidth * widthMultiplier * renderScale;
 
   // An adopted stream is never an edge-swipe candidate: it began on a UI
   // control inside the app, not at the screen bezel where OS gestures start —
@@ -582,6 +756,7 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayon,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -613,7 +788,7 @@ function commitEdgeSwipe(ps: PointerState) {
   ps.edgeSwipeGuard = null;
   renderStrokeStart(ps);
   if (ps.pendingPoints.length > 0) {
-    strokeSmoothSegments(ps, ps.pendingPoints.map(screenToPaper));
+    advancePointerStroke(ps, ps.pendingPoints.map(screenToPaper));
     ps.pendingPoints = [];
   }
   // Restart speed sampling from the commit point so the buffered span doesn't
@@ -666,17 +841,29 @@ function advanceEdgeSwipeCandidate(
 // large for continuous contact together mean the finger really lifted, so the
 // stroke is restarted at the resumed point. The gap/jump thresholds and the
 // decision predicate live in ./strokeMath (pointerWasResumed).
-function restartStrokeIfResumed(ps: PointerState, resume: { x: number; y: number }, now: number) {
+function restartStrokeIfResumed(
+  ps: PointerState,
+  resume: { x: number; y: number },
+  now: number
+): boolean {
   const deltaX = resume.x - ps.x;
   const deltaY = resume.y - ps.y;
   const jump = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-  if (!pointerWasResumed(now - ps.lastTime, jump, Math.min(paper.pxW, paper.pxH))) return;
+  if (!pointerWasResumed(now - ps.lastTime, jump, Math.min(paper.pxW, paper.pxH))) return false;
   ps.x = resume.x;
   ps.y = resume.y;
   ps.midX = resume.x;
   ps.midY = resume.y;
   ps.speedSamples = [{ t: now, distance: 0 }];
   ctx.beginPath();
+  return true;
+}
+
+// Route new stroke points to the active tip: crayon gestures grow swept
+// passes; everything else records the per-frame smoothed path ops.
+function advancePointerStroke(ps: PointerState, points: { x: number; y: number }[]) {
+  if (ps.crayon) advanceCrayonStroke(ps, points);
+  else strokeSmoothSegments(ps, points);
 }
 
 // Speed is sampled from the final event only: one chord per pointermove,
@@ -721,10 +908,11 @@ function draw(e: PointerEvent) {
   }
 
   const points = screenPoints.map(screenToPaper);
-  restartStrokeIfResumed(pointerState, points[0], now);
+  const resumed = restartStrokeIfResumed(pointerState, points[0], now);
+  if (resumed && pointerState.crayon) restartCrayonStroke(pointerState);
   const speed = strokeSpeed(pointerState, points[points.length - 1], now);
 
-  strokeSmoothSegments(pointerState, points);
+  advancePointerStroke(pointerState, points);
 
   pointerState.lastTime = now;
 
@@ -745,6 +933,10 @@ function stopDrawing(e?: PointerEvent) {
   if (pointerState?.edgeSwipeGuard && e.type === 'pointerup') {
     commitEdgeSwipe(pointerState);
   }
+
+  // The lift closes the crayon gesture's final pass: stamp it onto the main
+  // canvas (recording it for replay) and drop it from the live overlay.
+  if (pointerState?.crayon) finishCrayonStroke(e.pointerId);
 
   activePointers.delete(e.pointerId);
   activePointerIds.delete(e.pointerId);
@@ -769,6 +961,11 @@ function stopDrawing(e?: PointerEvent) {
 export function releaseAllPointers() {
   if (!ctx) return;
   ctx.beginPath();
+
+  // Strokes the engine ends itself (a swatch press, drag-to-clear, teardown)
+  // never see a pointerup — close their open crayon passes so the ink is
+  // stamped and recorded before the group commits below.
+  for (const pointerId of Array.from(crayonStrokes.keys())) finishCrayonStroke(pointerId);
 
   activePointers.clear();
   groupHasDrawn = false;
@@ -934,6 +1131,10 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   currentColor = options.initialColor || '#AB71E1';
 
   renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
+  // Before the first resize/replay: persisted history can already hold crayon
+  // ops, and their tooth must rasterize at this session's scale.
+  setCrayonRenderScale(renderScale);
+  mountCrayonOverlay();
 
   resizeCanvas();
 
@@ -1007,6 +1208,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
       // the ink.
       releaseAllPointers();
       liveDownIds.clear();
+      unmountCrayonOverlay();
     },
   };
 }
@@ -1020,6 +1222,7 @@ export function setColor(color: string) {
   if (color === currentColor) return;
   currentColor = color;
   lastColorChangeTime = Date.now();
+  if (crayonActive) warmCrayonTileWhenIdle(color);
 }
 
 export function setStrokeWidth(widthPx: number) {
@@ -1037,6 +1240,15 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+// Crayon tip on/off (ADR-0065). A latched pen-tip style rather than a third
+// modifier: eraser/magic take precedence while selected (see startDrawing) and
+// the pen resumes as a crayon when they release. Selecting it pre-warms the
+// paper-tooth tile for the active color off the pointer hot path.
+export function setCrayonMode(active: boolean) {
+  crayonActive = active;
+  if (active) warmCrayonTileWhenIdle(currentColor);
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

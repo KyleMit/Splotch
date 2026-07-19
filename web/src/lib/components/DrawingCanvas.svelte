@@ -6,6 +6,7 @@
     setStrokeWidth,
     setEraserMode,
     setMagicMode,
+    setCrayonMode,
     setColorSheet,
     setSafeAreaInsets,
     getCanvasRect,
@@ -14,13 +15,14 @@
   import { viewMatrix } from '$lib/drawing/paperView';
   import { layout } from '$lib/state/layout.svelte';
   import { colors } from '$lib/state/colors.svelte';
-  import { toolState } from '$lib/state/tool.svelte';
+  import { toolState, crayonSelected } from '$lib/state/tool.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import {
     strokeState,
     activeStrokeSize,
     getStrokeWidthPx,
     getEraserWidthPx,
+    CRAYON_SIZE_MULTIPLIER,
   } from '$lib/state/strokeWidth.svelte';
   import { coloringBookState } from '$lib/state/coloringBook.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
@@ -77,9 +79,12 @@
   );
 
   // Pen and magic strokes share the pen width (the engine applies no multiplier
-  // to magic ops), so both ring flavors share this size.
+  // to magic ops), so both ring flavors share this size; the crayon tip runs
+  // fatter (CRAYON_SIZE_MULTIPLIER, matching the engine's stroke width).
   const brushRingSizePx = $derived(
-    getStrokeWidthPx(strokeState.penSize) * (paperView.active ? paperView.scale : 1)
+    getStrokeWidthPx(strokeState.penSize) *
+      (crayonSelected() ? CRAYON_SIZE_MULTIPLIER : 1) *
+      (paperView.active ? paperView.scale : 1)
   );
 
   function updateEraserCursor(e: PointerEvent) {
@@ -241,6 +246,10 @@
 
   $effect(() => {
     setMagicMode(toolState.magic);
+  });
+
+  $effect(() => {
+    setCrayonMode(toolState.crayon);
   });
 
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK

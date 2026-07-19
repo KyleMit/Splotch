@@ -9,6 +9,11 @@ export const DEFAULT_SIZE = 3;
 // feel. Matching the pen exactly makes precise erasing frustrating.
 export const ERASER_SIZE_MULTIPLIER = 2;
 
+// The crayon tip is fatter than the pen at the same level: a real kids' crayon
+// lays a chunky stroke, and the wider strip gives its paper tooth room to read
+// (ADR-0065). Applied in the engine at stroke start, like the eraser's.
+export const CRAYON_SIZE_MULTIPLIER = 1.5;
+
 // Pen and eraser each remember their own level, persisted separately, so
 // switching tools restores the size the child last used for that tool.
 const PEN_SIZE_KEY = 'splotch-stroke-width-size'; // pen (existing key)
