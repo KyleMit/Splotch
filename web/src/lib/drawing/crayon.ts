@@ -139,8 +139,15 @@ function valueNoiseOctave(size: number, cell: number, rand: () => number): Float
 let toothTile: HTMLCanvasElement | null = null;
 let toothTileKey = '';
 
+// The 'dense' A/B variant lays a heavier crayon (more wax, less tooth) off the same
+// noise field; 'tooth' (shipped) and 'off' use the authored coverage. Clamped so the
+// tile always keeps some valley to build up into.
+function effectiveCoverage(p: CrayonParams): number {
+  return p.mode === 'dense' ? Math.min(0.95, p.coverage + 0.07) : p.coverage;
+}
+
 function toothParamsKey(p: CrayonParams): string {
-  return `${p.tile}|${p.coverage}|${p.cells.join(',')}|${p.weights.join(',')}|${p.band}|${p.bodyAlpha}`;
+  return `${p.mode}|${p.tile}|${effectiveCoverage(p)}|${p.cells.join(',')}|${p.weights.join(',')}|${p.band}|${p.bodyAlpha}`;
 }
 
 function buildToothTile(p: CrayonParams): HTMLCanvasElement | null {
@@ -160,7 +167,7 @@ function buildToothTile(p: CrayonParams): HTMLCanvasElement | null {
   // Threshold at the coverage quantile so the opaque fraction is exactly `coverage`,
   // independent of the noise's actual distribution.
   const sorted = Float32Array.from(fbm).sort();
-  const t = sorted[Math.min(sorted.length - 1, Math.floor(p.coverage * sorted.length))];
+  const t = sorted[Math.min(sorted.length - 1, Math.floor(effectiveCoverage(p) * sorted.length))];
 
   const canvas = document.createElement('canvas');
   canvas.width = size;
