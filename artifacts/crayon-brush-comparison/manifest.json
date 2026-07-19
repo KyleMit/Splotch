@@ -31,6 +31,7 @@
   ],
   "attempts": [
     {
+      "id": "pr-397",
       "pr": 397,
       "rank": 1,
       "title": "feat: add live wax crayon buildup",
@@ -43,6 +44,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-399",
       "pr": 399,
       "rank": 2,
       "title": "temp(drawing): draw the plain pen as crayon for in-app preview",
@@ -55,6 +57,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-403",
       "pr": 403,
       "rank": 3,
       "title": "feat(drawing): waxy crayon brush with wax build-up as the default pen",
@@ -67,6 +70,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-411",
       "pr": 411,
       "rank": 4,
       "title": "Add a wax crayon brush (screened tooth, seed-driven buildup)",
@@ -79,6 +83,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-416",
       "pr": 416,
       "rank": 5,
       "title": "Add a crayon brush: waxy paper-tooth grain with live wax buildup",
@@ -91,6 +96,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-414",
       "pr": 414,
       "rank": 6,
       "title": "Add a wax-crayon brush: colour stroked through a paper-tooth pattern",
@@ -103,6 +109,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-406",
       "pr": 406,
       "rank": 7,
       "title": "Make the pen draw crayon by default",
@@ -115,6 +122,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-396",
       "pr": 396,
       "rank": 8,
       "title": "feat: add wax crayon buildup",
@@ -124,6 +132,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-389",
       "pr": 389,
       "rank": 9,
       "title": "feat: add textured crayon brush",
@@ -133,6 +142,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-387",
       "pr": 387,
       "rank": 10,
       "title": "feat(drawing): add deterministic wax crayon texture",
@@ -145,6 +155,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-388",
       "pr": 388,
       "rank": 11,
       "title": "feat: add textured crayon brush",
@@ -157,6 +168,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-390",
       "pr": 390,
       "rank": 12,
       "title": "feat: add textured wax crayon buildup",
@@ -169,6 +181,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-392",
       "pr": 392,
       "rank": 13,
       "title": "feat: add textured wax crayon brush",
@@ -181,6 +194,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-394",
       "pr": 394,
       "rank": 14,
       "title": "feat: add phase-shifted crayon tooth",
@@ -193,6 +207,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-395",
       "pr": 395,
       "rank": 15,
       "title": "feat: add deterministic wax crayon texture",
@@ -205,6 +220,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-402",
       "pr": 402,
       "rank": 16,
       "title": "feat: add deterministic wax crayon buildup",
@@ -217,6 +233,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-405",
       "pr": 405,
       "rank": 17,
       "title": "Add two-octave crayon texture",
@@ -229,6 +246,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-407",
       "pr": 407,
       "rank": 18,
       "title": "Add blue-noise crayon texture buildup",
@@ -241,6 +259,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-409",
       "pr": 409,
       "rank": 19,
       "title": "Add paper-tooth crayon rendering",
@@ -253,6 +272,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-410",
       "pr": 410,
       "rank": 20,
       "title": "Add textured crayon brush rendering",
@@ -265,6 +285,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-400",
       "pr": 400,
       "rank": 21,
       "title": "feat(drawing): make the crayon the default freehand brush (replace pen)",
@@ -277,6 +298,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-393",
       "pr": 393,
       "rank": 22,
       "title": "feat: add textured crayon coverage brush",
@@ -289,6 +311,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-398",
       "pr": 398,
       "rank": 23,
       "title": "Add a waxy crayon brush with same-colour buildup",
@@ -301,6 +324,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-412",
       "pr": 412,
       "rank": 24,
       "title": "Make the crayon 'dense' A/B variant a real higher-coverage tooth",
@@ -313,6 +337,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-404",
       "pr": 404,
       "rank": 25,
       "title": "Add wax crayon texture rendering",
@@ -322,6 +347,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-401",
       "pr": 401,
       "rank": 26,
       "title": "feat: add textured crayon buildup",
@@ -334,6 +360,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-386",
       "pr": 386,
       "rank": 27,
       "title": "feat: add wax crayon tooth brush",
@@ -346,6 +373,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-391",
       "pr": 391,
       "rank": 28,
       "title": "feat: add wax crayon buildup brush",
@@ -358,6 +386,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-385",
       "pr": 385,
       "rank": 29,
       "title": "feat: add textured crayon brush",
@@ -370,6 +399,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-417",
       "pr": 417,
       "rank": 30,
       "title": "feat(drawing): waxy crayon brush with paper-tooth buildup (default pen)",
@@ -382,6 +412,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-415",
       "pr": 415,
       "rank": 31,
       "title": "Add a wax crayon brush (textured, buildup at constant hue)",
@@ -394,6 +425,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-353",
       "pr": 353,
       "rank": 32,
       "title": "Add handoff for crayon-brush-iteration",
@@ -406,6 +438,7 @@
       "captureSchemaVersion": 1
     },
     {
+      "id": "pr-408",
       "pr": 408,
       "rank": 33,
       "title": "feat(drawing): waxy crayon free-draw via colour-tinted paper-tooth pattern",
@@ -415,6 +448,16 @@
         true
       ],
       "directory": "attempts/pr-408",
+      "captureSchemaVersion": 1
+    },
+    {
+      "id": "final-proposed",
+      "pr": null,
+      "rank": 34,
+      "title": "Refined color-phased wax crayon",
+      "headSha": "working-tree-after-d81d02f",
+      "activation": "default crayon",
+      "directory": "attempts/final-proposed",
       "captureSchemaVersion": 1
     }
   ]

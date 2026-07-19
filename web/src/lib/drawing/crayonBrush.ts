@@ -205,6 +205,34 @@ const tintedTiles = new Map<string, HTMLCanvasElement>();
 let patternCache = new WeakMap<CanvasRenderingContext2D, Map<string, CanvasPattern>>();
 const MAX_TINTED_COLORS = 16;
 
+function hashColor(color: string): number {
+  let hash = 2166136261;
+  for (const codePoint of color.trim().toLowerCase()) {
+    hash ^= codePoint.codePointAt(0)!;
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+export function crayonPhaseForColor(color: string, tile: number): { x: number; y: number } {
+  const hash = hashColor(color);
+  return {
+    x: hash % tile,
+    y: (Math.imul(hash ^ (hash >>> 16), 0x45d9f3b) >>> 0) % tile,
+  };
+}
+
+function drawColorPhasedTooth(
+  ctx: CanvasRenderingContext2D,
+  tooth: HTMLCanvasElement,
+  color: string
+): void {
+  const { x, y } = crayonPhaseForColor(color, tooth.width);
+  for (const dx of [-x, tooth.width - x]) {
+    for (const dy of [-y, tooth.height - y]) ctx.drawImage(tooth, dx, dy);
+  }
+}
+
 function buildToothTile(variant: CrayonVariant): HTMLCanvasElement {
   const side = variant.tile;
   const canvas = document.createElement('canvas');
@@ -243,8 +271,8 @@ export function warmCrayonTooth(): void {
   ensureToothTile();
 }
 
-// A tile of solid `color` carrying the tooth's alpha: fill opaque colour, then
-// destination-in the tooth so only the tooth's alpha survives. Cached per colour.
+// A tile of solid `color` carrying the tooth's alpha: assemble a wrapped,
+// colour-phased tooth, then source-in the opaque colour. Cached per colour.
 function tintedTileFor(color: string): HTMLCanvasElement {
   const cached = tintedTiles.get(color);
   if (cached) return cached;
@@ -253,10 +281,10 @@ function tintedTileFor(color: string): HTMLCanvasElement {
   tile.width = tooth.width;
   tile.height = tooth.height;
   const ctx = tile.getContext('2d')!;
+  drawColorPhasedTooth(ctx, tooth, color);
+  ctx.globalCompositeOperation = 'source-in';
   ctx.fillStyle = color;
   ctx.fillRect(0, 0, tile.width, tile.height);
-  ctx.globalCompositeOperation = 'destination-in';
-  ctx.drawImage(tooth, 0, 0);
   ctx.globalCompositeOperation = 'source-over';
   if (tintedTiles.size >= MAX_TINTED_COLORS) {
     // Cheap bound: drop everything and let it rebuild lazily. The tooth is

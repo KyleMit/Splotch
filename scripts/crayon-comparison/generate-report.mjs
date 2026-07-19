@@ -31,7 +31,10 @@ const hasRank = (attempt) => Number.isFinite(Number(attempt.metadata.rank));
 function attemptDirectories() {
   if (!existsSync(ATTEMPTS_DIR)) return [];
   return readdirSync(ATTEMPTS_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && /^pr-\d+$/.test(entry.name))
+    .filter(
+      (entry) =>
+        entry.isDirectory() && (/^pr-\d+$/.test(entry.name) || entry.name === 'final-proposed')
+    )
     .map((entry) => join(ATTEMPTS_DIR, entry.name));
 }
 
@@ -41,21 +44,22 @@ function loadAttempt(directory) {
   if (!existsSync(metadataPath) || !existsSync(capturePath)) return null;
   const metadata = readJson(metadataPath);
   const capture = readJson(capturePath);
-  const pr = Number(metadata.pr ?? basename(directory).replace('pr-', ''));
-  const ranking = rankingsByPr.get(pr);
+  const directoryName = basename(directory);
+  const pr = Number(metadata.pr ?? directoryName.replace('pr-', ''));
+  const ranking = Number.isFinite(pr) ? rankingsByPr.get(pr) : null;
   if (ranking) {
     metadata.rank = ranking.rank;
     metadata.score = ranking.total;
     metadata.scores = ranking.scores;
     metadata.rankingRationale = ranking.rationale;
   }
-  return { directory, metadata, capture, pr };
+  return { directory, metadata, capture, pr, id: directoryName };
 }
 
 function compareAttempts(a, b) {
   if (hasRank(a) && hasRank(b)) return Number(a.metadata.rank) - Number(b.metadata.rank);
   if (hasRank(a) !== hasRank(b)) return hasRank(a) ? -1 : 1;
-  return b.pr - a.pr;
+  return (Number.isFinite(b.pr) ? b.pr : 0) - (Number.isFinite(a.pr) ? a.pr : 0);
 }
 
 function displayValue(value) {
@@ -119,9 +123,15 @@ function attemptCard(attempt) {
   const metrics = metricRows(metadata);
   const attemptFailures = failures(metadata);
   const rank = hasRank(attempt) ? `<span class="rank">Rank ${esc(metadata.rank)}</span>` : '';
-  return `<article class="attempt" id="pr-${attempt.pr}">
+  const label = Number.isFinite(attempt.pr)
+    ? `PR ${attempt.pr}`
+    : (metadata.label ?? 'Final candidate');
+  const url =
+    metadata.url ??
+    (Number.isFinite(attempt.pr) ? `https://github.com/KyleMit/Splotch/pull/${attempt.pr}` : '#');
+  return `<article class="attempt" id="${esc(attempt.id)}">
     <header class="attempt-head">
-      <div><div class="eyebrow">PR ${attempt.pr}</div><h2><a href="https://github.com/KyleMit/Splotch/pull/${attempt.pr}">${esc(metadata.title ?? `Pull request ${attempt.pr}`)}</a></h2></div>
+      <div><div class="eyebrow">${esc(label)}</div><h2><a href="${esc(url)}">${esc(metadata.title ?? `Pull request ${attempt.pr}`)}</a></h2></div>
       ${rank}
     </header>
     <div class="attempt-meta">
@@ -174,7 +184,8 @@ const manifest = {
   order: 'rank-worst-to-best-then-pr-descending',
   scenes: SCENES,
   attempts: attempts.map((attempt) => ({
-    pr: attempt.pr,
+    id: attempt.id,
+    pr: Number.isFinite(attempt.pr) ? attempt.pr : null,
     rank: hasRank(attempt) ? Number(attempt.metadata.rank) : null,
     title: attempt.metadata.title ?? null,
     headSha: attempt.metadata.headSha ?? null,

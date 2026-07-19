@@ -1376,3 +1376,32 @@ test('same-colour crayon builds up: denser, hue held, live along the second stro
   expect(Math.abs(leftAfter.g - pass1.g)).toBeLessThan(8);
   expect(Math.abs(leftAfter.b - pass1.b)).toBeLessThan(8);
 });
+
+test('same-colour crayon builds up live when a held stroke retraces itself (ADR-0065)', async ({
+  page,
+}) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+  await page.evaluate(() => {
+    window.__engine.setColor('#62a2e9');
+    window.__engine.setStrokeWidth(20);
+    window.__engine.setCrayonVariant('wax');
+  });
+  await page.waitForTimeout(160);
+
+  await page.mouse.move(box.x + 60, box.y + 90);
+  await page.mouse.down();
+  for (const { x, y } of crayonBar(90, 70, 300)) await page.mouse.move(box.x + x, box.y + y);
+  const forward = await page.evaluate(() => window.__engine.inkStats(80, 82, 200, 16));
+
+  for (const { x, y } of crayonBar(90, 70, 300).reverse()) {
+    await page.mouse.move(box.x + x, box.y + y);
+  }
+  const retracedWhileDown = await page.evaluate(() => window.__engine.inkStats(80, 82, 200, 16));
+  await page.mouse.up();
+
+  expect(retracedWhileDown.alpha).toBeGreaterThan(forward.alpha + 0.05);
+  expect(Math.abs(retracedWhileDown.r - forward.r)).toBeLessThan(8);
+  expect(Math.abs(retracedWhileDown.g - forward.g)).toBeLessThan(8);
+  expect(Math.abs(retracedWhileDown.b - forward.b)).toBeLessThan(8);
+});

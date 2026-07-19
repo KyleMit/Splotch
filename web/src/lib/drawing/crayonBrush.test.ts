@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { toothHeight, depositAlpha, CRAYON_VARIANTS, type CrayonVariant } from './crayonBrush';
+import {
+  toothHeight,
+  depositAlpha,
+  crayonPhaseForColor,
+  CRAYON_VARIANTS,
+  type CrayonVariant,
+} from './crayonBrush';
 
 const wax = CRAYON_VARIANTS.wax;
 
@@ -53,6 +59,31 @@ describe('wax-deposit curve', () => {
   it('keeps a non-zero valley deposit so later passes can keep filling', () => {
     // A zero floor would freeze the valleys forever — no buildup past pass one.
     expect(depositAlpha(0, wax)).toBeGreaterThan(0);
+  });
+});
+
+describe('colour-derived tooth phase', () => {
+  it('is deterministic and canonicalises equivalent colour spelling', () => {
+    expect(crayonPhaseForColor(' #62A2E9 ', wax.tile)).toEqual(
+      crayonPhaseForColor('#62a2e9', wax.tile)
+    );
+  });
+
+  it('gives distinct palette colours distinct paper-tooth phases', () => {
+    const phases = ['#62a2e9', '#ef5350', '#fdd835', '#66bb6a'].map((color) =>
+      crayonPhaseForColor(color, wax.tile)
+    );
+    expect(new Set(phases.map(({ x, y }) => `${x},${y}`)).size).toBe(phases.length);
+  });
+
+  it('always stays inside the repeat tile', () => {
+    for (const color of ['#000000', '#ffffff', '#62a2e9', 'rgb(10, 20, 30)']) {
+      const phase = crayonPhaseForColor(color, wax.tile);
+      expect(phase.x).toBeGreaterThanOrEqual(0);
+      expect(phase.x).toBeLessThan(wax.tile);
+      expect(phase.y).toBeGreaterThanOrEqual(0);
+      expect(phase.y).toBeLessThan(wax.tile);
+    }
   });
 });
 

@@ -1,0 +1,24 @@
+{
+  "label": "Final candidate",
+  "title": "Refined color-phased wax crayon",
+  "url": "https://github.com/KyleMit/Splotch/pull/418",
+  "headSha": "working-tree-after-d81d02f",
+  "activation": "default crayon",
+  "rank": 34,
+  "score": 89,
+  "scores": {
+    "waxBody": 22,
+    "fineNaturalTooth": 18,
+    "containmentCrispEdge": 14,
+    "sameHueBuildup": 24,
+    "colorInteraction": 7,
+    "fullDrawing": 4
+  },
+  "visualNotes": "Retains PR 408's fine, contained wax tooth and strong constant-hue buildup. Deterministic color-derived tooth phases make crossings optically interleave instead of sharing perfectly registered opaque peaks; the effect is intentionally subtle and avoids multiply-style mud.",
+  "gates": {
+    "continuousRetraceBuildup": true,
+    "sameHueBuildup": true,
+    "deterministicReplay": true,
+    "supportedCanvasApis": true
+  }
+}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Crayon brush comparison — 33 attempts</title>
+<title>Crayon brush comparison — 34 attempts</title>
 <style>
 :root{
   color-scheme: light dark;
@@ -198,7 +198,7 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
     <div class="masthead-body">
       <h1>Crayon brush comparison</h1>
       <p class="tagline">Identical deterministic drawings across independent crayon implementations, compared against real-crayon reference samples. Ranked candidates appear <b>worst to best</b>; unranked candidates follow by PR number.</p>
-      <div class="stat-row"><span class="chip accent"><b>33</b> attempts</span><span class="chip"><b>33</b> ranked</span><span class="chip"><b>5</b> scenes each</span></div>
+      <div class="stat-row"><span class="chip accent"><b>34</b> attempts</span><span class="chip"><b>34</b> ranked</span><span class="chip"><b>5</b> scenes each</span></div>
     </div>
   </div>
 </header><main><div class="shell">
@@ -1239,6 +1239,37 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
     <div class="assessment">
       <div><h3>Evaluator notes</h3><p>Fine all-over tooth, crisp containment, and a stable-hue progression toward denser lifted passes produce a credible dry-wax result. Continuous retrace is less dramatic and the grain can look uniformly sandy; different colors still stack in draw order rather than mix.</p><p class="ranking-note"><b>Ranking:</b> The best overall balance: fine crisp tooth, a dense but visibly broken wax body, strict containment, and the clearest progressive fill-in from single through repeated passes at stable hue. Cross-color behavior remains mostly layered, leaving room for the next iteration.</p></div>
       <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>22</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>18</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>22</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>5</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="final-proposed">
+    <header class="attempt-head">
+      <div><div class="eyebrow">Final candidate</div><h2><a href="https://github.com/KyleMit/Splotch/pull/418">Refined color-phased wax crayon</a></h2></div>
+      <span class="rank">Rank 34</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> default crayon</span>
+      <span class="chip"><b>SHA</b> <code>working-tr</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/final-proposed/01-single-line.webp"><img src="attempts/final-proposed/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/final-proposed/02-continuous-retrace.webp"><img src="attempts/final-proposed/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/final-proposed/03-lifted-buildup.webp"><img src="attempts/final-proposed/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/final-proposed/04-color-crossing.webp"><img src="attempts/final-proposed/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/final-proposed/05-toddler-drawing.webp"><img src="attempts/final-proposed/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Retains PR 408&#39;s fine, contained wax tooth and strong constant-hue buildup. Deterministic color-derived tooth phases make crossings optically interleave instead of sharing perfectly registered opaque peaks; the effect is intentionally subtle and avoids multiply-style mud.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>22</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>18</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>24</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>7</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div><div class="metric gate"><dt>continuousRetraceBuildup</dt><dd>pass</dd></div><div class="metric gate"><dt>sameHueBuildup</dt><dd>pass</dd></div><div class="metric gate"><dt>deterministicReplay</dt><dd>pass</dd></div><div class="metric gate"><dt>supportedCanvasApis</dt><dd>pass</dd></div></dl></div>
       <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
     </div>
   </article>

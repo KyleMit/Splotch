@@ -44,9 +44,10 @@ The mechanism (`crayonBrush.ts`):
   mapped through a contrast curve and a wax-deposit curve `deposit = floor + (ceil − floor)·toothᵞ`.
   The field is **positional** (a property of the paper, tiled from paper `(0,0)`), not per-stroke
   random.
-* A small **tooth tile** whose alpha channel is that deposit, tinted per colour (fill the colour,
-  then `destination-in` the tooth so only its alpha survives) and cached as a `repeat` pattern per
-  target context.
+* A small **tooth tile** whose alpha channel is that deposit, tinted per colour (assemble a wrapped,
+  deterministically colour-phased copy of the tooth, then `source-in` the colour) and cached as a
+  `repeat` pattern per target context. The same normalised colour shares a phase; different colours
+  generally sample shifted peaks and valleys from the same paper field.
 
 Two properties fall out of this one primitive:
 
@@ -59,6 +60,11 @@ Two properties fall out of this one primitive:
   while the hue is invariant. It converges to the solid colour and stops — the opposite of
   `multiply`. And it is live/gradual: every per-frame op composites as the finger moves, so fill-in
   happens during the second stroke, never as a post-stroke snap.
+* **Colour interaction.** Colour-derived phase offsets make different crayons optically interleave
+  at crossings: one colour's wax peaks can occupy another colour's tooth valleys under ordinary
+  `source-over`, instead of every colour depositing on exactly the same pixels. Same-colour strokes
+  remain in register, preserving constant-hue buildup. The phase is applied once when the cached
+  tinted tile is built, so it adds no per-op hot-path work.
 
 Replay stays bit-identical because every surface renders ops in the same paper-pixel space, so a
 pattern tiled from paper `(0,0)` samples the identical tooth phase everywhere — the same property
