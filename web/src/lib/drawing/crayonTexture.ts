@@ -60,7 +60,7 @@ export const DEFAULT_CRAYON_PARAMS: CrayonParams = {
   edge0: 0.0,
   edge1: 0.32,
   gamma: 1,
-  grainPx: 1.5,
+  grainPx: 2,
   varAmp: 0.4,
   varFreq: 2,
 };

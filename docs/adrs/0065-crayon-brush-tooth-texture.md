@@ -31,8 +31,11 @@ exported PNG.
 
 ## Decision
 
-Add a **crayon** tool (a mutually-exclusive modifier alongside eraser/magic, wired the same way) and
-render it as **a stroke masked by a fixed paper-tooth texture, composited per stroke group**.
+Make the **crayon** the freehand brush — it replaces the plain pen as what the app draws with unless
+the eraser or magic brush is picked (the DrawingCanvas reactive bridge sets crayon mode whenever
+neither modifier is active) — and render it as **a stroke masked by a fixed paper-tooth texture,
+composited per stroke group**. The engine keeps a `crayon` flag per op (so the plain-pen render path
+still exists and the /dev/engine spec can exercise it), but the app never selects it.
 
 ### 1. Blue-noise paper tooth, shipped as a constant
 

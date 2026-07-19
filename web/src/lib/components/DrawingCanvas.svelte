@@ -244,8 +244,10 @@
     setMagicMode(toolState.magic);
   });
 
+  // The crayon is the freehand brush (ADR-0065) — it replaced the plain pen, so
+  // any normal stroke (neither eraser nor magic) draws with it.
   $effect(() => {
-    setCrayonMode(toolState.crayon);
+    setCrayonMode(!toolState.eraser && !toolState.magic);
   });
 
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK
