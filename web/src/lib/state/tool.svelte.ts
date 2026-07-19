@@ -6,10 +6,21 @@
 //
 // `eraser` and `magic` are mutually exclusive modifiers on top of the pen — at
 // most one is ever true. Pen is the state where both are false.
+//
+// `style` is the pen-mode brush (ADR: crayon brush): 'crayon' textures strokes
+// like wax on paper tooth, 'pen' is the flat solid stroke. It's an orthogonal
+// axis to eraser/magic (those override it) and defaults to 'crayon' — the app's
+// waxy-on-paper look. The engine's own default stays 'pen' so the low-level
+// harness specs are unaffected; the DrawingCanvas bridge pushes this choice in.
 export const toolState = $state({
   eraser: false,
   magic: false,
+  style: 'crayon' as 'crayon' | 'pen',
 });
+
+export function setBrushStyle(style: 'crayon' | 'pen') {
+  toolState.style = style;
+}
 
 export function selectEraser() {
   toolState.eraser = true;

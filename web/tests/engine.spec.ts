@@ -1303,3 +1303,145 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
   expect(s.canvasEmpty).toBe(true);
   expect(s.canUndo).toBe(false);
 });
+
+// --- Crayon brush (ADR: crayon brush) --------------------------------------
+// The crayon is a pen-mode brush that textures strokes with a paper-tooth
+// pattern. Its defining behaviour is wax BUILDUP: a second same-colour pass
+// fills more of the paper grain and gets denser while the hue stays constant
+// (no multiply-style darkening), through the same op/replay path as every other
+// brush, deterministically.
+
+// Count of inked pixels + their mean colour across the whole canvas.
+const crayonStats = (page: Page) =>
+  page.evaluate(() => {
+    const c = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+    let n = 0,
+      r = 0,
+      g = 0,
+      b = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] > 127) {
+        n++;
+        r += d[i];
+        g += d[i + 1];
+        b += d[i + 2];
+      }
+    }
+    const k = Math.max(n, 1);
+    return { n, r: r / k, g: g / k, b: b / k };
+  });
+
+// A cheap whole-canvas checksum, to prove two rebuilds are pixel-identical.
+const canvasChecksum = (page: Page) =>
+  page.evaluate(() => {
+    const c = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+    let sum = 0;
+    for (let i = 0; i < d.length; i += 4)
+      sum = (sum + d[i] * 3 + d[i + 1] * 5 + d[i + 3] * 7) >>> 0;
+    return sum;
+  });
+
+// A horizontal drag sampled at many points, so the engine strokes the full span
+// (a 2-point drag only reaches the last midpoint) and the band below sits on a
+// fully-stroked region.
+const CRAYON_LINE = Array.from({ length: 15 }, (_, i) => ({ x: 40 + i * 16, y: 150 }));
+
+// Fraction of a normalized band that is BARE (transparent) — the paper tooth
+// showing through. Measured in a rectangle safely inside the stroke so the
+// stroke's own edges don't count.
+const holeFrac = (page: Page, band: { x0: number; x1: number; y0: number; y1: number }) =>
+  page.evaluate((b) => {
+    const c = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const g = c.getContext('2d')!;
+    const x = Math.round(b.x0 * c.width);
+    const y = Math.round(b.y0 * c.height);
+    const w = Math.round((b.x1 - b.x0) * c.width);
+    const h = Math.round((b.y1 - b.y0) * c.height);
+    const d = g.getImageData(x, y, w, h).data;
+    let bare = 0;
+    for (let i = 3; i < d.length; i += 4) if (d[i] < 50) bare++;
+    return bare / (w * h);
+  }, band);
+
+// A band fully inside the 40px-wide horizontal stroke, away from its edges.
+const INSIDE = { x0: 0.28, x1: 0.62, y0: 0.47, y1: 0.53 };
+
+test('crayon: a single pass is a broken waxy body, not a flat fill', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+
+  // The solid pen fills its interior completely — no paper shows through.
+  await page.evaluate(() => {
+    window.__engine.setBrushStyle('pen');
+    window.__engine.setStrokeWidth(40);
+  });
+  await drawStroke(page, box, CRAYON_LINE);
+  const penBare = await holeFrac(page, INSIDE);
+  expect(penBare).toBeLessThan(0.02);
+
+  // The crayon over the same path leaves fine paper tooth showing INSIDE the
+  // stroke — a broken waxy body, not a flat fill — yet stays a dense body.
+  await page.evaluate(() => window.__engine.clearCanvas());
+  await page.evaluate(() => window.__engine.setBrushStyle('crayon'));
+  await drawStroke(page, box, CRAYON_LINE);
+  const crayonBare = await holeFrac(page, INSIDE);
+  expect(crayonBare).toBeGreaterThan(penBare + 0.05);
+  expect(crayonBare).toBeLessThan(0.55);
+});
+
+test('crayon: a second same-colour pass builds up density at constant hue', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await page.evaluate(() => {
+    window.__engine.setBrushStyle('crayon');
+    window.__engine.setStrokeWidth(40);
+  });
+
+  await drawStroke(page, box, CRAYON_LINE);
+  const p1 = await crayonStats(page);
+
+  // A SECOND, separate same-colour stroke over the same path (new command → a
+  // different tooth seed → it fills paper pits the first pass missed).
+  await drawStroke(page, box, CRAYON_LINE);
+  const p2 = await crayonStats(page);
+
+  // Buildup: the grain fills in — the second pass inks meaningfully more pixels.
+  expect(p2.n).toBeGreaterThan(p1.n * 1.05);
+
+  // Constant hue: still clearly red, and it did NOT darken/muddy the way a
+  // multiply would — overlapping the same opaque colour only adds coverage, so
+  // the red channel must not drop and green/blue must not climb toward brown.
+  expect(p2.r).toBeGreaterThan(p2.g + 40);
+  expect(p2.r).toBeGreaterThan(p2.b + 40);
+  expect(p2.r).toBeGreaterThanOrEqual(p1.r - 8);
+  expect(p2.g).toBeLessThanOrEqual(p1.g + 8);
+  expect(p2.b).toBeLessThanOrEqual(p1.b + 8);
+
+  // A third pass keeps filling toward solid.
+  await drawStroke(page, box, CRAYON_LINE);
+  const p3 = await crayonStats(page);
+  expect(p3.n).toBeGreaterThan(p2.n);
+});
+
+test('crayon: strokes replay deterministically (bit-identical rebuilds)', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await page.evaluate(() => {
+    window.__engine.setBrushStyle('crayon');
+    window.__engine.setStrokeWidth(24);
+  });
+  await drawStroke(page, box, [
+    { x: 40, y: 80 },
+    { x: 180, y: 200 },
+    { x: 260, y: 90 },
+  ]);
+
+  // Two independent rebuilds from the stored ops must be pixel-identical — the
+  // ADR-0033 replay invariant. A crayon whose grain used Math.random at render
+  // (instead of the stored per-stroke seed) would differ between rebuilds.
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  const a = await canvasChecksum(page);
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  const b = await canvasChecksum(page);
+  expect(b).toBe(a);
+  expect(await count(page)).toBeGreaterThan(0);
+});

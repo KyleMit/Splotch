@@ -60,6 +60,8 @@ import {
 import { getSimplifyCounters, setSimplifyOptions, type SimplifyOptions } from './commandSimplify';
 import { scanCanvasIsEmpty } from './emptyScan';
 import { exportDrawing, warmPaperTextureWhenIdle, type ExportOptions } from './exportDrawing';
+import { warmCrayonTexture } from './crayonTexture';
+import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
 
 export { setColorSheet };
@@ -87,6 +89,13 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+// Pen-mode brush variant (ADR: crayon brush). 'crayon' textures pen strokes with
+// the paper-tooth pattern (crayonTexture.ts); 'pen' is the flat solid stroke.
+// Default 'pen' keeps the low-level engine (and the /dev/engine specs that drive
+// it) on solid strokes; the app opts into 'crayon' as its product default via the
+// DrawingCanvas bridge, and the dev harness flips it to A/B the two — the same
+// dev-selectable-variant pattern as SimplifyMode (commandSimplify.ts).
+let brushStyle: 'pen' | 'crayon' = 'pen';
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +431,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    brush: ps.brush,
+    seed: ps.seed,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +460,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    brush: ps.brush,
+    seed: ps.seed,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +507,11 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  // 'crayon' tags the stroke's ops so renderOp textures them; seed is generated
+  // once per stroke and stamped on every op, so all ops share one tooth phase
+  // (idempotent overlap) and replay is deterministic. Undefined for other tools.
+  brush: 'crayon' | undefined;
+  seed: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +600,11 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    // Crayon is a pen-mode brush; the eraser and magic brush override it. The
+    // seed is captured at capture time (allowed — only render-time randomness is
+    // banned) and stored on every op so replay is bit-identical.
+    brush: brushStyle === 'crayon' && !eraserActive && !magicActive ? 'crayon' : undefined,
+    seed: (Math.random() * 0x7fffffff) | 0,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -991,6 +1014,10 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   // first export.
   warmPaperTextureWhenIdle();
 
+  // Warm the crayon tooth mask (a one-time noise generation) at idle so the
+  // child's first crayon stroke doesn't pay for it on its own frame.
+  scheduleIdle(() => warmCrayonTexture());
+
   return {
     teardown() {
       for (const remove of removers) remove();
@@ -1028,6 +1055,14 @@ export function setStrokeWidth(widthPx: number) {
 
 export function setEraserMode(active: boolean) {
   eraserActive = active;
+}
+
+// Select the pen-mode brush variant. A pen-mode concern only: it changes how a
+// stroke's ops are painted (crayon = through the paper-tooth texture), so the
+// engine just records the choice and stamps it onto each op. The app sets 'crayon'
+// as its default; the /dev/engine harness flips it to A/B against 'pen'.
+export function setBrushStyle(style: 'pen' | 'crayon') {
+  brushStyle = style;
 }
 
 // Magic brush on/off (ADR-0043). Mutually exclusive with the eraser at the UI

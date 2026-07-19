@@ -6,6 +6,7 @@
     setStrokeWidth,
     setEraserMode,
     setMagicMode,
+    setBrushStyle,
     setColorSheet,
     setSafeAreaInsets,
     getCanvasRect,
@@ -241,6 +242,13 @@
 
   $effect(() => {
     setMagicMode(toolState.magic);
+  });
+
+  // Pen-mode brush variant (ADR: crayon brush). Defaults to 'crayon' so the app
+  // draws waxy-on-paper; the engine's own default is 'pen', so this bridge is
+  // what makes crayon the product default.
+  $effect(() => {
+    setBrushStyle(toolState.style);
   });
 
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK

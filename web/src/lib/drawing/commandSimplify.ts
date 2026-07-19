@@ -119,7 +119,9 @@ function pathStyleMatches(a: PathOp, b: PathOp): boolean {
     a.color === b.color &&
     a.lineWidth === b.lineWidth &&
     a.erase === b.erase &&
-    !!a.magic === !!b.magic
+    !!a.magic === !!b.magic &&
+    a.brush === b.brush &&
+    a.seed === b.seed
   );
 }
 
@@ -182,6 +184,8 @@ function reducePathRun(run: PathOp[]): PathOp[] {
     lineWidth: first.lineWidth,
     erase: first.erase,
     magic: first.magic,
+    brush: first.brush,
+    seed: first.seed,
   }));
 }
 

@@ -7,6 +7,12 @@ import type { PageLoad } from './$types';
 // pixels back. Gated by requireDevHarness() so it never ships to real users.
 export const prerender = false;
 
+// Client-only: the harness mounts a real canvas and puts the engine API on
+// `window`, so there is nothing to server-render (and SSR would touch `window`).
+// Under `vite build && vite preview` the route already falls back to the SPA
+// shell; ssr=false makes `vite dev` behave the same instead of 500-ing on SSR.
+export const ssr = false;
+
 export const load: PageLoad = () => {
   requireDevHarness();
   return {};

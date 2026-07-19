@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { crayonPaintFor } from './crayonTexture';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -16,6 +17,11 @@ import { sheetPatternFor } from './magicBrush';
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
+// `brush`, when 'crayon', renders the op's shape through the paper-tooth texture
+// (crayonTexture.ts) instead of a solid colour, and `seed` picks that stroke's
+// tooth phase — a stored integer so replay is deterministic (ADR-0033) and a
+// second same-colour pass (a different seed) fills complementary paper pits,
+// building up wax at constant hue. All ops of one stroke share one seed.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -25,6 +31,8 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      brush?: 'crayon';
+      seed?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +51,8 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      brush?: 'crayon';
+      seed?: number;
     }
   | { kind: 'clear' };
 
@@ -114,6 +124,17 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
+    return;
+  }
+  if (op.brush === 'crayon' && !op.erase) {
+    // Wax on paper tooth: stroke the same geometry, but paint it through the
+    // colour-tinted tooth pattern. Opaque, so overlapping ops of one stroke stay
+    // idempotent (no beaded joints, no commit-time snap); a second same-colour
+    // stroke's different seed fills complementary pits and builds up at constant
+    // hue. Falls back to the solid colour only if the pattern can't be built.
+    const paint = crayonPaintFor(target, op.color, op.seed ?? 0);
+    target.globalCompositeOperation = 'source-over';
+    paintOpShape(target, op, paint ?? op.color);
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
