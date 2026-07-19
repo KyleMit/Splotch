@@ -16,7 +16,7 @@
 import {
   clearAllOf,
   commandSegmentCount,
-  renderOp,
+  renderCommand,
   type StrokeGroupCommand,
   type StrokeOp,
 } from './strokeOps';
@@ -225,7 +225,7 @@ function foldOldestIntoBaseline(): boolean {
     baselineCtx.clearRect(0, 0, baselineCanvas.width, baselineCanvas.height);
     baselineCtx.drawImage(oldest.keyframe, 0, 0);
   } else {
-    for (const op of oldest.ops) renderOp(baselineCtx, op);
+    renderCommand(baselineCtx, oldest.ops);
   }
   if (PERF_MARKS) performance.measure('engine.foldBaseline', 'engine.foldBaseline:start');
   return true;
@@ -271,7 +271,7 @@ export function paintStateThrough(target: CanvasRenderingContext2D, upToIndex: n
     begin = 0;
   }
   for (let i = begin; i <= upToIndex; i++) {
-    for (const op of commandLog[i].ops) renderOp(target, op);
+    renderCommand(target, commandLog[i].ops);
   }
 }
 
@@ -283,7 +283,7 @@ export function paintStateThrough(target: CanvasRenderingContext2D, upToIndex: n
 export function replayAll(target: CanvasRenderingContext2D) {
   paintStateThrough(target, commandLog.length - 1);
   if (activeCommand) {
-    for (const op of activeCommand.ops) renderOp(target, op);
+    renderCommand(target, activeCommand.ops);
   }
 }
 

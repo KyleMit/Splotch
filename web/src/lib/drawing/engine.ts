@@ -42,7 +42,16 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import {
+  addCrayonLiveOp,
+  beginCrayonLive,
+  clearAllOf,
+  crayonLiveActive,
+  endCrayonLive,
+  invalidateCrayonLive,
+  renderOp,
+  type StrokeOp,
+} from './strokeOps';
 import {
   beginCommand,
   commandCount,
@@ -341,6 +350,10 @@ function resizeCanvas() {
   // magic ops against it.
   rasterizeSheet();
   replayAll(ctx);
+  // A mid-stroke resize just rebuilt the canvas (backing store reset + full
+  // replay, active stroke included), so the live wax layer's snapshot and
+  // coverage are stale — rebase them onto the freshly rebuilt pixels.
+  invalidateCrayonLive(ctx);
 
   refreshCanvasRect();
   notifyViewChange();
@@ -434,7 +447,7 @@ function renderStrokeStart(ps: PointerState) {
     crayon: ps.crayon,
     textureSeed: ps.textureSeed,
   };
-  renderOp(ctx, dot);
+  paintLiveOp(dot);
   recordOp(dot);
 
   ctx.beginPath();
@@ -472,8 +485,20 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     ps.midX = midX;
     ps.midY = midY;
   }
-  renderOp(ctx, op);
+  paintLiveOp(op);
   recordOp(op);
+}
+
+// Live rendering of one op onto the visible ctx. Crayon ops go through the
+// incremental coverage layer so a whole stroke-group composites as one
+// non-accumulating wax layer (matching replay); everything else paints directly.
+function paintLiveOp(op: StrokeOp) {
+  if (op.kind !== 'clear' && op.crayon && !op.erase && !op.magic) {
+    if (!crayonLiveActive()) beginCrayonLive(ctx);
+    addCrayonLiveOp(ctx, op);
+    return;
+  }
+  renderOp(ctx, op);
 }
 
 // Push the finished stroke group onto the undo log (once per group, when the
@@ -481,6 +506,10 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
 // end, not start, so consumers (e.g. mounting the install banner) never do DOM
 // work while a finger is mid-stroke.
 function commitStrokeGroup() {
+  // The visible canvas already holds the finished wax composite from the last
+  // live op (identical to what replay paints), so ending the layer just frees
+  // its scratch state — no repaint needed.
+  endCrayonLive();
   if (PERF_MARKS) performance.mark('engine.commit:start');
   if (!commitActiveCommand()) return;
   setCanUndo(true);
@@ -883,7 +912,9 @@ export function clearCanvas() {
   // A stroke can straddle the clear (e.g. a second finger drawing while
   // drag-to-clear completes) — see resetActiveCommandForClear. The continuing
   // stroke counts as content (same as beginStrokeGroup), so the empty flag only
-  // flips when no stroke is live.
+  // flips when no stroke is live. Rebase its live wax layer onto the now-cleared
+  // surface so it doesn't composite over the wiped ink.
+  invalidateCrayonLive(ctx);
   const strokeStillLive = resetActiveCommandForClear();
   setCanvasEmptyState(!strokeStillLive);
   // A cleared canvas releases the held rainbow so the next magic use picks a fresh
