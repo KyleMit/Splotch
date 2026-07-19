@@ -88,6 +88,56 @@ test('crayon buildup fills paper tooth without changing its hue, live and after 
   expect(await page.evaluate(() => window.__engine.pixels())).toEqual(livePixels);
 });
 
+// Regression guard for the lossy-undo fade (PR #402 follow-up). A real scribble
+// is recorded as many overlapping ops that commit-time simplification (ADR-0036)
+// collapses. When crayon ink composited op-by-op, that op-count drop bled ~20% of
+// the wax alpha out of the stroke on the first replay (undo/resize) — a visible
+// texture shift. Rendering a whole stroke-group as one non-accumulating wax layer
+// makes per-pixel density independent of op count, so a replay keeps the same
+// wax weight (only the tiny coverage change simplification gives every brush).
+test('a many-op crayon scribble keeps its wax density across a replay', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+
+  // A wavy stroke with many distinct points, drawn with real pointer input so
+  // the engine records one op per move — the case simplification collapses.
+  const points = Array.from({ length: 48 }, (_, i) => ({
+    x: 20 + i * 5,
+    y: 150 + Math.round(Math.sin(i / 2.5) * 24),
+  }));
+  await page.mouse.move(box.x + points[0].x, box.y + points[0].y);
+  await page.mouse.down();
+  for (const p of points.slice(1)) await page.mouse.move(box.x + p.x, box.y + p.y);
+  await page.mouse.up();
+
+  // Mean alpha over the inked pixels = per-pixel wax density (its "weight").
+  const density = () =>
+    page.evaluate(() => {
+      const px = window.__engine.pixels();
+      let sum = 0;
+      let n = 0;
+      for (let i = 3; i < px.length; i += 4) {
+        if (px[i] > 0) {
+          sum += px[i];
+          n++;
+        }
+      }
+      return n === 0 ? 0 : sum / n;
+    });
+
+  const live = await density();
+  expect(live).toBeGreaterThan(0);
+
+  // A resize wipes the backing store and rebuilds from the simplified command
+  // log — the same path an undo of a later stroke would take.
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  const replayed = await density();
+
+  // The old op-by-op crayon lost ~20% here; the layered stroke stays within the
+  // noise of simplification's coverage change.
+  expect(Math.abs(replayed - live) / live).toBeLessThan(0.05);
+});
+
 test('undo reverts a stroke back to an empty canvas', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
