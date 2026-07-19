@@ -244,8 +244,13 @@
     setMagicMode(toolState.magic);
   });
 
+  // TEMPORARY: draw the plain pen as a crayon so the brush can be eyeballed in
+  // the running app without a picker button yet. The real selection seam is
+  // `toolState.crayon` (setCrayonMode(toolState.crayon)) — swap this back to it
+  // once a brush button lands. Eraser/magic still win (the engine only applies
+  // crayon to non-erase, non-magic ops).
   $effect(() => {
-    setCrayonMode(toolState.crayon);
+    setCrayonMode(!toolState.eraser && !toolState.magic);
   });
 
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK
