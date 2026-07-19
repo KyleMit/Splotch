@@ -584,10 +584,12 @@ function startDrawing(e: PointerEvent, adopted = false) {
         })
       : null;
 
-  // A crayon stroke is any non-erase, non-magic stroke while the crayon tool is
-  // active (or the dev A/B seam forces it). Each gets a fresh phase seed so
-  // overlapping strokes build up (crayonTexture.ts).
-  const crayon = (crayonActive || crayonForced) && !eraserActive && !magicActive;
+  // The pen now lays down CRAYON by default: every non-erase, non-magic stroke is
+  // a crayon stroke (crayonTexture.ts), so the flat-pen look is replaced app-wide
+  // without needing a tool toggle. `crayonActive`/`crayonForced` remain as seams
+  // but no longer gate the default. Each stroke gets a fresh phase seed so
+  // overlapping strokes build up. (The dead solid-pen path is kept for A/B.)
+  const crayon = !eraserActive && !magicActive;
   const seed = crayon ? crayonSeedCounter++ : 0;
 
   const now = Date.now();

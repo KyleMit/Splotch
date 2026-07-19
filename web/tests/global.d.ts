@@ -36,6 +36,8 @@ declare global {
         split?: 'none' | 'corner';
       }): void;
       setScreenAngleOverride(angle: number | null): void;
+      setCrayonMode(active: boolean): void;
+      setCrayonForced(forced: boolean): void;
       remount(): void;
       getViewState(): {
         active: boolean;
