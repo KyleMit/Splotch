@@ -4,6 +4,7 @@
 // same renderOp() so every surface is bit-identical.
 
 import type { PathSeg } from './strokeSimplify';
+import { toothPatternFor } from './crayon';
 import { sheetPatternFor } from './magicBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
@@ -25,6 +26,7 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
     }
   | {
       kind: 'path';
@@ -43,6 +45,7 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
     }
   | { kind: 'clear' };
 
@@ -114,6 +117,22 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
+    return;
+  }
+  if (op.crayon && !op.erase) {
+    // A translucent wax body lets the paper already beneath the transparent
+    // canvas show through. Repeating the same hue raises coverage rather than
+    // multiplying it, so a second pass fills tooth without turning muddy.
+    target.globalCompositeOperation = 'source-over';
+    target.globalAlpha = 0.72;
+    paintOpShape(target, op, op.color);
+    target.globalAlpha = 1;
+    const tooth = toothPatternFor(target);
+    if (tooth) {
+      target.globalCompositeOperation = 'source-atop';
+      paintOpShape(target, op, tooth);
+    }
+    target.globalCompositeOperation = 'source-over';
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';

@@ -43,6 +43,7 @@ import {
   setColorSheet,
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { initCrayonTooth, warmCrayonTooth } from './crayon';
 import {
   beginCommand,
   commandCount,
@@ -87,6 +88,8 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+type CrayonVariant = 'wax' | 'flat';
+let crayonVariant: CrayonVariant = 'wax';
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +425,7 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +453,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +499,7 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayon: boolean;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +588,7 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayon: crayonVariant === 'wax',
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -906,6 +913,8 @@ export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?
 
 export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
   canvas = canvasElement;
+  crayonVariant =
+    new URLSearchParams(window.location.search).get('crayon') === 'flat' ? 'flat' : 'wax';
   // NB: no `desynchronized: true` here. It was tried for lower Android ink
   // latency and rejected — a desynchronized 2D canvas is promoted to a hardware
   // overlay that does not alpha-composite with content below it, so this
@@ -923,6 +932,9 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
     repaint: () => {
       if (ctx) replayAll(ctx);
     },
+  });
+  initCrayonTooth(() => {
+    if (ctx) replayAll(ctx);
   });
 
   onDrawSoundCallback = options.onDrawSound || null;
@@ -990,6 +1002,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
   // first export.
   warmPaperTextureWhenIdle();
+  warmCrayonTooth();
 
   return {
     teardown() {
@@ -1037,6 +1050,13 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+// A query-selected flat control makes visual A/B comparisons possible without
+// changing the toddler-facing toolbar. Each in-flight stroke captures its choice
+// so replay remains independent of a later comparison toggle.
+export function setCrayonVariant(variant: CrayonVariant) {
+  crayonVariant = variant;
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

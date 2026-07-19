@@ -1073,6 +1073,35 @@ function distinctOpaqueColors(page: Page, bits = 4): Promise<number> {
   }, bits);
 }
 
+test('a second same-colour crayon pass fills paper tooth without changing hue', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  // Let the shared paper texture decode before sampling the real canvas output.
+  await page.waitForTimeout(300);
+  const stroke = [
+    { x: 150, y: 300 },
+    { x: 500, y: 300 },
+  ];
+  await draw(page, stroke);
+  const first = await page.evaluate(() => {
+    const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const pixel = canvas.getContext('2d')!.getImageData(325, 300, 1, 1).data;
+    return [...pixel];
+  });
+  await draw(page, stroke);
+  const second = await page.evaluate(() => {
+    const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const pixel = canvas.getContext('2d')!.getImageData(325, 300, 1, 1).data;
+    return [...pixel];
+  });
+
+  expect(first[3]).toBeGreaterThan(0);
+  expect(second[3]).toBeGreaterThan(first[3]);
+  const hue = ([r, g, b]: number[]) => Math.atan2(Math.sqrt(3) * (g - b), 2 * r - g - b);
+  expect(Math.abs(hue(first) - hue(second))).toBeLessThan(0.06);
+});
+
 test('the magic brush is always available and paints the coloring page colors', async ({
   page,
 }) => {
