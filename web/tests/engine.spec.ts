@@ -56,6 +56,38 @@ test('a stroke paints pixels and flips canvasEmpty false', async ({ page }) => {
   expect(s.canUndo).toBe(true);
 });
 
+test('crayon buildup fills paper tooth without changing its hue, live and after replay', async ({
+  page,
+}) => {
+  const stroke = [
+    { x: 55, y: 150 },
+    { x: 245, y: 150 },
+  ];
+
+  await page.evaluate((points) => window.__engine.strokeSync(points), stroke);
+  const first = await page.evaluate(() =>
+    Array.from({ length: 160 }, (_, i) => window.__engine.pixelAt(i + 70, 150))
+  );
+
+  await page.evaluate((points) => window.__engine.strokeSync(points), stroke);
+  const second = await page.evaluate(() =>
+    Array.from({ length: 160 }, (_, i) => window.__engine.pixelAt(i + 70, 150))
+  );
+
+  const firstAlpha = first.reduce((sum, pixel) => sum + pixel[3], 0);
+  const secondAlpha = second.reduce((sum, pixel) => sum + pixel[3], 0);
+  expect(secondAlpha).toBeGreaterThan(firstAlpha * 1.2);
+  for (const pixel of second.filter(([, , , alpha]) => alpha > 0)) {
+    expect(pixel[0]).toBeGreaterThan(245);
+    expect(pixel[1]).toBeLessThan(8);
+    expect(pixel[2]).toBeLessThan(8);
+  }
+
+  const livePixels = await page.evaluate(() => window.__engine.pixels());
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  expect(await page.evaluate(() => window.__engine.pixels())).toEqual(livePixels);
+});
+
 test('undo reverts a stroke back to an empty canvas', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
