@@ -600,7 +600,9 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
-    crayon: crayonActive,
+    // Crayon only applies to a plain pen stroke — never the eraser or magic
+    // brush (both have their own render path in renderOp).
+    crayon: crayonActive && !eraserActive && !magicActive,
     depositLevel: defaultDepositLevel(),
     // Resolve the tooth phase once per stroke (like the magic gradient pick), so
     // repeated passes over the same spot fill each other's grain. Random at draw

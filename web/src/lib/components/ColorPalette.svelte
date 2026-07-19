@@ -10,7 +10,13 @@
     themedSwatchColor,
   } from '$lib/state/colors.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { releaseAllPointers, setColor, setEraserMode, setMagicMode } from '$lib/drawing/engine';
+  import {
+    releaseAllPointers,
+    setColor,
+    setCrayonMode,
+    setEraserMode,
+    setMagicMode,
+  } from '$lib/drawing/engine';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
   import { dragColorToCanvas } from '$lib/actions/dragColorToCanvas';
   import { openColorPicker, buttonCenter } from '$lib/state/ui.svelte';
@@ -90,6 +96,7 @@
     ringAnimateKey = hex + ':' + Date.now();
     setEraserMode(false);
     setMagicMode(false);
+    setCrayonMode(true);
     setColor(paint);
   }
 

@@ -6,6 +6,7 @@
     setStrokeWidth,
     setEraserMode,
     setMagicMode,
+    setCrayonMode,
     setColorSheet,
     setSafeAreaInsets,
     getCanvasRect,
@@ -241,6 +242,14 @@
 
   $effect(() => {
     setMagicMode(toolState.magic);
+  });
+
+  // The plain pen draws as a waxy crayon by default (ADR-0065): crayon is on
+  // whenever neither the eraser nor the magic brush is — those keep their own
+  // render paths. The engine also guards this per stroke, so this only needs to
+  // track pen mode.
+  $effect(() => {
+    setCrayonMode(!toolState.eraser && !toolState.magic);
   });
 
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK

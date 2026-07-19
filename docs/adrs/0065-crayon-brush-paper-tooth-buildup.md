@@ -59,12 +59,17 @@ verbatim, so undo/resize/remount/export reproduce the stroke exactly. The look w
 several rounds against real-crayon reference photos with an automated vision judge as a regression
 signal and the final call made by eye (see "How it was tuned").
 
-The brush is **dev-selectable and A/B-able the way the repo does render variants** — engine setters
-`setCrayonMode` / `setCrayonRenderParams` exposed on `window.__engine` at `/dev/engine` behind
-`PUBLIC_ENABLE_DEV_HARNESS`, exactly like the `setSimplifyParams` seam (ADR-0036) — and the tuned
-parameter set ships as the default. Promoting it to a user-facing Actions Panel button (an icon +
-settings toggle, mirroring the magic button) is deliberately left as a small follow-up so this
-change stays focused on the brush itself and doesn't churn the button-layout/pixel tests.
+The crayon **is the default pen**: `DrawingCanvas` turns it on whenever the tool is the pen (neither
+eraser nor magic) via a `setCrayonMode` bridge alongside the existing `setEraserMode`/`setMagicMode`
+ones, and the engine flags a stroke `crayon` only in that pen mode. There's no separate "plain pen"
+tool — every ordinary mark is waxy crayon. The plain solid pen still exists as the engine's default
+(`crayonActive` starts false), so the low-level `/dev/engine` rig and its `engine.spec` mechanics
+keep testing it unchanged; production opts in through the bridge, and `crayon.spec` opts in
+explicitly. The brush is also **dev-selectable / A/B-able the way the repo does render variants** —
+`setCrayonMode` / `setCrayonRenderParams` on `window.__engine` at `/dev/engine` behind
+`PUBLIC_ENABLE_DEV_HARNESS`, exactly like the `setSimplifyParams` seam (ADR-0036) — so the plain pen
+and every look parameter can be toggled for comparison. The tuned parameter set ships as the
+default.
 
 ## Consequences
 
