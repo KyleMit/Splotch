@@ -10,7 +10,7 @@
     setStrokeSize,
     activeStrokeSize,
   } from '$lib/state/strokeWidth.svelte';
-  import { toolState, selectEraser, toggleMagic } from '$lib/state/tool.svelte';
+  import { toolState, selectEraser, toggleMagic, toggleCrayon } from '$lib/state/tool.svelte';
   import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
   import { network } from '$lib/state/network.svelte';
@@ -130,6 +130,7 @@
     el.toggleAttribute('data-drawer-open', drawerExpanded);
     el.toggleAttribute('data-off-adv', !settings.advancedControlsEnabled);
     el.toggleAttribute('data-off-stroke', !settings.strokeWidthControlEnabled);
+    el.toggleAttribute('data-off-crayon', !settings.crayonEnabled);
     el.toggleAttribute('data-off-eraser', !settings.eraserEnabled);
     el.toggleAttribute('data-off-coloring', !settings.coloringBookEnabled);
     el.toggleAttribute('data-off-screenshot', !settings.screenshotEnabled);
@@ -227,6 +228,10 @@
     toggleMagic();
   }
 
+  function handleCrayonClick() {
+    toggleCrayon();
+  }
+
   async function handleAiImageClick() {
     if (ui.aiGenerating || canvasState.canvasEmpty || !aiBtnEl) return;
 
@@ -300,6 +305,19 @@
           {/each}
         </div>
       </div>
+
+      <!-- Crayon: lays the active color down as waxy paper-tooth grain that builds
+           up on overlapping same-color passes (area:crayon). A pen-family brush. -->
+      <button
+        class="action-button"
+        class:active={toolState.crayon}
+        id="crayonButton"
+        aria-label="Crayon"
+        aria-pressed={toolState.crayon}
+        use:scribbleTap={handleCrayonClick}
+      >
+        <Icon name="crayon" class="action-icon" />
+      </button>
 
       <button
         class="action-button"
@@ -500,6 +518,9 @@
      prerendered HTML, before the head script runs, already shows the defaults.
      (The AI button is the exception — see its markup comment.) */
   :global(html[data-off-stroke]) .stroke-width-wrapper {
+    display: none;
+  }
+  :global(html[data-off-crayon]) #crayonButton {
     display: none;
   }
   :global(html[data-off-eraser]) #eraserButton {

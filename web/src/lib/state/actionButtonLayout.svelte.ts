@@ -31,14 +31,15 @@ export const DRAWER_TOGGLE_SIZE = 48;
 // Breathing room between the top of the portrait column and the palette bar.
 export const PALETTE_CLEARANCE = 8;
 
-// Every button the panel can show: stroke width, eraser, coloring book, magic
-// brush, screenshot, AI image, undo. The prerendered page sizes for this worst
-// case — the server can't know a stored AI token or toggle states.
-export const MAX_ACTION_BUTTON_COUNT = 7;
+// Every button the panel can show: crayon, stroke width, eraser, coloring book,
+// magic brush, screenshot, AI image, undo. The prerendered page sizes for this
+// worst case — the server can't know a stored AI token or toggle states.
+export const MAX_ACTION_BUTTON_COUNT = 8;
 
 export function visibleActionButtonCount(): number {
   return (
     1 + // magic brush, always shown
+    (settings.crayonEnabled ? 1 : 0) +
     (settings.strokeWidthControlEnabled ? 1 : 0) +
     (settings.eraserEnabled ? 1 : 0) +
     (settings.coloringBookEnabled ? 1 : 0) +

@@ -42,11 +42,19 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { renderOp, clearAllOf, opBounds, type StrokeOp } from './strokeOps';
+import {
+  MAX_CRAYON_LAYER,
+  setCrayonParams,
+  warmCrayonTiles,
+  type CrayonParams,
+} from './crayonBrush';
+import { scheduleIdle } from '../idle';
 import {
   beginCommand,
   commandCount,
   commitActiveCommand,
+  crayonLayerAt,
   ensureBaselineCovers,
   getHistoryDebug,
   popCommand,
@@ -87,6 +95,7 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonActive = false;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -404,6 +413,18 @@ function beginStrokeGroup() {
   groupHasDrawn = true;
 }
 
+// Stamp the wax-buildup layer onto a crayon op: how many prior committed
+// same-colour crayon strokes this op's ink overlaps (capped). Computed live from
+// committed history and stored, so the second same-colour pass fills tooth
+// valleys under the moving finger and replay reproduces it exactly. A no-op for
+// non-crayon ops. See crayonBrush.ts / undoHistory.crayonLayerAt.
+function stampCrayonLayer(op: StrokeOp) {
+  if (op.kind === 'clear' || !op.crayon || op.erase) return;
+  const b = opBounds(op);
+  if (!b) return;
+  op.layer = Math.min(crayonLayerAt(b, op.color), MAX_CRAYON_LAYER);
+}
+
 // Paint the round dot that anchors a stroke at its start point, and kick the
 // drawing sound. Used both for a normal pointerdown and when a deferred
 // edge-swipe candidate commits.
@@ -422,7 +443,9 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
   };
+  stampCrayonLayer(dot);
   renderOp(ctx, dot);
   recordOp(dot);
 
@@ -449,6 +472,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -459,6 +483,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     ps.midX = midX;
     ps.midY = midY;
   }
+  stampCrayonLayer(op);
   renderOp(ctx, op);
   recordOp(op);
 }
@@ -494,6 +519,7 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayon: boolean;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +608,7 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayon: crayonActive && !eraserActive && !magicActive,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -1020,6 +1047,9 @@ export function setColor(color: string) {
   if (color === currentColor) return;
   currentColor = color;
   lastColorChangeTime = Date.now();
+  // Warm the new colour's crayon tiles off the hot path if the crayon is active,
+  // so the first stroke in a freshly-picked colour doesn't build a tile mid-frame.
+  if (crayonActive) warmCrayonWhenIdle();
 }
 
 export function setStrokeWidth(widthPx: number) {
@@ -1028,6 +1058,33 @@ export function setStrokeWidth(widthPx: number) {
 
 export function setEraserMode(active: boolean) {
   eraserActive = active;
+}
+
+// Warm the crayon grain tiles for the current colour off the draw hot path, so
+// the one-time per-(colour,layer) tile build never stalls the first stroke's
+// frame (~1 frame under a 4× throttle). No-op until the canvas is mounted.
+function warmCrayonWhenIdle() {
+  scheduleIdle(() => {
+    if (ctx && currentColor) warmCrayonTiles(ctx, currentColor);
+  });
+}
+
+// Crayon brush on/off (area:crayon). A pen-family brush: mutually exclusive with
+// the eraser and magic brush at the UI level; the engine tracks the flag and
+// stamps it (plus the live wax-buildup layer) onto each op. No sheet to prime,
+// unlike the magic brush — the grain is generated deterministically per colour;
+// selecting it just warms the current colour's tiles off the hot path.
+export function setCrayonMode(active: boolean) {
+  crayonActive = active;
+  if (active) warmCrayonWhenIdle();
+}
+
+// Dev A/B seam (mirrors setSimplifyParams): swap the crayon grain parameters — a
+// named variant ('waxy' | 'fine' | 'coarse') or an explicit override — so the
+// judge loop / dev harness can sweep the look. Wired onto window.__engine only on
+// /dev/engine; production ships the default variant. See crayonBrush.ts.
+export function setCrayonVariant(next: string | Partial<CrayonParams>) {
+  setCrayonParams(next);
 }
 
 // Magic brush on/off (ADR-0043). Mutually exclusive with the eraser at the UI

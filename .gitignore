@@ -209,3 +209,6 @@ ios/local.xcconfig
 # Scratch output for the icon-gallery generator (gen:icons-sheet) and other
 # artifact-page dry runs; promote a keeper into artifacts/ with artifacts:publish.
 .artifacts-scratch/
+
+# Crayon iteration references (regenerable via scripts/crayon/gen-references.mjs; area:crayon)
+scripts/crayon/references/

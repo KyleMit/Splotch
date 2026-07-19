@@ -25,6 +25,7 @@ const SCREENSHOT_KEY = 'splotch-screenshot-enabled';
 const UNDO_KEY = 'splotch-undo-button-enabled';
 const STROKE_CTRL_KEY = 'splotch-stroke-width-control';
 const ERASER_KEY = 'splotch-eraser-enabled';
+const CRAYON_KEY = 'splotch-crayon-enabled';
 const COLORING_BOOK_KEY = 'splotch-coloring-book-enabled';
 const AI_IMAGE_KEY = 'splotch-ai-image-enabled';
 const AI_CUSTOMIZATION_KEY = 'splotch-ai-customization-enabled';
@@ -70,6 +71,7 @@ const BOOL_SETTINGS = {
   undoButtonEnabled: [UNDO_KEY, true],
   strokeWidthControlEnabled: [STROKE_CTRL_KEY, true],
   eraserEnabled: [ERASER_KEY, true],
+  crayonEnabled: [CRAYON_KEY, true],
   coloringBookEnabled: [COLORING_BOOK_KEY, true],
   aiImageEnabled: [AI_IMAGE_KEY, true],
   aiCustomizationEnabled: [AI_CUSTOMIZATION_KEY, true],
@@ -180,6 +182,7 @@ export const setScreenshot = makeBoolSetter('screenshotEnabled');
 export const setUndoButton = makeBoolSetter('undoButtonEnabled');
 export const setStrokeWidthControl = makeBoolSetter('strokeWidthControlEnabled');
 export const setEraser = makeBoolSetter('eraserEnabled');
+export const setCrayon = makeBoolSetter('crayonEnabled');
 export const setColoringBook = makeBoolSetter('coloringBookEnabled');
 export const setAiImage = makeBoolSetter('aiImageEnabled');
 export const setAiCustomization = makeBoolSetter('aiCustomizationEnabled');

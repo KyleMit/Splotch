@@ -5,6 +5,8 @@
     setColor,
     setStrokeWidth,
     setEraserMode,
+    setCrayonMode,
+    setCrayonVariant,
     setSafeAreaInsets,
     undo,
     clearCanvas,
@@ -58,6 +60,10 @@
       setColor,
       setStrokeWidth,
       setEraserMode,
+      // Crayon brush seams (area:crayon): toggle the tool and A/B the grain
+      // variant, so the engine spec's buildup test and the judge loop can drive it.
+      setCrayonMode,
+      setCrayonVariant,
       setSafeAreaInsets,
       undo,
       clearCanvas,
@@ -135,6 +141,36 @@
       pixelAt(x: number, y: number) {
         const ctx = canvasEl.getContext('2d')!;
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
+      },
+
+      // Wax-buildup probe (area:crayon): over a canvas-space rect, the fraction of
+      // pixels that carry ink (`coverage`) and the mean colour of just those inked
+      // pixels (`r`/`g`/`b`). The buildup test compares a first crayon pass to an
+      // overlapping second pass: coverage must climb (tooth filling in) while the
+      // mean hue stays put (no darkening / multiply).
+      regionStats(x: number, y: number, w: number, h: number) {
+        const ctx = canvasEl.getContext('2d')!;
+        const { data } = ctx.getImageData(x, y, w, h);
+        let inked = 0;
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] > 32) {
+            inked++;
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
+          }
+        }
+        const total = (w * h) | 0;
+        return {
+          coverage: total ? inked / total : 0,
+          inked,
+          r: inked ? r / inked : 0,
+          g: inked ? g / inked : 0,
+          b: inked ? b / inked : 0,
+        };
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,

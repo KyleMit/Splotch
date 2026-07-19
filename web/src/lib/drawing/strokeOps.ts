@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { crayonPatternFor } from './crayonBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -16,6 +17,12 @@ import { sheetPatternFor } from './magicBrush';
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
+// `crayon`, when true, paints the op's shape with the waxy grain pattern instead
+// of a flat colour (area:crayon / crayonBrush.ts). `layer` is the wax-buildup
+// ordinal captured live at draw time — how many prior committed same-colour
+// crayon strokes this op overlapped — so replay reproduces the exact grain the
+// child saw fill in. Stored, never recomputed on replay (that would depend on
+// partial replay state and break bit-identical rebuild).
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -25,6 +32,8 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      layer?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +52,8 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      layer?: number;
     }
   | { kind: 'clear' };
 
@@ -59,6 +70,12 @@ export interface StrokeGroupCommand {
   ops: StrokeOp[];
   wasEmpty: boolean;
   keyframe?: HTMLCanvasElement | null;
+  // Coverage footprint of this command's crayon ops (union bbox in paper coords +
+  // colour key), captured at commit so wax-buildup can count how many prior
+  // same-colour crayon strokes a new op overlaps. Kept on the command even after
+  // a keyframe drops `ops`, so buildup survives the keyframe safety net; it
+  // travels with the command and disappears when the command folds/pops away.
+  crayonCover?: { colorKey: string; minX: number; minY: number; maxX: number; maxY: number };
 }
 
 // Stroke or dot the op's bare geometry onto a target using `paint` as the
@@ -116,9 +133,69 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     paintOpShape(target, op, pattern);
     return;
   }
+  // A crayon op (never an eraser — the eraser is its own tool) lays down waxy
+  // grain: the paper-tooth pattern tinted to `color` at this op's buildup layer.
+  // Source-over with opaque wax, so a later same-colour pass fills new tooth
+  // valleys without darkening the overlap (crayonBrush.ts). Falls through to the
+  // solid path only if the pattern can't be built (degenerate colour).
+  if (op.crayon && !op.erase) {
+    const pattern = crayonPatternFor(target, op.color, op.layer ?? 0);
+    if (pattern) {
+      target.globalCompositeOperation = 'source-over';
+      paintOpShape(target, op, pattern);
+      return;
+    }
+  }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
   paintOpShape(target, op, op.color);
   target.globalCompositeOperation = 'source-over';
+}
+
+export interface OpBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+// Axis-aligned paper-space bounds of a dot/path op, inflated by its half-width so
+// the box covers the painted ink (not just the path centreline). Used by
+// wax-buildup to test stroke overlap; returns null for a clear op.
+export function opBounds(op: StrokeOp): OpBounds | null {
+  if (op.kind === 'clear') return null;
+  if (op.kind === 'dot') {
+    return {
+      minX: op.x - op.radius,
+      minY: op.y - op.radius,
+      maxX: op.x + op.radius,
+      maxY: op.y + op.radius,
+    };
+  }
+  const half = op.lineWidth / 2;
+  let minX = op.startX;
+  let minY = op.startY;
+  let maxX = op.startX;
+  let maxY = op.startY;
+  for (const s of op.segs) {
+    // The control point can bulge the curve outside the endpoint span; including
+    // it over-covers slightly, which is the safe direction for an overlap test.
+    for (const [x, y] of s.c2x !== undefined
+      ? ([
+          [s.cx, s.cy],
+          [s.c2x, s.c2y!],
+          [s.x, s.y],
+        ] as const)
+      : ([
+          [s.cx, s.cy],
+          [s.x, s.y],
+        ] as const)) {
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+  return { minX: minX - half, minY: minY - half, maxX: maxX + half, maxY: maxY + half };
 }
 
 // Total quadratic segments a command will re-stroke on replay — the keyframe

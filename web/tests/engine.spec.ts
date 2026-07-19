@@ -1303,3 +1303,115 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
   expect(s.canvasEmpty).toBe(true);
   expect(s.canUndo).toBe(false);
 });
+
+// --- Crayon brush: wax buildup (area:crayon) -------------------------------
+
+// Enable the crayon, pin the default grain variant, and give it a fat band so a
+// region entirely inside the stroke measures the wax-vs-tooth fill fraction.
+async function armCrayon(page: Page) {
+  await page.evaluate(() => {
+    window.__engine.setCrayonVariant('waxy');
+    window.__engine.setCrayonMode(true);
+    window.__engine.setStrokeWidth(44);
+  });
+}
+
+// A horizontal crayon band at y across the canvas; each call is its own stroke
+// group (mouse down…up), so a second call over the same band commits as a
+// separate command that the first can build up.
+async function crayonBand(page: Page, box: { x: number; y: number } | null, y: number) {
+  await drawStroke(page, box, [
+    { x: 60, y },
+    { x: 140, y },
+    { x: 220, y },
+    { x: 300, y },
+  ]);
+}
+
+// The measurement window: well inside the band (clear of the round start dot at
+// x=60) so coverage reads the body's wax fill fraction, not the cap.
+const BAND_REGION = { x: 130, y: 138, w: 140, h: 24 };
+const region = (page: Page) =>
+  page.evaluate((r) => window.__engine.regionStats(r.x, r.y, r.w, r.h), BAND_REGION);
+
+test('a second same-color crayon pass builds up: denser tooth, same hue', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await armCrayon(page);
+
+  // One pass: waxy body with paper tooth showing through (partial coverage).
+  await crayonBand(page, box, 150);
+  const first = await region(page);
+  expect(first.coverage).toBeGreaterThan(0.4);
+  expect(first.coverage).toBeLessThan(0.95); // tooth still showing — room to build
+
+  // Second same-color pass over the same band. It's a separate command, so its
+  // ops overlap the first and stamp buildup layer 1 → the grain fills MORE tooth
+  // in place (this happens live as the stroke is drawn, not as a post-commit
+  // snap: the pixels are laid down by the second stroke itself).
+  await crayonBand(page, box, 150);
+  const second = await region(page);
+
+  // Buildup: coverage climbs (tooth fills in).
+  expect(second.coverage).toBeGreaterThan(first.coverage + 0.04);
+
+  // Constant hue, NO multiply-style darkening: the mean inked color stays put
+  // (red is the crayon's dominant channel and stays dominant), and it does not
+  // get darker — opaque wax over opaque wax of the same color can't multiply.
+  expect(second.r).toBeGreaterThan(second.g);
+  expect(second.r).toBeGreaterThan(second.b);
+  expect(Math.abs(second.r - first.r)).toBeLessThan(24);
+  expect(Math.abs(second.g - first.g)).toBeLessThan(24);
+  expect(Math.abs(second.b - first.b)).toBeLessThan(24);
+  const firstLuma = first.r + first.g + first.b;
+  const secondLuma = second.r + second.g + second.b;
+  expect(secondLuma).toBeGreaterThan(firstLuma - 18); // not darker/muddier
+
+  // Grain survives a rebuild from stored ops (resize → full replay through the
+  // one renderer): the crayon flag + buildup layer live on the op and the grain
+  // is deterministic, so the rebuilt band is still waxy TOOTH, not a flat solid
+  // fill (the bug this guards: simplification dropping the crayon fields made
+  // replay paint solid — coverage would jump to ~1).
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  const rebuilt = await region(page);
+  expect(rebuilt.coverage).toBeLessThan(0.97); // tooth still shows — not solid
+  expect(rebuilt.coverage).toBeGreaterThan(0.55); // still the dense second pass
+
+  // Replay is deterministic: replaying the same stored ops again reproduces the
+  // exact same pixels (no Math.random/time at render; the grain derives from the
+  // stored op data).
+  const inkedA = await page.evaluate(() => window.__engine.nonTransparentCount());
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  const inkedB = await page.evaluate(() => window.__engine.nonTransparentCount());
+  expect(inkedB).toBe(inkedA);
+});
+
+test('a lone crayon pass with no overlap does not build up (stays layer 0)', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await armCrayon(page);
+
+  // Two SEPARATE bands that do not overlap: each is a first pass over virgin
+  // paper. Buildup is overlap-driven, so neither reaches the denser second-pass
+  // (layer-1) fill — both stay at the sparser layer-0 tooth. (They don't read an
+  // identical number because the fixed paper tooth varies from place to place,
+  // which is the point — the grain is anchored in paper space.)
+  await crayonBand(page, box, 90);
+  const top = await page.evaluate((r) => window.__engine.regionStats(r.x, r.y, r.w, r.h), {
+    x: 130,
+    y: 78,
+    w: 140,
+    h: 24,
+  });
+  await crayonBand(page, box, 210);
+  const bottom = await page.evaluate((r) => window.__engine.regionStats(r.x, r.y, r.w, r.h), {
+    x: 130,
+    y: 198,
+    w: 140,
+    h: 24,
+  });
+  // Layer-0 density (~0.7 for the default variant), clearly short of the ~0.83+
+  // a genuine second overlapping pass produces in the other test.
+  expect(top.coverage).toBeLessThan(0.8);
+  expect(bottom.coverage).toBeLessThan(0.8);
+  expect(top.coverage).toBeGreaterThan(0.5);
+  expect(bottom.coverage).toBeGreaterThan(0.5);
+});

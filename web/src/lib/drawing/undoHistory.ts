@@ -16,6 +16,7 @@
 import {
   clearAllOf,
   commandSegmentCount,
+  opBounds,
   renderOp,
   type StrokeGroupCommand,
   type StrokeOp,
@@ -126,10 +127,62 @@ export function commitActiveCommand(): boolean {
 export function pushCommand(cmd: StrokeGroupCommand) {
   commandLog.push(cmd);
   cmd.ops = simplifyCommandOps(cmd.ops);
+  // Capture the crayon footprint before maybeKeyframe can drop the ops, so
+  // wax-buildup keeps counting this stroke even after it keyframes.
+  recordCrayonCover(cmd);
   while (commandLog.length > MAX_UNDO_STACK_SIZE) {
     if (!foldOldestIntoBaseline()) break;
   }
   maybeKeyframe(cmd);
+}
+
+// Union bbox + colour of a command's crayon ops (a stroke group is one colour in
+// normal use; a mid-stroke tool/colour change is rare, so the first crayon op's
+// colour keys the group). Left undefined when the command laid no crayon.
+function recordCrayonCover(cmd: StrokeGroupCommand) {
+  let colorKey: string | null = null;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const op of cmd.ops) {
+    if (op.kind === 'clear' || !op.crayon || op.erase) continue;
+    if (colorKey === null) colorKey = op.color;
+    const b = opBounds(op);
+    if (!b) continue;
+    if (b.minX < minX) minX = b.minX;
+    if (b.minY < minY) minY = b.minY;
+    if (b.maxX > maxX) maxX = b.maxX;
+    if (b.maxY > maxY) maxY = b.maxY;
+  }
+  if (colorKey !== null && maxX > minX) {
+    cmd.crayonCover = { colorKey, minX, minY, maxX, maxY };
+  }
+}
+
+// Wax-buildup ordinal: how many prior committed same-colour crayon strokes a new
+// op (given its paper-space bounds) overlaps. Counted live as each segment is
+// drawn (the active in-flight stroke isn't in the log yet, so only earlier passes
+// count) and stamped onto the op, so replay reproduces the exact grain. Bbox
+// overlap is a deliberately cheap proxy — O(commands), and commands are bounded.
+export function crayonLayerAt(
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+  colorKey: string
+): number {
+  let layer = 0;
+  for (const cmd of commandLog) {
+    const c = cmd.crayonCover;
+    if (!c || c.colorKey !== colorKey) continue;
+    if (
+      bounds.minX <= c.maxX &&
+      bounds.maxX >= c.minX &&
+      bounds.minY <= c.maxY &&
+      bounds.maxY >= c.minY
+    ) {
+      layer++;
+    }
+  }
+  return layer;
 }
 
 // Remove and return the most recent command, or null when nothing is undoable.

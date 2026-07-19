@@ -13,6 +13,7 @@
     setUndoButton,
     setStrokeWidthControl,
     setEraser,
+    setCrayon,
     setColoringBook,
     setAdvancedControls,
     setPencilEraserEnabled,
@@ -54,6 +55,13 @@
       icon: 'line-weight',
       checked: () => settings.strokeWidthControlEnabled,
       toggle: setStrokeWidthControl,
+    },
+    {
+      id: 'crayonToggle',
+      label: 'Crayon',
+      icon: 'crayon',
+      checked: () => settings.crayonEnabled,
+      toggle: setCrayon,
     },
     {
       id: 'eraserToggle',

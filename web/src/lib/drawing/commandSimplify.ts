@@ -119,7 +119,13 @@ function pathStyleMatches(a: PathOp, b: PathOp): boolean {
     a.color === b.color &&
     a.lineWidth === b.lineWidth &&
     a.erase === b.erase &&
-    !!a.magic === !!b.magic
+    !!a.magic === !!b.magic &&
+    // Crayon ops carry a wax-buildup layer (area:crayon) that renderOp paints
+    // with; a run that crosses a buildup boundary mid-stroke (virgin paper →
+    // over a prior same-colour stroke) must split there so each span keeps the
+    // layer it was drawn at, or the reduced run would repaint one flat layer.
+    !!a.crayon === !!b.crayon &&
+    (a.layer ?? 0) === (b.layer ?? 0)
   );
 }
 
@@ -182,6 +188,12 @@ function reducePathRun(run: PathOp[]): PathOp[] {
     lineWidth: first.lineWidth,
     erase: first.erase,
     magic: first.magic,
+    // Preserve the crayon flag + wax-buildup layer so a rebuilt (undo/resize/
+    // export) crayon stroke replays the same grain, not a flat fill. The run is
+    // same-style (pathStyleMatches gates on both), so first's values apply to
+    // every reduced span.
+    crayon: first.crayon,
+    layer: first.layer,
   }));
 }
 
