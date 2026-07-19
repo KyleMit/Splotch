@@ -25,6 +25,8 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: CrayonVariant;
+      textureSeed?: number;
     }
   | {
       kind: 'path';
@@ -43,10 +45,73 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: CrayonVariant;
+      textureSeed?: number;
     }
   | { kind: 'clear' };
 
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
+
+export type CrayonVariant = 'blue-noise' | 'solid';
+
+const TEXTURE_SIZE = 64;
+const WAX_COVERAGE = 0.82;
+const TOOTH_ALPHA = 0.42;
+
+type TextureCache = Map<string, CanvasPattern>;
+const textureCaches = new WeakMap<CanvasRenderingContext2D, TextureCache>();
+
+function fract(value: number): number {
+  return value - Math.floor(value);
+}
+
+// Interleaved gradient noise scatters adjacent threshold crossings evenly
+// without a random source or a low-frequency cloud. At crayon scale this reads
+// as paper tooth rather than digital grit.
+function blueNoiseAt(x: number, y: number): number {
+  return fract(52.9829189 * fract(0.06711056 * x + 0.00583715 * y));
+}
+
+function texturePattern(target: CanvasRenderingContext2D, color: string): CanvasPattern | null {
+  let cache = textureCaches.get(target);
+  if (!cache) {
+    cache = new Map();
+    textureCaches.set(target, cache);
+  }
+  const cached = cache.get(color);
+  if (cached) return cached;
+
+  const tooth = document.createElement('canvas');
+  tooth.width = TEXTURE_SIZE;
+  tooth.height = TEXTURE_SIZE;
+  const toothCtx = tooth.getContext('2d');
+  if (!toothCtx) return null;
+  toothCtx.fillStyle = color;
+  for (let y = 0; y < TEXTURE_SIZE; y++) {
+    for (let x = 0; x < TEXTURE_SIZE; x++) {
+      toothCtx.globalAlpha = blueNoiseAt(x, y) < WAX_COVERAGE ? 1 : TOOTH_ALPHA;
+      toothCtx.fillRect(x, y, 1, 1);
+    }
+  }
+  const pattern = target.createPattern(tooth, 'repeat');
+  if (!pattern) return null;
+  cache.set(color, pattern);
+  return pattern;
+}
+
+function crayonPaint(
+  target: CanvasRenderingContext2D,
+  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
+): string | CanvasPattern {
+  if (op.crayon !== 'blue-noise') return op.color;
+  const pattern = texturePattern(target, op.color);
+  if (!pattern) return op.color;
+  const seed = op.textureSeed ?? 0;
+  pattern.setTransform(
+    new DOMMatrix().translate((seed * 17) % TEXTURE_SIZE, (seed * 29) % TEXTURE_SIZE)
+  );
+  return pattern;
+}
 
 // One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is
 // the canvas-empty state before the group drew, so undo can restore the flag
@@ -117,7 +182,7 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
+  paintOpShape(target, op, crayonPaint(target, op));
   target.globalCompositeOperation = 'source-over';
 }
 

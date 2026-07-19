@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blue-noise crayon buildup</title>
+    <style>
+      body { margin: 0; background: #f6f6f3; color: #292729; font: 16px/1.5 system-ui, sans-serif; }
+      main { max-width: 1200px; margin: 0 auto; padding: 32px; }
+      h1 { margin: 0; }
+      p { max-width: 72ch; }
+      .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+      figure { margin: 0; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 3px 14px #0002; }
+      img { display: block; width: 100%; height: auto; }
+      figcaption { padding: 12px 16px; font-weight: 650; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Blue-noise crayon</h1>
+      <p>Actual Splotch canvas captures. A seeded, fine tooth keeps the first pass visibly waxy; a second same-colour pass shifts the tooth phase and fills the lighter pores without darkening or changing hue.</p>
+      <section class="shots">
+        <figure><img src="crayon-single.png" alt="One purple crayon stroke on Splotch paper" /><figcaption>Single pass — fine paper tooth</figcaption></figure>
+        <figure><img src="crayon-double.png" alt="The same purple crayon stroke drawn twice on Splotch paper" /><figcaption>Double pass — denser wax at the same hue</figcaption></figure>
+        <figure><img src="crayon-scribble.png" alt="A purple crayon scribble fill on Splotch paper" /><figcaption>Scribble fill — texture remains inside every stroke</figcaption></figure>
+      </section>
+    </main>
+  </body>
+</html>

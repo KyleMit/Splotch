@@ -24,6 +24,28 @@ async function drawStroke(
 const state = (page: Page) => page.evaluate(() => window.__engineState);
 const count = (page: Page) => page.evaluate(() => window.__engine.nonTransparentCount());
 
+function coverage(page: Page, x0: number, y0: number, x1: number, y1: number) {
+  return page.evaluate(
+    ([left, top, right, bottom]) => {
+      const canvas = document.querySelector<HTMLCanvasElement>('#engineCanvas')!;
+      const data = canvas
+        .getContext('2d')!
+        .getImageData(left, top, right - left, bottom - top).data;
+      let covered = 0;
+      let wrongHue = 0;
+      let alphaTotal = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] === 0) continue;
+        covered++;
+        alphaTotal += data[i + 3];
+        if (data[i] !== 255 || data[i + 1] !== 0 || data[i + 2] !== 0) wrongHue++;
+      }
+      return { covered, wrongHue, alphaTotal };
+    },
+    [x0, y0, x1, y1] as const
+  );
+}
+
 test.beforeEach(async ({ page }) => {
   // Navigate ONCE, then poll for readiness. The harness sets window.__engineReady
   // in onMount. Against the default `vite preview` build this settles on the
@@ -54,6 +76,36 @@ test('a stroke paints pixels and flips canvasEmpty false', async ({ page }) => {
   const s = await state(page);
   expect(s.canvasEmpty).toBe(false);
   expect(s.canUndo).toBe(true);
+});
+
+test('blue-noise crayon builds wax coverage live without changing its hue', async ({ page }) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+  await page.evaluate(() => window.__engine.setStrokeWidth(24));
+
+  await drawStroke(page, box, [
+    { x: 40, y: 150 },
+    { x: 260, y: 150 },
+  ]);
+  const first = await coverage(page, 60, 140, 140, 160);
+  expect(first.covered).toBeGreaterThan(0);
+  expect(first.wrongHue).toBe(0);
+
+  await page.mouse.move(box.x + 40, box.y + 150);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 140, box.y + 150);
+
+  // The partial second pass has already filled new tooth before pointerup; it
+  // is not a stroke-end compositing effect.
+  const duringSecondPass = await coverage(page, 60, 140, 140, 160);
+  expect(duringSecondPass.alphaTotal).toBeGreaterThan(first.alphaTotal);
+  expect(duringSecondPass.wrongHue).toBe(0);
+
+  await page.mouse.move(box.x + 260, box.y + 150);
+  await page.mouse.up();
+  const second = await coverage(page, 60, 140, 240, 160);
+  expect(second.wrongHue).toBe(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 100)[3])).toBe(0);
 });
 
 test('undo reverts a stroke back to an empty canvas', async ({ page }) => {

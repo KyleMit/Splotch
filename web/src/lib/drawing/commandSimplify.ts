@@ -119,7 +119,9 @@ function pathStyleMatches(a: PathOp, b: PathOp): boolean {
     a.color === b.color &&
     a.lineWidth === b.lineWidth &&
     a.erase === b.erase &&
-    !!a.magic === !!b.magic
+    !!a.magic === !!b.magic &&
+    a.crayon === b.crayon &&
+    a.textureSeed === b.textureSeed
   );
 }
 
@@ -182,6 +184,8 @@ function reducePathRun(run: PathOp[]): PathOp[] {
     lineWidth: first.lineWidth,
     erase: first.erase,
     magic: first.magic,
+    crayon: first.crayon,
+    textureSeed: first.textureSeed,
   }));
 }
 
@@ -191,6 +195,10 @@ function reducePathRun(run: PathOp[]): PathOp[] {
 // input array untouched when simplification is disabled or there's nothing to do.
 export function simplifyCommandOps(ops: StrokeOp[]): StrokeOp[] {
   if (!enabled || ops.length === 0) return ops;
+  // A textured crayon is intentionally replayed at its live op boundaries.
+  // Rebuilding a single merged path changes Canvas's antialiasing at every
+  // boundary, which would make the fixed tooth mask drift on undo or resize.
+  if (ops.some((op) => op.kind !== 'clear' && op.crayon === 'blue-noise')) return ops;
   if (PERF_MARKS) performance.mark('engine.simplify:start');
 
   const reducedByPid = new Map<number, PathOp[]>();
