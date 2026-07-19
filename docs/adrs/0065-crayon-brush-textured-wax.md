@@ -43,15 +43,29 @@ Three properties, owned by `lib/drawing/crayonBrush.ts`, deliver the look and th
 1. **The tooth is the fill's alpha, so grain is contained by construction.** A single deterministic
    paper-tooth **height field** — a tileable sum of fine value-noise octaves, generated once from a
    fixed PRNG seed at module load — is thresholded per stroke into an opaque wax **body** punched by
-   fine anti-aliased **pits** where paper shows through. Because this is the op's own fill alpha,
-   the grain can only ever exist *inside* the stroke the finger drew. Nothing sprays past the path.
+   fine **pits** where paper shows through. The threshold decision is **binary** (a texel is opaque
+   bump or bare pit, never a grey in between — see property 2 for why); a fixed per-texel
+   ordered-dither field jitters the threshold within a narrow band so the pit rims *stipple* rather
+   than alias into hard dots, keeping the crisp-but-broken wax edge without any fractional alpha.
+   Because this is the op's own fill alpha, the grain can only ever exist *inside* the stroke the
+   finger drew. Nothing sprays past the path.
 
-2. **Deterministic, so replay is bit-identical.** The height field is fixed; the only per-stroke
-   variation is the stored `seed`, which merely **phase-shifts** the same field. `renderOp` sets the
-   pattern's transform to a paper-anchored translate derived from the seed (the same
-   paper-coordinate anchoring the magic sheet uses so live drawing and every replay surface tile it
-   identically). Undo/resize/export/remount re-render the stored ops to the exact same pixels — the
-   `engine.spec.ts` invariant stays green.
+2. **Deterministic *and op-count-independent*, so replay is bit-identical.** The height field is
+   fixed; the only per-stroke variation is the stored `seed`, which merely **phase-shifts** the same
+   field. `renderOp` sets the pattern's transform to a paper-anchored translate derived from the
+   seed (the same paper-coordinate anchoring the magic sheet uses so live drawing and every replay
+   surface tile it identically). But a fixed field and stored seed are **not sufficient** on their
+   own: a crayon stroke is drawn live as *dozens* of overlapping per-frame ops, then replayed (undo,
+   resize, export) as a *few* simplified ones (ADR-0036), and `source-over` only reproduces the same
+   pixels under a different op count when **every alpha is 0 or 1** — fractional alpha accumulates
+   on overlap (`a → a + a(1−a)`), so a soft tooth renders *denser* live than on replay and the whole
+   texture visibly shifts the instant any later stroke is undone. Making the tooth binary closes
+   that gap: overlapping same-phase ops are idempotent, so live pixels equal replay pixels. The lone
+   residual is the anti-aliased **silhouette** of the stroke itself (a sub-pixel edge ring), which
+   is inherent to per-op `stroke()` and imperceptible. `engine.spec.ts` guards this two ways now:
+   the pixel-**count** invariant (which a soft tooth also passed — count is blind to a spatial
+   shuffle) *and* a spatial-**stability** check that undoes a later stroke and asserts an earlier
+   stroke's texture band is byte-stable.
 
 3. **Wax buildup at constant hue, live and gradual.** The body is laid down **opaque**, so a second
    same-colour stroke over the first is opaque-over-opaque of the *identical* colour — the hue
@@ -65,7 +79,7 @@ Three properties, owned by `lib/drawing/crayonBrush.ts`, deliver the look and th
 The centre-dense / edge-broken falloff a real crayon shows (hard press in the middle, crumbling
 flecks at the rim) is reproduced with a small set of **nested density passes**: a full-width sparse
 pass under a narrower dense pass, both the same colour and seed, drawn widest-first. All the knobs
-(tile size, octaves, per-pass width/coverage, pit softness, body-density variation) live in a
+(tile size, octaves, per-pass width/coverage, dither-band width, body-density variation) live in a
 mutable `CrayonOptions` with tuned defaults.
 
 Because a crayon op lives in the **same canvas, in draw order**, the correctness requirements fall
@@ -103,8 +117,16 @@ ships as the `CRAYON_DEFAULTS`. Production never calls the setter.
   that would have to re-derive it.
 * **+** Wax buildup at a genuinely constant hue: opaque-over-opaque of the same colour can't darken,
   and coverage rises because the tooth phase-shifts per stroke. No multiply, no muddying.
-* **+** Fully deterministic: the tooth field is fixed and the only per-stroke variation is a stored
-  seed, so the same drawing always produces the same pixels.
+* **+** Fully deterministic *and* undo-stable: the tooth field is fixed, the only per-stroke
+  variation is a stored seed, and the tooth is binary, so the same drawing always produces the same
+  pixels — including after a later stroke is undone, when the surviving strokes rebuild from far
+  fewer simplified ops than they were drawn with.
+* **−** The tooth is binary, so the pit rims are stippled (ordered dither) rather than a smooth
+  alpha ramp. This is a deliberate trade: a soft ramp looked marginally creamier but its fractional
+  alpha accumulated across the overlapping live ops, so the whole texture *shifted* the moment any
+  stroke was undone/resized (the drawing rebuilds from simplified ops). Undo stability won; the
+  dither keeps the binary rims from reading as hard dots, so the look holds. A true soft tooth would
+  need a per-stroke composited layer (a parallel textured-layer system this ADR explicitly avoids).
 * **+** Cheap: under the 4× CPU throttle, per-op draw averaged **0.086 ms** (max 2.6 ms) across a
   realistic multi-colour session — far under the ≲ 2 ms / ~8 ms budget. A new colour's wax tiles
   build once at ~1 ms, off any single frame.
