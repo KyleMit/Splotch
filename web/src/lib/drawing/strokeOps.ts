@@ -6,6 +6,20 @@
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
 
+export type CrayonVariant = 'wax' | 'solid';
+
+let crayonVariant: CrayonVariant = 'wax';
+
+// Dev/profiling seam for comparing the former solid pen to the wax renderer.
+// Stroke ops carry their chosen variant, so changing this never changes history.
+export function setCrayonVariant(variant: CrayonVariant) {
+  crayonVariant = variant;
+}
+
+export function currentCrayonVariant(): CrayonVariant {
+  return crayonVariant;
+}
+
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
 // bit-identical to its op; the stored ops are then simplified once at commit
@@ -25,6 +39,8 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: CrayonVariant;
+      waxPass?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +59,8 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: CrayonVariant;
+      waxPass?: number;
     }
   | { kind: 'clear' };
 
@@ -59,6 +77,86 @@ export interface StrokeGroupCommand {
   ops: StrokeOp[];
   wasEmpty: boolean;
   keyframe?: HTMLCanvasElement | null;
+  crayonBounds?: CrayonBounds[];
+}
+
+export interface CrayonBounds {
+  color: string;
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+export function opCrayonBounds(op: StrokeOp): CrayonBounds | null {
+  if (op.kind === 'clear' || op.erase || op.magic || op.crayon !== 'wax') return null;
+  if (op.kind === 'dot') {
+    return {
+      color: op.color,
+      left: op.x - op.radius,
+      top: op.y - op.radius,
+      right: op.x + op.radius,
+      bottom: op.y + op.radius,
+    };
+  }
+  let left = op.startX;
+  let top = op.startY;
+  let right = op.startX;
+  let bottom = op.startY;
+  for (const segment of op.segs) {
+    left = Math.min(left, segment.cx, segment.x, segment.c2x ?? segment.cx);
+    top = Math.min(top, segment.cy, segment.y, segment.c2y ?? segment.cy);
+    right = Math.max(right, segment.cx, segment.x, segment.c2x ?? segment.cx);
+    bottom = Math.max(bottom, segment.cy, segment.y, segment.c2y ?? segment.cy);
+  }
+  const radius = op.lineWidth / 2;
+  return {
+    color: op.color,
+    left: left - radius,
+    top: top - radius,
+    right: right + radius,
+    bottom: bottom + radius,
+  };
+}
+
+export function boundsOverlap(a: CrayonBounds, b: CrayonBounds): boolean {
+  return a.left <= b.right && a.right >= b.left && a.top <= b.bottom && a.bottom >= b.top;
+}
+
+const waxPatterns = new WeakMap<CanvasRenderingContext2D, Map<string, CanvasPattern>>();
+
+function waxPattern(
+  target: CanvasRenderingContext2D,
+  color: string,
+  pass: number
+): CanvasPattern | null {
+  let patterns = waxPatterns.get(target);
+  if (!patterns) waxPatterns.set(target, (patterns = new Map()));
+  const key = `${color}:${pass}`;
+  const cached = patterns.get(key);
+  if (cached) return cached;
+  const tile = document.createElement('canvas');
+  tile.width = 64;
+  tile.height = 64;
+  const tileCtx = tile.getContext('2d');
+  if (!tileCtx) return null;
+  tileCtx.fillStyle = color;
+  // A deterministic, fine paper-tooth mask. Each pass shifts the mask phase,
+  // so a same-colour overlap deposits wax into previously open tooth instead of
+  // darkening the existing colour. The 64px tile avoids visible repetition.
+  for (let y = 0; y < tile.height; y++) {
+    for (let x = 0; x < tile.width; x++) {
+      let seed = (x * 374761393 + y * 668265263 + pass * 2246822519) >>> 0;
+      seed = Math.imul(seed ^ (seed >>> 13), 1274126177) >>> 0;
+      const noise = (seed ^ (seed >>> 16)) % 100;
+      if (noise >= 68) continue;
+      tileCtx.globalAlpha = 0.68 + ((seed >>> 8) % 12) / 100;
+      tileCtx.fillRect(x, y, 1, 1);
+    }
+  }
+  const pattern = target.createPattern(tile, 'repeat');
+  if (pattern) patterns.set(key, pattern);
+  return pattern;
 }
 
 // Stroke or dot the op's bare geometry onto a target using `paint` as the
@@ -117,7 +215,8 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
+  const wax = op.crayon === 'wax' ? waxPattern(target, op.color, op.waxPass ?? 0) : null;
+  paintOpShape(target, op, wax ?? op.color);
   target.globalCompositeOperation = 'source-over';
 }
 

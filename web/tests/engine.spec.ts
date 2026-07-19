@@ -132,6 +132,45 @@ test('the undo stack caps at 20 — you cannot undo all the way past the cap', a
   expect(await count(page)).toBeGreaterThan(0);
 });
 
+test('wax crayon overlap gradually fills paper tooth without changing its hue', async ({
+  page,
+}) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+
+  const line = [
+    { x: 50, y: 140 },
+    { x: 250, y: 140 },
+  ];
+  await drawStroke(page, box, line);
+  const firstPass = await count(page);
+
+  await page.mouse.move(box.x + 50, box.y + 140);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 150, box.y + 140);
+  const whileDrawingSecondPass = await count(page);
+  await page.mouse.move(box.x + 250, box.y + 140);
+  await page.mouse.up();
+  const secondPass = await count(page);
+
+  expect(whileDrawingSecondPass).toBeGreaterThan(firstPass);
+  expect(secondPass).toBeGreaterThan(firstPass * 1.15);
+  const hue = await page.evaluate(() => {
+    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const { data } = canvas.getContext('2d')!.getImageData(45, 130, 210, 20);
+    let coloured = 0;
+    let nonRed = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] < 32) continue;
+      coloured++;
+      if (data[i] < 230 || data[i + 1] > 8 || data[i + 2] > 8) nonRed++;
+    }
+    return { coloured, nonRed };
+  });
+  expect(hue.coloured).toBeGreaterThan(0);
+  expect(hue.nonRed).toBe(0);
+});
+
 test('clearing the canvas is itself undoable', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 

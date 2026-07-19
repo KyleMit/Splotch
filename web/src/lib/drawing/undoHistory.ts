@@ -15,7 +15,9 @@
 
 import {
   clearAllOf,
+  boundsOverlap,
   commandSegmentCount,
+  opCrayonBounds,
   renderOp,
   type StrokeGroupCommand,
   type StrokeOp,
@@ -113,6 +115,27 @@ export function recordOp(op: StrokeOp) {
   if (activeCommand) activeCommand.ops.push(op);
 }
 
+// The live renderer needs the wax pass before it draws an op. This is the
+// commit-time ordinal rule evaluated against already committed commands: once a
+// stroke is committed its bounds are immutable, so the result is replay-safe.
+export function crayonPassFor(op: StrokeOp): number {
+  const bounds = opCrayonBounds(op);
+  if (!bounds) return 0;
+  let overlaps = 0;
+  for (let index = commandLog.length - 1; index >= 0; index--) {
+    const command = commandLog[index];
+    if (command.ops.some((candidate) => candidate.kind === 'clear')) break;
+    if (
+      command.crayonBounds?.some(
+        (prior) => prior.color === bounds.color && boundsOverlap(prior, bounds)
+      )
+    ) {
+      overlaps++;
+    }
+  }
+  return Math.min(overlaps, 3);
+}
+
 // Finalize the stroke group built up since beginCommand() and push it onto the
 // undo log. Called once per group, when the last finger lifts. Returns false
 // when no group was open (nothing painted).
@@ -126,6 +149,10 @@ export function commitActiveCommand(): boolean {
 export function pushCommand(cmd: StrokeGroupCommand) {
   commandLog.push(cmd);
   cmd.ops = simplifyCommandOps(cmd.ops);
+  cmd.crayonBounds = cmd.ops.flatMap((op) => {
+    const bounds = opCrayonBounds(op);
+    return bounds ? [bounds] : [];
+  });
   while (commandLog.length > MAX_UNDO_STACK_SIZE) {
     if (!foldOldestIntoBaseline()) break;
   }

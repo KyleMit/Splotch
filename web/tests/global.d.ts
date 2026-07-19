@@ -35,6 +35,7 @@ declare global {
         reduce?: boolean;
         split?: 'none' | 'corner';
       }): void;
+      setCrayonVariant(variant: 'wax' | 'solid'): void;
       setScreenAngleOverride(angle: number | null): void;
       remount(): void;
       getViewState(): {

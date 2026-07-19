@@ -42,7 +42,7 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { currentCrayonVariant, renderOp, clearAllOf, type StrokeOp } from './strokeOps';
 import {
   beginCommand,
   commandCount,
@@ -53,6 +53,7 @@ import {
   pushCommand,
   rebaseActiveCommand,
   recordOp,
+  crayonPassFor,
   replayAll,
   resetActiveCommandForClear,
   setKeyframeSegmentThreshold,
@@ -63,6 +64,7 @@ import { exportDrawing, warmPaperTextureWhenIdle, type ExportOptions } from './e
 import { PERF_MARKS } from './perf';
 
 export { setColorSheet };
+export { setCrayonVariant } from './strokeOps';
 
 // --- Canvas, tool, and callback state -------------------------------------
 
@@ -422,7 +424,9 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: !ps.erase && !ps.magic ? currentCrayonVariant() : undefined,
   };
+  dot.waxPass = crayonPassFor(dot);
   renderOp(ctx, dot);
   recordOp(dot);
 
@@ -449,7 +453,9 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: !ps.erase && !ps.magic ? currentCrayonVariant() : undefined,
   };
+  op.waxPass = crayonPassFor(op);
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
     const midY = (ps.y + y) / 2;
