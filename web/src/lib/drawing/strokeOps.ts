@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { paintCrayonOp } from './crayon';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -16,6 +17,12 @@ import { sheetPatternFor } from './magicBrush';
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
+// `crayon`, when true, paints the op as waxy crayon through the paper-tooth
+// pattern (crayon.ts) instead of a flat colour: source-over of the same colour,
+// gated by a paper-tooth field, so same-colour passes build up and fill the
+// grain without shifting hue. `depositLevel` (wax strength) and `toothPhaseX/Y`
+// (the per-stroke tooth offset that drives buildup) are idea-11 stored scalars,
+// resolved at draw time and replayed verbatim.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -25,6 +32,13 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      depositLevel?: number;
+      // Per-stroke tooth phase in [0,1) (idea 11's stored scalar, 2-D): shifts the
+      // paper-tooth tile for this stroke so a later same-colour pass fills the
+      // earlier pass's valleys. Fixed for the whole stroke, replayed verbatim.
+      toothPhaseX?: number;
+      toothPhaseY?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +57,13 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      depositLevel?: number;
+      // Per-stroke tooth phase in [0,1) (idea 11's stored scalar, 2-D): shifts the
+      // paper-tooth tile for this stroke so a later same-colour pass fills the
+      // earlier pass's valleys. Fixed for the whole stroke, replayed verbatim.
+      toothPhaseX?: number;
+      toothPhaseY?: number;
     }
   | { kind: 'clear' };
 
@@ -114,6 +135,13 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
+    return;
+  }
+  // Crayon lays the same colour source-over through a paper-tooth pattern, so
+  // repeated same-colour passes build up and fill grain without shifting hue
+  // (crayon.ts). Erasing still wins — an eraser op is never a crayon op.
+  if (op.crayon && !op.erase) {
+    paintCrayonOp(target, op);
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';

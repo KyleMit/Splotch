@@ -43,6 +43,7 @@ import {
   setColorSheet,
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { defaultDepositLevel, setCrayonParams, type CrayonParams } from './crayon';
 import {
   beginCommand,
   commandCount,
@@ -87,6 +88,7 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonActive = false;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +424,10 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    depositLevel: ps.crayon ? ps.depositLevel : undefined,
+    toothPhaseX: ps.crayon ? ps.toothPhaseX : undefined,
+    toothPhaseY: ps.crayon ? ps.toothPhaseY : undefined,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +455,10 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    depositLevel: ps.crayon ? ps.depositLevel : undefined,
+    toothPhaseX: ps.crayon ? ps.toothPhaseX : undefined,
+    toothPhaseY: ps.crayon ? ps.toothPhaseY : undefined,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +504,14 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayon: boolean;
+  // Per-op wax strength, fixed for the stroke (idea 11's stored scalar), so the
+  // whole stroke replays at one deposit level. Only meaningful when `crayon`.
+  depositLevel: number;
+  // Per-stroke tooth phase, so this stroke's grain fills earlier passes' valleys
+  // (crayon buildup). Resolved once at stroke start and stamped on every op.
+  toothPhaseX: number;
+  toothPhaseY: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +600,13 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayon: crayonActive,
+    depositLevel: defaultDepositLevel(),
+    // Resolve the tooth phase once per stroke (like the magic gradient pick), so
+    // repeated passes over the same spot fill each other's grain. Random at draw
+    // time, then stored on every op → replay stays deterministic.
+    toothPhaseX: Math.random(),
+    toothPhaseY: Math.random(),
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -1037,6 +1062,21 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+// Crayon brush on/off. A pen-family brush (mutually exclusive with the eraser and
+// magic brush at the UI level); the engine tracks the flag and stamps it, plus a
+// fixed per-stroke deposit level, onto each op so replay reproduces the wax.
+export function setCrayonMode(active: boolean) {
+  crayonActive = active;
+}
+
+// Dev profiling seam: override the crayon look params at runtime so the /dev
+// harness can sweep the tooth/deposit against reference images. Wired onto
+// window.__engine only on /dev/engine (PUBLIC_ENABLE_DEV_HARNESS); production
+// never calls it.
+export function setCrayonRenderParams(params: Partial<CrayonParams>) {
+  setCrayonParams(params);
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

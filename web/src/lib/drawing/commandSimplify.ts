@@ -119,7 +119,8 @@ function pathStyleMatches(a: PathOp, b: PathOp): boolean {
     a.color === b.color &&
     a.lineWidth === b.lineWidth &&
     a.erase === b.erase &&
-    !!a.magic === !!b.magic
+    !!a.magic === !!b.magic &&
+    !!a.crayon === !!b.crayon
   );
 }
 
@@ -165,6 +166,16 @@ export function splitIntoContinuousRuns(ops: PathOp[]): PathOp[][] {
 // run's style to each returned span, and track the lifetime raw/kept counters.
 function reducePathRun(run: PathOp[]): PathOp[] {
   const first = run[0];
+  // Crayon deposits partial alpha, so its pixels are order- and
+  // segmentation-sensitive: merging per-frame ops into fewer longer strokes (as
+  // RDP does) would change where coverage overlaps and make replay diverge from
+  // the live render. Keep crayon runs verbatim so undo/resize/export stay
+  // bit-identical; ADR-0035 keyframing still bounds their replay cost.
+  if (first.crayon) {
+    rawPoints += run.length;
+    keptPoints += run.length;
+    return run;
+  }
   const opts = { epsilon: epsilonFor(first.lineWidth), cornerCos, reduce };
   const { spans, rawCount, keptCount } =
     mode === 'samples'

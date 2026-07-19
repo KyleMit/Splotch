@@ -5,6 +5,8 @@
     setColor,
     setStrokeWidth,
     setEraserMode,
+    setCrayonMode,
+    setCrayonRenderParams,
     setSafeAreaInsets,
     undo,
     clearCanvas,
@@ -58,6 +60,8 @@
       setColor,
       setStrokeWidth,
       setEraserMode,
+      setCrayonMode,
+      setCrayonRenderParams,
       setSafeAreaInsets,
       undo,
       clearCanvas,
@@ -135,6 +139,62 @@
       pixelAt(x: number, y: number) {
         const ctx = canvasEl.getContext('2d')!;
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
+      },
+
+      // Ink coverage stats over the visible canvas (optionally a sub-rect), used
+      // by the crayon buildup spec. `count` is non-transparent pixels; `alphaSum`
+      // is total opacity (rises as wax fills the tooth); `strong` counts near-solid
+      // pixels; r/g/b are the mean colour of the ink (its hue). A second same-hue
+      // pass raises alphaSum/strong while keeping r:g:b — that IS buildup.
+      inkStats(rect?: { x: number; y: number; w: number; h: number }) {
+        const ctx = canvasEl.getContext('2d')!;
+        const x = rect?.x ?? 0;
+        const y = rect?.y ?? 0;
+        const w = rect?.w ?? canvasEl.width;
+        const h = rect?.h ?? canvasEl.height;
+        const { data } = ctx.getImageData(x, y, w, h);
+        let count = 0,
+          alphaSum = 0,
+          strong = 0,
+          rw = 0,
+          gw = 0,
+          bw = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          const a = data[i + 3];
+          if (a === 0) continue;
+          count++;
+          alphaSum += a;
+          if (a > 200) strong++;
+          // Weight colour by alpha so faint tooth pixels don't skew the hue.
+          rw += data[i] * a;
+          gw += data[i + 1] * a;
+          bw += data[i + 2] * a;
+        }
+        return {
+          count,
+          alphaSum,
+          strong,
+          r: alphaSum ? rw / alphaSum : 0,
+          g: alphaSum ? gw / alphaSum : 0,
+          b: alphaSum ? bw / alphaSum : 0,
+        };
+      },
+
+      // Dispatch a single PointerEvent at canvas coords, so a spec can build a
+      // stroke step by step (down → moves → read mid-stroke → up) to prove crayon
+      // buildup is live and gradual, not a post-commit snap.
+      pointer(type: string, x: number, y: number, pointerId = 1, pointerType = 'mouse') {
+        const rect = canvasEl.getBoundingClientRect();
+        canvasEl.dispatchEvent(
+          new PointerEvent(type, {
+            pointerId,
+            pointerType,
+            clientX: rect.left + x,
+            clientY: rect.top + y,
+            bubbles: true,
+            cancelable: true,
+          })
+        );
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,
