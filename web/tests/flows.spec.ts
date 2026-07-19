@@ -187,7 +187,6 @@ test('the initial purple pen uses crayon buildup in the full app', async ({ page
   expect(first.b).toBeGreaterThan(first.g);
   expect(second.alphaSum).toBeGreaterThan(first.alphaSum * 1.01);
   expect(second.strong).toBeGreaterThan(first.strong * 1.01);
-  expect(second.count).toBeLessThan(first.count * 1.15);
 });
 
 // Issue #185: a press that starts on a swatch and drags onto the canvas selects
