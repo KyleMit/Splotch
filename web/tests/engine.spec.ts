@@ -684,6 +684,149 @@ test('a moderate stroke stays replayable ops (no keyframe) and undoes cleanly', 
   expect(s.canUndo).toBe(false);
 });
 
+test('crayon stays contained and builds coverage on separate and continuous overdraw', async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    window.__engine.setStrokeWidth(20);
+    window.__engine.setCrayonMode(true);
+    window.__engine.strokeSync([
+      { x: 30, y: 80 },
+      { x: 270, y: 80 },
+    ]);
+  });
+
+  const singlePass = await page.evaluate(() => window.__engine.alphaSum(80, 70, 140, 21));
+  const singlePixel = await page.evaluate(() => {
+    const canvas = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    return [...canvas.getContext('2d')!.getImageData(90, 80, 1, 1).data];
+  });
+  expect(singlePass).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__engine.alphaSum(0, 0, 300, 67))).toBe(0);
+  expect(await page.evaluate(() => window.__engine.alphaSum(0, 94, 300, 26))).toBe(0);
+
+  await page.evaluate(() =>
+    window.__engine.strokeSync([
+      { x: 30, y: 80 },
+      { x: 270, y: 80 },
+    ])
+  );
+  const doublePass = await page.evaluate(() => window.__engine.alphaSum(80, 70, 140, 21));
+  const doublePixel = await page.evaluate(() => {
+    const canvas = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    return [...canvas.getContext('2d')!.getImageData(90, 80, 1, 1).data];
+  });
+  expect(doublePass).toBeGreaterThan(singlePass * 1.2);
+  expect(doublePixel[3]).toBeGreaterThan(singlePixel[3]);
+  for (const pixel of [singlePixel, doublePixel]) {
+    for (const [index, expected] of [255, 0, 0].entries()) {
+      expect(Math.abs(pixel[index] - expected)).toBeLessThanOrEqual(2);
+    }
+  }
+
+  await page.evaluate(() => {
+    window.__engine.clearCanvas();
+    window.__engine.strokeSync([
+      { x: 30, y: 170 },
+      { x: 270, y: 170 },
+      { x: 130, y: 170 },
+    ]);
+  });
+  const oneTraversal = await page.evaluate(() => window.__engine.alphaSum(50, 160, 60, 21));
+  const backtracked = await page.evaluate(() => window.__engine.alphaSum(150, 160, 60, 21));
+  expect(backtracked).toBeGreaterThan(oneTraversal * 1.1);
+});
+
+test('crayon is event-rate invariant and has no density beads at input-frame boundaries', async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    window.__engine.setStrokeWidth(20);
+    window.__engine.setCrayonMode(true);
+    window.__engine.strokeSync([
+      { x: 30, y: 140 },
+      { x: 270, y: 140 },
+    ]);
+  });
+  const sparse = await page.evaluate(() => window.__engine.canvasDataUrl());
+
+  const densePoints = Array.from({ length: 13 }, (_, index) => ({
+    x: 30 + index * 20,
+    y: 140,
+  }));
+  await page.evaluate((points) => {
+    window.__engine.clearCanvas();
+    window.__engine.strokeSync(points);
+  }, densePoints);
+  expect(await page.evaluate(() => window.__engine.canvasDataUrl())).toBe(sparse);
+
+  const seamRatio = await page.evaluate(() => {
+    const canvas = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const ctx = canvas.getContext('2d')!;
+    const column = (x: number) => {
+      const data = ctx.getImageData(x, 128, 1, 25).data;
+      let sum = 0;
+      for (let index = 3; index < data.length; index += 4) sum += data[index];
+      return sum;
+    };
+    const endpoints = Array.from({ length: 11 }, (_, index) => 50 + index * 20);
+    const endpointMean = endpoints.reduce((sum, x) => sum + column(x), 0) / endpoints.length;
+    const neighborMean = endpoints.reduce((sum, x) => sum + column(x + 5), 0) / endpoints.length;
+    return endpointMean / neighborMean;
+  });
+  expect(seamRatio).toBeLessThan(1.15);
+});
+
+test('crayon replay, resize, undo, and export preserve the stored deposit', async ({ page }) => {
+  await page.evaluate(() => {
+    window.__engine.setStrokeWidth(18);
+    window.__engine.setCrayonMode(true);
+    window.__engine.strokeSync([
+      { x: 30, y: 80 },
+      { x: 100, y: 140 },
+      { x: 180, y: 70 },
+      { x: 270, y: 130 },
+    ]);
+  });
+  const live = await page.evaluate(() => window.__engine.canvasDataUrl());
+
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  expect(await page.evaluate(() => window.__engine.canvasDataUrl())).toBe(live);
+
+  await page.evaluate(() => {
+    window.__engine.setCrayonMode(false);
+    window.__engine.strokeSync([
+      { x: 40, y: 240 },
+      { x: 260, y: 240 },
+    ]);
+    window.__engine.undo();
+  });
+  expect(await page.evaluate(() => window.__engine.canvasDataUrl())).toBe(live);
+
+  const exportedPixels = await page.evaluate(async () => {
+    const blob = await window.__engine.exportCanvasBlob(null, { includePaperTexture: false });
+    return window.__engine.blobRedPixelCount(blob);
+  });
+  expect(exportedPixels).toBeGreaterThan(0);
+});
+
+test('a long crayon gesture keyframes without changing pixels', async ({ page }) => {
+  await page.evaluate(() => {
+    window.__engine.setSimplifyParams({ keyframeThreshold: 12 });
+    window.__engine.setStrokeWidth(16);
+    window.__engine.setCrayonMode(true);
+    window.__engine.strokeSync([
+      { x: 30, y: 150 },
+      { x: 270, y: 150 },
+    ]);
+  });
+  expect((await page.evaluate(() => window.__engine.getUndoDebug())).keyframes).toBe(1);
+  const live = await page.evaluate(() => window.__engine.canvasDataUrl());
+
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  expect(await page.evaluate(() => window.__engine.canvasDataUrl())).toBe(live);
+});
+
 test('a pathological all-corners gesture keyframes as a safety net (ADR-0035/0036)', async ({
   page,
 }) => {

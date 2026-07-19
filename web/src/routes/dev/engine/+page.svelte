@@ -5,6 +5,7 @@
     setColor,
     setStrokeWidth,
     setEraserMode,
+    setCrayonMode,
     setSafeAreaInsets,
     undo,
     clearCanvas,
@@ -58,6 +59,7 @@
       setColor,
       setStrokeWidth,
       setEraserMode,
+      setCrayonMode,
       setSafeAreaInsets,
       undo,
       clearCanvas,
@@ -105,6 +107,18 @@
         let n = 0;
         for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) n++;
         return n;
+      },
+
+      canvasDataUrl() {
+        return canvasEl.toDataURL('image/png');
+      },
+
+      alphaSum(x: number, y: number, width: number, height: number) {
+        const ctx = canvasEl.getContext('2d')!;
+        const { data } = ctx.getImageData(x, y, width, height);
+        let sum = 0;
+        for (let i = 3; i < data.length; i += 4) sum += data[i];
+        return sum;
       },
 
       // Bounding box (backing-store px) of the non-transparent pixels, so a spec

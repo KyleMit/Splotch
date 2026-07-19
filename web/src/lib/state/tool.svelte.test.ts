@@ -4,8 +4,10 @@ import {
   selectPen,
   selectEraser,
   selectMagic,
+  selectCrayon,
   toggleEraser,
   toggleMagic,
+  toggleCrayon,
   resetToolAfterClear,
 } from './tool.svelte';
 
@@ -27,18 +29,26 @@ describe('tool state', () => {
     expect(toolState.eraser).toBe(false);
   });
 
-  it('eraser and magic are mutually exclusive', () => {
+  it('eraser, magic, and crayon are mutually exclusive', () => {
     selectEraser();
     expect(toolState.eraser).toBe(true);
     expect(toolState.magic).toBe(false);
+    expect(toolState.crayon).toBe(false);
 
     selectMagic();
     expect(toolState.magic).toBe(true);
+    expect(toolState.eraser).toBe(false);
+    expect(toolState.crayon).toBe(false);
+
+    selectCrayon();
+    expect(toolState.crayon).toBe(true);
+    expect(toolState.magic).toBe(false);
     expect(toolState.eraser).toBe(false);
 
     selectEraser();
     expect(toolState.eraser).toBe(true);
     expect(toolState.magic).toBe(false);
+    expect(toolState.crayon).toBe(false);
   });
 
   it('toggleMagic flips between pen and magic, and always leaves magic for the pen', () => {
@@ -57,10 +67,20 @@ describe('tool state', () => {
     expect(toolState.magic).toBe(false);
   });
 
-  it('selectPen clears both modifiers', () => {
+  it('toggleCrayon flips between crayon and pen', () => {
+    toggleCrayon();
+    expect(toolState.crayon).toBe(true);
+    toggleCrayon();
+    expect(toolState.crayon).toBe(false);
+    expect(toolState.eraser).toBe(false);
+    expect(toolState.magic).toBe(false);
+  });
+
+  it('selectPen clears every modifier', () => {
     selectMagic();
     selectPen();
     expect(toolState.magic).toBe(false);
+    expect(toolState.crayon).toBe(false);
     expect(toolState.eraser).toBe(false);
   });
 
@@ -69,12 +89,22 @@ describe('tool state', () => {
     resetToolAfterClear();
     expect(toolState.eraser).toBe(false);
     expect(toolState.magic).toBe(false);
+    expect(toolState.crayon).toBe(false);
   });
 
   it('resetToolAfterClear keeps the magic brush selected', () => {
     selectMagic();
     resetToolAfterClear();
     expect(toolState.magic).toBe(true);
+    expect(toolState.eraser).toBe(false);
+    expect(toolState.crayon).toBe(false);
+  });
+
+  it('resetToolAfterClear keeps the crayon selected', () => {
+    selectCrayon();
+    resetToolAfterClear();
+    expect(toolState.crayon).toBe(true);
+    expect(toolState.magic).toBe(false);
     expect(toolState.eraser).toBe(false);
   });
 
@@ -83,5 +113,6 @@ describe('tool state', () => {
     resetToolAfterClear();
     expect(toolState.eraser).toBe(false);
     expect(toolState.magic).toBe(false);
+    expect(toolState.crayon).toBe(false);
   });
 });

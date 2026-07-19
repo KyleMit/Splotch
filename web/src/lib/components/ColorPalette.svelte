@@ -10,7 +10,13 @@
     themedSwatchColor,
   } from '$lib/state/colors.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { releaseAllPointers, setColor, setEraserMode, setMagicMode } from '$lib/drawing/engine';
+  import {
+    releaseAllPointers,
+    setColor,
+    setEraserMode,
+    setMagicMode,
+    setCrayonMode,
+  } from '$lib/drawing/engine';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
   import { dragColorToCanvas } from '$lib/actions/dragColorToCanvas';
   import { openColorPicker, buttonCenter } from '$lib/state/ui.svelte';
@@ -80,7 +86,7 @@
   // selects like a tap, with two differences: the engine must be painting in
   // this swatch's color and tool from the stroke's very first dot — the
   // reactive bridges in DrawingCanvas ($effect → setColor/setEraserMode/
-  // setMagicMode) flush after this handler, so push directly here; they re-push
+  // setMagicMode/setCrayonMode) flush after this handler, so push directly here; they re-push
   // the same values harmlessly — and no releaseAllPointers: the press already
   // released everything (handlePaletteDown), and releasing again now would kill
   // a stroke a sibling finger started during the drag.
@@ -90,6 +96,7 @@
     ringAnimateKey = hex + ':' + Date.now();
     setEraserMode(false);
     setMagicMode(false);
+    setCrayonMode(false);
     setColor(paint);
   }
 

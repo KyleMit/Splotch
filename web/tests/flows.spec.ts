@@ -497,6 +497,30 @@ test('tapping the eraser repeatedly keeps it selected', async ({ page }) => {
   await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
 });
 
+test('the crayon button selects the textured brush and paints', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const crayon = page.locator('#crayonBrushButton');
+  await crayon.click();
+  await expect(crayon).toHaveAttribute('aria-pressed', 'true');
+
+  await draw(page, [
+    { x: 120, y: 180 },
+    { x: 320, y: 180 },
+  ]);
+
+  const pixel = await firstOpaquePixel(page);
+  expect(pixel).not.toBeNull();
+  for (const [actual, expected] of pixel!
+    .slice(0, 3)
+    .map((value, index) => [value, [171, 113, 225][index]])) {
+    expect(Math.abs(actual - expected)).toBeLessThanOrEqual(5);
+  }
+  expect(pixel?.[3]).toBeLessThan(255);
+  await expect(page.locator('#undoButton')).toBeEnabled();
+});
+
 // ── undo / empty-state gating ───────────────────────────────────────────────
 
 test('the undo button enables on a stroke and reverts it', async ({ page }) => {

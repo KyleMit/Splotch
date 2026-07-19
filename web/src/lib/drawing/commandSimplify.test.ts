@@ -124,6 +124,23 @@ describe('simplifyCommandOps', () => {
     expect(out[out.length - 1]).toEqual({ kind: 'clear' });
   });
 
+  it('passes non-idempotent crayon geometry through unchanged', () => {
+    const crayon: StrokeOp = {
+      kind: 'crayon',
+      color: '#ab71e1',
+      polygons: [
+        {
+          points: [
+            { x: 1, y: 2 },
+            { x: 3, y: 4 },
+            { x: 5, y: 2 },
+          ],
+        },
+      ],
+    };
+    expect(simplifyCommandOps([crayon])).toEqual([crayon]);
+  });
+
   it('emits each finger of a multi-touch command as its own reduced stroke', () => {
     const a = liveOps(1, line(20));
     const b = liveOps(2, line(20, 4, 50), { color: '#222222' });

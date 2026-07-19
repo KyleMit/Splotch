@@ -10,7 +10,7 @@
     setStrokeSize,
     activeStrokeSize,
   } from '$lib/state/strokeWidth.svelte';
-  import { toolState, selectEraser, toggleMagic } from '$lib/state/tool.svelte';
+  import { toolState, selectEraser, toggleMagic, toggleCrayon } from '$lib/state/tool.svelte';
   import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
   import { network } from '$lib/state/network.svelte';
@@ -227,6 +227,10 @@
     toggleMagic();
   }
 
+  function handleCrayonClick() {
+    toggleCrayon();
+  }
+
   async function handleAiImageClick() {
     if (ui.aiGenerating || canvasState.canvasEmpty || !aiBtnEl) return;
 
@@ -310,6 +314,20 @@
         use:scribbleTap={handleEraserClick}
       >
         <Icon name="eraser" class="action-icon" />
+      </button>
+
+      <button
+        class="action-button"
+        class:active={toolState.crayon}
+        class:white-stroke={whiteStroke}
+        class:dark-stroke={darkStroke}
+        id="crayonBrushButton"
+        aria-label="Crayon"
+        aria-pressed={toolState.crayon}
+        use:scribbleTap={handleCrayonClick}
+        style:color={colors.activeColor}
+      >
+        <Icon name="crayon" class="action-icon" />
       </button>
 
       <button

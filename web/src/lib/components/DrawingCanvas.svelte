@@ -6,6 +6,7 @@
     setStrokeWidth,
     setEraserMode,
     setMagicMode,
+    setCrayonMode,
     setColorSheet,
     setSafeAreaInsets,
     getCanvasRect,
@@ -76,8 +77,7 @@
     getEraserWidthPx(strokeState.eraserSize) * (paperView.active ? paperView.scale : 1)
   );
 
-  // Pen and magic strokes share the pen width (the engine applies no multiplier
-  // to magic ops), so both ring flavors share this size.
+  // Pen, crayon, and magic strokes share the pen width.
   const brushRingSizePx = $derived(
     getStrokeWidthPx(strokeState.penSize) * (paperView.active ? paperView.scale : 1)
   );
@@ -241,6 +241,10 @@
 
   $effect(() => {
     setMagicMode(toolState.magic);
+  });
+
+  $effect(() => {
+    setCrayonMode(toolState.crayon);
   });
 
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK

@@ -5,12 +5,13 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { crayonPatternFor, type CrayonPolygon } from './crayonBrush';
 
-// Each op is captured at the exact granularity it was rendered (one path op per
-// strokeSmoothSegments call, one dot op per stroke start). Live rendering is
-// bit-identical to its op; the stored ops are then simplified once at commit
-// (ADR-0036) so replay re-strokes far fewer segments without a visible change. A
-// 'clear' op wipes the target.
+// Each op is captured at the exact granularity it was rendered. Pen paths are
+// simplified once at commit (ADR-0036) so replay re-strokes fewer segments.
+// Crayon ops retain the exact swept polygons used live because their translucent
+// deposit topology is not safe to simplify (ADR-0065). A 'clear' op wipes the
+// target.
 // `magic`, when true, means the op reveals the coloring page's colored fill
 // instead of laying down `color` — its shape samples the pre-rendered color sheet
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
@@ -43,6 +44,11 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+    }
+  | {
+      kind: 'crayon';
+      color: string;
+      polygons: CrayonPolygon[];
     }
   | { kind: 'clear' };
 
@@ -101,12 +107,28 @@ export function clearAllOf(target: CanvasRenderingContext2D) {
 
 // Paint one recorded op onto a target context. Used both live (target = the
 // visible ctx) and during undo/resize replay (target = the visible or baseline
-// surface). Erasing composites destination-out; a magic op reveals the color
-// sheet (source-over, its shape filled with the sheet pattern) and paints
-// nothing until the sheet has decoded; everything else lays down its solid color.
+// surface). Erasing composites destination-out; magic reveals the color sheet;
+// crayon fills stored swept polygons with paper-anchored wax tooth; everything
+// else lays down its solid color.
 export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   if (op.kind === 'clear') {
     clearAllOf(target);
+    return;
+  }
+  if (op.kind === 'crayon') {
+    const pattern = crayonPatternFor(target, op.color);
+    if (!pattern) return;
+    target.globalCompositeOperation = 'source-over';
+    target.fillStyle = pattern;
+    for (const polygon of op.polygons) {
+      const [first, ...rest] = polygon.points;
+      if (!first) continue;
+      target.beginPath();
+      target.moveTo(first.x, first.y);
+      for (const point of rest) target.lineTo(point.x, point.y);
+      target.closePath();
+      target.fill();
+    }
     return;
   }
   if (op.magic) {
@@ -121,10 +143,13 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   target.globalCompositeOperation = 'source-over';
 }
 
-// Total quadratic segments a command will re-stroke on replay — the keyframe
-// safety net's trigger (ADR-0035), measured after simplification.
+// Total geometry pieces a command will replay — the keyframe safety net's
+// trigger (ADR-0035), measured after pen simplification.
 export function commandSegmentCount(cmd: StrokeGroupCommand): number {
   let n = 0;
-  for (const op of cmd.ops) if (op.kind === 'path') n += op.segs.length;
+  for (const op of cmd.ops) {
+    if (op.kind === 'path') n += op.segs.length;
+    if (op.kind === 'crayon') n += op.polygons.length;
+  }
   return n;
 }

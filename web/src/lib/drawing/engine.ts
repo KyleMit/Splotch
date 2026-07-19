@@ -44,6 +44,15 @@ import {
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
 import {
+  createCrayonStrokeGeometry,
+  extendCrayonStrokeGeometry,
+  finishCrayonStrokeGeometry,
+  sampleQuadratic,
+  warmCrayonColor,
+  type CrayonPolygon,
+  type CrayonStrokeGeometry,
+} from './crayonBrush';
+import {
   beginCommand,
   commandCount,
   commitActiveCommand,
@@ -87,6 +96,7 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonActive = false;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -410,6 +420,12 @@ function beginStrokeGroup() {
 function renderStrokeStart(ps: PointerState) {
   beginStrokeGroup();
 
+  if (ps.crayon) {
+    ps.crayonGeometry = createCrayonStrokeGeometry({ x: ps.x, y: ps.y }, ps.lineWidth / 2);
+    if (onDrawSoundCallback) onDrawSoundCallback({ speed: 0 });
+    return;
+  }
+
   // Erasing clears pixels via destination-out; the stroke color is irrelevant
   // there, only its (opaque) alpha matters. A magic op ignores `color` too — it
   // reveals the sheet — but carries it so a mid-stroke tool flip keeps a stable
@@ -463,6 +479,54 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
   recordOp(op);
 }
 
+function renderCrayonPolygons(ps: PointerState, polygons: CrayonPolygon[]) {
+  if (polygons.length === 0) return;
+  const op: StrokeOp = { kind: 'crayon', color: ps.color, polygons };
+  renderOp(ctx, op);
+  recordOp(op);
+}
+
+function strokeCrayonSegments(ps: PointerState, points: { x: number; y: number }[]) {
+  const geometry = ps.crayonGeometry;
+  if (!geometry || points.length === 0) return;
+  const curvePoints: { x: number; y: number }[] = [];
+  for (const point of points) {
+    const mid = { x: (ps.x + point.x) / 2, y: (ps.y + point.y) / 2 };
+    curvePoints.push(
+      ...sampleQuadratic(
+        { x: ps.midX, y: ps.midY },
+        { x: ps.x, y: ps.y },
+        mid,
+        geometry.spacing / 2
+      )
+    );
+    ps.x = point.x;
+    ps.y = point.y;
+    ps.midX = mid.x;
+    ps.midY = mid.y;
+  }
+  renderCrayonPolygons(ps, extendCrayonStrokeGeometry(geometry, curvePoints));
+}
+
+function renderStrokeSegments(ps: PointerState, points: { x: number; y: number }[]) {
+  if (ps.crayon) strokeCrayonSegments(ps, points);
+  else strokeSmoothSegments(ps, points);
+}
+
+function finishCrayonPointer(ps: PointerState) {
+  const geometry = ps.crayonGeometry;
+  if (!ps.crayon || !geometry) return;
+  const tail = sampleQuadratic(
+    { x: ps.midX, y: ps.midY },
+    { x: ps.x, y: ps.y },
+    { x: ps.x, y: ps.y },
+    geometry.spacing / 2
+  );
+  renderCrayonPolygons(ps, extendCrayonStrokeGeometry(geometry, tail));
+  renderCrayonPolygons(ps, finishCrayonStrokeGeometry(geometry));
+  ps.crayonGeometry = null;
+}
+
 // Push the finished stroke group onto the undo log (once per group, when the
 // last finger lifts) and tell reactive consumers. onStrokeEnd fires at stroke
 // end, not start, so consumers (e.g. mounting the install banner) never do DOM
@@ -494,6 +558,8 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayon: boolean;
+  crayonGeometry: CrayonStrokeGeometry | null;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +648,8 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayon: crayonActive,
+    crayonGeometry: null,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -613,7 +681,7 @@ function commitEdgeSwipe(ps: PointerState) {
   ps.edgeSwipeGuard = null;
   renderStrokeStart(ps);
   if (ps.pendingPoints.length > 0) {
-    strokeSmoothSegments(ps, ps.pendingPoints.map(screenToPaper));
+    renderStrokeSegments(ps, ps.pendingPoints.map(screenToPaper));
     ps.pendingPoints = [];
   }
   // Restart speed sampling from the commit point so the buffered span doesn't
@@ -671,11 +739,13 @@ function restartStrokeIfResumed(ps: PointerState, resume: { x: number; y: number
   const deltaY = resume.y - ps.y;
   const jump = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
   if (!pointerWasResumed(now - ps.lastTime, jump, Math.min(paper.pxW, paper.pxH))) return;
+  finishCrayonPointer(ps);
   ps.x = resume.x;
   ps.y = resume.y;
   ps.midX = resume.x;
   ps.midY = resume.y;
   ps.speedSamples = [{ t: now, distance: 0 }];
+  if (ps.crayon) ps.crayonGeometry = createCrayonStrokeGeometry(resume, ps.lineWidth / 2);
   ctx.beginPath();
 }
 
@@ -724,7 +794,7 @@ function draw(e: PointerEvent) {
   restartStrokeIfResumed(pointerState, points[0], now);
   const speed = strokeSpeed(pointerState, points[points.length - 1], now);
 
-  strokeSmoothSegments(pointerState, points);
+  renderStrokeSegments(pointerState, points);
 
   pointerState.lastTime = now;
 
@@ -745,6 +815,8 @@ function stopDrawing(e?: PointerEvent) {
   if (pointerState?.edgeSwipeGuard && e.type === 'pointerup') {
     commitEdgeSwipe(pointerState);
   }
+
+  if (pointerState && !pointerState.edgeSwipeGuard) finishCrayonPointer(pointerState);
 
   activePointers.delete(e.pointerId);
   activePointerIds.delete(e.pointerId);
@@ -769,6 +841,8 @@ function stopDrawing(e?: PointerEvent) {
 export function releaseAllPointers() {
   if (!ctx) return;
   ctx.beginPath();
+
+  for (const pointerState of activePointers.values()) finishCrayonPointer(pointerState);
 
   activePointers.clear();
   groupHasDrawn = false;
@@ -1037,6 +1111,12 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+export function setCrayonMode(active: boolean) {
+  crayonActive = active;
+  if (!active) return;
+  warmCrayonColor(currentColor);
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system
