@@ -240,7 +240,7 @@
   });
 
   $effect(() => {
-    setBrush(toolState.brush);
+    setBrush(toolState.brush === 'pen' ? 'crayon' : toolState.brush);
   });
 
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK
