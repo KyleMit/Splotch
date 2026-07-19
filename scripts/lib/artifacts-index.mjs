@@ -53,6 +53,19 @@ const REGISTRY = {
     kind: 'Comparison report',
     count: () => null,
   },
+  'crayon-brush-samples': {
+    icon: 'more-colors',
+    hue: 'red',
+    title: 'Crayon brush — reference strokes',
+    blurb:
+      'AI-generated acceptance-criteria art for the crayon brush mode: what a waxy crayon stroke should look like, built up stage by stage — single lines, same-color buildup, cross-color layering, scribble types, and fills.',
+    entry: 'crayon-brush-samples/index.html',
+    kind: 'Reference sheet',
+    count: (files) => {
+      const n = files.filter((f) => f.endsWith('.webp')).length;
+      return n ? `${n} samples` : null;
+    },
+  },
   icons: {
     icon: 'more-colors',
     hue: 'purple',
