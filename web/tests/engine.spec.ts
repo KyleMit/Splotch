@@ -56,6 +56,33 @@ test('a stroke paints pixels and flips canvasEmpty false', async ({ page }) => {
   expect(s.canUndo).toBe(true);
 });
 
+test('a second same-colour crayon pass progressively fills the tooth without changing hue', async ({
+  page,
+}) => {
+  const box = await page.locator('#engineCanvas').boundingBox();
+  const line = [
+    { x: 60, y: 100 },
+    { x: 240, y: 100 },
+  ];
+
+  await drawStroke(page, box, line);
+  const first = await page.evaluate(() => window.__engine.pixelAt(150, 100));
+
+  if (!box) throw new Error('canvas has no bounding box');
+  await page.mouse.move(box.x + line[0].x, box.y + line[0].y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + line[1].x, box.y + line[1].y);
+  const liveSecond = await page.evaluate(() => window.__engine.pixelAt(150, 100));
+  await page.mouse.up();
+
+  expect(first[3]).toBeGreaterThan(0);
+  expect(first[3]).toBeLessThan(255);
+  expect(liveSecond[3]).toBeGreaterThan(first[3]);
+  expect(liveSecond[0]).toBeGreaterThan(240);
+  expect(liveSecond[1]).toBeLessThan(10);
+  expect(liveSecond[2]).toBeLessThan(10);
+});
+
 test('undo reverts a stroke back to an empty canvas', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
