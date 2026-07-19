@@ -127,6 +127,45 @@ function firstOpaquePixel(page: Page): Promise<number[] | null> {
   });
 }
 
+function canvasInkStats(
+  page: Page,
+  region: { x: number; y: number; width: number; height: number }
+): Promise<{ count: number; strong: number; alphaSum: number; r: number; g: number; b: number }> {
+  return page.evaluate(({ x, y, width, height }) => {
+    const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const pixels = canvas
+      .getContext('2d')!
+      .getImageData(x * scaleX, y * scaleY, width * scaleX, height * scaleY).data;
+    let count = 0;
+    let strong = 0;
+    let alphaSum = 0;
+    let redSum = 0;
+    let greenSum = 0;
+    let blueSum = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      const alpha = pixels[i + 3];
+      if (alpha <= 8) continue;
+      count++;
+      if (alpha >= 220) strong++;
+      alphaSum += alpha;
+      redSum += pixels[i] * alpha;
+      greenSum += pixels[i + 1] * alpha;
+      blueSum += pixels[i + 2] * alpha;
+    }
+    return {
+      count,
+      strong,
+      alphaSum,
+      r: redSum / alphaSum,
+      g: greenSum / alphaSum,
+      b: blueSum / alphaSum,
+    };
+  }, region);
+}
+
 // ── palette ──────────────────────────────────────────────────────────────--
 
 test('selecting a palette color activates it and paints in that color', async ({ page }) => {
@@ -148,6 +187,25 @@ test('selecting a palette color activates it and paints in that color', async ({
   expect(px).not.toBeNull();
   // #62A2E9 is blue-dominant — the painted pixel should be more blue than red.
   expect(px![2]).toBeGreaterThan(px![0]);
+});
+
+test('the initial purple pen uses crayon buildup in the full app', async ({ page }) => {
+  await gotoApp(page);
+  await expect(page.locator('button.color-swatch[data-color="#AB71E1"]')).toHaveClass(/active/);
+
+  const line = Array.from({ length: 15 }, (_, index) => ({ x: 240 + index * 20, y: 320 }));
+  const region = { x: 220, y: 280, width: 320, height: 80 };
+  await draw(page, line);
+  const first = await canvasInkStats(page, region);
+  await draw(page, line);
+  const second = await canvasInkStats(page, region);
+
+  expect(first.count).toBeGreaterThan(200);
+  expect(first.r).toBeGreaterThan(first.g);
+  expect(first.b).toBeGreaterThan(first.g);
+  expect(second.alphaSum).toBeGreaterThan(first.alphaSum * 1.01);
+  expect(second.strong).toBeGreaterThan(first.strong * 1.01);
+  expect(second.count).toBeLessThan(first.count * 1.15);
 });
 
 // Issue #185: a press that starts on a swatch and drags onto the canvas selects
