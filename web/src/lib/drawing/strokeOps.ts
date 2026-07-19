@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { crayonPatternFor } from './crayon';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -16,6 +17,12 @@ import { sheetPatternFor } from './magicBrush';
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
+// `crayon`, when true, lays `color` down through a paper-tooth texture instead of a
+// flat fill (crayon.ts): the paint is a tooth-punched `CanvasPattern` of the colour,
+// phase-shifted by the per-stroke grain offset `gx`/`gy` so an overlapping second
+// stroke of the same colour fills the valleys the first left — wax buildup at constant
+// hue. Like magic, it's an ordinary command-log op, so undo/eraser/resize/export are
+// free. `gx`/`gy` are constant across a stroke's ops and stored so replay is identical.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -25,6 +32,9 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      gx?: number;
+      gy?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +53,9 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      gx?: number;
+      gy?: number;
     }
   | { kind: 'clear' };
 
@@ -64,7 +77,7 @@ export interface StrokeGroupCommand {
 // Stroke or dot the op's bare geometry onto a target using `paint` as the
 // fill/stroke style — a solid colour for a normal op, the sheet pattern for a
 // magic one.
-function paintOpShape(
+export function paintOpShape(
   target: CanvasRenderingContext2D,
   op: Extract<StrokeOp, { kind: 'dot' | 'path' }>,
   paint: string | CanvasPattern
@@ -115,6 +128,17 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
     return;
+  }
+  // A crayon op lays its colour through the paper-tooth pattern (crayon.ts). If the
+  // pattern can't be built (SSR, a stubbed canvas, or the 'off' variant) it falls
+  // through to the solid paint below, so the crayon degrades to a plain stroke.
+  if (op.crayon && !op.erase) {
+    const pattern = crayonPatternFor(target, op.color, op.gx ?? 0, op.gy ?? 0);
+    if (pattern) {
+      target.globalCompositeOperation = 'source-over';
+      paintOpShape(target, op, pattern);
+      return;
+    }
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
   paintOpShape(target, op, op.color);

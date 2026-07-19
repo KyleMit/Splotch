@@ -119,7 +119,13 @@ function pathStyleMatches(a: PathOp, b: PathOp): boolean {
     a.color === b.color &&
     a.lineWidth === b.lineWidth &&
     a.erase === b.erase &&
-    !!a.magic === !!b.magic
+    !!a.magic === !!b.magic &&
+    // Crayon ops carry a per-stroke grain phase; runs with a different brush or a
+    // different phase must not merge, or the rebuilt run would re-texture at one
+    // phase and lose the continuity/buildup the stored phase encodes (crayon.ts).
+    !!a.crayon === !!b.crayon &&
+    a.gx === b.gx &&
+    a.gy === b.gy
   );
 }
 
@@ -182,6 +188,9 @@ function reducePathRun(run: PathOp[]): PathOp[] {
     lineWidth: first.lineWidth,
     erase: first.erase,
     magic: first.magic,
+    crayon: first.crayon,
+    gx: first.gx,
+    gy: first.gy,
   }));
 }
 

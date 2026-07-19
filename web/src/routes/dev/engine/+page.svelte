@@ -12,6 +12,8 @@
     exportCanvasBlob,
     getUndoDebug,
     setSimplifyParams,
+    setCrayonMode,
+    setCrayonParams,
     setScreenAngleOverride,
     getViewState,
     RESIZE_SETTLE_MS,
@@ -65,6 +67,10 @@
       exportCanvasBlob,
       getUndoDebug,
       setSimplifyParams,
+      // Crayon brush: setCrayonMode(true) selects it for subsequent strokes;
+      // setCrayonParams({...}) A/Bs the tooth/coverage/mode variants (crayon.ts).
+      setCrayonMode,
+      setCrayonParams,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).
@@ -135,6 +141,34 @@
       pixelAt(x: number, y: number) {
         const ctx = canvasEl.getContext('2d')!;
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
+      },
+
+      // Coverage + mean colour of the painted (alpha > 128) pixels in a
+      // backing-store rect. Used by the crayon buildup spec: a second same-colour
+      // pass must raise `covered` (fills the paper tooth) while the mean colour
+      // holds (no darkening/hue-shift).
+      regionStats(x: number, y: number, w: number, h: number) {
+        const ctx = canvasEl.getContext('2d')!;
+        const { data } = ctx.getImageData(x, y, w, h);
+        let covered = 0;
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] > 128) {
+            covered++;
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
+          }
+        }
+        return {
+          covered,
+          total: w * h,
+          r: covered ? r / covered : 0,
+          g: covered ? g / covered : 0,
+          b: covered ? b / covered : 0,
+        };
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,

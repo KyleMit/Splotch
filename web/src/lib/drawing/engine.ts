@@ -44,6 +44,12 @@ import {
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
 import {
+  crayonGrainPhase,
+  resetCrayonCaches,
+  setCrayonParams as setCrayonRenderParams,
+  type CrayonParams,
+} from './crayon';
+import {
   beginCommand,
   commandCount,
   commitActiveCommand,
@@ -87,6 +93,7 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonActive = false;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +429,9 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    gx: ps.gx,
+    gy: ps.gy,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +459,9 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    gx: ps.gx,
+    gy: ps.gy,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +507,13 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  // Crayon brush active for this stroke, plus the per-stroke grain phase (paper
+  // units) derived once at stroke start from the start point and stamped onto every
+  // op so the tooth texture is continuous along the stroke and decorrelated between
+  // strokes (crayon.ts). Constant for the pointer's lifetime.
+  crayon: boolean;
+  gx: number;
+  gy: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -569,6 +589,9 @@ function startDrawing(e: PointerEvent, adopted = false) {
       : null;
 
   const now = Date.now();
+  // The crayon's grain phase is fixed from the stroke's paper start point, so it's
+  // deterministic and constant for the whole stroke (crayon.ts).
+  const grain = crayonGrainPhase(x, y);
   const pointerState: PointerState = {
     id: e.pointerId,
     x,
@@ -582,6 +605,9 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayon: crayonActive && !eraserActive && !magicActive,
+    gx: grain.gx,
+    gy: grain.gy,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -902,6 +928,17 @@ export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?
   setSimplifyOptions(params);
 }
 
+// Dev render-variant seam for the crayon brush (mirrors setSimplifyParams). Overrides
+// the crayon's tooth/coverage/mode tunables so one build can A/B every variant, and
+// re-renders the current drawing so the change is visible immediately. Wired onto
+// window.__engine only on the /dev/engine page (PUBLIC_ENABLE_DEV_HARNESS); production
+// never calls it and ships crayon.ts's default.
+export function setCrayonParams(params: Partial<CrayonParams>) {
+  setCrayonRenderParams(params);
+  resetCrayonCaches();
+  if (ctx) replayAll(ctx);
+}
+
 // --- Mount / unmount ---------------------------------------------------------
 
 export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
@@ -1037,6 +1074,14 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+// Crayon brush on/off. Mutually exclusive with the eraser and magic brush at the UI
+// level; the engine just tracks the flag and stamps it (plus the per-stroke grain
+// phase) onto each op, which renderOp lays down through the paper-tooth texture
+// (crayon.ts).
+export function setCrayonMode(active: boolean) {
+  crayonActive = active;
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

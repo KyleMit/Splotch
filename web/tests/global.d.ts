@@ -35,6 +35,16 @@ declare global {
         reduce?: boolean;
         split?: 'none' | 'corner';
       }): void;
+      setCrayonMode(active: boolean): void;
+      setCrayonParams(params: {
+        mode?: 'tooth' | 'dense' | 'off';
+        tile?: number;
+        coverage?: number;
+        cells?: number[];
+        weights?: number[];
+        band?: number;
+        bodyAlpha?: number;
+      }): void;
       setScreenAngleOverride(angle: number | null): void;
       remount(): void;
       getViewState(): {
@@ -55,6 +65,12 @@ declare global {
       blobRedPixelCount(blob: Blob | null): Promise<number>;
       nonTransparentCount(): number;
       pixelAt(x: number, y: number): number[];
+      regionStats(
+        x: number,
+        y: number,
+        w: number,
+        h: number
+      ): { covered: number; total: number; r: number; g: number; b: number };
       resizeTo(w: number, h: number): Promise<void>;
       resumeTo(w: number, h: number): void;
       strokeSync(points: { x: number; y: number }[], pointerType?: string): void;

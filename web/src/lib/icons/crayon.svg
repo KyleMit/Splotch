@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g transform="rotate(32 32 32)">
+    <!-- wax tip -->
+    <path fill="#e2703a" d="M27 6 Q32 -2 37 6 L40 16 L24 16 Z" />
+    <!-- crayon body -->
+    <rect x="23" y="15" width="18" height="42" rx="4" fill="#f2a03d" />
+    <!-- rounded base shadow -->
+    <path fill="#e2823a" d="M23 50h18v3a4 4 0 0 1-4 4H27a4 4 0 0 1-4-4z" />
+    <!-- paper label band -->
+    <rect x="22" y="27" width="20" height="12" rx="2" fill="#fbe8c8" />
+    <rect x="22" y="29" width="20" height="2.4" fill="#e2703a" />
+    <rect x="22" y="34.6" width="20" height="2.4" fill="#e2703a" />
+  </g>
+</svg>

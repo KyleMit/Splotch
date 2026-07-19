@@ -10,7 +10,7 @@
     setStrokeSize,
     activeStrokeSize,
   } from '$lib/state/strokeWidth.svelte';
-  import { toolState, selectEraser, toggleMagic } from '$lib/state/tool.svelte';
+  import { toolState, selectEraser, toggleMagic, toggleCrayon } from '$lib/state/tool.svelte';
   import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
   import { network } from '$lib/state/network.svelte';
@@ -227,6 +227,10 @@
     toggleMagic();
   }
 
+  function handleCrayonClick() {
+    toggleCrayon();
+  }
+
   async function handleAiImageClick() {
     if (ui.aiGenerating || canvasState.canvasEmpty || !aiBtnEl) return;
 
@@ -334,6 +338,19 @@
         use:scribbleTap={handleMagicClick}
       >
         <Icon name="magic-brush" class="action-icon" />
+      </button>
+
+      <!-- Crayon: lays the active colour down through a paper-tooth texture that
+           builds up like real wax (crayon.ts). Works on any canvas, always shown. -->
+      <button
+        class="action-button"
+        class:active={toolState.crayon}
+        id="crayonButton"
+        aria-label="Crayon"
+        aria-pressed={toolState.crayon}
+        use:scribbleTap={handleCrayonClick}
+      >
+        <Icon name="crayon" class="action-icon" />
       </button>
 
       <button
