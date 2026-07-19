@@ -1,0 +1,10 @@
+{
+  "pr": 405,
+  "title": "Add two-octave crayon texture",
+  "headSha": "0bd8d72546fbcb3e117304426346aaa2c46a2f52",
+  "activation": [
+    "setCrayonVariant",
+    "waxy"
+  ],
+  "visualNotes": "The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness."
+}

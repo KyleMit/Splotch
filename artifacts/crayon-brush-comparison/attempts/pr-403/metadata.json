@@ -1,0 +1,10 @@
+{
+  "pr": 403,
+  "title": "feat(drawing): waxy crayon brush with wax build-up as the default pen",
+  "headSha": "4fd87b8b50bb5c2ab4f2d42df1f91a1aa2f8636a",
+  "activation": [
+    "setBrushVariant",
+    "crayon"
+  ],
+  "visualNotes": "Strong contained texture and clear constant-hue buildup are visible in both the pass comparison and full drawing. However, the tooth is coarse and sparse, reading as a distressed stencil or stipple rather than fine wax-on-paper; crossings occlude without mixing."
+}

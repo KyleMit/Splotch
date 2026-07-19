@@ -1,0 +1,10 @@
+{
+  "pr": 407,
+  "title": "Add blue-noise crayon texture buildup",
+  "headSha": "f2d1c00d7f19fd98ee2e996271d5c2cebd5efc55",
+  "activation": [
+    "setCrayonVariant",
+    "waxy"
+  ],
+  "visualNotes": "The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness."
+}

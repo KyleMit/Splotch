@@ -1,0 +1,10 @@
+{
+  "pr": 390,
+  "title": "feat: add textured wax crayon buildup",
+  "headSha": "a1fdfcba85130778ab8a26775db1961efed2998a",
+  "activation": [
+    "setCrayonVariant",
+    "waxy"
+  ],
+  "visualNotes": "The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness."
+}

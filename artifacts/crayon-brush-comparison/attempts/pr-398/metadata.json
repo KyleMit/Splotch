@@ -1,0 +1,10 @@
+{
+  "pr": 398,
+  "title": "Add a waxy crayon brush with same-colour buildup",
+  "headSha": "3d4dbc3d66fadf62684cee9f031023fa74dc7f4b",
+  "activation": [
+    "setBrush",
+    "crayon"
+  ],
+  "visualNotes": "Dense restrained texture, crisp containment, and modest constant-hue buildup make a readable result. The initial body is close to solid marker coverage, and crossings occlude without mixing."
+}

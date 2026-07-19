@@ -1,0 +1,10 @@
+{
+  "pr": 411,
+  "title": "Add a wax crayon brush (screened tooth, seed-driven buildup)",
+  "headSha": "d7a5fd5adfa1aebc2315f4c39412d9ae45481840",
+  "activation": [
+    "setBrushStyle",
+    "crayon"
+  ],
+  "visualNotes": "Strong contained texture and clear constant-hue buildup are visible in both the pass comparison and full drawing. However, the tooth is coarse and sparse, reading as a distressed stencil or stipple rather than fine wax-on-paper; crossings occlude without mixing."
+}

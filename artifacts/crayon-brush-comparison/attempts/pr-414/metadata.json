@@ -1,0 +1,10 @@
+{
+  "pr": 414,
+  "title": "Add a wax-crayon brush: colour stroked through a paper-tooth pattern",
+  "headSha": "41b8a62d1fa40356cf7a380d0f6fe6a6e9069b08",
+  "activation": [
+    "setCrayonMode",
+    true
+  ],
+  "visualNotes": "Very dense glossy wax with crisp containment and a few irregular gaps. The first pass is already nearly solid, so continuous and lifted buildup change little; broad areas read more like a marker with white chips, and crossings do not mix."
+}

@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 1,
+  "sceneSpec": "crayon-comparison-v1",
+  "worktree": "/private/tmp/splotch-crayon-pr401",
+  "viewport": {
+    "width": 1024,
+    "height": 559
+  },
+  "paper": "#f7f4ec",
+  "strokeWidth": 44,
+  "results": [
+    {
+      "scene": "01-single-line",
+      "file": "01-single-line.webp",
+      "sha256": "7134d762809076faed9f406717e28b4ec59eb957dd224301d0b08d404cd02372",
+      "activation": {
+        "strategy": "setter",
+        "setter": "setCrayonVariant",
+        "value": "waxy",
+        "keys": [
+          "RESIZE_SETTLE_MS",
+          "adoptPointerStroke",
+          "clearCanvas",
+          "exportCanvasBlob",
+          "getActiveCanvas",
+          "getCanvasRect",
+          "getUndoDebug",
+          "getViewState",
+          "initDrawingCanvas",
+          "isCanvasEmpty",
+          "releaseAllPointers",
+          "setColor",
+          "setColorSheet",
+          "setCrayonVariant",
+          "setEraserMode",
+          "setMagicMode",
+          "setSafeAreaInsets",
+          "setScreenAngleOverride",
+          "setSimplifyParams",
+          "setStrokeWidth",
+          "undo"
+        ]
+      },
+      "canvas": {
+        "width": 1024,
+        "height": 559
+      },
+      "undo": {
+        "commands": 2,
+        "keyframes": 0,
+        "maxOps": 68,
+        "maxSegments": 67,
+        "totalSegments": 67,
+        "rawPoints": 0,
+        "keptPoints": 0
+      }
+    },
+    {
+      "scene": "02-continuous-retrace",
+      "file": "02-continuous-retrace.webp",
+      "sha256": "b23c6b45d37332df833198245bd515968d6b35a7df952170fa517bcb52514a0b",
+      "activation": {
+        "strategy": "setter",
+        "setter": "setCrayonVariant",
+        "value": "waxy",
+        "keys": [
+          "RESIZE_SETTLE_MS",
+          "adoptPointerStroke",
+          "clearCanvas",
+          "exportCanvasBlob",
+          "getActiveCanvas",
+          "getCanvasRect",
+          "getUndoDebug",
+          "getViewState",
+          "initDrawingCanvas",
+          "isCanvasEmpty",
+          "releaseAllPointers",
+          "setColor",
+          "setColorSheet",
+          "setCrayonVariant",
+          "setEraserMode",
+          "setMagicMode",
+          "setSafeAreaInsets",
+          "setScreenAngleOverride",
+          "setSimplifyParams",
+          "setStrokeWidth",
+          "undo"
+        ]
+      },
+      "canvas": {
+        "width": 1024,
+        "height": 559
+      },
+      "undo": {
+        "commands": 2,
+        "keyframes": 0,
+        "maxOps": 175,
+        "maxSegments": 174,
+        "totalSegments": 174,
+        "rawPoints": 0,
+        "keptPoints": 0
+      }
+    },
+    {
+      "scene": "03-lifted-buildup",
+      "file": "03-lifted-buildup.webp",
+      "sha256": "c45cb8eeb112fbafd2059be0d5dda7bdf3c12904f596337d63d02e9e0736e049",
+      "activation": {
+        "strategy": "setter",
+        "setter": "setCrayonVariant",
+        "value": "waxy",
+        "keys": [
+          "RESIZE_SETTLE_MS",
+          "adoptPointerStroke",
+          "clearCanvas",
+          "exportCanvasBlob",
+          "getActiveCanvas",
+          "getCanvasRect",
+          "getUndoDebug",
+          "getViewState",
+          "initDrawingCanvas",
+          "isCanvasEmpty",
+          "releaseAllPointers",
+          "setColor",
+          "setColorSheet",
+          "setCrayonVariant",
+          "setEraserMode",
+          "setMagicMode",
+          "setSafeAreaInsets",
+          "setScreenAngleOverride",
+          "setSimplifyParams",
+          "setStrokeWidth",
+          "undo"
+        ]
+      },
+      "canvas": {
+        "width": 1024,
+        "height": 559
+      },
+      "undo": {
+        "commands": 8,
+        "keyframes": 0,
+        "maxOps": 77,
+        "maxSegments": 76,
+        "totalSegments": 532,
+        "rawPoints": 0,
+        "keptPoints": 0
+      }
+    },
+    {
+      "scene": "04-color-crossing",
+      "file": "04-color-crossing.webp",
+      "sha256": "e13e7b3c533751fa864746e5f2604d2fd47e030b647944982e33c9b6de9ed570",
+      "activation": {
+        "strategy": "setter",
+        "setter": "setCrayonVariant",
+        "value": "waxy",
+        "keys": [
+          "RESIZE_SETTLE_MS",
+          "adoptPointerStroke",
+          "clearCanvas",
+          "exportCanvasBlob",
+          "getActiveCanvas",
+          "getCanvasRect",
+          "getUndoDebug",
+          "getViewState",
+          "initDrawingCanvas",
+          "isCanvasEmpty",
+          "releaseAllPointers",
+          "setColor",
+          "setColorSheet",
+          "setCrayonVariant",
+          "setEraserMode",
+          "setMagicMode",
+          "setSafeAreaInsets",
+          "setScreenAngleOverride",
+          "setSimplifyParams",
+          "setStrokeWidth",
+          "undo"
+        ]
+      },
+      "canvas": {
+        "width": 1024,
+        "height": 559
+      },
+      "undo": {
+        "commands": 4,
+        "keyframes": 0,
+        "maxOps": 83,
+        "maxSegments": 82,
+        "totalSegments": 220,
+        "rawPoints": 0,
+        "keptPoints": 0
+      }
+    },
+    {
+      "scene": "05-toddler-drawing",
+      "file": "05-toddler-drawing.webp",
+      "sha256": "d6270610d8d8fe7a22b1d1adf3d335464c289364e151f4a28b1392f2ea22694e",
+      "activation": {
+        "strategy": "setter",
+        "setter": "setCrayonVariant",
+        "value": "waxy",
+        "keys": [
+          "RESIZE_SETTLE_MS",
+          "adoptPointerStroke",
+          "clearCanvas",
+          "exportCanvasBlob",
+          "getActiveCanvas",
+          "getCanvasRect",
+          "getUndoDebug",
+          "getViewState",
+          "initDrawingCanvas",
+          "isCanvasEmpty",
+          "releaseAllPointers",
+          "setColor",
+          "setColorSheet",
+          "setCrayonVariant",
+          "setEraserMode",
+          "setMagicMode",
+          "setSafeAreaInsets",
+          "setScreenAngleOverride",
+          "setSimplifyParams",
+          "setStrokeWidth",
+          "undo"
+        ]
+      },
+      "canvas": {
+        "width": 1024,
+        "height": 559
+      },
+      "undo": {
+        "commands": 17,
+        "keyframes": 0,
+        "maxOps": 365,
+        "maxSegments": 364,
+        "totalSegments": 749,
+        "rawPoints": 0,
+        "keptPoints": 0
+      }
+    }
+  ],
+  "status": "captured"
+}

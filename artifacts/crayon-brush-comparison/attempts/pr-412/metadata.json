@@ -1,0 +1,10 @@
+{
+  "pr": 412,
+  "title": "Make the crayon 'dense' A/B variant a real higher-coverage tooth",
+  "headSha": "cc7f3e2ecd6674a9e5629f2e94289628bb57badd",
+  "activation": [
+    "setCrayonMode",
+    true
+  ],
+  "visualNotes": "Dense, well-contained body with relatively fine distributed tooth and visible stable-hue buildup. Later passes approach a flat marker fill, and different colors simply occlude at crossings."
+}

@@ -1,0 +1,10 @@
+{
+  "pr": 408,
+  "title": "feat(drawing): waxy crayon free-draw via colour-tinted paper-tooth pattern",
+  "headSha": "1541d782bffbb473db891f58028a06e83999eeea",
+  "activation": [
+    "setCrayonMode",
+    true
+  ],
+  "visualNotes": "Fine all-over tooth, crisp containment, and a stable-hue progression toward denser lifted passes produce a credible dry-wax result. Continuous retrace is less dramatic and the grain can look uniformly sandy; different colors still stack in draw order rather than mix."
+}

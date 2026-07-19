@@ -1,0 +1,7 @@
+{
+  "pr": 416,
+  "title": "Add a crayon brush: waxy paper-tooth grain with live wax buildup",
+  "headSha": "ef705c3c15a586890e2208a2ff19ad46ee6905e2",
+  "activation": ["setCrayonMode", true],
+  "visualNotes": "The stroke is fully contained with crisp geometry, and separate same-color passes produce a very obvious constant-hue progression from sparse tooth to dense wax. However, the first-pass grain is extremely coarse and open, reading as a noisy stencil or sponge rather than fine paper tooth. The continuous retrace shows almost no added density because buildup depends on previously committed strokes, while the densest lifted-pass result becomes soft and visibly tiled/banded. Color crossings simply occlude in draw order without mixing. The full drawing is legible but its pervasive large white holes make it feel brittle and digital rather than like a convincing crayon drawing."
+}

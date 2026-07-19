@@ -1,0 +1,10 @@
+{
+  "pr": 399,
+  "title": "temp(drawing): draw the plain pen as crayon for in-app preview",
+  "headSha": "6637ce2eab6d047a5c3fbe1717fe1389078bf798",
+  "activation": [
+    "setCrayonMode",
+    true
+  ],
+  "visualNotes": "Strong contained texture and clear constant-hue buildup are visible in both the pass comparison and full drawing. However, the tooth is coarse and sparse, reading as a distressed stencil or stipple rather than fine wax-on-paper; crossings occlude without mixing."
+}

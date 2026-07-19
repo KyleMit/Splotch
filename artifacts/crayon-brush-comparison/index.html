@@ -1,0 +1,1252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Crayon brush comparison — 33 attempts</title>
+<style>
+:root{
+  color-scheme: light dark;
+  --paper:#f5f3ee; --paper-2:#efece5; --card:#fdfbf6; --card-2:#f6f3ec;
+  --ink:#23212a; --muted:#6b6774; --faint:#948f9c;
+  --hair:#e6e1d8; --hair-strong:#d9d3c8;
+  --accent:#2f6fed; --accent-ink:#1e50c4; --accent-wash:#e8effe;
+  --gold:#b1780a;
+  --ok:#3f9d55; --warn:#e08a1e; --bad:#d24b3f;
+  --c-red:#ec534e; --c-orange:#f89c45; --c-yellow:#f9d24f;
+  --c-green:#8cc864; --c-blue:#62a2e9; --c-purple:#ab71e1; --c-pink:#f47cb0;
+  --shadow-sm:0 1px 2px rgba(30,28,40,.05);
+  --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
+  --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
+  --r-sm:9px; --r-md:16px; --r-lg:18px;
+  --shell:1160px;
+  --font: ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#131418; --paper-2:#0f1013; --card:#1d1f27; --card-2:#181a20;
+    --ink:#e9e7e2; --muted:#a8a4af; --faint:#807d89;
+    --hair:#34373f; --hair-strong:#464a55;
+    --accent:#7aa8ff; --accent-ink:#a9c6ff; --accent-wash:#1b2536;
+    --gold:#d9a441;
+    --ok:#5cc078; --warn:#e6a545; --bad:#e8695c;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+    --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme=light]{
+  color-scheme: light;
+  --paper:#f5f3ee; --paper-2:#efece5; --card:#fdfbf6; --card-2:#f6f3ec;
+  --ink:#23212a; --muted:#6b6774; --faint:#948f9c;
+  --hair:#e6e1d8; --hair-strong:#d9d3c8;
+  --accent:#2f6fed; --accent-ink:#1e50c4; --accent-wash:#e8effe; --gold:#b1780a;
+  --ok:#3f9d55; --warn:#e08a1e; --bad:#d24b3f;
+  --shadow-sm:0 1px 2px rgba(30,28,40,.05);
+  --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
+  --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
+}
+:root[data-theme=dark]{
+  color-scheme: dark;
+  --paper:#131418; --paper-2:#0f1013; --card:#1c1e24; --card-2:#191b20;
+  --ink:#e9e7e2; --muted:#a19da8; --faint:#797682;
+  --hair:#2b2e36; --hair-strong:#3a3e48;
+  --accent:#7aa8ff; --accent-ink:#a9c6ff; --accent-wash:#1b2536; --gold:#d9a441;
+  --ok:#5cc078; --warn:#e6a545; --bad:#e8695c;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--font); font-size:16px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent-ink); text-decoration:none}
+a:hover{text-decoration:underline}
+.shell{width:100%; max-width:var(--shell); margin:0 auto; padding:0 clamp(16px,4vw,44px)}
+
+/* ---- Masthead ------------------------------------------------------------ */
+.masthead{
+  position:relative; overflow:hidden;
+  background:
+    radial-gradient(120% 140% at 100% 0, color-mix(in srgb,var(--accent-wash) 55%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--card-2), var(--paper));
+  border-bottom:1px solid var(--hair);
+}
+.masthead .shell{padding-top:clamp(16px,3vw,26px); padding-bottom:clamp(20px,3.5vw,34px)}
+.topbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; min-height:34px}
+.brand{
+  display:inline-flex; align-items:center; gap:10px;
+  color:var(--ink); font-weight:700; letter-spacing:-.01em;
+}
+.brand:hover{text-decoration:none}
+.brand:hover .brand-name{color:var(--accent-ink)}
+.brand-name{font-size:15px; transition:color .12s}
+.brand-name .brand-sub{color:var(--muted); font-weight:600}
+.brand-name .brand-sub::before{content:"/"; margin:0 5px; color:var(--faint); font-weight:400}
+.crayons{display:inline-flex; gap:4px; flex:0 0 auto}
+.crayons i{display:block; border-radius:99px}
+.crayons-lg i{width:22px; height:7px}
+.crayons-sm i{width:15px; height:5px}
+.brand .crayons-lg i{width:16px; height:6px}
+
+.crumbs{margin-left:auto; display:flex; align-items:center; gap:2px; font-size:13px; color:var(--muted); flex-wrap:wrap}
+.crumbs a{color:var(--muted)}
+.crumbs a:hover{color:var(--accent-ink)}
+.crumbs .sep{color:var(--faint); margin:0 5px}
+.crumbs .here{color:var(--ink); font-weight:650}
+
+.masthead-body{margin-top:clamp(16px,3vw,26px); position:relative; z-index:1}
+.masthead h1{
+  font-size:clamp(1.85rem,4.4vw,2.7rem); line-height:1.03; margin:0;
+  letter-spacing:-.032em; text-wrap:balance; font-weight:800;
+}
+.tagline{color:var(--muted); max-width:58ch; margin:.55rem 0 0; font-size:clamp(1rem,1.4vw,1.08rem)}
+.masthead-deco{position:absolute; top:-8px; right:clamp(-20px,-1vw,0px); width:clamp(150px,20vw,240px); pointer-events:none; opacity:.14; filter:saturate(1.1); z-index:0}
+.masthead-deco svg{width:100%; height:auto; display:block}
+@media (prefers-color-scheme:dark){.masthead-deco{opacity:.2}}
+:root[data-theme=dark] .masthead-deco{opacity:.2}
+@media (max-width:640px){.masthead-deco{display:none}}
+.tagline b{color:var(--ink); font-weight:650}
+.tagline a{color:var(--accent-ink); text-decoration:underline; text-underline-offset:2px}
+.masthead .stat-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px}
+
+/* ---- Content ------------------------------------------------------------- */
+main{display:block}
+main .shell{padding-top:clamp(24px,4vw,40px); padding-bottom:clamp(48px,7vw,84px)}
+.section-head{display:flex; align-items:baseline; gap:10px; margin:clamp(30px,5vw,46px) 0 14px}
+.section-head:first-child{margin-top:0}
+.section-head h2{font-size:1.18rem; margin:0; letter-spacing:-.01em; font-weight:750}
+.section-head .desc{color:var(--muted); font-size:.9rem}
+.eyebrow{font-size:.72rem; text-transform:uppercase; letter-spacing:.12em; color:var(--gold); font-weight:700}
+
+/* chips / pills */
+.chip{
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+  font-size:.76rem; font-weight:600; padding:4px 11px; border-radius:999px;
+  background:var(--card); border:1px solid var(--hair); color:var(--muted);
+}
+.chip b{color:var(--ink); font-weight:700}
+.chip.accent{background:var(--accent-wash); border-color:transparent; color:var(--accent-ink)}
+.chip .dot{width:7px; height:7px; border-radius:99px; background:var(--accent)}
+
+/* card grid — each card carries a single collection --hue (a crayon color) that
+   tints its top edge and icon plaque; the full rainbow is reserved for the
+   masthead brand + footer so the motif stays a signature, not wallpaper. */
+.card-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(288px,1fr)); gap:clamp(14px,2vw,20px)}
+.card{
+  --hue:var(--accent); position:relative; display:flex; flex-direction:column;
+  background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+  box-shadow:var(--shadow-sm); overflow:hidden; transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+.card:hover{transform:translateY(-3px); box-shadow:var(--shadow-lg); border-color:color-mix(in srgb,var(--hue) 45%, var(--hair-strong))}
+.card > a.card-hit{position:absolute; inset:0; z-index:1}
+.card-top{height:5px; background:linear-gradient(90deg,var(--hue),color-mix(in srgb,var(--hue) 40%, transparent))}
+.card-body{padding:18px 18px 16px; display:flex; flex-direction:column; gap:9px; flex:1}
+.card-emoji{
+  width:46px; height:46px; border-radius:13px; display:grid; place-items:center;
+  background:color-mix(in srgb,var(--hue) 13%, var(--card-2));
+  border:1px solid color-mix(in srgb,var(--hue) 26%, var(--hair)); color:var(--hue);
+}
+.card-emoji svg{width:26px; height:26px; display:block}
+.card-emoji.is-emoji{font-size:24px}
+.card h3{margin:2px 0 0; font-size:1.14rem; letter-spacing:-.01em; font-weight:750}
+.card p{margin:0; color:var(--muted); font-size:.92rem; flex:1}
+.card-meta{margin-top:2px; font-size:.78rem; color:var(--faint)}
+.card-meta .kind{color:var(--muted); font-weight:650}
+.card-links{position:relative; z-index:2; display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:2px; font-size:.82rem}
+.card .go{position:relative; z-index:2; margin-top:4px; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; font-weight:700; color:var(--accent-ink); font-size:.9rem}
+.card:hover .go .arrow{transform:translateX(3px)}
+.go .arrow{transition:transform .14s ease}
+
+/* footer */
+.site-foot{border-top:1px solid var(--hair); background:var(--card-2)}
+.site-foot .shell{display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-top:22px; padding-bottom:26px; color:var(--muted); font-size:.85rem}
+.site-foot .crayons{opacity:.9}
+.site-foot p{margin:0}
+.site-foot a{color:var(--accent-ink); text-decoration:none}
+.site-foot a:hover{text-decoration:underline; text-underline-offset:2px}
+
+.empty{color:var(--muted); background:var(--card); border:1px dashed var(--hair-strong); border-radius:var(--r-md); padding:22px}
+code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42em; border-radius:5px; font-size:.88em}
+
+@media (max-width:560px){
+  .crumbs{width:100%; margin-left:0; margin-top:6px}
+  .card-grid{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .card,.go .arrow{transition:none}
+}
+
+/* page */
+
+.intro{max-width:78ch;color:var(--muted);margin:0 0 22px}.reference,.attempt{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:clamp(14px,2.5vw,24px);margin-bottom:24px}.reference h2,.attempt h2{margin:0;font-size:1.22rem;line-height:1.25}.scene-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:16px}.scene{margin:0;min-width:0}.scene a{display:block}.scene img,.missing-art{display:block;width:100%;aspect-ratio:1024/559;object-fit:cover;background:#f7f4ec;border:1px solid var(--hair);border-radius:var(--r-sm)}.scene img{transition:transform .12s,box-shadow .12s}.scene img:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}.scene figcaption{font-size:.76rem;color:var(--muted);padding-top:6px}.missing-art{display:grid;place-items:center;color:var(--bad);font-size:.76rem}.attempt-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.rank{flex:none;background:var(--ink);color:var(--paper);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:750}.attempt-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}.assessment{display:grid;grid-template-columns:minmax(0,2fr) repeat(2,minmax(180px,1fr));gap:20px;margin-top:19px;padding-top:17px;border-top:1px solid var(--hair)}.assessment h3{font-size:.82rem;text-transform:uppercase;letter-spacing:.08em;margin:0 0 7px;color:var(--muted)}.assessment p{margin:0}.muted{color:var(--faint)}dl{margin:0}.metric{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid var(--hair);font-size:.82rem}.metric:last-child{border:0}.metric dt{color:var(--muted)}.metric dd{margin:0;font-weight:700;text-align:right}.failures{margin:0;padding-left:18px;color:var(--bad);font-size:.86rem}@media(max-width:900px){.scene-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.assessment{grid-template-columns:1fr 1fr}.assessment>div:first-child{grid-column:1/-1}}@media(max-width:560px){.scene-grid,.assessment{grid-template-columns:1fr}.assessment>div:first-child{grid-column:auto}.attempt-head{display:block}.rank{display:inline-block;margin-top:9px}}
+</style>
+</head>
+<body>
+<header class="masthead">
+  
+  <div class="shell">
+    <div class="topbar">
+      <a class="brand" href="../index.html"><span class="crayons crayons-lg" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span><span class="brand-name">Splotch<span class="brand-sub">Artifacts</span></span></a>
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="../index.html">Artifacts</a><span class="sep">/</span><span class="here" aria-current="page">Crayon brush comparison</span></nav>
+    </div>
+    <div class="masthead-body">
+      <h1>Crayon brush comparison</h1>
+      <p class="tagline">Identical deterministic drawings across independent crayon implementations, compared against real-crayon reference samples. Ranked candidates appear <b>worst to best</b>; unranked candidates follow by PR number.</p>
+      <div class="stat-row"><span class="chip accent"><b>33</b> attempts</span><span class="chip"><b>33</b> ranked</span><span class="chip"><b>5</b> scenes each</span></div>
+    </div>
+  </div>
+</header><main><div class="shell">
+  <section class="reference"><div class="eyebrow">North star</div><h2>Real crayon references</h2><p class="intro">Representative examples from the committed crayon sample set. They anchor paper tooth, buildup, color interaction, and full-drawing character.</p><div class="scene-grid reference-grid"><figure class="scene">
+    <a href="../crayon-brush-samples/1-line-blue.webp"><img src="../crayon-brush-samples/1-line-blue.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="../crayon-brush-samples/4-scribble-backforth-blue.webp"><img src="../crayon-brush-samples/4-scribble-backforth-blue.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="../crayon-brush-samples/2-buildup-red.webp"><img src="../crayon-brush-samples/2-buildup-red.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="../crayon-brush-samples/3-cross-red-blue.webp"><img src="../crayon-brush-samples/3-cross-red-blue.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="../crayon-brush-samples/4-scribble-wild-multi.webp"><img src="../crayon-brush-samples/4-scribble-wild-multi.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div></section>
+  <div class="section-head"><h2>Implementation attempts</h2><span class="desc">Worst to best once ranked</span></div>
+  <article class="attempt" id="pr-397">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 397</div><h2><a href="https://github.com/KyleMit/Splotch/pull/397">feat: add live wax crayon buildup</a></h2></div>
+      <span class="rank">Rank 1</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonRenderVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>afeeab38de</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-397/01-single-line.webp"><img src="attempts/pr-397/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-397/02-continuous-retrace.webp"><img src="attempts/pr-397/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-397/03-lifted-buildup.webp"><img src="attempts/pr-397/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-397/04-color-crossing.webp"><img src="attempts/pr-397/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-397/05-toddler-drawing.webp"><img src="attempts/pr-397/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Opacity gradients create visible buildup but also washed-out starts and saturation changes, reading as watercolor or airbrush rather than crisp wax. Tooth is not convincing, the full drawing is pale, and colors do not mix.</p><p class="ranking-note"><b>Ranking:</b> The activated waxy variant is extremely pale and translucent, reading as a fading highlighter rather than wax. Retracing mostly changes opacity and the full drawing nearly disappears.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>4</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>4</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>6</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>1</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>1</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>2</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-399">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 399</div><h2><a href="https://github.com/KyleMit/Splotch/pull/399">temp(drawing): draw the plain pen as crayon for in-app preview</a></h2></div>
+      <span class="rank">Rank 2</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonMode = pass</span>
+      <span class="chip"><b>SHA</b> <code>6637ce2eab</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-399/01-single-line.webp"><img src="attempts/pr-399/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-399/02-continuous-retrace.webp"><img src="attempts/pr-399/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-399/03-lifted-buildup.webp"><img src="attempts/pr-399/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-399/04-color-crossing.webp"><img src="attempts/pr-399/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-399/05-toddler-drawing.webp"><img src="attempts/pr-399/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Strong contained texture and clear constant-hue buildup are visible in both the pass comparison and full drawing. However, the tooth is coarse and sparse, reading as a distressed stencil or stipple rather than fine wax-on-paper; crossings occlude without mixing.</p><p class="ranking-note"><b>Ranking:</b> Activation succeeded, but enormous random-looking voids break the stroke into confetti. It is contained, yet has neither a dense wax body nor convincing gradual buildup.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>5</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>4</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>9</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>3</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>2</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>2</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-403">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 403</div><h2><a href="https://github.com/KyleMit/Splotch/pull/403">feat(drawing): waxy crayon brush with wax build-up as the default pen</a></h2></div>
+      <span class="rank">Rank 3</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setBrushVariant = crayon</span>
+      <span class="chip"><b>SHA</b> <code>4fd87b8b50</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-403/01-single-line.webp"><img src="attempts/pr-403/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-403/02-continuous-retrace.webp"><img src="attempts/pr-403/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-403/03-lifted-buildup.webp"><img src="attempts/pr-403/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-403/04-color-crossing.webp"><img src="attempts/pr-403/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-403/05-toddler-drawing.webp"><img src="attempts/pr-403/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Strong contained texture and clear constant-hue buildup are visible in both the pass comparison and full drawing. However, the tooth is coarse and sparse, reading as a distressed stencil or stipple rather than fine wax-on-paper; crossings occlude without mixing.</p><p class="ranking-note"><b>Ranking:</b> The selected crayon is drastically under-filled with coarse holes, so the house looks eroded rather than drawn in wax. Repeated passes remain patchy instead of filling fine tooth naturally.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>5</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>5</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>9</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>4</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>2</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>2</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-411">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 411</div><h2><a href="https://github.com/KyleMit/Splotch/pull/411">Add a wax crayon brush (screened tooth, seed-driven buildup)</a></h2></div>
+      <span class="rank">Rank 4</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setBrushStyle = crayon</span>
+      <span class="chip"><b>SHA</b> <code>d7a5fd5adf</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-411/01-single-line.webp"><img src="attempts/pr-411/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-411/02-continuous-retrace.webp"><img src="attempts/pr-411/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-411/03-lifted-buildup.webp"><img src="attempts/pr-411/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-411/04-color-crossing.webp"><img src="attempts/pr-411/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-411/05-toddler-drawing.webp"><img src="attempts/pr-411/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Strong contained texture and clear constant-hue buildup are visible in both the pass comparison and full drawing. However, the tooth is coarse and sparse, reading as a distressed stencil or stipple rather than fine wax-on-paper; crossings occlude without mixing.</p><p class="ranking-note"><b>Ranking:</b> The crayon style activates but uses large conspicuous gaps and an uneven digital pattern. It improves slightly with passes, though the sparse body and crossing treatment remain unlike real wax.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>7</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>5</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>10</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>5</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>2</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>3</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-416">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 416</div><h2><a href="https://github.com/KyleMit/Splotch/pull/416">Add a crayon brush: waxy paper-tooth grain with live wax buildup</a></h2></div>
+      <span class="rank">Rank 5</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonMode = pass</span>
+      <span class="chip"><b>SHA</b> <code>ef705c3c15</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-416/01-single-line.webp"><img src="attempts/pr-416/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-416/02-continuous-retrace.webp"><img src="attempts/pr-416/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-416/03-lifted-buildup.webp"><img src="attempts/pr-416/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-416/04-color-crossing.webp"><img src="attempts/pr-416/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-416/05-toddler-drawing.webp"><img src="attempts/pr-416/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The stroke is fully contained with crisp geometry, and separate same-color passes produce a very obvious constant-hue progression from sparse tooth to dense wax. However, the first-pass grain is extremely coarse and open, reading as a noisy stencil or sponge rather than fine paper tooth. The continuous retrace shows almost no added density because buildup depends on previously committed strokes, while the densest lifted-pass result becomes soft and visibly tiled/banded. Color crossings simply occlude in draw order without mixing. The full drawing is legible but its pervasive large white holes make it feel brittle and digital rather than like a convincing crayon drawing.</p><p class="ranking-note"><b>Ranking:</b> The stroke is contained but dominated by coarse punched-out holes, especially in the single line and full drawing. Buildup exists, but the base deposit is too discontinuous to read as a crayon body.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>8</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>6</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>10</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>6</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>2</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>3</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-414">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 414</div><h2><a href="https://github.com/KyleMit/Splotch/pull/414">Add a wax-crayon brush: colour stroked through a paper-tooth pattern</a></h2></div>
+      <span class="rank">Rank 6</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonMode = pass</span>
+      <span class="chip"><b>SHA</b> <code>41b8a62d1f</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-414/01-single-line.webp"><img src="attempts/pr-414/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-414/02-continuous-retrace.webp"><img src="attempts/pr-414/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-414/03-lifted-buildup.webp"><img src="attempts/pr-414/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-414/04-color-crossing.webp"><img src="attempts/pr-414/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-414/05-toddler-drawing.webp"><img src="attempts/pr-414/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Very dense glossy wax with crisp containment and a few irregular gaps. The first pass is already nearly solid, so continuous and lifted buildup change little; broad areas read more like a marker with white chips, and crossings do not mix.</p><p class="ranking-note"><b>Ranking:</b> Visible tooth and pass filling are present, but the holes are much coarser than the reference and create a chipped-paint appearance. Crossings mostly stack rather than mix.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>9</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>7</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>10</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>7</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>2</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>3</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-406">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 406</div><h2><a href="https://github.com/KyleMit/Splotch/pull/406">Make the pen draw crayon by default</a></h2></div>
+      <span class="rank">Rank 7</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonMode = pass</span>
+      <span class="chip"><b>SHA</b> <code>0df4a23292</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-406/01-single-line.webp"><img src="attempts/pr-406/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-406/02-continuous-retrace.webp"><img src="attempts/pr-406/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-406/03-lifted-buildup.webp"><img src="attempts/pr-406/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-406/04-color-crossing.webp"><img src="attempts/pr-406/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-406/05-toddler-drawing.webp"><img src="attempts/pr-406/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Dense textured strokes with crisp edges and clear continuous/lifted buildup at stable hue. Grain is somewhat coarse and patchy, broad fills become marker-like, and color crossings only occlude.</p><p class="ranking-note"><b>Ranking:</b> This activated brush has a usable dense core, but isolated large white voids look synthetic rather than like fine paper tooth. Continuous and lifted buildup are present but visually uneven.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>10</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>7</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>11</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>7</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>2</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>3</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-396">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 396</div><h2><a href="https://github.com/KyleMit/Splotch/pull/396">feat: add wax crayon buildup</a></h2></div>
+      <span class="rank">Rank 8</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> default</span>
+      <span class="chip"><b>SHA</b> <code>01a2fdae6e</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-396/01-single-line.webp"><img src="attempts/pr-396/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-396/02-continuous-retrace.webp"><img src="attempts/pr-396/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-396/03-lifted-buildup.webp"><img src="attempts/pr-396/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-396/04-color-crossing.webp"><img src="attempts/pr-396/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-396/05-toddler-drawing.webp"><img src="attempts/pr-396/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> capture.json shows only default activation and the result is a smooth, flat marker. The body and edges are clean, but there is essentially no paper tooth or wax-specific buildup.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>10</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>2</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>9</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>3</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-389">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 389</div><h2><a href="https://github.com/KyleMit/Splotch/pull/389">feat: add textured crayon brush</a></h2></div>
+      <span class="rank">Rank 9</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> default</span>
+      <span class="chip"><b>SHA</b> <code>a15c06fc66</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-389/01-single-line.webp"><img src="attempts/pr-389/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-389/02-continuous-retrace.webp"><img src="attempts/pr-389/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-389/03-lifted-buildup.webp"><img src="attempts/pr-389/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-389/04-color-crossing.webp"><img src="attempts/pr-389/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-389/05-toddler-drawing.webp"><img src="attempts/pr-389/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> The default capture is visually indistinguishable from the standard solid pen. It makes a tidy drawing, but misses the defining tooth, deposit, and mixing behavior.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>11</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>2</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>9</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>3</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-387">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 387</div><h2><a href="https://github.com/KyleMit/Splotch/pull/387">feat(drawing): add deterministic wax crayon texture</a></h2></div>
+      <span class="rank">Rank 10</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonRenderVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>268aa32e20</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-387/01-single-line.webp"><img src="attempts/pr-387/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-387/02-continuous-retrace.webp"><img src="attempts/pr-387/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-387/03-lifted-buildup.webp"><img src="attempts/pr-387/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-387/04-color-crossing.webp"><img src="attempts/pr-387/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-387/05-toddler-drawing.webp"><img src="attempts/pr-387/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> Although the waxy setter was invoked, the screenshots remain nearly flat and marker-like. There is little perceptible texture or distinction between repeated deposits.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>11</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>3</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>9</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>3</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-388">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 388</div><h2><a href="https://github.com/KyleMit/Splotch/pull/388">feat: add textured crayon brush</a></h2></div>
+      <span class="rank">Rank 11</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>dc34e9566d</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-388/01-single-line.webp"><img src="attempts/pr-388/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-388/02-continuous-retrace.webp"><img src="attempts/pr-388/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-388/03-lifted-buildup.webp"><img src="attempts/pr-388/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-388/04-color-crossing.webp"><img src="attempts/pr-388/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-388/05-toddler-drawing.webp"><img src="attempts/pr-388/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> The selected variant produces a dense but overwhelmingly uniform line. Its clean containment helps, yet its texture and buildup cues are too weak to match the references.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>12</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>3</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>9</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>3</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-390">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 390</div><h2><a href="https://github.com/KyleMit/Splotch/pull/390">feat: add textured wax crayon buildup</a></h2></div>
+      <span class="rank">Rank 12</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>a1fdfcba85</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-390/01-single-line.webp"><img src="attempts/pr-390/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-390/02-continuous-retrace.webp"><img src="attempts/pr-390/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-390/03-lifted-buildup.webp"><img src="attempts/pr-390/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-390/04-color-crossing.webp"><img src="attempts/pr-390/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-390/05-toddler-drawing.webp"><img src="attempts/pr-390/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> This is another mostly solid marker result despite successful activation. Repeated passes add modest density, but do not visibly fill a convincing tooth pattern.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>12</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>3</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>10</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>3</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-392">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 392</div><h2><a href="https://github.com/KyleMit/Splotch/pull/392">feat: add textured wax crayon brush</a></h2></div>
+      <span class="rank">Rank 13</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setBrushVariant = crayon</span>
+      <span class="chip"><b>SHA</b> <code>e8a57577ff</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-392/01-single-line.webp"><img src="attempts/pr-392/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-392/02-continuous-retrace.webp"><img src="attempts/pr-392/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-392/03-lifted-buildup.webp"><img src="attempts/pr-392/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-392/04-color-crossing.webp"><img src="attempts/pr-392/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-392/05-toddler-drawing.webp"><img src="attempts/pr-392/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> The crayon setter works, but the rendered line is smooth enough to read as a pen. Subtle modulation is visible at close range, though buildup and color crossings remain conventional.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>12</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>4</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>10</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>3</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-394">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 394</div><h2><a href="https://github.com/KyleMit/Splotch/pull/394">feat: add phase-shifted crayon tooth</a></h2></div>
+      <span class="rank">Rank 14</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>d4872a873e</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-394/01-single-line.webp"><img src="attempts/pr-394/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-394/02-continuous-retrace.webp"><img src="attempts/pr-394/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-394/03-lifted-buildup.webp"><img src="attempts/pr-394/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-394/04-color-crossing.webp"><img src="attempts/pr-394/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-394/05-toddler-drawing.webp"><img src="attempts/pr-394/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> A solid wax-colored body is present, but fine tooth is almost absent. The no-lift and lifted scenes show too little material change to sell progressive wax deposit.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>13</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>4</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>10</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>3</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-395">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 395</div><h2><a href="https://github.com/KyleMit/Splotch/pull/395">feat: add deterministic wax crayon texture</a></h2></div>
+      <span class="rank">Rank 15</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>4b04c3b4f9</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-395/01-single-line.webp"><img src="attempts/pr-395/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-395/02-continuous-retrace.webp"><img src="attempts/pr-395/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-395/03-lifted-buildup.webp"><img src="attempts/pr-395/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-395/04-color-crossing.webp"><img src="attempts/pr-395/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-395/05-toddler-drawing.webp"><img src="attempts/pr-395/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> The variant is well-contained and usable, but resembles an opaque marker in every scene. Slight pass variation raises it above the flattest attempts, without reaching real crayon texture.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>13</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>4</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>11</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>3</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-402">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 402</div><h2><a href="https://github.com/KyleMit/Splotch/pull/402">feat: add deterministic wax crayon buildup</a></h2></div>
+      <span class="rank">Rank 16</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>02761584f5</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-402/01-single-line.webp"><img src="attempts/pr-402/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-402/02-continuous-retrace.webp"><img src="attempts/pr-402/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-402/03-lifted-buildup.webp"><img src="attempts/pr-402/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-402/04-color-crossing.webp"><img src="attempts/pr-402/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-402/05-toddler-drawing.webp"><img src="attempts/pr-402/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> The stroke has faint internal modulation but still reads primarily as flat paint. Its edge and finished drawing are clean; buildup and interaction are under-expressed.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>13</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>5</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>11</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>3</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-405">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 405</div><h2><a href="https://github.com/KyleMit/Splotch/pull/405">Add two-octave crayon texture</a></h2></div>
+      <span class="rank">Rank 17</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>0bd8d72546</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-405/01-single-line.webp"><img src="attempts/pr-405/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-405/02-continuous-retrace.webp"><img src="attempts/pr-405/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-405/03-lifted-buildup.webp"><img src="attempts/pr-405/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-405/04-color-crossing.webp"><img src="attempts/pr-405/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-405/05-toddler-drawing.webp"><img src="attempts/pr-405/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> Two-octave variation is too restrained in these captures, leaving a marker-like result. It maintains hue and containment, but overlap does little visible tooth filling.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>14</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>5</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>11</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>3</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-407">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 407</div><h2><a href="https://github.com/KyleMit/Splotch/pull/407">Add blue-noise crayon texture buildup</a></h2></div>
+      <span class="rank">Rank 18</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>f2d1c00d7f</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-407/01-single-line.webp"><img src="attempts/pr-407/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-407/02-continuous-retrace.webp"><img src="attempts/pr-407/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-407/03-lifted-buildup.webp"><img src="attempts/pr-407/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-407/04-color-crossing.webp"><img src="attempts/pr-407/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-407/05-toddler-drawing.webp"><img src="attempts/pr-407/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> This activated blue-noise brush is clean and dense but visually close to the standard pen at artifact scale. Buildup is somewhat clearer than lower-ranked flat variants, while texture remains too quiet.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>14</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>5</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>12</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>3</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-409">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 409</div><h2><a href="https://github.com/KyleMit/Splotch/pull/409">Add paper-tooth crayon rendering</a></h2></div>
+      <span class="rank">Rank 19</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>42e01068b9</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-409/01-single-line.webp"><img src="attempts/pr-409/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-409/02-continuous-retrace.webp"><img src="attempts/pr-409/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-409/03-lifted-buildup.webp"><img src="attempts/pr-409/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-409/04-color-crossing.webp"><img src="attempts/pr-409/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-409/05-toddler-drawing.webp"><img src="attempts/pr-409/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> The paper-tooth variant has subtle fine texture, but the body is so uniform that it still reads as a softened marker. It reproduces a pleasant full drawing without strong wax buildup.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>14</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>6</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>12</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>3</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-410">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 410</div><h2><a href="https://github.com/KyleMit/Splotch/pull/410">Add textured crayon brush rendering</a></h2></div>
+      <span class="rank">Rank 20</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setBrushVariant = crayon</span>
+      <span class="chip"><b>SHA</b> <code>3580ac071b</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-410/01-single-line.webp"><img src="attempts/pr-410/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-410/02-continuous-retrace.webp"><img src="attempts/pr-410/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-410/03-lifted-buildup.webp"><img src="attempts/pr-410/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-410/04-color-crossing.webp"><img src="attempts/pr-410/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-410/05-toddler-drawing.webp"><img src="attempts/pr-410/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> Successful activation yields slight texture and excellent containment, but the single line and retrace remain visually flat. The result is polished yet insufficiently crayon-specific.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>15</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>6</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>12</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>3</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-400">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 400</div><h2><a href="https://github.com/KyleMit/Splotch/pull/400">feat(drawing): make the crayon the default freehand brush (replace pen)</a></h2></div>
+      <span class="rank">Rank 21</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonMode = pass</span>
+      <span class="chip"><b>SHA</b> <code>89776bb12c</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-400/01-single-line.webp"><img src="attempts/pr-400/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-400/02-continuous-retrace.webp"><img src="attempts/pr-400/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-400/03-lifted-buildup.webp"><img src="attempts/pr-400/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-400/04-color-crossing.webp"><img src="attempts/pr-400/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-400/05-toddler-drawing.webp"><img src="attempts/pr-400/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Subtle translucent vertical banding provides some density change, but reads as a patterned low-opacity marker rather than crisp wax. Broad regions expose repetition, and colors do not mix.</p><p class="ranking-note"><b>Ranking:</b> A restrained, fine-grained texture begins to read as wax and does not escape the path. Repeated passes densify modestly, but the effect is weaker than the supplied buildup references.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>15</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>8</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>13</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>13</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>4</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-393">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 393</div><h2><a href="https://github.com/KyleMit/Splotch/pull/393">feat: add textured crayon coverage brush</a></h2></div>
+      <span class="rank">Rank 22</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonRenderVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>3f7eff9534</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-393/01-single-line.webp"><img src="attempts/pr-393/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-393/02-continuous-retrace.webp"><img src="attempts/pr-393/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-393/03-lifted-buildup.webp"><img src="attempts/pr-393/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-393/04-color-crossing.webp"><img src="attempts/pr-393/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-393/05-toddler-drawing.webp"><img src="attempts/pr-393/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness.</p><p class="ranking-note"><b>Ranking:</b> The stroke has gentle tonal and edge variation and retains a dense body. Tooth remains faint, though lifted passes show a more credible same-hue fill-in than the marker-like group.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>15</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>8</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>13</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>14</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>4</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-398">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 398</div><h2><a href="https://github.com/KyleMit/Splotch/pull/398">Add a waxy crayon brush with same-colour buildup</a></h2></div>
+      <span class="rank">Rank 23</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setBrush = crayon</span>
+      <span class="chip"><b>SHA</b> <code>3d4dbc3d66</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-398/01-single-line.webp"><img src="attempts/pr-398/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-398/02-continuous-retrace.webp"><img src="attempts/pr-398/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-398/03-lifted-buildup.webp"><img src="attempts/pr-398/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-398/04-color-crossing.webp"><img src="attempts/pr-398/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-398/05-toddler-drawing.webp"><img src="attempts/pr-398/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Dense restrained texture, crisp containment, and modest constant-hue buildup make a readable result. The initial body is close to solid marker coverage, and crossings occlude without mixing.</p><p class="ranking-note"><b>Ranking:</b> Clearly visible texture and buildup distinguish this from flat pens, but the isolated holes are too large and harsh. Crossings preserve texture enough to suggest physical media, though not true mixing.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>14</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>10</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>12</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>15</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>5</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-412">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 412</div><h2><a href="https://github.com/KyleMit/Splotch/pull/412">Make the crayon &#39;dense&#39; A/B variant a real higher-coverage tooth</a></h2></div>
+      <span class="rank">Rank 24</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonMode = pass</span>
+      <span class="chip"><b>SHA</b> <code>cc7f3e2ecd</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-412/01-single-line.webp"><img src="attempts/pr-412/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-412/02-continuous-retrace.webp"><img src="attempts/pr-412/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-412/03-lifted-buildup.webp"><img src="attempts/pr-412/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-412/04-color-crossing.webp"><img src="attempts/pr-412/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-412/05-toddler-drawing.webp"><img src="attempts/pr-412/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Dense, well-contained body with relatively fine distributed tooth and visible stable-hue buildup. Later passes approach a flat marker fill, and different colors simply occlude at crossings.</p><p class="ranking-note"><b>Ranking:</b> The brush deposits a credible dense layer and fills visible gaps on repeated passes. Its tooth is still coarse and digitally spotty compared with the real samples, limiting naturalism.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>15</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>10</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>12</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>16</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>5</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-404">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 404</div><h2><a href="https://github.com/KyleMit/Splotch/pull/404">Add wax crayon texture rendering</a></h2></div>
+      <span class="rank">Rank 25</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> default</span>
+      <span class="chip"><b>SHA</b> <code>6bd6068361</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-404/01-single-line.webp"><img src="attempts/pr-404/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-404/02-continuous-retrace.webp"><img src="attempts/pr-404/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-404/03-lifted-buildup.webp"><img src="attempts/pr-404/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-404/04-color-crossing.webp"><img src="attempts/pr-404/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-404/05-toddler-drawing.webp"><img src="attempts/pr-404/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Fine all-over tooth, crisp containment, and a stable-hue progression toward denser lifted passes produce a credible dry-wax result. Continuous retrace is less dramatic and the grain can look uniformly sandy; different colors still stack in draw order rather than mix.</p><p class="ranking-note"><b>Ranking:</b> Although capture.json used the default path, the pixels visibly show fine, contained texture rather than a plain fallback. It looks crayon-like in single strokes, but buildup changes are less convincing than the leaders.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>17</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>14</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>12</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>13</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>5</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-401">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 401</div><h2><a href="https://github.com/KyleMit/Splotch/pull/401">feat: add textured crayon buildup</a></h2></div>
+      <span class="rank">Rank 26</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>b7d5ad0c3f</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-401/01-single-line.webp"><img src="attempts/pr-401/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-401/02-continuous-retrace.webp"><img src="attempts/pr-401/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-401/03-lifted-buildup.webp"><img src="attempts/pr-401/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-401/04-color-crossing.webp"><img src="attempts/pr-401/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-401/05-toddler-drawing.webp"><img src="attempts/pr-401/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Fine all-over tooth, crisp containment, and a stable-hue progression toward denser lifted passes produce a credible dry-wax result. Continuous retrace is less dramatic and the grain can look uniformly sandy; different colors still stack in draw order rather than mix.</p><p class="ranking-note"><b>Ranking:</b> Fine texture is evenly contained in a strong core and produces an attractive complete drawing. Pass-to-pass filling is visible but comparatively restrained, and crossings mostly overpaint.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>18</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>15</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>13</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>14</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>4</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-386">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 386</div><h2><a href="https://github.com/KyleMit/Splotch/pull/386">feat: add wax crayon tooth brush</a></h2></div>
+      <span class="rank">Rank 27</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>fdd2a3ee83</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-386/01-single-line.webp"><img src="attempts/pr-386/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-386/02-continuous-retrace.webp"><img src="attempts/pr-386/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-386/03-lifted-buildup.webp"><img src="attempts/pr-386/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-386/04-color-crossing.webp"><img src="attempts/pr-386/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-386/05-toddler-drawing.webp"><img src="attempts/pr-386/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Fine all-over tooth, crisp containment, and a stable-hue progression toward denser lifted passes produce a credible dry-wax result. Continuous retrace is less dramatic and the grain can look uniformly sandy; different colors still stack in draw order rather than mix.</p><p class="ranking-note"><b>Ranking:</b> This has a convincing fine screen of paper tooth, crisp broken edges, and clear densification in the multi-pass rows. It is slightly too regular and does little special at color crossings.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>18</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>15</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>13</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>16</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>4</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-391">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 391</div><h2><a href="https://github.com/KyleMit/Splotch/pull/391">feat: add wax crayon buildup brush</a></h2></div>
+      <span class="rank">Rank 28</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>195aba91a5</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-391/01-single-line.webp"><img src="attempts/pr-391/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-391/02-continuous-retrace.webp"><img src="attempts/pr-391/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-391/03-lifted-buildup.webp"><img src="attempts/pr-391/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-391/04-color-crossing.webp"><img src="attempts/pr-391/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-391/05-toddler-drawing.webp"><img src="attempts/pr-391/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Fine all-over tooth, crisp containment, and a stable-hue progression toward denser lifted passes produce a credible dry-wax result. Continuous retrace is less dramatic and the grain can look uniformly sandy; different colors still stack in draw order rather than mix.</p><p class="ranking-note"><b>Ranking:</b> The fine texture and dense core are well balanced, creating a natural dry-wax surface without spray. Buildup is credible, though quieter than the best attempts and still source-over at crossings.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>19</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>16</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>13</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>16</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>4</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-385">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 385</div><h2><a href="https://github.com/KyleMit/Splotch/pull/385">feat: add textured crayon brush</a></h2></div>
+      <span class="rank">Rank 29</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonRenderVariant = waxy</span>
+      <span class="chip"><b>SHA</b> <code>a8a4ff4ad5</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-385/01-single-line.webp"><img src="attempts/pr-385/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-385/02-continuous-retrace.webp"><img src="attempts/pr-385/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-385/03-lifted-buildup.webp"><img src="attempts/pr-385/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-385/04-color-crossing.webp"><img src="attempts/pr-385/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-385/05-toddler-drawing.webp"><img src="attempts/pr-385/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Fine all-over tooth, crisp containment, and a stable-hue progression toward denser lifted passes produce a credible dry-wax result. Continuous retrace is less dramatic and the grain can look uniformly sandy; different colors still stack in draw order rather than mix.</p><p class="ranking-note"><b>Ranking:</b> A fine, evenly distributed tooth closely resembles wax on paper and gradually fills while retaining hue. Edges are slightly too smooth and crossings show limited pigment interaction.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>20</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>16</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>13</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>18</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>4</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-417">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 417</div><h2><a href="https://github.com/KyleMit/Splotch/pull/417">feat(drawing): waxy crayon brush with paper-tooth buildup (default pen)</a></h2></div>
+      <span class="rank">Rank 30</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonMode = pass</span>
+      <span class="chip"><b>SHA</b> <code>2475022f97</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-417/01-single-line.webp"><img src="attempts/pr-417/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-417/02-continuous-retrace.webp"><img src="attempts/pr-417/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-417/03-lifted-buildup.webp"><img src="attempts/pr-417/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-417/04-color-crossing.webp"><img src="attempts/pr-417/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-417/05-toddler-drawing.webp"><img src="attempts/pr-417/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Strongly contained, crisp-edged strokes with a dense body and clearly visible paper gaps. Same-color lifted passes fill the tooth progressively at stable hue, and the continuous retrace also becomes noticeably denser. The texture is somewhat coarse and patchy versus fine real paper tooth, the rounded ends and uniform width feel slightly marker-like, and different colors mostly occlude rather than visibly mix at crossings. The full drawing remains legible and pleasantly crayon-like, though broad filled regions emphasize the repeating pale-chip texture.</p><p class="ranking-note"><b>Ranking:</b> The default crayon has a dense wax body, visible fine tooth, and strong same-hue densification across repeated passes. Some larger voids and a somewhat uniform pattern keep it below the most natural candidates.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>20</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>16</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>13</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>19</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>5</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-415">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 415</div><h2><a href="https://github.com/KyleMit/Splotch/pull/415">Add a wax crayon brush (textured, buildup at constant hue)</a></h2></div>
+      <span class="rank">Rank 31</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonMode = pass</span>
+      <span class="chip"><b>SHA</b> <code>848a8d27b2</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-415/01-single-line.webp"><img src="attempts/pr-415/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-415/02-continuous-retrace.webp"><img src="attempts/pr-415/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-415/03-lifted-buildup.webp"><img src="attempts/pr-415/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-415/04-color-crossing.webp"><img src="attempts/pr-415/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-415/05-toddler-drawing.webp"><img src="attempts/pr-415/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Dense, well-contained strokes with crisp broken edges and a convincing constant-hue progression across lifted passes. Continuous retracing also fills most gaps. The tooth is uneven and concentrated toward edges, leaving the centers rather flat and marker-like; later passes become nearly solid. Crossings occlude cleanly with no visible mixing. The full drawing is attractive and readable but broad green/red areas reveal sparse, somewhat repetitive white chips rather than fine all-over paper grain.</p><p class="ranking-note"><b>Ranking:</b> Fine contained tooth remains visible in the first pass and fills convincingly in both retrace tests without muddying hue. The full drawing reads strongly as crayon, though crossings still mostly layer.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>20</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>17</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>13</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>20</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>5</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-353">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 353</div><h2><a href="https://github.com/KyleMit/Splotch/pull/353">Add handoff for crayon-brush-iteration</a></h2></div>
+      <span class="rank">Rank 32</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setBrush = crayon</span>
+      <span class="chip"><b>SHA</b> <code>4e94dbb2aa</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-353/01-single-line.webp"><img src="attempts/pr-353/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-353/02-continuous-retrace.webp"><img src="attempts/pr-353/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-353/03-lifted-buildup.webp"><img src="attempts/pr-353/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-353/04-color-crossing.webp"><img src="attempts/pr-353/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-353/05-toddler-drawing.webp"><img src="attempts/pr-353/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Texture and buildup are obvious and contained, but dark flecks muddy every hue and read as dirt or multiply noise. The full drawing is gritty, and color crossings stack without mixing.</p><p class="ranking-note"><b>Ranking:</b> This has the richest wax body and especially convincing irregular tooth in the house and single line. It builds density strongly at constant hue, with only slightly dark mottling and ordinary source-over crossings holding it back.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>22</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>17</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>13</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>20</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>5</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>5</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+<article class="attempt" id="pr-408">
+    <header class="attempt-head">
+      <div><div class="eyebrow">PR 408</div><h2><a href="https://github.com/KyleMit/Splotch/pull/408">feat(drawing): waxy crayon free-draw via colour-tinted paper-tooth pattern</a></h2></div>
+      <span class="rank">Rank 33</span>
+    </header>
+    <div class="attempt-meta">
+      <span class="chip"><b>Activation</b> setCrayonMode = pass</span>
+      <span class="chip"><b>SHA</b> <code>1541d782bf</code></span>
+    </div>
+    <div class="scene-grid"><figure class="scene">
+    <a href="attempts/pr-408/01-single-line.webp"><img src="attempts/pr-408/01-single-line.webp" alt="Single line" loading="lazy"/></a>
+    <figcaption>Single line</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-408/02-continuous-retrace.webp"><img src="attempts/pr-408/02-continuous-retrace.webp" alt="Continuous retrace" loading="lazy"/></a>
+    <figcaption>Continuous retrace</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-408/03-lifted-buildup.webp"><img src="attempts/pr-408/03-lifted-buildup.webp" alt="Lifted buildup" loading="lazy"/></a>
+    <figcaption>Lifted buildup</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-408/04-color-crossing.webp"><img src="attempts/pr-408/04-color-crossing.webp" alt="Color crossing" loading="lazy"/></a>
+    <figcaption>Color crossing</figcaption>
+  </figure><figure class="scene">
+    <a href="attempts/pr-408/05-toddler-drawing.webp"><img src="attempts/pr-408/05-toddler-drawing.webp" alt="Full drawing" loading="lazy"/></a>
+    <figcaption>Full drawing</figcaption>
+  </figure></div>
+    <div class="assessment">
+      <div><h3>Evaluator notes</h3><p>Fine all-over tooth, crisp containment, and a stable-hue progression toward denser lifted passes produce a credible dry-wax result. Continuous retrace is less dramatic and the grain can look uniformly sandy; different colors still stack in draw order rather than mix.</p><p class="ranking-note"><b>Ranking:</b> The best overall balance: fine crisp tooth, a dense but visibly broken wax body, strict containment, and the clearest progressive fill-in from single through repeated passes at stable hue. Cross-color behavior remains mostly layered, leaving room for the next iteration.</p></div>
+      <div><h3>Scores &amp; gates</h3><dl><div class="metric score"><dt>waxBody</dt><dd>22</dd></div><div class="metric score"><dt>fineNaturalTooth</dt><dd>18</dd></div><div class="metric score"><dt>containmentCrispEdge</dt><dd>14</dd></div><div class="metric score"><dt>sameHueBuildup</dt><dd>22</dd></div><div class="metric score"><dt>colorInteraction</dt><dd>5</dd></div><div class="metric score"><dt>fullDrawing</dt><dd>4</dd></div></dl></div>
+      <div><h3>Failures</h3><p class="muted">None recorded.</p></div>
+    </div>
+  </article>
+</div></main><footer class="site-foot">
+  <div class="shell">
+    <span class="crayons crayons-sm" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span>
+    <p>Committed run outputs from the Splotch generators — see <code>artifacts/README.md</code>. · <a href="https://github.com/KyleMit/Splotch">GitHub</a> · <a href="../index.html">All artifacts</a></p>
+  </div>
+</footer>
+</body>
+</html>

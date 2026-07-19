@@ -1,0 +1,10 @@
+{
+  "pr": 397,
+  "title": "feat: add live wax crayon buildup",
+  "headSha": "afeeab38ded20f2f6b080629f1c9f515cd93594a",
+  "activation": [
+    "setCrayonRenderVariant",
+    "waxy"
+  ],
+  "visualNotes": "Opacity gradients create visible buildup but also washed-out starts and saturation changes, reading as watercolor or airbrush rather than crisp wax. Tooth is not convincing, the full drawing is pale, and colors do not mix."
+}

@@ -1,0 +1,10 @@
+{
+  "pr": 402,
+  "title": "feat: add deterministic wax crayon buildup",
+  "headSha": "02761584f5ad700c416bd998b885a8db306895b6",
+  "activation": [
+    "setCrayonVariant",
+    "waxy"
+  ],
+  "visualNotes": "The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness."
+}

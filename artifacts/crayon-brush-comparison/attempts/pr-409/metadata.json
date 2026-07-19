@@ -1,0 +1,10 @@
+{
+  "pr": 409,
+  "title": "Add paper-tooth crayon rendering",
+  "headSha": "42e01068b901de133e68946fb9bb33ea29dd6e53",
+  "activation": [
+    "setCrayonVariant",
+    "waxy"
+  ],
+  "visualNotes": "The five scenes render as a smooth solid pen: containment and legibility are clean, but there is no visible paper tooth, meaningful continuous or lifted buildup, broken wax edge, or crayon-like color interaction. This is an honest ineffective/unsupported crayon result in the standardized harness."
+}

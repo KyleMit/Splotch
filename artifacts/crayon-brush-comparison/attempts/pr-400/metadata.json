@@ -1,0 +1,10 @@
+{
+  "pr": 400,
+  "title": "feat(drawing): make the crayon the default freehand brush (replace pen)",
+  "headSha": "89776bb12c577237e9a178ec948ebafb28d43dea",
+  "activation": [
+    "setCrayonMode",
+    true
+  ],
+  "visualNotes": "Subtle translucent vertical banding provides some density change, but reads as a patterned low-opacity marker rather than crisp wax. Broad regions expose repetition, and colors do not mix."
+}

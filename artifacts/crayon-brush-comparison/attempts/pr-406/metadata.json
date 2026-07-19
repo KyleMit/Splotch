@@ -1,0 +1,10 @@
+{
+  "pr": 406,
+  "title": "Make the pen draw crayon by default",
+  "headSha": "0df4a23292e36cf4ae3b9adafab735f2d2153c52",
+  "activation": [
+    "setCrayonMode",
+    true
+  ],
+  "visualNotes": "Dense textured strokes with crisp edges and clear continuous/lifted buildup at stable hue. Grain is somewhat coarse and patchy, broad fills become marker-like, and color crossings only occlude."
+}

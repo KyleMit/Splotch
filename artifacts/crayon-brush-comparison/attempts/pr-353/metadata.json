@@ -1,0 +1,10 @@
+{
+  "pr": 353,
+  "title": "Add handoff for crayon-brush-iteration",
+  "headSha": "4e94dbb2aae0142f06dcc72e7c66489e5fdd49a8",
+  "activation": [
+    "setBrush",
+    "crayon"
+  ],
+  "visualNotes": "Texture and buildup are obvious and contained, but dark flecks muddy every hue and read as dirt or multiply noise. The full drawing is gritty, and color crossings stack without mixing."
+}

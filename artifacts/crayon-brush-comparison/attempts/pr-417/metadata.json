@@ -1,0 +1,7 @@
+{
+  "pr": 417,
+  "title": "feat(drawing): waxy crayon brush with paper-tooth buildup (default pen)",
+  "headSha": "2475022f973c958d3d9983009d2c530dcff83259",
+  "activation": ["setCrayonMode", true],
+  "visualNotes": "Strongly contained, crisp-edged strokes with a dense body and clearly visible paper gaps. Same-color lifted passes fill the tooth progressively at stable hue, and the continuous retrace also becomes noticeably denser. The texture is somewhat coarse and patchy versus fine real paper tooth, the rounded ends and uniform width feel slightly marker-like, and different colors mostly occlude rather than visibly mix at crossings. The full drawing remains legible and pleasantly crayon-like, though broad filled regions emphasize the repeating pale-chip texture."
+}

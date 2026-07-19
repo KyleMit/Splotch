@@ -1,0 +1,421 @@
+{
+  "schemaVersion": 1,
+  "sceneSpec": "crayon-comparison-v1",
+  "order": "rank-worst-to-best-then-pr-descending",
+  "scenes": [
+    {
+      "id": "01-single-line",
+      "label": "Single line",
+      "reference": "1-line-blue.webp"
+    },
+    {
+      "id": "02-continuous-retrace",
+      "label": "Continuous retrace",
+      "reference": "4-scribble-backforth-blue.webp"
+    },
+    {
+      "id": "03-lifted-buildup",
+      "label": "Lifted buildup",
+      "reference": "2-buildup-red.webp"
+    },
+    {
+      "id": "04-color-crossing",
+      "label": "Color crossing",
+      "reference": "3-cross-red-blue.webp"
+    },
+    {
+      "id": "05-toddler-drawing",
+      "label": "Full drawing",
+      "reference": "4-scribble-wild-multi.webp"
+    }
+  ],
+  "attempts": [
+    {
+      "pr": 397,
+      "rank": 1,
+      "title": "feat: add live wax crayon buildup",
+      "headSha": "afeeab38ded20f2f6b080629f1c9f515cd93594a",
+      "activation": [
+        "setCrayonRenderVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-397",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 399,
+      "rank": 2,
+      "title": "temp(drawing): draw the plain pen as crayon for in-app preview",
+      "headSha": "6637ce2eab6d047a5c3fbe1717fe1389078bf798",
+      "activation": [
+        "setCrayonMode",
+        true
+      ],
+      "directory": "attempts/pr-399",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 403,
+      "rank": 3,
+      "title": "feat(drawing): waxy crayon brush with wax build-up as the default pen",
+      "headSha": "4fd87b8b50bb5c2ab4f2d42df1f91a1aa2f8636a",
+      "activation": [
+        "setBrushVariant",
+        "crayon"
+      ],
+      "directory": "attempts/pr-403",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 411,
+      "rank": 4,
+      "title": "Add a wax crayon brush (screened tooth, seed-driven buildup)",
+      "headSha": "d7a5fd5adfa1aebc2315f4c39412d9ae45481840",
+      "activation": [
+        "setBrushStyle",
+        "crayon"
+      ],
+      "directory": "attempts/pr-411",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 416,
+      "rank": 5,
+      "title": "Add a crayon brush: waxy paper-tooth grain with live wax buildup",
+      "headSha": "ef705c3c15a586890e2208a2ff19ad46ee6905e2",
+      "activation": [
+        "setCrayonMode",
+        true
+      ],
+      "directory": "attempts/pr-416",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 414,
+      "rank": 6,
+      "title": "Add a wax-crayon brush: colour stroked through a paper-tooth pattern",
+      "headSha": "41b8a62d1fa40356cf7a380d0f6fe6a6e9069b08",
+      "activation": [
+        "setCrayonMode",
+        true
+      ],
+      "directory": "attempts/pr-414",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 406,
+      "rank": 7,
+      "title": "Make the pen draw crayon by default",
+      "headSha": "0df4a23292e36cf4ae3b9adafab735f2d2153c52",
+      "activation": [
+        "setCrayonMode",
+        true
+      ],
+      "directory": "attempts/pr-406",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 396,
+      "rank": 8,
+      "title": "feat: add wax crayon buildup",
+      "headSha": "01a2fdae6e8fde540e358305547980c0d7377d74",
+      "activation": "default",
+      "directory": "attempts/pr-396",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 389,
+      "rank": 9,
+      "title": "feat: add textured crayon brush",
+      "headSha": "a15c06fc661862d9a77269fed05bd0eb64d7f640",
+      "activation": "default",
+      "directory": "attempts/pr-389",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 387,
+      "rank": 10,
+      "title": "feat(drawing): add deterministic wax crayon texture",
+      "headSha": "268aa32e20080e7a5e5df311505a3578d87f86ed",
+      "activation": [
+        "setCrayonRenderVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-387",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 388,
+      "rank": 11,
+      "title": "feat: add textured crayon brush",
+      "headSha": "dc34e9566dc3854db9509be6a9c9cdd6d2445484",
+      "activation": [
+        "setCrayonVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-388",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 390,
+      "rank": 12,
+      "title": "feat: add textured wax crayon buildup",
+      "headSha": "a1fdfcba85130778ab8a26775db1961efed2998a",
+      "activation": [
+        "setCrayonVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-390",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 392,
+      "rank": 13,
+      "title": "feat: add textured wax crayon brush",
+      "headSha": "e8a57577ffb68236858c3409279fdf3762d18b07",
+      "activation": [
+        "setBrushVariant",
+        "crayon"
+      ],
+      "directory": "attempts/pr-392",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 394,
+      "rank": 14,
+      "title": "feat: add phase-shifted crayon tooth",
+      "headSha": "d4872a873e21b01ed2c30421b8db0cf5f800544e",
+      "activation": [
+        "setCrayonVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-394",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 395,
+      "rank": 15,
+      "title": "feat: add deterministic wax crayon texture",
+      "headSha": "4b04c3b4f96e2407b557304e7fd61f435b41d819",
+      "activation": [
+        "setCrayonVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-395",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 402,
+      "rank": 16,
+      "title": "feat: add deterministic wax crayon buildup",
+      "headSha": "02761584f5ad700c416bd998b885a8db306895b6",
+      "activation": [
+        "setCrayonVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-402",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 405,
+      "rank": 17,
+      "title": "Add two-octave crayon texture",
+      "headSha": "0bd8d72546fbcb3e117304426346aaa2c46a2f52",
+      "activation": [
+        "setCrayonVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-405",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 407,
+      "rank": 18,
+      "title": "Add blue-noise crayon texture buildup",
+      "headSha": "f2d1c00d7f19fd98ee2e996271d5c2cebd5efc55",
+      "activation": [
+        "setCrayonVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-407",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 409,
+      "rank": 19,
+      "title": "Add paper-tooth crayon rendering",
+      "headSha": "42e01068b901de133e68946fb9bb33ea29dd6e53",
+      "activation": [
+        "setCrayonVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-409",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 410,
+      "rank": 20,
+      "title": "Add textured crayon brush rendering",
+      "headSha": "3580ac071ba3d1f3c5a9bcb1d67d012725adbf50",
+      "activation": [
+        "setBrushVariant",
+        "crayon"
+      ],
+      "directory": "attempts/pr-410",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 400,
+      "rank": 21,
+      "title": "feat(drawing): make the crayon the default freehand brush (replace pen)",
+      "headSha": "89776bb12c577237e9a178ec948ebafb28d43dea",
+      "activation": [
+        "setCrayonMode",
+        true
+      ],
+      "directory": "attempts/pr-400",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 393,
+      "rank": 22,
+      "title": "feat: add textured crayon coverage brush",
+      "headSha": "3f7eff95345981d339bf2b4be3cb1647d842bd87",
+      "activation": [
+        "setCrayonRenderVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-393",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 398,
+      "rank": 23,
+      "title": "Add a waxy crayon brush with same-colour buildup",
+      "headSha": "3d4dbc3d66fadf62684cee9f031023fa74dc7f4b",
+      "activation": [
+        "setBrush",
+        "crayon"
+      ],
+      "directory": "attempts/pr-398",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 412,
+      "rank": 24,
+      "title": "Make the crayon 'dense' A/B variant a real higher-coverage tooth",
+      "headSha": "cc7f3e2ecd6674a9e5629f2e94289628bb57badd",
+      "activation": [
+        "setCrayonMode",
+        true
+      ],
+      "directory": "attempts/pr-412",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 404,
+      "rank": 25,
+      "title": "Add wax crayon texture rendering",
+      "headSha": "6bd6068361dc2c5fe4602a72c679aa56d4816e68",
+      "activation": "default",
+      "directory": "attempts/pr-404",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 401,
+      "rank": 26,
+      "title": "feat: add textured crayon buildup",
+      "headSha": "b7d5ad0c3f915e7507ba1f14a91db33640d021b8",
+      "activation": [
+        "setCrayonVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-401",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 386,
+      "rank": 27,
+      "title": "feat: add wax crayon tooth brush",
+      "headSha": "fdd2a3ee83c7c4f27862f053e36ab03238d937cc",
+      "activation": [
+        "setCrayonVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-386",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 391,
+      "rank": 28,
+      "title": "feat: add wax crayon buildup brush",
+      "headSha": "195aba91a5dd92050054489a8c7bfa8ec6c3bcbb",
+      "activation": [
+        "setCrayonVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-391",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 385,
+      "rank": 29,
+      "title": "feat: add textured crayon brush",
+      "headSha": "a8a4ff4ad527589de53994adcddd4e1c6153ed69",
+      "activation": [
+        "setCrayonRenderVariant",
+        "waxy"
+      ],
+      "directory": "attempts/pr-385",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 417,
+      "rank": 30,
+      "title": "feat(drawing): waxy crayon brush with paper-tooth buildup (default pen)",
+      "headSha": "2475022f973c958d3d9983009d2c530dcff83259",
+      "activation": [
+        "setCrayonMode",
+        true
+      ],
+      "directory": "attempts/pr-417",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 415,
+      "rank": 31,
+      "title": "Add a wax crayon brush (textured, buildup at constant hue)",
+      "headSha": "848a8d27b2a917e625e404be8afa79cd86f73a70",
+      "activation": [
+        "setCrayonMode",
+        true
+      ],
+      "directory": "attempts/pr-415",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 353,
+      "rank": 32,
+      "title": "Add handoff for crayon-brush-iteration",
+      "headSha": "4e94dbb2aae0142f06dcc72e7c66489e5fdd49a8",
+      "activation": [
+        "setBrush",
+        "crayon"
+      ],
+      "directory": "attempts/pr-353",
+      "captureSchemaVersion": 1
+    },
+    {
+      "pr": 408,
+      "rank": 33,
+      "title": "feat(drawing): waxy crayon free-draw via colour-tinted paper-tooth pattern",
+      "headSha": "1541d782bffbb473db891f58028a06e83999eeea",
+      "activation": [
+        "setCrayonMode",
+        true
+      ],
+      "directory": "attempts/pr-408",
+      "captureSchemaVersion": 1
+    }
+  ]
+}
