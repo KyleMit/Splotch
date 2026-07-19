@@ -21,8 +21,12 @@ import { crayonPatternFor } from './crayonBrush';
 // with a paper-anchored, colour-tinted tooth pattern instead of a solid fill, so
 // it reads as textured wax and overdrawn same-colour passes build up (ADR-0065,
 // crayonBrush.ts). Like `magic` it's an ordinary member of the command log, so
-// undo, eraser, and simplification all fall out of the existing replay. Absent
-// (or the eraser/magic paths) means the flat solid-colour stroke.
+// undo and eraser fall out of the existing replay. It is exempt from commit-time
+// simplification, though: the crayon is semi-transparent, so re-chunking a
+// stroke's per-frame ops changes its composited density and shifted the grain on
+// rebuild — crayon commands keep their raw ops so replay is bit-identical to the
+// live render (ADR-0065, commandSimplify.isUnsimplifiableCrayon). Absent (or the
+// eraser/magic paths) means the flat solid-colour stroke.
 export type StrokeOp =
   | {
       kind: 'dot';

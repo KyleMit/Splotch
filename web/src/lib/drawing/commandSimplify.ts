@@ -119,7 +119,8 @@ function pathStyleMatches(a: PathOp, b: PathOp): boolean {
     a.color === b.color &&
     a.lineWidth === b.lineWidth &&
     a.erase === b.erase &&
-    !!a.magic === !!b.magic
+    !!a.magic === !!b.magic &&
+    a.brush === b.brush
   );
 }
 
@@ -182,15 +183,36 @@ function reducePathRun(run: PathOp[]): PathOp[] {
     lineWidth: first.lineWidth,
     erase: first.erase,
     magic: first.magic,
+    brush: first.brush,
   }));
+}
+
+// A crayon command is left un-simplified: the crayon is semi-transparent and
+// each per-frame op composites source-over, so a single stroke's overlapping
+// stamps compound into its wax density. Simplification rewrites those per-frame
+// ops into a different (smaller) set, which composites to a DIFFERENT density —
+// so a simplified rebuild shifted the grain lighter on the first undo/resize.
+// Reducing ops is lossless only for an opaque brush (idempotent overlap); for
+// the crayon it is lossy, so we keep its raw ops and let live drawing and every
+// replay render the identical op stream (bit-identical, no shift). The keyframe
+// safety net (ADR-0035) still bounds replay cost for a pathologically long
+// stroke. Simplification stays on for the opaque eraser/flat marker. See ADR-0065.
+function isUnsimplifiableCrayon(ops: StrokeOp[]): boolean {
+  let hasPath = false;
+  for (const op of ops) {
+    if (op.kind === 'clear' || op.brush !== 'crayon' || op.erase) return false;
+    if (op.kind === 'path') hasPath = true;
+  }
+  return hasPath;
 }
 
 // Simplify a committed command's per-frame path ops. Each finger's reduced ops
 // are emitted at the position of its first op; dots and clears pass through in
 // place, preserving compositing order for the single-finger case. Returns the
-// input array untouched when simplification is disabled or there's nothing to do.
+// input array untouched when simplification is disabled, there's nothing to do,
+// or the command is crayon (see isUnsimplifiableCrayon).
 export function simplifyCommandOps(ops: StrokeOp[]): StrokeOp[] {
-  if (!enabled || ops.length === 0) return ops;
+  if (!enabled || ops.length === 0 || isUnsimplifiableCrayon(ops)) return ops;
   if (PERF_MARKS) performance.mark('engine.simplify:start');
 
   const reducedByPid = new Map<number, PathOp[]>();
