@@ -245,7 +245,7 @@
   });
 
   $effect(() => {
-    setCrayonMode(toolState.crayon);
+    setCrayonMode(!toolState.eraser && !toolState.magic);
   });
 
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK
