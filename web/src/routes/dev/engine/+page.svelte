@@ -3,6 +3,7 @@
   import {
     initDrawingCanvas,
     setColor,
+    setCrayonVariant,
     setStrokeWidth,
     setEraserMode,
     setSafeAreaInsets,
@@ -56,6 +57,7 @@
     // reading the resulting bitmap.
     win.__engine = {
       setColor,
+      setCrayonVariant,
       setStrokeWidth,
       setEraserMode,
       setSafeAreaInsets,
@@ -105,6 +107,26 @@
         let n = 0;
         for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) n++;
         return n;
+      },
+
+      crayonStats() {
+        const { data } = canvasEl
+          .getContext('2d')!
+          .getImageData(0, 0, canvasEl.width, canvasEl.height);
+        let covered = 0;
+        let hue = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] === 0) continue;
+          covered++;
+          const max = Math.max(data[i], data[i + 1], data[i + 2]);
+          const min = Math.min(data[i], data[i + 1], data[i + 2]);
+          const delta = max - min;
+          if (delta === 0) continue;
+          if (max === data[i]) hue += 60 * (((data[i + 1] - data[i + 2]) / delta) % 6);
+          else if (max === data[i + 1]) hue += 60 * ((data[i + 2] - data[i]) / delta + 2);
+          else hue += 60 * ((data[i] - data[i + 1]) / delta + 4);
+        }
+        return { covered, meanHue: covered ? hue / covered : 0 };
       },
 
       // Bounding box (backing-store px) of the non-transparent pixels, so a spec

@@ -25,6 +25,7 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: CrayonTexture;
     }
   | {
       kind: 'path';
@@ -43,10 +44,50 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: CrayonTexture;
     }
   | { kind: 'clear' };
 
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
+
+export interface CrayonTexture {
+  seed: number;
+  variant: 'dense' | 'toothier';
+}
+
+const crayonPatterns = new WeakMap<CanvasRenderingContext2D, Map<string, CanvasPattern>>();
+
+function crayonPattern(
+  target: CanvasRenderingContext2D,
+  color: string,
+  texture: CrayonTexture
+): CanvasPattern | null {
+  const key = `${color}:${texture.variant}:${texture.seed}`;
+  let patterns = crayonPatterns.get(target);
+  if (!patterns) {
+    patterns = new Map();
+    crayonPatterns.set(target, patterns);
+  }
+  const cached = patterns.get(key);
+  if (cached) return cached;
+
+  const tile = document.createElement('canvas');
+  tile.width = 32;
+  tile.height = 32;
+  const tileCtx = tile.getContext('2d');
+  if (!tileCtx) return null;
+  const coverage = texture.variant === 'dense' ? 52 : 46;
+  tileCtx.fillStyle = color;
+  for (let y = 0; y < tile.height; y++) {
+    for (let x = 0; x < tile.width; x++) {
+      const hash = Math.imul(((x + 1) * 0x45d9f3b) ^ texture.seed, (y + 1) * 0x27d4eb2d);
+      if ((hash >>> 0) % 64 < coverage) tileCtx.fillRect(x, y, 1, 1);
+    }
+  }
+  const pattern = target.createPattern(tile, 'repeat');
+  if (pattern) patterns.set(key, pattern);
+  return pattern;
+}
 
 // One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is
 // the canvas-empty state before the group drew, so undo can restore the flag
@@ -117,7 +158,8 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
+  const paint = op.crayon ? crayonPattern(target, op.color, op.crayon) : op.color;
+  if (paint) paintOpShape(target, op, paint);
   target.globalCompositeOperation = 'source-over';
 }
 

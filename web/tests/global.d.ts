@@ -9,6 +9,7 @@ declare global {
     __engineState: { canUndo: boolean; canvasEmpty: boolean };
     __engine: {
       setColor(color: string): void;
+      setCrayonVariant(variant: 'dense' | 'toothier'): void;
       setStrokeWidth(width: number): void;
       setEraserMode(active: boolean): void;
       setSafeAreaInsets(insets: { top: number; right: number; bottom: number; left: number }): void;
@@ -54,6 +55,7 @@ declare global {
       ): Promise<Blob | null>;
       blobRedPixelCount(blob: Blob | null): Promise<number>;
       nonTransparentCount(): number;
+      crayonStats(): { covered: number; meanHue: number };
       pixelAt(x: number, y: number): number[];
       resizeTo(w: number, h: number): Promise<void>;
       resumeTo(w: number, h: number): void;

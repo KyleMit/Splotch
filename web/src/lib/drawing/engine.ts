@@ -42,7 +42,7 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { renderOp, clearAllOf, type CrayonTexture, type StrokeOp } from './strokeOps';
 import {
   beginCommand,
   commandCount,
@@ -87,6 +87,8 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonVariant: CrayonTexture['variant'] = 'dense';
+let nextCrayonSeed = 1;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +424,7 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +452,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +498,7 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayon: CrayonTexture | undefined;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +587,8 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayon:
+      eraserActive || magicActive ? undefined : { seed: nextCrayonSeed++, variant: crayonVariant },
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -1037,6 +1044,10 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+export function setCrayonVariant(variant: CrayonTexture['variant']) {
+  crayonVariant = variant;
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

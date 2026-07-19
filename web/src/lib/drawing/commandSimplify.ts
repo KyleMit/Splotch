@@ -119,7 +119,9 @@ function pathStyleMatches(a: PathOp, b: PathOp): boolean {
     a.color === b.color &&
     a.lineWidth === b.lineWidth &&
     a.erase === b.erase &&
-    !!a.magic === !!b.magic
+    !!a.magic === !!b.magic &&
+    a.crayon?.seed === b.crayon?.seed &&
+    a.crayon?.variant === b.crayon?.variant
   );
 }
 
@@ -182,6 +184,7 @@ function reducePathRun(run: PathOp[]): PathOp[] {
     lineWidth: first.lineWidth,
     erase: first.erase,
     magic: first.magic,
+    crayon: first.crayon,
   }));
 }
 
@@ -190,6 +193,7 @@ function reducePathRun(run: PathOp[]): PathOp[] {
 // place, preserving compositing order for the single-finger case. Returns the
 // input array untouched when simplification is disabled or there's nothing to do.
 export function simplifyCommandOps(ops: StrokeOp[]): StrokeOp[] {
+  if (ops.some((op) => op.kind !== 'clear' && op.crayon)) return ops;
   if (!enabled || ops.length === 0) return ops;
   if (PERF_MARKS) performance.mark('engine.simplify:start');
 
