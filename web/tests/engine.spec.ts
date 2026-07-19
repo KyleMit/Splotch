@@ -1303,3 +1303,110 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
   expect(s.canvasEmpty).toBe(true);
   expect(s.canUndo).toBe(false);
 });
+
+// --- Crayon brush (ADR-0065) ------------------------------------------------
+
+// The crayon lays colour down as textured wax: an opaque body punched by fine
+// paper-tooth pits, with each stroke's tooth phase-shifted by a stored seed. The
+// buildup + determinism contract lives here, at the engine layer, because it is a
+// property of rendering the stored ops — not of the pure phase math (unit-tested
+// in crayonBrush.test.ts).
+
+// Draw a horizontal crayon line and read back per-region opaque coverage + mean
+// opaque colour, all in one page context so the canvas pixels never leave the browser.
+async function crayonScene(page: Page) {
+  return page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const ymid = Math.round(cv.height / 2);
+    const line = (x0: number, x1: number) => {
+      const p: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 40; i++) p.push({ x: x0 + ((x1 - x0) * i) / 40, y: ymid });
+      return p;
+    };
+    const region = (x0: number, x1: number) => {
+      const d = g.getImageData(Math.round(x0), ymid - 15, Math.round(x1 - x0), 30).data;
+      let opq = 0,
+        tot = 0,
+        r = 0,
+        gg = 0,
+        b = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        tot++;
+        if (d[i + 3] > 128) {
+          opq++;
+          r += d[i];
+          gg += d[i + 1];
+          b += d[i + 2];
+        }
+      }
+      return {
+        cov: opq / tot,
+        rgb: opq ? [Math.round(r / opq), Math.round(gg / opq), Math.round(b / opq)] : null,
+      };
+    };
+    const W = cv.width;
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setColor('#e23b36');
+    E.setStrokeWidth(30);
+    E.strokeSync(line(W * 0.2, W * 0.8), 'pen'); // one full-width pass
+    const leftA = region(W * 0.25, W * 0.45);
+    const rightA = region(W * 0.55, W * 0.75);
+    E.strokeSync(line(W * 0.2, W * 0.5), 'pen'); // a second same-colour pass, LEFT half only
+    const leftB = region(W * 0.25, W * 0.45);
+    const rightB = region(W * 0.55, W * 0.75);
+    return { leftA, rightA, leftB, rightB };
+  });
+}
+
+test('a crayon stroke reads as tooth, not a solid fill', async ({ page }) => {
+  const r = await crayonScene(page);
+  // A single pass leaves paper tooth showing — neither a flat fill nor a few specks.
+  expect(r.leftA.cov).toBeGreaterThan(0.4);
+  expect(r.leftA.cov).toBeLessThan(0.92);
+});
+
+test('a second same-colour crayon pass builds up where it is drawn, at a constant hue', async ({
+  page,
+}) => {
+  const r = await crayonScene(page);
+  // Buildup: the redrawn (left) band gets denser — fills in tooth.
+  expect(r.leftB.cov).toBeGreaterThan(r.leftA.cov + 0.03);
+  // Live/gradual, not a global snap: the untouched (right) band is unchanged.
+  expect(Math.abs(r.rightB.cov - r.rightA.cov)).toBeLessThan(0.02);
+  // No darken/muddy: the mean opaque hue barely moves (every channel within a few levels).
+  for (let i = 0; i < 3; i++) {
+    expect(Math.abs((r.leftB.rgb as number[])[i] - (r.leftA.rgb as number[])[i])).toBeLessThan(6);
+  }
+});
+
+test('crayon replay is deterministic — a rebuild reproduces the exact pixel count', async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const y = Math.round(cv.height / 2);
+    const p: { x: number; y: number }[] = [];
+    for (let i = 0; i <= 40; i++) p.push({ x: 20 + ((cv.width - 40) * i) / 40, y });
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setColor('#2c5faa');
+    E.setStrokeWidth(24);
+    E.strokeSync(p, 'pen');
+  });
+  const c0 = await count(page);
+  expect(c0).toBeGreaterThan(0);
+
+  // Teardown + re-init replays every stored op from the command log; the crayon
+  // tooth is deterministic (fixed field + stored seed), so the rebuild is
+  // pixel-for-pixel identical.
+  await page.evaluate(() => window.__engine.remount());
+  expect(await count(page)).toBe(c0);
+
+  // And it undoes cleanly back to a blank canvas.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+});

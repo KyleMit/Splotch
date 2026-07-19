@@ -119,7 +119,13 @@ function pathStyleMatches(a: PathOp, b: PathOp): boolean {
     a.color === b.color &&
     a.lineWidth === b.lineWidth &&
     a.erase === b.erase &&
-    !!a.magic === !!b.magic
+    !!a.magic === !!b.magic &&
+    // A crayon run must not merge with a non-crayon one, and two crayon strokes
+    // with different seeds must stay separate so each keeps its own tooth phase
+    // (the buildup phase-shift — ADR-0065). Within one stroke every op shares the
+    // seed, so a genuine run still reduces as a unit.
+    !!a.crayon === !!b.crayon &&
+    a.seed === b.seed
   );
 }
 
@@ -182,6 +188,8 @@ function reducePathRun(run: PathOp[]): PathOp[] {
     lineWidth: first.lineWidth,
     erase: first.erase,
     magic: first.magic,
+    crayon: first.crayon,
+    seed: first.seed,
   }));
 }
 
