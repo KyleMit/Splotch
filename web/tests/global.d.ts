@@ -11,6 +11,24 @@ declare global {
       setColor(color: string): void;
       setStrokeWidth(width: number): void;
       setEraserMode(active: boolean): void;
+      setCrayonMode(active: boolean): void;
+      setCrayonParams(params: {
+        variant?: string;
+        body?: number;
+        toothFloor?: number;
+        pit?: number;
+        bodyThresh?: number;
+        grain?: number;
+        warp?: number;
+      }): void;
+      getCrayonParams(): {
+        body: number;
+        toothFloor: number;
+        pit: number;
+        bodyThresh: number;
+        grain: number;
+        warp: number;
+      };
       setSafeAreaInsets(insets: { top: number; right: number; bottom: number; left: number }): void;
       undo(): void;
       clearCanvas(): void;

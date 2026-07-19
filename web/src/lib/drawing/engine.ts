@@ -44,6 +44,14 @@ import {
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
 import {
+  setCrayonVariant,
+  setCrayonOptions,
+  getCrayonVariant,
+  warmCrayonTextureWhenIdle,
+  warmCrayonColorWhenIdle,
+  type CrayonVariant,
+} from './crayonTexture';
+import {
   beginCommand,
   commandCount,
   commitActiveCommand,
@@ -87,6 +95,7 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonActive = false;
 let lastColorChangeTime = 0;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -422,6 +431,7 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +459,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +505,7 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayon: boolean;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +594,9 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    // The base brush only draws as crayon for a normal color stroke — the
+    // eraser and magic modifiers override it.
+    crayon: crayonActive && !eraserActive && !magicActive,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -988,8 +1003,10 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   listen(window, 'pointermove', adoptStrayPenStream, true);
 
   // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
-  // first export.
+  // first export, and the crayon tooth tile so its ~100ms build never lands on
+  // the first crayon stroke's draw frame.
   warmPaperTextureWhenIdle();
+  warmCrayonTextureWhenIdle();
 
   return {
     teardown() {
@@ -1020,6 +1037,9 @@ export function setColor(color: string) {
   if (color === currentColor) return;
   currentColor = color;
   lastColorChangeTime = Date.now();
+  // Pre-build this colour's crayon tile while the child moves from the swatch to
+  // the canvas, so its first crayon stroke is hitch-free.
+  if (crayonActive) warmCrayonColorWhenIdle(color);
 }
 
 export function setStrokeWidth(widthPx: number) {
@@ -1037,6 +1057,31 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+// Crayon base-brush on/off. The engine just tracks the flag and stamps it onto
+// each normal-color op (crayonTexture.ts renders it as waxy grain that builds
+// up). Mutually exclusive with the eraser/magic modifiers at the UI level.
+export function setCrayonMode(active: boolean) {
+  crayonActive = active;
+  // Warm the active colour's tooth tile (and, transitively, the shared tile) off
+  // the draw path so the first crayon stroke doesn't build it on a draw frame.
+  if (active && currentColor) warmCrayonColorWhenIdle(currentColor);
+}
+
+// Dev/A-B seam (mirrors setSimplifyParams): swap the crayon texture variant, or
+// tweak individual knobs, at runtime. Wired onto window.__engine only on the
+// /dev/engine page (PUBLIC_ENABLE_DEV_HARNESS); production keeps the tuned
+// default. Repaints so already-recorded crayon ops pick up the new texture.
+export function setCrayonParams(params: { variant?: string } & Partial<CrayonVariant>) {
+  const { variant, ...opts } = params;
+  if (variant !== undefined) setCrayonVariant(variant);
+  if (Object.keys(opts).length > 0) setCrayonOptions(opts);
+  if (ctx) replayAll(ctx);
+}
+
+export function getCrayonParams(): CrayonVariant {
+  return getCrayonVariant();
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

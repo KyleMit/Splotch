@@ -1,12 +1,15 @@
-// Active drawing tool: pen (default), eraser, or magic brush. The eraser shares
-// the stroke-width setting but removes pixels instead of laying down color. The
-// magic brush (ADR-0043) reveals colors where the child paints — the active
-// coloring page's colored fill when one is applied, otherwise a random rainbow —
-// so it works on any canvas.
+// Active drawing tool: pen (default), crayon, eraser, or magic brush. The eraser
+// shares the stroke-width setting but removes pixels instead of laying down
+// color. The magic brush (ADR-0043) reveals colors where the child paints. The
+// crayon lays the active color down through a paper-tooth texture that builds up
+// like wax where same-color strokes overlap (crayonTexture.ts).
 //
-// `eraser` and `magic` are mutually exclusive modifiers on top of the pen — at
-// most one is ever true. Pen is the state where both are false.
+// `crayon` is the BASE brush selector (pen vs. crayon — which texture a normal
+// color stroke uses); `eraser` and `magic` are mutually exclusive MODIFIERS on
+// top of it, and both override the base while active. So a normal stroke is
+// crayon only when `crayon` is true and neither `eraser` nor `magic` is.
 export const toolState = $state({
+  crayon: false,
   eraser: false,
   magic: false,
 });
@@ -17,6 +20,28 @@ export function selectEraser() {
 }
 
 export function selectPen() {
+  toolState.eraser = false;
+  toolState.magic = false;
+  toolState.crayon = false;
+}
+
+export function selectCrayon() {
+  toolState.crayon = true;
+  toolState.eraser = false;
+  toolState.magic = false;
+}
+
+// Flip between the crayon and the plain pen, leaving the eraser/magic modifiers
+// off (picking a base brush is also leaving those tools).
+export function toggleCrayon() {
+  if (toolState.crayon) selectPen();
+  else selectCrayon();
+}
+
+// Leaving the eraser/magic modifiers (e.g. when the child picks a colour to
+// resume drawing) returns to the current BASE brush — pen OR crayon — instead of
+// always forcing the pen. So changing colours never kicks a child out of crayon.
+export function resumeBaseBrush() {
   toolState.eraser = false;
   toolState.magic = false;
 }

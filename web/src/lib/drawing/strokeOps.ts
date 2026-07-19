@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { crayonPatternFor } from './crayonTexture';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -16,6 +17,13 @@ import { sheetPatternFor } from './magicBrush';
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
+// `crayon`, when true, lays the op's colour down through the paper-tooth pattern
+// (crayonTexture.ts) instead of as a flat fill: a waxy grained body that builds
+// up (fills the tooth, same hue) where same-colour strokes overlap. Mutually
+// exclusive with `erase`/`magic`. A crayon path op is kept VERBATIM through
+// commit — never simplified (commandSimplify.ts) — because its semi-transparent
+// tooth composites per op, so replay must re-stroke the exact same op boundaries
+// to stay bit-identical to the live render (ADR-0033).
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -25,6 +33,7 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
     }
   | {
       kind: 'path';
@@ -43,6 +52,7 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
     }
   | { kind: 'clear' };
 
@@ -114,6 +124,16 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
+    return;
+  }
+  // Crayon: lay the colour down through the paper-tooth pattern with source-over,
+  // so overlapping same-colour strokes accumulate alpha (grain fills in, hue is
+  // unchanged — no multiply darkening). Falls back to a flat fill only if the
+  // pattern can't be built (createPattern returned null on a zero-size target).
+  if (op.crayon && !op.erase) {
+    const pattern = crayonPatternFor(target, op.color);
+    target.globalCompositeOperation = 'source-over';
+    paintOpShape(target, op, pattern ?? op.color);
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';

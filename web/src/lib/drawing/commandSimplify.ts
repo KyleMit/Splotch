@@ -119,7 +119,8 @@ function pathStyleMatches(a: PathOp, b: PathOp): boolean {
     a.color === b.color &&
     a.lineWidth === b.lineWidth &&
     a.erase === b.erase &&
-    !!a.magic === !!b.magic
+    !!a.magic === !!b.magic &&
+    !!a.crayon === !!b.crayon
   );
 }
 
@@ -165,6 +166,12 @@ export function splitIntoContinuousRuns(ops: PathOp[]): PathOp[][] {
 // run's style to each returned span, and track the lifetime raw/kept counters.
 function reducePathRun(run: PathOp[]): PathOp[] {
   const first = run[0];
+  // Crayon ops are kept VERBATIM: the semi-transparent tooth composites per op,
+  // so a reduced run (different op boundaries) would deposit grain differently
+  // than the live render — replay must re-stroke the exact same ops to stay
+  // bit-identical (strokeOps.ts). Long crayon strokes are instead bounded on
+  // replay by the ADR-0035 keyframe safety net.
+  if (first.crayon) return run;
   const opts = { epsilon: epsilonFor(first.lineWidth), cornerCos, reduce };
   const { spans, rawCount, keptCount } =
     mode === 'samples'

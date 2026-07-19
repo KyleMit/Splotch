@@ -4,8 +4,11 @@ import {
   selectPen,
   selectEraser,
   selectMagic,
+  selectCrayon,
   toggleEraser,
   toggleMagic,
+  toggleCrayon,
+  resumeBaseBrush,
   resetToolAfterClear,
 } from './tool.svelte';
 
@@ -62,6 +65,37 @@ describe('tool state', () => {
     selectPen();
     expect(toolState.magic).toBe(false);
     expect(toolState.eraser).toBe(false);
+  });
+
+  it('the crayon is a base brush, mutually exclusive with eraser/magic', () => {
+    selectCrayon();
+    expect(toolState.crayon).toBe(true);
+    expect(toolState.eraser).toBe(false);
+    expect(toolState.magic).toBe(false);
+
+    selectEraser();
+    expect(toolState.crayon).toBe(true); // base brush is remembered under the eraser
+    expect(toolState.eraser).toBe(true);
+
+    selectPen();
+    expect(toolState.crayon).toBe(false);
+  });
+
+  it('toggleCrayon flips between the crayon and the pen', () => {
+    expect(toolState.crayon).toBe(false);
+    toggleCrayon();
+    expect(toolState.crayon).toBe(true);
+    toggleCrayon();
+    expect(toolState.crayon).toBe(false);
+  });
+
+  it('resumeBaseBrush leaves eraser/magic but keeps the crayon base brush', () => {
+    selectCrayon();
+    selectEraser();
+    resumeBaseBrush();
+    expect(toolState.eraser).toBe(false);
+    expect(toolState.magic).toBe(false);
+    expect(toolState.crayon).toBe(true); // a colour pick doesn't kick you out of crayon
   });
 
   it('resetToolAfterClear switches back to the pen when erasing', () => {
