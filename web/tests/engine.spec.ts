@@ -1488,6 +1488,30 @@ test('crossing crayon colours mix a little — yellow over blue picks up green',
   expect(r.mixed).toBeGreaterThan(r.wax * 0.3);
 });
 
+test('colorMix 0 restores the direct opaque pipeline (the A/B escape hatch)', async ({ page }) => {
+  // With the mix disabled the crayon paints the canvas directly — fully opaque
+  // wax, no pass buffer, no stamp — byte-for-byte the pre-mixing pipeline.
+  const opaque = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const ymid = Math.round(cv.height / 2);
+    const p: { x: number; y: number }[] = [];
+    for (let i = 0; i <= 40; i++) p.push({ x: 20 + ((cv.width - 40) * i) / 40, y: ymid });
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setCrayonParams({ colorMix: 0 });
+    E.setColor('#e23b36');
+    E.setStrokeWidth(24);
+    E.strokeSync(p, 'pen');
+    const d = g.getImageData(20, ymid - 10, cv.width - 40, 20).data;
+    let full = 0;
+    for (let i = 3; i < d.length; i += 4) if (d[i] === 255) full++;
+    return full;
+  });
+  expect(opaque).toBeGreaterThan(500);
+});
+
 test('scribbling back and forth in ONE gesture builds up like separate strokes', async ({
   page,
 }) => {

@@ -326,6 +326,13 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   if (op.crayon && !op.erase) {
+    // Zero mix = the pre-mixing pipeline exactly: paint the target directly
+    // (opaque wax, no buffer, no stamp) — the dev harness's A/B baseline and a
+    // cheap escape hatch. Flushes become no-ops on a clean buffer.
+    if (getCrayonMix() === 0) {
+      paintCrayon(target, op);
+      return;
+    }
     const buf = crayonBufferFor(target);
     let matrix: DOMMatrix | null = null;
     if (typeof target.getTransform === 'function') {

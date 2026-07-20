@@ -198,6 +198,15 @@ ships as the `CRAYON_DEFAULTS`. Production never calls the setter.
   flip binary-tooth texels. A hairpin gentler than the split thresholds deposits once (no split) —
   sharp reversals and true re-entries, the toddler cases, split correctly. Dwelling with a wiggling
   finger slowly darkens the tip area — physically plausible, bounded per split.
+* **−** The mix stamps make a rebuild's raster work synchronous: each pass's `drawImage` is a canvas
+  read-back that forces the just-painted strokes to rasterize on the spot (pre-mixing, replay
+  strokes queued and rasterized off-thread after the undo call returned). Undo — a discrete tap, not
+  the drawing hot path — pays it: a crayon-heavy 20-command history rebuilds in ~0.3–0.5 s under the
+  software-rendered 4× profile harness (which exaggerates canvas blits; a real GPU composites them
+  far cheaper). Stamps are bounded to each pass's bbox, `engine.draw` stays at ~0.9 ms avg, and
+  `colorMix: 0` is a dev-sweepable escape hatch back to the direct opaque pipeline. A known
+  follow-up if devices show sluggish undo: a rolling one-undo-back snapshot to make the first (most
+  common) undo a single blit.
 * **−** Not yet exposed as a kid-facing Actions Panel tool. The brush is fully wired through the
   engine (`setCrayonMode`) and selectable/A-B-able via the dev harness; adding a user-facing button
   is a deliberate follow-up (it needs an illustrated crayon icon matching the existing icon set,
