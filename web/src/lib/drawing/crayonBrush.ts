@@ -92,12 +92,14 @@ export interface CrayonOptions {
   // lighter — the subtle waxy mottling of a real fill. RGB only; the alpha
   // stays binary so undo/replay stability is untouched.
   shadeVariation: number;
-  // How much a new deposition pass lets the ink UNDER it show through: each
-  // pass is buffered at full opacity and stamped onto the canvas at
-  // (1 - colorMix), so a covered pixel becomes (1-k)·crayon + k·under — yellow
-  // over blue picks up a little green, while same-colour overlap is exactly
-  // hue-neutral (mix(c,c)=c) and virgin paper gets near-opaque wax. Low, not
-  // zero: real crayons barely mix. See strokeOps' pass buffer.
+  // How strongly the ink UNDER a new deposition pass glazes through it. Each
+  // pass is buffered at full opacity and stamped as a SUBTRACTIVE glaze —
+  // out = crayon·(1-m + m·under) — because pigments mix by filtering light,
+  // not by averaging rgb (an rgb lerp of blue over yellow goes grey; the
+  // multiply glaze goes green). Virgin paper is untouched by the glaze (the
+  // wax lands fully opaque and exact), and same-colour overdraw deepens only
+  // a few percent, converging — never compounding into mud. Low, not zero:
+  // real crayons barely mix. See strokeOps' pass buffer.
   colorMix: number;
   // The density passes, widest first.
   passes: CrayonPass[];
@@ -130,7 +132,7 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   bodyVariation: 0.2,
   bodyVariationCell: 110,
   shadeVariation: 0.08,
-  colorMix: 0.15,
+  colorMix: 0.2,
   passes: [
     { widthScale: 1.0, coverage: 0.45 },
     { widthScale: 0.68, coverage: 0.63 },
@@ -253,7 +255,7 @@ export function getCrayonPasses(): CrayonPass[] {
   return opts.passes.map((p) => ({ ...p }));
 }
 
-// The stamp alpha for a deposition pass: 1 - colorMix (see CrayonOptions).
+// The glaze strength for a deposition pass's stamp (see CrayonOptions).
 export function getCrayonMix(): number {
   return Math.min(0.9, Math.max(0, opts.colorMix));
 }

@@ -97,18 +97,26 @@ let magicActive = false;
 let crayonActive = false;
 let lastColorChangeTime = 0;
 
-// The live crayon pass overlay: an engine-owned canvas layered over the main
-// one, where the OPEN deposition pass renders at full opacity. Its CSS opacity
-// is (1 - colorMix), so what the finger sees composited live is pixel-for-pixel
-// what the pass's 'crayonFlush' stamp will bake into the main canvas at close —
-// the pass mixes slightly with the ink under it (see strokeOps' pass buffer),
-// with no visible snap. pointer-events: none, so input still lands on the
-// canvas beneath.
+// The live crayon pass overlays: two engine-owned canvases layered over the
+// main one, both holding the OPEN deposition pass at full opacity. The bottom
+// layer composites with mix-blend-mode: multiply and the top with CSS opacity
+// (1 - colorMix), so the browser's compositing of (multiply, then lerp) shows
+// pixel-for-pixel the two-blit subtractive glaze the pass's 'crayonFlush'
+// stamp will bake into the main canvas at close (see strokeOps' pass buffer)
+// — no visible snap. pointer-events: none, so input still lands on the canvas
+// beneath. (One nuance: over VIRGIN canvas the stamp glazes against nothing —
+// pure colour — while the multiply layer previews against the CSS paper
+// behind the canvas; on the near-white light paper that is the same thing, in
+// dark mode a fresh pass previews a touch darker until it closes.)
 let crayonOverlay: HTMLCanvasElement | null = null;
 let crayonOverlayCtx: CanvasRenderingContext2D | null = null;
+let crayonOverlayTop: HTMLCanvasElement | null = null;
+let crayonOverlayTopCtx: CanvasRenderingContext2D | null = null;
 
 function syncCrayonOverlayMix() {
-  if (crayonOverlay) crayonOverlay.style.opacity = String(1 - getCrayonOptions().colorMix);
+  if (crayonOverlayTop) {
+    crayonOverlayTop.style.opacity = String(1 - getCrayonOptions().colorMix);
+  }
 }
 
 // Close the current deposition pass: stamp the live buffer onto the canvas and
@@ -377,11 +385,15 @@ function resizeCanvas() {
   canvas.height = Math.round(rect.height * renderScale);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  if (crayonOverlay && crayonOverlayCtx) {
-    crayonOverlay.width = canvas.width;
-    crayonOverlay.height = canvas.height;
-    crayonOverlayCtx.lineCap = 'round';
-    crayonOverlayCtx.lineJoin = 'round';
+  for (const [el, g] of [
+    [crayonOverlay, crayonOverlayCtx],
+    [crayonOverlayTop, crayonOverlayTopCtx],
+  ] as const) {
+    if (!el || !g) continue;
+    el.width = canvas.width;
+    el.height = canvas.height;
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
   }
   applyPaperView(lockPaper);
 
@@ -1048,19 +1060,26 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   // ADR-0051.
   ctx = canvas.getContext('2d')!;
 
-  // The live crayon pass overlay (see the crayonOverlay notes above). Absolute
-  // inset-0 inside the canvas's positioned container tracks the canvas box —
-  // #drawingCanvas fills that container — and the paper-view transform lives in
-  // the ctx (mirrored onto the buffer per op), never in CSS, so no transform
-  // mirroring is needed here.
+  // The live crayon pass overlays (see the crayonOverlay notes above).
+  // Absolute inset-0 inside the canvas's positioned container tracks the
+  // canvas box — #drawingCanvas fills that container — and the paper-view
+  // transform lives in the ctx (mirrored onto the buffers per op), never in
+  // CSS, so no transform mirroring is needed here.
   crayonOverlay?.remove();
+  crayonOverlayTop?.remove();
+  const overlayCss =
+    'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;';
   crayonOverlay = document.createElement('canvas');
   crayonOverlay.setAttribute('aria-hidden', 'true');
-  crayonOverlay.style.cssText =
-    'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;';
+  crayonOverlay.style.cssText = overlayCss + 'mix-blend-mode:multiply;';
+  crayonOverlayTop = document.createElement('canvas');
+  crayonOverlayTop.setAttribute('aria-hidden', 'true');
+  crayonOverlayTop.style.cssText = overlayCss;
   canvas.insertAdjacentElement('afterend', crayonOverlay);
+  crayonOverlay.insertAdjacentElement('afterend', crayonOverlayTop);
   crayonOverlayCtx = crayonOverlay.getContext('2d')!;
-  setLiveCrayonBuffer(ctx, crayonOverlayCtx);
+  crayonOverlayTopCtx = crayonOverlayTop.getContext('2d')!;
+  setLiveCrayonBuffer(ctx, crayonOverlayCtx, crayonOverlayTopCtx);
   syncCrayonOverlayMix();
 
   // The magic brush's color sheet lives in paper coordinates (like every op) and
@@ -1160,6 +1179,9 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
       crayonOverlay?.remove();
       crayonOverlay = null;
       crayonOverlayCtx = null;
+      crayonOverlayTop?.remove();
+      crayonOverlayTop = null;
+      crayonOverlayTopCtx = null;
     },
   };
 }

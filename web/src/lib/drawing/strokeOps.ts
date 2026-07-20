@@ -24,11 +24,12 @@ import { crayonPatternFor, getCrayonPasses, getCrayonMix } from './crayonBrush';
 // deterministic; every op in one pass shares it.
 // Crayon ops do not paint the target directly: they accumulate on a per-target
 // PASS BUFFER at full opacity, and a 'crayonFlush' op stamps the buffer onto
-// the target at (1 - colorMix) — that single stamp is what lets a new pass mix
-// slightly with the ink under it (yellow over blue → a little green) without
-// the pass ever mixing with its own overlapping per-frame ops. The engine
-// records a flush at every pass close (mid-stroke split, pointer lift, resume
-// jump), so replay stamps at exactly the live positions in the op order.
+// the target as a subtractive glaze (see the pass-buffer notes below) — that
+// single stamp is what lets a new pass mix slightly with the ink under it
+// (blue over yellow → green) without the pass ever mixing with its own
+// overlapping per-frame ops. The engine records a flush at every pass close
+// (mid-stroke split, pointer lift, resume jump), so replay stamps at exactly
+// the live positions in the op order.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -131,22 +132,32 @@ function paintCrayon(
 //
 // A deposition pass accumulates on a buffer at FULL opacity (overlapping
 // per-frame ops stay idempotent there — binary tooth, same rgb), then one
-// 'crayonFlush' stamps the whole buffer onto the target at (1 - colorMix).
-// Source-over algebra makes the stamp do exactly the physical thing per pixel:
-// over blank paper out_alpha = 1-k (near-opaque pure wax, the paper tinting
-// through slightly); over existing ink out = (1-k)·crayon + k·under, at full
-// opacity — the crayon-mixing the pass buffer exists for. Mixing ONCE per pass
-// is the crux: any per-op mix would compound across the dozens of overlapping
-// per-frame ops and cancel itself toward pure crayon colour in the interior.
+// 'crayonFlush' stamps the whole buffer onto the target as a SUBTRACTIVE
+// glaze, in two blits with no readback:
+//
+//   1. 'multiply', alpha 1     → covered ink becomes S×D; blank paper gets S
+//   2. 'source-over', alpha 1-m → out = (1-m)·S + m·(step 1)
+//
+// Net per covered pixel: out = S·(1-m + m·D) — the crayon colour filtered by
+// the ink beneath, which is how pigments actually mix (an rgb lerp of blue
+// over yellow goes grey; the multiply glaze goes green). Over blank paper the
+// two steps collapse to exactly S: fully opaque, exact-colour wax. Same-colour
+// overdraw deepens a few percent and CONVERGES (each pass re-lays S glazed by
+// the result, a contraction toward S·(1-m)/(1-m·S/255)) — never compounding
+// into mud. Glazing ONCE per pass is the crux: any per-op mix would compound
+// across the dozens of overlapping per-frame ops and cancel itself toward pure
+// crayon colour in the interior.
 //
 // One buffer per target context. For replay surfaces (baseline, keyframes,
 // exports) it is an offscreen canvas allocated on demand (WeakMap — GC'd with
-// its target). For the LIVE canvas the engine registers its overlay element's
-// context as the buffer, so the open pass is visible under the finger: the
-// overlay's CSS opacity is (1 - colorMix), which composites to the same pixels
-// the stamp will produce — no snap at pass close.
+// its target). For the LIVE canvas the engine registers its overlay elements
+// as the buffer: ops paint into BOTH a multiply-blended bottom layer and a
+// (1-m)-opacity top layer (the `mirror`), whose CSS compositing reproduces the
+// two-blit stamp exactly — the open pass previews its final glazed pixels with
+// no snap at pass close.
 interface CrayonPassBuffer {
   ctx: CanvasRenderingContext2D;
+  mirror: CanvasRenderingContext2D | null;
   dirty: boolean;
   // Device-px bounding box of the open pass's ink, so the stamp and the
   // post-stamp clear touch only the pass-sized rect. Stamping the full canvas
@@ -160,14 +171,16 @@ const bufferByTarget = new WeakMap<CanvasRenderingContext2D, CrayonPassBuffer>()
 let liveTarget: CanvasRenderingContext2D | null = null;
 let liveBuffer: CrayonPassBuffer | null = null;
 
-// The engine points the live canvas's buffer at its overlay canvas (null to
-// unregister on teardown). The overlay is engine-sized alongside the canvas.
+// The engine points the live canvas's buffer at its overlay canvases (null to
+// unregister on teardown). The overlays are engine-sized alongside the canvas;
+// `mirror` is the top preview layer, painted identically per op.
 export function setLiveCrayonBuffer(
   target: CanvasRenderingContext2D | null,
-  buffer: CanvasRenderingContext2D | null
+  buffer: CanvasRenderingContext2D | null,
+  mirror: CanvasRenderingContext2D | null = null
 ) {
   liveTarget = buffer ? target : null;
-  liveBuffer = buffer ? { ctx: buffer, dirty: false, bounds: null } : null;
+  liveBuffer = buffer ? { ctx: buffer, mirror, dirty: false, bounds: null } : null;
 }
 
 function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
@@ -182,7 +195,7 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
     const g = c.getContext('2d')!;
     g.lineCap = 'round';
     g.lineJoin = 'round';
-    buf = { ctx: g, dirty: false, bounds: null };
+    buf = { ctx: g, mirror: null, dirty: false, bounds: null };
     bufferByTarget.set(target, buf);
   } else if (buf.ctx.canvas.width !== w || buf.ctx.canvas.height !== h) {
     buf.ctx.canvas.width = w;
@@ -249,19 +262,23 @@ function unionCrayonBounds(
 function clearCrayonBounds(buf: CrayonPassBuffer) {
   const b = buf.bounds;
   if (b) {
-    buf.ctx.save();
-    buf.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    buf.ctx.clearRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
-    buf.ctx.restore();
+    for (const g of [buf.ctx, buf.mirror]) {
+      if (!g) continue;
+      g.save();
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.clearRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+      g.restore();
+    }
   }
   buf.bounds = null;
   buf.dirty = false;
 }
 
-// Stamp the target's open pass (if any) at (1 - colorMix) and clear the buffer
-// — both restricted to the pass's device-px bounds. Buffer and target share
-// backing dimensions, and ops were painted into the buffer through the target's
-// own transform, so the blit is a 1:1 rect copy in device space.
+// Stamp the target's open pass (if any) as the two-blit subtractive glaze (see
+// the pass-buffer notes above) and clear the buffer — all restricted to the
+// pass's device-px bounds. Buffer and target share backing dimensions, and ops
+// were painted into the buffer through the target's own transform, so the
+// blits are 1:1 rect copies in device space.
 export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
   const buf = existingBufferFor(target);
   if (!buf || !buf.dirty) return;
@@ -271,6 +288,9 @@ export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
     const h = b.y1 - b.y0;
     target.save();
     target.setTransform(1, 0, 0, 1, 0, 0);
+    target.globalCompositeOperation = 'multiply';
+    target.globalAlpha = 1;
+    target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
     target.globalCompositeOperation = 'source-over';
     target.globalAlpha = 1 - getCrayonMix();
     target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
@@ -338,8 +358,10 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     if (typeof target.getTransform === 'function') {
       matrix = target.getTransform();
       buf.ctx.setTransform(matrix);
+      buf.mirror?.setTransform(matrix);
     }
     paintCrayon(buf.ctx, op);
+    if (buf.mirror) paintCrayon(buf.mirror, op);
     buf.dirty = true;
     if (op.kind === 'dot') {
       unionCrayonBounds(buf, matrix, op.x, op.y, op.x, op.y, op.radius + 2);

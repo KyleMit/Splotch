@@ -1378,12 +1378,15 @@ test('a second same-colour crayon pass builds up where it is drawn, at a constan
   expect(r.leftB.cov).toBeGreaterThan(r.leftA.cov + 0.03);
   // Live/gradual, not a global snap: the untouched (right) band is unchanged.
   expect(Math.abs(r.rightB.cov - r.rightA.cov)).toBeLessThan(0.02);
-  // No darken/muddy: the mean opaque hue barely moves. The deliberate shade
-  // wobble (shadeShift) lets a band's mean drift a few levels between passes —
-  // its slow term doesn't average out over a band — but a multiply/translucency
-  // regression darkens every channel by tens of levels, far past this bound.
+  // No runaway darken/muddy: same-colour overdraw deepens only slightly. Two
+  // deliberate effects move a band's mean a few levels between passes — the
+  // shade wobble's slow term, and the colour-mix glaze (a same-colour pass
+  // deepens covered texels by ~m·c·(1-c/255), CONVERGING toward a fixed point
+  // a few percent under the colour, never compounding). An uncontrolled
+  // multiply or translucency regression darkens by tens of levels per pass,
+  // far past this bound.
   for (let i = 0; i < 3; i++) {
-    expect(Math.abs((r.leftB.rgb as number[])[i] - (r.leftA.rgb as number[])[i])).toBeLessThan(8);
+    expect(Math.abs((r.leftB.rgb as number[])[i] - (r.leftA.rgb as number[])[i])).toBeLessThan(12);
   }
 });
 
@@ -1392,11 +1395,10 @@ test('the crayon wax body carries a subtle shade variation, not one flat colour'
 }) => {
   // The fill's rgb wobbles a few percent around the exact crayon colour
   // (shadeShift) — enough that the body reads as mottled wax, never enough to
-  // read as a different colour. Measured over fully covered body texels only —
-  // a single stamped pass peaks at alpha (1-colorMix)·255 ≈ 217, so the ≥200
-  // filter keeps the stroke's anti-aliased silhouette from faking variation
-  // (unpremultiply rounding at that alpha adds ~±2 levels of noise, well
-  // inside the bounds below).
+  // read as a different colour. A pass over blank paper stamps fully opaque
+  // and glaze-free (the multiply glaze only engages over existing ink), so
+  // fully covered body texels are exact; the ≥200 alpha filter keeps the
+  // stroke's anti-aliased silhouette from faking variation.
   const r = await page.evaluate(() => {
     const E = window.__engine;
     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
@@ -1441,11 +1443,14 @@ test('the crayon wax body carries a subtle shade variation, not one flat colour'
   expect(r.meanDev).toBeLessThanOrEqual(12);
 });
 
-test('crossing crayon colours mix a little — yellow over blue picks up green', async ({ page }) => {
-  // Each deposition pass stamps at (1 - colorMix), so where yellow wax covers
-  // blue wax the pixel becomes (1-k)·yellow + k·blue — a slightly green-pulled
-  // yellow, like real crayons barely mixing. The mix must be present but LOW:
-  // most of the crossing still reads as yellow, not green.
+test('crossing crayon colours mix subtractively — blue over yellow goes green', async ({
+  page,
+}) => {
+  // Each pass stamps a multiply glaze: out = S·(1-m + m·D). Subtractive is the
+  // point — an rgb lerp of blue over yellow goes GREY, while the glaze filters
+  // the blue wax's blue channel down against the yellow beneath, pulling it
+  // toward green like real pigment. The mix must be present but LOW: most of
+  // the crossing still reads as blue, just greener.
   const r = await page.evaluate(() => {
     const E = window.__engine;
     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
@@ -1461,30 +1466,29 @@ test('crossing crayon colours mix a little — yellow over blue picks up green',
     E.clearCanvas();
     E.setCrayonMode(true);
     E.setStrokeWidth(36);
-    E.setColor('#2c5faa'); // blue underlay (44, 95, 170)
+    E.setColor('#f7d64b'); // yellow underlay (247, 214, 75)
     E.strokeSync(seg(cx - 150, cy, cx + 150, cy), 'pen');
-    E.setColor('#f7d64b'); // yellow over it (247, 214, 75)
+    E.setColor('#62A2E9'); // blue over it (98, 162, 233)
     E.strokeSync(seg(cx, cy - 120, cx, cy + 120), 'pen');
-    // Sample the crossing square, counting yellow-family texels (the top
-    // stroke's wax) and how far their blue channel was pulled up by the blue
-    // beneath: pure yellow b=75; the 0.15 mix over blue-covered texels lands
-    // b ≈ 0.85·75 + 0.15·170 ≈ 89.
+    // Sample the crossing square. Blue wax glazed by the yellow beneath lands
+    // b ≈ 233·(0.8 + 0.2·75/255) ≈ 200 (vs 233 pure over blank) — the blue
+    // channel filtered down is exactly the green pull.
     const d = g.getImageData(cx - 12, cy - 12, 24, 24).data;
     let wax = 0;
     let mixed = 0;
     for (let i = 0; i < d.length; i += 4) {
       if (d[i + 3] < 200) continue;
-      const [rr, gg, bb] = [d[i], d[i + 1], d[i + 2]];
-      const yellowFamily = rr > 180 && gg > 150 && bb < 130;
-      if (!yellowFamily) continue;
+      const [rr, , bb] = [d[i], d[i + 1], d[i + 2]];
+      const blueFamily = rr < 150 && bb > 150;
+      if (!blueFamily) continue;
       wax++;
-      if (bb >= 82 && bb <= 110) mixed++;
+      if (bb >= 185 && bb <= 215) mixed++;
     }
     return { wax, mixed };
   });
   expect(r.wax).toBeGreaterThan(100);
-  // The blue beneath genuinely pulls the yellow wax — a zero-mix regression
-  // leaves every yellow texel at b=75.
+  // The yellow beneath genuinely filters the blue wax — a zero-mix regression
+  // leaves every blue texel at b ≈ 233, far above the mixed window.
   expect(r.mixed).toBeGreaterThan(r.wax * 0.3);
 });
 
