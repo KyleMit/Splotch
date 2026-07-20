@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   CRAYON_TILE_CSS_PX,
+  CRAYON_BANDS,
   CrayonPassTracker,
   crayonAlphaField,
+  crayonBandDepositAlpha,
   crayonDepositAlpha,
   crayonToothHeight,
   parseCrayonColor,
@@ -83,6 +85,26 @@ describe('crayon deposit transfer', () => {
     expect(mean * (1 - mean)).toBeGreaterThan(0.1);
     // And the field must not already be near-solid — the #417 failure mode.
     expect(mean).toBeLessThan(0.85);
+  });
+
+  it('keeps the current body deposit while thinning the outer edge', () => {
+    expect(CRAYON_BANDS).toEqual([
+      { band: 'edge', widthScale: 1 },
+      { band: 'core', widthScale: 0.68 },
+    ]);
+
+    for (let height = 0; height <= 1.001; height += 0.01) {
+      const deposit = crayonDepositAlpha(height);
+      const edge = crayonBandDepositAlpha(height, 'edge');
+      const core = crayonBandDepositAlpha(height, 'core');
+      expect(edge).toBeGreaterThan(0);
+      expect(edge).toBeLessThan(deposit);
+      expect(edge + core * (1 - edge)).toBeCloseTo(deposit, 10);
+    }
+
+    expect(crayonBandDepositAlpha(1, 'edge')).toBeGreaterThan(
+      crayonBandDepositAlpha(0, 'edge') * 50
+    );
   });
 });
 

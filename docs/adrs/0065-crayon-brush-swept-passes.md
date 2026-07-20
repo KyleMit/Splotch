@@ -31,16 +31,16 @@ heuristics, multiply darkening, and distance-driven density were all rejected on
 
 ## Decision
 
-### Deposition: one union-stroke per pass
+### Deposition: one union-stroke per band and pass
 
 A crayon gesture is recorded as a sequence of **passes**. Each pass is a raw polyline stored in a
-new `crayon` op, rendered by **a single Canvas `stroke()` call** (midpoint-quadratic smoothed, round
-caps/joins, the tooth pattern as `strokeStyle`). Canvas path-tracing semantics make one stroke call
-deposit its paint **exactly once over the union of the swept area** — overlapping segments inside
-one call cannot darken. That single primitive eliminates the frame-boundary problem by construction:
-pointer-frame batching, event rate, and coalescing cannot change the deposit, there are no per-frame
-caps to stack, and the only caps are the gesture's real start and end. A single-point pass renders
-as the bare tip disk (a tap).
+new `crayon` op, rendered as two nested Canvas `stroke()` calls (midpoint-quadratic smoothed, round
+caps/joins, paper-tooth patterns as `strokeStyle`): a sparse full-width edge band and a narrower
+core band. Canvas path-tracing semantics make each band deposit its paint **exactly once over the
+union of the swept area** — overlapping segments inside one call cannot darken. That primitive
+eliminates the frame-boundary problem by construction: pointer-frame batching, event rate, and
+coalescing cannot change the deposit, there are no per-frame caps to stack, and the only caps are
+the gesture's real start and end. A single-point pass renders as the same two nested disks (a tap).
 
 **Buildup is the pass boundary.** `CrayonPassTracker` (pure, unit-tested) splits the gesture where
 the physical crayon re-covers its own paper: a sharp reversal (direction anchors ≥ ~⅓ stroke-width
@@ -57,16 +57,20 @@ drift, a light domain warp — hashed from constants: no RNG, no per-stroke stat
 transfer (contrast stretch → smoothstep polarization → gamma) maps height to alpha between a nonzero
 valley (≈0.05 — white flecks on the first pass that still color in under enough overdraw; no
 permanent pits) and a ≈0.96 peak. Tiles are tinted per color (exact RGB everywhere) and served as
-origin-anchored repeating `CanvasPattern`s cached per color and per target context — fixed paper
-phase, so grain can never move between surfaces or sessions. Tile generation is warmed off the hot
-path when the crayon or its color is selected (`scheduleIdle`).
+origin-anchored repeating `CanvasPattern`s cached per color, band, and target context — fixed paper
+phase, so grain can never move between surfaces or sessions. The outer band's transfer strongly
+favors raised tooth, producing a light broken rim. The inner band's alpha compensates for that first
+deposit (`core = (original − edge) / (1 − edge)`), so their source-over result is exactly the
+original transfer through the center. The established body texture and buildup headroom therefore
+stay unchanged while only the silhouette becomes less mechanically round. Tile generation is warmed
+off the hot path when the crayon or its color is selected (`scheduleIdle`).
 
 ### Live rendering: a presentation-only overlay
 
 An open pass grows every frame, so it cannot be painted incrementally onto the main canvas. The
 engine mounts a pointer-events-none **overlay canvas** directly above the drawing canvas and
-re-strokes the open pass(es) there each pointer frame (clear + one stroke per active pointer). A
-pass is stamped onto the main canvas through the shared `renderOp` **exactly once, at close**
+re-strokes the open pass(es) there each pointer frame (clear + one two-band op per active pointer).
+A pass is stamped onto the main canvas through the shared `renderOp` **exactly once, at close**
 (split, resume, or lift), and recorded at the same moment. Replay therefore performs the identical
 stamps in the identical order — **live pixels and undo/resize/keyframe/export rebuilds agree by
 construction**, which the E2E suite pins with full-canvas hash equality.

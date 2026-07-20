@@ -95,6 +95,29 @@ test('grain stays inside the swept stroke', async ({ page }) => {
   expect(bounds!.maxX).toBeLessThanOrEqual(258);
 });
 
+test('the outer edge is lighter and more broken than the crayon body', async ({ page }) => {
+  await stroke(page, linePoints(50, 150, 250, 150, 25));
+
+  const core = await meanAlpha(page, { x: 70, y: 148, w: 160, h: 4 });
+  const edge = await meanAlpha(page, { x: 70, y: 145, w: 160, h: 1 });
+  expect(edge).toBeGreaterThan(0);
+  expect(edge).toBeLessThan(core * 0.6);
+
+  const edgeRange = await page.evaluate(() => {
+    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const { data } = canvas.getContext('2d')!.getImageData(70, 145, 160, 1);
+    let min = 255;
+    let max = 0;
+    for (let i = 3; i < data.length; i += 4) {
+      min = Math.min(min, data[i]);
+      max = Math.max(max, data[i]);
+    }
+    return { min, max };
+  });
+  expect(edgeRange.min).toBeLessThan(10);
+  expect(edgeRange.max - edgeRange.min).toBeGreaterThan(80);
+});
+
 test('density is independent of pointer event rate — no frame-boundary seams', async ({ page }) => {
   // The same straight path sampled at 40 points vs 2 points is the same swept
   // pass (one union stroke either way), so the pixels are identical — the

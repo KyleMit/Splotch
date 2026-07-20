@@ -5,7 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
-import { crayonPatternFor, type CrayonPoint } from './crayonBrush';
+import { CRAYON_BANDS, crayonPatternFor, type CrayonPoint } from './crayonBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -65,36 +65,39 @@ export type StrokeOp =
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
 export type CrayonOp = Extract<StrokeOp, { kind: 'crayon' }>;
 
-// Stroke one crayon pass: the whole polyline in a single stroke() call, so the
-// deposit is the union of the swept strip — internal joins and pointer-frame
-// boundaries share geometry instead of stacking translucent caps. Midpoint
-// smoothing matches the live pen's curve family; a single-point pass (a tap,
-// or a split landing immediately) is the bare tip disk.
+// Stroke one crayon pass: the whole polyline in one stroke() call per nested
+// edge/core band, so each deposit is the union of its swept strip — internal
+// joins and pointer-frame boundaries share geometry instead of stacking
+// translucent caps. Midpoint smoothing matches the live pen's curve family; a
+// single-point pass (a tap, or a split landing immediately) is the nested tip
+// disks.
 function paintCrayonPass(target: CanvasRenderingContext2D, op: CrayonOp) {
-  const pattern = crayonPatternFor(target, op.color);
-  if (!pattern) return;
   const pts = op.points;
-  if (pts.length === 1) {
-    target.fillStyle = pattern;
+  for (const { band, widthScale } of CRAYON_BANDS) {
+    const pattern = crayonPatternFor(target, op.color, band);
+    if (!pattern) continue;
+    if (pts.length === 1) {
+      target.fillStyle = pattern;
+      target.beginPath();
+      target.arc(pts[0].x, pts[0].y, (op.lineWidth * widthScale) / 2, 0, Math.PI * 2);
+      target.fill();
+      continue;
+    }
+    target.strokeStyle = pattern;
+    target.lineWidth = op.lineWidth * widthScale;
     target.beginPath();
-    target.arc(pts[0].x, pts[0].y, op.lineWidth / 2, 0, Math.PI * 2);
-    target.fill();
-    return;
+    target.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length - 1; i++) {
+      target.quadraticCurveTo(
+        pts[i].x,
+        pts[i].y,
+        (pts[i].x + pts[i + 1].x) / 2,
+        (pts[i].y + pts[i + 1].y) / 2
+      );
+    }
+    target.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+    target.stroke();
   }
-  target.strokeStyle = pattern;
-  target.lineWidth = op.lineWidth;
-  target.beginPath();
-  target.moveTo(pts[0].x, pts[0].y);
-  for (let i = 1; i < pts.length - 1; i++) {
-    target.quadraticCurveTo(
-      pts[i].x,
-      pts[i].y,
-      (pts[i].x + pts[i + 1].x) / 2,
-      (pts[i].y + pts[i + 1].y) / 2
-    );
-  }
-  target.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
-  target.stroke();
 }
 
 // One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is

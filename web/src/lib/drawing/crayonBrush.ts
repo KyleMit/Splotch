@@ -13,8 +13,8 @@
 // tooth never moves between live rendering and undo/resize/export replay.
 //
 // GEOMETRY. A crayon gesture is recorded as a sequence of PASSES — each one
-// polyline rendered by a single stroke() call. Canvas path-union semantics
-// deposit the tile exactly once over the pass's swept area, so pointer-frame
+// polyline rendered once per nested edge/core band. Canvas path-union semantics
+// deposit each band exactly once over the pass's swept area, so pointer-frame
 // boundaries can never double-deposit (no periodic cap circles, and density is
 // independent of pointer event rate). A new pass begins only where the
 // physical crayon genuinely covers the same paper again: a sharp reversal, or
@@ -36,6 +36,18 @@ const VALLEY_ALPHA = 0.05;
 const PEAK_ALPHA = 0.96;
 const CONTRAST = 2.7;
 const GAMMA = 0.48;
+
+export type CrayonBand = 'edge' | 'core';
+
+export const CRAYON_BANDS: readonly { band: CrayonBand; widthScale: number }[] = [
+  { band: 'edge', widthScale: 1 },
+  { band: 'core', widthScale: 0.68 },
+];
+
+const EDGE_MIN_DEPOSIT_FRACTION = 0.02;
+const EDGE_MAX_DEPOSIT_FRACTION = 0.82;
+const EDGE_TOOTH_FLOOR = 0.38;
+const EDGE_TOOTH_SPAN = 0.44;
 
 // Octaves of the height field, in lattice cells across one tile (cells must be
 // integers so the lattice wraps seamlessly). Feature size ≈ 256/cells CSS px;
@@ -116,23 +128,50 @@ export function crayonDepositAlpha(height: number): number {
   return VALLEY_ALPHA + (PEAK_ALPHA - VALLEY_ALPHA) * Math.pow(polarized, GAMMA);
 }
 
+export function crayonBandDepositAlpha(height: number, band: CrayonBand): number {
+  const deposit = crayonDepositAlpha(height);
+  const prominence = smoothstep(
+    Math.min(1, Math.max(0, (height - EDGE_TOOTH_FLOOR) / EDGE_TOOTH_SPAN))
+  );
+  const edgeFraction =
+    EDGE_MIN_DEPOSIT_FRACTION +
+    (EDGE_MAX_DEPOSIT_FRACTION - EDGE_MIN_DEPOSIT_FRACTION) * prominence;
+  const edgeDeposit = deposit * edgeFraction;
+  if (band === 'edge') return edgeDeposit;
+  return (deposit - edgeDeposit) / (1 - edgeDeposit);
+}
+
 // The alpha field is generated at device resolution (tile side × renderScale)
 // but SAMPLED in CSS px, so the tooth is the same visual size relative to the
 // stroke on every device — renderScale already scales the stroke widths.
-let alphaFieldCache: { renderScale: number; size: number; alpha: Uint8ClampedArray } | null = null;
+interface CrayonAlphaFields {
+  renderScale: number;
+  size: number;
+  alpha: Uint8ClampedArray;
+  edgeAlpha: Uint8ClampedArray;
+  coreAlpha: Uint8ClampedArray;
+}
+
+let alphaFieldCache: CrayonAlphaFields | null = null;
 
 export function crayonAlphaField(renderScale: number): { size: number; alpha: Uint8ClampedArray } {
   if (alphaFieldCache && alphaFieldCache.renderScale === renderScale) return alphaFieldCache;
   const size = Math.round(CRAYON_TILE_CSS_PX * renderScale);
   const alpha = new Uint8ClampedArray(size * size);
+  const edgeAlpha = new Uint8ClampedArray(size * size);
+  const coreAlpha = new Uint8ClampedArray(size * size);
   for (let py = 0; py < size; py++) {
     const v = py / renderScale;
     for (let px = 0; px < size; px++) {
       const u = px / renderScale;
-      alpha[py * size + px] = Math.round(crayonDepositAlpha(crayonToothHeight(u, v)) * 255);
+      const i = py * size + px;
+      const height = crayonToothHeight(u, v);
+      alpha[i] = Math.round(crayonDepositAlpha(height) * 255);
+      edgeAlpha[i] = Math.max(1, Math.round(crayonBandDepositAlpha(height, 'edge') * 255));
+      coreAlpha[i] = Math.round(crayonBandDepositAlpha(height, 'core') * 255);
     }
   }
-  alphaFieldCache = { renderScale, size, alpha };
+  alphaFieldCache = { renderScale, size, alpha, edgeAlpha, coreAlpha };
   return alphaFieldCache;
 }
 
@@ -171,16 +210,19 @@ export function setCrayonRenderScale(scale: number) {
   patternCache = new WeakMap();
 }
 
-// Tinted tiles per color: exact RGB everywhere, the shared alpha field as
-// coverage. Bounded — a child cycles through a handful of colors; evicting the
-// oldest just costs a rebuild if they return to it much later.
-const MAX_TILE_CACHE = 12;
+// Tinted tiles per color and band: exact RGB everywhere, the shared alpha
+// fields as coverage. Bounded — a child cycles through a handful of colors;
+// evicting the oldest just costs a rebuild if they return to it much later.
+const MAX_TILE_CACHE = 12 * CRAYON_BANDS.length;
 const tileCache = new Map<string, HTMLCanvasElement>();
 
-export function crayonTileFor(color: string): HTMLCanvasElement {
-  const cached = tileCache.get(color);
+export function crayonTileFor(color: string, band: CrayonBand): HTMLCanvasElement {
+  const key = `${color}@${band}`;
+  const cached = tileCache.get(key);
   if (cached) return cached;
-  const { size, alpha } = crayonAlphaField(crayonRenderScale);
+  crayonAlphaField(crayonRenderScale);
+  const { size, edgeAlpha, coreAlpha } = alphaFieldCache!;
+  const alpha = band === 'edge' ? edgeAlpha : coreAlpha;
   const { r, g, b } = resolveColor(color);
   const tile = document.createElement('canvas');
   tile.width = size;
@@ -200,11 +242,11 @@ export function crayonTileFor(color: string): HTMLCanvasElement {
     const oldest = tileCache.keys().next().value;
     if (oldest !== undefined) tileCache.delete(oldest);
   }
-  tileCache.set(color, tile);
+  tileCache.set(key, tile);
   return tile;
 }
 
-// Repeating pattern of the color's tile, cached per target context (the
+// Repeating pattern of the color + band's tile, cached per target context (the
 // visible ctx almost always; baseline/keyframe/export contexts on replay).
 // Patterns are anchored at the context origin — paper coordinate (0,0) — so
 // every surface samples identical grain for identical op coordinates.
@@ -212,17 +254,19 @@ let patternCache = new WeakMap<CanvasRenderingContext2D, Map<string, CanvasPatte
 
 export function crayonPatternFor(
   target: CanvasRenderingContext2D,
-  color: string
+  color: string,
+  band: CrayonBand
 ): CanvasPattern | null {
-  let byColor = patternCache.get(target);
-  if (!byColor) {
-    byColor = new Map();
-    patternCache.set(target, byColor);
+  let byKey = patternCache.get(target);
+  if (!byKey) {
+    byKey = new Map();
+    patternCache.set(target, byKey);
   }
-  const cached = byColor.get(color);
+  const key = `${color}@${band}`;
+  const cached = byKey.get(key);
   if (cached) return cached;
-  const pattern = target.createPattern(crayonTileFor(color), 'repeat');
-  if (pattern) byColor.set(color, pattern);
+  const pattern = target.createPattern(crayonTileFor(color, band), 'repeat');
+  if (pattern) byKey.set(key, pattern);
   return pattern;
 }
 
@@ -232,7 +276,9 @@ export function crayonPatternFor(
 // If a stroke lands before idle fires, crayonPatternFor builds synchronously —
 // a one-time cost, never repeated.
 export function warmCrayonTileWhenIdle(color: string) {
-  scheduleIdle(() => void crayonTileFor(color));
+  scheduleIdle(() => {
+    for (const { band } of CRAYON_BANDS) crayonTileFor(color, band);
+  });
 }
 
 // --- Swept-pass split tracking ----------------------------------------------
