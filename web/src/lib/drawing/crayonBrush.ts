@@ -50,6 +50,8 @@
 // like separate strokes do. Seeds are stored per op, so this is replay-safe by
 // the same mechanism as everything else.
 
+import { scheduleIdle } from '../idle';
+
 // A density pass: stroke the op at `widthScale` of its line width, filled with
 // tooth at `coverage` (fraction opaque). Passes are drawn widest-first so the
 // dense narrow core lands on top of the sparse full-width rim, giving the
@@ -339,6 +341,17 @@ function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
   g.putImageData(img, 0, 0);
   colorTileCache.set(key, c);
   return c;
+}
+
+// Build a colour's wax tiles off the pointer hot path — scheduled when the
+// crayon is selected or its colour changes, so the first stroke of a new colour
+// doesn't pay the per-pass tile build (a few ms under CPU throttle) inside a
+// draw. If a stroke lands before idle fires, colorTile builds synchronously —
+// a one-time cost, never repeated.
+export function warmCrayonTiles(color: string) {
+  scheduleIdle(() => {
+    for (let i = 0; i < opts.passes.length; i++) colorTile(color, i);
+  });
 }
 
 // Per-context, per-(colour,pass) repeating pattern. createPattern is bound to one

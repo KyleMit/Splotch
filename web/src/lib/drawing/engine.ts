@@ -46,6 +46,7 @@ import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
 import {
   setCrayonOptions,
   getCrayonOptions,
+  warmCrayonTiles,
   CrayonPassTracker,
   type CrayonOptions,
 } from './crayonBrush';
@@ -1101,6 +1102,9 @@ export function setColor(color: string) {
   if (color === currentColor) return;
   currentColor = color;
   lastColorChangeTime = Date.now();
+  // Warm the new colour's wax tiles while the finger is still on the swatch,
+  // so the first crayon draw never pays the tile build inside a frame.
+  if (crayonActive) warmCrayonTiles(color);
 }
 
 export function setStrokeWidth(widthPx: number) {
@@ -1126,6 +1130,7 @@ export function setMagicMode(active: boolean) {
 // at the UI level.
 export function setCrayonMode(active: boolean) {
   crayonActive = active;
+  if (active) warmCrayonTiles(currentColor);
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system
