@@ -21,6 +21,17 @@
 // the tip re-entering the strip it already laid down. Consecutive passes
 // composite source-over, so true backtracking and self-crossing build up live
 // under the finger.
+//
+// EDGES. A real crayon presses hardest down the middle of its strip; toward
+// the rim the wax only catches the tallest tooth bumps, so the edge breaks
+// into scattered flecks instead of a solid round outline. Each pass is
+// therefore stroked as concentric LAYERS of the same polyline (the nested
+// density passes of the #415 crayon experiment, adapted to swept passes): the
+// full-width fringe layers deposit sparse fleck alphas that only fire on the
+// high-coverage texels of the same paper field, and the narrow core layer's
+// transfer is solved per-texel so the layers' composite equals
+// crayonDepositAlpha exactly — the stroke interior (and its buildup headroom)
+// is unchanged; only the rim annuli break up.
 
 import { scheduleIdle } from '../idle';
 
@@ -108,31 +119,96 @@ export function crayonToothHeight(u: number, v: number): number {
   return sum / ampTotal;
 }
 
-// Height → deposited alpha, in [VALLEY_ALPHA, PEAK_ALPHA]. Exported for unit
-// tests (bounds, continuity, nonzero valley).
-export function crayonDepositAlpha(height: number): number {
+// Contrast-stretched, polarized tooth coverage in [0,1] — the shared
+// intermediate every layer transfer reads, so fringe flecks land exactly on
+// the texels the body reads as raised tooth.
+function toothCoverage(height: number): number {
   const stretched = Math.min(1, Math.max(0, (height - 0.5) * CONTRAST + 0.5));
-  const polarized = stretched * stretched * (3 - 2 * stretched);
-  return VALLEY_ALPHA + (PEAK_ALPHA - VALLEY_ALPHA) * Math.pow(polarized, GAMMA);
+  return stretched * stretched * (3 - 2 * stretched);
 }
 
-// The alpha field is generated at device resolution (tile side × renderScale)
-// but SAMPLED in CSS px, so the tooth is the same visual size relative to the
-// stroke on every device — renderScale already scales the stroke widths.
-let alphaFieldCache: { renderScale: number; size: number; alpha: Uint8ClampedArray } | null = null;
+// Height → TOTAL deposited alpha of one pass (all layers composited), in
+// [VALLEY_ALPHA, PEAK_ALPHA]. Exported for unit tests (bounds, continuity,
+// nonzero valley).
+export function crayonDepositAlpha(height: number): number {
+  return VALLEY_ALPHA + (PEAK_ALPHA - VALLEY_ALPHA) * Math.pow(toothCoverage(height), GAMMA);
+}
 
-export function crayonAlphaField(renderScale: number): { size: number; alpha: Uint8ClampedArray } {
+// --- Concentric deposition layers (edge artifacting) -------------------------
+//
+// Fringe layers deposit only where tooth coverage clears `start` (smoothstep
+// over `ramp`, capped at `peak`) — mostly-zero fields whose scattered flecks
+// are what the rim annuli show. Width fractions nest inside the nominal tip
+// width, so nothing lands outside the swept strip. Tuned so the outer annulus
+// reads as loose grains, the mid annulus as ragged falloff.
+interface CrayonFringeSpec {
+  widthFraction: number;
+  start: number;
+  ramp: number;
+  peak: number;
+}
+
+const FRINGE_SPECS: CrayonFringeSpec[] = [
+  { widthFraction: 1, start: 0.72, ramp: 0.28, peak: 0.85 },
+  { widthFraction: 0.84, start: 0.38, ramp: 0.34, peak: 0.62 },
+];
+const CORE_WIDTH_FRACTION = 0.64;
+
+// Stroke width multipliers per layer, outermost first; paintCrayonPass strokes
+// one polyline per entry.
+export const CRAYON_LAYER_WIDTH_FRACTIONS: readonly number[] = [
+  ...FRINGE_SPECS.map((s) => s.widthFraction),
+  CORE_WIDTH_FRACTION,
+];
+
+// Fringe layer alpha at a height — exported for unit tests (sparsity, bounds).
+export function crayonFringeAlpha(height: number, layer: number): number {
+  const spec = FRINGE_SPECS[layer];
+  const t = Math.min(1, Math.max(0, (toothCoverage(height) - spec.start) / spec.ramp));
+  return spec.peak * t * t * (3 - 2 * t);
+}
+
+// Per-layer alphas at a height, outermost first. The core (last) is solved so
+// the source-over composite of all layers reproduces crayonDepositAlpha:
+// 1 − Π(1−layerᵢ) = target. The fringe peaks are tuned to keep Π(1−fringeᵢ)
+// above 1 − PEAK_ALPHA everywhere, so the solve never clamps (unit-tested).
+export function crayonLayerAlphas(height: number): number[] {
+  const target = crayonDepositAlpha(height);
+  const alphas = FRINGE_SPECS.map((_, i) => crayonFringeAlpha(height, i));
+  let transparency = 1;
+  for (const a of alphas) transparency *= 1 - a;
+  alphas.push(Math.max(0, 1 - (1 - target) / transparency));
+  return alphas;
+}
+
+// The alpha fields (one per layer, outermost first) are generated at device
+// resolution (tile side × renderScale) but SAMPLED in CSS px, so the tooth is
+// the same visual size relative to the stroke on every device — renderScale
+// already scales the stroke widths.
+let alphaFieldCache: {
+  renderScale: number;
+  size: number;
+  layers: Uint8ClampedArray[];
+} | null = null;
+
+export function crayonAlphaField(renderScale: number): {
+  size: number;
+  layers: Uint8ClampedArray[];
+} {
   if (alphaFieldCache && alphaFieldCache.renderScale === renderScale) return alphaFieldCache;
   const size = Math.round(CRAYON_TILE_CSS_PX * renderScale);
-  const alpha = new Uint8ClampedArray(size * size);
+  const layers = CRAYON_LAYER_WIDTH_FRACTIONS.map(() => new Uint8ClampedArray(size * size));
   for (let py = 0; py < size; py++) {
     const v = py / renderScale;
     for (let px = 0; px < size; px++) {
       const u = px / renderScale;
-      alpha[py * size + px] = Math.round(crayonDepositAlpha(crayonToothHeight(u, v)) * 255);
+      const alphas = crayonLayerAlphas(crayonToothHeight(u, v));
+      for (let layer = 0; layer < alphas.length; layer++) {
+        layers[layer][py * size + px] = Math.round(alphas[layer] * 255);
+      }
     }
   }
-  alphaFieldCache = { renderScale, size, alpha };
+  alphaFieldCache = { renderScale, size, layers };
   return alphaFieldCache;
 }
 
@@ -171,49 +247,54 @@ export function setCrayonRenderScale(scale: number) {
   patternCache = new WeakMap();
 }
 
-// Tinted tiles per color: exact RGB everywhere, the shared alpha field as
-// coverage. Bounded — a child cycles through a handful of colors; evicting the
-// oldest just costs a rebuild if they return to it much later.
+// Tinted tiles per color (one per layer, outermost first): exact RGB
+// everywhere, the layer's alpha field as coverage. Bounded — a child cycles
+// through a handful of colors; evicting the oldest just costs a rebuild if
+// they return to it much later.
 const MAX_TILE_CACHE = 12;
-const tileCache = new Map<string, HTMLCanvasElement>();
+const tileCache = new Map<string, HTMLCanvasElement[]>();
 
-export function crayonTileFor(color: string): HTMLCanvasElement {
+export function crayonTilesFor(color: string): HTMLCanvasElement[] {
   const cached = tileCache.get(color);
   if (cached) return cached;
-  const { size, alpha } = crayonAlphaField(crayonRenderScale);
+  const { size, layers } = crayonAlphaField(crayonRenderScale);
   const { r, g, b } = resolveColor(color);
-  const tile = document.createElement('canvas');
-  tile.width = size;
-  tile.height = size;
-  const tileCtx = tile.getContext('2d')!;
-  const image = tileCtx.createImageData(size, size);
-  const data = image.data;
-  for (let i = 0; i < alpha.length; i++) {
-    const o = i * 4;
-    data[o] = r;
-    data[o + 1] = g;
-    data[o + 2] = b;
-    data[o + 3] = alpha[i];
-  }
-  tileCtx.putImageData(image, 0, 0);
+  const tiles = layers.map((alpha) => {
+    const tile = document.createElement('canvas');
+    tile.width = size;
+    tile.height = size;
+    const tileCtx = tile.getContext('2d')!;
+    const image = tileCtx.createImageData(size, size);
+    const data = image.data;
+    for (let i = 0; i < alpha.length; i++) {
+      const o = i * 4;
+      data[o] = r;
+      data[o + 1] = g;
+      data[o + 2] = b;
+      data[o + 3] = alpha[i];
+    }
+    tileCtx.putImageData(image, 0, 0);
+    return tile;
+  });
   if (tileCache.size >= MAX_TILE_CACHE) {
     const oldest = tileCache.keys().next().value;
     if (oldest !== undefined) tileCache.delete(oldest);
   }
-  tileCache.set(color, tile);
-  return tile;
+  tileCache.set(color, tiles);
+  return tiles;
 }
 
-// Repeating pattern of the color's tile, cached per target context (the
-// visible ctx almost always; baseline/keyframe/export contexts on replay).
-// Patterns are anchored at the context origin — paper coordinate (0,0) — so
-// every surface samples identical grain for identical op coordinates.
-let patternCache = new WeakMap<CanvasRenderingContext2D, Map<string, CanvasPattern>>();
+// Repeating patterns of the color's layer tiles, cached per target context
+// (the visible ctx almost always; baseline/keyframe/export contexts on
+// replay). Patterns are anchored at the context origin — paper coordinate
+// (0,0) — so every surface samples identical grain for identical op
+// coordinates, and every layer's flecks stay registered to the same paper.
+let patternCache = new WeakMap<CanvasRenderingContext2D, Map<string, (CanvasPattern | null)[]>>();
 
-export function crayonPatternFor(
+export function crayonPatternsFor(
   target: CanvasRenderingContext2D,
   color: string
-): CanvasPattern | null {
+): (CanvasPattern | null)[] {
   let byColor = patternCache.get(target);
   if (!byColor) {
     byColor = new Map();
@@ -221,18 +302,18 @@ export function crayonPatternFor(
   }
   const cached = byColor.get(color);
   if (cached) return cached;
-  const pattern = target.createPattern(crayonTileFor(color), 'repeat');
-  if (pattern) byColor.set(color, pattern);
-  return pattern;
+  const patterns = crayonTilesFor(color).map((tile) => target.createPattern(tile, 'repeat'));
+  byColor.set(color, patterns);
+  return patterns;
 }
 
-// Pre-generate the shared field and the active color's tile off the pointer
+// Pre-generate the shared fields and the active color's tiles off the pointer
 // hot path — scheduled when the crayon is selected or its color changes, so
 // the first stroke rarely pays the one-time field generation (~tens of ms).
-// If a stroke lands before idle fires, crayonPatternFor builds synchronously —
+// If a stroke lands before idle fires, crayonPatternsFor builds synchronously —
 // a one-time cost, never repeated.
 export function warmCrayonTileWhenIdle(color: string) {
-  scheduleIdle(() => void crayonTileFor(color));
+  scheduleIdle(() => void crayonTilesFor(color));
 }
 
 // --- Swept-pass split tracking ----------------------------------------------

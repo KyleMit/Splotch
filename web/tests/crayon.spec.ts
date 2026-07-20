@@ -7,9 +7,11 @@ import { expect, test, type Page } from '@playwright/test';
 // undo, resize — must reproduce the exact live pixels (the stamps and the
 // replay run the same renderOp over the same recorded passes).
 
-// The tile's peak deposit is 0.95 → 242/255. A single pass can never exceed it;
-// anything above means two deposits stacked where they shouldn't have.
-const SINGLE_PASS_MAX_ALPHA = 245;
+// The layers of one pass composite to the transfer's 0.96 peak → ~245/255
+// (±1 for per-layer compositing rounding). A single pass can never exceed it;
+// anything above means two deposits stacked where they shouldn't have (a true
+// double deposit reads ~254).
+const SINGLE_PASS_MAX_ALPHA = 247;
 
 const state = (page: Page) => page.evaluate(() => window.__engineState);
 const count = (page: Page) => page.evaluate(() => window.__engine.nonTransparentCount());
@@ -79,6 +81,21 @@ test('a crayon stroke is translucent tooth in the exact selected color', async (
   expect(await maxAlpha(page, { x: 30, y: 140, w: 240, h: 20 })).toBeLessThanOrEqual(
     SINGLE_PASS_MAX_ALPHA
   );
+});
+
+test('the stroke edge breaks into flecks instead of a solid outline', async ({ page }) => {
+  await stroke(page, linePoints(40, 150, 260, 150, 25));
+
+  // Stroke tip = 8px × the 1.5 crayon multiplier = 12px wide, centered on
+  // y=150. The outermost rows of the band only receive the sparse fringe
+  // layer, so they must be far lighter than the core — scattered flecks, not
+  // the solid round outline of a plain pattern stroke.
+  const core = await meanAlpha(page, { x: 60, y: 148, w: 180, h: 4 });
+  const topEdge = await meanAlpha(page, { x: 60, y: 144, w: 180, h: 1 });
+  const bottomEdge = await meanAlpha(page, { x: 60, y: 155, w: 180, h: 1 });
+  const edge = (topEdge + bottomEdge) / 2;
+  expect(edge).toBeGreaterThan(2);
+  expect(edge).toBeLessThan(core * 0.55);
 });
 
 test('grain stays inside the swept stroke', async ({ page }) => {

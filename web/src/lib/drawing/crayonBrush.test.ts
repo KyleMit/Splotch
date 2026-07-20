@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CRAYON_LAYER_WIDTH_FRACTIONS,
   CRAYON_TILE_CSS_PX,
   CrayonPassTracker,
   crayonAlphaField,
   crayonDepositAlpha,
+  crayonFringeAlpha,
+  crayonLayerAlphas,
   crayonToothHeight,
   parseCrayonColor,
   type CrayonPoint,
@@ -75,14 +78,83 @@ describe('crayon deposit transfer', () => {
 
   it('leaves visible first-pass headroom for buildup', () => {
     // A second pass must be perceptibly denser: the mean extra deposit of
-    // overdraw, mean(a)·(1−mean(a)), needs to be non-trivial across the field.
-    const { alpha } = crayonAlphaField(1);
+    // overdraw, mean(a)·(1−mean(a)), needs to be non-trivial across the
+    // composited field.
+    const { size, layers } = crayonAlphaField(1);
     let sum = 0;
-    for (let i = 0; i < alpha.length; i++) sum += alpha[i];
-    const mean = sum / alpha.length / 255;
+    for (let i = 0; i < size * size; i++) {
+      let transparency = 1;
+      for (const layer of layers) transparency *= 1 - layer[i] / 255;
+      sum += 1 - transparency;
+    }
+    const mean = sum / (size * size);
     expect(mean * (1 - mean)).toBeGreaterThan(0.1);
     // And the field must not already be near-solid — the #417 failure mode.
     expect(mean).toBeLessThan(0.85);
+  });
+});
+
+describe('crayon deposition layers', () => {
+  it('width fractions nest strictly inward from the full tip width', () => {
+    expect(CRAYON_LAYER_WIDTH_FRACTIONS[0]).toBe(1);
+    for (let i = 1; i < CRAYON_LAYER_WIDTH_FRACTIONS.length; i++) {
+      expect(CRAYON_LAYER_WIDTH_FRACTIONS[i]).toBeLessThan(CRAYON_LAYER_WIDTH_FRACTIONS[i - 1]);
+      expect(CRAYON_LAYER_WIDTH_FRACTIONS[i]).toBeGreaterThan(0);
+    }
+  });
+
+  it('layers composite to exactly the single-tile deposit transfer', () => {
+    // The stroke interior gets every layer; their source-over composite must
+    // reproduce crayonDepositAlpha so the layered edges cost nothing in the
+    // body (aesthetic and buildup headroom preserved).
+    for (let h = 0; h <= 1.001; h += 0.005) {
+      const alphas = crayonLayerAlphas(h);
+      expect(alphas.length).toBe(CRAYON_LAYER_WIDTH_FRACTIONS.length);
+      let transparency = 1;
+      for (const a of alphas) {
+        expect(a).toBeGreaterThanOrEqual(0);
+        expect(a).toBeLessThan(1);
+        transparency *= 1 - a;
+      }
+      expect(1 - transparency).toBeCloseTo(crayonDepositAlpha(h), 6);
+    }
+  });
+
+  it('the outer fringe is sparse flecks — mostly bare, breaking the rim', () => {
+    const { size, layers } = crayonAlphaField(1);
+    const outer = layers[0];
+    let bare = 0;
+    let strong = 0;
+    for (let i = 0; i < size * size; i++) {
+      if (outer[i] < 16) bare++;
+      if (outer[i] > 102) strong++;
+    }
+    // Most of the outermost annulus deposits nothing (the broken edge), yet a
+    // real minority of texels carry solid flecks (grain, not a faint halo).
+    expect(bare / (size * size)).toBeGreaterThan(0.5);
+    expect(strong / (size * size)).toBeGreaterThan(0.1);
+  });
+
+  it('fringe layers get denser inward', () => {
+    const { size, layers } = crayonAlphaField(1);
+    const means = layers.map((layer) => {
+      let sum = 0;
+      for (let i = 0; i < size * size; i++) sum += layer[i];
+      return sum / (size * size);
+    });
+    for (let i = 1; i < means.length; i++) expect(means[i]).toBeGreaterThan(means[i - 1]);
+  });
+
+  it('fringe alpha only fires on high tooth coverage and stays under its peak', () => {
+    for (let layer = 0; layer < CRAYON_LAYER_WIDTH_FRACTIONS.length - 1; layer++) {
+      expect(crayonFringeAlpha(0, layer)).toBe(0);
+      expect(crayonFringeAlpha(0.3, layer)).toBe(0);
+      for (let h = 0; h <= 1.001; h += 0.01) {
+        const a = crayonFringeAlpha(h, layer);
+        expect(a).toBeGreaterThanOrEqual(0);
+        expect(a).toBeLessThan(1);
+      }
+    }
   });
 });
 
@@ -92,20 +164,28 @@ describe('crayon alpha field', () => {
     const b = crayonAlphaField(1);
     expect(b).toBe(a);
     expect(a.size).toBe(CRAYON_TILE_CSS_PX);
-    expect(a.alpha.length).toBe(CRAYON_TILE_CSS_PX * CRAYON_TILE_CSS_PX);
+    expect(a.layers.length).toBe(CRAYON_LAYER_WIDTH_FRACTIONS.length);
+    for (const layer of a.layers) {
+      expect(layer.length).toBe(CRAYON_TILE_CSS_PX * CRAYON_TILE_CSS_PX);
+    }
   });
 
-  it('holds every texel inside the transfer bounds', () => {
-    const { alpha } = crayonAlphaField(1);
-    let min = 255;
+  it('every texel of the composited field stays inside the transfer bounds', () => {
+    // The nonzero valley (no permanent white pits) and the sub-opaque peak are
+    // properties of the LAYER COMPOSITE — an individual layer's texel may
+    // legitimately be 0 where the fringes already meet the target.
+    const { size, layers } = crayonAlphaField(1);
+    let min = 1;
     let max = 0;
-    for (let i = 0; i < alpha.length; i++) {
-      min = Math.min(min, alpha[i]);
-      max = Math.max(max, alpha[i]);
+    for (let i = 0; i < size * size; i++) {
+      let transparency = 1;
+      for (const layer of layers) transparency *= 1 - layer[i] / 255;
+      min = Math.min(min, 1 - transparency);
+      max = Math.max(max, 1 - transparency);
     }
     expect(min).toBeGreaterThan(0);
-    expect(max).toBeLessThan(255);
-    expect(max - min).toBeGreaterThan(60);
+    expect(max).toBeLessThan(1);
+    expect(max - min).toBeGreaterThan(0.25);
   });
 });
 
