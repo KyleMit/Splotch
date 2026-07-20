@@ -1378,16 +1378,14 @@ test('a second same-colour crayon pass builds up where it is drawn, at a constan
   expect(r.leftB.cov).toBeGreaterThan(r.leftA.cov + 0.03);
   // Live/gradual, not a global snap: the untouched (right) band is unchanged.
   expect(Math.abs(r.rightB.cov - r.rightA.cov)).toBeLessThan(0.02);
-  // No runaway darken/muddy: same-colour overdraw deepens, boundedly. Two
-  // deliberate effects move a band's mean between passes — the shade wobble's
-  // slow term, and the colour-mix glaze (a same-colour pass deepens covered
-  // texels by ~m·c·(1-c/255) ≈ 16 levels max at m=0.35, CONVERGING toward a
-  // fixed point below the colour, never compounding). The band mean moves less
-  // than the per-texel max (freshly filled pits stamp at the exact colour); an
-  // uncontrolled multiply regression darkens every pass by several tens of
+  // No darken/muddy: same-colour overdraw cannot shift the colour — the
+  // darken mix is EXACT on its own colour (min(c,c)=c), so the only mean
+  // drift left is the shade wobble's slow term (its per-texel min against the
+  // previous pass's shade is bounded by the shade amplitude) plus band
+  // composition. A multiply-style regression darkens every pass by tens of
   // levels, far past this bound.
   for (let i = 0; i < 3; i++) {
-    expect(Math.abs((r.leftB.rgb as number[])[i] - (r.leftA.rgb as number[])[i])).toBeLessThan(15);
+    expect(Math.abs((r.leftB.rgb as number[])[i] - (r.leftA.rgb as number[])[i])).toBeLessThan(10);
   }
 });
 
@@ -1447,11 +1445,11 @@ test('the crayon wax body carries a subtle shade variation, not one flat colour'
 test('crossing crayon colours mix subtractively — blue over yellow goes green', async ({
   page,
 }) => {
-  // Each pass stamps a multiply glaze: out = S·(1-m + m·D). Subtractive is the
-  // point — an rgb lerp of blue over yellow goes GREY, while the glaze filters
-  // the blue wax's blue channel down against the yellow beneath, pulling it
-  // toward green like real pigment. The mix must be present but LOW: most of
-  // the crossing still reads as blue, just greener.
+  // Each pass stamps a darken mix: out = (1-m)·S + m·min(S,D). Subtractive is
+  // the point — an rgb lerp of blue over yellow goes GREY, while min keeps the
+  // blue wax's full green channel and drops only its blue channel toward the
+  // yellow's, so the crossing crosses into GREEN-dominance (g > b) at the
+  // shipped strength while blue over bare paper stays pure.
   const r = await page.evaluate(() => {
     const E = window.__engine;
     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
@@ -1471,26 +1469,30 @@ test('crossing crayon colours mix subtractively — blue over yellow goes green'
     E.strokeSync(seg(cx - 150, cy, cx + 150, cy), 'pen');
     E.setColor('#62A2E9'); // blue over it (98, 162, 233)
     E.strokeSync(seg(cx, cy - 120, cx, cy + 120), 'pen');
-    // Sample the crossing square. Blue wax glazed by the yellow beneath lands
-    // b ≈ 233·(0.65 + 0.35·75/255) ≈ 175 (vs 233 pure over blank) — the blue
-    // channel filtered down toward the green channel IS the visible green.
+    // Sample the crossing square. Blue wax mixed by the yellow beneath lands
+    // at ≈ (98, 162, 0.45·233 + 0.55·75 ≈ 146) — green channel above blue,
+    // i.e. actually green — vs (98, 162, 233) pure over blank.
     const d = g.getImageData(cx - 12, cy - 12, 24, 24).data;
     let wax = 0;
     let mixed = 0;
+    let greenLean = 0;
     for (let i = 0; i < d.length; i += 4) {
       if (d[i + 3] < 200) continue;
-      const [rr, , bb] = [d[i], d[i + 1], d[i + 2]];
-      const blueFamily = rr < 150 && bb > 150;
-      if (!blueFamily) continue;
+      const [rr, gg, bb] = [d[i], d[i + 1], d[i + 2]];
+      if (rr >= 150) continue; // exclude the yellow showing through pits
       wax++;
-      if (bb >= 160 && bb <= 192) mixed++;
+      if (bb >= 128 && bb <= 168) mixed++;
+      if (gg > bb) greenLean++;
     }
-    return { wax, mixed };
+    return { wax, mixed, greenLean };
   });
   expect(r.wax).toBeGreaterThan(100);
-  // The yellow beneath genuinely filters the blue wax — a zero-mix regression
-  // leaves every blue texel at b ≈ 233, far above the mixed window.
+  // The yellow beneath genuinely mixes into the blue wax — a zero-mix
+  // regression leaves every blue texel at b ≈ 233, far above the window…
   expect(r.mixed).toBeGreaterThan(r.wax * 0.3);
+  // …and the crossing is not just teal: a solid share of the mixed wax is
+  // green-DOMINANT, which is what the eye finally reads as green.
+  expect(r.greenLean).toBeGreaterThan(r.wax * 0.25);
 });
 
 test('colorMix 0 restores the direct opaque pipeline (the A/B escape hatch)', async ({ page }) => {

@@ -76,11 +76,13 @@ describe('crayon options seam', () => {
     expect(passes.at(-1)!.coverage).toBeGreaterThan(passes[0].coverage);
   });
 
-  it('ships a visible but bounded colour mix — enough glaze to actually read green', () => {
-    // Below ~0.3 the subtractive pull is measurable but invisible on a phone;
-    // past ~0.45 crossings read as paint blending, not wax.
-    expect(CRAYON_DEFAULTS.colorMix).toBeGreaterThanOrEqual(0.3);
-    expect(CRAYON_DEFAULTS.colorMix).toBeLessThanOrEqual(0.45);
+  it('ships a visible but bounded colour mix — enough to actually read green', () => {
+    // Below ~0.45 blue-over-yellow never crosses into green-dominance on the
+    // palette colours; past ~0.7 crossings read as paint blending, not wax.
+    // Strength costs nothing on buildup — the darken mix is exact on
+    // same-colour overdraw.
+    expect(CRAYON_DEFAULTS.colorMix).toBeGreaterThanOrEqual(0.45);
+    expect(CRAYON_DEFAULTS.colorMix).toBeLessThanOrEqual(0.7);
   });
 
   it('ships a nonzero but very subtle shade variation by default', () => {

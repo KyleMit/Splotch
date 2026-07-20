@@ -133,27 +133,30 @@ function paintCrayon(
 // A deposition pass accumulates on a buffer at FULL opacity (overlapping
 // per-frame ops stay idempotent there — binary tooth, same rgb), then one
 // 'crayonFlush' stamps the whole buffer onto the target as a SUBTRACTIVE
-// glaze, in two blits with no readback:
+// mix, in two blits with no readback:
 //
-//   1. 'multiply', alpha 1     → covered ink becomes S×D; blank paper gets S
+//   1. 'darken', alpha 1        → covered ink becomes min(S,D); blank paper S
 //   2. 'source-over', alpha 1-m → out = (1-m)·S + m·(step 1)
 //
-// Net per covered pixel: out = S·(1-m + m·D) — the crayon colour filtered by
-// the ink beneath, which is how pigments actually mix (an rgb lerp of blue
-// over yellow goes grey; the multiply glaze goes green). Over blank paper the
-// two steps collapse to exactly S: fully opaque, exact-colour wax. Same-colour
-// overdraw deepens a few percent and CONVERGES (each pass re-lays S glazed by
-// the result, a contraction toward S·(1-m)/(1-m·S/255)) — never compounding
-// into mud. Glazing ONCE per pass is the crux: any per-op mix would compound
-// across the dozens of overlapping per-frame ops and cancel itself toward pure
-// crayon colour in the interior.
+// Net per covered pixel: out = (1-m)·S + m·min(S,D). The per-channel min is
+// the shared reflectance of the two pigments — the light both let through —
+// so blue over yellow keeps its full green channel while its blue channel
+// drops toward the yellow's, and the crossing genuinely reads GREEN (an rgb
+// lerp goes grey, and a multiply glaze both muted the shared channels and
+// darkened same-colour overdraw). min's fixed point is what makes a strong
+// mix safe: min(c,c)=c, so a same-colour pass reproduces its own pixels
+// EXACTLY — constant-hue buildup is preserved at any mix strength. Over blank
+// paper the two steps collapse to exactly S: fully opaque, exact-colour wax.
+// Mixing ONCE per pass is the crux: any per-op mix would compound across the
+// dozens of overlapping per-frame ops and cancel itself toward pure crayon
+// colour in the interior.
 //
 // One buffer per target context. For replay surfaces (baseline, keyframes,
 // exports) it is an offscreen canvas allocated on demand (WeakMap — GC'd with
 // its target). For the LIVE canvas the engine registers its overlay elements
-// as the buffer: ops paint into BOTH a multiply-blended bottom layer and a
+// as the buffer: ops paint into BOTH a darken-blended bottom layer and a
 // (1-m)-opacity top layer (the `mirror`), whose CSS compositing reproduces the
-// two-blit stamp exactly — the open pass previews its final glazed pixels with
+// two-blit stamp exactly — the open pass previews its final mixed pixels with
 // no snap at pass close.
 interface CrayonPassBuffer {
   ctx: CanvasRenderingContext2D;
@@ -288,7 +291,7 @@ export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
     const h = b.y1 - b.y0;
     target.save();
     target.setTransform(1, 0, 0, 1, 0, 0);
-    target.globalCompositeOperation = 'multiply';
+    target.globalCompositeOperation = 'darken';
     target.globalAlpha = 1;
     target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
     target.globalCompositeOperation = 'source-over';

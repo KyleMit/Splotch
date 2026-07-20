@@ -132,11 +132,13 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   bodyVariation: 0.2,
   bodyVariationCell: 110,
   shadeVariation: 0.08,
-  // 0.35, not lower: the glaze must pull a top colour's filtered channel far
-  // enough to cross perceptual lines (blue over yellow needs its blue channel
-  // down near its green channel before the eye reads GREEN) — at 0.2 the mix
-  // measured cleanly but looked like nothing on a phone.
-  colorMix: 0.35,
+  // The mix must cross perceptual lines to register at all: blue over yellow
+  // only reads GREEN once the blue channel drops BELOW the green channel
+  // (0.2 and 0.35 both measured cleanly yet looked like nothing on a phone).
+  // 0.55 lands blue-over-yellow at (98,162,146) and yellow-over-blue at
+  // chartreuse (165,185,75). Strength is free here: the darken-mix stamp is
+  // exact on same-colour overdraw (min(c,c)=c), so buildup never deepens.
+  colorMix: 0.55,
   passes: [
     { widthScale: 1.0, coverage: 0.45 },
     { widthScale: 0.68, coverage: 0.63 },

@@ -99,15 +99,15 @@ let lastColorChangeTime = 0;
 
 // The live crayon pass overlays: two engine-owned canvases layered over the
 // main one, both holding the OPEN deposition pass at full opacity. The bottom
-// layer composites with mix-blend-mode: multiply and the top with CSS opacity
-// (1 - colorMix), so the browser's compositing of (multiply, then lerp) shows
-// pixel-for-pixel the two-blit subtractive glaze the pass's 'crayonFlush'
+// layer composites with mix-blend-mode: darken and the top with CSS opacity
+// (1 - colorMix), so the browser's compositing of (darken, then lerp) shows
+// pixel-for-pixel the two-blit subtractive mix the pass's 'crayonFlush'
 // stamp will bake into the main canvas at close (see strokeOps' pass buffer)
 // — no visible snap. pointer-events: none, so input still lands on the canvas
-// beneath. (One nuance: over VIRGIN canvas the stamp glazes against nothing —
-// pure colour — while the multiply layer previews against the CSS paper
-// behind the canvas; on the near-white light paper that is the same thing, in
-// dark mode a fresh pass previews a touch darker until it closes.)
+// beneath. (One nuance: over VIRGIN canvas the stamp mixes against nothing —
+// pure colour — while the darken layer previews against the CSS paper behind
+// the canvas; on the near-white light paper that is the same thing, in dark
+// mode a fresh pass previews darker until it closes.)
 let crayonOverlay: HTMLCanvasElement | null = null;
 let crayonOverlayCtx: CanvasRenderingContext2D | null = null;
 let crayonOverlayTop: HTMLCanvasElement | null = null;
@@ -1071,7 +1071,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
     'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;';
   crayonOverlay = document.createElement('canvas');
   crayonOverlay.setAttribute('aria-hidden', 'true');
-  crayonOverlay.style.cssText = overlayCss + 'mix-blend-mode:multiply;';
+  crayonOverlay.style.cssText = overlayCss + 'mix-blend-mode:darken;';
   crayonOverlayTop = document.createElement('canvas');
   crayonOverlayTop.setAttribute('aria-hidden', 'true');
   crayonOverlayTop.style.cssText = overlayCss;

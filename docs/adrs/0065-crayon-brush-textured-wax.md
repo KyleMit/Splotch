@@ -107,31 +107,32 @@ ordinary corners, and hand jitter never split (unit-pinned); a genuine pointer-r
 starts a fresh pass. Since the seed was already stored per op, mid-stroke splits are replay-safe by
 the same mechanism as everything else.
 
-**Crossing colours mix a little — subtractively, via a per-pass buffer stamped once.** Real crayons
-barely mix, but they do: blue over yellow picks up green. Two traps shaped the mechanism. First, any
-per-op mix would compound across the dozens of overlapping per-frame ops inside a stroke and cancel
-itself toward pure crayon colour in the interior; mixing must happen **once per deposition pass**,
-against what was under the pass — the swept-passes experiment's overlay conclusion. Second, the mix
-must be **subtractive**: pigments filter light rather than average it, so an rgb lerp of blue over
-yellow goes *grey* while a multiply glaze goes *green*. So crayon ops no longer paint the target
-directly: they accumulate on a per-target **pass buffer** at full opacity (overlapping ops stay
-idempotent there), and a recorded `crayonFlush` op stamps the buffer in two blits with no readback —
-`multiply` at alpha 1 (covered ink becomes `S×D`, blank paper gets `S`), then `source-over` at
-`1 − m` — netting `out = S·(1−m + m·D)` per covered pixel (`colorMix` m = 0.35 — tuned up from 0.2,
-which measured cleanly but was perceptually invisible on a phone): the crayon colour filtered by the
-ink beneath. Over blank paper the two steps collapse to exactly `S`, fully opaque. Same-colour
-overdraw deepens a few percent and **converges** (each pass re-lays `S` glazed by the result, a
-contraction toward `S·(1−m)/(1−m·S/255)`) — a deliberate, bounded softening of the strict
-constant-hue rule, matching how real wax layering deepens, and never compounding into mud. The
-engine records the flush at every pass close (mid-stroke split, pointer lift, resume jump), so
-replay stamps — and therefore mixes — at exactly the live positions in the op order, keeping
-rebuilds byte-identical. Live, the open pass renders on **two stacked engine-owned overlay
-canvases** painted identically per op — the bottom with `mix-blend-mode: multiply`, the top at CSS
-opacity `1 − m` — whose compositing reproduces the two-blit stamp precisely, so there is no visible
-snap at pass close, and the pointer-events-none overlays never intercept input. (One nuance: over
-virgin canvas the stamp glazes against nothing, while the live multiply layer previews against the
-CSS paper behind the canvas — identical on the near-white light paper, a touch darker in dark mode
-until the pass closes.)
+**Crossing colours mix — subtractively, via a per-pass buffer stamped once.** Blue over yellow must
+read green. Three iterations shaped the mechanism. First, any per-op mix would compound across the
+dozens of overlapping per-frame ops inside a stroke and cancel itself toward pure crayon colour in
+the interior; mixing must happen **once per deposition pass**, against what was under the pass — the
+swept-passes experiment's overlay conclusion. Second, the mix must be **subtractive**: pigments
+filter light rather than average it, so an rgb lerp of blue over yellow goes *grey*. Third, the
+subtractive operator matters: a multiply glaze mutes the shared channels and darkens same-colour
+overdraw, capping how strong the mix could ship — still short of visible green on a phone. The
+winner is **`darken` (per-channel min)**: `min(S,D)` is the two pigments' shared reflectance, so
+blue over yellow keeps its full green channel while only its blue channel drops, and `min(c,c) = c`
+means a same-colour pass reproduces its own pixels **exactly** — the constant-hue buildup rule holds
+at any strength, which is what lets the mix ship strong enough to actually see. Crayon ops
+accumulate on a per-target **pass buffer** at full opacity (overlapping ops stay idempotent there),
+and a recorded `crayonFlush` op stamps the buffer in two blits with no readback — `darken` at alpha
+1 (covered ink becomes `min(S,D)`, blank paper gets `S`), then `source-over` at `1 − m` — netting
+`out = (1−m)·S + m·min(S,D)` per covered pixel (`colorMix` m = 0.55: the palette blue over yellow
+lands at (98, 162, 146), green-dominant). Over blank paper the two steps collapse to exactly `S`,
+fully opaque. The engine records the flush at every pass close (mid-stroke split, pointer lift,
+resume jump), so replay stamps — and therefore mixes — at exactly the live positions in the op
+order, keeping rebuilds byte-identical. Live, the open pass renders on **two stacked engine-owned
+overlay canvases** painted identically per op — the bottom with `mix-blend-mode: darken`, the top at
+CSS opacity `1 − m` — whose compositing reproduces the two-blit stamp precisely, so there is no
+visible snap at pass close, and the pointer-events-none overlays never intercept input. (One nuance:
+over virgin canvas the stamp mixes against nothing, while the live darken layer previews against the
+CSS paper behind the canvas — identical on the near-white light paper, darker in dark mode until the
+pass closes.)
 
 Because a crayon op lives in the **same canvas, in draw order**, the correctness requirements fall
 out of machinery that already exists: undo/resize/export replay it like any op (ADR-0033/0034);
@@ -177,12 +178,13 @@ ships as the `CRAYON_DEFAULTS`. Production never calls the setter.
   and coverage rises because the tooth phase-shifts per pass — a fresh stroke *or* a continuous
   gesture re-covering its own paper (the pass tracker). No multiply, no muddying, and no
   lift-dependence: scribbling in one gesture deepens exactly like redrawing after a lift.
-* **+** Crossing colours interact like real pigment: each pass is glazed by `colorMix` (35%) of the
-  ink under it — subtractively, so blue over yellow genuinely goes green (an rgb lerp would go
-  grey). Wax over blank paper stays fully opaque at the exact colour. The costs: same-colour
-  overdraw now deepens a few percent (bounded and convergent — a deliberate softening of the strict
-  constant-hue rule that matches real wax layering), and the engine owns two small overlay canvases
-  for the open pass's live preview.
+* **+** Crossing colours interact like real pigment: each pass shows `colorMix` (55%) of its darken
+  mix with the ink under it — subtractively, so blue over yellow genuinely goes green-dominant (an
+  rgb lerp goes grey; a multiply glaze went muddy-teal and penalised buildup). Same-colour overdraw
+  is EXACT (`min(c,c)=c` — the constant-hue rule survives at full mix strength), and wax over blank
+  paper stays fully opaque at the exact colour. The cost: the engine owns two small overlay canvases
+  for the open pass's live preview, whose darken layer previews darker over virgin paper in dark
+  mode until the pass closes.
 * **+** Fully deterministic *and* undo-stable: the tooth field is fixed, the only per-pass variation
   is a stored seed, the tooth is binary, and crayon ops replay exactly as drawn — so the same
   drawing always produces the same pixels, byte-for-byte, including after a later stroke is undone.
