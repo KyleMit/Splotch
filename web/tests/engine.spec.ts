@@ -1378,10 +1378,64 @@ test('a second same-colour crayon pass builds up where it is drawn, at a constan
   expect(r.leftB.cov).toBeGreaterThan(r.leftA.cov + 0.03);
   // Live/gradual, not a global snap: the untouched (right) band is unchanged.
   expect(Math.abs(r.rightB.cov - r.rightA.cov)).toBeLessThan(0.02);
-  // No darken/muddy: the mean opaque hue barely moves (every channel within a few levels).
+  // No darken/muddy: the mean opaque hue barely moves. The deliberate shade
+  // wobble (shadeShift) lets a band's mean drift a few levels between passes —
+  // its slow term doesn't average out over a band — but a multiply/translucency
+  // regression darkens every channel by tens of levels, far past this bound.
   for (let i = 0; i < 3; i++) {
-    expect(Math.abs((r.leftB.rgb as number[])[i] - (r.leftA.rgb as number[])[i])).toBeLessThan(6);
+    expect(Math.abs((r.leftB.rgb as number[])[i] - (r.leftA.rgb as number[])[i])).toBeLessThan(8);
   }
+});
+
+test('the crayon wax body carries a subtle shade variation, not one flat colour', async ({
+  page,
+}) => {
+  // The fill's rgb wobbles a few percent around the exact crayon colour
+  // (shadeShift) — enough that the body reads as mottled wax, never enough to
+  // read as a different colour. Measured over the FULLY opaque texels only
+  // (alpha 255), so the stroke's anti-aliased silhouette can't fake variation.
+  const r = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const ymid = Math.round(cv.height / 2);
+    const p: { x: number; y: number }[] = [];
+    for (let i = 0; i <= 40; i++) p.push({ x: 20 + ((cv.width - 40) * i) / 40, y: ymid });
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setColor('#e23b36'); // r=226 g=59 b=54
+    E.setStrokeWidth(30);
+    E.strokeSync(p, 'pen');
+    const d = g.getImageData(20, ymid - 12, cv.width - 40, 24).data;
+    const exact = [226, 59, 54];
+    let opq = 0;
+    let varied = 0;
+    let maxDev = 0;
+    const mean = [0, 0, 0];
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] !== 255) continue;
+      opq++;
+      let dev = 0;
+      for (let c = 0; c < 3; c++) {
+        dev = Math.max(dev, Math.abs(d[i + c] - exact[c]));
+        mean[c] += d[i + c];
+      }
+      if (dev > 2) varied++;
+      if (dev > maxDev) maxDev = dev;
+    }
+    return {
+      opq,
+      variedFrac: opq ? varied / opq : 0,
+      maxDev,
+      meanDev: opq ? Math.max(...mean.map((m, c) => Math.abs(m / opq - exact[c]))) : 0,
+    };
+  });
+  expect(r.opq).toBeGreaterThan(500);
+  // A real spread across the body — a flat fill scores ~0 here.
+  expect(r.variedFrac).toBeGreaterThan(0.15);
+  // …but a SUBTLE one: no texel strays far, and the mean stays on the colour.
+  expect(r.maxDev).toBeLessThanOrEqual(40);
+  expect(r.meanDev).toBeLessThanOrEqual(12);
 });
 
 test('crayon replay is deterministic — a rebuild reproduces the exact pixel count', async ({

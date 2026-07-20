@@ -79,8 +79,22 @@ Three properties, owned by `lib/drawing/crayonBrush.ts`, deliver the look and th
 The centre-dense / edge-broken falloff a real crayon shows (hard press in the middle, crumbling
 flecks at the rim) is reproduced with a small set of **nested density passes**: a full-width sparse
 pass under a narrower dense pass, both the same colour and seed, drawn widest-first. All the knobs
-(tile size, octaves, per-pass width/coverage, dither-band width, body-density variation) live in a
-mutable `CrayonOptions` with tuned defaults.
+(tile size, octaves, per-pass width/coverage, dither-band width, body-density variation, shade
+variation) live in a mutable `CrayonOptions` with tuned defaults.
+
+**The wax body carries a subtle per-texel shade variation, in RGB only.** The swept-passes
+experiment (PR 429) showed that a fill whose colour gently mottles reads far waxier than a flat
+body, and its continuous alpha ramp is exactly what property 2 forbids here. The resolution:
+`shadeShift` nudges each tile texel's rgb a few percent toward black/white — tall tooth bumps (thick
+deposit) slightly darker, the slow body field lighter exactly where it thins the coverage — while
+the alpha stays binary. Because the shift is a pure function of the paper texel (never the pass or
+op) and every pass of a stroke shares one phase, overdraw rewrites each pixel with its own exact
+colour, so the op-count-independence of property 2 is untouched. The amplitude is deliberately very
+subtle (`shadeVariation: 0.08`, fine grain weighted over the slow drift): the phase-shifting splat
+pattern already varies coverage, so the colour wobble only has to break the flatness, not carry the
+texture. Same-colour buildup still cannot multiply-darken; a band's *mean* colour can now drift a
+few levels between passes (the slow term does not average out over a band), which the constant-hue
+E2E bound accommodates while still catching a translucency regression by an order of magnitude.
 
 Because a crayon op lives in the **same canvas, in draw order**, the correctness requirements fall
 out of machinery that already exists: undo/resize/export replay it like any op (ADR-0033/0034);

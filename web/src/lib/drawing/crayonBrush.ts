@@ -25,6 +25,14 @@
 //      left bare. Redrawing gets denser and fills the grain while staying the
 //      same colour, exactly like pressing a crayon over its own mark.
 //
+// The wax body is not one flat rgb: each texel's colour is nudged a few percent
+// lighter or darker by the same paper fields (shadeShift below), so the fill
+// carries the gentle waxy mottling of real crayon. Crucially this variation
+// lives in the tile's RGB ONLY — the alpha stays binary, and the shift is a
+// function of the paper texel alone, identical across every pass and op of a
+// stroke — so overdraw rewrites each pixel with its own exact colour
+// (idempotent) and property 2's op-count-independent replay is untouched.
+//
 // Patterns are paper-anchored like the magic sheet (ADR-0043): a
 // per-(context,colour,pass) repeating pattern whose tile grid is offset in paper
 // coordinates by the stroke's phase, so live drawing and every replay surface
@@ -66,6 +74,12 @@ export interface CrayonOptions {
   bodyVariation: number;
   // Lattice cell (px) of that body-variation field.
   bodyVariationCell: number;
+  // Max fractional value shift of a wax texel's rgb toward black/white (0
+  // disables, leaving a flat body colour). Driven by the paper fields via
+  // shadeShift: thick deposit reads slightly darker, sparse patches slightly
+  // lighter — the subtle waxy mottling of a real fill. RGB only; the alpha
+  // stays binary so undo/replay stability is untouched.
+  shadeVariation: number;
   // The density passes, widest first.
   passes: CrayonPass[];
 }
@@ -82,6 +96,9 @@ export interface CrayonOptions {
 // deliberately start light: a first stroke reads as an airy single crayon pass
 // with plenty of bare tooth, leaving headroom for redraws to visibly densify —
 // the lighter the first pass, the more each same-colour overlap fills in.
+// `shadeVariation` keeps the wax body from being one flat rgb — a very subtle
+// per-texel value wobble (the swept-passes experiment's fill mottling, dialled
+// way down because the splat pattern already varies the coverage).
 export const CRAYON_DEFAULTS: CrayonOptions = {
   tile: 256,
   octaves: [
@@ -93,6 +110,7 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   edge: 0.045,
   bodyVariation: 0.2,
   bodyVariationCell: 110,
+  shadeVariation: 0.08,
   passes: [
     { widthScale: 1.0, coverage: 0.45 },
     { widthScale: 0.68, coverage: 0.63 },
@@ -250,8 +268,31 @@ function waxAlpha(i: number, coverage: number): number {
   return h + jitter >= t ? 1 : 0;
 }
 
-// A colorized wax tile per (colour, pass): rgb = the crayon colour, alpha = the
-// pass's tooth field. Built once and reused by every context's pattern.
+// Texels that survive the pit threshold cluster around this height, so the fine
+// shade term is centred near zero WITHIN the wax — the mean body colour stays
+// the exact crayon colour instead of skewing dark.
+const SHADE_HEIGHT_MID = 0.7;
+// Fine grain dominates; the slow body term stays light because it does not
+// average out over stroke-sized areas — it is what makes two passes' local mean
+// colour differ slightly, and past ~0.3 that patchiness stops being subtle.
+const SHADE_FINE_WEIGHT = 0.7;
+const SHADE_BODY_WEIGHT = 0.3;
+
+// Signed per-texel value shift in [-amplitude, +amplitude]; positive = lighter.
+// Tall tooth bumps take a thick deposit and read slightly darker; the slow body
+// field lightens exactly where waxAlpha thins the coverage, so shade and density
+// mottle together like uneven crayon pressure. Pure and deterministic — a
+// function of the paper texel only, never the pass or op — which is what keeps
+// overdraw idempotent (see the module header). Exported for unit tests.
+export function shadeShift(heightValue: number, bodyValue: number, amplitude: number): number {
+  const fine = Math.max(-1, Math.min(1, (SHADE_HEIGHT_MID - heightValue) * 2));
+  const slow = bodyValue * 2 - 1;
+  return amplitude * (SHADE_FINE_WEIGHT * fine + SHADE_BODY_WEIGHT * slow);
+}
+
+// A colorized wax tile per (colour, pass): rgb = the crayon colour shade-shifted
+// per texel (identically for every pass), alpha = the pass's tooth field. Built
+// once and reused by every context's pattern.
 const colorTileCache = new Map<string, HTMLCanvasElement>();
 
 function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
@@ -269,11 +310,20 @@ function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
   const img = g.createImageData(tile, tile);
   const [r, gr, b] = parseColor(color);
   const data = img.data;
+  const amp = Math.max(0, opts.shadeVariation);
   for (let i = 0; i < height.length; i++) {
     const j = i * 4;
-    data[j] = r;
-    data[j + 1] = gr;
-    data[j + 2] = b;
+    const s = amp ? shadeShift(height[i], body![i], amp) : 0;
+    if (s >= 0) {
+      data[j] = Math.round(r + (255 - r) * s);
+      data[j + 1] = Math.round(gr + (255 - gr) * s);
+      data[j + 2] = Math.round(b + (255 - b) * s);
+    } else {
+      const k = 1 + s;
+      data[j] = Math.round(r * k);
+      data[j + 1] = Math.round(gr * k);
+      data[j + 2] = Math.round(b * k);
+    }
     data[j + 3] = Math.round(waxAlpha(i, pass.coverage) * 255);
   }
   g.putImageData(img, 0, 0);
