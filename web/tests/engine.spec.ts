@@ -1438,6 +1438,99 @@ test('the crayon wax body carries a subtle shade variation, not one flat colour'
   expect(r.meanDev).toBeLessThanOrEqual(12);
 });
 
+test('scribbling back and forth in ONE gesture builds up like separate strokes', async ({
+  page,
+}) => {
+  // Real wax doesn't care whether the crayon lifted before re-covering a spot:
+  // a continuous out-back-out scribble must densify mid-stroke (the pass
+  // tracker bumps the seed phase at each reversal), landing in the same
+  // coverage territory as three separate strokes over the same line.
+  const r = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const ymid = Math.round(cv.height / 2);
+    const W = cv.width;
+    const pts = (x0: number, x1: number) => {
+      const p: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 40; i++) p.push({ x: x0 + ((x1 - x0) * i) / 40, y: ymid });
+      return p;
+    };
+    const coverage = () => {
+      const d = g.getImageData(Math.round(W * 0.2), ymid - 12, Math.round(W * 0.6), 24).data;
+      let opq = 0;
+      let tot = 0;
+      for (let i = 3; i < d.length; i += 4) {
+        tot++;
+        if (d[i] > 128) opq++;
+      }
+      return opq / tot;
+    };
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setColor('#2c5faa');
+    E.setStrokeWidth(30);
+    E.strokeSync(pts(W * 0.1, W * 0.9), 'pen'); // one single-direction pass
+    const single = coverage();
+    E.clearCanvas();
+    const fwd = pts(W * 0.1, W * 0.9);
+    const back = pts(W * 0.9, W * 0.1);
+    // One continuous gesture: out, back, out — a single pointerdown/up.
+    E.strokeSync([...fwd, ...back.slice(1), ...fwd.slice(1)], 'pen');
+    const scribble = coverage();
+    return { single, scribble };
+  });
+  // Mid-stroke overdraw fills real extra tooth (three phases vs one)…
+  expect(r.scribble).toBeGreaterThan(r.single + 0.08);
+  // …while staying wax, not a solid bar.
+  expect(r.scribble).toBeLessThan(0.995);
+});
+
+test('mid-stroke pass splits replay byte-identically and undo cleanly', async ({ page }) => {
+  // The split gesture stores several seeds inside one command; the rebuild must
+  // reproduce EVERY byte — crayon ops replay exactly as drawn (no RDP re-fit,
+  // whose ~1px silhouette shift would flip whole binary-tooth texels at the
+  // scribble's hairpins).
+  const r = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const y = Math.round(cv.height / 2);
+    const pts = (x0: number, x1: number) => {
+      const p: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 40; i++) p.push({ x: x0 + ((x1 - x0) * i) / 40, y });
+      return p;
+    };
+    const fwd = pts(20, cv.width - 20);
+    const back = pts(cv.width - 20, 20);
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setColor('#e23b36');
+    E.setStrokeWidth(24);
+    E.strokeSync([...fwd, ...back.slice(1), ...fwd.slice(1)], 'pen');
+    const before = g.getImageData(0, 0, cv.width, cv.height).data;
+    E.remount();
+    const after = g.getImageData(0, 0, cv.width, cv.height).data;
+    let inked = 0;
+    let changed = 0;
+    for (let i = 0; i < before.length; i += 4) {
+      if (before[i + 3] > 0) inked++;
+      for (let c = 0; c < 4; c++) {
+        if (before[i + c] !== after[i + c]) {
+          changed++;
+          break;
+        }
+      }
+    }
+    return { inked, changed };
+  });
+  expect(r.inked).toBeGreaterThan(0);
+  expect(r.changed).toBe(0);
+
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+});
+
 test('crayon replay is deterministic — a rebuild reproduces the exact pixel count', async ({
   page,
 }) => {

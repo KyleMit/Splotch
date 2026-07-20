@@ -203,7 +203,18 @@ export function simplifyCommandOps(ops: StrokeOp[]): StrokeOp[] {
 
   const reducedByPid = new Map<number, PathOp[]>();
   for (const [pid, pathOps] of groupPathOpsByPointer(ops)) {
-    reducedByPid.set(pid, splitIntoContinuousRuns(pathOps).flatMap(reducePathRun));
+    // Crayon runs bypass thinning. RDP re-fits the polyline within ~1px — an
+    // invisible AA shift for a solid stroke, but the crayon's tooth is BINARY,
+    // so a texel at the re-fitted silhouette flips fully in or out and the
+    // wax's byte-identical replay promise (ADR-0065) breaks at scribble
+    // hairpins. Replaying the exact live ops is idempotent by construction;
+    // ADR-0035 keyframing bounds the longer replay instead.
+    reducedByPid.set(
+      pid,
+      splitIntoContinuousRuns(pathOps).flatMap((run) =>
+        run[0].crayon && !run[0].erase ? run : reducePathRun(run)
+      )
+    );
   }
 
   const out: StrokeOp[] = [];

@@ -152,3 +152,32 @@ describe('simplifyCommandOps', () => {
     expect(getSimplifyCounters()).toEqual({ rawPoints: 0, keptPoints: 0 });
   });
 });
+
+describe('crayon runs', () => {
+  it('pass through simplification untouched, in order (byte-identical replay)', () => {
+    // RDP re-fits geometry within ~1px — invisible for a solid stroke, but the
+    // crayon's binary tooth flips whole texels at a shifted silhouette, so
+    // crayon ops replay exactly as drawn (ADR-0065); keyframing bounds replay.
+    const ops: StrokeOp[] = liveOps(1, line(30), { crayon: true, seed: 7 });
+    const out = simplifyCommandOps(ops);
+    expect(out).toHaveLength(ops.length);
+    ops.forEach((op, i) => expect(out[i]).toBe(op));
+  });
+
+  it('a mid-stroke seed bump splits the run — passes never merge across seeds', () => {
+    const a = liveOps(1, line(10), { crayon: true, seed: 7 });
+    const b = liveOps(1, line(10, 4, 30), { crayon: true, seed: 8 });
+    const runs = splitIntoContinuousRuns([...a, ...b]);
+    expect(runs).toHaveLength(2);
+    expect(runs[0].every((op) => op.seed === 7)).toBe(true);
+    expect(runs[1].every((op) => op.seed === 8)).toBe(true);
+  });
+
+  it('a plain pen run in the same command still reduces', () => {
+    const crayon = liveOps(1, line(30), { crayon: true, seed: 7 });
+    const pen = liveOps(2, line(30, 4, 60));
+    const out = simplifyCommandOps([...crayon, ...pen]);
+    const penOut = out.filter((op) => op.kind === 'path' && op.pid === 2);
+    expect(penOut.length).toBeLessThan(pen.length);
+  });
+});

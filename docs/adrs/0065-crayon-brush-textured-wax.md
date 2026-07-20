@@ -96,12 +96,28 @@ texture. Same-colour buildup still cannot multiply-darken; a band's *mean* colou
 few levels between passes (the slow term does not average out over a band), which the constant-hue
 E2E bound accommodates while still catching a translucency regression by an order of magnitude.
 
+**Buildup also happens mid-stroke — a pass, not a stroke, is the unit of phase.** Real wax doesn't
+care whether the crayon lifted before re-covering a spot, so a continuous back-and-forth scribble
+must densify live exactly like separate strokes do. `CrayonPassTracker` (ported from the
+swept-passes experiment, PR 429, thresholds and all) watches the live polyline for the tip
+re-covering its own laid strip — a sharp reversal, or re-entry within a stroke width of paper laid
+more than the trailing-arc exclusion ago — and the engine starts a new **pass** there by bumping to
+a fresh seed for the ops that follow (`strokeCrayonSegments`). Straight lines, gentle curves,
+ordinary corners, and hand jitter never split (unit-pinned); a genuine pointer-resume jump also
+starts a fresh pass. Since the seed was already stored per op, mid-stroke splits are replay-safe by
+the same mechanism as everything else.
+
 Because a crayon op lives in the **same canvas, in draw order**, the correctness requirements fall
 out of machinery that already exists: undo/resize/export replay it like any op (ADR-0033/0034);
 `renderOp` skips crayon when the op is an eraser, so `destination-out` erasing clears wax like any
-pixel; a later solid stroke paints over it (source-over order); and simplification (ADR-0036) thins
-it like any path op — `crayon` and `seed` join the per-run style key so crayon/solid runs, and two
-crayon strokes with different seeds, never merge.
+pixel; and a later solid stroke paints over it (source-over order). Simplification (ADR-0036) is the
+one carve-out: `crayon` and `seed` join the per-run style key so crayon/solid runs, and two passes
+with different seeds, never merge — but crayon runs then **bypass RDP thinning entirely**. RDP
+re-fits the polyline within ~1px, an invisible AA shift for a solid stroke, but the crayon's binary
+tooth flips whole texels at a re-fitted silhouette — visible at exactly the scribble hairpins
+mid-stroke splitting creates. Replaying the exact live ops is idempotent by construction (binary
+alpha), so live and every rebuild agree byte-for-byte; ADR-0035 keyframing bounds the longer replay
+instead, just as the swept-passes experiment concluded.
 
 ### Design + tuning loop
 
@@ -130,11 +146,12 @@ ships as the `CRAYON_DEFAULTS`. Production never calls the setter.
   bit-identical-replay invariant is correct by construction, not by a parallel textured-layer system
   that would have to re-derive it.
 * **+** Wax buildup at a genuinely constant hue: opaque-over-opaque of the same colour can't darken,
-  and coverage rises because the tooth phase-shifts per stroke. No multiply, no muddying.
-* **+** Fully deterministic *and* undo-stable: the tooth field is fixed, the only per-stroke
-  variation is a stored seed, and the tooth is binary, so the same drawing always produces the same
-  pixels — including after a later stroke is undone, when the surviving strokes rebuild from far
-  fewer simplified ops than they were drawn with.
+  and coverage rises because the tooth phase-shifts per pass — a fresh stroke *or* a continuous
+  gesture re-covering its own paper (the pass tracker). No multiply, no muddying, and no
+  lift-dependence: scribbling in one gesture deepens exactly like redrawing after a lift.
+* **+** Fully deterministic *and* undo-stable: the tooth field is fixed, the only per-pass variation
+  is a stored seed, the tooth is binary, and crayon ops replay exactly as drawn — so the same
+  drawing always produces the same pixels, byte-for-byte, including after a later stroke is undone.
 * **−** The tooth is binary, so the pit rims are stippled (ordered dither) rather than a smooth
   alpha ramp. This is a deliberate trade: a soft ramp looked marginally creamier but its fractional
   alpha accumulated across the overlapping live ops, so the whole texture *shifted* the moment any
@@ -150,6 +167,12 @@ ships as the `CRAYON_DEFAULTS`. Production never calls the setter.
 * **−** Buildup varies which pits fill (phase-shift), not deposit *depth* — it does not model a
   second pass filling the *same* valleys deeper. Visually indistinguishable at toddler scale and it
   keeps the hue exactly constant, which the depth model would not.
+* **−** Crayon commands keep their per-frame ops (no RDP thinning), so their replay walks more ops
+  and the undo log holds more points than a solid stroke's. ADR-0035 keyframing bounds the replay
+  walk; the trade buys byte-identical rebuilds at scribble hairpins, where RDP's ~1px re-fit would
+  flip binary-tooth texels. A hairpin gentler than the split thresholds deposits once (no split) —
+  sharp reversals and true re-entries, the toddler cases, split correctly. Dwelling with a wiggling
+  finger slowly darkens the tip area — physically plausible, bounded per split.
 * **−** Not yet exposed as a kid-facing Actions Panel tool. The brush is fully wired through the
   engine (`setCrayonMode`) and selectable/A-B-able via the dev harness; adding a user-facing button
   is a deliberate follow-up (it needs an illustrated crayon icon matching the existing icon set,
