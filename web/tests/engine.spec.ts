@@ -1392,8 +1392,11 @@ test('the crayon wax body carries a subtle shade variation, not one flat colour'
 }) => {
   // The fill's rgb wobbles a few percent around the exact crayon colour
   // (shadeShift) — enough that the body reads as mottled wax, never enough to
-  // read as a different colour. Measured over the FULLY opaque texels only
-  // (alpha 255), so the stroke's anti-aliased silhouette can't fake variation.
+  // read as a different colour. Measured over fully covered body texels only —
+  // a single stamped pass peaks at alpha (1-colorMix)·255 ≈ 217, so the ≥200
+  // filter keeps the stroke's anti-aliased silhouette from faking variation
+  // (unpremultiply rounding at that alpha adds ~±2 levels of noise, well
+  // inside the bounds below).
   const r = await page.evaluate(() => {
     const E = window.__engine;
     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
@@ -1413,7 +1416,7 @@ test('the crayon wax body carries a subtle shade variation, not one flat colour'
     let maxDev = 0;
     const mean = [0, 0, 0];
     for (let i = 0; i < d.length; i += 4) {
-      if (d[i + 3] !== 255) continue;
+      if (d[i + 3] < 200) continue;
       opq++;
       let dev = 0;
       for (let c = 0; c < 3; c++) {
@@ -1436,6 +1439,53 @@ test('the crayon wax body carries a subtle shade variation, not one flat colour'
   // …but a SUBTLE one: no texel strays far, and the mean stays on the colour.
   expect(r.maxDev).toBeLessThanOrEqual(40);
   expect(r.meanDev).toBeLessThanOrEqual(12);
+});
+
+test('crossing crayon colours mix a little — yellow over blue picks up green', async ({ page }) => {
+  // Each deposition pass stamps at (1 - colorMix), so where yellow wax covers
+  // blue wax the pixel becomes (1-k)·yellow + k·blue — a slightly green-pulled
+  // yellow, like real crayons barely mixing. The mix must be present but LOW:
+  // most of the crossing still reads as yellow, not green.
+  const r = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const cx = Math.round(cv.width / 2);
+    const cy = Math.round(cv.height / 2);
+    const seg = (x0: number, y0: number, x1: number, y1: number) => {
+      const p: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 40; i++)
+        p.push({ x: x0 + ((x1 - x0) * i) / 40, y: y0 + ((y1 - y0) * i) / 40 });
+      return p;
+    };
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setStrokeWidth(36);
+    E.setColor('#2c5faa'); // blue underlay (44, 95, 170)
+    E.strokeSync(seg(cx - 150, cy, cx + 150, cy), 'pen');
+    E.setColor('#f7d64b'); // yellow over it (247, 214, 75)
+    E.strokeSync(seg(cx, cy - 120, cx, cy + 120), 'pen');
+    // Sample the crossing square, counting yellow-family texels (the top
+    // stroke's wax) and how far their blue channel was pulled up by the blue
+    // beneath: pure yellow b=75; the 0.15 mix over blue-covered texels lands
+    // b ≈ 0.85·75 + 0.15·170 ≈ 89.
+    const d = g.getImageData(cx - 12, cy - 12, 24, 24).data;
+    let wax = 0;
+    let mixed = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 200) continue;
+      const [rr, gg, bb] = [d[i], d[i + 1], d[i + 2]];
+      const yellowFamily = rr > 180 && gg > 150 && bb < 130;
+      if (!yellowFamily) continue;
+      wax++;
+      if (bb >= 82 && bb <= 110) mixed++;
+    }
+    return { wax, mixed };
+  });
+  expect(r.wax).toBeGreaterThan(100);
+  // The blue beneath genuinely pulls the yellow wax — a zero-mix regression
+  // leaves every yellow texel at b=75.
+  expect(r.mixed).toBeGreaterThan(r.wax * 0.3);
 });
 
 test('scribbling back and forth in ONE gesture builds up like separate strokes', async ({

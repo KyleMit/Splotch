@@ -42,7 +42,7 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { renderOp, clearAllOf, setLiveCrayonBuffer, type StrokeOp } from './strokeOps';
 import {
   setCrayonOptions,
   getCrayonOptions,
@@ -96,6 +96,30 @@ let eraserActive = false;
 let magicActive = false;
 let crayonActive = false;
 let lastColorChangeTime = 0;
+
+// The live crayon pass overlay: an engine-owned canvas layered over the main
+// one, where the OPEN deposition pass renders at full opacity. Its CSS opacity
+// is (1 - colorMix), so what the finger sees composited live is pixel-for-pixel
+// what the pass's 'crayonFlush' stamp will bake into the main canvas at close —
+// the pass mixes slightly with the ink under it (see strokeOps' pass buffer),
+// with no visible snap. pointer-events: none, so input still lands on the
+// canvas beneath.
+let crayonOverlay: HTMLCanvasElement | null = null;
+let crayonOverlayCtx: CanvasRenderingContext2D | null = null;
+
+function syncCrayonOverlayMix() {
+  if (crayonOverlay) crayonOverlay.style.opacity = String(1 - getCrayonOptions().colorMix);
+}
+
+// Close the current deposition pass: stamp the live buffer onto the canvas and
+// record the flush so replay stamps at exactly this position in the op order.
+// recordOp no-ops when no command is open, matching renderOp's no-op flush of a
+// clean buffer.
+function recordCrayonFlush() {
+  const flush: StrokeOp = { kind: 'crayonFlush' };
+  renderOp(ctx, flush);
+  recordOp(flush);
+}
 
 // A per-pass seed stamped onto every crayon op, so the paper-tooth pattern is
 // phase-shifted per deposition pass (the source of wax buildup — ADR-0065) yet
@@ -353,6 +377,12 @@ function resizeCanvas() {
   canvas.height = Math.round(rect.height * renderScale);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+  if (crayonOverlay && crayonOverlayCtx) {
+    crayonOverlay.width = canvas.width;
+    crayonOverlay.height = canvas.height;
+    crayonOverlayCtx.lineCap = 'round';
+    crayonOverlayCtx.lineJoin = 'round';
+  }
   applyPaperView(lockPaper);
 
   // The magic sheet is sized to the paper, so re-rasterize before replaying any
@@ -501,6 +531,7 @@ function strokeCrayonSegments(ps: PointerState, points: { x: number; y: number }
     if (ps.passTracker!.advance(p) === 'split') {
       strokeSmoothSegments(ps, batch);
       batch = [];
+      recordCrayonFlush();
       ps.seed = crayonSeedCounter++;
       ps.passTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
       ps.passTracker.advance(p);
@@ -739,8 +770,10 @@ function restartStrokeIfResumed(ps: PointerState, resume: { x: number; y: number
   ps.midY = resume.y;
   ps.speedSamples = [{ t: now, distance: 0 }];
   // The finger really lifted, so a crayon's next contact is physically a fresh
-  // pass — new seed, tracker restarted at the resumed point.
+  // pass — close the current one (stamp + recorded flush), new seed, tracker
+  // restarted at the resumed point.
   if (ps.passTracker) {
+    recordCrayonFlush();
     ps.seed = crayonSeedCounter++;
     ps.passTracker = new CrayonPassTracker(resume.x, resume.y, ps.lineWidth);
   }
@@ -814,6 +847,14 @@ function stopDrawing(e?: PointerEvent) {
     commitEdgeSwipe(pointerState);
   }
 
+  // A lifting crayon finger closes its deposition pass — stamp the buffered wax
+  // onto the canvas (mixing with the ink under it) and record the flush so
+  // replay stamps at the same point in the op order. Skipped for a discarded
+  // edge-swipe candidate (nothing was rendered).
+  if (pointerState?.isDrawing && pointerState.passTracker && !pointerState.edgeSwipeGuard) {
+    recordCrayonFlush();
+  }
+
   activePointers.delete(e.pointerId);
   activePointerIds.delete(e.pointerId);
 
@@ -837,6 +878,16 @@ function stopDrawing(e?: PointerEvent) {
 export function releaseAllPointers() {
   if (!ctx) return;
   ctx.beginPath();
+
+  // Force-releasing mid-flight crayon strokes closes their open pass so the
+  // committed command ends stamped (one flush covers every open pass — the
+  // buffer is shared per target).
+  for (const ps of activePointers.values()) {
+    if (ps.isDrawing && ps.passTracker && !ps.edgeSwipeGuard) {
+      recordCrayonFlush();
+      break;
+    }
+  }
 
   activePointers.clear();
   groupHasDrawn = false;
@@ -977,6 +1028,7 @@ export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?
 // recorded crayon ops repaint with the new tooth.
 export function setCrayonParams(params: Partial<CrayonOptions>) {
   setCrayonOptions(params);
+  syncCrayonOverlayMix();
   if (ctx) replayAll(ctx);
 }
 
@@ -995,6 +1047,21 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   // beneath it, ADR-0050) rendered as opaque black on the Android WebView. See
   // ADR-0051.
   ctx = canvas.getContext('2d')!;
+
+  // The live crayon pass overlay (see the crayonOverlay notes above). Absolute
+  // inset-0 inside the canvas's positioned container tracks the canvas box —
+  // #drawingCanvas fills that container — and the paper-view transform lives in
+  // the ctx (mirrored onto the buffer per op), never in CSS, so no transform
+  // mirroring is needed here.
+  crayonOverlay?.remove();
+  crayonOverlay = document.createElement('canvas');
+  crayonOverlay.setAttribute('aria-hidden', 'true');
+  crayonOverlay.style.cssText =
+    'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;';
+  canvas.insertAdjacentElement('afterend', crayonOverlay);
+  crayonOverlayCtx = crayonOverlay.getContext('2d')!;
+  setLiveCrayonBuffer(ctx, crayonOverlayCtx);
+  syncCrayonOverlayMix();
 
   // The magic brush's color sheet lives in paper coordinates (like every op) and
   // repaints recorded magic ops once an async fill finishes decoding (ADR-0043).
@@ -1089,6 +1156,10 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
       // the ink.
       releaseAllPointers();
       liveDownIds.clear();
+      setLiveCrayonBuffer(null, null);
+      crayonOverlay?.remove();
+      crayonOverlay = null;
+      crayonOverlayCtx = null;
     },
   };
 }

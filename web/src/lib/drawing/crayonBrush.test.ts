@@ -76,6 +76,11 @@ describe('crayon options seam', () => {
     expect(passes.at(-1)!.coverage).toBeGreaterThan(passes[0].coverage);
   });
 
+  it('ships a low but nonzero colour mix — crayons barely mix, but they do', () => {
+    expect(CRAYON_DEFAULTS.colorMix).toBeGreaterThan(0);
+    expect(CRAYON_DEFAULTS.colorMix).toBeLessThanOrEqual(0.25);
+  });
+
   it('ships a nonzero but very subtle shade variation by default', () => {
     // The splat pattern already varies coverage, so the colour wobble must stay
     // gentle — a default past ~0.12 reads as mottled paint, not wax.

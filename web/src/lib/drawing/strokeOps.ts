@@ -5,7 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
-import { crayonPatternFor, getCrayonPasses } from './crayonBrush';
+import { crayonPatternFor, getCrayonPasses, getCrayonMix } from './crayonBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -21,7 +21,14 @@ import { crayonPatternFor, getCrayonPasses } from './crayonBrush';
 // fill (ADR-0065): the op shape is filled with the paper-tooth pattern from
 // crayonBrush.ts, phase-shifted by `seed` so overlapping same-colour strokes
 // build up (fill tooth) at a constant hue. `seed` is stored so replay is
-// deterministic; every op in one stroke shares it.
+// deterministic; every op in one pass shares it.
+// Crayon ops do not paint the target directly: they accumulate on a per-target
+// PASS BUFFER at full opacity, and a 'crayonFlush' op stamps the buffer onto
+// the target at (1 - colorMix) — that single stamp is what lets a new pass mix
+// slightly with the ink under it (yellow over blue → a little green) without
+// the pass ever mixing with its own overlapping per-frame ops. The engine
+// records a flush at every pass close (mid-stroke split, pointer lift, resume
+// jump), so replay stamps at exactly the live positions in the op order.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -54,6 +61,7 @@ export type StrokeOp =
       crayon?: boolean;
       seed?: number;
     }
+  | { kind: 'crayonFlush' }
   | { kind: 'clear' };
 
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
@@ -119,6 +127,97 @@ function paintCrayon(
   }
 }
 
+// --- Crayon pass buffer ------------------------------------------------------
+//
+// A deposition pass accumulates on a buffer at FULL opacity (overlapping
+// per-frame ops stay idempotent there — binary tooth, same rgb), then one
+// 'crayonFlush' stamps the whole buffer onto the target at (1 - colorMix).
+// Source-over algebra makes the stamp do exactly the physical thing per pixel:
+// over blank paper out_alpha = 1-k (near-opaque pure wax, the paper tinting
+// through slightly); over existing ink out = (1-k)·crayon + k·under, at full
+// opacity — the crayon-mixing the pass buffer exists for. Mixing ONCE per pass
+// is the crux: any per-op mix would compound across the dozens of overlapping
+// per-frame ops and cancel itself toward pure crayon colour in the interior.
+//
+// One buffer per target context. For replay surfaces (baseline, keyframes,
+// exports) it is an offscreen canvas allocated on demand (WeakMap — GC'd with
+// its target). For the LIVE canvas the engine registers its overlay element's
+// context as the buffer, so the open pass is visible under the finger: the
+// overlay's CSS opacity is (1 - colorMix), which composites to the same pixels
+// the stamp will produce — no snap at pass close.
+interface CrayonPassBuffer {
+  ctx: CanvasRenderingContext2D;
+  dirty: boolean;
+}
+
+const bufferByTarget = new WeakMap<CanvasRenderingContext2D, CrayonPassBuffer>();
+let liveTarget: CanvasRenderingContext2D | null = null;
+let liveBuffer: CrayonPassBuffer | null = null;
+
+// The engine points the live canvas's buffer at its overlay canvas (null to
+// unregister on teardown). The overlay is engine-sized alongside the canvas.
+export function setLiveCrayonBuffer(
+  target: CanvasRenderingContext2D | null,
+  buffer: CanvasRenderingContext2D | null
+) {
+  liveTarget = buffer ? target : null;
+  liveBuffer = buffer ? { ctx: buffer, dirty: liveBuffer?.dirty ?? false } : null;
+}
+
+function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
+  if (target === liveTarget && liveBuffer) return liveBuffer;
+  let buf = bufferByTarget.get(target);
+  const w = target.canvas.width;
+  const h = target.canvas.height;
+  if (!buf) {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const g = c.getContext('2d')!;
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    buf = { ctx: g, dirty: false };
+    bufferByTarget.set(target, buf);
+  } else if (buf.ctx.canvas.width !== w || buf.ctx.canvas.height !== h) {
+    buf.ctx.canvas.width = w;
+    buf.ctx.canvas.height = h;
+    buf.ctx.lineCap = 'round';
+    buf.ctx.lineJoin = 'round';
+    buf.dirty = false;
+  }
+  return buf;
+}
+
+function existingBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer | null {
+  if (target === liveTarget && liveBuffer) return liveBuffer;
+  return bufferByTarget.get(target) ?? null;
+}
+
+// Stamp the target's open pass (if any) at (1 - colorMix) and clear the buffer.
+// Device-space blit: buffer and target share backing dimensions, and ops were
+// painted into the buffer through the target's own transform.
+export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
+  const buf = existingBufferFor(target);
+  if (!buf || !buf.dirty) return;
+  target.save();
+  target.setTransform(1, 0, 0, 1, 0, 0);
+  target.globalCompositeOperation = 'source-over';
+  target.globalAlpha = 1 - getCrayonMix();
+  target.drawImage(buf.ctx.canvas, 0, 0);
+  target.restore();
+  clearAllOf(buf.ctx);
+  buf.dirty = false;
+}
+
+// Discard the target's open pass without stamping — a 'clear' wipes everything,
+// open passes included.
+function dropCrayonBuffer(target: CanvasRenderingContext2D) {
+  const buf = existingBufferFor(target);
+  if (!buf || !buf.dirty) return;
+  clearAllOf(buf.ctx);
+  buf.dirty = false;
+}
+
 // Clear everything a target could be showing. The visible ctx's user space is
 // PAPER coordinates whenever the paper view is active — and with the margins
 // drawable, ink can sit at negative paper coordinates that a rect from (0,0)
@@ -135,13 +234,22 @@ export function clearAllOf(target: CanvasRenderingContext2D) {
 // visible ctx) and during undo/resize replay (target = the visible or baseline
 // surface). Erasing composites destination-out; a magic op reveals the color
 // sheet (source-over, its shape filled with the sheet pattern) and paints
-// nothing until the sheet has decoded; everything else lays down its solid color.
+// nothing until the sheet has decoded; a crayon op accumulates on the target's
+// pass buffer until a 'crayonFlush' stamps it (see the pass-buffer notes
+// above); everything else lays down its solid color. Any non-crayon ink op
+// flushes an open pass first so compositing order matches the op order.
 export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   if (op.kind === 'clear') {
+    dropCrayonBuffer(target);
     clearAllOf(target);
     return;
   }
+  if (op.kind === 'crayonFlush') {
+    flushCrayonBuffer(target);
+    return;
+  }
   if (op.magic) {
+    flushCrayonBuffer(target);
     const pattern = sheetPatternFor(target);
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
@@ -149,9 +257,15 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   if (op.crayon && !op.erase) {
-    paintCrayon(target, op);
+    const buf = crayonBufferFor(target);
+    if (typeof target.getTransform === 'function') {
+      buf.ctx.setTransform(target.getTransform());
+    }
+    paintCrayon(buf.ctx, op);
+    buf.dirty = true;
     return;
   }
+  flushCrayonBuffer(target);
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
   paintOpShape(target, op, op.color);
   target.globalCompositeOperation = 'source-over';

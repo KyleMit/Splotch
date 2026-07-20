@@ -107,17 +107,37 @@ ordinary corners, and hand jitter never split (unit-pinned); a genuine pointer-r
 starts a fresh pass. Since the seed was already stored per op, mid-stroke splits are replay-safe by
 the same mechanism as everything else.
 
+**Crossing colours mix a little, via a per-pass buffer stamped once.** Real crayons barely mix — but
+they do: yellow over blue picks up a hint of green. The trap is that any per-op mix would compound
+across the dozens of overlapping per-frame ops inside a stroke and cancel itself toward pure crayon
+colour in the interior; mixing must happen **once per deposition pass**, against what was under the
+pass — the swept-passes experiment's overlay conclusion. So crayon ops no longer paint the target
+directly: they accumulate on a per-target **pass buffer** at full opacity (overlapping ops stay
+idempotent there), and a recorded `crayonFlush` op stamps the whole buffer onto the target at
+`globalAlpha = 1 − colorMix` (default 0.15). Source-over algebra then does exactly the physical
+thing per pixel: over blank paper the wax lands near-opaque and pure (the paper tinting through
+slightly); over existing ink the pixel becomes `(1−k)·crayon + k·under` at full opacity — while
+same-colour overlap stays exactly hue-neutral (`mix(c,c)=c`), preserving the constant-hue buildup
+promise. The engine records the flush at every pass close (mid-stroke split, pointer lift, resume
+jump), so replay stamps — and therefore mixes — at exactly the live positions in the op order,
+keeping rebuilds byte-identical. Live, the open pass renders on an engine-owned **overlay canvas**
+whose CSS opacity is `1 − colorMix`: the browser composites precisely the pixels the stamp will bake
+in, so there is no visible snap at pass close, and the pointer-events-none overlay never intercepts
+input.
+
 Because a crayon op lives in the **same canvas, in draw order**, the correctness requirements fall
 out of machinery that already exists: undo/resize/export replay it like any op (ADR-0033/0034);
 `renderOp` skips crayon when the op is an eraser, so `destination-out` erasing clears wax like any
-pixel; and a later solid stroke paints over it (source-over order). Simplification (ADR-0036) is the
-one carve-out: `crayon` and `seed` join the per-run style key so crayon/solid runs, and two passes
-with different seeds, never merge — but crayon runs then **bypass RDP thinning entirely**. RDP
-re-fits the polyline within ~1px, an invisible AA shift for a solid stroke, but the crayon's binary
-tooth flips whole texels at a re-fitted silhouette — visible at exactly the scribble hairpins
-mid-stroke splitting creates. Replaying the exact live ops is idempotent by construction (binary
-alpha), so live and every rebuild agree byte-for-byte; ADR-0035 keyframing bounds the longer replay
-instead, just as the swept-passes experiment concluded.
+pixel; and a later solid stroke paints over it (source-over order, flushing any open pass first so
+compositing order matches op order). Simplification (ADR-0036) is the one carve-out: a command
+holding crayon ink **bypasses simplification wholesale**, for two reasons. RDP re-fits the polyline
+within ~1px, an invisible AA shift for a solid stroke, but the crayon's binary tooth flips whole
+texels at a re-fitted silhouette — visible at exactly the scribble hairpins mid-stroke splitting
+creates. And the reducer re-emits path ops at the pointer's first-op position, which would reorder
+the inline `crayonFlush` markers relative to their passes — the positions that make replay mix at
+the same points live rendering did. Replaying the exact live ops is idempotent by construction, so
+live and every rebuild agree byte-for-byte; ADR-0035 keyframing bounds the longer replay instead,
+just as the swept-passes experiment concluded.
 
 ### Design + tuning loop
 
@@ -149,6 +169,11 @@ ships as the `CRAYON_DEFAULTS`. Production never calls the setter.
   and coverage rises because the tooth phase-shifts per pass — a fresh stroke *or* a continuous
   gesture re-covering its own paper (the pass tracker). No multiply, no muddying, and no
   lift-dependence: scribbling in one gesture deepens exactly like redrawing after a lift.
+* **+** Crossing colours interact like real wax: each pass lets `colorMix` (15%) of the ink under it
+  show through its deposit, so yellow over blue reads slightly green while same-colour overlap is
+  untouched (`mix(c,c)=c`). The cost is that a pass over blank paper lands at alpha `1 − colorMix`
+  (~0.85) rather than fully opaque — the paper tints through slightly, which is itself physical —
+  and the engine now owns a small overlay canvas for the open pass's live preview.
 * **+** Fully deterministic *and* undo-stable: the tooth field is fixed, the only per-pass variation
   is a stored seed, the tooth is binary, and crayon ops replay exactly as drawn — so the same
   drawing always produces the same pixels, byte-for-byte, including after a later stroke is undone.
