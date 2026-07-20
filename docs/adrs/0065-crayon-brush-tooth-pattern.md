@@ -132,6 +132,15 @@ pressure feel". Two changes make a single pass deposit once, whatever the speed:
   drags *lighter*. Crayon points buffer until the pointer advances ≥ 3 CSS px, so each op lays full
   coverage; the ink trails the fingertip imperceptibly and the tail flushes on lift.
 
+Removing the cap compounding also removed density the approved look was tuned *with*: measured on
+the same gestures (20 px stroke, dev-harness reference bar), the old render laid ~0.93 mean alpha on
+a slow drag, ~0.67 moderate, ~0.47 fast, and the speed-independent single pass landed well below the
+whole band (~0.42) — lighter than even the old fast drag. The variants therefore gained a **`layers`
+parameter** (deposit `1 − (1 − base)^layers`, default 1): `layers: 2.75` compounds the tuned base
+curve to the ~2–3 effective coats a typical drag used to lay, so a single pass now matches the
+approved moderate density (measured 0.68 vs the old moderate's 0.67) at every speed, and later
+passes still build on top.
+
 Accepted residue: seam pixels at op joints and the doubled half-disc under each anchor dot deviate
 slightly from the ideal single deposit — localized, hidden by the grain, and it reads as a crayon's
 pressed stroke ends. Deliberately kept: a stroke that genuinely crosses **itself** still builds up

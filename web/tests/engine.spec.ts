@@ -90,7 +90,10 @@ test('undo preserves and rebases a stroke that is still in progress', async ({ p
   await page.evaluate(() => window.__engine.undo());
 
   expect(await page.evaluate(() => window.__engine.pixelAt(60, 40)[3])).toBe(0);
-  expect(await page.evaluate(() => window.__engine.pixelAt(220, 180)[3])).toBeGreaterThan(0);
+  // Sample inside the live stroke's drawn span (it runs 180→220 at y=180), not
+  // at its exact tip: a mid-stroke crayon path ends in a butt cut (the round
+  // end anchor is only recorded on lift), so the boundary pixel itself is bare.
+  expect(await page.evaluate(() => window.__engine.pixelAt(200, 180)[3])).toBeGreaterThan(0);
   expect((await state(page)).canvasEmpty).toBe(false);
 
   await page.mouse.up();
