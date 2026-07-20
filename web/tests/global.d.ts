@@ -67,6 +67,7 @@ declare global {
       resizeTo(w: number, h: number): Promise<void>;
       resumeTo(w: number, h: number): void;
       strokeSync(points: { x: number; y: number }[], pointerType?: string): void;
+      coalescedStrokeSync(points: { x: number; y: number }[], batchSize: number): void;
       multiStrokeSync(
         strokes: { pointerId: number; points: { x: number; y: number }[] }[],
         pointerType?: string

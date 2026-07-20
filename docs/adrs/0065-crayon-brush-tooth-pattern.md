@@ -115,10 +115,11 @@ reducer, so a (rare) mixed command stays crayon.
 
 ## Consequences
 
-* A single continuous stroke's overlapping per-frame stamps still compound slightly under per-op
-  `source-over`, so a slow/heavy stroke lays down denser than a fast one — mild, and it reads as
-  authentic pressure/speed sensitivity. This is now a stable property of the stored stroke (raw
-  ops), reproduced identically on every rebuild, rather than something a rebuild could shift.
+* Every raw pointer sample becomes its own crayon op, even when a browser delivers several samples
+  coalesced in one pointer event. This keeps the stroke's body density largely independent of swipe
+  speed and browser event batching, while allowing the small natural variation around widely spaced
+  samples and jagged edges. The raw op stream is still replayed exactly, so undo, resize, and export
+  preserve the live pixels.
 * The crayon is semi-transparent, so its tooth valleys reveal whatever is beneath — the real paper
   texture on a blank canvas (visual coherence for free), or a coloring page's line art — which is
   desirable. The eraser (`destination-out`) removes crayon pixels normally, and the empty-scan's

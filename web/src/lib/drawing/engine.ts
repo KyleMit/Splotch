@@ -442,33 +442,37 @@ function renderStrokeStart(ps: PointerState) {
 // One quadratic segment per input point: the path runs midpoint-to-midpoint
 // with the raw point as the control, so consecutive segments share a tangent
 // and the stroke curves smoothly instead of showing straight-chord corners.
-// Each call is captured as one path op (matching its own beginPath/stroke
-// boundary) so undo replay reproduces identical pixels and anti-aliasing.
+// Each segment is captured and stroked independently, even when the browser
+// delivers several coalesced points in one pointermove. A wax crayon is
+// semi-transparent, so grouping those points into one canvas stroke made its
+// density depend on the browser's pointer-event batching: a quick drag (many
+// coalesced points) was lighter than the same slow drag. One segment per op
+// gives both cadences the same compositing boundaries, while raw-op replay
+// keeps undo, resize, and export pixel-identical to the live mark.
 function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
   if (points.length === 0) return;
-  const op: StrokeOp = {
-    kind: 'path',
-    pid: ps.id,
-    startX: ps.midX,
-    startY: ps.midY,
-    segs: [],
-    color: ps.color,
-    lineWidth: ps.lineWidth,
-    erase: ps.erase,
-    magic: ps.magic,
-    brush: ps.brush,
-  };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
     const midY = (ps.y + y) / 2;
-    op.segs.push({ cx: ps.x, cy: ps.y, x: midX, y: midY });
+    const op: StrokeOp = {
+      kind: 'path',
+      pid: ps.id,
+      startX: ps.midX,
+      startY: ps.midY,
+      segs: [{ cx: ps.x, cy: ps.y, x: midX, y: midY }],
+      color: ps.color,
+      lineWidth: ps.lineWidth,
+      erase: ps.erase,
+      magic: ps.magic,
+      brush: ps.brush,
+    };
+    renderOp(ctx, op);
+    recordOp(op);
     ps.x = x;
     ps.y = y;
     ps.midX = midX;
     ps.midY = midY;
   }
-  renderOp(ctx, op);
-  recordOp(op);
 }
 
 // Push the finished stroke group onto the undo log (once per group, when the

@@ -1372,6 +1372,35 @@ test('a crayon stroke rebuilds identically — no texture shift on undo/resize (
   expect(debug.keyframes).toBe(0);
 });
 
+test('crayon density is stable across slow and coalesced pointer input', async ({ page }) => {
+  const points = crayonBar(90, 60, 300);
+  await page.evaluate(() => {
+    window.__engine.setColor('#62a2e9');
+    window.__engine.setStrokeWidth(20);
+    window.__engine.setCrayonVariant('wax');
+  });
+  await page.waitForTimeout(160);
+
+  // A slow drag commonly arrives as one raw point per pointermove.
+  await page.evaluate((pts) => window.__engine.strokeSync(pts), points);
+  const slow = await page.evaluate(() => window.__engine.inkStats(60, 82, 240, 16));
+
+  await page.evaluate(() => window.__engine.clearCanvas());
+  // The same geometry in batches simulates a long, quick drag. Coalescing must
+  // not change the crayon's body density — only the path's natural edge detail.
+  await page.evaluate((pts) => window.__engine.coalescedStrokeSync(pts, 5), points);
+  const quick = await page.evaluate(() => window.__engine.inkStats(60, 82, 240, 16));
+
+  expect(Math.abs(slow.alpha - quick.alpha)).toBeLessThan(0.01);
+  expect(Math.abs(slow.coverage - quick.coverage)).toBeLessThan(0.01);
+
+  // The unbatched raw ops are also the replay contract: rebuilding the quick
+  // stroke must retain this normalized density exactly.
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  const rebuilt = await page.evaluate(() => window.__engine.inkStats(60, 82, 240, 16));
+  expect(rebuilt).toEqual(quick);
+});
+
 test('same-colour crayon builds up: denser, hue held, live along the second stroke (ADR-0065)', async ({
   page,
 }) => {

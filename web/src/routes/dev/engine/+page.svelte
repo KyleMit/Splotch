@@ -222,6 +222,33 @@
         ev('pointerup', points[points.length - 1]);
       },
 
+      // Synthetic stroke with the same raw points delivered in batches, like a
+      // fast finger drag whose browser coalesces several samples per move. This
+      // keeps the cadence test on the real pointer path instead of testing a
+      // renderer helper in isolation.
+      coalescedStrokeSync(points: { x: number; y: number }[], batchSize: number) {
+        const rect = canvasEl.getBoundingClientRect();
+        const eventAt = (type: string, p: { x: number; y: number }) =>
+          new PointerEvent(type, {
+            pointerId: 1,
+            pointerType: 'mouse',
+            clientX: rect.left + p.x,
+            clientY: rect.top + p.y,
+            bubbles: true,
+            cancelable: true,
+          });
+        canvasEl.dispatchEvent(eventAt('pointerdown', points[0]));
+        for (let i = 1; i < points.length; i += batchSize) {
+          const batch = points.slice(i, i + batchSize);
+          const move = eventAt('pointermove', batch[batch.length - 1]);
+          Object.defineProperty(move, 'getCoalescedEvents', {
+            value: () => batch.map((p) => eventAt('pointermove', p)),
+          });
+          canvasEl.dispatchEvent(move);
+        }
+        canvasEl.dispatchEvent(eventAt('pointerup', points[points.length - 1]));
+      },
+
       // Synchronous synthetic multi-touch — drives several pointers at once
       // through the same pointerdown/move/up handlers the engine binds. Every
       // pointer goes down first, then all advance one step at a time in lockstep
