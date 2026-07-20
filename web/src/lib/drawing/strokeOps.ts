@@ -148,6 +148,12 @@ function paintCrayon(
 interface CrayonPassBuffer {
   ctx: CanvasRenderingContext2D;
   dirty: boolean;
+  // Device-px bounding box of the open pass's ink, so the stamp and the
+  // post-stamp clear touch only the pass-sized rect. Stamping the full canvas
+  // per pass turned replay (undo, keyframe builds — one stamp per pass over the
+  // whole history) into hundreds of ms of full-canvas blits; the bbox keeps a
+  // flush proportional to the pass, not the canvas.
+  bounds: { x0: number; y0: number; x1: number; y1: number } | null;
 }
 
 const bufferByTarget = new WeakMap<CanvasRenderingContext2D, CrayonPassBuffer>();
@@ -161,7 +167,7 @@ export function setLiveCrayonBuffer(
   buffer: CanvasRenderingContext2D | null
 ) {
   liveTarget = buffer ? target : null;
-  liveBuffer = buffer ? { ctx: buffer, dirty: liveBuffer?.dirty ?? false } : null;
+  liveBuffer = buffer ? { ctx: buffer, dirty: false, bounds: null } : null;
 }
 
 function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
@@ -176,7 +182,7 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
     const g = c.getContext('2d')!;
     g.lineCap = 'round';
     g.lineJoin = 'round';
-    buf = { ctx: g, dirty: false };
+    buf = { ctx: g, dirty: false, bounds: null };
     bufferByTarget.set(target, buf);
   } else if (buf.ctx.canvas.width !== w || buf.ctx.canvas.height !== h) {
     buf.ctx.canvas.width = w;
@@ -184,6 +190,7 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
     buf.ctx.lineCap = 'round';
     buf.ctx.lineJoin = 'round';
     buf.dirty = false;
+    buf.bounds = null;
   }
   return buf;
 }
@@ -193,20 +200,83 @@ function existingBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer |
   return bufferByTarget.get(target) ?? null;
 }
 
-// Stamp the target's open pass (if any) at (1 - colorMix) and clear the buffer.
-// Device-space blit: buffer and target share backing dimensions, and ops were
-// painted into the buffer through the target's own transform.
+// Grow the buffer's device-px bounds by an op's user-space bbox, mapped through
+// the transform the op was painted with. Conservative: quadratic/cubic control
+// points bound the curve's hull, the pad covers the stroke's half-width plus AA
+// bleed, and a transformed rect unions its mapped corners.
+function unionCrayonBounds(
+  buf: CrayonPassBuffer,
+  matrix: DOMMatrix | null,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  pad: number
+) {
+  x0 -= pad;
+  y0 -= pad;
+  x1 += pad;
+  y1 += pad;
+  if (matrix && !matrix.isIdentity) {
+    const corners = [
+      matrix.transformPoint({ x: x0, y: y0 }),
+      matrix.transformPoint({ x: x1, y: y0 }),
+      matrix.transformPoint({ x: x0, y: y1 }),
+      matrix.transformPoint({ x: x1, y: y1 }),
+    ];
+    x0 = Math.min(...corners.map((p) => p.x));
+    y0 = Math.min(...corners.map((p) => p.y));
+    x1 = Math.max(...corners.map((p) => p.x));
+    y1 = Math.max(...corners.map((p) => p.y));
+  }
+  const w = buf.ctx.canvas.width;
+  const h = buf.ctx.canvas.height;
+  x0 = Math.max(0, Math.floor(x0));
+  y0 = Math.max(0, Math.floor(y0));
+  x1 = Math.min(w, Math.ceil(x1));
+  y1 = Math.min(h, Math.ceil(y1));
+  if (x1 <= x0 || y1 <= y0) return;
+  const b = buf.bounds;
+  if (!b) buf.bounds = { x0, y0, x1, y1 };
+  else {
+    b.x0 = Math.min(b.x0, x0);
+    b.y0 = Math.min(b.y0, y0);
+    b.x1 = Math.max(b.x1, x1);
+    b.y1 = Math.max(b.y1, y1);
+  }
+}
+
+function clearCrayonBounds(buf: CrayonPassBuffer) {
+  const b = buf.bounds;
+  if (b) {
+    buf.ctx.save();
+    buf.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    buf.ctx.clearRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+    buf.ctx.restore();
+  }
+  buf.bounds = null;
+  buf.dirty = false;
+}
+
+// Stamp the target's open pass (if any) at (1 - colorMix) and clear the buffer
+// — both restricted to the pass's device-px bounds. Buffer and target share
+// backing dimensions, and ops were painted into the buffer through the target's
+// own transform, so the blit is a 1:1 rect copy in device space.
 export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
   const buf = existingBufferFor(target);
   if (!buf || !buf.dirty) return;
-  target.save();
-  target.setTransform(1, 0, 0, 1, 0, 0);
-  target.globalCompositeOperation = 'source-over';
-  target.globalAlpha = 1 - getCrayonMix();
-  target.drawImage(buf.ctx.canvas, 0, 0);
-  target.restore();
-  clearAllOf(buf.ctx);
-  buf.dirty = false;
+  const b = buf.bounds;
+  if (b) {
+    const w = b.x1 - b.x0;
+    const h = b.y1 - b.y0;
+    target.save();
+    target.setTransform(1, 0, 0, 1, 0, 0);
+    target.globalCompositeOperation = 'source-over';
+    target.globalAlpha = 1 - getCrayonMix();
+    target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
+    target.restore();
+  }
+  clearCrayonBounds(buf);
 }
 
 // Discard the target's open pass without stamping — a 'clear' wipes everything,
@@ -214,8 +284,7 @@ export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
 function dropCrayonBuffer(target: CanvasRenderingContext2D) {
   const buf = existingBufferFor(target);
   if (!buf || !buf.dirty) return;
-  clearAllOf(buf.ctx);
-  buf.dirty = false;
+  clearCrayonBounds(buf);
 }
 
 // Clear everything a target could be showing. The visible ctx's user space is
@@ -258,11 +327,34 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   }
   if (op.crayon && !op.erase) {
     const buf = crayonBufferFor(target);
+    let matrix: DOMMatrix | null = null;
     if (typeof target.getTransform === 'function') {
-      buf.ctx.setTransform(target.getTransform());
+      matrix = target.getTransform();
+      buf.ctx.setTransform(matrix);
     }
     paintCrayon(buf.ctx, op);
     buf.dirty = true;
+    if (op.kind === 'dot') {
+      unionCrayonBounds(buf, matrix, op.x, op.y, op.x, op.y, op.radius + 2);
+    } else {
+      let x0 = op.startX;
+      let y0 = op.startY;
+      let x1 = op.startX;
+      let y1 = op.startY;
+      for (const s of op.segs) {
+        x0 = Math.min(x0, s.cx, s.x);
+        y0 = Math.min(y0, s.cy, s.y);
+        x1 = Math.max(x1, s.cx, s.x);
+        y1 = Math.max(y1, s.cy, s.y);
+        if (s.c2x !== undefined) {
+          x0 = Math.min(x0, s.c2x);
+          y0 = Math.min(y0, s.c2y!);
+          x1 = Math.max(x1, s.c2x);
+          y1 = Math.max(y1, s.c2y!);
+        }
+      }
+      unionCrayonBounds(buf, matrix, x0, y0, x1, y1, op.lineWidth / 2 + 2);
+    }
     return;
   }
   flushCrayonBuffer(target);
