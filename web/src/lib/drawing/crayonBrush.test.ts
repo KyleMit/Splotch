@@ -6,6 +6,7 @@ import {
   getCrayonPasses,
   waxTone,
   shadeWaxChannel,
+  waxMixDeposit,
   CrayonPassTracker,
   CRAYON_DEFAULTS,
   type CrayonPoint,
@@ -185,6 +186,41 @@ describe('CrayonPassTracker', () => {
   });
 });
 
+describe('waxMixDeposit', () => {
+  const yellow: [number, number, number] = [242, 193, 78];
+  const blue: [number, number, number] = [44, 95, 170];
+
+  it('is an exact identity for same-colour under-ink (constant-hue buildup)', () => {
+    expect(waxMixDeposit(blue, blue, 255, 0.4)).toEqual(blue);
+    expect(waxMixDeposit(yellow, yellow, 255, 1)).toEqual(yellow);
+  });
+
+  it('barely moves for the tone variants of its own colour', () => {
+    const toned: [number, number, number] = [50, 101, 178];
+    const out = waxMixDeposit(blue, toned, 255, 0.4);
+    for (let i = 0; i < 3; i++) expect(Math.abs(out[i] - blue[i])).toBeLessThanOrEqual(2);
+  });
+
+  it('pulls yellow over blue toward GREEN, not grey (subtractive target)', () => {
+    const out = waxMixDeposit(yellow, blue, 255, 0.4);
+    // Red drops much more than green — the hue rotates toward green…
+    expect(yellow[0] - out[0]).toBeGreaterThan(25);
+    expect(out[1] - out[0]).toBeGreaterThan(yellow[1] - yellow[0] + 15);
+    // …and blue does NOT rise (an RGB lerp toward blue would raise it).
+    expect(out[2]).toBeLessThanOrEqual(yellow[2]);
+  });
+
+  it('is identity at zero amplitude or zero under-alpha, and stays in range', () => {
+    expect(waxMixDeposit(yellow, blue, 255, 0)).toEqual(yellow);
+    expect(waxMixDeposit(yellow, blue, 0, 0.4)).toEqual(yellow);
+    const out = waxMixDeposit([255, 0, 255], [0, 255, 0], 255, 1);
+    for (const c of out) {
+      expect(c).toBeGreaterThanOrEqual(0);
+      expect(c).toBeLessThanOrEqual(255);
+    }
+  });
+});
+
 describe('crayon options seam', () => {
   afterEach(() => setCrayonOptions(CRAYON_DEFAULTS));
 
@@ -196,8 +232,11 @@ describe('crayon options seam', () => {
   });
 
   it('mixes colour with the under-ink a little, but only a little (crayons barely mix)', () => {
+    // The amplitude is the MAX pull, reached only for maximally different
+    // colours (waxMixDeposit weights by colour distance; same colour is an
+    // exact identity) — so it can sit higher than a flat fraction would.
     expect(CRAYON_DEFAULTS.colorMix).toBeGreaterThan(0);
-    expect(CRAYON_DEFAULTS.colorMix).toBeLessThanOrEqual(0.3);
+    expect(CRAYON_DEFAULTS.colorMix).toBeLessThanOrEqual(0.5);
   });
 
   it('setCrayonOptions overrides then restores (the dev A/B seam)', () => {

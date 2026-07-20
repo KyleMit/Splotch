@@ -1543,15 +1543,16 @@ test('crayon deposits pick up a little of the ink underneath (yellow over blue l
   const mixed = await measure(null); // tuned default
   expect(mixed.over.n).toBeGreaterThan(300);
   expect(mixed.bare.n).toBeGreaterThan(300);
-  // Deposits over blue lean toward it: less red, more blue — but subtly.
-  expect(mixed.bare.r - mixed.over.r).toBeGreaterThan(8);
-  expect(mixed.over.b - mixed.bare.b).toBeGreaterThan(5);
-  expect(mixed.bare.r - mixed.over.r).toBeLessThan(60);
+  // Deposits over blue lean GREEN (the subtractive target): red drops hard
+  // while blue does not rise — an RGB lerp toward blue would raise it.
+  expect(mixed.bare.r - mixed.over.r).toBeGreaterThan(15);
+  expect(mixed.bare.r - mixed.over.r).toBeLessThan(100);
+  expect(mixed.over.b - mixed.bare.b).toBeLessThan(8);
 
   const flat = await measure(0);
   expect(Math.abs(flat.over.r - flat.bare.r)).toBeLessThan(3);
   expect(Math.abs(flat.over.b - flat.bare.b)).toBeLessThan(3);
-  await page.evaluate(() => window.__engine.setCrayonParams({ colorMix: 0.15 }));
+  await page.evaluate(() => window.__engine.setCrayonParams({ colorMix: 0.4 }));
 });
 
 test('a colour-mixed crayon scene replays and undoes exactly', async ({ page }) => {

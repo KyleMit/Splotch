@@ -16,6 +16,7 @@ import {
   getCrayonPasses,
   noteCrayonInk,
   resetCrayonInk,
+  waxMixDeposit,
   type DeviceBox,
 } from './crayonBrush';
 
@@ -270,11 +271,33 @@ export function applyCrayonMixFixup(target: CanvasRenderingContext2D, ops: Strok
       paintOpShape(scratch, op, pattern, passes[i].widthScale);
     }
   }
-  scratch.setTransform(1, 0, 0, 1, 0, 0);
-  scratch.globalCompositeOperation = 'source-atop';
-  scratch.globalAlpha = getCrayonColorMix();
-  scratch.drawImage(under, union.x, union.y, union.w, union.h, union.x, union.y, union.w, union.h);
   scratch.restore();
+  // The mix itself is per-pixel math over the bounded union rect (off the draw
+  // frame, so exactness beats compositing tricks): pull each deposited pixel
+  // toward its subtractive product with the under-ink, weighted by colour
+  // distance — see waxMixDeposit for why that model (and not an RGB lerp or a
+  // plain multiply) is what makes yellow-over-blue lean green while
+  // same-colour buildup stays an exact identity.
+  const k = getCrayonColorMix();
+  const underCtx = under.getContext('2d');
+  if (!underCtx) return false;
+  const deposits = scratch.getImageData(union.x, union.y, union.w, union.h);
+  const underneath = underCtx.getImageData(union.x, union.y, union.w, union.h);
+  const d = deposits.data;
+  const u = underneath.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0 || u[i + 3] === 0) continue;
+    const [r, g, b] = waxMixDeposit(
+      [d[i], d[i + 1], d[i + 2]],
+      [u[i], u[i + 1], u[i + 2]],
+      u[i + 3],
+      k
+    );
+    d[i] = r;
+    d[i + 1] = g;
+    d[i + 2] = b;
+  }
+  scratch.putImageData(deposits, union.x, union.y);
   target.save();
   target.setTransform(1, 0, 0, 1, 0, 0);
   target.drawImage(

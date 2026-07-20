@@ -129,9 +129,17 @@ correct construction restores purity:
   a multi-touch command's interleaved ops, which is only sound while every op of the command mixes
   against the same under image. Mixing with pre-stroke ink covers every visible case anyway — a
   stroke is one colour, and mixing with your own colour is invisible.
-* **A lerp, not a multiply — same-colour buildup stays at constant hue.** `lerp(C, C) = C`, so
-  redrawing the same colour cannot darken or muddy (the constant-hue requirement above); a
-  subtractive multiply would darken same-colour overlap by `k·C(1−C/255)` and was rejected.
+* **A subtractive target, weighted by colour distance — green from yellow-over-blue AND constant-hue
+  same-colour buildup.** Wax layers mix subtractively (thin yellow over blue transmits green), so
+  each deposited pixel pulls toward the multiply product `C·S/255` — an RGB lerp toward the
+  under-colour was tried first and rejected: yellow lerped toward blue passes through grey/mustard,
+  never green. A *plain* multiply was also rejected — `multiply(C, C)` darkens same-colour overlap
+  by `k·C(1−C/255)`, breaking the constant-hue requirement — so the pull is scaled by how different
+  the two colours are (max channel difference, saturating at 180) and by the under-ink's alpha:
+  mixing with your own colour, including its ±tone variants, is an identity to within a level
+  (`waxMixDeposit`, pure and unit-tested). Because the fixup runs once per command over a bounded
+  rect, off the draw frame, it applies this as exact per-pixel math (getImageData/putImageData on
+  the scratch) rather than contorting it into compositing primitives.
 * **The mix is applied once per command, at commit, from the simplified ops — never per live op.**
   Any per-op composite re-touches the trail of deposits behind the tip (its padded bounds overhang
   them), and a re-touch repeated across the live op count diverges from the few simplified replay

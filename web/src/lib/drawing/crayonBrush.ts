@@ -94,13 +94,14 @@ export interface CrayonOptions {
   // idempotence is unaffected. 0 disables (flat body colour).
   toneVariation: number;
   // How much freshly deposited wax picks up the colour of ink already on the
-  // paper beneath it (yellow over blue leans green): each deposited texel is
-  // lerped this fraction toward the under-ink sampled from a once-per-stroke
-  // snapshot, applied at commit (see the colour-mixing section below — the
-  // subtle hue pull settles at pen lift; coverage buildup stays live). Real
-  // crayons barely mix, so keep it low. A lerp is identity when the under-ink
-  // is the same colour, so same-colour buildup still cannot shift hue. 0
-  // disables (the pure deposit).
+  // paper beneath it: each deposited texel is pulled up to this fraction
+  // toward the SUBTRACTIVE (multiply) product with the under-ink sampled from
+  // a once-per-stroke snapshot, applied at commit (see waxMixDeposit and the
+  // colour-mixing section below — the subtle hue pull settles at pen lift;
+  // coverage buildup stays live). Subtractive is what makes yellow over blue
+  // lean GREEN, like real wax layers; the pull is weighted by how different
+  // the two colours are, so same-colour buildup is an exact identity and
+  // cannot darken or shift hue. 0 disables (the pure deposit).
   colorMix: number;
   // The density passes, widest first.
   passes: CrayonPass[];
@@ -133,7 +134,7 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   bodyVariation: 0.2,
   bodyVariationCell: 110,
   toneVariation: 0.12,
-  colorMix: 0.15,
+  colorMix: 0.4,
   passes: [
     { widthScale: 1.0, coverage: 0.45 },
     { widthScale: 0.68, coverage: 0.63 },
@@ -228,6 +229,36 @@ export function waxTone(h: number): number {
 export function shadeWaxChannel(channel: number, toneShade: number, amplitude: number): number {
   const a = toneShade * amplitude;
   return Math.round(a >= 0 ? channel * (1 - a) : channel + (255 - channel) * -a);
+}
+
+// Mix one freshly deposited texel toward the ink underneath it (colorMix).
+// Wax layers mix SUBTRACTIVELY — thin yellow over blue transmits green — so
+// the target is the multiply product (C·S/255), not the RGB average (an RGB
+// lerp of yellow toward blue passes through grey, never green). The pull is
+// `amplitude` scaled by how different the two colours are (max channel
+// difference, saturating at 180) and by the under-ink's alpha, so mixing with
+// your own colour — including its ±tone variants — is an identity: same-colour
+// buildup cannot darken or shift hue, the constant-hue requirement. Pure and
+// deterministic (the commit fixup applies it per pixel); exported for unit
+// tests.
+export function waxMixDeposit(
+  deposit: [number, number, number],
+  under: [number, number, number],
+  underAlpha: number,
+  amplitude: number
+): [number, number, number] {
+  const dist = Math.max(
+    Math.abs(deposit[0] - under[0]),
+    Math.abs(deposit[1] - under[1]),
+    Math.abs(deposit[2] - under[2])
+  );
+  const w = amplitude * Math.min(1, dist / 180) * (underAlpha / 255);
+  if (w <= 0) return deposit;
+  return [
+    Math.round(deposit[0] + ((deposit[0] * under[0]) / 255 - deposit[0]) * w),
+    Math.round(deposit[1] + ((deposit[1] * under[1]) / 255 - deposit[1]) * w),
+    Math.round(deposit[2] + ((deposit[2] * under[2]) / 255 - deposit[2]) * w),
+  ];
 }
 
 // The paper-tooth height field (0..1, higher = a raised bump that takes wax), a
