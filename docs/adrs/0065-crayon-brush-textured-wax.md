@@ -132,19 +132,42 @@ correct construction restores purity:
 * **A lerp, not a multiply — same-colour buildup stays at constant hue.** `lerp(C, C) = C`, so
   redrawing the same colour cannot darken or muddy (the constant-hue requirement above); a
   subtractive multiply would darken same-colour overlap by `k·C(1−C/255)` and was rejected.
-* **Compositing confines the mix to the op's own tooth.** A mixed op renders on a shared scratch
-  surface: the tooth passes stroke onto the scratch, one `source-atop` pass at `colorMix` alpha
-  draws the snapshot over it (atop = confined to existing alpha, so the pits stay transparent and
-  old ink shows through untouched), and the result blits back within the op's device bounds. Live
-  per-op bounds are a few dozen pixels, so the extra raster cost is small; the snapshot copy is one
-  full-canvas `drawImage` per stroke, skipped entirely when the canvas is blank or `colorMix` is 0.
+* **The mix is applied once per command, at commit, from the simplified ops — never per live op.**
+  Any per-op composite re-touches the trail of deposits behind the tip (its padded bounds overhang
+  them), and a re-touch repeated across the live op count diverges from the few simplified replay
+  ops — a rejected per-op `source-atop` variant drifted deposits by tens of levels between live and
+  rebuild. Instead the live stroke renders pure deposits (the exact `colorMix`-0 path, so nothing is
+  added to the pointer frame), and at commit — already off the draw frame — one scratch pass
+  re-renders the command's freshly *simplified* tooth ops over the overlap rect, lerps the deposits
+  toward the snapshot with a single `source-atop` at `colorMix` alpha (atop confines the lerp to the
+  deposits' own alpha, so pits and surrounding old ink stay untouched), and blits the rect over the
+  live render. Every replay loop applies the *identical* fixup with the *identical* simplified ops
+  after the command's ops, so live-final and every rebuild agree on deposit values by construction —
+  pinned by a live-vs-remount byte comparison in E2E. The visible trade: the subtle hue pull settles
+  in at pen lift rather than mid-stroke; coverage buildup stays live.
+* **Cost scales with actual overlap, not with drawing.** renderOp maintains a per-target
+  ink-occupancy grid (64 px cells, reset by clear ops, marked fully inked when a rebuild blits a
+  baseline/keyframe raster it can't itemize); the grid is frozen at arm time so decisions see only
+  pre-stroke ink. The fixup is confined to the union of the ops' inked-cell overlap rects — over
+  blank paper the lerp is an identity, so a stroke that crosses nothing records `mixedUnder: false`
+  on its command and every rebuild skips the machinery for it entirely. The snapshot is captured in
+  one batched copy of the inked region at stroke start (pointerdown — one settle beats read-back
+  stalls landing mid-gesture), with lazy per-cell capture as the pre-paint safety net; replay
+  captures exactly the cells each command's fixup will sample, in one bounded copy per command.
 
-Cost: two extra canvas-sized rasters (snapshot + scratch, grow-only, allocated lazily — never for a
-blank canvas), one full-canvas copy per crayon stroke over existing ink, and the same per command on
-rebuild. Residual: the under-ink's ADR-accepted anti-aliased silhouette fringe differs slightly
-between live and simplified rendering, and the mix samples it — measured at a few invisible fringe
-pixels per overlapping stroke pair (present with `colorMix` 0 too; the mixed-scene E2E pins interior
-byte-stability and bounds the fringe count).
+Cost: one grow-only snapshot raster and one grow-only scratch raster (allocated lazily — never while
+the canvas is blank), one bounded copy per stroke over existing ink, and one scratch composite per
+mixed command at commit and per rebuild. Measured on the 4×-CPU-throttle harness (software raster,
+the worst case): `engine.draw` 1.1 ms avg / 5.6 ms max — inside the ≲ 2 ms / ~8 ms budget — while
+`engine.commit` rises to ~27 ms avg and `engine.undo` to ~130 ms avg on a heavily-overlapped session
+(vs ~14 / ~5 ms with `colorMix` 0): both are off-frame one-shots whose cost is proportional to how
+much of the drawing is genuinely overlapped crayon, and GPU-accelerated devices composite these
+rects far cheaper. Residuals: the under-ink's ADR-accepted anti-aliased silhouette fringe differs
+slightly between live and simplified rendering and the mix samples it (a few invisible fringe pixels
+per overlapping stroke pair, present with `colorMix` 0 too); and the live ink grid is built from
+per-frame op bounds while a rebuild's grid comes from simplified bounds, so a 64 px cell at a
+stroke's extreme fringe can rarely differ in mix coverage between live and rebuild —
+rebuild-vs-rebuild is always exact.
 
 ### Mid-gesture buildup: the seed advances when a stroke re-covers its own wax
 

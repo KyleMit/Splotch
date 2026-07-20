@@ -1578,13 +1578,32 @@ test('a colour-mixed crayon scene replays and undoes exactly', async ({ page }) 
   });
   const c0 = await count(page);
   expect(c0).toBeGreaterThan(0);
-  await page.evaluate(() => window.__engine.remount());
+  // Live-final vs rebuild, byte level: the mix is applied at commit from the
+  // SAME simplified ops every replay uses, so the mixed deposits must agree —
+  // this is the check that catches any per-op-count mixing drift. Only the
+  // ADR-0065 silhouette-fringe residual may differ.
+  const liveVsReplay = await page.evaluate(() => {
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const band = () => Array.from(g.getImageData(20, 60, cv.width - 40, 35).data);
+    const live = band();
+    window.__engine.remount();
+    const replayed = band();
+    let changed = 0;
+    for (let i = 0; i < live.length; i += 4) {
+      let d = 0;
+      for (let c = 0; c < 4; c++) d += Math.abs(live[i + c] - replayed[i + c]);
+      if (d > 8) changed++;
+    }
+    return changed / (live.length / 4);
+  });
+  expect(liveVsReplay).toBeLessThan(0.05);
   // Two OVERLAPPING strokes carry the ADR-0065 silhouette residual: the
   // simplified replay's stroke edge anti-aliases a hair differently from the
   // live per-frame edge where it crosses the other stroke, so the rebuild can
   // differ by a few sub-pixel fringe pixels (measured ±1 of ~7000; identical
   // with colorMix 0 — it is not the mixing). Interior ink is exact, pinned by
-  // the byte-stability half below.
+  // the byte-stability halves.
   expect(Math.abs((await count(page)) - c0)).toBeLessThanOrEqual(8);
 
   const changedFrac = await page.evaluate(() => {

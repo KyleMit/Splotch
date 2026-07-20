@@ -47,6 +47,7 @@ import {
   setCrayonOptions,
   getCrayonOptions,
   prepareCrayonMixUnder,
+  captureCrayonMixNow,
   CrayonPassTracker,
   type CrayonOptions,
 } from './crayonBrush';
@@ -423,6 +424,10 @@ function beginStrokeGroup() {
   // replayed command (whose target holds exactly this state when its turn
   // comes) mix against identical bytes.
   prepareCrayonMixUnder(ctx, crayonActive && !eraserActive && !magicActive, canvasEmpty);
+  // Capture the whole inked region in one copy now, at pointerdown: a single
+  // settle before the stroke's first frame beats read-back stalls landing
+  // mid-gesture as the stroke wanders into uncaptured cells.
+  captureCrayonMixNow();
   setCanvasEmptyState(false);
   groupHasDrawn = true;
 }
@@ -519,7 +524,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
 // work while a finger is mid-stroke.
 function commitStrokeGroup() {
   if (PERF_MARKS) performance.mark('engine.commit:start');
-  if (!commitActiveCommand()) return;
+  if (!commitActiveCommand(ctx)) return;
   setCanUndo(true);
   if (onStrokeEnd) onStrokeEnd();
   if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
