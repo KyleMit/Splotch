@@ -1378,15 +1378,16 @@ test('a second same-colour crayon pass builds up where it is drawn, at a constan
   expect(r.leftB.cov).toBeGreaterThan(r.leftA.cov + 0.03);
   // Live/gradual, not a global snap: the untouched (right) band is unchanged.
   expect(Math.abs(r.rightB.cov - r.rightA.cov)).toBeLessThan(0.02);
-  // No runaway darken/muddy: same-colour overdraw deepens only slightly. Two
-  // deliberate effects move a band's mean a few levels between passes — the
-  // shade wobble's slow term, and the colour-mix glaze (a same-colour pass
-  // deepens covered texels by ~m·c·(1-c/255), CONVERGING toward a fixed point
-  // a few percent under the colour, never compounding). An uncontrolled
-  // multiply or translucency regression darkens by tens of levels per pass,
-  // far past this bound.
+  // No runaway darken/muddy: same-colour overdraw deepens, boundedly. Two
+  // deliberate effects move a band's mean between passes — the shade wobble's
+  // slow term, and the colour-mix glaze (a same-colour pass deepens covered
+  // texels by ~m·c·(1-c/255) ≈ 16 levels max at m=0.35, CONVERGING toward a
+  // fixed point below the colour, never compounding). The band mean moves less
+  // than the per-texel max (freshly filled pits stamp at the exact colour); an
+  // uncontrolled multiply regression darkens every pass by several tens of
+  // levels, far past this bound.
   for (let i = 0; i < 3; i++) {
-    expect(Math.abs((r.leftB.rgb as number[])[i] - (r.leftA.rgb as number[])[i])).toBeLessThan(12);
+    expect(Math.abs((r.leftB.rgb as number[])[i] - (r.leftA.rgb as number[])[i])).toBeLessThan(15);
   }
 });
 
@@ -1471,8 +1472,8 @@ test('crossing crayon colours mix subtractively — blue over yellow goes green'
     E.setColor('#62A2E9'); // blue over it (98, 162, 233)
     E.strokeSync(seg(cx, cy - 120, cx, cy + 120), 'pen');
     // Sample the crossing square. Blue wax glazed by the yellow beneath lands
-    // b ≈ 233·(0.8 + 0.2·75/255) ≈ 200 (vs 233 pure over blank) — the blue
-    // channel filtered down is exactly the green pull.
+    // b ≈ 233·(0.65 + 0.35·75/255) ≈ 175 (vs 233 pure over blank) — the blue
+    // channel filtered down toward the green channel IS the visible green.
     const d = g.getImageData(cx - 12, cy - 12, 24, 24).data;
     let wax = 0;
     let mixed = 0;
@@ -1482,7 +1483,7 @@ test('crossing crayon colours mix subtractively — blue over yellow goes green'
       const blueFamily = rr < 150 && bb > 150;
       if (!blueFamily) continue;
       wax++;
-      if (bb >= 185 && bb <= 215) mixed++;
+      if (bb >= 160 && bb <= 192) mixed++;
     }
     return { wax, mixed };
   });

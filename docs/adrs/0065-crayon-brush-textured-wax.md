@@ -117,10 +117,11 @@ yellow goes *grey* while a multiply glaze goes *green*. So crayon ops no longer 
 directly: they accumulate on a per-target **pass buffer** at full opacity (overlapping ops stay
 idempotent there), and a recorded `crayonFlush` op stamps the buffer in two blits with no readback —
 `multiply` at alpha 1 (covered ink becomes `S×D`, blank paper gets `S`), then `source-over` at
-`1 − m` — netting `out = S·(1−m + m·D)` per covered pixel (`colorMix` m = 0.2): the crayon colour
-filtered by the ink beneath. Over blank paper the two steps collapse to exactly `S`, fully opaque.
-Same-colour overdraw deepens a few percent and **converges** (each pass re-lays `S` glazed by the
-result, a contraction toward `S·(1−m)/(1−m·S/255)`) — a deliberate, bounded softening of the strict
+`1 − m` — netting `out = S·(1−m + m·D)` per covered pixel (`colorMix` m = 0.35 — tuned up from 0.2,
+which measured cleanly but was perceptually invisible on a phone): the crayon colour filtered by the
+ink beneath. Over blank paper the two steps collapse to exactly `S`, fully opaque. Same-colour
+overdraw deepens a few percent and **converges** (each pass re-lays `S` glazed by the result, a
+contraction toward `S·(1−m)/(1−m·S/255)`) — a deliberate, bounded softening of the strict
 constant-hue rule, matching how real wax layering deepens, and never compounding into mud. The
 engine records the flush at every pass close (mid-stroke split, pointer lift, resume jump), so
 replay stamps — and therefore mixes — at exactly the live positions in the op order, keeping
@@ -176,7 +177,7 @@ ships as the `CRAYON_DEFAULTS`. Production never calls the setter.
   and coverage rises because the tooth phase-shifts per pass — a fresh stroke *or* a continuous
   gesture re-covering its own paper (the pass tracker). No multiply, no muddying, and no
   lift-dependence: scribbling in one gesture deepens exactly like redrawing after a lift.
-* **+** Crossing colours interact like real pigment: each pass is glazed by `colorMix` (20%) of the
+* **+** Crossing colours interact like real pigment: each pass is glazed by `colorMix` (35%) of the
   ink under it — subtractively, so blue over yellow genuinely goes green (an rgb lerp would go
   grey). Wax over blank paper stays fully opaque at the exact colour. The costs: same-colour
   overdraw now deepens a few percent (bounded and convergent — a deliberate softening of the strict

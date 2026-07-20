@@ -132,7 +132,11 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   bodyVariation: 0.2,
   bodyVariationCell: 110,
   shadeVariation: 0.08,
-  colorMix: 0.2,
+  // 0.35, not lower: the glaze must pull a top colour's filtered channel far
+  // enough to cross perceptual lines (blue over yellow needs its blue channel
+  // down near its green channel before the eye reads GREEN) — at 0.2 the mix
+  // measured cleanly but looked like nothing on a phone.
+  colorMix: 0.35,
   passes: [
     { widthScale: 1.0, coverage: 0.45 },
     { widthScale: 0.68, coverage: 0.63 },
