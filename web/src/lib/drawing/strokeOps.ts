@@ -5,7 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
-import { crayonPatternFor, type CrayonPoint } from './crayonBrush';
+import { CRAYON_LAYER_WIDTH_FRACTIONS, crayonPatternsFor, type CrayonPoint } from './crayonBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -65,36 +65,43 @@ export type StrokeOp =
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
 export type CrayonOp = Extract<StrokeOp, { kind: 'crayon' }>;
 
-// Stroke one crayon pass: the whole polyline in a single stroke() call, so the
-// deposit is the union of the swept strip — internal joins and pointer-frame
-// boundaries share geometry instead of stacking translucent caps. Midpoint
-// smoothing matches the live pen's curve family; a single-point pass (a tap,
-// or a split landing immediately) is the bare tip disk.
+// Stroke one crayon pass: the whole polyline in a single stroke() call PER
+// LAYER, so each layer's deposit is the union of its swept strip — internal
+// joins and pointer-frame boundaries share geometry instead of stacking
+// translucent caps. The concentric layers (full-width sparse fringes over a
+// narrow dense core, same paper field) break the rim into flecks while their
+// composite in the core region equals the single-tile deposit exactly.
+// Midpoint smoothing matches the live pen's curve family; a single-point pass
+// (a tap, or a split landing immediately) is the bare tip disk per layer.
 function paintCrayonPass(target: CanvasRenderingContext2D, op: CrayonOp) {
-  const pattern = crayonPatternFor(target, op.color);
-  if (!pattern) return;
+  const patterns = crayonPatternsFor(target, op.color);
   const pts = op.points;
-  if (pts.length === 1) {
-    target.fillStyle = pattern;
+  for (let layer = 0; layer < patterns.length; layer++) {
+    const pattern = patterns[layer];
+    if (!pattern) continue;
+    const lineWidth = op.lineWidth * CRAYON_LAYER_WIDTH_FRACTIONS[layer];
+    if (pts.length === 1) {
+      target.fillStyle = pattern;
+      target.beginPath();
+      target.arc(pts[0].x, pts[0].y, lineWidth / 2, 0, Math.PI * 2);
+      target.fill();
+      continue;
+    }
+    target.strokeStyle = pattern;
+    target.lineWidth = lineWidth;
     target.beginPath();
-    target.arc(pts[0].x, pts[0].y, op.lineWidth / 2, 0, Math.PI * 2);
-    target.fill();
-    return;
+    target.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length - 1; i++) {
+      target.quadraticCurveTo(
+        pts[i].x,
+        pts[i].y,
+        (pts[i].x + pts[i + 1].x) / 2,
+        (pts[i].y + pts[i + 1].y) / 2
+      );
+    }
+    target.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+    target.stroke();
   }
-  target.strokeStyle = pattern;
-  target.lineWidth = op.lineWidth;
-  target.beginPath();
-  target.moveTo(pts[0].x, pts[0].y);
-  for (let i = 1; i < pts.length - 1; i++) {
-    target.quadraticCurveTo(
-      pts[i].x,
-      pts[i].y,
-      (pts[i].x + pts[i + 1].x) / 2,
-      (pts[i].y + pts[i + 1].y) / 2
-    );
-  }
-  target.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
-  target.stroke();
 }
 
 // One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is

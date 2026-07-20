@@ -61,6 +61,27 @@ origin-anchored repeating `CanvasPattern`s cached per color and per target conte
 phase, so grain can never move between surfaces or sessions. Tile generation is warmed off the hot
 path when the crayon or its color is selected (`scheduleIdle`).
 
+### Edges: concentric deposition layers, solved to a fixed composite
+
+A single full-width pattern stroke gives the tip a solid round outline — but a real crayon presses
+hardest mid-strip, and toward the rim the wax only catches the tallest tooth, so the edge breaks
+into scattered flecks. Each pass is therefore stroked as **concentric layers** of the same polyline
+(the nested-density-passes idea from the #415 experiment, adapted to swept passes): a full-width
+**fringe** layer whose transfer deposits sparse near-opaque flecks only above a high tooth-coverage
+threshold, a mid ring at 0.84× width, and a dense **core** at 0.64× width. All layers read the same
+paper-anchored height field, so fringe flecks land exactly on the texels the body reads as raised
+tooth, and every surface (live, replay, export) tiles them identically.
+
+The core layer's transfer is not tuned independently — it is **solved per-texel** so the layers'
+source-over composite reproduces the single-tile transfer exactly:
+`1 − Π(1 − layerᵢ(h)) =
+deposit(h)` (unit-tested; byte-identical within 1/255). The stroke interior,
+exact-hue behavior, and buildup headroom are therefore unchanged by the edge treatment; only the rim
+annuli — which receive just the fringe layers — break up. Fringe peaks are capped so the solve never
+clamps. Because each layer is still one union-stroke through `renderOp`, all replay/undo invariants
+hold per layer exactly as they do for one; the E2E hash-equality pins stayed green unchanged, and a
+new pin asserts the rim rows read far lighter than the core.
+
 ### Live rendering: a presentation-only overlay
 
 An open pass grows every frame, so it cannot be painted incrementally onto the main canvas. The
@@ -98,6 +119,9 @@ construction**, which the E2E suite pins with full-canvas hash equality.
   losing its pre-clear half (slightly different from the pen, accepted for consistency).
 * **Dwelling with a wiggling finger slowly darkens the tip area** (accumulated jitter arc eventually
   re-enters the trail) — physically plausible, bounded per split.
+* **Each pass strokes once per layer** (currently 3×), tripling the per-pass draw and tile-memory
+  cost — measured far under budget (single-stroke draw was ~0.014 ms avg at 4× throttle), accepted
+  for the edge fidelity.
 * **Simplification is off for crayon ops**, so retained crayon commands replay their raw points; the
   keyframe safety net (which now counts crayon points) bounds the worst case. A brush-aware
   simplifier would need to prove 0-pixel drift first.
