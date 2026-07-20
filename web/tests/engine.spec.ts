@@ -1410,3 +1410,47 @@ test('crayon replay is deterministic — a rebuild reproduces the exact pixel co
   await page.evaluate(() => window.__engine.undo());
   expect(await count(page)).toBe(0);
 });
+
+test('undoing a later crayon stroke leaves an earlier stroke texture spatially unchanged', async ({
+  page,
+}) => {
+  // The tooth must survive an undo *in place*, not just at the same pixel count.
+  // A crayon op is stroked live as dozens of overlapping per-frame ops but
+  // replayed (on undo) as a few simplified ones; unless the tooth is binary,
+  // source-over accumulates the fractional overlap differently between the two
+  // op counts and the whole texture visibly shifts when any later stroke is
+  // undone. Draw stroke A, snapshot its band, draw a NON-overlapping stroke B,
+  // undo B, and assert A's band is essentially byte-identical — a regression to
+  // the fractional-alpha tooth changes the majority of A's pixels here.
+  const changedFrac = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const band = () => Array.from(g.getImageData(20, 60, cv.width - 40, 30).data);
+    const line = (y: number) => {
+      const p: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 40; i++) p.push({ x: 20 + ((cv.width - 40) * i) / 40, y });
+      return p;
+    };
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setColor('#2c5faa');
+    E.setStrokeWidth(24);
+    E.strokeSync(line(75), 'pen'); // stroke A, top band
+    const before = band();
+    E.strokeSync(line(cv.height - 60), 'pen'); // stroke B, far bottom band (no overlap)
+    E.undo();
+    const after = band();
+    let changed = 0;
+    const px = before.length / 4;
+    for (let i = 0; i < before.length; i += 4) {
+      let d = 0;
+      for (let c = 0; c < 4; c++) d += Math.abs(before[i + c] - after[i + c]);
+      if (d > 8) changed++;
+    }
+    return changed / px;
+  });
+  // Only the sub-pixel silhouette AA of A may differ (a thin ring); the interior
+  // tooth is byte-stable. The pre-fix behaviour changed ~70% of the band.
+  expect(changedFrac).toBeLessThan(0.05);
+});

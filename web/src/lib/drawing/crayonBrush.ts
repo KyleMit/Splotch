@@ -53,11 +53,16 @@ export interface CrayonOptions {
   // paper grain instead of one-frequency digital noise.
   octaves: { cell: number; weight: number }[];
   // Half-width (in normalised height units) of the soft edge around each tooth
-  // pit, so pits are anti-aliased grain, not hard gritty dots.
+  // pit. The wax must be BINARY (alpha 0 or 1) for the tooth to survive undo
+  // without shifting — see the idempotence note below — so this is not an alpha
+  // ramp: it is the width of the deterministic ordered-dither band that turns a
+  // would-be grey edge pixel into a 0/1 decision, keeping the pit rims from
+  // reading as hard aliased dots while staying replay-stable.
   edge: number;
-  // Subtle body-density variation: the opaque body's alpha dips by up to this
-  // much across a slow low-frequency field, so the wax isn't a flat marker fill.
-  // Kept tiny so overlapping the same colour still can't visibly darken.
+  // Subtle body-density variation: the tooth coverage swings by up to this much
+  // across a slow low-frequency field, so the wax isn't a flat marker fill. This
+  // biases which bumps take wax (a coverage wobble), NOT the body's alpha — the
+  // body stays opaque so overlapping the same colour can't darken or shift.
   bodyVariation: number;
   // Lattice cell (px) of that body-variation field.
   bodyVariationCell: number;
@@ -69,9 +74,11 @@ export interface CrayonOptions {
 // (tools/asset-gen/.coloring-samples/crayon): a big tile with no coarse octave to
 // kill visible repetition; fine multi-scale grain for organic paper tooth; a
 // full-width sparse rim pass under a narrower dense core pass for the crayon's
-// centre-dense / edge-broken falloff; and a slow body-density dip for waxy
-// pressure variation. Single pass ~0.68 coverage (tooth visible), a second same-
-// colour pass fills to ~0.81 (buildup) at a constant hue.
+// centre-dense / edge-broken falloff; and a slow body-density wobble for waxy
+// pressure variation. `edge` is the ordered-dither band that keeps the binary
+// pits from aliasing (see waxAlpha) — narrow, so rims read as tooth flecks rather
+// than a stippled haze. Single pass leaves tooth visible; a second same-colour
+// pass fills the tooth it left bare (buildup) at a constant hue.
 export const CRAYON_DEFAULTS: CrayonOptions = {
   tile: 256,
   octaves: [
@@ -80,7 +87,7 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
     { cell: 3, weight: 0.3 },
     { cell: 2, weight: 0.18 },
   ],
-  edge: 0.14,
+  edge: 0.045,
   bodyVariation: 0.2,
   bodyVariationCell: 110,
   passes: [
@@ -155,12 +162,16 @@ function normalizeInPlace(a: Float32Array) {
   for (let i = 0; i < a.length; i++) a[i] = (a[i] - lo) / span;
 }
 
-// The paper-tooth height field (0..1, higher = a raised bump that takes wax) and
-// a slow body-density field. Rebuilt whenever the options change; a colorized
-// tile then thresholds the height field per pass.
+// The paper-tooth height field (0..1, higher = a raised bump that takes wax), a
+// slow body-density field, and a per-texel dither field. Rebuilt whenever the
+// options change; a colorized tile then thresholds the height field per pass.
+// `dither` is a fixed per-texel value in [0,1) that jitters the pit threshold so
+// a rim texel resolves to a stippled 0/1 instead of a grey ramp — the tooth stays
+// BINARY (undo-stable, see waxAlpha) while the rims read as grain, not hard dots.
 let tile = 0;
 let height: Float32Array | null = null;
 let body: Float32Array | null = null;
+let dither: Float32Array | null = null;
 
 function buildFields() {
   tile = opts.tile;
@@ -177,6 +188,11 @@ function buildFields() {
   addOctave(b, size, opts.bodyVariationCell, 1, rand);
   normalizeInPlace(b);
   body = b;
+
+  const d = new Float32Array(size * size);
+  const drand = mulberry32(0x0d17e); // fixed, independent of the tooth stream
+  for (let i = 0; i < d.length; i++) d[i] = drand();
+  dither = d;
 }
 
 buildFields();
@@ -214,18 +230,21 @@ function parseColor(color: string): [number, number, number] {
   return [128, 128, 128];
 }
 
-// Wax opacity 0..1 at texel i for a pass covering `coverage` of the area:
-// threshold the height field so that fraction is opaque body, soft-edge the pits,
-// then dip the body slightly by the slow body field so it's not a flat fill.
+// Binary wax opacity (0 or 1) at texel i for a pass covering `coverage` of the
+// area. The tooth MUST be binary: a crayon op is stroked live as dozens of
+// overlapping per-frame ops but replayed (undo/resize/export) as a few simplified
+// ones, and source-over only reproduces the same pixels under a different op
+// count when every alpha is 0 or 1 (fractional alpha accumulates on overlap, so a
+// soft tooth shifts the moment the drawing is rebuilt). So: bias the pit
+// threshold slowly by the body field (a coverage wobble, not an alpha dip, so the
+// body stays opaque and same-colour overlap can't darken), jitter it per-texel by
+// the dither field within an `edge`-wide band so rims stipple instead of aliasing,
+// then hard-decide bump (1) vs pit (0).
 function waxAlpha(i: number, coverage: number): number {
   const h = height![i];
-  const t = 1 - coverage;
-  const e = Math.max(0.001, opts.edge);
-  let a: number;
-  if (h <= t - e) a = 0;
-  else if (h >= t + e) a = 1;
-  else a = smooth((h - (t - e)) / (2 * e));
-  return a * (1 - opts.bodyVariation * body![i]);
+  const t = 1 - coverage + opts.bodyVariation * (body![i] - 0.5);
+  const jitter = (dither![i] - 0.5) * 2 * Math.max(0, opts.edge);
+  return h + jitter >= t ? 1 : 0;
 }
 
 // A colorized wax tile per (colour, pass): rgb = the crayon colour, alpha = the
