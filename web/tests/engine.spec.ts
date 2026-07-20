@@ -1363,9 +1363,11 @@ async function crayonScene(page: Page) {
 
 test('a crayon stroke reads as tooth, not a solid fill', async ({ page }) => {
   const r = await crayonScene(page);
-  // A single pass leaves paper tooth showing — neither a flat fill nor a few specks.
-  expect(r.leftA.cov).toBeGreaterThan(0.4);
-  expect(r.leftA.cov).toBeLessThan(0.92);
+  // A single pass leaves paper tooth showing — neither a flat fill nor a few
+  // specks. The floor sits below the deliberately light first-pass defaults
+  // (they leave buildup headroom); the ceiling catches a solid fill.
+  expect(r.leftA.cov).toBeGreaterThan(0.3);
+  expect(r.leftA.cov).toBeLessThan(0.85);
 });
 
 test('a second same-colour crayon pass builds up where it is drawn, at a constant hue', async ({
