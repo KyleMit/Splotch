@@ -1431,6 +1431,107 @@ test('the crayon body carries subtle tone variation, not one flat RGB', async ({
   expect(r.max).toBeLessThan(226 + 45);
 });
 
+test('scribbling back over the same spot within ONE continuous stroke builds up like fresh strokes', async ({
+  page,
+}) => {
+  // A real crayon doesn't care whether the pen lifted before re-covering: the
+  // pass tracker advances the seed mid-gesture at each reversal, so a single
+  // out-and-back-and-out scribble must deepen the band like three separate
+  // strokes do — not idempotently re-deposit one phase.
+  const r = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const ymid = Math.round(cv.height / 2);
+    const W = cv.width;
+    const leg = (x0: number, x1: number) => {
+      const p: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 40; i++) p.push({ x: x0 + ((x1 - x0) * i) / 40, y: ymid });
+      return p;
+    };
+    const cov = () => {
+      const d = g.getImageData(Math.round(W * 0.3), ymid - 10, Math.round(W * 0.4), 20).data;
+      let opq = 0;
+      for (let i = 3; i < d.length; i += 4) if (d[i] > 128) opq++;
+      return opq / (d.length / 4);
+    };
+    E.setCrayonMode(true);
+    E.setColor('#2c5faa');
+    E.setStrokeWidth(30);
+
+    E.clearCanvas();
+    E.strokeSync(leg(W * 0.2, W * 0.8), 'pen'); // one single pass
+    const single = cov();
+
+    E.clearCanvas();
+    const scribble = [
+      ...leg(W * 0.2, W * 0.8),
+      ...leg(W * 0.8, W * 0.2).slice(1),
+      ...leg(W * 0.2, W * 0.8).slice(1),
+    ];
+    E.strokeSync(scribble, 'pen'); // the same 3 sweeps, ONE continuous gesture
+    const oneGesture = cov();
+
+    E.clearCanvas();
+    E.strokeSync(leg(W * 0.2, W * 0.8), 'pen'); // the same 3 sweeps, lifting
+    E.strokeSync(leg(W * 0.8, W * 0.2), 'pen'); // between each
+    E.strokeSync(leg(W * 0.2, W * 0.8), 'pen');
+    const threeStrokes = cov();
+
+    return { single, oneGesture, threeStrokes };
+  });
+  // The continuous scribble genuinely deepens over a single pass…
+  expect(r.oneGesture).toBeGreaterThan(r.single + 0.08);
+  // …and lands in the same ballpark as lifting the pen between sweeps.
+  expect(Math.abs(r.oneGesture - r.threeStrokes)).toBeLessThan(0.1);
+});
+
+test('a mid-gesture-split crayon stroke replays and undoes exactly', async ({ page }) => {
+  // The seed now advances WITHIN a stroke at each reversal; every op still
+  // stores its own seed, so a rebuild must reproduce the split stroke
+  // pixel-for-pixel and undo must leave earlier ink byte-stable.
+  await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const leg = (y: number, x0: number, x1: number) => {
+      const p: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 40; i++) p.push({ x: x0 + ((x1 - x0) * i) / 40, y });
+      return p;
+    };
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setColor('#2c5faa');
+    E.setStrokeWidth(24);
+    E.strokeSync([...leg(75, 20, cv.width - 20), ...leg(75, cv.width - 20, 20).slice(1)], 'pen');
+  });
+  const c0 = await count(page);
+  expect(c0).toBeGreaterThan(0);
+  await page.evaluate(() => window.__engine.remount());
+  expect(await count(page)).toBe(c0);
+
+  const changedFrac = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const band = () => Array.from(g.getImageData(20, 60, cv.width - 40, 30).data);
+    const before = band();
+    const y = cv.height - 60;
+    const p: { x: number; y: number }[] = [];
+    for (let i = 0; i <= 40; i++) p.push({ x: 20 + ((cv.width - 40) * i) / 40, y });
+    E.strokeSync(p, 'pen'); // non-overlapping stroke B
+    E.undo();
+    const after = band();
+    let changed = 0;
+    for (let i = 0; i < before.length; i += 4) {
+      let d = 0;
+      for (let c = 0; c < 4; c++) d += Math.abs(before[i + c] - after[i + c]);
+      if (d > 8) changed++;
+    }
+    return changed / (before.length / 4);
+  });
+  expect(changedFrac).toBeLessThan(0.05);
+});
+
 test('crayon replay is deterministic — a rebuild reproduces the exact pixel count', async ({
   page,
 }) => {

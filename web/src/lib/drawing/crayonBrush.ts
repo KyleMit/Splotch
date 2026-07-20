@@ -15,7 +15,7 @@
 //      inside the stroke the finger drew — nothing sprays past the path.
 //   2. Deterministic. The tooth field is generated once from a fixed seed (no
 //      Math.random / time at render), so undo/resize/export replay identical
-//      pixels. Per-stroke variation is a stored integer `seed` that only
+//      pixels. Per-span variation is a stored integer `seed` that only
 //      PHASE-SHIFTS the same field — still fully replayable.
 //   3. Wax buildup at constant hue. The body is laid down OPAQUE, so a second
 //      same-colour stroke over the first is opaque-over-opaque of the identical
@@ -23,7 +23,12 @@
 //      coverage: because each stroke phase-shifts the tooth by its own seed, the
 //      second stroke's holes land in different spots and fill in tooth the first
 //      left bare. Redrawing gets denser and fills the grain while staying the
-//      same colour, exactly like pressing a crayon over its own mark.
+//      same colour, exactly like pressing a crayon over its own mark. And a real
+//      crayon doesn't care whether the pen lifted before re-covering: when one
+//      continuous gesture doubles back over wax it already laid (a sharp
+//      reversal, or the tip re-entering its own strip — CrayonPassTracker), the
+//      engine advances the seed mid-stroke, so scribbling in place deepens live
+//      exactly like lifting and redrawing would.
 //
 // The opaque body is not one flat RGB: each texel's colour is shaded a touch
 // darker or lighter by a tone field derived from the same paper-tooth height
@@ -398,4 +403,125 @@ export function crayonPatternFor(
     pattern.setTransform(new DOMMatrix([1, 0, 0, 1, px, py]));
   }
   return pattern;
+}
+
+// --- Mid-gesture pass tracking ----------------------------------------------
+//
+// Buildup comes from the seed phase-shift, and the seed used to change only per
+// stroke — so backtracking WITHIN one continuous gesture was idempotent (the
+// same phase re-deposits the same texels) while lifting and redrawing deepened.
+// A real crayon doesn't care whether the pen lifted: re-covering wax is
+// re-covering wax. CrayonPassTracker (ported from the swept-passes experiment,
+// ADR-0065) detects the moment a gesture starts re-covering its own strip; the
+// engine then advances the op seed and re-seeds a tracker, so each re-covering
+// sweep deposits a freshly phase-shifted tooth and the mark deepens live under
+// the finger. Pure geometry, no engine state — unit-tested in isolation.
+
+export interface CrayonPoint {
+  x: number;
+  y: number;
+}
+
+// Split triggers, all relative to the stroke width so thick and thin crayons
+// feel the same:
+//  • direction is measured between anchors at least DIR_STEP apart, so pixel
+//    jitter while holding still can neither split nor rotate the direction;
+//  • a turn sharper than SPLIT_TURN_COS is a reversal — the tip is heading
+//    back over wax it just laid, so the pass splits immediately;
+//  • re-entry: the tip landing within PROXIMITY_FRACTION of the width of a
+//    point laid at least EXCLUDE_ARC_FRACTION widths of arc ago means the path
+//    looped or hairpinned back onto its own strip without a sharp corner.
+//    The trailing arc is excluded because the tip is always near the strip it
+//    just painted.
+const SPLIT_TURN_COS = Math.cos((100 * Math.PI) / 180);
+const DIR_STEP_FRACTION = 0.35;
+const PROXIMITY_FRACTION = 0.45;
+const EXCLUDE_ARC_FRACTION = 2.5;
+const ANCHOR_SPACING_FRACTION = 0.25;
+
+// Decides where a crayon gesture must advance to a new deposition pass. One
+// instance per pass, fed points in order; on 'split' the caller re-seeds a new
+// tracker at the PREVIOUS point (the split point is not consumed).
+export class CrayonPassTracker {
+  private readonly dirStep: number;
+  private readonly proximity: number;
+  private readonly excludeArc: number;
+  private readonly anchorSpacing: number;
+
+  private anchors: { x: number; y: number; arc: number }[] = [];
+  private arc = 0;
+  private lastX: number;
+  private lastY: number;
+  private dirX = 0;
+  private dirY = 0;
+  private hasDir = false;
+  private dirOriginX: number;
+  private dirOriginY: number;
+
+  constructor(startX: number, startY: number, lineWidth: number) {
+    this.dirStep = Math.max(3, lineWidth * DIR_STEP_FRACTION);
+    this.proximity = Math.max(2, lineWidth * PROXIMITY_FRACTION);
+    this.excludeArc = Math.max(this.dirStep * 3, lineWidth * EXCLUDE_ARC_FRACTION);
+    this.anchorSpacing = Math.max(2, lineWidth * ANCHOR_SPACING_FRACTION);
+    this.lastX = startX;
+    this.lastY = startY;
+    this.dirOriginX = startX;
+    this.dirOriginY = startY;
+    this.anchors.push({ x: startX, y: startY, arc: 0 });
+  }
+
+  // Advance the tip to p. Returns 'split' when a new pass must start at the
+  // PREVIOUS point (the caller re-seeds a tracker there and feeds it p);
+  // 'extend' otherwise, with p consumed.
+  advance(p: CrayonPoint): 'extend' | 'split' {
+    if (this.reversalAt(p) || this.reentryAt(p)) return 'split';
+    this.consume(p);
+    return 'extend';
+  }
+
+  private reversalAt(p: CrayonPoint): boolean {
+    const dx = p.x - this.dirOriginX;
+    const dy = p.y - this.dirOriginY;
+    const len = Math.hypot(dx, dy);
+    if (len < this.dirStep) return false;
+    if (!this.hasDir) return false;
+    const dot = (dx / len) * this.dirX + (dy / len) * this.dirY;
+    return dot < SPLIT_TURN_COS;
+  }
+
+  private reentryAt(p: CrayonPoint): boolean {
+    const stepArc = Math.hypot(p.x - this.lastX, p.y - this.lastY);
+    const tipArc = this.arc + stepArc;
+    for (const a of this.anchors) {
+      if (tipArc - a.arc <= this.excludeArc) break;
+      const dx = p.x - a.x;
+      const dy = p.y - a.y;
+      if (dx * dx + dy * dy <= this.proximity * this.proximity) return true;
+    }
+    return false;
+  }
+
+  private consume(p: CrayonPoint) {
+    this.arc += Math.hypot(p.x - this.lastX, p.y - this.lastY);
+    this.lastX = p.x;
+    this.lastY = p.y;
+
+    const dx = p.x - this.dirOriginX;
+    const dy = p.y - this.dirOriginY;
+    const len = Math.hypot(dx, dy);
+    if (len >= this.dirStep) {
+      this.dirX = dx / len;
+      this.dirY = dy / len;
+      this.hasDir = true;
+      this.dirOriginX = p.x;
+      this.dirOriginY = p.y;
+    }
+
+    const lastAnchor = this.anchors[this.anchors.length - 1];
+    const ax = p.x - lastAnchor.x;
+    const ay = p.y - lastAnchor.y;
+    if (ax * ax + ay * ay >= this.anchorSpacing * this.anchorSpacing) {
+      this.anchors.push({ x: p.x, y: p.y, arc: this.arc });
+    }
+  }
 }

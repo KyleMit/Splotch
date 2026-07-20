@@ -51,7 +51,7 @@ Three properties, owned by `lib/drawing/crayonBrush.ts`, deliver the look and th
    finger drew. Nothing sprays past the path.
 
 2. **Deterministic *and op-count-independent*, so replay is bit-identical.** The height field is
-   fixed; the only per-stroke variation is the stored `seed`, which merely **phase-shifts** the same
+   fixed; the only variation is the stored per-op `seed`, which merely **phase-shifts** the same
    field. `renderOp` sets the pattern's transform to a paper-anchored translate derived from the
    seed (the same paper-coordinate anchoring the magic sheet uses so live drawing and every replay
    surface tile it identically). But a fixed field and stored seed are **not sufficient** on their
@@ -109,6 +109,29 @@ the tone is quantized to 32 levels at field-build time and applied per texel as 
 a per-colour LUT — measured first-stroke cost for a fresh colour moved ~2.6 → ~3.0 ms (unthrottled,
 one-time per colour); the per-frame hot path (cached pattern) is untouched.
 
+### Mid-gesture buildup: the seed advances when a stroke re-covers its own wax
+
+With one seed per stroke, backtracking WITHIN a continuous gesture was idempotent — the same phase
+re-deposits the same texels, so scribbling back and forth over a spot never deepened it, while
+lifting the pen and redrawing the identical sweeps did. A real crayon doesn't care whether the pen
+lifted: re-covering wax is re-covering wax. So the seed is per **deposition pass**, not per stroke:
+`CrayonPassTracker` (ported from the swept-passes experiment, PR `#429`) watches each pointer's
+gesture geometry, and at the moment the tip starts re-covering its own strip — a sharp reversal
+(turn past ~100°, measured between direction anchors so pixel jitter can't trigger it) or re-entry
+(landing within ~half a width of a point laid more than ~2.5 widths of arc ago) — the engine closes
+the current op, advances the seed from the same monotonic counter, and re-seeds a tracker. Each
+re-covering sweep then deposits a freshly phase-shifted tooth on top, so a continuous scribble
+deepens live exactly like lifted strokes (pinned by an E2E parity test).
+
+Every op still stores the seed it was drawn with, so replay is exact by the same argument as before;
+commit-time simplification already refuses to merge ops with different seeds (the style key), so the
+pass boundaries survive reduction and undo rebuilds are byte-stable (both pinned in E2E for a
+split-containing stroke). The split lands between ops mid-frame — the closed op ends at the previous
+point and the next begins there, keeping the smoothed curve geometrically continuous. Known
+tradeoffs inherited with the tracker: a hairpin gentler than both thresholds deposits once (no
+split), and a long dwell with a wiggling finger slowly darkens under the tip — the physical
+behaviour, bounded per split.
+
 Because a crayon op lives in the **same canvas, in draw order**, the correctness requirements fall
 out of machinery that already exists: undo/resize/export replay it like any op (ADR-0033/0034);
 `renderOp` skips crayon when the op is an eraser, so `destination-out` erasing clears wax like any
@@ -143,11 +166,12 @@ ships as the `CRAYON_DEFAULTS`. Production never calls the setter.
   bit-identical-replay invariant is correct by construction, not by a parallel textured-layer system
   that would have to re-derive it.
 * **+** Wax buildup at a genuinely constant hue: opaque-over-opaque of the same colour can't darken,
-  and coverage rises because the tooth phase-shifts per stroke. No multiply, no muddying.
-* **+** Fully deterministic *and* undo-stable: the tooth field is fixed, the only per-stroke
-  variation is a stored seed, and the tooth is binary, so the same drawing always produces the same
-  pixels — including after a later stroke is undone, when the surviving strokes rebuild from far
-  fewer simplified ops than they were drawn with.
+  and coverage rises because the tooth phase-shifts per deposition pass — across strokes and within
+  one continuous scribble alike. No multiply, no muddying.
+* **+** Fully deterministic *and* undo-stable: the tooth field is fixed, the only variation is a
+  seed stored per op, and the tooth is binary, so the same drawing always produces the same pixels —
+  including after a later stroke is undone, when the surviving strokes rebuild from far fewer
+  simplified ops than they were drawn with.
 * **−** The tooth is binary, so the pit rims are stippled (ordered dither) rather than a smooth
   alpha ramp. This is a deliberate trade: a soft ramp looked marginally creamier but its fractional
   alpha accumulated across the overlapping live ops, so the whole texture *shifted* the moment any

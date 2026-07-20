@@ -42,8 +42,13 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
-import { setCrayonOptions, getCrayonOptions, type CrayonOptions } from './crayonBrush';
+import { renderOp, clearAllOf, type PathOp, type StrokeOp } from './strokeOps';
+import {
+  setCrayonOptions,
+  getCrayonOptions,
+  CrayonPassTracker,
+  type CrayonOptions,
+} from './crayonBrush';
 import {
   beginCommand,
   commandCount,
@@ -91,11 +96,14 @@ let magicActive = false;
 let crayonActive = false;
 let lastColorChangeTime = 0;
 
-// A per-stroke seed stamped onto every crayon op, so the paper-tooth pattern is
-// phase-shifted per stroke (the source of wax buildup — ADR-0065) yet fully
-// replayable from stored op data. A monotonic counter guarantees consecutive
-// strokes differ even when drawn over the same spot; the value is stored on the
-// op, so replay is deterministic regardless of the counter's live position.
+// A seed stamped onto every crayon op, so the paper-tooth pattern is
+// phase-shifted per deposition pass (the source of wax buildup — ADR-0065) yet
+// fully replayable from stored op data. A stroke starts on a fresh seed and
+// advances to another whenever its gesture re-covers wax it already laid (the
+// CrayonPassTracker split in strokeSmoothSegments), so scribbling back and
+// forth deepens mid-stroke just like lifting and redrawing. A monotonic counter
+// guarantees every pass differs even over the same spot; the value is stored on
+// the op, so replay is deterministic regardless of the counter's live position.
 let crayonSeedCounter = 1;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -448,9 +456,8 @@ function renderStrokeStart(ps: PointerState) {
 // and the stroke curves smoothly instead of showing straight-chord corners.
 // Each call is captured as one path op (matching its own beginPath/stroke
 // boundary) so undo replay reproduces identical pixels and anti-aliasing.
-function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
-  if (points.length === 0) return;
-  const op: StrokeOp = {
+function beginPathOp(ps: PointerState): PathOp {
+  return {
     kind: 'path',
     pid: ps.id,
     startX: ps.midX,
@@ -463,7 +470,29 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     crayon: ps.crayon,
     seed: ps.seed,
   };
+}
+
+function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
+  if (points.length === 0) return;
+  let op = beginPathOp(ps);
   for (const { x, y } of points) {
+    // Mid-gesture crayon buildup (ADR-0065): the moment this gesture starts
+    // re-covering wax it already laid — a sharp reversal or re-entering its own
+    // strip — close the current op and advance the seed, so the rest of the
+    // gesture deposits a freshly phase-shifted tooth on top, deepening the mark
+    // live exactly as if the pen had lifted and redrawn. The split point is not
+    // consumed: the re-seeded tracker takes it, so the new span starts at the
+    // previous point and the curve stays geometrically continuous.
+    if (ps.crayonTracker && ps.crayonTracker.advance({ x, y }) === 'split') {
+      if (op.segs.length > 0) {
+        renderOp(ctx, op);
+        recordOp(op);
+      }
+      ps.seed = crayonSeedCounter++;
+      ps.crayonTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
+      ps.crayonTracker.advance({ x, y });
+      op = beginPathOp(ps);
+    }
     const midX = (ps.x + x) / 2;
     const midY = (ps.y + y) / 2;
     op.segs.push({ cx: ps.x, cy: ps.y, x: midX, y: midY });
@@ -472,8 +501,10 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     ps.midX = midX;
     ps.midY = midY;
   }
-  renderOp(ctx, op);
-  recordOp(op);
+  if (op.segs.length > 0) {
+    renderOp(ctx, op);
+    recordOp(op);
+  }
 }
 
 // Push the finished stroke group onto the undo log (once per group, when the
@@ -509,6 +540,11 @@ interface PointerState {
   magic: boolean;
   crayon: boolean;
   seed: number;
+  // Detects the moment this gesture starts re-covering its own wax (sharp
+  // reversal / strip re-entry), which advances `seed` so the next span builds
+  // up (ADR-0065). Per pointer, so multi-touch gestures track independently;
+  // null when the crayon wouldn't render (eraser/magic override, or off).
+  crayonTracker: CrayonPassTracker | null;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -599,6 +635,8 @@ function startDrawing(e: PointerEvent, adopted = false) {
     magic: magicActive,
     crayon: crayonActive,
     seed: crayonActive ? crayonSeedCounter++ : 0,
+    crayonTracker:
+      crayonActive && !eraserActive && !magicActive ? new CrayonPassTracker(x, y, lineWidth) : null,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
