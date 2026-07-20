@@ -4,6 +4,8 @@ import {
   getCrayonOptions,
   setCrayonOptions,
   getCrayonPasses,
+  waxTone,
+  shadeWaxChannel,
   CRAYON_DEFAULTS,
 } from './crayonBrush';
 
@@ -33,6 +35,56 @@ describe('seedPhase', () => {
     // Consecutive stroke seeds must not collapse onto one phase, or a redraw
     // would re-punch the same tooth pits and never fill in.
     expect(phases.size).toBeGreaterThan(25);
+  });
+});
+
+describe('waxTone', () => {
+  it('is deterministic and bounded to [-1, 1]', () => {
+    for (const h of [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1]) {
+      const s = waxTone(h);
+      expect(s).toBe(waxTone(h));
+      expect(s).toBeGreaterThanOrEqual(-1);
+      expect(s).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('shades thick wax darker and thin wax lighter, monotonic in tooth height', () => {
+    expect(waxTone(0.9)).toBeGreaterThan(0);
+    expect(waxTone(0.1)).toBeLessThan(0);
+    expect(waxTone(0.5)).toBeCloseTo(0, 5);
+    expect(waxTone(0.7)).toBeGreaterThan(waxTone(0.6));
+  });
+});
+
+describe('shadeWaxChannel', () => {
+  it('is the identity at zero amplitude or zero tone (flat body colour)', () => {
+    for (const c of [0, 54, 128, 226, 255]) {
+      expect(shadeWaxChannel(c, 1, 0)).toBe(c);
+      expect(shadeWaxChannel(c, -1, 0)).toBe(c);
+      expect(shadeWaxChannel(c, 0, 0.2)).toBe(c);
+    }
+  });
+
+  it('darkens toward black and lightens toward white, staying in 0..255', () => {
+    for (const c of [0, 54, 128, 226, 255]) {
+      const dark = shadeWaxChannel(c, 1, 0.12);
+      const light = shadeWaxChannel(c, -1, 0.12);
+      expect(dark).toBeLessThanOrEqual(c);
+      expect(light).toBeGreaterThanOrEqual(c);
+      expect(dark).toBeGreaterThanOrEqual(0);
+      expect(light).toBeLessThanOrEqual(255);
+    }
+    // Even a saturated channel keeps headroom in the direction it has room for.
+    expect(shadeWaxChannel(255, 1, 0.12)).toBeLessThan(255);
+    expect(shadeWaxChannel(0, -1, 0.12)).toBeGreaterThan(0);
+  });
+
+  it('stays subtle at the tuned default amplitude', () => {
+    const amp = CRAYON_DEFAULTS.toneVariation;
+    for (const c of [0, 54, 128, 226, 255]) {
+      expect(Math.abs(shadeWaxChannel(c, 1, amp) - c)).toBeLessThanOrEqual(255 * amp + 1);
+      expect(Math.abs(shadeWaxChannel(c, -1, amp) - c)).toBeLessThanOrEqual(255 * amp + 1);
+    }
   });
 });
 

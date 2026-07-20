@@ -1384,6 +1384,53 @@ test('a second same-colour crayon pass builds up where it is drawn, at a constan
   }
 });
 
+test('the crayon body carries subtle tone variation, not one flat RGB', async ({ page }) => {
+  // The opaque wax is shaded per-texel by the tone field (thick wax darker,
+  // thin wax lighter). Fully opaque interior texels must show a spread of
+  // colours around the base — a flat fill has none — while staying subtle: the
+  // splat pattern already provides the coarse variation, so the tone is a
+  // whisper, bounded well inside the toneVariation amplitude.
+  const r = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const ymid = Math.round(cv.height / 2);
+    const p: { x: number; y: number }[] = [];
+    for (let i = 0; i <= 40; i++) p.push({ x: 20 + ((cv.width - 40) * i) / 40, y: ymid });
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setColor('#e23b36');
+    E.setStrokeWidth(30);
+    E.strokeSync(p, 'pen');
+    const d = g.getImageData(20, ymid - 10, cv.width - 40, 20).data;
+    let n = 0,
+      sum = 0,
+      sumSq = 0,
+      min = 255,
+      max = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] !== 255) continue; // interior wax only — skip pits + silhouette AA
+      const red = d[i];
+      n++;
+      sum += red;
+      sumSq += red * red;
+      if (red < min) min = red;
+      if (red > max) max = red;
+    }
+    const mean = sum / n;
+    return { n, mean, std: Math.sqrt(sumSq / n - mean * mean), min, max };
+  });
+  expect(r.n).toBeGreaterThan(500);
+  // Variation exists: a flat fill has std 0 and a single value.
+  expect(r.std).toBeGreaterThan(2);
+  expect(r.max - r.min).toBeGreaterThan(10);
+  // ...and stays subtle: mean hugs the base red (226) and no texel strays past
+  // the toneVariation amplitude (±~12% of the channel's headroom).
+  expect(Math.abs(r.mean - 226)).toBeLessThan(10);
+  expect(r.min).toBeGreaterThan(226 - 45);
+  expect(r.max).toBeLessThan(226 + 45);
+});
+
 test('crayon replay is deterministic — a rebuild reproduces the exact pixel count', async ({
   page,
 }) => {

@@ -79,8 +79,35 @@ Three properties, owned by `lib/drawing/crayonBrush.ts`, deliver the look and th
 The centre-dense / edge-broken falloff a real crayon shows (hard press in the middle, crumbling
 flecks at the rim) is reproduced with a small set of **nested density passes**: a full-width sparse
 pass under a narrower dense pass, both the same colour and seed, drawn widest-first. All the knobs
-(tile size, octaves, per-pass width/coverage, dither-band width, body-density variation) live in a
-mutable `CrayonOptions` with tuned defaults.
+(tile size, octaves, per-pass width/coverage, dither-band width, body-density variation, tone
+variation) live in a mutable `CrayonOptions` with tuned defaults.
+
+### Subtle per-texel tone variation (RGB-only, alpha untouched)
+
+The opaque body is additionally not one flat RGB: each texel's colour is shaded a touch darker or
+lighter (`toneVariation`, ±12% of the channel's headroom by default) by a **tone field** derived
+from the same paper-tooth height field that decides where wax lands — thick wax on the high grain
+shades darker, a thin scrape lighter — so the fill carries the waxy tonal life of real crayon
+(adapted from the swept-passes experiment's continuous height→alpha transfer, PR `#429`) without
+giving up any replay invariant. Three constraints shape it:
+
+* **RGB only, never alpha.** Fractional alpha is what breaks undo (property 2), so the tone lives
+  entirely in the tile's RGB while the tooth stays binary. An opaque texel painted any number of
+  times by any number of ops resolves to the same colour, because…
+* **…the tone is a pure function of the texel, shared by every pass.** Both density passes shade a
+  given paper texel identically (only their alphas differ), so pass order and op overlap cannot
+  produce a different colour — idempotence extends from the binary alpha to the shaded RGB.
+* **Fine grain only, so buildup keeps a constant hue.** The tone deliberately samples only the fine
+  height field, never the slow body field: fine grain averages out over any region, so a same-colour
+  redraw — whose seed phase-shifts the tone along with the tooth — cannot move a region's *mean*
+  colour (the buildup-at-constant-hue test pins this). An earlier variant that mixed in the slow
+  body field visibly shifted a band's mean on redraw and was rejected. Slow tonal drift still reads
+  in the render via the body field's pit-density wobble.
+
+Because the colour tile is built synchronously on the pointer path the first time a colour is drawn,
+the tone is quantized to 32 levels at field-build time and applied per texel as one byte lookup into
+a per-colour LUT — measured first-stroke cost for a fresh colour moved ~2.6 → ~3.0 ms (unthrottled,
+one-time per colour); the per-frame hot path (cached pattern) is untouched.
 
 Because a crayon op lives in the **same canvas, in draw order**, the correctness requirements fall
 out of machinery that already exists: undo/resize/export replay it like any op (ADR-0033/0034);

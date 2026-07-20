@@ -25,6 +25,16 @@
 //      left bare. Redrawing gets denser and fills the grain while staying the
 //      same colour, exactly like pressing a crayon over its own mark.
 //
+// The opaque body is not one flat RGB: each texel's colour is shaded a touch
+// darker or lighter by a tone field derived from the same paper-tooth height
+// field that decides where wax lands (thick wax on the high grain, a thin
+// scrape in the shallows), so the fill has the waxy tonal life of real crayon
+// instead of a stencilled cutout. Crucially the tone lives in the RGB only and
+// is shared by every density pass: a texel is painted the SAME colour by
+// whichever pass or overlapping op reaches it, so opaque-over-opaque stays
+// idempotent and the undo/replay invariants of the binary tooth are untouched
+// (see waxAlpha and waxTone).
+//
 // Patterns are paper-anchored like the magic sheet (ADR-0043): a
 // per-(context,colour,pass) repeating pattern whose tile grid is offset in paper
 // coordinates by the stroke's phase, so live drawing and every replay surface
@@ -66,6 +76,12 @@ export interface CrayonOptions {
   bodyVariation: number;
   // Lattice cell (px) of that body-variation field.
   bodyVariationCell: number;
+  // Subtle per-texel tone shading of the opaque wax body: each texel's RGB is
+  // pulled toward black (thick wax) or white (thin wax) by up to this fraction
+  // of the available range, driven by the shared tone field. RGB only — the
+  // alpha stays binary, and the tone is identical across passes, so replay
+  // idempotence is unaffected. 0 disables (flat body colour).
+  toneVariation: number;
   // The density passes, widest first.
   passes: CrayonPass[];
 }
@@ -74,8 +90,11 @@ export interface CrayonOptions {
 // (tools/asset-gen/.coloring-samples/crayon): a big tile with no coarse octave to
 // kill visible repetition; fine multi-scale grain for organic paper tooth; a
 // full-width sparse rim pass under a narrower dense core pass for the crayon's
-// centre-dense / edge-broken falloff; and a slow body-density wobble for waxy
-// pressure variation. `edge` is the ordered-dither band that keeps the binary
+// centre-dense / edge-broken falloff; a slow body-density wobble for waxy
+// pressure variation; and a whisper of per-texel tone shading (`toneVariation`)
+// so the opaque body reads as thick-and-thin wax rather than one flat RGB —
+// kept deliberately subtle because the binary tooth already varies coverage.
+// `edge` is the ordered-dither band that keeps the binary
 // pits from aliasing (see waxAlpha) — narrow, so rims read as tooth flecks rather
 // than a stippled haze. Single pass leaves tooth visible; a second same-colour
 // pass fills the tooth it left bare (buildup) at a constant hue. Pass coverages
@@ -93,6 +112,7 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   edge: 0.045,
   bodyVariation: 0.2,
   bodyVariationCell: 110,
+  toneVariation: 0.12,
   passes: [
     { widthScale: 1.0, coverage: 0.45 },
     { widthScale: 0.68, coverage: 0.63 },
@@ -165,6 +185,30 @@ function normalizeInPlace(a: Float32Array) {
   for (let i = 0; i < a.length; i++) a[i] = (a[i] - lo) / span;
 }
 
+// Tone shade in [-1, 1] for a texel with paper-tooth height `h` (0..1):
+// positive = a raised bump that grabs wax thick, shade the colour darker;
+// negative = a shallow spot the crayon barely kisses, shade lighter. A mild
+// contrast stretch keeps the mid-heavy noise producing legible tonal life.
+// Deliberately driven by the FINE height field only, never the slow body
+// field: fine grain averages out over any region, so a same-colour redraw
+// (which phase-shifts the tone with its seed) cannot move a region's mean
+// colour — buildup stays at constant hue. Slow tonal drift already exists
+// visually through the body field's pit-density wobble. Pure and
+// deterministic; exported for unit tests.
+export function waxTone(h: number): number {
+  const s = (h - 0.5) * 2.4;
+  return s < -1 ? -1 : s > 1 ? 1 : s;
+}
+
+// Shade one 0..255 colour channel by `tone` (see waxTone) at `amplitude`
+// (CrayonOptions.toneVariation): darkening multiplies toward black, lightening
+// blends toward white, so every colour keeps headroom in both directions. Pure
+// and deterministic; exported for unit tests.
+export function shadeWaxChannel(channel: number, toneShade: number, amplitude: number): number {
+  const a = toneShade * amplitude;
+  return Math.round(a >= 0 ? channel * (1 - a) : channel + (255 - channel) * -a);
+}
+
 // The paper-tooth height field (0..1, higher = a raised bump that takes wax), a
 // slow body-density field, and a per-texel dither field. Rebuilt whenever the
 // options change; a colorized tile then thresholds the height field per pass.
@@ -175,6 +219,14 @@ let tile = 0;
 let height: Float32Array | null = null;
 let body: Float32Array | null = null;
 let dither: Float32Array | null = null;
+// Per-texel tone, quantized to TONE_LEVELS indices at field-build time so
+// colorTile shades a texel with one byte lookup into a tiny per-colour LUT
+// instead of three rounded multiplies — the tile build runs synchronously on
+// the pointer path the first time a colour is drawn, so it must stay as cheap
+// as the un-toned build. 32 levels across a ±toneVariation swing step channels
+// by well under 2/255 — invisible, and just as deterministic.
+const TONE_LEVELS = 32;
+let toneIdx: Uint8Array | null = null;
 
 function buildFields() {
   tile = opts.tile;
@@ -196,6 +248,12 @@ function buildFields() {
   const drand = mulberry32(0x0d17e); // fixed, independent of the tooth stream
   for (let i = 0; i < d.length; i++) d[i] = drand();
   dither = d;
+
+  const t = new Uint8Array(size * size);
+  for (let i = 0; i < t.length; i++) {
+    t[i] = Math.round(((waxTone(h[i]) + 1) / 2) * (TONE_LEVELS - 1));
+  }
+  toneIdx = t;
 }
 
 buildFields();
@@ -250,8 +308,12 @@ function waxAlpha(i: number, coverage: number): number {
   return h + jitter >= t ? 1 : 0;
 }
 
-// A colorized wax tile per (colour, pass): rgb = the crayon colour, alpha = the
-// pass's tooth field. Built once and reused by every context's pattern.
+// A colorized wax tile per (colour, pass): rgb = the crayon colour shaded by
+// the per-texel tone field, alpha = the pass's tooth field. The tone shading is
+// a pure function of the texel (never the pass), so a texel painted by several
+// passes or overlapping ops always receives the same RGB — the idempotence
+// waxAlpha's binary tooth guarantees extends to the shaded colour. Built once
+// and reused by every context's pattern.
 const colorTileCache = new Map<string, HTMLCanvasElement>();
 
 function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
@@ -269,11 +331,20 @@ function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
   const img = g.createImageData(tile, tile);
   const [r, gr, b] = parseColor(color);
   const data = img.data;
+  const lut = new Uint8ClampedArray(TONE_LEVELS * 3);
+  for (let level = 0; level < TONE_LEVELS; level++) {
+    const s = (level / (TONE_LEVELS - 1)) * 2 - 1;
+    lut[level * 3] = shadeWaxChannel(r, s, opts.toneVariation);
+    lut[level * 3 + 1] = shadeWaxChannel(gr, s, opts.toneVariation);
+    lut[level * 3 + 2] = shadeWaxChannel(b, s, opts.toneVariation);
+  }
+  const idx = toneIdx!;
   for (let i = 0; i < height.length; i++) {
     const j = i * 4;
-    data[j] = r;
-    data[j + 1] = gr;
-    data[j + 2] = b;
+    const k = idx[i] * 3;
+    data[j] = lut[k];
+    data[j + 1] = lut[k + 1];
+    data[j + 2] = lut[k + 2];
     data[j + 3] = Math.round(waxAlpha(i, pass.coverage) * 255);
   }
   g.putImageData(img, 0, 0);
