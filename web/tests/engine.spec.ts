@@ -1407,3 +1407,40 @@ test('same-colour crayon builds up: denser, hue held, live along the second stro
   expect(Math.abs(leftAfter.g - pass1.g)).toBeLessThan(8);
   expect(Math.abs(leftAfter.b - pass1.b)).toBeLessThan(8);
 });
+
+test('crayon stroke weight is independent of drag speed (ADR-0065)', async ({ page }) => {
+  // The regression this guards: crayon ops used to stroke with round caps, so a
+  // full line-width disc re-composited at every per-frame op joint — a slow
+  // steady drag (joints every px or two) compounded toward solid while a long
+  // quick drag stayed light. Ops now tile butt-to-butt in ≥min-advance chunks,
+  // so a single pass deposits once whatever the pointer speed. Drawn over the
+  // SAME canvas region (cleared between) so both passes sample identical tooth.
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await page.evaluate(() => {
+    window.__engine.setColor('#62a2e9');
+    window.__engine.setStrokeWidth(20);
+    window.__engine.setCrayonVariant('wax');
+  });
+  await page.waitForTimeout(160);
+
+  // Slow steady drag: 2px per pointermove.
+  const slowPts = [];
+  for (let x = 60; x <= 300; x += 2) slowPts.push({ x, y: 90 });
+  await drawStroke(page, box, slowPts);
+  const slow = await page.evaluate(() => window.__engine.inkStats(70, 82, 220, 16));
+
+  await page.evaluate(() => window.__engine.clearCanvas());
+
+  // Long quick drag: 40px per pointermove over the same span.
+  const fastPts = [];
+  for (let x = 60; x <= 300; x += 40) fastPts.push({ x, y: 90 });
+  await drawStroke(page, box, fastPts);
+  const fast = await page.evaluate(() => window.__engine.inkStats(70, 82, 220, 16));
+
+  // Both are the textured single-pass deposit — neither a solid fill nor a
+  // faint wash — and their densities land close together. (Before the fix the
+  // slow pass compounded to ~2× the fast pass's alpha.)
+  expect(slow.alpha).toBeGreaterThan(0.25);
+  expect(slow.alpha).toBeLessThan(0.8);
+  expect(Math.abs(slow.alpha - fast.alpha)).toBeLessThan(0.06);
+});

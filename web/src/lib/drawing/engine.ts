@@ -444,8 +444,7 @@ function renderStrokeStart(ps: PointerState) {
 // and the stroke curves smoothly instead of showing straight-chord corners.
 // Each call is captured as one path op (matching its own beginPath/stroke
 // boundary) so undo replay reproduces identical pixels and anti-aliasing.
-function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
-  if (points.length === 0) return;
+function emitSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
   const op: StrokeOp = {
     kind: 'path',
     pid: ps.id,
@@ -467,8 +466,65 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     ps.midX = midX;
     ps.midY = midY;
   }
+  ps.hasPathOps = true;
   renderOp(ctx, op);
   recordOp(op);
+}
+
+// Crayon ops tile butt-to-butt so the semi-transparent deposit composites once
+// per pass regardless of chunking (strokeOps.renderOp) — but a butt-capped op
+// only a fraction of a pixel long lays down partial COVERAGE, and compositing
+// several partial covers undershoots the full deposit (1−∏(1−a·cᵢ) < a). An op
+// per pointermove would therefore leave a slow drag lighter than a fast one —
+// the inverse of the round-cap compounding it replaced. Crayon points instead
+// wait in ps.crayonPending until the finger has advanced far enough for the op
+// to lay full coverage; the ink trails the fingertip by at most this many CSS
+// px (invisible under a finger) and the tail flushes on lift.
+const CRAYON_MIN_ADVANCE_CSS = 3;
+
+function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
+  if (points.length === 0) return;
+  if (ps.brush !== 'crayon') {
+    emitSmoothSegments(ps, points);
+    return;
+  }
+  for (const p of points) {
+    const tail = ps.crayonPending[ps.crayonPending.length - 1] ?? { x: ps.x, y: ps.y };
+    ps.crayonPendingDist += Math.hypot(p.x - tail.x, p.y - tail.y);
+    ps.crayonPending.push(p);
+  }
+  if (ps.crayonPendingDist >= CRAYON_MIN_ADVANCE_CSS * renderScale) flushCrayonPending(ps);
+}
+
+function flushCrayonPending(ps: PointerState) {
+  if (ps.crayonPending.length === 0) return;
+  emitSmoothSegments(ps, ps.crayonPending);
+  ps.crayonPending = [];
+  ps.crayonPendingDist = 0;
+}
+
+// Seal a crayon stroke when its contact ends (lift, cancel, teardown, or a
+// WebKit resume gap): flush the buffered tail, then anchor the butt-capped path
+// end with a round dot — the same disc the old round cap drew, recorded as an
+// op so every replay surface ends the stroke identically. Idempotent via the
+// hasPathOps reset; a tap (no path ops) keeps just its start dot.
+function finishCrayonStroke(ps: PointerState) {
+  if (ps.brush !== 'crayon' || ps.edgeSwipeGuard) return;
+  flushCrayonPending(ps);
+  if (!ps.hasPathOps) return;
+  ps.hasPathOps = false;
+  const dot: StrokeOp = {
+    kind: 'dot',
+    x: ps.midX,
+    y: ps.midY,
+    radius: ps.lineWidth / 2,
+    color: ps.color,
+    erase: ps.erase,
+    magic: ps.magic,
+    brush: ps.brush,
+  };
+  renderOp(ctx, dot);
+  recordOp(dot);
 }
 
 // Push the finished stroke group onto the undo log (once per group, when the
@@ -505,6 +561,18 @@ interface PointerState {
   // Captured at stroke start so a mid-stroke tool flip can't split one drag's
   // ops between brushes (matches how color/erase/magic are pinned per stroke).
   brush: 'crayon' | undefined;
+  // Crayon ops are emitted in ≥ CRAYON_MIN_ADVANCE_CSS chunks so each lays down
+  // full pixel coverage (see strokeSmoothSegments): points wait here with their
+  // running chord length until the pointer has advanced far enough.
+  crayonPending: { x: number; y: number }[];
+  crayonPendingDist: number;
+  // Whether any path op has been emitted — drives the round end-anchor dot a
+  // crayon stroke gets on lift (a tap keeps just its start dot).
+  hasPathOps: boolean;
+  // Last pointer-event position, for the speed window: x/y lag behind the finger
+  // while crayon points sit in the pending buffer, so speed tracks these.
+  lastEventX: number;
+  lastEventY: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -594,6 +662,11 @@ function startDrawing(e: PointerEvent, adopted = false) {
     erase: eraserActive,
     magic: magicActive,
     brush: crayonActive && !eraserActive && !magicActive ? 'crayon' : undefined,
+    crayonPending: [],
+    crayonPendingDist: 0,
+    hasPathOps: false,
+    lastEventX: x,
+    lastEventY: y,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -625,7 +698,11 @@ function commitEdgeSwipe(ps: PointerState) {
   ps.edgeSwipeGuard = null;
   renderStrokeStart(ps);
   if (ps.pendingPoints.length > 0) {
-    strokeSmoothSegments(ps, ps.pendingPoints.map(screenToPaper));
+    const paperPoints = ps.pendingPoints.map(screenToPaper);
+    strokeSmoothSegments(ps, paperPoints);
+    const lastPoint = paperPoints[paperPoints.length - 1];
+    ps.lastEventX = lastPoint.x;
+    ps.lastEventY = lastPoint.y;
     ps.pendingPoints = [];
   }
   // Restart speed sampling from the commit point so the buffered span doesn't
@@ -683,19 +760,32 @@ function restartStrokeIfResumed(ps: PointerState, resume: { x: number; y: number
   const deltaY = resume.y - ps.y;
   const jump = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
   if (!pointerWasResumed(now - ps.lastTime, jump, Math.min(paper.pxW, paper.pxH))) return;
+  // The old contact really ended — seal its crayon tail (flush + end anchor) so
+  // the resumed stroke doesn't drag buffered points across the gap.
+  finishCrayonStroke(ps);
   ps.x = resume.x;
   ps.y = resume.y;
   ps.midX = resume.x;
   ps.midY = resume.y;
+  ps.lastEventX = resume.x;
+  ps.lastEventY = resume.y;
   ps.speedSamples = [{ t: now, distance: 0 }];
   ctx.beginPath();
+  // Re-anchor the restart: butt-capped crayon ops rely on a dot for a round
+  // stroke start (other brushes get theirs from the next op's round cap).
+  if (ps.brush === 'crayon') renderStrokeStart(ps);
 }
 
 // Speed is sampled from the final event only: one chord per pointermove,
-// matching the cadence the sliding window was tuned for.
+// matching the cadence the sliding window was tuned for. Chords run between
+// consecutive EVENT positions (ps.lastEventX/Y, advanced here) — ps.x/ps.y lag
+// behind the finger while crayon points sit in the pending buffer, and chords
+// measured from there would re-count the buffered span every event.
 function strokeSpeed(ps: PointerState, last: { x: number; y: number }, now: number): number {
-  const deltaX = last.x - ps.x;
-  const deltaY = last.y - ps.y;
+  const deltaX = last.x - ps.lastEventX;
+  const deltaY = last.y - ps.lastEventY;
+  ps.lastEventX = last.x;
+  ps.lastEventY = last.y;
   const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
   return calculateStrokeSpeed(ps.speedSamples, { t: now, distance }, SPEED_WINDOW_MS);
 }
@@ -758,6 +848,10 @@ function stopDrawing(e?: PointerEvent) {
     commitEdgeSwipe(pointerState);
   }
 
+  // Seal a lifting crayon stroke: flush its buffered tail and round its end
+  // with the anchor dot (a no-op for other brushes or an undecided candidate).
+  if (pointerState) finishCrayonStroke(pointerState);
+
   activePointers.delete(e.pointerId);
   activePointerIds.delete(e.pointerId);
 
@@ -781,6 +875,10 @@ function stopDrawing(e?: PointerEvent) {
 export function releaseAllPointers() {
   if (!ctx) return;
   ctx.beginPath();
+
+  // Mid-flight crayon strokes keep their ink (this commits the active command
+  // below), so seal each one — buffered tail plus end anchor — first.
+  for (const ps of activePointers.values()) finishCrayonStroke(ps);
 
   activePointers.clear();
   groupHasDrawn = false;
