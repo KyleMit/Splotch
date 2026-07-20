@@ -91,8 +91,8 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   bodyVariation: 0.2,
   bodyVariationCell: 110,
   passes: [
-    { widthScale: 1.0, coverage: 0.54 },
-    { widthScale: 0.68, coverage: 0.75 },
+    { widthScale: 1.0, coverage: 0.5 },
+    { widthScale: 0.68, coverage: 0.68 },
   ],
 };
 

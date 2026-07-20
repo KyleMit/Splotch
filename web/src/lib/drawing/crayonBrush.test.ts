@@ -41,9 +41,10 @@ describe('crayon options seam', () => {
 
   it('exposes the tuned default passes (widest-first, denser core last)', () => {
     const passes = getCrayonPasses();
-    expect(passes.length).toBeGreaterThanOrEqual(2);
-    expect(passes[0].widthScale).toBe(1);
-    expect(passes.at(-1)!.coverage).toBeGreaterThan(passes[0].coverage);
+    expect(passes).toEqual([
+      { widthScale: 1, coverage: 0.5 },
+      { widthScale: 0.68, coverage: 0.68 },
+    ]);
   });
 
   it('setCrayonOptions overrides then restores (the dev A/B seam)', () => {
