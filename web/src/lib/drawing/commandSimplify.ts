@@ -182,6 +182,8 @@ function reducePathRun(run: PathOp[]): PathOp[] {
     lineWidth: first.lineWidth,
     erase: first.erase,
     magic: first.magic,
+    crayonSeed: first.crayonSeed,
+    crayonVariant: first.crayonVariant,
   }));
 }
 

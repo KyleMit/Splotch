@@ -83,6 +83,41 @@ test('a second same-colour crayon pass fills tooth without changing hue', async 
   expect(pixel[2]).toBe(0);
 });
 
+test('crayon tooth survives the replay that undo forces', async ({ page }) => {
+  // Live pixels persist until a rebuild, so a dropped crayon seed only shows
+  // once undo replays the surviving ops from the (simplified) command log.
+  await page.evaluate(() => {
+    window.__engine.setStrokeWidth(24);
+    window.__engine.strokeSync([
+      { x: 60, y: 140 },
+      { x: 260, y: 140 },
+    ]);
+  });
+  const before = await page.evaluate(() => window.__engine.alphaStats(80, 128, 160, 24));
+
+  // A second, separate command whose undo forces the first stroke to rebuild
+  // from its recorded ops rather than from its live pixels.
+  await page.evaluate(() => {
+    window.__engine.strokeSync([
+      { x: 60, y: 250 },
+      { x: 260, y: 250 },
+    ]);
+  });
+  await page.evaluate(() => window.__engine.undo());
+  const after = await page.evaluate(() => window.__engine.alphaStats(80, 128, 160, 24));
+
+  // The tooth is thousands of partial-alpha interior pixels; a solid line has
+  // partial pixels only along its antialiased edges. If replay drops the crayon
+  // seed the stroke rebuilds solid and the interior tooth collapses.
+  expect(before.partial).toBeGreaterThan(100);
+  expect(after.partial).toBeGreaterThan(before.partial * 0.6);
+  expect(after.transparent).toBeGreaterThan(before.transparent * 0.6);
+  const pixel = await page.evaluate(() => window.__engine.pixelAt(160, 140));
+  expect(pixel[0]).toBe(255);
+  expect(pixel[1]).toBe(0);
+  expect(pixel[2]).toBe(0);
+});
+
 test('undo reverts a stroke back to an empty canvas', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
