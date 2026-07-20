@@ -1341,6 +1341,37 @@ test('a crayon stroke reads as textured wax, not a flat fill (ADR-0065)', async 
   expect(crayon.alpha).toBeGreaterThan(0.3);
 });
 
+test('a crayon stroke rebuilds identically — no texture shift on undo/resize (ADR-0065)', async ({
+  page,
+}) => {
+  // The regression this fixes: on the first undo/resize the textured wax path
+  // shifted (commit-time simplification dropped the `brush` flag → flat marker,
+  // and re-chunking the per-frame ops changed the source-over buildup density).
+  // Crayon now keeps its raw ops, so live drawing and every replay run the
+  // identical op stream and the rebuilt grain matches the live render.
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await page.evaluate(() => {
+    window.__engine.setColor('#62a2e9');
+    window.__engine.setStrokeWidth(20);
+    window.__engine.setCrayonVariant('wax');
+  });
+  await page.waitForTimeout(160);
+  await drawStroke(page, box, crayonBar(90, 60, 300));
+  const live = await page.evaluate(() => window.__engine.inkStats(60, 82, 240, 16));
+
+  // Force the stored ops to repaint the canvas — the path undo/resize/export share.
+  await page.evaluate(() => window.__engine.resizeTo(300, 300));
+  const rebuilt = await page.evaluate(() => window.__engine.inkStats(60, 82, 240, 16));
+
+  // Still broken wax grain (not a flat solid line)…
+  expect(rebuilt.alpha).toBeLessThan(0.8);
+  // …and the density did not shift from the live render (raw ops → identical).
+  expect(Math.abs(rebuilt.alpha - live.alpha)).toBeLessThan(0.02);
+  // The command kept its raw ops (crayon skips simplification) — not keyframed.
+  const debug = await page.evaluate(() => window.__engine.getUndoDebug());
+  expect(debug.keyframes).toBe(0);
+});
+
 test('same-colour crayon builds up: denser, hue held, live along the second stroke (ADR-0065)', async ({
   page,
 }) => {

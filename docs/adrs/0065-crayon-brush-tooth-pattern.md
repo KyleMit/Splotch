@@ -83,13 +83,42 @@ can be A/B'd and tuned from the `/dev/engine` harness without a rebuild.
   from compounding on themselves. Rejected as a large, risky rearchitecture of the single-renderer /
   per-op / bit-identical model. See the tradeoff below.
 
+## Crayon strokes skip simplification (amended 2026-07-19)
+
+Commit-time simplification (ADR-0036) rewrites a command's per-frame ops into a smaller set that
+rebuilds visually identical ink **for an opaque brush** — overlapping opaque stamps are idempotent,
+so op count doesn't change the result. The crayon is **semi-transparent and composites
+`source-over`**, so a single stroke's overlapping per-frame stamps compound into its wax density:
+change the op decomposition and the composited density changes. Simplifying a crayon command
+therefore made the grain visibly **shift lighter on the first undo/resize/export**, when the visible
+canvas repainted from the (differently-chunked) stored ops. A second bug compounded it —
+simplification's rebuilt path ops dropped the `brush` flag, so a rebuilt crayon path rendered as a
+flat, fully-opaque marker line.
+
+**A crayon command keeps its raw per-frame ops** (`commandSimplify.isUnsimplifiableCrayon`): live
+drawing and every replay surface then run the identical op stream through the one `renderOp`, so the
+rebuild is bit-identical to the live render — no density shift, no flat-fill. Reduction stays on for
+the opaque eraser/flat marker, where it's lossless. The `brush` flag is also carried through the
+reducer, so a (rare) mixed command stays crayon.
+
+* **Consequence — replay cost.** Un-simplified crayon commands re-stroke more ops on undo/resize
+  than a reduced command would (measured: still low-single-digit ms per rebuild). Cost is bounded by
+  the ADR-0035 keyframe safety net exactly as before — a pathologically long crayon stroke collapses
+  to a cumulative raster, which captures the same per-op wax and so stays consistent. The trade vs.
+  the reduced brush is undo depth past such a keyframe, not correctness.
+* **Rejected — per-stroke union-once isolation** (accumulate the stroke's union coverage,
+  tooth-mask, flatten once): the "principled" way to make density op-count-independent, which would
+  let crayon keep simplification. Prototyped and measured a **6× worse `engine.draw` and ~100× worse
+  `engine.undo`** (a per-command offscreen rasterise + mask + composite, plus a per-frame
+  recomposite on the live hot path) against the tuned budget — far outside ADR-0032. Not worth it
+  when keeping raw ops is one predicate and a keyframe bound.
+
 ## Consequences
 
-* **Accepted:** with per-op `source-over`, a single continuous stroke's overlapping per-frame stamps
-  compound slightly, so a slow/heavy stroke lays down denser than a fast one. This is mild and reads
-  as authentic pressure/speed sensitivity; the default variant is tuned so a normal-speed single
-  stroke already reads as waxy crayon (not near-solid). Eliminating it entirely would require
-  per-stroke isolation (above).
+* A single continuous stroke's overlapping per-frame stamps still compound slightly under per-op
+  `source-over`, so a slow/heavy stroke lays down denser than a fast one — mild, and it reads as
+  authentic pressure/speed sensitivity. This is now a stable property of the stored stroke (raw
+  ops), reproduced identically on every rebuild, rather than something a rebuild could shift.
 * The crayon is semi-transparent, so its tooth valleys reveal whatever is beneath — the real paper
   texture on a blank canvas (visual coherence for free), or a coloring page's line art — which is
   desirable. The eraser (`destination-out`) removes crayon pixels normally, and the empty-scan's
