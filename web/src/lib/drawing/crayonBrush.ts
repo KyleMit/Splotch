@@ -59,6 +59,14 @@ export interface CrayonVariant {
   floor: number;
   ceil: number;
   gamma: number;
+  // Effective wax layers a single pass lays down (default 1): the final deposit
+  // is 1 − (1 − base)^layers. The deposit curves above were tuned by eye when
+  // per-frame round caps composited a typical drag's ops ~2-3 coats over; now
+  // that a pass deposits exactly once at any speed (the butt-tiled ops,
+  // ADR-0065 speed-independence amendment), layers = 2.75 reproduces the
+  // approved moderate-drag density (measured 0.68 vs 0.67 mean alpha on the
+  // reference bar) — while later passes still build (1 − (1 − a)^n).
+  layers?: number;
   // Skip the tooth entirely and lay down solid colour — the A/B baseline that
   // reproduces the pre-crayon flat marker.
   flat?: boolean;
@@ -82,6 +90,7 @@ export const CRAYON_VARIANTS: Record<string, CrayonVariant> = {
     floor: 0.08,
     ceil: 0.95,
     gamma: 1.6,
+    layers: 2.75,
   },
   // Coarser, hungrier tooth — more paper shows through a single pass (a lighter,
   // scratchier crayon).
@@ -95,6 +104,7 @@ export const CRAYON_VARIANTS: Record<string, CrayonVariant> = {
     floor: 0.05,
     ceil: 0.92,
     gamma: 1.9,
+    layers: 2.75,
   },
   // Denser and finer — closer to a soft pencil / oil pastel.
   fine: {
@@ -107,6 +117,7 @@ export const CRAYON_VARIANTS: Record<string, CrayonVariant> = {
     floor: 0.14,
     ceil: 1.0,
     gamma: 1.4,
+    layers: 2.75,
   },
   // Flat solid colour — the marker Splotch shipped before, for side-by-side A/B.
   flat: { name: 'flat', tile: 1, grain: 1, octaves: 1, floor: 1, ceil: 1, gamma: 1, flat: true },
@@ -184,10 +195,14 @@ export function toothHeight(x: number, y: number, variant: CrayonVariant): numbe
   return Math.min(1, Math.max(0, 0.5 + (t - 0.5) * contrast));
 }
 
-// Map a tooth height to a wax-deposit alpha in [0,1] via the variant's curve.
+// Map a tooth height to a wax-deposit alpha in [0,1] via the variant's curve,
+// compounded to the variant's effective per-pass layers (source-over algebra:
+// n layers of base alpha a composite to 1 − (1 − a)^n).
 export function depositAlpha(toothT: number, variant: CrayonVariant): number {
   const shaped = Math.pow(Math.min(1, Math.max(0, toothT)), variant.gamma);
-  return variant.floor + (variant.ceil - variant.floor) * shaped;
+  const base = variant.floor + (variant.ceil - variant.floor) * shaped;
+  const layers = variant.layers ?? 1;
+  return layers === 1 ? base : 1 - Math.pow(1 - base, layers);
 }
 
 // --- Tooth tile + tinted-pattern cache (canvas) ------------------------------

@@ -38,10 +38,16 @@ describe('crayon tooth field', () => {
   });
 });
 
+// The variant's per-pass deposit compounds its base curve to `layers`
+// effective coats: n layers of alpha a composite source-over to 1-(1-a)^n.
+function layered(a: number): number {
+  return 1 - Math.pow(1 - a, wax.layers ?? 1);
+}
+
 describe('wax-deposit curve', () => {
-  it('maps valleys to the floor and peaks to the ceil, monotonically', () => {
-    expect(depositAlpha(0, wax)).toBeCloseTo(wax.floor, 6);
-    expect(depositAlpha(1, wax)).toBeCloseTo(wax.ceil, 6);
+  it('maps valleys to the layered floor and peaks to the layered ceil, monotonically', () => {
+    expect(depositAlpha(0, wax)).toBeCloseTo(layered(wax.floor), 6);
+    expect(depositAlpha(1, wax)).toBeCloseTo(layered(wax.ceil), 6);
     let prev = -1;
     for (let t = 0; t <= 1.0001; t += 0.05) {
       const d = depositAlpha(t, wax);

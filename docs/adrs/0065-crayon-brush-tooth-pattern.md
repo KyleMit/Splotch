@@ -113,12 +113,46 @@ reducer, so a (rare) mixed command stays crayon.
   recomposite on the live hot path) against the tuned budget — far outside ADR-0032. Not worth it
   when keeping raw ops is one predicate and a keyframe bound.
 
+## Stroke weight is speed-independent (amended 2026-07-20)
+
+As shipped, crayon ops stroked with the engine's global **round caps**, so every per-frame op
+re-deposited a full line-width disc at the joint it shares with the previous op. A slow steady drag
+(joints every px or two) compounded `1 − (1 − a)ⁿ` toward solid; a long quick drag (joints every ~30
+px) stayed near the single-pass deposit — stroke weight tracked finger speed far beyond "authentic
+pressure feel". Two changes make a single pass deposit once, whatever the speed:
+
+* **Crayon path ops stroke with butt caps** (`strokeOps.renderOp`). Consecutive ops of one stroke
+  share a tangent at their joint (the midpoint-smoothing construction), so butt ends tile
+  seamlessly: no re-deposit, just an antialiased seam pixel. Stroke ends stay round via **anchor
+  dots** — the existing start dot, plus one the engine records at lift (and at a WebKit resume-gap
+  restart) — so the silhouette is unchanged.
+* **Minimum-advance chunking** (`engine.strokeSmoothSegments`). A butt-capped op only a fraction of
+  a pixel long lays down partial *coverage*, and compositing several partial covers undershoots the
+  deposit (`1 − ∏(1 − a·cᵢ) < a`) — an op per pointermove would have flipped the bias, leaving slow
+  drags *lighter*. Crayon points buffer until the pointer advances ≥ 3 CSS px, so each op lays full
+  coverage; the ink trails the fingertip imperceptibly and the tail flushes on lift.
+
+Removing the cap compounding also removed density the approved look was tuned *with*: measured on
+the same gestures (20 px stroke, dev-harness reference bar), the old render laid ~0.93 mean alpha on
+a slow drag, ~0.67 moderate, ~0.47 fast, and the speed-independent single pass landed well below the
+whole band (~0.42) — lighter than even the old fast drag. The variants therefore gained a **`layers`
+parameter** (deposit `1 − (1 − base)^layers`, default 1): `layers: 2.75` compounds the tuned base
+curve to the ~2–3 effective coats a typical drag used to lay, so a single pass now matches the
+approved moderate density (measured 0.68 vs the old moderate's 0.67) at every speed, and later
+passes still build on top.
+
+Accepted residue: seam pixels at op joints and the doubled half-disc under each anchor dot deviate
+slightly from the ideal single deposit — localized, hidden by the grain, and it reads as a crayon's
+pressed stroke ends. Deliberately kept: a stroke that genuinely crosses **itself** still builds up
+(the crossing ops overlap), so scribbling back and forth densifies live without lifting — matching
+real wax. Replay is untouched: the recorded ops are exactly what rendered live, so every rebuild
+surface stays bit-identical.
+
 ## Consequences
 
-* A single continuous stroke's overlapping per-frame stamps still compound slightly under per-op
-  `source-over`, so a slow/heavy stroke lays down denser than a fast one — mild, and it reads as
-  authentic pressure/speed sensitivity. This is now a stable property of the stored stroke (raw
-  ops), reproduced identically on every rebuild, rather than something a rebuild could shift.
+* Stroke density is a property of where the crayon travelled, not how fast: a single pass lays the
+  same deposit at any drag speed (see the speed-independence amendment above), while self-crossings
+  and repeated passes still build up. The stored raw ops reproduce it identically on every rebuild.
 * The crayon is semi-transparent, so its tooth valleys reveal whatever is beneath — the real paper
   texture on a blank canvas (visual coherence for free), or a coloring page's line art — which is
   desirable. The eraser (`destination-out`) removes crayon pixels normally, and the empty-scan's

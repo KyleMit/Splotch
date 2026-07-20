@@ -20,13 +20,17 @@ import { crayonPatternFor } from './crayonBrush';
 // `brush`, when 'crayon', renders the op as waxy crayon: its shape is stroked
 // with a paper-anchored, colour-tinted tooth pattern instead of a solid fill, so
 // it reads as textured wax and overdrawn same-colour passes build up (ADR-0065,
-// crayonBrush.ts). Like `magic` it's an ordinary member of the command log, so
-// undo and eraser fall out of the existing replay. It is exempt from commit-time
-// simplification, though: the crayon is semi-transparent, so re-chunking a
-// stroke's per-frame ops changes its composited density and shifted the grain on
-// rebuild — crayon commands keep their raw ops so replay is bit-identical to the
-// live render (ADR-0065, commandSimplify.isUnsimplifiableCrayon). Absent (or the
-// eraser/magic paths) means the flat solid-colour stroke.
+// crayonBrush.ts). Crayon path ops stroke with BUTT caps so a stroke's ops tile
+// without re-depositing at their joints (density stays independent of how the
+// stroke was chunked, i.e. of finger speed); the engine anchors stroke start and
+// end with round dots. Like `magic` it's an ordinary member of the command log,
+// so undo and eraser fall out of the existing replay. It is exempt from
+// commit-time simplification, though: the crayon is semi-transparent, so
+// re-chunking a stroke's ops moves the butt-joint seams and their antialiased
+// composites — a simplified rebuild would not be bit-identical — so crayon
+// commands keep their raw ops and replay exactly the live render (ADR-0065,
+// commandSimplify.isUnsimplifiableCrayon). Absent (or the eraser/magic paths)
+// means the flat solid-colour stroke.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -135,7 +139,22 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     // variant returns no pattern, falling back to the solid colour (A/B baseline).
     const pattern = crayonPatternFor(target, op.color);
     target.globalCompositeOperation = 'source-over';
-    paintOpShape(target, op, pattern ?? op.color);
+    if (op.kind === 'path') {
+      // Butt caps, not round: consecutive ops of one stroke share a tangent at
+      // their joint (the midpoint construction), so butt ends tile seamlessly
+      // and the semi-transparent deposit composites ONCE per pass no matter how
+      // finely the stroke was chunked. Round caps would re-deposit a full
+      // line-width disc at every op joint — one per frame — so a slow drag
+      // (joints every px or two) compounded toward solid while a fast drag
+      // stayed light: stroke weight tracked finger speed. Stroke ends stay
+      // round via the anchor dots the engine records at start and lift.
+      const cap = target.lineCap;
+      target.lineCap = 'butt';
+      paintOpShape(target, op, pattern ?? op.color);
+      target.lineCap = cap;
+    } else {
+      paintOpShape(target, op, pattern ?? op.color);
+    }
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
