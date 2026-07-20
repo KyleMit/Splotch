@@ -195,6 +195,11 @@ describe('crayon options seam', () => {
     expect(passes.at(-1)!.coverage).toBeGreaterThan(passes[0].coverage);
   });
 
+  it('mixes colour with the under-ink a little, but only a little (crayons barely mix)', () => {
+    expect(CRAYON_DEFAULTS.colorMix).toBeGreaterThan(0);
+    expect(CRAYON_DEFAULTS.colorMix).toBeLessThanOrEqual(0.3);
+  });
+
   it('setCrayonOptions overrides then restores (the dev A/B seam)', () => {
     setCrayonOptions({ passes: [{ widthScale: 1, coverage: 0.9 }] });
     expect(getCrayonPasses()).toHaveLength(1);

@@ -42,6 +42,8 @@ declare global {
         edge?: number;
         bodyVariation?: number;
         bodyVariationCell?: number;
+        toneVariation?: number;
+        colorMix?: number;
         passes?: { widthScale: number; coverage: number }[];
       }): void;
       getCrayonParams(): unknown;

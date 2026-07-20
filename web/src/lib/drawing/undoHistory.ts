@@ -22,6 +22,12 @@ import {
 } from './strokeOps';
 import { simplifyCommandOps } from './commandSimplify';
 import { isMagicSheetUnready } from './magicBrush';
+import {
+  crayonMixWasSampled,
+  markCrayonInkAll,
+  prepareCrayonMixUnder,
+  resetCrayonInk,
+} from './crayonBrush';
 import { PERF_MARKS } from './perf';
 
 // The retained command log; commands older than this fold into the baseline.
@@ -41,6 +47,9 @@ const commandLog: StrokeGroupCommand[] = [];
 
 let baselineCanvas: HTMLCanvasElement | null = null;
 let baselineCtx: CanvasRenderingContext2D | null = null;
+// Whether anything has ever folded into the baseline — the cheap, conservative
+// "does the baseline blit carry ink?" signal for the crayon ink grid.
+let baselineHasInk = false;
 
 // The stroke group currently being drawn (opened on first paint, pushed to the
 // log when the last finger lifts), so a multi-touch gesture undoes as a single
@@ -118,6 +127,7 @@ export function recordOp(op: StrokeOp) {
 // when no group was open (nothing painted).
 export function commitActiveCommand(): boolean {
   if (!activeCommand) return false;
+  activeCommand.mixedUnder = crayonMixWasSampled();
   pushCommand(activeCommand);
   activeCommand = null;
   return true;
@@ -220,11 +230,13 @@ function foldOldestIntoBaseline(): boolean {
   if (!oldest || !baselineCtx || !baselineCanvas) return false;
   if (commandHasMagic(oldest) && isMagicSheetUnready()) return false;
   commandLog.shift();
+  baselineHasInk = true;
   if (PERF_MARKS) performance.mark('engine.foldBaseline:start');
   if (oldest.keyframe) {
     baselineCtx.clearRect(0, 0, baselineCanvas.width, baselineCanvas.height);
     baselineCtx.drawImage(oldest.keyframe, 0, 0);
   } else {
+    prepareMixForCommand(baselineCtx, oldest);
     for (const op of oldest.ops) renderOp(baselineCtx, op);
   }
   if (PERF_MARKS) performance.measure('engine.foldBaseline', 'engine.foldBaseline:start');
@@ -233,6 +245,27 @@ function foldOldestIntoBaseline(): boolean {
 
 function commandHasMagic(command: StrokeGroupCommand): boolean {
   return command.ops.some((op) => op.kind !== 'clear' && op.magic);
+}
+
+// Whether a command's ops will sample the crayon colour-mix source when
+// rendered — mirrors the live-side condition in the engine's beginStrokeGroup
+// (crayon on, not eraser/magic), read off the stored ops so replay re-arms the
+// mix source for exactly the commands whose live render used one.
+function commandMixesCrayon(command: StrokeGroupCommand): boolean {
+  return command.ops.some((op) => op.kind !== 'clear' && op.crayon && !op.erase && !op.magic);
+}
+
+// Re-arm the crayon colour-mix source for one command about to replay onto a
+// target: the target's content at this moment is exactly the pre-stroke state
+// the live snapshot captured (commands rebuild in order), so mixed ops resolve
+// to identical bytes (ADR-0065).
+function prepareMixForCommand(target: CanvasRenderingContext2D, cmd: StrokeGroupCommand) {
+  // `mixedUnder` undefined = the still-open activeCommand — arm conservatively.
+  // The frozen grid a rebuild decides with is re-derived from its own replayed
+  // ops, so every rebuild of a command makes identical per-op decisions and
+  // rebuilds stay byte-stable against each other.
+  const active = commandMixesCrayon(cmd) && cmd.mixedUnder !== false;
+  prepareCrayonMixUnder(target, active, cmd.wasEmpty);
 }
 
 // An unready sheet makes renderOp intentionally paint no magic pixels (a pending
@@ -262,15 +295,24 @@ export function paintStateThrough(target: CanvasRenderingContext2D, upToIndex: n
     }
   }
   clearAllOf(target);
+  // Rebuild the target's ink-occupancy grid alongside its pixels: replayed ops
+  // re-note themselves through renderOp; blitted rasters bypass renderOp, so
+  // mark the grid fully inked when one carries content.
+  resetCrayonInk(target);
   let begin: number;
   if (start >= 0) {
     target.drawImage(commandLog[start].keyframe!, 0, 0);
+    markCrayonInkAll(target);
     begin = start + 1;
   } else {
-    if (baselineCanvas) target.drawImage(baselineCanvas, 0, 0);
+    if (baselineCanvas) {
+      target.drawImage(baselineCanvas, 0, 0);
+      if (baselineHasInk) markCrayonInkAll(target);
+    }
     begin = 0;
   }
   for (let i = begin; i <= upToIndex; i++) {
+    prepareMixForCommand(target, commandLog[i]);
     for (const op of commandLog[i].ops) renderOp(target, op);
   }
 }
@@ -283,6 +325,10 @@ export function paintStateThrough(target: CanvasRenderingContext2D, upToIndex: n
 export function replayAll(target: CanvasRenderingContext2D) {
   paintStateThrough(target, commandLog.length - 1);
   if (activeCommand) {
+    // The re-armed mix source persists past this rebuild: when the target is
+    // the visible canvas (a mid-stroke resize/undo), the still-live stroke's
+    // subsequent ops keep mixing against the same pre-stroke state.
+    prepareMixForCommand(target, activeCommand);
     for (const op of activeCommand.ops) renderOp(target, op);
   }
 }

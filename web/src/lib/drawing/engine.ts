@@ -46,6 +46,7 @@ import { renderOp, clearAllOf, type PathOp, type StrokeOp } from './strokeOps';
 import {
   setCrayonOptions,
   getCrayonOptions,
+  prepareCrayonMixUnder,
   CrayonPassTracker,
   type CrayonOptions,
 } from './crayonBrush';
@@ -417,6 +418,11 @@ let groupHasDrawn = false;
 function beginStrokeGroup() {
   if (groupHasDrawn) return;
   beginCommand(canvasEmpty);
+  // Snapshot the pre-stroke ink as this group's crayon colour-mix source
+  // (ADR-0065) — before the group paints its first pixel, so live ops and the
+  // replayed command (whose target holds exactly this state when its turn
+  // comes) mix against identical bytes.
+  prepareCrayonMixUnder(ctx, crayonActive && !eraserActive && !magicActive, canvasEmpty);
   setCanvasEmptyState(false);
   groupHasDrawn = true;
 }
@@ -923,6 +929,12 @@ export function clearCanvas() {
   // stroke counts as content (same as beginStrokeGroup), so the empty flag only
   // flips when no stroke is live.
   const strokeStillLive = resetActiveCommandForClear();
+  // The straddling stroke's remaining ops draw over a blank canvas and its
+  // command replays after the clear op, so re-arm its mix source as empty —
+  // keeping the live render byte-equal to the rebuild.
+  if (strokeStillLive) {
+    prepareCrayonMixUnder(ctx, crayonActive && !eraserActive && !magicActive, true);
+  }
   setCanvasEmptyState(!strokeStillLive);
   // A cleared canvas releases the held rainbow so the next magic use picks a fresh
   // one; if the brush is still selected, lock the new one in right away.

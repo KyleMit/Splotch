@@ -109,6 +109,43 @@ the tone is quantized to 32 levels at field-build time and applied per texel as 
 a per-colour LUT — measured first-stroke cost for a fresh colour moved ~2.6 → ~3.0 ms (unthrottled,
 one-time per colour); the per-frame hot path (cached pattern) is untouched.
 
+### Colour mixing with the ink underneath (a once-per-stroke snapshot, never the live destination)
+
+Fresh wax picks up a little of the colour already on the paper — yellow drawn over blue leans green
+(`colorMix`, a low lerp fraction, 0.15 by default; real crayons barely mix). The obvious
+implementations all break the replay contract: a blend mode or fractional alpha *reads the
+destination per op*, and a stroke is dozens of overlapping live ops but a few simplified replay ops,
+so repeated destination-reads accumulate differently per op count and the pixels shift on undo. The
+correct construction restores purity:
+
+* **The mix source is a snapshot of the target taken once per stroke group**, before the group's
+  first op. Every op of the group lerps its deposited texels toward that fixed image, so the
+  deposited value is again a pure function of the texel — idempotent under any op count — and every
+  rebuild reproduces the snapshot bit-exactly because commands replay in order: the target's content
+  before a command *is* the state the live snapshot captured. The engine arms the snapshot at live
+  stroke start (and re-arms it as empty when a clear lands mid-stroke); every replay loop (undo,
+  resize, export, keyframe build, baseline fold) re-arms it per command.
+* **Per stroke group, not per finger or per mid-gesture pass:** commit-time simplification reorders
+  a multi-touch command's interleaved ops, which is only sound while every op of the command mixes
+  against the same under image. Mixing with pre-stroke ink covers every visible case anyway — a
+  stroke is one colour, and mixing with your own colour is invisible.
+* **A lerp, not a multiply — same-colour buildup stays at constant hue.** `lerp(C, C) = C`, so
+  redrawing the same colour cannot darken or muddy (the constant-hue requirement above); a
+  subtractive multiply would darken same-colour overlap by `k·C(1−C/255)` and was rejected.
+* **Compositing confines the mix to the op's own tooth.** A mixed op renders on a shared scratch
+  surface: the tooth passes stroke onto the scratch, one `source-atop` pass at `colorMix` alpha
+  draws the snapshot over it (atop = confined to existing alpha, so the pits stay transparent and
+  old ink shows through untouched), and the result blits back within the op's device bounds. Live
+  per-op bounds are a few dozen pixels, so the extra raster cost is small; the snapshot copy is one
+  full-canvas `drawImage` per stroke, skipped entirely when the canvas is blank or `colorMix` is 0.
+
+Cost: two extra canvas-sized rasters (snapshot + scratch, grow-only, allocated lazily — never for a
+blank canvas), one full-canvas copy per crayon stroke over existing ink, and the same per command on
+rebuild. Residual: the under-ink's ADR-accepted anti-aliased silhouette fringe differs slightly
+between live and simplified rendering, and the mix samples it — measured at a few invisible fringe
+pixels per overlapping stroke pair (present with `colorMix` 0 too; the mixed-scene E2E pins interior
+byte-stability and bounds the fringe count).
+
 ### Mid-gesture buildup: the seed advances when a stroke re-covers its own wax
 
 With one seed per stroke, backtracking WITHIN a continuous gesture was idempotent — the same phase

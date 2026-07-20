@@ -5,7 +5,15 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
-import { crayonPatternFor, getCrayonPasses } from './crayonBrush';
+import {
+  crayonPatternFor,
+  crayonMixFixup,
+  getCrayonColorMix,
+  getCrayonPasses,
+  noteCrayonInk,
+  resetCrayonInk,
+  type DeviceBox,
+} from './crayonBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -68,6 +76,10 @@ export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
 export interface StrokeGroupCommand {
   ops: StrokeOp[];
   wasEmpty: boolean;
+  // Whether the live render of this group actually sampled the crayon
+  // colour-mix under image (ADR-0065). Recorded at commit so every rebuild
+  // arms the mix for exactly these commands — and pays nothing for the rest.
+  mixedUnder?: boolean;
   keyframe?: HTMLCanvasElement | null;
 }
 
@@ -99,24 +111,110 @@ function paintOpShape(
   }
 }
 
+// Device-space integer bounds of an op's painted area (its geometry padded by
+// half the line width plus an anti-aliasing margin, mapped through the target's
+// current transform), clamped to the canvas. Null when nothing lands on-canvas.
+// A quadratic/cubic segment stays inside the convex hull of its anchor and
+// control points, so taking min/max over every stored point is a true bound.
+function opDeviceBounds(
+  target: CanvasRenderingContext2D,
+  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
+): DeviceBox | null {
+  let minX: number;
+  let minY: number;
+  let maxX: number;
+  let maxY: number;
+  let pad: number;
+  if (op.kind === 'dot') {
+    minX = maxX = op.x;
+    minY = maxY = op.y;
+    pad = op.radius + 2;
+  } else {
+    minX = maxX = op.startX;
+    minY = maxY = op.startY;
+    for (const s of op.segs) {
+      minX = Math.min(minX, s.cx, s.x);
+      maxX = Math.max(maxX, s.cx, s.x);
+      minY = Math.min(minY, s.cy, s.y);
+      maxY = Math.max(maxY, s.cy, s.y);
+      if (s.c2x !== undefined) {
+        minX = Math.min(minX, s.c2x);
+        maxX = Math.max(maxX, s.c2x);
+        minY = Math.min(minY, s.c2y!);
+        maxY = Math.max(maxY, s.c2y!);
+      }
+    }
+    pad = op.lineWidth / 2 + 2;
+  }
+  const m = target.getTransform();
+  let dMinX = Infinity;
+  let dMinY = Infinity;
+  let dMaxX = -Infinity;
+  let dMaxY = -Infinity;
+  for (const [px, py] of [
+    [minX - pad, minY - pad],
+    [maxX + pad, minY - pad],
+    [minX - pad, maxY + pad],
+    [maxX + pad, maxY + pad],
+  ]) {
+    const dx = m.a * px + m.c * py + m.e;
+    const dy = m.b * px + m.d * py + m.f;
+    dMinX = Math.min(dMinX, dx);
+    dMaxX = Math.max(dMaxX, dx);
+    dMinY = Math.min(dMinY, dy);
+    dMaxY = Math.max(dMaxY, dy);
+  }
+  const x = Math.max(0, Math.floor(dMinX));
+  const y = Math.max(0, Math.floor(dMinY));
+  const w = Math.min(target.canvas.width, Math.ceil(dMaxX)) - x;
+  const h = Math.min(target.canvas.height, Math.ceil(dMaxY)) - y;
+  return w > 0 && h > 0 ? { x, y, w, h } : null;
+}
+
 // Lay a crayon op down as textured wax: one pass per density band (widest first),
 // each filled with the paper-tooth pattern for the op's colour + seed. Opaque
 // where wax deposits, transparent in the tooth pits — so overlapping same-colour
 // strokes build up coverage without shifting hue (ADR-0065). No-op until the
 // tooth tile is buildable (a DOM canvas exists), matching the magic sheet's
 // decode-pending skip.
+//
+// When a mix source is armed for the target (colorMix, ADR-0065), one extra
+// composite follows, confined to the sub-rect where the op overlaps pre-stroke
+// ink: the under-ink snapshot draws over the target with `source-atop` at
+// `colorMix` alpha. Everywhere the target still equals the snapshot — the pits
+// inside the op, and old ink around it — compositing a pixel over itself at
+// any alpha is an identity, so the only pixels that move are this op's fresh
+// deposits, which lerp toward the under-ink. The direct pass resets every
+// deposited texel to the pure tile colour immediately before each atop, so
+// overlapping live ops and their fewer simplified replay ops both resolve to
+// the same lerp — the deposited value stays a pure function of the texel (the
+// snapshot is fixed for the whole stroke). Over blank paper the atop paints
+// nothing, so skipping uninked rects is byte-exact and the mixing cost scales
+// with how much the stroke genuinely crosses existing ink.
 function paintCrayon(
   target: CanvasRenderingContext2D,
-  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
+  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>,
+  box: DeviceBox | null
 ) {
   const seed = op.seed ?? 0;
   const passes = getCrayonPasses();
   target.globalCompositeOperation = 'source-over';
+  // Must run before the op paints: it captures the pre-paint under-ink cells.
+  const fix = box ? crayonMixFixup(target, box) : null;
   for (let i = 0; i < passes.length; i++) {
     const pattern = crayonPatternFor(target, op.color, seed, i);
     if (!pattern) continue;
     paintOpShape(target, op, pattern, passes[i].widthScale);
   }
+  if (!fix) return;
+  const { rect, under } = fix;
+  target.save();
+  target.setTransform(1, 0, 0, 1, 0, 0);
+  target.globalCompositeOperation = 'source-atop';
+  target.globalAlpha = getCrayonColorMix();
+  target.drawImage(under, rect.x, rect.y, rect.w, rect.h, rect.x, rect.y, rect.w, rect.h);
+  target.restore();
+  target.globalCompositeOperation = 'source-over';
 }
 
 // Clear everything a target could be showing. The visible ctx's user space is
@@ -139,22 +237,29 @@ export function clearAllOf(target: CanvasRenderingContext2D) {
 export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   if (op.kind === 'clear') {
     clearAllOf(target);
+    resetCrayonInk(target);
     return;
   }
+  // Every painted op reports its device bounds to the target's ink-occupancy
+  // grid, the cheap "is there anything under this op to mix with?" filter for
+  // the crayon colour mix (ADR-0065). All tools report — crayon later mixes
+  // with solid and magic ink too, and erasing reports as a conservative
+  // superset. Reported AFTER painting: a crayon op's mix decision must see the
+  // grid as it was before the op's own ink joined it.
+  const box = opDeviceBounds(target, op);
   if (op.magic) {
     const pattern = sheetPatternFor(target);
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
-    return;
+  } else if (op.crayon && !op.erase) {
+    paintCrayon(target, op, box);
+  } else {
+    target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
+    paintOpShape(target, op, op.color);
+    target.globalCompositeOperation = 'source-over';
   }
-  if (op.crayon && !op.erase) {
-    paintCrayon(target, op);
-    return;
-  }
-  target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
-  paintOpShape(target, op, op.color);
-  target.globalCompositeOperation = 'source-over';
+  if (box) noteCrayonInk(target, box);
 }
 
 // Total quadratic segments a command will re-stroke on replay — the keyframe

@@ -1486,6 +1486,130 @@ test('scribbling back over the same spot within ONE continuous stroke builds up 
   expect(Math.abs(r.oneGesture - r.threeStrokes)).toBeLessThan(0.1);
 });
 
+test('crayon deposits pick up a little of the ink underneath (yellow over blue leans green)', async ({
+  page,
+}) => {
+  // colorMix lerps each deposited texel toward a once-per-stroke snapshot of
+  // the under-ink. Compare the yellow deposits laid over a blue line against
+  // the same stroke's deposits over bare paper: with the default mix they
+  // shift toward blue (less red, more blue — reads greener); with colorMix 0
+  // they are statistically identical. Classification by red channel keeps the
+  // measurement blind to which pits expose blue underneath.
+  const measure = (mix: number | null) =>
+    page.evaluate((colorMix) => {
+      const E = window.__engine;
+      const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+      const g = cv.getContext('2d')!;
+      if (colorMix !== null) E.setCrayonParams({ colorMix });
+      E.clearCanvas();
+      E.setCrayonMode(true);
+      E.setStrokeWidth(30);
+      const ymid = Math.round(cv.height / 2);
+      const line = (x0: number, y0: number, x1: number, y1: number) => {
+        const p: { x: number; y: number }[] = [];
+        for (let i = 0; i <= 40; i++)
+          p.push({ x: x0 + ((x1 - x0) * i) / 40, y: y0 + ((y1 - y0) * i) / 40 });
+        return p;
+      };
+      // A blue patch on the LEFT half only, then a yellow line across the full
+      // width: its left half deposits over blue, its right half over paper.
+      E.setColor('#2c5faa');
+      const W = cv.width;
+      for (let dy = -12; dy <= 12; dy += 8) {
+        E.strokeSync(line(20, ymid + dy, W * 0.45, ymid + dy), 'pen');
+      }
+      E.setColor('#f2c14e');
+      E.strokeSync(line(20, ymid, W - 20, ymid), 'pen');
+      const yellowStats = (x0: number, x1: number) => {
+        const d = g.getImageData(Math.round(x0), ymid - 8, Math.round(x1 - x0), 16).data;
+        let n = 0,
+          r = 0,
+          b = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i + 3] === 255 && d[i] > 150) {
+            n++;
+            r += d[i];
+            b += d[i + 2];
+          }
+        }
+        return { n, r: r / n, b: b / n };
+      };
+      return {
+        over: yellowStats(W * 0.08, W * 0.42), // yellow deposits above the blue patch
+        bare: yellowStats(W * 0.55, W * 0.92), // same stroke over bare paper
+      };
+    }, mix);
+
+  const mixed = await measure(null); // tuned default
+  expect(mixed.over.n).toBeGreaterThan(300);
+  expect(mixed.bare.n).toBeGreaterThan(300);
+  // Deposits over blue lean toward it: less red, more blue — but subtly.
+  expect(mixed.bare.r - mixed.over.r).toBeGreaterThan(8);
+  expect(mixed.over.b - mixed.bare.b).toBeGreaterThan(5);
+  expect(mixed.bare.r - mixed.over.r).toBeLessThan(60);
+
+  const flat = await measure(0);
+  expect(Math.abs(flat.over.r - flat.bare.r)).toBeLessThan(3);
+  expect(Math.abs(flat.over.b - flat.bare.b)).toBeLessThan(3);
+  await page.evaluate(() => window.__engine.setCrayonParams({ colorMix: 0.15 }));
+});
+
+test('a colour-mixed crayon scene replays and undoes exactly', async ({ page }) => {
+  // The mix source is a per-stroke snapshot that every rebuild re-derives from
+  // replay order, so a mixed scene must survive a remount at the exact pixel
+  // count and keep earlier mixed ink byte-stable when a later stroke is undone.
+  await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const line = (y: number, x0: number, x1: number) => {
+      const p: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 40; i++) p.push({ x: x0 + ((x1 - x0) * i) / 40, y });
+      return p;
+    };
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setStrokeWidth(24);
+    E.setColor('#2c5faa');
+    E.strokeSync(line(75, 20, cv.width - 20), 'pen');
+    E.setColor('#f2c14e');
+    // Crosses the blue line's band and includes a mid-gesture reversal, so the
+    // scene exercises mixing and mid-stroke seed splits together.
+    E.strokeSync([...line(80, 20, cv.width - 20), ...line(80, cv.width - 20, 20).slice(1)], 'pen');
+  });
+  const c0 = await count(page);
+  expect(c0).toBeGreaterThan(0);
+  await page.evaluate(() => window.__engine.remount());
+  // Two OVERLAPPING strokes carry the ADR-0065 silhouette residual: the
+  // simplified replay's stroke edge anti-aliases a hair differently from the
+  // live per-frame edge where it crosses the other stroke, so the rebuild can
+  // differ by a few sub-pixel fringe pixels (measured ±1 of ~7000; identical
+  // with colorMix 0 — it is not the mixing). Interior ink is exact, pinned by
+  // the byte-stability half below.
+  expect(Math.abs((await count(page)) - c0)).toBeLessThanOrEqual(8);
+
+  const changedFrac = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const band = () => Array.from(g.getImageData(20, 60, cv.width - 40, 35).data);
+    const before = band();
+    const y = cv.height - 60;
+    const p: { x: number; y: number }[] = [];
+    for (let i = 0; i <= 40; i++) p.push({ x: 20 + ((cv.width - 40) * i) / 40, y });
+    E.strokeSync(p, 'pen'); // non-overlapping stroke, then undo it
+    E.undo();
+    const after = band();
+    let changed = 0;
+    for (let i = 0; i < before.length; i += 4) {
+      let d = 0;
+      for (let c = 0; c < 4; c++) d += Math.abs(before[i + c] - after[i + c]);
+      if (d > 8) changed++;
+    }
+    return changed / (before.length / 4);
+  });
+  expect(changedFrac).toBeLessThan(0.05);
+});
+
 test('a mid-gesture-split crayon stroke replays and undoes exactly', async ({ page }) => {
   // The seed now advances WITHIN a stroke at each reversal; every op still
   // stores its own seed, so a rebuild must reproduce the split stroke
