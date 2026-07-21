@@ -157,7 +157,7 @@ let onViewChange: ((view: EngineViewState) => void) | null = null;
 // screens, capped at 2× — DPR-3 panels would cost 9× the pixels for detail a
 // finger-drawn stroke can't use (see ADR 0015). Fixed for the session at init:
 // a mid-session DPR change (desktop zoom, monitor move) would otherwise need
-// every pixel surface (visible canvas, baseline) rescaled in place.
+// every pixel surface (visible canvas, paper) rescaled in place.
 const MAX_RENDER_SCALE = 2;
 let renderScale = 1;
 

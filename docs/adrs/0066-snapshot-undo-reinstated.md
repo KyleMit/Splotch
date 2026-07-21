@@ -130,4 +130,9 @@ the RDP bypass and replay-cost consequences are moot; the determinism contract n
 "live-equals-fold." Amends **ADR-0050**: the margin-ink corner (permanent crop at commit, no
 resurrect-on-rotation, snapshot stack instead of a command-retention window). Amends **ADR-0032**:
 the mark set drops `engine.keyframe`/`engine.foldBaseline` and gains `engine.snapshot` +
-`engine.fold` at commit, with `engine.undo` now paired by an explicit `engine.undo:end` mark.
+`engine.fold` at commit, with `engine.undo` now paired by an explicit `engine.undo:end` mark. Amends
+**ADR-0004**: `commandSimplify.ts` leaves the sibling-module list, and the undo-memory consequence
+"resolved by ADR-0033" re-opens as the managed snapshot budget above. Amends **ADR-0015**: the
+4×-DPR surface set is the paper + live snapshots (not "backing store + baseline"), and the
+per-commit full-canvas copy returns. Amends **ADR-0043**: magic ops ride snapshots and the pending
+fold, not the command log, and the margin crop is permanent.

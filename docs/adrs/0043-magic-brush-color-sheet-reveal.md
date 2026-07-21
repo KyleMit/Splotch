@@ -1,6 +1,9 @@
 # ADR-0043: Magic Brush Reveals the Coloring Page's Colored Fill via Pattern-Fill Ops
 
-**Status:** Active **Date:** 2026-07
+**Status:** Active — amended by ADR-0066 (2026-07): the pattern-fill-op design stands unchanged, but
+the undo/eraser/margin machinery it rides is framed below in replay terms (command log,
+simplification, keyframes); under snapshot undo those mechanisms are snapshots, the pending fold,
+and a permanent margin crop. See the amendment at the end. **Date:** 2026-07
 
 ## Context
 
@@ -286,3 +289,25 @@ fills only" is unchanged — the fill still carries no copy of the outlines. Det
 review-surface consequences (the coloring-book proof sheet's `buildFills` now runs only for
 `--source samples`) live in
 [`tools/asset-gen/docs/inpainted-fill-punch.md`](../../tools/asset-gen/docs/inpainted-fill-punch.md).
+
+## Amendment (ADR-0066, 2026-07)
+
+ADR-0066 replaced the command log with snapshot undo (the committed "paper" raster + a depth-20
+stack of pre-stroke snapshots), so the replay framing above is historical. The design conclusion
+holds — a magic stroke is still an ordinary op rendered by the shared `renderOp` with a
+`CanvasPattern` paint, so eraser and override ordering still fall out of draw order on the shared
+canvas — but the machinery it rides changed:
+
+* **Undo no longer replays magic ops** — it restores the pre-stroke snapshot byte-exactly, at any
+  stroke complexity. The one magic-specific carve-out moved to the commit fold: magic commands are
+  retained as ops (`pendingCommands`) only while the sheet is unready, because folding then would
+  bake the op's intentionally-blank pixels into the paper; they fold in once the sheet decodes.
+* **Simplification is gone** (ADR-0036 deleted with ADR-0066): the Decision's "thins them like any
+  path op" point is moot, as is the `sample` alternative's log-fragmentation/replay-cost objection —
+  `sample` still loses on fidelity (a flat reveal that drops the fill's shading).
+* **Margin semantics** (the rotation-lock follow-up): margin ink no longer "crops on rotating back
+  and may drop once keyframed" — it is cropped **permanently at commit** (the fold clips at the
+  paper square; see ADR-0050's matching amendment). The reveal still follows the same rules as every
+  other op. ADR-0050's rejection of mapped-margin rasters, cited above against widening the undo
+  baseline, now reads against widening the depth-20 snapshot stack and is stronger for it; the
+  single transient sheet stays exempt for the same reason.

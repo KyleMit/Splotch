@@ -70,7 +70,7 @@ test('undo reverts a stroke back to an empty canvas', async ({ page }) => {
   expect(await count(page)).toBe(0);
   const s = await state(page);
   expect(s.canvasEmpty).toBe(true);
-  // The only command was undone back to the empty baseline — nothing left to undo.
+  // The only stroke was undone back to the blank paper — nothing left to undo.
   expect(s.canUndo).toBe(false);
 });
 
@@ -627,9 +627,9 @@ test('an export started just before a clear still captures the drawing (save-on-
 });
 
 test('undoing an eraser stroke replays the erased pixels back', async ({ page }) => {
-  // The command-replay undo (ADR-0033) must reproduce destination-out ops in
-  // order: undoing the erase rebuilds from the baseline and replays only the
-  // pen stroke, so the erased pixels return and the canvas is non-empty again.
+  // Undo must revert a destination-out stroke like any other: the pre-erase
+  // snapshot (ADR-0066) still holds the pen stroke's pixels, so restoring it
+  // brings the erased pixels back and the canvas is non-empty again.
   const box = await page.locator('#engineCanvas').boundingBox();
 
   await drawStroke(page, box, [
@@ -1186,9 +1186,10 @@ test('a visibility flip with unchanged geometry leaves the drawing untouched', a
 
 // ── teardown / re-init lifecycle (ADR-0004) ──────────────────────────────────
 // Client-side navigation (`/` → `/privacy` → `/`) tears the engine down and
-// re-inits it on a fresh canvas. Drawing state (command log, baseline) persists
-// across the cycle by design — a parent checking another page must not wipe the
-// child's drawing — while pointer-input state must be reset by teardown().
+// re-inits it on a fresh canvas. Drawing state (paper raster, snapshot stack)
+// persists across the cycle by design — a parent checking another page must not
+// wipe the child's drawing — while pointer-input state must be reset by
+// teardown().
 
 test('the drawing persists across teardown + re-init (client-side navigation)', async ({
   page,
@@ -1203,13 +1204,14 @@ test('the drawing persists across teardown + re-init (client-side navigation)', 
 
   await page.evaluate(() => window.__engine.remount());
 
-  // Rebuilt from the retained baseline + command log onto the fresh init.
+  // Rebuilt by blitting the retained paper raster onto the fresh init.
   expect(await count(page)).toBeGreaterThan(0);
   const s = await state(page);
   expect(s.canvasEmpty).toBe(false);
   expect(s.canUndo).toBe(true);
 
-  // The persisted log is still live: undo reverts the pre-remount stroke.
+  // The persisted snapshot stack is still live: undo reverts the pre-remount
+  // stroke.
   await page.evaluate(() => window.__engine.undo());
   expect(await count(page)).toBe(0);
   expect((await state(page)).canvasEmpty).toBe(true);
