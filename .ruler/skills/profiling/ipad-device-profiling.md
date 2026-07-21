@@ -101,12 +101,15 @@ In Web Inspector → **Console** tab, paste the **entire contents** of
 Enter. It runs on the iPad page and:
 
 * resizes the canvas to the full iPad screen (so the raster is the real on-device size),
-* drives two real-volume scenarios — 12 long ~1200-op squiggles, then 12 five-finger ~2400-op drags
-  — matching `npm run perf:undo`,
-* prints a `console.table` with, per scenario: `keyframes` / `commands` / `maxOps`, **`kf max ms`**
-  (slowest single keyframe build), **`undo max ms`**, and the real-raster `history MB`.
+* drives four real-volume scenarios — 12 long ~1200-op squiggles, 12 five-finger ~2400-op drags, 12
+  crayon squiggles, and 12 crayon reversal-scribbles (mid-stroke pass splits) — matching
+  `npm run perf:undo`; on a build with the `setUndoMode` seam each scenario runs in **both** undo
+  systems (`replay` vs `snapshot`), the on-device A/B for the snapshot-undo gates,
+* prints a `console.table` with, per scenario × mode: `keyframes` / `snapshots` / `blob KB`,
+  **`kf max ms`** (slowest keyframe build), **`snap copy max ms`** (slowest paper copy),
+  **`commit max ms`** (the stroke-end hitch), **`undo max ms`**, and the real `history MB`.
 
-Keep the iPad screen awake and the tab foregrounded while it runs (a few seconds).
+Keep the iPad screen awake and the tab foregrounded while it runs (under a minute).
 
 ### A7. Stop and export — **[Mac]**
 

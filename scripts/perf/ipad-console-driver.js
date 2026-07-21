@@ -4,15 +4,21 @@
 // /dev/engine open (on a PERF_MARKS + PUBLIC_ENABLE_DEV_HARNESS build). It drives
 // the same undo/keyframe scenarios as `npm run perf:undo`, but on the real device
 // (real WebKit/JavaScriptCore + GPU + 120 Hz ProMotion), and prints a table of
-// the device-specific numbers the desktop harness can't give: the keyframe-build
-// time and undo time at real op volume on real hardware.
+// the device-specific numbers the desktop harness can't give: the stroke-end
+// commit hitch (keyframe build / snapshot copy) and undo time at real op volume
+// on real hardware.
+//
+// If the build has the setUndoMode seam, every scenario runs in BOTH undo
+// systems — 'replay' (ADR-0033) and 'snapshot' (the reversal prototype) — which
+// is the on-device A/B that fills the snapshot-undo gates table.
 //
 // WebKit clamps performance.now() to ~1 ms, so timings are coarse — but that is
-// plenty to tell a ~10 ms keyframe build from the old hundreds-of-ms undo hang.
-// For the frame/GPU picture, record a Web Inspector *Timeline* across the run and
-// watch for a dropped frame at finger-lift; export it and feed it to
+// plenty to tell a ~10 ms blit from a hundreds-of-ms replay hang. For the
+// frame/GPU picture, record a Web Inspector *Timeline* across the run and watch
+// for a dropped frame at finger-lift; export it and feed it to
 // `npm run perf:ios:analyze -- <export>.json` (the Web Inspector export is a
 // different, mark-only/ring-buffered format — NOT the Chrome-trace perf:analyze).
+// Peak memory wants the Xcode memory gauge on the same session.
 (async () => {
   const E = window.__engine;
   const S = window.__engineState;
@@ -23,6 +29,7 @@
     );
     return;
   }
+  const modes = E.setUndoMode ? ['replay', 'snapshot'] : ['replay'];
 
   // Match the device viewport so the raster is the real on-device size.
   E.resizeTo(window.innerWidth, window.innerHeight);
@@ -45,6 +52,22 @@
     for (let i = 0; i < pts; i++) {
       const t = i / (pts - 1);
       a.push({ x: x0 + span * t, y: cy + Math.sin(t * Math.PI * 12) * amp });
+    }
+    return a;
+  };
+  // Back-and-forth triangle-wave scribble — with the crayon on, every reversal
+  // splits a deposition pass and stamps a crayonFlush (the toddler fill case).
+  const scribble = (row, pts = HZ * 10) => {
+    const sweeps = 8,
+      x0 = M,
+      span = W - 2 * M,
+      bandTop = M + ((H - 2 * M) * row) / 6,
+      bandH = (H - 2 * M) / 8,
+      a = [];
+    for (let i = 0; i < pts; i++) {
+      const t = i / (pts - 1);
+      const tri = Math.abs(((t * sweeps) % 2) - 1);
+      a.push({ x: x0 + span * (1 - tri), y: bandTop + bandH * t });
     }
     return a;
   };
@@ -79,9 +102,15 @@
     };
   };
 
+  // Snapshot-mode restores settle asynchronously (deep entries decode from a
+  // blob), so a false canUndo gets one re-check after a beat.
   const undoAll = async () => {
     let n = 0;
-    while (S.canUndo && n < 40) {
+    for (let i = 0; i < 60; i++) {
+      if (!S.canUndo) {
+        await new Promise((r) => setTimeout(r, 50));
+        if (!S.canUndo) break;
+      }
       E.undo();
       n++;
       await new Promise((r) => requestAnimationFrame(r));
@@ -89,8 +118,11 @@
     return n;
   };
 
-  async function scenario(label, strokes) {
-    await undoAll(); // clean command log for an accurate per-scenario keyframe count
+  async function scenario(label, mode, { strokes, crayon }) {
+    await undoAll(); // clean history for an accurate per-scenario count
+    E.clearCanvas();
+    if (E.setUndoMode) E.setUndoMode(mode); // also drops history at the switch
+    if (E.setCrayonMode) E.setCrayonMode(!!crayon);
     const drawStart = performance.now();
     for (const s of strokes) {
       if (Array.isArray(s)) E.strokeSync(s, 'touch');
@@ -102,35 +134,58 @@
     const undoStart = performance.now();
     const steps = await undoAll();
     const undoEnd = performance.now();
+    if (E.setCrayonMode) E.setCrayonMode(false);
     const kf = agg(drawStart, drawEnd, 'engine.keyframe');
+    const snap = agg(drawStart, drawEnd, 'engine.snapshot');
+    const commit = agg(drawStart, drawEnd, 'engine.commit');
     const un = agg(undoStart, undoEnd, 'engine.undo');
+    const historyMB =
+      mode === 'snapshot'
+        ? (dbg.snapshotLiveRasters + 1) * mbPerRaster + dbg.snapshotBlobBytes / 1048576
+        : (dbg.keyframes + 1) * mbPerRaster;
     return {
       scenario: label,
+      mode,
       keyframes: dbg.keyframes,
-      commands: dbg.commands,
-      maxOps: dbg.maxOps,
-      'kf builds': kf.count,
+      snapshots: dbg.snapshots ?? 0,
+      'blob KB': Math.round((dbg.snapshotBlobBytes ?? 0) / 1024),
       'kf max ms': kf.max,
+      'snap copy max ms': snap.max,
+      'commit max ms': commit.max,
       'undo steps': steps,
       'undo avg ms': un.avg,
       'undo max ms': un.max,
-      'history MB': +((dbg.keyframes + 1) * mbPerRaster).toFixed(0),
+      'history MB': +historyMB.toFixed(0),
     };
   }
 
+  const SCENARIOS = [
+    {
+      label: '12 long squiggles (~1200 ops)',
+      strokes: Array.from({ length: 12 }, (_, i) => longSquiggle(i % 6)),
+    },
+    {
+      label: '12 five-finger drags (~2400 ops)',
+      strokes: Array.from({ length: 12 }, (_, i) => multiGesture(i)),
+    },
+    {
+      label: '12 crayon squiggles',
+      strokes: Array.from({ length: 12 }, (_, i) => longSquiggle(i % 6)),
+      crayon: true,
+    },
+    {
+      label: '12 crayon scribbles (pass splits)',
+      strokes: Array.from({ length: 12 }, (_, i) => scribble(i % 6)),
+      crayon: true,
+    },
+  ];
+
   const rows = [];
-  rows.push(
-    await scenario(
-      '12 long squiggles (~1200 ops)',
-      Array.from({ length: 12 }, (_, i) => longSquiggle(i % 6))
-    )
-  );
-  rows.push(
-    await scenario(
-      '12 five-finger drags (~2400 ops)',
-      Array.from({ length: 12 }, (_, i) => multiGesture(i))
-    )
-  );
+  for (const sc of SCENARIOS) {
+    for (const mode of modes) {
+      rows.push(await scenario(sc.label, mode, sc));
+    }
+  }
 
   console.log(
     `Device raster ${side}×${side} = ${mbPerRaster.toFixed(1)} MB/raster · ` +
@@ -138,6 +193,8 @@
   );
   console.table(rows);
   console.log(
-    'Watch a Web Inspector Timeline for a dropped frame at finger-lift (the keyframe build).'
+    'Watch a Web Inspector Timeline for a dropped frame at finger-lift ' +
+      '(replay: the keyframe build; snapshot: the paper copy), and the Xcode ' +
+      'memory gauge for the snapshot tiers.'
   );
 })();

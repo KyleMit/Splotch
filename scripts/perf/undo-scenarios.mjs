@@ -45,6 +45,13 @@ const flag = (name, def) => {
 const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '4'));
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
+// Which undo system to drive (the setUndoMode dev seam): 'replay' (ADR-0033,
+// the production default), 'snapshot', or 'both' for the side-by-side A/B.
+const undoModeFlag = flag('undo-mode', 'replay');
+if (!['replay', 'snapshot', 'both'].includes(undoModeFlag)) {
+  throw new Error(`--undo-mode must be replay|snapshot|both, got: ${undoModeFlag}`);
+}
+const undoModes = undoModeFlag === 'both' ? ['replay', 'snapshot'] : [undoModeFlag];
 
 // The regression is "one op per pointermove frame," so op volume = refresh rate
 // × stroke duration. A 120 Hz ProMotion iPad Pro captures ~120 ops/second, so a
@@ -239,12 +246,18 @@ async function drawStrokes(page, strokes, crayon = false) {
 }
 
 // Undo until the engine reports nothing left (capped well above the log size),
-// counting the steps actually performed.
+// counting the steps actually performed. Snapshot-mode restores settle
+// asynchronously (a deep entry decodes from its blob), so a false canUndo is
+// re-checked after a beat before trusting it — and the loop only exits once
+// the queued restores have all landed (the last one is what flips the flag).
 async function undoAll(page) {
   return page.evaluate(async () => {
     let steps = 0;
-    for (let i = 0; i < 40; i++) {
-      if (!window.__engineState.canUndo) break;
+    for (let i = 0; i < 60; i++) {
+      if (!window.__engineState.canUndo) {
+        await new Promise((r) => setTimeout(r, 50));
+        if (!window.__engineState.canUndo) break;
+      }
       window.__engine.undo();
       steps++;
       await new Promise((r) => requestAnimationFrame(r));
@@ -316,78 +329,96 @@ async function main() {
     const results = [];
 
     for (const sc of scenarios) {
-      console.log(`\n▶ ${sc.label}`);
-      await resetEngine(page, base, DEVICE.width, DEVICE.height);
-      // Reload drops the rAF FPS sampler injected before the trace; re-inject so
-      // frame health still reflects this scenario.
-      await injectObservers(page);
+      for (const mode of undoModes) {
+        console.log(`\n▶ ${sc.label} [${mode}]`);
+        await resetEngine(page, base, DEVICE.width, DEVICE.height);
+        // Reload drops the rAF FPS sampler injected before the trace; re-inject so
+        // frame health still reflects this scenario.
+        await injectObservers(page);
+        await page.evaluate((m) => window.__engine.setUndoMode(m), mode);
 
-      const drawStart = await now(page);
-      await markPhase(page, `${sc.key}-draw`, () => drawStrokes(page, sc.strokes, !!sc.crayon));
-      const drawEnd = await now(page);
+        const drawStart = await now(page);
+        await markPhase(page, `${sc.key}-${mode}-draw`, () =>
+          drawStrokes(page, sc.strokes, !!sc.crayon)
+        );
+        const drawEnd = await now(page);
 
-      const debug = await undoDebug(page);
-      const heapAfterDraw = await heapBytes(page);
+        const debug = await undoDebug(page);
+        const heapAfterDraw = await heapBytes(page);
 
-      const undoStart = await now(page);
-      let steps = 0;
-      await markPhase(page, `${sc.key}-undo`, async () => {
-        steps = await undoAll(page);
-      });
-      const undoEnd = await now(page);
-      const heapAfterUndo = await heapBytes(page);
+        const undoStart = await now(page);
+        let steps = 0;
+        await markPhase(page, `${sc.key}-${mode}-undo`, async () => {
+          steps = await undoAll(page);
+        });
+        const undoEnd = await now(page);
+        const heapAfterUndo = await heapBytes(page);
 
-      const drawMarks = await engineMeasuresIn(page, drawStart, drawEnd);
-      const undoMarks = await engineMeasuresIn(page, undoStart, undoEnd);
+        const drawMarks = await engineMeasuresIn(page, drawStart, drawEnd);
+        const undoMarks = await engineMeasuresIn(page, undoStart, undoEnd);
 
-      const draw = drawMarks['engine.draw'] || { count: 0, total: 0, max: 0 };
-      const keyframe = drawMarks['engine.keyframe'] || { count: 0, total: 0, max: 0 };
-      // engine.commit wraps the whole stroke-end pipeline (simplify → fold →
-      // keyframe), so its max is the pointerup hitch the user feels.
-      const commit = drawMarks['engine.commit'] || { count: 0, total: 0, max: 0 };
-      const simplify = drawMarks['engine.simplify'] || { count: 0, total: 0, max: 0 };
-      const undoM = undoMarks['engine.undo'] || { count: 0, total: 0, max: 0 };
+        const draw = drawMarks['engine.draw'] || { count: 0, total: 0, max: 0 };
+        const keyframe = drawMarks['engine.keyframe'] || { count: 0, total: 0, max: 0 };
+        // engine.commit wraps the whole stroke-end pipeline (replay: simplify →
+        // fold → keyframe; snapshot: paper copy → fold), so its max is the
+        // pointerup hitch the user feels. engine.snapshot isolates the paper
+        // copy inside a snapshot-mode commit.
+        const commit = drawMarks['engine.commit'] || { count: 0, total: 0, max: 0 };
+        const simplify = drawMarks['engine.simplify'] || { count: 0, total: 0, max: 0 };
+        const snapshot = drawMarks['engine.snapshot'] || { count: 0, total: 0, max: 0 };
+        const undoM = undoMarks['engine.undo'] || { count: 0, total: 0, max: 0 };
 
-      results.push({
-        key: sc.key,
-        label: sc.label,
-        strokes: sc.strokes.length,
-        crayon: !!sc.crayon,
-        debug, // { commands, keyframes, maxOps, maxSegments, totalSegments } or null on the snapshot engine
-        undoSteps: steps,
-        draw: {
-          ops: draw.count,
-          totalMs: draw.total,
-          keyframeBuilds: keyframe.count,
-          keyframeMs: keyframe.total,
-          keyframeMaxMs: keyframe.max,
-          commitMs: commit.total,
-          commitMaxMs: commit.max,
-          simplifyMs: simplify.total,
-          simplifyMaxMs: simplify.max,
-        },
-        undo: {
-          steps: undoM.count,
-          totalMs: undoM.total,
-          avgMs: undoM.count ? undoM.total / undoM.count : 0,
-          maxMs: undoM.max,
-        },
-        heap: {
-          afterDrawMB: heapAfterDraw ? heapAfterDraw / 1048576 : null,
-          afterUndoMB: heapAfterUndo ? heapAfterUndo / 1048576 : null,
-        },
         // History raster memory the way it actually lives — off the JS heap, in
-        // canvas backing stores. keyframes resident now + 1 always-present
-        // baseline, each bytesPerRaster.
-        historyRasterMB:
-          debug != null ? ((debug.keyframes + 1) * geom.bytesPerRaster) / 1048576 : null,
-      });
-      console.log(
-        `  keyframes=${debug?.keyframes ?? 'n/a'} commands=${debug?.commands ?? 'n/a'} ` +
-          `maxOps=${debug?.maxOps ?? 'n/a'} maxSegs=${debug?.maxSegments ?? 'n/a'} | ` +
-          `commit max ${commit.max.toFixed(1)}ms | undo ${undoM.count} steps ` +
-          `avg ${(undoM.count ? undoM.total / undoM.count : 0).toFixed(1)}ms max ${undoM.max.toFixed(1)}ms`
-      );
+        // canvas backing stores. Replay: retained keyframes + the baseline.
+        // Snapshot: live snapshot rasters + the paper, plus the encoded blobs.
+        const historyRasterMB =
+          debug == null
+            ? null
+            : mode === 'snapshot'
+              ? ((debug.snapshotLiveRasters + 1) * geom.bytesPerRaster + debug.snapshotBlobBytes) /
+                1048576
+              : ((debug.keyframes + 1) * geom.bytesPerRaster) / 1048576;
+
+        results.push({
+          key: sc.key,
+          label: sc.label,
+          mode,
+          strokes: sc.strokes.length,
+          crayon: !!sc.crayon,
+          debug,
+          undoSteps: steps,
+          draw: {
+            ops: draw.count,
+            totalMs: draw.total,
+            keyframeBuilds: keyframe.count,
+            keyframeMs: keyframe.total,
+            keyframeMaxMs: keyframe.max,
+            commitMs: commit.total,
+            commitMaxMs: commit.max,
+            simplifyMs: simplify.total,
+            simplifyMaxMs: simplify.max,
+            snapshotMs: snapshot.total,
+            snapshotMaxMs: snapshot.max,
+          },
+          undo: {
+            steps: undoM.count,
+            totalMs: undoM.total,
+            avgMs: undoM.count ? undoM.total / undoM.count : 0,
+            maxMs: undoM.max,
+          },
+          heap: {
+            afterDrawMB: heapAfterDraw ? heapAfterDraw / 1048576 : null,
+            afterUndoMB: heapAfterUndo ? heapAfterUndo / 1048576 : null,
+          },
+          historyRasterMB,
+        });
+        console.log(
+          `  keyframes=${debug?.keyframes ?? 'n/a'} commands=${debug?.commands ?? 'n/a'} ` +
+            `snapshots=${debug?.snapshots ?? 'n/a'} blobKB=${debug ? Math.round(debug.snapshotBlobBytes / 1024) : 'n/a'} | ` +
+            `commit max ${commit.max.toFixed(1)}ms | undo ${undoM.count} steps ` +
+            `avg ${(undoM.count ? undoM.total / undoM.count : 0).toFixed(1)}ms max ${undoM.max.toFixed(1)}ms`
+        );
+      }
     }
 
     const obs = await readObservers(page);
@@ -404,6 +435,7 @@ async function main() {
       refreshHz: HZ,
       frameBudgetMs: 1000 / HZ,
       longOps: LONG_OPS,
+      undoModes,
       buildMode: build ? 'production-preview' : 'production-preview (reused build)',
       captureMode: 'cdp-trace',
       raster: { ...geom, mbPerRaster: geom.bytesPerRaster / 1048576 },
@@ -464,39 +496,40 @@ function renderUndoReport({ settings, scenarios }) {
   );
   out.push('## Command log after drawing (getUndoDebug)\n');
   out.push(
-    '| Scenario | Strokes | Commands retained | Keyframes | Max ops in a command | Max segments | Total segments |'
+    '| Scenario | Mode | Strokes | Commands retained | Keyframes | Snapshots | Max ops in a command | Max segments | Total segments |'
   );
-  out.push('| --- | --- | --- | --- | --- | --- | --- |');
+  out.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
     out.push(
-      `| ${s.label} | ${s.strokes} | ${s.debug?.commands ?? 'n/a'} | ` +
-        `${s.debug?.keyframes ?? 'n/a'} | ${s.debug?.maxOps ?? 'n/a'} | ` +
+      `| ${s.label} | ${s.mode} | ${s.strokes} | ${s.debug?.commands ?? 'n/a'} | ` +
+        `${s.debug?.keyframes ?? 'n/a'} | ${s.debug?.snapshots ?? 'n/a'} | ${s.debug?.maxOps ?? 'n/a'} | ` +
         `${s.debug?.maxSegments ?? 'n/a'} | ${s.debug?.totalSegments ?? 'n/a'} |`
     );
   }
   out.push('\n## Drawing cost (engine.draw + the stroke-end pipeline)\n');
   out.push(
-    'engine.commit wraps the whole stroke-end pipeline (simplify → fold → keyframe), so ' +
-      '**commit max** is the pointerup hitch the user feels; the keyframe build is its ' +
-      'dominant term when it fires.\n'
+    'engine.commit wraps the whole stroke-end pipeline (replay: simplify → fold → keyframe; ' +
+      'snapshot: paper copy → fold), so **commit max** is the pointerup hitch the user feels. ' +
+      'The keyframe build is replay mode’s dominant term when it fires; the paper copy ' +
+      '(engine.snapshot) is snapshot mode’s.\n'
   );
   out.push(
-    '| Scenario | draw() calls | draw total | keyframe builds | keyframe total | keyframe max | simplify max | **commit max (1 stroke end)** |'
+    '| Scenario | Mode | draw() calls | draw total | keyframe builds | keyframe max | simplify max | snapshot copy max | **commit max (1 stroke end)** |'
   );
-  out.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
+  out.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
     out.push(
-      `| ${s.label} | ${s.draw.ops} | ${f1(s.draw.totalMs)} ms | ` +
-        `${s.draw.keyframeBuilds} | ${f1(s.draw.keyframeMs)} ms | ${f1(s.draw.keyframeMaxMs)} ms | ` +
-        `${f1(s.draw.simplifyMaxMs)} ms | **${f1(s.draw.commitMaxMs)} ms** |`
+      `| ${s.label} | ${s.mode} | ${s.draw.ops} | ${f1(s.draw.totalMs)} ms | ` +
+        `${s.draw.keyframeBuilds} | ${f1(s.draw.keyframeMaxMs)} ms | ` +
+        `${f1(s.draw.simplifyMaxMs)} ms | ${f1(s.draw.snapshotMaxMs)} ms | **${f1(s.draw.commitMaxMs)} ms** |`
     );
   }
   out.push('\n## Undo cost (engine.undo)\n');
-  out.push('| Scenario | Undo steps | Total | Avg / step | Max step |');
-  out.push('| --- | --- | --- | --- | --- |');
+  out.push('| Scenario | Mode | Undo steps | Total | Avg / step | Max step |');
+  out.push('| --- | --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
     out.push(
-      `| ${s.label} | ${s.undo.steps} | ${f1(s.undo.totalMs)} ms | ` +
+      `| ${s.label} | ${s.mode} | ${s.undo.steps} | ${f1(s.undo.totalMs)} ms | ` +
         `${f1(s.undo.avgMs)} ms | ${f1(s.undo.maxMs)} ms |`
     );
   }
@@ -505,19 +538,31 @@ function renderUndoReport({ settings, scenarios }) {
   out.push(
     `Each square raster is ${r?.side}×${r?.side} → **${f1(r?.mbPerRaster)} MB**. ` +
       `Canvas backing stores are **not** counted by performance.memory, so the JS-heap ` +
-      `table below stays flat regardless of history — the raster figure is the one that matters.\n`
+      `table below stays flat regardless of history — the raster figure is the one that matters. ` +
+      `Replay rasters = keyframes + baseline; snapshot rasters = live snapshots + the paper, ` +
+      `plus the encoded blob bytes.\n`
   );
-  out.push('| Scenario | Rasters resident (keyframes + baseline) | History raster memory |');
-  out.push('| --- | --- | --- |');
+  out.push('| Scenario | Mode | Rasters resident | Blob bytes | History memory |');
+  out.push('| --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
-    const rasters = s.debug != null ? `${s.debug.keyframes} + 1` : 'n/a';
-    out.push(`| ${s.label} | ${rasters} | ${f1(s.historyRasterMB)} MB |`);
+    const rasters =
+      s.debug == null
+        ? 'n/a'
+        : s.mode === 'snapshot'
+          ? `${s.debug.snapshotLiveRasters} + 1`
+          : `${s.debug.keyframes} + 1`;
+    const blobKB = s.debug ? Math.round((s.debug.snapshotBlobBytes ?? 0) / 1024) : 'n/a';
+    out.push(
+      `| ${s.label} | ${s.mode} | ${rasters} | ${blobKB} KB | ${f1(s.historyRasterMB)} MB |`
+    );
   }
   out.push('\n## JS heap (performance.memory — excludes canvas pixels; coarse, GC-dependent)\n');
-  out.push('| Scenario | After draw (history resident) | After undo-to-empty |');
-  out.push('| --- | --- | --- |');
+  out.push('| Scenario | Mode | After draw (history resident) | After undo-to-empty |');
+  out.push('| --- | --- | --- | --- |');
   for (const s of scenarios) {
-    out.push(`| ${s.label} | ${f1(s.heap.afterDrawMB)} MB | ${f1(s.heap.afterUndoMB)} MB |`);
+    out.push(
+      `| ${s.label} | ${s.mode} | ${f1(s.heap.afterDrawMB)} MB | ${f1(s.heap.afterUndoMB)} MB |`
+    );
   }
   out.push('\n---\nSee the `profiling` skill and ADR-0035 for how to read these.\n');
   return out.join('\n');
