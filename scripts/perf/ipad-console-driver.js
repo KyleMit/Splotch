@@ -5,9 +5,10 @@
 // the same undo scenarios as `npm run perf:undo`, but on the real device
 // (real WebKit/JavaScriptCore + GPU + 120 Hz ProMotion), and prints a table of
 // the device-specific numbers the desktop harness can't give — the ADR-0066
-// gates: the stroke-end commit hitch (paper copy), per-step undo restore time
-// (live blit vs blob decode), and history memory, at real op volume on real
-// hardware.
+// gates: the stroke-end commit hitch (with the paper copy and the op fold
+// measured separately, so a hot commit is attributable), per-step undo restore
+// time (live blit vs blob decode), and history memory, at real op volume on
+// real hardware.
 //
 // WebKit clamps performance.now() to ~1 ms, so timings are coarse — but that is
 // plenty to tell a ~10 ms blit from a hundreds-of-ms replay hang. For the
@@ -84,17 +85,24 @@
     return out;
   };
 
+  const percentile = (values, p) => {
+    const sorted = [...values].sort((a, b) => a - b);
+    return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * p) - 1))];
+  };
+
   const agg = (from, to, name) => {
     const ms = performance
       .getEntriesByType('measure')
       .filter((m) => m.name === name && m.startTime >= from && m.startTime < to);
-    if (!ms.length) return { count: 0, total: 0, avg: 0, max: 0 };
-    const total = ms.reduce((s, m) => s + m.duration, 0);
+    if (!ms.length) return { count: 0, total: 0, avg: 0, p95: 0, max: 0 };
+    const durations = ms.map((m) => m.duration);
+    const total = durations.reduce((s, d) => s + d, 0);
     return {
       count: ms.length,
       total: +total.toFixed(1),
       avg: +(total / ms.length).toFixed(2),
-      max: +Math.max(...ms.map((m) => m.duration)).toFixed(2),
+      p95: +percentile(durations, 0.95).toFixed(2),
+      max: +Math.max(...durations).toFixed(2),
     };
   };
 
@@ -135,6 +143,7 @@
     const undoEnd = performance.now();
     if (E.setCrayonMode) E.setCrayonMode(false);
     const snap = agg(drawStart, drawEnd, 'engine.snapshot');
+    const fold = agg(drawStart, drawEnd, 'engine.fold');
     const commit = agg(drawStart, drawEnd, 'engine.commit');
     const un = agg(undoStart, undoEnd, 'engine.undo');
     const historyMB = (dbg.liveRasters + 1) * mbPerRaster + dbg.blobBytes / 1048576;
@@ -143,9 +152,11 @@
       snapshots: dbg.snapshots ?? 0,
       'blob KB': Math.round((dbg.blobBytes ?? 0) / 1024),
       'snap copy max ms': snap.max,
+      'fold max ms': fold.max,
       'commit max ms': commit.max,
       'undo steps': steps,
       'undo avg ms': un.avg,
+      'undo p95 ms': un.p95,
       'undo max ms': un.max,
       'history MB': +historyMB.toFixed(0),
     };
@@ -183,9 +194,12 @@
   );
   console.table(rows);
   console.log(
-    'Gates (ADR-0066): undo avg < 50 ms · commit max ~16 ms (the paper copy) · ' +
-      'history MB well under 150 · no dropped frame at finger-lift. Watch a Web ' +
-      'Inspector Timeline for the paper copy at finger-lift and blob encodes ' +
-      'after it, and the Xcode memory gauge for the snapshot tier.'
+    'Gates (ADR-0066): undo p95 < 50 ms · commit hitch (engine.commit max) ≈ one ' +
+      '120 Hz frame ≈ 8.3 ms · history ≲ 150 MB · no dropped frames while blobs ' +
+      'encode. Inside a commit, "snap copy" is engine.snapshot (the paper copy ' +
+      'alone) and "fold" is engine.fold (rendering the committed ops) — a hot ' +
+      'commit attributes to one of those. Watch a Web Inspector Timeline for a ' +
+      'dropped frame at finger-lift and during the blob encodes after it, and ' +
+      'the Xcode memory gauge for the snapshot tier.'
   );
 })();
