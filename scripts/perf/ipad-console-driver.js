@@ -2,15 +2,12 @@
 // BROWSER CONSOLE SNIPPET — not a Node script. Paste the whole file into the
 // Safari Web Inspector JS console that is remote-debugging an iPad which has
 // /dev/engine open (on a PERF_MARKS + PUBLIC_ENABLE_DEV_HARNESS build). It drives
-// the same undo/keyframe scenarios as `npm run perf:undo`, but on the real device
+// the same undo scenarios as `npm run perf:undo`, but on the real device
 // (real WebKit/JavaScriptCore + GPU + 120 Hz ProMotion), and prints a table of
-// the device-specific numbers the desktop harness can't give: the stroke-end
-// commit hitch (keyframe build / snapshot copy) and undo time at real op volume
-// on real hardware.
-//
-// If the build has the setUndoMode seam, every scenario runs in BOTH undo
-// systems — 'replay' (ADR-0033) and 'snapshot' (the reversal prototype) — which
-// is the on-device A/B that fills the snapshot-undo gates table.
+// the device-specific numbers the desktop harness can't give — the ADR-0066
+// gates: the stroke-end commit hitch (paper copy), per-step undo restore time
+// (live blit vs blob decode), and history memory, at real op volume on real
+// hardware.
 //
 // WebKit clamps performance.now() to ~1 ms, so timings are coarse — but that is
 // plenty to tell a ~10 ms blit from a hundreds-of-ms replay hang. For the
@@ -29,7 +26,6 @@
     );
     return;
   }
-  const modes = E.setUndoMode ? ['replay', 'snapshot'] : ['replay'];
 
   // Match the device viewport so the raster is the real on-device size.
   E.resizeTo(window.innerWidth, window.innerHeight);
@@ -102,9 +98,9 @@
     };
   };
 
-  // Snapshot-mode restores settle asynchronously (deep entries decode from a
-  // blob), so each step waits for its engine.undo measure to land before the
-  // next fires — otherwise the loop outruns the restore queue.
+  // Restores settle asynchronously (deep entries decode from a blob), so each
+  // step waits for its engine.undo measure to land before the next fires —
+  // otherwise the loop outruns the restore queue.
   const undoAll = async () => {
     const completed = () => performance.getEntriesByName('engine.undo', 'measure').length;
     let n = 0;
@@ -122,10 +118,9 @@
     return n;
   };
 
-  async function scenario(label, mode, { strokes, crayon }) {
+  async function scenario(label, { strokes, crayon }) {
     await undoAll(); // clean history for an accurate per-scenario count
     E.clearCanvas();
-    if (E.setUndoMode) E.setUndoMode(mode); // also drops history at the switch
     if (E.setCrayonMode) E.setCrayonMode(!!crayon);
     const drawStart = performance.now();
     for (const s of strokes) {
@@ -139,21 +134,14 @@
     const steps = await undoAll();
     const undoEnd = performance.now();
     if (E.setCrayonMode) E.setCrayonMode(false);
-    const kf = agg(drawStart, drawEnd, 'engine.keyframe');
     const snap = agg(drawStart, drawEnd, 'engine.snapshot');
     const commit = agg(drawStart, drawEnd, 'engine.commit');
     const un = agg(undoStart, undoEnd, 'engine.undo');
-    const historyMB =
-      mode === 'snapshot'
-        ? (dbg.snapshotLiveRasters + 1) * mbPerRaster + dbg.snapshotBlobBytes / 1048576
-        : (dbg.keyframes + 1) * mbPerRaster;
+    const historyMB = (dbg.liveRasters + 1) * mbPerRaster + dbg.blobBytes / 1048576;
     return {
       scenario: label,
-      mode,
-      keyframes: dbg.keyframes,
       snapshots: dbg.snapshots ?? 0,
-      'blob KB': Math.round((dbg.snapshotBlobBytes ?? 0) / 1024),
-      'kf max ms': kf.max,
+      'blob KB': Math.round((dbg.blobBytes ?? 0) / 1024),
       'snap copy max ms': snap.max,
       'commit max ms': commit.max,
       'undo steps': steps,
@@ -186,9 +174,7 @@
 
   const rows = [];
   for (const sc of SCENARIOS) {
-    for (const mode of modes) {
-      rows.push(await scenario(sc.label, mode, sc));
-    }
+    rows.push(await scenario(sc.label, sc));
   }
 
   console.log(
@@ -197,8 +183,9 @@
   );
   console.table(rows);
   console.log(
-    'Watch a Web Inspector Timeline for a dropped frame at finger-lift ' +
-      '(replay: the keyframe build; snapshot: the paper copy), and the Xcode ' +
-      'memory gauge for the snapshot tiers.'
+    'Gates (ADR-0066): undo avg < 50 ms · commit max ~16 ms (the paper copy) · ' +
+      'history MB well under 150 · no dropped frame at finger-lift. Watch a Web ' +
+      'Inspector Timeline for the paper copy at finger-lift and blob encodes ' +
+      'after it, and the Xcode memory gauge for the snapshot tier.'
   );
 })();

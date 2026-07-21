@@ -20,10 +20,10 @@ Throughout, every step is tagged **[Mac]** or **[iPad]** so it's clear where the
 
 ## Which approach to use
 
-| Approach                                                          | Fidelity                                                         | Determinism                                                       | Use when                                                                       |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| **A. Safari on iPad → Mac's `/dev/engine` preview** (recommended) | Real iPad WebKit + GPU + ProMotion (Safari shell, not WKWebView) | High — driven by the same scenario as `perf:undo` via the console | You want repeatable engine numbers (undo/keyframe/draw cost at real op volume) |
-| **B. Native Capacitor app, hand-driven**                          | Real WKWebView app shell *and* hardware                          | Low — gestures by hand, no `getUndoDebug`                         | You specifically need to rule out a WKWebView-vs-Safari difference             |
+| Approach                                                          | Fidelity                                                         | Determinism                                                       | Use when                                                                     |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **A. Safari on iPad → Mac's `/dev/engine` preview** (recommended) | Real iPad WebKit + GPU + ProMotion (Safari shell, not WKWebView) | High — driven by the same scenario as `perf:undo` via the console | You want repeatable engine numbers (undo/commit/draw cost at real op volume) |
+| **B. Native Capacitor app, hand-driven**                          | Real WKWebView app shell *and* hardware                          | Low — gestures by hand, no `getUndoDebug`                         | You specifically need to rule out a WKWebView-vs-Safari difference           |
 
 Safari-on-iPad and the native WKWebView run the **same** WebKit engine, so for engine/canvas
 performance Approach A is the right default; Approach B is a sanity check on the app shell. Both are
@@ -91,7 +91,7 @@ stay tethered after the first connection.)
 ### A5. Start a Timeline recording — **[Mac]**
 
 In Web Inspector → **Timelines** tab → click the record button. This captures the frame/GPU view, so
-you can *see* whether a keyframe build drops a ProMotion frame at finger-lift. (Optional but
+you can *see* whether the commit's paper copy drops a ProMotion frame at finger-lift. (Optional but
 recommended — the console table in A6 gives the raw engine timings either way.)
 
 ### A6. Drive the scenario — **[Mac]**
@@ -103,11 +103,10 @@ Enter. It runs on the iPad page and:
 * resizes the canvas to the full iPad screen (so the raster is the real on-device size),
 * drives four real-volume scenarios — 12 long ~1200-op squiggles, 12 five-finger ~2400-op drags, 12
   crayon squiggles, and 12 crayon reversal-scribbles (mid-stroke pass splits) — matching
-  `npm run perf:undo`; on a build with the `setUndoMode` seam each scenario runs in **both** undo
-  systems (`replay` vs `snapshot`), the on-device A/B for the snapshot-undo gates,
-* prints a `console.table` with, per scenario × mode: `keyframes` / `snapshots` / `blob KB`,
-  **`kf max ms`** (slowest keyframe build), **`snap copy max ms`** (slowest paper copy),
-  **`commit max ms`** (the stroke-end hitch), **`undo max ms`**, and the real `history MB`.
+  `npm run perf:undo`,
+* prints a `console.table` with, per scenario: `snapshots` / `blob KB`, **`snap copy max ms`**
+  (slowest paper copy), **`commit max ms`** (the stroke-end hitch), **`undo avg/max ms`** (live blit
+  vs deep blob decode), and the real `history MB` — the ADR-0066 verification gates.
 
 Keep the iPad screen awake and the tab foregrounded while it runs (under a minute).
 
@@ -127,8 +126,8 @@ npm run perf:ios:analyze -- perf-profiles/web-inspector-timeline/<export>.json
 >
 > * It records `performance.mark()` as `markers` but **not** `performance.measure()`, so engine.\*
 >   durations aren't stored directly — the analyzer recovers each op's main-thread cost from the
->   smallest timeline **record** spanning the mark (a keyframe build lands inside the pointerup
->   record; an undo inside its rAF record).
+>   smallest timeline **record** spanning the mark (the commit's paper copy lands inside the
+>   pointerup record; an undo inside its rAF record).
 > * `markers` is a **ring buffer** — a long session keeps only the most recent marks (the analyzer
 >   warns when the first mark is far past the recording start). Keep the driven scenario short, or
 >   run one scenario per recording.
@@ -136,7 +135,7 @@ npm run perf:ios:analyze -- perf-profiles/web-inspector-timeline/<export>.json
 >   as "effectively free," not precise.
 >
 > GPU-side cost (the canvas raster) shows in the **paint/composite** records, not in the engine
-> marks: the canvas is GPU-accelerated, so issuing replay ops is cheap on the main thread and
+> marks: the canvas is GPU-accelerated, so issuing draw calls is cheap on the main thread and
 > rasterization is deferred.
 
 ---
@@ -145,8 +144,8 @@ npm run perf:ios:analyze -- perf-profiles/web-inspector-timeline/<export>.json
 
 Instead of having the harness generate synthetic strokes, capture your own finger input on the
 device once and feed it into the profiler. The replay reproduces the real op stream **and** real
-frame pacing, and reports exactly how the engine stored *your* strokes (keyframes / commands / op
-counts).
+frame pacing, and reports exactly how the engine stored *your* strokes (snapshot depth / blob
+bytes).
 
 ### C1. Serve the app on the LAN — **[Mac]**
 
@@ -192,9 +191,9 @@ npm run perf:replay -- --recording=perf-profiles/recordings/my-session.json
 It opens `/dev/engine`, sizes the canvas to the recorded device, replays your input at its recorded
 timing (add `--turbo` for as-fast-as-possible, `--throttle=N` to emulate a slower CPU), captures a
 CDP trace + engine marks, and writes the usual `report.md` plus `replay-summary.md` (how your input
-was stored + engine.draw/ keyframe/undo cost). The replay runs in **headless Chromium on the Mac**,
-so it's for op-stream/algorithm fidelity from real input — not on-device hardware numbers (for
-those, profile the replay or your live drawing on the iPad via Approach A/B).
+was stored + engine.draw/commit/undo cost). The replay runs in **headless Chromium on the Mac**, so
+it's for op-stream/algorithm fidelity from real input — not on-device hardware numbers (for those,
+profile the replay or your live drawing on the iPad via Approach A/B).
 
 > The replay (`perf:replay`) takes over port 4173 and will stop the `--host` recording server.
 > Record first, then replay.
@@ -213,7 +212,7 @@ Use only to confirm the app shell behaves like Safari.
 4. **[Mac]** Start a **Timelines** recording.
 5. **[iPad]** By hand: draw one long continuous scribble (several seconds), then tap **undo**.
    Repeat a few times; try a five-finger drag too.
-6. **[Mac]** Stop the recording. Read `engine.draw` / `engine.keyframe` / `engine.undo` in the
+6. **[Mac]** Stop the recording. Read `engine.draw` / `engine.snapshot` / `engine.undo` in the
    Timeline's user-timing track, or export and `npm run perf:ios:analyze -- <export>.json`.
 
 There's no `window.__engine` here (the real app doesn't expose the harness), so op counts aren't
@@ -223,24 +222,25 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
 
 ## Reading the results
 
-* **`undo max ms` ≈ 0** → the undo regression (ADR-0035) is gone on real hardware. This is the
-  primary pass/fail; before the keyframe fix a long scribble's undo was hundreds of ms.
-* **`kf max ms` vs the 8.3 ms frame budget** → the keyframe build runs once at finger-lift, off the
-  draw frame, but a build slower than one 120 Hz frame (8.3 ms) can still drop a frame the instant
-  the stroke ends. Cross-check the Timeline for a long frame at that moment. This is the cost the
-  desktop harness can only estimate.
+* **`undo avg ms` < 50** → the ADR-0066 undo gate. Shallow undos (the K_LIVE = 2 live rasters)
+  should be a near-free blit; deep undos add a lossless blob decode — both are one-off costs at
+  button-press.
+* **`snap copy max ms` / `commit max ms` vs the 8.3 ms frame budget** → the paper copy runs once at
+  finger-lift, off the draw frame, but a copy slower than one 120 Hz frame (8.3 ms) can still drop a
+  frame the instant the stroke ends. Cross-check the Timeline for a long frame at that moment. This
+  is the cost the desktop harness can only estimate — SwiftShader exaggerates it wildly.
 * **`history MB`** → real raster memory for that scenario
-  (`(keyframes + 1) ×
-  max(w,h)² × 4 bytes`). On a 12.9″ iPad Pro the square raster is ~28 MB, so a
-  ten-keyframe history is ~310 MB — the worst case ADR-0033/0035 bound.
+  (`(live rasters + the paper) × max(w,h)² × 4 bytes + blob bytes`). On a 12.9″ iPad Pro the square
+  raster is ~28 MB, so the resident tier is ~85 MB plus single-digit-MB blobs per deep entry —
+  verify against the ≲150 MB gate with the Xcode memory gauge (no jetsam).
 
 ---
 
 ## Caveats & troubleshooting
 
 * **WebKit clamps `performance.now()` to ~1 ms**, so sub-millisecond marks read as 0. Fine at our
-  scale (telling a ~10 ms keyframe build from the old hundreds-of-ms hang), but don't trust the
-  second decimal.
+  scale (telling a ~10 ms paper copy from a hundreds-of-ms hang), but don't trust the second
+  decimal.
 * **Safari ≠ WKWebView**, but the engine is identical; the difference is the app shell, which
   Approach B checks if needed.
 * **iPad not under the Develop menu** → re-confirm the iPad's Web Inspector toggle, re-seat the USB

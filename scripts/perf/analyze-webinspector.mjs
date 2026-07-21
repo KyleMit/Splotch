@@ -12,9 +12,9 @@
 //     below the clock floor — treat <1 ms as "effectively free," not precise.
 //
 // We recover an engine op's cost from the enclosing timeline record: each
-// synthetic pointer event is its own `event-dispatched` script record, and a
-// keyframe build runs inside the pointerup record while an undo() runs inside its
-// own rAF/microtask record — so the smallest record spanning the mark's timestamp
+// synthetic pointer event is its own `event-dispatched` script record, and the
+// commit's paper copy runs inside the pointerup record while an undo() runs inside
+// its own rAF/microtask record — so the smallest record spanning the mark's timestamp
 // bounds that op's main-thread cost. GPU-side cost shows up in paint/composite
 // records instead (the canvas is GPU-accelerated, so issuing replay ops is cheap
 // and rasterization is deferred off the main thread).
@@ -39,7 +39,7 @@ const spans = (rec.records || [])
     dur: (r.endTime - r.startTime) * 1000,
   }));
 
-// Smallest record spanning t (so a keyframe build maps to the pointerup record,
+// Smallest record spanning t (so a commit paper copy maps to the pointerup record,
 // not the whole-session frame). O(markers × spans) — fine for a single export.
 const enclosing = (t) => {
   let best = null;
@@ -84,9 +84,8 @@ console.log('NOTE: WebKit clamps performance.now() to ~1 ms — treat <1 ms as e
 console.log('## Engine ops (main-thread cost via enclosing record, ms)\n');
 for (const name of [
   'engine.undo',
-  'engine.keyframe',
+  'engine.snapshot',
   'engine.commit',
-  'engine.foldBaseline',
   'engine.resize',
   'engine.draw',
 ]) {
