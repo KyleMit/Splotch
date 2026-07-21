@@ -12,7 +12,11 @@
 // Memory is tiered: the K_LIVE most recent snapshots stay live rasters
 // (~30 MB each at 2× DPR on a 13″ iPad — instant common undo); older entries
 // are encoded to a lossless blob off the commit path and decoded again only on
-// deep undo, so a deep stack costs megabytes, not hundreds of them.
+// deep undo, so a deep stack costs megabytes, not hundreds of them. The tier
+// re-balances in both directions: undo (or a commit on an undo-shallowed
+// stack) can raise an encoded entry into the K_LIVE window, and it re-inflates
+// back to a live raster off the hot path (reinflateHotSnapshots), so the
+// window holds after undo-then-draw, not only while the stack grows.
 //
 // Commands are retained as ops (`pendingCommands`) only while the magic sheet
 // is unready — folding a magic op then would bake its intentionally-blank
@@ -36,7 +40,8 @@ import { PERF_MARKS } from './perf';
 export const MAX_UNDO_STACK_SIZE = 20;
 
 // How many of the most recent snapshots stay live rasters for instant undo;
-// everything deeper demotes to an encoded blob (see encodeColdSnapshots).
+// everything deeper demotes to an encoded blob (encodeColdSnapshots), and a
+// blob rising back into the window re-inflates (reinflateHotSnapshots).
 const K_LIVE = 2;
 
 let paperCanvas: HTMLCanvasElement | null = null;
@@ -47,6 +52,7 @@ interface Snapshot {
   canvas: HTMLCanvasElement | null;
   blob: Blob | null;
   encoding: boolean;
+  decoding: boolean;
   // Commands committed but not yet folded when this snapshot was taken (magic
   // sheet unready) — replayed on top of the raster to reproduce the state.
   pending: StrokeGroupCommand[];
@@ -173,6 +179,7 @@ export function pushCommand(cmd: StrokeGroupCommand) {
       canvas: copy,
       blob: null,
       encoding: false,
+      decoding: false,
       pending: [...pendingCommands],
     });
     while (snapshotStack.length > MAX_UNDO_STACK_SIZE) snapshotStack.shift();
@@ -181,6 +188,7 @@ export function pushCommand(cmd: StrokeGroupCommand) {
   foldPendingIntoPaper();
   if (PERF_MARKS) performance.measure('engine.snapshot', 'engine.snapshot:start');
   encodeColdSnapshots();
+  reinflateHotSnapshots();
 }
 
 // Fold committed-but-unfolded commands into the paper, oldest first, stopping
@@ -196,10 +204,17 @@ function foldPendingIntoPaper() {
   }
 }
 
+function isInLiveWindow(snap: Snapshot): boolean {
+  const i = snapshotStack.indexOf(snap);
+  return i >= 0 && i >= snapshotStack.length - K_LIVE;
+}
+
 // Demote snapshots below the K_LIVE window to encoded blobs, freeing their
 // ~30 MB rasters. WebP first (Chromium encodes quality-1 WebP losslessly at a
 // fraction of PNG's size); engines that can't encode WebP hand back a PNG blob
 // (per spec toBlob falls back to image/png), which is lossless everywhere.
+// An entry that rose into the live window while its encode was in flight
+// keeps the raster it never lost.
 function encodeColdSnapshots() {
   for (let i = 0; i < snapshotStack.length - K_LIVE; i++) {
     const snap = snapshotStack[i];
@@ -210,11 +225,53 @@ function encodeColdSnapshots() {
       (blob) => {
         snap.encoding = false;
         if (!blob) return; // encode failed — keep the raster
+        if (snap.canvas === source && isInLiveWindow(snap)) return;
         snap.blob = blob;
         if (snap.canvas === source) snap.canvas = null;
       },
       'image/webp',
       1
+    );
+  }
+}
+
+// Re-inflate encoded entries that rise into the K_LIVE window — undo popping
+// the stack, or a commit landing on an undo-shallowed one — so the "K_LIVE
+// most recent snapshots are live rasters" invariant survives undo-then-draw
+// instead of only holding while the stack grows. Fire-and-forget off the hot
+// path, like the encode tier; it never touches the paper, so it cannot race
+// the undo/paper chain — a re-inflating entry popped for undo mid-decode
+// fails the isInLiveWindow re-check and popSnapshot's own decode stays the
+// single restore path.
+function reinflateHotSnapshots() {
+  for (let i = Math.max(0, snapshotStack.length - K_LIVE); i < snapshotStack.length; i++) {
+    const snap = snapshotStack[i];
+    if (snap.canvas || !snap.blob || snap.decoding) continue;
+    const source = snap.blob;
+    snap.decoding = true;
+    createImageBitmap(source).then(
+      (bitmap) => {
+        snap.decoding = false;
+        if (snap.canvas || snap.blob !== source || !isInLiveWindow(snap)) {
+          bitmap.close();
+          return;
+        }
+        const live = document.createElement('canvas');
+        live.width = bitmap.width;
+        live.height = bitmap.height;
+        const liveCtx = live.getContext('2d');
+        if (!liveCtx) {
+          bitmap.close();
+          return;
+        }
+        liveCtx.drawImage(bitmap, 0, 0);
+        bitmap.close();
+        snap.canvas = live;
+        snap.blob = null;
+      },
+      () => {
+        snap.decoding = false; // decode failed — keep the blob; deep undo retries it
+      }
     );
   }
 }
@@ -227,6 +284,7 @@ export function popSnapshot(): Promise<{ wasEmpty: boolean }> | null {
   const snap = snapshotStack.pop();
   if (!snap) return null;
   pendingCommands = [...snap.pending];
+  reinflateHotSnapshots();
   if (snap.canvas) {
     restorePaper(snap.canvas);
     return Promise.resolve({ wasEmpty: snap.wasEmpty });

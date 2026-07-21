@@ -1828,3 +1828,68 @@ test('drawing immediately after rapid undos folds onto the restored paper (undo 
   expect(s.canvasEmpty).toBe(true);
   expect(s.canUndo).toBe(false);
 });
+
+test('encoded snapshots rising into the K_LIVE window re-inflate to live rasters', async ({
+  page,
+}) => {
+  // The K_LIVE invariant must survive undo-then-draw, not just monotonic
+  // growth: after deep undos the entries that rise into the top-2 window
+  // decode back to live rasters off the hot path, so the *second* undo tap
+  // after a new stroke is a live blit, not a blob decode.
+  await page.evaluate(() => {
+    for (let i = 0; i < 5; i++) {
+      const y = 20 + i * 20;
+      window.__engine.strokeSync(
+        [
+          { x: 30, y },
+          { x: 270, y },
+        ],
+        'pen'
+      );
+    }
+  });
+
+  // Let the cold tier settle: strokes 1–3 demote to blobs, 4–5 stay live.
+  await expect(async () => {
+    const d = await page.evaluate(() => window.__engine.getUndoDebug());
+    expect(d.snapshots).toBe(5);
+    expect(d.liveRasters).toBe(2);
+    expect(d.blobBytes).toBeGreaterThan(0);
+  }).toPass();
+
+  await page.evaluate(async () => {
+    await window.__engine.undo();
+    await window.__engine.undo();
+    await window.__engine.undo();
+  });
+
+  // Both survivors were blobs; rising into the window re-inflates them.
+  await expect(async () => {
+    const d = await page.evaluate(() => window.__engine.getUndoDebug());
+    expect(d.snapshots).toBe(2);
+    expect(d.liveRasters).toBe(2);
+    expect(d.blobBytes).toBe(0);
+  }).toPass();
+
+  await page.evaluate(() => window.__engine.strokeSync([{ x: 150, y: 200 }], 'pen'));
+
+  // The new commit re-tiers: top-2 live (stroke 2's snapshot + the dot's),
+  // the entry pushed below the window demotes back to a blob.
+  await expect(async () => {
+    const d = await page.evaluate(() => window.__engine.getUndoDebug());
+    expect(d.snapshots).toBe(3);
+    expect(d.liveRasters).toBe(2);
+    expect(d.blobBytes).toBeGreaterThan(0);
+  }).toPass();
+
+  // First undo drops the dot; the second — the tap that used to pay a blob
+  // decode — restores stroke 1 from its re-inflated raster.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 200)[3])).toBe(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 40)[3])).toBeGreaterThan(0);
+
+  await page.evaluate(() => window.__engine.undo());
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 40)[3])).toBe(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 20)[3])).toBeGreaterThan(0);
+  expect((await state(page)).canUndo).toBe(true);
+});

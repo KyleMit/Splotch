@@ -47,7 +47,11 @@ pre-stroke snapshots:
   on a 13″ iPad — instant common undo); older entries encode to a **lossless blob** off the commit
   path (`canvas.toBlob('image/webp', 1)` — lossless on Chromium; WebKit falls back to PNG per spec)
   and decode only on deep undo. Measured: 1.4–2 MB per crayon-heavy snapshot, ≈ 92–120 MB analytic
-  total history on the biggest iPad raster — versus ~600 MB for 20 naïve live snapshots.
+  total history on the biggest iPad raster — versus ~600 MB for 20 naïve live snapshots. The tier
+  re-balances in both directions: an encoded entry that rises into the `K_LIVE` window (undo popping
+  the stack, or a commit landing on an undo-shallowed one) re-inflates back to a live raster off the
+  hot path (`reinflateHotSnapshots`), so the invariant holds after undo-then-draw, not only while
+  the stack grows.
 * **Undo is queued and async** (`engine.ts undo()`): deep entries decode before they blit, so rapid
   taps serialize through a promise chain; each step repaints, updates undo/empty state, and the
   chain is returned so the E2E harness can await settlement.
