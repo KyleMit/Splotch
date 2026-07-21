@@ -126,9 +126,33 @@
     return n;
   };
 
+  // Every scenario must start from blank paper AND zero history, so each row's
+  // snapshot / undo-step counts equal exactly the stroke count in its label.
+  // A bare clearCanvas() can't be the last reset step: a clear runs the full
+  // pushCommand path (it IS an undoable action, engine.ts clearCanvas), so it
+  // would leave one phantom snapshot that pads every count, dilutes the undo
+  // average with a trivial blank-paper restore, and inflates history MB.
+  // Instead drain the history first (undo restores the pre-command snapshot,
+  // so a full drain lands on the pre-history baseline — blank unless the
+  // operator drew past the undo cap before pasting); only if ink remains,
+  // clear and drain the clear's own entry too, then assert the count is 0.
+  const resetForScenario = async (label) => {
+    await undoAll();
+    if (!E.isCanvasEmpty()) {
+      E.clearCanvas();
+      await undoAll();
+    }
+    const leftover = E.getUndoDebug().snapshots;
+    if (leftover !== 0 || !E.isCanvasEmpty()) {
+      console.warn(
+        `[${label}] reset incomplete: ${leftover} leftover snapshot(s), ` +
+          `canvasEmpty=${E.isCanvasEmpty()} — this row's counts include pre-existing state`
+      );
+    }
+  };
+
   async function scenario(label, { strokes, crayon }) {
-    await undoAll(); // clean history for an accurate per-scenario count
-    E.clearCanvas();
+    await resetForScenario(label);
     if (E.setCrayonMode) E.setCrayonMode(!!crayon);
     const drawStart = performance.now();
     for (const s of strokes) {
