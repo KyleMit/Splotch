@@ -259,6 +259,7 @@ function renderReplayReport({ settings, replayed, debug, summary }) {
   out.push('\n## Engine cost during replay (user-timing marks)\n');
   out.push(`- engine.draw: ${row(hot['engine.draw'])}`);
   out.push(`- engine.snapshot: ${row(hot['engine.snapshot'])}`);
+  out.push(`- engine.fold: ${row(hot['engine.fold'])}`);
   out.push(`- engine.undo: ${row(hot['engine.undo'])}`);
   out.push(`- engine.commit: ${row(hot['engine.commit'])}`);
   out.push(

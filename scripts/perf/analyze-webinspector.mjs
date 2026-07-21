@@ -85,6 +85,7 @@ console.log('## Engine ops (main-thread cost via enclosing record, ms)\n');
 for (const name of [
   'engine.undo',
   'engine.snapshot',
+  'engine.fold',
   'engine.commit',
   'engine.resize',
   'engine.draw',

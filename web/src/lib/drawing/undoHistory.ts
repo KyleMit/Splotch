@@ -161,8 +161,10 @@ export function commitActiveCommand(defer = false): boolean {
 }
 
 // Commit: push the pre-stroke paper state, then fold the new command in.
-// The engine.snapshot mark isolates the paper-copy cost (the pointerup hitch
-// candidate) inside the surrounding engine.commit measure.
+// Inside the surrounding engine.commit measure, engine.snapshot isolates the
+// paper-copy cost and engine.fold isolates rendering the committed ops onto
+// the paper — the two pointerup hitch candidates, kept apart so a hot commit
+// can be attributed to the right one.
 export function pushCommand(cmd: StrokeGroupCommand) {
   if (!paperCanvas || !paperCtx) return;
   if (PERF_MARKS) performance.mark('engine.snapshot:start');
@@ -184,9 +186,11 @@ export function pushCommand(cmd: StrokeGroupCommand) {
     });
     while (snapshotStack.length > MAX_UNDO_STACK_SIZE) snapshotStack.shift();
   }
-  pendingCommands.push(cmd);
-  foldPendingIntoPaper();
   if (PERF_MARKS) performance.measure('engine.snapshot', 'engine.snapshot:start');
+  pendingCommands.push(cmd);
+  if (PERF_MARKS) performance.mark('engine.fold:start');
+  foldPendingIntoPaper();
+  if (PERF_MARKS) performance.measure('engine.fold', 'engine.fold:start');
   encodeColdSnapshots();
   reinflateHotSnapshots();
 }
