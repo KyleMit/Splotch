@@ -40,7 +40,13 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, setLiveCrayonBuffer, type StrokeOp } from './strokeOps';
+import {
+  renderOp,
+  clearAllOf,
+  setLiveCrayonBuffer,
+  type StrokeGroupCommand,
+  type StrokeOp,
+} from './strokeOps';
 import {
   setCrayonOptions,
   getCrayonOptions,
@@ -51,11 +57,14 @@ import {
 import {
   beginCommand,
   commitActiveCommand,
+  deferCommand,
   ensurePaperCovers,
+  finalizeDeferredCommand,
   getHistoryDebug,
   popSnapshot,
   pushCommand,
   rebaseActiveCommand,
+  rebaseDeferredCommands,
   recordOp,
   repaintAll,
   resetActiveCommandForClear,
@@ -556,12 +565,16 @@ function strokeSegments(ps: PointerState, points: { x: number; y: number }[]) {
 }
 
 // Push the finished stroke group onto the undo log (once per group, when the
-// last finger lifts) and tell reactive consumers. onStrokeEnd fires at stroke
-// end, not start, so consumers (e.g. mounting the install banner) never do DOM
-// work while a finger is mid-stroke.
+// last finger lifts) and tell reactive consumers. While an undo restore is
+// still pending on the paper chain the copy+fold defers behind it (see
+// queuePaperStep) so it lands on the restored paper. onStrokeEnd fires at
+// stroke end, not start, so consumers (e.g. mounting the install banner)
+// never do DOM work while a finger is mid-stroke.
 function commitStrokeGroup() {
   if (PERF_MARKS) performance.mark('engine.commit:start');
-  if (!commitActiveCommand()) return;
+  const deferBehindRestore = paperStepsPending > 0;
+  if (!commitActiveCommand(deferBehindRestore)) return;
+  if (deferBehindRestore) queueDeferredCommandFold();
   setCanUndo(true);
   if (onStrokeEnd) onStrokeEnd();
   if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
@@ -970,39 +983,66 @@ const cancelTouch = (e: TouchEvent) => e.preventDefault();
 // --- Undo, clear, and canvas-empty API --------------------------------------
 
 // Undo can be asynchronous — a deep entry decodes from its encoded blob
-// before it can blit — so rapid taps serialize through a promise chain
-// instead of interleaving mid-restore. Each step repaints and updates
-// undo/empty state before the next runs. The chain is returned so callers
-// that need the settled state (the E2E harness) can await it; the app's
-// undo button ignores it.
-let undoChain: Promise<void> = Promise.resolve();
+// before it can blit — so every paper mutation serializes through one promise
+// chain instead of interleaving mid-restore: rapid undo taps queue in order,
+// and a stroke commit or clear landing inside a pending decode defers its
+// copy+fold behind the restore (deferCommand/finalizeDeferredCommand) so it
+// operates on the restored paper instead of being clobbered by the decode's
+// blit. Each step repaints and updates undo/empty state before the next runs.
+// The chain is returned so callers that need the settled state (the E2E
+// harness) can await it; the app's undo button ignores it.
+let paperChain: Promise<void> = Promise.resolve();
+let paperStepsPending = 0;
+
+function queuePaperStep(step: () => void | Promise<void>): Promise<void> {
+  paperStepsPending++;
+  paperChain = paperChain
+    .then(step)
+    .catch((err) => {
+      // A failed step (e.g. a blob decode) loses that one mutation; the chain
+      // must survive so the next undo tap still works.
+      console.error('Undo chain step failed:', err);
+    })
+    .finally(() => {
+      paperStepsPending--;
+    });
+  return paperChain;
+}
+
+function queueDeferredCommandFold() {
+  queuePaperStep(() => {
+    finalizeDeferredCommand();
+    setCanUndo(snapshotCount() > 0);
+  });
+}
 
 export function undo(): Promise<void> {
-  if (!canUndo || !canvas || !ctx) return undoChain;
-  undoChain = undoChain
-    .then(async () => {
-      if (PERF_MARKS) performance.mark('engine.undo:start');
-      const restored = popSnapshot();
-      if (!restored) return;
-      const { wasEmpty } = await restored;
-      const strokeStillLive = rebaseActiveCommand(wasEmpty);
-      repaintAll(ctx);
-      setCanvasEmptyState(wasEmpty && !strokeStillLive);
-      setCanUndo(snapshotCount() > 0);
-      if (PERF_MARKS) performance.measure('engine.undo', 'engine.undo:start');
-    })
-    .catch((err) => {
-      // A failed blob decode loses that one restore; the chain must survive so
-      // the next undo tap still works.
-      console.error('Undo restore failed:', err);
-    });
-  return undoChain;
+  if (!canUndo || !canvas || !ctx) return paperChain;
+  return queuePaperStep(async () => {
+    if (PERF_MARKS) performance.mark('engine.undo:start');
+    const restored = popSnapshot();
+    if (!restored) return;
+    const { wasEmpty } = await restored;
+    const emptyBeneathLiveStroke = rebaseDeferredCommands(wasEmpty);
+    const strokeStillLive = rebaseActiveCommand(emptyBeneathLiveStroke);
+    repaintAll(ctx);
+    setCanvasEmptyState(emptyBeneathLiveStroke && !strokeStillLive);
+    setCanUndo(snapshotCount() > 0);
+    if (PERF_MARKS) performance.measure('engine.undo', 'engine.undo:start');
+  });
 }
 
 export function clearCanvas() {
   // The clear is its own undo command: folding it wipes the paper, and undoing
-  // it restores the pre-clear snapshot in one blit.
-  pushCommand({ ops: [{ kind: 'clear' }], wasEmpty: canvasEmpty });
+  // it restores the pre-clear snapshot in one blit. Mid-restore it defers like
+  // a stroke commit; the visible wipe below still happens immediately.
+  const clearCommand: StrokeGroupCommand = { ops: [{ kind: 'clear' }], wasEmpty: canvasEmpty };
+  if (paperStepsPending > 0) {
+    deferCommand(clearCommand);
+    queueDeferredCommandFold();
+  } else {
+    pushCommand(clearCommand);
+  }
   setCanUndo(true);
   clearAllOf(ctx);
   // A stroke can straddle the clear (e.g. a second finger drawing while

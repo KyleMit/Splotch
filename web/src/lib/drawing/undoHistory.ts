@@ -54,6 +54,43 @@ interface Snapshot {
 const snapshotStack: Snapshot[] = [];
 let pendingCommands: StrokeGroupCommand[] = [];
 
+// Commands committed while an async deep-undo restore is mid-flight (see
+// engine.ts's paper chain): their copy+fold must wait behind the pending
+// restore, or the fold would land on the pre-restore paper and be clobbered
+// by the decode's blit — the committed ink would vanish and the pushed
+// snapshot would turn the next undo into a redo. Held apart from
+// pendingCommands because they have no snapshot yet: popSnapshot reinstates a
+// snapshot's captured pending set, and must not drop these.
+const deferredCommands: StrokeGroupCommand[] = [];
+
+export function deferCommand(cmd: StrokeGroupCommand) {
+  deferredCommands.push(cmd);
+}
+
+// Complete a deferred commit's copy+fold, now that every restore queued ahead
+// of it has landed: the snapshot it pushes copies the restored paper.
+export function finalizeDeferredCommand() {
+  const cmd = deferredCommands.shift();
+  if (cmd) pushCommand(cmd);
+}
+
+// A restore that lands beneath deferred commits becomes their baseline: the
+// earliest one's captured pre-stroke state now reflects the restored paper
+// (parallel to rebaseActiveCommand; later deferred commands sit on the
+// earlier ones' ink, so their captured flags already hold). Returns whether
+// the canvas is empty once the deferred commands replay on the restored
+// paper, so the caller's empty flag tracks what repaintAll shows.
+export function rebaseDeferredCommands(restoredEmpty: boolean): boolean {
+  if (deferredCommands.length === 0) return restoredEmpty;
+  deferredCommands[0].wasEmpty = restoredEmpty;
+  for (let i = deferredCommands.length - 1; i >= 0; i--) {
+    const ops = deferredCommands[i].ops;
+    if (ops.some((op) => op.kind !== 'clear')) return false;
+    if (ops.length > 0) return true;
+  }
+  return restoredEmpty;
+}
+
 // The stroke group currently being drawn (opened on first paint, pushed to the
 // stack when the last finger lifts), so a multi-touch gesture undoes as a
 // single unit.
@@ -106,10 +143,13 @@ export function recordOp(op: StrokeOp) {
 
 // Finalize the stroke group built up since beginCommand() and push it onto the
 // snapshot stack. Called once per group, when the last finger lifts. Returns
-// false when no group was open (nothing painted).
-export function commitActiveCommand(): boolean {
+// false when no group was open (nothing painted). `defer` parks the command
+// for a later finalizeDeferredCommand instead of pushing now — the
+// commit-during-pending-restore path (see deferredCommands).
+export function commitActiveCommand(defer = false): boolean {
   if (!activeCommand) return false;
-  pushCommand(activeCommand);
+  if (defer) deferCommand(activeCommand);
+  else pushCommand(activeCommand);
   activeCommand = null;
   return true;
 }
@@ -238,14 +278,16 @@ function commandHasMagic(command: StrokeGroupCommand): boolean {
 
 // Reconstruct the full drawing onto a target: the paper IS the committed
 // drawing — one blit — plus any commands the unready magic sheet is holding
-// out of the paper, plus the in-flight stroke. A mid-stroke resize still has
-// an uncommitted activeCommand (its ops are recorded but not yet folded), so
-// replay it last to keep the in-flight stroke; between strokes activeCommand
-// is null and that step is a no-op.
+// out of the paper, plus any commits deferred behind a pending restore, plus
+// the in-flight stroke. A mid-stroke resize still has an uncommitted
+// activeCommand (its ops are recorded but not yet folded), so replay it last
+// to keep the in-flight stroke; between strokes activeCommand is null and
+// that step is a no-op.
 export function repaintAll(target: CanvasRenderingContext2D) {
   clearAllOf(target);
   if (paperCanvas) target.drawImage(paperCanvas, 0, 0);
   for (const cmd of pendingCommands) for (const op of cmd.ops) renderOp(target, op);
+  for (const cmd of deferredCommands) for (const op of cmd.ops) renderOp(target, op);
   if (activeCommand) {
     for (const op of activeCommand.ops) renderOp(target, op);
   }
