@@ -1,8 +1,9 @@
 # ADR-0066: Snapshot Undo Reinstated — Paper Raster + Tiered Pre-Stroke Snapshots
 
 **Status:** Active — supersedes ADR-0033 (and with it ADR-0035 keyframing and ADR-0036
-simplification); device verification of the perf gates is pending (tracked on PR 442). **Date:**
-2026-07
+simplification); device verification of the perf gates is pending (tracked on PR 442). Amended by
+[ADR-0068](0068-dirty-rect-patch-snapshots.md): snapshots shrink from full-paper copies to
+dirty-rect patches of the fold region. **Date:** 2026-07
 
 ## Context
 

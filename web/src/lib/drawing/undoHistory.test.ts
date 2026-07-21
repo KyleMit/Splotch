@@ -216,6 +216,83 @@ describe('cold-snapshot blob validation', () => {
   });
 });
 
+describe('dirty-rect patch snapshots', () => {
+  // A snapshot captures only the paper under the region its fold mutates
+  // (foldRegionForCommands), so per-entry memory scales with the stroke, not
+  // the canvas.
+
+  it('bounds a path by its points padded with half the line width plus AA bleed', async () => {
+    const m = await freshHistory();
+    const op: PathOp = {
+      kind: 'path',
+      pid: 1,
+      startX: 20,
+      startY: 30,
+      segs: [{ cx: 24, cy: 34, x: 28, y: 38 }],
+      color: '#a',
+      lineWidth: 8,
+      erase: false,
+    };
+    // pad = 8/2 + 2 = 6: x spans 20−6..28+6, y spans 30−6..38+6.
+    expect(m.foldRegionForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual({
+      x: 14,
+      y: 24,
+      w: 20,
+      h: 20,
+    });
+  });
+
+  it('bounds a dot by its radius plus AA bleed and clamps to the paper', async () => {
+    const m = await freshHistory();
+    const dot = { kind: 'dot' as const, x: 2, y: 62, radius: 5, color: '#a', erase: false };
+    // pad = 5 + 2 = 7: clamped at the left and bottom paper edges.
+    expect(m.foldRegionForCommands([{ ops: [dot], wasEmpty: false }], 64, 64)).toEqual({
+      x: 0,
+      y: 55,
+      w: 9,
+      h: 9,
+    });
+  });
+
+  it('a clear claims the whole paper; wholly off-paper ink claims nothing', async () => {
+    const m = await freshHistory();
+    expect(
+      m.foldRegionForCommands([{ ops: [{ kind: 'clear' }], wasEmpty: false }], 64, 64)
+    ).toEqual({ x: 0, y: 0, w: 64, h: 64 });
+    // Margin ink beyond the paper square is clipped at fold (ADR-0050), so the
+    // fold never touches the paper and no patch is owed.
+    const off = { kind: 'dot' as const, x: -40, y: 10, radius: 5, color: '#a', erase: false };
+    expect(m.foldRegionForCommands([{ ops: [off], wasEmpty: false }], 64, 64)).toBeNull();
+    expect(m.foldRegionForCommands([], 64, 64)).toBeNull();
+  });
+
+  it('a magic-blocked commit captures no pixels, and its undo still restores the pending set', async () => {
+    const m = await freshHistory();
+    magicSheet.ready = false;
+    m.pushCommand(cmd('#magic-ink', true, true));
+    // Nothing folded, so the snapshot holds no raster at all — zero bytes.
+    expect(m.snapshotCount()).toBe(1);
+    expect(m.getHistoryDebug().liveRasters).toBe(0);
+    expect(m.getHistoryDebug().rasterBytes).toBe(0);
+
+    magicSheet.ready = true;
+    const restored = await m.popSnapshot();
+    expect(restored?.wasEmpty).toBe(true);
+    expect(m.getHistoryDebug().pendingCommands).toBe(0);
+    expect(repaintedContent(m)).toEqual([]);
+  });
+
+  it('sizes the captured patch to the fold region, not the paper', async () => {
+    const m = await freshHistory();
+    m.pushCommand(cmd('#a', false, true));
+    const { liveRasters, rasterBytes } = m.getHistoryDebug();
+    expect(liveRasters).toBe(1);
+    // cmd()'s ops span 0..1 with lineWidth 8 → pad 6 → clamped rect 0..7 both
+    // axes: 7×7 px, nowhere near the 64×64 paper.
+    expect(rasterBytes).toBe(7 * 7 * 4);
+  });
+});
+
 describe('in-flight strokes', () => {
   it('repaints an uncommitted active command on top of the paper', async () => {
     const m = await freshHistory();

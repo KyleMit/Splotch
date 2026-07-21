@@ -1,22 +1,28 @@
 // Undo history: a committed "paper" raster + a bounded stack of pre-stroke
-// snapshots (ADR-0066, reversing ADR-0033's command replay).
+// PATCH snapshots (ADR-0066 reversed ADR-0033's command replay; ADR-0068
+// shrank the snapshots from full-paper copies to dirty-rect patches).
 //
 // The paper is one offscreen raster (a max(w,h) square) holding the committed
-// drawing. Every commit pushes a copy of the pre-stroke paper onto the
-// snapshot stack, then folds the stroke's ops in — so undo, resize, remount,
-// and export are all blits (plus the in-flight stroke), never command replays.
-// The copy cost is one full-canvas drawImage at pointerup; it buys O(blit)
+// drawing. Every commit captures the paper pixels under the region its fold
+// is about to mutate — the padded bounding rect of the commands folding now —
+// then folds the stroke's ops in. Undo blits the patch back over that rect;
+// pixels outside it were untouched by that fold (or already reverted by later
+// pops, the stack being LIFO), so the restore is byte-exact without a
+// full-canvas copy. Resize, remount, and export stay whole-paper blits
+// (repaintAll), never command replays. The capture cost at pointerup is one
+// stroke-sized drawImage — full-canvas only for a 'clear' — which buys O(blit)
 // undo at any stroke complexity and frees every brush from replay-determinism
 // constraints (ADR-0065's crayon was the forcing case).
 //
-// Memory is tiered: the K_LIVE most recent snapshots stay live rasters
-// (~30 MB each at 2× DPR on a 13″ iPad — instant common undo); older entries
-// are encoded to a lossless blob off the commit path and decoded again only on
-// deep undo, so a deep stack costs megabytes, not hundreds of them. The tier
-// re-balances in both directions: undo (or a commit on an undo-shallowed
-// stack) can raise an encoded entry into the K_LIVE window, and it re-inflates
-// back to a live raster off the hot path (reinflateHotSnapshots), so the
-// window holds after undo-then-draw, not only while the stack grows.
+// Memory is tiered on top of that: the K_LIVE most recent snapshots stay live
+// rasters (patch-sized — a stroke's bounding rect, worst case the full ~30 MB
+// paper at 2× DPR on a 13″ iPad for a canvas-spanning scribble or a clear);
+// older entries are encoded to a lossless blob off the commit path and decoded
+// again only on deep undo. The tier re-balances in both directions: undo (or a
+// commit on an undo-shallowed stack) can raise an encoded entry into the
+// K_LIVE window, and it re-inflates back to a live raster off the hot path
+// (reinflateHotSnapshots), so the window holds after undo-then-draw, not only
+// while the stack grows.
 //
 // Commands are retained as ops (`pendingCommands`) only while the magic sheet
 // is unready — folding a magic op then would bake its intentionally-blank
@@ -47,8 +53,22 @@ const K_LIVE = 2;
 let paperCanvas: HTMLCanvasElement | null = null;
 let paperCtx: CanvasRenderingContext2D | null = null;
 
+// The paper region a snapshot's patch covers, in whole paper pixels (so the
+// capture and restore blits are exact 1:1 copies, never resampled).
+export interface PatchRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 interface Snapshot {
   wasEmpty: boolean;
+  // The region this commit's fold mutated — the patch's home. Null when the
+  // fold never touched the paper (wholly magic-blocked, or clipped entirely
+  // off the paper square): such an entry captures no pixels at all, and its
+  // undo only reinstates the pending set.
+  rect: PatchRect | null;
   canvas: HTMLCanvasElement | null;
   blob: Blob | null;
   encoding: boolean;
@@ -160,25 +180,119 @@ export function commitActiveCommand(defer = false): boolean {
   return true;
 }
 
-// Commit: push the pre-stroke paper state, then fold the new command in.
+// AA bleed pad in paper px around an op's geometric bounds, matching
+// strokeOps' unionCrayonBounds — it covers anti-aliased edges, and keeps the
+// crayon flush stamp inside the rect (the pass buffer bounds its stamp with
+// this same pad).
+const PATCH_AA_PAD = 2;
+
+// The paper region folding `commands` will mutate: the union of every op's
+// padded geometric bounds, clamped to the paper. A path's quadratic control
+// points bound the curve's hull, so start + segs' points padded by the stroke
+// half-width cover the ink; a 'clear' wipes everything, so it short-circuits
+// to the full paper; a 'crayonFlush' has no geometry of its own (its stamp is
+// bounded by the pass's crayon ops, already unioned). Null when nothing would
+// touch the paper — no foldable commands, or ink wholly outside the paper
+// square (margin ink is clipped at fold, ADR-0050). Exported as the rect-math
+// unit-test seam.
+export function foldRegionForCommands(
+  commands: StrokeGroupCommand[],
+  paperW: number,
+  paperH: number
+): PatchRect | null {
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  for (const cmd of commands) {
+    for (const op of cmd.ops) {
+      if (op.kind === 'clear') return { x: 0, y: 0, w: paperW, h: paperH };
+      if (op.kind === 'crayonFlush') continue;
+      let ox0: number;
+      let oy0: number;
+      let ox1: number;
+      let oy1: number;
+      let pad: number;
+      if (op.kind === 'dot') {
+        ox0 = ox1 = op.x;
+        oy0 = oy1 = op.y;
+        pad = op.radius + PATCH_AA_PAD;
+      } else {
+        ox0 = ox1 = op.startX;
+        oy0 = oy1 = op.startY;
+        for (const s of op.segs) {
+          ox0 = Math.min(ox0, s.cx, s.x);
+          oy0 = Math.min(oy0, s.cy, s.y);
+          ox1 = Math.max(ox1, s.cx, s.x);
+          oy1 = Math.max(oy1, s.cy, s.y);
+        }
+        pad = op.lineWidth / 2 + PATCH_AA_PAD;
+      }
+      x0 = Math.min(x0, ox0 - pad);
+      y0 = Math.min(y0, oy0 - pad);
+      x1 = Math.max(x1, ox1 + pad);
+      y1 = Math.max(y1, oy1 + pad);
+    }
+  }
+  if (x0 === Infinity) return null;
+  const x = Math.max(0, Math.floor(x0));
+  const y = Math.max(0, Math.floor(y0));
+  const w = Math.min(paperW, Math.ceil(x1)) - x;
+  const h = Math.min(paperH, Math.ceil(y1)) - y;
+  if (w <= 0 || h <= 0) return null;
+  return { x, y, w, h };
+}
+
+// The prefix of `commands` the fold may render now: it stops at the first
+// command the unready magic sheet would render blank (nothing after it folds
+// either, preserving cross-command ordering — eraser, crayon mix).
+function foldableCount(commands: StrokeGroupCommand[]): number {
+  let n = 0;
+  for (const cmd of commands) {
+    if (commandHasMagic(cmd) && isMagicSheetUnready()) break;
+    n++;
+  }
+  return n;
+}
+
+// Commit: capture the pre-stroke paper patch under the region the fold is
+// about to mutate, push it, then fold the new command in. The fold set (and
+// so the rect) is decided once, up front — capture and fold must agree on
+// exactly which commands render, or the patch wouldn't cover the mutation.
 // Inside the surrounding engine.commit measure, engine.snapshot isolates the
-// paper-copy cost and engine.fold isolates rendering the committed ops onto
-// the paper — the two pointerup hitch candidates, kept apart so a hot commit
-// can be attributed to the right one.
+// patch-capture cost and engine.fold isolates rendering the committed ops
+// onto the paper — the two pointerup hitch candidates, kept apart so a hot
+// commit can be attributed to the right one.
 export function pushCommand(cmd: StrokeGroupCommand) {
   if (!paperCanvas || !paperCtx) return;
   if (PERF_MARKS) performance.mark('engine.snapshot:start');
-  const copy = document.createElement('canvas');
-  copy.width = paperCanvas.width;
-  copy.height = paperCanvas.height;
-  const copyCtx = copy.getContext('2d');
-  // A failed copy context loses this one undo entry, never the ink — the fold
+  const prospective = [...pendingCommands, cmd];
+  const foldCount = foldableCount(prospective);
+  const rect = foldRegionForCommands(
+    prospective.slice(0, foldCount),
+    paperCanvas.width,
+    paperCanvas.height
+  );
+  let patch: HTMLCanvasElement | null = null;
+  if (rect) {
+    const copy = document.createElement('canvas');
+    copy.width = rect.w;
+    copy.height = rect.h;
+    const copyCtx = copy.getContext('2d');
+    if (copyCtx) {
+      copyCtx.drawImage(paperCanvas, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+      patch = copy;
+    }
+  }
+  // A failed patch context loses this one undo entry, never the ink — the fold
   // below must still run or the stroke would vanish from the committed paper.
-  if (copyCtx) {
-    copyCtx.drawImage(paperCanvas, 0, 0);
+  // A null rect isn't a failure: the fold won't touch the paper, so the entry
+  // legitimately carries no pixels.
+  if (!rect || patch) {
     snapshotStack.push({
       wasEmpty: cmd.wasEmpty,
-      canvas: copy,
+      rect,
+      canvas: patch,
       blob: null,
       encoding: false,
       decoding: false,
@@ -189,21 +303,20 @@ export function pushCommand(cmd: StrokeGroupCommand) {
   if (PERF_MARKS) performance.measure('engine.snapshot', 'engine.snapshot:start');
   pendingCommands.push(cmd);
   if (PERF_MARKS) performance.mark('engine.fold:start');
-  foldPendingIntoPaper();
+  foldPendingIntoPaper(foldCount);
   if (PERF_MARKS) performance.measure('engine.fold', 'engine.fold:start');
   encodeColdSnapshots();
   reinflateHotSnapshots();
 }
 
-// Fold committed-but-unfolded commands into the paper, oldest first, stopping
-// at the first one the unready magic sheet would render blank. Ordering is
-// preserved by construction: nothing after a blocked command folds either.
-function foldPendingIntoPaper() {
+// Fold the first `count` pending commands into the paper, oldest first. The
+// count comes from foldableCount() over the same list the pre-fold patch
+// capture measured, so the captured rect covers exactly what renders here.
+function foldPendingIntoPaper(count: number) {
   if (!paperCtx) return;
-  while (pendingCommands.length > 0) {
-    const cmd = pendingCommands[0];
-    if (commandHasMagic(cmd) && isMagicSheetUnready()) break;
-    pendingCommands.shift();
+  for (let i = 0; i < count; i++) {
+    const cmd = pendingCommands.shift();
+    if (!cmd) return;
     for (const op of cmd.ops) renderOp(paperCtx, op);
   }
 }
@@ -227,7 +340,8 @@ export function isValidColdSnapshotBlob(blob: Blob | null): blob is Blob {
 }
 
 // Demote snapshots below the K_LIVE window to encoded blobs, freeing their
-// ~30 MB rasters. WebP first (Chromium encodes quality-1 WebP losslessly at a
+// patch rasters (stroke-sized; worst case the full ~30 MB paper for a clear or
+// a canvas-spanning scribble). WebP first (Chromium encodes quality-1 WebP losslessly at a
 // fraction of PNG's size); engines that can't encode WebP hand back a PNG blob
 // (per spec toBlob falls back to image/png), which is lossless everywhere.
 // The returned blob is validated before the raster is dropped — see
@@ -295,40 +409,48 @@ function reinflateHotSnapshots() {
 }
 
 // Pop the top snapshot and restore it as the committed paper state. A live
-// raster restores synchronously; a demoted entry decodes from its blob first,
-// so the caller repaints when the promise resolves. Null when nothing is
-// undoable.
+// patch raster restores synchronously; a demoted entry decodes from its blob
+// first, so the caller repaints when the promise resolves. Null when nothing
+// is undoable.
 export function popSnapshot(): Promise<{ wasEmpty: boolean }> | null {
   const snap = snapshotStack.pop();
   if (!snap) return null;
   pendingCommands = [...snap.pending];
   reinflateHotSnapshots();
+  // A null rect means this commit's fold never touched the paper, so undoing
+  // it is just the pending-set reinstatement above.
+  if (!snap.rect) return Promise.resolve({ wasEmpty: snap.wasEmpty });
+  const rect = snap.rect;
   if (snap.canvas) {
-    restorePaper(snap.canvas);
+    restorePatch(snap.canvas, rect);
     return Promise.resolve({ wasEmpty: snap.wasEmpty });
   }
-  // Invariant: a stacked entry always holds its canvas or its blob — encode
-  // drops the raster only after a validated blob lands (encodeColdSnapshots),
-  // and re-inflation drops the blob only after the raster lands
-  // (reinflateHotSnapshots), so this branch is unreachable. It must stay that
-  // way: it pops the stack but skips the restore blit, leaving the paper
-  // wrong. The error is a tripwire for a refactor that breaks the invariant;
-  // the return semantics are deliberately unchanged.
+  // Invariant: a stacked entry with a rect always holds its canvas or its blob
+  // — encode drops the raster only after a validated blob lands
+  // (encodeColdSnapshots), and re-inflation drops the blob only after the
+  // raster lands (reinflateHotSnapshots), so this branch is unreachable. It
+  // must stay that way: it pops the stack but skips the restore blit, leaving
+  // the paper wrong. The error is a tripwire for a refactor that breaks the
+  // invariant; the return semantics are deliberately unchanged.
   if (!snap.blob) {
     console.error('Undo snapshot lost both canvas and blob; restore blit skipped');
     return Promise.resolve({ wasEmpty: snap.wasEmpty });
   }
   return createImageBitmap(snap.blob).then((bitmap) => {
-    restorePaper(bitmap);
+    restorePatch(bitmap, rect);
     bitmap.close();
     return { wasEmpty: snap.wasEmpty };
   });
 }
 
-function restorePaper(source: CanvasImageSource) {
-  if (!paperCtx || !paperCanvas) return;
-  paperCtx.clearRect(0, 0, paperCanvas.width, paperCanvas.height);
-  paperCtx.drawImage(source, 0, 0);
+// Blit a captured patch back over the region its commit's fold mutated.
+// Pixels outside the rect were untouched by that fold — or were already
+// reverted by later pops, the stack being LIFO — so clearing and redrawing
+// just the rect reproduces the exact pre-stroke paper.
+function restorePatch(source: CanvasImageSource, rect: PatchRect) {
+  if (!paperCtx) return;
+  paperCtx.clearRect(rect.x, rect.y, rect.w, rect.h);
+  paperCtx.drawImage(source, rect.x, rect.y);
 }
 
 export function snapshotCount(): number {
@@ -380,19 +502,26 @@ export function repaintAll(target: CanvasRenderingContext2D) {
 }
 
 // Test/profiling seam: how the undo history is currently stored. `liveRasters`
-// counts snapshots still holding their ~30 MB canvas (≤ K_LIVE + entries whose
-// encode hasn't landed); `blobBytes` is the encoded tier's total size — the
-// deep-history memory cost the perf harness reports; `pendingCommands` counts
-// commands the unready magic sheet is holding out of the paper.
+// counts snapshots still holding their patch canvas (≤ K_LIVE + entries whose
+// encode hasn't landed) and `rasterBytes` is those patches' actual pixel cost
+// (w × h × 4 — patch-sized since ADR-0068, not full-paper); `blobBytes` is the
+// encoded tier's total size — together the history memory the perf harness
+// reports; `pendingCommands` counts commands the unready magic sheet is
+// holding out of the paper.
 export function getHistoryDebug(): {
   snapshots: number;
   liveRasters: number;
+  rasterBytes: number;
   blobBytes: number;
   pendingCommands: number;
 } {
   return {
     snapshots: snapshotStack.length,
     liveRasters: snapshotStack.reduce((n, s) => n + (s.canvas ? 1 : 0), 0),
+    rasterBytes: snapshotStack.reduce(
+      (n, s) => n + (s.canvas ? s.canvas.width * s.canvas.height * 4 : 0),
+      0
+    ),
     blobBytes: snapshotStack.reduce((n, s) => n + (s.blob?.size ?? 0), 0),
     pendingCommands: pendingCommands.length,
   };

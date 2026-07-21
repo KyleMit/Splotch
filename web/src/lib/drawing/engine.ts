@@ -1079,6 +1079,7 @@ export function isCanvasEmpty(): boolean {
 export function getUndoDebug(): {
   snapshots: number;
   liveRasters: number;
+  rasterBytes: number;
   blobBytes: number;
   pendingCommands: number;
 } {
