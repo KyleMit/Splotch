@@ -209,12 +209,26 @@ function isInLiveWindow(snap: Snapshot): boolean {
   return i >= 0 && i >= snapshotStack.length - K_LIVE;
 }
 
+// Demotion may only trust a blob that is plausibly the lossless encoding it
+// asked for: WebP (Chromium and Firefox 105+ encode quality-1 WebP
+// losslessly) or the spec-mandated toBlob fallback PNG (lossless everywhere;
+// Safari has no canvas WebP encoder and always takes it). Anything else —
+// null, empty, or an unexpected type from a nonconforming engine — fails
+// here, and the entry keeps its live raster instead: more memory, but undo
+// stays byte-exact. Exported as the unit-test seam for the validation rule.
+export function isValidColdSnapshotBlob(blob: Blob | null): blob is Blob {
+  return (
+    blob !== null && blob.size > 0 && (blob.type === 'image/webp' || blob.type === 'image/png')
+  );
+}
+
 // Demote snapshots below the K_LIVE window to encoded blobs, freeing their
 // ~30 MB rasters. WebP first (Chromium encodes quality-1 WebP losslessly at a
 // fraction of PNG's size); engines that can't encode WebP hand back a PNG blob
 // (per spec toBlob falls back to image/png), which is lossless everywhere.
-// An entry that rose into the live window while its encode was in flight
-// keeps the raster it never lost.
+// The returned blob is validated before the raster is dropped — see
+// isValidColdSnapshotBlob. An entry that rose into the live window while its
+// encode was in flight keeps the raster it never lost.
 function encodeColdSnapshots() {
   for (let i = 0; i < snapshotStack.length - K_LIVE; i++) {
     const snap = snapshotStack[i];
@@ -224,7 +238,7 @@ function encodeColdSnapshots() {
     source.toBlob(
       (blob) => {
         snap.encoding = false;
-        if (!blob) return; // encode failed — keep the raster
+        if (!isValidColdSnapshotBlob(blob)) return; // bad encode — keep the raster
         if (snap.canvas === source && isInLiveWindow(snap)) return;
         snap.blob = blob;
         if (snap.canvas === source) snap.canvas = null;

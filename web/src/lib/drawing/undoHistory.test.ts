@@ -201,6 +201,21 @@ describe('folding while the magic sheet decodes', () => {
   });
 });
 
+describe('cold-snapshot blob validation', () => {
+  // Guards the demotion path: only a blob that is plausibly a lossless
+  // encoding (WebP at quality 1, or the spec's PNG fallback) may replace a
+  // live raster. Everything else keeps the raster so undo stays byte-exact.
+  it('accepts only a non-empty webp or png blob', async () => {
+    const m = await freshHistory();
+    expect(m.isValidColdSnapshotBlob(new Blob(['x'], { type: 'image/webp' }))).toBe(true);
+    expect(m.isValidColdSnapshotBlob(new Blob(['x'], { type: 'image/png' }))).toBe(true);
+    expect(m.isValidColdSnapshotBlob(null)).toBe(false);
+    expect(m.isValidColdSnapshotBlob(new Blob([], { type: 'image/webp' }))).toBe(false);
+    expect(m.isValidColdSnapshotBlob(new Blob(['x'], { type: 'image/jpeg' }))).toBe(false);
+    expect(m.isValidColdSnapshotBlob(new Blob(['x'], { type: '' }))).toBe(false);
+  });
+});
+
 describe('in-flight strokes', () => {
   it('repaints an uncommitted active command on top of the paper', async () => {
     const m = await freshHistory();
