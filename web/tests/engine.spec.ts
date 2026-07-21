@@ -1679,6 +1679,75 @@ test('the dab deposit commits, remounts byte-identically, and undoes to blank', 
   expect(await count(page)).toBe(0);
 });
 
+test('dab overdraw deepens convergently toward the darkened dab colour, never mud', async ({
+  page,
+}) => {
+  // The dab deposit's deepening is an accumulation ramp: within a pass dabs
+  // converge to the sprite colour (source-over fixed point), and across
+  // passes the darken-min stamp's fixed point is that same colour — so
+  // repeated same-colour overdraw must (a) get darker at first, (b) settle
+  // instead of compounding, (c) never rotate the hue. This is the dab path's
+  // analogue of the pattern path's constant-hue guard, with the bound moved
+  // from "exact colour" to "bounded convergent deepening".
+  const samples = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const y = Math.round(cv.height / 2);
+    const pts: { x: number; y: number }[] = [];
+    for (let i = 0; i <= 40; i++) pts.push({ x: 40 + ((cv.width - 80) * i) / 40, y });
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setCrayonParams({ dabs: E.CRAYON_DAB_DEFAULTS });
+    E.setColor('#1f75fe');
+    E.setStrokeWidth(24);
+    // Mean stroke colour composited over the light paper, over a fixed band —
+    // tooth pits and partial alpha count as lightness, exactly as the eye
+    // reads them.
+    const bandMean = () => {
+      const band = g.getImageData(60, y - 8, cv.width - 120, 16).data;
+      let r = 0;
+      let gg = 0;
+      let b = 0;
+      let n = 0;
+      for (let i = 0; i < band.length; i += 4) {
+        const a = band[i + 3] / 255;
+        r += band[i] * a + 255 * (1 - a);
+        gg += band[i + 1] * a + 255 * (1 - a);
+        b += band[i + 2] * a + 255 * (1 - a);
+        n++;
+      }
+      return [r / n, gg / n, b / n];
+    };
+    const out: number[][] = [];
+    for (let i = 0; i < 12; i++) {
+      E.strokeSync(pts, 'pen');
+      out.push(bandMean());
+    }
+    E.setCrayonParams({ dabs: null });
+    return out;
+  });
+
+  const value = (s: number[]) => (s[0] + s[1] + s[2]) / 3;
+  // (a) The first few passes deepen visibly.
+  expect(value(samples[2])).toBeLessThan(value(samples[0]) - 4);
+  // (b) The ramp converges: the late-pass step is a fraction of the early one.
+  const earlyStep = value(samples[0]) - value(samples[2]);
+  const lateStep = Math.abs(value(samples[9]) - value(samples[11]));
+  expect(lateStep).toBeLessThan(Math.max(1.5, earlyStep * 0.25));
+  // (c) Bounded floor: never below the darkened dab colour (#1f75fe − 10 %,
+  // ≈ (28,105,229)) by more than sampling noise — mud/black is a failure.
+  const last = samples[11];
+  expect(last[0]).toBeGreaterThan(28 - 15);
+  expect(last[1]).toBeGreaterThan(105 - 15);
+  expect(last[2]).toBeGreaterThan(229 - 15);
+  // (d) Hue holds: the palette blue keeps its b > g > r ordering throughout.
+  for (const s of samples) {
+    expect(s[2]).toBeGreaterThan(s[1]);
+    expect(s[1]).toBeGreaterThan(s[0]);
+  }
+});
+
 // --- The snapshot memory tier (ADR-0066) --------------------------------------
 //
 // Undo restores pre-stroke canvas snapshots (see undoHistory.ts). A restore can
