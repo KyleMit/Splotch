@@ -1019,16 +1019,29 @@ function queueDeferredCommandFold() {
 export function undo(): Promise<void> {
   if (!canUndo || !canvas || !ctx) return paperChain;
   return queuePaperStep(async () => {
+    // Paired start/end marks, not just the measure: Safari Web Inspector's
+    // timeline export contains marks but no measures, and a deep undo spans
+    // multiple tasks (pop, await blob decode, restore blit), so only an
+    // explicit end mark at completion lets the export attribute the full
+    // duration (scripts/perf/analyze-webinspector.mjs). The serialized paper
+    // chain runs one step at a time, so start/end pairs never interleave; the
+    // finally guarantees an end mark even when a step's decode fails.
     if (PERF_MARKS) performance.mark('engine.undo:start');
-    const restored = popSnapshot();
-    if (!restored) return;
-    const { wasEmpty } = await restored;
-    const emptyBeneathLiveStroke = rebaseDeferredCommands(wasEmpty);
-    const strokeStillLive = rebaseActiveCommand(emptyBeneathLiveStroke);
-    repaintAll(ctx);
-    setCanvasEmptyState(emptyBeneathLiveStroke && !strokeStillLive);
-    setCanUndo(snapshotCount() > 0);
-    if (PERF_MARKS) performance.measure('engine.undo', 'engine.undo:start');
+    try {
+      const restored = popSnapshot();
+      if (!restored) return;
+      const { wasEmpty } = await restored;
+      const emptyBeneathLiveStroke = rebaseDeferredCommands(wasEmpty);
+      const strokeStillLive = rebaseActiveCommand(emptyBeneathLiveStroke);
+      repaintAll(ctx);
+      setCanvasEmptyState(emptyBeneathLiveStroke && !strokeStillLive);
+      setCanUndo(snapshotCount() > 0);
+    } finally {
+      if (PERF_MARKS) {
+        performance.mark('engine.undo:end');
+        performance.measure('engine.undo', 'engine.undo:start', 'engine.undo:end');
+      }
+    }
   });
 }
 
