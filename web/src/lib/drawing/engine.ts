@@ -56,13 +56,17 @@ import {
   commitActiveCommand,
   ensureBaselineCovers,
   getHistoryDebug,
+  getUndoMode,
   popCommand,
+  popSnapshot,
   pushCommand,
   rebaseActiveCommand,
   recordOp,
   replayAll,
   resetActiveCommandForClear,
   setKeyframeSegmentThreshold,
+  setUndoMode as setHistoryUndoMode,
+  type UndoMode,
 } from './undoHistory';
 import { getSimplifyCounters, setSimplifyOptions, type SimplifyOptions } from './commandSimplify';
 import { scanCanvasIsEmpty } from './emptyScan';
@@ -977,6 +981,11 @@ const cancelTouch = (e: TouchEvent) => e.preventDefault();
 export function undo() {
   if (!canUndo || !canvas || !ctx) return;
 
+  if (getUndoMode() === 'snapshot') {
+    queueSnapshotUndo();
+    return;
+  }
+
   if (PERF_MARKS) performance.mark('engine.undo:start');
 
   const undone = popCommand();
@@ -988,6 +997,26 @@ export function undo() {
   setCanUndo(commandCount() > 0);
 
   if (PERF_MARKS) performance.measure('engine.undo', 'engine.undo:start');
+}
+
+// Snapshot-mode undo can be asynchronous — a deep entry decodes from its
+// encoded blob before it can blit — so rapid taps serialize through a promise
+// chain instead of interleaving mid-restore. Each step repaints and updates
+// undo/empty state exactly like the synchronous path.
+let snapshotUndoChain: Promise<void> = Promise.resolve();
+
+function queueSnapshotUndo() {
+  snapshotUndoChain = snapshotUndoChain.then(async () => {
+    if (PERF_MARKS) performance.mark('engine.undo:start');
+    const restored = popSnapshot();
+    if (!restored) return;
+    const { wasEmpty } = await restored;
+    const strokeStillLive = rebaseActiveCommand(wasEmpty);
+    replayAll(ctx);
+    setCanvasEmptyState(wasEmpty && !strokeStillLive);
+    setCanUndo(commandCount() > 0);
+    if (PERF_MARKS) performance.measure('engine.undo', 'engine.undo:start');
+  });
 }
 
 export function clearCanvas() {
@@ -1020,6 +1049,10 @@ export function getUndoDebug(): {
   maxOps: number;
   maxSegments: number;
   totalSegments: number;
+  mode: UndoMode;
+  snapshots: number;
+  snapshotLiveRasters: number;
+  snapshotBlobBytes: number;
   rawPoints: number;
   keptPoints: number;
 } {
@@ -1049,6 +1082,18 @@ export function setCrayonParams(params: Partial<CrayonOptions>) {
 export function getCrayonParams(): CrayonOptions {
   return getCrayonOptions();
 }
+
+// Dev A/B seam (snapshot-undo evaluation, mirrors setSimplifyParams): switch
+// between ADR-0033 command-replay undo and pre-stroke canvas snapshots. The
+// switch consolidates the committed drawing and drops undo history (see
+// undoHistory.setUndoMode). Wired onto window.__engine only on /dev/engine;
+// production never calls it.
+export function setUndoMode(mode: UndoMode) {
+  setHistoryUndoMode(mode);
+  setCanUndo(commandCount() > 0);
+}
+
+export { getUndoMode };
 
 // --- Mount / unmount ---------------------------------------------------------
 

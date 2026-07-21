@@ -15,6 +15,8 @@
     setCrayonMode,
     setCrayonParams,
     getCrayonParams,
+    setUndoMode,
+    getUndoMode,
     setScreenAngleOverride,
     getViewState,
     RESIZE_SETTLE_MS,
@@ -73,6 +75,10 @@
       setCrayonMode,
       setCrayonParams,
       getCrayonParams,
+      // Snapshot-undo evaluation seam: A/B command-replay undo (ADR-0033)
+      // against pre-stroke canvas snapshots.
+      setUndoMode,
+      getUndoMode,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).

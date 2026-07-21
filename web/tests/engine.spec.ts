@@ -1684,3 +1684,189 @@ test('undoing a later crayon stroke leaves an earlier stroke texture spatially u
   // tooth is byte-stable. The pre-fix behaviour changed ~70% of the band.
   expect(changedFrac).toBeLessThan(0.05);
 });
+
+// --- Snapshot undo mode (dev seam — evaluating a reversal of ADR-0033) -------
+//
+// setUndoMode('snapshot') swaps command-replay undo for pre-stroke canvas
+// snapshots (see undoHistory.ts). A restore can be asynchronous — deep entries
+// decode from an encoded blob — so undo assertions poll for the settled state
+// instead of assuming a synchronous repaint.
+
+test('snapshot mode: a stroke undoes back to an empty canvas', async ({ page }) => {
+  await page.evaluate(() => {
+    window.__engine.setUndoMode('snapshot');
+    window.__engine.strokeSync(
+      [
+        { x: 50, y: 50 },
+        { x: 150, y: 150 },
+      ],
+      'pen'
+    );
+  });
+  expect(await count(page)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__engine.getUndoDebug().mode)).toBe('snapshot');
+
+  await page.evaluate(() => window.__engine.undo());
+
+  await expect(async () => {
+    expect(await count(page)).toBe(0);
+    const s = await state(page);
+    expect(s.canvasEmpty).toBe(true);
+    expect(s.canUndo).toBe(false);
+  }).toPass();
+});
+
+test('snapshot mode: depth caps at 20 and deep entries restore from encoded blobs', async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    window.__engine.setUndoMode('snapshot');
+    for (let i = 0; i < 22; i++) {
+      const y = 14 + i * 12;
+      window.__engine.strokeSync(
+        [
+          { x: 30, y },
+          { x: 270, y },
+        ],
+        'pen'
+      );
+    }
+  });
+
+  // The cold tier encodes off the commit path — wait for it to settle: only
+  // K_LIVE (2) recent snapshots stay live rasters, the rest demote to blobs.
+  await expect(async () => {
+    const d = await page.evaluate(() => window.__engine.getUndoDebug());
+    expect(d.snapshots).toBe(20);
+    expect(d.snapshotLiveRasters).toBeLessThanOrEqual(2);
+    expect(d.snapshotBlobBytes).toBeGreaterThan(0);
+  }).toPass();
+
+  for (let i = 0; i < 20; i++) {
+    await page.evaluate(() => window.__engine.undo());
+  }
+
+  await expect(async () => {
+    expect((await state(page)).canUndo).toBe(false);
+  }).toPass();
+
+  // The two oldest snapshots were shifted past the cap, so the deepest restore
+  // still shows strokes 1–2 — the same semantics as the replay-mode cap.
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 14)[3])).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 26)[3])).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 38)[3])).toBe(0);
+});
+
+test('snapshot mode: crayon strokes never keyframe and undo restores exact prior pixels', async ({
+  page,
+}) => {
+  // The replay-mode counterpart of this test tolerates a sub-5% AA-silhouette
+  // band change; a snapshot restore is a raster blit, so the bar is exact.
+  const debug = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const line = (y: number) => {
+      const p: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 40; i++) p.push({ x: 20 + ((cv.width - 40) * i) / 40, y });
+      return p;
+    };
+    E.setUndoMode('snapshot');
+    E.setCrayonMode(true);
+    E.setColor('#2c5faa');
+    E.setStrokeWidth(24);
+    E.strokeSync(line(75), 'pen'); // stroke A, top band
+    (window as unknown as { __bandBefore: number[] }).__bandBefore = Array.from(
+      g.getImageData(20, 60, cv.width - 40, 30).data
+    );
+    E.strokeSync(line(cv.height - 60), 'pen'); // stroke B, far bottom band
+    const d = E.getUndoDebug();
+    E.undo();
+    return d;
+  });
+  expect(debug.keyframes).toBe(0);
+  expect(debug.snapshots).toBe(2);
+
+  await expect(async () => {
+    const gone = await page.evaluate(() => {
+      const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+      return window.__engine.pixelAt(Math.round(cv.width / 2), cv.height - 60)[3];
+    });
+    expect(gone).toBe(0);
+  }).toPass();
+
+  const mismatched = await page.evaluate(() => {
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const before = (window as unknown as { __bandBefore: number[] }).__bandBefore;
+    const after = g.getImageData(20, 60, cv.width - 40, 30).data;
+    let n = 0;
+    for (let i = 0; i < before.length; i++) if (before[i] !== after[i]) n++;
+    return n;
+  });
+  expect(mismatched).toBe(0);
+});
+
+test('snapshot mode: clearing the canvas is itself undoable', async ({ page }) => {
+  await page.evaluate(() => {
+    window.__engine.setUndoMode('snapshot');
+    window.__engine.strokeSync(
+      [
+        { x: 50, y: 50 },
+        { x: 150, y: 150 },
+      ],
+      'pen'
+    );
+    window.__engine.clearCanvas();
+  });
+  expect(await count(page)).toBe(0);
+
+  await page.evaluate(() => window.__engine.undo());
+
+  await expect(async () => {
+    expect(await count(page)).toBeGreaterThan(0);
+  }).toPass();
+});
+
+test('switching undo modes consolidates the drawing and resets history', async ({ page }) => {
+  await page.evaluate(() => {
+    window.__engine.strokeSync(
+      [
+        { x: 40, y: 40 },
+        { x: 200, y: 40 },
+      ],
+      'pen'
+    );
+    window.__engine.strokeSync(
+      [
+        { x: 40, y: 80 },
+        { x: 200, y: 80 },
+      ],
+      'pen'
+    );
+  });
+  const inked = await count(page);
+  expect(inked).toBeGreaterThan(0);
+
+  await page.evaluate(() => window.__engine.setUndoMode('snapshot'));
+  expect((await state(page)).canUndo).toBe(false); // history dropped at the switch
+  expect(await count(page)).toBe(inked); // pixels intact
+
+  // New work in snapshot mode undoes back to the consolidated state, not blank.
+  await page.evaluate(() => {
+    window.__engine.strokeSync(
+      [
+        { x: 40, y: 120 },
+        { x: 200, y: 120 },
+      ],
+      'pen'
+    );
+  });
+  await page.evaluate(() => window.__engine.undo());
+
+  await expect(async () => {
+    expect(await count(page)).toBe(inked);
+    expect((await state(page)).canUndo).toBe(false);
+    expect((await state(page)).canvasEmpty).toBe(false);
+  }).toPass();
+});

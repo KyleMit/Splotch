@@ -42,6 +42,75 @@ const commandLog: StrokeGroupCommand[] = [];
 let baselineCanvas: HTMLCanvasElement | null = null;
 let baselineCtx: CanvasRenderingContext2D | null = null;
 
+// --- Snapshot mode (dev seam — evaluating a reversal of ADR-0033) -----------
+//
+// In 'snapshot' mode the baseline is promoted to the committed source of truth
+// (the "paper canvas"): every commit pushes a copy of the pre-stroke paper onto
+// a bounded snapshot stack and folds the new command's ops straight in, so
+// undo/resize/remount/export are all blits (plus the in-flight stroke) instead
+// of command replays. Commands are only retained as ops (`pendingCommands`)
+// while the magic sheet is unready — folding a magic op then would bake its
+// intentionally-blank pixels (the same hazard hasMagicAwaitingDecodeThrough
+// guards in replay mode).
+//
+// Memory is tiered: the K_LIVE most recent snapshots stay live rasters (a
+// max(w,h) square ≈ 30 MB at 2× DPR on a 13″ iPad — instant common undo);
+// older entries are encoded to a lossless blob off the commit path and decoded
+// again only on deep undo. Production stays on 'replay' unless the A/B verdict
+// reverses ADR-0033.
+export type UndoMode = 'replay' | 'snapshot';
+let undoMode: UndoMode = 'replay';
+
+const K_LIVE = 2;
+
+interface Snapshot {
+  wasEmpty: boolean;
+  canvas: HTMLCanvasElement | null;
+  blob: Blob | null;
+  encoding: boolean;
+  // Commands committed but not yet folded when this snapshot was taken (magic
+  // sheet unready) — replayed on top of the raster to reproduce the state.
+  pending: StrokeGroupCommand[];
+}
+const snapshotStack: Snapshot[] = [];
+let pendingCommands: StrokeGroupCommand[] = [];
+
+export function getUndoMode(): UndoMode {
+  return undoMode;
+}
+
+// Dev seam: switch undo systems mid-session. The committed drawing is
+// consolidated into the baseline raster and BOTH histories are dropped — the
+// seam trades undo depth at the moment of the switch for never having to keep
+// two live histories mirrored. The A/B harness resets the engine per scenario,
+// so nothing real is lost.
+export function setUndoMode(mode: UndoMode) {
+  if (mode === undoMode) return;
+  if (baselineCanvas && baselineCtx) {
+    if (undoMode === 'replay' && commandLog.length > 0) {
+      // paintStateThrough clears its target first, so consolidating onto the
+      // baseline itself needs a scratch surface, then a swap.
+      const flat = document.createElement('canvas');
+      flat.width = baselineCanvas.width;
+      flat.height = baselineCanvas.height;
+      const flatCtx = flat.getContext('2d');
+      if (flatCtx) {
+        flatCtx.lineCap = 'round';
+        flatCtx.lineJoin = 'round';
+        paintStateThrough(flatCtx, commandLog.length - 1);
+        baselineCanvas = flat;
+        baselineCtx = flatCtx;
+      }
+    } else if (undoMode === 'snapshot') {
+      for (const cmd of pendingCommands) for (const op of cmd.ops) renderOp(baselineCtx, op);
+    }
+  }
+  commandLog.length = 0;
+  snapshotStack.length = 0;
+  pendingCommands = [];
+  undoMode = mode;
+}
+
 // The stroke group currently being drawn (opened on first paint, pushed to the
 // log when the last finger lifts), so a multi-touch gesture undoes as a single
 // unit.
@@ -124,6 +193,10 @@ export function commitActiveCommand(): boolean {
 }
 
 export function pushCommand(cmd: StrokeGroupCommand) {
+  if (undoMode === 'snapshot') {
+    commitSnapshot(cmd);
+    return;
+  }
   commandLog.push(cmd);
   cmd.ops = simplifyCommandOps(cmd.ops);
   while (commandLog.length > MAX_UNDO_STACK_SIZE) {
@@ -132,13 +205,103 @@ export function pushCommand(cmd: StrokeGroupCommand) {
   maybeKeyframe(cmd);
 }
 
+// Snapshot-mode commit: push the pre-stroke paper state, then fold the new
+// command in. The copy cost is one full-canvas drawImage at pointerup — the
+// per-gesture cost ADR-0033 removed, reinstated deliberately: it buys O(blit)
+// undo and frees every brush from replay-determinism constraints. The
+// engine.snapshot mark exists so the A/B can weigh exactly that trade.
+function commitSnapshot(cmd: StrokeGroupCommand) {
+  if (!baselineCanvas || !baselineCtx) return;
+  if (PERF_MARKS) performance.mark('engine.snapshot:start');
+  const copy = document.createElement('canvas');
+  copy.width = baselineCanvas.width;
+  copy.height = baselineCanvas.height;
+  const copyCtx = copy.getContext('2d');
+  if (!copyCtx) return;
+  copyCtx.drawImage(baselineCanvas, 0, 0);
+  snapshotStack.push({
+    wasEmpty: cmd.wasEmpty,
+    canvas: copy,
+    blob: null,
+    encoding: false,
+    pending: [...pendingCommands],
+  });
+  while (snapshotStack.length > MAX_UNDO_STACK_SIZE) snapshotStack.shift();
+  pendingCommands.push(cmd);
+  foldPendingIntoPaper();
+  if (PERF_MARKS) performance.measure('engine.snapshot', 'engine.snapshot:start');
+  encodeColdSnapshots();
+}
+
+// Fold committed-but-unfolded commands into the paper, oldest first, stopping
+// at the first one the unready magic sheet would render blank. Ordering is
+// preserved by construction: nothing after a blocked command folds either.
+function foldPendingIntoPaper() {
+  if (!baselineCtx) return;
+  while (pendingCommands.length > 0) {
+    const cmd = pendingCommands[0];
+    if (commandHasMagic(cmd) && isMagicSheetUnready()) break;
+    pendingCommands.shift();
+    for (const op of cmd.ops) renderOp(baselineCtx, op);
+  }
+}
+
+// Demote snapshots below the K_LIVE window to encoded blobs, freeing their
+// ~30 MB rasters. WebP first (Chromium encodes quality-1 WebP losslessly at a
+// fraction of PNG's size); engines that can't encode WebP hand back a PNG blob
+// (per spec toBlob falls back to image/png), which is lossless everywhere.
+function encodeColdSnapshots() {
+  for (let i = 0; i < snapshotStack.length - K_LIVE; i++) {
+    const snap = snapshotStack[i];
+    if (!snap.canvas || snap.blob || snap.encoding) continue;
+    const source = snap.canvas;
+    snap.encoding = true;
+    source.toBlob(
+      (blob) => {
+        snap.encoding = false;
+        if (!blob) return; // encode failed — keep the raster
+        snap.blob = blob;
+        if (snap.canvas === source) snap.canvas = null;
+      },
+      'image/webp',
+      1
+    );
+  }
+}
+
+// Pop the top snapshot and restore it as the committed paper state. A live
+// raster restores synchronously; a demoted entry decodes from its blob first,
+// so the caller repaints when the promise resolves. Null when nothing is
+// undoable.
+export function popSnapshot(): Promise<{ wasEmpty: boolean }> | null {
+  const snap = snapshotStack.pop();
+  if (!snap) return null;
+  pendingCommands = [...snap.pending];
+  if (snap.canvas) {
+    restorePaper(snap.canvas);
+    return Promise.resolve({ wasEmpty: snap.wasEmpty });
+  }
+  if (!snap.blob) return Promise.resolve({ wasEmpty: snap.wasEmpty });
+  return createImageBitmap(snap.blob).then((bitmap) => {
+    restorePaper(bitmap);
+    bitmap.close();
+    return { wasEmpty: snap.wasEmpty };
+  });
+}
+
+function restorePaper(source: CanvasImageSource) {
+  if (!baselineCtx || !baselineCanvas) return;
+  baselineCtx.clearRect(0, 0, baselineCanvas.width, baselineCanvas.height);
+  baselineCtx.drawImage(source, 0, 0);
+}
+
 // Remove and return the most recent command, or null when nothing is undoable.
 export function popCommand(): StrokeGroupCommand | null {
   return commandLog.pop() ?? null;
 }
 
 export function commandCount(): number {
-  return commandLog.length;
+  return undoMode === 'snapshot' ? snapshotStack.length : commandLog.length;
 }
 
 // A clear can arrive while a stroke straddles it (e.g. a second finger drawing
@@ -281,7 +444,16 @@ export function paintStateThrough(target: CanvasRenderingContext2D, upToIndex: n
 // keyframed until commit), so replay it last to keep the in-flight stroke;
 // between strokes activeCommand is null and that step is a no-op.
 export function replayAll(target: CanvasRenderingContext2D) {
-  paintStateThrough(target, commandLog.length - 1);
+  if (undoMode === 'snapshot') {
+    // The paper IS the committed drawing: one blit, plus any commands the
+    // unready magic sheet is holding out of the paper, plus the in-flight
+    // stroke — no command replay.
+    clearAllOf(target);
+    if (baselineCanvas) target.drawImage(baselineCanvas, 0, 0);
+    for (const cmd of pendingCommands) for (const op of cmd.ops) renderOp(target, op);
+  } else {
+    paintStateThrough(target, commandLog.length - 1);
+  }
   if (activeCommand) {
     for (const op of activeCommand.ops) renderOp(target, op);
   }
@@ -299,6 +471,10 @@ export function getHistoryDebug(): {
   maxOps: number;
   maxSegments: number;
   totalSegments: number;
+  mode: UndoMode;
+  snapshots: number;
+  snapshotLiveRasters: number;
+  snapshotBlobBytes: number;
 } {
   return {
     commands: commandLog.length,
@@ -306,5 +482,9 @@ export function getHistoryDebug(): {
     maxOps: commandLog.reduce((m, c) => Math.max(m, c.ops.length), 0),
     maxSegments: commandLog.reduce((m, c) => Math.max(m, commandSegmentCount(c)), 0),
     totalSegments: commandLog.reduce((m, c) => m + commandSegmentCount(c), 0),
+    mode: undoMode,
+    snapshots: snapshotStack.length,
+    snapshotLiveRasters: snapshotStack.reduce((n, s) => n + (s.canvas ? 1 : 0), 0),
+    snapshotBlobBytes: snapshotStack.reduce((n, s) => n + (s.blob?.size ?? 0), 0),
   };
 }

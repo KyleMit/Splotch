@@ -21,6 +21,10 @@ declare global {
         maxOps: number;
         maxSegments: number;
         totalSegments: number;
+        mode: 'replay' | 'snapshot';
+        snapshots: number;
+        snapshotLiveRasters: number;
+        snapshotBlobBytes: number;
         rawPoints: number;
         keptPoints: number;
       };
@@ -36,6 +40,8 @@ declare global {
         split?: 'none' | 'corner';
       }): void;
       setCrayonMode(active: boolean): void;
+      setUndoMode(mode: 'replay' | 'snapshot'): void;
+      getUndoMode(): 'replay' | 'snapshot';
       setCrayonParams(params: {
         tile?: number;
         octaves?: { cell: number; weight: number }[];
