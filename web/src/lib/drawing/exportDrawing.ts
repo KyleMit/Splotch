@@ -4,7 +4,7 @@
 // dark mode the paper fill is the dark paper and the line art is inverted and
 // screened, matching the on-screen --paper / --lineart-* tokens.
 
-import { replayAll } from './undoHistory';
+import { repaintAll } from './undoHistory';
 import { flushCrayonBuffer } from './strokeOps';
 import { scheduleIdle } from '../idle';
 import { PAPER_COLORS } from '../theme';
@@ -46,10 +46,10 @@ export function warmPaperTextureWhenIdle() {
   scheduleIdle(() => void loadPaperTexture());
 }
 
-// Rebuild the strokes in PAPER space (baseline + log + any in-flight stroke)
-// rather than copying the visible canvas: under a rotation-locked view the
-// visible canvas is the letterboxed presentation, and the export should be the
-// full upright page.
+// Rebuild the strokes in PAPER space (the paper raster + pending + any
+// in-flight stroke) rather than copying the visible canvas: under a
+// rotation-locked view the visible canvas is the letterboxed presentation, and
+// the export should be the full upright page.
 function snapshotStrokes(source: ExportSource): HTMLCanvasElement {
   const snapshot = document.createElement('canvas');
   snapshot.width = source.paperPxWidth;
@@ -57,7 +57,7 @@ function snapshotStrokes(source: ExportSource): HTMLCanvasElement {
   const snapshotCtx = snapshot.getContext('2d')!;
   snapshotCtx.lineCap = 'round';
   snapshotCtx.lineJoin = 'round';
-  replayAll(snapshotCtx);
+  repaintAll(snapshotCtx);
   // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
   // (its flush is only recorded at pass close); an export is terminal for this
   // snapshot, so stamp it now rather than dropping that ink.

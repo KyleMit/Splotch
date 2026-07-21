@@ -8,10 +8,8 @@
 // delegates the rest:
 //
 //   strokeOps.ts        the op vocabulary + the one renderer every surface shares
-//   undoHistory.ts      undo baseline + command log + keyframes (ADR-0033/0035)
-//   commandSimplify.ts  commit-time stroke simplification (ADR-0036)
+//   undoHistory.ts      the paper raster + pre-stroke snapshot stack (ADR-0066)
 //   strokeMath.ts       pure gesture math (edge swipes, resume detection, speed)
-//   strokeSimplify.ts   pure reduction geometry (RDP, span reconstruction)
 //   paperView.ts        pure rotation-lock view geometry (ADR-0050)
 //   magicBrush.ts       the magic brush's color sheet + paint pattern (ADR-0043)
 //   emptyScan.ts        cheap blank-canvas detection
@@ -52,23 +50,17 @@ import {
 } from './crayonBrush';
 import {
   beginCommand,
-  commandCount,
   commitActiveCommand,
-  ensureBaselineCovers,
+  ensurePaperCovers,
   getHistoryDebug,
-  getUndoMode,
-  popCommand,
   popSnapshot,
   pushCommand,
   rebaseActiveCommand,
   recordOp,
-  replayAll,
+  repaintAll,
   resetActiveCommandForClear,
-  setKeyframeSegmentThreshold,
-  setUndoMode as setHistoryUndoMode,
-  type UndoMode,
+  snapshotCount,
 } from './undoHistory';
-import { getSimplifyCounters, setSimplifyOptions, type SimplifyOptions } from './commandSimplify';
 import { scanCanvasIsEmpty } from './emptyScan';
 import { exportDrawing, warmPaperTextureWhenIdle, type ExportOptions } from './exportDrawing';
 import { PERF_MARKS } from './perf';
@@ -126,9 +118,9 @@ function syncCrayonOverlayMix() {
 }
 
 // Close the current deposition pass: stamp the live buffer onto the canvas and
-// record the flush so replay stamps at exactly this position in the op order.
-// recordOp no-ops when no command is open, matching renderOp's no-op flush of a
-// clean buffer.
+// record the flush so the commit fold stamps at exactly this position in the
+// op order. recordOp no-ops when no command is open, matching renderOp's no-op
+// flush of a clean buffer.
 function recordCrayonFlush() {
   const flush: StrokeOp = { kind: 'crayonFlush' };
   renderOp(ctx, flush);
@@ -136,13 +128,13 @@ function recordCrayonFlush() {
 }
 
 // A per-pass seed stamped onto every crayon op, so the paper-tooth pattern is
-// phase-shifted per deposition pass (the source of wax buildup — ADR-0065) yet
-// fully replayable from stored op data. A pass is usually a whole stroke, but a
-// continuous gesture that re-covers its own paper (a back-and-forth scribble)
-// splits into further passes mid-stroke — see strokeCrayonSegments. A monotonic
-// counter guarantees consecutive passes differ even when drawn over the same
-// spot; the value is stored on the op, so replay is deterministic regardless of
-// the counter's live position.
+// phase-shifted per deposition pass (the source of wax buildup — ADR-0065). A
+// pass is usually a whole stroke, but a continuous gesture that re-covers its
+// own paper (a back-and-forth scribble) splits into further passes mid-stroke
+// — see strokeCrayonSegments. A monotonic counter guarantees consecutive
+// passes differ even when drawn over the same spot; the value is stored on the
+// op, so the commit fold (and the pending-window repaint) reproduces the live
+// pixels regardless of the counter's position.
 let crayonSeedCounter = 1;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -181,8 +173,8 @@ function setCanvasEmptyState(empty: boolean) {
 
 // --- Paper space and the rotation-lock view (ADR-0050) --------------------
 
-// The paper: the coordinate space every recorded op, the baseline, the
-// keyframes, and the magic sheet live in (ADR-0050). It tracks the viewport
+// The paper: the coordinate space every recorded op, the committed paper
+// raster, and the magic sheet live in (ADR-0050). It tracks the viewport
 // while the canvas is empty or the screen angle is unchanged (today's
 // semantics), but a device rotation with ink on the canvas LOCKS it: the
 // drawing keeps its space — and its tall/wide coloring page — and is instead
@@ -199,7 +191,7 @@ let paperAngle = 0;
 let resizedAngle = 0;
 let paperView: PaperView = IDENTITY_PAPER_VIEW;
 
-// Dev/test seam (mirrors setSimplifyParams): pin the screen angle the engine
+// Dev/test seam (mirrors setCrayonParams): pin the screen angle the engine
 // reads so the /dev/engine harness can simulate a device rotation without a
 // device. Production never calls the setter.
 let screenAngleOverride: number | null = null;
@@ -346,7 +338,7 @@ function adoptPaperUnlessLocked(rect: DOMRect): boolean {
 }
 
 // Present the locked paper through the view: the visible ctx keeps painting in
-// paper coordinates (live ops, replay, and the sheet pattern all map through
+// paper coordinates (live ops, repaints, and the sheet pattern all map through
 // the transform untouched), persisting until the next backing-store reset. The
 // paper is presented UPRIGHT (view rotation 0): the picture rotates with the
 // device and contain-fits — scaled down when it must — rather than
@@ -355,12 +347,12 @@ function adoptPaperUnlessLocked(rect: DOMRect): boolean {
 //
 // The margins around the fitted paper stay DRAWABLE (no clip): a child mid-
 // scribble shouldn't hit dead zones. Margin ink records at out-of-paper
-// coordinates — it renders and replays normally while its command is retained,
-// is cropped by design when rotating back (and from exports), and may drop
-// from rebuilds once folded/keyframed past the paper-square rasters. Rasters
-// covering the mapped margins would cost tens of MB at 2× DPR (the fit maps a
-// phone viewport to ~2× the paper's long side), so that corner is accepted —
-// see ADR-0050.
+// coordinates — it renders normally while its stroke is live, is cropped by
+// design when rotating back (and from exports), and drops from repaints once
+// its commit folds it past the paper-square raster's bounds. Rasters covering
+// the mapped margins would cost tens of MB at 2× DPR (the fit maps a phone
+// viewport to ~2× the paper's long side), so that corner is accepted — see
+// ADR-0050.
 function applyPaperView(lockPaper: boolean) {
   paperView = lockPaper
     ? computePaperView(
@@ -380,13 +372,13 @@ function resizeCanvas() {
   const lockPaper = adoptPaperUnlessLocked(rect);
   resizedAngle = currentScreenAngle();
 
-  // The undo baseline is a max(w,h) square of the paper so it covers both
+  // The paper raster is a max(w,h) square of the viewport so it covers both
   // orientations and rotation never loses pixels; anything larger (e.g. a
   // resized desktop window) goes through the grow path.
-  ensureBaselineCovers(Math.ceil(Math.max(paper.pxW, paper.pxH)));
+  ensurePaperCovers(Math.ceil(Math.max(paper.pxW, paper.pxH)));
 
   // Resizing the backing store wipes the visible canvas and resets its context
-  // state, so re-arm the round caps and repaint from the baseline + command log.
+  // state, so re-arm the round caps and repaint from the paper raster.
   canvas.width = Math.round(rect.width * renderScale);
   canvas.height = Math.round(rect.height * renderScale);
   ctx.lineCap = 'round';
@@ -403,10 +395,10 @@ function resizeCanvas() {
   }
   applyPaperView(lockPaper);
 
-  // The magic sheet is sized to the paper, so re-rasterize before replaying any
-  // magic ops against it.
+  // The magic sheet is sized to the paper, so re-rasterize before repainting
+  // any pending magic ops against it.
   rasterizeSheet();
-  replayAll(ctx);
+  repaintAll(ctx);
 
   refreshCanvasRect();
   notifyViewChange();
@@ -415,7 +407,7 @@ function resizeCanvas() {
 }
 
 // A desktop window-edge drag fires resize continuously, and every backing-store
-// reassignment in resizeCanvas() wipes the canvas and forces a full replay. The
+// reassignment in resizeCanvas() wipes the canvas and forces a repaint. The
 // resize listener refreshes the cached rect immediately (so pointer mapping
 // tracks the moving layout) but defers the wipe + rebuild until the size
 // settles. Native skips the debounce: rotation is a single resize event, and
@@ -443,7 +435,7 @@ function handleResize() {
 // (visibilitychange → visible; the native WebViews hide the document while the
 // app is backgrounded, so this covers Capacitor resume too) rebuild
 // synchronously — but only when the geometry actually moved while away, so a
-// plain tab switch doesn't pay the backing-store wipe + full replay.
+// plain tab switch doesn't pay the backing-store wipe + repaint.
 function resyncOnReentry() {
   if (document.visibilityState !== 'visible') return;
   const rect = canvas.getBoundingClientRect();
@@ -477,9 +469,8 @@ function renderStrokeStart(ps: PointerState) {
   beginStrokeGroup();
 
   // Erasing clears pixels via destination-out; the stroke color is irrelevant
-  // there, only its (opaque) alpha matters. A magic op ignores `color` too — it
-  // reveals the sheet — but carries it so a mid-stroke tool flip keeps a stable
-  // style key for simplification.
+  // there, only its (opaque) alpha matters. A magic op ignores `color` too —
+  // it reveals the sheet — but carries it so every op is style-complete.
   const dot: StrokeOp = {
     kind: 'dot',
     x: ps.x,
@@ -504,7 +495,7 @@ function renderStrokeStart(ps: PointerState) {
 // with the raw point as the control, so consecutive segments share a tangent
 // and the stroke curves smoothly instead of showing straight-chord corners.
 // Each call is captured as one path op (matching its own beginPath/stroke
-// boundary) so undo replay reproduces identical pixels and anti-aliasing.
+// boundary) so the commit fold reproduces identical pixels and anti-aliasing.
 function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
   if (points.length === 0) return;
   const op: StrokeOp = {
@@ -541,8 +532,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
 // must build up exactly like a fresh stroke does. The flush boundary reuses
 // strokeSmoothSegments' own start/mid bookkeeping, so the drawn PATH is
 // identical to the unsplit one — only the pattern phase of the later ops
-// changes. Seeds are stored per op (and keep runs apart in simplification), so
-// replay reproduces the splits byte-for-byte.
+// changes. Seeds are stored per op, so the commit fold reproduces the splits
+// byte-for-byte.
 function strokeCrayonSegments(ps: PointerState, points: { x: number; y: number }[]) {
   let batch: { x: number; y: number }[] = [];
   for (const p of points) {
@@ -866,9 +857,9 @@ function stopDrawing(e?: PointerEvent) {
   }
 
   // A lifting crayon finger closes its deposition pass — stamp the buffered wax
-  // onto the canvas (mixing with the ink under it) and record the flush so
-  // replay stamps at the same point in the op order. Skipped for a discarded
-  // edge-swipe candidate (nothing was rendered).
+  // onto the canvas (mixing with the ink under it) and record the flush so the
+  // commit fold stamps at the same point in the op order. Skipped for a
+  // discarded edge-swipe candidate (nothing was rendered).
   if (pointerState?.isDrawing && pointerState.passTracker && !pointerState.edgeSwipeGuard) {
     recordCrayonFlush();
   }
@@ -978,50 +969,39 @@ const cancelTouch = (e: TouchEvent) => e.preventDefault();
 
 // --- Undo, clear, and canvas-empty API --------------------------------------
 
-export function undo() {
-  if (!canUndo || !canvas || !ctx) return;
+// Undo can be asynchronous — a deep entry decodes from its encoded blob
+// before it can blit — so rapid taps serialize through a promise chain
+// instead of interleaving mid-restore. Each step repaints and updates
+// undo/empty state before the next runs. The chain is returned so callers
+// that need the settled state (the E2E harness) can await it; the app's
+// undo button ignores it.
+let undoChain: Promise<void> = Promise.resolve();
 
-  if (getUndoMode() === 'snapshot') {
-    queueSnapshotUndo();
-    return;
-  }
-
-  if (PERF_MARKS) performance.mark('engine.undo:start');
-
-  const undone = popCommand();
-  if (!undone) return;
-  const strokeStillLive = rebaseActiveCommand(undone.wasEmpty);
-  replayAll(ctx);
-  setCanvasEmptyState(undone.wasEmpty && !strokeStillLive);
-
-  setCanUndo(commandCount() > 0);
-
-  if (PERF_MARKS) performance.measure('engine.undo', 'engine.undo:start');
-}
-
-// Snapshot-mode undo can be asynchronous — a deep entry decodes from its
-// encoded blob before it can blit — so rapid taps serialize through a promise
-// chain instead of interleaving mid-restore. Each step repaints and updates
-// undo/empty state exactly like the synchronous path.
-let snapshotUndoChain: Promise<void> = Promise.resolve();
-
-function queueSnapshotUndo() {
-  snapshotUndoChain = snapshotUndoChain.then(async () => {
-    if (PERF_MARKS) performance.mark('engine.undo:start');
-    const restored = popSnapshot();
-    if (!restored) return;
-    const { wasEmpty } = await restored;
-    const strokeStillLive = rebaseActiveCommand(wasEmpty);
-    replayAll(ctx);
-    setCanvasEmptyState(wasEmpty && !strokeStillLive);
-    setCanUndo(commandCount() > 0);
-    if (PERF_MARKS) performance.measure('engine.undo', 'engine.undo:start');
-  });
+export function undo(): Promise<void> {
+  if (!canUndo || !canvas || !ctx) return undoChain;
+  undoChain = undoChain
+    .then(async () => {
+      if (PERF_MARKS) performance.mark('engine.undo:start');
+      const restored = popSnapshot();
+      if (!restored) return;
+      const { wasEmpty } = await restored;
+      const strokeStillLive = rebaseActiveCommand(wasEmpty);
+      repaintAll(ctx);
+      setCanvasEmptyState(wasEmpty && !strokeStillLive);
+      setCanUndo(snapshotCount() > 0);
+      if (PERF_MARKS) performance.measure('engine.undo', 'engine.undo:start');
+    })
+    .catch((err) => {
+      // A failed blob decode loses that one restore; the chain must survive so
+      // the next undo tap still works.
+      console.error('Undo restore failed:', err);
+    });
+  return undoChain;
 }
 
 export function clearCanvas() {
-  // The clear is its own undo command: replaying it wipes the surface, and
-  // undoing it replays the strokes that preceded it back from the baseline.
+  // The clear is its own undo command: folding it wipes the paper, and undoing
+  // it restores the pre-clear snapshot in one blit.
   pushCommand({ ops: [{ kind: 'clear' }], wasEmpty: canvasEmpty });
   setCanUndo(true);
   clearAllOf(ctx);
@@ -1042,58 +1022,31 @@ export function isCanvasEmpty(): boolean {
 }
 
 // Test/profiling seam: how the undo history is currently stored (see
-// undoHistory.getHistoryDebug) plus the lifetime simplification counters.
+// undoHistory.getHistoryDebug).
 export function getUndoDebug(): {
-  commands: number;
-  keyframes: number;
-  maxOps: number;
-  maxSegments: number;
-  totalSegments: number;
-  mode: UndoMode;
   snapshots: number;
-  snapshotLiveRasters: number;
-  snapshotBlobBytes: number;
-  rawPoints: number;
-  keptPoints: number;
+  liveRasters: number;
+  blobBytes: number;
+  pendingCommands: number;
 } {
-  return { ...getHistoryDebug(), ...getSimplifyCounters() };
-}
-
-// Dev profiling seam (ADR-0036 tuning): override the simplification tolerances
-// and the keyframe safety-net bound so a single build can sweep every setting.
-// Wired onto window.__engine only on the /dev/engine page
-// (PUBLIC_ENABLE_DEV_HARNESS); production never calls it.
-export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?: number }) {
-  if (params.keyframeThreshold !== undefined) setKeyframeSegmentThreshold(params.keyframeThreshold);
-  setSimplifyOptions(params);
+  return getHistoryDebug();
 }
 
 // Dev A/B seam (ADR-0065 tuning): override the crayon tooth/coverage/pass knobs
 // so one build can sweep render variants and the winner ships as the default.
 // Wired onto window.__engine only on the /dev/engine page; production never calls
-// it and keeps crayonBrush.ts's tuned defaults. After a change, replay so already
-// recorded crayon ops repaint with the new tooth.
+// it and keeps crayonBrush.ts's tuned defaults. After a change, repaint so the
+// in-flight and pending crayon ops pick up the new tooth (committed wax is
+// baked into the paper raster and keeps the tooth it was drawn with).
 export function setCrayonParams(params: Partial<CrayonOptions>) {
   setCrayonOptions(params);
   syncCrayonOverlayMix();
-  if (ctx) replayAll(ctx);
+  if (ctx) repaintAll(ctx);
 }
 
 export function getCrayonParams(): CrayonOptions {
   return getCrayonOptions();
 }
-
-// Dev A/B seam (snapshot-undo evaluation, mirrors setSimplifyParams): switch
-// between ADR-0033 command-replay undo and pre-stroke canvas snapshots. The
-// switch consolidates the committed drawing and drops undo history (see
-// undoHistory.setUndoMode). Wired onto window.__engine only on /dev/engine;
-// production never calls it.
-export function setUndoMode(mode: UndoMode) {
-  setHistoryUndoMode(mode);
-  setCanUndo(commandCount() > 0);
-}
-
-export { getUndoMode };
 
 // --- Mount / unmount ---------------------------------------------------------
 
@@ -1136,7 +1089,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
       paper.pxW > 0 && paper.pxH > 0 ? { width: paper.pxW, height: paper.pxH } : null,
     sheetBounds: () => (paper.pxW > 0 && paper.pxH > 0 ? sheetBoundsPaper() : null),
     repaint: () => {
-      if (ctx) replayAll(ctx);
+      if (ctx) repaintAll(ctx);
     },
   });
 

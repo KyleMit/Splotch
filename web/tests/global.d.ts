@@ -12,36 +12,18 @@ declare global {
       setStrokeWidth(width: number): void;
       setEraserMode(active: boolean): void;
       setSafeAreaInsets(insets: { top: number; right: number; bottom: number; left: number }): void;
-      undo(): void;
+      // Resolves when the queued restore has settled (a deep entry decodes
+      // from its blob asynchronously) — page.evaluate awaits it.
+      undo(): Promise<void>;
       clearCanvas(): void;
       isCanvasEmpty(): boolean;
       getUndoDebug(): {
-        commands: number;
-        keyframes: number;
-        maxOps: number;
-        maxSegments: number;
-        totalSegments: number;
-        mode: 'replay' | 'snapshot';
         snapshots: number;
-        snapshotLiveRasters: number;
-        snapshotBlobBytes: number;
-        rawPoints: number;
-        keptPoints: number;
+        liveRasters: number;
+        blobBytes: number;
+        pendingCommands: number;
       };
-      setSimplifyParams(params: {
-        fraction?: number;
-        min?: number;
-        max?: number;
-        keyframeThreshold?: number;
-        cornerAngleDeg?: number;
-        mode?: 'midpoint' | 'spline' | 'samples';
-        enabled?: boolean;
-        reduce?: boolean;
-        split?: 'none' | 'corner';
-      }): void;
       setCrayonMode(active: boolean): void;
-      setUndoMode(mode: 'replay' | 'snapshot'): void;
-      getUndoMode(): 'replay' | 'snapshot';
       setCrayonParams(params: {
         tile?: number;
         octaves?: { cell: number; weight: number }[];

@@ -11,12 +11,9 @@
     isCanvasEmpty,
     exportCanvasBlob,
     getUndoDebug,
-    setSimplifyParams,
     setCrayonMode,
     setCrayonParams,
     getCrayonParams,
-    setUndoMode,
-    getUndoMode,
     setScreenAngleOverride,
     getViewState,
     RESIZE_SETTLE_MS,
@@ -69,16 +66,11 @@
       isCanvasEmpty,
       exportCanvasBlob,
       getUndoDebug,
-      setSimplifyParams,
       // Crayon brush (ADR-0065): toggle the textured-wax mode and A/B its tooth
       // knobs. The spec draws crayon strokes via strokeSync after setCrayonMode.
       setCrayonMode,
       setCrayonParams,
       getCrayonParams,
-      // Snapshot-undo evaluation seam: A/B command-replay undo (ADR-0033)
-      // against pre-stroke canvas snapshots.
-      setUndoMode,
-      getUndoMode,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).
@@ -122,8 +114,8 @@
       },
 
       // Bounding box (backing-store px) of the non-transparent pixels, so a spec
-      // can assert a stroke's extent survives a rebuild (e.g. a scribble's tips
-      // don't shrink after simplification, ADR-0036). Empty canvas → null.
+      // can assert a stroke's extent survives a rebuild (resize, remount).
+      // Empty canvas → null.
       inkBounds() {
         const ctx = canvasEl.getContext('2d')!;
         const { width, height } = canvasEl;
@@ -152,8 +144,8 @@
       },
 
       // Resize the canvas box and fire the resize event the engine listens for,
-      // so the spec can verify the drawing (rebuilt from the baseline + command
-      // log) survives a resize. The engine debounces the rebuild until the size
+      // so the spec can verify the drawing (repainted from the paper raster)
+      // survives a resize. The engine debounces the rebuild until the size
       // settles, so resolve only after that window has passed.
       resizeTo(w: number, h: number) {
         wrapperEl.style.width = `${w}px`;
