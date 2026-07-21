@@ -156,11 +156,13 @@ function paintCrayon(
 // (it travels as its live-captured raster). Fractional alpha means the
 // deposit is NOT idempotent, which forces two structural changes the binary
 // pattern path never needed:
-//   • ops paint ONCE, into the paper-space accumulation buffer; the live
-//     overlay preview is a dirty-rect BLIT of that buffer through the view
-//     transform (per-op painting into the overlays would double-composite
-//     wherever consecutive ops of one pass overlap — and an independent
-//     paint would roll different randomness than the buffer captured);
+//   • each op's deposit is BUILT ONCE (the punched scratch layer) and that
+//     same layer composites onto every surface of the pass — the paper-space
+//     accumulation and both overlay previews. Painting each surface
+//     independently would roll different randomness per surface; and reading
+//     the preview back out of the big paper-space buffer per op forces a
+//     full source-surface snapshot under software rendering (~200× the
+//     pattern deposit's per-op cost, measured — see compositeDabLayer);
 //   • a repaint that replays the open pass's ops must reset the live buffers
 //     first (resetLiveCrayonForReplay) — replaying over the existing
 //     accumulation would deepen it. The open pass re-rolls its texture on
@@ -211,13 +213,12 @@ function dabLayerFor(w: number, h: number): CanvasRenderingContext2D | null {
   return dabLayer;
 }
 
-// Stamp one crayon op as soft dabs punched through the paper tooth, onto `g`
-// (transform already set by the caller; dab coordinates are op coordinates).
-// Returns the dirty rect of what was painted, or null when nothing was.
-function paintCrayonDabs(
-  g: CanvasRenderingContext2D,
-  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
-): DabRect | null {
+// Build one crayon op's punched dab deposit on the shared scratch layer: soft
+// dabs along the polyline, punched through the paper-anchored tooth. Returns
+// the deposit's rect in op coordinates (the layer holds [0,0..w,h] of it), or
+// null when no dab landed. Callers composite the layer onto each surface of
+// the pass via compositeDabLayer.
+function buildCrayonDabLayer(op: Extract<StrokeOp, { kind: 'dot' | 'path' }>): DabRect | null {
   const d = getCrayonDabs();
   if (!d) return null;
   const tooth = dabToothTile();
@@ -334,8 +335,21 @@ function paintCrayonDabs(
     layer.globalCompositeOperation = 'source-over';
   }
 
-  g.drawImage(layer.canvas, 0, 0, w, h, x0, y0, w, h);
   return { x0, y0, x1: x0 + w, y1: y0 + h };
+}
+
+// Composite the punched op layer onto a target (source-over) at its op-space
+// origin, through whatever transform the caller set. Every surface of the
+// pass — the paper-space buffer, both overlay layers — accumulates the SAME
+// punched deposit, so they agree without ever reading each other: a per-op
+// drawImage FROM the big paper-space canvas would force a full source-surface
+// snapshot per op under software rendering (~200× the pattern deposit's cost,
+// measured), while this layer is op-sized.
+function compositeDabLayer(g: CanvasRenderingContext2D, rect: DabRect) {
+  if (!dabLayer) return;
+  const w = rect.x1 - rect.x0;
+  const h = rect.y1 - rect.y0;
+  g.drawImage(dabLayer.canvas, 0, 0, w, h, rect.x0, rect.y0, w, h);
 }
 
 // --- Crayon pass buffer ------------------------------------------------------
@@ -615,74 +629,37 @@ export function clearAllOf(target: CanvasRenderingContext2D) {
   target.restore();
 }
 
-// Blit a paper-space rect of `source` into `g` through `matrix` (the target's
-// view transform — scale + translate only under ADR-0050, so clearRect maps to
-// an axis-aligned device rect), replacing what g showed there. The rect is
-// clamped to the source canvas; margin ink outside the paper square therefore
-// doesn't preview — matching its permanent crop at commit (ADR-0066).
-function blitDabRect(
-  g: CanvasRenderingContext2D,
-  source: HTMLCanvasElement,
-  matrix: DOMMatrix | null,
-  rect: DabRect
-) {
-  const x0 = Math.max(0, Math.floor(rect.x0));
-  const y0 = Math.max(0, Math.floor(rect.y0));
-  const x1 = Math.min(source.width, Math.ceil(rect.x1));
-  const y1 = Math.min(source.height, Math.ceil(rect.y1));
-  if (x1 <= x0 || y1 <= y0) return;
-  if (matrix) g.setTransform(matrix);
-  g.clearRect(x0, y0, x1 - x0, y1 - y0);
-  g.drawImage(source, x0, y0, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0);
-}
-
-// A crayon op on the dab-deposit path (see the dab-stamp notes above). Live:
-// paint once into the paper-space accumulation, then blit the op's dirty rect
-// onto both overlay layers through the view transform — the preview shows the
-// exact pixels the pass raster will capture. Elsewhere (a pending/deferred
-// replay, an export): paint into the target's offscreen pass buffer directly;
-// that surface re-rolls its randomness per replay, which only the open pass
-// ever pays.
+// A crayon op on the dab-deposit path (see the dab-stamp notes above): build
+// the op's punched deposit once on the scratch layer, then composite that SAME
+// layer onto every surface of the pass — the paper-space accumulation
+// (identity) and both overlay layers (through the view transform) for the live
+// target; the offscreen pass buffer elsewhere (a pending/deferred replay, an
+// export — those re-roll their randomness per replay, which only the open pass
+// ever pays). Identical composite sequence on every surface means preview,
+// raster, and stamp agree without any surface ever reading another.
 function renderCrayonDabOp(
   target: CanvasRenderingContext2D,
   op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
 ) {
+  const rect = buildCrayonDabLayer(op);
+  if (!rect) return;
   const matrix = typeof target.getTransform === 'function' ? target.getTransform() : null;
   const buf = crayonBufferFor(target);
   const pb = target === liveTarget ? livePaperBufferFor() : null;
   if (pb) {
     pb.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    const rect = paintCrayonDabs(pb.ctx, op);
-    if (!rect) return;
+    compositeDabLayer(pb.ctx, rect);
     pb.dirty = true;
     unionCrayonBounds(pb, null, rect.x0, rect.y0, rect.x1, rect.y1, 0);
-    blitDabRect(buf.ctx, pb.ctx.canvas, matrix, rect);
-    if (buf.mirror) blitDabRect(buf.mirror, pb.ctx.canvas, matrix, rect);
-    buf.dirty = true;
-    unionCrayonBounds(buf, matrix, rect.x0, rect.y0, rect.x1, rect.y1, 0);
-    return;
   }
-  if (matrix) buf.ctx.setTransform(matrix);
-  const rect = paintCrayonDabs(buf.ctx, op);
-  if (!rect) return;
+  if (matrix) {
+    buf.ctx.setTransform(matrix);
+    buf.mirror?.setTransform(matrix);
+  }
+  compositeDabLayer(buf.ctx, rect);
+  if (buf.mirror) compositeDabLayer(buf.mirror, rect);
   buf.dirty = true;
   unionCrayonBounds(buf, matrix, rect.x0, rect.y0, rect.x1, rect.y1, 0);
-  // The rare live-without-paper corner (paper side undeclared): keep the
-  // mirror a copy of the bottom layer rather than rolling different dabs.
-  if (buf.mirror) {
-    const b = { ...rect };
-    if (matrix && !matrix.isIdentity) {
-      const corners = [
-        matrix.transformPoint({ x: rect.x0, y: rect.y0 }),
-        matrix.transformPoint({ x: rect.x1, y: rect.y1 }),
-      ];
-      b.x0 = Math.min(corners[0].x, corners[1].x);
-      b.y0 = Math.min(corners[0].y, corners[1].y);
-      b.x1 = Math.max(corners[0].x, corners[1].x);
-      b.y1 = Math.max(corners[0].y, corners[1].y);
-    }
-    blitDabRect(buf.mirror, buf.ctx.canvas, null, b);
-  }
 }
 
 // Fractional-alpha dabs are not idempotent, so a repaint that replays the open
