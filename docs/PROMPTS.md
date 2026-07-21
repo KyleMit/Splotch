@@ -52,40 +52,54 @@ a sun in the background.
 For the pen/crayon brush-type buttons (siblings of the eraser and magic-brush buttons in the Actions
 Panel). The app tints the icon's barrel to the active drawing color at runtime — the same
 `fill="currentColor"` mechanism as `line-weight.svg` — so the colorable region must stay one flat
-solid color the winner can be vectorized from. Attach the existing-icons reference sheet
-(`artifacts/icon-candidates/pen-crayon/` renders it live) and run the prompt twice: once as PEN,
-once as CRAYON. A hand-drawn SVG first pass (also tinted via currentColor) lives on that same
-artifact page.
+solid color the winner can be vectorized from. Written for ChatGPT image generation: attach the
+existing-icons reference sheet (`artifacts/icon-candidates/pen-crayon/` renders it live) and run the
+prompt twice — once with every `{… | …}` choice resolved to the PEN option, once to the CRAYON
+option. A hand-drawn SVG first pass (also tinted via currentColor) lives on that same artifact page.
 
 ```md
-The attached image shows the current tool icons from a toddler drawing app: a paintbrush drawing
-squiggles, a pink eraser, and a rainbow magic brush. Generate 9 variations of a {PEN | CRAYON} icon
-that belongs to this same family, laid out in a 3x3 grid on a plain white background.
+The attached image shows the current tool icons from Splotch, a drawing app for toddlers: a
+paintbrush drawing squiggles, a pink eraser with a cream band, and a rainbow magic brush.
 
-Style: premium toddler app aesthetic, playful flat vector illustration, soft paper-cut sticker feel,
-large rounded geometric forms, thick silhouettes, minimal detail, clean color blocking, no outlines,
-no gradients, no gloss, no texture, no drop shadows.
+Create ONE square image containing a 3x3 grid of 9 different {PEN | CRAYON} icon options for this
+app, on a plain white background with even spacing between cells. Each cell is a genuinely different
+design option, not the same drawing repeated. No text, letters, numbers, labels, watermarks, or grid
+lines anywhere.
 
-Composition: one {pen | crayon} per tile, drawn at a 45-degree angle with the tip pointing to the
-bottom-left (as if actively drawing), centered with generous margins, chunky enough to stay readable
-at 60px.
+STYLE (match the attached reference icons): premium toddler app aesthetic, playful flat vector
+illustration, soft paper-cut sticker feel, large rounded geometric forms, thick silhouettes, minimal
+detail, clean color blocking, no outlines, no gradients, no gloss, no texture, no drop shadows.
 
-RECOLOR CONSTRAINT (important): the app recolors the {pen's barrel and tip | crayon's body and tip}
-to whatever color the child has selected, so paint that entire region in ONE perfectly flat solid
-color — use purple #AB71E1 as the placeholder — with no shading, highlights, or gradients on it. The
-fixed accents (the {cap band and grip collar | paper wrapper}) must use warm cream #ECDCBF with tan
-#C9B891 details, matching the eraser's cream body.
+COMPOSITION: exactly one {pen | crayon} per cell, drawn at a 45-degree angle with the tip pointing
+to the bottom-left (as if actively drawing), centered in its cell with generous margins, and chunky
+enough to stay readable when shrunk to a 60px app button.
 
-Vary across the 9 tiles: {chunky felt-tip marker, rounded sign pen, fountain-style nib, cap-on vs
-cap-off | classic wrapped crayon, stubby toddler crayon, taller slim crayon, worn rounded tip vs
-sharp cone tip}, some with and some without a drawn squiggle stroke trailing from the tip (the
-squiggle, if present, is also flat placeholder purple).
+MAKE IT UNMISTAKABLY A {PEN, NOT A CRAYON: every option needs a smooth plastic barrel with a defined
+nib or felt tip separated from the barrel by a cream collar, and longer, slimmer proportions.
+Absolutely no paper wrappers and no waxy cone tips | CRAYON, NOT A PEN OR MARKER: every option needs
+a waxy cone-shaped tip, a stubby wide body, and a cream paper wrapper label around the middle.
+Absolutely no caps, no nibs, no collars, no clips}. This icon will sit next to a sibling {crayon |
+pen} icon in the app, so the silhouette alone must tell them apart.
+
+RECOLOR CONSTRAINT (most important rule): the app recolors the {pen's barrel and tip | crayon's body
+and tip} to whatever color the child has picked, so that entire region must be ONE perfectly flat
+solid color — purple #AB71E1 — with zero shading, highlights, or gradients. The fixed accents (the
+{cream collar and cap band | cream paper wrapper}) must be warm cream #ECDCBF with tan #C9B891
+details, matching the eraser's cream body in the reference.
+
+VARY across the 9 cells: {felt-tip marker vs rounded sign pen vs fountain-style nib, cap-on vs
+cap-off, wider vs slimmer | classic wrapped crayon vs stubby toddler crayon vs taller slim crayon,
+worn rounded tip vs sharp cone tip, wider vs slimmer wrapper}, and make some cells include a drawn
+squiggle stroke trailing from the tip (the squiggle is the same flat purple #AB71E1).
 ```
 
 Lessons encoded above: the flat single-color barrel is what makes runtime tinting possible — a
 shaded/gradient barrel can't be recolored cleanly, so reject variations that shade it. Keep the
 cream accents fixed so the icon still reads as an object (not a color blob) for every palette color,
-including white-on-dark.
+including white-on-dark. The "unmistakably a pen / crayon" block exists because the two tools sit
+side by side in the Actions Panel — without it, image models drift both toward a generic
+marker-crayon hybrid. ChatGPT image gen also loves adding tile labels; the no-text line heads that
+off.
 
 ## Icons
 
