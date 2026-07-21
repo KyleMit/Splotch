@@ -104,10 +104,12 @@ let lastColorChangeTime = 0;
 // pixel-for-pixel the two-blit subtractive mix the pass's 'crayonFlush'
 // stamp will bake into the main canvas at close (see strokeOps' pass buffer)
 // — no visible snap. pointer-events: none, so input still lands on the canvas
-// beneath. (One nuance: over VIRGIN canvas the stamp mixes against nothing —
-// pure colour — while the darken layer previews against the CSS paper behind
-// the canvas; on the near-white light paper that is the same thing, in dark
-// mode a fresh pass previews darker until it closes.)
+// beneath. The canvas's OWNING wrapper must set `isolation: isolate`
+// (DrawingCanvas's .canvas-stack; the dev harness's .canvas-wrapper): it
+// confines the darken blend to the canvas's own pixels, so a pass over virgin
+// (transparent) canvas previews at the pure colour — without it the blend
+// sees the composited page, and on the DARK paper min(colour, near-black)
+// erased the bottom layer, leaving a faint 1-m-opacity stroke until stamp.
 let crayonOverlay: HTMLCanvasElement | null = null;
 let crayonOverlayCtx: CanvasRenderingContext2D | null = null;
 let crayonOverlayTop: HTMLCanvasElement | null = null;

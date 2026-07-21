@@ -193,6 +193,59 @@ test('the initial purple pen uses crayon buildup in the full app', async ({ page
   expect(second.count).toBeLessThan(first.count * 1.4);
 });
 
+test('a crayon stroke previews at its true colour MID-stroke in dark mode', async ({ page }) => {
+  // The open pass lives on the engine's overlay canvases until it stamps. The
+  // bottom overlay previews the darken mix via mix-blend-mode, which composites
+  // against everything behind it — and on the DARK paper min(colour, near-black)
+  // erased the blend layer, leaving only the 45%-opacity top layer: strokes
+  // looked faint until pass close. The canvas + overlays are now isolated into
+  // one blending group, so the preview mixes against the canvas's own pixels
+  // (transparent where virgin → pure colour). Screenshot mid-drag (pointer
+  // still down — nothing stamped) and assert full-strength purple is on screen.
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await gotoApp(page);
+
+  // Structural pin: the overlays and canvas share an isolated stacking group.
+  const isolation = await page.evaluate(() => {
+    const stack = document.getElementById('drawingCanvas')!.parentElement!;
+    return { isolation: getComputedStyle(stack).isolation, children: stack.children.length };
+  });
+  expect(isolation.isolation).toBe('isolate');
+  expect(isolation.children).toBeGreaterThanOrEqual(3); // canvas + two overlays
+
+  const box = (await page.locator('#drawingCanvas').boundingBox())!;
+  const y = box.y + 260;
+  await page.mouse.move(box.x + 200, y);
+  await page.mouse.down();
+  for (let i = 1; i <= 10; i++) {
+    await page.mouse.move(box.x + 200 + i * 12, y, { steps: 2 });
+  }
+  // Pointer still down: the whole stroke is an open pass on the overlays.
+  const shot = await page.screenshot({
+    clip: { x: box.x + 210, y: y - 12, width: 100, height: 24 },
+  });
+  const fullColour = await page.evaluate(async (b64) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${b64}`;
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = img.width;
+    c.height = img.height;
+    const g = c.getContext('2d')!;
+    g.drawImage(img, 0, 0);
+    const d = g.getImageData(0, 0, c.width, c.height).data;
+    let n = 0;
+    // Full default purple is (171,113,225); the faint pre-fix preview over the
+    // dark paper peaked near (95,68,124) — b>190 cleanly separates them.
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 2] > 190 && d[i] > 130) n++;
+    }
+    return n;
+  }, shot.toString('base64'));
+  await page.mouse.up();
+  expect(fullColour).toBeGreaterThan(150);
+});
+
 // Issue #185: a press that starts on a swatch and drags onto the canvas selects
 // that color and becomes a live stroke — ink flows from where the pointer
 // crosses on, and releasing over the canvas commits it (no 100ms color-change

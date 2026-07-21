@@ -258,6 +258,10 @@
     left: 0;
     width: 300px;
     height: 300px;
+    /* Blend-isolate the canvas + the engine's crayon pass overlays, matching
+       DrawingCanvas's .canvas-stack — the darken preview must mix against the
+       canvas's own pixels, not whatever is behind the wrapper. */
+    isolation: isolate;
   }
 
   #engineCanvas {

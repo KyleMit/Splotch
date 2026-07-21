@@ -129,10 +129,13 @@ resume jump), so replay stamps — and therefore mixes — at exactly the live p
 order, keeping rebuilds byte-identical. Live, the open pass renders on **two stacked engine-owned
 overlay canvases** painted identically per op — the bottom with `mix-blend-mode: darken`, the top at
 CSS opacity `1 − m` — whose compositing reproduces the two-blit stamp precisely, so there is no
-visible snap at pass close, and the pointer-events-none overlays never intercept input. (One nuance:
-over virgin canvas the stamp mixes against nothing, while the live darken layer previews against the
-CSS paper behind the canvas — identical on the near-white light paper, darker in dark mode until the
-pass closes.)
+visible snap at pass close, and the pointer-events-none overlays never intercept input. The canvas
+and both overlays sit in a wrapper with **`isolation: isolate`**, which confines the darken blend to
+the canvas's own pixels: over virgin (transparent) canvas the preview shows the pure colour, exactly
+like the stamp. Without the isolation the blend composites against the page behind the canvas —
+invisible on the near-white light paper (`min(colour, white) = colour`) but on the dark paper
+`min(colour, near-black)` erased the bottom layer, leaving a faint `1 − m`-opacity stroke until the
+pass stamped (the dark-mode-only bug this paragraph's E2E screenshot test pins).
 
 Because a crayon op lives in the **same canvas, in draw order**, the correctness requirements fall
 out of machinery that already exists: undo/resize/export replay it like any op (ADR-0033/0034);
@@ -183,8 +186,8 @@ ships as the `CRAYON_DEFAULTS`. Production never calls the setter.
   rgb lerp goes grey; a multiply glaze went muddy-teal and penalised buildup). Same-colour overdraw
   is EXACT (`min(c,c)=c` — the constant-hue rule survives at full mix strength), and wax over blank
   paper stays fully opaque at the exact colour. The cost: the engine owns two small overlay canvases
-  for the open pass's live preview, whose darken layer previews darker over virgin paper in dark
-  mode until the pass closes.
+  for the open pass's live preview, and the canvas's owning wrapper must blend-isolate the stack
+  (`isolation: isolate`) so the preview mixes against the canvas's pixels, not the page behind it.
 * **+** Fully deterministic *and* undo-stable: the tooth field is fixed, the only per-pass variation
   is a stored seed, the tooth is binary, and crayon ops replay exactly as drawn — so the same
   drawing always produces the same pixels, byte-for-byte, including after a later stroke is undone.
