@@ -18,11 +18,13 @@
   // with `icon-color` so those filter rules can opt out (see ActionsPanel).
   const COLOR_ICONS = new Set([
     'camera',
+    'crayon',
     'eraser',
     'line-weight',
     'line-weight-eraser',
     'magic-brush',
     'more-colors',
+    'pen',
     'shapes',
     'sweep-icon',
     'undo',

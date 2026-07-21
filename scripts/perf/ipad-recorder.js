@@ -3,8 +3,9 @@
 // Inspector console attached to the iPad running the REAL app (e.g.
 // http://<mac-lan-ip>:4173/). It records EVERY pointer event on the page —
 // canvas strokes and UI-targeted events alike — plus pointer-capture
-// transitions and the UI actions it can recognize (color, stroke size, eraser,
-// undo, clear), into a JSON recording that serves two jobs:
+// transitions and the UI actions it can recognize (color, stroke size, brush
+// selection from the Brush Menu, undo, clear), into a JSON recording that
+// serves two jobs:
 //
 //   • Perf replay (`npm run perf:replay`): the canvas-targeted events give the
 //     harness REAL stroke data (real op counts, real pacing) instead of
@@ -188,15 +189,22 @@
   };
 
   // UI actions: recognize the app's known controls so a full session replays, not
-  // just the strokes. Best-effort — unrecognized taps are ignored.
+  // just the strokes. Best-effort — unrecognized taps are ignored. The brushes
+  // (pen/crayon/magic/eraser, ADR-0067) are entries in the Brush Menu flyout;
+  // each selection records as a `brush` action with the picked type, so a
+  // crayon- or magic-heavy session replays with the renderer that was actually
+  // measured on device. (Recordings from before the Brush Menu carry a legacy
+  // toggle-style `eraser` action instead; replay still honors it.)
   const onClick = (e) => {
     const el = e.target.closest?.(
-      '.color-swatch[data-color], #eraserButton, #undoButton, #clearButton, button[aria-label^="Size "]'
+      '.color-swatch[data-color], #penBrushButton, #crayonBrushButton, #magicBrushButton, #eraserButton, #undoButton, #clearButton, button[aria-label^="Size "]'
     );
     if (!el) return;
     if (el.matches('.color-swatch[data-color]')) recAction('color', el.getAttribute('data-color'));
-    else if (el.id === 'eraserButton')
-      recAction('eraser'); // toggle
+    else if (el.id === 'penBrushButton') recAction('brush', 'pen');
+    else if (el.id === 'crayonBrushButton') recAction('brush', 'crayon');
+    else if (el.id === 'magicBrushButton') recAction('brush', 'magic');
+    else if (el.id === 'eraserButton') recAction('brush', 'eraser');
     else if (el.id === 'undoButton') recAction('undo');
     else if (el.id === 'clearButton') recAction('clear');
     else if (el.getAttribute('aria-label')?.startsWith('Size '))

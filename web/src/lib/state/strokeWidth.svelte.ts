@@ -9,9 +9,10 @@ export const DEFAULT_SIZE = 3;
 // feel. Matching the pen exactly makes precise erasing frustrating.
 export const ERASER_SIZE_MULTIPLIER = 2;
 
-// Pen and eraser each remember their own level, persisted separately, so
-// switching tools restores the size the child last used for that tool.
-const PEN_SIZE_KEY = 'splotch-stroke-width-size'; // pen (existing key)
+// Drawing brushes (pen/crayon/magic) share one remembered level and the eraser
+// keeps its own, persisted separately, so switching tools restores the size the
+// child last used for that tool.
+const PEN_SIZE_KEY = 'splotch-stroke-width-size'; // drawing brushes (existing key)
 const ERASER_SIZE_KEY = 'splotch-eraser-width-size'; // eraser (independent)
 
 const SIZE_TO_PX: Record<number, number> = {
@@ -25,7 +26,6 @@ const SIZE_TO_PX: Record<number, number> = {
 export const strokeState = $state({
   penSize: readInt(PEN_SIZE_KEY, DEFAULT_SIZE, STROKE_SIZES),
   eraserSize: readInt(ERASER_SIZE_KEY, DEFAULT_SIZE, STROKE_SIZES),
-  menuOpen: false,
 });
 
 // Re-read the persisted pen/eraser levels into the live store after the durable
@@ -38,13 +38,13 @@ export function reloadStrokeWidth() {
 // The level for the tool that's currently active. Reads toolState so it stays
 // reactive inside $derived, $effect, and template expressions.
 export function activeStrokeSize() {
-  return toolState.eraser ? strokeState.eraserSize : strokeState.penSize;
+  return toolState.brush === 'eraser' ? strokeState.eraserSize : strokeState.penSize;
 }
 
 // Set the level for the active tool, persisting only that tool's value.
 export function setStrokeSize(size: number) {
   if (!STROKE_SIZES.includes(size)) return;
-  if (toolState.eraser) {
+  if (toolState.brush === 'eraser') {
     strokeState.eraserSize = size;
     writeInt(ERASER_SIZE_KEY, size);
   } else {

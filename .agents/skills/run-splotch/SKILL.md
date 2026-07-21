@@ -116,9 +116,10 @@ await page.waitForFunction(() => {
 await page.locator('button[aria-label="Expand controls"]').click();
 await page.locator('#undoButton').waitFor({ state: 'visible' });
 
-// Tools toggle, so select idempotently rather than clicking blindly.
-const magic = page.locator('#magicBrushButton');
-if ((await magic.getAttribute('aria-pressed')) !== 'true') await magic.click();
+// The brushes (pen, crayon, magic, eraser) live in the Brush Menu flyout:
+// open it via its trigger, then pick the entry (selection closes the menu).
+await page.locator('#brushButton').click();
+await page.locator('#magicBrushButton').click();
 ```
 
 > **Save the script file inside the repo, not the session scratchpad.** Node resolves
@@ -185,10 +186,11 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
   page.
 * **`--port` defaults to 5199**, not the usual 5173, to avoid clashing with a dev server you already
   have running. Pass `--port 5173` to reuse one, or `--keep` to leave the driver's own server up.
-* **The action drawer is collapsed by default**, so the tool buttons (magic brush, eraser, undo,
-  coloring, screenshot) aren't in the DOM until you click `button[aria-label="Expand controls"]`. A
-  custom script that goes straight for `#magicBrushButton` fails with "element is not visible" —
-  expand first (the E2E suite's `openDrawer` helper does the same).
+* **The action drawer is collapsed by default**, so the tool buttons (brush menu, undo, coloring,
+  screenshot) aren't visible until you click `button[aria-label="Expand controls"]`. The eraser and
+  magic brush are entries in the Brush Menu flyout, another level down — a custom script that goes
+  straight for `#magicBrushButton` fails with "element is not visible": expand the drawer, click
+  `#brushButton`, then the entry (the E2E suite's `openDrawer` + `pickBrush` helpers do the same).
 * **Clearing the canvas is a drag gesture, not a click.** `#clearButton` is wired to `dragToClear` —
   you have to press on it and drag past its accept threshold (`0.4 × min(innerWidth, innerHeight)`)
   toward the screen center, then release. A plain `.click()` does nothing.

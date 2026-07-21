@@ -3,7 +3,9 @@
 **Status:** Active — amended by ADR-0066 (2026-07): the pattern-fill-op design stands unchanged, but
 the undo/eraser/margin machinery it rides is framed below in replay terms (command log,
 simplification, keyframes); under snapshot undo those mechanisms are snapshots, the pending fold,
-and a permanent margin crop. See the amendment at the end. **Date:** 2026-07
+and a permanent margin crop. See the amendment at the end. Also amended by ADR-0067 (2026-07): the
+magic brush is selected from the Brush Menu (one `brush` axis) rather than a top-level toggle
+button; the rendering design is untouched. **Date:** 2026-07
 
 ## Context
 

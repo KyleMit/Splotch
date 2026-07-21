@@ -17,6 +17,7 @@
     settings,
   } from '$lib/state/settings.svelte';
   import { reloadStrokeWidth } from '$lib/state/strokeWidth.svelte';
+  import { reloadBrushType } from '$lib/state/tool.svelte';
   import { hydrateDurableStorage } from '$lib/storage';
   import { initNetwork } from '$lib/state/network.svelte';
   import { isNative } from '$lib/platform';
@@ -95,6 +96,7 @@
       if (restored) {
         reloadSettings();
         reloadStrokeWidth();
+        reloadBrushType();
         applyDeviceOrientationPreference();
       }
     });

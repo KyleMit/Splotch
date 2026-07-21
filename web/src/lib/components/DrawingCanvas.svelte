@@ -84,7 +84,7 @@
   );
 
   function updateEraserCursor(e: PointerEvent) {
-    if (!toolState.eraser) return;
+    if (toolState.brush !== 'eraser') return;
     // The canvas fills the container, so its cached client rect shares the
     // container's origin — reuse it instead of forcing another reflow per move.
     const rect = getCanvasRect();
@@ -98,7 +98,7 @@
   }
 
   function handlePointerDown(e: PointerEvent) {
-    if (toolState.eraser) {
+    if (toolState.brush === 'eraser') {
       updateEraserCursor(e);
       return;
     }
@@ -106,12 +106,12 @@
     brushRings[e.pointerId] = {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
-      magic: toolState.magic,
+      magic: toolState.brush === 'magic',
     };
   }
 
   function handlePointerMove(e: PointerEvent) {
-    if (toolState.eraser) {
+    if (toolState.brush === 'eraser') {
       updateEraserCursor(e);
       return;
     }
@@ -223,8 +223,9 @@
   });
 
   $effect(() => {
-    setEraserMode(toolState.eraser);
-    if (toolState.eraser) brushRings = {};
+    const erasing = toolState.brush === 'eraser';
+    setEraserMode(erasing);
+    if (erasing) brushRings = {};
     else hideEraserCursor();
   });
 
@@ -241,11 +242,11 @@
   });
 
   $effect(() => {
-    setMagicMode(toolState.magic);
+    setMagicMode(toolState.brush === 'magic');
   });
 
   $effect(() => {
-    setCrayonMode(!toolState.eraser && !toolState.magic);
+    setCrayonMode(toolState.brush === 'crayon');
   });
 
   // The overlay's line art is theme-aware: dark mode shows the page's CHALK
@@ -374,7 +375,7 @@
     <canvas
       bind:this={canvasEl}
       id="drawingCanvas"
-      class:erasing={toolState.eraser}
+      class:erasing={toolState.brush === 'eraser'}
       onpointerdown={handleCanvasPointerDown}
       onpointermove={handleCanvasPointerMove}
       onpointerenter={updateEraserCursor}

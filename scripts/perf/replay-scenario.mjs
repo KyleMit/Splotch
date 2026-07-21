@@ -163,6 +163,10 @@ function replayInPage({ events, recCanvas, sizePx, turbo }) {
   const raf = () => new Promise((res) => requestAnimationFrame(res));
   const E = window.__engine;
   let eraser = false;
+  let magic = false;
+  // Last ink brush (ADR-0067): what a color pick resumes. false = pen (the
+  // app's default), true = crayon.
+  let inkCrayon = false;
   let prevT = 0;
   let strokes = 0;
   let undos = 0;
@@ -214,9 +218,31 @@ function replayInPage({ events, recCanvas, sizePx, turbo }) {
         fire(e);
         if (e.type === 'pointerup' || e.type === 'pointercancel') snapPeak();
       } else if (e.kind === 'action') {
-        if (e.name === 'color') E.setColor(e.value);
-        else if (e.name === 'size') E.setStrokeWidth(sizePx[e.value] || 8);
-        else if (e.name === 'eraser') E.setEraserMode((eraser = !eraser));
+        if (e.name === 'color') {
+          // A color pick exits the eraser/magic brush and resumes the last ink
+          // brush (the app's selectInkBrush) — mirror it so post-pick strokes
+          // replay with the renderer the device actually ran. This also repairs
+          // legacy toggle-`eraser` recordings, whose color-exits-eraser was
+          // never replayed.
+          if (eraser || magic) {
+            eraser = false;
+            magic = false;
+            E.setEraserMode(false);
+            E.setMagicMode(false);
+            E.setCrayonMode(inkCrayon);
+          }
+          E.setColor(e.value);
+        } else if (e.name === 'size') E.setStrokeWidth(sizePx[e.value] || 8);
+        else if (e.name === 'brush') {
+          // Brush Menu selection (ADR-0067): idempotent, one action per pick.
+          eraser = e.value === 'eraser';
+          magic = e.value === 'magic';
+          if (e.value === 'pen' || e.value === 'crayon') inkCrayon = e.value === 'crayon';
+          E.setEraserMode(eraser);
+          E.setMagicMode(magic);
+          E.setCrayonMode(e.value === 'crayon');
+        } else if (e.name === 'eraser')
+          E.setEraserMode((eraser = !eraser)); // legacy pre-Brush-Menu recordings
         else if (e.name === 'undo') {
           snapPeak();
           undos++;

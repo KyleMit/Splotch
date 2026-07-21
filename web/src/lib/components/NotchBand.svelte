@@ -21,7 +21,7 @@
       insetLeft: layout.safeArea.left,
       insetRight: layout.safeArea.right,
       activeColor: colors.activeColor,
-      eraser: toolState.eraser,
+      eraser: toolState.brush === 'eraser',
       paperColor: PAPER_COLORS[resolvedTheme()],
     })
   );

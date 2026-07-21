@@ -10,7 +10,7 @@ import {
   getEraserWidthPx,
   reloadStrokeWidth,
 } from './strokeWidth.svelte';
-import { selectPen, selectEraser } from './tool.svelte';
+import { selectBrush } from './tool.svelte';
 
 const PEN_KEY = 'splotch-stroke-width-size';
 const ERASER_KEY = 'splotch-eraser-width-size';
@@ -20,7 +20,7 @@ beforeEach(() => {
   // Reset the live store + active tool to a known baseline for each test.
   strokeState.penSize = DEFAULT_SIZE;
   strokeState.eraserSize = DEFAULT_SIZE;
-  selectPen();
+  selectBrush('pen');
 });
 
 describe('getStrokeWidthPx', () => {
@@ -46,7 +46,7 @@ describe('getEraserWidthPx', () => {
 
 describe('setStrokeSize / activeStrokeSize', () => {
   it('writes the pen level to the pen key when the pen is active', () => {
-    selectPen();
+    selectBrush('pen');
     setStrokeSize(5);
     expect(strokeState.penSize).toBe(5);
     expect(activeStrokeSize()).toBe(5);
@@ -55,7 +55,7 @@ describe('setStrokeSize / activeStrokeSize', () => {
   });
 
   it('writes the eraser level to the eraser key when the eraser is active', () => {
-    selectEraser();
+    selectBrush('eraser');
     setStrokeSize(1);
     expect(strokeState.eraserSize).toBe(1);
     expect(activeStrokeSize()).toBe(1);
@@ -64,9 +64,9 @@ describe('setStrokeSize / activeStrokeSize', () => {
   });
 
   it('keeps pen and eraser levels independent', () => {
-    selectPen();
+    selectBrush('pen');
     setStrokeSize(2);
-    selectEraser();
+    selectBrush('eraser');
     setStrokeSize(5);
 
     expect(strokeState.penSize).toBe(2);
@@ -74,12 +74,12 @@ describe('setStrokeSize / activeStrokeSize', () => {
 
     // Switching tools surfaces that tool's own remembered level.
     expect(activeStrokeSize()).toBe(5); // eraser active
-    selectPen();
+    selectBrush('pen');
     expect(activeStrokeSize()).toBe(2); // pen active
   });
 
   it('ignores levels outside STROKE_SIZES and persists nothing', () => {
-    selectPen();
+    selectBrush('pen');
     setStrokeSize(3);
     setStrokeSize(7); // invalid
     setStrokeSize(0); // invalid

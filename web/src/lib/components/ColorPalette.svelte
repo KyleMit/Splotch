@@ -10,11 +10,17 @@
     themedSwatchColor,
   } from '$lib/state/colors.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { releaseAllPointers, setColor, setEraserMode, setMagicMode } from '$lib/drawing/engine';
+  import {
+    releaseAllPointers,
+    setColor,
+    setCrayonMode,
+    setEraserMode,
+    setMagicMode,
+  } from '$lib/drawing/engine';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
   import { dragColorToCanvas } from '$lib/actions/dragColorToCanvas';
   import { openColorPicker, buttonCenter } from '$lib/state/ui.svelte';
-  import { toolState, selectPen } from '$lib/state/tool.svelte';
+  import { toolState, selectInkBrush } from '$lib/state/tool.svelte';
   import { layout } from '$lib/state/layout.svelte';
   import { getRingColor } from '$lib/colorRing';
   import { onMount } from 'svelte';
@@ -24,6 +30,10 @@
   let swatchEls = $state<Record<string, HTMLButtonElement>>({});
 
   const dark = $derived(resolvedTheme() === 'dark');
+
+  // The selection ring hides while erasing (no ink is being laid down) and
+  // stays visible for every other brush, matching the pre-brush-menu behavior.
+  const erasing = $derived(toolState.brush === 'eraser');
 
   // A live theme flip (e.g. the OS switching while in system mode) must repaint
   // the Black swatch's ink — white on dark paper, black on light — even when the
@@ -70,7 +80,7 @@
   }
 
   function selectSwatch(hex: string, paint: string) {
-    selectPen();
+    selectInkBrush();
     selectPaletteColor(hex, paint);
     ringAnimateKey = hex + ':' + Date.now();
     releaseAllPointers();
@@ -80,21 +90,22 @@
   // selects like a tap, with two differences: the engine must be painting in
   // this swatch's color and tool from the stroke's very first dot — the
   // reactive bridges in DrawingCanvas ($effect → setColor/setEraserMode/
-  // setMagicMode) flush after this handler, so push directly here; they re-push
-  // the same values harmlessly — and no releaseAllPointers: the press already
-  // released everything (handlePaletteDown), and releasing again now would kill
-  // a stroke a sibling finger started during the drag.
+  // setMagicMode/setCrayonMode) flush after this handler, so push directly
+  // here; they re-push the same values harmlessly — and no releaseAllPointers:
+  // the press already released everything (handlePaletteDown), and releasing
+  // again now would kill a stroke a sibling finger started during the drag.
   function dragSelectSwatch(hex: string, paint: string) {
-    selectPen();
+    selectInkBrush();
     selectPaletteColor(hex, paint);
     ringAnimateKey = hex + ':' + Date.now();
     setEraserMode(false);
     setMagicMode(false);
+    setCrayonMode(toolState.brush === 'crayon');
     setColor(paint);
   }
 
   function selectCustomColor() {
-    selectPen();
+    selectInkBrush();
     selectCustomSwatch();
     openColorPicker(swatchEls[CUSTOM_SWATCH] ? buttonCenter(swatchEls[CUSTOM_SWATCH]) : null);
     releaseAllPointers();
@@ -137,11 +148,11 @@
     <button
       class="color-swatch"
       class:bonus
-      class:active={!toolState.eraser && colors.activeSwatch === hex}
+      class:active={!erasing && colors.activeSwatch === hex}
       class:ring-animate={ringAnimateKey?.startsWith(hex + ':')}
       data-color={hex}
       data-trim-rank={trimRank.get(hex)}
-      style="background-color: {shown}; {!toolState.eraser && colors.activeSwatch === hex
+      style="background-color: {shown}; {!erasing && colors.activeSwatch === hex
         ? `box-shadow: ${ringShadow(shown)}; --ring-color: ${getRingColor(shown)};`
         : ''}"
       aria-label={shown === hex ? label : 'White'}
@@ -155,13 +166,11 @@
 
   <button
     class="color-swatch gradient-swatch"
-    class:active={!toolState.eraser && colors.activeSwatch === CUSTOM_SWATCH}
-    class:ringed={!toolState.eraser &&
-      colors.activeSwatch === CUSTOM_SWATCH &&
-      colors.customColorSelected}
+    class:active={!erasing && colors.activeSwatch === CUSTOM_SWATCH}
+    class:ringed={!erasing && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected}
     data-color="custom"
     aria-label="Custom Color"
-    style={!toolState.eraser && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected
+    style={!erasing && colors.activeSwatch === CUSTOM_SWATCH && colors.customColorSelected
       ? `box-shadow: ${gradientRingShadow(colors.customColor)};`
       : ''}
     use:scribbleTap={selectCustomColor}
