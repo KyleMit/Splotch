@@ -1,6 +1,11 @@
 # ADR-0065: Crayon Brush — Textured Wax via Phase-Shifted Paper-Tooth Pattern Ops
 
-**Status:** Active **Date:** 2026-07
+**Status:** Active — amended by ADR-0066 (2026-07): snapshot undo replaced command replay, so the
+replay-determinism contract this ADR was built under narrows to "the commit fold must reproduce the
+live pixels." The RDP-bypass carve-out and the replay-cost consequence are moot (simplification and
+keyframing are deleted); the binary tooth is still required for intra-pass idempotence on the pass
+buffer, but the replay-era constraints against soft fractional-alpha tooth, per-stroke composited
+layers, and nondeterministic grain are lifted. **Date:** 2026-07
 
 ## Context
 

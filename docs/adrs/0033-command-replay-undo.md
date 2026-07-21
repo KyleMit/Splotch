@@ -1,7 +1,10 @@
 # ADR-0033: Command-Replay Undo (Single Baseline + Stroke Log)
 
-**Status:** Active (the "decimate points" alternative rejected below was later adopted in a
-different form — see ADR-0036) **Date:** 2026-06
+**Status:** Superseded by ADR-0066 (2026-07) — the crayon brush (ADR-0065) broke this design's
+economics: its commands can't be simplified (ADR-0036), so every multi-second crayon stroke
+keyframed (ADR-0035) with a 1–2 s commit hitch and undo depth collapsing to ~1. ADR-0066 reinstates
+pre-stroke snapshots with a tiered raster/blob memory design that keeps this ADR's memory win.
+**Date:** 2026-06
 
 ## Context
 

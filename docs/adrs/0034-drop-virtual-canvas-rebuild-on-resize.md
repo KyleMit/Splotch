@@ -1,6 +1,8 @@
 # ADR-0034: Drop the Virtual Canvas — Rebuild on Resize from the Baseline + Log
 
-**Status:** Active **Date:** 2026-06
+**Status:** Active — the decision (no virtual canvas; resize rebuilds from retained history)
+survives ADR-0066's reversal of ADR-0033; the rebuild is now one blit of the paper raster
+(`repaintAll`) instead of a baseline + command-log replay. **Date:** 2026-06
 
 ## Context
 
