@@ -287,7 +287,8 @@
   "overrides": {
     "@capacitor/assets": {
       "sharp": "$sharp"
-    }
+    },
+    "tar": "^7.5.19"
   },
   "browserslist": [
     "chrome >= 111",
