@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Pen &amp; crayon icon candidates — Splotch artifacts</title>
+<style>
+:root{
+  color-scheme: light dark;
+  --paper:#f5f3ee; --paper-2:#efece5; --card:#fdfbf6; --card-2:#f6f3ec;
+  --ink:#23212a; --muted:#6b6774; --faint:#948f9c;
+  --hair:#e6e1d8; --hair-strong:#d9d3c8;
+  --accent:#2f6fed; --accent-ink:#1e50c4; --accent-wash:#e8effe;
+  --gold:#b1780a;
+  --ok:#3f9d55; --warn:#e08a1e; --bad:#d24b3f;
+  --c-red:#ec534e; --c-orange:#f89c45; --c-yellow:#f9d24f;
+  --c-green:#8cc864; --c-blue:#62a2e9; --c-purple:#ab71e1; --c-pink:#f47cb0;
+  --shadow-sm:0 1px 2px rgba(30,28,40,.05);
+  --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
+  --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
+  --r-sm:9px; --r-md:16px; --r-lg:18px;
+  --shell:1160px;
+  --font: ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#131418; --paper-2:#0f1013; --card:#1d1f27; --card-2:#181a20;
+    --ink:#e9e7e2; --muted:#a8a4af; --faint:#807d89;
+    --hair:#34373f; --hair-strong:#464a55;
+    --accent:#7aa8ff; --accent-ink:#a9c6ff; --accent-wash:#1b2536;
+    --gold:#d9a441;
+    --ok:#5cc078; --warn:#e6a545; --bad:#e8695c;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+    --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme=light]{
+  color-scheme: light;
+  --paper:#f5f3ee; --paper-2:#efece5; --card:#fdfbf6; --card-2:#f6f3ec;
+  --ink:#23212a; --muted:#6b6774; --faint:#948f9c;
+  --hair:#e6e1d8; --hair-strong:#d9d3c8;
+  --accent:#2f6fed; --accent-ink:#1e50c4; --accent-wash:#e8effe; --gold:#b1780a;
+  --ok:#3f9d55; --warn:#e08a1e; --bad:#d24b3f;
+  --shadow-sm:0 1px 2px rgba(30,28,40,.05);
+  --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
+  --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
+}
+:root[data-theme=dark]{
+  color-scheme: dark;
+  --paper:#131418; --paper-2:#0f1013; --card:#1c1e24; --card-2:#191b20;
+  --ink:#e9e7e2; --muted:#a19da8; --faint:#797682;
+  --hair:#2b2e36; --hair-strong:#3a3e48;
+  --accent:#7aa8ff; --accent-ink:#a9c6ff; --accent-wash:#1b2536; --gold:#d9a441;
+  --ok:#5cc078; --warn:#e6a545; --bad:#e8695c;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--font); font-size:16px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent-ink); text-decoration:none}
+a:hover{text-decoration:underline}
+.shell{width:100%; max-width:var(--shell); margin:0 auto; padding:0 clamp(16px,4vw,44px)}
+
+/* ---- Masthead ------------------------------------------------------------ */
+.masthead{
+  position:relative; overflow:hidden;
+  background:
+    radial-gradient(120% 140% at 100% 0, color-mix(in srgb,var(--accent-wash) 55%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--card-2), var(--paper));
+  border-bottom:1px solid var(--hair);
+}
+.masthead .shell{padding-top:clamp(16px,3vw,26px); padding-bottom:clamp(20px,3.5vw,34px)}
+.topbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; min-height:34px}
+.brand{
+  display:inline-flex; align-items:center; gap:10px;
+  color:var(--ink); font-weight:700; letter-spacing:-.01em;
+}
+.brand:hover{text-decoration:none}
+.brand:hover .brand-name{color:var(--accent-ink)}
+.brand-name{font-size:15px; transition:color .12s}
+.brand-name .brand-sub{color:var(--muted); font-weight:600}
+.brand-name .brand-sub::before{content:"/"; margin:0 5px; color:var(--faint); font-weight:400}
+.crayons{display:inline-flex; gap:4px; flex:0 0 auto}
+.crayons i{display:block; border-radius:99px}
+.crayons-lg i{width:22px; height:7px}
+.crayons-sm i{width:15px; height:5px}
+.brand .crayons-lg i{width:16px; height:6px}
+
+.crumbs{margin-left:auto; display:flex; align-items:center; gap:2px; font-size:13px; color:var(--muted); flex-wrap:wrap}
+.crumbs a{color:var(--muted)}
+.crumbs a:hover{color:var(--accent-ink)}
+.crumbs .sep{color:var(--faint); margin:0 5px}
+.crumbs .here{color:var(--ink); font-weight:650}
+
+.masthead-body{margin-top:clamp(16px,3vw,26px); position:relative; z-index:1}
+.masthead h1{
+  font-size:clamp(1.85rem,4.4vw,2.7rem); line-height:1.03; margin:0;
+  letter-spacing:-.032em; text-wrap:balance; font-weight:800;
+}
+.tagline{color:var(--muted); max-width:58ch; margin:.55rem 0 0; font-size:clamp(1rem,1.4vw,1.08rem)}
+.masthead-deco{position:absolute; top:-8px; right:clamp(-20px,-1vw,0px); width:clamp(150px,20vw,240px); pointer-events:none; opacity:.14; filter:saturate(1.1); z-index:0}
+.masthead-deco svg{width:100%; height:auto; display:block}
+@media (prefers-color-scheme:dark){.masthead-deco{opacity:.2}}
+:root[data-theme=dark] .masthead-deco{opacity:.2}
+@media (max-width:640px){.masthead-deco{display:none}}
+.tagline b{color:var(--ink); font-weight:650}
+.tagline a{color:var(--accent-ink); text-decoration:underline; text-underline-offset:2px}
+.masthead .stat-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px}
+
+/* ---- Content ------------------------------------------------------------- */
+main{display:block}
+main .shell{padding-top:clamp(24px,4vw,40px); padding-bottom:clamp(48px,7vw,84px)}
+.section-head{display:flex; align-items:baseline; gap:10px; margin:clamp(30px,5vw,46px) 0 14px}
+.section-head:first-child{margin-top:0}
+.section-head h2{font-size:1.18rem; margin:0; letter-spacing:-.01em; font-weight:750}
+.section-head .desc{color:var(--muted); font-size:.9rem}
+.eyebrow{font-size:.72rem; text-transform:uppercase; letter-spacing:.12em; color:var(--gold); font-weight:700}
+
+/* chips / pills */
+.chip{
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+  font-size:.76rem; font-weight:600; padding:4px 11px; border-radius:999px;
+  background:var(--card); border:1px solid var(--hair); color:var(--muted);
+}
+.chip b{color:var(--ink); font-weight:700}
+.chip.accent{background:var(--accent-wash); border-color:transparent; color:var(--accent-ink)}
+.chip .dot{width:7px; height:7px; border-radius:99px; background:var(--accent)}
+
+/* card grid — each card carries a single collection --hue (a crayon color) that
+   tints its top edge and icon plaque; the full rainbow is reserved for the
+   masthead brand + footer so the motif stays a signature, not wallpaper. */
+.card-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(288px,1fr)); gap:clamp(14px,2vw,20px)}
+.card{
+  --hue:var(--accent); position:relative; display:flex; flex-direction:column;
+  background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+  box-shadow:var(--shadow-sm); overflow:hidden; transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+.card:hover{transform:translateY(-3px); box-shadow:var(--shadow-lg); border-color:color-mix(in srgb,var(--hue) 45%, var(--hair-strong))}
+.card > a.card-hit{position:absolute; inset:0; z-index:1}
+.card-top{height:5px; background:linear-gradient(90deg,var(--hue),color-mix(in srgb,var(--hue) 40%, transparent))}
+.card-body{padding:18px 18px 16px; display:flex; flex-direction:column; gap:9px; flex:1}
+.card-emoji{
+  width:46px; height:46px; border-radius:13px; display:grid; place-items:center;
+  background:color-mix(in srgb,var(--hue) 13%, var(--card-2));
+  border:1px solid color-mix(in srgb,var(--hue) 26%, var(--hair)); color:var(--hue);
+}
+.card-emoji svg{width:26px; height:26px; display:block}
+.card-emoji.is-emoji{font-size:24px}
+.card h3{margin:2px 0 0; font-size:1.14rem; letter-spacing:-.01em; font-weight:750}
+.card p{margin:0; color:var(--muted); font-size:.92rem; flex:1}
+.card-meta{margin-top:2px; font-size:.78rem; color:var(--faint)}
+.card-meta .kind{color:var(--muted); font-weight:650}
+.card-links{position:relative; z-index:2; display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:2px; font-size:.82rem}
+.card .go{position:relative; z-index:2; margin-top:4px; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; font-weight:700; color:var(--accent-ink); font-size:.9rem}
+.card:hover .go .arrow{transform:translateX(3px)}
+.go .arrow{transition:transform .14s ease}
+
+/* footer */
+.site-foot{border-top:1px solid var(--hair); background:var(--card-2)}
+.site-foot .shell{display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-top:22px; padding-bottom:26px; color:var(--muted); font-size:.85rem}
+.site-foot .crayons{opacity:.9}
+.site-foot p{margin:0}
+.site-foot a{color:var(--accent-ink); text-decoration:none}
+.site-foot a:hover{text-decoration:underline; text-underline-offset:2px}
+
+.empty{color:var(--muted); background:var(--card); border:1px dashed var(--hair-strong); border-radius:var(--r-md); padding:22px}
+code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42em; border-radius:5px; font-size:.88em}
+
+@media (max-width:560px){
+  .crumbs{width:100%; margin-left:0; margin-top:6px}
+  .card-grid{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .card,.go .arrow{transition:none}
+}
+
+/* page */
+
+.ref-row{display:flex; gap:18px; flex-wrap:wrap}
+.ref-tile{text-align:center; max-width:190px}
+.ref-tile .box{width:150px; height:150px; background:#fff; border-radius:26px;
+  box-shadow:var(--shadow-md); border:1px solid var(--hair); display:flex;
+  align-items:center; justify-content:center; padding:24px; margin:0 auto}
+.ref-tile svg{width:100%; height:100%}
+.ref-tile .cap{font-size:.8rem; color:var(--muted); margin-top:8px; line-height:1.35}
+.tint-table{overflow-x:auto; padding-bottom:6px}
+.tint-grid{display:grid; grid-template-columns:110px repeat(11, 62px); gap:8px; align-items:center; min-width:900px}
+.tint-grid .rowname{font-size:.82rem; font-weight:650}
+.tint-grid .rowname small{display:block; font-weight:500; color:var(--muted)}
+.tint-grid .colname{font-size:.68rem; color:var(--faint); text-align:center}
+.cell{width:58px; height:58px; background:#fff; border-radius:13px; padding:7px;
+  border:1px solid var(--hair); box-shadow:var(--shadow-sm)}
+.cell.dark{background:#3a3733}
+.cell svg{width:100%; height:100%}
+.prompt-block{background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+  padding:18px 20px; box-shadow:var(--shadow-sm); overflow-x:auto}
+.prompt-block pre{margin:0; font-size:.82rem; line-height:1.5; white-space:pre-wrap}
+.note{color:var(--muted); font-size:.9rem; max-width:72ch}
+</style>
+</head>
+<body>
+<header class="masthead">
+  
+  <div class="shell">
+    <div class="topbar">
+      <a class="brand" href="../../index.html"><span class="crayons crayons-lg" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span><span class="brand-name">Splotch<span class="brand-sub">Artifacts</span></span></a>
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="../../index.html">Artifacts</a><span class="sep">/</span><a href="">Icon candidates</a><span class="sep">/</span><span class="here" aria-current="page">Pen &amp; crayon</span></nav>
+    </div>
+    <div class="masthead-body">
+      <h1>Pen &amp; crayon icon candidates</h1>
+      <p class="tagline">A design pass at the two new stroke-type icons (siblings of the eraser and magic brush). The barrel is <b>fill="currentColor"</b> so the icon tints to the child’s active drawing color — the same mechanism as the line-weight icon.</p>
+      
+    </div>
+  </div>
+</header>
+<main><div class="shell">
+  <div class="section-head"><h2>Existing tool icons (style reference)</h2>
+    <span class="desc">flat spot illustrations, chunky rounded shapes, no outlines</span></div>
+  
+<div class="ref-row">
+  <div class="ref-tile"><div class="box" style="color:#AB71E1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 409 288"><g fill="none" stroke-width="2"><path stroke="#b56d73" d="M362.06 140.17q-8.31-5.25-17.37-9.1c-7.3-3.11-14.17-4.09-22.04-4.48" vector-effect="non-scaling-stroke"/><path stroke="#d08a14" d="M344.35 188.37q-1.46-2.5-4.05-4.39c-4.13-3.01-8.99-5.6-13.39-7.53q-10.81-4.75-22.61-2.09" vector-effect="non-scaling-stroke"/></g><path fill="#6d1fe3" d="M362.06 140.17q-8.31-5.25-17.37-9.1c-7.3-3.11-14.17-4.09-22.04-4.48q.68-3.55 1.2-5.28 12.49-41.39 27.14-86.92 3.6-11.19 4.71-13.37c4.57-8.96 13.36-15.33 23.57-15.34q17-.03 23.19 14.03c3.38 7.7 2.56 15.4-.52 22.89q-3.46 8.41-6.74 16.46-15.68 38.43-30.41 75.02-1.17 2.93-2.73 6.09"/><path fill="currentColor" d="m270.13 24.47.16.29a2.37 2.37 0 0 1-1.21 3.4c-6.12 2.32-12.25 5.8-17.54 7.61-4.09 1.4-10.62 4.07-14.18 5.19q-36.35 11.43-74.63 4.33-9.27-1.73-23.64-6.52-11.17-3.72-23.58-6.75-3.64-.89-13.97-2.18c-14.2-1.77-29.5.32-42.77 4.43-9.04 2.8-19.93 7.75-27.87 10.94a2.49 2.49 0 0 1-3.3-1.56l-.03-.11a2.94 2.93-20.2 0 1 1.66-3.59q15.31-6.44 29.19-10.77 12.95-4.03 24.33-4.95 5.57-.45 20.5.52 3.32.22 15.67 2.95c9.02 2 18.87 5.17 26.71 7.77 10.32 3.43 22.35 5.55 32.06 6.87 13.1 1.77 26.38.62 40.62-1.79 16.74-2.83 32.28-9.85 47.85-17.3a3.07 3.06-27.9 0 1 3.97 1.22M23.1 101.7l-.06-.17a4.59 4.59 0 0 1 2.77-5.77q7.54-2.78 23.2-8.48 7.84-2.86 18.94-5.1 21.13-4.27 42.72.1c7.91 1.6 15.12 4.23 22.9 6.43q2.19.62 16.63 6.1c3.15 1.2 10.29 2.51 16.21 3.74 20.94 4.34 43.61 2.09 63.64-4.04q11-3.37 26.92-11.07a3.95 3.94 64.2 0 1 5.27 1.84l.07.15a3.82 3.82 0 0 1-1.83 5.12q-.93.43-13.9 5.96c-25.74 10.99-54.25 14.63-81.83 9.79q-9.16-1.61-21.97-5.91-20.09-6.74-21.63-7.26-3.14-1.07-15.96-3.59-5.96-1.17-12.93-1.16-9.48.01-13.05.29c-7.2.58-13.41 2.43-22.39 4.99q-4.18 1.18-9.64 3.33-8.86 3.49-18.4 7.34a4.3 4.29 69.8 0 1-5.68-2.63"/><path fill="#fdba02" d="M322.65 126.59c7.87.39 14.74 1.37 22.04 4.48q9.06 3.85 17.37 9.1 3.65 4.44 1.63 9.72-6.38 16.67-12.27 33.5-1.76 5.03-7.07 4.98-1.46-2.5-4.05-4.39c-4.13-3.01-8.99-5.6-13.39-7.53q-10.81-4.75-22.61-2.09-3.39-4.59-1.35-10.17 4.04-11 9.95-28.09 1.71-4.93 3.2-6.55 2.5-2.71 6.55-2.96"/><path fill="currentColor" d="M18.7 156.64q1.42-1.86 4.17-3.02 11.12-4.7 25.4-9.37c16-5.23 33.16-7.97 49.65-5.98q11.25 1.36 19.51 3.85 9.02 2.72 27.4 9.54 30.49 11.3 62.02 5.27c13-2.49 24.54-7.32 36.93-13.63q2.38-1.22 5.7-1.32c7.01-.22 9.93 7.7 6.24 12.99q-1.2 1.72-4.84 2.88-2.43.78-9.39 3.96c-7.7 3.51-18.33 6.47-24.72 8.23q-1.39.38-9.64 1.83-26.34 4.64-51.68-1.5-6.63-1.6-17.02-5.46-5.36-2-16.86-5.98-9.67-3.35-22.17-5.03-23.86-3.19-47.57 5.97-13.62 5.26-20.27 8.21c-4.14 1.84-8.1 2.64-11.58-.04-3.69-2.83-4.06-7.78-1.28-11.4"/><path fill="#a25925" d="M344.35 188.37q5.61 11.32 6.12 19.89 1.17 19.84-8.47 36.77c-9.18 16.13-26.91 27.85-44.99 32.73q-10.93 2.95-21.39 3.2c-4.54.11-26.06.53-25.95-6.34q.05-3.01 2.05-4.18 5.81-3.37 7.23-4.96 6.7-7.47 9.05-16.23c1.43-5.32 2.37-12.47 2.35-18.08-.02-4.66.06-9.74.69-13.9q3.64-23.96 23.72-38 2.34-1.63 9.54-4.91 11.8-2.66 22.61 2.09c4.4 1.93 9.26 4.52 13.39 7.53q2.59 1.89 4.05 4.39"/><path fill="currentColor" d="M11.49 242.47c-9.8-7.24-5.67-21.91 4.98-25.74 12.93-4.66 27.61-10.23 41.88-13.4q24.5-5.47 49.53-.47c7.6 1.52 18.32 5.1 27.88 8.82 15.26 5.95 31.77 9.7 47.72 8.74q11.51-.68 26.88-4.98c6.76-1.89 14.82-5.4 21.12-7.95 5.23-2.12 10.42-1.84 15.02 1.57q7.45 5.51 4.46 15.53c-1.51 5.07-4.35 7.21-9.62 9.27q-17.04 6.65-28.01 9.71-33.23 9.25-66.23 1.06-8.69-2.15-26.64-9.2-10.15-3.98-15.99-5.16-9.15-1.85-16.78-2.14c-14.68-.57-29.53 3.1-43.57 8.47q-13.82 5.3-14.89 5.85c-6.9 3.54-12 4.26-17.74.02"/></svg></div>
+    <div class="cap"><b>line-weight</b> — stroke width button; squiggles tint via currentColor</div></div>
+  <div class="ref-tile"><div class="box"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 314 296"><path fill="none" stroke="#fc94ad" stroke-width="2" d="M220.47 204.18q-5.21-4.45-9.81-9.61c-3.39-3.8-6.47-6.38-9.63-9.62q-4.92-5.05-6.48-6.62-19.01-19.17-35.48-34.9-7.39-7.06-14.53-14.45c-4.09-4.24-8.31-7.67-12.21-11.78-4.93-5.19-11.08-10.66-16.62-16.25" vector-effect="non-scaling-stroke"/><path fill="#fb3675" d="M220.47 204.18q-5.21-4.45-9.81-9.61c-3.39-3.8-6.47-6.38-9.63-9.62q-4.92-5.05-6.48-6.62-19.01-19.17-35.48-34.9-7.39-7.06-14.53-14.45c-4.09-4.24-8.31-7.67-12.21-11.78-4.93-5.19-11.08-10.66-16.62-16.25q39.43-42.13 78.88-84.36 3.73-3.99 9.43-7.31c13.09-7.65 27.02-6.46 39.71 1.22q3.7 2.24 11.03 9.16 21.7 20.52 41.55 40.28 5.28 5.26 8.22 11.26c9.2 18.78 4.25 37.47-9.8 51.84q-4.72 4.82-6.54 6.84-25.04 27.67-45.19 49.54c-5.98 6.48-14.7 16.71-22.53 24.76"/><path fill="#ecdcbf" d="M220.47 204.18q-25.57 28.04-51.51 56.52-14.43 15.84-33.26 14.16c-8.47-.76-15.9-4.09-21.86-9.93Q93.63 245.16 70.8 222.2c-3.46-3.48-6.54-6.94-9.75-10.56-10.66-12.01-11.91-30.96-4.95-44.74q2.6-5.15 12.17-15.16 10.2-10.65 39.84-43.02.7-.76 3.94-3.75 2.05-1.88 3.66-4.02c5.54 5.59 11.69 11.06 16.62 16.25 3.9 4.11 8.12 7.54 12.21 11.78q7.14 7.39 14.53 14.45 16.47 15.73 35.48 34.9 1.56 1.57 6.48 6.62c3.16 3.24 6.24 5.82 9.63 9.62q4.6 5.16 9.81 9.61"/><ellipse fill="#fb3675" rx="18.22" ry="16.03" transform="rotate(-4.9 2939.478 -117.975)"/><ellipse fill="#fb3675" rx="17.55" ry="15.76" transform="rotate(-4.8 3310.057 -649.648)"/></svg></div>
+    <div class="cap"><b>eraser</b> — brush type, cream #ECDCBF body</div></div>
+  <div class="ref-tile"><div class="box"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1687 1863"><path fill="#d99f60" d="m1134.66 916.22-12.83-6.84a2.2 2.05 83.3 0 1-.67-.57q-1.25-1.63-3.89-1.74a3.37 3.35-33.9 0 1-.99-.19q-7.58-2.65-18.52-3.52c-19.48-1.56-44.36-4.5-60.09-6.06q-73.43-7.32-115.73-11.77-135.77-14.29-292.93-30.14-3.64-.37-25.61-2.71-11.86-1.27-24.35 3.13a2.55 2.34-53.8 0 1-.65.13l-1.83.13q-.42-.96-.4-1.57.54-16.71 4.47-34.53c6.21-28.14 23.16-51.92 49.82-63.2q3.59-1.52 13.39-4.42c25.06-7.43 49.16-22.07 62.16-45.35q5.89-10.56 10.1-21.69 4.17-11.05 6.43-23.04 4.19-22.25 3.96-48.77-.36-40.57-4.33-77.97-4.7-44.25-8.48-85.9c-1.12-12.3-1.89-25.78-2.52-37.06-2.31-41.49-.22-83.71 7.43-124.69q4.45-23.86 11.19-42.29 12.94-35.32 36.16-65.46 17.75-23.03 43.1-39.6 24.65-16.13 53.21-23.78c16.28-4.37 33.11-5.5 50.02-4.82 11.7.47 21.79 2.38 32.59 4.46q4.29.83 13.67 4.1c22.58 7.87 43.76 21.28 62.05 37.2q4.1 3.57 8.84 8.89 10.2 11.45 19.13 24.37 13.19 19.08 21.09 41.14c4.32 12.05 8.89 26.55 11.29 39.44q6.98 37.44 6.63 72.95-.24 24.52-3.65 53.5-2.42 20.61-9.04 52.86-13.1 63.83-30.11 124.18-3.19 11.33-11.93 49.51-3.01 13.15-6 34.54-2.83 20.18-1.65 34.94 2.34 29.24 13.49 52.52c5.56 11.6 15.39 24.22 26.55 32.86 9.94 7.68 16.31 11.35 28.7 18.9q20.66 12.59 31.74 32.48 8.73 15.66 11.54 33.59.71 4.52.76 9.8c.03 3.78.38 8.49 0 13.12q-1.15 14.34-3.31 28.94m-279.82-590.5q3.69 5.17 8.89 9.67 19.97 17.27 47.54 14.49c46.08-4.65 68.77-57.17 42.09-94.53-26.68-37.35-83.73-32.93-103.07 9.15q-11.57 25.18-1.71 49.67 2.57 6.38 6.26 11.55"/><path fill="#f24c7a" d="M385.68 1116.48c-3.03-.12-5.67-.05-8.58-.37q-19.52-2.13-39.23-8.01-34.91-10.4-67.78-28.68c-28.33-15.75-55.3-37.44-74.07-63.21-22.14-30.39-35.6-65.92-36.31-103.46q-.42-22.18 7.57-44.7 4.83-13.63 11.34-23.25c15.06-22.25 37.1-38.91 63-46.09q17.38-4.82 36.42-4.92c20.75-.11 41.48 7.18 57.14 20.92q5.68 5 10.53 12.09c20.35 29.78 22.06 65.41 25.26 101q2.84 31.61 11.64 61.45c2.91 9.88 7.47 20.07 10.61 28.09q8.52 21.72 22.1 42.82 2.13 3.31 5.16 11.61 5.55 15.23-.66 30.06c-5.2 12.42-22.25 15.12-34.14 14.65"/><path fill="#4891d3" d="M1347.22 1041.45c-10.1 6.32-19.31 9.46-31 6.12-11.1-3.17-17.29-14.2-18.43-25.35-1.16-11.36.11-23.46 1.6-34.07 3.42-24.24 8.31-48.59 15.53-70.71 10.48-32.14 27.03-62.31 50.72-86.6 36.76-37.67 97.81-52.17 141.79-16.23q10.8 8.83 17.7 20.75c10.22 17.69 16.76 38.23 16.57 58.49-.33 35.58-20.29 65.53-52.16 80.69q-11.82 5.62-18.62 8.15-17.52 6.51-44.47 15.75c-14.02 4.8-26.55 10.74-41.6 18.92-13.37 7.26-25.18 16.31-37.63 24.09"/><path fill="#8567cd" d="M1134.66 916.22q6.11 5.72 10.93 12.93 7.79 11.64 9.6 24.86.88 6.41.87 18.99-.01 35.75-.89 64c-.67 21.47-10.76 45.64-35.61 46.46a.6.59-64 0 0-.31.11q-.52.36-.11.76-18.26-1.98-36.31-3.03-8.62-.5-16.25-1.57-8.58-1.2-16.19-2.22l-94.25-9.33a.23.11-18.4 0 1-.07-.01q-3.2-.74-6.54-.81c-12.12-1.31-24.75-3.14-36.29-4.2q-19.41-1.78-38.46-3.43l-5.22-.65q-3.27-2.66-7.59-3.21-11.23-1.43-12.65-1.56-31.78-2.89-53.89-5.17-9.93-1.02-18.96-.53a.36.35-19.6 0 0-.27.56q.31.42 1.12.69-.8-.02-1.23-.28-3.12-.39-6.2-.84c-5.77-.83-11.55-.92-17.36-1.33l10.88.19a.15.14 2 0 0 .15-.13.12.12 0 0 0-.1-.13q-5.39-.72-10.78-.97-2.29-.11-10.78-.74-5.82-.44-11.67-.28-20.07-2.1-40.13-4.22-1.98-.21-2.47 1.06-8.69.02-13.48-1.12c-4.53-1.08-9.19-2.25-13.82-2.88q-11.51-1.58-17.12-2.53a.8.71-15.8 0 1-.39-.19q-.4-.34-.96-.4-9.44-.88-38.44-4.16-4.06-.46-6.36-.28c-7.63.59-14.6.43-22.72-1.06a.13.13 0 0 1-.11-.14v-.01a.17.17 0 0 1 .18-.16l9.55.36a.2.2 0 0 0 .2-.16v-.01a.23.23 0 0 0-.2-.25q-7.16-.8-14.36-1.57-1.78-.19-4.34.05-2.28.21-4.29.45-.26-1.52-2.82-2.41-2.89-1-3.6-1.4c-19.47-11.12-21.59-32.51-19.87-52.82q3.9-45.92 6.21-64.53c.76-6.09 2.96-14.94 5.72-20.86q6.8-14.57 19.98-23.77 2.31-1.61 8.88-5.11.49-.26 1.1-1.16l1.83-.13a2.55 2.34-53.8 0 0 .65-.13q12.49-4.4 24.35-3.13 21.97 2.34 25.61 2.71 157.16 15.85 292.93 30.14 42.3 4.45 115.73 11.77c15.73 1.56 40.61 4.5 60.09 6.06q10.94.87 18.52 3.52a3.37 3.35-33.9 0 0 .99.19q2.64.11 3.89 1.74a2.2 2.05 83.3 0 0 .67.57z"/><path fill="#f24c7a" d="M687.63 1042.19q-.14 3.7-1.1 7.31-5.61 21.08-14.04 51.02-4.87 17.31-9.21 30.15-6.21 18.35-10.75 29.63-11.77 29.29-16.19 39.56-7.8 18.12-20.01 40.77-.29.52-.52.82a.99.01-52.9 0 0-.59.79q-.56 1.81-7.29 13.47-17.69 30.66-35.59 54.89-1.54 2.08-2.89 3.66c-1.59 1.86-2.72 4.91-4.95 6.65a3.69 3.63.5 0 0-.61.59q-19.29 23.28-25.13 29.77-10.96 12.18-30.4 31.58-5.49 5.47-27.37 24.55c-18.41 16.06-36.44 29.49-56.39 43.43q-12.47 8.72-12.94 9.05-7.61 5.43-13.05 8.91-14.86 9.52-23.38 15.19-2.01 1.34-5.5 2.76a2.39 2.37-54.7 0 1-.91.16l-9.28-.33q-7.47-.15-13.68 1.52-19.07 5.12-33.12 7.31-39.97 6.25-78.42.15-35-5.54-66.14-23.92-30.63-18.08-49.17-46.63c-19.45-29.96-27.43-66.2-22.51-101.74q1.41-10.14 5.98-24.27 4.42-13.66 9.62-23.07 14.83-26.81 37.67-44.66 14.96-11.69 34.71-19.48 37.25-14.67 77.28-10.83c11.61 1.12 21.7 2.66 34.25 5.28q19.98 4.16 30.74 6.02c12.37 2.13 25.34 2.54 40 2.3q12.68-.21 20.92-1.51 34.53-5.5 63.24-22.44 11.83-6.98 26.45-18.49 12.58-9.92 23.41-22.18c25.32-28.67 43.05-63.04 53.31-99.62q2.83-10.1 5.52-19.89.21-.76 1.37-2.29 2.01-.24 4.29-.45 2.56-.24 4.34-.05 7.2.77 14.36 1.57a.23.23 0 0 1 .2.25v.01a.2.2 0 0 1-.2.16l-9.55-.36a.17.17 0 0 0-.18.16v.01a.13.13 0 0 0 .11.14c8.12 1.49 15.09 1.65 22.72 1.06q2.3-.18 6.36.28 29 3.28 38.44 4.16.56.06.96.4a.8.71-15.8 0 0 .39.19q5.61.95 17.12 2.53c4.63.63 9.29 1.8 13.82 2.88q4.79 1.14 13.48 1.12"/><path fill="#fe882c" d="m730.23 1045.35 18 1.76-4.21.56a.41.41 0 0 0-.06.8c10.03 2.86 20.78 3.32 31.24 3.42q-.36 5.98-1.62 11.7-.66 3.01-.98 5.48c-.64 4.93-1.57 9.32-1.96 13.79-.56 6.41-2.18 13.58-3.33 21.04q-3.62 23.45-5.43 32.62-.67 3.37-4.15 20.77c-5.2 25.95-11.6 51.34-19 78.16-3.57 12.91-8.57 26.96-12.28 39.31-2.45 8.18-6.04 16.71-9.89 27.32q-8.77 24.12-28.33 68c-2.08 4.69-3.42 8.62-5.66 12.86q-2.09 3.97-4.45 9.54c-2.5 5.9-6.22 12.86-8.67 18.18q-5.07 11-26.41 57.05-10.26 22.15-29.57 66.74c-5.75 13.27-10.18 26.43-11.86 40.57-.41 3.45-1.64 7.95-1.68 11.99q-.01 1.33-1.72 1.14c-11.92-1.68-22.21 7-30.96 14.87q-13.41 12.06-19.27 16.23c-24.71 17.57-54.43 30.31-84.68 34.71-30.08 4.38-62.35 2.97-89.07-12.96-15.06-8.97-28.77-23.17-34.41-39.98q-8.04-23.96-3.43-49.04 1.74-9.48 4.08-16.27 8.41-24.47 25.63-45.35a2.29 1.91-6.2 0 1 .27-.28l2.47-2.27a.5.5 0 0 0-.32-.86l-8.98-.38 9.28.33a2.39 2.37-54.7 0 0 .91-.16q3.49-1.42 5.5-2.76 8.52-5.67 23.38-15.19 5.44-3.48 13.05-8.91.47-.33 12.94-9.05c19.95-13.94 37.98-27.37 56.39-43.43q21.88-19.08 27.37-24.55 19.44-19.4 30.4-31.58 5.84-6.49 25.13-29.77a3.69 3.63.5 0 1 .61-.59c2.23-1.74 3.36-4.79 4.95-6.65q1.35-1.58 2.89-3.66 17.9-24.23 35.59-54.89 6.73-11.66 7.29-13.47a.99.01-52.9 0 1 .59-.79q.23-.3.52-.82 12.21-22.65 20.01-40.77 4.42-10.27 16.19-39.56 4.54-11.28 10.75-29.63 4.34-12.84 9.21-30.15 8.43-29.94 14.04-51.02.96-3.61 1.1-7.31.49-1.27 2.47-1.06 20.06 2.12 40.13 4.22"/><path fill="#f24c7a" d="m752.53 1047.41-4.3-.3-18-1.76q5.85-.16 11.67.28 8.49.63 10.78.74 5.39.25 10.78.97a.12.12 0 0 1 .1.13.15.14 2 0 1-.15.13z"/><path fill="#d99f60" d="M752.53 1047.41c5.81.41 11.59.5 17.36 1.33q3.08.45 6.2.84-.87 1.42-.89 2.31c-10.46-.1-21.21-.56-31.24-3.42a.41.41 0 0 1 .06-.8l4.21-.56z"/><path fill="#7cb86c" d="m869.56 1059.08-92.24-9.22q-.81-.27-1.12-.69a.36.35-19.6 0 1 .27-.56q9.03-.49 18.96.53 22.11 2.28 53.89 5.17 1.42.13 12.65 1.56 4.32.55 7.59 3.21"/><path fill="#fcc417" d="M776.09 1049.58q.43.26 1.23.28l92.24 9.22 5.22.65q.82 4.57.24 9.08-.79 6.14-.8 6.24-2.55 34.38-4.89 65.72-.23 3.08-.44 6.22-1.81 27.49-2.3 43.94a3.89 3.57 55.1 0 1-.11.82q-.48 1.92-.39 3.75.29 6.1-.35 11.58-.72 6.15-.65 11.39.13 10.96-.19 16.19a4.09 3.69 58 0 1-.13.74q-.59 1.99-.6 3.86-.04 9.64-.31 25.49c-.03 2 .28 4.24.28 6q-.02 16.26-.02 26.32.01 9.56.43 22.82.22 7.04.91 22.79.41 9.64.56 13.57.6 16.59 3.67 51.62c2.28 26.01 4.81 51.17 8.25 80.76q4.55 39.05 8.57 81.29c1.52 16.03 2.59 24.75 1.52 37.33q-.68 7.97-1.79 12.23-2.4 9.17-6.96 20.28-3.97 8.76-9.05 16.91-1.19 1.9-1.67 2.9-.77 1.62-1.67 2.86c-2.54 3.53-4.02 6.22-6.32 9-19.89 24.01-47.22 41.21-77.86 47.7-42.2 8.93-87.85 3.67-125.08-18.01q-10.24-5.96-21.03-15.98-26.72-24.83-34.29-60.66-3.59-17.03-3.18-32.95a1.34 1.31 61.6 0 1 .18-.63q.52-.91.27-2.11a.6.55-76.6 0 0-.17-.3q-.47-.45-1.2-.34 1.71.19 1.72-1.14c.04-4.04 1.27-8.54 1.68-11.99 1.68-14.14 6.11-27.3 11.86-40.57q19.31-44.59 29.57-66.74 21.34-46.05 26.41-57.05c2.45-5.32 6.17-12.28 8.67-18.18q2.36-5.57 4.45-9.54c2.24-4.24 3.58-8.17 5.66-12.86q19.56-43.88 28.33-68c3.85-10.61 7.44-19.14 9.89-27.32 3.71-12.35 8.71-26.4 12.28-39.31 7.4-26.82 13.8-52.21 19-78.16q3.48-17.4 4.15-20.77 1.81-9.17 5.43-32.62c1.15-7.46 2.77-14.63 3.33-21.04.39-4.47 1.32-8.86 1.96-13.79q.32-2.47.98-5.48 1.26-5.72 1.62-11.7.02-.89.89-2.31m21.373 5.746a.51.06-173.9 0 0 .5.114.51.06-173.9 0 0 .514-.006.51.06-173.9 0 0-.5-.114.51.06-173.9 0 0-.514.006"/><path fill="#d99f60" d="M797.463 1055.326a.51.06-173.9 0 1 .513-.006.51.06-173.9 0 1 .501.114.51.06-173.9 0 1-.513.006.51.06-173.9 0 1-.501-.114"/><path fill="#7cb86c" d="m949.53 1067.36 4.75.94h.03l11.1.92a.98.98 0 0 1 .8.56l1.62 3.52a2.89 2.78 31.3 0 1 .26.98q.43 4.92.26 10.47-.06 1.77.33 3.46a3.29 2.77-56 0 1 .07.66q.55 31.44 3.16 60.37.31 3.36 3.73 36.14 2.21 21.12 4.7 36.02 3.85 23.03 7.77 41.94 2.33 11.24 6.84 28.66 7.17 27.7 7.44 28.49.01.01 2.05 6.97 1.79 6.06 2.29 8.53.41 2.01 3.16 9.75 1.46 4.12 2.96 9.79 4.4 16.58 11.02 30.69 4.65 9.91 6.08 13.26 6.1 14.31 11.91 25.71a.23.23 0 0 0 .3.1l.01-.01a.35.34-25.5 0 0 .17-.47q-1.38-2.83-8.91-18.47-1.63-3.38-1.62-4.55a.19.18-62.7 0 1 .33-.11q2.32 3.31 3.4 5.78 8.73 20.03 14.23 29.58 5.88 10.2 10.68 18.69c1.21 2.15 3.08 4.73 4.77 6.76q1.47 1.77 3.55 5.03 11.93 18.62 17.94 26.79 1.35 1.84 7.72 10.43c5.34 7.2 11.53 14.14 17.03 21.32q.23.3 7.26 8.96.06.08.81 1.03 2.73 3.49 16.33 19.58 6.54 7.73 12.76 17.49 1.31 2.05 3.37 6.35.17.34.71.77a1.36 1.35-77.9 0 1 .48.75l.71 3.1a1.95 1.93-71.3 0 0 .36.74q1.46 1.86 1.31 3.54c2.2 6.77 3.17 14.12 4.02 20.87 2.87 22.62-3.52 45.7-16.01 64.41-16.51 24.75-43.7 39.65-72.22 46.45q-17.36 4.14-35.64 4.43c-46.29.76-90.03-17.44-118.28-54.68q-4.93-6.49-8.22-12.2-4.23-7.36-8-12.31-3.16-4.15-7.96-5.6-5.1-1.54-13.97.02 4.56-11.11 6.96-20.28 1.11-4.26 1.79-12.23c1.07-12.58 0-21.3-1.52-37.33q-4.02-42.24-8.57-81.29c-3.44-29.59-5.97-54.75-8.25-80.76q-3.07-35.03-3.67-51.62-.15-3.93-.56-13.57-.69-15.75-.91-22.79-.42-13.26-.43-22.82 0-10.06.02-26.32c0-1.76-.31-4-.28-6q.27-15.85.31-25.49.01-1.87.6-3.86a4.09 3.69 58 0 0 .13-.74q.32-5.23.19-16.19-.07-5.24.65-11.39.64-5.48.35-11.58-.09-1.83.39-3.75a3.89 3.57 55.1 0 0 .11-.82q.49-16.45 2.3-43.94.21-3.14.44-6.22 2.34-31.34 4.89-65.72.01-.1.8-6.24.58-4.51-.24-9.08 19.05 1.65 38.46 3.43c11.54 1.06 24.17 2.89 36.29 4.2"/><path fill="#66b5e1" d="M1050.39 1077.51q3.49 13.52 5.06 28.08.99 9.13 2.21 15.07 3.24 15.79 4.61 21.32 11.52 46.47 34.86 88.13 9.59 17.12 22.95 36.67 3.62 5.29 9.03 11.84 8.16 9.86 9.61 11.57 10.31 12.14 25.13 27 7.72 7.73 16.97 15.31 15.72 12.9 17.63 14.32 22.45 16.66 49.2 31.02 12.56 6.74 25.07 11.42 21.39 7.99 42.61 13.6 7.39 1.95 23.65 5.12 3.23.63 23.76 4.66 4.99.98 9.09 1.66 14.97 5.5 29.01 12.1 14.44 6.79 22.56 12.58c12.09 8.61 23.68 18.53 32.39 30.25 14.32 19.27 21.6 47.24 18.58 71.34-.92 7.34-1.99 15.34-4.47 22.76q-5.68 17.03-16.7 31.47-10.35 13.55-26.43 23.73-21.01 13.31-45.62 18.59-28.08 6.03-55.2 5.1c-7.43-.25-14.93-1.2-22.21-1.86q-5.05-.46-8.85-1.07c-38.82-6.28-76.62-19.99-109.88-41.2-5.3-3.37-11.81-7.43-18.07-8.96q-5.8-1.42-11.38-.76.15-1.68-1.31-3.54a1.95 1.93-71.3 0 1-.36-.74l-.71-3.1a1.36 1.35-77.9 0 0-.48-.75q-.54-.43-.71-.77-2.06-4.3-3.37-6.35-6.22-9.76-12.76-17.49-13.6-16.09-16.33-19.58-.75-.95-.81-1.03-7.03-8.66-7.26-8.96c-5.5-7.18-11.69-14.12-17.03-21.32q-6.37-8.59-7.72-10.43-6.01-8.17-17.94-26.79-2.08-3.26-3.55-5.03c-1.69-2.03-3.56-4.61-4.77-6.76q-4.8-8.49-10.68-18.69-5.5-9.55-14.23-29.58-1.08-2.47-3.4-5.78a.19.18-62.7 0 0-.33.11q-.01 1.17 1.62 4.55 7.53 15.64 8.91 18.47a.35.34-25.5 0 1-.17.47l-.01.01a.23.23 0 0 1-.3-.1q-5.81-11.4-11.91-25.71-1.43-3.35-6.08-13.26-6.62-14.11-11.02-30.69-1.5-5.67-2.96-9.79-2.75-7.74-3.16-9.75-.5-2.47-2.29-8.53-2.04-6.96-2.05-6.97-.27-.79-7.44-28.49-4.51-17.42-6.84-28.66-3.92-18.91-7.77-41.94-2.49-14.9-4.7-36.02-3.42-32.78-3.73-36.14-2.61-28.93-3.16-60.37a3.29 2.77-56 0 0-.07-.66q-.39-1.69-.33-3.46.17-5.55-.26-10.47a2.89 2.78 31.3 0 0-.26-.98l-1.62-3.52a.98.98 0 0 0-.8-.56l-11.1-.92h-.03l-4.75-.94q3.34.07 6.54.81a.23.11-18.4 0 0 .07.01z"/><path fill="#4891d3" d="M1119.14 1084.33q1.51 9.96 3.34 19.97 3.58 19.51 11.47 36.87 4.98 10.94 9.41 18.17c7.43 12.13 18.62 22.82 30.64 31.61q24.82 18.14 55.15 21.75 30.34 3.6 58.97-5.96 26.26-8.77 47.34-25.55 6.76-5.38 28.49-23.25 20.65-16.97 44.71-26.48c26.58-10.5 58.2-13.4 85.81-6.63q20.55 5.04 39.36 16.89c36.4 22.94 53.42 64.9 55.15 106.29q1.52 36.29-14.15 68.36c-7.47 15.3-19.57 31.89-32.89 43.49q-23.83 20.75-51.12 30.74-24.13 8.84-49.66 12.7-13.25 2.01-28.97 2.86c-14.19.77-27.11 3.7-40.36 8.14q-4.1-.68-9.09-1.66-20.53-4.03-23.76-4.66-16.26-3.17-23.65-5.12-21.22-5.61-42.61-13.6-12.51-4.68-25.07-11.42-26.75-14.36-49.2-31.02-1.91-1.42-17.63-14.32-9.25-7.58-16.97-15.31-14.82-14.86-25.13-27-1.45-1.71-9.61-11.57-5.41-6.55-9.03-11.84-13.36-19.55-22.95-36.67-23.34-41.66-34.86-88.13-1.37-5.53-4.61-21.32-1.22-5.94-2.21-15.07-1.57-14.56-5.06-28.08 7.61 1.02 16.19 2.22 7.63 1.07 16.25 1.57 18.05 1.05 36.31 3.03"/></svg></div>
+    <div class="cap"><b>magic-brush</b> — the "magical" brush type</div></div>
+</div>
+
+  <div class="section-head"><h2>Candidates, tinted to every palette color</h2>
+    <span class="desc">white ink shown on a dark tile</span></div>
+  <div class="tint-table"><div class="tint-grid"><div></div><div class="colname">Purple</div><div class="colname">Blue</div><div class="colname">Teal</div><div class="colname">Green</div><div class="colname">Yellow</div><div class="colname">Orange</div><div class="colname">Brown</div><div class="colname">Red</div><div class="colname">Pink</div><div class="colname">Black</div><div class="colname">White</div><div class="rowname">Pen A<small>Chunky felt-tip marker</small></div><div class="cell" style="color:#AB71E1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+    <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+    <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+    <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+    <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#62A2E9"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+    <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+    <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+    <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+    <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#4FC4C0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+    <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+    <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+    <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+    <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#8CC864"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+    <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+    <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+    <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+    <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#F9D24F"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+    <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+    <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+    <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+    <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#F89C45"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+    <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+    <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+    <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+    <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#B5835A"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+    <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+    <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+    <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+    <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#EC534E"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+    <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+    <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+    <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+    <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#F47CB0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+    <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+    <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+    <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+    <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#1A1A1A"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+    <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+    <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+    <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+    <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell dark" style="color:#FFFFFF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+    <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+    <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+    <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+    <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="rowname">Pen B<small>Rounded sign pen</small></div><div class="cell" style="color:#AB71E1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 12h10q7 0 7 7v39H36V19q0-7 7-7z"/>
+    <path fill="#ecdcbf" d="M36 58h24c0 7-4 10-6 13h-12c-2-3-6-6-6-13z"/>
+    <path fill="currentColor" d="M43 69h10c1 4 .5 8-1.5 11.5q-1.6 2.8-3.5 2.8t-3.5-2.8C42.5 77 42 73 43 69z"/>
+    <rect x="40" y="16" width="4" height="30" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#62A2E9"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 12h10q7 0 7 7v39H36V19q0-7 7-7z"/>
+    <path fill="#ecdcbf" d="M36 58h24c0 7-4 10-6 13h-12c-2-3-6-6-6-13z"/>
+    <path fill="currentColor" d="M43 69h10c1 4 .5 8-1.5 11.5q-1.6 2.8-3.5 2.8t-3.5-2.8C42.5 77 42 73 43 69z"/>
+    <rect x="40" y="16" width="4" height="30" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#4FC4C0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 12h10q7 0 7 7v39H36V19q0-7 7-7z"/>
+    <path fill="#ecdcbf" d="M36 58h24c0 7-4 10-6 13h-12c-2-3-6-6-6-13z"/>
+    <path fill="currentColor" d="M43 69h10c1 4 .5 8-1.5 11.5q-1.6 2.8-3.5 2.8t-3.5-2.8C42.5 77 42 73 43 69z"/>
+    <rect x="40" y="16" width="4" height="30" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#8CC864"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 12h10q7 0 7 7v39H36V19q0-7 7-7z"/>
+    <path fill="#ecdcbf" d="M36 58h24c0 7-4 10-6 13h-12c-2-3-6-6-6-13z"/>
+    <path fill="currentColor" d="M43 69h10c1 4 .5 8-1.5 11.5q-1.6 2.8-3.5 2.8t-3.5-2.8C42.5 77 42 73 43 69z"/>
+    <rect x="40" y="16" width="4" height="30" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#F9D24F"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 12h10q7 0 7 7v39H36V19q0-7 7-7z"/>
+    <path fill="#ecdcbf" d="M36 58h24c0 7-4 10-6 13h-12c-2-3-6-6-6-13z"/>
+    <path fill="currentColor" d="M43 69h10c1 4 .5 8-1.5 11.5q-1.6 2.8-3.5 2.8t-3.5-2.8C42.5 77 42 73 43 69z"/>
+    <rect x="40" y="16" width="4" height="30" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#F89C45"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 12h10q7 0 7 7v39H36V19q0-7 7-7z"/>
+    <path fill="#ecdcbf" d="M36 58h24c0 7-4 10-6 13h-12c-2-3-6-6-6-13z"/>
+    <path fill="currentColor" d="M43 69h10c1 4 .5 8-1.5 11.5q-1.6 2.8-3.5 2.8t-3.5-2.8C42.5 77 42 73 43 69z"/>
+    <rect x="40" y="16" width="4" height="30" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#B5835A"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 12h10q7 0 7 7v39H36V19q0-7 7-7z"/>
+    <path fill="#ecdcbf" d="M36 58h24c0 7-4 10-6 13h-12c-2-3-6-6-6-13z"/>
+    <path fill="currentColor" d="M43 69h10c1 4 .5 8-1.5 11.5q-1.6 2.8-3.5 2.8t-3.5-2.8C42.5 77 42 73 43 69z"/>
+    <rect x="40" y="16" width="4" height="30" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#EC534E"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 12h10q7 0 7 7v39H36V19q0-7 7-7z"/>
+    <path fill="#ecdcbf" d="M36 58h24c0 7-4 10-6 13h-12c-2-3-6-6-6-13z"/>
+    <path fill="currentColor" d="M43 69h10c1 4 .5 8-1.5 11.5q-1.6 2.8-3.5 2.8t-3.5-2.8C42.5 77 42 73 43 69z"/>
+    <rect x="40" y="16" width="4" height="30" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#F47CB0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 12h10q7 0 7 7v39H36V19q0-7 7-7z"/>
+    <path fill="#ecdcbf" d="M36 58h24c0 7-4 10-6 13h-12c-2-3-6-6-6-13z"/>
+    <path fill="currentColor" d="M43 69h10c1 4 .5 8-1.5 11.5q-1.6 2.8-3.5 2.8t-3.5-2.8C42.5 77 42 73 43 69z"/>
+    <rect x="40" y="16" width="4" height="30" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#1A1A1A"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 12h10q7 0 7 7v39H36V19q0-7 7-7z"/>
+    <path fill="#ecdcbf" d="M36 58h24c0 7-4 10-6 13h-12c-2-3-6-6-6-13z"/>
+    <path fill="currentColor" d="M43 69h10c1 4 .5 8-1.5 11.5q-1.6 2.8-3.5 2.8t-3.5-2.8C42.5 77 42 73 43 69z"/>
+    <rect x="40" y="16" width="4" height="30" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell dark" style="color:#FFFFFF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 12h10q7 0 7 7v39H36V19q0-7 7-7z"/>
+    <path fill="#ecdcbf" d="M36 58h24c0 7-4 10-6 13h-12c-2-3-6-6-6-13z"/>
+    <path fill="currentColor" d="M43 69h10c1 4 .5 8-1.5 11.5q-1.6 2.8-3.5 2.8t-3.5-2.8C42.5 77 42 73 43 69z"/>
+    <rect x="40" y="16" width="4" height="30" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="rowname">Pen C<small>Marker + drawn stroke</small></div><div class="cell" style="color:#AB71E1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+      <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+      <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+      <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+      <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#62A2E9"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+      <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+      <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+      <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+      <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#4FC4C0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+      <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+      <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+      <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+      <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#8CC864"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+      <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+      <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+      <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+      <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#F9D24F"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+      <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+      <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+      <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+      <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#F89C45"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+      <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+      <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+      <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+      <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#B5835A"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+      <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+      <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+      <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+      <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#EC534E"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+      <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+      <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+      <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+      <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#F47CB0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+      <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+      <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+      <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+      <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#1A1A1A"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+      <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+      <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+      <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+      <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell dark" style="color:#FFFFFF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+      <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+      <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+      <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+      <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="rowname">Crayon A<small>Classic wrapped crayon</small></div><div class="cell" style="color:#AB71E1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+    <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+    <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+    <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+    <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="39" y="11" width="4" height="7" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#62A2E9"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+    <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+    <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+    <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+    <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="39" y="11" width="4" height="7" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#4FC4C0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+    <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+    <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+    <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+    <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="39" y="11" width="4" height="7" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#8CC864"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+    <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+    <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+    <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+    <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="39" y="11" width="4" height="7" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#F9D24F"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+    <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+    <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+    <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+    <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="39" y="11" width="4" height="7" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#F89C45"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+    <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+    <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+    <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+    <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="39" y="11" width="4" height="7" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#B5835A"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+    <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+    <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+    <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+    <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="39" y="11" width="4" height="7" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#EC534E"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+    <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+    <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+    <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+    <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="39" y="11" width="4" height="7" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#F47CB0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+    <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+    <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+    <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+    <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="39" y="11" width="4" height="7" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#1A1A1A"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+    <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+    <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+    <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+    <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="39" y="11" width="4" height="7" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell dark" style="color:#FFFFFF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+    <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+    <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+    <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+    <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    <rect x="39" y="11" width="4" height="7" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="rowname">Crayon B<small>Crayon + drawn stroke</small></div><div class="cell" style="color:#AB71E1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+      <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+      <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+      <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+      <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+      <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#62A2E9"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+      <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+      <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+      <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+      <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+      <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#4FC4C0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+      <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+      <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+      <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+      <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+      <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#8CC864"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+      <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+      <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+      <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+      <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+      <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#F9D24F"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+      <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+      <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+      <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+      <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+      <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#F89C45"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+      <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+      <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+      <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+      <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+      <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#B5835A"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+      <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+      <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+      <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+      <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+      <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#EC534E"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+      <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+      <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+      <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+      <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+      <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#F47CB0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+      <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+      <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+      <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+      <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+      <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell" style="color:#1A1A1A"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+      <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+      <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+      <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+      <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+      <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="cell dark" style="color:#FFFFFF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="translate(24 2) scale(0.8)">
+    <g transform="rotate(45 48 48)">
+      <path fill="currentColor" d="M41 8h14q6 0 6 6v54H35V14q0-6 6-6z"/>
+      <path fill="currentColor" d="M35 68h26c0 5-3 8.5-6.5 11.5-3 2.5-5 5.5-6.5 9.5-1.5-4-3.5-7-6.5-9.5C38 76.5 35 73 35 68z"/>
+      <rect x="35" y="63.5" width="26" height="4" fill="#000" opacity=".12"/>
+      <rect x="32.5" y="26" width="31" height="22" rx="4" fill="#ecdcbf"/>
+      <rect x="32.5" y="30.5" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+      <rect x="32.5" y="41" width="31" height="2.5" fill="#c9b891" opacity=".8"/>
+    </g>
+  </g>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M10 84c8-12 14-13 18-4s12 8 17-3"/>
+</svg>
+</div><div class="rowname">Crayon C<small>Stubby chunky crayon</small></div><div class="cell" style="color:#AB71E1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M39 12h18q7 0 7 7v45H32V19q0-7 7-7z"/>
+    <path fill="currentColor" d="M32 64h32c0 6-4 10-8.5 13.5-3.7 2.9-5.5 6-7.5 10.5-2-4.5-3.8-7.6-7.5-10.5C36 74 32 70 32 64z"/>
+    <rect x="32" y="60" width="32" height="4" fill="#000" opacity=".12"/>
+    <rect x="29.5" y="24" width="37" height="22" rx="5" fill="#ecdcbf"/>
+    <rect x="37" y="15" width="5" height="8" rx="2.5" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#62A2E9"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M39 12h18q7 0 7 7v45H32V19q0-7 7-7z"/>
+    <path fill="currentColor" d="M32 64h32c0 6-4 10-8.5 13.5-3.7 2.9-5.5 6-7.5 10.5-2-4.5-3.8-7.6-7.5-10.5C36 74 32 70 32 64z"/>
+    <rect x="32" y="60" width="32" height="4" fill="#000" opacity=".12"/>
+    <rect x="29.5" y="24" width="37" height="22" rx="5" fill="#ecdcbf"/>
+    <rect x="37" y="15" width="5" height="8" rx="2.5" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#4FC4C0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M39 12h18q7 0 7 7v45H32V19q0-7 7-7z"/>
+    <path fill="currentColor" d="M32 64h32c0 6-4 10-8.5 13.5-3.7 2.9-5.5 6-7.5 10.5-2-4.5-3.8-7.6-7.5-10.5C36 74 32 70 32 64z"/>
+    <rect x="32" y="60" width="32" height="4" fill="#000" opacity=".12"/>
+    <rect x="29.5" y="24" width="37" height="22" rx="5" fill="#ecdcbf"/>
+    <rect x="37" y="15" width="5" height="8" rx="2.5" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#8CC864"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M39 12h18q7 0 7 7v45H32V19q0-7 7-7z"/>
+    <path fill="currentColor" d="M32 64h32c0 6-4 10-8.5 13.5-3.7 2.9-5.5 6-7.5 10.5-2-4.5-3.8-7.6-7.5-10.5C36 74 32 70 32 64z"/>
+    <rect x="32" y="60" width="32" height="4" fill="#000" opacity=".12"/>
+    <rect x="29.5" y="24" width="37" height="22" rx="5" fill="#ecdcbf"/>
+    <rect x="37" y="15" width="5" height="8" rx="2.5" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#F9D24F"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M39 12h18q7 0 7 7v45H32V19q0-7 7-7z"/>
+    <path fill="currentColor" d="M32 64h32c0 6-4 10-8.5 13.5-3.7 2.9-5.5 6-7.5 10.5-2-4.5-3.8-7.6-7.5-10.5C36 74 32 70 32 64z"/>
+    <rect x="32" y="60" width="32" height="4" fill="#000" opacity=".12"/>
+    <rect x="29.5" y="24" width="37" height="22" rx="5" fill="#ecdcbf"/>
+    <rect x="37" y="15" width="5" height="8" rx="2.5" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#F89C45"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M39 12h18q7 0 7 7v45H32V19q0-7 7-7z"/>
+    <path fill="currentColor" d="M32 64h32c0 6-4 10-8.5 13.5-3.7 2.9-5.5 6-7.5 10.5-2-4.5-3.8-7.6-7.5-10.5C36 74 32 70 32 64z"/>
+    <rect x="32" y="60" width="32" height="4" fill="#000" opacity=".12"/>
+    <rect x="29.5" y="24" width="37" height="22" rx="5" fill="#ecdcbf"/>
+    <rect x="37" y="15" width="5" height="8" rx="2.5" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#B5835A"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M39 12h18q7 0 7 7v45H32V19q0-7 7-7z"/>
+    <path fill="currentColor" d="M32 64h32c0 6-4 10-8.5 13.5-3.7 2.9-5.5 6-7.5 10.5-2-4.5-3.8-7.6-7.5-10.5C36 74 32 70 32 64z"/>
+    <rect x="32" y="60" width="32" height="4" fill="#000" opacity=".12"/>
+    <rect x="29.5" y="24" width="37" height="22" rx="5" fill="#ecdcbf"/>
+    <rect x="37" y="15" width="5" height="8" rx="2.5" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#EC534E"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M39 12h18q7 0 7 7v45H32V19q0-7 7-7z"/>
+    <path fill="currentColor" d="M32 64h32c0 6-4 10-8.5 13.5-3.7 2.9-5.5 6-7.5 10.5-2-4.5-3.8-7.6-7.5-10.5C36 74 32 70 32 64z"/>
+    <rect x="32" y="60" width="32" height="4" fill="#000" opacity=".12"/>
+    <rect x="29.5" y="24" width="37" height="22" rx="5" fill="#ecdcbf"/>
+    <rect x="37" y="15" width="5" height="8" rx="2.5" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#F47CB0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M39 12h18q7 0 7 7v45H32V19q0-7 7-7z"/>
+    <path fill="currentColor" d="M32 64h32c0 6-4 10-8.5 13.5-3.7 2.9-5.5 6-7.5 10.5-2-4.5-3.8-7.6-7.5-10.5C36 74 32 70 32 64z"/>
+    <rect x="32" y="60" width="32" height="4" fill="#000" opacity=".12"/>
+    <rect x="29.5" y="24" width="37" height="22" rx="5" fill="#ecdcbf"/>
+    <rect x="37" y="15" width="5" height="8" rx="2.5" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell" style="color:#1A1A1A"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M39 12h18q7 0 7 7v45H32V19q0-7 7-7z"/>
+    <path fill="currentColor" d="M32 64h32c0 6-4 10-8.5 13.5-3.7 2.9-5.5 6-7.5 10.5-2-4.5-3.8-7.6-7.5-10.5C36 74 32 70 32 64z"/>
+    <rect x="32" y="60" width="32" height="4" fill="#000" opacity=".12"/>
+    <rect x="29.5" y="24" width="37" height="22" rx="5" fill="#ecdcbf"/>
+    <rect x="37" y="15" width="5" height="8" rx="2.5" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div><div class="cell dark" style="color:#FFFFFF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M39 12h18q7 0 7 7v45H32V19q0-7 7-7z"/>
+    <path fill="currentColor" d="M32 64h32c0 6-4 10-8.5 13.5-3.7 2.9-5.5 6-7.5 10.5-2-4.5-3.8-7.6-7.5-10.5C36 74 32 70 32 64z"/>
+    <rect x="32" y="60" width="32" height="4" fill="#000" opacity=".12"/>
+    <rect x="29.5" y="24" width="37" height="22" rx="5" fill="#ecdcbf"/>
+    <rect x="37" y="15" width="5" height="8" rx="2.5" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
+</div></div></div>
+  <p class="note">Raw SVGs live beside this page in <code>assets/</code>. The cream accents
+  (#ECDCBF / #C9B891) match the eraser's body and stay fixed, so the icon still reads as an object
+  for every ink color — including white-on-dark.</p>
+
+  <div class="section-head"><h2>Hand-off prompt</h2>
+    <span class="desc">source of truth: docs/PROMPTS.md · run once as PEN, once as CRAYON</span></div>
+  <div class="prompt-block"><pre>The attached image shows the current tool icons from a toddler drawing app: a paintbrush drawing
+squiggles, a pink eraser, and a rainbow magic brush. Generate 9 variations of a {PEN | CRAYON} icon
+that belongs to this same family, laid out in a 3x3 grid on a plain white background.
+
+Style: premium toddler app aesthetic, playful flat vector illustration, soft paper-cut sticker feel,
+large rounded geometric forms, thick silhouettes, minimal detail, clean color blocking, no outlines,
+no gradients, no gloss, no texture, no drop shadows.
+
+Composition: one {pen | crayon} per tile, drawn at a 45-degree angle with the tip pointing to the
+bottom-left (as if actively drawing), centered with generous margins, chunky enough to stay readable
+at 60px.
+
+RECOLOR CONSTRAINT (important): the app recolors the {pen's barrel and tip | crayon's body and tip}
+to whatever color the child has selected, so paint that entire region in ONE perfectly flat solid
+color — use purple #AB71E1 as the placeholder — with no shading, highlights, or gradients on it. The
+fixed accents (the {cap band and grip collar | paper wrapper}) must use warm cream #ECDCBF with tan
+#C9B891 details, matching the eraser's cream body.
+
+Vary across the 9 tiles: {chunky felt-tip marker, rounded sign pen, fountain-style nib, cap-on vs
+cap-off | classic wrapped crayon, stubby toddler crayon, taller slim crayon, worn rounded tip vs
+sharp cone tip}, some with and some without a drawn squiggle stroke trailing from the tip (the
+squiggle, if present, is also flat placeholder purple).</pre></div>
+</div></main>
+<footer class="site-foot">
+  <div class="shell">
+    <span class="crayons crayons-sm" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span>
+    <p>Committed run outputs from the Splotch generators — see <code>artifacts/README.md</code>. · <a href="https://github.com/KyleMit/Splotch">GitHub</a> · <a href="../../index.html">All artifacts</a></p>
+  </div>
+</footer>
+</body>
+</html>

@@ -47,6 +47,46 @@ It should be a landscape aspect ratio of a purple dinosaur wearing a party hat w
 a sun in the background.
 ```
 
+## Stroke-type tool icons (pen, crayon)
+
+For the pen/crayon brush-type buttons (siblings of the eraser and magic-brush buttons in the Actions
+Panel). The app tints the icon's barrel to the active drawing color at runtime — the same
+`fill="currentColor"` mechanism as `line-weight.svg` — so the colorable region must stay one flat
+solid color the winner can be vectorized from. Attach the existing-icons reference sheet
+(`artifacts/icon-candidates/pen-crayon/` renders it live) and run the prompt twice: once as PEN,
+once as CRAYON. A hand-drawn SVG first pass (also tinted via currentColor) lives on that same
+artifact page.
+
+```md
+The attached image shows the current tool icons from a toddler drawing app: a paintbrush drawing
+squiggles, a pink eraser, and a rainbow magic brush. Generate 9 variations of a {PEN | CRAYON} icon
+that belongs to this same family, laid out in a 3x3 grid on a plain white background.
+
+Style: premium toddler app aesthetic, playful flat vector illustration, soft paper-cut sticker feel,
+large rounded geometric forms, thick silhouettes, minimal detail, clean color blocking, no outlines,
+no gradients, no gloss, no texture, no drop shadows.
+
+Composition: one {pen | crayon} per tile, drawn at a 45-degree angle with the tip pointing to the
+bottom-left (as if actively drawing), centered with generous margins, chunky enough to stay readable
+at 60px.
+
+RECOLOR CONSTRAINT (important): the app recolors the {pen's barrel and tip | crayon's body and tip}
+to whatever color the child has selected, so paint that entire region in ONE perfectly flat solid
+color — use purple #AB71E1 as the placeholder — with no shading, highlights, or gradients on it. The
+fixed accents (the {cap band and grip collar | paper wrapper}) must use warm cream #ECDCBF with tan
+#C9B891 details, matching the eraser's cream body.
+
+Vary across the 9 tiles: {chunky felt-tip marker, rounded sign pen, fountain-style nib, cap-on vs
+cap-off | classic wrapped crayon, stubby toddler crayon, taller slim crayon, worn rounded tip vs
+sharp cone tip}, some with and some without a drawn squiggle stroke trailing from the tip (the
+squiggle, if present, is also flat placeholder purple).
+```
+
+Lessons encoded above: the flat single-color barrel is what makes runtime tinting possible — a
+shaded/gradient barrel can't be recolored cleanly, so reject variations that shade it. Keep the
+cream accents fixed so the icon still reads as an object (not a color blob) for every palette color,
+including white-on-dark.
+
 ## Icons
 
 ```md

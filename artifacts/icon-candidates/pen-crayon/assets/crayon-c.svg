@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M39 12h18q7 0 7 7v45H32V19q0-7 7-7z"/>
+    <path fill="currentColor" d="M32 64h32c0 6-4 10-8.5 13.5-3.7 2.9-5.5 6-7.5 10.5-2-4.5-3.8-7.6-7.5-10.5C36 74 32 70 32 64z"/>
+    <rect x="32" y="60" width="32" height="4" fill="#000" opacity=".12"/>
+    <rect x="29.5" y="24" width="37" height="22" rx="5" fill="#ecdcbf"/>
+    <rect x="37" y="15" width="5" height="8" rx="2.5" fill="#fff" opacity=".35"/>
+  </g>
+</svg>

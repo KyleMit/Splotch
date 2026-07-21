@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(45 48 48)">
+    <path fill="currentColor" d="M43 10h10q7 0 7 7v43H36V17q0-7 7-7z"/>
+    <rect x="36" y="55" width="24" height="5" fill="#000" opacity=".12"/>
+    <path fill="#ecdcbf" d="M36 60h24l-4.5 12h-15z"/>
+    <path fill="currentColor" d="M43.5 70h9l3 11q.6 3-2 3h-11q-2.6 0-2-3z"/>
+    <rect x="40" y="14" width="4" height="26" rx="2" fill="#fff" opacity=".35"/>
+  </g>
+</svg>
