@@ -35,6 +35,16 @@ declare global {
         reduce?: boolean;
         split?: 'none' | 'corner';
       }): void;
+      setCrayonMode(active: boolean): void;
+      setCrayonParams(params: {
+        tile?: number;
+        octaves?: { cell: number; weight: number }[];
+        edge?: number;
+        bodyVariation?: number;
+        bodyVariationCell?: number;
+        passes?: { widthScale: number; coverage: number }[];
+      }): void;
+      getCrayonParams(): unknown;
       setScreenAngleOverride(angle: number | null): void;
       remount(): void;
       getViewState(): {

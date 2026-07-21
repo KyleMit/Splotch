@@ -12,6 +12,9 @@
     exportCanvasBlob,
     getUndoDebug,
     setSimplifyParams,
+    setCrayonMode,
+    setCrayonParams,
+    getCrayonParams,
     setScreenAngleOverride,
     getViewState,
     RESIZE_SETTLE_MS,
@@ -65,6 +68,11 @@
       exportCanvasBlob,
       getUndoDebug,
       setSimplifyParams,
+      // Crayon brush (ADR-0065): toggle the textured-wax mode and A/B its tooth
+      // knobs. The spec draws crayon strokes via strokeSync after setCrayonMode.
+      setCrayonMode,
+      setCrayonParams,
+      getCrayonParams,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).

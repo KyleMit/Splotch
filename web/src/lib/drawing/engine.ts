@@ -43,6 +43,7 @@ import {
   setColorSheet,
 } from './magicBrush';
 import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
+import { setCrayonOptions, getCrayonOptions, type CrayonOptions } from './crayonBrush';
 import {
   beginCommand,
   commandCount,
@@ -87,7 +88,15 @@ let currentColor = '';
 let currentLineWidth = 8;
 let eraserActive = false;
 let magicActive = false;
+let crayonActive = false;
 let lastColorChangeTime = 0;
+
+// A per-stroke seed stamped onto every crayon op, so the paper-tooth pattern is
+// phase-shifted per stroke (the source of wax buildup — ADR-0065) yet fully
+// replayable from stored op data. A monotonic counter guarantees consecutive
+// strokes differ even when drawn over the same spot; the value is stored on the
+// op, so replay is deterministic regardless of the counter's live position.
+let crayonSeedCounter = 1;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
 let onDrawStopCallback: (() => void) | null = null;
@@ -422,6 +431,8 @@ function renderStrokeStart(ps: PointerState) {
     color: ps.color,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    seed: ps.seed,
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -449,6 +460,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     lineWidth: ps.lineWidth,
     erase: ps.erase,
     magic: ps.magic,
+    crayon: ps.crayon,
+    seed: ps.seed,
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -494,6 +507,8 @@ interface PointerState {
   lineWidth: number;
   erase: boolean;
   magic: boolean;
+  crayon: boolean;
+  seed: number;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -582,6 +597,8 @@ function startDrawing(e: PointerEvent, adopted = false) {
     lineWidth,
     erase: eraserActive,
     magic: magicActive,
+    crayon: crayonActive,
+    seed: crayonActive ? crayonSeedCounter++ : 0,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -902,6 +919,20 @@ export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?
   setSimplifyOptions(params);
 }
 
+// Dev A/B seam (ADR-0065 tuning): override the crayon tooth/coverage/pass knobs
+// so one build can sweep render variants and the winner ships as the default.
+// Wired onto window.__engine only on the /dev/engine page; production never calls
+// it and keeps crayonBrush.ts's tuned defaults. After a change, replay so already
+// recorded crayon ops repaint with the new tooth.
+export function setCrayonParams(params: Partial<CrayonOptions>) {
+  setCrayonOptions(params);
+  if (ctx) replayAll(ctx);
+}
+
+export function getCrayonParams(): CrayonOptions {
+  return getCrayonOptions();
+}
+
 // --- Mount / unmount ---------------------------------------------------------
 
 export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
@@ -1037,6 +1068,14 @@ export function setEraserMode(active: boolean) {
 export function setMagicMode(active: boolean) {
   magicActive = active;
   if (active) ensureMagicSheet();
+}
+
+// Crayon brush on/off (ADR-0065). Like the eraser/magic it's a modifier the
+// engine just tracks and stamps onto each op; renderOp turns a crayon op's solid
+// colour into textured wax. Mutually exclusive with the eraser and magic brush
+// at the UI level.
+export function setCrayonMode(active: boolean) {
+  crayonActive = active;
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

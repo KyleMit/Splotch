@@ -5,6 +5,7 @@
 
 import type { PathSeg } from './strokeSimplify';
 import { sheetPatternFor } from './magicBrush';
+import { crayonPatternFor, getCrayonPasses } from './crayonBrush';
 
 // Each op is captured at the exact granularity it was rendered (one path op per
 // strokeSmoothSegments call, one dot op per stroke start). Live rendering is
@@ -16,6 +17,11 @@ import { sheetPatternFor } from './magicBrush';
 // (ADR-0043). Magic ops are otherwise ordinary members of the command log, so
 // undo, eraser (destination-out clears revealed pixels too), and later solid
 // strokes overriding them all fall out of the existing replay for free.
+// `crayon`, when true, lays the colour down as textured wax instead of a flat
+// fill (ADR-0065): the op shape is filled with the paper-tooth pattern from
+// crayonBrush.ts, phase-shifted by `seed` so overlapping same-colour strokes
+// build up (fill tooth) at a constant hue. `seed` is stored so replay is
+// deterministic; every op in one stroke shares it.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -25,6 +31,8 @@ export type StrokeOp =
       color: string;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      seed?: number;
     }
   | {
       kind: 'path';
@@ -43,6 +51,8 @@ export type StrokeOp =
       lineWidth: number;
       erase: boolean;
       magic?: boolean;
+      crayon?: boolean;
+      seed?: number;
     }
   | { kind: 'clear' };
 
@@ -63,20 +73,22 @@ export interface StrokeGroupCommand {
 
 // Stroke or dot the op's bare geometry onto a target using `paint` as the
 // fill/stroke style — a solid colour for a normal op, the sheet pattern for a
-// magic one.
+// magic one. `widthScale` shrinks a path op's line width / a dot's radius for a
+// crayon density pass (1 = the op's full size).
 function paintOpShape(
   target: CanvasRenderingContext2D,
   op: Extract<StrokeOp, { kind: 'dot' | 'path' }>,
-  paint: string | CanvasPattern
+  paint: string | CanvasPattern,
+  widthScale = 1
 ) {
   if (op.kind === 'dot') {
     target.fillStyle = paint;
     target.beginPath();
-    target.arc(op.x, op.y, op.radius, 0, Math.PI * 2);
+    target.arc(op.x, op.y, op.radius * widthScale, 0, Math.PI * 2);
     target.fill();
   } else {
     target.strokeStyle = paint;
-    target.lineWidth = op.lineWidth;
+    target.lineWidth = op.lineWidth * widthScale;
     target.beginPath();
     target.moveTo(op.startX, op.startY);
     for (const s of op.segs) {
@@ -84,6 +96,26 @@ function paintOpShape(
       else target.quadraticCurveTo(s.cx, s.cy, s.x, s.y);
     }
     target.stroke();
+  }
+}
+
+// Lay a crayon op down as textured wax: one pass per density band (widest first),
+// each filled with the paper-tooth pattern for the op's colour + seed. Opaque
+// where wax deposits, transparent in the tooth pits — so overlapping same-colour
+// strokes build up coverage without shifting hue (ADR-0065). No-op until the
+// tooth tile is buildable (a DOM canvas exists), matching the magic sheet's
+// decode-pending skip.
+function paintCrayon(
+  target: CanvasRenderingContext2D,
+  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
+) {
+  const seed = op.seed ?? 0;
+  const passes = getCrayonPasses();
+  target.globalCompositeOperation = 'source-over';
+  for (let i = 0; i < passes.length; i++) {
+    const pattern = crayonPatternFor(target, op.color, seed, i);
+    if (!pattern) continue;
+    paintOpShape(target, op, pattern, passes[i].widthScale);
   }
 }
 
@@ -114,6 +146,10 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     if (!pattern) return;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
+    return;
+  }
+  if (op.crayon && !op.erase) {
+    paintCrayon(target, op);
     return;
   }
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
