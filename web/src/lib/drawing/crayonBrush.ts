@@ -96,9 +96,9 @@ export interface CrayonOptions {
   // How much freshly deposited wax picks up the colour of ink already on the
   // paper beneath it: each deposited texel is pulled up to this fraction
   // toward the SUBTRACTIVE (multiply) product with the under-ink sampled from
-  // a once-per-stroke snapshot, applied at commit (see waxMixDeposit and the
-  // colour-mixing section below — the subtle hue pull settles at pen lift;
-  // coverage buildup stays live). Subtractive is what makes yellow over blue
+  // a once-per-stroke snapshot — applied live in throttled batches as the
+  // stroke progresses, then canonicalized at commit (see waxMixDeposit and
+  // the colour-mixing section below). Subtractive is what makes yellow over blue
   // lean GREEN, like real wax layers; the pull is weighted by how different
   // the two colours are, so same-colour buildup is an exact identity and
   // cannot darken or shift hue. 0 disables (the pure deposit).
@@ -482,9 +482,10 @@ export function crayonPatternFor(
 //     single source-atop, and blits the rect over the live deposits. Every
 //     replay loop applies the identical fixup with the identical simplified
 //     ops after the command's ops, so live-final and every rebuild agree on
-//     deposit values by construction. The visible trade: the (subtle) hue
-//     pull settles in at pen lift rather than mid-stroke; coverage buildup
-//     stays live.
+//     deposit values by construction. And because the fixup is idempotent,
+//     the engine also runs it live, throttled, over the ops painted since the
+//     last flush — the blend soaks in a beat behind the fingertip instead of
+//     snapping at pen lift, with no effect on any final byte.
 //
 // Cost control: renderOp maintains a per-target ink-occupancy grid (MIX_CELL
 // cells); the fixup is confined to the rect where the command's ops overlap

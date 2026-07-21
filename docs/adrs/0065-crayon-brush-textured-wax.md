@@ -151,8 +151,13 @@ correct construction restores purity:
   deposits' own alpha, so pits and surrounding old ink stay untouched), and blits the rect over the
   live render. Every replay loop applies the *identical* fixup with the *identical* simplified ops
   after the command's ops, so live-final and every rebuild agree on deposit values by construction —
-  pinned by a live-vs-remount byte comparison in E2E. The visible trade: the subtle hue pull settles
-  in at pen lift rather than mid-stroke; coverage buildup stays live.
+  pinned by a live-vs-remount byte comparison in E2E. And because the fixup is idempotent (it
+  re-renders deposits to pure colour and re-mixes them from the fixed snapshot), the engine ALSO
+  runs it live, throttled (~120 ms), over just the ops painted since the last flush — the blend
+  soaks in a beat behind the fingertip instead of snapping at pen lift, batch timing cannot change
+  any final byte, and the commit pass still canonicalizes from the simplified ops (pinned by an E2E
+  that measures the green shift while the pointer is still down and asserts lift moves the mean by
+  only fringe amounts).
 * **Cost scales with actual overlap, not with drawing.** renderOp maintains a per-target
   ink-occupancy grid (64 px cells, reset by clear ops, marked fully inked when a rebuild blits a
   baseline/keyframe raster it can't itemize); the grid is frozen at arm time so decisions see only

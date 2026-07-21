@@ -1555,6 +1555,79 @@ test('crayon deposits pick up a little of the ink underneath (yellow over blue l
   await page.evaluate(() => window.__engine.setCrayonParams({ colorMix: 0.4 }));
 });
 
+test('the colour mix soaks in LIVE, while the pointer is still down', async ({ page }) => {
+  // The blend must appear mid-stroke (throttled ~120ms behind the tip), not
+  // snap in at pen lift: hold the pointer down over a blue patch, keep it
+  // moving past the flush interval, and measure the yellow deposits BEFORE
+  // pointerup — they must already lean green.
+  const r = await page.evaluate(async () => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const ymid = Math.round(cv.height / 2);
+    const W = cv.width;
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setStrokeWidth(30);
+    E.setColor('#2c5faa');
+    const line = (x0: number, x1: number) => {
+      const p: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 40; i++) p.push({ x: x0 + ((x1 - x0) * i) / 40, y: ymid });
+      return p;
+    };
+    for (let dy = -12; dy <= 12; dy += 8) {
+      E.strokeSync(
+        line(20, W * 0.6).map((p) => ({ x: p.x, y: p.y + dy })),
+        'pen'
+      );
+    }
+    E.setColor('#f2c14e');
+    const rect = cv.getBoundingClientRect();
+    const ev = (type: string, x: number, y: number) =>
+      cv.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: 7,
+          pointerType: 'pen',
+          clientX: rect.left + x,
+          clientY: rect.top + y,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    const yellowStats = (x0: number, x1: number) => {
+      const d = g.getImageData(Math.round(x0), ymid - 8, Math.round(x1 - x0), 16).data;
+      let n = 0,
+        rr = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] === 255 && d[i] > 150 && d[i + 1] > 100) {
+          n++;
+          rr += d[i];
+        }
+      }
+      return { n, r: rr / n };
+    };
+    // Draw the left (over-blue) half of the yellow line, then WAIT past the
+    // flush interval while still down, wiggling to keep events flowing.
+    ev('pointerdown', 20, ymid);
+    for (let i = 1; i <= 20; i++) ev('pointermove', 20 + ((W * 0.5 - 20) * i) / 20, ymid);
+    await new Promise((res) => setTimeout(res, 200));
+    for (let i = 0; i < 4; i++) ev('pointermove', W * 0.5 + i * 3, ymid);
+    const during = yellowStats(W * 0.08, W * 0.45); // measured while still down
+    for (let i = 1; i <= 10; i++) ev('pointermove', W * 0.52 + (W * 0.4 * i) / 10, ymid);
+    ev('pointerup', W * 0.92, ymid);
+    const after = yellowStats(W * 0.08, W * 0.45);
+    const bare = yellowStats(W * 0.72, W * 0.9); // over blank paper
+    return { during, after, bare };
+  });
+  expect(r.during.n).toBeGreaterThan(200);
+  // Mid-stroke, the over-blue deposits are already visibly greener (red
+  // dropped) than deposits over bare paper…
+  expect(r.bare.r - r.during.r).toBeGreaterThan(12);
+  // …and pen lift does NOT snap them further: the commit pass only
+  // canonicalizes, so the mid-stroke and final means are close.
+  expect(Math.abs(r.after.r - r.during.r)).toBeLessThan(6);
+});
+
 test('a colour-mixed crayon scene replays and undoes exactly', async ({ page }) => {
   // The mix source is a per-stroke snapshot that every rebuild re-derives from
   // replay order, so a mixed scene must survive a remount at the exact pixel

@@ -335,11 +335,13 @@ export function replayAll(target: CanvasRenderingContext2D) {
   if (activeCommand) {
     // The re-armed mix source persists past this rebuild: when the target is
     // the visible canvas (a mid-stroke resize/undo), the still-live stroke
-    // keeps capturing against the re-derived pre-stroke state, and its commit
-    // fixup uses it. The fixup itself is NOT applied here — the open command
-    // is unsimplified and its mix lands at commit.
+    // keeps flushing live mixes against the re-derived pre-stroke state, and
+    // its commit fixup canonicalizes from the simplified ops as usual. Apply
+    // the fixup for the raw ops replayed here so the rebuilt canvas shows the
+    // same soaked-in blend the live canvas showed.
     prepareMixForCommand(target, activeCommand);
     for (const op of activeCommand.ops) renderOp(target, op);
+    applyCrayonMixFixup(target, activeCommand.ops);
   }
 }
 
