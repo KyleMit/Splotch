@@ -165,6 +165,7 @@ function replayInPage({ events, recCanvas, sizePx, turbo }) {
   let eraser = false;
   let prevT = 0;
   let strokes = 0;
+  let undos = 0;
 
   // Track the high-water mark of the snapshot stack, since a session that ends
   // on undo-to-empty would otherwise report 0/0 at the end. Snapshot after each
@@ -218,13 +219,33 @@ function replayInPage({ events, recCanvas, sizePx, turbo }) {
         else if (e.name === 'eraser') E.setEraserMode((eraser = !eraser));
         else if (e.name === 'undo') {
           snapPeak();
+          undos++;
           E.undo();
         } else if (e.name === 'clear') E.clearCanvas();
         await raf();
       }
     }
+    // Undos fire app-style above (not awaited), and deep blob-tier restores
+    // settle asynchronously — so drain the undo queue before resolving, or the
+    // tail engine.undo measures land after Tracing.end and vanish from the
+    // hot-path table. One measure lands per completed restore; a no-op undo
+    // (pressed on an empty stack) or a marks-less build never lands one, so a
+    // stall cap (matching undo-scenarios' per-step wait) keeps those moving.
+    if (undos > 0) {
+      const landed = () => performance.getEntriesByName('engine.undo', 'measure').length;
+      let seen = landed();
+      let lastProgress = performance.now();
+      while (landed() < undos && performance.now() - lastProgress < 5000) {
+        await raf();
+        const n = landed();
+        if (n > seen) {
+          seen = n;
+          lastProgress = performance.now();
+        }
+      }
+    }
     await raf();
-    return { events: events.length, strokes, peak };
+    return { events: events.length, strokes, undos, peak };
   })();
 }
 
