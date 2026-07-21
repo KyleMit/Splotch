@@ -98,18 +98,29 @@ active regardless of which deposit is selected):
 `npm run perf:undo -- --scenarios=crayon-squiggles,crayon-scribbles` (iPad-Pro viewport, 4× CPU
 throttle, software rendering — structure, not absolute gates), pattern vs `--crayon-dabs`:
 
-Pattern-deposit baseline (this container): `engine.draw` avg 0.37 ms/op on long squiggles and 1.18
-ms/op on reversal scribbles; commit max ~987 ms, dominated by the ~816 ms paper copy
-(`engine.snapshot` — the software renderer exaggerates full-canvas blits, ADR-0066); undo avg 84–125
-ms; history ≈ 110–120 MB analytic.
+| Metric (22 strokes × ~1200 ops)  | Pattern — squiggles | Pattern — scribbles | Dabs — squiggles | Dabs — scribbles |
+| -------------------------------- | ------------------- | ------------------- | ---------------- | ---------------- |
+| `engine.draw` avg /op            | 0.37 ms             | 1.18 ms             | 3.09 ms          | 4.74 ms          |
+| `engine.commit` max (stroke end) | 986.9 ms            | 974.2 ms            | **289.2 ms**     | **347.7 ms**     |
+| `engine.undo` avg / max per step | 83.7 / 379.9 ms     | 124.5 / 657.7 ms    | 112.6 / 757.5 ms | 178.8 / 796.3 ms |
+| Snapshot blob bytes (20 encoded) | 25.6 MB             | 35.9 MB             | 32.1 MB          | 52.0 MB          |
+| History memory (analytic)        | 110.4 MB            | 120.5 MB            | 116.7 MB         | 136.2 MB         |
 
-The dab-mode run of the same scenarios is **in progress at the time of writing and is the honest
-headline so far: it runs several times longer wall-clock than the pattern baseline**, falsifying the
-design's "dab stamping ≈ pattern-stroke cost" assumption at least under this harness. Suspects: the
-per-op scratch-layer punch, and the snapshot tier's lossless-WebP encodes on the dab texture's noisy
-fractional alpha (binary-alpha pattern content encodes far cheaper). The completed A/B numbers land
-in this section when the run finishes; the dab deposit stays behind the dev seam until they (and an
-on-device run) say otherwise.
+Readings (relative only — SwiftShader exaggerates canvas blits; absolutes want the on-device run):
+
+* **The blit-commit pays for itself**: dab commit max is ~3× *lower* than the pattern baseline — the
+  fold blits the pass rasters instead of re-rendering per-pass pattern fills.
+* **Live deposit is ~3–8× the pattern's per-op cost** (3.1–4.7 ms/op vs 0.4–1.2 ms at 4× throttle).
+  The design's "dab stamping ≈ pattern-stroke cost" assumption was optimistic; the budget call
+  (ADR-0065's ≲2 ms avg) is on the real-device run. One pathology was found and fixed en route: the
+  first implementation read the preview back out of the 2732² paper-space buffer per op, which
+  forces a full source-surface snapshot under software rendering — **~81 ms/op, ~200× the pattern
+  deposit** — resolved by compositing the op-sized punched layer onto every surface instead
+  (`compositeDabLayer`); never put a `drawImage` FROM a large freshly-painted canvas on the pointer
+  hot path.
+* **The noisy fractional-alpha texture inflates the snapshot tier**: blobs 1.25–1.45× larger, undo
+  steps ~1.4× slower (bigger lossless decodes), history +6–16 MB. WebKit's PNG fallback (ADR-0066's
+  open device gate) will amplify this — re-check the ≲150 MB gate on-device before promotion.
 
 ## Consequences
 
