@@ -127,7 +127,9 @@
   };
 
   // Every scenario must start from blank paper AND zero history, so each row's
-  // snapshot / undo-step counts equal exactly the stroke count in its label.
+  // snapshot / undo-step counts come only from its own strokes — 22 strokes
+  // against the depth-20 cap means every row reports 20 snapshots and drains
+  // 20 undo steps.
   // A bare clearCanvas() can't be the last reset step: a clear runs the full
   // pushCommand path (it IS an undoable action, engine.ts clearCanvas), so it
   // would leave one phantom snapshot that pads every count, dilutes the undo
@@ -186,23 +188,28 @@
     };
   }
 
+  // 22 strokes — two past the depth-20 cap (MAX_UNDO_STACK_SIZE, matching
+  // scripts/perf/undo-scenarios.mjs) — so history MB is measured with the
+  // stack full and the oldest-entry fold + shift overflow path runs on the
+  // real device.
+  const STROKES = 22;
   const SCENARIOS = [
     {
-      label: '12 long squiggles (~1200 ops)',
-      strokes: Array.from({ length: 12 }, (_, i) => longSquiggle(i % 6)),
+      label: `${STROKES} long squiggles (~1200 ops each)`,
+      strokes: Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6)),
     },
     {
-      label: '12 five-finger drags (~2400 ops)',
-      strokes: Array.from({ length: 12 }, (_, i) => multiGesture(i)),
+      label: `${STROKES} five-finger drags (~2400 ops each)`,
+      strokes: Array.from({ length: STROKES }, (_, i) => multiGesture(i)),
     },
     {
-      label: '12 crayon squiggles',
-      strokes: Array.from({ length: 12 }, (_, i) => longSquiggle(i % 6)),
+      label: `${STROKES} crayon squiggles`,
+      strokes: Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6)),
       crayon: true,
     },
     {
-      label: '12 crayon scribbles (pass splits)',
-      strokes: Array.from({ length: 12 }, (_, i) => scribble(i % 6)),
+      label: `${STROKES} crayon scribbles (pass splits)`,
+      strokes: Array.from({ length: STROKES }, (_, i) => scribble(i % 6)),
       crayon: true,
     },
   ];
