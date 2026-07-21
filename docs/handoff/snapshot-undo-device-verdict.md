@@ -18,9 +18,10 @@ byte-stable-replay tests). No UI changes. Don't delete replay before the verdict
 
 ## State
 
-* `feat/snapshot-undo` @ `581e869`, PR [#442](https://github.com/KyleMit/Splotch/pull/442) (base
-  `claude/splotch-stroke-texture-jye8jz` = PR 440's head `4a3da0f`). Mirrored to
-  `claude/resume-handoff-undo-snapshots-u7i9yo`. Once the 437→440 stack merges to main, rebase.
+* `feat/snapshot-undo` @ `5f9212f` (this packet's commit; last code commit `581e869`), PR
+  [#442](https://github.com/KyleMit/Splotch/pull/442) (base `claude/splotch-stroke-texture-jye8jz` =
+  PR 440's head `4a3da0f`). Mirrored to `claude/resume-handoff-undo-snapshots-u7i9yo`. Once the
+  437→440 stack merges to main, rebase.
 * Commits: `154f2fe` crayon perf scenarios · `23e1a57` snapshot-mode prototype · `d01f3c5`+`581e869`
   A/B harness + iPad driver + undo-queue pacing fix.
 * Touched: `web/src/lib/drawing/undoHistory.ts` (snapshot mode: paper canvas, depth-20 stack,
