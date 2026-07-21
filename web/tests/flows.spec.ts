@@ -15,8 +15,8 @@ async function gotoApp(page: Page, path = '/') {
 }
 
 // The action drawer is collapsed by default (drawerOpen=false), so its buttons
-// (undo, eraser, screenshot, AI, coloring) aren't rendered until the chevron is
-// tapped. Retrying the tap also rides out any hydration lag on the first click.
+// (brush menu, undo, screenshot, AI, coloring) aren't rendered until the chevron
+// is tapped. Retrying the tap also rides out any hydration lag on the first click.
 async function openDrawer(page: Page) {
   const undo = page.locator('#undoButton');
   if (await undo.isVisible().catch(() => false)) return; // already open (e.g. persisted)
@@ -66,6 +66,26 @@ async function openStrokeMenu(page: Page) {
     }
     await expect(sentinel).toBeVisible({ timeout: 1000 });
   }).toPass({ timeout: 10_000 });
+}
+
+// Open the Brush Menu flyout robustly and leave it open — same retry shape as
+// openStrokeMenu. The eraser and magic brush live in this flyout (they used to
+// be top-level action buttons), so selecting them goes through here.
+async function openBrushMenu(page: Page) {
+  const sentinel = page.locator('#penBrushButton');
+  await expect(async () => {
+    if (!(await sentinel.isVisible().catch(() => false))) {
+      await page.locator('#brushButton').click({ timeout: 1000 });
+    }
+    await expect(sentinel).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
+}
+
+// Select a brush from the Brush Menu by its entry id (e.g. '#eraserButton',
+// '#magicBrushButton'). Selecting closes the flyout.
+async function pickBrush(page: Page, id: string) {
+  await openBrushMenu(page);
+  await page.locator(id).click();
 }
 
 /** Drag a stroke through canvas-relative points with real mouse input. */
@@ -171,9 +191,11 @@ test('selecting a palette color activates it and paints in that color', async ({
   expect(px![2]).toBeGreaterThan(px![0]);
 });
 
-test('the initial purple pen uses crayon buildup in the full app', async ({ page }) => {
+test('the crayon brush lays textured strokes that build up in the full app', async ({ page }) => {
   await gotoApp(page);
   await expect(page.locator('button.color-swatch[data-color="#AB71E1"]')).toHaveClass(/active/);
+  await openDrawer(page);
+  await pickBrush(page, '#crayonBrushButton');
 
   const line = Array.from({ length: 15 }, (_, index) => ({ x: 240 + index * 20, y: 320 }));
   const region = { x: 220, y: 280, width: 320, height: 80 };
@@ -193,6 +215,29 @@ test('the initial purple pen uses crayon buildup in the full app', async ({ page
   expect(second.count).toBeLessThan(first.count * 1.4);
 });
 
+// The pen is the default brush: solid ink, no wax texture, no color mixing.
+// Its strokes are fully opaque on the first pass (no tooth to fill), so an
+// identical redraw changes nothing — the opposite signature of the crayon
+// buildup asserted above.
+test('the default pen lays solid ink with no crayon buildup', async ({ page }) => {
+  await gotoApp(page);
+  await expect(page.locator('button.color-swatch[data-color="#AB71E1"]')).toHaveClass(/active/);
+
+  const line = Array.from({ length: 15 }, (_, index) => ({ x: 240 + index * 20, y: 320 }));
+  const region = { x: 220, y: 280, width: 320, height: 80 };
+  await draw(page, line);
+  const first = await canvasInkStats(page, region);
+  await draw(page, line);
+  const second = await canvasInkStats(page, region);
+
+  expect(first.count).toBeGreaterThan(200);
+  // Solid fill: nearly every inked pixel is at full strength (only AA edges dip).
+  expect(first.strong).toBeGreaterThan(first.count * 0.6);
+  // Redrawing the same line adds no coverage and no buildup.
+  expect(second.alphaSum).toBeLessThan(first.alphaSum * 1.01);
+  expect(second.count).toBeLessThan(first.count * 1.01);
+});
+
 test('a crayon stroke previews at its true colour MID-stroke in dark mode', async ({ page }) => {
   // The open pass lives on the engine's overlay canvases until it stamps. The
   // bottom overlay previews the darken mix via mix-blend-mode, which composites
@@ -204,6 +249,8 @@ test('a crayon stroke previews at its true colour MID-stroke in dark mode', asyn
   // still down — nothing stamped) and assert full-strength purple is on screen.
   await page.emulateMedia({ colorScheme: 'dark' });
   await gotoApp(page);
+  await openDrawer(page);
+  await pickBrush(page, '#crayonBrushButton');
 
   // Structural pin: the overlays and canvas share an isolated stacking group.
   const isolation = await page.evaluate(() => {
@@ -551,7 +598,7 @@ test('a stylus tap on an action button has its touch stream cancelled (Scribble 
   await gotoApp(page);
   await openDrawer(page);
 
-  expect(await stylusTouchStartPrevented(page, '#eraserButton')).toBe(true);
+  expect(await stylusTouchStartPrevented(page, '#brushButton')).toBe(true);
 });
 
 // On iPadOS the guard's cancelled touchstart suppresses the tap's synthesized
@@ -563,6 +610,7 @@ test('action buttons activate on a pointer press alone, without a synthesized cl
 }) => {
   await gotoApp(page);
   await openDrawer(page);
+  await openBrushMenu(page);
 
   const eraser = page.locator('#eraserButton');
   await expect(eraser).toHaveAttribute('aria-pressed', 'false');
@@ -580,33 +628,28 @@ test('picking a color exits eraser mode', async ({ page }) => {
   await openDrawer(page);
 
   const eraser = page.locator('#eraserButton');
-  await expect(async () => {
-    await eraser.click({ timeout: 1000 });
-    await expect(eraser).toHaveAttribute('aria-pressed', 'true', { timeout: 1000 });
-  }).toPass({ timeout: 10_000 });
+  await pickBrush(page, '#eraserButton');
   await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
 
-  // Tapping a swatch should switch back to the pen (selectPen in handleSwatchUp).
+  // Tapping a swatch should switch back to the ink brush (selectInkBrush in
+  // handleSwatchUp).
   await page.locator('button.color-swatch[data-color="#EC534E"]').click();
   await expect(eraser).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#drawingCanvas')).not.toHaveClass(/erasing/);
 });
 
-// Issue #276: a toddler mashing the eraser button should keep erasing, not toggle
-// the tool off and on. Repeated taps are idempotent — you leave the eraser by
-// picking a color, not by tapping the eraser again.
-test('tapping the eraser repeatedly keeps it selected', async ({ page }) => {
+// Issue #276: a toddler mashing the eraser entry should keep erasing, not toggle
+// the tool off and on. Repeated selections are idempotent — you leave the eraser
+// by picking another brush or a color, not by tapping the eraser again.
+test('selecting the eraser repeatedly keeps it selected', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
 
   const eraser = page.locator('#eraserButton');
-  await expect(async () => {
-    await eraser.click({ timeout: 1000 });
-    await expect(eraser).toHaveAttribute('aria-pressed', 'true', { timeout: 1000 });
-  }).toPass({ timeout: 10_000 });
+  await pickBrush(page, '#eraserButton');
+  await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
 
-  await eraser.click();
-  await eraser.click();
+  await pickBrush(page, '#eraserButton');
   await expect(eraser).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#drawingCanvas')).toHaveClass(/erasing/);
 });
@@ -695,7 +738,7 @@ test('pen and eraser keep independent stroke sizes that persist across reload', 
   await page.locator('button[aria-label="Size 5"]').click();
 
   // Eraser → size 1 (the flyout re-labels to the eraser context).
-  await page.locator('#eraserButton').click();
+  await pickBrush(page, '#eraserButton');
   await openStrokeMenu(page);
   await page.locator('button[aria-label="Eraser size 1"]').click();
 
@@ -709,7 +752,7 @@ test('pen and eraser keep independent stroke sizes that persist across reload', 
   await expect(page.locator('button[aria-label="Size 5"]')).toHaveAttribute('aria-pressed', 'true');
 
   // Switch to the eraser — its independent size 1 is restored.
-  await page.locator('#eraserButton').click();
+  await pickBrush(page, '#eraserButton');
   await openStrokeMenu(page);
   await expect(page.locator('button[aria-label="Eraser size 1"]')).toHaveAttribute(
     'aria-pressed',
@@ -738,8 +781,35 @@ test('a persisted-open drawer, with a control toggled off, is correct at first p
   await expect(page.locator('#undoButton')).toBeVisible();
   await expect(page.locator('#coloringBookButton')).toBeVisible();
   // The control the parent switched off is fully hidden (display:none), even
-  // though it's in the DOM, and not focusable.
+  // though it's in the DOM: opening the Brush Menu shows the other brushes but
+  // never the eraser entry.
+  await openBrushMenu(page);
+  await expect(page.locator('#crayonBrushButton')).toBeVisible();
   await expect(page.locator('#eraserButton')).toBeHidden();
+});
+
+// The brush choice is a persisted user setting (default pen; the eraser is
+// deliberately excluded). The head script in app.html stamps [data-brush] on
+// <html> before paint so the Brush Button wears the right face with no flash.
+test('the picked brush persists across a reload and stamps the brush face pre-paint', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  // Default is the pen: no data-brush attribute, pen entry selected.
+  await expect(page.locator('html')).not.toHaveAttribute('data-brush');
+  await openBrushMenu(page);
+  await expect(page.locator('#penBrushButton')).toHaveAttribute('aria-pressed', 'true');
+
+  await pickBrush(page, '#crayonBrushButton');
+  await expect(page.locator('html')).toHaveAttribute('data-brush', 'crayon');
+
+  await page.reload();
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-brush', 'crayon');
+  await openBrushMenu(page);
+  await expect(page.locator('#crayonBrushButton')).toHaveAttribute('aria-pressed', 'true');
 });
 
 // On a phone-width portrait screen the stroke-width flyout used to open as a
@@ -1194,12 +1264,12 @@ test('the magic brush is always available and paints the coloring page colors', 
   await openDrawer(page);
 
   const magic = page.locator('#magicBrushButton');
+  await openBrushMenu(page);
   await expect(magic).toBeVisible(); // available even before a page is applied
 
   await applyFarmPage(page);
-  await expect(magic).toBeVisible();
 
-  await magic.click();
+  await pickBrush(page, '#magicBrushButton');
   await expect(magic).toHaveAttribute('aria-pressed', 'true');
 
   // Paint across the picture: the reveal should show many of the fill's fill
@@ -1244,7 +1314,7 @@ test('drawing shows a brush impact ring, rainbow-flavored for the magic brush', 
 
   // Magic brush: same ring, rainbow-flavored.
   const magic = page.locator('#magicBrushButton');
-  await magic.click();
+  await pickBrush(page, '#magicBrushButton');
   await expect(magic).toHaveAttribute('aria-pressed', 'true');
   await page.mouse.move(box.x + 150, box.y + 120);
   await page.mouse.down();
@@ -1351,7 +1421,7 @@ test('the magic brush reveals fills only, never the fill outlines (no double lin
   await gotoApp(page);
   await openDrawer(page);
   await applyFarmPage(page);
-  await page.locator('#magicBrushButton').click();
+  await pickBrush(page, '#magicBrushButton');
 
   // Sweep across the picture, crossing many black outlines (clouds, cattails,
   // duck, water). Before the outline-masking fix the reveal painted the fill's
@@ -1392,7 +1462,7 @@ test('the magic brush paints the letterbox margin by extending the edge colour',
   await gotoApp(page);
   await openDrawer(page);
   await applyFarmPage(page);
-  await page.locator('#magicBrushButton').click();
+  await pickBrush(page, '#magicBrushButton');
 
   // Hug the far-left edge, well inside the letterbox band, sweeping top to bottom.
   await draw(page, [
@@ -1444,7 +1514,7 @@ test('the magic brush paints the rotation-lock letterbox margin', async ({ page 
   // The wide paper stays, lifted into the letterboxed sheet with top/bottom margins.
   await expect(page.locator('.paper-sheet.paper-lifted')).toBeVisible();
 
-  await page.locator('#magicBrushButton').click();
+  await pickBrush(page, '#magicBrushButton');
   // Sweep along the very top of the canvas — inside the rotation-lock top margin.
   await draw(page, [
     { x: 40, y: 6 },
@@ -1462,8 +1532,7 @@ test('the magic brush reveals a rainbow gradient when no coloring page is applie
   await openDrawer(page);
 
   const magic = page.locator('#magicBrushButton');
-  await expect(magic).toBeVisible();
-  await magic.click();
+  await pickBrush(page, '#magicBrushButton');
   await expect(magic).toHaveAttribute('aria-pressed', 'true');
 
   // Drawing across the blank canvas reveals the pre-generated rainbow — a long
@@ -1507,7 +1576,7 @@ test('the eraser removes magic-brush strokes and later colors override them', as
   await openDrawer(page);
   await applyFarmPage(page);
 
-  await page.locator('#magicBrushButton').click();
+  await pickBrush(page, '#magicBrushButton');
   // A diagonal that crosses several fill regions, so the reveal is real ink.
   const line = [
     { x: 120, y: 120 },
@@ -1520,13 +1589,13 @@ test('the eraser removes magic-brush strokes and later colors override them', as
 
   // Eraser wipes magic pixels like any other — dragging back along the stroke
   // removes most of it.
-  await page.locator('#eraserButton').click();
+  await pickBrush(page, '#eraserButton');
   await draw(page, line);
   await expect.poll(() => opaqueCount(page)).toBeLessThan(revealed / 2);
 
   // A solid color drawn afterward overrides the reveal: paint magic, then a
   // single palette color on top, and confirm that flat color is present.
-  await page.locator('#magicBrushButton').click(); // re-select magic (clears eraser)
+  await pickBrush(page, '#magicBrushButton'); // re-select magic (clears eraser)
   await draw(page, line);
   const red = page.locator('.color-swatch[data-color="#EC534E"]');
   await red.click();

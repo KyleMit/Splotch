@@ -77,7 +77,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `state/canvas.svelte.ts`        | Thin `$state` object bridging the imperative engine's callbacks (`canUndo`, `canvasEmpty`) into Svelte reactivity.                                                                                                                                                                                                                                                                                                         |
 | `state/colors.svelte.ts`        | Active color selection and the full palette.                                                                                                                                                                                                                                                                                                                                                                               |
 | `state/strokeWidth.svelte.ts`   | Stroke width levels and eraser size multiplier.                                                                                                                                                                                                                                                                                                                                                                            |
-| `state/tool.svelte.ts`          | Active tool (pen vs. eraser).                                                                                                                                                                                                                                                                                                                                                                                              |
+| `state/tool.svelte.ts`          | The active brush — one four-way axis (`pen \| crayon \| magic \| eraser`, ADR-0067), persisted as `splotch-brush-type` (default pen; the eraser is never persisted). Pen and crayon are the "ink brushes" that lay the active palette color; `selectInkBrush()` returns to the last one when a color pick or clear leaves the eraser/magic.                                                                                |
 | `state/settings.svelte.ts`      | User-configurable toggles (sounds, save-on-delete, screenshot button, coloring books, etc.) plus the appearance setting (light/dark/system), persisted via `storage.ts`.                                                                                                                                                                                                                                                   |
 | `state/appearance.svelte.ts`    | Reactive *resolved* theme ('light' \| 'dark'): the appearance setting combined with the live OS preference. For the few JS consumers of the resolved value (Notch Band paper color, export paper fill); CSS reads the `app.css` tokens instead.                                                                                                                                                                            |
 | `state/layout.svelte.ts`        | Viewport and orientation state.                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -175,17 +175,22 @@ media queries + the head-script stamp in `app.html`).
   * **Clear Accept Zone** - Bottom 15% of screen that turns red; drop Clear Button here to confirm
   * **Page Turn Overlay** - White overlay animation that sweeps across when clearing
 * **Actions Panel** - Bottom-corner panel hosting auxiliary controls
+  * **Brush Button** (`#brushButton`) - Wears the active brush's icon as its face and opens the
+    **Brush Menu**, a flyout listing the four brush types in order (ADR-0067): **Pen**
+    (`#penBrushButton`) — solid ink, the default; **Crayon** (`#crayonBrushButton`) — textured wax
+    (ADR-0065); **Magic Brush** (`#magicBrushButton`); **Eraser** (`#eraserButton`, hidden by the
+    Parent Center's Eraser toggle). The choice persists (`splotch-brush-type`; the eraser never
+    does), and pen/crayon share the active palette color. The magic brush is always available:
+    painting reveals the applied coloring page's colored fill (`.light.webp`) where the child
+    strokes — a `magic`-flagged op whose paint is a `CanvasPattern` of the fill (ADR-0043), or a
+    random rainbow on a blank canvas. Magic ops are otherwise ordinary ops in the active/pending
+    `StrokeGroupCommand`s: at commit they fold into the paper raster like any stroke (held in
+    `undoHistory.ts`'s `pendingCommands` while the fill is still decoding, so a blank sheet never
+    bakes in), and undo comes from the snapshot stack for free (ADR-0066).
   * **Undo Button** - Reverts the last drawing stroke
   * **Screenshot Button** - Saves the current drawing as a PNG (toggle in Parent Center)
   * **Stroke Width Button** - Opens a flyout for selecting line thickness (toggle in Parent Center)
   * **Coloring Book Button** - Opens the Coloring Book Picker (toggle in Parent Center)
-  * **Magic Brush Button** (`#magicBrushButton`) - Toggles the magic brush; shown only while a
-    coloring page is applied. Painting reveals that page's colored fill (`.light.webp`) where the
-    child strokes — a `magic`-flagged op whose paint is a `CanvasPattern` of the fill (ADR-0043).
-    Magic ops are otherwise ordinary ops in the active/pending `StrokeGroupCommand`s: at commit they
-    fold into the paper raster like any stroke (held in `undoHistory.ts`'s `pendingCommands` while
-    the fill is still decoding, so a blank sheet never bakes in), and undo comes from the snapshot
-    stack for free (ADR-0066).
 * **Coloring Book Picker** - Modal dialog for choosing a coloring page to use as a canvas overlay
   * **Coloring Book Grid** - First menu showing each coloring book by its cover image
   * **Coloring Book Tile** - Individual book cover button; tap to open that book's pages

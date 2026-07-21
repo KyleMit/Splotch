@@ -4,13 +4,9 @@
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colors, isWhite, isDarkInk } from '$lib/state/colors.svelte';
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
-  import {
-    strokeState,
-    STROKE_SIZES,
-    setStrokeSize,
-    activeStrokeSize,
-  } from '$lib/state/strokeWidth.svelte';
-  import { toolState, selectEraser, toggleMagic } from '$lib/state/tool.svelte';
+  import { STROKE_SIZES, setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte';
+  import { toolState, selectBrush, type BrushType } from '$lib/state/tool.svelte';
+  import type { CommonIconName } from './iconTypes';
   import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
   import { network } from '$lib/state/network.svelte';
@@ -32,9 +28,28 @@
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
 
+  let brushWrapperEl: HTMLDivElement | undefined = $state();
   let strokeWrapperEl: HTMLDivElement | undefined = $state();
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
   let aiBtnEl: HTMLButtonElement | undefined = $state();
+
+  // The two flyouts (Brush Menu, Stroke Width) share one open-state slot, so
+  // opening one closes the other and the outside-click handler below only ever
+  // watches a single wrapper.
+  let openFlyout = $state<'brush' | 'stroke' | null>(null);
+
+  const erasing = $derived(toolState.brush === 'eraser');
+
+  // The Brush Menu's entries, in presentation order. The eraser keeps its
+  // long-standing #eraserButton id (and the magic brush #magicBrushButton) from
+  // their days as top-level buttons — the Parent Center's data-off-eraser CSS
+  // and the E2E suite address them by id.
+  const BRUSH_OPTIONS: { brush: BrushType; icon: CommonIconName; label: string; id: string }[] = [
+    { brush: 'pen', icon: 'pen', label: 'Pen', id: 'penBrushButton' },
+    { brush: 'crayon', icon: 'crayon', label: 'Crayon', id: 'crayonBrushButton' },
+    { brush: 'magic', icon: 'magic-brush', label: 'Magic brush', id: 'magicBrushButton' },
+    { brush: 'eraser', icon: 'eraser', label: 'Eraser', id: 'eraserButton' },
+  ];
 
   // Orientation drives the landscape palette-clearing offset below, which needs
   // the measured palette width in JS. Everything else orientation-dependent here
@@ -134,6 +149,12 @@
     el.toggleAttribute('data-off-coloring', !settings.coloringBookEnabled);
     el.toggleAttribute('data-off-screenshot', !settings.screenshotEnabled);
     el.toggleAttribute('data-off-undo', !settings.undoButtonEnabled);
+    // The Brush Button's face is the active brush's icon. All four icons are in
+    // the DOM and CSS shows the one matching this attribute ({@html} icons
+    // can't swap during hydration — see .claude/rules/svelte.md), absent for
+    // the default pen so the raw prerendered HTML is already correct.
+    if (toolState.brush === 'pen') el.removeAttribute('data-brush');
+    else el.setAttribute('data-brush', toolState.brush);
   });
 
   // The stroke-size lines preview the ink you'll lay down, tinted via
@@ -145,27 +166,27 @@
   // A white brush color vanishes against the light icon buttons, so the brush
   // icon and stroke-weight lines get a black outline while white is active.
   // Never during erasing — the eraser icon carries its own (pink) coloring.
-  const whiteStroke = $derived(!toolState.eraser && isWhite(colors.activeColor));
+  const whiteStroke = $derived(!erasing && isWhite(colors.activeColor));
 
   // The dark-mode mirror: near-black ink vanishes against the dark cards, so it
   // gets a light outline there. The class applies in every theme; the keyline
   // color (--dark-ink-keyline) is transparent in light, so it only ever shows
   // in dark.
-  const darkStroke = $derived(!toolState.eraser && isDarkInk(colors.activeColor));
+  const darkStroke = $derived(!erasing && isDarkInk(colors.activeColor));
 
   function toggleDrawer() {
     const next = !settings.drawerOpen;
     setDrawerOpen(next);
     // Tidy up any open flyout as the controls tuck away.
-    if (!next) strokeState.menuOpen = false;
+    if (!next) openFlyout = null;
   }
 
   onMount(() => {
-    // Click outside closes stroke menu
+    // Click outside closes the open flyout
     const onDocPointerDown = (e: PointerEvent) => {
-      if (strokeState.menuOpen && strokeWrapperEl && !strokeWrapperEl.contains(e.target as Node)) {
-        strokeState.menuOpen = false;
-      }
+      if (!openFlyout) return;
+      const wrapper = openFlyout === 'brush' ? brushWrapperEl : strokeWrapperEl;
+      if (wrapper && !wrapper.contains(e.target as Node)) openFlyout = null;
     };
     document.addEventListener('pointerdown', onDocPointerDown);
 
@@ -202,29 +223,31 @@
     if (!canvasState.canvasEmpty) saveScreenshot();
   }
 
-  function handleStrokeBtnClick() {
-    strokeState.menuOpen = !strokeState.menuOpen;
+  function handleBrushBtnClick() {
+    openFlyout = openFlyout === 'brush' ? null : 'brush';
   }
 
-  function handleEraserClick() {
-    // Tapping the eraser keeps it selected rather than toggling off (issue #276):
-    // repeated taps are idempotent. The child leaves the eraser by picking a color
-    // (ColorPalette calls selectPen), which resumes drawing with that color.
-    selectEraser();
+  function handleStrokeBtnClick() {
+    openFlyout = openFlyout === 'stroke' ? null : 'stroke';
+  }
+
+  // Picking a brush keeps it selected rather than toggling off (issue #276):
+  // repeated taps are idempotent. The child leaves the eraser or magic brush by
+  // picking another brush here or a color (ColorPalette calls selectInkBrush),
+  // which resumes drawing with that color.
+  function handleBrushTypeClick(brush: BrushType) {
+    selectBrush(brush);
+    openFlyout = null;
   }
 
   function handleStrokeSizeClick(size: number) {
     setStrokeSize(size);
-    strokeState.menuOpen = false;
+    openFlyout = null;
   }
 
   function handleColoringBookClick() {
     if (!coloringBtnEl) return;
     openColoringBook(buttonCenter(coloringBtnEl));
-  }
-
-  function handleMagicClick() {
-    toggleMagic();
   }
 
   async function handleAiImageClick() {
@@ -255,28 +278,59 @@
        state is correct at first paint of the prerendered page. -->
   <div class="actions-drawer">
     <div class="actions-drawer-inner">
-      <div class="stroke-width-wrapper" bind:this={strokeWrapperEl}>
+      <!-- Brush Menu: the four brush types (pen, crayon, magic, eraser) behind
+           one trigger whose face is the active brush's icon. All four trigger
+           icons stay in the DOM and CSS shows the one matching [data-brush] on
+           <html> (seeded pre-paint by app.html, kept live by the publish
+           effect) — an {@html} icon swapped on client-only state would keep the
+           server-rendered SVG through hydration (.claude/rules/svelte.md). -->
+      <div class="flyout-wrapper brush-wrapper" bind:this={brushWrapperEl}>
+        <button
+          class="action-button"
+          id="brushButton"
+          aria-label="Brushes"
+          aria-expanded={openFlyout === 'brush'}
+          use:scribbleTap={handleBrushBtnClick}
+        >
+          {#each BRUSH_OPTIONS as opt (opt.brush)}
+            <Icon name={opt.icon} class="action-icon" data-brush-face={opt.brush} />
+          {/each}
+        </button>
+        <div class="flyout-menu brush-menu" hidden={openFlyout !== 'brush'}>
+          {#each BRUSH_OPTIONS as opt (opt.brush)}
+            <button
+              class="flyout-option"
+              class:active={toolState.brush === opt.brush}
+              id={opt.id}
+              aria-label={opt.label}
+              aria-pressed={toolState.brush === opt.brush}
+              use:scribbleTap={() => handleBrushTypeClick(opt.brush)}
+            >
+              <Icon name={opt.icon} class="action-icon" />
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <div class="flyout-wrapper stroke-width-wrapper" bind:this={strokeWrapperEl}>
         <button
           class="action-button"
           class:white-stroke={whiteStroke}
           class:dark-stroke={darkStroke}
           id="strokeWidthButton"
           aria-label="Stroke width"
-          aria-expanded={strokeState.menuOpen}
+          aria-expanded={openFlyout === 'stroke'}
           use:scribbleTap={handleStrokeBtnClick}
           style:color={colors.activeColor}
         >
-          <Icon
-            name={toolState.eraser ? 'line-weight-eraser' : 'line-weight'}
-            class="action-icon"
-          />
+          <Icon name={erasing ? 'line-weight-eraser' : 'line-weight'} class="action-icon" />
         </button>
         <div
-          class="stroke-width-menu"
+          class="flyout-menu stroke-width-menu"
           class:white-stroke={whiteStroke}
           class:dark-stroke={darkStroke}
-          class:eraser-mode={toolState.eraser}
-          hidden={!strokeState.menuOpen}
+          class:eraser-mode={erasing}
+          hidden={openFlyout !== 'stroke'}
           style:color={strokeMenuColor}
         >
           <!-- The previews change shape with the tool, not just color (a pink pen
@@ -286,14 +340,14 @@
                with --paper so the hole shows the canvas through the flyout. -->
           {#each STROKE_SIZES as size (size)}
             <button
-              class="stroke-size-button"
+              class="flyout-option"
               class:active={activeStrokeSize() === size}
-              aria-label={toolState.eraser ? `Eraser size ${size}` : `Size ${size}`}
+              aria-label={erasing ? `Eraser size ${size}` : `Size ${size}`}
               aria-pressed={activeStrokeSize() === size}
               use:scribbleTap={() => handleStrokeSizeClick(size)}
             >
               <Icon
-                name={`${toolState.eraser ? 'eraser-size' : 'size'}-${size}` as import('./iconTypes').CommonIconName}
+                name={`${erasing ? 'eraser-size' : 'size'}-${size}` as CommonIconName}
                 class="action-icon"
               />
             </button>
@@ -303,37 +357,12 @@
 
       <button
         class="action-button"
-        class:active={toolState.eraser}
-        id="eraserButton"
-        aria-label="Eraser"
-        aria-pressed={toolState.eraser}
-        use:scribbleTap={handleEraserClick}
-      >
-        <Icon name="eraser" class="action-icon" />
-      </button>
-
-      <button
-        class="action-button"
         id="coloringBookButton"
         aria-label="Coloring books"
         use:scribbleTap={handleColoringBookClick}
         bind:this={coloringBtnEl}
       >
         <Icon name="shapes" class="action-icon" />
-      </button>
-
-      <!-- Magic brush: reveals colors as the child paints (ADR-0043) — the applied
-           coloring page's colors when one is set, otherwise a random rainbow. Works
-           on any canvas, so it's always shown. -->
-      <button
-        class="action-button"
-        class:active={toolState.magic}
-        id="magicBrushButton"
-        aria-label="Magic brush"
-        aria-pressed={toolState.magic}
-        use:scribbleTap={handleMagicClick}
-      >
-        <Icon name="magic-brush" class="action-icon" />
       </button>
 
       <button
@@ -444,9 +473,9 @@
     min-width: 0;
     min-height: 0;
     /* Clip the buttons to the collapsing track. Flipped to visible once open so
-       the absolutely-positioned stroke-width flyout (which pops outside the
-       drawer box) isn't clipped — it can only be opened while the drawer is open
-       and settled, so the closed/animating clip still holds. */
+       the absolutely-positioned flyouts (which pop outside the drawer box)
+       aren't clipped — they can only be opened while the drawer is open and
+       settled, so the closed/animating clip still holds. */
     overflow: hidden;
   }
 
@@ -502,6 +531,8 @@
   :global(html[data-off-stroke]) .stroke-width-wrapper {
     display: none;
   }
+  /* The eraser's Parent Center toggle now hides its Brush Menu entry (the
+     eraser lives in the flyout, not the top-level row). */
   :global(html[data-off-eraser]) #eraserButton {
     display: none;
   }
@@ -574,11 +605,11 @@
        portrait phones painted tiny buttons that jumped to full size (issue #317).
        Square via width = height so a capped button shrinks like a smaller scale
        instead of squishing. Landscape 100vw (unaffected by the URL bar); the
-       200px = PARENT_BUTTON_RESERVE 64 + worst-case chrome 136 (6·12 gap + 8
+       188px = PARENT_BUTTON_RESERVE 64 + worst-case chrome 124 (5·12 gap + 8
        inset + 8 toggle margin + 48 toggle). */
     --action-btn-fallback: min(
       calc(60px * var(--action-btn-scale, 1)),
-      calc((100vw - 200px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 7)
+      calc((100vw - 188px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 6)
     );
     width: var(--action-btn-size, var(--action-btn-fallback));
     height: var(--action-btn-size, var(--action-btn-fallback));
@@ -608,15 +639,15 @@
       /* Portrait first-paint cap: the column stops short of the palette bar.
          100vh is the large viewport (overestimates while the URL bar shows), but
          this is only the pre-hydration fallback — --action-btn-size swaps in the
-         exact visible height right after hydration. 220px = 8px palette clearance
-         + 136px worst-case chrome (see landscape note) + 76px palette bar. The
+         exact visible height right after hydration. 208px = 8px palette clearance
+         + 124px worst-case chrome (see landscape note) + 76px palette bar. The
          hydrated formula subtracts the measured palette height; reserving the
          same ~76px here (it's a stable bar height across portrait widths) keeps
          the column off the palette on short screens instead of relying on the
-         slack from the worst-case /7 divisor. */
+         slack from the worst-case /6 divisor. */
       --action-btn-fallback: min(
         calc(55px * var(--action-btn-scale, 1)),
-        calc((100vh - 220px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 7)
+        calc((100vh - 208px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 6)
       );
       padding: calc(9px * var(--action-btn-scale, 1));
     }
@@ -704,19 +735,6 @@
     }
   }
 
-  /* Selected tool (e.g. eraser): purple ring + tinted fill, matching the
-     active stroke-size button. */
-  .action-button.active {
-    border-color: var(--brand);
-    background: var(--brand-wash);
-    box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent);
-  }
-
-  .action-button.active :global(.action-icon:not(.icon-color) svg) {
-    fill: var(--brand);
-  }
-
   .action-button:disabled,
   .action-button.disabled {
     opacity: 0.3;
@@ -750,9 +768,11 @@
     animation: aiSpin 1s linear infinite;
   }
 
-  /* Stroke width: trigger button wrapper + flyout menu. Visibility is gated by
-     the [data-off-stroke] rule above (the Parent Center toggle). */
-  .stroke-width-wrapper {
+  /* Flyouts (Brush Menu, Stroke Width): a relative trigger wrapper + an
+     absolute menu popped above it, shared by both. Visibility of the whole
+     stroke-width wrapper is gated by the [data-off-stroke] rule above (the
+     Parent Center toggle). */
+  .flyout-wrapper {
     position: relative;
   }
 
@@ -760,8 +780,8 @@
      along the bottom with little height to spare, so the flyout pops up as a
      horizontal row — one button tall — instead of a vertical column that would
      run off the top of a short landscape screen. There's ample width to spread
-     the sizes rightward. */
-  .stroke-width-menu {
+     the options rightward. */
+  .flyout-menu {
     position: absolute;
     left: 0;
     bottom: calc(100% + 8px);
@@ -777,7 +797,7 @@
   }
 
   @media (orientation: portrait) {
-    .stroke-width-menu {
+    .flyout-menu {
       left: calc(100% + 8px);
       bottom: 0;
       flex-direction: row;
@@ -786,25 +806,43 @@
 
   /* On phone-width portrait screens the horizontal flyout runs under the
      bottom-right Parent Center button (and, when narrower, off the right edge):
-     a tap on the rightmost size closes the menu, and the trailing click falls
-     through to the parent button and opens its modal. Stack the sizes
+     a tap on the rightmost option closes the menu, and the trailing click falls
+     through to the parent button and opens its modal. Stack the options
      vertically instead so the flyout runs up alongside the other action buttons
      and clears the parent button. The row layout stays for tablet-width portrait,
      where there's room to the right of the palette.
 
-     Breakpoint: the row's right edge is fixed (~411px with the 60px size
-     buttons — panel inset + stroke button + five buttons); the parent button
+     Breakpoint: the row's right edge is fixed (~411px with the 60px option
+     buttons — panel inset + trigger + five buttons); the parent button
      occupies the rightmost ~56px, so they collide below ~467px of viewport
      width. Stay in the column up to 540px for headroom (button sizes have grown
      before) while keeping the row for tablet-width portrait (≥600px devices). */
   @media (orientation: portrait) and (max-width: 540px) {
-    .stroke-width-menu {
+    .flyout-menu {
       flex-direction: column;
     }
   }
 
-  .stroke-width-menu[hidden] {
+  .flyout-menu[hidden] {
     display: none;
+  }
+
+  /* The Brush Button wears the active brush's icon: all four faces are always
+     in the DOM ({@html} icons can't be swapped on client-only state during
+     hydration — .claude/rules/svelte.md) and [data-brush] on <html> (seeded
+     pre-paint by app.html, kept live by the publish effect) picks the visible
+     one. No attribute means the default pen, so the raw prerendered HTML is
+     already correct. */
+  .brush-wrapper :global(.action-icon[data-brush-face]) {
+    display: none;
+  }
+  :global(html:not([data-brush])) .brush-wrapper :global(.action-icon[data-brush-face='pen']),
+  :global(html[data-brush='crayon']) .brush-wrapper :global(.action-icon[data-brush-face='crayon']),
+  :global(html[data-brush='magic']) .brush-wrapper :global(.action-icon[data-brush-face='magic']),
+  :global(html[data-brush='eraser'])
+    .brush-wrapper
+    :global(.action-icon[data-brush-face='eraser']) {
+    display: inline-flex;
   }
 
   /* Eraser mode renders the hole previews at the eraser's true pixel sizes:
@@ -816,17 +854,17 @@
      Center's --action-btn-scale (70–130%) must never rescale the holes. The
      SVG is transparent outside the hole, so on the smallest buttons the
      level-5 hole pokes a couple px past the button edge — honestly. */
-  .stroke-width-menu.eraser-mode .stroke-size-button {
+  .stroke-width-menu.eraser-mode .flyout-option {
     padding: 0;
   }
 
-  .stroke-width-menu.eraser-mode .stroke-size-button :global(.action-icon) {
+  .stroke-width-menu.eraser-mode .flyout-option :global(.action-icon) {
     width: 56px;
     height: 56px;
     flex-shrink: 0;
   }
 
-  .stroke-size-button {
+  .flyout-option {
     width: calc(60px * var(--action-btn-scale, 1));
     height: calc(60px * var(--action-btn-scale, 1));
     background: var(--float-surface);
@@ -851,17 +889,17 @@
   }
 
   @media (hover: hover) {
-    .stroke-size-button:hover {
+    .flyout-option:hover {
       border-color: var(--brand);
       background: var(--brand-wash);
     }
   }
 
-  .stroke-size-button:active {
+  .flyout-option:active {
     transform: scale(0.92);
   }
 
-  .stroke-size-button.active {
+  .flyout-option.active {
     border-color: var(--brand);
     background: var(--brand-wash);
     box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
@@ -870,7 +908,7 @@
 
   /* The selected size reads from the button's purple ring/fill; its line keeps
      the current color (currentColor), so only tint non-color icons here. */
-  .stroke-size-button.active :global(.action-icon:not(.icon-color) svg) {
+  .flyout-option.active :global(.action-icon:not(.icon-color) svg) {
     fill: var(--brand);
   }
 

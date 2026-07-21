@@ -69,6 +69,8 @@ const BOOL_SETTINGS = {
   screenshotEnabled: [SCREENSHOT_KEY, true],
   undoButtonEnabled: [UNDO_KEY, true],
   strokeWidthControlEnabled: [STROKE_CTRL_KEY, true],
+  // Hides the eraser entry in the Actions Panel's Brush Menu (the eraser moved
+  // there from its old top-level button; the stored key predates the move).
   eraserEnabled: [ERASER_KEY, true],
   coloringBookEnabled: [COLORING_BOOK_KEY, true],
   aiImageEnabled: [AI_IMAGE_KEY, true],

@@ -57,6 +57,9 @@
            • data-drawer-open — present only when the drawer is open (default: closed).
            • data-off-adv / data-off-<control> — present only when advanced controls
              or that Parent-Center control is switched OFF (default: on/shown).
+           • data-brush — the persisted brush type when it deviates from the default
+             pen ('crayon' or 'magic'; the eraser is never persisted), so the Brush
+             Button wears the right face at first paint. Mirrors state/tool.svelte.ts.
            • data-theme — present only when the parent explicitly chose light or dark
              (default: system, where the prefers-color-scheme CSS drives the theme
              with no attribute at all). Mirrors lib/theme.ts.
@@ -90,6 +93,9 @@
           el.toggleAttribute('data-off-coloring', !on('splotch-coloring-book-enabled', true));
           el.toggleAttribute('data-off-screenshot', !on('splotch-screenshot-enabled', true));
           el.toggleAttribute('data-off-undo', !on('splotch-undo-button-enabled', true));
+
+          var brush = localStorage.getItem('splotch-brush-type');
+          if (brush === 'crayon' || brush === 'magic') el.setAttribute('data-brush', brush);
 
           var theme = localStorage.getItem('splotch-theme');
           if (theme === 'light' || theme === 'dark') el.setAttribute('data-theme', theme);

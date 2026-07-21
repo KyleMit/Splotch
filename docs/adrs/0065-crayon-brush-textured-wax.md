@@ -5,7 +5,9 @@ replay-determinism contract this ADR was built under narrows to "the commit fold
 live pixels." The RDP-bypass carve-out and the replay-cost consequence are moot (simplification and
 keyframing are deleted); the binary tooth is still required for intra-pass idempotence on the pass
 buffer, but the replay-era constraints against soft fractional-alpha tooth, per-stroke composited
-layers, and nondeterministic grain are lifted. **Date:** 2026-07
+layers, and nondeterministic grain are lifted. Also amended by ADR-0067 (2026-07): the crayon is no
+longer the only free-draw mode — the solid pen returned as a sibling brush type, both selected from
+the Brush Menu, with the pen as the default. **Date:** 2026-07
 
 ## Context
 

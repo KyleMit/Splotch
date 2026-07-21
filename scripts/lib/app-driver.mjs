@@ -53,7 +53,7 @@ export async function openAppPage(browser, base, device) {
 
 export const canvasBox = (page) => page.locator('#drawingCanvas').boundingBox();
 
-// The action drawer (eraser / coloring book / camera / undo) starts collapsed.
+// The action drawer (brush menu / coloring book / camera / undo) starts collapsed.
 // Its buttons stay in the DOM always (ADR-0040) — open/closed is CSS-only, so
 // probe visibility (a closed drawer hides them) rather than presence.
 export async function expandDrawer(page) {

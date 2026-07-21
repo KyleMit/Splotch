@@ -8,7 +8,7 @@ vi.mock('@capacitor/core', () => ({
 }));
 
 import { PencilEraser, initPencilEraser, handleDoubleTap } from './pencilEraser';
-import { toolState, selectPen } from '$lib/state/tool.svelte';
+import { toolState, selectBrush } from '$lib/state/tool.svelte';
 import { settings, setPencilEraserEnabled, setApplePencilSeen } from '$lib/state/settings.svelte';
 
 describe('PencilEraser web fallback', () => {
@@ -25,7 +25,7 @@ describe('PencilEraser web fallback', () => {
 
 describe('handleDoubleTap', () => {
   beforeEach(() => {
-    selectPen();
+    selectBrush('pen');
     setPencilEraserEnabled(true);
     setApplePencilSeen(false);
   });
@@ -33,15 +33,15 @@ describe('handleDoubleTap', () => {
   it('records the pencil and toggles the eraser when enabled', () => {
     handleDoubleTap();
     expect(settings.applePencilSeen).toBe(true);
-    expect(toolState.eraser).toBe(true);
+    expect(toolState.brush).toBe('eraser');
     handleDoubleTap();
-    expect(toolState.eraser).toBe(false);
+    expect(toolState.brush).toBe('pen');
   });
 
   it('still records the pencil but does not toggle when disabled', () => {
     setPencilEraserEnabled(false);
     handleDoubleTap();
     expect(settings.applePencilSeen).toBe(true);
-    expect(toolState.eraser).toBe(false);
+    expect(toolState.brush).toBe('pen');
   });
 });

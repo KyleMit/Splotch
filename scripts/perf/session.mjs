@@ -168,8 +168,12 @@ export async function driveSession(page, cdp, { outDir, settings }) {
     await drawStroke(page, box, zigzag(box.width * 0.2, box.height * 0.5, box.width * 0.8, 20, 20));
   });
   await beat(page, 'erase', async () => {
+    // The eraser is an entry in the Brush Menu flyout, not a top-level button.
+    const brushMenu = page.locator('#brushButton');
+    if (await brushMenu.count()) await brushMenu.click();
+    await sleep(150);
     const eraser = page.locator('#eraserButton');
-    if (await eraser.count()) await eraser.click();
+    if (await eraser.isVisible().catch(() => false)) await eraser.click();
     await sleep(150);
     await drawStroke(page, box, zigzag(box.width * 0.2, box.height * 0.6, box.width * 0.8, 40, 16));
   });
