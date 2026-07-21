@@ -187,7 +187,10 @@ test('the initial purple pen uses crayon buildup in the full app', async ({ page
   expect(first.b).toBeGreaterThan(first.g);
   expect(second.alphaSum).toBeGreaterThan(first.alphaSum * 1.01);
   expect(second.strong).toBeGreaterThan(first.strong * 1.01);
-  expect(second.count).toBeLessThan(first.count * 1.15);
+  // The redraw fills bare tooth INSIDE the stroke, so the inked footprint may
+  // grow up to ~2-coverage of the light first pass — but never past the stroke
+  // silhouette. A spray/bloom regression would blow well past this bound.
+  expect(second.count).toBeLessThan(first.count * 1.4);
 });
 
 // Issue #185: a press that starts on a swatch and drags onto the canvas selects

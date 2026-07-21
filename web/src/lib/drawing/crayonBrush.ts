@@ -78,7 +78,10 @@ export interface CrayonOptions {
 // pressure variation. `edge` is the ordered-dither band that keeps the binary
 // pits from aliasing (see waxAlpha) — narrow, so rims read as tooth flecks rather
 // than a stippled haze. Single pass leaves tooth visible; a second same-colour
-// pass fills the tooth it left bare (buildup) at a constant hue.
+// pass fills the tooth it left bare (buildup) at a constant hue. Pass coverages
+// deliberately start light: a first stroke reads as an airy single crayon pass
+// with plenty of bare tooth, leaving headroom for redraws to visibly densify —
+// the lighter the first pass, the more each same-colour overlap fills in.
 export const CRAYON_DEFAULTS: CrayonOptions = {
   tile: 256,
   octaves: [
@@ -91,8 +94,8 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   bodyVariation: 0.2,
   bodyVariationCell: 110,
   passes: [
-    { widthScale: 1.0, coverage: 0.54 },
-    { widthScale: 0.68, coverage: 0.75 },
+    { widthScale: 1.0, coverage: 0.45 },
+    { widthScale: 0.68, coverage: 0.63 },
   ],
 };
 
