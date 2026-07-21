@@ -126,6 +126,31 @@
     return n;
   };
 
+  // Preflight the PERF_MARKS half of the build recipe. The harness checks above
+  // prove PUBLIC_ENABLE_DEV_HARNESS is on, but a build made without
+  // PERF_MARKS=true emits no marks/measures at all — undoAll's per-step wait
+  // would then burn its full 5 s cap on every undo step (4 scenarios × 20 steps
+  // ≈ 7 minutes of apparent hang) before printing a table of zeros. So drive
+  // one probe stroke and require its engine.commit measure (emitted
+  // synchronously at stroke end, engine.ts commitStrokeGroup) to exist before
+  // any scenario runs.
+  E.strokeSync(longSquiggle(0, 48), 'touch');
+  await new Promise((r) => requestAnimationFrame(r));
+  if (performance.getEntriesByName('engine.commit', 'measure').length === 0) {
+    E.undo();
+    console.error(
+      'PERF_MARKS is off in this build: a probe stroke produced no engine.commit ' +
+        'measure, so every undo step would stall for the full 5 s wait and every ' +
+        'timing column would read 0. Rebuild with BOTH flags — ' +
+        'PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true — reload /dev/engine, ' +
+        'and paste again.'
+    );
+    return;
+  }
+  await undoAll(); // drain the probe stroke so scenario counts start honest
+  performance.clearMeasures(); // drop the probe's own commit/snapshot/undo entries
+  performance.clearMarks();
+
   // Every scenario must start from blank paper AND zero history, so each row's
   // snapshot / undo-step counts come only from its own strokes — 22 strokes
   // against the depth-20 cap means every row reports 20 snapshots and drains
