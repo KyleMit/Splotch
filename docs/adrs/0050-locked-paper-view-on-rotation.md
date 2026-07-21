@@ -1,6 +1,9 @@
 # ADR-0050: Lock the "Paper" on Rotation and Present It Upright Through a Contain-Fit View
 
-**Status:** Active **Date:** 2026-07
+**Status:** Active — amended by ADR-0066 (2026-07): the paper lock and the upright contain-fit view
+stand unchanged, but the margin-ink semantics and the replay framing below are replay-era; under
+snapshot undo, margin ink outside a locked paper is cropped **permanently at commit** and never
+resurrected. See the amendment at the end. **Date:** 2026-07
 
 ## Context
 
@@ -127,3 +130,35 @@ Amends the "rotation coordinate handling is unchanged" note in **ADR-0034** (the
 remains the preservation mechanism; presentation is new) and the sheet-sizing note in **ADR-0043**
 (the sheet is paper-sized now). Builds on **ADR-0033/0035**; the picker/state wiring extends
 **ADR-0045**'s orientation handling.
+
+## Amendment (ADR-0066, 2026-07)
+
+ADR-0066 replaced command-replay undo with snapshot undo: the paper raster is now the committed
+source of truth, and the command log, keyframes, and simplification are deleted. The core of this
+ADR — the paper lock, the upright contain-fit view, drawable margins, blank-canvas re-adoption — is
+untouched. What changes is the margin-ink corner and the replay framing:
+
+* **Margin ink is cropped permanently at commit.** The commit fold clips at the paper square, so ink
+  drawn outside a rotation-locked paper survives only until its stroke commits. The Decision's
+  "renders and replays normally while its command is retained … reappears when rotating forward
+  again while its ops survive" no longer holds — there is no command log to resurrect it from.
+  Rotating forward again shows nothing in the margins. The E2E ("the margins around the rotated
+  paper are drawable, and crop on rotating back", `web/tests/engine.spec.ts`) pins the permanent
+  crop.
+* **The command-retention framing is gone.** The Consequences' "10-command retention window" was
+  stale even under replay (the depth was 20), and history is now a depth-20 stack of paper
+  snapshots, not commands. An undo restores a prior paper raster, which never contained margin ink
+  in the first place — so the "undo pressed while rotated can also remove margin ink" caveat reduces
+  to: committed margin ink is simply gone.
+* The Context's "Ops, the baseline, and the keyframes all live in the visible canvas's coordinate
+  space (ADR-0033/0034/0035)" reads today as: ops (live and magic-pending only), the paper raster,
+  and the snapshots all live in paper coordinates — the baseline and keyframes are deleted with
+  their ADRs.
+* The Consequences' "undo (ADR-0033) … keyframes (ADR-0035), simplification (ADR-0036) … are
+  untouched replay-wise" is moot: those ADRs are superseded by ADR-0066. The surviving point stands
+  — the view remains one `setTransform` + `clip` at resize time, off every paint path (undo, resize,
+  remount, and export are all blits through it).
+
+The rejection of margin-covering rasters (~2× the paper's long side per surface) carries over
+unchanged and is, if anything, stronger: snapshots are full paper-square copies, so widening them to
+cover mapped margins would multiply the whole depth-20 stack.

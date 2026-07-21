@@ -70,7 +70,8 @@ pre-stroke snapshots:
 
 One accepted semantics change: margin ink drawn outside a rotation-locked paper (ADR-0050) is now
 cropped permanently at commit (the fold clips at the paper square), where the replay era resurrected
-it on the next rotation. The E2E spec pins the new behavior.
+it on the next rotation. The E2E spec pins the new behavior; ADR-0050 carries the matching
+amendment.
 
 Evaluation method (PR 442): both systems shipped in one build behind a `setUndoMode` dev seam,
 A/B-driven by `perf:undo --undo-mode=both` and the iPad console driver, then the loser was deleted.
@@ -118,5 +119,6 @@ Supersedes **ADR-0033** (command-replay undo), **ADR-0035** (keyframes — delet
 (commit-time simplification — deleted). **ADR-0034**'s decision (no virtual canvas; rebuild on
 resize from the retained history) survives with the rebuild now a paper blit. Amends **ADR-0065**:
 the RDP bypass and replay-cost consequences are moot; the determinism contract narrows to
-"live-equals-fold." The ADR-0032 mark set drops `engine.keyframe`/`engine.foldBaseline` and gains
-`engine.snapshot`.
+"live-equals-fold." Amends **ADR-0050**: the margin-ink corner (permanent crop at commit, no
+resurrect-on-rotation, snapshot stack instead of a command-retention window). The ADR-0032 mark set
+drops `engine.keyframe`/`engine.foldBaseline` and gains `engine.snapshot`.
