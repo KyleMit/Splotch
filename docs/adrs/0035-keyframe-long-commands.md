@@ -1,11 +1,9 @@
 # ADR-0035: Keyframe Long Commands So Undo Doesn't Replay Thousands of Ops
 
-**Status:** Active — the bounded **safety net** behind ADR-0036. ADR-0036 simplifies a committed
-command's ops to a few imperceptible sub-strokes *before* this runs, so in practice keyframes fire
-only for a pathological all-corners gesture RDP can't thin (none did on the real sessions). This
-ADR's trigger measures a command's *simplified* segment count (`KEYFRAME_SEGMENT_THRESHOLD`, 384),
-so it bounds worst-case undo at one `drawImage` blit when simplification isn't enough. **Date:**
-2026-06
+**Status:** Superseded by ADR-0066 (2026-07) — the keyframe machinery is deleted. Crayon commands
+(ADR-0065) bypass simplification, so their raw op counts hit this ADR's threshold on every
+multi-second stroke, and the `MAX_KEYFRAMES = 1` fold collapsed crayon undo depth to ~1 — the two
+defects that triggered the reversal to snapshot undo. **Date:** 2026-06
 
 ## Context
 

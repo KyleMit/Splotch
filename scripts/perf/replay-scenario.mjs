@@ -10,7 +10,7 @@
 // canvas to the recorded device, replays the captured pointer stream + UI actions
 // at their recorded timing (so frame pacing matches real drawing — unlike the
 // synchronous synthetic driver), captures a CDP trace + engine marks, and reports
-// how YOUR input was actually stored (keyframes / commands / op counts).
+// how YOUR input landed on the snapshot stack (depth, live rasters, blob bytes).
 
 import { chromium } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -30,9 +30,6 @@ const flag = (name, def) => {
   return hit ? hit.split('=')[1] : def;
 };
 const recordingPath = flag('recording', null);
-// Optional simplification-mode override (setSimplifyParams seam), so one build
-// can compare how each rebuild mode stores/replays the same recording.
-const mode = flag('mode', null);
 const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '0'));
 const turbo = args.includes('--turbo');
 const port = Number(flag('port', '4173'));
@@ -81,7 +78,6 @@ async function main() {
     await page.waitForSelector('#engineCanvas');
     await page.waitForFunction(() => window.__engineReady === true);
     await page.evaluate(({ w, h }) => window.__engine.resizeTo(w, h), cssCanvas);
-    if (mode) await page.evaluate((m) => window.__engine.setSimplifyParams({ mode: m }), mode);
     await sleep(150);
 
     const cdp = await ctx.newCDPSession(page);
@@ -123,7 +119,6 @@ async function main() {
         ua: meta.ua,
         pacing: turbo ? 'turbo' : 'real-time',
       },
-      simplifyMode: mode || 'default',
       startedAt: new Date(t0).toISOString(),
       durationMs: Date.now() - t0,
     };
@@ -170,17 +165,17 @@ function replayInPage({ events, recCanvas, sizePx, turbo }) {
   let eraser = false;
   let prevT = 0;
   let strokes = 0;
+  let undos = 0;
 
-  // Track the high-water mark of the command log, since a session that ends on
-  // undo-to-empty would otherwise report 0/0/0 at the end. Snapshot after each
+  // Track the high-water mark of the snapshot stack, since a session that ends
+  // on undo-to-empty would otherwise report 0/0 at the end. Snapshot after each
   // stroke commits and before each undo.
-  const peak = { commands: 0, keyframes: 0, maxOps: 0 };
+  const peak = { snapshots: 0, blobBytes: 0 };
   const snapPeak = () => {
     const d = E.getUndoDebug && E.getUndoDebug();
     if (!d) return;
-    peak.commands = Math.max(peak.commands, d.commands);
-    peak.keyframes = Math.max(peak.keyframes, d.keyframes);
-    peak.maxOps = Math.max(peak.maxOps, d.maxOps);
+    peak.snapshots = Math.max(peak.snapshots, d.snapshots);
+    peak.blobBytes = Math.max(peak.blobBytes, d.blobBytes);
   };
 
   const fire = (e) => {
@@ -224,13 +219,33 @@ function replayInPage({ events, recCanvas, sizePx, turbo }) {
         else if (e.name === 'eraser') E.setEraserMode((eraser = !eraser));
         else if (e.name === 'undo') {
           snapPeak();
+          undos++;
           E.undo();
         } else if (e.name === 'clear') E.clearCanvas();
         await raf();
       }
     }
+    // Undos fire app-style above (not awaited), and deep blob-tier restores
+    // settle asynchronously — so drain the undo queue before resolving, or the
+    // tail engine.undo measures land after Tracing.end and vanish from the
+    // hot-path table. One measure lands per completed restore; a no-op undo
+    // (pressed on an empty stack) or a marks-less build never lands one, so a
+    // stall cap (matching undo-scenarios' per-step wait) keeps those moving.
+    if (undos > 0) {
+      const landed = () => performance.getEntriesByName('engine.undo', 'measure').length;
+      let seen = landed();
+      let lastProgress = performance.now();
+      while (landed() < undos && performance.now() - lastProgress < 5000) {
+        await raf();
+        const n = landed();
+        if (n > seen) {
+          seen = n;
+          lastProgress = performance.now();
+        }
+      }
+    }
     await raf();
-    return { events: events.length, strokes, peak };
+    return { events: events.length, strokes, undos, peak };
   })();
 }
 
@@ -254,21 +269,22 @@ function renderReplayReport({ settings, replayed, debug, summary }) {
   if (peak) {
     out.push(
       `- Strokes (pointerdowns): **${replayed.strokes}**\n` +
-        `- **Peak** command log (high-water mark): commands **${peak.commands}** · ` +
-        `keyframes **${peak.keyframes}** · max ops in a non-keyframed command **${peak.maxOps}**\n` +
-        `- End of session: commands **${debug?.commands ?? 'n/a'}** · keyframes ` +
-        `**${debug?.keyframes ?? 'n/a'}** (0/0 means the session ended on undo-to-empty)`
+        `- **Peak** snapshot stack (high-water mark): snapshots **${peak.snapshots}** · ` +
+        `blob bytes **${Math.round(peak.blobBytes / 1024)} KB**\n` +
+        `- End of session: snapshots **${debug?.snapshots ?? 'n/a'}** · blob KB ` +
+        `**${debug ? Math.round(debug.blobBytes / 1024) : 'n/a'}** (0 means the session ended on undo-to-empty)`
     );
   } else {
     out.push('_getUndoDebug unavailable._');
   }
   out.push('\n## Engine cost during replay (user-timing marks)\n');
   out.push(`- engine.draw: ${row(hot['engine.draw'])}`);
-  out.push(`- engine.keyframe: ${row(hot['engine.keyframe'])}`);
+  out.push(`- engine.snapshot: ${row(hot['engine.snapshot'])}`);
+  out.push(`- engine.fold: ${row(hot['engine.fold'])}`);
   out.push(`- engine.undo: ${row(hot['engine.undo'])}`);
   out.push(`- engine.commit: ${row(hot['engine.commit'])}`);
   out.push(
-    '\nSee report.md for full frame health / hot paths; ADR-0035 and the `profiling` skill for interpretation.\n'
+    '\nSee report.md for full frame health / hot paths; ADR-0066 and the `profiling` skill for interpretation.\n'
   );
   return out.join('\n');
 }

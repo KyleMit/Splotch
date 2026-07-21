@@ -1,6 +1,9 @@
 # ADR-0004: Imperative Canvas Engine with Callback Interface
 
-**Status:** Active\
+**Status:** Active — amended by ADR-0066 (2026-07): the imperative-engine and callback-bridge
+decisions stand unchanged, but the sibling-module list and the undo-memory notes below are
+replay-era — snapshot undo re-opens resident-raster memory as a managed, tiered budget. See the
+amendment at the end.\
 **Date:** 2024
 
 ## Context
@@ -71,3 +74,27 @@ destroys the child's drawing — a parent checking another page must not wipe th
   doesn't update to reflect engine state.
 * **-** ~~Undo snapshots consume memory in proportion to canvas size × stack depth (10 frames at
   full viewport resolution).~~ Resolved by ADR-0033: one baseline raster + a small command log.
+  *(Re-opened in managed form by ADR-0066 — see the amendment below.)*
+
+## Amendment (ADR-0066, 2026-07)
+
+ADR-0066 replaced command-replay undo (ADR-0033/0035/0036) with snapshot undo: the committed drawing
+is again a raster (the "paper"), with a depth-20 stack of pre-stroke snapshots. The core of this ADR
+— the imperative module-singleton, the callback bridge, the survive-unmount lifecycle — is
+untouched. What changed shape:
+
+* **The sibling-module list:** `commandSimplify.ts` was deleted with the ADR-0036 simplification
+  pipeline. The engine's current focused siblings are `undoHistory.ts`, `strokeOps.ts`,
+  `strokeMath.ts`, `paperView.ts`, `magicBrush.ts`, `crayonBrush.ts`, `emptyScan.ts`, and
+  `exportDrawing.ts` — module-singletons in the same way, with `engine.ts` still the facade.
+* **The undo-memory consequence is re-opened, as a managed budget, not the naïve stack.** The
+  "resolved by ADR-0033: one baseline raster + a small command log" note no longer describes the
+  code: history is again full-canvas snapshots, but tiered — the paper plus the `K_LIVE = 2` most
+  recent snapshots stay live rasters (~30 MB each at 2× DPR on a large tablet) and every deeper
+  entry is a lossless encoded blob (single-digit MB), so depth 20 costs roughly three live rasters
+  plus blob bytes, inside ADR-0066's device-gated ≲ 150 MB budget — not 20 live frames.
+* **The lifecycle note's retained state** reads today as: the paper raster, the snapshot stack, and
+  any magic-pending commands (plus `canUndo`/`canvasEmpty`) survive teardown; a later
+  `initDrawingCanvas()` rebuilds the drawing by blitting the paper (`repaintAll`), not by replaying
+  a retained baseline + log. The accepted cost `undoHistory.ts` cites this ADR for — rasters
+  resident while no canvas is mounted — now covers that tiered set.

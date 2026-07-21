@@ -16,13 +16,20 @@ vi.mock('./magicBrush', () => ({
 // canvas's "content" is the ordered list of stroke colors painted onto it,
 // drawImage copies a source canvas's content, and clearRect empties it. Giving
 // every command a unique color makes a canvas's content the drawing's
-// ground-truth in draw order — enough to assert both the keyframe-memory bound
-// and that undo/rebuild reproduce the exact pixels.
+// ground-truth in draw order — enough to assert the snapshot stack restores
+// exact pre-stroke states and the paper accumulates every fold.
 let origGetContext: typeof HTMLCanvasElement.prototype.getContext;
+let origToBlob: typeof HTMLCanvasElement.prototype.toBlob;
 
 beforeEach(() => {
   magicSheet.ready = true;
   origGetContext = HTMLCanvasElement.prototype.getContext;
+  origToBlob = HTMLCanvasElement.prototype.toBlob;
+  // The blob tier is exercised end-to-end by the engine E2E specs; here every
+  // encode "fails" so snapshots keep their rasters and stay synchronous.
+  HTMLCanvasElement.prototype.toBlob = function (cb: BlobCallback) {
+    cb(null);
+  };
   (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = function (
     this: HTMLCanvasElement,
     kind: string
@@ -71,177 +78,162 @@ beforeEach(() => {
 
 afterEach(() => {
   HTMLCanvasElement.prototype.getContext = origGetContext;
+  HTMLCanvasElement.prototype.toBlob = origToBlob;
   vi.resetModules();
 });
 
-// A single-stroke command in a unique color. `segs` controls its replay cost so
-// the caller can push it over the keyframe threshold on demand.
-function cmd(color: string, segs: number, magic = false): StrokeGroupCommand {
-  const s = Array.from({ length: segs }, (_, i) => ({ cx: i, cy: i, x: i + 1, y: i + 1 }));
+// A single-stroke command in a unique color.
+function cmd(color: string, magic = false, wasEmpty = false): StrokeGroupCommand {
   const op: PathOp = {
     kind: 'path',
     pid: 1,
     startX: 0,
     startY: 0,
-    segs: s,
+    segs: [{ cx: 0, cy: 0, x: 1, y: 1 }],
     color,
     lineWidth: 8,
     erase: false,
     magic,
   };
-  return { ops: [op], wasEmpty: false };
+  return { ops: [op], wasEmpty };
 }
 
 async function freshHistory() {
   vi.resetModules();
   const m = await import('./undoHistory');
-  const cs = await import('./commandSimplify');
-  // Keep ops verbatim (no segment reduction) so segment counts and colors stay
-  // exactly what the test sets.
-  cs.setSimplifyOptions({ enabled: false });
-  m.ensureBaselineCovers(64);
+  m.ensurePaperCovers(64);
   return m;
 }
 
-// The color sequence a fresh rebuild paints — the visible drawing, ground-truth.
-function rebuiltContent(m: Awaited<ReturnType<typeof freshHistory>>): string[] {
+// The color sequence a fresh repaint paints — the visible drawing, ground-truth.
+function repaintedContent(m: Awaited<ReturnType<typeof freshHistory>>): string[] {
   const target = document.createElement('canvas');
   target.width = 64;
   target.height = 64;
   const ctx = target.getContext('2d')!;
-  m.replayAll(ctx);
+  m.repaintAll(ctx);
   return [...(target as unknown as { _content: string[] })._content];
 }
 
-const PATHOLOGICAL = 5;
-const CHEAP = 1;
-
-describe('keyframe memory bound', () => {
-  it('retains at most one keyframe raster no matter how many outlier commands commit', async () => {
-    const m = await freshHistory();
-    m.setKeyframeSegmentThreshold(2);
-    const colors = Array.from({ length: 30 }, (_, i) => `#kf${i}`);
-    for (const c of colors) m.pushCommand(cmd(c, PATHOLOGICAL));
-    // Without the cap every retained command (up to MAX_UNDO_STACK_SIZE) would
-    // hold a baseline-sized keyframe (~600 MB worst case); the cap keeps it at
-    // one.
-    expect(m.getHistoryDebug().keyframes).toBeLessThanOrEqual(1);
-    // Bounding memory must not lose pixels: the surviving keyframe accumulates
-    // the whole drawing, so a rebuild still shows every command in order.
-    expect(rebuiltContent(m)).toEqual(colors);
-  });
-
-  it('does not fold when commands stay under the keyframe threshold', async () => {
-    const m = await freshHistory();
-    m.setKeyframeSegmentThreshold(100);
-    for (let i = 0; i < 5; i++) m.pushCommand(cmd(`#c${i}`, CHEAP));
-    expect(m.getHistoryDebug().keyframes).toBe(0);
-    expect(m.getHistoryDebug().commands).toBe(5);
-  });
-});
-
-describe('fold boundary at the undo cap', () => {
-  it('retains exactly MAX_UNDO_STACK_SIZE commands and folds the overflow into the baseline', async () => {
+describe('snapshot stack depth', () => {
+  it('caps retained snapshots at MAX_UNDO_STACK_SIZE while the paper keeps every stroke', async () => {
     const m = await freshHistory();
     const colors = Array.from({ length: m.MAX_UNDO_STACK_SIZE + 3 }, (_, i) => `#s${i}`);
-    for (const c of colors) m.pushCommand(cmd(c, CHEAP));
-    expect(m.getHistoryDebug().commands).toBe(m.MAX_UNDO_STACK_SIZE);
-    // Folding is invisible: the rebuild still shows every command in order.
-    expect(rebuiltContent(m)).toEqual(colors);
+    for (const c of colors) m.pushCommand(cmd(c));
+    expect(m.snapshotCount()).toBe(m.MAX_UNDO_STACK_SIZE);
+    // Dropping old snapshots loses undo depth, never pixels: the paper holds
+    // the full drawing in order.
+    expect(repaintedContent(m)).toEqual(colors);
   });
 
-  it('a log exactly at the cap folds nothing — undoing everything reaches blank', async () => {
-    const m = await freshHistory();
-    const colors = Array.from({ length: m.MAX_UNDO_STACK_SIZE }, (_, i) => `#s${i}`);
-    for (const c of colors) m.pushCommand(cmd(c, CHEAP));
-    expect(m.getHistoryDebug().commands).toBe(m.MAX_UNDO_STACK_SIZE);
-    while (m.popCommand());
-    expect(rebuiltContent(m)).toEqual([]);
-  });
-
-  it('undoing past the cap stops at the folded baseline, not a blank canvas', async () => {
+  it('undoing past the cap stops at the overflow content, not a blank canvas', async () => {
     const m = await freshHistory();
     const colors = Array.from({ length: m.MAX_UNDO_STACK_SIZE + 2 }, (_, i) => `#s${i}`);
-    for (const c of colors) m.pushCommand(cmd(c, CHEAP));
+    for (const c of colors) m.pushCommand(cmd(c));
     let undos = 0;
-    while (m.popCommand()) undos++;
+    while (m.popSnapshot()) undos++;
     expect(undos).toBe(m.MAX_UNDO_STACK_SIZE);
-    // The two overflow commands survive in the baseline — that's the wall the
+    // The two overflow commands survive on the paper — that's the wall the
     // undo button hits.
-    expect(rebuiltContent(m)).toEqual(colors.slice(0, 2));
+    expect(repaintedContent(m)).toEqual(colors.slice(0, 2));
   });
 });
 
-describe('undo correctness after folding through a keyframe', () => {
-  it('rebuild reproduces the full drawing across multiple keyframes', async () => {
+describe('snapshot restore', () => {
+  it('each pop restores the exact pre-stroke paper state, down to blank', async () => {
     const m = await freshHistory();
-    m.setKeyframeSegmentThreshold(2);
-    // Two outlier commands with a cheap one between them — the second outlier's
-    // keyframe folds the first through the baseline.
-    m.pushCommand(cmd('#a', PATHOLOGICAL));
-    m.pushCommand(cmd('#b', CHEAP));
-    m.pushCommand(cmd('#c', PATHOLOGICAL));
-    expect(m.getHistoryDebug().keyframes).toBeLessThanOrEqual(1);
-    // Every color still shows, in order: folding preserved the first keyframe's
-    // pixels in the baseline rather than dropping them.
-    expect(rebuiltContent(m)).toEqual(['#a', '#b', '#c']);
+    m.pushCommand(cmd('#a', false, true));
+    m.pushCommand(cmd('#b'));
+    m.pushCommand(cmd('#c'));
+    expect(repaintedContent(m)).toEqual(['#a', '#b', '#c']);
+
+    await m.popSnapshot();
+    expect(repaintedContent(m)).toEqual(['#a', '#b']);
+    await m.popSnapshot();
+    expect(repaintedContent(m)).toEqual(['#a']);
+    const last = await m.popSnapshot();
+    expect(repaintedContent(m)).toEqual([]);
+    expect(last?.wasEmpty).toBe(true);
+    expect(m.popSnapshot()).toBeNull();
   });
 
-  it('popping the newest keyframe repaints the prior state from the baseline', async () => {
+  it('undoing a clear restores the pre-clear drawing in one pop', async () => {
     const m = await freshHistory();
-    m.setKeyframeSegmentThreshold(2);
-    m.pushCommand(cmd('#a', PATHOLOGICAL));
-    m.pushCommand(cmd('#b', CHEAP));
-    m.pushCommand(cmd('#c', PATHOLOGICAL));
-    // Undo the newest keyframed command; the older keyframe was folded into the
-    // baseline, so the rebuild must still show it plus the surviving middle op.
-    const popped = m.popCommand();
-    expect(popped?.keyframe).toBeTruthy();
-    expect(rebuiltContent(m)).toEqual(['#a', '#b']);
-  });
-
-  it('interleaved cheap and outlier commands rebuild identically to a no-keyframe replay', async () => {
-    // Reference: same command stream with keyframes disabled (pure op replay).
-    const ref = await freshHistory();
-    ref.setKeyframeSegmentThreshold(Infinity);
-    const colors = ['#1', '#2', '#3', '#4', '#5', '#6'];
-    for (const c of colors) ref.pushCommand(cmd(c, PATHOLOGICAL));
-    const expected = rebuiltContent(ref);
-
-    const m = await freshHistory();
-    m.setKeyframeSegmentThreshold(2);
-    for (const c of colors) m.pushCommand(cmd(c, PATHOLOGICAL));
-    expect(m.getHistoryDebug().keyframes).toBeLessThanOrEqual(1);
-    expect(rebuiltContent(m)).toEqual(expected);
+    m.pushCommand(cmd('#a', false, true));
+    m.pushCommand({ ops: [{ kind: 'clear' }], wasEmpty: false });
+    expect(repaintedContent(m)).toEqual([]);
+    await m.popSnapshot();
+    expect(repaintedContent(m)).toEqual(['#a']);
   });
 });
 
 describe('folding while the magic sheet decodes', () => {
-  it('retains an oldest magic command until its paint can be replayed', async () => {
+  it('holds a magic command (and everything after it) out of the paper until the sheet is ready', async () => {
     const m = await freshHistory();
-    m.setKeyframeSegmentThreshold(Infinity);
     magicSheet.ready = false;
-    m.pushCommand(cmd('#ignored', CHEAP, true));
-    // Enough solid commands to push the magic one past the cap, so a fold is
-    // attempted (and must be deferred) while the sheet is still decoding.
-    const solidColors = Array.from({ length: m.MAX_UNDO_STACK_SIZE }, (_, i) => `#solid${i}`);
-    for (const color of solidColors) m.pushCommand(cmd(color, CHEAP));
-
+    m.pushCommand(cmd('#ignored', true));
+    m.pushCommand(cmd('#solid'));
+    // Nothing folded: the paper would bake the magic op's blank pixels.
+    expect(m.getHistoryDebug().pendingCommands).toBe(2);
+    // The repaint replays the pending ops instead, so once the sheet is ready
+    // the drawing shows in order without any fold having happened.
     magicSheet.ready = true;
+    expect(repaintedContent(m)).toEqual(['#magic', '#solid']);
 
-    expect(rebuiltContent(m)).toEqual(['#magic', ...solidColors]);
+    // The next commit folds the whole backlog through the now-ready sheet.
+    m.pushCommand(cmd('#after'));
+    expect(m.getHistoryDebug().pendingCommands).toBe(0);
+    expect(repaintedContent(m)).toEqual(['#magic', '#solid', '#after']);
   });
 
-  it('does not build a cumulative keyframe that omits pending magic ink', async () => {
+  it('undo restores the pending set captured with the snapshot', async () => {
     const m = await freshHistory();
-    m.setKeyframeSegmentThreshold(2);
     magicSheet.ready = false;
-    m.pushCommand(cmd('#ignored', CHEAP, true));
-    m.pushCommand(cmd('#solid', PATHOLOGICAL));
-
+    m.pushCommand(cmd('#magic-ink', true, true));
+    m.pushCommand(cmd('#solid'));
     magicSheet.ready = true;
 
-    expect(m.getHistoryDebug().keyframes).toBe(0);
-    expect(rebuiltContent(m)).toEqual(['#magic', '#solid']);
+    // Undo the solid stroke: the snapshot carried the still-pending magic
+    // command, so the repaint reproduces exactly the magic-only state.
+    await m.popSnapshot();
+    expect(m.getHistoryDebug().pendingCommands).toBe(1);
+    expect(repaintedContent(m)).toEqual(['#magic']);
+  });
+});
+
+describe('cold-snapshot blob validation', () => {
+  // Guards the demotion path: only a blob that is plausibly a lossless
+  // encoding (WebP at quality 1, or the spec's PNG fallback) may replace a
+  // live raster. Everything else keeps the raster so undo stays byte-exact.
+  it('accepts only a non-empty webp or png blob', async () => {
+    const m = await freshHistory();
+    expect(m.isValidColdSnapshotBlob(new Blob(['x'], { type: 'image/webp' }))).toBe(true);
+    expect(m.isValidColdSnapshotBlob(new Blob(['x'], { type: 'image/png' }))).toBe(true);
+    expect(m.isValidColdSnapshotBlob(null)).toBe(false);
+    expect(m.isValidColdSnapshotBlob(new Blob([], { type: 'image/webp' }))).toBe(false);
+    expect(m.isValidColdSnapshotBlob(new Blob(['x'], { type: 'image/jpeg' }))).toBe(false);
+    expect(m.isValidColdSnapshotBlob(new Blob(['x'], { type: '' }))).toBe(false);
+  });
+});
+
+describe('in-flight strokes', () => {
+  it('repaints an uncommitted active command on top of the paper', async () => {
+    const m = await freshHistory();
+    m.pushCommand(cmd('#a', false, true));
+    m.beginCommand(false);
+    const op = cmd('#live').ops[0];
+    m.recordOp(op);
+    expect(repaintedContent(m)).toEqual(['#a', '#live']);
+    m.commitActiveCommand();
+    expect(repaintedContent(m)).toEqual(['#a', '#live']);
+    expect(m.snapshotCount()).toBe(2);
+  });
+
+  it('resetActiveCommandForClear drops the straddling stroke ops', async () => {
+    const m = await freshHistory();
+    m.beginCommand(true);
+    m.recordOp(cmd('#live').ops[0]);
+    expect(m.resetActiveCommandForClear()).toBe(true);
+    expect(repaintedContent(m)).toEqual([]);
   });
 });

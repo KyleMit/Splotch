@@ -2,17 +2,21 @@
 // BROWSER CONSOLE SNIPPET — not a Node script. Paste the whole file into the
 // Safari Web Inspector JS console that is remote-debugging an iPad which has
 // /dev/engine open (on a PERF_MARKS + PUBLIC_ENABLE_DEV_HARNESS build). It drives
-// the same undo/keyframe scenarios as `npm run perf:undo`, but on the real device
+// the same undo scenarios as `npm run perf:undo`, but on the real device
 // (real WebKit/JavaScriptCore + GPU + 120 Hz ProMotion), and prints a table of
-// the device-specific numbers the desktop harness can't give: the keyframe-build
-// time and undo time at real op volume on real hardware.
+// the device-specific numbers the desktop harness can't give — the ADR-0066
+// gates: the stroke-end commit hitch (with the paper copy and the op fold
+// measured separately, so a hot commit is attributable), per-step undo restore
+// time (live blit vs blob decode), and history memory, at real op volume on
+// real hardware.
 //
 // WebKit clamps performance.now() to ~1 ms, so timings are coarse — but that is
-// plenty to tell a ~10 ms keyframe build from the old hundreds-of-ms undo hang.
-// For the frame/GPU picture, record a Web Inspector *Timeline* across the run and
-// watch for a dropped frame at finger-lift; export it and feed it to
+// plenty to tell a ~10 ms blit from a hundreds-of-ms replay hang. For the
+// frame/GPU picture, record a Web Inspector *Timeline* across the run and watch
+// for a dropped frame at finger-lift; export it and feed it to
 // `npm run perf:ios:analyze -- <export>.json` (the Web Inspector export is a
 // different, mark-only/ring-buffered format — NOT the Chrome-trace perf:analyze).
+// Peak memory wants the Xcode memory gauge on the same session.
 (async () => {
   const E = window.__engine;
   const S = window.__engineState;
@@ -48,6 +52,22 @@
     }
     return a;
   };
+  // Back-and-forth triangle-wave scribble — with the crayon on, every reversal
+  // splits a deposition pass and stamps a crayonFlush (the toddler fill case).
+  const scribble = (row, pts = HZ * 10) => {
+    const sweeps = 8,
+      x0 = M,
+      span = W - 2 * M,
+      bandTop = M + ((H - 2 * M) * row) / 6,
+      bandH = (H - 2 * M) / 8,
+      a = [];
+    for (let i = 0; i < pts; i++) {
+      const t = i / (pts - 1);
+      const tri = Math.abs(((t * sweeps) % 2) - 1);
+      a.push({ x: x0 + span * (1 - tri), y: bandTop + bandH * t });
+    }
+    return a;
+  };
   const multiGesture = (gi, perFinger = HZ * 4, fingers = 5) => {
     const out = [];
     for (let f = 0; f < fingers; f++) {
@@ -65,32 +85,102 @@
     return out;
   };
 
+  const percentile = (values, p) => {
+    const sorted = [...values].sort((a, b) => a - b);
+    return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * p) - 1))];
+  };
+
   const agg = (from, to, name) => {
     const ms = performance
       .getEntriesByType('measure')
       .filter((m) => m.name === name && m.startTime >= from && m.startTime < to);
-    if (!ms.length) return { count: 0, total: 0, avg: 0, max: 0 };
-    const total = ms.reduce((s, m) => s + m.duration, 0);
+    if (!ms.length) return { count: 0, total: 0, avg: 0, p95: 0, max: 0 };
+    const durations = ms.map((m) => m.duration);
+    const total = durations.reduce((s, d) => s + d, 0);
     return {
       count: ms.length,
       total: +total.toFixed(1),
       avg: +(total / ms.length).toFixed(2),
-      max: +Math.max(...ms.map((m) => m.duration)).toFixed(2),
+      p95: +percentile(durations, 0.95).toFixed(2),
+      max: +Math.max(...durations).toFixed(2),
     };
   };
 
+  // Restores settle asynchronously (deep entries decode from a blob), so each
+  // step waits for its engine.undo measure to land before the next fires —
+  // otherwise the loop outruns the restore queue.
   const undoAll = async () => {
+    const completed = () => performance.getEntriesByName('engine.undo', 'measure').length;
     let n = 0;
-    while (S.canUndo && n < 40) {
+    for (let i = 0; i < 60; i++) {
+      if (!S.canUndo) break;
+      const before = completed();
       E.undo();
       n++;
+      const t0 = performance.now();
+      while (completed() === before && performance.now() - t0 < 5000) {
+        await new Promise((r) => requestAnimationFrame(r));
+      }
       await new Promise((r) => requestAnimationFrame(r));
     }
     return n;
   };
 
-  async function scenario(label, strokes) {
-    await undoAll(); // clean command log for an accurate per-scenario keyframe count
+  // Preflight the PERF_MARKS half of the build recipe. The harness checks above
+  // prove PUBLIC_ENABLE_DEV_HARNESS is on, but a build made without
+  // PERF_MARKS=true emits no marks/measures at all — undoAll's per-step wait
+  // would then burn its full 5 s cap on every undo step (4 scenarios × 20 steps
+  // ≈ 7 minutes of apparent hang) before printing a table of zeros. So drive
+  // one probe stroke and require its engine.commit measure (emitted
+  // synchronously at stroke end, engine.ts commitStrokeGroup) to exist before
+  // any scenario runs.
+  E.strokeSync(longSquiggle(0, 48), 'touch');
+  await new Promise((r) => requestAnimationFrame(r));
+  if (performance.getEntriesByName('engine.commit', 'measure').length === 0) {
+    E.undo();
+    console.error(
+      'PERF_MARKS is off in this build: a probe stroke produced no engine.commit ' +
+        'measure, so every undo step would stall for the full 5 s wait and every ' +
+        'timing column would read 0. Rebuild with BOTH flags — ' +
+        'PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true — reload /dev/engine, ' +
+        'and paste again.'
+    );
+    return;
+  }
+  await undoAll(); // drain the probe stroke so scenario counts start honest
+  performance.clearMeasures(); // drop the probe's own commit/snapshot/undo entries
+  performance.clearMarks();
+
+  // Every scenario must start from blank paper AND zero history, so each row's
+  // snapshot / undo-step counts come only from its own strokes — 22 strokes
+  // against the depth-20 cap means every row reports 20 snapshots and drains
+  // 20 undo steps.
+  // A bare clearCanvas() can't be the last reset step: a clear runs the full
+  // pushCommand path (it IS an undoable action, engine.ts clearCanvas), so it
+  // would leave one phantom snapshot that pads every count, dilutes the undo
+  // average with a trivial blank-paper restore, and inflates history MB.
+  // Instead drain the history first (undo restores the pre-command snapshot,
+  // so a full drain lands on the pre-history baseline — blank unless the
+  // operator drew past the undo cap before pasting); only if ink remains,
+  // clear and drain the clear's own entry too, then assert the count is 0.
+  const resetForScenario = async (label) => {
+    await undoAll();
+    if (!E.isCanvasEmpty()) {
+      E.clearCanvas();
+      await undoAll();
+    }
+    const leftover = E.getUndoDebug().snapshots;
+    if (leftover !== 0 || !E.isCanvasEmpty()) {
+      console.warn(
+        `[${label}] reset incomplete: ${leftover} leftover snapshot(s), ` +
+          `canvasEmpty=${E.isCanvasEmpty()} — this row's counts include pre-existing state`
+      );
+    }
+  };
+
+  async function scenario(label, { strokes, crayon }) {
+    await resetForScenario(label);
+    if (E.setCrayonMode) E.setCrayonMode(!!crayon);
     const drawStart = performance.now();
     for (const s of strokes) {
       if (Array.isArray(s)) E.strokeSync(s, 'touch');
@@ -102,35 +192,57 @@
     const undoStart = performance.now();
     const steps = await undoAll();
     const undoEnd = performance.now();
-    const kf = agg(drawStart, drawEnd, 'engine.keyframe');
+    if (E.setCrayonMode) E.setCrayonMode(false);
+    const snap = agg(drawStart, drawEnd, 'engine.snapshot');
+    const fold = agg(drawStart, drawEnd, 'engine.fold');
+    const commit = agg(drawStart, drawEnd, 'engine.commit');
     const un = agg(undoStart, undoEnd, 'engine.undo');
+    const historyMB = (dbg.liveRasters + 1) * mbPerRaster + dbg.blobBytes / 1048576;
     return {
       scenario: label,
-      keyframes: dbg.keyframes,
-      commands: dbg.commands,
-      maxOps: dbg.maxOps,
-      'kf builds': kf.count,
-      'kf max ms': kf.max,
+      snapshots: dbg.snapshots ?? 0,
+      'blob KB': Math.round((dbg.blobBytes ?? 0) / 1024),
+      'snap copy max ms': snap.max,
+      'fold max ms': fold.max,
+      'commit max ms': commit.max,
       'undo steps': steps,
       'undo avg ms': un.avg,
+      'undo p95 ms': un.p95,
       'undo max ms': un.max,
-      'history MB': +((dbg.keyframes + 1) * mbPerRaster).toFixed(0),
+      'history MB': +historyMB.toFixed(0),
     };
   }
 
+  // 22 strokes — two past the depth-20 cap (MAX_UNDO_STACK_SIZE, matching
+  // scripts/perf/undo-scenarios.mjs) — so history MB is measured with the
+  // stack full and the oldest-entry fold + shift overflow path runs on the
+  // real device.
+  const STROKES = 22;
+  const SCENARIOS = [
+    {
+      label: `${STROKES} long squiggles (~1200 ops each)`,
+      strokes: Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6)),
+    },
+    {
+      label: `${STROKES} five-finger drags (~2400 ops each)`,
+      strokes: Array.from({ length: STROKES }, (_, i) => multiGesture(i)),
+    },
+    {
+      label: `${STROKES} crayon squiggles`,
+      strokes: Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6)),
+      crayon: true,
+    },
+    {
+      label: `${STROKES} crayon scribbles (pass splits)`,
+      strokes: Array.from({ length: STROKES }, (_, i) => scribble(i % 6)),
+      crayon: true,
+    },
+  ];
+
   const rows = [];
-  rows.push(
-    await scenario(
-      '12 long squiggles (~1200 ops)',
-      Array.from({ length: 12 }, (_, i) => longSquiggle(i % 6))
-    )
-  );
-  rows.push(
-    await scenario(
-      '12 five-finger drags (~2400 ops)',
-      Array.from({ length: 12 }, (_, i) => multiGesture(i))
-    )
-  );
+  for (const sc of SCENARIOS) {
+    rows.push(await scenario(sc.label, sc));
+  }
 
   console.log(
     `Device raster ${side}×${side} = ${mbPerRaster.toFixed(1)} MB/raster · ` +
@@ -138,6 +250,12 @@
   );
   console.table(rows);
   console.log(
-    'Watch a Web Inspector Timeline for a dropped frame at finger-lift (the keyframe build).'
+    'Gates (ADR-0066): undo p95 < 50 ms · commit hitch (engine.commit max) ≈ one ' +
+      '120 Hz frame ≈ 8.3 ms · history ≲ 150 MB · no dropped frames while blobs ' +
+      'encode. Inside a commit, "snap copy" is engine.snapshot (the paper copy ' +
+      'alone) and "fold" is engine.fold (rendering the committed ops) — a hot ' +
+      'commit attributes to one of those. Watch a Web Inspector Timeline for a ' +
+      'dropped frame at finger-lift and during the blob encodes after it, and ' +
+      'the Xcode memory gauge for the snapshot tier.'
   );
 })();

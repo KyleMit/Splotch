@@ -14,34 +14,33 @@ re-runnable on any saved trace.
 
 ## Commands
 
-| Command                                       | Profiles                                                                                                                                                                                                                       | Capture                                                                                                                         |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run perf:web`                            | Production preview in headless Chromium, phone viewport, **4× CPU throttle**                                                                                                                                                   | full CDP Chrome trace                                                                                                           |
-| `npm run perf:web:raw`                        | …no throttle                                                                                                                                                                                                                   | full CDP trace                                                                                                                  |
-| `npm run perf:mount`                          | **page load / mount** (the Lighthouse-TBT window) — every other web command starts tracing *after* the page is loaded, so use this one for boot/startup questions; phone viewport, 4× throttle **+ Slow-4G network emulation** | CDP trace across the navigation **+** load-phase long tasks, paint timings, and any user-timing measures (`mount-summary.json`) |
-| `npm run perf:android`                        | the **real Capacitor WebView** on a connected device/emulator, no throttle                                                                                                                                                     | full CDP trace                                                                                                                  |
-| `npm run perf:ios`                            | Playwright **WebKit** (the iOS WKWebView engine), production preview                                                                                                                                                           | engine marks + FPS (no CDP trace)                                                                                               |
-| `npm run perf:undo`                           | the **undo/keyframe** question specifically — drives `/dev/engine` (so it can read `getUndoDebug()`) through 3 shaped sessions: 12 long squiggles, 12 short dot/dash marks, a mix; tablet viewport, 4× throttle                | CDP trace **+** per-scenario keyframe/op counts, draw-vs-undo timing, and analytic raster memory                                |
-| `npm run perf:replay -- --recording=<f>`      | **real recorded finger input** instead of synthetic strokes — replays a recording captured on-device with `scripts/perf/ipad-recorder.js` (see `ipad-device-profiling.md`) at real timing                                      | CDP trace **+** how your input was stored (`getUndoDebug`) + engine.draw/keyframe/undo cost                                     |
-| `npm run perf:analyze -- <dir or trace.json>` | re-summarize a saved trace                                                                                                                                                                                                     | —                                                                                                                               |
+| Command                                       | Profiles                                                                                                                                                                                                                                                                                                 | Capture                                                                                                                                       |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run perf:web`                            | Production preview in headless Chromium, phone viewport, **4× CPU throttle**                                                                                                                                                                                                                             | full CDP Chrome trace                                                                                                                         |
+| `npm run perf:web:raw`                        | …no throttle                                                                                                                                                                                                                                                                                             | full CDP trace                                                                                                                                |
+| `npm run perf:mount`                          | **page load / mount** (the Lighthouse-TBT window) — every other web command starts tracing *after* the page is loaded, so use this one for boot/startup questions; phone viewport, 4× throttle **+ Slow-4G network emulation**                                                                           | CDP trace across the navigation **+** load-phase long tasks, paint timings, and any user-timing measures (`mount-summary.json`)               |
+| `npm run perf:android`                        | the **real Capacitor WebView** on a connected device/emulator, no throttle                                                                                                                                                                                                                               | full CDP trace                                                                                                                                |
+| `npm run perf:ios`                            | Playwright **WebKit** (the iOS WKWebView engine), production preview                                                                                                                                                                                                                                     | engine marks + FPS (no CDP trace)                                                                                                             |
+| `npm run perf:undo`                           | the **undo** question specifically — drives `/dev/engine` (so it can read `getUndoDebug()`) through 7 shaped sessions (long squiggles, short marks, a mix, five-finger drags, pen scribbles, crayon squiggles, crayon reversal-scribbles); `--scenarios=a,b` runs a subset; tablet viewport, 4× throttle | CDP trace **+** per-scenario snapshot depth / live-raster / blob counts, commit + paper-copy + undo timing, and analytic raster + blob memory |
+| `npm run perf:replay -- --recording=<f>`      | **real recorded finger input** instead of synthetic strokes — replays a recording captured on-device with `scripts/perf/ipad-recorder.js` (see `ipad-device-profiling.md`) at real timing                                                                                                                | CDP trace **+** how your input landed on the snapshot stack (`getUndoDebug`) + engine.draw/commit/undo cost                                   |
+| `npm run perf:analyze -- <dir or trace.json>` | re-summarize a saved trace                                                                                                                                                                                                                                                                               | —                                                                                                                                             |
 
 Flags (web/ios): `--device=phone\|tablet\|desktop`, `--no-build` (reuse the last build); web also
 `--throttle=N`. Android: `--no-build` (profile the installed app as-is). `perf:undo` takes
 `--throttle=N` / `--no-throttle` / `--no-build`. Interaction runs write
 `perf-profiles/<timestamp>-<target>-…/` with `trace.json`, `metrics.json`, `summary.json`,
 `report.md`, and `screenshot.png`; `perf:undo` also writes `undo-scenarios.json` /
-`undo-scenarios.md` (the per-scenario keyframe/op/undo-cost/memory tables). `perf:mount` initially
+`undo-scenarios.md` (the per-scenario snapshot/undo-cost/memory tables). `perf:mount` initially
 writes only `trace.json` and `mount-summary.json`; running `perf:analyze` on that trace adds
 `summary.json` and `report.md`. The raw mount trace does not retain the harness settings metadata,
 so the regenerated report's Settings table can say `n/a` / `none`; use the command and
 output-directory suffix (for example, `mount-phone-4x`) for the actual capture profile.
 `perf-profiles/` is gitignored.
 
-**Undo/keyframe memory caveat:** history rasters (keyframes, the baseline, and the old snapshot
-stack) live in **canvas backing stores, not the JS heap** — so `performance.memory` / the heap table
-can't see them and stay flat. `perf:undo` reports the *real* cost analytically:
-`keyframes × (max(w,h)² × 4 bytes)`. It's also re-runnable unchanged against the old snapshot engine
-for an apples-to-apples keyframe-vs-snapshot comparison.
+**Undo memory caveat:** history rasters (the paper and the live snapshot tier) live in **canvas
+backing stores, not the JS heap** — so `performance.memory` / the heap table can't see them and stay
+flat. `perf:undo` reports the *real* cost analytically:
+`(live rasters + the paper) × (max(w,h)² × 4 bytes) + encoded blob bytes` (ADR-0066).
 
 ## How capture works (so the numbers make sense)
 
@@ -54,11 +53,11 @@ for an apples-to-apples keyframe-vs-snapshot comparison.
   `mount-summary.json` long-task list is the TBT signal; feed its `trace.json` to `perf:analyze` for
   the breakdown.
 * **Engine marks** are the clean signal. `PERF_MARKS=true` at build time turns on
-  `performance.mark/measure` around the engine's hot paths (`lib/drawing/` — `draw`, `commit`,
-  `foldBaseline`, `scanCanvasIsEmpty`, `resizeCanvas`, `undo`; gated by the shared `perf.ts` flag
-  across `engine.ts` and its sibling modules). The `npm run perf:*` scripts set it; normal builds
-  strip the marks entirely. If the report says "*No engine.* marks*", the build wasn't a
-  `PERF_MARKS` build.
+  `performance.mark/measure` around the engine's hot paths (`lib/drawing/` — `engine.draw`,
+  `engine.commit`, `engine.snapshot`, `engine.fold`, `engine.undo`, `engine.resize`,
+  `engine.scanEmpty`; gated by the shared `perf.ts` flag across `engine.ts` and its sibling
+  modules). The `npm run perf:*` scripts set it; normal builds strip the marks entirely. If the
+  report says "*No engine.* marks*", the build wasn't a `PERF_MARKS` build.
 * **Headless + CPU throttle approximates a phone** — good for finding hotspots and catching
   regressions, but absolute frame numbers want the Android path. Don't compare across
   targets/throttle without checking the Settings table.
@@ -83,22 +82,22 @@ Read in this order:
    of long tasks points to the phase they fall in (see the per-phase table's "Long tasks" column).
 2. **Engine hot paths** — the `Total`/`Avg`/`Max` per operation. Map a hot row to its cause and fix:
 
-   | Hot row                        | What it is                                                                              | Where to look                                                                                                                                                                                                     |
-   | ------------------------------ | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-   | `engine.draw` high **Avg/Max** | per-pointermove stroking (coalesced replay + quadratic segments)                        | `strokeSmoothSegments` / `draw` in `web/src/lib/drawing/engine.ts`. A high *Max* (vs Avg) = a few heavy frames, often the first move after a resize.                                                              |
-   | `engine.commit` high           | finalizing a stroke group into the undo log (push, fold check, keyframe check)          | should be cheap — recording ops, not copying pixels (ADR-0033).                                                                                                                                                   |
-   | `engine.keyframe` high         | collapsing a long command into a cumulative raster (`paintStateThrough`) at commit      | fires only for a scribble past `keyframeSegmentThreshold` (`undoHistory.ts`); a one-off replay at stroke end, off the draw frame (ADR-0035). Stops `engine.undo`/`engine.resize` from replaying thousands of ops. |
-   | `engine.foldBaseline` high     | folding the oldest command into the baseline once the log passes the cap                | a keyframed command blits onto the baseline; otherwise one stroke render per commit past `MAX_UNDO_STACK_SIZE`; runs at stroke end, off the draw frame.                                                           |
-   | `engine.scanEmpty` high        | `getImageData` readback after an **eraser** stroke                                      | `scanCanvasIsEmpty`; already downscaled 0.25×. Costlier on real devices (GPU→CPU readback).                                                                                                                       |
-   | `engine.resize` high/frequent  | backing-store rebuild + baseline/command-log replay, blitting keyframes (ADR-0034/0035) | should fire only on resize/rotation — if it fires mid-draw, that's the bug.                                                                                                                                       |
-   | `engine.undo` high             | rebuild from baseline + replay the command log, blitting keyframes (ADR-0033/0035)      | replay is bounded to ops after the most recent keyframe, not the whole session; a one-off cost at button-press, not per-frame.                                                                                    |
+   | Hot row                        | What it is                                                                           | Where to look                                                                                                                                                                                          |
+   | ------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+   | `engine.draw` high **Avg/Max** | per-pointermove stroking (coalesced samples + quadratic segments)                    | `strokeSmoothSegments` / `draw` in `web/src/lib/drawing/engine.ts`. A high *Max* (vs Avg) = a few heavy frames, often the first move after a resize.                                                   |
+   | `engine.commit` high           | the stroke-end pipeline: paper copy + folding the stroke's ops into the paper        | the pointerup hitch candidate (ADR-0066). Its two inner measures attribute it: `engine.snapshot` dominating = the paper copy; `engine.fold` dominating = rendering the ops.                            |
+   | `engine.snapshot` high         | the pre-stroke paper copy (alone) pushed onto the snapshot stack at commit           | one full-canvas `drawImage` per commit, off the draw frame (`undoHistory.ts pushCommand`). Software renderers exaggerate it heavily — judge on-device. See the pooling/`createImageBitmap` follow-ups. |
+   | `engine.fold` high             | rendering the committed stroke's ops onto the paper, inside the commit               | `foldPendingIntoPaper` (`undoHistory.ts`) — scales with op count and brush cost; heaviest for crayon strokes (per-pass pattern stamps).                                                                |
+   | `engine.scanEmpty` high        | `getImageData` readback after an **eraser** stroke                                   | `scanCanvasIsEmpty`; already downscaled 0.25×. Costlier on real devices (GPU→CPU readback).                                                                                                            |
+   | `engine.resize` high/frequent  | backing-store rebuild + one paper blit (plus pending/in-flight ops)                  | should fire only on resize/rotation — if it fires mid-draw, that's the bug.                                                                                                                            |
+   | `engine.undo` high             | restoring the top snapshot: a blit for a live raster, decode + blit for a blob entry | deep entries (past K_LIVE = 2) decode from their lossless blob; a one-off cost at button-press, not per-frame.                                                                                         |
 3. **Where the main thread went** (Chromium/Android only) — Scripting vs Rendering vs Painting.
    Painting/raster dominating = GPU/compositing cost (the high-DPR canvas), not JS.
 4. **Per-phase main-thread busy** — which interaction actually costs CPU (busy, not wall-clock —
    wall is dominated by the scenario's pacing sleeps).
-5. **Top JS by self-time** — corroborates 2–3. `drawImage` = canvas copies (the baseline blit on
-   resize/undo — the per-stroke virtual-canvas sync is gone, ADR-0034); `stroke`/`quadraticCurveTo`
-   = live drawing and undo/resize replay; `getImageData` = the empty-scan.
+5. **Top JS by self-time** — corroborates 2–3. `drawImage` = canvas copies (the commit's paper copy,
+   undo restores, the resize blit); `stroke`/`quadraticCurveTo` = live drawing and the commit fold;
+   `getImageData` = the empty-scan.
 
 For a forced-reflow / layout-thrash check, the harness confirmed **0 forced synchronous layouts** in
 the drawing path (the engine caches `canvasRect`). If that ever turns non-zero, look for a new
@@ -114,8 +113,8 @@ The drawing path is already well-optimized; treat these as the baseline:
   * **Capped-DPR canvas compositing (ADR-0015).** The dominant cost on-device is raster/paint of the
     4×-pixel canvas (~4970 ms/session on the Android emulator vs ~210 ms throttled-desktop).
     Changing it (`MAX_RENDER_SCALE`) alters rendered crispness — needs a deliberate decision, not a
-    drive-by edit. Note the undo *memory* cost it used to multiply is gone: undo now keeps one
-    baseline raster plus a tiny command log, not ten full snapshots (ADR-0033).
+    drive-by edit. Undo memory is tiered (ADR-0066): the paper + 2 live snapshot rasters, with
+    deeper history as encoded blobs — single-digit MB per entry, not full rasters.
   * `engine.scanEmpty` ~14 ms on-device per erase-stroke-end — low impact (once per stroke), noted
     for the future.
 

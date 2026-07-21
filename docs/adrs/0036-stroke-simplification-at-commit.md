@@ -1,11 +1,10 @@
 # ADR-0036: Simplify Stroke Ops at Commit So Undo Replays Few Segments
 
-**Status:** Active — **enabled by default**, since 2026-07 with the **'samples' reconstruction**
-(see "Revision"), which halved the worst-case rebuild shift the first shipped ('spline')
-reconstruction left. (An earlier revision disabled simplification entirely, having concluded it
-couldn't be made imperceptible; that conclusion was wrong — it rested on a strict 0px bar and a
-reconstruction *bug*, not a real floor. See "Outcome".) ADR-0035 keyframing remains as a bounded
-safety net. **Date:** 2026-06 (revised 2026-07)
+**Status:** Superseded by ADR-0066 (2026-07) — the simplification pipeline (`commandSimplify.ts` +
+`strokeSimplify.ts` and the `perf:sweep`/`perf:units` harnesses) is deleted. Snapshot undo stores no
+ops past commit, so there is nothing left to simplify; stored ops now exist only for the commit
+fold, which renders them verbatim. The 'samples' reconstruction work below remains a correct record
+of how rebuild fidelity was achieved in the replay era. **Date:** 2026-06 (revised 2026-07)
 
 ## Revision (2026-07): rebuild in the live curve family ('samples' mode)
 

@@ -70,7 +70,7 @@ test('undo reverts a stroke back to an empty canvas', async ({ page }) => {
   expect(await count(page)).toBe(0);
   const s = await state(page);
   expect(s.canvasEmpty).toBe(true);
-  // The only command was undone back to the empty baseline — nothing left to undo.
+  // The only stroke was undone back to the blank paper — nothing left to undo.
   expect(s.canUndo).toBe(false);
 });
 
@@ -110,8 +110,9 @@ test('undo preserves and rebases a stroke that is still in progress', async ({ p
 test('the undo stack caps at 20 — you cannot undo all the way past the cap', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
-  // 22 distinct strokes → 22 commands, but only the last 20 are retained
-  // (MAX_UNDO_STACK_SIZE); the older two fold into the baseline.
+  // 22 distinct strokes → 22 snapshots pushed, but only the last 20 are
+  // retained (MAX_UNDO_STACK_SIZE); the older two drop off the stack while
+  // their ink stays on the paper.
   for (let i = 0; i < 22; i++) {
     const y = 14 + i * 12;
     await drawStroke(page, box, [
@@ -128,7 +129,7 @@ test('the undo stack caps at 20 — you cannot undo all the way past the cap', a
   }
 
   expect(undos).toBe(20);
-  // Two strokes folded into the baseline, so the canvas can't reach blank.
+  // The two overflow strokes stay on the paper, so the canvas can't reach blank.
   expect(await count(page)).toBeGreaterThan(0);
 });
 
@@ -158,8 +159,8 @@ test('a clear during an in-flight stroke does not resurrect the wiped ink on reb
   // Reachable in the app: drag-to-clear releases pointers at drag *start* but
   // fires onClear at drag *end*, so a second finger can be mid-stroke when the
   // clear lands. The stroke's pre-clear ops must not survive into the command
-  // that commits after the clear, or every rebuild (undo/resize/export) would
-  // replay clear-then-stroke and repaint ink the user saw erased.
+  // that commits after the clear, or the fold (and any repaint of the still-
+  // uncommitted stroke) would repaint ink the user saw erased.
   const box = await page.locator('#engineCanvas').boundingBox();
   if (!box) throw new Error('canvas has no bounding box');
 
@@ -180,7 +181,8 @@ test('a clear during an in-flight stroke does not resurrect the wiped ink on reb
   expect(await count(page)).toBeGreaterThan(0);
   expect((await state(page)).canvasEmpty).toBe(false); // post-clear ink counts as content
 
-  // Undoing a later stroke replays clear + the straddling stroke from the log.
+  // Undoing a later stroke restores the snapshot taken after the clear + the
+  // straddling stroke.
   await drawStroke(page, box, [
     { x: 200, y: 260 },
     { x: 260, y: 260 },
@@ -625,9 +627,9 @@ test('an export started just before a clear still captures the drawing (save-on-
 });
 
 test('undoing an eraser stroke replays the erased pixels back', async ({ page }) => {
-  // The command-replay undo (ADR-0033) must reproduce destination-out ops in
-  // order: undoing the erase rebuilds from the baseline and replays only the
-  // pen stroke, so the erased pixels return and the canvas is non-empty again.
+  // Undo must revert a destination-out stroke like any other: the pre-erase
+  // snapshot (ADR-0066) still holds the pen stroke's pixels, so restoring it
+  // brings the erased pixels back and the canvas is non-empty again.
   const box = await page.locator('#engineCanvas').boundingBox();
 
   await drawStroke(page, box, [
@@ -657,13 +659,9 @@ test('undoing an eraser stroke replays the erased pixels back', async ({ page })
   expect(s.canUndo).toBe(true); // the pen stroke remains undoable
 });
 
-test('a moderate stroke stays replayable ops (no keyframe) and undoes cleanly', async ({
-  page,
-}) => {
-  // Below the keyframe budget a command keeps replayable ops (simplified at
-  // commit in the live curve family, see ADR-0036), so a rebuild re-strokes
-  // them. It must not keyframe and must undo as one unit. strokeSync gives a
-  // deterministic one-seg-per-move op stream.
+test('a moderate stroke is one snapshot and undoes cleanly', async ({ page }) => {
+  // One gesture → one snapshot on the undo stack, whatever the op volume.
+  // strokeSync gives a deterministic one-seg-per-move op stream.
   const points = Array.from({ length: 120 }, (_, i) => ({
     x: 20 + i * 2,
     y: 150 + Math.round(60 * Math.sin(i / 40)),
@@ -673,8 +671,7 @@ test('a moderate stroke stays replayable ops (no keyframe) and undoes cleanly', 
   expect(await count(page)).toBeGreaterThan(0);
 
   const debug = await page.evaluate(() => window.__engine.getUndoDebug());
-  expect(debug.commands).toBe(1);
-  expect(debug.keyframes).toBe(0);
+  expect(debug.snapshots).toBe(1);
 
   // Still one undo unit back to blank.
   await page.evaluate(() => window.__engine.undo());
@@ -684,14 +681,13 @@ test('a moderate stroke stays replayable ops (no keyframe) and undoes cleanly', 
   expect(s.canUndo).toBe(false);
 });
 
-test('a pathological all-corners gesture keyframes as a safety net (ADR-0035/0036)', async ({
+test('a pathological all-corners gesture is still one snapshot and one undo step', async ({
   page,
 }) => {
-  // Simplification can't thin a gesture that is genuinely all direction changes.
-  // Once a command's *simplified* segment total passes KEYFRAME_SEGMENT_THRESHOLD
-  // it collapses to a cumulative raster keyframe (ops dropped) so undo/resize stay
-  // one drawImage blit instead of re-stroking hundreds of segments on a 4×-DPR
-  // backing store. A tight zigzag keeps every point through RDP.
+  // A gesture that is genuinely all direction changes produces hundreds of raw
+  // ops. The stack must stay one snapshot per gesture (this exact shape used to
+  // trigger the ADR-0035 keyframe safety net; snapshots make it the same cost
+  // as any other stroke) and undo must revert it in one blit.
   const points = Array.from({ length: 460 }, (_, i) => ({
     x: i % 2 === 0 ? 30 : 230,
     y: 20 + Math.floor(i * 0.5),
@@ -701,10 +697,7 @@ test('a pathological all-corners gesture keyframes as a safety net (ADR-0035/003
   expect(await count(page)).toBeGreaterThan(0);
 
   const debug = await page.evaluate(() => window.__engine.getUndoDebug());
-  // One undo unit, collapsed to a keyframe with its ops dropped.
-  expect(debug.commands).toBe(1);
-  expect(debug.keyframes).toBe(1);
-  expect(debug.maxSegments).toBe(0);
+  expect(debug.snapshots).toBe(1);
 
   // Undo still reverts the whole gesture in one step, back to blank.
   await page.evaluate(() => window.__engine.undo());
@@ -714,23 +707,19 @@ test('a pathological all-corners gesture keyframes as a safety net (ADR-0035/003
   expect(s.canUndo).toBe(false);
 });
 
-test('a keyframed gesture survives a resize, rebuilt from the keyframe (ADR-0035)', async ({
-  page,
-}) => {
-  // The keyframe is a cumulative square raster, so a resize rebuilds from it
-  // (drawImage) rather than re-stroking the dropped ops — the drawing must still
-  // be there afterward.
+test('a dense zigzag survives a resize, repainted from the paper raster', async ({ page }) => {
+  // A resize wipes the visible backing store; the repaint is one blit of the
+  // committed paper — the drawing must still be there afterward.
   const points = Array.from({ length: 460 }, (_, i) => ({
     x: i % 2 === 0 ? 30 : 230,
     y: 20 + Math.floor(i * 0.5),
   }));
   await page.evaluate((pts) => window.__engine.strokeSync(pts), points);
-  expect((await page.evaluate(() => window.__engine.getUndoDebug())).keyframes).toBe(1);
   expect(await count(page)).toBeGreaterThan(0);
 
   await page.evaluate(() => window.__engine.resizeTo(500, 400));
 
-  // The drawing persists after the resize, rebuilt from the keyframe.
+  // The drawing persists after the resize, repainted from the paper.
   expect(await count(page)).toBeGreaterThan(0);
 
   // And it still undoes as a single unit back to blank.
@@ -739,14 +728,12 @@ test('a keyframed gesture survives a resize, rebuilt from the keyframe (ADR-0035
   expect((await state(page)).canvasEmpty).toBe(true);
 });
 
-test('a back-and-forth scribble keeps its full extent after a rebuild (ADR-0036 tip fidelity)', async ({
+test('a back-and-forth scribble keeps its full extent after a rebuild (tip fidelity)', async ({
   page,
 }) => {
-  // Simplification drops the dense samples around each turning point, so the
-  // curve through the survivors must pass *through* the tips. The midpoint
-  // smoothing it replaced used those tips only as control points and bulged ~25%
-  // short of them, so a scribble visibly shrank on undo/resize. Draw a horizontal
-  // zigzag, then force a rebuild-from-stored-ops via resize and check the extent.
+  // The resize repaint blits the committed paper, so the scribble's tips must
+  // survive exactly (the ADR-0036 simplification era shrank them ~25% until the
+  // curve family was fixed; a blit can't shrink anything — this pins that).
   const pts: { x: number; y: number }[] = [{ x: 50, y: 40 }];
   let y = 40;
   let dir = 1;
@@ -764,7 +751,7 @@ test('a back-and-forth scribble keeps its full extent after a rebuild (ADR-0036 
   const before = await page.evaluate(() => window.__engine.inkBounds());
   if (!before) throw new Error('nothing drawn');
 
-  // Force the stored (simplified) ops to repaint the visible canvas.
+  // Force a repaint of the visible canvas from the paper raster.
   await page.evaluate(() => window.__engine.resizeTo(300, 300));
   const after = await page.evaluate(() => window.__engine.inkBounds());
   if (!after) throw new Error('rebuild produced an empty canvas');
@@ -775,14 +762,12 @@ test('a back-and-forth scribble keeps its full extent after a rebuild (ADR-0036 
   expect(after.minX).toBeLessThanOrEqual(before.minX + 4);
 });
 
-test('a sharp corner stays sharp and in place after a rebuild (ADR-0036 corner fidelity)', async ({
+test('a sharp corner stays sharp and in place after a rebuild (corner fidelity)', async ({
   page,
 }) => {
-  // A smooth interpolating spline rounds a sharp turn into a displaced bend, so a
-  // hook drawn as a long arm + a sharp reversal would lose its corner on rebuild
-  // (the corner pulls inward, shrinking the extent by tens of px). Corner-aware
-  // splining keeps the turn crisp and located. Draw the hook, rebuild, and check
-  // the corner's reach is preserved.
+  // The rebuild is a blit of the committed paper, so a hook's sharp corner must
+  // keep its exact reach (the simplification era could round and displace it by
+  // tens of px). Draw the hook, rebuild, and check the corner's reach.
   const pts: { x: number; y: number }[] = [];
   for (let i = 0; i <= 60; i++) pts.push({ x: 40 + i * 3, y: 150 }); // long horizontal arm
   for (let i = 1; i <= 18; i++) pts.push({ x: 220 - i * 2, y: 150 - i * 6 }); // sharp hook up-left
@@ -832,9 +817,7 @@ test('a multi-touch gesture undoes as a single unit', async ({ page }) => {
   expect(s.canUndo).toBe(false); // the whole group was one undo step
 });
 
-test('undo still works after a canvas resize (replay onto the grown baseline)', async ({
-  page,
-}) => {
+test('undo still works after a canvas resize (restore onto the grown paper)', async ({ page }) => {
   const box = await page.locator('#engineCanvas').boundingBox();
 
   await drawStroke(page, box, [
@@ -1037,9 +1020,12 @@ test('the margins around the rotated paper are drawable, and crop on rotating ba
   if (!bounds) throw new Error('rotation lost the drawing');
   expect(bounds.minX).toBeGreaterThanOrEqual(30);
 
-  // The margin ops are retained, so rotating forward again brings the ink back.
+  // The crop is permanent: the commit fold clipped the margin ink at the paper
+  // square's bounds, so rotating forward again does not resurrect it (the
+  // accepted ADR-0050 margin corner — replay-era op retention brought it back,
+  // snapshot folding does not).
   await rotateTo(page, 90, 400, 300);
-  expect(await page.evaluate(() => window.__engine.pixelAt(25, 150)[3])).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(25, 150)[3])).toBe(0);
 });
 
 test('clearing while rotated wipes margin ink too', async ({ page }) => {
@@ -1200,9 +1186,10 @@ test('a visibility flip with unchanged geometry leaves the drawing untouched', a
 
 // ── teardown / re-init lifecycle (ADR-0004) ──────────────────────────────────
 // Client-side navigation (`/` → `/privacy` → `/`) tears the engine down and
-// re-inits it on a fresh canvas. Drawing state (command log, baseline) persists
-// across the cycle by design — a parent checking another page must not wipe the
-// child's drawing — while pointer-input state must be reset by teardown().
+// re-inits it on a fresh canvas. Drawing state (paper raster, snapshot stack)
+// persists across the cycle by design — a parent checking another page must not
+// wipe the child's drawing — while pointer-input state must be reset by
+// teardown().
 
 test('the drawing persists across teardown + re-init (client-side navigation)', async ({
   page,
@@ -1217,13 +1204,14 @@ test('the drawing persists across teardown + re-init (client-side navigation)', 
 
   await page.evaluate(() => window.__engine.remount());
 
-  // Rebuilt from the retained baseline + command log onto the fresh init.
+  // Rebuilt by blitting the retained paper raster onto the fresh init.
   expect(await count(page)).toBeGreaterThan(0);
   const s = await state(page);
   expect(s.canvasEmpty).toBe(false);
   expect(s.canUndo).toBe(true);
 
-  // The persisted log is still live: undo reverts the pre-remount stroke.
+  // The persisted snapshot stack is still live: undo reverts the pre-remount
+  // stroke.
   await page.evaluate(() => window.__engine.undo());
   expect(await count(page)).toBe(0);
   expect((await state(page)).canvasEmpty).toBe(true);
@@ -1274,10 +1262,10 @@ test('a pointer held through teardown cannot keep painting after remount', async
 test('a stroke in progress survives a mid-stroke resize and undoes as one unit', async ({
   page,
 }) => {
-  // The rebuild replays from the baseline + command log, but a stroke still being
-  // drawn has an uncommitted activeCommand (recorded, not yet in the log). The
-  // resize must replay it too, so the in-flight stroke isn't dropped — and the
-  // whole stroke remains a single undo unit afterwards.
+  // The rebuild blits the committed paper, but a stroke still being drawn has
+  // an uncommitted activeCommand (recorded, not yet folded). The resize must
+  // repaint it too, so the in-flight stroke isn't dropped — and the whole
+  // stroke remains a single undo unit afterwards.
   const box = await page.locator('#engineCanvas').boundingBox();
   if (!box) throw new Error('canvas has no bounding box');
 
@@ -1567,11 +1555,13 @@ test('scribbling back and forth in ONE gesture builds up like separate strokes',
   expect(r.scribble).toBeLessThan(0.995);
 });
 
-test('mid-stroke pass splits replay byte-identically and undo cleanly', async ({ page }) => {
-  // The split gesture stores several seeds inside one command; the rebuild must
-  // reproduce EVERY byte — crayon ops replay exactly as drawn (no RDP re-fit,
-  // whose ~1px silhouette shift would flip whole binary-tooth texels at the
-  // scribble's hairpins).
+test('mid-stroke pass splits survive a remount byte-identically and undo cleanly', async ({
+  page,
+}) => {
+  // The split gesture folds several seeds' worth of ops into the paper at
+  // commit; a remount blits that paper back, and the blit must reproduce EVERY
+  // byte of what the child saw live — live-render and fold share renderOp, so
+  // any drift here means the fold diverged from the live pixels.
   const r = await page.evaluate(() => {
     const E = window.__engine;
     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
@@ -1612,9 +1602,7 @@ test('mid-stroke pass splits replay byte-identically and undo cleanly', async ({
   expect(await count(page)).toBe(0);
 });
 
-test('crayon replay is deterministic — a rebuild reproduces the exact pixel count', async ({
-  page,
-}) => {
+test('a crayon remount reproduces the exact pixel count', async ({ page }) => {
   await page.evaluate(() => {
     const E = window.__engine;
     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
@@ -1630,9 +1618,8 @@ test('crayon replay is deterministic — a rebuild reproduces the exact pixel co
   const c0 = await count(page);
   expect(c0).toBeGreaterThan(0);
 
-  // Teardown + re-init replays every stored op from the command log; the crayon
-  // tooth is deterministic (fixed field + stored seed), so the rebuild is
-  // pixel-for-pixel identical.
+  // Teardown + re-init repaints from the committed paper raster (one blit), so
+  // the rebuild is pixel-for-pixel identical.
   await page.evaluate(() => window.__engine.remount());
   expect(await count(page)).toBe(c0);
 
@@ -1641,46 +1628,270 @@ test('crayon replay is deterministic — a rebuild reproduces the exact pixel co
   expect(await count(page)).toBe(0);
 });
 
-test('undoing a later crayon stroke leaves an earlier stroke texture spatially unchanged', async ({
+// --- The snapshot memory tier (ADR-0066) --------------------------------------
+//
+// Undo restores pre-stroke canvas snapshots (see undoHistory.ts). A restore can
+// be asynchronous — deep entries decode from an encoded blob — so undo() returns
+// its queue promise (page.evaluate awaits it) and assertions that race the
+// encode tier poll for the settled state.
+
+test('depth caps at 20 and deep entries restore from encoded blobs', async ({ page }) => {
+  await page.evaluate(() => {
+    for (let i = 0; i < 22; i++) {
+      const y = 14 + i * 12;
+      window.__engine.strokeSync(
+        [
+          { x: 30, y },
+          { x: 270, y },
+        ],
+        'pen'
+      );
+    }
+  });
+
+  // The cold tier encodes off the commit path — wait for it to settle: only
+  // K_LIVE (2) recent snapshots stay live rasters, the rest demote to blobs.
+  await expect(async () => {
+    const d = await page.evaluate(() => window.__engine.getUndoDebug());
+    expect(d.snapshots).toBe(20);
+    expect(d.liveRasters).toBeLessThanOrEqual(2);
+    expect(d.blobBytes).toBeGreaterThan(0);
+  }).toPass();
+
+  for (let i = 0; i < 20; i++) {
+    await page.evaluate(() => window.__engine.undo());
+  }
+  expect((await state(page)).canUndo).toBe(false);
+
+  // The two oldest snapshots were shifted past the cap, so the deepest restore
+  // still shows strokes 1–2 — the undo wall.
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 14)[3])).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 26)[3])).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 38)[3])).toBe(0);
+});
+
+test('undoing a later crayon stroke restores the earlier texture byte-exactly', async ({
   page,
 }) => {
-  // The tooth must survive an undo *in place*, not just at the same pixel count.
-  // A crayon op is stroked live as dozens of overlapping per-frame ops but
-  // replayed (on undo) as a few simplified ones; unless the tooth is binary,
-  // source-over accumulates the fractional overlap differently between the two
-  // op counts and the whole texture visibly shifts when any later stroke is
-  // undone. Draw stroke A, snapshot its band, draw a NON-overlapping stroke B,
-  // undo B, and assert A's band is essentially byte-identical — a regression to
-  // the fractional-alpha tooth changes the majority of A's pixels here.
-  const changedFrac = await page.evaluate(() => {
+  // A restore is a raster blit of the pre-stroke paper, so an earlier stroke's
+  // wax texture must come through with ZERO changed bytes — not merely within
+  // an AA tolerance band.
+  const debug = await page.evaluate(async () => {
     const E = window.__engine;
     const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
     const g = cv.getContext('2d')!;
-    const band = () => Array.from(g.getImageData(20, 60, cv.width - 40, 30).data);
     const line = (y: number) => {
       const p: { x: number; y: number }[] = [];
       for (let i = 0; i <= 40; i++) p.push({ x: 20 + ((cv.width - 40) * i) / 40, y });
       return p;
     };
-    E.clearCanvas();
     E.setCrayonMode(true);
     E.setColor('#2c5faa');
     E.setStrokeWidth(24);
     E.strokeSync(line(75), 'pen'); // stroke A, top band
-    const before = band();
-    E.strokeSync(line(cv.height - 60), 'pen'); // stroke B, far bottom band (no overlap)
-    E.undo();
-    const after = band();
-    let changed = 0;
-    const px = before.length / 4;
-    for (let i = 0; i < before.length; i += 4) {
-      let d = 0;
-      for (let c = 0; c < 4; c++) d += Math.abs(before[i + c] - after[i + c]);
-      if (d > 8) changed++;
-    }
-    return changed / px;
+    (window as unknown as { __bandBefore: number[] }).__bandBefore = Array.from(
+      g.getImageData(20, 60, cv.width - 40, 30).data
+    );
+    E.strokeSync(line(cv.height - 60), 'pen'); // stroke B, far bottom band
+    const d = E.getUndoDebug();
+    await E.undo();
+    return d;
   });
-  // Only the sub-pixel silhouette AA of A may differ (a thin ring); the interior
-  // tooth is byte-stable. The pre-fix behaviour changed ~70% of the band.
-  expect(changedFrac).toBeLessThan(0.05);
+  expect(debug.snapshots).toBe(2);
+
+  const gone = await page.evaluate(() => {
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    return window.__engine.pixelAt(Math.round(cv.width / 2), cv.height - 60)[3];
+  });
+  expect(gone).toBe(0);
+
+  const mismatched = await page.evaluate(() => {
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const before = (window as unknown as { __bandBefore: number[] }).__bandBefore;
+    const after = g.getImageData(20, 60, cv.width - 40, 30).data;
+    let n = 0;
+    for (let i = 0; i < before.length; i++) if (before[i] !== after[i]) n++;
+    return n;
+  });
+  expect(mismatched).toBe(0);
+});
+
+test('a stroke committed during a deep-undo blob decode survives the restore and undoes next', async ({
+  page,
+}) => {
+  // The deep-undo step pops its snapshot, then awaits createImageBitmap(blob)
+  // — a real task-level window. A commit landing inside it must defer its
+  // copy+fold behind the pending restore (paper chain): the committed ink
+  // survives the restore's blit, and the next undo undoes IT, instead of
+  // restoring a pre-undo snapshot (undo acting as redo).
+  await page.evaluate(() => {
+    for (let i = 0; i < 4; i++) {
+      const y = 20 + i * 20;
+      window.__engine.strokeSync(
+        [
+          { x: 30, y },
+          { x: 270, y },
+        ],
+        'pen'
+      );
+    }
+  });
+
+  // Wait for the cold tier to settle so the third undo is a blob decode.
+  await expect(async () => {
+    const d = await page.evaluate(() => window.__engine.getUndoDebug());
+    expect(d.liveRasters).toBeLessThanOrEqual(2);
+    expect(d.blobBytes).toBeGreaterThan(0);
+  }).toPass();
+
+  await page.evaluate(async () => {
+    const E = window.__engine;
+    await E.undo(); // stroke 4 — live raster
+    await E.undo(); // stroke 3 — live raster
+    const deepUndo = E.undo(); // stroke 2 — demoted, decodes from its blob
+    await Promise.resolve(); // the step has popped its snapshot and is awaiting the decode
+    E.strokeSync([{ x: 150, y: 200 }], 'pen'); // dot commits mid-decode
+    await deepUndo;
+  });
+
+  // The restore landed BENEATH the dot: stroke 2 gone, stroke 1 kept, dot kept.
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 20)[3])).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 40)[3])).toBe(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 200)[3])).toBeGreaterThan(0);
+
+  // The next undo undoes the dot — not a redo of the strokes the child undid.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 200)[3])).toBe(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 40)[3])).toBe(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 20)[3])).toBeGreaterThan(0);
+
+  // And one more reaches blank with the stack cleanly exhausted.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+  const s = await state(page);
+  expect(s.canvasEmpty).toBe(true);
+  expect(s.canUndo).toBe(false);
+});
+
+test('drawing immediately after rapid undos folds onto the restored paper (undo → draw → undo)', async ({
+  page,
+}) => {
+  // Toddler flow: mash undo three times (the last restore decodes a blob),
+  // then dot the canvas before the restores land. The stroke's commit queues
+  // behind all three restores, its baseline rebases to the restored blank
+  // paper, and the next undo removes just that stroke back to blank.
+  await page.evaluate(() => {
+    for (let i = 0; i < 3; i++) {
+      const y = 20 + i * 20;
+      window.__engine.strokeSync(
+        [
+          { x: 30, y },
+          { x: 270, y },
+        ],
+        'pen'
+      );
+    }
+  });
+  await expect(async () => {
+    const d = await page.evaluate(() => window.__engine.getUndoDebug());
+    expect(d.blobBytes).toBeGreaterThan(0);
+  }).toPass();
+
+  await page.evaluate(async () => {
+    const E = window.__engine;
+    E.undo();
+    E.undo();
+    const chain = E.undo(); // three rapid taps back to blank
+    E.strokeSync(
+      [
+        { x: 150, y: 200 },
+        { x: 200, y: 250 },
+      ],
+      'pen'
+    ); // draws before any restore lands
+    await chain;
+  });
+
+  // Only the new stroke survives the queued restores.
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 20)[3])).toBe(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 40)[3])).toBe(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 60)[3])).toBe(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 200)[3])).toBeGreaterThan(0);
+  let s = await state(page);
+  expect(s.canvasEmpty).toBe(false);
+  expect(s.canUndo).toBe(true);
+
+  // Undoing the new stroke lands on the blank paper the undos restored — the
+  // deferred commit's snapshot copied the post-restore state, not a stale one.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+  s = await state(page);
+  expect(s.canvasEmpty).toBe(true);
+  expect(s.canUndo).toBe(false);
+});
+
+test('encoded snapshots rising into the K_LIVE window re-inflate to live rasters', async ({
+  page,
+}) => {
+  // The K_LIVE invariant must survive undo-then-draw, not just monotonic
+  // growth: after deep undos the entries that rise into the top-2 window
+  // decode back to live rasters off the hot path, so the *second* undo tap
+  // after a new stroke is a live blit, not a blob decode.
+  await page.evaluate(() => {
+    for (let i = 0; i < 5; i++) {
+      const y = 20 + i * 20;
+      window.__engine.strokeSync(
+        [
+          { x: 30, y },
+          { x: 270, y },
+        ],
+        'pen'
+      );
+    }
+  });
+
+  // Let the cold tier settle: strokes 1–3 demote to blobs, 4–5 stay live.
+  await expect(async () => {
+    const d = await page.evaluate(() => window.__engine.getUndoDebug());
+    expect(d.snapshots).toBe(5);
+    expect(d.liveRasters).toBe(2);
+    expect(d.blobBytes).toBeGreaterThan(0);
+  }).toPass();
+
+  await page.evaluate(async () => {
+    await window.__engine.undo();
+    await window.__engine.undo();
+    await window.__engine.undo();
+  });
+
+  // Both survivors were blobs; rising into the window re-inflates them.
+  await expect(async () => {
+    const d = await page.evaluate(() => window.__engine.getUndoDebug());
+    expect(d.snapshots).toBe(2);
+    expect(d.liveRasters).toBe(2);
+    expect(d.blobBytes).toBe(0);
+  }).toPass();
+
+  await page.evaluate(() => window.__engine.strokeSync([{ x: 150, y: 200 }], 'pen'));
+
+  // The new commit re-tiers: top-2 live (stroke 2's snapshot + the dot's),
+  // the entry pushed below the window demotes back to a blob.
+  await expect(async () => {
+    const d = await page.evaluate(() => window.__engine.getUndoDebug());
+    expect(d.snapshots).toBe(3);
+    expect(d.liveRasters).toBe(2);
+    expect(d.blobBytes).toBeGreaterThan(0);
+  }).toPass();
+
+  // First undo drops the dot; the second — the tap that used to pay a blob
+  // decode — restores stroke 1 from its re-inflated raster.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 200)[3])).toBe(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 40)[3])).toBeGreaterThan(0);
+
+  await page.evaluate(() => window.__engine.undo());
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 40)[3])).toBe(0);
+  expect(await page.evaluate(() => window.__engine.pixelAt(150, 20)[3])).toBeGreaterThan(0);
+  expect((await state(page)).canUndo).toBe(true);
 });

@@ -14,9 +14,9 @@
 //   1. Contained grain. The tooth is the op's fill ALPHA, so it only ever exists
 //      inside the stroke the finger drew — nothing sprays past the path.
 //   2. Deterministic. The tooth field is generated once from a fixed seed (no
-//      Math.random / time at render), so undo/resize/export replay identical
-//      pixels. Per-stroke variation is a stored integer `seed` that only
-//      PHASE-SHIFTS the same field — still fully replayable.
+//      Math.random / time at render), so the commit fold and export repaint
+//      identical pixels to the live stroke. Per-stroke variation is a stored
+//      integer `seed` that only PHASE-SHIFTS the same field.
 //   3. Wax buildup at constant hue. The body is laid down OPAQUE, so a second
 //      same-colour stroke over the first is opaque-over-opaque of the identical
 //      colour — the hue cannot shift or darken (no multiply). What DOES change is
@@ -31,12 +31,12 @@
 // lives in the tile's RGB ONLY — the alpha stays binary, and the shift is a
 // function of the paper texel alone, identical across every pass and op of a
 // stroke — so overdraw rewrites each pixel with its own exact colour
-// (idempotent) and property 2's op-count-independent replay is untouched.
+// (idempotent) and property 2's live-equals-fold reproduction is untouched.
 //
 // Patterns are paper-anchored like the magic sheet (ADR-0043): a
 // per-(context,colour,pass) repeating pattern whose tile grid is offset in paper
-// coordinates by the stroke's phase, so live drawing and every replay surface
-// tile it identically. Within one deposition pass every op shares the seed, so
+// coordinates by the stroke's phase, so live drawing and every fold/export
+// surface tile it identically. Within one deposition pass every op shares the seed, so
 // the tooth is spatially consistent across the pass's segments and reads as one
 // coherent piece of wax rather than beading per-segment.
 //
@@ -47,8 +47,8 @@
 // painted — and the engine starts a new pass there by bumping to a fresh seed
 // for the ops that follow. The new phase punches its pits in different paper
 // spots, so scribbling back and forth in one gesture builds up live exactly
-// like separate strokes do. Seeds are stored per op, so this is replay-safe by
-// the same mechanism as everything else.
+// like separate strokes do. Seeds are stored per op, so the commit fold
+// reproduces it by the same mechanism as everything else.
 
 import { scheduleIdle } from '../idle';
 
@@ -62,8 +62,8 @@ export interface CrayonPass {
 }
 
 // Tunable knobs, mutable so the dev/engine harness can A/B render variants at
-// runtime (setCrayonOptions, exposed only behind PUBLIC_ENABLE_DEV_HARNESS —
-// mirrors commandSimplify's setSimplifyOptions). Production keeps these defaults.
+// runtime (setCrayonOptions, exposed only behind PUBLIC_ENABLE_DEV_HARNESS).
+// Production keeps these defaults.
 export interface CrayonOptions {
   // Tile edge in paper px. The tooth field repeats every `tile` px; large enough
   // that the repeat is not legible as texture, small enough to stay cheap.
@@ -77,7 +77,7 @@ export interface CrayonOptions {
   // without shifting — see the idempotence note below — so this is not an alpha
   // ramp: it is the width of the deterministic ordered-dither band that turns a
   // would-be grey edge pixel into a 0/1 decision, keeping the pit rims from
-  // reading as hard aliased dots while staying replay-stable.
+  // reading as hard aliased dots while staying fold-stable.
   edge: number;
   // Subtle body-density variation: the tooth coverage swings by up to this much
   // across a slow low-frequency field, so the wax isn't a flat marker fill. This
@@ -90,7 +90,7 @@ export interface CrayonOptions {
   // disables, leaving a flat body colour). Driven by the paper fields via
   // shadeShift: thick deposit reads slightly darker, sparse patches slightly
   // lighter — the subtle waxy mottling of a real fill. RGB only; the alpha
-  // stays binary so undo/replay stability is untouched.
+  // stays binary so live-equals-fold stability is untouched.
   shadeVariation: number;
   // How strongly the ink UNDER a new deposition pass glazes through it. Each
   // pass is buffered at full opacity and stamped as a SUBTRACTIVE glaze —
@@ -285,11 +285,10 @@ function parseColor(color: string): [number, number, number] {
 }
 
 // Binary wax opacity (0 or 1) at texel i for a pass covering `coverage` of the
-// area. The tooth MUST be binary: a crayon op is stroked live as dozens of
-// overlapping per-frame ops but replayed (undo/resize/export) as a few simplified
-// ones, and source-over only reproduces the same pixels under a different op
-// count when every alpha is 0 or 1 (fractional alpha accumulates on overlap, so a
-// soft tooth shifts the moment the drawing is rebuilt). So: bias the pit
+// area. The tooth MUST be binary: a pass accumulates dozens of overlapping
+// per-frame ops on its buffer, and source-over only stays idempotent under
+// that overlap when every alpha is 0 or 1 (fractional alpha would deepen
+// wherever consecutive ops of one pass overlap, striping the stroke). So: bias the pit
 // threshold slowly by the body field (a coverage wobble, not an alpha dip, so the
 // body stays opaque and same-colour overlap can't darken), jitter it per-texel by
 // the dither field within an `edge`-wide band so rims stipple instead of aliasing,

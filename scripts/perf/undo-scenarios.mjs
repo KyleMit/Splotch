@@ -1,19 +1,18 @@
-// Focused undo/keyframe profile: drives the imperative engine through three
-// deliberately-shaped sessions and records, per scenario, how the command log
-// behaves (keyframe count, retained commands, peak op count), the cost of
-// drawing vs. the cost of undoing, and the JS-heap footprint while history is
-// resident. Built to answer "is keyframing earning its keep, and is undo back
-// to O(1)?" (ADR-0033/0035) and to be re-run unchanged against the old snapshot
-// engine for a side-by-side comparison.
+// Focused undo profile: drives the imperative engine through deliberately-
+// shaped sessions and records, per scenario, how the snapshot stack behaves
+// (depth, live rasters vs encoded blobs), the cost of drawing vs. the cost of
+// undoing — the commit hitch (paper copy) and per-step restore — and the
+// memory footprint while history is resident. Built to watch the ADR-0066
+// gates: commit max, snapshot copy max, undo avg/max, history MB.
 //
 //   npm run perf:undo                       (tablet viewport, 4× CPU throttle)
 //   node scripts/perf/undo-scenarios.mjs --no-throttle --no-build
 //
 // Unlike perf:web (which drives the real #drawingCanvas toddler session), this
-// drives /dev/engine so it can read getUndoDebug() — the command-log internals —
-// and place strokes with exact op counts. Synthetic PointerEvents don't coalesce,
-// so one dispatched pointermove == one engine draw() == one recorded op; that is
-// what lets a stroke deterministically land above or below OP_KEYFRAME_THRESHOLD.
+// drives /dev/engine so it can read getUndoDebug() — the snapshot-stack
+// internals — and place strokes with exact op counts. Synthetic PointerEvents
+// don't coalesce, so one dispatched pointermove == one engine draw() == one
+// recorded op — real 120 Hz input volume, deterministically.
 
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -33,8 +32,8 @@ import { analyze, renderReport } from './analyze.mjs';
 // The deployment target we actually worry about: a 12.9" iPad Pro in portrait —
 // 1024×1366 CSS pt. iPads report devicePixelRatio 2 and the engine caps
 // renderScale at min(dpr, 2) = 2, so the backing store is 2048×2732 and the
-// square baseline/keyframe raster is 2732² ≈ 29.9 MB each — the real per-raster
-// cost on that device (ten of them ≈ 300 MB, the worst case ADR-0033 bounds).
+// square paper/snapshot raster is 2732² ≈ 29.9 MB each — the real per-raster
+// cost on that device (the K_LIVE tier holds 2 of them + the paper).
 const DEVICE = { width: 1024, height: 1366, deviceScaleFactor: 2, label: 'ipad-pro-12.9' };
 
 const args = process.argv.slice(2);
@@ -46,19 +45,18 @@ const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '4
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
 
-// The regression is "one op per pointermove frame," so op volume = refresh rate
-// × stroke duration. A 120 Hz ProMotion iPad Pro captures ~120 ops/second, so a
-// sustained multi-second scribble is ~1,000–2,400 ops in ONE undo command
-// (ADR-0035). Default to a ~10 s single-finger scribble at 120 Hz; override to
-// explore. This is the data volume the harness MUST reproduce — 80-op strokes
-// clear the 48-op threshold but don't stress the keyframe build the way a real
-// scribble does.
+// Op volume = refresh rate × stroke duration. A 120 Hz ProMotion iPad Pro
+// captures ~120 ops/second, so a sustained multi-second scribble is
+// ~1,000–2,400 ops in ONE undo command. Default to a ~10 s single-finger
+// scribble at 120 Hz; override to explore. This is the data volume the
+// harness MUST reproduce — it's what made the replay era's stroke-end
+// keyframe builds hitch, and what the commit fold now absorbs.
 const HZ = Number(flag('hz', '120'));
 const LONG_SECONDS = Number(flag('long-seconds', '10'));
 const LONG_OPS = Number(flag('long-ops', String(Math.round(HZ * LONG_SECONDS)))); // ≈1200
 // A multi-finger gesture is a SINGLE undo unit accumulating every finger's ops.
-// 5 fingers × a ~4 s drag at 120 Hz ≈ this many ops in one command — the worst
-// case for a single keyframe build.
+// 5 fingers × a ~4 s drag at 120 Hz ≈ this many ops in one command — the
+// heaviest single commit fold.
 const MULTI_FINGERS = 5;
 const MULTI_SECONDS = Number(flag('multi-seconds', '4'));
 const MULTI_OPS_PER_FINGER = Math.round(HZ * MULTI_SECONDS);
@@ -67,7 +65,7 @@ const MARGIN = 160; // keep stroke starts away from the edge-swipe guard band
 
 // A long, multi-second squiggle: one dense sine sweep across the canvas interior.
 // `points` dispatched moves → ~points ops, so at the default LONG_OPS each of
-// these is a real 120 Hz scribble that commits to a keyframe.
+// these is a real 120 Hz scribble.
 function longSquiggle(row, width, height, points = LONG_OPS) {
   const x0 = MARGIN;
   const x1 = width - MARGIN;
@@ -82,8 +80,28 @@ function longSquiggle(row, width, height, points = LONG_OPS) {
   return pts;
 }
 
-// A tap (1 point → a dot op) or a short dash (4 points → 3 ops). Either way far
-// under the threshold, so these stay cheap replayable ops and never keyframe.
+// A reversal-heavy back-and-forth scribble: x sweeps the interior in a triangle
+// wave (a sharp reversal at each end) while y drifts down the row's band — the
+// canonical toddler fill gesture. Drawn with the crayon, every reversal re-covers
+// the just-laid strip, so the pass tracker splits mid-stroke and records a
+// crayonFlush stamp per sweep; drawn with the pen it's the shape-matched control.
+function scribble(row, width, height, points = LONG_OPS) {
+  const sweeps = 8;
+  const x0 = MARGIN;
+  const span = width - 2 * MARGIN;
+  const bandTop = MARGIN + ((height - 2 * MARGIN) * row) / 6;
+  const bandH = (height - 2 * MARGIN) / 8;
+  const pts = [];
+  for (let i = 0; i < points; i++) {
+    const t = i / (points - 1);
+    const tri = Math.abs(((t * sweeps) % 2) - 1);
+    pts.push({ x: x0 + span * (1 - tri), y: bandTop + bandH * t });
+  }
+  return pts;
+}
+
+// A tap (1 point → a dot op) or a short dash (4 points → 3 ops) — the cheap
+// end of the commit-cost spectrum.
 function shortMark(i, width, height) {
   const cols = 4;
   const rows = Math.ceil(STROKES / cols);
@@ -95,8 +113,9 @@ function shortMark(i, width, height) {
 }
 
 // One five-finger drag: every finger down, all advance in lockstep, all lift —
-// the engine records them into ONE command (one undo unit), so its op list is
-// fingers × points. Shaped as { multi: [{pointerId, points}] } for multiStrokeSync.
+// the engine records them into ONE command (one undo unit, one snapshot), so its
+// op list is fingers × points. Shaped as { multi: [{pointerId, points}] } for
+// multiStrokeSync.
 function multiFingerGesture(gi, width, height, perFinger = MULTI_OPS_PER_FINGER) {
   const fingers = [];
   for (let f = 0; f < MULTI_FINGERS; f++) {
@@ -114,9 +133,8 @@ function multiFingerGesture(gi, width, height, perFinger = MULTI_OPS_PER_FINGER)
   return { multi: fingers };
 }
 
-// Two strokes past MAX_UNDO_STACK_SIZE, so every scenario fills the retained
-// log AND exercises the fold-into-baseline path (mirrors the original 12 vs
-// the old cap of 10).
+// Two strokes past MAX_UNDO_STACK_SIZE, so every scenario fills the snapshot
+// stack AND exercises the depth-cap shift path.
 const STROKES = Number(flag('strokes', '22'));
 
 function buildScenarios(width, height) {
@@ -127,6 +145,7 @@ function buildScenarios(width, height) {
     i % 2 === 0 ? longSquiggle(i % 6, width, height) : shortMark(i, width, height)
   );
   const multi = Array.from({ length: STROKES }, (_, i) => multiFingerGesture(i, width, height));
+  const scribbles = Array.from({ length: STROKES }, (_, i) => scribble(i % 6, width, height));
   return [
     {
       key: 'long-squiggles',
@@ -143,6 +162,26 @@ function buildScenarios(width, height) {
       key: 'multi-finger',
       label: `${STROKES} five-finger drags (~${MULTI_FINGERS * MULTI_OPS_PER_FINGER} ops/command), then undo all`,
       strokes: multi,
+    },
+    // The crayon rows (ADR-0065): same input volume, but every pass close
+    // stamps the pass buffer, so the crayon fold is the heaviest per-commit
+    // render. The pen scribble is the shape-matched control.
+    {
+      key: 'scribbles',
+      label: `${STROKES} pen back-and-forth scribbles (~${LONG_OPS} ops each), then undo all`,
+      strokes: scribbles,
+    },
+    {
+      key: 'crayon-squiggles',
+      label: `${STROKES} crayon long squiggles (~${LONG_OPS} ops each), then undo all`,
+      strokes: longs,
+      crayon: true,
+    },
+    {
+      key: 'crayon-scribbles',
+      label: `${STROKES} crayon back-and-forth scribbles (mid-stroke pass splits), then undo all`,
+      strokes: scribbles,
+      crayon: true,
     },
   ];
 }
@@ -181,24 +220,39 @@ async function resetEngine(page, base, width, height) {
   await sleep(150);
 }
 
-async function drawStrokes(page, strokes) {
-  await page.evaluate((strokes) => {
-    for (const s of strokes) {
-      if (s && s.multi) window.__engine.multiStrokeSync(s.multi, 'touch');
-      else window.__engine.strokeSync(s, 'touch');
-    }
-  }, strokes);
+async function drawStrokes(page, strokes, crayon = false) {
+  await page.evaluate(
+    ({ strokes, crayon }) => {
+      window.__engine.setCrayonMode(crayon);
+      for (const s of strokes) {
+        if (s && s.multi) window.__engine.multiStrokeSync(s.multi, 'touch');
+        else window.__engine.strokeSync(s, 'touch');
+      }
+    },
+    { strokes, crayon }
+  );
 }
 
-// Undo until the engine reports nothing left (capped well above the log size),
-// counting the steps actually performed.
+// Undo until the engine reports nothing left (capped well above the stack
+// size), counting the steps actually performed. Restores settle asynchronously
+// (a deep entry decodes from its blob), so each step waits for its engine.undo
+// measure to land before firing the next — otherwise the loop outruns the
+// restore queue and the phase window misses the tail steps.
 async function undoAll(page) {
   return page.evaluate(async () => {
+    const completed = () => performance.getEntriesByName('engine.undo', 'measure').length;
     let steps = 0;
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 60; i++) {
       if (!window.__engineState.canUndo) break;
+      const before = completed();
       window.__engine.undo();
       steps++;
+      const t0 = performance.now();
+      // PERF_MARKS builds land one measure per completed restore; cap the wait
+      // so a marks-less build still advances (on the old rAF cadence).
+      while (completed() === before && performance.now() - t0 < 5000) {
+        await new Promise((r) => requestAnimationFrame(r));
+      }
       await new Promise((r) => requestAnimationFrame(r));
     }
     return steps;
@@ -208,11 +262,38 @@ async function undoAll(page) {
 const undoDebug = (page) =>
   page.evaluate(() => (window.__engine.getUndoDebug ? window.__engine.getUndoDebug() : null));
 
-// The square baseline/keyframe raster is max(w,h) of the backing store (engine
+// Cold-tier demotion is async (encodeColdSnapshots' toBlob callbacks), and the
+// batched draw phase returns before those callbacks run — sampled immediately,
+// below-window entries still hold their ~30 MB rasters, so historyRasterMB
+// transiently reports hundreds of MB of a healthy tier (nondeterministically,
+// against the ≲150 MB gate) and the undo phase would measure live-raster
+// restores instead of the blob decodes it exists to validate. Mirror the E2E
+// spec (engine.spec.ts): poll until only the K_LIVE window still holds rasters
+// — a raster is only dropped after its blob lands and validates, so
+// liveRasters ≤ K_LIVE means every below-window entry is encoded.
+const K_LIVE = 2;
+async function settleColdTier(page, timeoutMs = 10_000) {
+  const t0 = Date.now();
+  for (;;) {
+    const d = await undoDebug(page);
+    if (d == null) return null;
+    if (d.liveRasters <= K_LIVE && (d.snapshots <= K_LIVE || d.blobBytes > 0)) return d;
+    if (Date.now() - t0 > timeoutMs) {
+      throw new Error(
+        `cold tier never settled within ${timeoutMs} ms: snapshots=${d.snapshots} ` +
+          `liveRasters=${d.liveRasters} blobBytes=${d.blobBytes} ` +
+          `(want liveRasters ≤ ${K_LIVE} with below-window entries encoded)`
+      );
+    }
+    await sleep(100);
+  }
+}
+
+// The square paper/snapshot raster is max(w,h) of the backing store (engine
 // uses max(w,h) × renderScale). performance.memory can't see canvas pixel
-// buffers (they aren't on the JS heap), so history memory has to be derived from
-// the raster geometry: this is the real per-raster cost a keyframe or an old-
-// style snapshot occupies, and the apples-to-apples number across both engines.
+// buffers (they aren't on the JS heap), so history memory has to be derived
+// from the raster geometry: this is the real per-raster cost each live
+// snapshot (and the paper) occupies.
 async function rasterGeometry(page) {
   return page.evaluate(() => {
     const c = document.querySelector('#engineCanvas');
@@ -257,7 +338,14 @@ async function main() {
     await injectObservers(page);
     const geom = await rasterGeometry(page);
     const events = await startTrace(cdp);
-    const scenarios = buildScenarios(DEVICE.width, DEVICE.height);
+    // --scenarios=key1,key2 runs a subset (fast iteration on one question).
+    const only = flag('scenarios', '');
+    let scenarios = buildScenarios(DEVICE.width, DEVICE.height);
+    if (only) {
+      const keys = only.split(',');
+      scenarios = scenarios.filter((sc) => keys.includes(sc.key));
+      if (scenarios.length === 0) throw new Error(`--scenarios matched nothing: ${only}`);
+    }
     const results = [];
 
     for (const sc of scenarios) {
@@ -268,10 +356,10 @@ async function main() {
       await injectObservers(page);
 
       const drawStart = await now(page);
-      await markPhase(page, `${sc.key}-draw`, () => drawStrokes(page, sc.strokes));
+      await markPhase(page, `${sc.key}-draw`, () => drawStrokes(page, sc.strokes, !!sc.crayon));
       const drawEnd = await now(page);
 
-      const debug = await undoDebug(page);
+      const debug = await settleColdTier(page);
       const heapAfterDraw = await heapBytes(page);
 
       const undoStart = await now(page);
@@ -286,21 +374,35 @@ async function main() {
       const undoMarks = await engineMeasuresIn(page, undoStart, undoEnd);
 
       const draw = drawMarks['engine.draw'] || { count: 0, total: 0, max: 0 };
-      const keyframe = drawMarks['engine.keyframe'] || { count: 0, total: 0, max: 0 };
+      // engine.commit wraps the whole stroke-end pipeline (paper copy → fold),
+      // so its max is the pointerup hitch the user feels. engine.snapshot
+      // isolates the paper copy inside it.
+      const commit = drawMarks['engine.commit'] || { count: 0, total: 0, max: 0 };
+      const snapshot = drawMarks['engine.snapshot'] || { count: 0, total: 0, max: 0 };
       const undoM = undoMarks['engine.undo'] || { count: 0, total: 0, max: 0 };
+
+      // History raster memory the way it actually lives — off the JS heap, in
+      // canvas backing stores: live snapshot rasters + the paper, plus the
+      // encoded blobs.
+      const historyRasterMB =
+        debug == null
+          ? null
+          : ((debug.liveRasters + 1) * geom.bytesPerRaster + debug.blobBytes) / 1048576;
 
       results.push({
         key: sc.key,
         label: sc.label,
         strokes: sc.strokes.length,
-        debug, // { commands, keyframes, maxOps } or null on the snapshot engine
+        crayon: !!sc.crayon,
+        debug,
         undoSteps: steps,
         draw: {
           ops: draw.count,
           totalMs: draw.total,
-          keyframeBuilds: keyframe.count,
-          keyframeMs: keyframe.total,
-          keyframeMaxMs: keyframe.max,
+          commitMs: commit.total,
+          commitMaxMs: commit.max,
+          snapshotMs: snapshot.total,
+          snapshotMaxMs: snapshot.max,
         },
         undo: {
           steps: undoM.count,
@@ -312,15 +414,13 @@ async function main() {
           afterDrawMB: heapAfterDraw ? heapAfterDraw / 1048576 : null,
           afterUndoMB: heapAfterUndo ? heapAfterUndo / 1048576 : null,
         },
-        // History raster memory the way it actually lives — off the JS heap, in
-        // canvas backing stores. keyframes resident now + 1 always-present
-        // baseline, each bytesPerRaster.
-        historyRasterMB:
-          debug != null ? ((debug.keyframes + 1) * geom.bytesPerRaster) / 1048576 : null,
+        historyRasterMB,
       });
       console.log(
-        `  keyframes=${debug?.keyframes ?? 'n/a'} commands=${debug?.commands ?? 'n/a'} ` +
-          `maxOps=${debug?.maxOps ?? 'n/a'} | undo ${undoM.count} steps ` +
+        `  snapshots=${debug?.snapshots ?? 'n/a'} liveRasters=${debug?.liveRasters ?? 'n/a'} ` +
+          `blobKB=${debug ? Math.round(debug.blobBytes / 1024) : 'n/a'} | ` +
+          `commit max ${commit.max.toFixed(1)}ms (copy max ${snapshot.max.toFixed(1)}ms) | ` +
+          `undo ${undoM.count} steps ` +
           `avg ${(undoM.count ? undoM.total / undoM.count : 0).toFixed(1)}ms max ${undoM.max.toFixed(1)}ms`
       );
     }
@@ -330,7 +430,7 @@ async function main() {
     await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
 
     // Standard trace artifacts (engine hot paths, frame health) via the shared
-    // analyzer, plus the bespoke per-scenario undo/keyframe summary.
+    // analyzer, plus the bespoke per-scenario undo summary.
     const settings = {
       target: 'web/dev-engine (headless Chromium — not WebKit/real GPU)',
       device: DEVICE.label,
@@ -375,7 +475,7 @@ const f1 = (n) => (n == null ? 'n/a' : n.toFixed(1));
 
 function renderUndoReport({ settings, scenarios }) {
   const out = [];
-  out.push('# Undo / keyframe scenario profile\n');
+  out.push('# Undo scenario profile (snapshot stack, ADR-0066)\n');
   out.push(
     `Target **${settings.target}** · device **${settings.device}** ` +
       `(${settings.viewport?.width}×${settings.viewport?.height} @ dsf ${settings.viewport?.deviceScaleFactor}) · ` +
@@ -386,40 +486,41 @@ function renderUndoReport({ settings, scenarios }) {
   out.push(
     `> Fidelity: long strokes are ~${settings.longOps} ops (≈ ${settings.refreshHz}Hz × ` +
       `stroke seconds) to mirror real input volume. Headless Chromium (Blink/V8) is **not** ` +
-      `WebKit/JavaScriptCore or the iPad GPU, and CPU throttle models a slow CPU, not the ` +
-      `tighter ${f1(settings.frameBudgetMs)} ms ProMotion frame. Absolute ms want a real-device ` +
-      `Safari Web Inspector timeline (\`perf:ios\` / the \`mobile\` skill); this run is for ` +
-      `command-log behavior, op-volume scaling, and relative cost.\n`
+      `WebKit/JavaScriptCore or the iPad GPU — SwiftShader software rendering exaggerates ` +
+      `full-canvas blits (the paper copy, restores, blob decodes) heavily — and CPU throttle ` +
+      `models a slow CPU, not the tighter ${f1(settings.frameBudgetMs)} ms ProMotion frame. ` +
+      `Absolute ms want the on-device run (\`scripts/perf/ipad-console-driver.js\` / the ` +
+      `\`profiling\` skill); this run is for stack behavior, op-volume scaling, and relative cost.\n`
   );
   out.push(
     `> Note: strokes are dispatched synchronously (to land exact op counts), so the ` +
       `draw phase is one big task — its FPS/long-task numbers in report.md are a harness ` +
       `artifact. The clean live-draw signal is **engine.draw avg** (per pointermove); the ` +
-      `keyframe-build and undo costs below don't depend on pacing.\n`
+      `commit and undo costs below don't depend on pacing.\n`
   );
-  out.push('## Command log after drawing (getUndoDebug)\n');
-  out.push('| Scenario | Strokes | Commands retained | Keyframes | Max ops in a command |');
+  out.push('## Snapshot stack after drawing (getUndoDebug)\n');
+  out.push('| Scenario | Strokes | Snapshots | Live rasters | Blob bytes | Pending commands |');
+  out.push('| --- | --- | --- | --- | --- | --- |');
+  for (const s of scenarios) {
+    const blobKB = s.debug ? Math.round((s.debug.blobBytes ?? 0) / 1024) : 'n/a';
+    out.push(
+      `| ${s.label} | ${s.strokes} | ${s.debug?.snapshots ?? 'n/a'} | ` +
+        `${s.debug?.liveRasters ?? 'n/a'} | ${blobKB} KB | ${s.debug?.pendingCommands ?? 'n/a'} |`
+    );
+  }
+  out.push('\n## Drawing cost (engine.draw + the stroke-end pipeline)\n');
+  out.push(
+    'engine.commit wraps the whole stroke-end pipeline (paper copy → fold), so **commit max** ' +
+      'is the pointerup hitch the user feels; engine.snapshot isolates the paper copy inside it.\n'
+  );
+  out.push(
+    '| Scenario | draw() calls | draw total | snapshot copy max | **commit max (1 stroke end)** |'
+  );
   out.push('| --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
     out.push(
-      `| ${s.label} | ${s.strokes} | ${s.debug?.commands ?? 'n/a'} | ` +
-        `${s.debug?.keyframes ?? 'n/a'} | ${s.debug?.maxOps ?? 'n/a'} |`
-    );
-  }
-  out.push('\n## Drawing cost (engine.draw + keyframe builds)\n');
-  out.push(
-    'The keyframe build runs once at finger-lift (off the draw frame), but a slow ' +
-      'one still hitches the moment the stroke ends — so **max build** vs the frame budget ' +
-      'is the number to watch.\n'
-  );
-  out.push(
-    '| Scenario | draw() calls | draw total | keyframe builds | keyframe total | **keyframe max (1 build)** |'
-  );
-  out.push('| --- | --- | --- | --- | --- | --- |');
-  for (const s of scenarios) {
-    out.push(
       `| ${s.label} | ${s.draw.ops} | ${f1(s.draw.totalMs)} ms | ` +
-        `${s.draw.keyframeBuilds} | ${f1(s.draw.keyframeMs)} ms | **${f1(s.draw.keyframeMaxMs)} ms** |`
+        `${f1(s.draw.snapshotMaxMs)} ms | **${f1(s.draw.commitMaxMs)} ms** |`
     );
   }
   out.push('\n## Undo cost (engine.undo)\n');
@@ -436,13 +537,15 @@ function renderUndoReport({ settings, scenarios }) {
   out.push(
     `Each square raster is ${r?.side}×${r?.side} → **${f1(r?.mbPerRaster)} MB**. ` +
       `Canvas backing stores are **not** counted by performance.memory, so the JS-heap ` +
-      `table below stays flat regardless of history — the raster figure is the one that matters.\n`
+      `table below stays flat regardless of history — the raster figure is the one that ` +
+      `matters. Resident rasters = live snapshots + the paper, plus the encoded blob bytes.\n`
   );
-  out.push('| Scenario | Rasters resident (keyframes + baseline) | History raster memory |');
-  out.push('| --- | --- | --- |');
+  out.push('| Scenario | Rasters resident | Blob bytes | History memory |');
+  out.push('| --- | --- | --- | --- |');
   for (const s of scenarios) {
-    const rasters = s.debug != null ? `${s.debug.keyframes} + 1` : 'n/a';
-    out.push(`| ${s.label} | ${rasters} | ${f1(s.historyRasterMB)} MB |`);
+    const rasters = s.debug == null ? 'n/a' : `${s.debug.liveRasters} + 1`;
+    const blobKB = s.debug ? Math.round((s.debug.blobBytes ?? 0) / 1024) : 'n/a';
+    out.push(`| ${s.label} | ${rasters} | ${blobKB} KB | ${f1(s.historyRasterMB)} MB |`);
   }
   out.push('\n## JS heap (performance.memory — excludes canvas pixels; coarse, GC-dependent)\n');
   out.push('| Scenario | After draw (history resident) | After undo-to-empty |');
@@ -450,7 +553,7 @@ function renderUndoReport({ settings, scenarios }) {
   for (const s of scenarios) {
     out.push(`| ${s.label} | ${f1(s.heap.afterDrawMB)} MB | ${f1(s.heap.afterUndoMB)} MB |`);
   }
-  out.push('\n---\nSee the `profiling` skill and ADR-0035 for how to read these.\n');
+  out.push('\n---\nSee the `profiling` skill and ADR-0066 for how to read these.\n');
   return out.join('\n');
 }
 

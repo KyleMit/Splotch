@@ -275,11 +275,11 @@ export function rasterizeSheet() {
 }
 
 // A no-repeat pattern of the sheet, cached per target context (the visible ctx
-// almost always; baseline/keyframe contexts on replay). The pattern is offset by the
-// sheet's paper-coordinate origin so sheet pixel (0,0) lands at that paper coord —
+// almost always; the paper raster on fold, export surfaces). The pattern is offset by
+// the sheet's paper-coordinate origin so sheet pixel (0,0) lands at that paper coord —
 // identity in normal use, a translation under a rotation lock — keeping it aligned on
-// the visible canvas and the larger square baseline alike, all of which draw ops in
-// paper coordinates.
+// the visible canvas and the larger square paper raster alike, all of which draw ops
+// in paper coordinates.
 export function sheetPatternFor(target: CanvasRenderingContext2D): CanvasPattern | null {
   if (!sheetCanvas || !sheetReady) return null;
   const cached = patternCache.get(target);

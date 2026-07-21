@@ -17,7 +17,7 @@
 //     `__rec.diagnose()` scans for that signature and reports the targets.
 //   • Output-bug diagnosis: input can arrive perfectly and the pixels still
 //     vanish. Schema 3 also records what the app DID: engine.* performance
-//     measures (resize/undo/commit/keyframe — PERF_MARKS=true builds only),
+//     measures (resize/undo/commit/snapshot — PERF_MARKS=true builds only),
 //     environment events (window/visualViewport resize, orientation, scroll,
 //     focus, visibility) with the canvas backing-store size, and pixel PROBES —
 //     a strided alpha count of the canvas at +0/+250/+1000ms after each stroke
@@ -69,7 +69,7 @@
   };
 
   // Engine activity: PERF_MARKS=true builds measure every wipe/rebuild-capable
-  // operation (engine.resize, engine.undo, engine.commit, engine.keyframe…).
+  // operation (engine.resize, engine.undo, engine.commit, engine.snapshot…).
   // engine.draw is skipped — one per pointermove, pure noise here.
   let perfObs = null;
   try {

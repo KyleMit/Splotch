@@ -1,13 +1,14 @@
 // Pure geometry for presenting the drawing's "paper" inside a viewport that has
 // rotated since the paper was adopted (ADR-0050). While ink is on the canvas the
-// engine locks the paper — the coordinate space every recorded op, the baseline,
-// the keyframes, and the magic sheet live in — and a device rotation is handled
-// by *presenting* that space through the view computed here instead of remapping
-// any content. Production always presents UPRIGHT (rotation 0: the picture
-// rotates with the device and contain-fits, centered); the quarter-turn cases
-// are kept because the math is one unit and they document the rejected
-// counter-rotate alternative (see ADR-0050). engine.ts owns all state;
-// everything here is a pure function so the mapping math is unit-testable.
+// engine locks the paper — the coordinate space every recorded op, the paper
+// raster and its snapshots (ADR-0066), and the magic sheet live in — and a
+// device rotation is handled by *presenting* that space through the view
+// computed here instead of remapping any content. Production always presents
+// UPRIGHT (rotation 0: the picture rotates with the device and contain-fits,
+// centered); the quarter-turn cases are kept because the math is one unit and
+// they document the rejected counter-rotate alternative (see ADR-0050).
+// engine.ts owns all state; everything here is a pure function so the mapping
+// math is unit-testable.
 
 export type ViewRotation = 0 | 90 | 180 | 270;
 
