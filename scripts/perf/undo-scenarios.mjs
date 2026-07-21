@@ -247,19 +247,24 @@ async function drawStrokes(page, strokes, crayon = false) {
 
 // Undo until the engine reports nothing left (capped well above the log size),
 // counting the steps actually performed. Snapshot-mode restores settle
-// asynchronously (a deep entry decodes from its blob), so a false canUndo is
-// re-checked after a beat before trusting it — and the loop only exits once
-// the queued restores have all landed (the last one is what flips the flag).
+// asynchronously (a deep entry decodes from its blob), so each step waits for
+// its engine.undo measure to land before firing the next — otherwise the loop
+// outruns the restore queue and the phase window misses the tail steps.
 async function undoAll(page) {
   return page.evaluate(async () => {
+    const completed = () => performance.getEntriesByName('engine.undo', 'measure').length;
     let steps = 0;
     for (let i = 0; i < 60; i++) {
-      if (!window.__engineState.canUndo) {
-        await new Promise((r) => setTimeout(r, 50));
-        if (!window.__engineState.canUndo) break;
-      }
+      if (!window.__engineState.canUndo) break;
+      const before = completed();
       window.__engine.undo();
       steps++;
+      const t0 = performance.now();
+      // PERF_MARKS builds land one measure per completed restore; cap the wait
+      // so a marks-less build still advances (on the old rAF cadence).
+      while (completed() === before && performance.now() - t0 < 5000) {
+        await new Promise((r) => requestAnimationFrame(r));
+      }
       await new Promise((r) => requestAnimationFrame(r));
     }
     return steps;

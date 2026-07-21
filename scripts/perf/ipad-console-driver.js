@@ -103,16 +103,20 @@
   };
 
   // Snapshot-mode restores settle asynchronously (deep entries decode from a
-  // blob), so a false canUndo gets one re-check after a beat.
+  // blob), so each step waits for its engine.undo measure to land before the
+  // next fires — otherwise the loop outruns the restore queue.
   const undoAll = async () => {
+    const completed = () => performance.getEntriesByName('engine.undo', 'measure').length;
     let n = 0;
     for (let i = 0; i < 60; i++) {
-      if (!S.canUndo) {
-        await new Promise((r) => setTimeout(r, 50));
-        if (!S.canUndo) break;
-      }
+      if (!S.canUndo) break;
+      const before = completed();
       E.undo();
       n++;
+      const t0 = performance.now();
+      while (completed() === before && performance.now() - t0 < 5000) {
+        await new Promise((r) => requestAnimationFrame(r));
+      }
       await new Promise((r) => requestAnimationFrame(r));
     }
     return n;
