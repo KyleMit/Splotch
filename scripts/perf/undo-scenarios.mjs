@@ -82,6 +82,27 @@ function longSquiggle(row, width, height, points = LONG_OPS) {
   return pts;
 }
 
+// A reversal-heavy back-and-forth scribble: x sweeps the interior in a triangle
+// wave (a sharp reversal at each end) while y drifts down the row's band — the
+// canonical toddler fill gesture. Drawn with the crayon, every reversal re-covers
+// the just-laid strip, so the pass tracker splits mid-stroke and records a
+// crayonFlush stamp per sweep; drawn with the pen it's the control (RDP thins
+// reversals to a handful of corner-split segments).
+function scribble(row, width, height, points = LONG_OPS) {
+  const sweeps = 8;
+  const x0 = MARGIN;
+  const span = width - 2 * MARGIN;
+  const bandTop = MARGIN + ((height - 2 * MARGIN) * row) / 6;
+  const bandH = (height - 2 * MARGIN) / 8;
+  const pts = [];
+  for (let i = 0; i < points; i++) {
+    const t = i / (points - 1);
+    const tri = Math.abs(((t * sweeps) % 2) - 1);
+    pts.push({ x: x0 + span * (1 - tri), y: bandTop + bandH * t });
+  }
+  return pts;
+}
+
 // A tap (1 point → a dot op) or a short dash (4 points → 3 ops). Either way far
 // under the threshold, so these stay cheap replayable ops and never keyframe.
 function shortMark(i, width, height) {
@@ -127,6 +148,7 @@ function buildScenarios(width, height) {
     i % 2 === 0 ? longSquiggle(i % 6, width, height) : shortMark(i, width, height)
   );
   const multi = Array.from({ length: STROKES }, (_, i) => multiFingerGesture(i, width, height));
+  const scribbles = Array.from({ length: STROKES }, (_, i) => scribble(i % 6, width, height));
   return [
     {
       key: 'long-squiggles',
@@ -143,6 +165,28 @@ function buildScenarios(width, height) {
       key: 'multi-finger',
       label: `${STROKES} five-finger drags (~${MULTI_FINGERS * MULTI_OPS_PER_FINGER} ops/command), then undo all`,
       strokes: multi,
+    },
+    // The crayon rows (ADR-0065): same input volume, but crayon commands bypass
+    // ADR-0036 simplification wholesale, so their retained segment counts face
+    // the keyframe threshold raw — and each pass close records a crayonFlush
+    // whose stamp is a synchronous canvas readback on replay. The pen scribble
+    // is the shape-matched control.
+    {
+      key: 'scribbles',
+      label: `${STROKES} pen back-and-forth scribbles (~${LONG_OPS} ops each), then undo all`,
+      strokes: scribbles,
+    },
+    {
+      key: 'crayon-squiggles',
+      label: `${STROKES} crayon long squiggles (~${LONG_OPS} ops each), then undo all`,
+      strokes: longs,
+      crayon: true,
+    },
+    {
+      key: 'crayon-scribbles',
+      label: `${STROKES} crayon back-and-forth scribbles (mid-stroke pass splits), then undo all`,
+      strokes: scribbles,
+      crayon: true,
     },
   ];
 }
@@ -181,13 +225,17 @@ async function resetEngine(page, base, width, height) {
   await sleep(150);
 }
 
-async function drawStrokes(page, strokes) {
-  await page.evaluate((strokes) => {
-    for (const s of strokes) {
-      if (s && s.multi) window.__engine.multiStrokeSync(s.multi, 'touch');
-      else window.__engine.strokeSync(s, 'touch');
-    }
-  }, strokes);
+async function drawStrokes(page, strokes, crayon = false) {
+  await page.evaluate(
+    ({ strokes, crayon }) => {
+      window.__engine.setCrayonMode(crayon);
+      for (const s of strokes) {
+        if (s && s.multi) window.__engine.multiStrokeSync(s.multi, 'touch');
+        else window.__engine.strokeSync(s, 'touch');
+      }
+    },
+    { strokes, crayon }
+  );
 }
 
 // Undo until the engine reports nothing left (capped well above the log size),
@@ -257,7 +305,14 @@ async function main() {
     await injectObservers(page);
     const geom = await rasterGeometry(page);
     const events = await startTrace(cdp);
-    const scenarios = buildScenarios(DEVICE.width, DEVICE.height);
+    // --scenarios=key1,key2 runs a subset (fast iteration on one question).
+    const only = flag('scenarios', '');
+    let scenarios = buildScenarios(DEVICE.width, DEVICE.height);
+    if (only) {
+      const keys = only.split(',');
+      scenarios = scenarios.filter((sc) => keys.includes(sc.key));
+      if (scenarios.length === 0) throw new Error(`--scenarios matched nothing: ${only}`);
+    }
     const results = [];
 
     for (const sc of scenarios) {
@@ -268,7 +323,7 @@ async function main() {
       await injectObservers(page);
 
       const drawStart = await now(page);
-      await markPhase(page, `${sc.key}-draw`, () => drawStrokes(page, sc.strokes));
+      await markPhase(page, `${sc.key}-draw`, () => drawStrokes(page, sc.strokes, !!sc.crayon));
       const drawEnd = await now(page);
 
       const debug = await undoDebug(page);
@@ -287,13 +342,18 @@ async function main() {
 
       const draw = drawMarks['engine.draw'] || { count: 0, total: 0, max: 0 };
       const keyframe = drawMarks['engine.keyframe'] || { count: 0, total: 0, max: 0 };
+      // engine.commit wraps the whole stroke-end pipeline (simplify → fold →
+      // keyframe), so its max is the pointerup hitch the user feels.
+      const commit = drawMarks['engine.commit'] || { count: 0, total: 0, max: 0 };
+      const simplify = drawMarks['engine.simplify'] || { count: 0, total: 0, max: 0 };
       const undoM = undoMarks['engine.undo'] || { count: 0, total: 0, max: 0 };
 
       results.push({
         key: sc.key,
         label: sc.label,
         strokes: sc.strokes.length,
-        debug, // { commands, keyframes, maxOps } or null on the snapshot engine
+        crayon: !!sc.crayon,
+        debug, // { commands, keyframes, maxOps, maxSegments, totalSegments } or null on the snapshot engine
         undoSteps: steps,
         draw: {
           ops: draw.count,
@@ -301,6 +361,10 @@ async function main() {
           keyframeBuilds: keyframe.count,
           keyframeMs: keyframe.total,
           keyframeMaxMs: keyframe.max,
+          commitMs: commit.total,
+          commitMaxMs: commit.max,
+          simplifyMs: simplify.total,
+          simplifyMaxMs: simplify.max,
         },
         undo: {
           steps: undoM.count,
@@ -320,7 +384,8 @@ async function main() {
       });
       console.log(
         `  keyframes=${debug?.keyframes ?? 'n/a'} commands=${debug?.commands ?? 'n/a'} ` +
-          `maxOps=${debug?.maxOps ?? 'n/a'} | undo ${undoM.count} steps ` +
+          `maxOps=${debug?.maxOps ?? 'n/a'} maxSegs=${debug?.maxSegments ?? 'n/a'} | ` +
+          `commit max ${commit.max.toFixed(1)}ms | undo ${undoM.count} steps ` +
           `avg ${(undoM.count ? undoM.total / undoM.count : 0).toFixed(1)}ms max ${undoM.max.toFixed(1)}ms`
       );
     }
@@ -398,28 +463,32 @@ function renderUndoReport({ settings, scenarios }) {
       `keyframe-build and undo costs below don't depend on pacing.\n`
   );
   out.push('## Command log after drawing (getUndoDebug)\n');
-  out.push('| Scenario | Strokes | Commands retained | Keyframes | Max ops in a command |');
-  out.push('| --- | --- | --- | --- | --- |');
+  out.push(
+    '| Scenario | Strokes | Commands retained | Keyframes | Max ops in a command | Max segments | Total segments |'
+  );
+  out.push('| --- | --- | --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
     out.push(
       `| ${s.label} | ${s.strokes} | ${s.debug?.commands ?? 'n/a'} | ` +
-        `${s.debug?.keyframes ?? 'n/a'} | ${s.debug?.maxOps ?? 'n/a'} |`
+        `${s.debug?.keyframes ?? 'n/a'} | ${s.debug?.maxOps ?? 'n/a'} | ` +
+        `${s.debug?.maxSegments ?? 'n/a'} | ${s.debug?.totalSegments ?? 'n/a'} |`
     );
   }
-  out.push('\n## Drawing cost (engine.draw + keyframe builds)\n');
+  out.push('\n## Drawing cost (engine.draw + the stroke-end pipeline)\n');
   out.push(
-    'The keyframe build runs once at finger-lift (off the draw frame), but a slow ' +
-      'one still hitches the moment the stroke ends — so **max build** vs the frame budget ' +
-      'is the number to watch.\n'
+    'engine.commit wraps the whole stroke-end pipeline (simplify → fold → keyframe), so ' +
+      '**commit max** is the pointerup hitch the user feels; the keyframe build is its ' +
+      'dominant term when it fires.\n'
   );
   out.push(
-    '| Scenario | draw() calls | draw total | keyframe builds | keyframe total | **keyframe max (1 build)** |'
+    '| Scenario | draw() calls | draw total | keyframe builds | keyframe total | keyframe max | simplify max | **commit max (1 stroke end)** |'
   );
-  out.push('| --- | --- | --- | --- | --- | --- |');
+  out.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
     out.push(
       `| ${s.label} | ${s.draw.ops} | ${f1(s.draw.totalMs)} ms | ` +
-        `${s.draw.keyframeBuilds} | ${f1(s.draw.keyframeMs)} ms | **${f1(s.draw.keyframeMaxMs)} ms** |`
+        `${s.draw.keyframeBuilds} | ${f1(s.draw.keyframeMs)} ms | ${f1(s.draw.keyframeMaxMs)} ms | ` +
+        `${f1(s.draw.simplifyMaxMs)} ms | **${f1(s.draw.commitMaxMs)} ms** |`
     );
   }
   out.push('\n## Undo cost (engine.undo)\n');
