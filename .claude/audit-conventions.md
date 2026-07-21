@@ -16,9 +16,29 @@ a shared rule, change it **here** — the skills point at this file on purpose.
 | **session-audit**           | `/session-audit`           | Recurring friction from the just-finished session (code traversal / execution) + the tooling fix for each | `docs/AUDIT.md`                                   |
 | **workflow-audit**          | `/workflow-audit`          | Claude Code config + session-history review vs. current best practice                                     | dated `docs/claude-workflow-review-YYYY-MM-DD.md` |
 
-**Consumers** of `docs/AUDIT.md` (not audits themselves): `/fix-audits` clears the whole list
-autonomously on its own branch + PR; `/vet-audits` validates the list against the current code and
-prunes stale items.
+**Consumers** of `docs/AUDIT.md` (not audits themselves): `/vet-audits` adversarially validates the
+list against the current code, drops what doesn't hold up, and **files each survivor as a GitHub
+issue** labeled `type:audit` (draining and deleting the file); `/fix-audits` then burns down the
+open `type:audit` issues autonomously on its own branch + PR — it no longer reads `docs/AUDIT.md`.
+
+### The audit lifecycle — `docs/AUDIT.md` is a staging area, GitHub issues are the backlog
+
+The durable audit backlog lives in **GitHub Issues** (open issues labeled `type:audit`), not in a
+standing Markdown file. `docs/AUDIT.md` is the transient hand-off between a producer and
+`/vet-audits`:
+
+1. **Producer** (`code-audit`, `extract-audit`, `lighthouse-audit`, `session-audit`) → appends raw
+   findings to `docs/AUDIT.md` (the merge rules in §1 govern this).
+2. **`/vet-audits`** → validates each finding, removes the ones that don't hold up, and promotes
+   each survivor to a GitHub issue (`type:audit` + applicable `area:*`/`type:*`; add `needs-triage`
+   when the finding is valid but its fix approach is unclear). It deletes `docs/AUDIT.md` once
+   drained. See `docs/ISSUE-WORKFLOW.md` for the label glossary.
+3. **`/fix-audits`** → queries open `type:audit` issues and clears them, one commit per issue,
+   referencing each so it closes on merge.
+
+So a finding's home is `docs/AUDIT.md` only until `/vet-audits` runs; after that it's a GitHub
+issue. Never treat `docs/AUDIT.md` as a long-lived backlog — between a vet run and the next producer
+it is expected to be absent.
 
 ## Shared conventions
 
@@ -84,21 +104,23 @@ The `docs/AUDIT.md` header (create it if the file doesn't exist yet):
 ```markdown
 # Audit
 
-> Findings from Splotch's audit skills (`.claude/audit-conventions.md`). Clear the whole list
-> autonomously with `/fix-audits`; validate it with `/vet-audits`. Skills **merge** into this file —
-> they never overwrite each other's sections.
+> Transient staging for Splotch's audit skills (`.claude/audit-conventions.md`). Producers **merge**
+> findings here; `/vet-audits` validates them and files the survivors as `type:audit` GitHub issues,
+> then deletes this file. `/fix-audits` burns down those issues. Never treat this file as a
+> long-lived backlog.
 ```
 
-**`docs/AUDIT.md` may not exist.** An empty backlog is a real, expected state, not an error:
-`/fix-audits` **deletes** the file once it clears the last finding, so between audit runs there is
-often no `docs/AUDIT.md` at all. Every audit skill must handle its absence gracefully:
+**`docs/AUDIT.md` may not exist.** A missing file is a real, expected state, not an error:
+`/vet-audits` **deletes** it once it has drained the last finding into a GitHub issue, so between a
+vet run and the next producer there is often no `docs/AUDIT.md` at all. Every audit skill must
+handle its absence gracefully:
 
-* **Producers** (write findings): treat a missing file as an empty backlog and create it with the
-  header above — never assume it's already there, and never error out because `cat`/read of it
-  failed.
-* **Consumers** (`/fix-audits`, `/vet-audits`): a missing (or header-only) file means there's
-  nothing to do. Report "no audit backlog" and stop cleanly — do not treat the missing file as a
-  failure.
+* **Producers** (write findings): treat a missing file as empty and create it with the header above
+  — never assume it's already there, and never error out because `cat`/read of it failed.
+* **`/vet-audits`**: a missing (or header-only) file means there's nothing to vet. Report "no audit
+  backlog to vet" and stop cleanly — do not treat the missing file as a failure.
+* **`/fix-audits`**: it doesn't read this file at all; its backlog is the open `type:audit` issues.
+  No open `type:audit` issue means there's nothing to fix — report that and stop cleanly.
 
 Check for the file's existence before reading it, and read defensively (e.g. `test -f docs/AUDIT.md`
 first, or tolerate a non-zero exit from `cat`).
@@ -110,9 +132,9 @@ scannable history of what each audit found and when. See that file's header for 
 Keep the summary to one line.
 
 This includes the **consumer** skills (`/fix-audits`, `/vet-audits`): log the run — branch/PR for
-fix-audits, prune summary for vet-audits — even though they don't write findings into
-`docs/AUDIT.md`. The Inventory's "not audits themselves" scopes §1 only (which only producers
-satisfy); §2 applies to every run.
+fix-audits, and for vet-audits the issues filed (with numbers) plus what was pruned — even though
+they don't write findings into `docs/AUDIT.md`. The Inventory's "not audits themselves" scopes §1
+only (which only producers satisfy); §2 applies to every run.
 
 ### 3. Self-heal — fold learnings back into the skill
 

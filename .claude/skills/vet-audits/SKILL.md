@@ -1,35 +1,40 @@
 ---
 name: vet-audits
-description: Adversarially validate each finding in docs/AUDIT.md against the current code — is it real, worth solving, and actionable — enriching the keepers with verification steps and pruning the rest. Use when asked to vet, review, or prune the audit backlog before fixing it. Review only; it does not implement fixes.
+description: Adversarially validate each finding in docs/AUDIT.md against the current code — is it real, worth solving, and actionable — then file the survivors as type:audit GitHub issues and drop the rest. Use when asked to vet, review, or prune the audit backlog before fixing it. Review only; it does not implement fixes.
 ---
 
 # Vet Audits
 
 Read `docs/AUDIT.md` and the current codebase, then **adversarially** validate each finding against
 the actual code — is the problem real, is it *worth solving*, and does the fix agent have what it
-needs to act on it.
+needs to act on it. Each survivor becomes a **GitHub issue** labeled `type:audit`; the file is
+transient staging that this skill drains and deletes (see `.claude/audit-conventions.md`).
 
-**First, check the file exists.** `docs/AUDIT.md` may be absent — `/fix-audits` deletes it once the
-backlog is cleared, so a missing (or header-only) file is a normal, expected state, not an error. If
-there's no `docs/AUDIT.md`, or it holds only the header with no `###` findings, there's nothing to
-vet: report "no audit backlog to vet" and stop cleanly.
+**First, check the file exists.** `docs/AUDIT.md` may be absent — this skill deletes it once it has
+drained the backlog into issues, so a missing (or header-only) file is a normal, expected state, not
+an error. If there's no `docs/AUDIT.md`, or it holds only the header with no `###` findings, there's
+nothing to vet: report "no audit backlog to vet" and stop cleanly.
 
-## For each finding, decide: keep, enrich, or remove
+## For each finding, decide: file as an issue, or drop it
 
-**Keep and enrich** if the finding is real *and worth acting on* — it improves performance,
-readability, maintainability, or architecture by enough to outweigh the cost and risk of the change.
-For these findings:
+**File as a `type:audit` issue** if the finding is real *and worth acting on* — it improves
+performance, readability, maintainability, or architecture by enough to outweigh the cost and risk
+of the change. First **search open issues to avoid duplicates** (`search_issues` for the same
+file/symptom); if one already tracks it, enrich that issue instead of opening a second. Otherwise,
+before filing, sharpen the finding so the fix agent can act on it without re-deriving it:
 
-* Confirm the problem still exists in the current code (cite file + line in `#### Problem`).
-* Sharpen `#### Proposed solution` if the sketch is wrong, harmful, or has a gotcha (see the
+* Confirm the problem still exists in the current code (cite file + line in the issue's problem
+  section).
+* Sharpen the proposed solution if the sketch is wrong, harmful, or has a gotcha (see the
   verification angles below).
-* **Fill in `#### Verification`** — the concrete way the fix agent will prove the problem is real
-  and confirm the fix resolves it: repro steps, a command or script to paste, a profile to capture,
-  the test that should fail before and pass after. This is the highest-value thing you add here;
-  leave no kept finding without it whenever a verification is feasible.
-* Adjust the priority/order if you find a dependency or sequencing issue.
+* **Write the verification** — the concrete way the fix agent will prove the problem is real and
+  confirm the fix resolves it: repro steps, a command or script to paste, a profile to capture, the
+  test that should fail before and pass after. This is the highest-value thing you add; leave no
+  filed issue without it whenever a verification is feasible.
 
-**Remove** if the finding is:
+Then open the issue (see **Filing the issue** below).
+
+**Drop** (file no issue, just delete the finding from `docs/AUDIT.md`) if the finding is:
 
 * Already fixed in the current code.
 * A false positive (the "problem" is intentional or harmless in context).
@@ -41,21 +46,46 @@ For these findings:
   clear that bar, remove it rather than leave the fix agent to burn a cycle rediscovering the same
   thing.
 
+## Filing the issue
+
+Open one GitHub issue per surviving finding with the GitHub MCP `issue_write` tool (search first
+with `search_issues` to avoid duplicates — enrich an existing issue rather than opening a second).
+
+* **Title** — a concise, imperative summary of the fix ("Debounce the canvas resize handler", not
+  "Resize is slow").
+* **Body** — carry the sharpened finding over in full, keeping the `#### Problem` /
+  `#### Proposed solution` / `#### Verification` sections so the fix agent has everything without
+  re-deriving it. Note which audit surfaced it (e.g. "Surfaced by `code-audit`."). Escape any bare
+  `#`-number that isn't a deliberate issue reference (see `docs/ISSUE-WORKFLOW.md`).
+* **Labels** — always `type:audit`. Add the applicable `area:*` and the substantive `type:*`
+  (`type:perf`, `type:chore`, …) when they're clear — an audit issue may carry `type:audit` *and* a
+  substantive type (this is the one sanctioned exception to "one `type:` per issue"; see
+  `docs/ISSUE-WORKFLOW.md`). **When the finding is valid but you can't confidently determine the fix
+  approach or its right categorization, also add `needs-triage`** so a human confirms direction
+  before `/fix-audits` implements it — file the issue anyway; don't drop a valid finding just
+  because the path forward is fuzzy.
+
+`type:audit` and `needs-triage` are declared in `.github/labels.yml`. If a run needs a label that
+isn't there yet, add it to that file (the `Label Sync` workflow pushes it to GitHub) as part of the
+run.
+
 ## Output
 
-1. Edit `docs/AUDIT.md` in place — remove the findings that don't hold up, enrich the ones that do.
-   Each finding is a `### [Category] …` block with `#### Problem` / `#### Proposed solution` /
-   `#### Verification` inside (see `.claude/audit-conventions.md`); preserve each `## Source:`
-   section and the file header.
+1. Drain `docs/AUDIT.md`: remove every finding you dropped **and** every finding you filed as an
+   issue (a filed finding now lives in the issue, not the file). Preserve the file header and any
+   `## Source:` sections that still hold un-drained findings; delete a `## Source:` section once its
+   last finding is gone. **If no findings remain, delete `docs/AUDIT.md` entirely.**
 2. Add one row to `docs/AUDIT-LOG.md` for this run per `.claude/audit-conventions.md` §2 (date ·
-   `vet-audits` · one-line prune summary — what you kept/enriched vs removed).
-3. In your response, print two short lists:
-   * **Kept / enriched** — one line each, noting what you sharpened or the verification you added.
-   * **Removed** — one line each, with the reason (fixed / false positive / superseded / not worth
+   `vet-audits` · one-line summary — issues filed with their numbers vs what was dropped).
+3. Commit and push the `docs/AUDIT.md` drain + `docs/AUDIT-LOG.md` row.
+4. In your response, print two short lists:
+   * **Filed** — one line each: the issue number/link, its labels, and what you sharpened or the
+     verification you added (flag any `needs-triage` issues).
+   * **Dropped** — one line each, with the reason (fixed / false positive / superseded / not worth
      it).
 
-Do not implement any of the changes — this is a review pass only. Implementation happens via
-`/fix-audits`.
+Do not implement any of the findings — this is a review pass only. Implementation happens via
+`/fix-audits`, which burns down the open `type:audit` issues you filed.
 
 ## Verification angles that catch what a plain re-read misses
 

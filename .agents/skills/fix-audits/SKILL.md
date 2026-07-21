@@ -1,46 +1,56 @@
 ---
 name: fix-audits
-description: Work through every finding in docs/AUDIT.md autonomously on a dedicated branch — one commit per item — validating, fixing, and verifying each. Use when asked to fix, clear, or work through the audit backlog.
+description: Work through every open type:audit GitHub issue autonomously on a dedicated branch — one commit per issue — validating, fixing, and verifying each. Use when asked to fix, clear, or work through the audit backlog.
 ---
 
 # Fix Audits
 
-Work through **every** item in `docs/AUDIT.md` autonomously on a dedicated branch — one commit per
-item — without stopping to ask the user anything **mid-run**. The one exception is a single upfront
-question: whether to open a pull request. Some environments (Claude Code on the web / cloud
-sessions) can't silently open a PR — the harness only permits it when the user has explicitly asked,
-and `gh` may be unavailable — so resolve that **once, before any work**, then run the whole sweep
-without further prompts (see Setup). Review happens on the PR when there is one; otherwise in the
-final summary.
+Work through **every** open GitHub issue labeled `type:audit` autonomously on a dedicated branch —
+one commit per issue — without stopping to ask the user anything **mid-run**. The `type:audit`
+issues are the durable audit backlog; `/vet-audits` files them from validated findings (see
+`.claude/audit-conventions.md`). This skill no longer reads `docs/AUDIT.md`.
 
-## Two kinds of finding — adapt the loop to each
+The one exception to the no-prompts rule is a single upfront question: whether to open a pull
+request. Some environments (Claude Code on the web / cloud sessions) can't silently open a PR — the
+harness only permits it when the user has explicitly asked, and `gh` may be unavailable — so resolve
+that **once, before any work**, then run the whole sweep without further prompts (see Setup). Review
+happens on the PR when there is one; otherwise in the final summary.
 
-`docs/AUDIT.md` mixes two shapes of finding, and "validate → fix → verify" means something different
-for each. Read the finding's `## Source:` header and its `[Category]` tag to tell them apart before
-you delegate:
+## Two kinds of issue — adapt the loop to each
 
-* **Product-code findings** — from `/code-audit`, `/extract-audit`, `lighthouse-audit`. The fix
-  changes app source under `web/src/` (or a build / perf path). Validate empirically (a failing
-  test, a profile, a query) and verify with `npm run check` + the tests covering the touched files,
-  exactly as the per-item loop describes.
-* **Tooling findings** — from `/session-audit` (categories `[Traversal]` / `[Execution]` / `[Docs]`
-  / `[Tooling]`), and any finding whose fix is a change to Splotch's **Claude Code tooling and
-  cloud-session workflow** rather than to production code: a skill under `.ruler/skills/`, a
-  path-scoped rule in `.claude/rules/`, an instruction note in the `.ruler/` sources (regenerate
-  `CLAUDE.md`/`AGENTS.md` with `npm run ruler:apply`, ADR-0058), a `docs/*` reference, an ADR,
-  `.claude/cloud/*`, or a small helper script in `scripts/`. These usually have **no product test to
-  turn green** — a Markdown edit has nothing to typecheck. Validate and verify against the *tooling
-  itself* (see the per-item loop), and do **not** fabricate or report a passing product suite as if
-  it validated a change that never touched product code.
+The `type:audit` backlog mixes two shapes of issue, and "validate → fix → verify" means something
+different for each. Read the issue's labels and body (which name the audit that surfaced it) to tell
+them apart before you delegate:
 
-The two classes can coexist in one sweep; decide per item, not per run.
+* **Product-code issues** — surfaced by `/code-audit`, `/extract-audit`, `lighthouse-audit`
+  (typically carry `type:perf`/`type:bug`/`type:chore` + an `area:*`). The fix changes app source
+  under `web/src/` (or a build / perf path). Validate empirically (a failing test, a profile, a
+  query) and verify with `npm run check` + the tests covering the touched files, exactly as the
+  per-item loop describes.
+* **Tooling issues** — surfaced by `/session-audit` and any issue whose fix is a change to Splotch's
+  **Claude Code tooling and cloud-session workflow** rather than to production code: a skill under
+  `.ruler/skills/`, a path-scoped rule in `.claude/rules/`, an instruction note in the `.ruler/`
+  sources (regenerate `CLAUDE.md`/`AGENTS.md` with `npm run ruler:apply`, ADR-0058), a `docs/*`
+  reference, an ADR, `.claude/cloud/*`, or a small helper script in `scripts/`. These usually have
+  **no product test to turn green** — a Markdown edit has nothing to typecheck. Validate and verify
+  against the *tooling itself* (see the per-item loop), and do **not** fabricate or report a passing
+  product suite as if it validated a change that never touched product code.
+
+The two classes can coexist in one sweep; decide per issue, not per run.
+
+A `needs-triage` label on a `type:audit` issue means `/vet-audits` judged the finding valid but
+couldn't settle the fix approach. Still attempt it — but if the subagent can't reach a confident
+approach or the issue needs a product/user decision, that's a **Skip**: leave the issue open with a
+comment (per the per-item loop), don't force a shaky fix.
 
 ## Setup (once per run)
 
-1. **Check `docs/AUDIT.md` exists first.** It may be absent — this command deletes it once the
-   backlog is cleared, so a missing (or header-only) file is a normal, expected state, not an error.
-   If there's no `docs/AUDIT.md`, or it holds only the header with no `###` findings, there's
-   nothing to fix: report "no audit backlog to fix" and stop cleanly — don't create a branch or PR.
+1. **Fetch the backlog first.** Query the open `type:audit` issues with the GitHub MCP tools
+   (`list_issues` with `labels: ["type:audit"]` and `state: OPEN`, or `search_issues` for
+   `is:open label:type:audit`). If there are none, there's nothing to fix: report "no open
+   `type:audit` issues" and stop cleanly — don't create a branch or PR. Order the issues you did get
+   for the sweep: `priority:high` first, then the rest oldest-first (issue number ascending); order
+   is not implied by number otherwise.
 2. Ensure the working tree is clean; if not, stop and tell the user — never mix their uncommitted
    work into this run.
 3. **Resolve the PR question once, upfront — then never ask again.** This is the single thing the
@@ -66,32 +76,31 @@ The two classes can coexist in one sweep; decide per item, not per run.
 
 ## Per-item loop
 
-Process items **top to bottom** (they're ordered by impact). For each item:
+Process the issues in the sweep order chosen in Setup. For each issue:
 
 1. **Delegate to a fresh subagent.** Launch a `general-purpose` agent whose prompt contains the
-   item's full text verbatim plus repo conventions. A fresh agent per item is what keeps each fix's
-   context clean — do not implement items in the orchestrator conversation, and do not pull the
-   subagent's diff into your own context; rely on its report. Instruct the subagent to work in this
-   order:
+   issue's full text verbatim (number, title, body, labels) plus repo conventions. A fresh agent per
+   issue is what keeps each fix's context clean — do not implement issues in the orchestrator
+   conversation, and do not pull the subagent's diff into your own context; rely on its report.
+   Instruct the subagent to work in this order:
 
    1. **Validate the problem first — empirically where possible.** Before changing anything, confirm
-      the finding is real against the *current* code: run the finding's `#### Verification` steps if
-      it has them, otherwise reproduce it yourself (a failing test, a profile capture, a log line, a
-      query — whatever the item's category admits) rather than trusting the write-up. If the problem
-      no longer holds, is intentional, or can't be reproduced, that's a **Skip** carrying the
-      evidence.
+      the finding is real against the *current* code: run the issue's verification steps if it has
+      them, otherwise reproduce it yourself (a failing test, a profile capture, a log line, a query
+      — whatever the issue admits) rather than trusting the write-up. If the problem no longer
+      holds, is intentional, or can't be reproduced, that's a **Skip** carrying the evidence.
 
-      For a **tooling finding**, "reproduce it" means confirming the gap against the *current*
+      For a **tooling issue**, "reproduce it" means confirming the gap against the *current*
       tooling, not against product behaviour: the doc really is missing the note, the script really
       throws, the rule really doesn't warn (grep the skill / rule / `CLAUDE.md`, run the script,
-      re-run the finding's `#### Verification`). If the tooling has since been fixed — someone added
-      the note, the import was already corrected — that's a **Skip** with the grep/run that proves
-      it.
-   2. **Brainstorm the fix — the item's recommendation is a starting point, not gospel.** The
-      suggested fix in `docs/AUDIT.md` was written by an earlier pass without implementation
-      context, so treat it as one candidate among others. Weigh it against alternatives and choose
-      the approach that is genuinely best for this codebase, even if that means diverging from or
-      improving on the recommendation. Carefully consider the best way to proceed.
+      re-run the issue's verification). If the tooling has since been fixed — someone added the
+      note, the import was already corrected — that's a **Skip** with the grep/run that proves it.
+   2. **Brainstorm the fix — the issue's recommendation is a starting point, not gospel.** The
+      suggested fix in the issue was written by an earlier pass (`vet-audits`) without
+      implementation context, so treat it as one candidate among others. Weigh it against
+      alternatives and choose the approach that is genuinely best for this codebase, even if that
+      means diverging from or improving on the recommendation. Carefully consider the best way to
+      proceed.
 
       **When a tooling fix calls for automation, keep it small and composable.** A cloud-session or
       Claude-tooling fix that needs a script must be a **small, single-purpose, non-brittle helper
@@ -100,8 +109,8 @@ Process items **top to bottom** (they're ordered by impact). For each item:
       command with a pile of args, *as long as each is documented*. So:
 
       * Prefer several focused commands, each doing one thing, over one command switched by
-        arguments. If a finding's `#### Proposed solution` sketches a broad do-everything script,
-        decompose it — build the smallest reusable primitive, then let callers compose primitives.
+        arguments. If an issue's proposed solution sketches a broad do-everything script, decompose
+        it — build the smallest reusable primitive, then let callers compose primitives.
       * Reuse before you add: check `scripts/lib/` (`utils.mjs`, `vite-server.mjs`, `smoke.mjs`,
         `android.mjs`) for glue that already exists rather than re-implementing it.
       * Name and document every new script per ADR-0019: a `namespace:variant` npm script with a
@@ -116,44 +125,44 @@ Process items **top to bottom** (they're ordered by impact). For each item:
         stays green. A new helper script must actually run (invoke it, or its smoke).
       * If the fix only changed **docs / skills / rules / `CLAUDE.md` / ADRs**, there is nothing to
         typecheck — `npm run check` and `npm test` are irrelevant, so don't report a green run you
-        didn't need as if it validated the edit. Instead re-run the finding's `#### Verification`,
-        grep for the guidance you added to confirm it landed, and read the surrounding section to be
-        sure the new text is correct, self-consistent, and doesn't contradict a sibling skill / rule
-        / doc.
+        didn't need as if it validated the edit. Instead re-run the issue's verification, grep for
+        the guidance you added to confirm it landed, and read the surrounding section to be sure the
+        new text is correct, self-consistent, and doesn't contradict a sibling skill / rule / doc.
 
    The subagent must report back one of:
    * **Fixed** — with a summary of what changed and why, the approach chosen (and how/why it
-     diverged from the item's recommendation, if it did), the empirical validation of both the
+     diverged from the issue's recommendation, if it did), the empirical validation of both the
      problem and the fix, files touched, check/test results, and any caveats or follow-ups.
    * **Skip** — the finding didn't hold up (couldn't be reproduced, already fixed, or intentional),
-     the fix turned out riskier than the item claims, or it requires a product/user decision to
+     the fix turned out riskier than the issue claims, or it requires a product/user decision to
      proceed. It must revert all its changes (`git restore .` + delete any new untracked files) and
-     state the evidence plus exactly what decision is needed or why the item doesn't hold up.
+     state the evidence plus exactly what decision is needed or why the finding doesn't hold up.
 2. **On Fixed:**
    * Verify the tree has changes and the reported checks passed (re-run `npm run check` if the
      report is ambiguous).
-   * Remove the finding's whole `###` block from `docs/AUDIT.md` (keep the file header and other
-     sections intact; delete the `## Source:` section once its last finding is gone).
-   * Commit the fix **and** the `docs/AUDIT.md` edit together as one commit with a descriptive
-     message, then push.
-   * Record — the item title, the commit SHA, the subagent's summary, test/check results, and any
-     caveats worth a reviewer's attention. **In Draft-PR mode**, post it as a PR comment
+   * Commit the fix as one commit with a descriptive message that **references the issue so it
+     closes on merge** — `Fixes #<NN>` in the commit body — then push.
+   * Record — the issue number/title, the commit SHA, the subagent's summary, test/check results,
+     and any caveats worth a reviewer's attention. **In Draft-PR mode**, post it as a PR comment
      (`gh pr comment`, or the GitHub MCP `add_issue_comment` tool on the PR number). **In
      Branch-only mode**, accumulate it for the final response instead.
 3. **On Skip:**
    * Confirm the working tree is clean again (revert it yourself if the subagent didn't).
-   * Edit the finding in place in `docs/AUDIT.md`: add a
-     `**⏸ Pending decision:** <what the user must decide, and why the sweep couldn't proceed>` line
-     right under its `###` header (above `#### Problem`). Commit that edit and push.
-   * Flag the skipped item and its pending decision — as a PR comment in Draft-PR mode
-     (`gh pr comment`, or the GitHub MCP `add_issue_comment` tool), or in the final summary in
-     Branch-only mode.
-4. Move to the next item. Do not stop between items, do not ask the user anything mid-run — a
+   * **Leave the issue open** and add a comment to it (GitHub MCP `add_issue_comment` on the issue
+     number) stating the evidence and — if it needs a decision — exactly what the user must decide
+     and why the sweep couldn't proceed. If the finding simply didn't hold up (already fixed /
+     intentional / not reproducible), say so in the comment; a human can then close it. If it's
+     blocked on a decision and the issue isn't already `needs-triage`, add that label
+     (`issue_write`). Do **not** reference the issue in any commit — a skipped issue must not close.
+   * Flag the skipped issue and its reason — as a PR comment in Draft-PR mode (`gh pr comment`, or
+     the GitHub MCP `add_issue_comment` tool on the PR), or in the final summary in Branch-only
+     mode.
+4. Move to the next issue. Do not stop between issues, do not ask the user anything mid-run — a
    decision point is handled by step 3, not by pausing.
 
 ## Completion
 
-When every item is either fixed or marked pending:
+When every issue is either fixed or skipped:
 
 1. **One final verification — of whatever the sweep actually touched.** With all fixes now
    accumulated on the branch, confirm they *compose* — that no later fix silently undermined an
@@ -165,18 +174,19 @@ When every item is either fixed or marked pending:
      say contradictory things, and every new helper the sweep introduced is referenced from the
      skill / rule / `scripts-info` that should invoke it. Running `npm test` on a docs-only branch
      proves nothing; skip it unless a commit touched code.
-2. If **no items remain**, delete `docs/AUDIT.md` and commit. If pending items remain, leave the
-   file containing only the header and the pending items.
+2. The `type:audit` issues are the backlog — this skill doesn't touch `docs/AUDIT.md`. Fixed issues
+   close automatically when the PR merges (each commit references them with `Fixes #<NN>`); skipped
+   issues stay open with the comment step 3 of the per-item loop added.
 3. Add one row to `docs/AUDIT-LOG.md` for this run per `.claude/audit-conventions.md` §2 (date ·
    `fix-audits` · one-line summary with the PR link, or the branch name in Branch-only mode),
    committed and pushed with the completion changes.
 4. **In Draft-PR mode**, update the PR description (`gh pr edit --body`, or the GitHub MCP
-   `update_pull_request` tool's `body`): a one-line summary per change (linking each commit), plus —
-   if any — a **"Needs your decision"** section listing each remaining item and its pending
-   decision. **In Branch-only mode** there is no PR description — this content goes in the final
-   response instead.
+   `update_pull_request` tool's `body`): a one-line summary per change (linking each commit and the
+   issue it closes), plus — if any — a **"Needs your decision"** section listing each skipped issue
+   and what it's waiting on. **In Branch-only mode** there is no PR description — this content goes
+   in the final response instead.
 5. **In Draft-PR mode**, mark the PR ready for review (`gh pr ready`, or the GitHub MCP
    `update_pull_request` tool with `draft: false`). Branch-only mode has no PR to ready.
-6. In your final response: how many items were fixed, how many are pending decisions (and what those
-   decisions are), and — in Draft-PR mode — the PR URL, or in Branch-only mode the branch name plus
-   the per-item summaries accumulated above.
+6. In your final response: how many issues were fixed (with their numbers), how many were skipped
+   (and what each is waiting on), and — in Draft-PR mode — the PR URL, or in Branch-only mode the
+   branch name plus the per-item summaries accumulated above.
