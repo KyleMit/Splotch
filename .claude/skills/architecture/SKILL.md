@@ -181,8 +181,11 @@ media queries + the head-script stamp in `app.html`).
   * **Coloring Book Button** - Opens the Coloring Book Picker (toggle in Parent Center)
   * **Magic Brush Button** (`#magicBrushButton`) - Toggles the magic brush; shown only while a
     coloring page is applied. Painting reveals that page's colored fill (`.light.webp`) where the
-    child strokes — a `magic`-flagged op in the command log whose paint is a `CanvasPattern` of the
-    fill, so undo/eraser/override are free (ADR-0043).
+    child strokes — a `magic`-flagged op whose paint is a `CanvasPattern` of the fill (ADR-0043).
+    Magic ops are otherwise ordinary ops in the active/pending `StrokeGroupCommand`s: at commit they
+    fold into the paper raster like any stroke (held in `undoHistory.ts`'s `pendingCommands` while
+    the fill is still decoding, so a blank sheet never bakes in), and undo comes from the snapshot
+    stack for free (ADR-0066).
 * **Coloring Book Picker** - Modal dialog for choosing a coloring page to use as a canvas overlay
   * **Coloring Book Grid** - First menu showing each coloring book by its cover image
   * **Coloring Book Tile** - Individual book cover button; tap to open that book's pages

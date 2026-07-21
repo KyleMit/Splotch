@@ -53,11 +53,11 @@ flat. `perf:undo` reports the *real* cost analytically:
   `mount-summary.json` long-task list is the TBT signal; feed its `trace.json` to `perf:analyze` for
   the breakdown.
 * **Engine marks** are the clean signal. `PERF_MARKS=true` at build time turns on
-  `performance.mark/measure` around the engine's hot paths (`lib/drawing/` — `draw`, `commit`,
-  `foldBaseline`, `scanCanvasIsEmpty`, `resizeCanvas`, `undo`; gated by the shared `perf.ts` flag
-  across `engine.ts` and its sibling modules). The `npm run perf:*` scripts set it; normal builds
-  strip the marks entirely. If the report says "*No engine.* marks*", the build wasn't a
-  `PERF_MARKS` build.
+  `performance.mark/measure` around the engine's hot paths (`lib/drawing/` — `engine.draw`,
+  `engine.commit`, `engine.snapshot`, `engine.fold`, `engine.undo`, `engine.resize`,
+  `engine.scanEmpty`; gated by the shared `perf.ts` flag across `engine.ts` and its sibling
+  modules). The `npm run perf:*` scripts set it; normal builds strip the marks entirely. If the
+  report says "*No engine.* marks*", the build wasn't a `PERF_MARKS` build.
 * **Headless + CPU throttle approximates a phone** — good for finding hotspots and catching
   regressions, but absolute frame numbers want the Android path. Don't compare across
   targets/throttle without checking the Settings table.
@@ -82,14 +82,15 @@ Read in this order:
    of long tasks points to the phase they fall in (see the per-phase table's "Long tasks" column).
 2. **Engine hot paths** — the `Total`/`Avg`/`Max` per operation. Map a hot row to its cause and fix:
 
-   | Hot row                        | What it is                                                                           | Where to look                                                                                                                                             |
-   | ------------------------------ | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-   | `engine.draw` high **Avg/Max** | per-pointermove stroking (coalesced samples + quadratic segments)                    | `strokeSmoothSegments` / `draw` in `web/src/lib/drawing/engine.ts`. A high *Max* (vs Avg) = a few heavy frames, often the first move after a resize.      |
-   | `engine.commit` high           | the stroke-end pipeline: paper copy + folding the stroke's ops into the paper        | the pointerup hitch candidate (ADR-0066). If `engine.snapshot` dominates it, the paper copy is the cost — see the pooling/`createImageBitmap` follow-ups. |
-   | `engine.snapshot` high         | the pre-stroke paper copy pushed onto the snapshot stack at commit                   | one full-canvas `drawImage` per commit, off the draw frame (`undoHistory.ts pushCommand`). Software renderers exaggerate it heavily — judge on-device.    |
-   | `engine.scanEmpty` high        | `getImageData` readback after an **eraser** stroke                                   | `scanCanvasIsEmpty`; already downscaled 0.25×. Costlier on real devices (GPU→CPU readback).                                                               |
-   | `engine.resize` high/frequent  | backing-store rebuild + one paper blit (plus pending/in-flight ops)                  | should fire only on resize/rotation — if it fires mid-draw, that's the bug.                                                                               |
-   | `engine.undo` high             | restoring the top snapshot: a blit for a live raster, decode + blit for a blob entry | deep entries (past K_LIVE = 2) decode from their lossless blob; a one-off cost at button-press, not per-frame.                                            |
+   | Hot row                        | What it is                                                                           | Where to look                                                                                                                                                                                          |
+   | ------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+   | `engine.draw` high **Avg/Max** | per-pointermove stroking (coalesced samples + quadratic segments)                    | `strokeSmoothSegments` / `draw` in `web/src/lib/drawing/engine.ts`. A high *Max* (vs Avg) = a few heavy frames, often the first move after a resize.                                                   |
+   | `engine.commit` high           | the stroke-end pipeline: paper copy + folding the stroke's ops into the paper        | the pointerup hitch candidate (ADR-0066). Its two inner measures attribute it: `engine.snapshot` dominating = the paper copy; `engine.fold` dominating = rendering the ops.                            |
+   | `engine.snapshot` high         | the pre-stroke paper copy (alone) pushed onto the snapshot stack at commit           | one full-canvas `drawImage` per commit, off the draw frame (`undoHistory.ts pushCommand`). Software renderers exaggerate it heavily — judge on-device. See the pooling/`createImageBitmap` follow-ups. |
+   | `engine.fold` high             | rendering the committed stroke's ops onto the paper, inside the commit               | `foldPendingIntoPaper` (`undoHistory.ts`) — scales with op count and brush cost; heaviest for crayon strokes (per-pass pattern stamps).                                                                |
+   | `engine.scanEmpty` high        | `getImageData` readback after an **eraser** stroke                                   | `scanCanvasIsEmpty`; already downscaled 0.25×. Costlier on real devices (GPU→CPU readback).                                                                                                            |
+   | `engine.resize` high/frequent  | backing-store rebuild + one paper blit (plus pending/in-flight ops)                  | should fire only on resize/rotation — if it fires mid-draw, that's the bug.                                                                                                                            |
+   | `engine.undo` high             | restoring the top snapshot: a blit for a live raster, decode + blit for a blob entry | deep entries (past K_LIVE = 2) decode from their lossless blob; a one-off cost at button-press, not per-frame.                                                                                         |
 3. **Where the main thread went** (Chromium/Android only) — Scripting vs Rendering vs Painting.
    Painting/raster dominating = GPU/compositing cost (the high-DPR canvas), not JS.
 4. **Per-phase main-thread busy** — which interaction actually costs CPU (busy, not wall-clock —

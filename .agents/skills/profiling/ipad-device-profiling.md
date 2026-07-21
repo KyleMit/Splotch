@@ -101,14 +101,19 @@ In Web Inspector → **Console** tab, paste the **entire contents** of
 Enter. It runs on the iPad page and:
 
 * resizes the canvas to the full iPad screen (so the raster is the real on-device size),
-* drives four real-volume scenarios — 12 long ~1200-op squiggles, 12 five-finger ~2400-op drags, 12
-  crayon squiggles, and 12 crayon reversal-scribbles (mid-stroke pass splits) — matching
-  `npm run perf:undo`,
-* prints a `console.table` with, per scenario: `snapshots` / `blob KB`, **`snap copy max ms`**
-  (slowest paper copy), **`commit max ms`** (the stroke-end hitch), **`undo avg/max ms`** (live blit
-  vs deep blob decode), and the real `history MB` — the ADR-0066 verification gates.
+* preflights the build with a probe stroke — if the probe emits no `engine.commit` measure,
+  `PERF_MARKS` was off in the build and the driver bails immediately with a rebuild message instead
+  of stalling through every undo wait,
+* drives four real-volume scenarios — 22 long ~1200-op squiggles, 22 five-finger ~2400-op drags, 22
+  crayon squiggles, and 22 crayon reversal-scribbles (mid-stroke pass splits) — matching
+  `npm run perf:undo`; 22 strokes runs two past the depth-20 cap so the overflow path executes, and
+  each scenario resets to blank paper **and** zero history first so its counts are its own,
+* prints a `console.table` with, per scenario: `snapshots` / `blob KB`, **`snap copy max ms`** (the
+  paper copy alone, `engine.snapshot`), **`fold max ms`** (rendering the committed ops,
+  `engine.fold`), **`commit max ms`** (the stroke-end hitch), **`undo avg/p95/max ms`** (live blit
+  vs deep blob decode), and the real `history MB` — then the ADR-0066 gates verbatim.
 
-Keep the iPad screen awake and the tab foregrounded while it runs (under a minute).
+Keep the iPad screen awake and the tab foregrounded while it runs (a minute or two).
 
 ### A7. Stop and export — **[Mac]**
 
@@ -222,13 +227,15 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
 
 ## Reading the results
 
-* **`undo avg ms` < 50** → the ADR-0066 undo gate. Shallow undos (the K_LIVE = 2 live rasters)
-  should be a near-free blit; deep undos add a lossless blob decode — both are one-off costs at
-  button-press.
-* **`snap copy max ms` / `commit max ms` vs the 8.3 ms frame budget** → the paper copy runs once at
-  finger-lift, off the draw frame, but a copy slower than one 120 Hz frame (8.3 ms) can still drop a
-  frame the instant the stroke ends. Cross-check the Timeline for a long frame at that moment. This
-  is the cost the desktop harness can only estimate — SwiftShader exaggerates it wildly.
+* **`undo p95 ms` < 50** → the ADR-0066 undo gate (the driver computes p95 per scenario and prints
+  the gate line verbatim). Shallow undos (the K_LIVE = 2 live rasters) should be a near-free blit;
+  deep undos add a lossless blob decode — both are one-off costs at button-press.
+* **`commit max ms` ≈ one 120 Hz frame ≈ 8.3 ms** → the ADR-0066 commit-hitch gate. The commit runs
+  once at finger-lift, off the draw frame, but a commit slower than one frame can still drop a frame
+  the instant the stroke ends; attribute a hot one via its inner columns — `snap copy max ms`
+  (`engine.snapshot`, the paper copy alone) vs `fold max ms` (`engine.fold`, rendering the ops).
+  Cross-check the Timeline for a long frame at that moment. This is the cost the desktop harness can
+  only estimate — SwiftShader exaggerates it wildly.
 * **`history MB`** → real raster memory for that scenario
   (`(live rasters + the paper) × max(w,h)² × 4 bytes + blob bytes`). On a 12.9″ iPad Pro the square
   raster is ~28 MB, so the resident tier is ~85 MB plus single-digit-MB blobs per deep entry —
@@ -246,9 +253,10 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
 * **iPad not under the Develop menu** → re-confirm the iPad's Web Inspector toggle, re-seat the USB
   cable, re-tap **Trust This Computer**, and make sure the iPad is unlocked with the Safari tab
   foregrounded.
-* **Page won't load over LAN** → confirm both devices are on the same Wi‑Fi, that `npm run preview`
-  was started with `--host`, and that you used the Mac's LAN IP (not `localhost`). A firewall prompt
-  on the Mac may need approving.
+* **Page won't load over LAN** → confirm both devices are on the same Wi‑Fi, that
+  `npm run perf:serve` is running (it serves on `0.0.0.0:4173` — a plain `npm run preview` binds
+  localhost only and lacks the harness flag), and that you used the Mac's LAN IP (not `localhost`).
+  A firewall prompt on the Mac may need approving.
 * **`window.__engine` is undefined** → the build wasn't made with `PUBLIC_ENABLE_DEV_HARNESS=true`,
   or you're not on the `/dev/engine` route.
 * **No `engine.*` marks in the export** → the build wasn't made with `PERF_MARKS=true`.
