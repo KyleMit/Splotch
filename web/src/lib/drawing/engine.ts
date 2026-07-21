@@ -42,7 +42,7 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { applyCrayonMixFixup, renderOp, clearAllOf, type PathOp, type StrokeOp } from './strokeOps';
+import { renderOp, clearAllOf, type PathOp, type StrokeOp } from './strokeOps';
 import {
   setCrayonOptions,
   getCrayonOptions,
@@ -107,32 +107,6 @@ let lastColorChangeTime = 0;
 // guarantees every pass differs even over the same spot; the value is stored on
 // the op, so replay is deterministic regardless of the counter's live position.
 let crayonSeedCounter = 1;
-
-// Live colour-mix flushing (ADR-0065). The commit-time mix fixup is idempotent
-// by construction — it re-renders deposits to pure colour and re-mixes them
-// from the fixed pre-stroke snapshot — so the SAME fixup can run mid-stroke,
-// throttled, over just the ops painted since the last flush: the blend soaks
-// in ~a tenth of a second behind the fingertip instead of snapping at pen
-// lift. Batch timing cannot change the final bytes (each texel's mixed value
-// is a pure function of the texel), and commit still canonicalizes from the
-// simplified ops, so replay stays byte-exact regardless of when flushes fired.
-const MIX_FLUSH_MS = 120;
-let pendingMixOps: StrokeOp[] = [];
-let lastMixFlush = 0;
-
-function queueLiveMix(op: StrokeOp) {
-  if (!crayonActive || eraserActive || magicActive) return;
-  pendingMixOps.push(op);
-}
-
-function maybeFlushLiveMix() {
-  if (pendingMixOps.length === 0) return;
-  const now = Date.now();
-  if (now - lastMixFlush < MIX_FLUSH_MS) return;
-  lastMixFlush = now;
-  applyCrayonMixFixup(ctx, pendingMixOps);
-  pendingMixOps = [];
-}
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
 let onDrawStopCallback: (() => void) | null = null;
@@ -454,8 +428,6 @@ function beginStrokeGroup() {
   // settle before the stroke's first frame beats read-back stalls landing
   // mid-gesture as the stroke wanders into uncaptured cells.
   captureCrayonMixNow();
-  pendingMixOps = [];
-  lastMixFlush = Date.now();
   setCanvasEmptyState(false);
   groupHasDrawn = true;
 }
@@ -483,7 +455,6 @@ function renderStrokeStart(ps: PointerState) {
   };
   renderOp(ctx, dot);
   recordOp(dot);
-  queueLiveMix(dot);
 
   ctx.beginPath();
   ctx.moveTo(ps.x, ps.y);
@@ -527,7 +498,6 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
       if (op.segs.length > 0) {
         renderOp(ctx, op);
         recordOp(op);
-        queueLiveMix(op);
       }
       ps.seed = crayonSeedCounter++;
       ps.crayonTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
@@ -545,9 +515,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
   if (op.segs.length > 0) {
     renderOp(ctx, op);
     recordOp(op);
-    queueLiveMix(op);
   }
-  maybeFlushLiveMix();
 }
 
 // Push the finished stroke group onto the undo log (once per group, when the
@@ -556,7 +524,7 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
 // work while a finger is mid-stroke.
 function commitStrokeGroup() {
   if (PERF_MARKS) performance.mark('engine.commit:start');
-  if (!commitActiveCommand(ctx)) return;
+  if (!commitActiveCommand()) return;
   setCanUndo(true);
   if (onStrokeEnd) onStrokeEnd();
   if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
@@ -971,7 +939,6 @@ export function clearCanvas() {
   // keeping the live render byte-equal to the rebuild.
   if (strokeStillLive) {
     prepareCrayonMixUnder(ctx, crayonActive && !eraserActive && !magicActive, true);
-    pendingMixOps = [];
   }
   setCanvasEmptyState(!strokeStillLive);
   // A cleared canvas releases the held rainbow so the next magic use picks a fresh

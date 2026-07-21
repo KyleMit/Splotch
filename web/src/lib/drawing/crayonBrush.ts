@@ -96,12 +96,13 @@ export interface CrayonOptions {
   // How much freshly deposited wax picks up the colour of ink already on the
   // paper beneath it: each deposited texel is pulled up to this fraction
   // toward the SUBTRACTIVE (multiply) product with the under-ink sampled from
-  // a once-per-stroke snapshot — applied live in throttled batches as the
-  // stroke progresses, then canonicalized at commit (see waxMixDeposit and
-  // the colour-mixing section below). Subtractive is what makes yellow over blue
-  // lean GREEN, like real wax layers; the pull is weighted by how different
-  // the two colours are, so same-colour buildup is an exact identity and
-  // cannot darken or shift hue. 0 disables (the pure deposit).
+  // a once-per-stroke snapshot. Every op's paint is pre-mixed before it
+  // strokes, so the blend is simply there under the fingertip — nothing
+  // settles at lift (see waxMixDeposit and the colour-mixing section below).
+  // Subtractive is what makes yellow over blue lean GREEN, like real wax
+  // layers; the pull is weighted by how different the two colours are, so
+  // same-colour buildup is an exact identity and cannot darken or shift hue.
+  // 0 disables (the pure deposit).
   colorMix: number;
   // The density passes, widest first.
   passes: CrayonPass[];
@@ -365,10 +366,14 @@ function waxAlpha(i: number, coverage: number): number {
 // a pure function of the texel (never the pass), so a texel painted by several
 // passes or overlapping ops always receives the same RGB — the idempotence
 // waxAlpha's binary tooth guarantees extends to the shaded colour. Built once
-// and reused by every context's pattern.
-const colorTileCache = new Map<string, HTMLCanvasElement>();
+// and reused by every context's pattern; the raw bytes are kept alongside so
+// the colour mix can pre-mix an op's paint in JS (crayonTileBytes).
+const colorTileCache = new Map<string, { canvas: HTMLCanvasElement; data: Uint8ClampedArray }>();
 
-function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
+function colorTileEntry(
+  color: string,
+  passIdx: number
+): { canvas: HTMLCanvasElement; data: Uint8ClampedArray } | null {
   const key = `${color}@${passIdx}`;
   const hit = colorTileCache.get(key);
   if (hit) return hit;
@@ -400,8 +405,9 @@ function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
     data[j + 3] = Math.round(waxAlpha(i, pass.coverage) * 255);
   }
   g.putImageData(img, 0, 0);
-  colorTileCache.set(key, c);
-  return c;
+  const entry = { canvas: c, data };
+  colorTileCache.set(key, entry);
+  return entry;
 }
 
 // Per-context, per-(colour,pass) repeating pattern. createPattern is bound to one
@@ -431,8 +437,9 @@ export function crayonPatternFor(
   seed: number,
   passIdx: number
 ): CanvasPattern | null {
-  const t = colorTile(color, passIdx);
-  if (!t) return null;
+  const entry = colorTileEntry(color, passIdx);
+  if (!entry) return null;
+  const t = entry.canvas;
   const key = `${color}@${passIdx}`;
   let byKey = patternCache.get(target);
   if (!byKey) {
@@ -455,8 +462,9 @@ export function crayonPatternFor(
 // --- Colour mixing with the ink underneath ----------------------------------
 //
 // Fresh wax picks up a little of the colour already on the paper (colorMix):
-// each deposited texel is lerped toward the under-ink. Two constructions keep
-// that compatible with bit-identical replay:
+// deposited texels pull toward their subtractive product with the under-ink
+// (waxMixDeposit). Two constructions keep that live, snap-free, AND
+// bit-identical on replay:
 //
 //   • THE MIX SOURCE IS A SNAPSHOT of the target from before the stroke
 //     group's first op — never the live destination. Reading the destination
@@ -466,46 +474,40 @@ export function crayonPatternFor(
 //     deposited texel's value is a pure function of the texel. Replay
 //     reproduces the snapshot exactly because commands rebuild in order — the
 //     target's content before a command IS the state the live snapshot
-//     captured. The snapshot is per stroke GROUP: commit-time simplification
+//     captured. Per stroke GROUP, not per finger or pass: simplification
 //     reorders a multi-touch command's interleaved ops, which is only sound
-//     while every op mixes against the same under image; and pre-stroke ink
-//     covers every visible case, since a stroke is one colour and mixing with
-//     your own colour is invisible (lerp identity).
-//   • THE MIX IS APPLIED ONCE PER COMMAND, AT COMMIT, FROM THE SIMPLIFIED
-//     OPS — never per live op. A per-op composite cannot avoid re-touching
-//     the trail of deposits behind the tip (its padded bounds overhang them),
-//     and any re-touch repeats differently across the live op count vs the
-//     simplified replay count. Instead the live stroke renders pure deposits
-//     (the exact colorMix-0 path — nothing is added to the pointer frame),
-//     and at commit one scratch pass re-renders the command's SIMPLIFIED
-//     tooth ops over the overlap rect, lerps them toward the snapshot with a
-//     single source-atop, and blits the rect over the live deposits. Every
-//     replay loop applies the identical fixup with the identical simplified
-//     ops after the command's ops, so live-final and every rebuild agree on
-//     deposit values by construction. And because the fixup is idempotent,
-//     the engine also runs it live, throttled, over the ops painted since the
-//     last flush — the blend soaks in a beat behind the fingertip instead of
-//     snapping at pen lift, with no effect on any final byte.
+//     while every op mixes against the same under image.
+//   • EACH OP'S PAINT IS PRE-MIXED BEFORE IT STROKES. Rim and core tiles
+//     share their RGB, so an op's mixed deposit values are computable in pure
+//     JS from the cached tile bytes and the snapshot bytes: build the op's
+//     bounds as a small ImageData (tile alpha, mixed RGB), stage it in a
+//     reusable mini canvas (createPattern snapshots its source, so one canvas
+//     serves every op), and stroke with that no-repeat pattern instead of the
+//     repeating tile. The op deposits its final bytes in its own first frame
+//     — the blend is simply THERE under the fingertip, nothing settles or
+//     snaps at lift, and no fixup, re-render, or pixel read-back ever runs on
+//     the hot path. Replay builds the same patterns from the same stored ops
+//     and the same reproduced snapshot, so deposits agree everywhere by the
+//     same pure-function argument as the tooth itself.
 //
 // Cost control: renderOp maintains a per-target ink-occupancy grid (MIX_CELL
-// cells); the fixup is confined to the rect where the command's ops overlap
-// pre-stroke ink per the grid frozen at arm time (over blank paper the lerp
-// is an identity, so skipping is byte-exact), the snapshot is captured
-// lazily per cell before the first op that touches it paints (batched into
-// one copy per command on replay, where the ops are known up front), and
-// whether a command mixed at all is recorded on it (`mixedUnder`) so
-// rebuilds arm the machinery only for those commands.
+// cells, frozen at arm time so decisions see only pre-stroke ink); ops whose
+// bounds touch no inked cell take the exact pre-mix path untouched, and
+// whether a group mixed at all is recorded on its command (`mixedUnder`) so
+// rebuilds arm the machinery only for those commands. The snapshot is one
+// bounded getImageData of the inked region at pointerdown (and one per mixed
+// command on replay). Mixing sits out while a rotation-locked paper view has
+// the visible canvas on a non-identity transform (integer JS tile lookups
+// need identity); the recorded flag keeps every rebuild consistent with what
+// the live stroke did.
 const MIX_CELL = 64;
 
-// The under-ink snapshot (device space, grow-only) plus the armed state:
-// which target it serves, whether mixing applies at all, and which cells are
-// captured so far.
-let underSnap: HTMLCanvasElement | null = null;
-let underSnapCtx: CanvasRenderingContext2D | null = null;
 let mixFor: CanvasRenderingContext2D | null = null;
 let mixReady = false;
-let mixCaptured: Uint8Array | null = null;
-let mixCapturedCols = 0;
+let mixSampled = false;
+// The under-ink snapshot bytes (device space), covering the frozen grid's
+// inked bounding rect. CPU-side only — every consumer is the JS pre-mixer.
+let underBytes: { x: number; y: number; data: ImageData } | null = null;
 
 export interface DeviceBox {
   x: number;
@@ -514,21 +516,9 @@ export interface DeviceBox {
   h: number;
 }
 
-function growCanvasToCover(
-  canvas: HTMLCanvasElement | null,
-  width: number,
-  height: number
-): HTMLCanvasElement {
-  if (canvas && canvas.width >= width && canvas.height >= height) return canvas;
-  const grown = canvas ?? document.createElement('canvas');
-  grown.width = Math.max(width, grown.width);
-  grown.height = Math.max(height, grown.height);
-  return grown;
-}
-
 // Per-target ink occupancy: which MIX_CELL cells have ever been painted since
 // the last clear. Purely an optimization input — a stale/over-full grid only
-// costs scratch passes, never correctness. `all` marks everything inked (used
+// costs pre-mixing work, never correctness. `all` marks everything inked (used
 // after rebuilds whose blitted baseline/keyframe content bypasses renderOp).
 interface InkGrid {
   cols: number;
@@ -591,12 +581,26 @@ export function markCrayonInkAll(target: CanvasRenderingContext2D) {
 // live grid keeps accumulating this stroke's own ops for future strokes.
 let mixDecisionGrid: InkGrid | null = null;
 
-// The device rect of `box` that overlaps pre-stroke ink per the frozen grid —
-// the only area where the mix can change a pixel (atop over blank is an
-// identity) — or null when none. The bounding rect over the hit cells may
-// span blank cells between inked ones; that's fine, blank under-cells mix to
-// identity, they just have to be captured too.
-function frozenInkOverlapRect(box: DeviceBox): DeviceBox | null {
+function boxTouchesFrozenInk(box: DeviceBox): boolean {
+  const grid = mixDecisionGrid;
+  if (!grid) return false;
+  if (grid.all) return true;
+  let hit = false;
+  forEachCellIn(grid, box, (i) => {
+    if (grid.cells[i]) hit = true;
+  });
+  return hit;
+}
+
+// The sub-rect of `box` that overlaps pre-stroke ink per the frozen grid — the
+// only area where mixing can change a pixel — or null when none. Used by the
+// big-op fixup path; the bounding rect may span blank cells between inked
+// ones, where the mix is an identity anyway.
+export function crayonMixOverlapRect(
+  target: CanvasRenderingContext2D,
+  box: DeviceBox
+): DeviceBox | null {
+  if (!mixReady || mixFor !== target || !underBytes) return null;
   const grid = mixDecisionGrid;
   if (!grid) return null;
   if (grid.all) return box;
@@ -621,14 +625,61 @@ function frozenInkOverlapRect(box: DeviceBox): DeviceBox | null {
   return w > 0 && h > 0 ? { x, y, w, h } : null;
 }
 
+// Pull every deposited pixel of `img` (positioned at device (dx, dy)) toward
+// its under-ink per waxMixDeposit, inlined — the big-op fixup path reads the
+// op's freshly stroked deposits back, mixes them here, and writes them back.
+export function mixDepositsInPlace(img: ImageData, dx: number, dy: number) {
+  if (!mixReady || !underBytes) return;
+  const k = opts.colorMix;
+  const under = underBytes;
+  const U = under.data.data;
+  const uW = under.data.width;
+  const uH = under.data.height;
+  const d = img.data;
+  for (let y = 0; y < img.height; y++) {
+    const uy = dy + y - under.y;
+    if (uy < 0 || uy >= uH) continue;
+    for (let x = 0; x < img.width; x++) {
+      const o = (y * img.width + x) * 4;
+      if (d[o + 3] === 0) continue;
+      const ux = dx + x - under.x;
+      if (ux < 0 || ux >= uW) continue;
+      const u4 = (uy * uW + ux) * 4;
+      const ua = U[u4 + 3];
+      if (ua === 0) continue;
+      const dr = d[o];
+      const dg = d[o + 1];
+      const db = d[o + 2];
+      let dist = Math.abs(dr - U[u4]);
+      const gDist = Math.abs(dg - U[u4 + 1]);
+      if (gDist > dist) dist = gDist;
+      const bDist = Math.abs(db - U[u4 + 2]);
+      if (bDist > dist) dist = bDist;
+      const w = k * Math.min(1, dist / 180) * (ua / 255);
+      if (w <= 0) continue;
+      d[o] = Math.round(dr + ((dr * U[u4]) / 255 - dr) * w);
+      d[o + 1] = Math.round(dg + ((dg * U[u4 + 1]) / 255 - dg) * w);
+      d[o + 2] = Math.round(db + ((db * U[u4 + 2]) / 255 - db) * w);
+    }
+  }
+  mixSampled = true;
+}
+
+// A pooled scratch context at least rect-bucket sized, for the big-op fixup.
+export function crayonMixScratchFor(
+  w: number,
+  h: number
+): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } | null {
+  return mixMiniFor(w, h);
+}
+
 // Arm the colour mix for the stroke group / replayed command about to render
 // onto `target`. `active` = the ops are mixable crayon deposits and (on
-// replay) the live group actually sampled the under image; `underEmpty` = the
-// canvas is known blank (nothing to mix with). Freezes the target's current
-// ink grid as the decision input — live that is the pre-stroke state by
-// construction, and on replay it is rebuilt to the pre-command state by the
-// replay loops themselves. Cheap: no pixels move until a mixed op captures
-// its first cell.
+// replay) the live group actually mixed; `underEmpty` = the canvas is known
+// blank (nothing to mix with). Freezes the target's current ink grid as the
+// decision input — live that is the pre-stroke state by construction, and on
+// replay it is rebuilt to the pre-command state by the replay loops
+// themselves. No pixels move until captureCrayonMixNow.
 export function prepareCrayonMixUnder(
   target: CanvasRenderingContext2D,
   active: boolean,
@@ -636,6 +687,9 @@ export function prepareCrayonMixUnder(
 ) {
   mixFor = target;
   mixReady = active && !underEmpty && opts.colorMix > 0;
+  mixSampled = false;
+  underBytes = null;
+  mixDecisionGrid = null;
   if (!mixReady) return;
   const live = inkGridFor(target);
   mixDecisionGrid = {
@@ -644,79 +698,16 @@ export function prepareCrayonMixUnder(
     cells: live.cells.slice(),
     all: live.all,
   };
-  const { width, height } = target.canvas;
-  const grown = growCanvasToCover(underSnap, width, height);
-  if (grown !== underSnap || !underSnapCtx) {
-    underSnap = grown;
-    underSnapCtx = grown.getContext('2d');
-    if (!underSnapCtx) {
-      mixReady = false;
-      return;
-    }
-  }
-  const cols = Math.ceil(underSnap.width / MIX_CELL);
-  const rows = Math.ceil(underSnap.height / MIX_CELL);
-  if (!mixCaptured || mixCaptured.length !== cols * rows) mixCaptured = new Uint8Array(cols * rows);
-  else mixCaptured.fill(0);
-  mixCapturedCols = cols;
 }
 
-// Whether the colour mix is armed for this target — the gate for both the
-// per-op snapshot capture and the commit/replay fixup.
-export function crayonMixArmedFor(target: CanvasRenderingContext2D): boolean {
-  return mixReady && mixFor === target;
-}
-
-// The armed snapshot canvas (device space). Only meaningful while armed.
-export function crayonMixUnder(): HTMLCanvasElement | null {
-  return mixReady ? underSnap : null;
-}
-
-// The sub-rect of an op's bounds where pre-stroke ink lies per the frozen
-// grid — where the commit fixup must composite — or null when the op cannot
-// mix with anything.
-export function crayonMixOverlapRect(
-  target: CanvasRenderingContext2D,
-  box: DeviceBox
-): DeviceBox | null {
-  if (!crayonMixArmedFor(target)) return null;
-  return frozenInkOverlapRect(box);
-}
-
-// Capture the still-uncaptured snapshot cells an op's overlap rect needs,
-// copying them from the target — which is why this MUST run before the op
-// paints anything. Any cell holding this stroke's own earlier ink sat inside
-// an earlier op's padded bounds and was captured then, so a captured cell
-// always holds pre-stroke bytes.
-export function captureCrayonMixCells(target: CanvasRenderingContext2D, box: DeviceBox) {
-  if (!crayonMixArmedFor(target) || !underSnap || !underSnapCtx || !mixCaptured) return;
-  const rect = frozenInkOverlapRect(box);
-  if (!rect) return;
-  const grid = { cols: mixCapturedCols, rows: Math.ceil(underSnap.height / MIX_CELL) };
-  const captured = mixCaptured;
-  const snapCtx = underSnapCtx;
-  forEachCellIn(grid, rect, (i) => {
-    if (captured[i]) return;
-    captured[i] = 1;
-    const cx = (i % grid.cols) * MIX_CELL;
-    const cy = Math.floor(i / grid.cols) * MIX_CELL;
-    snapCtx.clearRect(cx, cy, MIX_CELL, MIX_CELL);
-    snapCtx.drawImage(target.canvas, cx, cy, MIX_CELL, MIX_CELL, cx, cy, MIX_CELL, MIX_CELL);
-  });
-}
-
-// Eagerly capture the whole frozen-ink bounding rect in one copy, marking its
-// cells captured. Capture timing never changes the captured bytes (anything
-// before the first op paints is the same pre-stroke state), so this is purely
-// a scheduling choice: replay loops call it right after arming, replacing many
-// small per-op read-backs — each of which forces the target's pending strokes
-// to rasterize — with a single read per command. Live drawing stays lazy: at
-// stroke start the future ops' extent is unknown, and spreading small copies
-// across frames beats one big pointerdown spike.
+// Read the under-ink snapshot: one bounded getImageData of the frozen grid's
+// inked rect, before the group paints its first pixel. Live it runs at
+// pointerdown; replay loops run it per mixed command right after arming. The
+// frozen grid cannot grow mid-stroke, so every mixed op's bounds stay inside
+// this rect.
 export function captureCrayonMixNow() {
-  if (!mixReady || !mixFor || !underSnap || !underSnapCtx || !mixCaptured) return;
+  if (!mixReady || !mixFor || !mixDecisionGrid) return;
   const grid = mixDecisionGrid;
-  if (!grid) return;
   let c0 = Infinity;
   let r0 = Infinity;
   let c1 = -Infinity;
@@ -743,37 +734,120 @@ export function captureCrayonMixNow() {
   const w = Math.min(mixFor.canvas.width, (c1 + 1) * MIX_CELL) - x;
   const h = Math.min(mixFor.canvas.height, (r1 + 1) * MIX_CELL) - y;
   if (w <= 0 || h <= 0) return;
-  underSnapCtx.clearRect(x, y, w, h);
-  underSnapCtx.drawImage(mixFor.canvas, x, y, w, h, x, y, w, h);
-  const capGrid = { cols: mixCapturedCols, rows: Math.ceil(underSnap.height / MIX_CELL) };
-  const captured = mixCaptured;
-  forEachCellIn(capGrid, { x, y, w, h }, (i) => {
-    captured[i] = 1;
-  });
+  underBytes = { x, y, data: mixFor.getImageData(x, y, w, h) };
+}
+
+// Whether any op has actually pre-mixed against the under image since the mix
+// was last armed — recorded onto the committed command (`mixedUnder`) so
+// replay arms exactly the commands whose live render mixed.
+export function crayonMixWasSampled(): boolean {
+  return mixSampled;
+}
+
+// Staging canvases for the per-op pre-mixed paint, pooled by size bucket.
+// createPattern snapshots its ENTIRE source canvas at creation — its cost is
+// the source's area, not the op's — so the staging canvas must stay close to
+// the op's bounds. Bucketing dimensions to MIX_MINI_STEP keeps a handful of
+// reusable canvases (patterns hold their snapshot, so reuse is safe) without
+// ever snapshotting more than ~one bucket beyond the op.
+const MIX_MINI_STEP = 64;
+const mixMinis = new Map<number, { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D }>();
+
+function mixMiniFor(w: number, h: number) {
+  const bw = Math.ceil(w / MIX_MINI_STEP) * MIX_MINI_STEP;
+  const bh = Math.ceil(h / MIX_MINI_STEP) * MIX_MINI_STEP;
+  const key = bw * 65536 + bh;
+  let mini = mixMinis.get(key) ?? null;
+  if (!mini) {
+    const canvas = document.createElement('canvas');
+    canvas.width = bw;
+    canvas.height = bh;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    mini = { canvas, ctx };
+    mixMinis.set(key, mini);
+  }
+  return mini;
+}
+
+// The pre-mixed paint for one density pass of a crayon op covering `box` on
+// `target`, or null when the op must use the plain repeating tile (mix
+// unarmed, nothing inked under the op, or no snapshot). A no-repeat pattern
+// of the op's bounds: alpha = the pass's binary tooth at the op's seed phase,
+// RGB = the tile colour pulled toward the under-ink per texel (waxMixDeposit,
+// inlined — this loop runs per op). A pure function of the texel given the
+// stored op and the reproduced snapshot, so live per-frame ops and simplified
+// replay ops deposit identical bytes.
+export function crayonMixedPatternFor(
+  target: CanvasRenderingContext2D,
+  box: DeviceBox,
+  color: string,
+  seed: number,
+  passIdx: number
+): CanvasPattern | null {
+  if (!mixReady || mixFor !== target || !underBytes) return null;
+  if (!boxTouchesFrozenInk(box)) return null;
+  const entry = colorTileEntry(color, passIdx);
+  if (!entry) return null;
+  const tileData = entry.data;
+  const tileSize = tile;
+  const [phaseX, phaseY] = seedPhase(seed, tileSize);
+  const k = opts.colorMix;
+  const under = underBytes;
+  const U = under.data.data;
+  const uW = under.data.width;
+  const uH = under.data.height;
+  const layer = new ImageData(box.w, box.h);
+  const L = layer.data;
+  for (let y = 0; y < box.h; y++) {
+    const py = box.y + y;
+    // The tile pattern's transform is translate(phase): texel = paper − phase.
+    const ty = (((py - phaseY) % tileSize) + tileSize) % tileSize;
+    const uy = py - under.y;
+    const rowIn = uy >= 0 && uy < uH;
+    for (let x = 0; x < box.w; x++) {
+      const t4 = (ty * tileSize + ((((box.x + x - phaseX) % tileSize) + tileSize) % tileSize)) * 4;
+      const a = tileData[t4 + 3];
+      if (a === 0) continue;
+      const o = (y * box.w + x) * 4;
+      const dr = tileData[t4];
+      const dg = tileData[t4 + 1];
+      const db = tileData[t4 + 2];
+      const ux = box.x + x - under.x;
+      let w = 0;
+      let u4 = 0;
+      if (rowIn && ux >= 0 && ux < uW) {
+        u4 = (uy * uW + ux) * 4;
+        const ua = U[u4 + 3];
+        if (ua > 0) {
+          let dist = Math.abs(dr - U[u4]);
+          const gDist = Math.abs(dg - U[u4 + 1]);
+          if (gDist > dist) dist = gDist;
+          const bDist = Math.abs(db - U[u4 + 2]);
+          if (bDist > dist) dist = bDist;
+          w = k * Math.min(1, dist / 180) * (ua / 255);
+        }
+      }
+      L[o] = w > 0 ? Math.round(dr + ((dr * U[u4]) / 255 - dr) * w) : dr;
+      L[o + 1] = w > 0 ? Math.round(dg + ((dg * U[u4 + 1]) / 255 - dg) * w) : dg;
+      L[o + 2] = w > 0 ? Math.round(db + ((db * U[u4 + 2]) / 255 - db) * w) : db;
+      L[o + 3] = a;
+    }
+  }
+  const mini = mixMiniFor(box.w, box.h);
+  if (!mini) return null;
+  mini.ctx.putImageData(layer, 0, 0);
+  const pattern = target.createPattern(mini.canvas, 'no-repeat');
+  if (!pattern) return null;
+  if (typeof DOMMatrix !== 'undefined') {
+    pattern.setTransform(new DOMMatrix([1, 0, 0, 1, box.x, box.y]));
+  }
+  mixSampled = true;
+  return pattern;
 }
 
 export function getCrayonColorMix(): number {
   return opts.colorMix;
-}
-
-// Shared scratch surface for the commit/replay mix fixup (grow-only; state is
-// fully cleared per use, so one scratch serves every target). Its 2d context
-// mirrors the round caps/joins every drawing surface uses, so the fixup's
-// strokes rasterize byte-identically to the direct ones.
-let scratch: HTMLCanvasElement | null = null;
-let scratchCtx: CanvasRenderingContext2D | null = null;
-
-export function crayonScratchFor(width: number, height: number): CanvasRenderingContext2D | null {
-  const grown = growCanvasToCover(scratch, width, height);
-  if (grown !== scratch || !scratchCtx) {
-    scratch = grown;
-    scratchCtx = grown.getContext('2d');
-    if (scratchCtx) {
-      scratchCtx.lineCap = 'round';
-      scratchCtx.lineJoin = 'round';
-    }
-  }
-  return scratchCtx;
 }
 
 // --- Mid-gesture pass tracking ----------------------------------------------

@@ -109,78 +109,55 @@ the tone is quantized to 32 levels at field-build time and applied per texel as 
 a per-colour LUT — measured first-stroke cost for a fresh colour moved ~2.6 → ~3.0 ms (unthrottled,
 one-time per colour); the per-frame hot path (cached pattern) is untouched.
 
-### Colour mixing with the ink underneath (a once-per-stroke snapshot, never the live destination)
+### Colour mixing with the ink underneath (pre-mixed per-op paint from a per-stroke snapshot)
 
 Fresh wax picks up a little of the colour already on the paper — yellow drawn over blue leans green
-(`colorMix`, a low lerp fraction, 0.15 by default; real crayons barely mix). The obvious
-implementations all break the replay contract: a blend mode or fractional alpha *reads the
-destination per op*, and a stroke is dozens of overlapping live ops but a few simplified replay ops,
-so repeated destination-reads accumulate differently per op count and the pixels shift on undo. The
-correct construction restores purity:
+(`colorMix`). Model: each deposited pixel pulls toward its subtractive (multiply) product with the
+under-ink, weighted by how different the two colours are and by the under-ink's alpha
+(`waxMixDeposit`, pure and unit-tested). An RGB lerp was rejected (yellow lerped toward blue passes
+through grey, never green — light mixes additively, wax subtractively); a plain multiply was
+rejected (`multiply(C, C)` darkens same-colour overlap, breaking the constant-hue requirement); the
+distance weight makes same-colour mixing — including the ±tone variants — an exact identity.
 
-* **The mix source is a snapshot of the target taken once per stroke group**, before the group's
-  first op. Every op of the group lerps its deposited texels toward that fixed image, so the
-  deposited value is again a pure function of the texel — idempotent under any op count — and every
-  rebuild reproduces the snapshot bit-exactly because commands replay in order: the target's content
-  before a command *is* the state the live snapshot captured. The engine arms the snapshot at live
-  stroke start (and re-arms it as empty when a clear lands mid-stroke); every replay loop (undo,
-  resize, export, keyframe build, baseline fold) re-arms it per command.
-* **Per stroke group, not per finger or per mid-gesture pass:** commit-time simplification reorders
-  a multi-touch command's interleaved ops, which is only sound while every op of the command mixes
-  against the same under image. Mixing with pre-stroke ink covers every visible case anyway — a
-  stroke is one colour, and mixing with your own colour is invisible.
-* **A subtractive target, weighted by colour distance — green from yellow-over-blue AND constant-hue
-  same-colour buildup.** Wax layers mix subtractively (thin yellow over blue transmits green), so
-  each deposited pixel pulls toward the multiply product `C·S/255` — an RGB lerp toward the
-  under-colour was tried first and rejected: yellow lerped toward blue passes through grey/mustard,
-  never green. A *plain* multiply was also rejected — `multiply(C, C)` darkens same-colour overlap
-  by `k·C(1−C/255)`, breaking the constant-hue requirement — so the pull is scaled by how different
-  the two colours are (max channel difference, saturating at 180) and by the under-ink's alpha:
-  mixing with your own colour, including its ±tone variants, is an identity to within a level
-  (`waxMixDeposit`, pure and unit-tested). Because the fixup runs once per command over a bounded
-  rect, off the draw frame, it applies this as exact per-pixel math (getImageData/putImageData on
-  the scratch) rather than contorting it into compositing primitives.
-* **The mix is applied once per command, at commit, from the simplified ops — never per live op.**
-  Any per-op composite re-touches the trail of deposits behind the tip (its padded bounds overhang
-  them), and a re-touch repeated across the live op count diverges from the few simplified replay
-  ops — a rejected per-op `source-atop` variant drifted deposits by tens of levels between live and
-  rebuild. Instead the live stroke renders pure deposits (the exact `colorMix`-0 path, so nothing is
-  added to the pointer frame), and at commit — already off the draw frame — one scratch pass
-  re-renders the command's freshly *simplified* tooth ops over the overlap rect, lerps the deposits
-  toward the snapshot with a single `source-atop` at `colorMix` alpha (atop confines the lerp to the
-  deposits' own alpha, so pits and surrounding old ink stay untouched), and blits the rect over the
-  live render. Every replay loop applies the *identical* fixup with the *identical* simplified ops
-  after the command's ops, so live-final and every rebuild agree on deposit values by construction —
-  pinned by a live-vs-remount byte comparison in E2E. And because the fixup is idempotent (it
-  re-renders deposits to pure colour and re-mixes them from the fixed snapshot), the engine ALSO
-  runs it live, throttled (~120 ms), over just the ops painted since the last flush — the blend
-  soaks in a beat behind the fingertip instead of snapping at pen lift, batch timing cannot change
-  any final byte, and the commit pass still canonicalizes from the simplified ops (pinned by an E2E
-  that measures the green shift while the pointer is still down and asserts lift moves the mean by
-  only fringe amounts).
-* **Cost scales with actual overlap, not with drawing.** renderOp maintains a per-target
-  ink-occupancy grid (64 px cells, reset by clear ops, marked fully inked when a rebuild blits a
-  baseline/keyframe raster it can't itemize); the grid is frozen at arm time so decisions see only
-  pre-stroke ink. The fixup is confined to the union of the ops' inked-cell overlap rects — over
-  blank paper the lerp is an identity, so a stroke that crosses nothing records `mixedUnder: false`
-  on its command and every rebuild skips the machinery for it entirely. The snapshot is captured in
-  one batched copy of the inked region at stroke start (pointerdown — one settle beats read-back
-  stalls landing mid-gesture), with lazy per-cell capture as the pre-paint safety net; replay
-  captures exactly the cells each command's fixup will sample, in one bounded copy per command.
+Two constructions keep the blend live, snap-free, and bit-identical on replay:
 
-Cost: one grow-only snapshot raster and one grow-only scratch raster (allocated lazily — never while
-the canvas is blank), one bounded copy per stroke over existing ink, and one scratch composite per
-mixed command at commit and per rebuild. Measured on the 4×-CPU-throttle harness (software raster,
-the worst case): `engine.draw` 1.1 ms avg / 5.6 ms max — inside the ≲ 2 ms / ~8 ms budget — while
-`engine.commit` rises to ~27 ms avg and `engine.undo` to ~130 ms avg on a heavily-overlapped session
-(vs ~14 / ~5 ms with `colorMix` 0): both are off-frame one-shots whose cost is proportional to how
-much of the drawing is genuinely overlapped crayon, and GPU-accelerated devices composite these
-rects far cheaper. Residuals: the under-ink's ADR-accepted anti-aliased silhouette fringe differs
-slightly between live and simplified rendering and the mix samples it (a few invisible fringe pixels
-per overlapping stroke pair, present with `colorMix` 0 too); and the live ink grid is built from
-per-frame op bounds while a rebuild's grid comes from simplified bounds, so a 64 px cell at a
-stroke's extreme fringe can rarely differ in mix coverage between live and rebuild —
-rebuild-vs-rebuild is always exact.
+* **The mix source is a snapshot of the pre-stroke canvas, never the live destination.** Reading the
+  destination per op accumulates differently across the live op count vs the few simplified replay
+  ops; against a fixed image, a deposit's value is a pure function of the texel. Replay reproduces
+  the snapshot exactly because commands rebuild in order — the target's content before a command
+  *is* what the live snapshot captured. Per stroke group (simplification reorders a multi-touch
+  command's ops, which is only sound while every op mixes against the same image); one bounded
+  `getImageData` of the inked region at pointerdown, and one per mixed command on replay.
+* **Each op's paint is pre-mixed before it strokes.** Rim and core tiles share their RGB, so an op's
+  mixed deposit values are computable in pure JS from the cached tile bytes and the snapshot bytes:
+  the op's bounds become a small ImageData (binary tooth alpha at the op's seed phase, mixed RGB),
+  staged in a size-bucketed pooled canvas (`createPattern` snapshots its whole source, so the
+  staging canvas must stay near the op's size), and stroked as a no-repeat pattern in place of the
+  repeating tile. The op deposits its final bytes in its own first frame — the blend is simply there
+  under the fingertip, nothing settles or snaps at lift, and no fixup, re-render, or pixel read-back
+  runs on the pointer path. Ops whose bounds exceed a size gate — the simplified whole-stroke ops
+  replay produces — render the plain tile and then fix up their ink-overlap rect in place (re-stroke
+  into a pooled scratch, mix the read-back deposits, blit); the gate is a pure function of the op's
+  stored geometry, so every rebuild picks the same path for the same op, and outside the overlap
+  rect mixed equals pure, so the blit boundary is seamless. Earlier designs are documented for the
+  record: a per-op `source-atop` composite (drifted — it re-touched the trail of deposits behind the
+  tip, repeating differently live vs replay), and a commit-time-only fixup (byte-exact but the blend
+  snapped in at pen lift; a throttled live re-application fixed the snap at the price of re-stroking
+  every batch).
+
+Cost control: renderOp maintains a per-target ink-occupancy grid (64 px cells, frozen at arm time so
+decisions see only pre-stroke ink); ops over blank paper take the exact pre-mix path untouched, and
+a group that never mixed records `mixedUnder: false` so rebuilds skip the machinery. Mixing sits out
+under a rotation-locked paper view (the JS tile lookup needs an identity transform); the recorded
+flag keeps every rebuild consistent with what the live stroke did. Measured on the 4×-CPU-throttle
+harness (software raster, the worst case): `engine.draw` ~1.9 ms avg / ~13 ms max (vs 0.9 / 5 with
+`colorMix` 0) and `engine.undo` ~380 ms avg on a heavily-overlapped session (vs ~5 ms) — an
+off-frame one-off per press whose cost tracks genuinely overlapped crayon ink; GPU-accelerated
+devices composite far cheaper. Residuals: the live grid derives from per-frame op bounds while a
+rebuild's grid comes from simplified bounds, so a 64 px cell at a stroke's extreme fringe can rarely
+differ in mix coverage between live and rebuild (rebuild-vs-rebuild is always exact); and the
+under-ink's ADR-accepted silhouette fringe differs slightly between live and simplified rendering,
+which the mix samples.
 
 ### Mid-gesture buildup: the seed advances when a stroke re-covers its own wax
 

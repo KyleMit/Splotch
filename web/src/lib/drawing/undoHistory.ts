@@ -14,8 +14,6 @@
 // (ADR-0004).
 
 import {
-  applyCrayonMixFixup,
-  captureCrayonMixForOps,
   clearAllOf,
   commandSegmentCount,
   renderOp,
@@ -24,7 +22,13 @@ import {
 } from './strokeOps';
 import { simplifyCommandOps } from './commandSimplify';
 import { isMagicSheetUnready } from './magicBrush';
-import { markCrayonInkAll, prepareCrayonMixUnder, resetCrayonInk } from './crayonBrush';
+import {
+  captureCrayonMixNow,
+  crayonMixWasSampled,
+  markCrayonInkAll,
+  prepareCrayonMixUnder,
+  resetCrayonInk,
+} from './crayonBrush';
 import { PERF_MARKS } from './perf';
 
 // The retained command log; commands older than this fold into the baseline.
@@ -122,21 +126,19 @@ export function recordOp(op: StrokeOp) {
 // Finalize the stroke group built up since beginCommand() and push it onto the
 // undo log. Called once per group, when the last finger lifts. Returns false
 // when no group was open (nothing painted).
-export function commitActiveCommand(liveTarget?: CanvasRenderingContext2D): boolean {
+export function commitActiveCommand(): boolean {
   if (!activeCommand) return false;
-  pushCommand(activeCommand, liveTarget);
+  // Whether this group's live render pre-mixed against the under image
+  // (ADR-0065) — replay arms the mix machinery for exactly these commands.
+  activeCommand.mixedUnder = crayonMixWasSampled();
+  pushCommand(activeCommand);
   activeCommand = null;
   return true;
 }
 
-export function pushCommand(cmd: StrokeGroupCommand, liveTarget?: CanvasRenderingContext2D) {
+export function pushCommand(cmd: StrokeGroupCommand) {
   commandLog.push(cmd);
   cmd.ops = simplifyCommandOps(cmd.ops);
-  // The crayon colour mix lands here, once per command and off the draw frame
-  // (ADR-0065): the fixup composites the freshly SIMPLIFIED ops' deposits
-  // toward the pre-stroke snapshot on the live canvas — the same ops every
-  // rebuild will use — and records on the command whether anything mixed.
-  cmd.mixedUnder = liveTarget ? applyCrayonMixFixup(liveTarget, cmd.ops) : false;
   while (commandLog.length > MAX_UNDO_STACK_SIZE) {
     if (!foldOldestIntoBaseline()) break;
   }
@@ -239,7 +241,6 @@ function foldOldestIntoBaseline(): boolean {
   } else {
     prepareMixForCommand(baselineCtx, oldest);
     for (const op of oldest.ops) renderOp(baselineCtx, op);
-    if (oldest.mixedUnder) applyCrayonMixFixup(baselineCtx, oldest.ops);
   }
   if (PERF_MARKS) performance.measure('engine.foldBaseline', 'engine.foldBaseline:start');
   return true;
@@ -268,11 +269,9 @@ function prepareMixForCommand(target: CanvasRenderingContext2D, cmd: StrokeGroup
   // rebuilds stay byte-stable against each other.
   const active = commandMixesCrayon(cmd) && cmd.mixedUnder !== false;
   prepareCrayonMixUnder(target, active, cmd.wasEmpty);
-  // One batched capture per command, bounded to the cells its fixup will
-  // sample: replayed ops are few and big, so lazy per-op cell copies would
-  // each stall on a read-after-write rasterization sync. Capture timing never
-  // changes the captured bytes.
-  if (active) captureCrayonMixForOps(target, cmd.ops);
+  // One bounded snapshot read per mixed command, before its ops paint —
+  // reproducing exactly the under image the live stroke pre-mixed against.
+  if (active) captureCrayonMixNow();
 }
 
 // An unready sheet makes renderOp intentionally paint no magic pixels (a pending
@@ -321,7 +320,6 @@ export function paintStateThrough(target: CanvasRenderingContext2D, upToIndex: n
   for (let i = begin; i <= upToIndex; i++) {
     prepareMixForCommand(target, commandLog[i]);
     for (const op of commandLog[i].ops) renderOp(target, op);
-    if (commandLog[i].mixedUnder) applyCrayonMixFixup(target, commandLog[i].ops);
   }
 }
 
@@ -334,14 +332,10 @@ export function replayAll(target: CanvasRenderingContext2D) {
   paintStateThrough(target, commandLog.length - 1);
   if (activeCommand) {
     // The re-armed mix source persists past this rebuild: when the target is
-    // the visible canvas (a mid-stroke resize/undo), the still-live stroke
-    // keeps flushing live mixes against the re-derived pre-stroke state, and
-    // its commit fixup canonicalizes from the simplified ops as usual. Apply
-    // the fixup for the raw ops replayed here so the rebuilt canvas shows the
-    // same soaked-in blend the live canvas showed.
+    // the visible canvas (a mid-stroke resize/undo), the still-live stroke's
+    // subsequent ops keep pre-mixing against the re-derived pre-stroke state.
     prepareMixForCommand(target, activeCommand);
     for (const op of activeCommand.ops) renderOp(target, op);
-    applyCrayonMixFixup(target, activeCommand.ops);
   }
 }
 
