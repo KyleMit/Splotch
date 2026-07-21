@@ -16,6 +16,8 @@
   // Full-color "spot" icons carry their own palette, so callers that tint
   // monochrome icons with a CSS `filter` must leave these alone. We tag them
   // with `icon-color` so those filter rules can opt out (see ActionsPanel).
+  // Some (pen, crayon, line-weight) mix that fixed palette with currentColor
+  // ink parts that ActionsPanel tints to the active drawing color.
   const COLOR_ICONS = new Set([
     'camera',
     'crayon',

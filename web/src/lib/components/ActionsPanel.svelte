@@ -163,16 +163,24 @@
   // they stay distinct from every pen color (including pink).
   const strokeMenuColor = $derived(colors.activeColor);
 
-  // A white brush color vanishes against the light icon buttons, so the brush
-  // icon and stroke-weight lines get a black outline while white is active.
-  // Never during erasing — the eraser icon carries its own (pink) coloring.
-  const whiteStroke = $derived(!erasing && isWhite(colors.activeColor));
+  // A white brush color vanishes against the light icon buttons, so the
+  // color-tinted icons (the pen/crayon currentColor parts, the stroke-weight
+  // lines) get a black outline while white is active.
+  const inkWhite = $derived(isWhite(colors.activeColor));
 
   // The dark-mode mirror: near-black ink vanishes against the dark cards, so it
   // gets a light outline there. The class applies in every theme; the keyline
   // color (--dark-ink-keyline) is transparent in light, so it only ever shows
   // in dark.
-  const darkStroke = $derived(!erasing && isDarkInk(colors.activeColor));
+  const inkDark = $derived(isDarkInk(colors.activeColor));
+
+  // The stroke-weight control drops the keylines while erasing — its icons
+  // carry the eraser's own coloring then. The Brush Button keeps them: its
+  // pen/crayon faces and menu entries preview the ink color even while the
+  // eraser is active, and the eraser/magic icons hold no currentColor paths,
+  // so the keyline rules are inert on them.
+  const whiteStroke = $derived(!erasing && inkWhite);
+  const darkStroke = $derived(!erasing && inkDark);
 
   function toggleDrawer() {
     const next = !settings.drawerOpen;
@@ -285,18 +293,30 @@
            effect) — an {@html} icon swapped on client-only state would keep the
            server-rendered SVG through hydration (.claude/rules/svelte.md). -->
       <div class="flyout-wrapper brush-wrapper" bind:this={brushWrapperEl}>
+        <!-- The pen and crayon icons draw their ink parts in currentColor, so
+             the trigger and menu carry the active color the way the stroke-width
+             control does (the magic/eraser icons ignore it — no currentColor). -->
         <button
           class="action-button"
+          class:white-stroke={inkWhite}
+          class:dark-stroke={inkDark}
           id="brushButton"
           aria-label="Brushes"
           aria-expanded={openFlyout === 'brush'}
           use:scribbleTap={handleBrushBtnClick}
+          style:color={colors.activeColor}
         >
           {#each BRUSH_OPTIONS as opt (opt.brush)}
             <Icon name={opt.icon} class="action-icon" data-brush-face={opt.brush} />
           {/each}
         </button>
-        <div class="flyout-menu brush-menu" hidden={openFlyout !== 'brush'}>
+        <div
+          class="flyout-menu brush-menu"
+          class:white-stroke={inkWhite}
+          class:dark-stroke={inkDark}
+          hidden={openFlyout !== 'brush'}
+          style:color={colors.activeColor}
+        >
           {#each BRUSH_OPTIONS as opt (opt.brush)}
             <button
               class="flyout-option"
@@ -912,14 +932,17 @@
     fill: var(--brand);
   }
 
-  /* White brush color is invisible on the white buttons, so ring the brush
-     lines with a solid black edge while white is active. paint-order draws the
+  /* White brush color is invisible on the white buttons, so ring the tinted
+     shapes with a solid black edge while white is active. paint-order draws the
      stroke behind the white fill (so only an outer keyline shows), and
-     non-scaling-stroke pins it to 2 screen px on both icons despite their very
-     different viewBoxes (brush 409-wide, size lines 960). In the brush icon we
-     stroke only the currentColor lines, leaving the colored pencils untouched;
-     the size menu holds a single currentColor path, so plain `path` suffices. */
+     non-scaling-stroke pins it to 2 screen px across the icons' very different
+     viewBoxes (line-weight 409-wide, size lines 960, pen/crayon ~272). The
+     buttons and the Brush Menu stroke only the currentColor paths, leaving each
+     icon's fixed-palette parts (colored pencils, the crayon's wrapper, the
+     magic/eraser entries) untouched; the size menu holds a single currentColor
+     path, so plain `path` suffices. */
   .action-button.white-stroke :global(svg path[fill='currentColor']),
+  .brush-menu.white-stroke :global(svg path[fill='currentColor']),
   .stroke-width-menu.white-stroke :global(svg path) {
     stroke: #000;
     stroke-width: 2px;
@@ -931,6 +954,7 @@
      on the dark cards. Same paint-order trick; the keyline token is transparent
      in light mode, so this rule is inert there. */
   .action-button.dark-stroke :global(svg path[fill='currentColor']),
+  .brush-menu.dark-stroke :global(svg path[fill='currentColor']),
   .stroke-width-menu.dark-stroke :global(svg path) {
     stroke: var(--dark-ink-keyline);
     stroke-width: 2px;
