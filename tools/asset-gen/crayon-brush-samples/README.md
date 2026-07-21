@@ -13,13 +13,14 @@ reference art, published under
 
 The set is progressive, mirroring how a toddler builds a mark up (ids are prefixed by stage):
 
-| Prefix | Stage                    | What it pins down                                                      |
-| ------ | ------------------------ | ---------------------------------------------------------------------- |
-| `1-`   | Single lines             | One straight crayon stroke per color — the baseline grainy waxy mark   |
-| `2-`   | Same-color overdraw      | Drawing back over a stroke → visible buildup (darker, denser, opaque)  |
-| `3-`   | Different-color overdraw | One color layered over another → partial wax mixing at the crossing    |
-| `4-`   | Scribble types           | Back-and-forth fills, circles, zigzags, hatching, loops, spirals, dots |
-| `5-`   | Fills & swatches         | Area coverage at different pressures, blended gradients                |
+| Prefix | Stage                    | What it pins down                                                       |
+| ------ | ------------------------ | ----------------------------------------------------------------------- |
+| `1-`   | Single lines             | One straight crayon stroke per color — the baseline grainy waxy mark    |
+| `2-`   | Same-color overdraw      | Drawing back over a stroke → visible buildup (darker, denser, opaque)   |
+| `3-`   | Different-color overdraw | One color layered over another → partial wax mixing at the crossing     |
+| `4-`   | Scribble types           | Back-and-forth fills, circles, zigzags, hatching, loops, spirals, dots  |
+| `5-`   | Fills & swatches         | Area coverage at different pressures, blended gradients                 |
+| `6-`   | Macro close-ups          | Deposit physics at tooth scale — thickness → value, directional streaks |
 
 ## Regenerating
 
@@ -41,3 +42,26 @@ npm --prefix ../../.. run artifacts:index                                       
   using the shared `/artifacts` chrome (`scripts/lib/artifact-chrome.mjs`). Pass `--artifact=<path>`
   to also emit a body-only fragment for the Claude Artifact tool (which supplies its own page
   skeleton).
+
+## Comparing against the shipping brush
+
+The committed [`vs-current.html`](../../../artifacts/crayon-brush-samples/vs-current.html) puts each
+acceptance scene side by side with the real ADR-0065 renderer and names the visual gap per scene
+(first built for the 2026-07 re-architecture study). To refresh it after a brush change:
+
+```bash
+# 1. Serve the production build with the dev harness unlocked (vite dev won't do:
+#    /dev/engine SSR currently 500s there — its `window` read survives only in the
+#    minified build).
+npm --prefix ../../.. run build
+PUBLIC_ENABLE_DEV_HARNESS=true npm --prefix ../../.. run preview -- --port 4188
+
+# 2. Re-capture the scenes and rebuild the sheet (no API key needed).
+node capture-current.mjs --url=http://localhost:4188
+node build-compare-sheet.mjs
+```
+
+* `capture-current.mjs` — drives the crayon brush through each reference mark on `/dev/engine`
+  (Playwright, synthetic strokes) and screenshots into the gitignored `screenshots/crayon-current`.
+* `build-compare-sheet.mjs` — pairs those captures with the reference images into the self-contained
+  `vs-current.html`. Same `--artifact=<path>` fragment option as `build-sheet.mjs`.
