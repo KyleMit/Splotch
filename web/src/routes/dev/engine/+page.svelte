@@ -15,6 +15,7 @@
     setCrayonMode,
     setCrayonParams,
     getCrayonParams,
+    CRAYON_DAB_DEFAULTS,
     setScreenAngleOverride,
     getViewState,
     RESIZE_SETTLE_MS,
@@ -73,9 +74,13 @@
       getUndoDebug,
       // Crayon brush (ADR-0065): toggle the textured-wax mode and A/B its tooth
       // knobs. The spec draws crayon strokes via strokeSync after setCrayonMode.
+      // CRAYON_DAB_DEFAULTS is the dab-deposit prototype's starting point:
+      // setCrayonParams({ dabs: CRAYON_DAB_DEFAULTS }) switches deposits to
+      // soft-alpha dab stamps; { dabs: null } restores the pattern pipeline.
       setCrayonMode,
       setCrayonParams,
       getCrayonParams,
+      CRAYON_DAB_DEFAULTS,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).

@@ -57,6 +57,9 @@ import {
   CrayonPassTracker,
   type CrayonOptions,
 } from './crayonBrush';
+// The dab prototype's tuned starting point, re-exported so the dev harness can
+// A/B it with one call: setCrayonParams({ dabs: CRAYON_DAB_DEFAULTS }).
+export { CRAYON_DAB_DEFAULTS, type CrayonDabOptions } from './crayonBrush';
 import {
   activeCrayonRasterRects,
   beginCommand,

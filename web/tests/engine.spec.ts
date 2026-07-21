@@ -1628,6 +1628,57 @@ test('a crayon remount reproduces the exact pixel count', async ({ page }) => {
   expect(await count(page)).toBe(0);
 });
 
+test('the dab deposit commits, remounts byte-identically, and undoes to blank', async ({
+  page,
+}) => {
+  // The dab-stamp deposit (setCrayonParams({ dabs })) is nondeterministic by
+  // design — Math.random jitter, soft fractional alpha. Byte-exact rebuilds
+  // therefore cannot come from re-rendering: the closed pass travels as its
+  // live-captured raster and commit reconciles the screen from the paper.
+  // A remount (one paper blit) must still reproduce EVERY byte, including
+  // across a mid-stroke pass split.
+  const r = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const y = Math.round(cv.height / 2);
+    const pts = (x0: number, x1: number) => {
+      const p: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 40; i++) p.push({ x: x0 + ((x1 - x0) * i) / 40, y });
+      return p;
+    };
+    const fwd = pts(20, cv.width - 20);
+    const back = pts(cv.width - 20, 20);
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setCrayonParams({ dabs: E.CRAYON_DAB_DEFAULTS });
+    E.setColor('#2c5faa');
+    E.setStrokeWidth(24);
+    E.strokeSync([...fwd, ...back.slice(1)], 'pen');
+    const before = g.getImageData(0, 0, cv.width, cv.height).data;
+    E.remount();
+    const after = g.getImageData(0, 0, cv.width, cv.height).data;
+    let inked = 0;
+    let changed = 0;
+    for (let i = 0; i < before.length; i += 4) {
+      if (before[i + 3] > 0) inked++;
+      for (let c = 0; c < 4; c++) {
+        if (before[i + c] !== after[i + c]) {
+          changed++;
+          break;
+        }
+      }
+    }
+    E.setCrayonParams({ dabs: null });
+    return { inked, changed };
+  });
+  expect(r.inked).toBeGreaterThan(0);
+  expect(r.changed).toBe(0);
+
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+});
+
 // --- The snapshot memory tier (ADR-0066) --------------------------------------
 //
 // Undo restores pre-stroke canvas snapshots (see undoHistory.ts). A restore can

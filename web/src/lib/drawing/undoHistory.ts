@@ -28,7 +28,13 @@
 // the rasters stay resident while no canvas is mounted — is accepted
 // (ADR-0004).
 
-import { clearAllOf, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
+import {
+  clearAllOf,
+  renderOp,
+  resetLiveCrayonForReplay,
+  type StrokeGroupCommand,
+  type StrokeOp,
+} from './strokeOps';
 import { isMagicSheetUnready } from './magicBrush';
 import { PERF_MARKS } from './perf';
 
@@ -433,6 +439,10 @@ function commandHasMagic(command: StrokeGroupCommand): boolean {
 // to keep the in-flight stroke; between strokes activeCommand is null and
 // that step is a no-op.
 export function repaintAll(target: CanvasRenderingContext2D) {
+  // Replaying the open pass's ops below re-accumulates its crayon ink; the
+  // live buffers must start empty or a fractional-alpha (dab) deposit would
+  // deepen on every repaint (see strokeOps' dab-stamp notes).
+  resetLiveCrayonForReplay(target);
   clearAllOf(target);
   if (paperCanvas) target.drawImage(paperCanvas, 0, 0);
   for (const cmd of pendingCommands) for (const op of cmd.ops) renderOp(target, op);
