@@ -157,4 +157,18 @@ const stage5 = [
   ),
 ];
 
-export const SAMPLES = [...stage1, ...stage2, ...stage3, ...stage4, ...stage5];
+// ── Stage 6: macro close-ups (deposit physics at tooth scale) ────────────────
+const stage6 = [
+  stroke(
+    '6-macro-single-stroke',
+    'macro: deposit on tooth (blue)',
+    'EXTREME MACRO CLOSE-UP: a small section of a single blue crayon stroke filling the frame, so close that the paper tooth texture is clearly visible — individual raised paper bumps carrying thick waxy pigment, tiny bare pits of paper between them, faint streaks of wax dragged in the stroke direction, the wax deposit thicker and darker in some patches and thin and translucent in others.'
+  ),
+  stroke(
+    '6-macro-buildup-edge',
+    'macro: thin dusting vs heavy wax (red)',
+    'EXTREME MACRO CLOSE-UP of the boundary between a lightly-drawn red crayon area and a heavily built-up red crayon area on the same paper: on one side a thin, translucent, speckled single pass with lots of paper showing; on the other side thick, saturated, nearly solid wax from repeated passes, with a gradual transition between them showing how repeated strokes fill the paper tooth and deepen the color.'
+  ),
+];
+
+export const SAMPLES = [...stage1, ...stage2, ...stage3, ...stage4, ...stage5, ...stage6];

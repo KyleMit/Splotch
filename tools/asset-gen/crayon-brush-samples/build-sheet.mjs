@@ -42,6 +42,11 @@ const STAGES = [
     'Stage 5 · Fills & swatches',
     'Area coverage: how the texture reads when a shape is filled at different pressures, plus blended gradients.',
   ],
+  [
+    '6-',
+    'Stage 6 · Macro close-ups',
+    'Deposit physics at tooth scale: wax thickness varies continuously (value follows thickness), grain streaks along the drag direction, and thin deposit goes translucent rather than vanishing.',
+  ],
 ];
 
 const MIME = {
