@@ -25,6 +25,9 @@
 - name: "type:docs"
   color: "0075ca"
   description: "Documentation"
+- name: "type:audit"
+  color: "cc317c"
+  description: "Surfaced by an audit skill (vet-audits) — provenance marker fix-audits burns down; may coexist with a substantive type:*"
 
 # --- area: which part of the product (one or more per issue) ---
 - name: "area:drawing"
@@ -82,6 +85,9 @@
 - name: "user-report"
   color: "0e8a16"
   description: "Filed from the in-app Report form (Parent Center → About)"
+- name: "needs-triage"
+  color: "ffd8b1"
+  description: "Valid audit finding whose fix approach is unclear — a human should confirm direction before fix-audits implements it"
 - name: "needs-scoping"
   color: "fef2c0"
   description: "Rough spec — investigate and firm up (often an ADR) before significant work"

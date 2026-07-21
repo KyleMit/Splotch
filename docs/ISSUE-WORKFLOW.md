@@ -36,6 +36,12 @@ Labels are declared in [`.github/labels.yml`](../.github/labels.yml) and synced 
 | `type:perf`     | Performance / responsiveness                            |
 | `type:security` | Access, admin, privacy, or security hardening           |
 | `type:docs`     | Documentation                                           |
+| `type:audit`    | Surfaced by an audit skill — see the note below         |
+
+`type:audit` is the **one exception** to "pick one `type:`". It's a provenance marker: `vet-audits`
+files it on every audit finding that survives validation, and `fix-audits` burns down the open
+`type:audit` issues. It may layer on top of the finding's substantive type (`type:audit` +
+`type:perf`), so an audit issue can legitimately carry two `type:` labels.
 
 ### `area:` — which part of the product (one or more)
 
@@ -61,13 +67,14 @@ deliberate triage call, not a default — most of the migrated backlog is intent
 
 ### meta
 
-| Label              | Meaning                                                                     |
-| ------------------ | --------------------------------------------------------------------------- |
-| `reviewed`         | Review pass complete; automation moves the issue to Project status `ToDo`   |
-| `needs-scoping`    | Rough spec — investigate and firm up (often an ADR) before significant work |
-| `needs-adr`        | Needs an architectural decision record before or alongside implementation   |
-| `wont-do`          | Considered and declined (see "Closing" below)                               |
-| `good first issue` | Small, self-contained, good for a newcomer                                  |
+| Label              | Meaning                                                                                                                                  |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `reviewed`         | Review pass complete; automation moves the issue to Project status `ToDo`                                                                |
+| `needs-triage`     | Valid audit finding whose fix approach is unclear — a human confirms direction before `fix-audits` implements it (filed by `vet-audits`) |
+| `needs-scoping`    | Rough spec — investigate and firm up (often an ADR) before significant work                                                              |
+| `needs-adr`        | Needs an architectural decision record before or alongside implementation                                                                |
+| `wont-do`          | Considered and declined (see "Closing" below)                                                                                            |
+| `good first issue` | Small, self-contained, good for a newcomer                                                                                               |
 
 ## Triage & lifecycle
 
@@ -91,6 +98,23 @@ The `Move reviewed issue to ToDo` workflow runs when `reviewed` is applied. It a
 `Status` field to `ToDo`. The repository must have an Actions secret named `PROJECT_PAT` containing
 a classic personal access token with the `project` scope (`repo` is also required if the repository
 becomes private). The normal `GITHUB_TOKEN` cannot update a user-owned project.
+
+### Audit findings become issues
+
+Splotch's audit skills feed the tracker, not a standing Markdown backlog (see
+`.claude/audit-conventions.md`):
+
+1. **Producers** (`/code-audit`, `/extract-audit`, `lighthouse-audit`, `/session-audit`) write raw
+   findings to a **transient** `docs/AUDIT.md`.
+2. **`/vet-audits`** adversarially validates each finding and drains the file: it drops the ones
+   that don't hold up and **files each survivor as a GitHub issue** labeled `type:audit` plus the
+   applicable `area:*`/`type:*`. A finding that's valid but whose fix approach is unclear also gets
+   `needs-triage`. Once drained, `docs/AUDIT.md` is deleted.
+3. **`/fix-audits`** queries open `type:audit` issues and burns them down — one commit per issue,
+   referencing it so it closes on merge.
+
+So `docs/AUDIT.md` is a staging area between a producer and `vet-audits`, never the durable backlog.
+The durable audit backlog is the set of open `type:audit` issues.
 
 ## For coding agents
 
