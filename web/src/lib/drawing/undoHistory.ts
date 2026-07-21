@@ -307,7 +307,17 @@ export function popSnapshot(): Promise<{ wasEmpty: boolean }> | null {
     restorePaper(snap.canvas);
     return Promise.resolve({ wasEmpty: snap.wasEmpty });
   }
-  if (!snap.blob) return Promise.resolve({ wasEmpty: snap.wasEmpty });
+  // Invariant: a stacked entry always holds its canvas or its blob — encode
+  // drops the raster only after a validated blob lands (encodeColdSnapshots),
+  // and re-inflation drops the blob only after the raster lands
+  // (reinflateHotSnapshots), so this branch is unreachable. It must stay that
+  // way: it pops the stack but skips the restore blit, leaving the paper
+  // wrong. The error is a tripwire for a refactor that breaks the invariant;
+  // the return semantics are deliberately unchanged.
+  if (!snap.blob) {
+    console.error('Undo snapshot lost both canvas and blob; restore blit skipped');
+    return Promise.resolve({ wasEmpty: snap.wasEmpty });
+  }
   return createImageBitmap(snap.blob).then((bitmap) => {
     restorePaper(bitmap);
     bitmap.close();
