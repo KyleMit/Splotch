@@ -63,5 +63,9 @@ node build-compare-sheet.mjs
 
 * `capture-current.mjs` — drives the crayon brush through each reference mark on `/dev/engine`
   (Playwright, synthetic strokes) and screenshots into the gitignored `screenshots/crayon-current`.
+  Pass `--dabs` to capture the soft-alpha dab-deposit prototype instead
+  (`setCrayonParams({ dabs: CRAYON_DAB_DEFAULTS })`, output to `screenshots/crayon-dabs`); dab
+  captures are nondeterministic by design, so don't byte-diff them run to run.
 * `build-compare-sheet.mjs` — pairs those captures with the reference images into the self-contained
-  `vs-current.html`. Same `--artifact=<path>` fragment option as `build-sheet.mjs`.
+  `vs-current.html`. `--dabs=<dir>` adds the dab-prototype run as a third column per scene. Same
+  `--artifact=<path>` fragment option as `build-sheet.mjs`.

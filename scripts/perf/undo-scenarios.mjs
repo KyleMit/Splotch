@@ -44,6 +44,10 @@ const flag = (name, def) => {
 const throttle = args.includes('--no-throttle') ? 1 : Number(flag('throttle', '4'));
 const port = Number(flag('port', '4173'));
 const build = !args.includes('--no-build');
+// A/B the dab-stamp deposit (the post-ADR-0066 prototype): switches the crayon
+// scenarios to setCrayonParams({ dabs: CRAYON_DAB_DEFAULTS }) so their commit/
+// fold/undo costs can be compared against the pattern deposit's run.
+const crayonDabs = args.includes('--crayon-dabs');
 
 // Op volume = refresh rate × stroke duration. A 120 Hz ProMotion iPad Pro
 // captures ~120 ops/second, so a sustained multi-second scribble is
@@ -220,16 +224,21 @@ async function resetEngine(page, base, width, height) {
   await sleep(150);
 }
 
-async function drawStrokes(page, strokes, crayon = false) {
+async function drawStrokes(page, strokes, crayon = false, dabs = false) {
   await page.evaluate(
-    ({ strokes, crayon }) => {
+    ({ strokes, crayon, dabs }) => {
       window.__engine.setCrayonMode(crayon);
+      if (crayon) {
+        window.__engine.setCrayonParams({
+          dabs: dabs ? window.__engine.CRAYON_DAB_DEFAULTS : null,
+        });
+      }
       for (const s of strokes) {
         if (s && s.multi) window.__engine.multiStrokeSync(s.multi, 'touch');
         else window.__engine.strokeSync(s, 'touch');
       }
     },
-    { strokes, crayon }
+    { strokes, crayon, dabs }
   );
 }
 
@@ -356,7 +365,9 @@ async function main() {
       await injectObservers(page);
 
       const drawStart = await now(page);
-      await markPhase(page, `${sc.key}-draw`, () => drawStrokes(page, sc.strokes, !!sc.crayon));
+      await markPhase(page, `${sc.key}-draw`, () =>
+        drawStrokes(page, sc.strokes, !!sc.crayon, crayonDabs)
+      );
       const drawEnd = await now(page);
 
       const debug = await settleColdTier(page);
