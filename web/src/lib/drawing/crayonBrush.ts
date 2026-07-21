@@ -25,12 +25,32 @@
 //      left bare. Redrawing gets denser and fills the grain while staying the
 //      same colour, exactly like pressing a crayon over its own mark.
 //
+// The wax body is not one flat rgb: each texel's colour is nudged a few percent
+// lighter or darker by the same paper fields (shadeShift below), so the fill
+// carries the gentle waxy mottling of real crayon. Crucially this variation
+// lives in the tile's RGB ONLY — the alpha stays binary, and the shift is a
+// function of the paper texel alone, identical across every pass and op of a
+// stroke — so overdraw rewrites each pixel with its own exact colour
+// (idempotent) and property 2's op-count-independent replay is untouched.
+//
 // Patterns are paper-anchored like the magic sheet (ADR-0043): a
 // per-(context,colour,pass) repeating pattern whose tile grid is offset in paper
 // coordinates by the stroke's phase, so live drawing and every replay surface
-// tile it identically. Within one stroke every op shares the seed, so the tooth
-// is spatially consistent across the stroke's segments and reads as one coherent
-// piece of wax rather than beading per-segment.
+// tile it identically. Within one deposition pass every op shares the seed, so
+// the tooth is spatially consistent across the pass's segments and reads as one
+// coherent piece of wax rather than beading per-segment.
+//
+// A single continuous gesture is NOT one pass forever: real wax doesn't care
+// whether the crayon lifted before re-covering a spot. CrayonPassTracker
+// (below) watches the live polyline for the tip re-covering its own laid strip
+// — a sharp reversal, or re-entering within a stroke width of paper it already
+// painted — and the engine starts a new pass there by bumping to a fresh seed
+// for the ops that follow. The new phase punches its pits in different paper
+// spots, so scribbling back and forth in one gesture builds up live exactly
+// like separate strokes do. Seeds are stored per op, so this is replay-safe by
+// the same mechanism as everything else.
+
+import { scheduleIdle } from '../idle';
 
 // A density pass: stroke the op at `widthScale` of its line width, filled with
 // tooth at `coverage` (fraction opaque). Passes are drawn widest-first so the
@@ -66,6 +86,21 @@ export interface CrayonOptions {
   bodyVariation: number;
   // Lattice cell (px) of that body-variation field.
   bodyVariationCell: number;
+  // Max fractional value shift of a wax texel's rgb toward black/white (0
+  // disables, leaving a flat body colour). Driven by the paper fields via
+  // shadeShift: thick deposit reads slightly darker, sparse patches slightly
+  // lighter — the subtle waxy mottling of a real fill. RGB only; the alpha
+  // stays binary so undo/replay stability is untouched.
+  shadeVariation: number;
+  // How strongly the ink UNDER a new deposition pass glazes through it. Each
+  // pass is buffered at full opacity and stamped as a SUBTRACTIVE glaze —
+  // out = crayon·(1-m + m·under) — because pigments mix by filtering light,
+  // not by averaging rgb (an rgb lerp of blue over yellow goes grey; the
+  // multiply glaze goes green). Virgin paper is untouched by the glaze (the
+  // wax lands fully opaque and exact), and same-colour overdraw deepens only
+  // a few percent, converging — never compounding into mud. Low, not zero:
+  // real crayons barely mix. See strokeOps' pass buffer.
+  colorMix: number;
   // The density passes, widest first.
   passes: CrayonPass[];
 }
@@ -82,6 +117,9 @@ export interface CrayonOptions {
 // deliberately start light: a first stroke reads as an airy single crayon pass
 // with plenty of bare tooth, leaving headroom for redraws to visibly densify —
 // the lighter the first pass, the more each same-colour overlap fills in.
+// `shadeVariation` keeps the wax body from being one flat rgb — a very subtle
+// per-texel value wobble (the swept-passes experiment's fill mottling, dialled
+// way down because the splat pattern already varies the coverage).
 export const CRAYON_DEFAULTS: CrayonOptions = {
   tile: 256,
   octaves: [
@@ -93,6 +131,14 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   edge: 0.045,
   bodyVariation: 0.2,
   bodyVariationCell: 110,
+  shadeVariation: 0.08,
+  // The mix must cross perceptual lines to register at all: blue over yellow
+  // only reads GREEN once the blue channel drops BELOW the green channel
+  // (0.2 and 0.35 both measured cleanly yet looked like nothing on a phone).
+  // 0.55 lands blue-over-yellow at (98,162,146) and yellow-over-blue at
+  // chartreuse (165,185,75). Strength is free here: the darken-mix stamp is
+  // exact on same-colour overdraw (min(c,c)=c), so buildup never deepens.
+  colorMix: 0.55,
   passes: [
     { widthScale: 1.0, coverage: 0.45 },
     { widthScale: 0.68, coverage: 0.63 },
@@ -215,6 +261,11 @@ export function getCrayonPasses(): CrayonPass[] {
   return opts.passes.map((p) => ({ ...p }));
 }
 
+// The glaze strength for a deposition pass's stamp (see CrayonOptions).
+export function getCrayonMix(): number {
+  return Math.min(0.9, Math.max(0, opts.colorMix));
+}
+
 // Parse a CSS hex/rgb colour to [r,g,b]. The engine hands crayon ops a palette
 // hex (#rgb / #rrggbb) or an rgb() string; anything else falls back to mid-grey
 // so a bad colour can't throw on the hot path.
@@ -250,8 +301,31 @@ function waxAlpha(i: number, coverage: number): number {
   return h + jitter >= t ? 1 : 0;
 }
 
-// A colorized wax tile per (colour, pass): rgb = the crayon colour, alpha = the
-// pass's tooth field. Built once and reused by every context's pattern.
+// Texels that survive the pit threshold cluster around this height, so the fine
+// shade term is centred near zero WITHIN the wax — the mean body colour stays
+// the exact crayon colour instead of skewing dark.
+const SHADE_HEIGHT_MID = 0.7;
+// Fine grain dominates; the slow body term stays light because it does not
+// average out over stroke-sized areas — it is what makes two passes' local mean
+// colour differ slightly, and past ~0.3 that patchiness stops being subtle.
+const SHADE_FINE_WEIGHT = 0.7;
+const SHADE_BODY_WEIGHT = 0.3;
+
+// Signed per-texel value shift in [-amplitude, +amplitude]; positive = lighter.
+// Tall tooth bumps take a thick deposit and read slightly darker; the slow body
+// field lightens exactly where waxAlpha thins the coverage, so shade and density
+// mottle together like uneven crayon pressure. Pure and deterministic — a
+// function of the paper texel only, never the pass or op — which is what keeps
+// overdraw idempotent (see the module header). Exported for unit tests.
+export function shadeShift(heightValue: number, bodyValue: number, amplitude: number): number {
+  const fine = Math.max(-1, Math.min(1, (SHADE_HEIGHT_MID - heightValue) * 2));
+  const slow = bodyValue * 2 - 1;
+  return amplitude * (SHADE_FINE_WEIGHT * fine + SHADE_BODY_WEIGHT * slow);
+}
+
+// A colorized wax tile per (colour, pass): rgb = the crayon colour shade-shifted
+// per texel (identically for every pass), alpha = the pass's tooth field. Built
+// once and reused by every context's pattern.
 const colorTileCache = new Map<string, HTMLCanvasElement>();
 
 function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
@@ -269,16 +343,36 @@ function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
   const img = g.createImageData(tile, tile);
   const [r, gr, b] = parseColor(color);
   const data = img.data;
+  const amp = Math.max(0, opts.shadeVariation);
   for (let i = 0; i < height.length; i++) {
     const j = i * 4;
-    data[j] = r;
-    data[j + 1] = gr;
-    data[j + 2] = b;
+    const s = amp ? shadeShift(height[i], body![i], amp) : 0;
+    if (s >= 0) {
+      data[j] = Math.round(r + (255 - r) * s);
+      data[j + 1] = Math.round(gr + (255 - gr) * s);
+      data[j + 2] = Math.round(b + (255 - b) * s);
+    } else {
+      const k = 1 + s;
+      data[j] = Math.round(r * k);
+      data[j + 1] = Math.round(gr * k);
+      data[j + 2] = Math.round(b * k);
+    }
     data[j + 3] = Math.round(waxAlpha(i, pass.coverage) * 255);
   }
   g.putImageData(img, 0, 0);
   colorTileCache.set(key, c);
   return c;
+}
+
+// Build a colour's wax tiles off the pointer hot path — scheduled when the
+// crayon is selected or its colour changes, so the first stroke of a new colour
+// doesn't pay the per-pass tile build (a few ms under CPU throttle) inside a
+// draw. If a stroke lands before idle fires, colorTile builds synchronously —
+// a one-time cost, never repeated.
+export function warmCrayonTiles(color: string) {
+  scheduleIdle(() => {
+    for (let i = 0; i < opts.passes.length; i++) colorTile(color, i);
+  });
 }
 
 // Per-context, per-(colour,pass) repeating pattern. createPattern is bound to one
@@ -327,4 +421,120 @@ export function crayonPatternFor(
     pattern.setTransform(new DOMMatrix([1, 0, 0, 1, px, py]));
   }
   return pattern;
+}
+
+// --- Mid-stroke pass splitting -----------------------------------------------
+//
+// Ported from the swept-passes experiment (PR 429), where these thresholds were
+// tuned so toddler scribbles split where the crayon really re-covers its paper
+// while ordinary corners and hand jitter never do. Split triggers, all relative
+// to the stroke width so thick and thin crayons feel the same:
+//  • direction is measured between anchors at least DIR_STEP apart, so pixel
+//    jitter while holding still can neither split nor rotate the direction;
+//  • a turn sharper than SPLIT_TURN_COS is a reversal — the tip is heading
+//    back over wax it just laid, so the pass splits immediately;
+//  • re-entry: the tip landing within PROXIMITY_FRACTION of the width of a
+//    point laid at least EXCLUDE_ARC_FRACTION widths of arc ago means the path
+//    looped or hairpinned back onto its own strip without a sharp corner.
+//    The trailing arc is excluded because the tip is always near the strip it
+//    just painted.
+const SPLIT_TURN_COS = Math.cos((100 * Math.PI) / 180);
+const DIR_STEP_FRACTION = 0.35;
+const PROXIMITY_FRACTION = 0.45;
+const EXCLUDE_ARC_FRACTION = 2.5;
+const ANCHOR_SPACING_FRACTION = 0.25;
+
+export interface CrayonPoint {
+  x: number;
+  y: number;
+}
+
+// Decides where a crayon gesture's polyline must start a new deposition pass
+// (here: a fresh seed phase, so the new pass fills tooth the current one left
+// bare). Pure geometry — one instance per pass, fed points in order; on
+// 'split' the caller bumps the seed and re-seeds a tracker at the previous
+// point. Anchor state resets per pass, so the re-entry scan stays bounded on
+// the pointer hot path.
+export class CrayonPassTracker {
+  private readonly dirStep: number;
+  private readonly proximity: number;
+  private readonly excludeArc: number;
+  private readonly anchorSpacing: number;
+
+  private anchors: { x: number; y: number; arc: number }[] = [];
+  private arc = 0;
+  private lastX: number;
+  private lastY: number;
+  private dirX = 0;
+  private dirY = 0;
+  private hasDir = false;
+  private dirOriginX: number;
+  private dirOriginY: number;
+
+  constructor(startX: number, startY: number, lineWidth: number) {
+    this.dirStep = Math.max(3, lineWidth * DIR_STEP_FRACTION);
+    this.proximity = Math.max(2, lineWidth * PROXIMITY_FRACTION);
+    this.excludeArc = Math.max(this.dirStep * 3, lineWidth * EXCLUDE_ARC_FRACTION);
+    this.anchorSpacing = Math.max(2, lineWidth * ANCHOR_SPACING_FRACTION);
+    this.lastX = startX;
+    this.lastY = startY;
+    this.dirOriginX = startX;
+    this.dirOriginY = startY;
+    this.anchors.push({ x: startX, y: startY, arc: 0 });
+  }
+
+  // Advance the tip to p. Returns 'split' when a new pass must start at the
+  // PREVIOUS point (the caller re-seeds a tracker there for the new pass);
+  // 'extend' otherwise, with p consumed.
+  advance(p: CrayonPoint): 'extend' | 'split' {
+    if (this.reversalAt(p) || this.reentryAt(p)) return 'split';
+    this.consume(p);
+    return 'extend';
+  }
+
+  private reversalAt(p: CrayonPoint): boolean {
+    const dx = p.x - this.dirOriginX;
+    const dy = p.y - this.dirOriginY;
+    const len = Math.hypot(dx, dy);
+    if (len < this.dirStep) return false;
+    if (!this.hasDir) return false;
+    const dot = (dx / len) * this.dirX + (dy / len) * this.dirY;
+    return dot < SPLIT_TURN_COS;
+  }
+
+  private reentryAt(p: CrayonPoint): boolean {
+    const stepArc = Math.hypot(p.x - this.lastX, p.y - this.lastY);
+    const tipArc = this.arc + stepArc;
+    for (const a of this.anchors) {
+      if (tipArc - a.arc <= this.excludeArc) break;
+      const dx = p.x - a.x;
+      const dy = p.y - a.y;
+      if (dx * dx + dy * dy <= this.proximity * this.proximity) return true;
+    }
+    return false;
+  }
+
+  private consume(p: CrayonPoint) {
+    this.arc += Math.hypot(p.x - this.lastX, p.y - this.lastY);
+    this.lastX = p.x;
+    this.lastY = p.y;
+
+    const dx = p.x - this.dirOriginX;
+    const dy = p.y - this.dirOriginY;
+    const len = Math.hypot(dx, dy);
+    if (len >= this.dirStep) {
+      this.dirX = dx / len;
+      this.dirY = dy / len;
+      this.hasDir = true;
+      this.dirOriginX = p.x;
+      this.dirOriginY = p.y;
+    }
+
+    const lastAnchor = this.anchors[this.anchors.length - 1];
+    const ax = p.x - lastAnchor.x;
+    const ay = p.y - lastAnchor.y;
+    if (ax * ax + ay * ay >= this.anchorSpacing * this.anchorSpacing) {
+      this.anchors.push({ x: p.x, y: p.y, arc: this.arc });
+    }
+  }
 }

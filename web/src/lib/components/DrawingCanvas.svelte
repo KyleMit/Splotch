@@ -364,18 +364,26 @@
       hidden={!coloringBookState.overlayUrl}
     />
   </div>
-  <canvas
-    bind:this={canvasEl}
-    id="drawingCanvas"
-    class:erasing={toolState.eraser}
-    onpointerdown={handleCanvasPointerDown}
-    onpointermove={handleCanvasPointerMove}
-    onpointerenter={updateEraserCursor}
-    onpointerleave={handlePointerLeave}
-    onpointerup={removeBrushRing}
-    onpointercancel={removeBrushRing}
-    onlostpointercapture={removeBrushRing}
-  ></canvas>
+  <!-- The stack isolates the canvas + the engine's crayon pass overlays into
+       one blending group, so the overlays' darken preview mixes against the
+       CANVAS's own pixels (transparent where virgin — pure colour shows) and
+       never against the paper behind it. Without isolation, a fresh stroke
+       previews faint on the dark paper (min(colour, near-black) erases the
+       blend layer) until its pass stamps. -->
+  <div class="canvas-stack">
+    <canvas
+      bind:this={canvasEl}
+      id="drawingCanvas"
+      class:erasing={toolState.eraser}
+      onpointerdown={handleCanvasPointerDown}
+      onpointermove={handleCanvasPointerMove}
+      onpointerenter={updateEraserCursor}
+      onpointerleave={handlePointerLeave}
+      onpointerup={removeBrushRing}
+      onpointercancel={removeBrushRing}
+      onlostpointercapture={removeBrushRing}
+    ></canvas>
+  </div>
   {#each Object.entries(brushRings) as [id, ring] (id)}
     <div
       class="brush-ring"
@@ -429,14 +437,20 @@
     box-shadow: 0 2px 14px rgba(93, 84, 68, 0.18);
   }
 
+  .canvas-stack {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    isolation: isolate;
+  }
+
   #drawingCanvas {
     display: block;
     cursor: crosshair;
     touch-action: none;
     width: 100%;
     height: 100%;
-    position: relative;
-    z-index: 1;
   }
 
   #drawingCanvas.erasing {

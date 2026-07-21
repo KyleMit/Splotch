@@ -152,3 +152,48 @@ describe('simplifyCommandOps', () => {
     expect(getSimplifyCounters()).toEqual({ rawPoints: 0, keptPoints: 0 });
   });
 });
+
+describe('crayon commands', () => {
+  it('pass through simplification untouched, in order (byte-identical replay)', () => {
+    // RDP re-fits geometry within ~1px — invisible for a solid stroke, but the
+    // crayon's binary tooth flips whole texels at a shifted silhouette, so
+    // crayon ops replay exactly as drawn (ADR-0065); keyframing bounds replay.
+    const ops: StrokeOp[] = liveOps(1, line(30), { crayon: true, seed: 7 });
+    const out = simplifyCommandOps(ops);
+    expect(out).toBe(ops);
+  });
+
+  it('keeps crayonFlush markers at their exact op positions (the mix stamps there)', () => {
+    const passA = liveOps(1, line(10), { crayon: true, seed: 7 });
+    const passB = liveOps(1, line(10, 4, 30), { crayon: true, seed: 8 });
+    const ops: StrokeOp[] = [...passA, { kind: 'crayonFlush' }, ...passB, { kind: 'crayonFlush' }];
+    const out = simplifyCommandOps(ops);
+    expect(out).toBe(ops);
+    expect(out[passA.length]).toEqual({ kind: 'crayonFlush' });
+    expect(out[out.length - 1]).toEqual({ kind: 'crayonFlush' });
+  });
+
+  it('a mid-stroke seed bump splits the run — passes never merge across seeds', () => {
+    const a = liveOps(1, line(10), { crayon: true, seed: 7 });
+    const b = liveOps(1, line(10, 4, 30), { crayon: true, seed: 8 });
+    const runs = splitIntoContinuousRuns([...a, ...b]);
+    expect(runs).toHaveLength(2);
+    expect(runs[0].every((op) => op.seed === 7)).toBe(true);
+    expect(runs[1].every((op) => op.seed === 8)).toBe(true);
+  });
+
+  it('a command mixing crayon and pen ops passes through whole (order is load-bearing)', () => {
+    // Reducing only the pen run would still re-order it against the crayon
+    // ops' flush markers, so a mixed command keeps every op as drawn.
+    const crayon = liveOps(1, line(30), { crayon: true, seed: 7 });
+    const pen = liveOps(2, line(30, 4, 60));
+    const ops: StrokeOp[] = [...crayon, { kind: 'crayonFlush' }, ...pen];
+    expect(simplifyCommandOps(ops)).toBe(ops);
+  });
+
+  it('a pure pen command still reduces', () => {
+    const pen = liveOps(1, line(30));
+    const out = simplifyCommandOps(pen);
+    expect(out.filter((op) => op.kind === 'path').length).toBeLessThan(pen.length);
+  });
+});

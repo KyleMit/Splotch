@@ -199,6 +199,20 @@ function reducePathRun(run: PathOp[]): PathOp[] {
 // input array untouched when simplification is disabled or there's nothing to do.
 export function simplifyCommandOps(ops: StrokeOp[]): StrokeOp[] {
   if (!enabled || ops.length === 0) return ops;
+  // A command holding crayon ink bypasses simplification wholesale, for two
+  // reasons. (1) RDP re-fits the polyline within ~1px — an invisible AA shift
+  // for a solid stroke, but the crayon's tooth is BINARY, so a texel at the
+  // re-fitted silhouette flips fully in or out and the wax's byte-identical
+  // replay promise (ADR-0065) breaks at scribble hairpins. (2) The reducer
+  // re-emits every path op at the pointer's first-op position, which would
+  // reorder the command's inline 'crayonFlush' markers relative to their
+  // passes — and the flush positions are exactly what make replay stamp (and
+  // colour-mix) at the same points live rendering did. Replaying the exact
+  // live ops is idempotent by construction; ADR-0035 keyframing bounds the
+  // longer replay instead.
+  if (ops.some((op) => (op.kind === 'path' || op.kind === 'dot') && op.crayon && !op.erase)) {
+    return ops;
+  }
   if (PERF_MARKS) performance.mark('engine.simplify:start');
 
   const reducedByPid = new Map<number, PathOp[]>();

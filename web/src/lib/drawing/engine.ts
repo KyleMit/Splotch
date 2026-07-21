@@ -42,8 +42,14 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeOp } from './strokeOps';
-import { setCrayonOptions, getCrayonOptions, type CrayonOptions } from './crayonBrush';
+import { renderOp, clearAllOf, setLiveCrayonBuffer, type StrokeOp } from './strokeOps';
+import {
+  setCrayonOptions,
+  getCrayonOptions,
+  warmCrayonTiles,
+  CrayonPassTracker,
+  type CrayonOptions,
+} from './crayonBrush';
 import {
   beginCommand,
   commandCount,
@@ -91,11 +97,48 @@ let magicActive = false;
 let crayonActive = false;
 let lastColorChangeTime = 0;
 
-// A per-stroke seed stamped onto every crayon op, so the paper-tooth pattern is
-// phase-shifted per stroke (the source of wax buildup — ADR-0065) yet fully
-// replayable from stored op data. A monotonic counter guarantees consecutive
-// strokes differ even when drawn over the same spot; the value is stored on the
-// op, so replay is deterministic regardless of the counter's live position.
+// The live crayon pass overlays: two engine-owned canvases layered over the
+// main one, both holding the OPEN deposition pass at full opacity. The bottom
+// layer composites with mix-blend-mode: darken and the top with CSS opacity
+// (1 - colorMix), so the browser's compositing of (darken, then lerp) shows
+// pixel-for-pixel the two-blit subtractive mix the pass's 'crayonFlush'
+// stamp will bake into the main canvas at close (see strokeOps' pass buffer)
+// — no visible snap. pointer-events: none, so input still lands on the canvas
+// beneath. The canvas's OWNING wrapper must set `isolation: isolate`
+// (DrawingCanvas's .canvas-stack; the dev harness's .canvas-wrapper): it
+// confines the darken blend to the canvas's own pixels, so a pass over virgin
+// (transparent) canvas previews at the pure colour — without it the blend
+// sees the composited page, and on the DARK paper min(colour, near-black)
+// erased the bottom layer, leaving a faint 1-m-opacity stroke until stamp.
+let crayonOverlay: HTMLCanvasElement | null = null;
+let crayonOverlayCtx: CanvasRenderingContext2D | null = null;
+let crayonOverlayTop: HTMLCanvasElement | null = null;
+let crayonOverlayTopCtx: CanvasRenderingContext2D | null = null;
+
+function syncCrayonOverlayMix() {
+  if (crayonOverlayTop) {
+    crayonOverlayTop.style.opacity = String(1 - getCrayonOptions().colorMix);
+  }
+}
+
+// Close the current deposition pass: stamp the live buffer onto the canvas and
+// record the flush so replay stamps at exactly this position in the op order.
+// recordOp no-ops when no command is open, matching renderOp's no-op flush of a
+// clean buffer.
+function recordCrayonFlush() {
+  const flush: StrokeOp = { kind: 'crayonFlush' };
+  renderOp(ctx, flush);
+  recordOp(flush);
+}
+
+// A per-pass seed stamped onto every crayon op, so the paper-tooth pattern is
+// phase-shifted per deposition pass (the source of wax buildup — ADR-0065) yet
+// fully replayable from stored op data. A pass is usually a whole stroke, but a
+// continuous gesture that re-covers its own paper (a back-and-forth scribble)
+// splits into further passes mid-stroke — see strokeCrayonSegments. A monotonic
+// counter guarantees consecutive passes differ even when drawn over the same
+// spot; the value is stored on the op, so replay is deterministic regardless of
+// the counter's live position.
 let crayonSeedCounter = 1;
 
 let onDrawSoundCallback: ((data: DrawSoundData) => void) | null = null;
@@ -344,6 +387,16 @@ function resizeCanvas() {
   canvas.height = Math.round(rect.height * renderScale);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+  for (const [el, g] of [
+    [crayonOverlay, crayonOverlayCtx],
+    [crayonOverlayTop, crayonOverlayTopCtx],
+  ] as const) {
+    if (!el || !g) continue;
+    el.width = canvas.width;
+    el.height = canvas.height;
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+  }
   applyPaperView(lockPaper);
 
   // The magic sheet is sized to the paper, so re-rasterize before replaying any
@@ -476,6 +529,37 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
   recordOp(op);
 }
 
+// Crayon-aware segment routing: feed each point through the stroke's pass
+// tracker, and where it detects the gesture re-covering its own laid strip
+// (a scribble reversal, a loop closing), flush the points so far as ops of the
+// current pass, then bump to a fresh seed for the rest — real wax doesn't care
+// whether the crayon lifted before re-covering a spot, so mid-stroke overdraw
+// must build up exactly like a fresh stroke does. The flush boundary reuses
+// strokeSmoothSegments' own start/mid bookkeeping, so the drawn PATH is
+// identical to the unsplit one — only the pattern phase of the later ops
+// changes. Seeds are stored per op (and keep runs apart in simplification), so
+// replay reproduces the splits byte-for-byte.
+function strokeCrayonSegments(ps: PointerState, points: { x: number; y: number }[]) {
+  let batch: { x: number; y: number }[] = [];
+  for (const p of points) {
+    if (ps.passTracker!.advance(p) === 'split') {
+      strokeSmoothSegments(ps, batch);
+      batch = [];
+      recordCrayonFlush();
+      ps.seed = crayonSeedCounter++;
+      ps.passTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
+      ps.passTracker.advance(p);
+    }
+    batch.push(p);
+  }
+  strokeSmoothSegments(ps, batch);
+}
+
+function strokeSegments(ps: PointerState, points: { x: number; y: number }[]) {
+  if (ps.passTracker) strokeCrayonSegments(ps, points);
+  else strokeSmoothSegments(ps, points);
+}
+
 // Push the finished stroke group onto the undo log (once per group, when the
 // last finger lifts) and tell reactive consumers. onStrokeEnd fires at stroke
 // end, not start, so consumers (e.g. mounting the install banner) never do DOM
@@ -509,6 +593,10 @@ interface PointerState {
   magic: boolean;
   crayon: boolean;
   seed: number;
+  // Live pass-split detector for a crayon stroke (null for every other tool):
+  // when the gesture re-covers its own laid strip, the seed bumps so buildup
+  // happens mid-stroke. Replaced with a fresh instance at each split.
+  passTracker: CrayonPassTracker | null;
   lastTime: number;
   speedSamples: { t: number; distance: number }[];
   // Non-null while a touch that began in a guarded edge's gesture band hasn't
@@ -599,6 +687,8 @@ function startDrawing(e: PointerEvent, adopted = false) {
     magic: magicActive,
     crayon: crayonActive,
     seed: crayonActive ? crayonSeedCounter++ : 0,
+    passTracker:
+      crayonActive && !eraserActive && !magicActive ? new CrayonPassTracker(x, y, lineWidth) : null,
     lastTime: now,
     // Time-stamped distance samples for the sliding speed window. The first
     // entry is a zero-distance anchor so the very first move has a span to
@@ -630,7 +720,7 @@ function commitEdgeSwipe(ps: PointerState) {
   ps.edgeSwipeGuard = null;
   renderStrokeStart(ps);
   if (ps.pendingPoints.length > 0) {
-    strokeSmoothSegments(ps, ps.pendingPoints.map(screenToPaper));
+    strokeSegments(ps, ps.pendingPoints.map(screenToPaper));
     ps.pendingPoints = [];
   }
   // Restart speed sampling from the commit point so the buffered span doesn't
@@ -693,6 +783,14 @@ function restartStrokeIfResumed(ps: PointerState, resume: { x: number; y: number
   ps.midX = resume.x;
   ps.midY = resume.y;
   ps.speedSamples = [{ t: now, distance: 0 }];
+  // The finger really lifted, so a crayon's next contact is physically a fresh
+  // pass — close the current one (stamp + recorded flush), new seed, tracker
+  // restarted at the resumed point.
+  if (ps.passTracker) {
+    recordCrayonFlush();
+    ps.seed = crayonSeedCounter++;
+    ps.passTracker = new CrayonPassTracker(resume.x, resume.y, ps.lineWidth);
+  }
   ctx.beginPath();
 }
 
@@ -741,7 +839,7 @@ function draw(e: PointerEvent) {
   restartStrokeIfResumed(pointerState, points[0], now);
   const speed = strokeSpeed(pointerState, points[points.length - 1], now);
 
-  strokeSmoothSegments(pointerState, points);
+  strokeSegments(pointerState, points);
 
   pointerState.lastTime = now;
 
@@ -761,6 +859,14 @@ function stopDrawing(e?: PointerEvent) {
   // rendered and the canvas state below is left alone.
   if (pointerState?.edgeSwipeGuard && e.type === 'pointerup') {
     commitEdgeSwipe(pointerState);
+  }
+
+  // A lifting crayon finger closes its deposition pass — stamp the buffered wax
+  // onto the canvas (mixing with the ink under it) and record the flush so
+  // replay stamps at the same point in the op order. Skipped for a discarded
+  // edge-swipe candidate (nothing was rendered).
+  if (pointerState?.isDrawing && pointerState.passTracker && !pointerState.edgeSwipeGuard) {
+    recordCrayonFlush();
   }
 
   activePointers.delete(e.pointerId);
@@ -786,6 +892,16 @@ function stopDrawing(e?: PointerEvent) {
 export function releaseAllPointers() {
   if (!ctx) return;
   ctx.beginPath();
+
+  // Force-releasing mid-flight crayon strokes closes their open pass so the
+  // committed command ends stamped (one flush covers every open pass — the
+  // buffer is shared per target).
+  for (const ps of activePointers.values()) {
+    if (ps.isDrawing && ps.passTracker && !ps.edgeSwipeGuard) {
+      recordCrayonFlush();
+      break;
+    }
+  }
 
   activePointers.clear();
   groupHasDrawn = false;
@@ -926,6 +1042,7 @@ export function setSimplifyParams(params: SimplifyOptions & { keyframeThreshold?
 // recorded crayon ops repaint with the new tooth.
 export function setCrayonParams(params: Partial<CrayonOptions>) {
   setCrayonOptions(params);
+  syncCrayonOverlayMix();
   if (ctx) replayAll(ctx);
 }
 
@@ -944,6 +1061,28 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   // beneath it, ADR-0050) rendered as opaque black on the Android WebView. See
   // ADR-0051.
   ctx = canvas.getContext('2d')!;
+
+  // The live crayon pass overlays (see the crayonOverlay notes above).
+  // Absolute inset-0 inside the canvas's positioned container tracks the
+  // canvas box — #drawingCanvas fills that container — and the paper-view
+  // transform lives in the ctx (mirrored onto the buffers per op), never in
+  // CSS, so no transform mirroring is needed here.
+  crayonOverlay?.remove();
+  crayonOverlayTop?.remove();
+  const overlayCss =
+    'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;';
+  crayonOverlay = document.createElement('canvas');
+  crayonOverlay.setAttribute('aria-hidden', 'true');
+  crayonOverlay.style.cssText = overlayCss + 'mix-blend-mode:darken;';
+  crayonOverlayTop = document.createElement('canvas');
+  crayonOverlayTop.setAttribute('aria-hidden', 'true');
+  crayonOverlayTop.style.cssText = overlayCss;
+  canvas.insertAdjacentElement('afterend', crayonOverlay);
+  crayonOverlay.insertAdjacentElement('afterend', crayonOverlayTop);
+  crayonOverlayCtx = crayonOverlay.getContext('2d')!;
+  crayonOverlayTopCtx = crayonOverlayTop.getContext('2d')!;
+  setLiveCrayonBuffer(ctx, crayonOverlayCtx, crayonOverlayTopCtx);
+  syncCrayonOverlayMix();
 
   // The magic brush's color sheet lives in paper coordinates (like every op) and
   // repaints recorded magic ops once an async fill finishes decoding (ADR-0043).
@@ -1038,6 +1177,13 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
       // the ink.
       releaseAllPointers();
       liveDownIds.clear();
+      setLiveCrayonBuffer(null, null);
+      crayonOverlay?.remove();
+      crayonOverlay = null;
+      crayonOverlayCtx = null;
+      crayonOverlayTop?.remove();
+      crayonOverlayTop = null;
+      crayonOverlayTopCtx = null;
     },
   };
 }
@@ -1051,6 +1197,9 @@ export function setColor(color: string) {
   if (color === currentColor) return;
   currentColor = color;
   lastColorChangeTime = Date.now();
+  // Warm the new colour's wax tiles while the finger is still on the swatch,
+  // so the first crayon draw never pays the tile build inside a frame.
+  if (crayonActive) warmCrayonTiles(color);
 }
 
 export function setStrokeWidth(widthPx: number) {
@@ -1076,6 +1225,7 @@ export function setMagicMode(active: boolean) {
 // at the UI level.
 export function setCrayonMode(active: boolean) {
   crayonActive = active;
+  if (active) warmCrayonTiles(currentColor);
 }
 
 // CSS-px OS safe-area insets, used to decide which edges sit under a system

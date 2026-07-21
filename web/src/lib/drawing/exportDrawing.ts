@@ -5,6 +5,7 @@
 // screened, matching the on-screen --paper / --lineart-* tokens.
 
 import { replayAll } from './undoHistory';
+import { flushCrayonBuffer } from './strokeOps';
 import { scheduleIdle } from '../idle';
 import { PAPER_COLORS } from '../theme';
 import { resolvedTheme } from '../state/appearance.svelte';
@@ -57,6 +58,10 @@ function snapshotStrokes(source: ExportSource): HTMLCanvasElement {
   snapshotCtx.lineCap = 'round';
   snapshotCtx.lineJoin = 'round';
   replayAll(snapshotCtx);
+  // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
+  // (its flush is only recorded at pass close); an export is terminal for this
+  // snapshot, so stamp it now rather than dropping that ink.
+  flushCrayonBuffer(snapshotCtx);
   return snapshot;
 }
 
