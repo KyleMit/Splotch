@@ -120,5 +120,6 @@ Supersedes **ADR-0033** (command-replay undo), **ADR-0035** (keyframes — delet
 resize from the retained history) survives with the rebuild now a paper blit. Amends **ADR-0065**:
 the RDP bypass and replay-cost consequences are moot; the determinism contract narrows to
 "live-equals-fold." Amends **ADR-0050**: the margin-ink corner (permanent crop at commit, no
-resurrect-on-rotation, snapshot stack instead of a command-retention window). The ADR-0032 mark set
-drops `engine.keyframe`/`engine.foldBaseline` and gains `engine.snapshot`.
+resurrect-on-rotation, snapshot stack instead of a command-retention window). Amends **ADR-0032**:
+the mark set drops `engine.keyframe`/`engine.foldBaseline` and gains `engine.snapshot` +
+`engine.fold` at commit, with `engine.undo` now paired by an explicit `engine.undo:end` mark.

@@ -1,6 +1,10 @@
 # ADR-0032: Automated Performance Profiling Harness
 
-**Status:** Active **Date:** 2026-06
+**Status:** Active — amended by ADR-0066 (2026-07): the harness, the three capture paths, and the
+analyzer stand unchanged, but the mark set below is replay-era — `engine.foldBaseline` (and
+ADR-0035's `engine.keyframe`) were deleted with the replay system; a commit now splits into
+`engine.snapshot` + `engine.fold`, and `engine.undo` pairs an explicit end mark. See the amendment
+at the end. **Date:** 2026-06
 
 ## Context
 
@@ -84,3 +88,29 @@ A profiling harness in `scripts/perf/`, built on the existing Playwright app-dri
   `PERF_MARKS` native build); they can't run in CI or a cloud session.
 
 The `profiling` skill is the entry point for running the harness and reading a report.
+
+## Amendment (ADR-0066, 2026-07)
+
+ADR-0066 replaced command-replay undo (ADR-0033) with snapshot undo — the paper raster is the
+committed source of truth, with a depth-20 stack of pre-stroke snapshots. The harness, the three
+capture paths, and the analyzer are untouched; what changes is the engine mark set the Decision's
+first bullet lists:
+
+* **Current set:** `engine.draw`, `engine.commit`, `engine.snapshot`, `engine.fold`, `engine.undo`,
+  `engine.resize`, `engine.scanEmpty` (`web/src/lib/drawing/engine.ts`, `undoHistory.ts`,
+  `emptyScan.ts`).
+* **`engine.foldBaseline` is deleted** with the replay system, as is ADR-0035's `engine.keyframe` —
+  there is no baseline fold or keyframing left to measure.
+* **`engine.snapshot` and `engine.fold` sit inside `engine.commit`** and split the commit cost by
+  stage: `engine.snapshot` isolates the pre-stroke paper copy (canvas alloc + `drawImage` + stack
+  push), `engine.fold` isolates rendering the committed stroke's ops onto the paper — the exact
+  workload ADR-0066's commit-hitch gate bounds — so a hot commit attributes to the right stage.
+* **`engine.undo` is measured end-to-end across tasks.** A deep undo is async (pop, await blob
+  decode, restore blit), so the undo step emits an explicit `engine.undo:end` mark at restore
+  completion (closed in a `finally`, so a failed decode still ends the pair) and the measure spans
+  `engine.undo:start` → `engine.undo:end`. Marks-only consumers — WebKit's Web Inspector timeline
+  export exposes marks but not measures — pair the start/end marks instead of the
+  smallest-enclosing-record heuristic, which bounded only the first task of an async undo.
+
+ADR-0066 also deleted the `perf:sweep`/`perf:units` harnesses that tuned the replay machinery; the
+platform commands this ADR ships (`perf:web`/`perf:android`/`perf:ios`) are unchanged.
