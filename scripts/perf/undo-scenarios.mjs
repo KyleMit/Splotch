@@ -262,6 +262,33 @@ async function undoAll(page) {
 const undoDebug = (page) =>
   page.evaluate(() => (window.__engine.getUndoDebug ? window.__engine.getUndoDebug() : null));
 
+// Cold-tier demotion is async (encodeColdSnapshots' toBlob callbacks), and the
+// batched draw phase returns before those callbacks run — sampled immediately,
+// below-window entries still hold their ~30 MB rasters, so historyRasterMB
+// transiently reports hundreds of MB of a healthy tier (nondeterministically,
+// against the ≲150 MB gate) and the undo phase would measure live-raster
+// restores instead of the blob decodes it exists to validate. Mirror the E2E
+// spec (engine.spec.ts): poll until only the K_LIVE window still holds rasters
+// — a raster is only dropped after its blob lands and validates, so
+// liveRasters ≤ K_LIVE means every below-window entry is encoded.
+const K_LIVE = 2;
+async function settleColdTier(page, timeoutMs = 10_000) {
+  const t0 = Date.now();
+  for (;;) {
+    const d = await undoDebug(page);
+    if (d == null) return null;
+    if (d.liveRasters <= K_LIVE && (d.snapshots <= K_LIVE || d.blobBytes > 0)) return d;
+    if (Date.now() - t0 > timeoutMs) {
+      throw new Error(
+        `cold tier never settled within ${timeoutMs} ms: snapshots=${d.snapshots} ` +
+          `liveRasters=${d.liveRasters} blobBytes=${d.blobBytes} ` +
+          `(want liveRasters ≤ ${K_LIVE} with below-window entries encoded)`
+      );
+    }
+    await sleep(100);
+  }
+}
+
 // The square paper/snapshot raster is max(w,h) of the backing store (engine
 // uses max(w,h) × renderScale). performance.memory can't see canvas pixel
 // buffers (they aren't on the JS heap), so history memory has to be derived
@@ -332,7 +359,7 @@ async function main() {
       await markPhase(page, `${sc.key}-draw`, () => drawStrokes(page, sc.strokes, !!sc.crayon));
       const drawEnd = await now(page);
 
-      const debug = await undoDebug(page);
+      const debug = await settleColdTier(page);
       const heapAfterDraw = await heapBytes(page);
 
       const undoStart = await now(page);
