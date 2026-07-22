@@ -490,7 +490,7 @@
     transition:
       grid-template-columns 0.28s ease,
       grid-template-rows 0.28s ease,
-      opacity 0.2s ease,
+      opacity var(--duration-base) ease,
       margin 0.28s ease;
   }
 
@@ -526,7 +526,7 @@
     transition:
       grid-template-columns 0.28s ease,
       grid-template-rows 0.28s ease,
-      opacity 0.2s ease,
+      opacity var(--duration-base) ease,
       margin 0.28s ease,
       visibility 0s 0.28s;
   }
@@ -655,11 +655,11 @@
        panel re-measures on load or the parent drags the Button Size slider;
        those must snap, never animate (issue #317). */
     transition:
-      background-color 0.2s ease,
-      border-color 0.2s ease,
-      box-shadow 0.2s ease,
-      transform 0.2s ease,
-      opacity 0.2s ease;
+      background-color var(--duration-base) ease,
+      border-color var(--duration-base) ease,
+      box-shadow var(--duration-base) ease,
+      transform var(--duration-base) ease,
+      opacity var(--duration-base) ease;
     touch-action: manipulation;
     padding: calc(10px * var(--action-btn-scale, 1));
   }
@@ -698,6 +698,7 @@
       background: var(--float-surface-hover);
       border-color: var(--brand);
       box-shadow: 0 4px 12px rgba(171, 113, 225, 0.3);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 30%, transparent);
       box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 30%, transparent);
     }
   }
@@ -752,6 +753,7 @@
       border-color: var(--brand);
       background: var(--brand-wash);
       box-shadow: 0 0 0 10px rgba(171, 113, 225, 0.5);
+      box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 50%, transparent);
       box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 50%, transparent);
     }
   }
@@ -911,10 +913,10 @@
     /* Interaction feedback only — the width/height track --action-btn-scale and
        must snap when the parent drags the Button Size slider (issue #317). */
     transition:
-      background-color 0.15s ease,
-      border-color 0.15s ease,
-      box-shadow 0.15s ease,
-      transform 0.15s ease;
+      background-color var(--duration-fast) ease,
+      border-color var(--duration-fast) ease,
+      box-shadow var(--duration-fast) ease,
+      transform var(--duration-fast) ease;
     touch-action: manipulation;
   }
 
@@ -933,6 +935,7 @@
     border-color: var(--brand);
     background: var(--brand-wash);
     box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent);
   }
 
