@@ -177,8 +177,8 @@
     margin: 0;
     background: var(--surface);
     border: none;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-pop);
     width: fit-content;
     max-width: 90vw;
     max-height: 90vh;

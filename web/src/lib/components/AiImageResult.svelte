@@ -210,7 +210,7 @@
     position: relative;
     display: block;
     line-height: 0; /* drop the inline-image baseline gap under the sizer */
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     background: #fcfbf8;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
@@ -288,7 +288,7 @@
     transform: scale(1.08);
     transition:
       opacity 0.55s ease,
-      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      transform 0.6s var(--ease-glide);
   }
 
   .result.shown {
@@ -313,11 +313,11 @@
   }
   .ai-result-error p {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     font-weight: 600;
   }
   .ai-result-error-sub {
-    font-size: 14px !important;
+    font-size: var(--font-size-md) !important;
     font-weight: 500 !important;
     color: var(--text-muted);
     max-width: 280px;
@@ -338,7 +338,7 @@
     padding: 0 22px;
     background: var(--brand);
     border: none;
-    border-radius: 22px;
+    border-radius: var(--radius-xl);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -350,8 +350,8 @@
     box-shadow: 0 4px 12px rgba(171, 113, 225, 0.4);
     box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 40%, transparent);
     transition:
-      transform 0.15s ease,
-      background 0.2s ease;
+      transform var(--duration-fast) ease,
+      background var(--duration-base) ease;
     animation: downloadPop 0.4s backwards 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 

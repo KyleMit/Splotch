@@ -156,7 +156,7 @@
     padding: 14px 16px;
     background: var(--surface);
     border: 2px solid var(--brand, #ab71e1);
-    border-radius: 22px;
+    border-radius: var(--radius-xl);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
     font-family: inherit;
   }
@@ -170,7 +170,7 @@
     border-radius: 50%;
     background: var(--surface);
     color: var(--text-muted);
-    font-size: 22px;
+    font-size: var(--font-size-2xl);
     line-height: 1;
     display: flex;
     align-items: center;
@@ -178,9 +178,9 @@
     cursor: pointer;
     touch-action: manipulation;
     transition:
-      border-color 0.2s ease,
-      background 0.2s ease,
-      transform 0.15s ease;
+      border-color var(--duration-base) ease,
+      background var(--duration-base) ease,
+      transform var(--duration-fast) ease;
   }
 
   .install-dismiss:active {
@@ -210,7 +210,7 @@
   .install-parting p {
     margin: 0;
     color: var(--text-mid);
-    font-size: 14px;
+    font-size: var(--font-size-md);
     line-height: 1.5;
     text-align: left;
   }
@@ -243,7 +243,7 @@
 
   .install-sub {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--font-size-xs);
     margin-top: 2px;
   }
 
@@ -294,7 +294,7 @@
   .install-hint p {
     margin: 0;
     color: var(--text-mid);
-    font-size: 14px;
+    font-size: var(--font-size-md);
     line-height: 1.6;
   }
 

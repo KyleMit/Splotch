@@ -206,7 +206,7 @@
     border: 4px solid transparent;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-base) ease;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     /* none (not manipulation): a swatch press can become a drag onto the canvas
        (dragColorToCanvas), so the browser must never claim the gesture as a
