@@ -1,25 +1,20 @@
 // Composes the shareable PNG of the current drawing: the theme's paper color,
-// the handmade-paper texture, the strokes (rebuilt from undo history), and the
+// the handmade-paper texture, the strokes (snapshotted by the engine), and the
 // coloring-page overlay on top — the same stack the child sees on screen. In
 // dark mode the paper fill is the dark paper and the line art is inverted and
 // screened, matching the on-screen --paper / --lineart-* tokens.
+//
+// Save-time-only, so the engine loads this module on demand (issue #461) —
+// keep it free of static importers or it silently merges back into the startup
+// bundle (web/tests/startup-bundle.spec.ts guards the modulepreload list). The
+// stroke snapshot is taken synchronously by engine.exportCanvasBlob BEFORE the
+// module load's await, so a clear racing the export can't blank it.
 
-import { repaintAll } from './undoHistory';
-import { flushCrayonBuffer } from './strokeOps';
-import { scheduleIdle } from '../idle';
 import { PAPER_COLORS } from '../theme';
 import { resolvedTheme } from '../state/appearance.svelte';
 
 export interface ExportOptions {
   includePaperTexture?: boolean;
-}
-
-// The paper geometry the engine owns (ADR-0050): the pixel size of the space
-// ops are recorded in, and the render scale that maps it back to CSS pixels.
-interface ExportSource {
-  paperPxWidth: number;
-  paperPxHeight: number;
-  renderScale: number;
 }
 
 let paperTextureImage: HTMLImageElement | null = null;
@@ -40,29 +35,10 @@ function loadPaperTexture(): Promise<HTMLImageElement | null> {
   return paperTexturePromise;
 }
 
-// Warm the paper texture off the critical path so the fetch + decode (~226ms)
-// doesn't stall the first export.
-export function warmPaperTextureWhenIdle() {
-  scheduleIdle(() => void loadPaperTexture());
-}
-
-// Rebuild the strokes in PAPER space (the paper raster + pending + any
-// in-flight stroke) rather than copying the visible canvas: under a
-// rotation-locked view the visible canvas is the letterboxed presentation, and
-// the export should be the full upright page.
-function snapshotStrokes(source: ExportSource): HTMLCanvasElement {
-  const snapshot = document.createElement('canvas');
-  snapshot.width = source.paperPxWidth;
-  snapshot.height = source.paperPxHeight;
-  const snapshotCtx = snapshot.getContext('2d')!;
-  snapshotCtx.lineCap = 'round';
-  snapshotCtx.lineJoin = 'round';
-  repaintAll(snapshotCtx);
-  // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
-  // (its flush is only recorded at pass close); an export is terminal for this
-  // snapshot, so stamp it now rather than dropping that ink.
-  flushCrayonBuffer(snapshotCtx);
-  return snapshot;
+// Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
+// first export. The engine calls this from its own idle warm of this module.
+export function warmPaperTexture() {
+  void loadPaperTexture();
 }
 
 async function paintPaperBackground(
@@ -122,13 +98,13 @@ function drawOverlayContained(
   target.globalCompositeOperation = 'source-over';
 }
 
-export async function exportDrawing(
-  source: ExportSource,
+export async function composeExportPng(
+  snapshot: HTMLCanvasElement,
+  renderScale: number,
   overlayImage: HTMLImageElement | null = null,
   options: ExportOptions = {}
 ): Promise<Blob | null> {
   const { includePaperTexture = true } = options;
-  if (source.paperPxWidth === 0 || source.paperPxHeight === 0) return null;
 
   // Resolve once up front so an OS theme switch mid-export can't mismatch the
   // paper fill and the overlay treatment. Coloring pages follow the resolved
@@ -137,18 +113,12 @@ export async function exportDrawing(
   // and the night-fill reveals already baked into the replayed strokes.
   const theme = resolvedTheme();
 
-  // Snapshot the strokes before any await: save-on-delete fire-and-forgets the
-  // export and then clears the live canvas synchronously, so snapshotting after
-  // the paper-texture await (even a cache hit yields a microtask) would export
-  // a blank page.
-  const snapshot = snapshotStrokes(source);
-
   // Compose in CSS-pixel coordinates at an export scale of at least 2×, so the
   // paper texture and overlay keep their on-screen proportions while the
   // already-high-res strokes pass through with minimal resampling.
   const exportScale = Math.max(window.devicePixelRatio || 1, 2);
-  const w = snapshot.width / source.renderScale;
-  const h = snapshot.height / source.renderScale;
+  const w = snapshot.width / renderScale;
+  const h = snapshot.height / renderScale;
 
   const out = document.createElement('canvas');
   out.width = Math.round(w * exportScale);

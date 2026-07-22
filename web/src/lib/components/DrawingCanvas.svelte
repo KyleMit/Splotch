@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
-    initDrawingCanvas,
+    adoptDrawingCanvas,
     setColor,
     setStrokeWidth,
     setEraserMode,
@@ -146,7 +146,13 @@
   }
 
   onMount(() => {
-    const engine = initDrawingCanvas(canvasEl, {
+    // Adopt, don't init (ADR-0072): earlyBoot.ts already started the engine on
+    // this prerendered canvas at module-evaluation time, so drawing works
+    // before hydration; this mount attaches the reactive callbacks and replays
+    // any state pre-hydration strokes advanced. When the engine isn't live on
+    // this exact element (client-side nav back to `/`, dev HMR), adopt falls
+    // back to a full init.
+    const engine = adoptDrawingCanvas(canvasEl, {
       initialColor: colors.activeColor,
       onDrawSound: playDrawSound,
       onDrawStop: stopDrawSound,
@@ -384,6 +390,16 @@
       onpointercancel={removeBrushRing}
       onlostpointercapture={removeBrushRing}
     ></canvas>
+    <!-- The engine's live crayon pass overlays (bottom darken layer, then the
+         opacity-mixed top — see engine.ts's crayonOverlay notes). Rendered
+         here, not injected by the engine: the engine boots BEFORE hydration
+         (ADR-0072), and elements it inserted into the prerendered DOM made
+         Svelte's hydration walk bail to a full client re-render, replacing
+         the live canvas. Template-owned markup hydrates cleanly; the engine
+         adopts the pair by the data attribute. -->
+    <canvas class="crayon-overlay" data-crayon-overlay aria-hidden="true"></canvas>
+    <canvas class="crayon-overlay crayon-overlay-top" data-crayon-overlay aria-hidden="true"
+    ></canvas>
   </div>
   {#each Object.entries(brushRings) as [id, ring] (id)}
     <div
@@ -456,6 +472,23 @@
 
   #drawingCanvas.erasing {
     cursor: none;
+  }
+
+  /* Mirrors the inline styling the engine applies when it creates its own
+     overlays (the /dev/engine harness path) — keep the two in sync. */
+  .crayon-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+    mix-blend-mode: darken;
+  }
+
+  .crayon-overlay-top {
+    mix-blend-mode: normal;
   }
 
   .eraser-bubble {

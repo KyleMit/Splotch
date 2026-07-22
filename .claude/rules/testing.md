@@ -24,4 +24,8 @@ paths:
   `DEV_SERVER=1` to iterate against `vite dev` instead.
 * The admin specs rely on the Playwright web server starting with
   `ADMIN_ACCESS_TOKEN=test-admin-secret` (`playwright.config.ts`).
+* Adult-facing surfaces (`/privacy`, `/admin`, the Parent Center dialog) get axe-core scans in
+  `tests/a11y.spec.ts` — serious/critical violations fail. The toddler-facing canvas chrome is out
+  of scope by design; scans of overlays over it are scoped via `AxeBuilder.include()`. Details in
+  the `testing` skill.
 * Full guide (commands, Maestro install, CI triggers): the `testing` skill.

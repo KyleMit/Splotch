@@ -9,13 +9,6 @@ import {
 } from '../storage';
 import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage';
 import { applyTheme, isThemePreference, THEME_DEFAULT, type ThemePreference } from '../theme';
-import {
-  folderSaveSupported,
-  chooseSaveFolder,
-  getSaveFolderName,
-  clearSaveFolder,
-  onSaveFolderCleared,
-} from '$lib/drawing/folderSave';
 
 const SOUND_KEY = 'splotch-sound-enabled';
 const SOUND_VOLUME_KEY = 'splotch-sound-volume';
@@ -290,35 +283,79 @@ export async function hydrateApiKey() {
   if (key) settings.aiUserApiKey = key;
 }
 
-// A save that discovers the chosen folder is gone (moved/deleted) drops the
-// stored handle itself; mirror that here so the Parent Center pill doesn't keep
-// naming a folder that no longer receives saves.
-onSaveFolderCleared(() => {
-  settings.saveFolderName = null;
-});
+// folderSave is save-time-only, so it loads on demand and stays out of the
+// startup bundle (issue #461). The first load registers the stale-folder
+// listener: a save that discovers the chosen folder is gone (moved/deleted)
+// drops the stored handle itself, and this mirror keeps the Parent Center pill
+// from naming a folder that no longer receives saves. Saves reach folderSave
+// through the same module instance (screenshot.ts's static import), and on any
+// platform that can save to a folder the boot hydration below has already run
+// this loader — so the listener is armed before a save can fire it.
+let folderSaveModule: Promise<typeof import('$lib/drawing/folderSave')> | null = null;
+
+function loadFolderSave() {
+  // A failed chunk fetch must not pin the memo to a rejected promise — the
+  // next tap should retry the import instead of replaying the old failure.
+  folderSaveModule ??= import('$lib/drawing/folderSave').then(
+    (m) => {
+      m.onSaveFolderCleared(() => {
+        settings.saveFolderName = null;
+      });
+      return m;
+    },
+    (err) => {
+      folderSaveModule = null;
+      throw err;
+    }
+  );
+  return folderSaveModule;
+}
+
+// These three are UI/boot entry points wired straight into onclick/onMount, so
+// a chunk-load failure must be contained here — not surface as an unhandled
+// rejection on a Parent Center tap.
+async function tryLoadFolderSave() {
+  try {
+    return await loadFolderSave();
+  } catch (err) {
+    console.error('Folder-save module failed to load:', err);
+    return null;
+  }
+}
 
 // Pick (or re-pick) the optional destination folder for web saves. Must be
-// called from a click handler so the picker keeps its user activation. Keeps the
-// current folder if the parent cancels. Purely a convenience — it doesn't enable
-// or disable any save action; saves work the same with or without a folder.
+// called from a click handler so the picker keeps its user activation (the
+// import resolves from the module cache — the Parent Center section that hosts
+// this action already loaded folderSave). Keeps the current folder if the
+// parent cancels. Purely a convenience — it doesn't enable or disable any save
+// action; saves work the same with or without a folder.
 export async function changeSaveFolder() {
-  const name = await chooseSaveFolder();
+  const mod = await tryLoadFolderSave();
+  if (!mod) return;
+  const name = await mod.chooseSaveFolder();
   if (name) settings.saveFolderName = name;
 }
 
 // Forget the chosen folder, so web saves revert to the browser's default
 // download location. Doesn't stop anything from saving.
 export async function forgetSaveFolder() {
-  await clearSaveFolder();
+  const mod = await tryLoadFolderSave();
+  if (!mod) return;
+  await mod.clearSaveFolder();
   settings.saveFolderName = null;
 }
 
 // Boot hydration (web/desktop only): read the remembered folder name from the
 // directory handle in IndexedDB into the live store so the Parent Center can
-// show it. No side effects on the save features.
+// show it. No side effects on the save features. The support check is inlined
+// (same predicate as folderSaveSupported) so unsupported platforms — every
+// phone — never fetch the folder-save chunk just to learn there's nothing to
+// hydrate.
 export async function hydrateSaveFolder() {
-  if (!folderSaveSupported()) return;
-  settings.saveFolderName = await getSaveFolderName();
+  if (typeof window === 'undefined' || !('showDirectoryPicker' in window)) return;
+  const mod = await tryLoadFolderSave();
+  if (!mod) return;
+  settings.saveFolderName = await mod.getSaveFolderName();
 }
 
 export function captureAiAccessTokenFromUrl() {

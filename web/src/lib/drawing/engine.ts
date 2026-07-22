@@ -1,7 +1,10 @@
-// Imperative drawing engine (ADR-0004). Svelte components mount it via
-// initDrawingCanvas() and adapt reactive state (active color, stroke width) by
-// calling setColor() / setStrokeWidth() from $effect; the engine reports back
-// through the callbacks passed at init (onDrawSound, onUndoStateChange, …).
+// Imperative drawing engine (ADR-0004). earlyBoot.ts initializes it at
+// module-evaluation time — before SvelteKit hydrates the route — so the canvas
+// accepts strokes as soon as this chunk evaluates (ADR-0072); Svelte components
+// then ADOPT the running engine via adoptDrawingCanvas(), attaching the
+// callbacks it reports through (onDrawSound, onUndoStateChange, …) and pushing
+// reactive state (active color, stroke width) via setColor() / setStrokeWidth()
+// from $effect.
 //
 // The engine is the conductor over focused modules — it owns the <canvas>, the
 // paper coordinate space, all pointer tracking, and the public API, and
@@ -13,7 +16,7 @@
 //   paperView.ts        pure rotation-lock view geometry (ADR-0050)
 //   magicBrush.ts       the magic brush's color sheet + paint pattern (ADR-0043)
 //   emptyScan.ts        cheap blank-canvas detection
-//   exportDrawing.ts    PNG composition for save/share
+//   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
 import { ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte';
 import {
@@ -44,6 +47,7 @@ import {
   renderOp,
   clearAllOf,
   closeLiveCrayonPass,
+  flushCrayonBuffer,
   hasOpenLiveCrayonPass,
   resetLiveCrayonPass,
   setCrayonPaperSpace,
@@ -78,7 +82,8 @@ import {
   snapshotCount,
 } from './undoHistory';
 import { scanCanvasIsEmpty } from './emptyScan';
-import { exportDrawing, warmPaperTextureWhenIdle, type ExportOptions } from './exportDrawing';
+import type { ExportOptions } from './exportDrawing';
+import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
 
 export { setColorSheet };
@@ -109,9 +114,9 @@ let magicActive = false;
 let crayonActive = false;
 let lastColorChangeTime = 0;
 
-// The live crayon pass overlays: two engine-owned canvases layered over the
-// main one, both holding the OPEN deposition pass at full opacity. The bottom
-// layer composites with mix-blend-mode: darken and the top with CSS opacity
+// The live crayon pass overlays: two canvases layered over the main one, both
+// holding the OPEN deposition pass at full opacity. The bottom layer
+// composites with mix-blend-mode: darken and the top with CSS opacity
 // (1 - colorMix), so the browser's compositing of (darken, then lerp) shows
 // pixel-for-pixel the two-blit subtractive mix the pass's 'crayonFlush'
 // stamp will bake into the main canvas at close (see strokeOps' pass buffer)
@@ -122,10 +127,19 @@ let lastColorChangeTime = 0;
 // (transparent) canvas previews at the pure colour — without it the blend
 // sees the composited page, and on the DARK paper min(colour, near-black)
 // erased the bottom layer, leaving a faint 1-m-opacity stroke until stamp.
+//
+// ADOPTED from the markup when the owner provides them (two
+// `canvas[data-crayon-overlay]` siblings, bottom then top — DrawingCanvas
+// renders and styles them so the prerendered DOM matches what hydration
+// expects; elements the engine injected before hydration made Svelte bail to
+// a full client re-render, replacing the live canvas — ADR-0072). Created,
+// styled, and inserted by the engine only where the markup has none (the
+// /dev/engine harness, which inits after hydration).
 let crayonOverlay: HTMLCanvasElement | null = null;
 let crayonOverlayCtx: CanvasRenderingContext2D | null = null;
 let crayonOverlayTop: HTMLCanvasElement | null = null;
 let crayonOverlayTopCtx: CanvasRenderingContext2D | null = null;
+let crayonOverlaysCreated = false;
 
 function syncCrayonOverlayMix() {
   if (crayonOverlayTop) {
@@ -1146,7 +1160,83 @@ export function getCrayonParams(): CrayonOptions {
 
 // --- Mount / unmount ---------------------------------------------------------
 
+let engineLive = false;
+let listenerRemovers: (() => void)[] = [];
+
+function attachCallbacks(options: InitOptions) {
+  onDrawSoundCallback = options.onDrawSound || null;
+  onDrawStopCallback = options.onDrawStop || null;
+  onUndoStateChange = options.onUndoStateChange || null;
+  onCanvasEmptyChange = options.onCanvasEmptyChange || null;
+  onStrokeEnd = options.onStrokeEnd || null;
+  onViewChange = options.onViewChange || null;
+}
+
+function teardownEngine() {
+  if (!engineLive) return;
+  engineLive = false;
+  for (const remove of listenerRemovers) remove();
+  listenerRemovers = [];
+  if (resizeSettleTimer !== null) {
+    clearTimeout(resizeSettleTimer);
+    resizeSettleTimer = null;
+  }
+  // Pointer-input state must not outlive the mount, unlike the drawing
+  // state (see the persistence note in undoHistory.ts): a stale
+  // activePointers entry still marked isDrawing would let hover moves paint
+  // after a remount reuses its pointerId, and liveDownIds loses its
+  // self-healing window trackers above. releaseAllPointers also commits any
+  // mid-flight stroke into the log, so navigating away mid-stroke keeps
+  // the ink.
+  releaseAllPointers();
+  liveDownIds.clear();
+  setLiveCrayonBuffer(null, null);
+  // Only engine-created overlays are removed — adopted ones belong to the
+  // owner component's markup and die (or are re-adopted) with it.
+  if (crayonOverlaysCreated) {
+    crayonOverlay?.remove();
+    crayonOverlayTop?.remove();
+  }
+  crayonOverlay = null;
+  crayonOverlayCtx = null;
+  crayonOverlayTop = null;
+  crayonOverlayTopCtx = null;
+  // After the pointer release above has fired its stop/commit callbacks,
+  // detach them all: a torn-down engine (e.g. a deferred fold settling after
+  // navigation) must never signal an unmounted component. The next adopt or
+  // init re-attaches.
+  attachCallbacks({});
+}
+
+export function engineOwnsCanvas(canvasElement: HTMLCanvasElement): boolean {
+  return engineLive && canvas === canvasElement;
+}
+
+// Adopt the already-running engine (ADR-0072): attach the component's
+// callbacks and replay the current state to the new subscriber — strokes may
+// have landed between early boot and this mount, so canUndo / canvasEmpty /
+// the paper view push immediately instead of waiting for their next change.
+// Falls back to a full init when the engine isn't live on this exact element
+// (client-side navigation back to `/` remounts a fresh canvas; a hydration
+// fallback can replace the prerendered one). Either way the returned teardown
+// is the full engine teardown, keeping mount/unmount symmetric. On the adopt
+// path options.initialColor is deliberately ignored — the running engine
+// already holds the same default, and the component's $effect pushes the live
+// color right after mount.
+export function adoptDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
+  if (!engineOwnsCanvas(canvasElement)) return initDrawingCanvas(canvasElement, options);
+  attachCallbacks(options);
+  if (onUndoStateChange) onUndoStateChange(canUndo);
+  if (onCanvasEmptyChange) onCanvasEmptyChange(canvasEmpty);
+  notifyViewChange();
+  return { teardown: teardownEngine };
+}
+
 export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
+  // Re-init over a live engine (dev HMR double-eval, the adopt fallback after
+  // hydration replaced the canvas element) tears the previous instance down
+  // first so window listeners and crayon overlays never double up.
+  teardownEngine();
   canvas = canvasElement;
   // NB: no `desynchronized: true` here. It was tried for lower Android ink
   // latency and rejected — a desynchronized 2D canvas is promoted to a hardware
@@ -1156,23 +1246,32 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   // ADR-0051.
   ctx = canvas.getContext('2d')!;
 
-  // The live crayon pass overlays (see the crayonOverlay notes above).
+  // The live crayon pass overlays (see the crayonOverlay notes above): adopt
+  // the markup-provided pair when present, otherwise create and insert them.
   // Absolute inset-0 inside the canvas's positioned container tracks the
   // canvas box — #drawingCanvas fills that container — and the paper-view
   // transform lives in the ctx (mirrored onto the buffers per op), never in
   // CSS, so no transform mirroring is needed here.
-  crayonOverlay?.remove();
-  crayonOverlayTop?.remove();
-  const overlayCss =
-    'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;';
-  crayonOverlay = document.createElement('canvas');
-  crayonOverlay.setAttribute('aria-hidden', 'true');
-  crayonOverlay.style.cssText = overlayCss + 'mix-blend-mode:darken;';
-  crayonOverlayTop = document.createElement('canvas');
-  crayonOverlayTop.setAttribute('aria-hidden', 'true');
-  crayonOverlayTop.style.cssText = overlayCss;
-  canvas.insertAdjacentElement('afterend', crayonOverlay);
-  crayonOverlay.insertAdjacentElement('afterend', crayonOverlayTop);
+  const providedOverlays = canvas.parentElement?.querySelectorAll<HTMLCanvasElement>(
+    'canvas[data-crayon-overlay]'
+  );
+  if (providedOverlays && providedOverlays.length >= 2) {
+    crayonOverlay = providedOverlays[0];
+    crayonOverlayTop = providedOverlays[1];
+    crayonOverlaysCreated = false;
+  } else {
+    const overlayCss =
+      'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;';
+    crayonOverlay = document.createElement('canvas');
+    crayonOverlay.setAttribute('aria-hidden', 'true');
+    crayonOverlay.style.cssText = overlayCss + 'mix-blend-mode:darken;';
+    crayonOverlayTop = document.createElement('canvas');
+    crayonOverlayTop.setAttribute('aria-hidden', 'true');
+    crayonOverlayTop.style.cssText = overlayCss;
+    canvas.insertAdjacentElement('afterend', crayonOverlay);
+    crayonOverlay.insertAdjacentElement('afterend', crayonOverlayTop);
+    crayonOverlaysCreated = true;
+  }
   crayonOverlayCtx = crayonOverlay.getContext('2d')!;
   crayonOverlayTopCtx = crayonOverlayTop.getContext('2d')!;
   setLiveCrayonBuffer(ctx, crayonOverlayCtx, crayonOverlayTopCtx);
@@ -1189,12 +1288,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
     },
   });
 
-  onDrawSoundCallback = options.onDrawSound || null;
-  onDrawStopCallback = options.onDrawStop || null;
-  onUndoStateChange = options.onUndoStateChange || null;
-  onCanvasEmptyChange = options.onCanvasEmptyChange || null;
-  onStrokeEnd = options.onStrokeEnd || null;
-  onViewChange = options.onViewChange || null;
+  attachCallbacks(options);
   currentColor = options.initialColor || '#AB71E1';
 
   renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
@@ -1202,8 +1296,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   resizeCanvas();
 
   // Every listener registered through here is removed symmetrically in
-  // teardown(), so the add/remove lists can't drift apart.
-  const removers: (() => void)[] = [];
+  // teardownEngine(), so the add/remove lists can't drift apart.
   function listen<K extends keyof WindowEventMap>(
     target: EventTarget,
     type: K | string,
@@ -1211,7 +1304,9 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
     options?: AddEventListenerOptions | boolean
   ) {
     target.addEventListener(type, handler as EventListener, options);
-    removers.push(() => target.removeEventListener(type, handler as EventListener, options));
+    listenerRemovers.push(() =>
+      target.removeEventListener(type, handler as EventListener, options)
+    );
   }
 
   listen(window, 'resize', handleResize);
@@ -1251,35 +1346,17 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   listen(window, 'pointercancel', trackPointerLift, true);
   listen(window, 'pointermove', adoptStrayPenStream, true);
 
-  // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
-  // first export.
-  warmPaperTextureWhenIdle();
+  // Warm the export compositor + paper texture at idle: the module is
+  // dynamic-imported so it stays out of the startup bundle (issue #461), and
+  // pre-loading it here means the first save doesn't stall on the chunk fetch
+  // or the texture decode (~226ms). Best-effort — a failed warm just retries
+  // at save time.
+  scheduleIdle(() => {
+    void import('./exportDrawing').then((m) => m.warmPaperTexture()).catch(() => {});
+  });
 
-  return {
-    teardown() {
-      for (const remove of removers) remove();
-      if (resizeSettleTimer !== null) {
-        clearTimeout(resizeSettleTimer);
-        resizeSettleTimer = null;
-      }
-      // Pointer-input state must not outlive the mount, unlike the drawing
-      // state (see the persistence note in undoHistory.ts): a stale
-      // activePointers entry still marked isDrawing would let hover moves paint
-      // after a remount reuses its pointerId, and liveDownIds loses its
-      // self-healing window trackers above. releaseAllPointers also commits any
-      // mid-flight stroke into the log, so navigating away mid-stroke keeps
-      // the ink.
-      releaseAllPointers();
-      liveDownIds.clear();
-      setLiveCrayonBuffer(null, null);
-      crayonOverlay?.remove();
-      crayonOverlay = null;
-      crayonOverlayCtx = null;
-      crayonOverlayTop?.remove();
-      crayonOverlayTop = null;
-      crayonOverlayTopCtx = null;
-    },
-  };
+  engineLive = true;
+  return { teardown: teardownEngine };
 }
 
 // --- Tool state pushed in by components --------------------------------------
@@ -1336,16 +1413,40 @@ export function setSafeAreaInsets(insets: {
 
 // --- Export -------------------------------------------------------------------
 
+// Rebuild the strokes in PAPER space (the paper raster + pending + any
+// in-flight stroke) rather than copying the visible canvas: under a
+// rotation-locked view the visible canvas is the letterboxed presentation, and
+// the export should be the full upright page.
+function snapshotStrokes(): HTMLCanvasElement {
+  const snapshot = document.createElement('canvas');
+  snapshot.width = paper.pxW;
+  snapshot.height = paper.pxH;
+  const snapshotCtx = snapshot.getContext('2d')!;
+  snapshotCtx.lineCap = 'round';
+  snapshotCtx.lineJoin = 'round';
+  repaintAll(snapshotCtx);
+  // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
+  // (its flush is only recorded at pass close); an export is terminal for this
+  // snapshot, so stamp it now rather than dropping that ink.
+  flushCrayonBuffer(snapshotCtx);
+  return snapshot;
+}
+
+// The compositor is save-time-only, so it loads on demand and stays out of the
+// startup bundle (issue #461). The snapshot MUST be taken before the import's
+// await: save-on-delete fire-and-forgets this call and then clears the live
+// canvas synchronously, so snapshotting any later would export a blank page
+// (the engine E2E spec pins the race). A dead connection can reject the import
+// — callers own surfacing that (their tap handlers catch).
 export async function exportCanvasBlob(
   overlayImage: HTMLImageElement | null = null,
   options: ExportOptions = {}
 ): Promise<Blob | null> {
-  if (!canvas) return null;
-  return exportDrawing(
-    { paperPxWidth: paper.pxW, paperPxHeight: paper.pxH, renderScale },
-    overlayImage,
-    options
-  );
+  if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
+  const snapshot = snapshotStrokes();
+  const scale = renderScale;
+  const { composeExportPng } = await import('./exportDrawing');
+  return composeExportPng(snapshot, scale, overlayImage, options);
 }
 
 export function getActiveCanvas(): HTMLCanvasElement {

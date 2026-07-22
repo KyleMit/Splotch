@@ -176,10 +176,11 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
 
 ## Gotchas
 
-* **The canvas exists before it's interactive.** `#drawingCanvas` is in the DOM before `onMount`
-  runs `initDrawingCanvas` and binds the pointer listeners, so polling for the element alone draws
-  into a dead canvas. The driver waits for the engine to resize the backing store off its 300×150
-  default (which happens right before it binds listeners); do the same if you script your own draw.
+* **The canvas exists before it's interactive.** `#drawingCanvas` is in the prerendered DOM before
+  any script runs; the engine boots at module-evaluation time (before hydration, ADR-0072) and binds
+  the pointer listeners right after resizing the backing store off its 300×150 default. Polling for
+  the element alone can still draw into a dead canvas — wait for a non-default width (as the driver
+  does) if you script your own draw.
 * **Cold `vite dev` re-optimizes deps** on the first hit, briefly 504-ing modules and
   auto-reloading. The driver *polls* for readiness instead of re-navigating (same trick as
   `web/tests/global-setup.ts`); a plain `goto` + immediate screenshot can catch the transient error

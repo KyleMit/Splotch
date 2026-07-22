@@ -1,3 +1,8 @@
+// The shared "the child has settled in" threshold: earned UI (the install
+// banner) and deferred background work (service-worker registration, #462)
+// both wait for this many committed strokes, deliberately the same signal.
+export const SETTLED_IN_STROKES = 3;
+
 export const canvasState = $state({
   canUndo: false,
   canvasEmpty: true,

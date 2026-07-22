@@ -2,8 +2,9 @@
 
 **Status:** Active — amended by ADR-0066 (2026-07): the imperative-engine and callback-bridge
 decisions stand unchanged, but the sibling-module list and the undo-memory notes below are
-replay-era — snapshot undo re-opens resident-raster memory as a managed, tiered budget. See the
-amendment at the end.\
+replay-era — snapshot undo re-opens resident-raster memory as a managed, tiered budget. Amended by
+ADR-0072 (2026-07): "components mount the engine" becomes "components **adopt** the engine" — init
+moved to module-evaluation time, before hydration. See the amendments at the end.\
 **Date:** 2024
 
 ## Context
@@ -98,3 +99,14 @@ untouched. What changed shape:
   `initDrawingCanvas()` rebuilds the drawing by blitting the paper (`repaintAll`), not by replaying
   a retained baseline + log. The accepted cost `undoHistory.ts` cites this ADR for — rasters
   resident while no canvas is mounted — now covers that tiered set.
+
+## Amendment (ADR-0072, 2026-07)
+
+"Components call `initDrawingCanvas(canvas, options)` on mount" is superseded: `earlyBoot.ts` now
+initializes the engine at module-evaluation time — before SvelteKit hydrates the route — so the
+prerendered canvas accepts strokes as soon as the engine chunk evaluates, and
+`DrawingCanvas.svelte`'s mount instead **adopts** the running engine via `adoptDrawingCanvas()`
+(attach callbacks, replay current state), falling back to a full init when the engine isn't live on
+that element (client-side navigation back to `/`, dev HMR). The survive-unmount lifecycle above is
+what makes adoption safe and is unchanged; teardown remains full and symmetric. Details, the
+interim-window semantics, and the template-owned crayon overlays are in ADR-0072.

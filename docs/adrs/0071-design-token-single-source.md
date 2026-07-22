@@ -1,6 +1,6 @@
 # ADR-0071: Design Tokens from One Generated Source (In-Repo Design System)
 
-**Status:** Proposed (PR open). **Date:** 2026-07
+**Status:** Active. **Date:** 2026-07
 
 ## Context
 

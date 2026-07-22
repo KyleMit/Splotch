@@ -24,7 +24,6 @@
     visibleActionButtonCount,
   } from '$lib/state/actionButtonLayout.svelte';
   import { undo } from '$lib/drawing/engine';
-  import { saveScreenshot } from '$lib/drawing/screenshot';
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
 
@@ -227,8 +226,19 @@
     requestAnimationFrame(() => (undoNudge = true));
   }
 
-  function handleScreenshotClick() {
-    if (!canvasState.canvasEmpty) saveScreenshot();
+  // The save pipeline (export compositor, polaroid, folder save) is
+  // save-time-only, so it loads at tap time and stays out of the startup
+  // bundle (issue #461). The catch keeps a dead-connection chunk load from
+  // throwing unhandled — the tap just does nothing, like the other silent
+  // save degradations (see screenshot.ts).
+  async function handleScreenshotClick() {
+    if (canvasState.canvasEmpty) return;
+    try {
+      const { saveScreenshot } = await import('$lib/drawing/screenshot');
+      await saveScreenshot();
+    } catch (err) {
+      console.error('Screenshot save failed:', err);
+    }
   }
 
   function handleBrushBtnClick() {

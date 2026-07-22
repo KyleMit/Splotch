@@ -102,6 +102,13 @@ export default {
             // auto-reload, leaving updates.ts as the sole driver. This preserves
             // the canvas-empty guard (never interrupt a mid-drawing session).
             registerType: 'prompt',
+            // No auto-injected registerSW.js: the precache is ~39 MB (the full
+            // offline coloring-page set), and a window.load registration would
+            // saturate a slow connection right as boot's idle-deferred work runs
+            // and the child starts drawing. updates.ts registers the SW itself —
+            // deferred behind the stroke-count + idle gate on a first visit,
+            // immediately at idle on a repeat visit (issue #462).
+            injectRegister: null,
             includeAssets: [
               'favicon.ico',
               'favicon-96x96.png',

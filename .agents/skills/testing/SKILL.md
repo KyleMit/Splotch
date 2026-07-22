@@ -102,6 +102,27 @@ with `vite preview` (set `DEV_SERVER=1` for fast iteration against `vite dev`). 
 These run on real Chromium but **cannot catch native or WebView boot failures** — that's what the
 Android smoke test is for.
 
+### Accessibility tier — axe-core scans (`tests/a11y.spec.ts`)
+
+The **adult-facing surfaces** get an automated axe-core scan (`@axe-core/playwright`, a
+devDependency per ADR-0070 — CI-only tooling, never in the Netlify build) as part of the normal E2E
+run — no separate command or workflow:
+
+* **What's scanned:** `/privacy`, `/admin` (logged-out *and* logged-in, via the `test-admin-secret`
+  web-server key), and the Parent Center dialog opened over `/`.
+* **What's deliberately not:** the drawing canvas and toddler-facing chrome. Toddler UX (giant
+  wordless buttons, no reading order) isn't WCAG's model, so the Parent Center scan is **scoped to
+  `#parentHelpModal`** via `AxeBuilder.include()` instead of scanning the whole drawing page.
+* **The gate:** only violations with impact `serious` or `critical` fail the test, but the failure
+  message prints *every* violation axe found (id, impact, offending selectors, fix hints), so the
+  moderate/minor tail is visible in any red run.
+* **Adding a surface:** add a test to `tests/a11y.spec.ts` that navigates (or opens the overlay),
+  waits for a stable element, and calls `expectNoSeriousViolations(page)` — pass a CSS selector as
+  the second argument to scope the scan when the surface is an overlay above toddler chrome.
+* **Fixing vs suppressing:** fix violations in the app source. Only suppress (axe `disableRules` or
+  an exclusion) for a genuine false positive or an unfixable-by-design case, each with a comment
+  saying why.
+
 ### Cloud session gotchas
 
 * **`Executable doesn't exist … chromium-<rev>`** — the env's cached Chromium revision drifted from

@@ -1,4 +1,10 @@
 <script lang="ts">
+  // Side-effect import, deliberately static: it puts the engine boot in this
+  // page's module graph so it evaluates (and the prerendered canvas starts
+  // accepting strokes) before the hydration pass, not after it (ADR-0072). A
+  // dynamic import would push init back behind hydration — exactly the wait
+  // this removes.
+  import '$lib/drawing/earlyBoot';
   import { onMount, type Component } from 'svelte';
   import DrawingCanvas from '$lib/components/DrawingCanvas.svelte';
   import ColorPalette from '$lib/components/ColorPalette.svelte';
@@ -7,7 +13,12 @@
   import NotchBand from '$lib/components/NotchBand.svelte';
   import ParentHelpButton from '$lib/components/ParentHelpButton.svelte';
   import { ui } from '$lib/state/ui.svelte';
-  import { initPWAUpdates } from '$lib/pwa/updates';
+  import { canvasState } from '$lib/state/canvas.svelte';
+  import {
+    initPWAUpdates,
+    registerDeferredServiceWorker,
+    STROKES_BEFORE_SW_REGISTER,
+  } from '$lib/pwa/updates';
   import { initInstallPrompt } from '$lib/state/install.svelte';
   import {
     captureAiAccessTokenFromUrl,
@@ -30,6 +41,15 @@
     settings.lockRotationEnabled;
     settings.forceLandscapeOrientation;
     applyDeviceOrientationPreference();
+  });
+
+  // First-visit service worker registration waits for the Install Banner's
+  // "a few strokes drawn" signal so the ~39 MB precache never lands on top of
+  // boot or the first strokes (issue #462). Repeat visits don't pass through
+  // here — initPWAUpdates re-registers an existing registration at idle.
+  $effect(() => {
+    if (canvasState.strokeCount < STROKES_BEFORE_SW_REGISTER) return;
+    if (!isNative()) registerDeferredServiceWorker();
   });
 
   // The boot-hidden overlays (see bootHiddenOverlays.ts) load and mount at idle

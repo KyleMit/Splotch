@@ -77,17 +77,30 @@
     # autoplay are deliberately NOT listed — the canvas calls requestFullscreen()
     # and drawing plays audio, and both default to `self`.
     Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
-    # Content-Security-Policy, staged report-only first (issue #235): it surfaces
-    # violations to the browser console without breaking anything, so we can tighten
-    # toward nonces/hashes once real traffic is clean, then flip to the enforcing
-    # header. 'unsafe-inline' covers what report-only can't yet replace: SvelteKit's
-    # inline hydration boot code, the app.html pre-hydration state stamp, and every
-    # component-scoped stylesheet inlined into <head> (svelte.config.js
-    # inlineStyleThreshold: Infinity). img-src blob: is the AI/screenshot object-URL
-    # previews; connect-src 'self' is the same-origin /api/* calls; fonts are the
-    # self-hosted Quicksand. frame-ancestors 'none' is the modern twin of the
-    # X-Frame-Options above.
-    Content-Security-Policy-Report-Only = """\
+    # Reporting-Endpoints names the endpoint the CSP's report-to directive routes
+    # to (Chromium's Reporting API; report-uri below covers Firefox/Safari). The
+    # relative URL resolves against the response URL per the Reporting API spec,
+    # so previews report to themselves and production to splotch.art. Both point
+    # at the first-party /api/csp-report receiver (no third-party telemetry by
+    # design) — violations land as [csp-report] lines in the function log.
+    Reporting-Endpoints = 'csp="/api/csp-report"'
+    # Content-Security-Policy — ENFORCING (issue #457; staged as report-only by
+    # issue #235, flipped after a full Playwright sweep of every surface — draw/
+    # undo/clear, coloring book, screenshot save, AI dialog, parent center,
+    # /admin, /privacy, SW registration + repeat visit — against this exact
+    # policy came back violation-free). 'unsafe-inline' covers what nonces don't
+    # yet replace: SvelteKit's inline hydration boot code, the app.html
+    # pre-hydration state stamp, and every component-scoped stylesheet inlined
+    # into <head> (svelte.config.js inlineStyleThreshold: Infinity). img-src
+    # blob:/data: is the AI/screenshot object-URL previews; connect-src 'self'
+    # is the same-origin /api/* calls; fonts are the self-hosted Quicksand.
+    # frame-ancestors 'none' is the modern twin of the X-Frame-Options above.
+    # SCOPE: Netlify custom headers attach only to CDN/static responses — the
+    # prerendered pages (/, /privacy, /admin/native) get this header, but
+    # function-served SSR responses (/admin) ship with NO custom headers at
+    # all. The sweep verified /admin against the policy so it's ready if that
+    # gap is ever closed (e.g. headers set in SvelteKit for SSR responses).
+    Content-Security-Policy = """\
       default-src 'self'; \
       script-src 'self' 'unsafe-inline'; \
       style-src 'self' 'unsafe-inline'; \
@@ -99,7 +112,9 @@
       base-uri 'self'; \
       form-action 'self'; \
       frame-ancestors 'none'; \
-      object-src 'none'\
+      object-src 'none'; \
+      report-uri /api/csp-report; \
+      report-to csp\
       """
 
 [[headers]]
@@ -107,6 +122,13 @@
   [headers.values]
     Content-Type = "application/manifest+json"
 
+# No rule needed for /_app/immutable/* (hashed JS/CSS/fonts/assets): adapter-netlify
+# appends `/_app/immutable/*` -> `public, immutable, max-age=31536000` to the _headers
+# file it writes into the publish dir, and the deployed woff2/js under that path serve
+# with that header (verified 2026-07-22, issue #459). The two rules below cover hashed
+# output OUTSIDE /_app: today that's the root-level workbox-<hash>.js emitted by
+# vite-plugin-pwa. Rule order matters — a later matching rule's Cache-Control replaces
+# an earlier one's, which is how the /sw.js no-cache rule below beats /*.js.
 [[headers]]
   for = "/*.js"
   [headers.values]

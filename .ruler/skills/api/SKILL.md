@@ -1,6 +1,6 @@
 ---
 name: api
-description: HTTP API reference for the /api/* endpoints — generate-image, verify-access-code, verify-key, report, and the admin bearer-session endpoints, plus the CORS, rate-limiting, and auth model. Use before adding, changing, or calling any /api endpoint.
+description: HTTP API reference for the /api/* endpoints — generate-image, verify-access-code, verify-key, report, csp-report, and the admin bearer-session endpoints, plus the CORS, rate-limiting, and auth model. Use before adding, changing, or calling any /api endpoint.
 ---
 
 # Splotch HTTP API
@@ -14,8 +14,10 @@ endpoints cross-origin via `apiUrl()` (`web/src/lib/api.ts`, base injected at bu
 `/api/*` response, with `GET, POST, DELETE, OPTIONS` and the `Content-Type` / `Authorization` /
 `X-Access-Token` / `X-Api-Key` headers allowed, plus `Access-Control-Max-Age: 86400` so native
 clients cache the preflight instead of paying an OPTIONS round trip per request. The wildcard is
-safe because every endpoint is gated by a credential the caller must already hold (access token,
-Gemini key, or admin session) and nothing under `/api` uses cookies. See ADR-0007.
+safe because every endpoint is either gated by a credential the caller must already hold (access
+token, Gemini key, or admin session) or — for the credential-less telemetry receivers `report` and
+`csp-report` — rate-limited, size-capped, and side-effect-bounded to log lines; nothing under `/api`
+uses cookies. See ADR-0007.
 
 **Rate limiting:** unauthenticated oracles are throttled per IP with a sliding window (default 10
 hits/min, `web/src/lib/server/rateLimit.ts`, ADR-0014). Every throttled response uses one standard
@@ -152,6 +154,31 @@ submitter can't make the issue notify people or load remote content. See ADR-006
 
 ---
 
+## Telemetry
+
+### `POST /api/csp-report`
+
+First-party receiver for browser CSP violation reports (issue #457) — the `report-uri` / `report-to`
+target of the site's `Content-Security-Policy` header (root `netlify.toml`, which also sends the
+matching `Reporting-Endpoints: csp="/api/csp-report"` header). Violations land as structured
+`[csp-report]` lines in the Netlify function log — the app's only telemetry sink (no third-party
+reporting by design; same stance as `handleError` in `hooks.server.ts`).
+
+Browsers post these unauthenticated, so there is no credential gate. Accepted `Content-Type`s:
+`application/csp-report` (the legacy `report-uri` batch, `{"csp-report": {…kebab-case…}}` — Firefox
+and Safari), `application/reports+json` (the Reporting-API batch, an array of
+`{type: "csp-violation", url, body: {…camelCase…}}` — Chromium), and plain `application/json` for
+tooling; anything else is `415`. Abuse is blunted the same way as `/api/report`: a per-IP rate limit
+(10/min, the standard `throttled()` 429) plus hard caps — body over 32 KiB is `413`, at most 10
+reports are logged per payload, and every logged field is length-capped. Each report is normalized
+to one JSON log line (`documentURL`, `blockedURL`, `directive`, `disposition`, `sourceFile`, `line`,
+`column`, `sample`).
+
+Every accepted payload — including malformed JSON, which is silently dropped — is answered `204`
+with no body; browsers ignore the response, so there is nothing to return.
+
+---
+
 ## Admin (access-token management)
 
 JSON twin of the server-rendered `/admin` console, used by the native apps' `/admin/native` page
@@ -239,12 +266,13 @@ Run `npm run test:api:smoke` to check the live `/api/*` contract end-to-end. It'
 it boots a throwaway `vite dev` with a test `ADMIN_ACCESS_TOKEN`, exercises the admin auth flow
 (login success/failure, the bearer gate, and a token add/remove round-trip), the
 `verify-access-code` shape, `report`'s validation + honeypot + graceful-unconfigured path (no
-`GITHUB_ISSUE_TOKEN` in the smoke env, so no real issue is created), and `generate-image`'s auth
-gate (invalid token → 403, then the shared per-IP 429 once the verify budget is burned; valid token
-minus image → 400 — every case is rejected before the model call), then tears the server down. No
-Gemini key or Netlify Blobs needed; successful generation and `verify-key` (which make live model
-calls) are out of scope. Use it to sanity-check the contract after changing any endpoint — it's the
-cheap counterpart to the Playwright admin E2E in `tests/admin.spec.ts`.
+`GITHUB_ISSUE_TOKEN` in the smoke env, so no real issue is created), `csp-report`'s two payload
+formats + caps, and `generate-image`'s auth gate (invalid token → 403, then the shared per-IP 429
+once the verify budget is burned; valid token minus image → 400 — every case is rejected before the
+model call), then tears the server down. No Gemini key or Netlify Blobs needed; successful
+generation and `verify-key` (which make live model calls) are out of scope. Use it to sanity-check
+the contract after changing any endpoint — it's the cheap counterpart to the Playwright admin E2E in
+`tests/admin.spec.ts`.
 
 `test:api:smoke` deliberately runs against `vite dev`, which has **no** Blobs, so it can't catch the
 failure mode of ADR-0025 (a deployed function without the Blobs context). For that, run
