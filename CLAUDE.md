@@ -121,19 +121,19 @@ auto-invokes them by description (or via `/name`); agents without skill support 
 skill's `SKILL.md` directly from `.agents/skills/<name>/` (or `.claude/skills/<name>/` — same
 content):
 
-| Skill                               | Read it before…                                                                                                                                    |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `architecture`                      | navigating unfamiliar code, placing new code, naming UI elements                                                                                   |
-| `design`                            | writing or changing component styles, picking a color/size/shadow/easing — the token vocabulary, primitives, and `/dev/design`                     |
-| `api`                               | adding, changing, or calling any `/api/*` endpoint                                                                                                 |
-| `mobile`                            | touching anything Android/iOS/Capacitor, or store-release work                                                                                     |
-| `testing`                           | writing/running tests beyond the basics, or debugging CI failures                                                                                  |
-| `profiling`                         | measuring drawing/canvas performance, investigating jank, or checking for perf regressions (`npm run perf:*`)                                      |
-| `lighthouse-audit`                  | auditing page-load performance / Core Web Vitals on a throttled device (Lighthouse, first vs repeat visit)                                         |
-| `adrs`                              | proposing or discussing any architectural approach                                                                                                 |
-| `pr-screenshots`                    | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow                                     |
-| `review-pr`                         | reviewing a pull request / leaving review feedback — augments the built-in review flow (local checkout, empirical verification, gated posting)     |
-| `create-handoff` / `resume-handoff` | pausing in-flight work for a later session (`create-handoff`), or picking it back up (`resume-handoff`) — transfer packets live in `docs/handoff/` |
+| Skill                                   | Read it before…                                                                                                                                                                                                          |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `architecture`                          | navigating unfamiliar code, placing new code, naming UI elements                                                                                                                                                         |
+| `design`                                | writing or changing component styles, picking a color/size/shadow/easing — the token vocabulary, primitives, and `/dev/design`                                                                                           |
+| `api`                                   | adding, changing, or calling any `/api/*` endpoint                                                                                                                                                                       |
+| `mobile`                                | touching anything Android/iOS/Capacitor, or store-release work                                                                                                                                                           |
+| `testing`                               | writing/running tests beyond the basics, or debugging CI failures                                                                                                                                                        |
+| `profiling`                             | measuring drawing/canvas performance, investigating jank, or checking for perf regressions (`npm run perf:*`)                                                                                                            |
+| `lighthouse-audit`                      | auditing page-load performance / Core Web Vitals on a throttled device (Lighthouse, first vs repeat visit)                                                                                                               |
+| `adrs`                                  | proposing or discussing any architectural approach                                                                                                                                                                       |
+| `pr-screenshots`                        | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow                                                                                                           |
+| `leave-pr-review` / `address-pr-review` | authoring a review of a PR (`leave-pr-review` — local checkout, empirical verification, gated posting, augments the built-in review flow), or working through the review feedback received on a PR (`address-pr-review`) |
+| `create-handoff` / `resume-handoff`     | pausing in-flight work for a later session (`create-handoff`), or picking it back up (`resume-handoff`) — transfer packets live in `docs/handoff/`                                                                       |
 
 **Prefer skills over slash commands.** Every reusable agent workflow in this repo is authored as a
 skill in `.ruler/skills/<name>/SKILL.md` (ruler propagates it to `.claude/skills/` and

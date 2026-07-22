@@ -1,5 +1,5 @@
 ---
-name: review-pr
+name: leave-pr-review
 description: Splotch conventions that augment (not replace) the built-in review flow when reviewing a pull request — check out the PR branch locally for offline diffs and to run the code and empirically verify critiques, anchor every finding to a diff file + line as you analyze, present the full findings in the chat reply, then on a typed go-ahead post each one as an inline review comment (or, on request, file the findings as GitHub issues or implement them on a follow-up PR). Use in addition to the built-in review whenever asked to review a PR or leave review feedback on one.
 ---
 
@@ -7,7 +7,7 @@ description: Splotch conventions that augment (not replace) the built-in review 
 
 These conventions supplement the built-in review flow — follow them *in addition to* whatever the
 built-in `/review` behavior already does, not instead of it. The output side of this skill is the
-input side of [`review-pr-comments`](../review-pr-comments/SKILL.md): the comments posted here are
+input side of [`address-pr-review`](../address-pr-review/SKILL.md): the comments posted here are
 exactly what that skill later triages on the receiving branch, so every comment must stand on its
 own as an actionable, anchored critique.
 
@@ -103,7 +103,7 @@ GitHub" in the root instructions. If a comment fails to attach (anchor not in th
 anchor or move it to the review body — don't silently drop it.
 
 Afterwards, report what was posted (comment count, severities, review event) so the author knows
-what to expect — and know that working through those comments is `review-pr-comments`' job on the
+what to expect — and know that working through those comments is `address-pr-review`' job on the
 other side.
 
 ## Filing as GitHub issues instead
@@ -119,7 +119,7 @@ If the user says to implement the findings rather than post them:
 
 1. Branch off the PR's checked-out head: `git checkout -b <head-branch>-review-fixes`.
 2. Implement each finding — smallest correct change matching the surrounding style, one commit per
-   finding (or per logical group), the same fix discipline as `review-pr-comments`.
+   finding (or per logical group), the same fix discipline as `address-pr-review`.
 3. Verify composed: `npm run check` plus the tests covering everything touched
    (`npm run
    format:check` for Markdown-only fixes).
