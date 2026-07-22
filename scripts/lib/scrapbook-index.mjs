@@ -17,12 +17,19 @@ import { esc, chromeStyle, masthead, siteFooter } from './scrapbook-chrome.mjs';
 // Not scrapbook entries — the index's own scaffolding.
 const SCAFFOLDING = new Set(['index.html', 'README.md', '.nojekyll', '.gitkeep']);
 
+// Repo identity — the single source of truth for the URLs the scrapbook links to
+// (this module's Markdown blob links and the publish script's Pages base, which
+// imports these). Edit here if the repo is renamed or moved, and the two stay in
+// lockstep.
+export const OWNER = 'KyleMit';
+export const REPO = 'Splotch';
+
 // GitHub blob view for Markdown pages. Pages serves .md as text/plain under
 // .nojekyll (raw source, not rendered), so an on-site link would show markdown
 // as plain text — but github.com's blob view renders it. Markdown reports link
 // there; HTML pages link on-site (Pages renders those). Repo segment keeps its
 // casing; the owner is case-insensitive.
-const REPO_BLOB_BASE = 'https://github.com/KyleMit/Splotch/blob/main/scrapbook/';
+const REPO_BLOB_BASE = `https://github.com/${OWNER}/${REPO}/blob/main/scrapbook/`;
 
 const ICONS_DIR = join(ROOT, 'web/src/lib/icons');
 
@@ -104,10 +111,14 @@ function latestMtime(path) {
 // Every report page under a type dir (depth-first), relative to the scrapbook
 // root, skipping assets/ support folders — used for the unknown-type fallback
 // list. Surfaces .html (Pages renders these) and .md (linked to their rendered
-// GitHub blob view); raw data (.json, …) and assets/ stay unsurfaced.
+// GitHub blob view); raw data (.json, …), assets/, and a nested README.md (a run
+// dir's own readme — scaffolding, not a report) stay unsurfaced.
 function pagesUnder(dir, rel, out = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory() && entry.name === 'assets') continue;
+    // A run dir's own README.md is scaffolding, not a report page — skip it at
+    // any depth (a nested index.html, by contrast, is a legitimate entry page).
+    if (entry.isFile() && entry.name === 'README.md') continue;
     const full = join(dir, entry.name);
     const r = `${rel}/${entry.name}`;
     if (entry.isDirectory()) pagesUnder(full, r, out);
