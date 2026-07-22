@@ -27,11 +27,18 @@ async function openPickerAt(page: Page, width: number, height: number): Promise<
   // on descendants don't run at open, so no subtree). Deterministic where the
   // old consecutive-stable-rAF-frames poll was not: under full-suite CPU
   // contention, coalesced frames could report identical rects mid-animation
-  // and exit early (#469). The leading rAF guarantees a style/layout tick so
-  // the just-opened dialog's CSS animation is registered before we collect it.
+  // and exit early (#469). The just-opened dialog's animation is guaranteed
+  // registered by collection time: the toBeVisible above already forced a
+  // style pass with the dialog open, and getAnimations() itself flushes
+  // pending style per spec — the leading rAF is belt-and-braces. The catch
+  // shrugs off the AbortError a canceled animation rejects with, so a dialog
+  // torn down mid-wait fails at the geometry assertions, not as a cryptic
+  // evaluate error.
   await page.locator('#color-picker').evaluate(async (dialog) => {
     await new Promise(requestAnimationFrame);
-    await Promise.all(dialog.getAnimations().map((animation) => animation.finished));
+    await Promise.all(
+      dialog.getAnimations().map((animation) => animation.finished.catch(() => {}))
+    );
   });
 
   return page.locator('#color-picker').evaluate((dialog) => {
