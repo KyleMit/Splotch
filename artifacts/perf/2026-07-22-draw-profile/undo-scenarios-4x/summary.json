@@ -83,85 +83,337 @@
       "label": "long-squiggles-draw",
       "wallMs": 8411.191,
       "busyMs": 8148.7,
-      "longTasks": 2
+      "longTasks": 2,
+      "commitMs": 68.443,
+      "commitCount": 30,
+      "commitMaxMs": 61.538
     },
     {
       "label": "long-squiggles-undo",
       "wallMs": 1710.644,
       "busyMs": 1956.843,
-      "longTasks": 19
+      "longTasks": 19,
+      "commitMs": 1120.12,
+      "commitCount": 40,
+      "commitMaxMs": 110.404
     },
     {
       "label": "short-marks-draw",
       "wallMs": 2205.146,
       "busyMs": 2244.093,
-      "longTasks": 2
+      "longTasks": 2,
+      "commitMs": 75.678,
+      "commitCount": 1,
+      "commitMaxMs": 75.678
     },
     {
       "label": "short-marks-undo",
       "wallMs": 1685.364,
       "busyMs": 1842.02,
-      "longTasks": 18
+      "longTasks": 18,
+      "commitMs": 1192.912,
+      "commitCount": 41,
+      "commitMaxMs": 103.051
     },
     {
       "label": "mixed-draw",
       "wallMs": 5830.745,
       "busyMs": 5738.794,
-      "longTasks": 2
+      "longTasks": 2,
+      "commitMs": 70.895,
+      "commitCount": 17,
+      "commitMaxMs": 63.863
     },
     {
       "label": "mixed-undo",
       "wallMs": 1753.453,
       "busyMs": 1980.756,
-      "longTasks": 19
+      "longTasks": 19,
+      "commitMs": 1204.281,
+      "commitCount": 40,
+      "commitMaxMs": 103.77
     },
     {
       "label": "multi-finger-draw",
       "wallMs": 17931.712,
       "busyMs": 17456.764,
-      "longTasks": 2
+      "longTasks": 2,
+      "commitMs": 78.249,
+      "commitCount": 54,
+      "commitMaxMs": 64.099
     },
     {
       "label": "multi-finger-undo",
       "wallMs": 3161.062,
       "busyMs": 3629.216,
-      "longTasks": 28
+      "longTasks": 28,
+      "commitMs": 1176.951,
+      "commitCount": 44,
+      "commitMaxMs": 106.952
     },
     {
       "label": "scribbles-draw",
       "wallMs": 8735.788,
       "busyMs": 8432.089,
-      "longTasks": 2
+      "longTasks": 2,
+      "commitMs": 71.026,
+      "commitCount": 33,
+      "commitMaxMs": 62.177
     },
     {
       "label": "scribbles-undo",
       "wallMs": 1474.514,
       "busyMs": 1722.541,
-      "longTasks": 16
+      "longTasks": 16,
+      "commitMs": 907.614,
+      "commitCount": 41,
+      "commitMaxMs": 56.909
     },
     {
       "label": "crayon-squiggles-draw",
       "wallMs": 19143.843,
       "busyMs": 19027.618,
-      "longTasks": 2
+      "longTasks": 2,
+      "commitMs": 224.325,
+      "commitCount": 31,
+      "commitMaxMs": 209.027
     },
     {
       "label": "crayon-squiggles-undo",
       "wallMs": 3222.939,
       "busyMs": 3730.015,
-      "longTasks": 20
+      "longTasks": 20,
+      "commitMs": 2376.985,
+      "commitCount": 41,
+      "commitMaxMs": 274.812
     },
     {
       "label": "crayon-scribbles-draw",
       "wallMs": 45764.126,
       "busyMs": 45856.776,
-      "longTasks": 2
+      "longTasks": 2,
+      "commitMs": 216.55,
+      "commitCount": 35,
+      "commitMaxMs": 209.941
     },
     {
       "label": "crayon-scribbles-undo",
       "wallMs": 2974.261,
       "busyMs": 3488.449,
-      "longTasks": 21
+      "longTasks": 21,
+      "commitMs": 2060.467,
+      "commitCount": 41,
+      "commitMaxMs": 242.297
+    }
+  ],
+  "longTaskAttribution": [
+    {
+      "phase": "crayon-scribbles-draw",
+      "durMs": 44958.758,
+      "top": [
+        {
+          "name": "Receive mojo message",
+          "ms": 44519.953
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 814.417
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 705.627
+        }
+      ]
+    },
+    {
+      "phase": "crayon-squiggles-draw",
+      "durMs": 18412.171,
+      "top": [
+        {
+          "name": "Receive mojo message",
+          "ms": 17836.16
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 728.909
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 664.27
+        }
+      ]
+    },
+    {
+      "phase": "multi-finger-draw",
+      "durMs": 16923.237,
+      "top": [
+        {
+          "name": "Receive mojo message",
+          "ms": 16418.79
+        },
+        {
+          "name": "EventDispatch (pointerup)",
+          "ms": 1108.558
+        },
+        {
+          "name": "EventDispatch (pointerup)",
+          "ms": 811.127
+        }
+      ]
+    },
+    {
+      "phase": "scribbles-draw",
+      "durMs": 8138.552,
+      "top": [
+        {
+          "name": "Receive mojo message",
+          "ms": 7872.43
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 382.984
+        },
+        {
+          "name": "EventDispatch (pointerup)",
+          "ms": 159.585
+        }
+      ]
+    },
+    {
+      "phase": "long-squiggles-draw",
+      "durMs": 7861.553,
+      "top": [
+        {
+          "name": "Receive mojo message",
+          "ms": 7585.529
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 463.732
+        },
+        {
+          "name": "EventDispatch (pointerup)",
+          "ms": 146.597
+        }
+      ]
+    },
+    {
+      "phase": "mixed-draw",
+      "durMs": 5492.759,
+      "top": [
+        {
+          "name": "Receive mojo message",
+          "ms": 5060.031
+        },
+        {
+          "name": "EventDispatch (pointerup)",
+          "ms": 186.884
+        },
+        {
+          "name": "EventDispatch (pointerup)",
+          "ms": 185.652
+        }
+      ]
+    },
+    {
+      "phase": "short-marks-draw",
+      "durMs": 2101.208,
+      "top": [
+        {
+          "name": "Receive mojo message",
+          "ms": 2008.554
+        },
+        {
+          "name": "EventDispatch (pointerup)",
+          "ms": 100.763
+        },
+        {
+          "name": "EventDispatch (pointerup)",
+          "ms": 98.287
+        }
+      ]
+    },
+    {
+      "phase": "multi-finger-undo",
+      "durMs": 309.44,
+      "top": [
+        {
+          "name": "MajorGC",
+          "ms": 307.837
+        },
+        {
+          "name": "V8.GC_MARK_COMPACTOR",
+          "ms": 306.983
+        },
+        {
+          "name": "V8.GC_HEAP_EMBEDDER_TRACING_EPILOGUE",
+          "ms": 197.786
+        }
+      ]
+    },
+    {
+      "phase": "crayon-squiggles-undo",
+      "durMs": 284.92,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 274.812
+        },
+        {
+          "name": "FireAnimationFrame",
+          "ms": 7.618
+        },
+        {
+          "name": "ThreadPool_RunTask",
+          "ms": 7.191
+        }
+      ]
+    },
+    {
+      "phase": "crayon-scribbles-undo",
+      "durMs": 250.334,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 242.297
+        },
+        {
+          "name": "FireAnimationFrame",
+          "ms": 6.436
+        },
+        {
+          "name": "RunMicrotasks",
+          "ms": 6.412
+        }
+      ]
+    },
+    {
+      "phase": "crayon-squiggles-undo",
+      "durMs": 231.834,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 223.543
+        },
+        {
+          "name": "FireAnimationFrame",
+          "ms": 6.853
+        },
+        {
+          "name": "RunMicrotasks",
+          "ms": 6.022
+        }
+      ]
+    },
+    {
+      "phase": "crayon-scribbles-undo",
+      "durMs": 223.226,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 221.432
+        }
+      ]
     }
   ],
   "topSelfTime": [

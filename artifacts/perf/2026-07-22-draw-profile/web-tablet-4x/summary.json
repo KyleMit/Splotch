@@ -72,49 +72,274 @@
       "label": "boot-settle",
       "wallMs": 707.441,
       "busyMs": 123.352,
-      "longTasks": 0
+      "longTasks": 0,
+      "commitMs": 14.371,
+      "commitCount": 42,
+      "commitMaxMs": 0.988
     },
     {
       "label": "draw-single",
       "wallMs": 26502.702,
       "busyMs": 27092.85,
-      "longTasks": 1
+      "longTasks": 1,
+      "commitMs": 13278.837,
+      "commitCount": 1571,
+      "commitMaxMs": 25.208
     },
     {
       "label": "multi-finger-draw",
       "wallMs": 1111.233,
       "busyMs": 1506.828,
-      "longTasks": 1
+      "longTasks": 1,
+      "commitMs": 752.426,
+      "commitCount": 48,
+      "commitMaxMs": 19.22
     },
     {
       "label": "change-colors",
       "wallMs": 80374.205,
       "busyMs": 87769.326,
-      "longTasks": 16
+      "longTasks": 16,
+      "commitMs": 40609.695,
+      "commitCount": 4660,
+      "commitMaxMs": 176.893
     },
     {
       "label": "stroke-size",
       "wallMs": 14229.568,
       "busyMs": 14119.518,
-      "longTasks": 3
+      "longTasks": 3,
+      "commitMs": 6572.838,
+      "commitCount": 825,
+      "commitMaxMs": 67.154
     },
     {
       "label": "erase",
       "wallMs": 8618.124,
       "busyMs": 8845.994,
-      "longTasks": 2
+      "longTasks": 2,
+      "commitMs": 4315.925,
+      "commitCount": 503,
+      "commitMaxMs": 95.626
     },
     {
       "label": "undo",
       "wallMs": 3396.039,
       "busyMs": 2452.898,
-      "longTasks": 12
+      "longTasks": 12,
+      "commitMs": 289.246,
+      "commitCount": 154,
+      "commitMaxMs": 29.046
     },
     {
       "label": "clear",
       "wallMs": 2339.842,
       "busyMs": 3095.476,
-      "longTasks": 2
+      "longTasks": 2,
+      "commitMs": 808.192,
+      "commitCount": 58,
+      "commitMaxMs": 55.683
+    }
+  ],
+  "longTaskAttribution": [
+    {
+      "phase": "clear",
+      "durMs": 678.444,
+      "top": [
+        {
+          "name": "EventDispatch (pointerup)",
+          "ms": 588.844
+        },
+        {
+          "name": "FunctionCall (b)",
+          "ms": 581.857
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "ms": 12.611
+        }
+      ]
+    },
+    {
+      "phase": "(outside phases)",
+      "durMs": 257.709,
+      "top": [
+        {
+          "name": "FireAnimationFrame",
+          "ms": 253.846
+        },
+        {
+          "name": "FunctionCall (__perfFrameTick)",
+          "ms": 253.789
+        },
+        {
+          "name": "V8.StackGuard",
+          "ms": 253.044
+        }
+      ]
+    },
+    {
+      "phase": "change-colors",
+      "durMs": 191.166,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 172.403
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 7.89
+        },
+        {
+          "name": "SimpleWatcher::OnHandleReady",
+          "ms": 6.312
+        }
+      ]
+    },
+    {
+      "phase": "change-colors",
+      "durMs": 184.773,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 176.893
+        },
+        {
+          "name": "Layerize",
+          "ms": 2.533
+        }
+      ]
+    },
+    {
+      "phase": "erase",
+      "durMs": 122.752,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 95.626
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 12.844
+        },
+        {
+          "name": "EventDispatch (mousemove)",
+          "ms": 3.229
+        }
+      ]
+    },
+    {
+      "phase": "draw-single",
+      "durMs": 110.881,
+      "top": [
+        {
+          "name": "EventDispatch (pointerup)",
+          "ms": 91.751
+        },
+        {
+          "name": "FunctionCall (hr)",
+          "ms": 85.057
+        },
+        {
+          "name": "RunMicrotasks",
+          "ms": 3.629
+        }
+      ]
+    },
+    {
+      "phase": "change-colors",
+      "durMs": 101.945,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 81.87
+        },
+        {
+          "name": "EventDispatch (mousemove)",
+          "ms": 7.07
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 5.586
+        }
+      ]
+    },
+    {
+      "phase": "change-colors",
+      "durMs": 95.495,
+      "top": []
+    },
+    {
+      "phase": "change-colors",
+      "durMs": 94.296,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 78.555
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 7.817
+        },
+        {
+          "name": "RunMicrotasks",
+          "ms": 3.073
+        }
+      ]
+    },
+    {
+      "phase": "(outside phases)",
+      "durMs": 92.925,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 86.998
+        },
+        {
+          "name": "ThreadPool_RunTask",
+          "ms": 2.016
+        },
+        {
+          "name": "TaskGraphRunner::RunTask",
+          "ms": 1.768
+        }
+      ]
+    },
+    {
+      "phase": "undo",
+      "durMs": 92.827,
+      "top": [
+        {
+          "name": "BlinkScheduler_PerformMicrotaskCheckpoint",
+          "ms": 78.511
+        },
+        {
+          "name": "RunMicrotasks",
+          "ms": 78.5
+        },
+        {
+          "name": "ThreadPool_RunTask",
+          "ms": 4.999
+        }
+      ]
+    },
+    {
+      "phase": "change-colors",
+      "durMs": 89.285,
+      "top": [
+        {
+          "name": "Commit",
+          "ms": 64.071
+        },
+        {
+          "name": "EventDispatch (pointermove)",
+          "ms": 8.652
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "ms": 4.692
+        }
+      ]
     }
   ],
   "topSelfTime": [
