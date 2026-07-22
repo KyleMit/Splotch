@@ -427,6 +427,51 @@ describe('dirty-rect patch snapshots', () => {
   });
 });
 
+describe('popSnapshot reports the restored rect', () => {
+  // engine.undo uses the resolved rect for its rect-limited repaint: blit just
+  // the restored patch instead of rebuilding the whole canvas.
+  it('resolves the patch rect for a folded commit and null for a blocked one', async () => {
+    const m = await freshHistory();
+    m.pushCommand(cmd('#a', false, true));
+    // cmd()'s ops span 0..1 with lineWidth 8 → pad 6 → clamped rect 0..7.
+    const restored = await m.popSnapshot();
+    expect(restored?.rect).toEqual({ x: 0, y: 0, w: 7, h: 7 });
+
+    magicSheet.ready = false;
+    m.pushCommand(cmd('#magic-ink', true, true));
+    const blocked = await m.popSnapshot();
+    expect(blocked?.rect).toBeNull();
+  });
+});
+
+describe('hasUnfoldedCommands', () => {
+  // The engine's rect-limited undo repaint is only sound while every command
+  // is folded into the paper; any pending/deferred/active command forces the
+  // full repaint.
+  it('tracks the open stroke and magic-blocked pending commands', async () => {
+    const m = await freshHistory();
+    expect(m.hasUnfoldedCommands()).toBe(false);
+    m.beginCommand(true);
+    expect(m.hasUnfoldedCommands()).toBe(true);
+    m.recordOp(cmd('#live').ops[0]);
+    m.commitActiveCommand();
+    expect(m.hasUnfoldedCommands()).toBe(false);
+    magicSheet.ready = false;
+    m.pushCommand(cmd('#magic-ink', true));
+    expect(m.hasUnfoldedCommands()).toBe(true);
+  });
+
+  it('counts a deferred commit until it finalizes', async () => {
+    const m = await freshHistory();
+    m.beginCommand(true);
+    m.recordOp(cmd('#live').ops[0]);
+    m.commitActiveCommand(true);
+    expect(m.hasUnfoldedCommands()).toBe(true);
+    m.finalizeDeferredCommand();
+    expect(m.hasUnfoldedCommands()).toBe(false);
+  });
+});
+
 describe('closed crayon passes travel as rasters', () => {
   function crayonOp(seed: number): PathOp {
     const op = cmd('#wax').ops[0] as PathOp;

@@ -38,12 +38,14 @@
 import {
   clearAllOf,
   renderOp,
+  resetCrayonStateForClear,
   resetLiveCrayonForReplay,
   type StrokeGroupCommand,
   type StrokeOp,
 } from './strokeOps';
 import { isMagicSheetUnready } from './magicBrush';
 import { getCrayonPasses } from './crayonBrush';
+import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
 
 // The snapshot stack depth — how many strokes a child can take back. Depth 20
@@ -60,6 +62,14 @@ const K_LIVE = 2;
 
 let paperCanvas: HTMLCanvasElement | null = null;
 let paperCtx: CanvasRenderingContext2D | null = null;
+
+// True while every paper pixel is transparent-black AND nothing has forced the
+// canvas's lazily-allocated backing store into existence — a freshly created
+// or freshly swapped-in paper. While it holds, a folding 'clear' op can skip
+// its full-canvas clearRect (the wipe is a no-op, but the first touch of an
+// unallocated 2×-DPR paper materializes the whole ~30 MB surface — measured at
+// ~500 ms inside the pointerup under the 4×-throttled software profile).
+let paperPristine = false;
 
 // The paper region a snapshot's patch covers, in whole paper pixels (so the
 // capture and restore blits are exact 1:1 copies, never resampled).
@@ -146,6 +156,7 @@ export function ensurePaperCovers(squareSide: number) {
       paperCtx.lineCap = 'round';
       paperCtx.lineJoin = 'round';
     }
+    paperPristine = true;
     return;
   }
   if (squareSide <= paperCanvas.width && squareSide <= paperCanvas.height) return;
@@ -160,6 +171,7 @@ export function ensurePaperCovers(squareSide: number) {
   }
   paperCanvas = grown;
   paperCtx = grownCtx;
+  paperPristine = false;
 }
 
 // Open the undo command for a new stroke group. `wasEmpty` is the canvas-empty
@@ -375,6 +387,15 @@ function adoptPaperAsSnapshot(): HTMLCanvasElement | null {
   const adopted = paperCanvas;
   paperCanvas = fresh;
   paperCtx = freshCtx;
+  paperPristine = true;
+  // Materialize the fresh paper's backing store off the interaction path, so
+  // the first post-clear stroke's fold doesn't pay the surface allocation
+  // inside its own pointerup. A 1×1 clearRect is enough to force allocation
+  // and is a no-op on the blank paper; skipped if ink landed first (undoing
+  // the clear restores pixels a stray clearRect would then erase).
+  scheduleIdle(() => {
+    if (paperPristine && paperCtx) paperCtx.clearRect(0, 0, 1, 1);
+  });
   return adopted;
 }
 
@@ -459,7 +480,16 @@ function foldPendingIntoPaper(count: number) {
   for (let i = 0; i < count; i++) {
     const cmd = pendingCommands.shift();
     if (!cmd) return;
-    for (const op of cmd.ops) renderOp(paperCtx, op);
+    for (const op of cmd.ops) {
+      // A clear folding onto a pristine paper keeps its crayon side effects
+      // but skips the pixel wipe — see paperPristine.
+      if (op.kind === 'clear' && paperPristine) {
+        resetCrayonStateForClear(paperCtx);
+        continue;
+      }
+      paperPristine = false;
+      renderOp(paperCtx, op);
+    }
   }
 }
 
@@ -552,20 +582,22 @@ function reinflateHotSnapshots() {
 
 // Pop the top snapshot and restore it as the committed paper state. A live
 // patch raster restores synchronously; a demoted entry decodes from its blob
-// first, so the caller repaints when the promise resolves. Null when nothing
-// is undoable.
-export function popSnapshot(): Promise<{ wasEmpty: boolean }> | null {
+// first, so the caller repaints when the promise resolves. The resolved rect
+// is the region the restore mutated (null when the fold never touched the
+// paper), so an eligible caller can repaint just that patch instead of the
+// whole canvas — see engine.undo. Null when nothing is undoable.
+export function popSnapshot(): Promise<{ wasEmpty: boolean; rect: PatchRect | null }> | null {
   const snap = snapshotStack.pop();
   if (!snap) return null;
   pendingCommands = [...snap.pending];
   reinflateHotSnapshots();
   // A null rect means this commit's fold never touched the paper, so undoing
   // it is just the pending-set reinstatement above.
-  if (!snap.rect) return Promise.resolve({ wasEmpty: snap.wasEmpty });
+  if (!snap.rect) return Promise.resolve({ wasEmpty: snap.wasEmpty, rect: null });
   const rect = snap.rect;
   if (snap.canvas) {
     restorePatch(snap.canvas, rect);
-    return Promise.resolve({ wasEmpty: snap.wasEmpty });
+    return Promise.resolve({ wasEmpty: snap.wasEmpty, rect });
   }
   // Invariant: a stacked entry with a rect always holds its canvas or its blob
   // — encode drops the raster only after a validated blob lands
@@ -576,12 +608,12 @@ export function popSnapshot(): Promise<{ wasEmpty: boolean }> | null {
   // invariant; the return semantics are deliberately unchanged.
   if (!snap.blob) {
     console.error('Undo snapshot lost both canvas and blob; restore blit skipped');
-    return Promise.resolve({ wasEmpty: snap.wasEmpty });
+    return Promise.resolve({ wasEmpty: snap.wasEmpty, rect });
   }
   return createImageBitmap(snap.blob).then((bitmap) => {
     restorePatch(bitmap, rect);
     bitmap.close();
-    return { wasEmpty: snap.wasEmpty };
+    return { wasEmpty: snap.wasEmpty, rect };
   });
 }
 
@@ -591,12 +623,23 @@ export function popSnapshot(): Promise<{ wasEmpty: boolean }> | null {
 // just the rect reproduces the exact pre-stroke paper.
 function restorePatch(source: CanvasImageSource, rect: PatchRect) {
   if (!paperCtx) return;
+  paperPristine = false;
   paperCtx.clearRect(rect.x, rect.y, rect.w, rect.h);
   paperCtx.drawImage(source, rect.x, rect.y);
 }
 
 export function snapshotCount(): number {
   return snapshotStack.length;
+}
+
+// Whether any commands sit outside the folded paper: pending behind an unready
+// magic sheet, deferred behind an in-flight restore, or the open stroke. While
+// any exist, an undo repaint must rebuild the whole canvas — their pixels live
+// only in the op replay, so a patch-rect blit can't reproduce (or remove)
+// them. Checked by engine.undo on both sides of the restore before it takes
+// the rect-limited repaint path.
+export function hasUnfoldedCommands(): boolean {
+  return pendingCommands.length > 0 || deferredCommands.length > 0 || activeCommand !== null;
 }
 
 // A clear can arrive while a stroke straddles it (e.g. a second finger drawing
