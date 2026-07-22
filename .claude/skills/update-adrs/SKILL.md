@@ -36,7 +36,9 @@ Read `docs/adrs/README.md` to get the full list, then for each ADR:
      file path, a workaround that was resolved). Edit the ADR in place.
    * **Deprecated / superseded** — the decision has been reversed. Change `**Status:** Active` to
      `**Status:** Superseded by ADR-NNNN` or `**Status:** Deprecated`, and add a short note at the
-     top explaining what replaced it.
+     top explaining what replaced it. Also move the ADR's row in `docs/adrs/README.md` to the
+     Historical section (the index is tiered — see `/create-adr`), keeping supersession links
+     intact.
 
 Spot-check at minimum: any ADR that references a specific version number, file path, or external
 tool (Capacitor, Node, JDK, Maestro) — these age fastest.
@@ -48,7 +50,8 @@ For each decision found in Step 1 that is not already covered by an existing ADR
 * Confirm it meets the bar (see `/create-adr` for criteria).
 * Write the new ADR file following the template from `/create-adr`.
 * Use the next available four-digit number.
-* Add a row to `docs/adrs/README.md`.
+* Slot a row into the matching area section of the tiered index in `docs/adrs/README.md` (see
+  `/create-adr` for where a new row belongs).
 
 If a decision *amends* an existing ADR (same topic, updated approach), update the existing file
 rather than creating a new one — unless the approach changed so substantially that the old reasoning

@@ -44,7 +44,12 @@ decisions in `docs/adrs/`.
 
 5. **Write the ADR file** at `docs/adrs/NNNN-kebab-case-title.md` using the template below.
 
-6. **Update the index.** Add one row to the table in `docs/adrs/README.md`.
+6. **Update the index.** `docs/adrs/README.md` is a curated, tiered index — a "Start here" tier,
+   area-grouped sections for the remaining Active ADRs, and a Historical section for
+   Superseded/Rejected/Moved records. Slot the new row into the matching area section, in numeric
+   order within that section. New ADRs default to their area section — only promote one to "Start
+   here" when the decision is genuinely load-bearing for the whole project (rare). Every ADR appears
+   exactly once in the index.
 
 ## ADR template
 
@@ -76,6 +81,10 @@ an ADR with only upsides is not credible and not useful.
 * **Active** — in force right now
 * **Superseded by ADR-NNNN** — replaced; link to the successor
 * **Deprecated** — no longer in force but not replaced by a specific decision
+
+When an ADR's status changes to Superseded, Rejected, or Deprecated, also move its row in
+`docs/adrs/README.md` to the Historical section (keep the supersession links intact). Never
+renumber, rename, or delete the ADR file itself.
 
 ## Output
 
