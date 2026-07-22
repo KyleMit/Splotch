@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { getRingColor } from './colorRing';
 import { PALETTE_COLORS } from './state/colors.svelte';

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
 
 // registerPlugin lazily resolves the web fallback on non-native platforms; in the unit

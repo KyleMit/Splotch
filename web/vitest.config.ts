@@ -19,6 +19,12 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
+    // Worker threads spawn faster than the default child-process forks and
+    // nothing here needs process-level isolation (no native modules in the
+    // unit suite). Server-only and pure-logic test files opt out of the
+    // happy-dom environment with a `@vitest-environment node` docblock —
+    // per-file DOM setup is the suite's biggest fixed cost.
+    pool: 'threads',
     setupFiles: ['./vitest-setup.ts'],
     include: ['src/**/*.{test,spec}.{js,ts}'],
     // The Playwright specs live under tests/ and must not be picked up here.
