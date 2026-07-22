@@ -699,7 +699,6 @@
       border-color: var(--brand);
       box-shadow: 0 4px 12px rgba(171, 113, 225, 0.3);
       box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 30%, transparent);
-      box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 30%, transparent);
     }
   }
 
@@ -753,7 +752,6 @@
       border-color: var(--brand);
       background: var(--brand-wash);
       box-shadow: 0 0 0 10px rgba(171, 113, 225, 0.5);
-      box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 50%, transparent);
       box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 50%, transparent);
     }
   }
@@ -935,7 +933,6 @@
     border-color: var(--brand);
     background: var(--brand-wash);
     box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent);
   }
 
