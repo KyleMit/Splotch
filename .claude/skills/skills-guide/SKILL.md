@@ -87,10 +87,11 @@ All three augment the built-in PR flows rather than replacing them.
 
 ## Repo hygiene & meta
 
-| Skill                   | Use for                                                                  |
-| ----------------------- | ------------------------------------------------------------------------ |
-| `prune-remote-branches` | Triage stale `origin` branches and hand back an approved deletion script |
-| `skills-guide`          | This guide                                                               |
+| Skill                   | Use for                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------- |
+| `burn-down-backlog`     | Claim the newest unclaimed open issue (`in-progress` label) and drive it to a push |
+| `prune-remote-branches` | Triage stale `origin` branches and hand back an approved deletion script           |
+| `skills-guide`          | This guide                                                                         |
 
 ## Keeping this guide current
 

@@ -79,6 +79,9 @@
   description: "Nice to have, no rush"
 
 # --- meta: workflow signals ---
+- name: "in-progress"
+  color: "d93f0b"
+  description: "Claimed by a burn-down-backlog session actively working it — excluded from future pickup until the issue closes"
 - name: "reviewed"
   color: "1f883d"
   description: "Review pass complete — ready for the project ToDo queue"
