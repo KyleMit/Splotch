@@ -46,6 +46,13 @@ npm run info
 The descriptions live in the `scripts-info` section of `package.json`; script naming follows
 ADR-0019.
 
+> **Adding a dependency?** The `dependencies`/`devDependencies` split is repurposed (ADR-0069):
+> `dependencies` holds what the **Netlify web build** needs (the app's runtime imports plus
+> vite/SvelteKit/the adapter/`marked`), `devDependencies` holds local/CI-only tooling (Playwright,
+> dprint, sharp, the Capacitor CLIs, …). Netlify installs with `--omit=dev`, so a build-needed
+> package filed under `devDependencies` fails the deploy — CI won't catch it because GitHub Actions
+> installs everything.
+
 ## Environment variables
 
 None are required for local development. The app works fully offline without any API keys.

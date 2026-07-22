@@ -14,6 +14,21 @@
   # (ADR-0030). `|| true` so a fetch hiccup never fails the build — the fallback
   # still produces a valid per-commit version.
   command = "git fetch --tags --force || true; npm run build && node scripts/stage-netlify.mjs"
+  # Skip the build (exit 0 = skip) when the push touched nothing the web build
+  # consumes — docs, ADRs, ruler-generated agent files, artifacts/, native trees,
+  # asset-gen internals. The watched paths are everything the build reads: the
+  # app (web/), the build+prebuild scripts (scripts/), gen:releases input
+  # (releases/), the toolchain (package.json + lockfile), and this config.
+  # A skipped push leaves the previous deploy live, which is correct when
+  # nothing user-facing changed (ADR-0069).
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web scripts releases package.json package-lock.json netlify.toml"
+
+[build.environment]
+  # dependencies == what this Netlify build needs; devDependencies == local/CI-only
+  # tooling (Playwright, dprint, sharp, eslint, the Capacitor CLIs, ...). The
+  # inverted split + --omit=dev halves the install (ADR-0069). GitHub Actions and
+  # local dev run a plain `npm ci` and are unaffected.
+  NPM_FLAGS = "--omit=dev --no-audit --no-fund"
   # Static assets are published straight from web/build (no copy needed). Only the SSR function
   # is relocated: Netlify always looks for it at <base>/.netlify/functions-internal (base = root),
   # but adapter-netlify writes it under web/.netlify, so stage-netlify.mjs copies that one tree up.
