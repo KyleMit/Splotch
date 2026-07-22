@@ -123,6 +123,11 @@ jobs:
       - name: Run e2e tests
         run: npm run test:e2e
         env:
+          # Assert (not just assume) the WebKit smoke project is in the run —
+          # playwright.config.ts throws if the binary is missing, so a bad
+          # cache or edited install line fails loudly instead of silently
+          # dropping WebKit coverage.
+          REQUIRE_WEBKIT: 1
           # The generate-image rate-limit spec drives the managed-token path,
           # which requires the token to be allowlisted. Locally this comes from
           # .env (git-ignored); supply the same non-secret test tokens in CI.

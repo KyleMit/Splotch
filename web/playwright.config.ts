@@ -35,13 +35,17 @@ function chromiumExecutablePath(): string | undefined {
 // The WebKit smoke project only joins the run when the WebKit binary is
 // actually installed: CI installs it explicitly (test.yml), but local checkouts
 // and cloud sessions often have Chromium only, and `npm test` must not start
-// failing there. CI is the gate that guarantees the subset really runs.
+// failing there. REQUIRE_WEBKIT (set on CI's e2e step) turns a missing binary
+// from a silent project drop into a hard failure, so the subset can't quietly
+// stop running there.
 function webkitAvailable(): boolean {
   try {
-    return existsSync(webkit.executablePath());
-  } catch {
-    return false;
+    if (existsSync(webkit.executablePath())) return true;
+  } catch {}
+  if (process.env.REQUIRE_WEBKIT) {
+    throw new Error('REQUIRE_WEBKIT is set but the WebKit binary is not installed');
   }
+  return false;
 }
 
 const slowMo = Number(process.env.SLOWMO) || 0;
