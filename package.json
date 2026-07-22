@@ -7,7 +7,6 @@
   },
   "scripts": {
     "info": "npx scripts-info",
-    "predev": "node scripts/web.mjs svelte-kit sync",
     "dev": "node scripts/web.mjs vite dev",
     "predev:netlify": "node scripts/check-netlify-cli.mjs",
     "dev:netlify": "netlify dev --cwd web",
@@ -125,7 +124,6 @@
   },
   "scripts-info": {
     "info": "Lists every npm script with its description (this output)",
-    "predev": "svelte-kit sync (regenerate .svelte-kit types) before dev",
     "dev": "Dev server at localhost:5173 (no /api functions)",
     "predev:netlify": "Checks the Netlify CLI is on PATH, logged in, and linked before dev:netlify (Blobs needs auth), with a hint if not",
     "dev:netlify": "Dev server with the /api/* serverless functions (Netlify Dev)",
