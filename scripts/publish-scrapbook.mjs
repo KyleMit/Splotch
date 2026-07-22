@@ -5,13 +5,14 @@
 //
 //   node scripts/publish-scrapbook.mjs <source> <type>/<name>   publish a file or dir
 //   node scripts/publish-scrapbook.mjs --index-only             just rebuild index.html
+//   node scripts/publish-scrapbook.mjs --check                  fail if a collection has no entry page
 //
 // Cross-platform (ADR-0017): pure node:fs, no shell.
 
 import { cpSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { ROOT, fail } from './lib/utils.mjs';
-import { buildScrapbookIndex } from './lib/scrapbook-index.mjs';
+import { buildScrapbookIndex, collectionsMissingEntry } from './lib/scrapbook-index.mjs';
 
 // Project Pages site: https://<owner>.github.io/<repo>/ — the subdomain is
 // lowercased by GitHub, the repo segment keeps its casing. Update if the repo
@@ -30,6 +31,22 @@ function main() {
   if (args[0] === '--index-only') {
     writeIndex();
     console.log(`Rebuilt scrapbook/index.html → ${PAGES_BASE}`);
+    return;
+  }
+
+  // Drift guard (CI): every collection dir must resolve to at least one linked
+  // entry page, so the index's "N collections" count always matches the cards it
+  // shows — an md-only collection that once vanished now surfaces (issue #490).
+  if (args[0] === '--check') {
+    const missing = collectionsMissingEntry(SCRAPBOOK_DIR);
+    if (missing.length) {
+      fail(
+        'Scrapbook collections with no reachable entry page (counted in the index but shown as no card):\n' +
+          missing.map((m) => `  - scrapbook/${m}/`).join('\n') +
+          '\nAdd an .html entry page or an .md report, or remove the empty dir. See scrapbook/README.md.'
+      );
+    }
+    console.log('scrapbook: every collection resolves to a reachable entry page.');
     return;
   }
 

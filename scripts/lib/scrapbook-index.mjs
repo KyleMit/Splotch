@@ -5,9 +5,9 @@
 //
 // The page is a curated card grid: each scrapbook "type" (top-level folder) that
 // the registry below knows about becomes a card linking to its entry page; any
-// unknown type falls back to a plain list of its HTML pages so nothing published
-// ever goes missing from the index. The look comes from the shared chrome in
-// ./scrapbook-chrome.mjs.
+// unknown type falls back to a plain list of its report pages (HTML and Markdown)
+// so nothing published ever goes missing from the index. The look comes from the
+// shared chrome in ./scrapbook-chrome.mjs.
 
 import { readdirSync, statSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -16,6 +16,13 @@ import { esc, chromeStyle, masthead, siteFooter } from './scrapbook-chrome.mjs';
 
 // Not scrapbook entries — the index's own scaffolding.
 const SCAFFOLDING = new Set(['index.html', 'README.md', '.nojekyll', '.gitkeep']);
+
+// GitHub blob view for Markdown pages. Pages serves .md as text/plain under
+// .nojekyll (raw source, not rendered), so an on-site link would show markdown
+// as plain text — but github.com's blob view renders it. Markdown reports link
+// there; HTML pages link on-site (Pages renders those). Repo segment keeps its
+// casing; the owner is case-insensitive.
+const REPO_BLOB_BASE = 'https://github.com/KyleMit/Splotch/blob/main/scrapbook/';
 
 const ICONS_DIR = join(ROOT, 'web/src/lib/icons');
 
@@ -94,17 +101,32 @@ function latestMtime(path) {
   return newest;
 }
 
-// Every .html page under a type dir (depth-first), relative to the scrapbook root,
-// skipping assets/ support folders — used for the unknown-type fallback list.
-function htmlPagesUnder(dir, rel, out = []) {
+// Every report page under a type dir (depth-first), relative to the scrapbook
+// root, skipping assets/ support folders — used for the unknown-type fallback
+// list. Surfaces .html (Pages renders these) and .md (linked to their rendered
+// GitHub blob view); raw data (.json, …) and assets/ stay unsurfaced.
+function pagesUnder(dir, rel, out = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory() && entry.name === 'assets') continue;
     const full = join(dir, entry.name);
     const r = `${rel}/${entry.name}`;
-    if (entry.isDirectory()) htmlPagesUnder(full, r, out);
-    else if (entry.name.endsWith('.html')) out.push(r);
+    if (entry.isDirectory()) pagesUnder(full, r, out);
+    else if (entry.name.endsWith('.html')) out.push({ rel: r, ext: 'html' });
+    else if (entry.name.endsWith('.md')) out.push({ rel: r, ext: 'md' });
   }
   return out;
+}
+
+// Top-level collection dirs that would produce no card — no linkable .html/.md
+// page anywhere beneath (registry types always render a card). When non-empty the
+// index's "N collections" chip would exceed the cards it shows; the scrapbook:check
+// guard fails on it so nothing published silently vanishes from the index.
+export function collectionsMissingEntry(scrapbookDir) {
+  return readdirSync(scrapbookDir, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && !SCAFFOLDING.has(e.name))
+    .map((e) => e.name)
+    .sort()
+    .filter((t) => !REGISTRY[t] && pagesUnder(join(scrapbookDir, t), t).length === 0);
 }
 
 function card(type, meta, dir) {
@@ -127,10 +149,13 @@ function card(type, meta, dir) {
 }
 
 function fallbackCard(type, dir) {
-  const pages = htmlPagesUnder(dir, type);
+  const pages = pagesUnder(dir, type);
   if (!pages.length) return '';
   const rows = pages
-    .map((p) => `<li><a href="${esc(p)}">${esc(p.slice(type.length + 1))}</a></li>`)
+    .map((p) => {
+      const href = p.ext === 'md' ? REPO_BLOB_BASE + p.rel : p.rel;
+      return `<li><a href="${esc(href)}">${esc(p.rel.slice(type.length + 1))}</a></li>`;
+    })
     .join('');
   return `<article class="card card--plain" style="--hue:var(--c-green)">
       <div class="card-top"></div>
