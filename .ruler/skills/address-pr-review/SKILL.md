@@ -121,12 +121,17 @@ reviewer sees a verdict that was checked, not asserted.
 ## Replying — close every loop
 
 * **Fixed** → reply **on the same thread** stating what changed and the commit SHA
-  (`Fixed in <sha> — <one line on the approach>`). Use `add_reply_to_pull_request_comment` for
-  inline threads, `add_issue_comment` for conversation comments. Leave the thread **unresolved** so
-  the reviewer can verify the fix and resolve it themselves.
-* **Invalid / already addressed / question** → reply with the rationale or answer, then resolve the
-  thread (`resolve_review_thread`). Conversation comments and review summaries have no resolve
-  button — the reply alone closes them out.
+  (`Fixed in <sha> — <one line on the approach>`). The SHA must already be pushed — reply order is
+  always push first, then reply, then resolve. Use `add_reply_to_pull_request_comment` for inline
+  threads, `add_issue_comment` for conversation comments.
+* **Invalid / already addressed / question** → reply with the rationale or answer — the concrete
+  reason the comment isn't being addressed (the code path, test, command output, or ADR from the
+  verify pass), never a bare dismissal.
+* **After replying, resolve the thread** (`resolve_review_thread` in the GitHub MCP) — every
+  disposition, fixed or not. The reply is the record; resolving is what makes the remaining open
+  threads an accurate worklist. Conversation comments and review summaries have no resolve button —
+  there the reply alone closes them out. The one exception: never resolve a thread you escalated to
+  the user and haven't heard back on.
 * Keep replies short and concrete: the code path, test, ADR, or SHA that settles it — not a
   restatement of the comment. Be gracious; the reviewer's time produced the feedback.
 * **Escape `#`-numbers** that aren't deliberate issue/PR references (`\#1`, or backticks) — a bare
