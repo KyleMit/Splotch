@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 test('home page renders the drawing canvas', async ({ page }) => {
   await page.goto('/');
@@ -24,15 +24,53 @@ test('viewport meta permits browser zoom (no user-scalable=no / maximum-scale)',
   expect(content).not.toContain('maximum-scale');
 });
 
-test('/privacy is browser-zoomable (its scroll container permits touch zoom)', async ({ page }) => {
-  await page.goto('/privacy');
+// ADR-0076: the zoom lock is scoped to the drawing route. Only `/` carries the
+// `data-zoom-locked` flag (→ body touch-action: none); every other route defaults
+// to touch-action: auto and is freely pinch-zoomable for low-vision users.
+const bodyTouchAction = (page: Page) =>
+  page.locator('body').evaluate((el) => getComputedStyle(el).touchAction);
 
-  // The legal page opts back out of the body's touch-action:none lock so a
-  // low-vision reader can pinch-zoom it — the payoff of dropping user-scalable=no.
-  const touchAction = await page
-    .locator('.legal')
-    .evaluate((el) => getComputedStyle(el).touchAction);
-  expect(touchAction).toBe('auto');
+test('the drawing route locks page zoom via the data-zoom-locked flag', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  expect(await page.locator('html').getAttribute('data-zoom-locked')).not.toBeNull();
+  expect(await bodyTouchAction(page)).toBe('none');
+});
+
+test('non-canvas routes default to browser-zoomable (/privacy, /admin)', async ({ page }) => {
+  await page.goto('/privacy');
+  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+  expect(await page.locator('html').getAttribute('data-zoom-locked')).toBeNull();
+  expect(await bodyTouchAction(page)).toBe('auto');
+
+  await page.goto('/admin');
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+  expect(await bodyTouchAction(page)).toBe('auto');
+});
+
+test('client-side nav off the drawing route unlocks zoom (effect cleanup, not a reload)', async ({
+  page,
+}) => {
+  await page.goto('/');
+  expect(await bodyTouchAction(page)).toBe('none');
+
+  // Drive a real SvelteKit client-side navigation (no full reload), so it's the
+  // / page's effect cleanup — not the boot script, which only runs on load — that
+  // must clear the flag. The sentinel proves the page never reloaded.
+  await page.evaluate(() => ((window as unknown as { __spa: boolean }).__spa = true));
+  await page.evaluate(() => {
+    const a = document.createElement('a');
+    a.href = '/privacy';
+    document.body.appendChild(a);
+    a.click();
+  });
+  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+
+  const noReload = await page.evaluate(
+    () => (window as unknown as { __spa?: boolean }).__spa === true
+  );
+  expect(noReload, 'expected a client-side navigation, not a full reload').toBe(true);
+  expect(await bodyTouchAction(page)).toBe('auto');
 });
 
 test('link-preview meta tags are present and match the real OG image', async ({

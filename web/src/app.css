@@ -36,10 +36,23 @@ body {
     Roboto,
     sans-serif;
   background: var(--app-bg);
-  touch-action: none; /* Prevent default touch behaviors */
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none; /* Prevent iOS long-press callout menu */
+}
+
+/* Zoom lock is scoped to the drawing route, not the whole app (ADR-0076). Every
+   non-canvas page (/privacy, /admin, and any page added later) defaults to
+   touch-action: auto so a low-vision user can pinch-zoom it. Only the drawing
+   route sets `data-zoom-locked` on <html> — seeded before first paint by the
+   app.html boot script and kept correct across client-side nav by the / page's
+   effect — which locks pinch/pan across its whole surface (canvas AND the button
+   chrome, since the chrome's `touch-action: manipulation` would otherwise permit
+   a pinch). The canvas element carries its own touch-action:none + engine
+   preventDefault as a second layer, but this page-level rule is what stops a
+   toddler's stray two-finger gesture from zooming the page out from under them. */
+:root[data-zoom-locked] body {
+  touch-action: none;
 }
 
 .app-container {

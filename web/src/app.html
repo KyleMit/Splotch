@@ -4,15 +4,19 @@
     <meta charset="UTF-8" />
     <!-- No user-scalable=no / maximum-scale here on purpose (ADR-0076, supersedes
          ADR-0041). The drawing page still can't be pinch-zoomed — but the lock is
-         now element-level, not page-wide: `touch-action: none` on body (app.css)
-         plus the engine's touch preventDefault (drawing/engine.ts) veto any
-         multi-finger gesture that lands on the canvas, so a pinch/spread mid-stroke
-         still draws instead of zooming the page. Dropping the meta attributes lets
-         genuinely zoomable routes (/privacy, /admin) pinch-zoom for low-vision
-         users and clears the sole Lighthouse a11y deduction (92 → 100). Inside the
-         drawing page, parent-facing overlays get app-controlled zoom via the scoped
-         `pinchZoom` action instead of browser zoom (there's no JS to reset browser
-         zoom, so a stray page zoom would strand a toddler). -->
+         now scoped to that one route, not the whole document: only the drawing
+         route carries `data-zoom-locked` (seeded on <html> by the boot script
+         below, kept current by the / page), which app.css turns into
+         `touch-action: none` across the page; the engine's touch preventDefault
+         (drawing/engine.ts) is a second layer on the canvas itself. So a
+         pinch/spread mid-stroke still draws instead of zooming the page. Every
+         OTHER route (/privacy, /admin, anything added later) defaults to
+         touch-action: auto and is freely pinch-zoomable for low-vision users —
+         which, with the meta attributes gone, clears the sole Lighthouse a11y
+         deduction (92 → 100). Inside the drawing page, parent-facing overlays get
+         app-controlled zoom via the scoped `pinchZoom` / `pinchTextZoom` actions
+         instead of browser zoom (there's no JS to reset browser zoom, so a stray
+         page zoom would strand a toddler). -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -81,6 +85,13 @@
             'data-orientation',
             window.matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape'
           );
+
+          // Lock pinch/pan on the drawing route only (see app.css / ADR-0076).
+          // Seeded here so the / page is locked from first paint, with no window
+          // where the chrome is briefly zoomable before hydration; the / page's
+          // effect then keeps it correct across client-side navigation. Every
+          // other route stays unlocked (zoomable) by default.
+          el.toggleAttribute('data-zoom-locked', location.pathname === '/');
 
           var scaleRaw = localStorage.getItem('splotch-action-button-scale');
           var pct = scaleRaw == null ? 100 : parseInt(scaleRaw, 10);
