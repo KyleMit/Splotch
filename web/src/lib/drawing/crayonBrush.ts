@@ -159,18 +159,21 @@ export interface CrayonOptions {
 // alpha ~0.15 with rgb darkened ~10 %, spacing ~⅓ width, mild tangent stretch
 // and blotch. A/B'd against CRAYON_DEFAULTS via setCrayonParams({ dabs: ... }).
 export const CRAYON_DAB_DEFAULTS: CrayonDabOptions = {
-  alpha: 0.25,
+  // Each dab lands hard (a lone dab reads as wax, not haze — low-alpha dabs
+  // fringe the stroke edge with a watercolour halo; phone judgment 2026-07);
+  // deepening still converges, carried by the remaining overlap + the stamp.
+  alpha: 0.42,
   darken: 0.1,
-  spacing: 0.22,
+  spacing: 0.26,
   size: 1.05,
-  sizeJitter: 0.35,
-  posJitter: 0.18,
+  sizeJitter: 0.3,
+  posJitter: 0.1,
   alphaJitter: 0.35,
   elongation: 1.35,
   variants: 8,
   blotch: 0.35,
   toothCut: 0.42,
-  toothBand: 0.16,
+  toothBand: 0.12,
 };
 
 // Tuned against photos of real wax crayon through the render+measure+judge loop
@@ -459,8 +462,10 @@ export function warmCrayonTiles(color: string) {
 const DAB_SPRITE_PX = 64;
 // Fraction of the sprite radius the soft rim occupies. The sprite is only the
 // deposit BODY — a soft disc with mild mottle; the crisp grain comes from the
-// paper-anchored tooth mask (dabToothTile), not from the sprite.
-const DAB_RIM = 0.35;
+// paper-anchored tooth mask (dabToothTile), not from the sprite. Narrow: a
+// wide rim reads as a watercolour halo around every stroke lobe (phone
+// judgment, 2026-07); the edge should break on tooth flecks, not fade.
+const DAB_RIM = 0.12;
 // How much the sprite's mild mottle (a height-field window) swings its alpha.
 const DAB_MOTTLE = 0.3;
 
@@ -491,8 +496,9 @@ function buildDabMasks(): Float32Array[] {
 }
 
 // Alpha floor of a tooth pit in the deposit mask: pits stay near-bare so the
-// flecks read as white paper, but keep a whisper of wax.
-const DAB_TOOTH_TILE_FLOOR = 0.08;
+// flecks read as white paper, but keep a whisper of wax. Low — a higher floor
+// hazes the rim band where the sprite's own alpha is already fractional.
+const DAB_TOOTH_TILE_FLOOR = 0.04;
 
 // The paper-anchored deposit mask: a repeating alpha tile (white rgb, alpha =
 // the tooth curve over the height field) the dab deposit is punched through
