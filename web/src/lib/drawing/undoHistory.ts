@@ -42,6 +42,7 @@ import {
   type StrokeOp,
 } from './strokeOps';
 import { isMagicSheetUnready } from './magicBrush';
+import { getCrayonPasses } from './crayonBrush';
 import { PERF_MARKS } from './perf';
 
 // The snapshot stack depth — how many strokes a child can take back. Depth 20
@@ -286,6 +287,14 @@ export function foldRegionForCommands(
   paperW: number,
   paperH: number
 ): PatchRect | null {
+  // Crayon density passes stroke at op.lineWidth × widthScale (dot radius ×
+  // widthScale). The shipped passes never exceed 1, but the dev harness's
+  // setCrayonParams accepts arbitrary passes — a widthScale > 1 experiment
+  // would fold ink outside the base-width pad and undo would leave its fringe
+  // behind. Scale crayon ink pads by the widest pass so the containment
+  // invariant (ADR-0069) holds mid-experiment too.
+  let crayonScale = 1;
+  for (const p of getCrayonPasses()) crayonScale = Math.max(crayonScale, p.widthScale);
   let x0 = Infinity;
   let y0 = Infinity;
   let x1 = -Infinity;
@@ -299,26 +308,31 @@ export function foldRegionForCommands(
       let ox1: number;
       let oy1: number;
       let pad: number;
-      if (op.kind === 'dot') {
-        ox0 = ox1 = op.x;
-        oy0 = oy1 = op.y;
-        pad = op.radius + PATCH_AA_PAD;
-      } else if (op.kind === 'crayonPassRaster') {
+      if (op.kind === 'crayonPassRaster') {
         ox0 = op.x;
         oy0 = op.y;
         ox1 = op.x + op.canvas.width;
         oy1 = op.y + op.canvas.height;
         pad = PATCH_AA_PAD;
       } else {
-        ox0 = ox1 = op.startX;
-        oy0 = oy1 = op.startY;
-        for (const s of op.segs) {
-          ox0 = Math.min(ox0, s.cx, s.x);
-          oy0 = Math.min(oy0, s.cy, s.y);
-          ox1 = Math.max(ox1, s.cx, s.x);
-          oy1 = Math.max(oy1, s.cy, s.y);
+        // Magic and erase render at base width (renderOp routes them before
+        // the crayon branch); only a crayon ink op picks up the pass scale.
+        const scale = op.crayon && !op.erase && !op.magic ? crayonScale : 1;
+        if (op.kind === 'dot') {
+          ox0 = ox1 = op.x;
+          oy0 = oy1 = op.y;
+          pad = op.radius * scale + PATCH_AA_PAD;
+        } else {
+          ox0 = ox1 = op.startX;
+          oy0 = oy1 = op.startY;
+          for (const s of op.segs) {
+            ox0 = Math.min(ox0, s.cx, s.x);
+            oy0 = Math.min(oy0, s.cy, s.y);
+            ox1 = Math.max(ox1, s.cx, s.x);
+            oy1 = Math.max(oy1, s.cy, s.y);
+          }
+          pad = (op.lineWidth / 2) * scale + PATCH_AA_PAD;
         }
-        pad = op.lineWidth / 2 + PATCH_AA_PAD;
       }
       x0 = Math.min(x0, ox0 - pad);
       y0 = Math.min(y0, oy0 - pad);
@@ -378,8 +392,13 @@ export function pushCommand(cmd: StrokeGroupCommand) {
   }
   // A failed patch context loses this one undo entry, never the ink — the fold
   // below must still run or the stroke would vanish from the committed paper.
-  // A null rect isn't a failure: the fold won't touch the paper, so the entry
-  // legitimately carries no pixels.
+  // The degraded corner that comes with it: with no entry above this fold, its
+  // ink outside LOWER entries' rects survives every deeper undo (a full-paper
+  // snapshot used to wipe it). Accepted — keeping a child's stroke while
+  // losing its undo step beats deleting ink — but it means the restore
+  // induction (see restorePatch) is conditional on every fold having pushed
+  // its entry. A null rect isn't a failure: the fold won't touch the paper,
+  // so the entry legitimately carries no pixels.
   if (!rect || patch) {
     snapshotStack.push({
       wasEmpty: cmd.wasEmpty,

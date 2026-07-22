@@ -107,6 +107,12 @@ makes an unhandled kind a compile error, which is the intended tripwire).
   was order-forgiving: an out-of-order restore that was previously "last write wins, still a valid
   state" would now corrupt the paper. The engine's `queuePaperStep` chain already guarantees the
   ordering; this ADR makes it load-bearing.
+* − The induction also assumes every fold pushed its entry. The one path that violates it — patch
+  context creation fails at capture (`pushCommand` still folds, pushes nothing) — degrades
+  differently than before: that fold's ink outside lower entries' rects now survives deeper undos,
+  where a lower full-paper restore used to wipe it. Accepted: the failure is vanishingly rare
+  (canvas context creation under memory pressure), and keeping a child's stroke while losing its
+  undo step beats deleting ink.
 
 Amends **ADR-0066**: commit capture and snapshot storage become patch-sized; the "dirty-rect
 snapshots" rejection is narrowed to "dirty rects as the memory bound"; the `engine.snapshot` mark

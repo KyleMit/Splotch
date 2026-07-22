@@ -306,6 +306,63 @@ describe('dirty-rect patch snapshots', () => {
       h: 16,
     });
   });
+
+  it('widens a crayon ink op pad by the widest dev-harness pass', async () => {
+    // setCrayonParams accepts arbitrary passes; a widthScale > 1 experiment
+    // strokes wider than the op's line width, so the rect must scale with it
+    // or undo would leave the widened fringe behind.
+    const m = await freshHistory();
+    const { setCrayonOptions } = await import('./crayonBrush');
+    setCrayonOptions({ passes: [{ widthScale: 2, coverage: 1 }] });
+    const op = cmd('#wax').ops[0] as PathOp;
+    op.crayon = true;
+    // pad = (8/2)×2 + 2 = 10 (vs 6 at base width): span 0..1 grows to 0..11.
+    expect(m.foldRegionForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual({
+      x: 0,
+      y: 0,
+      w: 11,
+      h: 11,
+    });
+  });
+
+  it('unions every command folding under one commit, then unwinds the round trip', async () => {
+    const m = await freshHistory();
+    const at = (color: string, x: number, magic = false): StrokeGroupCommand => {
+      const op = cmd(color, magic).ops[0] as PathOp;
+      op.startX = x;
+      op.startY = x;
+      op.segs = [{ cx: x, cy: x, x: x + 2, y: x + 2 }];
+      return { ops: [op], wasEmpty: false };
+    };
+    magicSheet.ready = false;
+    m.pushCommand({ ...at('#magic-ink', 10, true), wasEmpty: true });
+    m.pushCommand(at('#solid', 30));
+    // Both blocked behind the unready sheet: two zero-pixel entries.
+    expect(m.getHistoryDebug().rasterBytes).toBe(0);
+    expect(m.getHistoryDebug().pendingCommands).toBe(2);
+
+    magicSheet.ready = true;
+    m.pushCommand(at('#after', 50));
+    // The third commit folds the whole backlog, so its patch rect must union
+    // all three commands' bounds: 10−6 .. 52+6 → 4..58, a 54×54 patch.
+    expect(m.getHistoryDebug().pendingCommands).toBe(0);
+    expect(m.getHistoryDebug().rasterBytes).toBe(54 * 54 * 4);
+    expect(repaintedContent(m)).toEqual(['#magic', '#solid', '#after']);
+
+    // Unwind: the patch entry reverts the whole fold and reinstates the
+    // captured pending pair; the two blocked entries then just peel it.
+    await m.popSnapshot();
+    expect(m.getHistoryDebug().rasterBytes).toBe(0);
+    expect(m.getHistoryDebug().pendingCommands).toBe(2);
+    expect(repaintedContent(m)).toEqual(['#magic', '#solid']);
+    await m.popSnapshot();
+    expect(m.getHistoryDebug().pendingCommands).toBe(1);
+    expect(repaintedContent(m)).toEqual(['#magic']);
+    const last = await m.popSnapshot();
+    expect(last?.wasEmpty).toBe(true);
+    expect(m.getHistoryDebug().pendingCommands).toBe(0);
+    expect(repaintedContent(m)).toEqual([]);
+  });
 });
 
 describe('closed crayon passes travel as rasters', () => {
