@@ -691,7 +691,7 @@
 
   .pc-nav-item.active {
     background: var(--brand);
-    color: #fff;
+    color: var(--on-brand);
   }
 
   :global(.pc-nav-icon) {
@@ -701,7 +701,7 @@
   }
 
   .pc-nav-item.active :global(.pc-nav-icon svg) {
-    fill: #fff;
+    fill: var(--on-brand);
   }
 
   .pc-pane {

@@ -33,11 +33,12 @@ pierce Svelte's style scoping, so every component references them directly via `
 
 | Group     | Tokens                                                                                                    |
 | --------- | --------------------------------------------------------------------------------------------------------- |
-| Brand     | `--brand`, `--brand-hover`, `--brand-tint-filter`                                                         |
+| Brand     | `--brand`, `--brand-hover`, `--brand-tint-filter`, `--on-brand` (text/icon ink on brand fills)            |
 | Spacing   | `--space-1` (4px) … `--space-8` (40px), a 4px-based ramp                                                  |
 | Radius    | `--radius-xs/sm/md/lg/xl` (4/8/12/16/22px), `--radius-pill`                                               |
 | Type      | `--font-size-xs/sm/md/lg/xl/2xl/3xl` (12–28px)                                                            |
-| Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s), `--ease-pop` (overshoot), `--ease-glide` (settle)           |
+| Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s), `--ease-pop` (overshoot), `--ease-pop-strong` (harder       |
+|           | overshoot — visibly springier than `--ease-pop`, don't converge them), `--ease-glide` (settle)            |
 | Elevation | `--shadow-sm`, `--shadow-pop` (neutral); `--float-shadow`, `--float-shadow-flyout` (themed, paper cards)  |
 | Theme     | surfaces, borders, text ramp, icon inks, brand/success/danger washes, paper, float-card chrome — the full |
 |           | list with per-token docs is in `tokens.ts` (`ThemeTokens`)                                                |
@@ -77,9 +78,10 @@ toggle. Use it to:
 The legacy migration is done: every raw value in component `<style>` blocks that mapped to a token
 was swapped (same-value, zero visual change). What remains raw is deliberate — documented one-offs
 (polaroid/photographic whites, ClearButton's unthemed danger red, confetti colors, canvas chrome)
-and the two **light-only pages** (`/admin`, `/privacy`), whose self-contained palettes must not use
-the themed color tokens: those flip with `data-theme`/`prefers-color-scheme` and would half-dark-
-theme them.
+and the two **deliberately light-only pages** (`/admin`, `/privacy`): a dark theme for them was
+considered and declined (owner decision, recorded in the ADR-0071 amendment — don't re-open it).
+Their self-contained palettes must not use the themed color tokens: those flip with
+`data-theme`/`prefers-color-scheme` and would half-dark-theme them.
 
 CI enforces this with `npm run lint:tokens` — a per-file raw-hex ratchet whose allowlisted baseline
 (with per-file reasons) lives in `scripts/lint-token-styles.mjs`. A new raw hex color fails the

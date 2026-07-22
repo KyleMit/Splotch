@@ -33,8 +33,9 @@ const BASELINE = new Map(
     'routes/privacy/+page.svelte': 8,
     // Deliberate constants: contrast-pinned #666 on hardcoded-light host pages.
     'lib/components/Breadcrumb.svelte': 1,
-    // Photographic stage/polaroid whites + the #4caf50 confirmation green.
-    'lib/components/AiImageResult.svelte': 5,
+    // Photographic stage/polaroid whites + the #9559cd download-button hover
+    // (≠ --brand-hover #9961d1; converging it is a visible change).
+    'lib/components/AiImageResult.svelte': 3,
     // #000 white-stroke keyline twin + rainbow-gradient/eraser chrome.
     'lib/components/ActionsPanel.svelte': 1,
     // Constant dim swatch ring + var(--color) usage documented in-file.
@@ -45,19 +46,6 @@ const BASELINE = new Map(
     'lib/components/DrawingCanvas.svelte': 9,
     // Confetti particle colors are content, not chrome.
     'lib/components/AiConfetti.svelte': 2,
-    // #fff on brand + the #4caf50 confirmation green shared with AiImageResult.
-    'lib/components/parent/SetupInstructions.svelte': 2,
-    // White-on-brand chrome: #fff text/icon on --brand fills, constant in both
-    // themes. Candidate for a future --on-brand token once minted (PR #472
-    // follow-ups); until then each of these carries its allowed #fff count.
-    'lib/components/InstallBanner.svelte': 1,
-    'lib/components/ParentCenter.svelte': 2,
-    'lib/components/parent/ControlsSection.svelte': 2,
-    'lib/components/parent/ReportForm.svelte': 2,
-    'lib/components/parent/AiKeyManager.svelte': 1,
-    'lib/components/parent/SavingSection.svelte': 1,
-    'lib/components/design/Button.svelte': 1,
-    'lib/components/ErrorScreen.svelte': 1,
     // Paper-white backing behind the baked-light style-cover thumbnails.
     'lib/components/AiImagePrompt.svelte': 1,
     // Constant on-paper ink for the floating "?" button.
