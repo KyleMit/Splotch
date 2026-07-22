@@ -17,10 +17,10 @@
     children: Snippet;
   }
 
-  let { variant = 'wash', size = 'md', children, ...rest }: Props = $props();
+  let { variant = 'wash', size = 'md', children, class: className, ...rest }: Props = $props();
 </script>
 
-<button type="button" class="btn {variant} {size}" {...rest}>
+<button type="button" class={['btn', variant, size, className]} {...rest}>
   {@render children()}
 </button>
 

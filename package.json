@@ -183,7 +183,7 @@
     "model-eval:gen-inputs": "Author a few canvas-plausible input drawings with gemini-3.1-flash-image (gen__* prefix) and add them to the eval corpus; needs GEMINI_API_KEY",
     "gen:icons": "Generate src/lib/components/icon-names.d.ts (typed IconName union) from the SVGs in src/lib/icons/ (auto-runs before build)",
     "gen:releases": "Generate src/lib/releases.json + fastlane store changelogs from releases/*.md (auto-runs before build)",
-    "gen:tokens": "Generate web/src/tokens.css (the design-token custom properties, light + dark) from the source of truth in web/src/lib/design/tokens.ts (ADR-0068)",
+    "gen:tokens": "Generate web/src/tokens.css (the design-token custom properties, light + dark) from the source of truth in web/src/lib/design/tokens.ts (ADR-0071)",
     "gen:tokens:check": "CI drift guard for gen:tokens: regenerate and fail if the committed tokens.css differs — fix by running gen:tokens and committing (never edit tokens.css directly)",
     "gen:large-image": "Regenerate static/large-image.png by replaying large-image.svg onto the live canvas (Playwright)",
     "gen:style-covers": "Regenerate the AI style thumbnails in static/styles/ from source.svg via Gemini (needs GEMINI_API_KEY; -- --style X --temperature N for one style / different takes)",
