@@ -279,8 +279,8 @@ describe('cold-snapshot blob validation', () => {
 });
 
 describe('dirty-rect patch snapshots', () => {
-  // A snapshot captures only the paper under the region its fold mutates
-  // (foldRegionForCommands), so per-entry memory scales with the stroke, not
+  // A snapshot captures only the paper under the regions its fold mutates
+  // (foldRegionsForCommands), so per-entry memory scales with the stroke, not
   // the canvas.
 
   it('bounds a path by its points padded with half the line width plus AA bleed', async () => {
@@ -296,36 +296,30 @@ describe('dirty-rect patch snapshots', () => {
       erase: false,
     };
     // pad = 8/2 + 2 = 6: x spans 20−6..28+6, y spans 30−6..38+6.
-    expect(m.foldRegionForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual({
-      x: 14,
-      y: 24,
-      w: 20,
-      h: 20,
-    });
+    expect(m.foldRegionsForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual([
+      { x: 14, y: 24, w: 20, h: 20 },
+    ]);
   });
 
   it('bounds a dot by its radius plus AA bleed and clamps to the paper', async () => {
     const m = await freshHistory();
     const dot = { kind: 'dot' as const, x: 2, y: 62, radius: 5, color: '#a', erase: false };
     // pad = 5 + 2 = 7: clamped at the left and bottom paper edges.
-    expect(m.foldRegionForCommands([{ ops: [dot], wasEmpty: false }], 64, 64)).toEqual({
-      x: 0,
-      y: 55,
-      w: 9,
-      h: 9,
-    });
+    expect(m.foldRegionsForCommands([{ ops: [dot], wasEmpty: false }], 64, 64)).toEqual([
+      { x: 0, y: 55, w: 9, h: 9 },
+    ]);
   });
 
   it('a clear claims the whole paper; wholly off-paper ink claims nothing', async () => {
     const m = await freshHistory();
     expect(
-      m.foldRegionForCommands([{ ops: [{ kind: 'clear' }], wasEmpty: false }], 64, 64)
-    ).toEqual({ x: 0, y: 0, w: 64, h: 64 });
+      m.foldRegionsForCommands([{ ops: [{ kind: 'clear' }], wasEmpty: false }], 64, 64)
+    ).toEqual([{ x: 0, y: 0, w: 64, h: 64 }]);
     // Margin ink beyond the paper square is clipped at fold (ADR-0050), so the
     // fold never touches the paper and no patch is owed.
     const off = { kind: 'dot' as const, x: -40, y: 10, radius: 5, color: '#a', erase: false };
-    expect(m.foldRegionForCommands([{ ops: [off], wasEmpty: false }], 64, 64)).toBeNull();
-    expect(m.foldRegionForCommands([], 64, 64)).toBeNull();
+    expect(m.foldRegionsForCommands([{ ops: [off], wasEmpty: false }], 64, 64)).toEqual([]);
+    expect(m.foldRegionsForCommands([], 64, 64)).toEqual([]);
   });
 
   it('a magic-blocked commit captures no pixels, and its undo still restores the pending set', async () => {
@@ -361,12 +355,9 @@ describe('dirty-rect patch snapshots', () => {
     canvas.height = 12;
     const raster = { kind: 'crayonPassRaster', canvas, x: 20, y: 30, mix: 0.55 } as const;
     // The stamp blits exactly the raster's rect; pad 2 covers any AA bleed.
-    expect(m.foldRegionForCommands([{ ops: [raster], wasEmpty: false }], 64, 64)).toEqual({
-      x: 18,
-      y: 28,
-      w: 14,
-      h: 16,
-    });
+    expect(m.foldRegionsForCommands([{ ops: [raster], wasEmpty: false }], 64, 64)).toEqual([
+      { x: 18, y: 28, w: 14, h: 16 },
+    ]);
   });
 
   it('widens a crayon ink op pad by the widest dev-harness pass', async () => {
@@ -379,15 +370,12 @@ describe('dirty-rect patch snapshots', () => {
     const op = cmd('#wax').ops[0] as PathOp;
     op.crayon = true;
     // pad = (8/2)×2 + 2 = 10 (vs 6 at base width): span 0..1 grows to 0..11.
-    expect(m.foldRegionForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual({
-      x: 0,
-      y: 0,
-      w: 11,
-      h: 11,
-    });
+    expect(m.foldRegionsForCommands([{ ops: [op], wasEmpty: false }], 64, 64)).toEqual([
+      { x: 0, y: 0, w: 11, h: 11 },
+    ]);
   });
 
-  it('unions every command folding under one commit, then unwinds the round trip', async () => {
+  it('covers every command folding under one commit, then unwinds the round trip', async () => {
     const m = await freshHistory();
     const at = (color: string, x: number, magic = false): StrokeGroupCommand => {
       const op = cmd(color, magic).ops[0] as PathOp;
@@ -405,10 +393,11 @@ describe('dirty-rect patch snapshots', () => {
 
     magicSheet.ready = true;
     m.pushCommand(at('#after', 50));
-    // The third commit folds the whole backlog, so its patch rect must union
-    // all three commands' bounds: 10−6 .. 52+6 → 4..58, a 54×54 patch.
+    // The third commit folds the whole backlog. The three strokes sit apart
+    // (each spans x−6..x+8, a 14×14 box), so the capture takes three disjoint
+    // patches instead of one 54×54 union.
     expect(m.getHistoryDebug().pendingCommands).toBe(0);
-    expect(m.getHistoryDebug().rasterBytes).toBe(54 * 54 * 4);
+    expect(m.getHistoryDebug().rasterBytes).toBe(3 * 14 * 14 * 4);
     expect(repaintedContent(m)).toEqual(['#magic', '#solid', '#after']);
 
     // Unwind: the patch entry reverts the whole fold and reinstates the
@@ -427,20 +416,75 @@ describe('dirty-rect patch snapshots', () => {
   });
 });
 
-describe('popSnapshot reports the restored rect', () => {
-  // engine.undo uses the resolved rect for its rect-limited repaint: blit just
-  // the restored patch instead of rebuilding the whole canvas.
-  it('resolves the patch rect for a folded commit and null for a blocked one', async () => {
+describe('popSnapshot reports the restored rects', () => {
+  // engine.undo uses the resolved rects for its rect-limited repaint: blit
+  // just the restored patches instead of rebuilding the whole canvas.
+  it('resolves the patch rects for a folded commit and none for a blocked one', async () => {
     const m = await freshHistory();
     m.pushCommand(cmd('#a', false, true));
     // cmd()'s ops span 0..1 with lineWidth 8 → pad 6 → clamped rect 0..7.
     const restored = await m.popSnapshot();
-    expect(restored?.rect).toEqual({ x: 0, y: 0, w: 7, h: 7 });
+    expect(restored?.rects).toEqual([{ x: 0, y: 0, w: 7, h: 7 }]);
 
     magicSheet.ready = false;
     m.pushCommand(cmd('#magic-ink', true, true));
     const blocked = await m.popSnapshot();
-    expect(blocked?.rect).toBeNull();
+    expect(blocked?.rects).toEqual([]);
+  });
+});
+
+describe('disjoint multi-finger patches', () => {
+  // A spread multi-touch gesture clusters per finger (path pid), so the
+  // capture cost scales with the fingers' band areas, not their union bbox —
+  // the five-finger 1068 ms patch copy in the 2026-07-22 profile.
+  const strokeAt = (x: number, pid: number): PathOp => {
+    const op = cmd('#multi').ops[0] as PathOp;
+    op.pid = pid;
+    op.startX = x;
+    op.startY = x;
+    op.segs = [{ cx: x, cy: x, x: x + 2, y: x + 2 }];
+    return op;
+  };
+
+  it('captures one patch per spread finger instead of the union bbox', async () => {
+    const m = await freshHistory();
+    m.pushCommand({ ops: [strokeAt(5, 1), strokeAt(45, 2)], wasEmpty: true });
+    const { liveRasters, rasterBytes } = m.getHistoryDebug();
+    expect(liveRasters).toBe(2);
+    // Two 14×14 bands (x−6..x+8, clamped: 0..13 and 39..53), not the 54-wide
+    // union.
+    expect(rasterBytes).toBe((13 * 13 + 14 * 14) * 4);
+    const restored = await m.popSnapshot();
+    expect(restored?.rects).toEqual([
+      { x: 0, y: 0, w: 13, h: 13 },
+      { x: 39, y: 39, w: 14, h: 14 },
+    ]);
+    expect(repaintedContent(m)).toEqual([]);
+  });
+
+  it('merges overlapping fingers into one patch', async () => {
+    const m = await freshHistory();
+    m.pushCommand({ ops: [strokeAt(20, 1), strokeAt(24, 2)], wasEmpty: true });
+    // Boxes 14..28 and 18..32 intersect → one merged 14..32 patch.
+    expect(m.getHistoryDebug().liveRasters).toBe(1);
+    expect(m.getHistoryDebug().rasterBytes).toBe(18 * 18 * 4);
+  });
+
+  it('falls back to one union patch past the cluster cap', async () => {
+    const m = await freshHistory();
+    // Nine spread dots (each its own cluster) exceed PATCH_CLUSTER_CAP = 8.
+    const dots = Array.from({ length: 9 }, (_, i) => ({
+      kind: 'dot' as const,
+      x: 3 + i * 7,
+      y: 3,
+      radius: 1,
+      color: '#dots',
+      erase: false,
+    }));
+    m.pushCommand({ ops: dots, wasEmpty: true });
+    expect(m.getHistoryDebug().liveRasters).toBe(1);
+    // Union spans x 0..62, y 0..6 (pad 3, clamped at the left edge).
+    expect(m.getHistoryDebug().rasterBytes).toBe(62 * 6 * 4);
   });
 });
 

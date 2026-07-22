@@ -1074,16 +1074,16 @@ export function undo(): Promise<void> {
       const foldedOnly = !hasUnfoldedCommands() && isIdentityView(paperView);
       const restored = popSnapshot();
       if (!restored) return;
-      const { wasEmpty, rect } = await restored;
+      const { wasEmpty, rects } = await restored;
       const emptyBeneathLiveStroke = rebaseDeferredCommands(wasEmpty);
       const strokeStillLive = rebaseActiveCommand(emptyBeneathLiveStroke);
       const rectOnly = foldedOnly && !hasUnfoldedCommands() && isIdentityView(paperView);
-      if (rectOnly && rect) {
-        blitPaperRect(ctx, rect.x, rect.y, rect.w, rect.h);
+      if (rectOnly && rects.length > 0) {
+        for (const r of rects) blitPaperRect(ctx, r.x, r.y, r.w, r.h);
       } else if (!rectOnly) {
         repaintAll(ctx);
       }
-      // rectOnly with a null rect: the popped fold never touched the paper
+      // rectOnly with no rects: the popped fold never touched the paper
       // and nothing replays on top — the screen already shows the state.
       setCanvasEmptyState(emptyBeneathLiveStroke && !strokeStillLive);
       setCanUndo(snapshotCount() > 0);
