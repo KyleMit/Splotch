@@ -1628,6 +1628,86 @@ test('a crayon remount reproduces the exact pixel count', async ({ page }) => {
   expect(await count(page)).toBe(0);
 });
 
+test('an eraser interleaved mid-gesture cannot resurrect erased wax at commit', async ({
+  page,
+}) => {
+  // The Brush Menu doesn't lift held pointers, so a second finger can erase
+  // through a crayon stroke whose gesture (and pass) is still open — both land
+  // in ONE stroke group with the erase ops inside the crayon run. The pass
+  // raster is cropped from the paper-space accumulation, which never sees
+  // erase ops, so without the boundary close the fold would stamp the whole
+  // pass's un-erased ink back over the erased region at commit.
+  const r = await page.evaluate(() => {
+    const E = window.__engine;
+    const cv = document.getElementById('engineCanvas') as HTMLCanvasElement;
+    const g = cv.getContext('2d')!;
+    const rect = cv.getBoundingClientRect();
+    const ev = (type: string, pointerId: number, x: number, y: number) =>
+      cv.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId,
+          pointerType: 'pen',
+          isPrimary: pointerId === 1,
+          clientX: rect.left + x,
+          clientY: rect.top + y,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    const y = Math.round(cv.height / 2);
+    const cx = Math.round(cv.width / 2);
+    // The open pass's ink lives on the OVERLAY canvases until a stamp lands it
+    // on the main canvas, so sample the main canvas only after the boundary
+    // close (the eraser's first op) has stamped the line.
+    const inkedAt = (x: number) => {
+      const band = g.getImageData(x - 8, y - 8, 16, 16).data;
+      let n = 0;
+      for (let i = 3; i < band.length; i += 4) if (band[i] > 0) n++;
+      return n;
+    };
+
+    E.clearCanvas();
+    E.setCrayonMode(true);
+    E.setColor('#2c5faa');
+    E.setStrokeWidth(24);
+
+    // Finger 1: draw a full horizontal crayon line and HOLD (gesture open).
+    ev('pointerdown', 1, 40, y);
+    for (let i = 1; i <= 40; i++) ev('pointermove', 1, 40 + ((cv.width - 80) * i) / 40, y);
+
+    // Brush switch while finger 1 is down, then finger 2 erases through the
+    // laid ink and lifts. The eraser's first op must close (stamp) the open
+    // pass, so from here the main canvas holds the line minus the erase.
+    E.setEraserMode(true);
+    ev('pointerdown', 2, cx, y - 50);
+    for (let i = 1; i <= 20; i++) ev('pointermove', 2, cx, y - 50 + (100 * i) / 20);
+    ev('pointerup', 2, cx, y + 50);
+    E.setEraserMode(false);
+    const bandAfterErase = inkedAt(cx);
+    const controlAfterErase = inkedAt(cx - 120);
+
+    // Finger 1 keeps drawing (a fresh pass) away from the erase site, lifts —
+    // the whole interleaved group commits as one undo unit.
+    for (let i = 1; i <= 5; i++) ev('pointermove', 1, cv.width - 40, y + i * 3);
+    ev('pointerup', 1, cv.width - 40, y + 15);
+    const bandAfterCommit = inkedAt(cx);
+    const controlAfterCommit = inkedAt(cx - 120);
+
+    return { bandAfterErase, controlAfterErase, bandAfterCommit, controlAfterCommit };
+  });
+
+  // The line landed (boundary close stamped it) everywhere but the erase site.
+  expect(r.controlAfterErase).toBeGreaterThan(0);
+  expect(r.bandAfterErase).toBe(0);
+  // The regression assertion: commit must not re-ink the erased band.
+  expect(r.bandAfterCommit).toBe(0);
+  expect(r.controlAfterCommit).toBeGreaterThan(0);
+
+  // The interleaved group is one undo unit back to blank.
+  await page.evaluate(() => window.__engine.undo());
+  expect(await count(page)).toBe(0);
+});
+
 // --- The snapshot memory tier (ADR-0066) --------------------------------------
 //
 // Undo restores pre-stroke canvas snapshots (see undoHistory.ts). A restore can

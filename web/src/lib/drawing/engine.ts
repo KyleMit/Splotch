@@ -44,6 +44,7 @@ import {
   renderOp,
   clearAllOf,
   closeLiveCrayonPass,
+  hasOpenLiveCrayonPass,
   resetLiveCrayonPass,
   setCrayonPaperSpace,
   setLiveCrayonBuffer,
@@ -486,11 +487,24 @@ function beginStrokeGroup() {
   groupHasDrawn = true;
 }
 
+// A mid-gesture brush switch (the Brush Menu doesn't lift held pointers) can
+// interleave a NON-crayon ink op — eraser, magic, pen — into a group whose
+// crayon pass is still open. The pass raster is cropped from the paper-space
+// accumulation, which never sees foreign ops, so an open pass must close at
+// that boundary or the raster would resurrect ink the foreign op erased or
+// painted over (and the trailing-run swap in replaceOpenCrayonPassOps could
+// not attribute it). Continued crayon ops then open a fresh pass, exactly as
+// the pre-raster pipeline behaved (the erase branch's implicit buffer flush).
+function closeCrayonPassBeforeForeignOp(ps: PointerState) {
+  if (!(ps.crayon && !ps.erase) && hasOpenLiveCrayonPass()) recordCrayonFlush();
+}
+
 // Paint the round dot that anchors a stroke at its start point, and kick the
 // drawing sound. Used both for a normal pointerdown and when a deferred
 // edge-swipe candidate commits.
 function renderStrokeStart(ps: PointerState) {
   beginStrokeGroup();
+  closeCrayonPassBeforeForeignOp(ps);
 
   // Erasing clears pixels via destination-out; the stroke color is irrelevant
   // there, only its (opaque) alpha matters. A magic op ignores `color` too —
@@ -522,6 +536,7 @@ function renderStrokeStart(ps: PointerState) {
 // boundary) so the commit fold reproduces identical pixels and anti-aliasing.
 function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
   if (points.length === 0) return;
+  closeCrayonPassBeforeForeignOp(ps);
   const op: StrokeOp = {
     kind: 'path',
     pid: ps.id,

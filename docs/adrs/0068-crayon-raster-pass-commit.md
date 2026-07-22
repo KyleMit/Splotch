@@ -84,7 +84,12 @@ surfaces; never read big surfaces per op.
   blitting.
 * \+ Zero visual change, pinned at the byte level (Δ ≤ 3/255, stamp rounding).
 * − Closed passes hold their pixels as canvases until commit — a long multi-pass gesture keeps one
-  cropped raster per pass alive (bounded by pass bboxes; freed at commit).
+  cropped raster per pass alive (bounded by pass bboxes; freed at commit). The specific device
+  hazard is **iOS Safari's total canvas-memory cap** (a few hundred MB across all live canvases;
+  exceeded allocations fail *silently*): the 2732² live paper buffer plus a long scribble's per-pass
+  rasters all count against it at once, on top of the ADR-0066 snapshot tier. The eventual on-device
+  run should test this deliberately — a many-pass scribble on the oldest supported iPad — not only
+  measure timings.
 * − The open pass's paper-space buffer is a third per-op paint during live drawing (identity
   transform, cheap — but real).
 * − Margin ink outside a rotation-locked paper square is captured only within the paper (unchanged

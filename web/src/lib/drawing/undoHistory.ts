@@ -199,19 +199,35 @@ export function blitPaperRect(
 
 // Swap the just-closed crayon pass's recorded ops for its prerendered raster
 // op (see strokeOps' closeLiveCrayonPass). The pass is exactly the maximal
-// trailing run of crayon ink ops: every op since the previous pass close is
-// crayon (tool modes are global, so a group never interleaves brushes), and a
-// closed pass always ends in a raster or flush op that stops the scan. Keeping
-// ONE op stream — rasters for closed passes, raw ops only for the open pass —
-// is what lets the fold, repaints, snapshot pending replay, and export all
-// stay a single renderOp walk. No-op between groups, matching recordOp.
+// trailing run of crayon ink ops: the engine closes an open pass before any
+// non-crayon ink op records (closeCrayonPassBeforeForeignOp — a mid-gesture
+// brush switch can interleave brushes within one group), so every op since
+// the previous pass close is crayon, and a closed pass always ends at a
+// raster/flush/clear boundary that stops the scan. Keeping ONE op stream —
+// rasters for closed passes, raw ops only for the open pass — is what lets
+// the fold, repaints, snapshot pending replay, and export all stay a single
+// renderOp walk. No-op between groups, matching recordOp.
 export function replaceOpenCrayonPassOps(raster: StrokeOp) {
   if (!activeCommand) return;
   const ops = activeCommand.ops;
+  const popped: StrokeOp[] = [];
   while (ops.length > 0) {
     const last = ops[ops.length - 1];
-    if ((last.kind === 'dot' || last.kind === 'path') && last.crayon && !last.erase) ops.pop();
-    else break;
+    if ((last.kind === 'dot' || last.kind === 'path') && last.crayon && !last.erase) {
+      popped.push(ops.pop()!);
+    } else break;
+  }
+  // Boundary guard: if the scan stopped on an ink/erase op rather than a pass
+  // boundary (raster/flush/clear or the command start), a foreign op sits
+  // INSIDE the pass's op run and the raster can't be attributed — its pixels
+  // would resurrect ink the foreign op erased or painted over. Restore the
+  // raw ops and record a plain flush instead: the legacy re-render fold stays
+  // correct (it replays the interleave in op order, implicit flushes and all).
+  const tail = ops[ops.length - 1];
+  if (tail && (tail.kind === 'dot' || tail.kind === 'path')) {
+    while (popped.length > 0) ops.push(popped.pop()!);
+    ops.push({ kind: 'crayonFlush' });
+    return;
   }
   ops.push(raster);
 }

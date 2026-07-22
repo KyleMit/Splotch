@@ -76,8 +76,11 @@ export type StrokeOp =
       seed?: number;
     }
   | { kind: 'crayonFlush' }
-  // x/y = the raster's top-left in paper coordinates (canvas dims are its size).
-  | { kind: 'crayonPassRaster'; canvas: HTMLCanvasElement; x: number; y: number }
+  // x/y = the raster's top-left in paper coordinates (canvas dims are its
+  // size). `mix` is the glaze strength captured at pass close, so the stamp
+  // the fold/repaint performs matches the live preview even if the dev
+  // harness's setCrayonParams changes colorMix before the raster renders.
+  | { kind: 'crayonPassRaster'; canvas: HTMLCanvasElement; x: number; y: number; mix: number }
   | { kind: 'clear' };
 
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
@@ -243,6 +246,16 @@ function livePaperBufferFor(): CrayonPassBuffer | null {
   return livePaperBuffer;
 }
 
+// Whether the live canvas currently holds an open (unstamped) crayon pass.
+// The engine checks this before a NON-crayon ink op (eraser, magic, pen — a
+// mid-gesture brush switch can interleave them into the same stroke group)
+// and closes the pass first: the pass raster is cropped from the paper-space
+// accumulation, which never sees foreign ops, so a pass must never span one
+// (see replaceOpenCrayonPassOps' boundary guard).
+export function hasOpenLiveCrayonPass(): boolean {
+  return !!(liveBuffer?.dirty || livePaperBuffer?.dirty);
+}
+
 // A canvas clear wipes the open pass with everything else: drop the live
 // overlays' buffered ink and the paper-space accumulation, so a stroke
 // straddling the clear (drag-to-clear finishing under a drawing finger) closes
@@ -275,7 +288,7 @@ export function closeLiveCrayonPass(): Extract<StrokeOp, { kind: 'crayonPassRast
   }
   g.drawImage(pb.ctx.canvas, b.x0, b.y0, w, h, 0, 0, w, h);
   clearCrayonBounds(pb);
-  return { kind: 'crayonPassRaster', canvas: c, x: b.x0, y: b.y0 };
+  return { kind: 'crayonPassRaster', canvas: c, x: b.x0, y: b.y0, mix: getCrayonMix() };
 }
 
 function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
@@ -448,13 +461,15 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     // subtractive glaze flushCrayonBuffer performs (see the pass-buffer notes),
     // drawn in user space at the raster's paper position so the target's own
     // transform places it — identity on the paper/fold surfaces, the paper
-    // view on the visible canvas.
+    // view on the visible canvas. The glaze strength is the op's CAPTURED mix,
+    // not the current option, so the stamp matches the live preview even if
+    // the dev harness changed colorMix since the pass closed.
     flushCrayonBuffer(target);
     target.globalCompositeOperation = 'darken';
     target.globalAlpha = 1;
     target.drawImage(op.canvas, op.x, op.y);
     target.globalCompositeOperation = 'source-over';
-    target.globalAlpha = 1 - getCrayonMix();
+    target.globalAlpha = 1 - op.mix;
     target.drawImage(op.canvas, op.x, op.y);
     target.globalAlpha = 1;
     return;
