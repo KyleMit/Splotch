@@ -435,7 +435,7 @@
 
   .subtitle {
     margin: 2px 0 0;
-    color: #888;
+    color: #666;
     font-size: 15px;
     font-weight: 500;
   }
@@ -594,10 +594,12 @@
     cursor: default;
   }
 
+  /* The page's darker accent (#7c4dcf, 4.5:1+ under white text) rather than
+     --brand, whose 3.4:1 fails WCAG AA (axe serious). */
   .btn-primary {
     padding: 11px 18px;
     color: #fff;
-    background: var(--brand);
+    background: #7c4dcf;
     flex-shrink: 0;
   }
 
@@ -605,7 +607,7 @@
      keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
     .btn-primary:hover {
-      background: var(--brand-hover);
+      background: #6b3fbe;
     }
   }
 
@@ -703,7 +705,7 @@
   .usage {
     font-size: 12.5px;
     font-weight: 500;
-    color: #777;
+    color: #666;
   }
 
   .usage strong {
@@ -718,7 +720,7 @@
 
   .usage-none {
     font-style: italic;
-    color: #aaa;
+    color: #757575;
   }
 
   .invite-actions {
@@ -764,7 +766,7 @@
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #aaa;
+    color: #757575;
     border-bottom: 1px solid #f0f0f0;
   }
 
@@ -808,11 +810,12 @@
     cursor: default;
   }
 
-  /* Empty state */
+  /* Empty state. #666, not #999: 2.85:1 on the white card is an axe serious
+     the suite can't see (the logged-in scan populates a row first). */
   .empty {
     text-align: center;
     padding: 24px 12px;
-    color: #999;
+    color: #666;
   }
 
   :global(.empty .empty-icon) {

@@ -60,8 +60,12 @@
     color: var(--text-faint);
   }
 
+  /* Hardcoded #666, not --text-mid: the host pages' backgrounds are hardcoded
+     light (#f5f5f5 admin, #f0ecf7 harness), so the dark-theme value of
+     --text-mid (#b3b1bf) would drop to 1.9:1 there; #666 clears the 4.5:1
+     floor on both (the old --text-faint #999 was a 2.6:1 axe serious). */
   .crumb-current {
-    color: var(--text-faint);
+    color: #666;
     cursor: default;
   }
 </style>

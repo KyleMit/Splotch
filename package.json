@@ -233,6 +233,7 @@
     "release": "Cut a release from releases/<version>.md: bump versions, commit, tag, push (use the /release command to draft notes first)"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@capacitor/android": "^8.4.1",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.4.1",

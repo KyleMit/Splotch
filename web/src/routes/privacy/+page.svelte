@@ -150,10 +150,12 @@
     padding: 32px clamp(20px, 5vw, 44px) 40px;
   }
 
+  /* Links use the darker #7c4dcf (4.5:1+ on white) instead of --brand, whose
+     3.4:1 fails WCAG AA for body-size text (axe serious). */
   .back {
     display: inline-block;
     margin-bottom: 20px;
-    color: var(--brand);
+    color: #7c4dcf;
     text-decoration: none;
     font-weight: 600;
   }
@@ -173,7 +175,7 @@
   }
 
   .updated {
-    color: #8a8a94;
+    color: #6c6c76;
     font-size: 0.9rem;
     margin-bottom: 24px;
   }
@@ -221,6 +223,6 @@
   }
 
   a {
-    color: var(--brand);
+    color: #7c4dcf;
   }
 </style>
