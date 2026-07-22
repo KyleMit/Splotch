@@ -24,6 +24,9 @@ paths:
   `DEV_SERVER=1` to iterate against `vite dev` instead.
 * The admin specs rely on the Playwright web server starting with
   `ADMIN_ACCESS_TOKEN=test-admin-secret` (`playwright.config.ts`).
+* `tests/webkit-smoke.spec.ts` is a WebKit critical-path subset (boot, stroke, the two dialogs) run
+  by the `webkit` Playwright project — CI installs WebKit so it always gates there; locally it only
+  runs if the WebKit binary is installed. Keep that spec free of CDP and dev-harness dependencies.
 * Adult-facing surfaces (`/privacy`, `/admin`, the Parent Center dialog) get axe-core scans in
   `tests/a11y.spec.ts` — serious/critical violations fail. The toddler-facing canvas chrome is out
   of scope by design; scans of overlays over it are scoped via `AxeBuilder.include()`. Details in

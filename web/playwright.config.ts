@@ -1,6 +1,6 @@
 // cSpell:ignore SLOWMO
 import { existsSync, readdirSync } from 'node:fs';
-import { chromium, defineConfig, devices } from '@playwright/test';
+import { chromium, defineConfig, devices, webkit } from '@playwright/test';
 
 const PORT = 4173;
 const baseURL = `http://localhost:${PORT}`;
@@ -32,6 +32,20 @@ function chromiumExecutablePath(): string | undefined {
   return undefined;
 }
 
+// The WebKit smoke project only joins the run when the WebKit binary is
+// actually installed: CI installs it explicitly (test.yml), but local checkouts
+// and cloud sessions often have Chromium only, and `npm test` must not start
+// failing there. CI is the gate that guarantees the subset really runs.
+function webkitAvailable(): boolean {
+  try {
+    return existsSync(webkit.executablePath());
+  } catch {
+    return false;
+  }
+}
+
+const slowMo = Number(process.env.SLOWMO) || 0;
+
 export default defineConfig({
   testDir: './tests',
   globalSetup: './tests/global-setup.ts',
@@ -47,17 +61,30 @@ export default defineConfig({
   use: {
     baseURL,
     trace: 'on-first-retry',
-    // Slow each action down when SLOWMO is set (ms), e.g. `SLOWMO=500 npm run test:e2e:headed`
-    launchOptions: {
-      slowMo: Number(process.env.SLOWMO) || 0,
-      executablePath: chromiumExecutablePath(),
-    },
   },
+  // launchOptions live per-project: the Chromium executable-path fallback must
+  // not leak into the WebKit launch. SLOWMO applies to both (ms), e.g.
+  // `SLOWMO=500 npm run test:e2e:headed`.
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      // webkit-smoke.spec.ts is the WebKit project's critical-path subset —
+      // everything it covers already runs under Chromium via the full suite.
+      testIgnore: /webkit-smoke\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: { slowMo, executablePath: chromiumExecutablePath() },
+      },
     },
+    ...(webkitAvailable()
+      ? [
+          {
+            name: 'webkit',
+            testMatch: /webkit-smoke\.spec\.ts/,
+            use: { ...devices['Desktop Safari'], launchOptions: { slowMo } },
+          },
+        ]
+      : []),
   ],
   webServer: {
     // Exercise the production artifact (service worker, adapter output,

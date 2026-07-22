@@ -104,17 +104,21 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+          # "-webkit" marks the cache generation that includes the WebKit
+          # binary — an older chromium-only cache would silently skip the
+          # WebKit smoke project (playwright.config.ts drops it when the
+          # binary is absent).
+          key: playwright-${{ runner.os }}-webkit-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
 
       # The browser binaries cache, but the apt packages don't — install-deps
       # is still required on a cache hit.
       - name: Install Playwright system deps
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: npx playwright install-deps chromium webkit
 
       - name: Run e2e tests
         run: npm run test:e2e

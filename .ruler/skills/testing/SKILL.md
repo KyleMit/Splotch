@@ -102,6 +102,25 @@ with `vite preview` (set `DEV_SERVER=1` for fast iteration against `vite dev`). 
 These run on real Chromium but **cannot catch native or WebView boot failures** — that's what the
 Android smoke test is for.
 
+### WebKit critical-path smoke — `tests/webkit-smoke.spec.ts`
+
+The full suite is Chromium-only, but Safari/iOS is the engine `docs/COMPATIBILITY.md` worries about
+most, so a tiny critical-path subset (boot, draw a stroke, Parent Center dialog, Color Picker
+dialog) also runs on **WebKit** as the `webkit` Playwright project:
+
+* The project only joins the run when the WebKit binary is installed
+  (`npx playwright install --with-deps webkit`) — local checkouts and cloud sessions with Chromium
+  only keep working, and **CI installs WebKit explicitly** (`test.yml`), so the subset always gates
+  pushes/PRs there.
+* Keep the spec WebKit-portable: no CDP sessions (the viewport-rotation and touch-synthesis helpers
+  in `flows.spec.ts` are Chromium-only), no dev-harness routes, no assertions tied to Chromium's
+  rasterizer. The Chromium project ignores the spec (its coverage is already in the full suite).
+* `web/playwright.webkit-scratch.config.ts` stays for ad-hoc "run *any* spec under WebKit"
+  debugging; it is still not part of `npm test`.
+
+CI runs current WebKit, not the floor's Safari 16.4 — it proves engine-family coverage, not the
+floor version (that remains a manual/device concern; see `docs/COMPATIBILITY.md`).
+
 ### Accessibility tier — axe-core scans (`tests/a11y.spec.ts`)
 
 The **adult-facing surfaces** get an automated axe-core scan (`@axe-core/playwright`, a

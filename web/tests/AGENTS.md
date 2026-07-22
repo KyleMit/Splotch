@@ -16,3 +16,7 @@
 * Playwright builds the production artifact and serves it with `vite preview` by default; set
   `DEV_SERVER=1` to iterate against `vite dev` instead. The admin specs rely on the web server
   starting with `ADMIN_ACCESS_TOKEN=test-admin-secret` (`playwright.config.ts`).
+* `webkit-smoke.spec.ts` is the WebKit critical-path subset — the only spec the `webkit` project
+  runs (the project joins the run only when the WebKit binary is installed; CI always installs it).
+  Keep it free of CDP sessions, dev-harness routes, and Chromium-rasterizer-specific assertions —
+  and don't add CDP-based helpers to it when refactoring shared test code.
