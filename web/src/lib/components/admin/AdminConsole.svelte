@@ -383,15 +383,14 @@
      this page. Scale tokens (font sizes, radii, durations) are safe and used
      below; theming /admin is a separate decision. */
 
-  /* The global app.css locks the body (no scroll, no text selection) for the
-     drawing canvas. The admin page is a normal document, so it opts back in. */
+  /* A full-viewport scroll panel with its own light background. The admin console
+     is a normal scrollable, selectable, zoomable document — the drawing-route
+     app-surface locks (app.css) don't reach this route, so no opt-out is needed. */
   .admin-page {
     position: fixed;
     inset: 0;
     overflow-y: auto;
     background: #f5f5f5;
-    -webkit-user-select: text;
-    user-select: text;
     -webkit-overflow-scrolling: touch;
   }
 

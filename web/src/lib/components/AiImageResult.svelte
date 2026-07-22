@@ -215,8 +215,9 @@
     background: #fcfbf8;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     /* Own the touch gesture so the scoped pinch-zoom (use:pinchZoom) drives the
-       preview instead of the browser — the page stays zoom-locked (ADR-0041).
-       Size comes from .stage-sizer below — the modal shrink-wraps this box. */
+       preview instead of the browser — the drawing surface stays zoom-locked
+       (ADR-0076). Size comes from .stage-sizer below — the modal shrink-wraps
+       this box. */
     touch-action: none;
   }
 
