@@ -775,9 +775,12 @@ export function repaintAll(target: CanvasRenderingContext2D) {
 }
 
 // Test/profiling seam: how the undo history is currently stored. `liveRasters`
-// counts snapshots still holding their patch canvas (≤ K_LIVE + entries whose
-// encode hasn't landed) and `rasterBytes` is those patches' actual pixel cost
-// (w × h × 4 — patch-sized since ADR-0069, not full-paper); `blobBytes` is the
+// counts ENTRIES still holding any patch canvas (≤ K_LIVE + entries whose
+// encode hasn't landed — entry-level on purpose: the settle gates in
+// engine.spec.ts and scripts/perf/undo-scenarios.mjs compare it against
+// K_LIVE, and a multi-patch entry would overshoot a patch-level count) and
+// `rasterBytes` is the live patches' actual pixel cost (w × h × 4 —
+// patch-sized since ADR-0069, per-cluster since ADR-0074); `blobBytes` is the
 // encoded tier's total size — together the history memory the perf harness
 // reports; `pendingCommands` counts commands the unready magic sheet is
 // holding out of the paper.
@@ -790,10 +793,7 @@ export function getHistoryDebug(): {
 } {
   return {
     snapshots: snapshotStack.length,
-    liveRasters: snapshotStack.reduce(
-      (n, s) => n + s.patches.reduce((m, p) => m + (p.canvas ? 1 : 0), 0),
-      0
-    ),
+    liveRasters: snapshotStack.reduce((n, s) => n + (s.patches.some((p) => p.canvas) ? 1 : 0), 0),
     rasterBytes: snapshotStack.reduce(
       (n, s) =>
         n +

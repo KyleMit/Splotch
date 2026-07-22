@@ -450,7 +450,9 @@ describe('disjoint multi-finger patches', () => {
     const m = await freshHistory();
     m.pushCommand({ ops: [strokeAt(5, 1), strokeAt(45, 2)], wasEmpty: true });
     const { liveRasters, rasterBytes } = m.getHistoryDebug();
-    expect(liveRasters).toBe(2);
+    // liveRasters counts entries, not patches — the settle gates compare it
+    // against K_LIVE.
+    expect(liveRasters).toBe(1);
     // Two 14×14 bands (x−6..x+8, clamped: 0..13 and 39..53), not the 54-wide
     // union.
     expect(rasterBytes).toBe((13 * 13 + 14 * 14) * 4);
