@@ -1,5 +1,5 @@
 // Undo history: a committed "paper" raster + a bounded stack of pre-stroke
-// PATCH snapshots (ADR-0066 reversed ADR-0033's command replay; ADR-0068
+// PATCH snapshots (ADR-0066 reversed ADR-0033's command replay; ADR-0069
 // shrank the snapshots from full-paper copies to dirty-rect patches).
 //
 // The paper is one offscreen raster (a max(w,h) square) holding the committed
@@ -34,7 +34,13 @@
 // the rasters stay resident while no canvas is mounted — is accepted
 // (ADR-0004).
 
-import { clearAllOf, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
+import {
+  clearAllOf,
+  renderOp,
+  resetLiveCrayonForReplay,
+  type StrokeGroupCommand,
+  type StrokeOp,
+} from './strokeOps';
 import { isMagicSheetUnready } from './magicBrush';
 import { PERF_MARKS } from './perf';
 
@@ -167,6 +173,85 @@ export function recordOp(op: StrokeOp) {
   if (activeCommand) activeCommand.ops.push(op);
 }
 
+// The paper-space rects of the active command's closed crayon passes. The
+// engine reads them just before commit: once the fold stamps those rasters
+// into the paper, the same rects are blitted BACK onto the visible canvas
+// (blitPaperRect) so the on-screen pixels are the committed pixels from commit
+// onward. The stamp composite rounds ±1 differently for the overlay's
+// device-rect blit than for the cropped raster (canvas-backing-dependent
+// premultiplied rounding), so without the reconcile a rebuild would differ
+// from the live stamp at the byte level — imperceptibly, but undo and remount
+// must reproduce the screen exactly.
+export function activeCrayonRasterRects(): { x: number; y: number; w: number; h: number }[] {
+  if (!activeCommand) return [];
+  const rects: { x: number; y: number; w: number; h: number }[] = [];
+  for (const op of activeCommand.ops) {
+    if (op.kind === 'crayonPassRaster') {
+      rects.push({ x: op.x, y: op.y, w: op.canvas.width, h: op.canvas.height });
+    }
+  }
+  return rects;
+}
+
+// Copy a committed paper rect onto a target, replacing what the target showed
+// there. Coordinates are paper-space; the target's own transform places the
+// rect (identity on the visible canvas normally, the paper view when locked).
+export function blitPaperRect(
+  target: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+) {
+  if (!paperCanvas) return;
+  const x0 = Math.max(0, x);
+  const y0 = Math.max(0, y);
+  const x1 = Math.min(paperCanvas.width, x + w);
+  const y1 = Math.min(paperCanvas.height, y + h);
+  if (x1 <= x0 || y1 <= y0) return;
+  target.save();
+  target.globalCompositeOperation = 'source-over';
+  target.globalAlpha = 1;
+  target.clearRect(x0, y0, x1 - x0, y1 - y0);
+  target.drawImage(paperCanvas, x0, y0, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0);
+  target.restore();
+}
+
+// Swap the just-closed crayon pass's recorded ops for its prerendered raster
+// op (see strokeOps' closeLiveCrayonPass). The pass is exactly the maximal
+// trailing run of crayon ink ops: the engine closes an open pass before any
+// non-crayon ink op records (closeCrayonPassBeforeForeignOp — a mid-gesture
+// brush switch can interleave brushes within one group), so every op since
+// the previous pass close is crayon, and a closed pass always ends at a
+// raster/flush/clear boundary that stops the scan. Keeping ONE op stream —
+// rasters for closed passes, raw ops only for the open pass — is what lets
+// the fold, repaints, snapshot pending replay, and export all stay a single
+// renderOp walk. No-op between groups, matching recordOp.
+export function replaceOpenCrayonPassOps(raster: StrokeOp) {
+  if (!activeCommand) return;
+  const ops = activeCommand.ops;
+  const popped: StrokeOp[] = [];
+  while (ops.length > 0) {
+    const last = ops[ops.length - 1];
+    if ((last.kind === 'dot' || last.kind === 'path') && last.crayon && !last.erase) {
+      popped.push(ops.pop()!);
+    } else break;
+  }
+  // Boundary guard: if the scan stopped on an ink/erase op rather than a pass
+  // boundary (raster/flush/clear or the command start), a foreign op sits
+  // INSIDE the pass's op run and the raster can't be attributed — its pixels
+  // would resurrect ink the foreign op erased or painted over. Restore the
+  // raw ops and record a plain flush instead: the legacy re-render fold stays
+  // correct (it replays the interleave in op order, implicit flushes and all).
+  const tail = ops[ops.length - 1];
+  if (tail && (tail.kind === 'dot' || tail.kind === 'path')) {
+    while (popped.length > 0) ops.push(popped.pop()!);
+    ops.push({ kind: 'crayonFlush' });
+    return;
+  }
+  ops.push(raster);
+}
+
 // Finalize the stroke group built up since beginCommand() and push it onto the
 // snapshot stack. Called once per group, when the last finger lifts. Returns
 // false when no group was open (nothing painted). `defer` parks the command
@@ -189,12 +274,13 @@ const PATCH_AA_PAD = 2;
 // The paper region folding `commands` will mutate: the union of every op's
 // padded geometric bounds, clamped to the paper. A path's quadratic control
 // points bound the curve's hull, so start + segs' points padded by the stroke
-// half-width cover the ink; a 'clear' wipes everything, so it short-circuits
-// to the full paper; a 'crayonFlush' has no geometry of its own (its stamp is
-// bounded by the pass's crayon ops, already unioned). Null when nothing would
-// touch the paper — no foldable commands, or ink wholly outside the paper
-// square (margin ink is clipped at fold, ADR-0050). Exported as the rect-math
-// unit-test seam.
+// half-width cover the ink; a 'crayonPassRaster' stamps exactly its canvas at
+// its paper position, so its bounds are the raster's rect; a 'clear' wipes
+// everything, so it short-circuits to the full paper; a 'crayonFlush' has no
+// geometry of its own (its stamp is bounded by the pass's crayon ops, already
+// unioned). Null when nothing would touch the paper — no foldable commands,
+// or ink wholly outside the paper square (margin ink is clipped at fold,
+// ADR-0050). Exported as the rect-math unit-test seam.
 export function foldRegionForCommands(
   commands: StrokeGroupCommand[],
   paperW: number,
@@ -217,6 +303,12 @@ export function foldRegionForCommands(
         ox0 = ox1 = op.x;
         oy0 = oy1 = op.y;
         pad = op.radius + PATCH_AA_PAD;
+      } else if (op.kind === 'crayonPassRaster') {
+        ox0 = op.x;
+        oy0 = op.y;
+        ox1 = op.x + op.canvas.width;
+        oy1 = op.y + op.canvas.height;
+        pad = PATCH_AA_PAD;
       } else {
         ox0 = ox1 = op.startX;
         oy0 = oy1 = op.startY;
@@ -492,6 +584,10 @@ function commandHasMagic(command: StrokeGroupCommand): boolean {
 // to keep the in-flight stroke; between strokes activeCommand is null and
 // that step is a no-op.
 export function repaintAll(target: CanvasRenderingContext2D) {
+  // Replaying the open pass's ops below rebuilds its crayon accumulation from
+  // scratch; the live buffers must start empty so a non-idempotent deposit
+  // can never double-composite on a repaint (see strokeOps).
+  resetLiveCrayonForReplay(target);
   clearAllOf(target);
   if (paperCanvas) target.drawImage(paperCanvas, 0, 0);
   for (const cmd of pendingCommands) for (const op of cmd.ops) renderOp(target, op);
@@ -504,7 +600,7 @@ export function repaintAll(target: CanvasRenderingContext2D) {
 // Test/profiling seam: how the undo history is currently stored. `liveRasters`
 // counts snapshots still holding their patch canvas (≤ K_LIVE + entries whose
 // encode hasn't landed) and `rasterBytes` is those patches' actual pixel cost
-// (w × h × 4 — patch-sized since ADR-0068, not full-paper); `blobBytes` is the
+// (w × h × 4 — patch-sized since ADR-0069, not full-paper); `blobBytes` is the
 // encoded tier's total size — together the history memory the perf harness
 // reports; `pendingCommands` counts commands the unready magic sheet is
 // holding out of the paper.

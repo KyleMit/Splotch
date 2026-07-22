@@ -41,7 +41,7 @@ output-directory suffix (for example, `mount-phone-4x`) for the actual capture p
 backing stores, not the JS heap** — so `performance.memory` / the heap table can't see them and stay
 flat. `perf:undo` reports the *real* cost analytically:
 `live patch bytes (rasterBytes) + the paper (max(w,h)² × 4 bytes) + encoded blob bytes`
-(ADR-0066/0068 — live snapshots are dirty-rect patches, so their bytes come from `getUndoDebug`, not
+(ADR-0066/0069 — live snapshots are dirty-rect patches, so their bytes come from `getUndoDebug`, not
 raster count × full-raster size).
 
 ## How capture works (so the numbers make sense)
@@ -88,7 +88,7 @@ Read in this order:
    | ------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
    | `engine.draw` high **Avg/Max** | per-pointermove stroking (coalesced samples + quadratic segments)                    | `strokeSmoothSegments` / `draw` in `web/src/lib/drawing/engine.ts`. A high *Max* (vs Avg) = a few heavy frames, often the first move after a resize.                                                                            |
    | `engine.commit` high           | the stroke-end pipeline: patch capture + folding the stroke's ops into the paper     | the pointerup hitch candidate (ADR-0066). Its two inner measures attribute it: `engine.snapshot` dominating = the patch capture; `engine.fold` dominating = rendering the ops.                                                  |
-   | `engine.snapshot` high         | the pre-stroke paper patch (alone) pushed onto the snapshot stack at commit          | one patch-sized `drawImage` per commit — the fold region's dirty rect, full-canvas only for a clear (ADR-0068) — off the draw frame (`undoHistory.ts pushCommand`). Software renderers exaggerate it heavily — judge on-device. |
+   | `engine.snapshot` high         | the pre-stroke paper patch (alone) pushed onto the snapshot stack at commit          | one patch-sized `drawImage` per commit — the fold region's dirty rect, full-canvas only for a clear (ADR-0069) — off the draw frame (`undoHistory.ts pushCommand`). Software renderers exaggerate it heavily — judge on-device. |
    | `engine.fold` high             | rendering the committed stroke's ops onto the paper, inside the commit               | `foldPendingIntoPaper` (`undoHistory.ts`) — scales with op count and brush cost; heaviest for crayon strokes (per-pass pattern stamps).                                                                                         |
    | `engine.scanEmpty` high        | `getImageData` readback after an **eraser** stroke                                   | `scanCanvasIsEmpty`; already downscaled 0.25×. Costlier on real devices (GPU→CPU readback).                                                                                                                                     |
    | `engine.resize` high/frequent  | backing-store rebuild + one paper blit (plus pending/in-flight ops)                  | should fire only on resize/rotation — if it fires mid-draw, that's the bug.                                                                                                                                                     |

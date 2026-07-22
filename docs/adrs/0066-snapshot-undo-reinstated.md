@@ -2,8 +2,11 @@
 
 **Status:** Active — supersedes ADR-0033 (and with it ADR-0035 keyframing and ADR-0036
 simplification); device verification of the perf gates is pending (tracked on PR 442). Amended by
-[ADR-0068](0068-dirty-rect-patch-snapshots.md): snapshots shrink from full-paper copies to
-dirty-rect patches of the fold region. **Date:** 2026-07
+[ADR-0068](0068-crayon-raster-pass-commit.md) (2026-07): the crayon's "live-equals-fold" contract
+narrows again — closed passes commit as live-captured rasters the fold blits, so only the open
+pass's short repaint window re-renders (and is allowed to re-roll nondeterministic texture). Amended
+by [ADR-0069](0069-dirty-rect-patch-snapshots.md) (2026-07): snapshots shrink from full-paper copies
+to dirty-rect patches of the fold region. **Date:** 2026-07
 
 ## Context
 

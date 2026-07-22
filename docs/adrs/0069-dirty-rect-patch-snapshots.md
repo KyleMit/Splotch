@@ -1,4 +1,4 @@
-# ADR-0068: Undo Snapshots Shrink to Dirty-Rect Patches of the Fold Region
+# ADR-0069: Undo Snapshots Shrink to Dirty-Rect Patches of the Fold Region
 
 **Status:** Active — amends ADR-0066; the on-device perf gates it inherits from ADR-0066 remain
 pending. **Date:** 2026-07
@@ -51,9 +51,11 @@ Alternatives considered:
 * **The patch rect** (`foldRegionForCommands`) is the union of every folding op's padded geometric
   bounds, clamped to the paper and floored/ceiled to whole pixels so capture and restore are exact
   1:1 blits: a path is bounded by its start + quadratic control/end points (control points bound the
-  curve's hull) padded by `lineWidth / 2 + 2`; a dot by `radius + 2`; a `clear` short-circuits to
-  the full paper; a `crayonFlush` contributes nothing (its stamp is bounded by the pass's crayon
-  ops, whose padding matches `unionCrayonBounds` in `strokeOps.ts` — the same `+2` AA convention).
+  curve's hull) padded by `lineWidth / 2 + 2`; a dot by `radius + 2`; a `crayonPassRaster`
+  (ADR-0068's live-captured closed pass) by exactly its raster's rect at its paper position, plus
+  the AA pad; a `clear` short-circuits to the full paper; a `crayonFlush` contributes nothing (its
+  stamp is bounded by the pass's crayon ops, whose padding matches `unionCrayonBounds` in
+  `strokeOps.ts` — the same `+2` AA convention).
 * **A null rect is a zero-cost snapshot**: a wholly magic-blocked commit, or ink entirely outside
   the paper square (margin ink, clipped at fold per ADR-0050), never touches the paper — the entry
   stores no pixels and its undo just reinstates the captured pending set.
@@ -77,7 +79,10 @@ geometric bounds. Any future brush whose marks can exceed `lineWidth / 2 + 2` of
 geometry (shadow/glow, blur filters, jitter beyond the pad, a crayon pass with `widthScale > 1`)
 must widen `foldRegionForCommands`' padding in the same change, or undo silently stops being
 byte-exact just outside the patch. The crayon's pass-buffer bounds (`unionCrayonBounds`) use the
-identical pad, which keeps the two in lockstep today.
+identical pad, which keeps the two in lockstep today — and ADR-0068's raster ops make the crayon's
+common case exact by construction: a closed pass's stamp is its raster's rect, no estimate needed. A
+new op *kind* must be added to `foldRegionForCommands` explicitly (the TypeScript narrowing there
+makes an unhandled kind a compile error, which is the intended tripwire).
 
 ## Consequences
 

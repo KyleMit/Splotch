@@ -43,6 +43,10 @@ import {
 import {
   renderOp,
   clearAllOf,
+  closeLiveCrayonPass,
+  hasOpenLiveCrayonPass,
+  resetLiveCrayonPass,
+  setCrayonPaperSpace,
   setLiveCrayonBuffer,
   type StrokeGroupCommand,
   type StrokeOp,
@@ -55,7 +59,9 @@ import {
   type CrayonOptions,
 } from './crayonBrush';
 import {
+  activeCrayonRasterRects,
   beginCommand,
+  blitPaperRect,
   commitActiveCommand,
   deferCommand,
   ensurePaperCovers,
@@ -67,6 +73,7 @@ import {
   rebaseDeferredCommands,
   recordOp,
   repaintAll,
+  replaceOpenCrayonPassOps,
   resetActiveCommandForClear,
   snapshotCount,
 } from './undoHistory';
@@ -126,14 +133,20 @@ function syncCrayonOverlayMix() {
   }
 }
 
-// Close the current deposition pass: stamp the live buffer onto the canvas and
-// record the flush so the commit fold stamps at exactly this position in the
-// op order. recordOp no-ops when no command is open, matching renderOp's no-op
-// flush of a clean buffer.
+// Close the current deposition pass: stamp the live buffer onto the canvas,
+// then swap the pass's recorded ops for the raster its paper-space
+// accumulation captured, so the commit fold BLITS the pass instead of
+// re-rendering it (strokeOps' closeLiveCrayonPass). When nothing accumulated
+// (the mix-0 direct-paint escape hatch, or a raster the crop couldn't build)
+// the raw ops stay and a plain flush op keeps the legacy re-render fold
+// correct. recordOp/replaceOpenCrayonPassOps no-op when no command is open,
+// matching renderOp's no-op flush of a clean buffer.
 function recordCrayonFlush() {
   const flush: StrokeOp = { kind: 'crayonFlush' };
   renderOp(ctx, flush);
-  recordOp(flush);
+  const raster = closeLiveCrayonPass();
+  if (raster) replaceOpenCrayonPassOps(raster);
+  else recordOp(flush);
 }
 
 // A per-pass seed stamped onto every crayon op, so the paper-tooth pattern is
@@ -383,8 +396,11 @@ function resizeCanvas() {
 
   // The paper raster is a max(w,h) square of the viewport so it covers both
   // orientations and rotation never loses pixels; anything larger (e.g. a
-  // resized desktop window) goes through the grow path.
-  ensurePaperCovers(Math.ceil(Math.max(paper.pxW, paper.pxH)));
+  // resized desktop window) goes through the grow path. The live crayon
+  // pass accumulation buffer mirrors the same square (strokeOps).
+  const paperSide = Math.ceil(Math.max(paper.pxW, paper.pxH));
+  ensurePaperCovers(paperSide);
+  setCrayonPaperSpace(paperSide);
 
   // Resizing the backing store wipes the visible canvas and resets its context
   // state, so re-arm the round caps and repaint from the paper raster.
@@ -471,11 +487,24 @@ function beginStrokeGroup() {
   groupHasDrawn = true;
 }
 
+// A mid-gesture brush switch (the Brush Menu doesn't lift held pointers) can
+// interleave a NON-crayon ink op — eraser, magic, pen — into a group whose
+// crayon pass is still open. The pass raster is cropped from the paper-space
+// accumulation, which never sees foreign ops, so an open pass must close at
+// that boundary or the raster would resurrect ink the foreign op erased or
+// painted over (and the trailing-run swap in replaceOpenCrayonPassOps could
+// not attribute it). Continued crayon ops then open a fresh pass, exactly as
+// the pre-raster pipeline behaved (the erase branch's implicit buffer flush).
+function closeCrayonPassBeforeForeignOp(ps: PointerState) {
+  if (!(ps.crayon && !ps.erase) && hasOpenLiveCrayonPass()) recordCrayonFlush();
+}
+
 // Paint the round dot that anchors a stroke at its start point, and kick the
 // drawing sound. Used both for a normal pointerdown and when a deferred
 // edge-swipe candidate commits.
 function renderStrokeStart(ps: PointerState) {
   beginStrokeGroup();
+  closeCrayonPassBeforeForeignOp(ps);
 
   // Erasing clears pixels via destination-out; the stroke color is irrelevant
   // there, only its (opaque) alpha matters. A magic op ignores `color` too —
@@ -507,6 +536,7 @@ function renderStrokeStart(ps: PointerState) {
 // boundary) so the commit fold reproduces identical pixels and anti-aliasing.
 function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
   if (points.length === 0) return;
+  closeCrayonPassBeforeForeignOp(ps);
   const op: StrokeOp = {
     kind: 'path',
     pid: ps.id,
@@ -573,8 +603,19 @@ function strokeSegments(ps: PointerState, points: { x: number; y: number }[]) {
 function commitStrokeGroup() {
   if (PERF_MARKS) performance.mark('engine.commit:start');
   const deferBehindRestore = paperStepsPending > 0;
+  const rasterRects = activeCrayonRasterRects();
   if (!commitActiveCommand(deferBehindRestore)) return;
-  if (deferBehindRestore) queueDeferredCommandFold();
+  if (deferBehindRestore) {
+    queueDeferredCommandFold();
+  } else if (rasterRects.length > 0 && getHistoryDebug().pendingCommands === 0) {
+    // The fold just stamped this stroke's pass rasters into the paper; blit
+    // those rects back so the screen shows the committed pixels exactly (see
+    // activeCrayonRasterRects). Skipped when the fold is parked — behind a
+    // pending restore or an unready magic sheet — where the paper doesn't
+    // hold this stroke yet; the op replay keeps the screen right there, and
+    // the eventual fold's next repaint reconciles.
+    for (const r of rasterRects) blitPaperRect(ctx, r.x, r.y, r.w, r.h);
+  }
   setCanUndo(true);
   if (onStrokeEnd) onStrokeEnd();
   if (PERF_MARKS) performance.measure('engine.commit', 'engine.commit:start');
@@ -1058,6 +1099,7 @@ export function clearCanvas() {
   }
   setCanUndo(true);
   clearAllOf(ctx);
+  resetLiveCrayonPass();
   // A stroke can straddle the clear (e.g. a second finger drawing while
   // drag-to-clear completes) — see resetActiveCommandForClear. The continuing
   // stroke counts as content (same as beginStrokeGroup), so the empty flag only

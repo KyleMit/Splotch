@@ -198,7 +198,7 @@
     const commit = agg(drawStart, drawEnd, 'engine.commit');
     const un = agg(undoStart, undoEnd, 'engine.undo');
     // rasterBytes is the live patches' real pixel cost (dirty-rect snapshots,
-    // ADR-0068); the liveRasters × full-raster product is the fallback for a
+    // ADR-0069); the liveRasters × full-raster product is the fallback for a
     // build that predates it. The +1 raster is the paper itself.
     const liveMB =
       dbg.rasterBytes != null ? dbg.rasterBytes / 1048576 : dbg.liveRasters * mbPerRaster;

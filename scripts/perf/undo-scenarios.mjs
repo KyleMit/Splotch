@@ -384,7 +384,7 @@ async function main() {
       // History raster memory the way it actually lives — off the JS heap, in
       // canvas backing stores: live snapshot patches + the paper, plus the
       // encoded blobs. rasterBytes is the patches' real pixel cost (dirty-rect
-      // snapshots, ADR-0068); liveRasters × full-raster is the fallback for a
+      // snapshots, ADR-0069); liveRasters × full-raster is the fallback for a
       // build that predates it.
       const historyRasterMB =
         debug == null
