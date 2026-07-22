@@ -125,16 +125,14 @@
 </main>
 
 <style>
-  /* The global body disables scrolling and text selection for the drawing
-     canvas, so this page opts back into both with its own scroll container. */
+  /* A full-viewport scroll panel with its own light background. The legal copy is
+     a normal scrollable, selectable, zoomable document — the drawing-route
+     app-surface locks (app.css) don't reach this route, so no opt-out is needed. */
   .legal {
     position: fixed;
     inset: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    touch-action: auto;
-    user-select: text;
-    -webkit-user-select: text;
     background: #f5f5f5;
     padding: 24px 16px 64px;
     color: #2b2b33;

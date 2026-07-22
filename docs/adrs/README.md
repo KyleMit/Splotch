@@ -62,13 +62,13 @@ The decisions that shape everything else, in rough order of importance. All are 
 | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------ |
 | [0026](0026-notch-band-via-safe-area-css.md)            | Notch Band via a Safe-Area CSS Strip, Not Per-Platform Native Status Bars                                         | Active |
 | [0039](0039-pwa-install-prompt-ux.md)                   | Friendly PWA Install Prompt — Capture `beforeinstallprompt`, Fall Back to Guided Hints                            | Active |
-| [0041](0041-lock-viewport-zoom-for-toddlers.md)         | Lock Viewport Pinch-Zoom (`user-scalable=no`) for a Toddler Drawing App                                           | Active |
 | [0045](0045-coloring-picker-thumbnails-and-prefetch.md) | Coloring-Picker Thumbnails + Prefetch (Two Resolutions per Page)                                                  | Active |
 | [0048](0048-hex-picker-trims-shades-before-hues.md)     | Hex Color Picker Trims Shades Before Hues, Transposing in Landscape                                               | Active |
 | [0049](0049-idle-mount-boot-hidden-overlays.md)         | Idle-Mount the Boot-Hidden Overlays (Parent Center on First Open)                                                 | Active |
 | [0052](0052-dark-mode-theme-tokens.md)                  | Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper, White "Chalk" Line Art, Night Coloring Fills | Active |
 | [0061](0061-parent-center-section-drill-in.md)          | Parent Center: One Section List, Two Responsive Shells (Drill-In / Sidebar)                                       | Active |
 | [0075](0075-no-web-font-preload-on-drawing-route.md)    | Don't Preload the Web Font — the Drawing Route Paints No Text                                                     | Active |
+| [0076](0076-scope-toddler-zoom-lock-element-level.md)   | Scope the Toddler Zoom-Lock to Element Level (Drop `user-scalable=no`), Add Scoped Parent-Center Pinch-to-Enlarge | Active |
 
 ## Native (Capacitor / Android / iOS)
 
@@ -149,6 +149,7 @@ chains stay intact (e.g. the undo saga: 0033 → 0035/0036 →
 | [0033](0033-command-replay-undo.md)               | Command-Replay Undo (Single Baseline + Stroke Log, replacing the snapshot stack)                   | Superseded by [0066](0066-snapshot-undo-reinstated.md)                   |
 | [0035](0035-keyframe-long-commands.md)            | Keyframe Long Commands So Undo Doesn't Replay Thousands of Ops                                     | Superseded by [0066](0066-snapshot-undo-reinstated.md)                   |
 | [0036](0036-stroke-simplification-at-commit.md)   | Simplify Stroke Ops at Commit (Ramer–Douglas–Peucker) So Undo Replays Few Segments                 | Superseded by [0066](0066-snapshot-undo-reinstated.md)                   |
+| [0041](0041-lock-viewport-zoom-for-toddlers.md)   | Lock Viewport Pinch-Zoom (`user-scalable=no`) for a Toddler Drawing App                            | Superseded by [0076](0076-scope-toddler-zoom-lock-element-level.md)      |
 | [0051](0051-desynchronized-canvas-low-latency.md) | `desynchronized` Canvas for Lower Ink Latency — Tried and Rejected                                 | Rejected                                                                 |
 | 0053                                              | Asset-Generation Pipeline in `tools/asset-gen/` (In-Repo Folder, Not a Workspace or Separate Repo) | Moved to [asset-gen docs](../../tools/asset-gen/docs/architecture.md)    |
 | 0054                                              | Uniform Dot-Separated Variant Suffixes for Coloring Assets (`{name}.{variant}.webp`)               | Moved to [asset-gen docs](../../tools/asset-gen/docs/asset-naming.md)    |

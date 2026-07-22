@@ -43,6 +43,16 @@
     applyDeviceOrientationPreference();
   });
 
+  // Own the drawing route's app-surface locks (ADR-0076): no scroll, selection,
+  // zoom, or iOS callout. Every other route is a normal document; the drawing
+  // page is the override, so it sets the flag app.css keys off and clears it when
+  // the user navigates away (client-side nav to /privacy etc.). The app.html boot
+  // script seeds the same flag for first paint.
+  $effect(() => {
+    document.documentElement.setAttribute('data-app-surface', '');
+    return () => document.documentElement.removeAttribute('data-app-surface');
+  });
+
   // First-visit service worker registration waits for the Install Banner's
   // "a few strokes drawn" signal so the ~39 MB precache never lands on top of
   // boot or the first strokes (issue #462). Repeat visits don't pass through

@@ -23,11 +23,12 @@ export function createAiPreviewLoader(
 }
 
 // ── Pinch-to-zoom for the AI preview ──────────────────────────────────────
-// The page-wide viewport is zoom-locked (`user-scalable=no`, ADR-0041) so the
-// toddler can't accidentally zoom the drawing surface. That also kills native
-// pinch on the AI result, so the preview runs its own gesture: two fingers scale
-// it, one finger pans once zoomed, and everything is clamped to the preview's
-// own bounds — the surrounding app stays locked.
+// The drawing page suppresses native pinch element-by-element (touch-action:none
+// + the engine's touch preventDefault, ADR-0076) so the toddler can't zoom the
+// drawing surface. That also kills native pinch on the AI result, so the preview
+// runs its own gesture: two fingers scale it, one finger pans once zoomed, and
+// everything is clamped to the preview's own bounds — the drawing surface stays
+// locked.
 
 export interface Point {
   x: number;

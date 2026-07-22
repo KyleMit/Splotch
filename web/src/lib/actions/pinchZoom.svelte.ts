@@ -14,7 +14,7 @@ export interface PinchZoomOptions {
 // Scoped pinch-to-zoom: `node` is the touch surface (kept at scale 1 so its
 // bounding rect stays a fixed reference), `opts.target` is the child that
 // actually scales and pans. The whole gesture is confined to `node`'s bounds, so
-// the page-wide zoom lock (ADR-0041) is untouched.
+// the drawing page's element-level zoom lock (ADR-0076) is untouched.
 //
 // The argument is a *getter* read inside a $effect (like modalDialog), so the
 // runes it touches — `enabled`, `resetKey`, the bound `target` — stay reactive.

@@ -283,7 +283,10 @@
     resize: vertical;
     min-height: 88px;
     padding: 10px 12px;
-    font-size: var(--font-size-md);
+    /* Never below 16px: iOS Safari / WKWebView zoom the visual viewport when a
+       focused input's font-size is < 16px, and on the drawing route that would
+       strand the canvas zoomed with no way to reset it (ADR-0076). */
+    font-size: max(16px, var(--font-size-md));
     font-family: inherit;
     line-height: 1.5;
     color: var(--text-strong);

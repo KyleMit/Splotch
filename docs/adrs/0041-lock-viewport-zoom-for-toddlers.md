@@ -1,6 +1,7 @@
 # ADR-0041: Lock Viewport Pinch-Zoom (`user-scalable=no`) for a Toddler Drawing App
 
-**Status:** Active **Date:** 2026-07
+**Status:** Superseded by [ADR-0076](0076-scope-toddler-zoom-lock-element-level.md) **Date:**
+2026-07
 
 ## Context
 
