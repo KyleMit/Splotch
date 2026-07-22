@@ -1,15 +1,11 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { gotoApp } from './helpers';
 
 // The drag-to-clear coachmark demos the gesture when a child taps the clear
 // button repeatedly (or holds it) instead of dragging. Regression guard: the
 // coachmark's own visibility ($state) was being read inside the
 // orientation-reset $effect, so revealing it re-ran the effect and dismissed it
 // in the same tick — the tutorial never actually appeared.
-
-async function gotoApp(page: Page) {
-  await page.goto('/');
-  await expect(page.locator('#drawingCanvas')).toBeVisible();
-}
 
 test('triple-tapping the clear button reveals the coachmark', async ({ page }) => {
   await gotoApp(page);

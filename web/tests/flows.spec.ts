@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { draw, firstOpaquePixel, gotoApp } from './helpers';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
 // Svelte component wiring (palette, action drawer, tool/stroke state, AI fetch,
@@ -15,12 +16,6 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 // well past a few seconds. Poll magic-reveal assertions against this generous
 // window rather than a tight one — see issue #498.
 const MAGIC_REVEAL_TIMEOUT = 15_000;
-
-async function gotoApp(page: Page, path = '/') {
-  await page.goto(path);
-  // The canvas mounts on the client; once it's visible the app has hydrated.
-  await expect(page.locator('#drawingCanvas')).toBeVisible();
-}
 
 // Open an overlay/flyout/dialog robustly and leave it open. Several of these
 // controls idle-mount (ADR-0049) or reposition on the first frame, so the first
@@ -110,16 +105,6 @@ async function pickBrush(page: Page, id: string) {
   await page.locator(id).click();
 }
 
-/** Drag a stroke through canvas-relative points with real mouse input. */
-async function draw(page: Page, points: { x: number; y: number }[]) {
-  const box = await page.locator('#drawingCanvas').boundingBox();
-  if (!box) throw new Error('canvas has no bounding box');
-  await page.mouse.move(box.x + points[0].x, box.y + points[0].y);
-  await page.mouse.down();
-  for (const p of points.slice(1)) await page.mouse.move(box.x + p.x, box.y + p.y);
-  await page.mouse.up();
-}
-
 // Draw a magic-brush stroke and confirm its reveal actually landed (more than a
 // flat pen colour), retrying the whole stroke on a miss. The brush→engine
 // magic-mode toggle flows through a Svelte $effect (DrawingCanvas), so for a
@@ -168,18 +153,6 @@ async function clearViaGesture(page: Page) {
     );
   }
   await page.mouse.up();
-}
-
-/** First non-transparent pixel on the canvas as [r,g,b,a], or null if blank. */
-function firstOpaquePixel(page: Page): Promise<number[] | null> {
-  return page.evaluate(() => {
-    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-    for (let i = 3; i < data.length; i += 4) {
-      if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
-    }
-    return null;
-  });
 }
 
 function canvasInkStats(
@@ -346,33 +319,45 @@ test('a crayon stroke previews at its true colour MID-stroke in dark mode', asyn
   expect(fullColour).toBeGreaterThan(150);
 });
 
+// Focus a control and fire an activation key, retrying the whole gesture until
+// the expected reactive class lands. A lone press-then-assert flakes under a
+// starved parallel worker: the keydown can land before the swatch's handler is
+// wired, so nothing activates and the class never appears — a single
+// toHaveClass then times out (issue #502). Activation is idempotent, so
+// re-focusing and re-pressing is safe. `press` focuses the target first.
+async function activateWithKey(target: Locator, key: string, className: RegExp) {
+  await expect(async () => {
+    await target.press(key);
+    await expect(target).toHaveClass(className, { timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
+}
+
 test('palette colors and custom hexagons activate from the keyboard', async ({ page }) => {
   await gotoApp(page);
 
+  // Tab lands focus on the first two swatches in order; toBeFocused retries, so
+  // the navigation itself is stable.
   await page.keyboard.press('Tab');
   await expect(page.getByRole('button', { name: 'Purple' })).toBeFocused();
   await page.keyboard.press('Tab');
   const blue = page.getByRole('button', { name: 'Blue' });
   await expect(blue).toBeFocused();
-  await page.keyboard.press('Enter');
-  await expect(blue).toHaveClass(/active/);
 
-  const red = page.getByRole('button', { name: 'Red' });
-  await red.focus();
-  await page.keyboard.press('Space');
-  await expect(red).toHaveClass(/active/);
+  // Enter/Space activation drives a reactive class update that can race the
+  // keydown under load — retry the whole press-then-assert (see activateWithKey).
+  await activateWithKey(blue, 'Enter', /active/);
+  await activateWithKey(page.getByRole('button', { name: 'Red' }), 'Space', /active/);
 
-  const custom = page.getByRole('button', { name: 'Custom Color' });
-  await custom.focus();
-  await page.keyboard.press('Enter');
+  // Opening the picker via the keyboard: retryOpen skips the re-press once the
+  // dialog is up, so a slow first open can't be toggled shut by a retry.
   const dialog = page.locator('#color-picker');
-  await expect(dialog).toBeVisible();
+  await retryOpen(dialog, () => page.getByRole('button', { name: 'Custom Color' }).press('Enter'));
 
+  // Space both selects the hexagon and closes the picker; the retry rides out a
+  // dropped keydown, then the dialog closes once the selection lands.
   const green = dialog.locator('.grid.landscape .hexagon[data-color="#2ECC71"]');
-  await green.focus();
-  await page.keyboard.press('Space');
+  await activateWithKey(green, 'Space', /selected/);
   await expect(dialog).not.toBeVisible();
-  await expect(green).toHaveClass(/selected/);
 });
 
 test('pointer exploration still snaps a hexagon gap and commits the highlighted color', async ({

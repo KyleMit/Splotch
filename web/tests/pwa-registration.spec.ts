@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { draw, gotoApp } from './helpers';
 
 // Issue #462: the service worker precaches the full offline bundle (~39 MB of
 // coloring-page variants), so registration no longer happens at load — it
@@ -9,20 +10,6 @@ import { expect, test, type Page } from '@playwright/test';
 // the previous session keeps controlling the page from load.
 
 test.skip(!!process.env.DEV_SERVER, 'the dev server neither emits nor registers sw.js');
-
-async function gotoApp(page: Page) {
-  await page.goto('/');
-  await expect(page.locator('#drawingCanvas')).toBeVisible();
-}
-
-async function draw(page: Page, points: { x: number; y: number }[]) {
-  const box = await page.locator('#drawingCanvas').boundingBox();
-  if (!box) throw new Error('canvas has no bounding box');
-  await page.mouse.move(box.x + points[0].x, box.y + points[0].y);
-  await page.mouse.down();
-  for (const p of points.slice(1)) await page.mouse.move(box.x + p.x, box.y + p.y);
-  await page.mouse.up();
-}
 
 function hasRegistration(page: Page): Promise<boolean> {
   return page.evaluate(() =>
