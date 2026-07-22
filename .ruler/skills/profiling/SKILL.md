@@ -134,7 +134,7 @@ The drawing path is already well-optimized; treat these as the baseline:
 When you fix something, re-run the same command and compare `summary.json` / `report.md` against the
 prior run in `perf-profiles/`. A committed baseline to compare against (high-DPI tablet toddler
 session + the seven `perf:undo` scenarios, with a ranked findings write-up) lives in
-`artifacts/perf/2026-07-22-draw-profile/`.
+`scrapbook/perf/2026-07-22-draw-profile/`.
 
 ## Native specifics
 
