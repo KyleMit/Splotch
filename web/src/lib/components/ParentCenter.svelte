@@ -14,6 +14,7 @@
   import AboutSection from './parent/AboutSection.svelte';
   import { SECTIONS, sectionSubtitle, type SectionId } from './parent/sections';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
   import ToggleRow from './parent/ToggleRow.svelte';
   import {
     settings,
@@ -123,6 +124,17 @@
   function backToHub() {
     view = 'hub';
   }
+
+  // Tier-2 accessibility (ADR-0076): let a low-vision parent pinch to enlarge the
+  // reading content. The bound element gets CSS `zoom`; whichever scroll shell is
+  // mounted binds it. Zoom resets to normal whenever the overlay closes or the
+  // parent navigates to another section.
+  let zoomTarget = $state<HTMLElement>();
+  const textZoom = () => ({
+    target: zoomTarget,
+    enabled: ui.parentCenterOpen,
+    resetKey: view,
+  });
 </script>
 
 {#snippet sectionContent(id: SectionId)}
@@ -258,9 +270,11 @@
             </button>
           {/each}
         </nav>
-        <div class="pc-pane">
-          <h3 class="pc-pane-title">{activeMeta.title ?? activeMeta.label}</h3>
-          {@render sectionContent(activeSection)}
+        <div class="pc-pane" use:pinchTextZoom={textZoom}>
+          <div class="pc-zoom" bind:this={zoomTarget}>
+            <h3 class="pc-pane-title">{activeMeta.title ?? activeMeta.label}</h3>
+            {@render sectionContent(activeSection)}
+          </div>
         </div>
       </div>
     {:else if view === 'hub'}
@@ -268,27 +282,29 @@
       <header class="pc-header">
         <h2>Parent Center</h2>
       </header>
-      <div class="pc-scroll">
-        <ul class="hub-list">
-          {#each SECTIONS as section (section.id)}
-            <li>
-              <button class="hub-row" onclick={() => openSection(section.id)}>
-                <span class="hub-icon">
-                  {#if section.icon === 'splotchy'}
-                    <SplotchyIcon class="hub-icon-svg" />
-                  {:else}
-                    <Icon name={section.icon} class="hub-icon-svg" />
-                  {/if}
-                </span>
-                <span class="hub-text">
-                  <span class="hub-title">{section.label}</span>
-                  <span class="hub-subtitle">{sectionSubtitle(section.id)}</span>
-                </span>
-                <Icon name="chevron-right" class="hub-chevron" />
-              </button>
-            </li>
-          {/each}
-        </ul>
+      <div class="pc-scroll" use:pinchTextZoom={textZoom}>
+        <div class="pc-zoom" bind:this={zoomTarget}>
+          <ul class="hub-list">
+            {#each SECTIONS as section (section.id)}
+              <li>
+                <button class="hub-row" onclick={() => openSection(section.id)}>
+                  <span class="hub-icon">
+                    {#if section.icon === 'splotchy'}
+                      <SplotchyIcon class="hub-icon-svg" />
+                    {:else}
+                      <Icon name={section.icon} class="hub-icon-svg" />
+                    {/if}
+                  </span>
+                  <span class="hub-text">
+                    <span class="hub-title">{section.label}</span>
+                    <span class="hub-subtitle">{sectionSubtitle(section.id)}</span>
+                  </span>
+                  <Icon name="chevron-right" class="hub-chevron" />
+                </button>
+              </li>
+            {/each}
+          </ul>
+        </div>
       </div>
     {:else}
       <!-- Phone: drilled into a single section, with a back arrow. -->
@@ -298,8 +314,10 @@
         </button>
         <h2>{activeMeta.title ?? activeMeta.label}</h2>
       </header>
-      <div class="pc-scroll">
-        {@render sectionContent(activeSection)}
+      <div class="pc-scroll" use:pinchTextZoom={textZoom}>
+        <div class="pc-zoom" bind:this={zoomTarget}>
+          {@render sectionContent(activeSection)}
+        </div>
       </div>
     {/if}
   </div>
@@ -549,11 +567,13 @@
     fill: var(--brand);
   }
 
-  /* Phone: the single scroll region (hub list or a section body). */
+  /* Phone: the single scroll region (hub list or a section body). overflow (not
+     just -y) so a pinch-enlarged (.pc-zoom) body can be scrolled sideways too;
+     at rest the content is container-width, so no horizontal bar shows. */
   .pc-scroll {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
+    overflow: auto;
     padding: 0 24px 28px;
   }
 
@@ -708,7 +728,9 @@
     flex: 1;
     min-width: 0;
     min-height: 0;
-    overflow-y: auto;
+    /* overflow (not just -y) so a pinch-enlarged (.pc-zoom) pane scrolls sideways
+       too; at rest the content is pane-width, so no horizontal bar shows. */
+    overflow: auto;
     padding: 4px 8px 4px 16px;
   }
 
