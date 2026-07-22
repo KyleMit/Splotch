@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const { getStoreMock } = vi.hoisted(() => ({ getStoreMock: vi.fn() }));

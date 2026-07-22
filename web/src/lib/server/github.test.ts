@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
 
 // github.ts reads GITHUB_ISSUE_TOKEN/REPO from $env/dynamic/private at call time;

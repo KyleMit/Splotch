@@ -22,8 +22,20 @@ async function openPickerAt(page: Page, width: number, height: number): Promise<
     await customSwatch.click({ timeout: 1000 });
     await expect(page.locator('#color-picker')).toBeVisible({ timeout: 1000 });
   }).toPass({ timeout: 10_000 });
-  // Let the fly-in animation land before measuring geometry.
-  await page.waitForTimeout(400);
+  // Let the fly-in animation land before measuring geometry: wait until the
+  // dialog's rect holds still across consecutive frames (a fixed sleep costs
+  // 400ms × 13 calls across this file; settling takes only a few frames).
+  await page.locator('#color-picker').evaluate(async (dialog) => {
+    const snap = () => JSON.stringify(dialog.getBoundingClientRect());
+    let prev = snap();
+    let stable = 0;
+    for (let frames = 0; frames < 120 && stable < 2; frames++) {
+      await new Promise(requestAnimationFrame);
+      const cur = snap();
+      stable = cur === prev ? stable + 1 : 0;
+      prev = cur;
+    }
+  });
 
   return page.locator('#color-picker').evaluate((dialog) => {
     const rows = [...dialog.querySelectorAll<HTMLElement>('.row')].filter(

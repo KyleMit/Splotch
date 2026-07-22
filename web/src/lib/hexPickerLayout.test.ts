@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { COLOR_FAMILIES, LANDSCAPE_ROWS, PORTRAIT_ROWS } from './hexPickerLayout';
 

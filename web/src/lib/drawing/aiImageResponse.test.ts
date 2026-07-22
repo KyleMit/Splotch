@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
 import { ui } from '$lib/state/ui.svelte';
 import { readAiImageResponse } from './aiImageResponse';

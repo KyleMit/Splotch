@@ -14,7 +14,10 @@ paths:
   E2E (`tests/*.spec.ts`), and a Maestro native smoke test (`.maestro/smoke.yaml` — one flow shared
   by Android and iOS). Pick the lowest layer that can catch the regression.
 * Unit tests cover pure logic and state modules only; UI flows belong in Playwright. The Vitest
-  environment is **happy-dom**, not jsdom (ADR-0009).
+  environment is **happy-dom**, not jsdom (ADR-0009). Test files that need no DOM at all —
+  `lib/server/**` and pure-logic modules — opt out with a `// @vitest-environment node` first line
+  (per-file happy-dom setup is the suite's biggest fixed cost); a file whose module (or imports)
+  touches `localStorage`/`document`/`window` must stay on the happy-dom default.
 * `npm test` = `test:unit` + `test:asset-gen` + `test:e2e`; the native smoke tests (`test:android`,
   `test:ios`) are deliberately excluded (need an emulator/simulator + native toolchain).
 * Playwright builds the production artifact and serves it with `vite preview` by default; set
