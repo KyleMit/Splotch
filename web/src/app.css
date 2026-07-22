@@ -282,7 +282,7 @@ body {
     inset 0 0 0 1px rgba(0, 0, 0, 0.04);
   transform: translate(var(--from-x), var(--from-y)) scale(0.1) rotate(-18deg);
   opacity: 0;
-  animation: polaroid-show 1.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: polaroid-show 1.9s var(--ease-glide) forwards;
   transform-origin: center center;
 }
 

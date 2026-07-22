@@ -12,7 +12,11 @@ pierce Svelte's style scoping, so every component references them directly via `
 ## Hard rules
 
 1. **Never edit `web/src/tokens.css`** — it's generated. Edit `tokens.ts`, run `npm run gen:tokens`,
-   commit both. CI fails on drift (`npm run gen:tokens:check`).
+   commit both. CI fails on drift (`npm run gen:tokens:check`). Nothing regenerates it
+   automatically: `npm run dev` and the Netlify build both serve the *committed* file (unlike
+   `gen:icons`/`gen:releases` it's deliberately not in `prebuild` — the Netlify build runs on the
+   platform-default Node, which may lack `--experimental-strip-types`), so a `tokens.ts` edit is
+   invisible until you rerun `gen:tokens`. If a token change doesn't show up, that's why.
 2. **No raw values where a token exists.** In component `<style>` blocks, don't write hex colors, px
    radii, px font sizes, shadow literals, or easing curves that a token already covers — use the
    `var(--…)`. A raw value is only acceptable for genuine one-offs (e.g. the polaroid frame's

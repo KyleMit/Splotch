@@ -1,9 +1,15 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import Button from '$lib/components/design/Button.svelte';
   import { brand, scale, themes, toCssVarName, type ThemeTokens } from '$lib/design/tokens';
-  import { applyTheme, type ThemePreference } from '$lib/theme';
+  import { applyTheme, isThemePreference, type ThemePreference } from '$lib/theme';
 
-  let theme = $state<ThemePreference>('system');
+  // Start from whatever data-theme the app has already stamped on <html> (no
+  // attribute = system). The toggle restamps it ephemerally for preview only —
+  // it doesn't write the stored setting, and the drawing page re-applies the
+  // parent's real preference on mount.
+  const appliedTheme = browser ? document.documentElement.dataset.theme : undefined;
+  let theme = $state<ThemePreference>(isThemePreference(appliedTheme) ? appliedTheme : 'system');
 
   function setTheme(next: ThemePreference) {
     theme = next;
