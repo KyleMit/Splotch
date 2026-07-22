@@ -1,6 +1,11 @@
 # ADR-0022: PWA Service Worker Strategy — vite-plugin-pwa as Manifest Injector with Custom Update Lifecycle
 
-**Status:** Active **Date:** 2026-06
+**Status:** Active — amended 2026-07 (issue #462): registration is no longer plugin-injected.
+`injectRegister: null` (the auto-injected `registerSW.js` never actually loaded under SvelteKit —
+`transformIndexHtml` doesn't run — so fresh visitors were never registering at all);
+`src/lib/pwa/updates.ts` now owns registration end-to-end: first visits register at idle after the
+shared settled-in stroke threshold (skipped under Save-Data), repeat visits re-register immediately
+at idle via the persisted registration. **Date:** 2026-06
 
 ## Context
 
