@@ -10,6 +10,31 @@ test('home page renders the drawing canvas', async ({ page }) => {
   await expect(page.locator('#drawingCanvas')).toBeVisible();
 });
 
+test('viewport meta permits browser zoom (no user-scalable=no / maximum-scale)', async ({
+  page,
+}) => {
+  await page.goto('/');
+
+  // ADR-0076: the drawing surface is zoom-locked element-by-element
+  // (touch-action:none + the engine's touch preventDefault), NOT via the viewport
+  // meta. Re-adding either attribute would re-block browser zoom page-wide and
+  // reinstate the sole Lighthouse a11y deduction axe flags as [user-scalable].
+  const content = await page.locator('meta[name="viewport"]').getAttribute('content');
+  expect(content).not.toContain('user-scalable');
+  expect(content).not.toContain('maximum-scale');
+});
+
+test('/privacy is browser-zoomable (its scroll container permits touch zoom)', async ({ page }) => {
+  await page.goto('/privacy');
+
+  // The legal page opts back out of the body's touch-action:none lock so a
+  // low-vision reader can pinch-zoom it — the payoff of dropping user-scalable=no.
+  const touchAction = await page
+    .locator('.legal')
+    .evaluate((el) => getComputedStyle(el).touchAction);
+  expect(touchAction).toBe('auto');
+});
+
 test('link-preview meta tags are present and match the real OG image', async ({
   page,
   request,

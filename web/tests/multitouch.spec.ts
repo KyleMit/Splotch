@@ -3,10 +3,13 @@ import { expect, test, type Page } from '@playwright/test';
 // Multi-touch drawing. The engine keys its drawing state by pointerId
 // (activePointers: Map<number, PointerState>), so several touch pointers must
 // paint independent strokes at the same time. And a pinch/spread — two fingers
-// moving together or apart — must NOT zoom or scale the canvas: touch-action:none
-// plus the user-scalable=no viewport keep gestures off the page, and the engine
-// never applies a transform of its own. These run through the /dev/engine harness
-// (see src/routes/dev/engine), driving up to 5 concurrent pointers in a single
+// moving together or apart — must NOT zoom or scale the canvas: the viewport meta
+// no longer carries user-scalable=no (ADR-0076), so the lock is now purely
+// element-level — touch-action:none on the canvas plus the engine's touch
+// preventDefault veto the gesture, and the engine never applies a transform of
+// its own. The spread test below asserts visualViewport.scale stays 1 to prove
+// the page itself never zooms. These run through the /dev/engine harness (see
+// src/routes/dev/engine), driving up to 5 concurrent pointers in a single
 // synchronous tick via window.__engine.multiStrokeSync.
 
 const count = (page: Page) => page.evaluate(() => window.__engine.nonTransparentCount());
