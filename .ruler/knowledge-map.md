@@ -8,6 +8,7 @@ content):
 | Skill                               | Read it before…                                                                                                                                    |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `architecture`                      | navigating unfamiliar code, placing new code, naming UI elements                                                                                   |
+| `design`                            | writing or changing component styles, picking a color/size/shadow/easing — the token vocabulary, primitives, and `/dev/design`                     |
 | `api`                               | adding, changing, or calling any `/api/*` endpoint                                                                                                 |
 | `mobile`                            | touching anything Android/iOS/Capacitor, or store-release work                                                                                     |
 | `testing`                           | writing/running tests beyond the basics, or debugging CI failures                                                                                  |
