@@ -30,9 +30,15 @@ authors and posts review comments; this one works through them.
    With `gh` available, `gh pr view <n> --comments` and
    `gh api repos/{owner}/{repo}/pulls/{n}/comments` cover the same ground. In cloud sessions `gh` is
    not available — use the MCP tools.
-4. **Filter to what's actionable.** Skip threads that are already resolved, comments you (or a
-   previous agent run) already replied to with a fix, and your own comments. Treat bot reviews
-   (Copilot, CI annotations) the same as human ones — triage them on merit, not on author.
+4. **Filter to open threads only — resolved is done.** The worklist is exclusively the
+   **unresolved** threads: because this skill resolves every thread it finishes (see Replying), a
+   resolved thread is a completed round, and re-triaging it duplicates effort. This is what lets
+   review rounds compose — `leave-pr-review` posts a fresh batch, this skill works and resolves it,
+   and the next run picks up only what's new or reopened (a reviewer unresolving a thread puts it
+   back in scope on purpose). If the comment listing doesn't expose resolution state, fall back to
+   the same signal by content: skip any thread whose last reply is your own disposition. Also skip
+   your own comments elsewhere, but treat bot reviews (Copilot, CI annotations) the same as human
+   ones — triage them on merit, not on author.
 
 ## Plan the order before starting
 
