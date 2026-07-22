@@ -57,7 +57,7 @@ async function gestureOnPane(
         node.dispatchEvent(ev);
         return ev;
       };
-      let movePrevented = false;
+      let movePrevented: boolean;
       if (o.fingers === 1) {
         fire('pointerdown', 1, cx, cy);
         movePrevented = fire('pointermove', 1, cx, cy - 60).defaultPrevented;

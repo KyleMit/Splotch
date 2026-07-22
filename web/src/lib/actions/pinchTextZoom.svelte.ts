@@ -36,6 +36,10 @@ export interface PinchTextZoomOptions {
 // The argument is a *getter* read inside a $effect (like `pinchZoom`), so the
 // runes it touches — `enabled`, `resetKey`, the bound `target` — stay reactive.
 export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoomOptions) {
+  // Imperative pointer tracking, read only inside the event handlers (spread /
+  // rebase / reset) — never from a rune — so a plain Map is intended and a
+  // reactive SvelteMap would be dead weight.
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- imperative pointer map, not reactive state
   const points = new Map<number, { x: number; y: number }>();
   let zoom = MIN_TEXT_ZOOM;
   // Snapshot at the moment the pinch becomes two-fingered, so scaling is relative
