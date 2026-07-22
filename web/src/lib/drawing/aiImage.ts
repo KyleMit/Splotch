@@ -13,7 +13,6 @@ import { apiUrl } from '$lib/api';
 import { exportCanvasBlob } from './engine';
 import { readAiImageResponse } from './aiImageResponse';
 import { getActiveOverlayImage } from './overlay';
-import { saveImageBlob } from './screenshot';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 
 const UPLOAD_WEBP_QUALITY = 0.85;
@@ -66,6 +65,18 @@ async function blobSignature(blob: Blob): Promise<string | null> {
 // changed since the last AI run, so duplicates don't pile up.
 async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, ownsRun: () => boolean) {
   if (!ownsRun()) return;
+  // The save pipeline loads on demand so this module — statically imported by
+  // ActionsPanel — doesn't drag it into the startup bundle (issue #461). A
+  // failed chunk load is contained here: the AI image already committed to the
+  // result modal, so it must degrade like any other silent save failure rather
+  // than bubbling into generateAiImage's error UI.
+  let saveImageBlob: (typeof import('./screenshot'))['saveImageBlob'];
+  try {
+    ({ saveImageBlob } = await import('./screenshot'));
+  } catch (err) {
+    console.error('Auto-save failed:', err);
+    return;
+  }
   await saveImageBlob(aiBlob, 'splotch-ai');
   if (!ownsRun()) return;
   const sig = await blobSignature(drawingBlob);

@@ -13,7 +13,7 @@
 //   paperView.ts        pure rotation-lock view geometry (ADR-0050)
 //   magicBrush.ts       the magic brush's color sheet + paint pattern (ADR-0043)
 //   emptyScan.ts        cheap blank-canvas detection
-//   exportDrawing.ts    PNG composition for save/share
+//   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
 import { ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte';
 import {
@@ -44,6 +44,7 @@ import {
   renderOp,
   clearAllOf,
   closeLiveCrayonPass,
+  flushCrayonBuffer,
   hasOpenLiveCrayonPass,
   resetLiveCrayonPass,
   setCrayonPaperSpace,
@@ -78,7 +79,8 @@ import {
   snapshotCount,
 } from './undoHistory';
 import { scanCanvasIsEmpty } from './emptyScan';
-import { exportDrawing, warmPaperTextureWhenIdle, type ExportOptions } from './exportDrawing';
+import type { ExportOptions } from './exportDrawing';
+import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
 
 export { setColorSheet };
@@ -1251,9 +1253,14 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   listen(window, 'pointercancel', trackPointerLift, true);
   listen(window, 'pointermove', adoptStrayPenStream, true);
 
-  // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
-  // first export.
-  warmPaperTextureWhenIdle();
+  // Warm the export compositor + paper texture at idle: the module is
+  // dynamic-imported so it stays out of the startup bundle (issue #461), and
+  // pre-loading it here means the first save doesn't stall on the chunk fetch
+  // or the texture decode (~226ms). Best-effort — a failed warm just retries
+  // at save time.
+  scheduleIdle(() => {
+    void import('./exportDrawing').then((m) => m.warmPaperTexture()).catch(() => {});
+  });
 
   return {
     teardown() {
@@ -1336,16 +1343,40 @@ export function setSafeAreaInsets(insets: {
 
 // --- Export -------------------------------------------------------------------
 
+// Rebuild the strokes in PAPER space (the paper raster + pending + any
+// in-flight stroke) rather than copying the visible canvas: under a
+// rotation-locked view the visible canvas is the letterboxed presentation, and
+// the export should be the full upright page.
+function snapshotStrokes(): HTMLCanvasElement {
+  const snapshot = document.createElement('canvas');
+  snapshot.width = paper.pxW;
+  snapshot.height = paper.pxH;
+  const snapshotCtx = snapshot.getContext('2d')!;
+  snapshotCtx.lineCap = 'round';
+  snapshotCtx.lineJoin = 'round';
+  repaintAll(snapshotCtx);
+  // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
+  // (its flush is only recorded at pass close); an export is terminal for this
+  // snapshot, so stamp it now rather than dropping that ink.
+  flushCrayonBuffer(snapshotCtx);
+  return snapshot;
+}
+
+// The compositor is save-time-only, so it loads on demand and stays out of the
+// startup bundle (issue #461). The snapshot MUST be taken before the import's
+// await: save-on-delete fire-and-forgets this call and then clears the live
+// canvas synchronously, so snapshotting any later would export a blank page
+// (the engine E2E spec pins the race). A dead connection can reject the import
+// — callers own surfacing that (their tap handlers catch).
 export async function exportCanvasBlob(
   overlayImage: HTMLImageElement | null = null,
   options: ExportOptions = {}
 ): Promise<Blob | null> {
-  if (!canvas) return null;
-  return exportDrawing(
-    { paperPxWidth: paper.pxW, paperPxHeight: paper.pxH, renderScale },
-    overlayImage,
-    options
-  );
+  if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
+  const snapshot = snapshotStrokes();
+  const scale = renderScale;
+  const { composeExportPng } = await import('./exportDrawing');
+  return composeExportPng(snapshot, scale, overlayImage, options);
 }
 
 export function getActiveCanvas(): HTMLCanvasElement {
