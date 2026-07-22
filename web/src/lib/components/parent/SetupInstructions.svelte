@@ -206,7 +206,7 @@
   .help-section {
     margin-bottom: 16px;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     overflow: hidden;
   }
 
@@ -216,14 +216,14 @@
 
   .help-section summary {
     padding: 16px;
-    font-size: 18px;
+    font-size: var(--font-size-xl);
     font-weight: 600;
     color: var(--text);
     cursor: pointer;
     user-select: none;
     list-style: none;
     background: var(--surface-2);
-    transition: background 0.2s ease;
+    transition: background var(--duration-base) ease;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -244,7 +244,7 @@
     content: '›';
     font-size: 24px;
     color: var(--text-faint);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-base) ease;
     flex-shrink: 0;
   }
 
@@ -258,7 +258,7 @@
 
   .os-heading {
     margin: 0 0 10px 0;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -270,7 +270,7 @@
   .lock-heading {
     margin: 0;
     padding: 16px 16px 0;
-    font-size: 18px;
+    font-size: var(--font-size-xl);
     font-weight: 600;
     color: var(--text);
   }
@@ -329,7 +329,7 @@
 
   .one-tap-hint {
     margin: 8px 0 0;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     color: var(--text-faint);
   }
 

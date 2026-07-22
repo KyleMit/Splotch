@@ -180,7 +180,7 @@
     align-items: center;
     gap: 12px;
     margin-bottom: 8px;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--text-mid);
   }
@@ -189,7 +189,7 @@
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 500;
     color: var(--text);
   }
@@ -200,7 +200,7 @@
 
   .chip-heading {
     margin: 0 0 10px 0;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -221,17 +221,17 @@
     min-width: 0;
     padding: 11px 12px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: var(--surface-2);
     color: var(--text-mid);
     font-family: inherit;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
     transition:
-      background 0.15s ease,
-      color 0.15s ease,
-      border-color 0.15s ease;
+      background var(--duration-fast) ease,
+      color var(--duration-fast) ease,
+      border-color var(--duration-fast) ease;
   }
 
   @media (hover: hover) {
@@ -278,7 +278,7 @@
     flex-shrink: 0;
     width: 14px;
     text-align: center;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 700;
   }
 

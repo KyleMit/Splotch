@@ -337,7 +337,7 @@
   /* AI access code entry */
   .access-code-label {
     display: block;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 500;
     color: var(--text);
     margin-bottom: 4px;
@@ -352,9 +352,9 @@
     flex: 1;
     min-width: 0;
     padding: 8px 12px;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--surface);
     color: var(--text-strong);
   }
@@ -366,14 +366,14 @@
 
   .access-code-submit {
     padding: 8px 16px;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 600;
     color: #fff;
     background: var(--brand);
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-base) ease;
     flex-shrink: 0;
   }
 
@@ -391,7 +391,7 @@
   /* BYOK (bring your own key) panel */
   .byok-intro {
     margin: 0 0 12px 0;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     color: var(--text);
     line-height: 1.5;
   }
@@ -403,14 +403,14 @@
   .byok-howto {
     margin: 0 0 14px 0;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--surface);
     overflow: hidden;
   }
 
   .byok-howto summary {
     padding: 10px 12px;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--brand);
     cursor: pointer;
@@ -426,7 +426,7 @@
     content: '›';
     float: right;
     color: var(--text-faint);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-base) ease;
   }
 
   .byok-howto[open] summary::after {
@@ -437,7 +437,7 @@
     margin: 0;
     padding: 0 16px 8px 32px;
     color: var(--text-mid);
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     line-height: 1.7;
   }
 
@@ -448,21 +448,21 @@
 
   .byok-howto code {
     background: var(--brand-wash);
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     padding: 1px 5px;
-    font-size: 12px;
+    font-size: var(--font-size-xs);
   }
 
   .byok-howto-note {
     margin: 0;
     padding: 0 12px 12px;
-    font-size: 12px;
+    font-size: var(--font-size-xs);
     color: var(--text-faint);
   }
 
   .byok-secret-hint {
     margin: 10px 0 0 0;
-    font-size: 12px;
+    font-size: var(--font-size-xs);
     color: var(--text-faint);
   }
 
@@ -472,7 +472,7 @@
     align-items: flex-start;
     gap: 6px;
     margin: 10px 0 0 0;
-    font-size: 12px;
+    font-size: var(--font-size-xs);
     line-height: 1.45;
     color: var(--success-text);
   }
@@ -513,8 +513,8 @@
   .byok-message {
     margin: 12px 0 0 0;
     padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 13px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
     line-height: 1.4;
   }
 

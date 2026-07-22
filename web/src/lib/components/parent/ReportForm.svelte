@@ -214,7 +214,7 @@
 <style>
   .report-heading {
     margin: 0 0 6px 0;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -223,7 +223,7 @@
 
   .report-intro {
     margin: 0 0 12px 0;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     color: var(--text-mid);
     line-height: 1.5;
   }
@@ -247,7 +247,7 @@
   .report-kind-option {
     flex: 1;
     padding: 8px 10px;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--text-mid);
     background: transparent;
@@ -255,8 +255,8 @@
     border-radius: 7px;
     cursor: pointer;
     transition:
-      background 0.15s ease,
-      color 0.15s ease;
+      background var(--duration-fast) ease,
+      color var(--duration-fast) ease;
   }
 
   .report-kind-option.active {
@@ -272,7 +272,7 @@
   }
 
   .report-label {
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 500;
     color: var(--text);
   }
@@ -283,13 +283,13 @@
     resize: vertical;
     min-height: 88px;
     padding: 10px 12px;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-family: inherit;
     line-height: 1.5;
     color: var(--text-strong);
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
   }
 
   .report-textarea:focus {
@@ -299,7 +299,7 @@
 
   .report-public-note {
     margin: -2px 0 0 0;
-    font-size: 12px;
+    font-size: var(--font-size-xs);
     line-height: 1.45;
     color: var(--text-muted);
   }
@@ -318,7 +318,7 @@
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     color: var(--text);
     line-height: 1.4;
     cursor: pointer;
@@ -341,14 +341,14 @@
   /* Collapsible device-info preview — same chevron idiom as the BYOK how-to. */
   .report-device-details {
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--surface);
     overflow: hidden;
   }
 
   .report-device-details summary {
     padding: 8px 12px;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--brand);
     cursor: pointer;
@@ -364,7 +364,7 @@
     content: '›';
     float: right;
     color: var(--text-faint);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-base) ease;
   }
 
   .report-device-details[open] summary::after {
@@ -378,7 +378,7 @@
   }
 
   .report-device-list li {
-    font-size: 12px;
+    font-size: var(--font-size-xs);
     color: var(--text-mid);
     line-height: 1.7;
     word-break: break-word;
@@ -392,7 +392,7 @@
   .report-device-empty {
     margin: 0;
     padding: 0 12px 8px;
-    font-size: 12px;
+    font-size: var(--font-size-xs);
     color: var(--text-faint);
   }
 
@@ -417,14 +417,14 @@
   .report-submit {
     align-self: flex-start;
     padding: 9px 18px;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 600;
     color: #fff;
     background: var(--brand);
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-base) ease;
   }
 
   @media (hover: hover) {
@@ -441,8 +441,8 @@
   .report-message {
     margin: 12px 0 0 0;
     padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 13px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
     line-height: 1.5;
   }
 

@@ -120,7 +120,7 @@
   }
 
   .ai-prompt-styles legend {
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 600;
     color: var(--text);
     padding: 0;
@@ -149,16 +149,16 @@
     width: 100%;
     aspect-ratio: 1 / 1;
     object-fit: cover;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     border: 3px solid transparent;
     background: #fcfbf8;
     transition:
-      border-color 0.15s ease,
-      transform 0.15s ease;
+      border-color var(--duration-fast) ease,
+      transform var(--duration-fast) ease;
   }
 
   .ai-style-label {
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--text);
     user-select: none;

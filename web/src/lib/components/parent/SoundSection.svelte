@@ -74,7 +74,7 @@
     align-items: center;
     gap: 12px;
     margin-bottom: 8px;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--text-mid);
   }

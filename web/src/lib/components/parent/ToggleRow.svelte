@@ -50,7 +50,7 @@
 
   .setting-help {
     margin: 6px 0 0 30px;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     color: var(--text-muted);
     line-height: 1.4;
   }
@@ -69,7 +69,7 @@
   }
 
   .setting-label {
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 500;
     color: var(--text);
   }
@@ -80,11 +80,11 @@
     height: 32px;
     background: var(--control-track);
     border: none;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: 0;
     position: relative;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-base) ease;
     flex-shrink: 0;
   }
 
@@ -113,7 +113,7 @@
     background: white;
     border-radius: 50%;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-base) ease;
   }
 
   .toggle-switch.active .toggle-switch-thumb {
