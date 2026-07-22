@@ -326,10 +326,10 @@
   /* ── Saved caption (auto-save mode, replaces the Download button) ── */
   .ai-result-saved {
     margin: 0;
-    color: #4caf50;
+    color: var(--success-accent);
     font-size: 15px;
     font-weight: 700;
-    animation: downloadPop 0.4s backwards 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: downloadPop 0.4s backwards 0.25s var(--ease-pop-strong);
   }
 
   /* ── Download button ── */
@@ -352,7 +352,7 @@
     transition:
       transform var(--duration-fast) ease,
       background var(--duration-base) ease;
-    animation: downloadPop 0.4s backwards 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: downloadPop 0.4s backwards 0.25s var(--ease-pop-strong);
   }
 
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
@@ -386,7 +386,7 @@
   /* Solid white on the brand button in both themes (a filter over the themed
      icon re-ink would drift dark in dark mode). */
   :global(.ai-result-download-icon svg) {
-    fill: #fff;
+    fill: var(--on-brand);
   }
 
   /* ── Polaroid send-off: tapping download morphs the whole modal into a
@@ -397,7 +397,7 @@
        The fly-out's delay (0.9s) covers the morph + a brief hold in the center. */
     transform: translate(-50%, -50%) rotate(-3deg);
     transition:
-      transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+      transform 0.4s var(--ease-pop-strong),
       background 0.4s ease;
     animation: ai-polaroid-fly 0.85s 0.9s cubic-bezier(0.55, 0, 0.85, 0.2) forwards;
   }

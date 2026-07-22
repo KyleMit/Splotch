@@ -256,7 +256,7 @@
     border: none;
     border-radius: 14px;
     background: var(--brand, #ab71e1);
-    color: #fff;
+    color: var(--on-brand, #fff);
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;

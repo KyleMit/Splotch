@@ -25,6 +25,9 @@ export const brand = {
   // engines (see docs/COMPATIBILITY.md).
   brandTintFilter:
     'invert(45%) sepia(63%) saturate(471%) hue-rotate(231deg) brightness(92%) contrast(88%)',
+  // Text/icon ink on --brand fills. Lives here (unthemed) because --brand
+  // itself is constant across themes, so what sits on it is too.
+  onBrand: '#fff',
 } as const;
 
 // Theme-independent scales. These are the vocabulary for component styles —
@@ -61,9 +64,12 @@ export const scale = {
   durationBase: '0.2s',
   durationSlow: '0.35s',
   // The overshoot pop shared by the fly-in dialogs; the settle glide the
-  // polaroid uses.
+  // polaroid uses; the harder overshoot for celebratory accents (download-done
+  // pop, swatch ring, Clear Button) — deliberately springier than --ease-pop,
+  // so don't converge the two without design review.
   easePop: 'cubic-bezier(0.34, 1.4, 0.64, 1)',
   easeGlide: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  easePopStrong: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
 
   // Neutral (unthemed) elevation. The paper-floating cards use the *themed*
   // --float-shadow tokens instead — these are for modal-layer chrome where
@@ -111,6 +117,12 @@ export interface ThemeTokens {
   /** verification / feedback banners */
   successWash: string;
   successText: string;
+  /**
+   * Confirmation check/icon green (download-done, setup check) — brighter
+   * than --success-text. Minted same-value in both themes from the recurring
+   * raw #4caf50; a dark-tuned value would be a visible change needing review.
+   */
+  successAccent: string;
   dangerWash: string;
   dangerText: string;
   /**
@@ -186,6 +198,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     brandText: '#7c50bb',
     successWash: '#e9f7ec',
     successText: '#2e7d4f',
+    successAccent: '#4caf50',
     dangerWash: '#fdecec',
     dangerText: '#b04a4a',
     paper: '#fcfbf8',
@@ -226,6 +239,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     brandText: '#c9a9f0',
     successWash: '#24382b',
     successText: '#8bcfa4',
+    successAccent: '#4caf50',
     dangerWash: '#422a2c',
     dangerText: '#e09393',
     paper: '#211f29',

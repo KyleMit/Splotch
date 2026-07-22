@@ -58,7 +58,7 @@
     border: none;
     border-radius: var(--radius-pill);
     background: var(--brand, #ab71e1);
-    color: #fff;
+    color: var(--on-brand, #fff);
     font: inherit;
     font-size: var(--font-size-xl);
     font-weight: 700;

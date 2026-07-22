@@ -95,7 +95,7 @@
     padding: 7px 16px;
     font-size: var(--font-size-sm);
     font-weight: 600;
-    color: #fff;
+    color: var(--on-brand);
     background: var(--brand);
     cursor: pointer;
   }

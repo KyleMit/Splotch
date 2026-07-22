@@ -261,7 +261,7 @@
 
   .report-kind-option.active {
     background: var(--brand);
-    color: #fff;
+    color: var(--on-brand);
   }
 
   @media (hover: hover) {
@@ -419,7 +419,7 @@
     padding: 9px 18px;
     font-size: var(--font-size-md);
     font-weight: 600;
-    color: #fff;
+    color: var(--on-brand);
     background: var(--brand);
     border: none;
     border-radius: var(--radius-sm);

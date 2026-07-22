@@ -244,7 +244,7 @@
   .chip.on {
     background: var(--brand);
     border-color: var(--brand);
-    color: #fff;
+    color: var(--on-brand);
   }
 
   @media (hover: hover) {
@@ -271,7 +271,7 @@
 
   /* The chip's icon inherits the chip text color so it flips to white when on. */
   .chip.on :global(.chip-icon svg) {
-    fill: #fff;
+    fill: var(--on-brand);
   }
 
   .chip-check {

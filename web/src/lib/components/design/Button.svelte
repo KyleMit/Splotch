@@ -64,7 +64,7 @@
 
   .brand {
     background: var(--brand);
-    color: #fff;
+    color: var(--on-brand);
   }
 
   .wash {
