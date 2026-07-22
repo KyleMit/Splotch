@@ -217,12 +217,17 @@ function phaseWindows(events) {
   return windows.sort((a, b) => a.startUs - b.startUs);
 }
 
-// For each phase window, the main-thread busy time (RunTask within it) and how
-// many of those tasks were long (>50 ms). Wall-clock is dominated by the
-// scenario's pacing sleeps, so busy time is the real per-phase cost signal.
+// For each phase window: main-thread busy time (RunTask within it), how many
+// of those tasks were long (>50 ms), and the compositor Commit cost — the
+// raster/damage push of the (high-DPR) canvas, the dominant on-device drawing
+// cost per ADR-0015. Wall-clock is dominated by the scenario's pacing sleeps,
+// so busy time is the real per-phase cost signal.
 function perPhase(events, windows) {
   const tasks = events
     .filter((e) => e.name === 'RunTask' && e.ph === 'X' && typeof e.dur === 'number')
+    .map((e) => ({ ts: e.ts, dur: e.dur }));
+  const commits = events
+    .filter((e) => e.name === 'Commit' && e.ph === 'X' && typeof e.dur === 'number')
     .map((e) => ({ ts: e.ts, dur: e.dur }));
   return windows.map((w) => {
     let busyUs = 0;
@@ -233,22 +238,78 @@ function perPhase(events, windows) {
         if (t.dur >= LONG_TASK_US) longTasks += 1;
       }
     }
+    let commitUs = 0;
+    let commitCount = 0;
+    let commitMaxUs = 0;
+    for (const c of commits) {
+      if (c.ts >= w.startUs && c.ts < w.endUs) {
+        commitUs += c.dur;
+        commitCount += 1;
+        commitMaxUs = Math.max(commitMaxUs, c.dur);
+      }
+    }
     return {
       label: w.label,
       wallMs: (w.endUs - w.startUs) / US_PER_MS,
       busyMs: busyUs / US_PER_MS,
       longTasks,
+      commitMs: commitUs / US_PER_MS,
+      commitCount,
+      commitMaxMs: commitMaxUs / US_PER_MS,
     };
   });
 }
 
+// Container events that wrap other work — excluded from long-task attribution
+// so the attribution names the payload, not the wrapper.
+const CONTAINER_EVENTS = new Set(['RunTask', 'ThreadControllerImpl::RunTask']);
+
+// The top long (>50 ms) main-thread tasks, each attributed to the phase it fell
+// in and its dominant nested timeline events — so "which phase janked" (the
+// per-phase table) becomes "what the jank actually was" (a compositor Commit, a
+// pointerup dispatch, a blob decode) without hand-walking the trace.
+function attributeLongTasks(events, windows, limit = 12) {
+  const tasks = events
+    .filter(
+      (e) =>
+        e.name === 'RunTask' && e.ph === 'X' && typeof e.dur === 'number' && e.dur >= LONG_TASK_US
+    )
+    .sort((a, b) => b.dur - a.dur)
+    .slice(0, limit);
+  if (tasks.length === 0) return [];
+  const nested = events.filter(
+    (e) =>
+      e.ph === 'X' &&
+      typeof e.dur === 'number' &&
+      e.dur >= 1 * US_PER_MS &&
+      !CONTAINER_EVENTS.has(e.name)
+  );
+  return tasks
+    .map((t) => {
+      const phase = windows.find((w) => t.ts >= w.startUs && t.ts < w.endUs);
+      const kids = nested
+        .filter((e) => e.ts >= t.ts && e.ts < t.ts + t.dur)
+        .sort((a, b) => b.dur - a.dur)
+        .slice(0, 3)
+        .map((e) => {
+          const data = e.args?.data || {};
+          const detail = data.functionName || data.type || '';
+          return { name: detail ? `${e.name} (${detail})` : e.name, ms: e.dur / US_PER_MS };
+        });
+      return { phase: phase?.label ?? '(outside phases)', durMs: t.dur / US_PER_MS, top: kids };
+    })
+    .sort((a, b) => b.durMs - a.durMs);
+}
+
 export function analyze(events, metrics = {}) {
   const measures = userTimingMeasures(events);
+  const windows = phaseWindows(events);
   return {
     settings: metrics.settings || {},
     breakdown: categoryBreakdown(events),
     engineHotPaths: measures.filter((m) => m.name.startsWith('engine.')),
-    phases: perPhase(events, phaseWindows(events)),
+    phases: perPhase(events, windows),
+    longTaskAttribution: attributeLongTasks(events, windows),
     topSelfTime: jsSelfTime(events),
     frames: metrics.frames || null,
     longTasks: metrics.longTasks
@@ -368,9 +429,40 @@ export function renderReport(s) {
   } else if (s.phases.length) {
     out.push('\n## Per-phase main-thread cost (busy time, not wall-clock)\n');
     out.push(
+      'Compositor commit = pushing the canvas damage rect to the compositor for raster — the\n' +
+        'dominant on-device drawing cost (ADR-0015); software rendering (headless) exaggerates it.\n'
+    );
+    out.push(
       table(
-        ['Phase', 'Busy', 'Long tasks', 'Wall'],
-        s.phases.map((p) => [p.label, ms(p.busyMs), String(p.longTasks), ms(p.wallMs)])
+        ['Phase', 'Busy', 'Long tasks', 'Compositor commit', 'Wall'],
+        s.phases.map((p) => [
+          p.label,
+          ms(p.busyMs),
+          String(p.longTasks),
+          p.commitCount ? `${ms(p.commitMs)} ×${p.commitCount} (max ${ms(p.commitMaxMs)})` : '—',
+          ms(p.wallMs),
+        ])
+      )
+    );
+  }
+
+  if (s.longTaskAttribution?.length) {
+    out.push('\n## Long tasks attributed (top tasks >50 ms, by duration)\n');
+    out.push(
+      'What each long main-thread task was actually doing — its largest nested timeline\n' +
+        'events. `Commit` = compositor raster push; `EventDispatch (pointerup)` = stroke-end\n' +
+        'work inside the lift handler (see engine.commit/engine.snapshot in the hot paths).\n'
+    );
+    out.push(
+      table(
+        ['Phase', 'Task', 'Dominant nested work'],
+        s.longTaskAttribution.map((t) => [
+          t.phase,
+          ms(t.durMs),
+          t.top.length
+            ? t.top.map((k) => `${k.name} ${k.ms.toFixed(1)}`).join(' · ') + ' ms'
+            : '(no nested events ≥1 ms)',
+        ])
       )
     );
   }
