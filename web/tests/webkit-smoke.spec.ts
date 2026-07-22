@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { draw, firstOpaquePixel, gotoApp } from './helpers';
 
 // WebKit critical-path smoke — the only spec the `webkit` project runs (see
 // playwright.config.ts). The rest of the E2E suite is Chromium-only, but
@@ -8,33 +9,8 @@ import { expect, test, type Page } from '@playwright/test';
 //
 // Keep it small and WebKit-portable: no CDP sessions (viewport rotation and
 // touch synthesis in flows.spec.ts are Chromium-only), no dev-harness routes,
-// no pixel-perfect assertions that depend on Chromium's rasterizer.
-
-async function gotoApp(page: Page) {
-  await page.goto('/');
-  await expect(page.locator('#drawingCanvas')).toBeVisible();
-}
-
-async function draw(page: Page, points: { x: number; y: number }[]) {
-  const box = await page.locator('#drawingCanvas').boundingBox();
-  if (!box) throw new Error('canvas has no bounding box');
-  await page.mouse.move(box.x + points[0].x, box.y + points[0].y);
-  await page.mouse.down();
-  for (const p of points.slice(1)) await page.mouse.move(box.x + p.x, box.y + p.y);
-  await page.mouse.up();
-}
-
-/** First non-transparent pixel on the canvas as [r,g,b,a], or null if blank. */
-function firstOpaquePixel(page: Page): Promise<number[] | null> {
-  return page.evaluate(() => {
-    const c = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
-    for (let i = 3; i < data.length; i += 4) {
-      if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
-    }
-    return null;
-  });
-}
+// no pixel-perfect assertions that depend on Chromium's rasterizer. The shared
+// helpers imported above are held to the same WebKit-portable bar.
 
 test('the app boots: canvas, palette, and Parent Center button render', async ({ page }) => {
   await gotoApp(page);
