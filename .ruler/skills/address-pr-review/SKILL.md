@@ -1,6 +1,6 @@
 ---
-name: review-pr-comments
-description: Triage and address every reviewer comment on a pull request — validate each one against the current code, fix the valid ones and reply with the solution, reply to and resolve the invalid ones with the rationale. Use when asked to review, address, respond to, or work through the comments/feedback/review on a PR.
+name: address-pr-review
+description: Triage and address every reviewer comment on a pull request — validate each one against the current code, fix the valid ones and reply with the solution, reply to and resolve the invalid ones with the rationale. Use when asked to address, respond to, or work through the comments/feedback/review received on a PR. To produce a review of a PR (author the critique), use leave-pr-review instead.
 ---
 
 # Review PR Comments
@@ -9,6 +9,9 @@ Work through the comments left on a pull request: decide for each one whether it
 change, make the valid fixes, and answer every thread so the reviewer can see at a glance what
 happened. The deliverable is a PR where **no comment is left hanging** — each thread ends with
 either a fix (and a reply pointing at it) or a reasoned reply explaining why no change is needed.
+
+This is the receiving side of [`leave-pr-review`](../leave-pr-review/SKILL.md) — that sister skill
+authors and posts review comments; this one works through them.
 
 ## Setup
 
@@ -27,9 +30,15 @@ either a fix (and a reply pointing at it) or a reasoned reply explaining why no 
    With `gh` available, `gh pr view <n> --comments` and
    `gh api repos/{owner}/{repo}/pulls/{n}/comments` cover the same ground. In cloud sessions `gh` is
    not available — use the MCP tools.
-4. **Filter to what's actionable.** Skip threads that are already resolved, comments you (or a
-   previous agent run) already replied to with a fix, and your own comments. Treat bot reviews
-   (Copilot, CI annotations) the same as human ones — triage them on merit, not on author.
+4. **Filter to open threads only — resolved is done.** The worklist is exclusively the
+   **unresolved** threads: because this skill resolves every thread it finishes (see Replying), a
+   resolved thread is a completed round, and re-triaging it duplicates effort. This is what lets
+   review rounds compose — `leave-pr-review` posts a fresh batch, this skill works and resolves it,
+   and the next run picks up only what's new or reopened (a reviewer unresolving a thread puts it
+   back in scope on purpose). If the comment listing doesn't expose resolution state, fall back to
+   the same signal by content: skip any thread whose last reply is your own disposition. Also skip
+   your own comments elsewhere, but treat bot reviews (Copilot, CI annotations) the same as human
+   ones — triage them on merit, not on author.
 
 ## Plan the order before starting
 
@@ -56,6 +65,13 @@ demand the restructure), reorder the remaining items rather than pushing through
 
 ## Triage — validate before touching anything
 
+Triage each comment **adversarially, in both directions** — the same stance `leave-pr-review` takes
+when authoring a review. Try to prove the comment right (assume it found a real defect, and hunt for
+the failure it describes) *and* try to refute it (assume it misread the code, and look for the
+evidence that clears it). Classification follows whichever side the evidence lands on — never the
+reviewer's confidence, seniority, or bot/human status. Agreeably fixing whatever is asked ships
+wrong changes; reflexively defending the code dismisses real defects.
+
 For each remaining comment, read the code it points at **as it exists now** and classify it:
 
 * **Valid** — the comment identifies a real defect, risk, or clear improvement, and the fix is in
@@ -75,9 +91,24 @@ For each remaining comment, read the code it points at **as it exists now** and 
   back. Never resolve a thread you weren't sure about — a wrong "resolved with rationale" reads as
   dismissing the reviewer.
 
-Validate empirically where the comment admits it: if a reviewer claims a bug, try to reproduce it (a
-failing test is the ideal proof the comment is valid — and the regression test then ships with the
-fix).
+### The verify pass — empirical, not rhetorical
+
+A classification is an *evidence-backed verdict*, not a reading. Wherever a comment makes a
+checkable claim, check it before classifying — the branch is checked out locally, so run it:
+
+* **Claimed bug or regression** → try to reproduce it: a targeted test, `npm run check`, or running
+  the app (see `run-splotch`). A failing test is the ideal proof the comment is valid — and the
+  regression test then ships with the fix. A failed reproduction attempt is the strongest basis for
+  an **invalid** verdict — cite what you ran and what it showed.
+* **Claimed better approach** → check it against reality: does it type-check, pass the existing
+  tests, and hold up against the ADRs? A suggestion that breaks under `npm run check` is refuted by
+  the output, not by argument.
+* **Unverifiable claims** (style, preference, product judgment) → these can't be settled
+  empirically; classify on the merits, and lean toward **ambiguous** (ask the user) rather than
+  forcing a verdict the evidence can't support.
+
+Every reply then cites its evidence — the repro, the command output, the test, or the ADR — so the
+reviewer sees a verdict that was checked, not asserted.
 
 ## Fixing the valid ones
 
@@ -96,12 +127,17 @@ fix).
 ## Replying — close every loop
 
 * **Fixed** → reply **on the same thread** stating what changed and the commit SHA
-  (`Fixed in <sha> — <one line on the approach>`). Use `add_reply_to_pull_request_comment` for
-  inline threads, `add_issue_comment` for conversation comments. Leave the thread **unresolved** so
-  the reviewer can verify the fix and resolve it themselves.
-* **Invalid / already addressed / question** → reply with the rationale or answer, then resolve the
-  thread (`resolve_review_thread`). Conversation comments and review summaries have no resolve
-  button — the reply alone closes them out.
+  (`Fixed in <sha> — <one line on the approach>`). The SHA must already be pushed — reply order is
+  always push first, then reply, then resolve. Use `add_reply_to_pull_request_comment` for inline
+  threads, `add_issue_comment` for conversation comments.
+* **Invalid / already addressed / question** → reply with the rationale or answer — the concrete
+  reason the comment isn't being addressed (the code path, test, command output, or ADR from the
+  verify pass), never a bare dismissal.
+* **After replying, resolve the thread** (`resolve_review_thread` in the GitHub MCP) — every
+  disposition, fixed or not. The reply is the record; resolving is what makes the remaining open
+  threads an accurate worklist. Conversation comments and review summaries have no resolve button —
+  there the reply alone closes them out. The one exception: never resolve a thread you escalated to
+  the user and haven't heard back on.
 * Keep replies short and concrete: the code path, test, ADR, or SHA that settles it — not a
   restatement of the comment. Be gracious; the reviewer's time produced the feedback.
 * **Escape `#`-numbers** that aren't deliberate issue/PR references (`\#1`, or backticks) — a bare
