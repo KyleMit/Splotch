@@ -137,7 +137,7 @@ content):
 
 That table covers the highest-traffic skills. The **full catalog** — every skill, grouped by the
 workflow it belongs to and how related skills chain together (the audit lifecycle, the PR flow,
-handoffs, ADRs) — is the `skills-map` skill (`/skills-map`). Consult it when unsure which skill
+handoffs, ADRs) — is the `skills-guide` skill (`/skills-guide`). Consult it when unsure which skill
 applies or how skills relate.
 
 **Prefer skills over slash commands.** Every reusable agent workflow in this repo is authored as a
@@ -146,10 +146,17 @@ skill in `.ruler/skills/<name>/SKILL.md` (ruler propagates it to `.claude/skills
 both user-invocable (`/name`) *and* model-invocable, so Claude can reach for it on its own — a plain
 command can't. When authoring a new reusable workflow, create a skill: give it a `name` and a
 `description` that says both what it does and when to use it (add `disable-model-invocation: true`
-if it should stay user-only), and **register it in the `skills-map` skill**
-(`.ruler/skills/skills-map/SKILL.md`) under the group it belongs to — same when renaming or deleting
-a skill. If the user asks to create a *command*, ask whether they'd like a skill instead before
-making one.
+if it should stay user-only), and **register it in the `skills-guide` skill**
+(`.ruler/skills/skills-guide/SKILL.md`) under the group it belongs to — same when renaming or
+deleting a skill. If the user asks to create a *command*, ask whether they'd like a skill instead
+before making one.
+
+**Skill naming:** the name's shape signals what invoking the skill does. **Workflow skills** — ones
+that perform a procedure with side effects (`create-adr`, `fix-audits`, `prune-remote-branches`) —
+get verb-noun names, so the name reads as the action it kicks off. **Reference skills** — ones that
+only load knowledge into context (`architecture`, `adrs`, `testing`, `skills-guide`) — get plain
+noun names; a verb name on a reference skill would falsely promise an action. Scanning the skill
+list, the name alone should tell you whether invoking it is passive or starts a procedure.
 
 Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
 agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,

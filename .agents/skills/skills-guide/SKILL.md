@@ -1,12 +1,12 @@
 ---
-name: skills-map
+name: skills-guide
 description: Grouped catalog of every Splotch skill — what each one does and how related skills chain together (the audit lifecycle, the PR flow, ADRs, handoffs). Use when asked what skills are available, which skill fits a task, or how skills relate — and to register a skill you just created, renamed, or deleted.
 ---
 
-# Skills map
+# Skills guide
 
 Every repo skill, grouped by the workflow it belongs to. Each skill's own `description` frontmatter
-stays the canonical trigger text; this map's job is the **grouping** and the **arrows between
+stays the canonical trigger text; this guide's job is the **grouping** and the **arrows between
 skills** — which ones consult, feed, or undo each other.
 
 ## Codebase reference — consult before working in an area
@@ -90,11 +90,16 @@ All three augment the built-in PR flows rather than replacing them.
 | Skill                   | Use for                                                                  |
 | ----------------------- | ------------------------------------------------------------------------ |
 | `prune-remote-branches` | Triage stale `origin` branches and hand back an approved deletion script |
-| `skills-map`            | This map                                                                 |
+| `skills-guide`          | This guide                                                               |
 
-## Keeping this map current
+## Keeping this guide current
 
 Every skill in `.ruler/skills/` must appear here, in exactly one primary group (cross-reference a
 second group in prose when a skill genuinely spans two, as `lighthouse-audit` does). **When you add,
-rename, or delete a skill, update this map in the same change**, then run `npm run ruler:apply`. If
-a new skill fits no existing group, add a group rather than forcing it into one.
+rename, or delete a skill, update this guide in the same change**, then run `npm run ruler:apply`.
+If a new skill fits no existing group, add a group rather than forcing it into one.
+
+Naming: workflow skills (perform a procedure with side effects) get verb-noun names (`create-adr`,
+`fix-audits`); reference skills (only load knowledge) get plain noun names (`architecture`, `adrs`).
+The name alone should tell you whether invoking the skill is passive or starts a procedure — see the
+skill-authoring guidance in the root `CLAUDE.md`.
