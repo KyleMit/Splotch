@@ -15,6 +15,18 @@ from the repo root.
 If an argument is given, scope the entire run to just that one package and skip straight to step 3
 for it.
 
+## Scheduled monthly run (Claude Routine)
+
+This skill is also invoked automatically once a month by a Claude Code Routine ("Monthly dependency
+update audit": fires at 12:00 UTC on the 1st, fresh cloud session per run). When running unattended
+from that Routine — or any run where no user is present to answer questions — adapt as follows:
+
+* **Skip the Phase 2 `AskUserQuestion` gate** and apply its defaults instead: minor/patch bumps
+  only; defer majors and the coordinated families (list them in the report); `npm run check` + unit
+  tests per package, full `npm test` once at the end.
+* **Open one pull request** for the whole batch (keeping the per-package commits) instead of only
+  reporting commits. If nothing needed upgrading, open no PR and just report.
+
 ## Phase 1 — Survey (no changes yet)
 
 1. **List what's behind.** Run `npm outdated` (it exits non-zero when anything is outdated — that's
