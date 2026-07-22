@@ -1,4 +1,4 @@
-# ADR-0072: Enforcing CSP with a First-Party Violation Receiver
+# ADR-0073: Enforcing CSP with a First-Party Violation Receiver
 
 **Status:** Active. **Date:** 2026-07
 

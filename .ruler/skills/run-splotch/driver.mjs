@@ -77,7 +77,7 @@ const externalUrl = values.url ?? null;
 
 // Readiness predicate per route — what to poll for before interacting.
 // For "/", the engine boots at module-evaluation time, before hydration
-// (ADR-0071), and resizes the canvas's backing store off its 300x150 default
+// (ADR-0072), and resizes the canvas's backing store off its 300x150 default
 // just before binding the pointer listeners — so a non-default width means
 // the engine is initialized and a stroke will register.
 const ready = {

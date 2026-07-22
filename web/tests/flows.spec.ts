@@ -1156,13 +1156,25 @@ test('the AI button posts the drawing and reveals the generated result', async (
 
 // ── coloring book overlay ───────────────────────────────────────────────────
 
+// Open the coloring-book dialog robustly — same retry shape as openDrawer: a
+// click fired right after hydration can hit the button before its handler is
+// wired, so re-click until the dialog actually opens.
+async function openColoringDialog(page: Page) {
+  const dialog = page.locator('#coloring-book-dialog');
+  await expect(async () => {
+    if (!(await dialog.isVisible().catch(() => false))) {
+      await page.locator('#coloringBookButton').click({ timeout: 1000 });
+    }
+    await expect(dialog).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
+}
+
 test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
 
-  await page.locator('#coloringBookButton').click();
+  await openColoringDialog(page);
   const dialog = page.locator('#coloring-book-dialog');
-  await expect(dialog).toBeVisible();
 
   // Farm ships on web and mobile; open it and pick its first page.
   await dialog.getByRole('button', { name: /Farm coloring book/i }).click();
@@ -1180,9 +1192,8 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
 
 // Apply the first Farm page and wait for its overlay + colored fill to be ready.
 async function applyFarmPage(page: Page) {
-  await page.locator('#coloringBookButton').click();
+  await openColoringDialog(page);
   const dialog = page.locator('#coloring-book-dialog');
-  await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: /Farm coloring book/i }).click();
   await dialog
     .getByRole('button', { name: /Farm coloring page/i })
@@ -1682,7 +1693,7 @@ test('rotating the viewport swaps the coloring overlay to the matching art', asy
   await gotoApp(page);
   await openDrawer(page);
 
-  await page.locator('#coloringBookButton').click();
+  await openColoringDialog(page);
   const dialog = page.locator('#coloring-book-dialog');
   await dialog.getByRole('button', { name: /Farm coloring book/i }).click();
   await dialog

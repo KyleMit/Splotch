@@ -177,7 +177,7 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
 ## Gotchas
 
 * **The canvas exists before it's interactive.** `#drawingCanvas` is in the prerendered DOM before
-  any script runs; the engine boots at module-evaluation time (before hydration, ADR-0071) and binds
+  any script runs; the engine boots at module-evaluation time (before hydration, ADR-0072) and binds
   the pointer listeners right after resizing the backing store off its 300×150 default. Polling for
   the element alone can still draw into a dead canvas — wait for a non-default width (as the driver
   does) if you script your own draw.

@@ -10,7 +10,7 @@ import {
   setStrokeWidth,
 } from './engine';
 
-// Boot the drawing engine at module-evaluation time (ADR-0071): the home route
+// Boot the drawing engine at module-evaluation time (ADR-0072): the home route
 // is prerendered, so #drawingCanvas is already in the DOM when the deferred
 // module scripts run — and module evaluation happens BEFORE SvelteKit's
 // hydration pass in the same script execution. Initializing here makes the

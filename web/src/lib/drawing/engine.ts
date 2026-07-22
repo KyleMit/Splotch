@@ -1,6 +1,6 @@
 // Imperative drawing engine (ADR-0004). earlyBoot.ts initializes it at
 // module-evaluation time — before SvelteKit hydrates the route — so the canvas
-// accepts strokes as soon as this chunk evaluates (ADR-0071); Svelte components
+// accepts strokes as soon as this chunk evaluates (ADR-0072); Svelte components
 // then ADOPT the running engine via adoptDrawingCanvas(), attaching the
 // callbacks it reports through (onDrawSound, onUndoStateChange, …) and pushing
 // reactive state (active color, stroke width) via setColor() / setStrokeWidth()
@@ -132,7 +132,7 @@ let lastColorChangeTime = 0;
 // `canvas[data-crayon-overlay]` siblings, bottom then top — DrawingCanvas
 // renders and styles them so the prerendered DOM matches what hydration
 // expects; elements the engine injected before hydration made Svelte bail to
-// a full client re-render, replacing the live canvas — ADR-0071). Created,
+// a full client re-render, replacing the live canvas — ADR-0072). Created,
 // styled, and inserted by the engine only where the markup has none (the
 // /dev/engine harness, which inits after hydration).
 let crayonOverlay: HTMLCanvasElement | null = null;
@@ -1212,7 +1212,7 @@ export function engineOwnsCanvas(canvasElement: HTMLCanvasElement): boolean {
   return engineLive && canvas === canvasElement;
 }
 
-// Adopt the already-running engine (ADR-0071): attach the component's
+// Adopt the already-running engine (ADR-0072): attach the component's
 // callbacks and replay the current state to the new subscriber — strokes may
 // have landed between early boot and this mount, so canUndo / canvasEmpty /
 // the paper view push immediately instead of waiting for their next change.

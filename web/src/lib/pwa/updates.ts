@@ -36,7 +36,7 @@ let refreshState: 'idle' | 'activating' | 'deferred' = 'idle';
 let registrationScheduled = false;
 
 // The registration gate waits for the shared settled-in signal (the same one
-// the Install Banner uses). Pre-hydration strokes (ADR-0071) don't tick
+// the Install Banner uses). Pre-hydration strokes (ADR-0072) don't tick
 // strokeCount, so only post-hydration strokes count — acceptable, it only
 // defers registration slightly further.
 export const STROKES_BEFORE_SW_REGISTER = SETTLED_IN_STROKES;

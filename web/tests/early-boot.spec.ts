@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-// ADR-0071: the engine boots at module evaluation against the prerendered
+// ADR-0072: the engine boots at module evaluation against the prerendered
 // canvas, and hydration must ADOPT that element — not bail and re-render the
 // route client-side. The bail is the silent failure mode of this design (any
 // pre-hydration DOM write into the prerendered subtree triggers it): the app

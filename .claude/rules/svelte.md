@@ -13,7 +13,7 @@ paths:
 * Complex gestures and dialog wiring are Svelte actions in `src/lib/actions/` (see `dragToClear.ts`,
   `modalDialog.svelte.ts`), not inline component logic.
 * The drawing engine (`src/lib/drawing/engine.ts`) is imperative by design (ADR-0004) and boots
-  before hydration (ADR-0071): components **adopt** the running engine on mount
+  before hydration (ADR-0072): components **adopt** the running engine on mount
   (`adoptDrawingCanvas` attaches callbacks and replays state) and call its exported functions
   directly — don't wrap it in reactive stores. Never insert DOM into the prerendered `/` subtree
   before hydration (engine code included): Svelte bails to a full client re-render, silently

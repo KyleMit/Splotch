@@ -146,7 +146,7 @@
   }
 
   onMount(() => {
-    // Adopt, don't init (ADR-0071): earlyBoot.ts already started the engine on
+    // Adopt, don't init (ADR-0072): earlyBoot.ts already started the engine on
     // this prerendered canvas at module-evaluation time, so drawing works
     // before hydration; this mount attaches the reactive callbacks and replays
     // any state pre-hydration strokes advanced. When the engine isn't live on
@@ -393,7 +393,7 @@
     <!-- The engine's live crayon pass overlays (bottom darken layer, then the
          opacity-mixed top — see engine.ts's crayonOverlay notes). Rendered
          here, not injected by the engine: the engine boots BEFORE hydration
-         (ADR-0071), and elements it inserted into the prerendered DOM made
+         (ADR-0072), and elements it inserted into the prerendered DOM made
          Svelte's hydration walk bail to a full client re-render, replacing
          the live canvas. Template-owned markup hydrates cleanly; the engine
          adopts the pair by the data attribute. -->

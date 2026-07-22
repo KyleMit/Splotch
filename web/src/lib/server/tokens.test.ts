@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Two backing modes per test: `blobsState.stores = null` makes getStore throw

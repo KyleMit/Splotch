@@ -59,6 +59,12 @@ Configured in `web/vitest.config.ts`. Environment is **happy-dom** (not jsdom). 
 logic + state modules (`colorRing`, `state/*`, `storage`, including the native dual-layer hydrate
 via a mocked `@capacitor/preferences`).
 
+Files that need no DOM at all — `lib/server/**` and pure-logic modules — carry a
+`// @vitest-environment node` first line so they skip the per-file happy-dom setup (the suite's
+biggest fixed cost). Keep the happy-dom default for any test whose module (or its imports) touches
+`localStorage`, `document`, or `window` — running those in `node` would silently switch the code
+onto its non-browser fallback paths.
+
 ## Asset-pipeline unit tests — Vitest
 
 ```bash

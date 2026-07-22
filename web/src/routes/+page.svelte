@@ -1,7 +1,7 @@
 <script lang="ts">
   // Side-effect import, deliberately static: it puts the engine boot in this
   // page's module graph so it evaluates (and the prerendered canvas starts
-  // accepting strokes) before the hydration pass, not after it (ADR-0071). A
+  // accepting strokes) before the hydration pass, not after it (ADR-0072). A
   // dynamic import would push init back behind hydration — exactly the wait
   // this removes.
   import '$lib/drawing/earlyBoot';

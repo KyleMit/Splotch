@@ -1,4 +1,4 @@
-# ADR-0071: Early Engine Boot at Module Evaluation — Components Adopt the Running Engine
+# ADR-0072: Early Engine Boot at Module Evaluation — Components Adopt the Running Engine
 
 **Status:** Active — amends [ADR-0004](0004-imperative-canvas-engine.md): "components mount the
 engine" becomes "components adopt the engine". **Date:** 2026-07

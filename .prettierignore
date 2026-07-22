@@ -11,6 +11,7 @@ ios/
 package-lock.json
 web/src/lib/components/icon-names.d.ts
 web/src/lib/releases.json
+web/src/tokens.css
 web/tests/**/*-snapshots/
 *.svg
 # Frozen review dashboard Prettier cannot round-trip: its reformatted output

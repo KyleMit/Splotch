@@ -4,6 +4,9 @@
   // index.css via the package's exports map, but only a path ending in `.css`
   // matches Vite's ambient `*.css` module type (so svelte-check stays happy).
   import '@fontsource-variable/quicksand/index.css';
+  // Generated design tokens (gen:tokens, ADR-0071) load before app.css so the
+  // global styles can reference them.
+  import '../tokens.css';
   import '../app.css';
 
   interface Props {
