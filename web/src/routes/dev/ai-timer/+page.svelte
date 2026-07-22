@@ -177,23 +177,23 @@
     margin: 0 auto;
     padding: 32px 24px 64px;
     font-family: system-ui, sans-serif;
-    color: #2a2a2a;
+    color: var(--text-strong);
   }
 
   h1 {
-    font-size: 22px;
+    font-size: var(--font-size-2xl);
     margin: 0 0 8px;
   }
 
   .intro {
     margin: 0 0 24px;
-    color: #555;
+    color: var(--text);
     line-height: 1.5;
   }
 
   code {
-    background: #f0ecf7;
-    border-radius: 4px;
+    background: var(--brand-wash);
+    border-radius: var(--radius-xs);
     padding: 1px 5px;
     font-size: 0.9em;
   }
@@ -213,29 +213,29 @@
 
   .group-label {
     width: 130px;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
-    color: #777;
+    color: var(--text-muted);
   }
 
   button {
     background: var(--brand);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 8px 14px;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 600;
     cursor: pointer;
     transition:
-      background 0.15s ease,
+      background var(--duration-fast) ease,
       transform 0.1s ease;
   }
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
      keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
     button:hover {
-      background: #9559cd;
+      background: var(--brand-hover);
     }
   }
   button:active {
@@ -250,17 +250,18 @@
 
   .hint {
     margin: 20px 0 0;
-    font-size: 13px;
-    color: #777;
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
     line-height: 1.6;
   }
 
   kbd {
+    /* Deliberate console-key chip: fixed dark slab + white glyph in both themes. */
     background: #2a2a2a;
     color: white;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     padding: 1px 6px;
-    font-size: 12px;
+    font-size: var(--font-size-xs);
     font-family: ui-monospace, monospace;
   }
 
@@ -274,15 +275,15 @@
   .state > div {
     display: flex;
     gap: 6px;
-    background: #f7f5fb;
-    border: 1px solid #e6e0f0;
-    border-radius: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     padding: 6px 10px;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
   }
   .state dt {
     font-weight: 600;
-    color: #777;
+    color: var(--text-muted);
     margin: 0;
   }
   .state dd {
@@ -303,13 +304,13 @@
   .thumbs img {
     width: 100%;
     border-radius: 10px;
-    border: 1px solid #e6e0f0;
+    border: 1px solid var(--border);
     display: block;
   }
   .thumbs figcaption {
     margin-top: 6px;
-    font-size: 12px;
-    color: #777;
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
     text-align: center;
   }
 </style>
