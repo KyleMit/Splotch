@@ -16,6 +16,7 @@ content):
 | `lighthouse-audit`                  | auditing page-load performance / Core Web Vitals on a throttled device (Lighthouse, first vs repeat visit)                                         |
 | `adrs`                              | proposing or discussing any architectural approach                                                                                                 |
 | `pr-screenshots`                    | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow                                     |
+| `review-pr`                         | reviewing a pull request / leaving review feedback — augments the built-in review flow (local checkout, empirical verification, gated posting)     |
 | `create-handoff` / `resume-handoff` | pausing in-flight work for a later session (`create-handoff`), or picking it back up (`resume-handoff`) — transfer packets live in `docs/handoff/` |
 
 **Prefer skills over slash commands.** Every reusable agent workflow in this repo is authored as a

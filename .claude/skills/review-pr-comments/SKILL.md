@@ -1,6 +1,6 @@
 ---
 name: review-pr-comments
-description: Triage and address every reviewer comment on a pull request — validate each one against the current code, fix the valid ones and reply with the solution, reply to and resolve the invalid ones with the rationale. Use when asked to review, address, respond to, or work through the comments/feedback/review on a PR.
+description: Triage and address every reviewer comment on a pull request — validate each one against the current code, fix the valid ones and reply with the solution, reply to and resolve the invalid ones with the rationale. Use when asked to address, respond to, or work through the comments/feedback/review received on a PR. To produce a review of a PR (author the critique), use review-pr instead.
 ---
 
 # Review PR Comments
@@ -9,6 +9,9 @@ Work through the comments left on a pull request: decide for each one whether it
 change, make the valid fixes, and answer every thread so the reviewer can see at a glance what
 happened. The deliverable is a PR where **no comment is left hanging** — each thread ends with
 either a fix (and a reply pointing at it) or a reasoned reply explaining why no change is needed.
+
+This is the receiving side of [`review-pr`](../review-pr/SKILL.md) — that sister skill authors and
+posts review comments; this one works through them.
 
 ## Setup
 
