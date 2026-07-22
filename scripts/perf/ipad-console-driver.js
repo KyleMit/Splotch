@@ -197,7 +197,12 @@
     const fold = agg(drawStart, drawEnd, 'engine.fold');
     const commit = agg(drawStart, drawEnd, 'engine.commit');
     const un = agg(undoStart, undoEnd, 'engine.undo');
-    const historyMB = (dbg.liveRasters + 1) * mbPerRaster + dbg.blobBytes / 1048576;
+    // rasterBytes is the live patches' real pixel cost (dirty-rect snapshots,
+    // ADR-0069); the liveRasters × full-raster product is the fallback for a
+    // build that predates it. The +1 raster is the paper itself.
+    const liveMB =
+      dbg.rasterBytes != null ? dbg.rasterBytes / 1048576 : dbg.liveRasters * mbPerRaster;
+    const historyMB = liveMB + mbPerRaster + dbg.blobBytes / 1048576;
     return {
       scenario: label,
       snapshots: dbg.snapshots ?? 0,
