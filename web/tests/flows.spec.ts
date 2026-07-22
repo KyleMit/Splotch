@@ -130,10 +130,20 @@ async function draw(page: Page, points: { x: number; y: number }[]) {
 // keeping any downstream undo/clear assertion valid. Use this instead of a bare
 // `draw` + a single colour-count poll whenever the assertion needs the reveal's
 // many colours (a canvas-fill count is immune — a pen stroke fills it too).
+//
+// The two waits are distinct and both needed. A *correct* stroke can read flat
+// for a moment — a coloring-page fill sheet rasterizes async, holding the ops
+// out of the paper until the fold-in repaint (see MAGIC_REVEAL_TIMEOUT) — so a
+// per-attempt poll waits the colours out before judging. Only a stroke that
+// stays flat past that inner window is a real pen-mode miss; undo it and let the
+// outer retry redraw. Reading the colour count once instead would undo those
+// valid-but-slow strokes and churn draw→undo→draw to the timeout.
 async function drawMagicReveal(page: Page, points: { x: number; y: number }[]) {
   await expect(async () => {
     await draw(page, points);
-    if ((await distinctOpaqueColors(page)) <= 4) {
+    try {
+      await expect.poll(() => distinctOpaqueColors(page), { timeout: 3000 }).toBeGreaterThan(4);
+    } catch {
       await page.locator('#undoButton').click();
       await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
       throw new Error('magic reveal came up flat (engine still in pen mode) — retrying');
@@ -1457,6 +1467,11 @@ test('the magic brush paints the rotation-lock letterbox margin', async ({ page 
 test('the magic brush reveals a rainbow gradient when no coloring page is applied', async ({
   page,
 }) => {
+  // Two drawMagicReveal calls, each bounded by MAGIC_REVEAL_TIMEOUT (15s), can
+  // together approach the default 30s per-test budget under load — the clear
+  // gesture and asserts still need room. test.slow() triples it so a worst-case
+  // pair of slow reveals can't trip a test-level timeout.
+  test.slow();
   await gotoApp(page);
   await openDrawer(page);
 
