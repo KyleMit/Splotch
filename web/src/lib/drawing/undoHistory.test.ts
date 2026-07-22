@@ -21,8 +21,13 @@ vi.mock('./magicBrush', () => ({
 let origGetContext: typeof HTMLCanvasElement.prototype.getContext;
 let origToBlob: typeof HTMLCanvasElement.prototype.toBlob;
 
+// Every stub drawImage bumps this, so a test can assert a code path copied
+// pixels (patch capture) or didn't (the clear's swap capture).
+let drawImageCalls = 0;
+
 beforeEach(() => {
   magicSheet.ready = true;
+  drawImageCalls = 0;
   origGetContext = HTMLCanvasElement.prototype.getContext;
   origToBlob = HTMLCanvasElement.prototype.toBlob;
   // The blob tier is exercised end-to-end by the engine E2E specs; here every
@@ -68,6 +73,7 @@ beforeEach(() => {
         canvas._content!.push(String(ctx.fillStyle));
       },
       drawImage(src: { _content?: string[] }) {
+        drawImageCalls++;
         if (src?._content) canvas._content!.push(...src._content);
       },
     };
@@ -164,6 +170,62 @@ describe('snapshot restore', () => {
     expect(repaintedContent(m)).toEqual([]);
     await m.popSnapshot();
     expect(repaintedContent(m)).toEqual(['#a']);
+  });
+});
+
+describe("clear snapshot swap (swap-don't-copy)", () => {
+  const clearCmd = (): StrokeGroupCommand => ({ ops: [{ kind: 'clear' }], wasEmpty: false });
+
+  it('captures a clear with zero drawImage copies', async () => {
+    const m = await freshHistory();
+    m.pushCommand(cmd('#a', false, true));
+    const copiesBefore = drawImageCalls;
+    m.pushCommand(clearCmd());
+    // The old paper is adopted as the snapshot raster and a fresh blank paper
+    // takes its place — no pixel copy anywhere on the commit path.
+    expect(drawImageCalls).toBe(copiesBefore);
+    expect(m.getHistoryDebug().rasterBytes).toBe(7 * 7 * 4 + 64 * 64 * 4);
+    expect(repaintedContent(m)).toEqual([]);
+  });
+
+  it('draw → clear → draw round-trips through both papers', async () => {
+    const m = await freshHistory();
+    m.pushCommand(cmd('#a', false, true));
+    m.pushCommand(clearCmd());
+    m.pushCommand(cmd('#b', false, true));
+    expect(repaintedContent(m)).toEqual(['#b']);
+    await m.popSnapshot();
+    expect(repaintedContent(m)).toEqual([]);
+    await m.popSnapshot();
+    expect(repaintedContent(m)).toEqual(['#a']);
+    await m.popSnapshot();
+    expect(repaintedContent(m)).toEqual([]);
+    expect(m.popSnapshot()).toBeNull();
+  });
+
+  it('ink drawn after an undone clear folds onto the restored paper', async () => {
+    const m = await freshHistory();
+    m.pushCommand(cmd('#a', false, true));
+    m.pushCommand(clearCmd());
+    await m.popSnapshot();
+    m.pushCommand(cmd('#b'));
+    expect(repaintedContent(m)).toEqual(['#a', '#b']);
+  });
+
+  it('a clear blocked behind an unready magic sheet folds later, swap intact', async () => {
+    const m = await freshHistory();
+    magicSheet.ready = false;
+    m.pushCommand(cmd('#magic-ink', true, true));
+    m.pushCommand(clearCmd());
+    // Neither folded: the clear queues behind the blocked magic command.
+    expect(m.getHistoryDebug().pendingCommands).toBe(2);
+    expect(repaintedContent(m)).toEqual([]);
+
+    magicSheet.ready = true;
+    m.pushCommand(cmd('#after'));
+    // The backlog folds through: magic ink, wiped by the clear, then #after.
+    expect(m.getHistoryDebug().pendingCommands).toBe(0);
+    expect(repaintedContent(m)).toEqual(['#after']);
   });
 });
 

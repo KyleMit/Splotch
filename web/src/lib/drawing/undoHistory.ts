@@ -10,9 +10,10 @@
 // pops, the stack being LIFO), so the restore is byte-exact without a
 // full-canvas copy. Resize, remount, and export stay whole-paper blits
 // (repaintAll), never command replays. The capture cost at pointerup is one
-// stroke-sized drawImage — full-canvas only for a 'clear' — which buys O(blit)
-// undo at any stroke complexity and frees every brush from replay-determinism
-// constraints (ADR-0065's crayon was the forcing case).
+// stroke-sized drawImage — a 'clear' instead swaps the whole paper out as its
+// snapshot (see pushCommand) — which buys O(blit) undo at any stroke
+// complexity and frees every brush from replay-determinism constraints
+// (ADR-0065's crayon was the forcing case).
 //
 // Memory is tiered on top of that: the K_LIVE most recent snapshots stay live
 // rasters (patch-sized — a stroke's bounding rect, worst case the full ~30 MB
@@ -349,6 +350,34 @@ export function foldRegionForCommands(
   return { x, y, w, h };
 }
 
+// Whether the fold set wipes the paper: a 'clear' op discards every pixel
+// before it, and everything after renders onto blank — so the fold's result
+// never reads the pre-fold paper, licensing the swap capture in pushCommand.
+function foldContainsClear(commands: StrokeGroupCommand[]): boolean {
+  return commands.some((cmd) => cmd.ops.some((op) => op.kind === 'clear'));
+}
+
+// Capture-by-swap for a clear: adopt the current paper canvas as the snapshot
+// raster (its pixels ARE the full-paper patch a clear's fold region demands)
+// and install a fresh, already-blank paper for the fold to land on. O(1)
+// pointer swap + allocation instead of drawImage-copying the whole 2×-DPR
+// paper — the worst fixed pointerup hitch in the 2026-07 profile. Null when
+// the fresh canvas yields no context; the caller falls back to the copy path.
+function adoptPaperAsSnapshot(): HTMLCanvasElement | null {
+  if (!paperCanvas) return null;
+  const fresh = document.createElement('canvas');
+  fresh.width = paperCanvas.width;
+  fresh.height = paperCanvas.height;
+  const freshCtx = fresh.getContext('2d');
+  if (!freshCtx) return null;
+  freshCtx.lineCap = 'round';
+  freshCtx.lineJoin = 'round';
+  const adopted = paperCanvas;
+  paperCanvas = fresh;
+  paperCtx = freshCtx;
+  return adopted;
+}
+
 // The prefix of `commands` the fold may render now: it stops at the first
 // command the unready magic sheet would render blank (nothing after it folds
 // either, preserving cross-command ordering — eraser, crayon mix).
@@ -374,20 +403,22 @@ export function pushCommand(cmd: StrokeGroupCommand) {
   if (PERF_MARKS) performance.mark('engine.snapshot:start');
   const prospective = [...pendingCommands, cmd];
   const foldCount = foldableCount(prospective);
-  const rect = foldRegionForCommands(
-    prospective.slice(0, foldCount),
-    paperCanvas.width,
-    paperCanvas.height
-  );
+  const folding = prospective.slice(0, foldCount);
+  const rect = foldRegionForCommands(folding, paperCanvas.width, paperCanvas.height);
   let patch: HTMLCanvasElement | null = null;
   if (rect) {
-    const copy = document.createElement('canvas');
-    copy.width = rect.w;
-    copy.height = rect.h;
-    const copyCtx = copy.getContext('2d');
-    if (copyCtx) {
-      copyCtx.drawImage(paperCanvas, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
-      patch = copy;
+    // A clear in the fold set claims the full paper AND never reads the
+    // pre-fold pixels, so the paper itself becomes the patch (swap, not copy).
+    if (foldContainsClear(folding)) patch = adoptPaperAsSnapshot();
+    if (!patch) {
+      const copy = document.createElement('canvas');
+      copy.width = rect.w;
+      copy.height = rect.h;
+      const copyCtx = copy.getContext('2d');
+      if (copyCtx) {
+        copyCtx.drawImage(paperCanvas, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+        patch = copy;
+      }
     }
   }
   // A failed patch context loses this one undo entry, never the ink — the fold
