@@ -42,6 +42,12 @@ export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoom
   // to that instant and never jumps as fingers are added or lifted.
   let baseZoom = MIN_TEXT_ZOOM;
   let baseSpread = 0;
+  // A pinch can start with the primary finger resting on a hub row / toggle /
+  // link while the second finger does the spreading. That primary pointer still
+  // fires a `click` when it lifts, which would open the section or flip the
+  // setting underneath it. Mark that a two-finger gesture happened and swallow
+  // the one trailing click it produces (the ghost-click guard from svelte.md).
+  let pinchedRecently = false;
 
   function spread(): number {
     const [a, b] = [...points.values()];
@@ -71,8 +77,12 @@ export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoom
 
   function onPointerDown(e: PointerEvent) {
     if (!getOptions().enabled || e.pointerType !== 'touch') return;
+    // A fresh gesture (first finger down) clears any stale pinch flag, so a
+    // pinch that produced no click doesn't swallow a later legitimate tap.
+    if (points.size === 0) pinchedRecently = false;
     points.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (points.size === 2) {
+      pinchedRecently = true;
       rebase();
       try {
         node.setPointerCapture(e.pointerId);
@@ -99,10 +109,21 @@ export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoom
     if (points.size >= 2) rebase();
   }
 
+  // Capture phase so it fires before the target's own click handler and can
+  // stop the click from ever reaching it. Swallows exactly one click — the one
+  // the just-ended pinch would otherwise leak onto the control under a finger.
+  function onClickCapture(e: MouseEvent) {
+    if (!pinchedRecently) return;
+    pinchedRecently = false;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
   node.addEventListener('pointerdown', onPointerDown);
   node.addEventListener('pointermove', onPointerMove);
   node.addEventListener('pointerup', onPointerUp);
   node.addEventListener('pointercancel', onPointerUp);
+  node.addEventListener('click', onClickCapture, true);
 
   // Reset to normal size whenever the gate toggles or the overlay reopens.
   // Reading these runes here is what subscribes the action to them.
@@ -119,6 +140,7 @@ export function pinchTextZoom(node: HTMLElement, getOptions: () => PinchTextZoom
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);
       node.removeEventListener('pointercancel', onPointerUp);
+      node.removeEventListener('click', onClickCapture, true);
     },
   };
 }
