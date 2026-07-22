@@ -1,0 +1,260 @@
+{
+  "settings": {
+    "target": "web/dev-engine (headless Chromium — not WebKit/real GPU)",
+    "device": "ipad-pro-12.9",
+    "viewport": {
+      "width": 1024,
+      "height": 1366,
+      "deviceScaleFactor": 2,
+      "label": "ipad-pro-12.9"
+    },
+    "throttle": 4,
+    "refreshHz": 120,
+    "frameBudgetMs": 8.333333333333334,
+    "longOps": 1200,
+    "buildMode": "production-preview (reused build)",
+    "captureMode": "cdp-trace",
+    "raster": {
+      "backingW": 2048,
+      "backingH": 2732,
+      "side": 2732,
+      "bytesPerRaster": 29855296,
+      "mbPerRaster": 28.47222900390625
+    },
+    "startedAt": "2026-07-22T14:50:01.346Z",
+    "durationMs": 156882
+  },
+  "scenarios": [
+    {
+      "key": "long-squiggles",
+      "label": "22 long squiggles (~1200 ops each @ 120Hz), then undo all",
+      "strokes": 22,
+      "crayon": false,
+      "debug": {
+        "snapshots": 20,
+        "liveRasters": 2,
+        "rasterBytes": 3655680,
+        "blobBytes": 324518,
+        "pendingCommands": 0
+      },
+      "undoSteps": 20,
+      "draw": {
+        "ops": 26378,
+        "totalMs": 1326.4999999973224,
+        "commitMs": 2765.700000000128,
+        "commitMaxMs": 146.5,
+        "snapshotMs": 2388.300000000105,
+        "snapshotMaxMs": 126.79999999998836
+      },
+      "undo": {
+        "steps": 20,
+        "totalMs": 112.69999999995343,
+        "avgMs": 5.634999999997672,
+        "maxMs": 7
+      },
+      "heap": {
+        "afterDrawMB": 18.405914306640625,
+        "afterUndoMB": 18.405914306640625
+      },
+      "historyRasterMB": 32.26804161071777
+    },
+    {
+      "key": "short-marks",
+      "label": "22 short dot/dash strokes, then undo all",
+      "strokes": 22,
+      "crayon": false,
+      "debug": {
+        "snapshots": 20,
+        "liveRasters": 2,
+        "rasterBytes": 8080,
+        "blobBytes": 9288,
+        "pendingCommands": 0
+      },
+      "undoSteps": 20,
+      "draw": {
+        "ops": 33,
+        "totalMs": 4.100000000093132,
+        "commitMs": 1968.600000000035,
+        "commitMaxMs": 99.90000000002328,
+        "snapshotMs": 1772.1000000001513,
+        "snapshotMaxMs": 89.5
+      },
+      "undo": {
+        "steps": 20,
+        "totalMs": 43.899999999965075,
+        "avgMs": 2.1949999999982537,
+        "maxMs": 4.5
+      },
+      "heap": {
+        "afterDrawMB": 18.405914306640625,
+        "afterUndoMB": 18.405914306640625
+      },
+      "historyRasterMB": 28.488792419433594
+    },
+    {
+      "key": "mixed",
+      "label": "22 mixed long+short strokes, then undo all",
+      "strokes": 22,
+      "crayon": false,
+      "debug": {
+        "snapshots": 20,
+        "liveRasters": 2,
+        "rasterBytes": 1834320,
+        "blobBytes": 167534,
+        "pendingCommands": 0
+      },
+      "undoSteps": 20,
+      "draw": {
+        "ops": 13222,
+        "totalMs": 517.599999998929,
+        "commitMs": 2738,
+        "commitMaxMs": 186.70000000001164,
+        "snapshotMs": 2404.800000000163,
+        "snapshotMaxMs": 174.5
+      },
+      "undo": {
+        "steps": 20,
+        "totalMs": 77.49999999994179,
+        "avgMs": 3.8749999999970894,
+        "maxMs": 6.100000000034925
+      },
+      "heap": {
+        "afterDrawMB": 18.405914306640625,
+        "afterUndoMB": 18.405914306640625
+      },
+      "historyRasterMB": 30.381345748901367
+    },
+    {
+      "key": "multi-finger",
+      "label": "22 five-finger drags (~2400 ops/command), then undo all",
+      "strokes": 22,
+      "crayon": false,
+      "debug": {
+        "snapshots": 20,
+        "liveRasters": 2,
+        "rasterBytes": 22535184,
+        "blobBytes": 5271796,
+        "pendingCommands": 0
+      },
+      "undoSteps": 20,
+      "draw": {
+        "ops": 52690,
+        "totalMs": 2783.600000001141,
+        "commitMs": 6761.699999999837,
+        "commitMaxMs": 1108.4000000000233,
+        "snapshotMs": 5924.699999999895,
+        "snapshotMaxMs": 1068.5999999999767
+      },
+      "undo": {
+        "steps": 20,
+        "totalMs": 621.7000000001281,
+        "avgMs": 31.085000000006403,
+        "maxMs": 159.5
+      },
+      "heap": {
+        "afterDrawMB": 18.405914306640625,
+        "afterUndoMB": 18.405914306640625
+      },
+      "historyRasterMB": 54.991031646728516
+    },
+    {
+      "key": "scribbles",
+      "label": "22 pen back-and-forth scribbles (~1200 ops each), then undo all",
+      "strokes": 22,
+      "crayon": false,
+      "debug": {
+        "snapshots": 20,
+        "liveRasters": 2,
+        "rasterBytes": 3219312,
+        "blobBytes": 149748,
+        "pendingCommands": 0
+      },
+      "undoSteps": 20,
+      "draw": {
+        "ops": 26378,
+        "totalMs": 1325.000000001979,
+        "commitMs": 2939.100000000035,
+        "commitMaxMs": 159.5,
+        "snapshotMs": 2558.5000000001164,
+        "snapshotMaxMs": 137.20000000001164
+      },
+      "undo": {
+        "steps": 20,
+        "totalMs": 94.89999999979045,
+        "avgMs": 4.744999999989522,
+        "maxMs": 6.5
+      },
+      "heap": {
+        "afterDrawMB": 18.405914306640625,
+        "afterUndoMB": 18.405914306640625
+      },
+      "historyRasterMB": 31.68521499633789
+    },
+    {
+      "key": "crayon-squiggles",
+      "label": "22 crayon long squiggles (~1200 ops each), then undo all",
+      "strokes": 22,
+      "crayon": true,
+      "debug": {
+        "snapshots": 20,
+        "liveRasters": 2,
+        "rasterBytes": 3711744,
+        "blobBytes": 1125050,
+        "pendingCommands": 0
+      },
+      "undoSteps": 20,
+      "draw": {
+        "ops": 26378,
+        "totalMs": 6636.699999998149,
+        "commitMs": 2852.300000000105,
+        "commitMaxMs": 139.5,
+        "snapshotMs": 147.60000000003492,
+        "snapshotMaxMs": 9
+      },
+      "undo": {
+        "steps": 20,
+        "totalMs": 118.19999999995343,
+        "avgMs": 5.909999999997671,
+        "maxMs": 6.900000000023283
+      },
+      "heap": {
+        "afterDrawMB": 18.405914306640625,
+        "afterUndoMB": 18.405914306640625
+      },
+      "historyRasterMB": 33.0849552154541
+    },
+    {
+      "key": "crayon-scribbles",
+      "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+      "strokes": 22,
+      "crayon": true,
+      "debug": {
+        "snapshots": 20,
+        "liveRasters": 2,
+        "rasterBytes": 3274128,
+        "blobBytes": 2078314,
+        "pendingCommands": 0
+      },
+      "undoSteps": 20,
+      "draw": {
+        "ops": 26378,
+        "totalMs": 32454.30000000022,
+        "commitMs": 3754.999999999942,
+        "commitMaxMs": 186.59999999997672,
+        "snapshotMs": 127.39999999996508,
+        "snapshotMaxMs": 7.5
+      },
+      "undo": {
+        "steps": 20,
+        "totalMs": 96.09999999997672,
+        "avgMs": 4.804999999998836,
+        "maxMs": 6.5
+      },
+      "heap": {
+        "afterDrawMB": 18.405914306640625,
+        "afterUndoMB": 18.405914306640625
+      },
+      "historyRasterMB": 33.57671546936035
+    }
+  ]
+}

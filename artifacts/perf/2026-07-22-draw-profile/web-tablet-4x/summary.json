@@ -1,0 +1,212 @@
+{
+  "settings": {
+    "target": "web",
+    "device": "tablet",
+    "viewport": {
+      "width": 1024,
+      "height": 1366,
+      "deviceScaleFactor": 2
+    },
+    "throttle": 4,
+    "buildMode": "production-preview",
+    "captureMode": "cdp-trace",
+    "startedAt": "2026-07-22T14:46:35.577Z",
+    "durationMs": 172286
+  },
+  "breakdown": {
+    "mainThreadBusyMs": 145989.22,
+    "scriptingMs": 17782.08,
+    "renderingMs": 4765.313,
+    "paintingMs": 1899.196,
+    "longTasksFromTrace": {
+      "count": 40,
+      "longestMs": 678.444
+    }
+  },
+  "engineHotPaths": [
+    {
+      "name": "engine.draw",
+      "count": 3738,
+      "totalMs": 1249.995,
+      "avgMs": 0.33440208667736754,
+      "maxMs": 6.266
+    },
+    {
+      "name": "engine.snapshot",
+      "count": 13,
+      "totalMs": 684.614,
+      "avgMs": 52.662615384615385,
+      "maxMs": 575.684
+    },
+    {
+      "name": "engine.commit",
+      "count": 12,
+      "totalMs": 215.294,
+      "avgMs": 17.941166666666668,
+      "maxMs": 83.9
+    },
+    {
+      "name": "engine.undo",
+      "count": 12,
+      "totalMs": 100.291,
+      "avgMs": 8.357583333333334,
+      "maxMs": 20.213
+    },
+    {
+      "name": "engine.fold",
+      "count": 13,
+      "totalMs": 92.703,
+      "avgMs": 7.131,
+      "maxMs": 73.853
+    },
+    {
+      "name": "engine.scanEmpty",
+      "count": 1,
+      "totalMs": 8.254,
+      "avgMs": 8.254,
+      "maxMs": 8.254
+    }
+  ],
+  "phases": [
+    {
+      "label": "boot-settle",
+      "wallMs": 707.441,
+      "busyMs": 123.352,
+      "longTasks": 0
+    },
+    {
+      "label": "draw-single",
+      "wallMs": 26502.702,
+      "busyMs": 27092.85,
+      "longTasks": 1
+    },
+    {
+      "label": "multi-finger-draw",
+      "wallMs": 1111.233,
+      "busyMs": 1506.828,
+      "longTasks": 1
+    },
+    {
+      "label": "change-colors",
+      "wallMs": 80374.205,
+      "busyMs": 87769.326,
+      "longTasks": 16
+    },
+    {
+      "label": "stroke-size",
+      "wallMs": 14229.568,
+      "busyMs": 14119.518,
+      "longTasks": 3
+    },
+    {
+      "label": "erase",
+      "wallMs": 8618.124,
+      "busyMs": 8845.994,
+      "longTasks": 2
+    },
+    {
+      "label": "undo",
+      "wallMs": 3396.039,
+      "busyMs": 2452.898,
+      "longTasks": 12
+    },
+    {
+      "label": "clear",
+      "wallMs": 2339.842,
+      "busyMs": 3095.476,
+      "longTasks": 2
+    }
+  ],
+  "topSelfTime": [
+    {
+      "name": "(anonymous)",
+      "location": "",
+      "selfMs": 1619.632
+    },
+    {
+      "name": "drawImage",
+      "location": "",
+      "selfMs": 907.969
+    },
+    {
+      "name": "(garbage collector)",
+      "location": "",
+      "selfMs": 593.963
+    },
+    {
+      "name": "querySelector",
+      "location": "",
+      "selfMs": 197.258
+    },
+    {
+      "name": "setProperty",
+      "location": "",
+      "selfMs": 185.832
+    },
+    {
+      "name": "addEventListener",
+      "location": "",
+      "selfMs": 159.119
+    },
+    {
+      "name": "setupDragListeners",
+      "location": "",
+      "selfMs": 154.775
+    },
+    {
+      "name": "di",
+      "location": "BkewDlkn.js:1",
+      "selfMs": 148.909
+    },
+    {
+      "name": "setTimeout",
+      "location": "",
+      "selfMs": 131.588
+    },
+    {
+      "name": "Ce",
+      "location": "jRfd2Atc.js:1",
+      "selfMs": 103.165
+    },
+    {
+      "name": "#_",
+      "location": "BkewDlkn.js:1",
+      "selfMs": 94.811
+    },
+    {
+      "name": "removeEventListener",
+      "location": "",
+      "selfMs": 88.487
+    },
+    {
+      "name": "mr",
+      "location": "CmsAsEaa.js:2",
+      "selfMs": 77.182
+    },
+    {
+      "name": "fill",
+      "location": "",
+      "selfMs": 72.572
+    },
+    {
+      "name": "clearTimeout",
+      "location": "",
+      "selfMs": 63.034
+    }
+  ],
+  "frames": {
+    "count": 7896,
+    "durationMs": 138244.5,
+    "fps": 57.10896274354496,
+    "longFrames": 211
+  },
+  "longTasks": {
+    "count": 24,
+    "totalMs": 2746,
+    "longestMs": 607
+  },
+  "heap": {
+    "beforeBytes": 10000000,
+    "afterBytes": 10000000
+  }
+}
