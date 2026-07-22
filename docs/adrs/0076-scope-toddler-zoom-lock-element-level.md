@@ -30,13 +30,10 @@ a rejected-for-now alternative and said that if the accessibility gain were late
   gesture behavior — so removing the attributes is exactly what clears the audit, and the
   element-level locks neither trigger nor clear it.
 
-The alternatives considered for *recovering zoom for parents* on the drawing page:
-
-* **Allow browser zoom inside a Parent Center overlay only.** Rejected: browser zoom is
-  visual-viewport-wide, not element-scoped, and **there is no JS API to reset it**. A parent who
-  zoomed then closed the overlay would leave the *canvas* zoomed with no programmatic recovery —
-  precisely the disorientation ADR-0041 guards against.
-* **Pinch-zoom the canvas content as a drawing feature.** Out of scope for the 2+ audience.
+The design space for *recovering zoom for parents* while keeping the canvas stable is wider than it
+looks; **How the zoom model works** and **Alternatives considered** (below) record the browser facts
+that ruled the intuitive options out, because they are non-obvious and will otherwise be
+re-litigated.
 
 ## Decision
 
@@ -93,6 +90,90 @@ two-finger spread and asserts the pane enlarges then resets on close (`tests/par
 touch zoom; `tests/multitouch.spec.ts` asserts `visualViewport.scale` stays 1 after a five-pointer
 spread. CSS `zoom` is registered in `docs/COMPATIBILITY.md` (above the Firefox 114 floor —
 standardized in Firefox 126; below that it is a graceful no-op).
+
+## How the zoom model works
+
+A handful of browser facts drive every choice above. They are recorded here because the intuitive
+fixes ("just freeze the canvas", "let it zoom then undo it") founder on them, and without this the
+next contributor will try those first.
+
+**Browser pinch-zoom is a visual-viewport operation, not a per-element one.** On mobile, a pinch
+magnifies the already-rendered pixels — a magnifying glass over the screen. It does **not** reflow,
+and it does **not** change layout coordinates: `clientX`/`clientY`, `getBoundingClientRect()`, and
+element sizes are all unaffected; only `visualViewport.scale` / `offsetLeft` / `offsetTop` change.
+Two consequences fall out:
+
+* You **cannot exempt one element** from it. If any region of a page can start a zoom, the whole
+  viewport — canvas included — scales. There is no CSS "do not zoom this element", so "let the app
+  zoom but freeze the canvas" cannot be expressed declaratively.
+* **Drawing coordinates do not break under a pinch-zoom.** A stroke drawn while the page is
+  pinch-zoomed still lands on the correct canvas pixel, because the engine's
+  `(clientX − rect.left) × (canvas.width / rect.width)` mapping is entirely in layout space, which
+  the pinch leaves untouched. (This is unlike CSS `zoom` or a CSS transform, which *do* change
+  coordinate math — which is exactly why the tier-2 overlays feed the gesture through their own
+  transform.)
+
+**A pinch initiates only if every contact point permits it.** The browser intersects `touch-action`
+across the active pointers of a gesture: if any finger is on a `touch-action: none` region, the
+pinch is vetoed (this is what the `multitouch.spec.ts` five-pointer spread asserts — the canvas
+never scales). So `touch-action: none` on the canvas covers two of the three finger placements —
+both fingers on the canvas, and one-on-canvas / one-on-chrome (the canvas finger vetoes). It does
+**not** cover the third: both fingers entirely on zoomable chrome (the palette bar, corner buttons,
+page margins — and the buttons carry `touch-action: manipulation`, which *permits* pinch). That
+remaining gap is the reason the lock is **page-level on `/`**, not canvas-only.
+
+**There is no API to reset browser zoom.** `visualViewport.scale` is read-only; nothing can return
+the viewport to scale 1 programmatically. This is the most load-bearing fact in the whole design: an
+accidental native zoom on the drawing surface is **unrecoverable** for a 2-year-old (they will not
+pinch back to fit), which is *why* the drawing page must stop a zoom from ever initiating rather
+than allowing it and correcting after. It is also why the two overlays use app-controlled zoom — a
+scale variable the app owns *can* be snapped back to 1.
+
+**The two overlay zoom mechanisms, and why they differ.** Inside the locked drawing page, two
+overlays offer their own zoom, each app-controlled so it resets cleanly and never touches the
+viewport:
+
+* `pinchZoom` (`lib/components/aiPreview.ts` + `lib/actions/pinchZoom.svelte.ts`) — for the
+  **fixed-size** AI image preview. A CSS `transform: translate() scale()` on an inner layer; the
+  surface stays at scale 1 as a stable coordinate reference; pan is clamped to the surface bounds.
+  It owns its surface with `touch-action: none` and pans with one finger once zoomed.
+* `pinchTextZoom` (`lib/actions/pinchTextZoom.svelte.ts`) — for the **scrollable** Parent Center
+  pane. Drives CSS `zoom` (not a transform), which reflows and grows the scroll container's extent,
+  so enlarged text stays reachable by ordinary one-finger scrolling — no custom pan, native momentum
+  preserved. It deliberately does **not** reuse `createPinchZoom`, whose pan clamp assumes the
+  target fits the surface at scale 1 (false for a taller-than-viewport document), and it never
+  intercepts a single pointer, so native scroll survives.
+
+## Alternatives considered
+
+Recorded because each is a natural next idea, and each fails on a fact above:
+
+* **Lock only the canvas element; leave the rest of `/` browser-zoomable.** Fails on the "both
+  fingers on chrome" gap (a toddler pinches the palette bar and zooms the whole app) *and* the
+  no-reset fact (once zoomed, no way back). Closing the gap means locking the palette, buttons, and
+  margins too — which just rebuilds the page-level lock, more fragilely.
+* **Let the whole app zoom natively and "freeze" only the canvas.** Impossible declaratively:
+  browser zoom is viewport-global, so nothing in CSS/native holds one element fixed while the
+  viewport scales. The only freeze that survives a viewport zoom is a JS counter-transform driven by
+  `visualViewport` events — fragile, laggy, and strange UX (the canvas sits still while the UI
+  balloons around it). Rejected.
+* **Allow the zoom, then a JS handler "resets the coordinates to the new viewport."** Two
+  independent problems: (1) pinch-zoom doesn't break coordinates in the first place (layout
+  coordinates are untouched), so the coordinate handler is a no-op; and (2) the thing that *would*
+  need resetting is the zoom level, and `visualViewport.scale` cannot be set, so native zoom can't
+  be reset at all. Rejected.
+* **Allow browser zoom inside a Parent Center overlay only.** Same no-reset wall: a parent who
+  zoomed then closed the overlay leaves the *canvas* zoomed with no recovery. Hence the overlays use
+  app-controlled zoom (CSS transform / CSS `zoom`) instead of browser zoom.
+* **Tier 3 — make the canvas itself a pan/zoom drawing surface, as a feature.** This is the *only*
+  architecture where "allow zoom + reset" works: the engine would draw in canvas-space through an
+  app-owned pan/zoom transform (pointer coordinates fed through its inverse), with a reset-to-fit
+  gesture that *is* settable because the scale is the app's own. Legitimate — it's how
+  Procreate/Excalidraw-class canvases work — but declined for the 2+ audience: a 2-year-old doesn't
+  benefit from zoom-to-draw-detail, accidental engagement still disorients even when it's resettable
+  (they won't find the reset), and it adds a transform layer to the hot per-stroke drawing path the
+  engine is deliberately tuned to keep flat (ADR-0004). Left open as a future *product* decision,
+  not a mechanical change.
 
 ## Consequences
 
