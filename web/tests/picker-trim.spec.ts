@@ -22,19 +22,16 @@ async function openPickerAt(page: Page, width: number, height: number): Promise<
     await customSwatch.click({ timeout: 1000 });
     await expect(page.locator('#color-picker')).toBeVisible({ timeout: 1000 });
   }).toPass({ timeout: 10_000 });
-  // Let the fly-in animation land before measuring geometry: wait until the
-  // dialog's rect holds still across consecutive frames (a fixed sleep costs
-  // 400ms × 13 calls across this file; settling takes only a few frames).
+  // Let the fly-in land before measuring geometry by awaiting the dialog's
+  // own animations (the modal-fly-in dialogFlyFromOrigin — hover transitions
+  // on descendants don't run at open, so no subtree). Deterministic where the
+  // old consecutive-stable-rAF-frames poll was not: under full-suite CPU
+  // contention, coalesced frames could report identical rects mid-animation
+  // and exit early (#469). The leading rAF guarantees a style/layout tick so
+  // the just-opened dialog's CSS animation is registered before we collect it.
   await page.locator('#color-picker').evaluate(async (dialog) => {
-    const snap = () => JSON.stringify(dialog.getBoundingClientRect());
-    let prev = snap();
-    let stable = 0;
-    for (let frames = 0; frames < 120 && stable < 2; frames++) {
-      await new Promise(requestAnimationFrame);
-      const cur = snap();
-      stable = cur === prev ? stable + 1 : 0;
-      prev = cur;
-    }
+    await new Promise(requestAnimationFrame);
+    await Promise.all(dialog.getAnimations().map((animation) => animation.finished));
   });
 
   return page.locator('#color-picker').evaluate((dialog) => {
