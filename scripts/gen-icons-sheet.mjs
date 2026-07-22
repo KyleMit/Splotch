@@ -1,4 +1,4 @@
-// Builds the icon-gallery artifact page (ADR-0059): every icon shipped in the
+// Builds the icon-gallery scrapbook page (ADR-0059): every icon shipped in the
 // app, rendered at size and split into the colorful "spot" illustrations and the
 // monochrome UI glyphs. Self-contained HTML (SVGs inlined) so it renders live on
 // GitHub Pages and via the Artifact tool.
@@ -15,7 +15,7 @@ import { readdirSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ROOT } from './lib/utils.mjs';
-import { esc, chromeStyle, masthead, siteFooter } from './lib/artifact-chrome.mjs';
+import { esc, chromeStyle, masthead, siteFooter } from './lib/scrapbook-chrome.mjs';
 
 const ICONS_DIR = join(ROOT, 'web/src/lib/icons');
 const args = process.argv.slice(2);
@@ -26,7 +26,7 @@ const OUT =
     : join(
         dirname(fileURLToPath(import.meta.url)),
         '..',
-        '.artifacts-scratch',
+        '.scrapbook-scratch',
         'icons',
         'index.html'
       );
@@ -144,7 +144,7 @@ const body = `${masthead({
   title: 'Icon gallery',
   tagline,
   home: '../index.html',
-  crumbs: [{ label: 'Artifacts', href: '../index.html' }, { label: 'Icon gallery' }],
+  crumbs: [{ label: 'Scrapbook', href: '../index.html' }, { label: 'Icon gallery' }],
   stats,
 })}
 <main>

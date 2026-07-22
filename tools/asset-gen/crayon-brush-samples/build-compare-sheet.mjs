@@ -5,7 +5,7 @@
 //
 //   node build-compare-sheet.mjs [--renders=<dir>] [--artifact=<path>]
 //
-// Writes ../../../artifacts/crayon-brush-samples/vs-current.html. `--renders`
+// Writes ../../../scrapbook/crayon-brush-samples/vs-current.html. `--renders`
 // points at capture-current.mjs output (default screenshots/crayon-current);
 // `--artifact` also emits a body-only fragment for the Claude Artifact tool.
 
@@ -13,10 +13,10 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { chromeStyle, masthead, page, siteFooter } from '../../../scripts/lib/artifact-chrome.mjs';
+import { chromeStyle, masthead, page, siteFooter } from '../../../scripts/lib/scrapbook-chrome.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const REF = join(HERE, '../../../artifacts/crayon-brush-samples');
+const REF = join(HERE, '../../../scrapbook/crayon-brush-samples');
 const arg = (name, fallback) =>
   process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
 const RENDERS = arg('renders', join(HERE, '../../../screenshots/crayon-current'));
@@ -134,7 +134,7 @@ const body = `${masthead({
   tagline:
     'Each acceptance scene side by side: the real-crayon reference next to the shipping ADR-0065 brush driven through the same mark on a production build, with the visual gap named per scene.',
   crumbs: [
-    { label: 'Artifacts', href: '../index.html' },
+    { label: 'Scrapbook', href: '../index.html' },
     { label: 'Crayon brush samples', href: 'index.html' },
     { label: 'vs. current' },
   ],

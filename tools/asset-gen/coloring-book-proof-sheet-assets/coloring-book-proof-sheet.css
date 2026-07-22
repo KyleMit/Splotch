@@ -1,5 +1,5 @@
-/* Palette kept in sync by eye with the shared artifact chrome
-   (scripts/lib/artifact-chrome.mjs) — asset-gen can't import across that boundary.
+/* Palette kept in sync by eye with the shared scrapbook chrome
+   (scripts/lib/scrapbook-chrome.mjs) — asset-gen can't import across that boundary.
    --accent is the site's interactive blue; --gold is the warm "shipped/source" tag. */
 :root {
   --paper: #f5f3ee;

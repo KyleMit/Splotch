@@ -15,7 +15,7 @@ import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSaf
 import { SAMPLES } from './samples.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = join(HERE, '../../../artifacts/crayon-brush-samples');
+const OUT = join(HERE, '../../../scrapbook/crayon-brush-samples');
 const MODEL = 'gemini-3.1-flash-image';
 
 if (!process.env.GEMINI_API_KEY) {

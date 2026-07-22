@@ -13,8 +13,8 @@ the minutes go to per-build platform overhead multiplied by build count:
   Capacitor CLIs. A full install is 1,159 packages / 512 MB, all restored and re-saved from
   Netlify's build cache on every deploy — yet the web build itself needs none of that tooling.
 * **Build count.** Every push to `main` deploys. Measured over 30 days: 13 of 67 production pushes
-  touched nothing the web build consumes (docs, ADRs, ruler-generated agent files, `artifacts/`,
-  native trees) and still burned a full build.
+  touched nothing the web build consumes (docs, ADRs, ruler-generated agent files, `artifacts/` (now
+  `scrapbook/`), native trees) and still burned a full build.
 
 Alternatives considered:
 

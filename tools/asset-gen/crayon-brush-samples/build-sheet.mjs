@@ -1,20 +1,20 @@
 // Assemble the generated crayon-stroke reference images into one self-contained
-// contact sheet, grouped by stage, using the shared /artifacts chrome. Images
+// contact sheet, grouped by stage, using the shared /scrapbook chrome. Images
 // are inlined as base64 so the page renders in the sandbox and on GitHub Pages
 // with no external files.
 //
 //   node --experimental-strip-types --disable-warning=ExperimentalWarning build-sheet.mjs
 //
-// Writes ./out/index.html. Promote with the artifacts:publish flow when happy.
+// Writes ./out/index.html. Promote with the scrapbook:publish flow when happy.
 
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromeStyle, masthead, page, siteFooter } from '../../../scripts/lib/artifact-chrome.mjs';
+import { chromeStyle, masthead, page, siteFooter } from '../../../scripts/lib/scrapbook-chrome.mjs';
 import { SAMPLES } from './samples.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = join(HERE, '../../../artifacts/crayon-brush-samples');
+const OUT = join(HERE, '../../../scrapbook/crayon-brush-samples');
 
 const STAGES = [
   [
@@ -111,7 +111,7 @@ const body = `${masthead({
   title: 'Crayon brush — reference strokes',
   tagline:
     'AI-generated acceptance-criteria art for the new crayon brush mode: what a waxy crayon stroke should look like, built up stage by stage.',
-  crumbs: [{ label: 'Artifacts', href: '../index.html' }, { label: 'Crayon brush samples' }],
+  crumbs: [{ label: 'Scrapbook', href: '../index.html' }, { label: 'Crayon brush samples' }],
   home: '../index.html',
   stats: `<span class="chip">${present} samples</span><span class="chip">${STAGES.length} stages</span><span class="chip">gemini-3.1-flash-image</span>`,
 })}

@@ -1,18 +1,18 @@
-# Publishes the committed /artifacts folder to GitHub Pages (ADR-0059) so the
+# Publishes the committed /scrapbook folder to GitHub Pages (ADR-0059) so the
 # kept run outputs — contact sheets, Lighthouse reports, model & prompt tests —
 # render live at https://kylemit.github.io/Splotch/. The committed folder is the
 # source of truth; this just mirrors it. Classic branch-source Pages can only
-# serve root or /docs, so the Actions path is what lets us serve /artifacts.
+# serve root or /docs, so the Actions path is what lets us serve /scrapbook.
 #
 # One-time setup: repo Settings → Pages → Source: GitHub Actions (configure-pages
 # below attempts to enable it, but org/repo policy may still require the manual
 # toggle on the first run).
-name: Deploy artifacts to Pages
+name: Deploy scrapbook to Pages
 
 on:
   push:
     branches: [main]
-    paths: ['artifacts/**']
+    paths: ['scrapbook/**']
   workflow_dispatch:
 
 permissions:
@@ -40,10 +40,10 @@ jobs:
         with:
           enablement: true
 
-      # Upload only the artifacts/ folder — it becomes the Pages site root.
+      # Upload only the scrapbook/ folder — it becomes the Pages site root.
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: artifacts
+          path: scrapbook
 
       - id: deployment
         uses: actions/deploy-pages@v4

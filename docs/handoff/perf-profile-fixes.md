@@ -2,11 +2,11 @@
 
 > 2026-07-22 · branch `claude/draw-performance-profile-rbliof` · Implement the ranked
 > recommendations from the 2026-07-22 draw-performance profile
-> (`artifacts/perf/2026-07-22-draw-profile/findings.md`)
+> (`scrapbook/perf/2026-07-22-draw-profile/findings.md`)
 
 ## Objective & non-goals
 
-Implement the perf fixes ranked in `artifacts/perf/2026-07-22-draw-profile/findings.md` — the
+Implement the perf fixes ranked in `scrapbook/perf/2026-07-22-draw-profile/findings.md` — the
 profile itself (capture, analysis, artifact publishing, analyzer/skill upgrades) is **done and
 committed**; only the engine fixes remain.
 
@@ -37,11 +37,11 @@ nothing in flight, no dirty files.
 
 | sha       | what                                                                                                                                                           |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `9277071` | Committed profile artifacts: `artifacts/perf/2026-07-22-draw-profile/` (findings + 2 reports)                                                                  |
+| `9277071` | Committed profile artifacts: `scrapbook/perf/2026-07-22-draw-profile/` (findings + 2 reports)                                                                  |
 | `5d41c55` | Analyzer upgrades (per-phase Compositor commit column, Long-tasks-attributed section) + regenerated artifact reports + `profiling` skill update (via `.ruler`) |
 
 Files touched: `scripts/perf/analyze.mjs`, `.ruler/skills/profiling/SKILL.md` (+ generated
-`.claude/`/`.agents/` copies), `artifacts/perf/2026-07-22-draw-profile/**`, `artifacts/index.html`.
+`.claude/`/`.agents/` copies), `scrapbook/perf/2026-07-22-draw-profile/**`, `scrapbook/index.html`.
 
 Raw traces (370 MB) live only in this container's gitignored `perf-profiles/` — gone with the
 container; re-capture rather than looking for them.
@@ -81,7 +81,7 @@ container; re-capture rather than looking for them.
 ## Done & verified
 
 * `npm run perf:web -- --device=tablet` and `npm run perf:undo` — both ran green; reports committed
-  under `artifacts/perf/2026-07-22-draw-profile/`.
+  under `scrapbook/perf/2026-07-22-draw-profile/`.
 * `npm run perf:analyze` re-run on **both** saved traces after the analyzer change — new sections
   render correctly and reproduce the hand-derived findings (clear hitch →
   `EventDispatch
@@ -113,7 +113,7 @@ Then rec 4/5 as follow-ups (4 needs a local session with an Android device).
 
 ## Reread first
 
-* `artifacts/perf/2026-07-22-draw-profile/findings.md` — the full ranked findings (numbers, caveats)
+* `scrapbook/perf/2026-07-22-draw-profile/findings.md` — the full ranked findings (numbers, caveats)
 * `.claude/skills/profiling/SKILL.md` — harness commands + how to read the new report sections
 * `web/src/lib/drawing/undoHistory.ts` — `pushCommand` (`:372`), `foldRegionForCommands` (`:285`),
   `popSnapshot` (`:526`), `repaintAll` (`:605`), tier invariants in the header comment

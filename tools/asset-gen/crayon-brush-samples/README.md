@@ -6,7 +6,7 @@ so the brush's behavior can be measured against them.
 
 This is **not** part of the shipping asset pipeline (`docs/pipeline.md`) — the outputs are committed
 reference art, published under
-[`artifacts/crayon-brush-samples/`](../../../artifacts/crayon-brush-samples/) (GitHub Pages:
+[`scrapbook/crayon-brush-samples/`](../../../scrapbook/crayon-brush-samples/) (GitHub Pages:
 <https://kylemit.github.io/Splotch/crayon-brush-samples/>).
 
 ## The stages
@@ -30,22 +30,22 @@ Needs `GEMINI_API_KEY` (real API cost — manual only, never in CI). Run from th
 node --experimental-strip-types --disable-warning=ExperimentalWarning gen.mjs        # generate every sample (or pass id prefixes, e.g. `2- 3-`)
 node --experimental-strip-types --disable-warning=ExperimentalWarning to-webp.mjs    # downsize the raw JPGs to committed webp (max 1024px, q80)
 node --experimental-strip-types --disable-warning=ExperimentalWarning build-sheet.mjs # rebuild the contact sheet index.html
-npm --prefix ../../.. run artifacts:index                                             # refresh the artifacts landing card
+npm --prefix ../../.. run scrapbook:index                                             # refresh the scrapbook landing card
 ```
 
 * `samples.mjs` — the sample specs (id, label, prompt). Add or tweak a mark here; every prompt
   shares one `BASE` so the whole set reads as one consistent material.
 * `gen.mjs` — text-to-image driver (Gemini `gemini-3.1-flash-image`), writes straight into the
-  artifacts folder.
+  scrapbook folder.
 * `to-webp.mjs` — one-time downsize of the ~750 KB JPGs to ~50 KB webp.
 * `build-sheet.mjs` — assembles the images into the stage-grouped, self-contained contact sheet
-  using the shared `/artifacts` chrome (`scripts/lib/artifact-chrome.mjs`). Pass `--artifact=<path>`
-  to also emit a body-only fragment for the Claude Artifact tool (which supplies its own page
-  skeleton).
+  using the shared `/scrapbook` chrome (`scripts/lib/scrapbook-chrome.mjs`). Pass
+  `--artifact=<path>` to also emit a body-only fragment for the Claude Artifact tool (which supplies
+  its own page skeleton).
 
 ## Comparing against the shipping brush
 
-The committed [`vs-current.html`](../../../artifacts/crayon-brush-samples/vs-current.html) puts each
+The committed [`vs-current.html`](../../../scrapbook/crayon-brush-samples/vs-current.html) puts each
 acceptance scene side by side with the real ADR-0065 renderer and names the visual gap per scene
 (first built for the 2026-07 re-architecture study). To refresh it after a brush change:
 
