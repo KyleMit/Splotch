@@ -102,7 +102,8 @@ All recorded in **ADR-0071** — read it before re-deciding anything. Highlights
 * **Known flake, not this branch:** `picker-trim.spec.ts` "phone portrait keeps all 9 families
   (390×844 → 9×4)" failed once in a full-suite run, then passed in isolation and on a full rerun.
   The spec was just modified on main (\#468). If it fails again, suspect suite parallelism there —
-  don't burn time blaming the token diff.
+  don't burn time blaming the token diff. Tracked (with root-cause analysis and fix options) in
+  issue [#469](https://github.com/KyleMit/Splotch/issues/469).
 
 ## Risks & next 3 steps
 
