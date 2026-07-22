@@ -81,7 +81,7 @@
   }
 
   .folder-title {
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 500;
     color: var(--text);
     white-space: nowrap;
@@ -91,9 +91,9 @@
   .folder-change {
     flex-shrink: 0;
     border: none;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: 7px 16px;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     color: #fff;
     background: var(--brand);
@@ -119,9 +119,9 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     border: none;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: 7px 14px;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--brand-text);
     background: var(--brand-wash);

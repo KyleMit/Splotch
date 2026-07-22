@@ -42,7 +42,7 @@
     margin-bottom: 16px;
     padding: 16px;
     background: var(--surface-2);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
   }
 
   .whats-new-heading {
@@ -62,7 +62,7 @@
   .whats-new-body :global(h2),
   .whats-new-body :global(h3) {
     margin: 12px 0 6px 0;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 700;
     color: var(--text-strong);
   }
@@ -78,7 +78,7 @@
   }
 
   .whats-new-body :global(li) {
-    font-size: 14px;
+    font-size: var(--font-size-md);
     color: var(--text);
     line-height: 1.5;
     margin-bottom: 4px;
@@ -90,7 +90,7 @@
 
   .all-releases {
     margin: 4px 0 0 0;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
   }
 
   .all-releases a {

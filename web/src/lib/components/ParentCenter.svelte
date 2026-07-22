@@ -347,7 +347,7 @@
   .parent-help-modal.resizing :global(.button-size-setting) {
     visibility: visible;
     background: var(--surface);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     /* A tight, even lift that hugs the rounded card — not the heavy, downward
        shadow that bled into a rectangular band below the control. */
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.16);
@@ -398,7 +398,7 @@
   }
 
   .pc-header-compact h2 {
-    font-size: 18px;
+    font-size: var(--font-size-xl);
   }
 
   .quick-toggles {
@@ -439,7 +439,7 @@
     gap: 6px;
     padding: 7px 4px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-mid);
     font-family: inherit;
@@ -448,9 +448,9 @@
     cursor: pointer;
     touch-action: manipulation;
     transition:
-      background 0.15s ease,
-      color 0.15s ease,
-      box-shadow 0.15s ease;
+      background var(--duration-fast) ease,
+      color var(--duration-fast) ease,
+      box-shadow var(--duration-fast) ease;
   }
 
   @media (hover: hover) {
@@ -486,7 +486,7 @@
   }
 
   .about-cell-version {
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 500;
     color: var(--text-muted);
   }
@@ -499,7 +499,7 @@
     gap: 8px;
     margin: 0;
     padding: 10px 24px 14px;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     color: var(--text-muted);
     text-align: center;
   }
@@ -574,11 +574,11 @@
     width: 100%;
     padding: 16px;
     border: none;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     background: var(--surface-2);
     cursor: pointer;
     text-align: left;
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast) ease;
   }
 
   @media (hover: hover) {
@@ -597,7 +597,7 @@
     justify-content: center;
     width: 44px;
     height: 44px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: var(--brand-wash);
     flex-shrink: 0;
   }
@@ -620,13 +620,13 @@
   }
 
   .hub-title {
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     font-weight: 600;
     color: var(--text-strong);
   }
 
   .hub-subtitle {
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     color: var(--text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -669,7 +669,7 @@
     width: 100%;
     padding: 12px 14px;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--text-mid);
     font-family: inherit;
@@ -678,8 +678,8 @@
     cursor: pointer;
     text-align: left;
     transition:
-      background 0.15s ease,
-      color 0.15s ease;
+      background var(--duration-fast) ease,
+      color var(--duration-fast) ease;
   }
 
   @media (hover: hover) {
@@ -714,7 +714,7 @@
 
   .pc-pane-title {
     margin: 0 0 20px 0;
-    font-size: 22px;
+    font-size: var(--font-size-2xl);
     font-weight: 600;
     color: var(--text-strong);
   }
@@ -733,7 +733,7 @@
   .parent-help-content :global(.setting) {
     padding: 12px 16px;
     background: var(--surface-2);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
   }
 
   @media (max-width: 480px) {

@@ -47,13 +47,15 @@ export const scale = {
   radiusXl: '22px',
   radiusPill: '999px',
 
-  textXs: '12px',
-  textSm: '13px',
-  textMd: '14px',
-  textLg: '16px',
-  textXl: '18px',
-  text2xl: '22px',
-  text3xl: '28px',
+  // Named --font-size-*, not --text-*, so the type ramp can't collide with
+  // the themed text-color family (--text, --text-strong, --text-muted, …).
+  fontSizeXs: '12px',
+  fontSizeSm: '13px',
+  fontSizeMd: '14px',
+  fontSizeLg: '16px',
+  fontSizeXl: '18px',
+  fontSize2xl: '22px',
+  fontSize3xl: '28px',
 
   durationFast: '0.15s',
   durationBase: '0.2s',
@@ -240,7 +242,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
   },
 };
 
-// `appBg` → `--app-bg`, `surface2` → `--surface-2`, `text2xl` → `--text-2xl`.
+// `appBg` → `--app-bg`, `surface2` → `--surface-2`, `fontSize2xl` → `--font-size-2xl`.
 export function toCssVarName(key: string): string {
   return `--${key.replace(/([a-z])([A-Z0-9])/g, '$1-$2').toLowerCase()}`;
 }

@@ -55,6 +55,12 @@ jobs:
       - name: Design-token drift
         run: npm run gen:tokens:check
 
+      # Raw-hex ratchet: component <style> blocks must use the design tokens
+      # (ADR-0071); the per-file allowlist of documented one-offs lives in
+      # scripts/lint-token-styles.mjs. Fails on any new raw hex color.
+      - name: Raw-hex token lint
+        run: npm run lint:tokens
+
       # Asset byte-stability guard: fails if any committed art asset (coloring
       # pages, style covers, fill-src raws) changed without regenerating
       # tools/asset-gen/golden/asset-manifest.sha256 — turns silent binary churn

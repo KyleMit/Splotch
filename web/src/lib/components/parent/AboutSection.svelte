@@ -77,7 +77,7 @@
 
   .about-tagline {
     margin: 0;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     color: var(--text-mid);
     line-height: 1.5;
     max-width: 320px;
@@ -88,7 +88,7 @@
     border-top: 1px solid var(--border);
     text-align: center;
     color: var(--text-faint);
-    font-size: 14px;
+    font-size: var(--font-size-md);
   }
 
   .about-links p {
@@ -116,8 +116,8 @@
     align-items: center;
     gap: 6px;
     color: var(--text-mid);
-    font-size: 14px;
-    transition: color 0.2s ease;
+    font-size: var(--font-size-md);
+    transition: color var(--duration-base) ease;
   }
 
   @media (hover: hover) {
@@ -131,7 +131,7 @@
     width: 20px;
     height: 20px;
     opacity: 0.8;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-base) ease;
   }
 
   @media (hover: hover) {
@@ -151,13 +151,13 @@
     background: none;
     cursor: pointer;
     text-align: center;
-    font-size: 12px;
+    font-size: var(--font-size-xs);
     color: var(--text-faint);
     font-family: 'Courier New', monospace;
     user-select: none;
   }
 
   .admin-link {
-    font-size: 12px;
+    font-size: var(--font-size-xs);
   }
 </style>

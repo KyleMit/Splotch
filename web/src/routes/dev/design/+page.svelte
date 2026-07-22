@@ -28,7 +28,7 @@
 
   const spaceKeys = Object.keys(scale).filter((k) => k.startsWith('space'));
   const radiusKeys = Object.keys(scale).filter((k) => k.startsWith('radius') && k !== 'radiusPill');
-  const textKeys = Object.keys(scale).filter((k) => k.startsWith('text'));
+  const fontSizeKeys = Object.keys(scale).filter((k) => k.startsWith('fontSize'));
   const shadowKeys = ['shadowSm', 'shadowPop'] as const;
   const motionEntries = Object.entries(scale).filter(
     ([k]) => k.startsWith('duration') || k.startsWith('ease')
@@ -136,7 +136,7 @@
   <section>
     <h2>Type scale</h2>
     <div class="row-list">
-      {#each textKeys as key (key)}
+      {#each fontSizeKeys as key (key)}
         <div class="scale-row">
           <code>{toCssVarName(key)}</code>
           <span class="type-sample" style:font-size={cssVar(key)}>Splotch says hello</span>
@@ -205,23 +205,23 @@
   section > p {
     max-width: 60ch;
     margin: var(--space-2) 0 var(--space-3);
-    font-size: var(--text-md);
+    font-size: var(--font-size-md);
   }
 
   h1 {
     color: var(--text-strong);
-    font-size: var(--text-3xl);
+    font-size: var(--font-size-3xl);
   }
 
   h2 {
     color: var(--text-strong);
-    font-size: var(--text-xl);
+    font-size: var(--font-size-xl);
     margin-bottom: var(--space-2);
   }
 
   h3 {
     color: var(--text-strong);
-    font-size: var(--text-md);
+    font-size: var(--font-size-md);
     margin: var(--space-4) 0 var(--space-2);
   }
 
@@ -230,12 +230,12 @@
   }
 
   code {
-    font-size: var(--text-xs);
+    font-size: var(--font-size-xs);
     color: var(--brand-text);
   }
 
   .value {
-    font-size: var(--text-xs);
+    font-size: var(--font-size-xs);
     color: var(--text-muted);
   }
 

@@ -191,10 +191,10 @@
     align-items: center;
     justify-content: center;
     transition:
-      box-shadow 0.2s ease,
+      box-shadow var(--duration-base) ease,
       border-radius 0.3s ease,
-      transform 0.2s ease,
-      background 0.2s ease;
+      transform var(--duration-base) ease,
+      background var(--duration-base) ease;
     pointer-events: auto; /* Button is clickable */
   }
 
@@ -257,11 +257,11 @@
     opacity: 0;
     transform: scale(0.85);
     transition:
-      opacity 0.2s ease,
+      opacity var(--duration-base) ease,
       transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-      border-color 0.15s ease,
-      border-style 0.15s ease,
-      background 0.15s ease;
+      border-color var(--duration-fast) ease,
+      border-style var(--duration-fast) ease,
+      background var(--duration-fast) ease;
   }
 
   /* .visible / .threshold-reached are toggled imperatively via classList. */
@@ -342,7 +342,7 @@
 
   /* .animating is added imperatively via classList. */
   .page-turn-overlay:global(.animating) {
-    animation: ripple 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: ripple 0.6s var(--ease-glide) forwards;
   }
 
   @keyframes ripple {

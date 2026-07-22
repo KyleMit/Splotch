@@ -23,7 +23,7 @@
     align-items: center;
     gap: 8px;
     margin-bottom: 20px;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 600;
   }
 
@@ -34,8 +34,8 @@
     color: var(--brand-text);
     text-decoration: none;
     padding: 4px 8px;
-    border-radius: 8px;
-    transition: background 0.15s ease;
+    border-radius: var(--radius-sm);
+    transition: background var(--duration-fast) ease;
   }
 
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and

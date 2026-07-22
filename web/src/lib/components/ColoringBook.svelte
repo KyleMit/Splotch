@@ -199,7 +199,7 @@
   }
 
   .coloring-book-close {
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-base) ease;
     z-index: 1;
   }
 
@@ -225,7 +225,7 @@
     align-items: center;
     justify-content: center;
     padding: 8px;
-    transition: background 0.2s ease;
+    transition: background var(--duration-base) ease;
   }
 
   /* Tinted via `fill` (not a filter chain) so the gray and the brand hover
@@ -238,7 +238,7 @@
 
   :global(.coloring-back-icon svg) {
     fill: var(--icon-muted);
-    transition: fill 0.2s ease;
+    transition: fill var(--duration-base) ease;
   }
 
   @media (hover: hover) {
@@ -276,7 +276,7 @@
     position: relative;
     background: var(--surface-2);
     border: 2px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     cursor: pointer;
     overflow: hidden;
     padding: 0;
@@ -285,7 +285,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     touch-action: manipulation;
   }
 
@@ -366,7 +366,7 @@
        the theme so the caption sits on the tile's own paper tone. */
     background: rgba(255, 255, 255, 0.92);
     background: color-mix(in srgb, var(--surface-2) 92%, transparent);
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 600;
     color: var(--text);
     text-align: center;

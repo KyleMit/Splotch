@@ -376,6 +376,13 @@
 </div>
 
 <style>
+  /* Colors here are deliberately raw: the admin console is a light-only
+     surface with its own accent palette (the #7c4dcf family, chosen for WCAG
+     AA over the failing --brand). The themed color tokens flip with
+     data-theme / prefers-color-scheme, so adopting them would half-dark-theme
+     this page. Scale tokens (font sizes, radii, durations) are safe and used
+     below; theming /admin is a separate decision. */
+
   /* The global app.css locks the body (no scroll, no text selection) for the
      drawing canvas. The admin page is a normal document, so it opts back in. */
   .admin-page {
@@ -414,7 +421,7 @@
     justify-content: center;
     width: 52px;
     height: 52px;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     background: linear-gradient(135deg, var(--brand), #7c4dcf);
     box-shadow: 0 6px 16px rgba(124, 77, 207, 0.35);
     flex-shrink: 0;
@@ -428,7 +435,7 @@
 
   h1 {
     margin: 0;
-    font-size: 28px;
+    font-size: var(--font-size-3xl);
     font-weight: 700;
     letter-spacing: -0.01em;
   }
@@ -443,8 +450,8 @@
   /* Flash messages */
   .flash {
     padding: 12px 16px;
-    border-radius: 12px;
-    font-size: 14px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-md);
     font-weight: 600;
     margin-bottom: 20px;
   }
@@ -484,7 +491,7 @@
   /* Cards */
   .card {
     background: #fff;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     padding: 24px;
     margin-bottom: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
@@ -492,7 +499,7 @@
 
   .card h2 {
     margin: 0 0 16px;
-    font-size: 18px;
+    font-size: var(--font-size-xl);
     font-weight: 600;
     color: #444;
   }
@@ -515,10 +522,10 @@
     min-width: 24px;
     height: 24px;
     padding: 0 8px;
-    border-radius: 12px;
+    border-radius: var(--radius-pill);
     background: #f0e9fb;
     color: #7c4dcf;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 700;
   }
 
@@ -544,8 +551,8 @@
     background: #fff;
     color: #333;
     transition:
-      border-color 0.15s ease,
-      box-shadow 0.15s ease;
+      border-color var(--duration-fast) ease,
+      box-shadow var(--duration-fast) ease;
   }
 
   .add-form input:focus {
@@ -573,14 +580,14 @@
   /* Buttons */
   .btn {
     font-family: inherit;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 600;
     border-radius: 10px;
     border: none;
     cursor: pointer;
     transition:
-      background 0.15s ease,
-      color 0.15s ease,
+      background var(--duration-fast) ease,
+      color var(--duration-fast) ease,
       transform 0.05s ease;
     white-space: nowrap;
   }
@@ -762,7 +769,7 @@
   .more-menu-title {
     margin: 0;
     padding: 16px 20px 12px;
-    font-size: 12px;
+    font-size: var(--font-size-xs);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -776,7 +783,7 @@
     padding: 16px 20px;
     text-align: left;
     font-family: inherit;
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     font-weight: 600;
     color: #7c4dcf;
     background: transparent;
@@ -827,7 +834,7 @@
 
   .empty p {
     margin: 0;
-    font-size: 14px;
+    font-size: var(--font-size-md);
     max-width: 320px;
     margin-inline: auto;
   }

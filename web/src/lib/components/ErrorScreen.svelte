@@ -47,7 +47,7 @@
 
   p {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     color: var(--text-mid, #666);
     max-width: 320px;
   }
@@ -56,11 +56,11 @@
     margin-top: 8px;
     padding: 14px 32px;
     border: none;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--brand, #ab71e1);
     color: #fff;
     font: inherit;
-    font-size: 18px;
+    font-size: var(--font-size-xl);
     font-weight: 700;
     cursor: pointer;
   }

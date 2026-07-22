@@ -190,7 +190,7 @@
     position: relative;
     width: 100%;
     height: 28px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--slider-track);
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
     overflow: hidden;
@@ -200,7 +200,7 @@
     position: absolute;
     inset: 0 auto 0 0;
     height: 100%;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--brand);
   }
 

@@ -84,7 +84,7 @@
   }
 
   .appearance-title {
-    font-size: 14px;
+    font-size: var(--font-size-md);
     font-weight: 500;
     color: var(--text);
   }
@@ -95,7 +95,7 @@
     gap: 4px;
     padding: 4px;
     background: var(--slider-track);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
   }
 
   .theme-option {
@@ -110,13 +110,13 @@
     background: transparent;
     color: var(--text-mid);
     font-family: inherit;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
     transition:
-      background 0.15s ease,
-      color 0.15s ease,
-      box-shadow 0.15s ease;
+      background var(--duration-fast) ease,
+      color var(--duration-fast) ease,
+      box-shadow var(--duration-fast) ease;
   }
 
   @media (hover: hover) {
