@@ -21,12 +21,15 @@ polaroid frame chrome (`app.css` `.polaroid-*`), confetti colors (`AiConfetti`),
 
 ## State
 
-Everything below assumes PR #464 **merged to main**; this branch adds only this handoff on top.
+Everything below assumes PR #464 **merged to main**; beyond the scaffold, the branch carries only
+this handoff and a clean merge-back of main.
 
 | sha       | what                                                                                                                                                                                                                                                               |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `370c44d` | The whole scaffold: tokens.ts + gen-tokens.mjs + tokens.css, Button, /dev/design, skill, ADR-0071, CI gate                                                                                                                                                         |
 | `021e19b` | Review fixes (via PR \#467 into the branch): Button class-merge, polaroid `--ease-glide`, `web/src/lib/design/tokens.test.ts` (toCssVarName + var-name shape), styleguide theme-toggle init from `data-theme`, skill note that nothing auto-regenerates tokens.css |
+| `22dd134` | This handoff                                                                                                                                                                                                                                                       |
+| `4dad04d` | Merge of origin/main (`9b186b2`, the \#468 test-suite changes) back into the branch — **zero conflicts**; CI green on this exact sha                                                                                                                               |
 
 Scaffold files (all in #464): `web/src/lib/design/tokens.ts`, `scripts/gen-tokens.mjs`,
 `web/src/tokens.css` (generated), `web/src/app.css` (token blocks removed), `web/src/lib/theme.ts`
@@ -65,6 +68,12 @@ All recorded in **ADR-0071** — read it before re-deciding anything. Highlights
 * Primitive extraction waits for the third duplicate. Candidates spotted but *not yet extracted*:
   Card/Surface (setting cards in `parent/*` + admin panels), a text-input/field wrapper
   (`AiKeyManager`, `ReportForm`, admin forms).
+* **OPEN — decide before migration starts: `--text-*` naming overlap.** The theme *colors*
+  `--text`/`--text-strong`/`--text-muted` share a prefix with the type-scale *sizes*
+  `--text-xs..3xl`. Flagged to the user pre-merge (options: keep as-is, or rename the size ramp to
+  `--font-*`); no decision was made. Renaming is a 5-minute change while usage is only
+  `app.css`/Button/styleguide — settle it in step 1, because every migrated file makes it more
+  expensive.
 
 ## Unverified assumptions
 
@@ -78,15 +87,22 @@ All recorded in **ADR-0071** — read it before re-deciding anything. Highlights
 * The lint-gate approach (stylelint vs. a grep script in CI) was never prototyped — open choice.
   Repo precedent favors a small Node script + npm `*:check` (like `img:audit:check`).
 
-## Done & verified (in the #464 scaffold, this container, 2026-07-22)
+## Done & verified (this container, 2026-07-22, on the merged result `4dad04d`)
 
 * `npm run gen:tokens:check` ✓ · `npm run check` 0 errors · `npm run lint` 0 errors ·
   `npm run format:check` ✓
-* `npm run test:unit` 436 passed · `npm run test:e2e` 152 passed · `npm run build` ✓
+* `npm run test:unit` 439 passed · `npm run test:e2e` 152 passed · `npm run build` ✓ (build ran
+  pre-merge at `370c44d`; main's incoming changes were test-config only)
+* GitHub CI green on `4dad04d` (Quality + Tests jobs) · Codex review at `f47b7fd`: "no major issues"
+  · adversarial Claude review already folded in as `021e19b`
 * Token parity: parsed every `--*` custom property from pre-change app.css vs generated tokens.css —
   zero missing, zero value drift, 28 additive scale tokens.
 * `/dev/design` renders correctly in light + dark (screenshots in PR #464 body; theme toggle
   verified by stamping `data-theme`).
+* **Known flake, not this branch:** `picker-trim.spec.ts` "phone portrait keeps all 9 families
+  (390×844 → 9×4)" failed once in a full-suite run, then passed in isolation and on a full rerun.
+  The spec was just modified on main (\#468). If it fails again, suspect suite parallelism there —
+  don't burn time blaming the token diff.
 
 ## Risks & next 3 steps
 
@@ -95,8 +111,9 @@ screenshots via `run-splotch`, and eyeball `/dev/design` + the touched surface i
 near-miss values wrongly snapped to a ramp step (when in doubt keep the raw value and flag it);
 `ClearButton`/`ActionsPanel` intentional one-offs getting "fixed".
 
-1. **Verify #464 merged**, restart the branch from origin/main, flip ADR-0071 to Active (index row
-   in `docs/adrs/README.md` too) in the first commit.
+1. **Verify #464 merged**, restart the branch from origin/main, then in the first commit: flip
+   ADR-0071 to Active (index row in `docs/adrs/README.md` too) and **settle the `--text-*` naming
+   question** (see the OPEN decision above — ask the user if they haven't said).
 2. **Migrate in risk order:** `routes/dev/ai-timer` (warm-up) → `AdminConsole` → the long tail →
    `DrawingCanvas`/`ActionsPanel`/`ClearButton` last (each needs the one-off audit). One commit per
    file/cluster, before/after screenshots for user-facing surfaces.
