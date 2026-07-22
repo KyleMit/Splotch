@@ -48,6 +48,13 @@ jobs:
       - name: Agent-file drift
         run: npm run ruler:check
 
+      # Drift guard: web/src/tokens.css is generated from the design-token
+      # source of truth in web/src/lib/design/tokens.ts (ADR-0071). Fails if a
+      # tokens.ts edit wasn't applied or the generated CSS was edited directly.
+      # Fix with `npm run gen:tokens` and commit.
+      - name: Design-token drift
+        run: npm run gen:tokens:check
+
       # Asset byte-stability guard: fails if any committed art asset (coloring
       # pages, style covers, fill-src raws) changed without regenerating
       # tools/asset-gen/golden/asset-manifest.sha256 — turns silent binary churn
