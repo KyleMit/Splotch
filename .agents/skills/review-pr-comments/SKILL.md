@@ -31,6 +31,29 @@ either a fix (and a reply pointing at it) or a reasoned reply explaining why no 
    previous agent run) already replied to with a fix, and your own comments. Treat bot reviews
    (Copilot, CI annotations) the same as human ones — triage them on merit, not on author.
 
+## Plan the order before starting
+
+With the full comment list in hand, decide the order to address them **before** touching anything —
+working comments in arrival order wastes effort when a later comment invalidates an earlier fix. Lay
+out the plan (a short ordered list of comments with a one-line reason for the sequencing), then work
+it top to bottom:
+
+1. **Ambiguous / scope-changing comments first.** Anything that will need an `AskUserQuestion` (see
+   Triage) goes to the front — ask early so the answer arrives while you work the rest, instead of
+   blocking the end of the sweep.
+2. **Broad before narrow.** A comment questioning an approach, an abstraction, or a file's whole
+   structure comes before line-level comments *inside* that structure — a restructure can moot or
+   relocate the nits, and fixing the nits first means fixing them twice.
+3. **Group comments touching the same file or subsystem** and handle the group consecutively, so the
+   code is fresh in context and related fixes can share one commit and one verification run.
+4. **Deep-diff order within a group.** Where one fix feeds another (a rename a later comment's fix
+   would build on, a helper another fix would call), sequence the dependency first.
+5. **Questions and reply-only dispositions last** (or interleaved freely) — they change no code, so
+   nothing else depends on them.
+
+If the triage below reclassifies a comment in a way that changes the plan (e.g. a "nit" turns out to
+demand the restructure), reorder the remaining items rather than pushing through the stale plan.
+
 ## Triage — validate before touching anything
 
 For each remaining comment, read the code it points at **as it exists now** and classify it:
