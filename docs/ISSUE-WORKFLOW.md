@@ -69,6 +69,7 @@ deliberate triage call, not a default — most of the migrated backlog is intent
 
 | Label              | Meaning                                                                                                                                  |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `in-progress`      | Claimed by a `burn-down-backlog` session actively working it; excluded from that skill's future pickup until the issue closes            |
 | `reviewed`         | Review pass complete; automation moves the issue to Project status `ToDo`                                                                |
 | `needs-triage`     | Valid audit finding whose fix approach is unclear — a human confirms direction before `fix-audits` implements it (filed by `vet-audits`) |
 | `needs-scoping`    | Rough spec — investigate and firm up (often an ADR) before significant work                                                              |
