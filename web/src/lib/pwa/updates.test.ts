@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   initPWAUpdates,
+  registerDeferredServiceWorker,
   checkVersionMismatch,
   checkForUpdates,
   resetUpdatesForTests,
@@ -8,7 +9,26 @@ import {
 } from './updates';
 
 const canvasState = vi.hoisted(() => ({ canvasEmpty: true }));
-vi.mock('$lib/state/canvas.svelte', () => ({ canvasState }));
+vi.mock('$lib/state/canvas.svelte', () => ({ canvasState, SETTLED_IN_STROKES: 3 }));
+
+// Controllable idle queue: registration must not fire until the test releases
+// the idle slot, so deferral itself is assertable.
+const idle = vi.hoisted(() => ({
+  queue: [] as (() => void)[],
+  flush() {
+    const pending = [...this.queue];
+    this.queue = [];
+    for (const fn of pending) fn();
+  },
+}));
+vi.mock('$lib/idle', () => ({
+  scheduleIdle: (fn: () => void) => {
+    idle.queue.push(fn);
+    return () => {
+      idle.queue = idle.queue.filter((queued) => queued !== fn);
+    };
+  },
+}));
 
 // --- helpers ---
 
@@ -36,6 +56,7 @@ function stubServiceWorker(reg?: ServiceWorkerRegistration) {
   const container = {
     ready: new Promise(() => {}), // never resolves — keeps test side-effect-free
     getRegistration: vi.fn().mockResolvedValue(reg),
+    register: vi.fn().mockResolvedValue(undefined),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
   };
@@ -311,6 +332,173 @@ describe('checkForUpdates — canvas-empty guard', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+// --- deferred service worker registration (issue #462) ---
+
+describe('deferred service worker registration', () => {
+  const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
+  let originalFetch: typeof fetch;
+
+  function stubConnection(saveData: boolean) {
+    Object.defineProperty(navigator, 'connection', {
+      value: { saveData },
+      configurable: true,
+    });
+    return () => {
+      delete (navigator as { connection?: unknown }).connection;
+    };
+  }
+
+  beforeEach(() => {
+    resetUpdatesForTests();
+    idle.queue = [];
+    canvasState.canvasEmpty = true;
+    originalFetch = globalThis.fetch;
+    (import.meta.env as Record<string, unknown>).DEV = false;
+    Object.defineProperty(window, 'location', {
+      value: { href: 'https://splotch.art/', reload: vi.fn() },
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    delete (navigator as { connection?: unknown }).connection;
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+    (import.meta.env as Record<string, unknown>).DEV = true;
+  });
+
+  it('registers sw.js only once the idle slot is released', async () => {
+    const container = stubServiceWorker(undefined);
+
+    registerDeferredServiceWorker();
+    expect(container.register).not.toHaveBeenCalled();
+
+    idle.flush();
+    await flushAsync();
+
+    expect(container.register).toHaveBeenCalledWith('/sw.js');
+  });
+
+  it('is idempotent: repeated gate calls schedule a single registration', async () => {
+    const container = stubServiceWorker(undefined);
+
+    registerDeferredServiceWorker();
+    registerDeferredServiceWorker();
+    expect(idle.queue).toHaveLength(1);
+
+    idle.flush();
+    await flushAsync();
+    registerDeferredServiceWorker();
+    idle.flush();
+
+    expect(container.register).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips registration when Save-Data is on', () => {
+    const container = stubServiceWorker(undefined);
+    const restore = stubConnection(true);
+
+    registerDeferredServiceWorker();
+    idle.flush();
+
+    expect(container.register).not.toHaveBeenCalled();
+    restore();
+  });
+
+  it('still registers when the connection reports Save-Data off', async () => {
+    const container = stubServiceWorker(undefined);
+    const restore = stubConnection(false);
+
+    registerDeferredServiceWorker();
+    idle.flush();
+    await flushAsync();
+
+    expect(container.register).toHaveBeenCalledWith('/sw.js');
+    restore();
+  });
+
+  it('does nothing in dev builds', () => {
+    const container = stubServiceWorker(undefined);
+    (import.meta.env as Record<string, unknown>).DEV = true;
+
+    registerDeferredServiceWorker();
+
+    expect(idle.queue).toHaveLength(0);
+    expect(container.register).not.toHaveBeenCalled();
+  });
+
+  it('a failed registration retries on the next gate call', async () => {
+    const container = stubServiceWorker(undefined);
+    container.register.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+    registerDeferredServiceWorker();
+    idle.flush();
+    await flushAsync();
+    expect(container.register).toHaveBeenCalledTimes(1);
+
+    registerDeferredServiceWorker();
+    idle.flush();
+    await flushAsync();
+
+    expect(container.register).toHaveBeenCalledTimes(2);
+  });
+
+  it('update checks no-op before registration and arm once one exists', async () => {
+    const container = stubServiceWorker(undefined);
+
+    await expect(checkForUpdates()).resolves.toBeUndefined();
+    expect(container.register).not.toHaveBeenCalled();
+
+    // Registration arrives late (gate passed) — the same check now reaches the
+    // registration and drives the waiting worker.
+    const worker = makeWorker();
+    const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
+    container.getRegistration.mockResolvedValue(reg);
+    registerDeferredServiceWorker();
+    idle.flush();
+    await flushAsync();
+
+    expect(container.register).toHaveBeenCalledWith('/sw.js');
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+  });
+
+  it('initPWAUpdates re-registers immediately at idle on a repeat visit', async () => {
+    const reg = makeRegistration();
+    const container = stubServiceWorker(reg);
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ version: '1.0.0-test' }),
+    } as Response);
+
+    const teardown = initPWAUpdates();
+    await flushAsync();
+    expect(container.register).not.toHaveBeenCalled(); // still waits for idle
+
+    idle.flush();
+    await flushAsync();
+
+    expect(container.register).toHaveBeenCalledWith('/sw.js');
+    teardown?.();
+  });
+
+  it('initPWAUpdates leaves a first visit to the stroke gate', async () => {
+    const container = stubServiceWorker(undefined);
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ version: '1.0.0-test' }),
+    } as Response);
+
+    const teardown = initPWAUpdates();
+    await flushAsync();
+    idle.flush();
+    await flushAsync();
+
+    expect(container.register).not.toHaveBeenCalled();
+    teardown?.();
   });
 });
 

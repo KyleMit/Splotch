@@ -3,12 +3,12 @@
   import { backOut, cubicIn } from 'svelte/easing';
   import Icon from './Icon.svelte';
   import SplotchyIcon from './SplotchyIcon.svelte';
-  import { canvasState } from '$lib/state/canvas.svelte';
+  import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
   import { install, promptInstall, dismissInstall } from '$lib/state/install.svelte';
 
   // Wait until the child has actually drawn a little, so the prompt feels earned
   // and never competes with the very first finger-on-screen moment.
-  const STROKES_BEFORE_PROMPT = 3;
+  const STROKES_BEFORE_PROMPT = SETTLED_IN_STROKES;
 
   // The banner sits above the corner controls (actions toggle, Parent Help), so
   // it must not linger: once the child has kept drawing past it, clear it and
