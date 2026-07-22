@@ -1,6 +1,7 @@
 # ADR-0071: Design Tokens from One Generated Source (In-Repo Design System)
 
-**Status:** Active. **Date:** 2026-07
+**Status:** Active. **Date:** 2026-07. Amended 2026-07-22: `/admin` and `/privacy` are permanently
+light-only — see the amendment at the end.
 
 ## Context
 
@@ -78,3 +79,12 @@ swaps.
   about — mitigated by matching the existing `ruler:check` / `img:audit:check` pattern.
 * The ~100 legacy raw values remain until touched; migration is deliberately incremental to keep
   diffs reviewable and avoid a big-bang visual-regression risk.
+
+## Amendment (2026-07-22): light-only surfaces
+
+`/admin` and `/privacy` will **not** get a dark theme — a dark theme was considered and declined
+(owner decision, 2026-07-22). Both keep self-contained, WCAG-tuned light palettes that are exempt
+from the themed color tokens: themed tokens flip with `data-theme` / `prefers-color-scheme`, so
+using them on these pages would half-dark-theme surfaces that are meant to stay light. The raw-hex
+ratchet (`scripts/lint-token-styles.mjs`) allowlists both files for exactly this reason. Don't
+re-open the question, and don't "fix" their raw palettes by migrating them to themed tokens.
