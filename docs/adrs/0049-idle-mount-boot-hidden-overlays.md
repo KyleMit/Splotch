@@ -63,3 +63,19 @@ context creation onto the child's first pointerdown.
   button) must stay out of this chunk, as the button's extraction shows.
 * − One more chunk request at idle; on repeat visits it's served from the service-worker precache
   like every other asset.
+
+## Escape hatch if the overlay set grows heavier
+
+The single barrel chunk (`CVCStUCq.js`, ~56 KB) evaluates all six overlays in one synchronous task
+when the idle `import()` resolves. That is fine **today** because the only heavy member is
+ParentCenter (~42 KB, ~75 % of the chunk) and it is already deferred to first open; the other five
+are ~1.6 KB gzip each, so the co-evaluation never forms a >50 ms task in a `perf:mount` trace. If a
+*second* ParentCenter-scale overlay is ever added to the barrel, that one eval would start reliably
+crossing the 50 ms long-task line at idle.
+
+The documented fix at that point — measured neutral now (2026-07), so **not adopted yet**: change
+`bootHiddenOverlays.ts` from static re-exports to a list of per-component lazy loaders
+(`() => import('./X.svelte')`) and have `+page.svelte` walk them **one loader per idle callback**,
+so each overlay's chunk loads, evaluates, and mounts in its own slice. Cost: one idle request per
+overlay instead of one for the set (precached on repeat visits). Verify with `npm run perf:mount`
+that no per-overlay slice exceeds ~50 ms before adopting it.

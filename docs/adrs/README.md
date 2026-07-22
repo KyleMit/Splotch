@@ -68,6 +68,7 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0049](0049-idle-mount-boot-hidden-overlays.md)         | Idle-Mount the Boot-Hidden Overlays (Parent Center on First Open)                                                 | Active |
 | [0052](0052-dark-mode-theme-tokens.md)                  | Dark Mode via `data-theme` + CSS Custom-Property Tokens; Dark Paper, White "Chalk" Line Art, Night Coloring Fills | Active |
 | [0061](0061-parent-center-section-drill-in.md)          | Parent Center: One Section List, Two Responsive Shells (Drill-In / Sidebar)                                       | Active |
+| [0075](0075-no-web-font-preload-on-drawing-route.md)    | Don't Preload the Web Font — the Drawing Route Paints No Text                                                     | Active |
 
 ## Native (Capacitor / Android / iOS)
 
