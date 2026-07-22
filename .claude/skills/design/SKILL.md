@@ -74,6 +74,14 @@ toggle. Use it to:
 
 ## Migration status
 
-Older components still carry pre-token raw values (hex colors, literal radii and font sizes). When
-you touch a component's styles for any reason, migrate the values you touch to tokens — same-value
-swaps, no visual change. Don't mass-migrate unrelated files in a feature PR.
+The legacy migration is done: every raw value in component `<style>` blocks that mapped to a token
+was swapped (same-value, zero visual change). What remains raw is deliberate — documented one-offs
+(polaroid/photographic whites, ClearButton's unthemed danger red, confetti colors, canvas chrome)
+and the two **light-only pages** (`/admin`, `/privacy`), whose self-contained palettes must not use
+the themed color tokens: those flip with `data-theme`/`prefers-color-scheme` and would half-dark-
+theme them.
+
+CI enforces this with `npm run lint:tokens` — a per-file raw-hex ratchet whose allowlisted baseline
+(with per-file reasons) lives in `scripts/lint-token-styles.mjs`. A new raw hex color fails the
+Quality job: use a token, or (for a genuine one-off) add a WHY comment and bump the baseline. When
+you remove a one-off, lower its baseline entry so the ratchet holds.
