@@ -1,4 +1,4 @@
-# ADR-0069: Netlify Build-Minute Reduction — Inverted Dependency Split + Build Ignore Rule
+# ADR-0070: Netlify Build-Minute Reduction — Inverted Dependency Split + Build Ignore Rule
 
 **Status:** Active **Date:** 2026-07
 

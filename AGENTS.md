@@ -83,7 +83,7 @@ one-line entry in the `scripts-info` block of `package.json`.
   ADR-0062): env vars are set inline (`VAR=value cmd`, no `cross-env`), and platform-specific tools
   (the Gradle wrapper, the file-manager opener) are invoked via Node helpers in `scripts/` rather
   than inline shell.
-* **The `dependencies`/`devDependencies` split is inverted** (ADR-0069): `dependencies` = what the
+* **The `dependencies`/`devDependencies` split is inverted** (ADR-0070): `dependencies` = what the
   Netlify web build needs (runtime imports + vite/SvelteKit/adapter/`marked`); `devDependencies` =
   local/CI-only tooling (Playwright, dprint, sharp, the Capacitor CLIs, …). Netlify installs with
   `--omit=dev`, so a build-needed package filed under `devDependencies` breaks the deploy (CI stays

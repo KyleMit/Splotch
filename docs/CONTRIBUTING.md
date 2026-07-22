@@ -46,7 +46,7 @@ npm run info
 The descriptions live in the `scripts-info` section of `package.json`; script naming follows
 ADR-0019.
 
-> **Adding a dependency?** The `dependencies`/`devDependencies` split is repurposed (ADR-0069):
+> **Adding a dependency?** The `dependencies`/`devDependencies` split is repurposed (ADR-0070):
 > `dependencies` holds what the **Netlify web build** needs (the app's runtime imports plus
 > vite/SvelteKit/the adapter/`marked`), `devDependencies` holds local/CI-only tooling (Playwright,
 > dprint, sharp, the Capacitor CLIs, …). Netlify installs with `--omit=dev`, so a build-needed

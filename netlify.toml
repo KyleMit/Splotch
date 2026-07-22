@@ -20,19 +20,19 @@
   # app (web/), the build+prebuild scripts (scripts/), gen:releases input
   # (releases/), the toolchain (package.json + lockfile), and this config.
   # A skipped push leaves the previous deploy live, which is correct when
-  # nothing user-facing changed (ADR-0069).
+  # nothing user-facing changed (ADR-0070).
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web scripts releases package.json package-lock.json netlify.toml"
-
-[build.environment]
-  # dependencies == what this Netlify build needs; devDependencies == local/CI-only
-  # tooling (Playwright, dprint, sharp, eslint, the Capacitor CLIs, ...). The
-  # inverted split + --omit=dev halves the install (ADR-0069). GitHub Actions and
-  # local dev run a plain `npm ci` and are unaffected.
-  NPM_FLAGS = "--omit=dev --no-audit --no-fund"
   # Static assets are published straight from web/build (no copy needed). Only the SSR function
   # is relocated: Netlify always looks for it at <base>/.netlify/functions-internal (base = root),
   # but adapter-netlify writes it under web/.netlify, so stage-netlify.mjs copies that one tree up.
   publish = "web/build"
+
+[build.environment]
+  # dependencies == what this Netlify build needs; devDependencies == local/CI-only
+  # tooling (Playwright, dprint, sharp, eslint, the Capacitor CLIs, ...). The
+  # inverted split + --omit=dev halves the install (ADR-0070). GitHub Actions and
+  # local dev run a plain `npm ci` and are unaffected.
+  NPM_FLAGS = "--omit=dev --no-audit --no-fund"
 
 # Edge deny-rules (issue #347). The site is one catch-all SSR function
 # (adapter-netlify emits `config.path = ["/*"]`), so every junk path a scanner

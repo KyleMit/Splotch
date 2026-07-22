@@ -91,8 +91,8 @@ stay tethered after the first connection.)
 ### A5. Start a Timeline recording — **[Mac]**
 
 In Web Inspector → **Timelines** tab → click the record button. This captures the frame/GPU view, so
-you can *see* whether the commit's paper copy drops a ProMotion frame at finger-lift. (Optional but
-recommended — the console table in A6 gives the raw engine timings either way.)
+you can *see* whether the commit's patch capture drops a ProMotion frame at finger-lift. (Optional
+but recommended — the console table in A6 gives the raw engine timings either way.)
 
 ### A6. Drive the scenario — **[Mac]**
 
@@ -109,7 +109,7 @@ Enter. It runs on the iPad page and:
   `npm run perf:undo`; 22 strokes runs two past the depth-20 cap so the overflow path executes, and
   each scenario resets to blank paper **and** zero history first so its counts are its own,
 * prints a `console.table` with, per scenario: `snapshots` / `blob KB`, **`snap copy max ms`** (the
-  paper copy alone, `engine.snapshot`), **`fold max ms`** (rendering the committed ops,
+  patch capture alone, `engine.snapshot`), **`fold max ms`** (rendering the committed ops,
   `engine.fold`), **`commit max ms`** (the stroke-end hitch), **`undo avg/p95/max ms`** (live blit
   vs deep blob decode), and the real `history MB` — then the ADR-0066 gates verbatim.
 
@@ -131,7 +131,7 @@ npm run perf:ios:analyze -- perf-profiles/web-inspector-timeline/<export>.json
 >
 > * It records `performance.mark()` as `markers` but **not** `performance.measure()`, so engine.\*
 >   durations aren't stored directly — the analyzer recovers each op's main-thread cost from the
->   smallest timeline **record** spanning the mark (the commit's paper copy lands inside the
+>   smallest timeline **record** spanning the mark (the commit's patch capture lands inside the
 >   pointerup record; an undo inside its rAF record).
 > * `markers` is a **ring buffer** — a long session keeps only the most recent marks (the analyzer
 >   warns when the first mark is far past the recording start). Keep the driven scenario short, or
@@ -233,7 +233,7 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
 * **`commit max ms` ≈ one 120 Hz frame ≈ 8.3 ms** → the ADR-0066 commit-hitch gate. The commit runs
   once at finger-lift, off the draw frame, but a commit slower than one frame can still drop a frame
   the instant the stroke ends; attribute a hot one via its inner columns — `snap copy max ms`
-  (`engine.snapshot`, the paper copy alone) vs `fold max ms` (`engine.fold`, rendering the ops).
+  (`engine.snapshot`, the patch capture alone) vs `fold max ms` (`engine.fold`, rendering the ops).
   Cross-check the Timeline for a long frame at that moment. This is the cost the desktop harness can
   only estimate — SwiftShader exaggerates it wildly.
 * **`history MB`** → real raster memory for that scenario
@@ -246,7 +246,7 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
 ## Caveats & troubleshooting
 
 * **WebKit clamps `performance.now()` to ~1 ms**, so sub-millisecond marks read as 0. Fine at our
-  scale (telling a ~10 ms paper copy from a hundreds-of-ms hang), but don't trust the second
+  scale (telling a ~10 ms patch capture from a hundreds-of-ms hang), but don't trust the second
   decimal.
 * **Safari ≠ WKWebView**, but the engine is identical; the difference is the app shell, which
   Approach B checks if needed.

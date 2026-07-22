@@ -382,12 +382,17 @@ async function main() {
       const undoM = undoMarks['engine.undo'] || { count: 0, total: 0, max: 0 };
 
       // History raster memory the way it actually lives — off the JS heap, in
-      // canvas backing stores: live snapshot rasters + the paper, plus the
-      // encoded blobs.
+      // canvas backing stores: live snapshot patches + the paper, plus the
+      // encoded blobs. rasterBytes is the patches' real pixel cost (dirty-rect
+      // snapshots, ADR-0069); liveRasters × full-raster is the fallback for a
+      // build that predates it.
       const historyRasterMB =
         debug == null
           ? null
-          : ((debug.liveRasters + 1) * geom.bytesPerRaster + debug.blobBytes) / 1048576;
+          : ((debug.rasterBytes ?? debug.liveRasters * geom.bytesPerRaster) +
+              geom.bytesPerRaster +
+              debug.blobBytes) /
+            1048576;
 
       results.push({
         key: sc.key,
