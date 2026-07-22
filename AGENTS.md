@@ -137,14 +137,21 @@ content):
 | `leave-pr-review` / `address-pr-review` | authoring a review of a PR (`leave-pr-review` — local checkout, empirical verification, gated posting, augments the built-in review flow), or working through the review feedback received on a PR (`address-pr-review`) |
 | `create-handoff` / `resume-handoff`     | pausing in-flight work for a later session (`create-handoff`), or picking it back up (`resume-handoff`) — transfer packets live in `docs/handoff/`                                                                       |
 
+That table covers the highest-traffic skills. The **full catalog** — every skill, grouped by the
+workflow it belongs to and how related skills chain together (the audit lifecycle, the PR flow,
+handoffs, ADRs) — is the `skills-map` skill (`/skills-map`). Consult it when unsure which skill
+applies or how skills relate.
+
 **Prefer skills over slash commands.** Every reusable agent workflow in this repo is authored as a
 skill in `.ruler/skills/<name>/SKILL.md` (ruler propagates it to `.claude/skills/` and
 `.agents/skills/`), not as a command in `.claude/commands/`. A skill with a good `description` is
 both user-invocable (`/name`) *and* model-invocable, so Claude can reach for it on its own — a plain
 command can't. When authoring a new reusable workflow, create a skill: give it a `name` and a
 `description` that says both what it does and when to use it (add `disable-model-invocation: true`
-if it should stay user-only). If the user asks to create a *command*, ask whether they'd like a
-skill instead before making one.
+if it should stay user-only), and **register it in the `skills-map` skill**
+(`.ruler/skills/skills-map/SKILL.md`) under the group it belongs to — same when renaming or deleting
+a skill. If the user asks to create a *command*, ask whether they'd like a skill instead before
+making one.
 
 Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
 agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,
