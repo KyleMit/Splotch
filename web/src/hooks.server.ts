@@ -6,7 +6,7 @@
 // can be abused without a valid credential, and none of it relies on cookies
 // (the wildcard origin is incompatible with credentialed requests anyway).
 // Only /api/* is opened up; the rest of the site stays same-origin.
-import type { Handle } from '@sveltejs/kit';
+import type { Handle, HandleServerError } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
   const isApi = event.url.pathname.startsWith('/api/');
@@ -26,6 +26,15 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   return response;
+};
+
+// Server twin of hooks.client.ts's handleError. No third-party telemetry by
+// design, so the Netlify function log is the only record of an unexpected
+// SSR or /api/* failure — SvelteKit only calls this for unexpected errors,
+// so expected error(4xx) responses never land here.
+export const handleError: HandleServerError = ({ error, event, status }) => {
+  console.error('[server error]', event.url.pathname, status, error);
+  return { message: 'Something went wrong.' };
 };
 
 function corsHeaders() {
