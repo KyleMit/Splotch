@@ -9,7 +9,7 @@ describe('toCssVarName', () => {
   it('maps the tricky key shapes', () => {
     expect(toCssVarName('appBg')).toBe('--app-bg');
     expect(toCssVarName('surface2')).toBe('--surface-2');
-    expect(toCssVarName('text2xl')).toBe('--text-2xl');
+    expect(toCssVarName('fontSize2xl')).toBe('--font-size-2xl');
     expect(toCssVarName('radiusXs')).toBe('--radius-xs');
     expect(toCssVarName('brandTintFilter')).toBe('--brand-tint-filter');
   });

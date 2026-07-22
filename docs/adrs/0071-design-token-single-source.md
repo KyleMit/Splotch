@@ -27,9 +27,10 @@ already works.
 
 **One TypeScript source of truth, one generated CSS file.** All design tokens live in
 `web/src/lib/design/tokens.ts`: the brand block, theme-independent scales (spacing `--space-1..8`,
-radius `--radius-xs..xl/pill`, type `--text-xs..3xl`, motion durations/easings, neutral shadows),
-and the themed colors as `themes.light` / `themes.dark` — both typed by one `ThemeTokens` interface,
-so the compiler enforces the structural identity the CSS comments used to beg for.
+radius `--radius-xs..xl/pill`, type `--font-size-xs..3xl` — named after the CSS property it feeds so
+the ramp can't collide with the themed `--text*` color family — motion durations/easings, neutral
+shadows), and the themed colors as `themes.light` / `themes.dark` — both typed by one `ThemeTokens`
+interface, so the compiler enforces the structural identity the CSS comments used to beg for.
 
 `npm run gen:tokens` (`scripts/gen-tokens.mjs`) emits `web/src/tokens.css` — the `:root` block plus
 the dark block **twice** (attribute selector + media query), guaranteed identical by generation. The

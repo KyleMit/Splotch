@@ -36,7 +36,7 @@ pierce Svelte's style scoping, so every component references them directly via `
 | Brand     | `--brand`, `--brand-hover`, `--brand-tint-filter`                                                         |
 | Spacing   | `--space-1` (4px) … `--space-8` (40px), a 4px-based ramp                                                  |
 | Radius    | `--radius-xs/sm/md/lg/xl` (4/8/12/16/22px), `--radius-pill`                                               |
-| Type      | `--text-xs/sm/md/lg/xl/2xl/3xl` (12–28px)                                                                 |
+| Type      | `--font-size-xs/sm/md/lg/xl/2xl/3xl` (12–28px)                                                            |
 | Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s), `--ease-pop` (overshoot), `--ease-glide` (settle)           |
 | Elevation | `--shadow-sm`, `--shadow-pop` (neutral); `--float-shadow`, `--float-shadow-flyout` (themed, paper cards)  |
 | Theme     | surfaces, borders, text ramp, icon inks, brand/success/danger washes, paper, float-card chrome — the full |

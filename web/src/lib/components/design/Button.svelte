@@ -54,12 +54,12 @@
 
   .md {
     padding: var(--space-3) var(--space-5);
-    font-size: var(--text-md);
+    font-size: var(--font-size-md);
   }
 
   .sm {
     padding: var(--space-2) var(--space-4);
-    font-size: var(--text-sm);
+    font-size: var(--font-size-sm);
   }
 
   .brand {
