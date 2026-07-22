@@ -704,12 +704,10 @@ let safeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 // edge is never guarded. Only touch input is affected; pen and mouse never
 // trigger the gesture. Children who want to draw at a guarded edge draw away.
 // The band/decision/inset thresholds and the geometry live in ./strokeMath.
-function startDrawing(e: PointerEvent, adopted = false) {
-  if (!adopted) {
-    const timeSinceColorChange = Date.now() - lastColorChangeTime;
-    const requiredDelay = e.pointerType === 'pen' ? 0 : COLOR_CHANGE_DEBOUNCE_MS;
-    if (timeSinceColorChange < requiredDelay) return;
-  }
+function startDrawing(e: PointerEvent) {
+  const timeSinceColorChange = Date.now() - lastColorChangeTime;
+  const requiredDelay = e.pointerType === 'pen' ? 0 : COLOR_CHANGE_DEBOUNCE_MS;
+  if (timeSinceColorChange < requiredDelay) return;
 
   const screen = pointerToScreen(e);
   const { x, y } = screenToPaper(screen);
@@ -719,13 +717,8 @@ function startDrawing(e: PointerEvent, adopted = false) {
   const lineWidth =
     (eraserActive ? currentLineWidth * ERASER_SIZE_MULTIPLIER : currentLineWidth) * renderScale;
 
-  // An adopted stream is never an edge-swipe candidate: it began on a UI
-  // control inside the app, not at the screen bezel where OS gestures start —
-  // and in landscape a swatch drag enters the canvas right through the guarded
-  // side band the palette sits against, moving inward, so guarding it would
-  // misread the whole drag as the OS gesture and silently discard it.
   const edgeSwipeGuard =
-    !adopted && e.pointerType === 'touch'
+    e.pointerType === 'touch'
       ? guardedEdgeAt(screen.x, screen.y, {
           width: canvas.width,
           height: canvas.height,
@@ -980,21 +973,6 @@ export function releaseAllPointers() {
   });
 
   activePointerIds.clear();
-}
-
-// Adopt a live pointer mid-gesture as a stroke start — the drag-a-color-onto-
-// the-canvas handoff (the palette's dragColorToCanvas action). The press began
-// on a swatch, so the canvas never saw a pointerdown; the caller selects the
-// color, then hands the stream here the moment it crosses onto exposed canvas,
-// and startDrawing's capture retargets the rest of the stream to the canvas.
-// This stream IS the intended stroke, so the tap-fallout defenses that would
-// swallow it are skipped (`adopted`): the color-change debounce, and the
-// edge-swipe guard — in landscape the drag enters the canvas through the
-// guarded side band the palette sits against, moving inward, exactly the
-// signature the guard discards as an OS gesture.
-export function adoptPointerStroke(e: PointerEvent) {
-  if (!ctx || activePointers.has(e.pointerId)) return;
-  startDrawing(e, true);
 }
 
 // --- WebKit merged-stream pen quirks ---------------------------------------
