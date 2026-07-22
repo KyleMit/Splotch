@@ -357,6 +357,19 @@ function boxesIntersect(a: Box, b: Box): boolean {
 // itself, and no real gesture produces more (five fingers → five clusters).
 const PATCH_CLUSTER_CAP = 8;
 
+// More RAW clusters than this and the capture skips the merge fixpoint
+// entirely and takes the union up front: the scan is O(n³) worst case on the
+// commit hot path, and only a magic-unready backlog folding under one commit
+// can push the count this high — a fold that large unions to ~the whole paper
+// after merging anyway, so nothing real is lost by not trying.
+const MERGE_INPUT_CAP = PATCH_CLUSTER_CAP * 8;
+
+function unionBoxes(boxes: Box[]): Box {
+  const union = boxes[0];
+  for (let i = 1; i < boxes.length; i++) mergeInto(union, boxes[i]);
+  return union;
+}
+
 // The disjoint paper regions folding `commands` will mutate, clamped to the
 // paper. Ops cluster per stroke (a path op's command index + pointer id;
 // dots and pass rasters seed their own cluster) and intersecting clusters
@@ -395,27 +408,27 @@ export function foldRegionsForCommands(
     }
   }
   let boxes = [...clusters.values()];
-  // Merge intersecting clusters to a fixpoint, so the returned rects are
-  // disjoint (a finger's start dot merges into its stroke; crossing fingers
-  // merge with each other).
-  let merged = true;
-  while (merged) {
-    merged = false;
-    for (let i = 0; i < boxes.length && !merged; i++) {
-      for (let j = i + 1; j < boxes.length; j++) {
-        if (boxesIntersect(boxes[i], boxes[j])) {
-          mergeInto(boxes[i], boxes[j]);
-          boxes.splice(j, 1);
-          merged = true;
-          break;
+  if (boxes.length > MERGE_INPUT_CAP) {
+    boxes = [unionBoxes(boxes)];
+  } else {
+    // Merge intersecting clusters to a fixpoint, so the returned rects are
+    // disjoint (a finger's start dot merges into its stroke; crossing fingers
+    // merge with each other).
+    let merged = true;
+    while (merged) {
+      merged = false;
+      for (let i = 0; i < boxes.length && !merged; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          if (boxesIntersect(boxes[i], boxes[j])) {
+            mergeInto(boxes[i], boxes[j]);
+            boxes.splice(j, 1);
+            merged = true;
+            break;
+          }
         }
       }
     }
-  }
-  if (boxes.length > PATCH_CLUSTER_CAP) {
-    const union = boxes[0];
-    for (let i = 1; i < boxes.length; i++) mergeInto(union, boxes[i]);
-    boxes = [union];
+    if (boxes.length > PATCH_CLUSTER_CAP) boxes = [unionBoxes(boxes)];
   }
   const rects: PatchRect[] = [];
   for (const b of boxes) {

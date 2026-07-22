@@ -472,6 +472,23 @@ describe('disjoint multi-finger patches', () => {
     expect(m.getHistoryDebug().rasterBytes).toBe(18 * 18 * 4);
   });
 
+  it('skips the merge fixpoint entirely past the raw-cluster input cap', async () => {
+    // 65 solo clusters (> PATCH_CLUSTER_CAP × 8) — the magic-backlog shape —
+    // short-circuit to one union without running the O(n³) merge scan.
+    const m = await freshHistory();
+    const dots = Array.from({ length: 65 }, (_, i) => ({
+      kind: 'dot' as const,
+      x: 10 + (i % 13) * 4,
+      y: 10 + Math.floor(i / 13) * 4,
+      radius: 1,
+      color: '#swarm',
+      erase: false,
+    }));
+    expect(m.foldRegionsForCommands([{ ops: dots, wasEmpty: true }], 64, 64)).toEqual([
+      { x: 7, y: 7, w: 54, h: 22 },
+    ]);
+  });
+
   it('falls back to one union patch past the cluster cap', async () => {
     const m = await freshHistory();
     // Nine spread dots (each its own cluster) exceed PATCH_CLUSTER_CAP = 8.
