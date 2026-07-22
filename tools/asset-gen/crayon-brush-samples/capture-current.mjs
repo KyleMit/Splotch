@@ -1,12 +1,7 @@
 // Drive the shipping crayon brush through the reference scenes and screenshot
 // each one, via the /dev/engine harness. Pairs with build-compare-sheet.mjs.
 //
-//   node capture-current.mjs [--url=http://localhost:4188] [--out=<dir>] [--dabs]
-//
-// --dabs switches the deposit to the soft-alpha dab-stamp prototype
-// (setCrayonParams({ dabs: CRAYON_DAB_DEFAULTS })) before capturing — the A/B
-// against the shipping pattern deposit. Dab captures are nondeterministic by
-// design (Math.random jitter), so don't byte-diff them run-to-run.
+//   node capture-current.mjs [--url=http://localhost:4188] [--out=<dir>]
 //
 // Needs a running app server with the dev harness unlocked. The production
 // build is the honest target (and `vite dev` currently 500s on /dev/engine —
@@ -25,12 +20,8 @@ import { chromium } from 'playwright';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const arg = (name, fallback) =>
   process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
-const dabMode = process.argv.includes('--dabs');
 const baseURL = arg('url', 'http://localhost:4188');
-const OUT = arg(
-  'out',
-  join(HERE, dabMode ? '../../../screenshots/crayon-dabs' : '../../../screenshots/crayon-current')
-);
+const OUT = arg('out', join(HERE, '../../../screenshots/crayon-current'));
 
 // Cloud sessions cache a Chromium whose revision can drift from Playwright's
 // pinned build — same fallback as web/playwright.config.ts.
@@ -71,11 +62,6 @@ await page.evaluate(() => {
   document.body.style.background = '#faf7f0';
 });
 await page.evaluate((size) => window.__engine.resizeTo(size.w, size.h), { w: W, h: H });
-if (dabMode) {
-  await page.evaluate(() =>
-    window.__engine.setCrayonParams({ dabs: window.__engine.CRAYON_DAB_DEFAULTS })
-  );
-}
 
 // One synthetic stroke = one pointer gesture (down → moves → up); a light sine
 // wobble keeps the polylines from being ruler-straight.

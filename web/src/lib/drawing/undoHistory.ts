@@ -439,9 +439,9 @@ function commandHasMagic(command: StrokeGroupCommand): boolean {
 // to keep the in-flight stroke; between strokes activeCommand is null and
 // that step is a no-op.
 export function repaintAll(target: CanvasRenderingContext2D) {
-  // Replaying the open pass's ops below re-accumulates its crayon ink; the
-  // live buffers must start empty or a fractional-alpha (dab) deposit would
-  // deepen on every repaint (see strokeOps' dab-stamp notes).
+  // Replaying the open pass's ops below rebuilds its crayon accumulation from
+  // scratch; the live buffers must start empty so a non-idempotent deposit
+  // can never double-composite on a repaint (see strokeOps).
   resetLiveCrayonForReplay(target);
   clearAllOf(target);
   if (paperCanvas) target.drawImage(paperCanvas, 0, 0);

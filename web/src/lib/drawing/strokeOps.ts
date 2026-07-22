@@ -8,16 +8,7 @@
 // being deterministic.
 
 import { sheetPatternFor } from './magicBrush';
-import {
-  crayonPatternFor,
-  getCrayonPasses,
-  getCrayonMix,
-  getCrayonDabs,
-  dabSpriteFor,
-  dabToothTile,
-  seedPhase,
-  crayonBodyAt,
-} from './crayonBrush';
+import { crayonPatternFor, getCrayonPasses, getCrayonMix } from './crayonBrush';
 
 // One rendered curve segment: a quadratic with control cx/cy and endpoint x/y.
 export interface PathSeg {
@@ -144,221 +135,6 @@ function paintCrayon(
     if (!pattern) continue;
     paintOpShape(target, op, pattern, passes[i].widthScale);
   }
-}
-
-// --- Dab-stamp deposit -------------------------------------------------------
-//
-// The post-ADR-0066 deposit (active when CrayonOptions.dabs is set, mix > 0):
-// instead of pattern-filling the op's path, walk its polyline and stamp
-// soft-alpha dab sprites at ~spacing·width intervals, each rotated to the
-// local tangent, stretched by `elongation`, and jittered in size/position/
-// alpha by Math.random — legal because nothing re-renders a closed pass
-// (it travels as its live-captured raster). Fractional alpha means the
-// deposit is NOT idempotent, which forces two structural changes the binary
-// pattern path never needed:
-//   • each op's deposit is BUILT ONCE (the punched scratch layer) and that
-//     same layer composites onto every surface of the pass — the paper-space
-//     accumulation and both overlay previews. Painting each surface
-//     independently would roll different randomness per surface; and reading
-//     the preview back out of the big paper-space buffer per op forces a
-//     full source-surface snapshot under software rendering (~200× the
-//     pattern deposit's per-op cost, measured — see compositeDabLayer);
-//   • a repaint that replays the open pass's ops must reset the live buffers
-//     first (resetLiveCrayonForReplay) — replaying over the existing
-//     accumulation would deepen it. The open pass re-rolls its texture on
-//     such a replay (mid-stroke resize); closed passes are rasters, immune.
-
-// A dab op's dirty bbox in op coordinates, padded to cover every jittered
-// stamp. Null when no dab landed (a sub-spacing op — the next op's walk
-// covers the gap statistically).
-interface DabRect {
-  x0: number;
-  y0: number;
-  x1: number;
-  y1: number;
-}
-
-// One planned dab: centre, radius, tangent angle, resolved alpha.
-interface DabStamp {
-  x: number;
-  y: number;
-  r: number;
-  angle: number;
-  a: number;
-}
-
-// Reusable per-op deposit layer (grow-only): dabs stamp here first, the layer
-// is punched through the paper-anchored tooth mask ('destination-in'), and the
-// punched result composites onto the accumulation buffer in one drawImage.
-// Punching the LAYER, not the buffer, is what keeps overlapping ops correct:
-// each op's fresh deposit is modulated by the fixed paper tooth, while wax
-// already accumulated is never re-carved.
-let dabLayer: CanvasRenderingContext2D | null = null;
-let dabLayerPattern: CanvasPattern | null = null;
-let dabLayerPatternTile: HTMLCanvasElement | null = null;
-
-// Arc-length remainder to the next dab, carried across ops so spacing stays
-// uniform along the whole stroke (see the walk in buildCrayonDabLayer).
-// Clamped to the current step on entry, so a stale carry from a wider brush
-// can only shift phase, never skip a dab.
-let dabSpacingCarry = 0;
-
-function dabLayerFor(w: number, h: number): CanvasRenderingContext2D | null {
-  if (!dabLayer) {
-    const c = document.createElement('canvas');
-    const g = c.getContext('2d');
-    if (!g) return null;
-    dabLayer = g;
-  }
-  const c = dabLayer.canvas;
-  if (c.width < w || c.height < h) {
-    c.width = Math.max(c.width, w);
-    c.height = Math.max(c.height, h);
-    dabLayerPattern = null;
-  }
-  return dabLayer;
-}
-
-// Build one crayon op's punched dab deposit on the shared scratch layer: soft
-// dabs along the polyline, punched through the paper-anchored tooth. Returns
-// the deposit's rect in op coordinates (the layer holds [0,0..w,h] of it), or
-// null when no dab landed. Callers composite the layer onto each surface of
-// the pass via compositeDabLayer.
-function buildCrayonDabLayer(op: Extract<StrokeOp, { kind: 'dot' | 'path' }>): DabRect | null {
-  const d = getCrayonDabs();
-  if (!d) return null;
-  const tooth = dabToothTile();
-  if (!tooth) return null;
-  const width = op.kind === 'dot' ? op.radius * 2 : op.lineWidth;
-  const step = Math.max(1, width * d.spacing);
-  const baseR = Math.max(0.5, (width * d.size) / 2);
-  const stretch = Math.max(1, d.elongation);
-
-  const dabs: DabStamp[] = [];
-  const plan = (x: number, y: number, tx: number, ty: number) => {
-    const jx = x + width * d.posJitter * (Math.random() * 2 - 1);
-    const jy = y + width * d.posJitter * (Math.random() * 2 - 1);
-    const blotch = 1 - d.blotch * (crayonBodyAt(jx, jy) * 2 - 1);
-    dabs.push({
-      x: jx,
-      y: jy,
-      r: baseR * (1 + d.sizeJitter * (Math.random() * 2 - 1)),
-      angle: tx !== 0 || ty !== 0 ? Math.atan2(ty, tx) : 0,
-      a: Math.max(
-        0.01,
-        Math.min(1, d.alpha * (1 + d.alphaJitter * (Math.random() * 2 - 1)) * blotch)
-      ),
-    });
-  };
-
-  if (op.kind === 'dot') {
-    plan(op.x, op.y, 0, 0);
-  } else {
-    // Walk the quadratic segments by chord-sampled arc length, emitting a dab
-    // every `step` px. `need` carries the remainder across chords, segments,
-    // AND ops (dabSpacingCarry): a per-op random phase made placement
-    // Poisson-clumpy — dab clusters read as blobs and gaps as necks, a
-    // sausage-link stroke (phone judgment, 2026-07). Uniform arc-length
-    // spacing keeps the strip's width even; the jitters supply the organics.
-    let px = op.startX;
-    let py = op.startY;
-    let need = Math.min(dabSpacingCarry, step);
-    for (const s of op.segs) {
-      const hull = Math.hypot(s.cx - px, s.cy - py) + Math.hypot(s.x - s.cx, s.y - s.cy);
-      const n = Math.max(1, Math.ceil(hull / Math.max(1, step * 0.5)));
-      let qx = px;
-      let qy = py;
-      for (let i = 1; i <= n; i++) {
-        const t = i / n;
-        const mt = 1 - t;
-        const nx = mt * mt * px + 2 * mt * t * s.cx + t * t * s.x;
-        const ny = mt * mt * py + 2 * mt * t * s.cy + t * t * s.y;
-        const dx = nx - qx;
-        const dy = ny - qy;
-        const dist = Math.hypot(dx, dy);
-        while (need <= dist && dist > 0) {
-          const f = need / dist;
-          plan(qx + dx * f, qy + dy * f, dx, dy);
-          need += step;
-        }
-        need -= dist;
-        qx = nx;
-        qy = ny;
-      }
-      px = s.x;
-      py = s.y;
-    }
-    dabSpacingCarry = need;
-  }
-  if (dabs.length === 0) return null;
-
-  const pad = baseR * (1 + d.sizeJitter) * stretch + width * d.posJitter + 2;
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const s of dabs) {
-    minX = Math.min(minX, s.x);
-    minY = Math.min(minY, s.y);
-    maxX = Math.max(maxX, s.x);
-    maxY = Math.max(maxY, s.y);
-  }
-  const x0 = Math.floor(minX - pad);
-  const y0 = Math.floor(minY - pad);
-  const w = Math.ceil(maxX + pad) - x0;
-  const h = Math.ceil(maxY + pad) - y0;
-
-  const layer = dabLayerFor(w, h);
-  if (!layer) return null;
-  layer.setTransform(1, 0, 0, 1, 0, 0);
-  layer.clearRect(0, 0, w, h);
-  layer.setTransform(1, 0, 0, 1, -x0, -y0);
-  for (const s of dabs) {
-    const sprite = dabSpriteFor(op.color, (Math.random() * 1024) | 0);
-    if (!sprite) return null;
-    layer.save();
-    layer.translate(s.x, s.y);
-    if (s.angle !== 0) layer.rotate(s.angle);
-    layer.scale(stretch, 1);
-    layer.globalAlpha = s.a;
-    layer.drawImage(sprite, -s.r, -s.r, s.r * 2, s.r * 2);
-    layer.restore();
-  }
-
-  // Punch the deposit through the paper-anchored tooth, phase-shifted by the
-  // pass seed (same anchoring as the pattern deposit's tiles): grain shared
-  // across the pass's dabs, filled in by the next pass's shifted phase.
-  if (dabLayerPatternTile !== tooth || !dabLayerPattern) {
-    dabLayerPattern = layer.createPattern(tooth, 'repeat');
-    dabLayerPatternTile = tooth;
-  }
-  if (dabLayerPattern) {
-    const [phx, phy] = seedPhase(op.seed ?? 0, tooth.width);
-    if (typeof DOMMatrix !== 'undefined') {
-      dabLayerPattern.setTransform(new DOMMatrix([1, 0, 0, 1, phx - x0, phy - y0]));
-    }
-    layer.setTransform(1, 0, 0, 1, 0, 0);
-    layer.globalCompositeOperation = 'destination-in';
-    layer.fillStyle = dabLayerPattern;
-    layer.fillRect(0, 0, w, h);
-    layer.globalCompositeOperation = 'source-over';
-  }
-
-  return { x0, y0, x1: x0 + w, y1: y0 + h };
-}
-
-// Composite the punched op layer onto a target (source-over) at its op-space
-// origin, through whatever transform the caller set. Every surface of the
-// pass — the paper-space buffer, both overlay layers — accumulates the SAME
-// punched deposit, so they agree without ever reading each other: a per-op
-// drawImage FROM the big paper-space canvas would force a full source-surface
-// snapshot per op under software rendering (~200× the pattern deposit's cost,
-// measured), while this layer is op-sized.
-function compositeDabLayer(g: CanvasRenderingContext2D, rect: DabRect) {
-  if (!dabLayer) return;
-  const w = rect.x1 - rect.x0;
-  const h = rect.y1 - rect.y0;
-  g.drawImage(dabLayer.canvas, 0, 0, w, h, rect.x0, rect.y0, w, h);
 }
 
 // --- Crayon pass buffer ------------------------------------------------------
@@ -638,43 +414,11 @@ export function clearAllOf(target: CanvasRenderingContext2D) {
   target.restore();
 }
 
-// A crayon op on the dab-deposit path (see the dab-stamp notes above): build
-// the op's punched deposit once on the scratch layer, then composite that SAME
-// layer onto every surface of the pass — the paper-space accumulation
-// (identity) and both overlay layers (through the view transform) for the live
-// target; the offscreen pass buffer elsewhere (a pending/deferred replay, an
-// export — those re-roll their randomness per replay, which only the open pass
-// ever pays). Identical composite sequence on every surface means preview,
-// raster, and stamp agree without any surface ever reading another.
-function renderCrayonDabOp(
-  target: CanvasRenderingContext2D,
-  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
-) {
-  const rect = buildCrayonDabLayer(op);
-  if (!rect) return;
-  const matrix = typeof target.getTransform === 'function' ? target.getTransform() : null;
-  const buf = crayonBufferFor(target);
-  const pb = target === liveTarget ? livePaperBufferFor() : null;
-  if (pb) {
-    pb.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    compositeDabLayer(pb.ctx, rect);
-    pb.dirty = true;
-    unionCrayonBounds(pb, null, rect.x0, rect.y0, rect.x1, rect.y1, 0);
-  }
-  if (matrix) {
-    buf.ctx.setTransform(matrix);
-    buf.mirror?.setTransform(matrix);
-  }
-  compositeDabLayer(buf.ctx, rect);
-  if (buf.mirror) compositeDabLayer(buf.mirror, rect);
-  buf.dirty = true;
-  unionCrayonBounds(buf, matrix, rect.x0, rect.y0, rect.x1, rect.y1, 0);
-}
-
-// Fractional-alpha dabs are not idempotent, so a repaint that replays the open
-// pass's ops (repaintAll on a mid-stroke resize, or undo beneath a live
-// stroke) must reset the live accumulation first — the replay rebuilds it from
-// scratch. Harmless on the pattern path (its replay was idempotent anyway).
+// A repaint that replays the open pass's ops (repaintAll on a mid-stroke
+// resize, or undo beneath a live stroke) rebuilds the live accumulation from
+// scratch, so reset it first. The pattern deposit's replay happens to be
+// idempotent, but no future deposit is required to be (ADR-0068) — replaying
+// over existing accumulation would double-composite any fractional-alpha ink.
 export function resetLiveCrayonForReplay(target: CanvasRenderingContext2D) {
   if (target === liveTarget) resetLiveCrayonPass();
 }
@@ -729,10 +473,6 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     // cheap escape hatch. Flushes become no-ops on a clean buffer.
     if (getCrayonMix() === 0) {
       paintCrayon(target, op);
-      return;
-    }
-    if (getCrayonDabs() && dabSpriteFor(op.color, 0)) {
-      renderCrayonDabOp(target, op);
       return;
     }
     const buf = crayonBufferFor(target);

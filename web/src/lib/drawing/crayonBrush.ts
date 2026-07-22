@@ -61,51 +61,6 @@ export interface CrayonPass {
   coverage: number;
 }
 
-// The dab-stamp deposit (the post-ADR-0066 redesign): a pass laid down as
-// SOFT-ALPHA SPRITES along the polyline instead of binary pattern-filled path
-// ops. Legal now because a closed pass travels as its live-captured raster
-// ('crayonPassRaster') — nothing re-renders it, so fractional alpha and
-// Math.random jitter can't drift between live and fold. Each dab is the crayon
-// colour darkened by `darken` at low `alpha`: a grazing pass reads as a
-// translucent tint, and overlap within a stroke accumulates opacity toward the
-// darker sprite colour — the alpha ramp IS the deepening ramp, so mid-stroke
-// overdraw deepens with no pass split.
-export interface CrayonDabOptions {
-  // Peak per-dab alpha. Low: coverage builds by dab overlap, not per stamp.
-  alpha: number;
-  // Fractional rgb darkening of the dab colour vs the crayon colour. What full
-  // accumulation converges to — the deposit's deepened wax value.
-  darken: number;
-  // Dab spacing along the path, as a fraction of the stroke width.
-  spacing: number;
-  // Dab diameter as a fraction of the stroke width.
-  size: number;
-  // ± fraction of the dab radius, per dab.
-  sizeJitter: number;
-  // ± offset of the dab centre off the path, as a fraction of the stroke width.
-  posJitter: number;
-  // ± fraction of `alpha`, per dab.
-  alphaJitter: number;
-  // Stretch of the dab along the path tangent (1 = round) — the directional
-  // streaking of a dragged crayon.
-  elongation: number;
-  // Number of baked sprite variants (each a different window into the tooth
-  // field); Math.random picks per dab.
-  variants: number;
-  // 0..1: how strongly the slow body field modulates dab alpha — the
-  // low-frequency pressure blotches of an uneven hand.
-  blotch: number;
-  // Height threshold below which a deposit-mask texel drops toward bare paper
-  // — the tooth pits. Higher = more bare-paper flecks. Applies to the
-  // PAPER-ANCHORED tooth tile the dab deposit is masked through (see
-  // dabToothTile): dabs alone are soft blobs whose independent randomness
-  // averages out under overlap; the grain has to live in paper space, shared
-  // by every dab of the pass, to stay crisp.
-  toothCut: number;
-  // Half-width of the soft band around toothCut. Narrow = crisp flecks.
-  toothBand: number;
-}
-
 // Tunable knobs, mutable so the dev/engine harness can A/B render variants at
 // runtime (setCrayonOptions, exposed only behind PUBLIC_ENABLE_DEV_HARNESS).
 // Production keeps these defaults.
@@ -148,36 +103,7 @@ export interface CrayonOptions {
   colorMix: number;
   // The density passes, widest first.
   passes: CrayonPass[];
-  // Non-null switches the buffered (mix > 0) deposit from pattern-filled path
-  // ops to soft-alpha dab stamps. Null ships the ADR-0065 pattern pipeline;
-  // the dab prototype is A/B-selected through setCrayonParams (dev harness)
-  // until it's judged and promoted.
-  dabs: CrayonDabOptions | null;
 }
-
-// The dab prototype's starting point (the accepted step-2 design values):
-// alpha ~0.15 with rgb darkened ~10 %, spacing ~⅓ width, mild tangent stretch
-// and blotch. A/B'd against CRAYON_DEFAULTS via setCrayonParams({ dabs: ... }).
-export const CRAYON_DAB_DEFAULTS: CrayonDabOptions = {
-  // Each dab lands hard (a lone dab reads as wax, not haze — low-alpha dabs
-  // fringe the stroke edge with a watercolour halo; phone judgment 2026-07);
-  // deepening still converges, carried by the remaining overlap + the stamp.
-  alpha: 0.42,
-  darken: 0.1,
-  spacing: 0.26,
-  size: 1.05,
-  // Kept mild: size jitter ripples the strip's width, and a strong blotch
-  // dims whole bands — together they read as blobs-and-necks along the
-  // stroke (phone judgment, 2026-07). Texture comes from the punch flecks.
-  sizeJitter: 0.18,
-  posJitter: 0.1,
-  alphaJitter: 0.25,
-  elongation: 1.35,
-  variants: 8,
-  blotch: 0.18,
-  toothCut: 0.42,
-  toothBand: 0.12,
-};
 
 // Tuned against photos of real wax crayon through the render+measure+judge loop
 // (tools/asset-gen/.coloring-samples/crayon): a big tile with no coarse octave to
@@ -217,7 +143,6 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
     { widthScale: 1.0, coverage: 0.45 },
     { widthScale: 0.68, coverage: 0.63 },
   ],
-  dabs: null,
 };
 
 let opts: CrayonOptions = clone(CRAYON_DEFAULTS);
@@ -227,7 +152,6 @@ function clone(o: CrayonOptions): CrayonOptions {
     ...o,
     octaves: o.octaves.map((x) => ({ ...x })),
     passes: o.passes.map((p) => ({ ...p })),
-    dabs: o.dabs ? { ...o.dabs } : null,
   };
 }
 
@@ -327,9 +251,6 @@ export function setCrayonOptions(next: Partial<CrayonOptions>) {
   buildFields();
   colorTileCache.clear();
   patternCache = new WeakMap();
-  dabMasks = null;
-  dabSpriteCache.clear();
-  dabToothTileCanvas = null;
 }
 
 export function getCrayonOptions(): CrayonOptions {
@@ -451,143 +372,6 @@ export function warmCrayonTiles(color: string) {
   scheduleIdle(() => {
     for (let i = 0; i < opts.passes.length; i++) colorTile(color, i);
   });
-}
-
-// --- Dab sprites (the dab-stamp deposit, see CrayonDabOptions) ---------------
-//
-// A dab sprite is a soft-rimmed disc of the crayon colour darkened by `darken`,
-// its alpha mottled by a window into the same paper-tooth height field the
-// pattern tiles threshold — so the dab texture and the pattern texture read as
-// one material. Masks (alpha only) bake once per options change; each variant
-// samples the field at a Math.random offset. Colorized sprites cache per
-// (colour, variant) like colorTile.
-
-const DAB_SPRITE_PX = 64;
-// Fraction of the sprite radius the soft rim occupies. The sprite is only the
-// deposit BODY — a soft disc with mild mottle; the crisp grain comes from the
-// paper-anchored tooth mask (dabToothTile), not from the sprite. Narrow: a
-// wide rim reads as a watercolour halo around every stroke lobe (phone
-// judgment, 2026-07); the edge should break on tooth flecks, not fade.
-const DAB_RIM = 0.12;
-// How much the sprite's mild mottle (a height-field window) swings its alpha.
-const DAB_MOTTLE = 0.3;
-
-let dabMasks: Float32Array[] | null = null;
-
-function buildDabMasks(): Float32Array[] {
-  const n = Math.max(1, Math.round(opts.dabs?.variants ?? 1));
-  const S = DAB_SPRITE_PX;
-  const masks: Float32Array[] = [];
-  for (let v = 0; v < n; v++) {
-    const ox = Math.floor(Math.random() * tile);
-    const oy = Math.floor(Math.random() * tile);
-    const m = new Float32Array(S * S);
-    for (let y = 0; y < S; y++) {
-      for (let x = 0; x < S; x++) {
-        const dx = ((x + 0.5) / S) * 2 - 1;
-        const dy = ((y + 0.5) / S) * 2 - 1;
-        const r = Math.hypot(dx, dy);
-        if (r >= 1) continue;
-        const radial = smooth(Math.min(1, (1 - r) / DAB_RIM));
-        const h = height![((y + oy) % tile) * tile + ((x + ox) % tile)];
-        m[y * S + x] = radial * (1 - DAB_MOTTLE + DAB_MOTTLE * h);
-      }
-    }
-    masks.push(m);
-  }
-  return masks;
-}
-
-// Alpha floor of a tooth pit in the deposit mask: pits stay near-bare so the
-// flecks read as white paper, but keep a whisper of wax. Low — a higher floor
-// hazes the rim band where the sprite's own alpha is already fractional.
-const DAB_TOOTH_TILE_FLOOR = 0.04;
-
-// The paper-anchored deposit mask: a repeating alpha tile (white rgb, alpha =
-// the tooth curve over the height field) the dab deposit is punched through
-// per op ('destination-in'), phase-shifted by the pass seed exactly like the
-// pattern deposit's tiles. This is what keeps dab grain crisp: every dab of a
-// pass shares the same paper pits, so overlap deepens the bumps instead of
-// averaging the pits away — and a new pass's shifted phase fills the old
-// pass's pits, preserving the buildup mechanic (ADR-0065 property 3).
-let dabToothTileCanvas: HTMLCanvasElement | null = null;
-
-export function dabToothTile(): HTMLCanvasElement | null {
-  if (dabToothTileCanvas) return dabToothTileCanvas;
-  const d = opts.dabs;
-  if (!d || !height) return null;
-  const cut = d.toothCut;
-  const band = Math.max(0.01, d.toothBand);
-  const c = document.createElement('canvas');
-  c.width = tile;
-  c.height = tile;
-  const g = c.getContext('2d');
-  if (!g) return null;
-  const img = g.createImageData(tile, tile);
-  const data = img.data;
-  for (let i = 0; i < height.length; i++) {
-    const j = i * 4;
-    const tooth = smooth(Math.max(0, Math.min(1, (height[i] - cut + band) / (2 * band))));
-    data[j] = 255;
-    data[j + 1] = 255;
-    data[j + 2] = 255;
-    data[j + 3] = Math.round((DAB_TOOTH_TILE_FLOOR + (1 - DAB_TOOTH_TILE_FLOOR) * tooth) * 255);
-  }
-  g.putImageData(img, 0, 0);
-  dabToothTileCanvas = c;
-  return c;
-}
-
-const dabSpriteCache = new Map<string, HTMLCanvasElement>();
-
-// The sprite for one dab: rgb = the crayon colour darkened by `darken`
-// (uniform — the value the accumulation converges toward), alpha = the
-// variant's baked mask at full range (the per-dab `alpha` is applied at draw
-// time via globalAlpha, so one sprite serves every jitter value). Null until a
-// DOM canvas is buildable or when dabs are off — callers fall back to the
-// pattern deposit.
-export function dabSpriteFor(color: string, variant: number): HTMLCanvasElement | null {
-  const d = opts.dabs;
-  if (!d || !height) return null;
-  if (!dabMasks) dabMasks = buildDabMasks();
-  const v = Math.abs(variant | 0) % dabMasks.length;
-  const key = `${color}@${v}`;
-  const hit = dabSpriteCache.get(key);
-  if (hit) return hit;
-  const c = document.createElement('canvas');
-  c.width = DAB_SPRITE_PX;
-  c.height = DAB_SPRITE_PX;
-  const g = c.getContext('2d');
-  if (!g) return null;
-  const img = g.createImageData(DAB_SPRITE_PX, DAB_SPRITE_PX);
-  const [r, gr, b] = parseColor(color);
-  const k = 1 - Math.max(0, Math.min(1, d.darken));
-  const mask = dabMasks[v];
-  const data = img.data;
-  for (let i = 0; i < mask.length; i++) {
-    const j = i * 4;
-    data[j] = Math.round(r * k);
-    data[j + 1] = Math.round(gr * k);
-    data[j + 2] = Math.round(b * k);
-    data[j + 3] = Math.round(mask[i] * 255);
-  }
-  g.putImageData(img, 0, 0);
-  dabSpriteCache.set(key, c);
-  return c;
-}
-
-// The dab knobs when the dab deposit is active, null otherwise.
-export function getCrayonDabs(): CrayonDabOptions | null {
-  return opts.dabs ? { ...opts.dabs } : null;
-}
-
-// The slow body field sampled at a paper coordinate, in [0,1] — the dab
-// deposit's low-frequency pressure-blotch modulation.
-export function crayonBodyAt(x: number, y: number): number {
-  if (!body) return 0.5;
-  const xi = ((Math.floor(x) % tile) + tile) % tile;
-  const yi = ((Math.floor(y) % tile) + tile) % tile;
-  return body[yi * tile + xi];
 }
 
 // Per-context, per-(colour,pass) repeating pattern. createPattern is bound to one

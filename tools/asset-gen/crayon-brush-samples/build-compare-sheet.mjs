@@ -3,12 +3,10 @@
 // driven through the same mark (capture-current.mjs) — with the visual gap
 // named per scene. Self-contained (images inlined) like the contact sheet.
 //
-//   node build-compare-sheet.mjs [--renders=<dir>] [--dabs=<dir>] [--artifact=<path>]
+//   node build-compare-sheet.mjs [--renders=<dir>] [--artifact=<path>]
 //
 // Writes ../../../artifacts/crayon-brush-samples/vs-current.html. `--renders`
 // points at capture-current.mjs output (default screenshots/crayon-current);
-// `--dabs` optionally adds a third column per scene from a
-// `capture-current.mjs --dabs` run (the step-2 dab-deposit prototype);
 // `--artifact` also emits a body-only fragment for the Claude Artifact tool.
 
 import { readFile, writeFile } from 'node:fs/promises';
@@ -22,7 +20,6 @@ const REF = join(HERE, '../../../artifacts/crayon-brush-samples');
 const arg = (name, fallback) =>
   process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
 const RENDERS = arg('renders', join(HERE, '../../../screenshots/crayon-current'));
-const DABS = arg('dabs', null);
 const OUT = join(REF, 'vs-current.html');
 
 // Renders are 2x-DSF PNGs; refs are committed webp. Downsize both to a
@@ -87,13 +84,11 @@ const sections = [];
 for (const s of SCENES) {
   const ref = await uri(join(REF, `${s.id}.webp`));
   const cur = await uri(join(RENDERS, `${s.id}.png`));
-  const dab = DABS ? await uri(join(DABS, `${s.id}.png`)) : null;
   sections.push(`<section class="scene">
     <h2>${s.title}</h2>
-    <div class="pair${dab ? ' triple' : ''}">
+    <div class="pair">
       <figure><img loading="lazy" src="${ref}" alt="Real crayon reference: ${s.title}"/><figcaption>Real crayon (reference)</figcaption></figure>
       <figure><img loading="lazy" src="${cur}" alt="Current renderer: ${s.title}"/><figcaption>Current brush (ADR-0065 renderer)</figcaption></figure>
-      ${dab ? `<figure><img loading="lazy" src="${dab}" alt="Dab-deposit prototype: ${s.title}"/><figcaption>Dab-deposit prototype (post-0066 redesign)</figcaption></figure>` : ''}
     </div>
     <p class="notes">${s.notes}</p>
   </section>`);
@@ -117,11 +112,6 @@ const summary = `<section class="scene summary">
     <li><strong>Binary edges.</strong> Stippled 0/1 rims read as confetti next to the references’ feathered, crumbly edges.</li>
   </ol>
   <p class="notes">The darken-min color mixing and mid-stroke pass splitting are explicitly worth carrying forward; every gap above traces back to the replay-determinism contract ADR-0066 deleted.</p>
-  ${
-    DABS
-      ? `<p class="notes"><strong>Third column:</strong> the soft-alpha dab-deposit prototype (steps 2–3 of the redesign), rendered from the same scenes with <code>setCrayonParams({ dabs })</code>. It attacks all five gaps — deposit depth via the alpha ramp (a grazing pass tints, overdraw deepens convergently toward the darkened dab colour), continuous tone, tangent-stretched dabs, blotch-field pressure modulation, and crumbly punched edges — while keeping the paper-anchored tooth (grain lives in paper space, phase-shifted per pass) and the darken-min stamp. Nondeterministic by design; captures vary run to run.</p>`
-      : ''
-  }
 </section>`;
 
 const extraCss = `
@@ -129,8 +119,7 @@ const extraCss = `
   .scene{margin:0 0 40px}
   .scene h2{margin:0 0 14px;font-size:1.15rem}
   .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .pair.triple{grid-template-columns:1fr 1fr 1fr}
-  @media (max-width:720px){.pair,.pair.triple{grid-template-columns:1fr}}
+  @media (max-width:720px){.pair{grid-template-columns:1fr}}
   .scene figure{margin:0;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-sm)}
   .scene img{display:block;width:100%;height:auto}
   .scene figcaption{padding:8px 12px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}

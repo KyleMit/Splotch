@@ -8,9 +8,8 @@ buffer, but the replay-era constraints against soft fractional-alpha tooth, per-
 layers, and nondeterministic grain are lifted. Also amended by ADR-0067 (2026-07): the crayon is no
 longer the only free-draw mode — the solid pen returned as a sibling brush type, both selected from
 the Brush Menu, with the pen as the default. Also amended by ADR-0068 (2026-07): closed passes now
-commit as live-captured rasters (the fold blits instead of re-rendering), and a soft-alpha dab-stamp
-deposit — punched through the same paper-anchored tooth fields — is staged behind
-`setCrayonParams({ dabs })` to replace the pattern deposit this ADR describes. **Date:** 2026-07
+commit as live-captured rasters, so the fold blits them instead of re-rendering this ADR's pattern
+fills — the deposit itself is unchanged. **Date:** 2026-07
 
 ## Context
 

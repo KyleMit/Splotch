@@ -3,23 +3,6 @@
 // src/routes/dev/engine/+page.svelte and only ever exist under /dev/engine.
 export {};
 
-// Mirrors CrayonDabOptions in src/lib/drawing/crayonBrush.ts (ambient file —
-// can't import it).
-interface EngineDabOptions {
-  alpha: number;
-  darken: number;
-  spacing: number;
-  size: number;
-  sizeJitter: number;
-  posJitter: number;
-  alphaJitter: number;
-  elongation: number;
-  variants: number;
-  blotch: number;
-  toothCut: number;
-  toothBand: number;
-}
-
 declare global {
   interface Window {
     __engineReady?: boolean;
@@ -50,10 +33,8 @@ declare global {
         shadeVariation?: number;
         colorMix?: number;
         passes?: { widthScale: number; coverage: number }[];
-        dabs?: EngineDabOptions | null;
       }): void;
       getCrayonParams(): unknown;
-      CRAYON_DAB_DEFAULTS: EngineDabOptions;
       setScreenAngleOverride(angle: number | null): void;
       remount(): void;
       getViewState(): {
