@@ -522,7 +522,7 @@
     min-width: 24px;
     height: 24px;
     padding: 0 8px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-pill);
     background: #f0e9fb;
     color: #7c4dcf;
     font-size: var(--font-size-sm);
