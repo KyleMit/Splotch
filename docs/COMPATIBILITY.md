@@ -119,6 +119,20 @@ Chrome 111 / Safari 16.4. The deliberate non-polyfill choices:
   non-passive `touchstart`/`touchmove` `preventDefault()` is the only working counter-measure;
   cancelling the pointer events does nothing. Don't "simplify" these listeners away.
 
+## How the floor is validated
+
+* **Engine family:** every push/PR runs the Chromium E2E suite plus a WebKit critical-path smoke
+  (`web/tests/webkit-smoke.spec.ts` — boot, stroke, Parent Center, Color Picker). That covers the
+  *engine*, not the floor *version* — CI runs current WebKit, not Safari 16.4.
+* **Floor versions:** not currently CI-validated; they're a manual/device concern. The stock Android
+  API 24 emulator image ships a pre-floor WebView (a maintained Android 7 device tops out at
+  WebView/Chrome 119 ≥ the 111 floor, but the emulator doesn't emulate "maintained"), and an iOS
+  16.4 simulator runtime needs an on-runner download experiment. Both are tracked as issues
+  [#483](https://github.com/KyleMit/Splotch/issues/483) and
+  [#484](https://github.com/KyleMit/Splotch/issues/484).
+* **Native boot:** the tag-only Maestro smoke boots the shipped app on Android API 33 and the newest
+  iOS simulator — current-device coverage, not floor coverage.
+
 ## Maintaining this
 
 * Changing the floor means changing all of: `web/vite.config.ts` `build.target`, the `browserslist`
