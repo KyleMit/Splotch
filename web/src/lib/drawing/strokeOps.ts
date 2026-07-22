@@ -197,6 +197,12 @@ let dabLayer: CanvasRenderingContext2D | null = null;
 let dabLayerPattern: CanvasPattern | null = null;
 let dabLayerPatternTile: HTMLCanvasElement | null = null;
 
+// Arc-length remainder to the next dab, carried across ops so spacing stays
+// uniform along the whole stroke (see the walk in buildCrayonDabLayer).
+// Clamped to the current step on entry, so a stale carry from a wider brush
+// can only shift phase, never skip a dab.
+let dabSpacingCarry = 0;
+
 function dabLayerFor(w: number, h: number): CanvasRenderingContext2D | null {
   if (!dabLayer) {
     const c = document.createElement('canvas');
@@ -249,12 +255,14 @@ function buildCrayonDabLayer(op: Extract<StrokeOp, { kind: 'dot' | 'path' }>): D
     plan(op.x, op.y, 0, 0);
   } else {
     // Walk the quadratic segments by chord-sampled arc length, emitting a dab
-    // every `step` px. `need` carries the remainder across chords and
-    // segments; the random start phase keeps per-frame op boundaries from
-    // lining dabs up into a visible cadence.
+    // every `step` px. `need` carries the remainder across chords, segments,
+    // AND ops (dabSpacingCarry): a per-op random phase made placement
+    // Poisson-clumpy — dab clusters read as blobs and gaps as necks, a
+    // sausage-link stroke (phone judgment, 2026-07). Uniform arc-length
+    // spacing keeps the strip's width even; the jitters supply the organics.
     let px = op.startX;
     let py = op.startY;
-    let need = Math.random() * step;
+    let need = Math.min(dabSpacingCarry, step);
     for (const s of op.segs) {
       const hull = Math.hypot(s.cx - px, s.cy - py) + Math.hypot(s.x - s.cx, s.y - s.cy);
       const n = Math.max(1, Math.ceil(hull / Math.max(1, step * 0.5)));
@@ -280,6 +288,7 @@ function buildCrayonDabLayer(op: Extract<StrokeOp, { kind: 'dot' | 'path' }>): D
       px = s.x;
       py = s.y;
     }
+    dabSpacingCarry = need;
   }
   if (dabs.length === 0) return null;
 

@@ -166,12 +166,15 @@ export const CRAYON_DAB_DEFAULTS: CrayonDabOptions = {
   darken: 0.1,
   spacing: 0.26,
   size: 1.05,
-  sizeJitter: 0.3,
+  // Kept mild: size jitter ripples the strip's width, and a strong blotch
+  // dims whole bands — together they read as blobs-and-necks along the
+  // stroke (phone judgment, 2026-07). Texture comes from the punch flecks.
+  sizeJitter: 0.18,
   posJitter: 0.1,
-  alphaJitter: 0.35,
+  alphaJitter: 0.25,
   elongation: 1.35,
   variants: 8,
-  blotch: 0.35,
+  blotch: 0.18,
   toothCut: 0.42,
   toothBand: 0.12,
 };
