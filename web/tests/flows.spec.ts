@@ -8,6 +8,14 @@ import { expect, test, type Page } from '@playwright/test';
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
+// The magic brush reveals by sampling a sheet that rasterizes asynchronously
+// (a random rainbow, or an async-decoded coloring-page fill). A stroke drawn
+// before the sheet is ready holds its ops out of the paper until the fold-in
+// repaint fires, so on a starved parallel worker the reveal can finish painting
+// well past a few seconds. Poll magic-reveal assertions against this generous
+// window rather than a tight one — see issue #498.
+const MAGIC_REVEAL_TIMEOUT = 15_000;
+
 async function gotoApp(page: Page, path = '/') {
   await page.goto(path);
   // The canvas mounts on the client; once it's visible the app has hydrated.
@@ -105,6 +113,27 @@ async function draw(page: Page, points: { x: number; y: number }[]) {
   await page.mouse.down();
   for (const p of points.slice(1)) await page.mouse.move(box.x + p.x, box.y + p.y);
   await page.mouse.up();
+}
+
+// Draw a magic-brush stroke and confirm its reveal actually landed (more than a
+// flat pen colour), retrying the whole stroke on a miss. The brush→engine
+// magic-mode toggle flows through a Svelte $effect (DrawingCanvas), so for a
+// spell after the button reads `aria-pressed=true` the engine can still be in
+// pen mode under parallel load — a stroke drawn then paints one flat pen colour
+// that never folds in (its pixels are already committed). Each missed attempt is
+// undone so exactly the one successful magic stroke remains on the canvas,
+// keeping any downstream undo/clear assertion valid. Use this instead of a bare
+// `draw` + a single colour-count poll whenever the assertion needs the reveal's
+// many colours (a canvas-fill count is immune — a pen stroke fills it too).
+async function drawMagicReveal(page: Page, points: { x: number; y: number }[]) {
+  await expect(async () => {
+    await draw(page, points);
+    if ((await distinctOpaqueColors(page)) <= 4) {
+      await page.locator('#undoButton').click();
+      await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
+      throw new Error('magic reveal came up flat (engine still in pen mode) — retrying');
+    }
+  }).toPass({ timeout: MAGIC_REVEAL_TIMEOUT });
 }
 
 /** Perform the drag-to-clear gesture: pull the clear button past its accept
@@ -767,9 +796,7 @@ test('the drawer open state persists across a reload', async ({ page }) => {
 test('parent center sidebar switches the content pane (tablet layout)', async ({ page }) => {
   await gotoApp(page);
 
-  await page.getByRole('button', { name: 'Parent Center' }).click();
-  const modal = page.locator('#parentHelpModal');
-  await expect(modal).toBeVisible();
+  const modal = await openParentCenter(page);
   // The default Playwright viewport is desktop-width, so the two-pane shell with
   // a persistent sidebar renders and the first section is selected.
   await expect(modal).toHaveClass(/wide/);
@@ -800,9 +827,7 @@ test('parent center hub drills into a section and back (phone layout)', async ({
   await page.setViewportSize({ width: 460, height: 852 });
   await gotoApp(page);
 
-  await page.getByRole('button', { name: 'Parent Center' }).click();
-  const modal = page.locator('#parentHelpModal');
-  await expect(modal).toBeVisible();
+  const modal = await openParentCenter(page);
   // Below the breakpoint the hub renders instead of the sidebar.
   await expect(modal).not.toHaveClass(/wide/);
   await expect(page.locator('.hub-list')).toBeVisible();
@@ -915,9 +940,7 @@ test('a lock-incapable device fills the empty quick-toggle slot with a mini Abou
   });
   await gotoApp(page);
 
-  await page.getByRole('button', { name: 'Parent Center' }).click();
-  const modal = page.locator('#parentHelpModal');
-  await expect(modal).toBeVisible();
+  const modal = await openParentCenter(page);
   await expect(modal).toHaveClass(/compact/);
 
   // The orientation lock selector is gone, and the About cell keeps the grid at
@@ -1175,13 +1198,12 @@ test('the magic brush is always available and paints the coloring page colors', 
 
   // Paint across the picture: the reveal should show many of the fill's fill
   // colors, not one flat pen color.
-  await draw(page, [
+  await drawMagicReveal(page, [
     { x: 120, y: 120 },
     { x: 260, y: 200 },
     { x: 400, y: 140 },
     { x: 520, y: 260 },
   ]);
-  await expect.poll(() => distinctOpaqueColors(page), { timeout: 4000 }).toBeGreaterThan(4);
 
   // Undo reverts the magic stroke.
   await page.locator('#undoButton').click();
@@ -1329,7 +1351,7 @@ test('the magic brush reveals fills only, never the fill outlines (no double lin
   // own black lines onto the canvas here (~2.8% of opaque pixels); the overlay
   // then drew those same lines again, so any drift doubled them. Now the reveal
   // is flat fills, so the canvas stays effectively black-free.
-  await draw(page, [
+  await drawMagicReveal(page, [
     { x: 120, y: 120 },
     { x: 260, y: 200 },
     { x: 400, y: 140 },
@@ -1337,7 +1359,6 @@ test('the magic brush reveals fills only, never the fill outlines (no double lin
     { x: 200, y: 320 },
     { x: 480, y: 360 },
   ]);
-  await expect.poll(() => distinctOpaqueColors(page), { timeout: 4000 }).toBeGreaterThan(4);
   expect(await revealedNearBlackFraction(page)).toBeLessThan(0.005);
 });
 
@@ -1373,7 +1394,9 @@ test('the magic brush paints the letterbox margin by extending the edge colour',
     { x: 3, y: 520 },
   ]);
   // The margin now reveals the extended edge colour instead of staying transparent.
-  await expect.poll(() => opaquePixelsInLeftBand(page), { timeout: 4000 }).toBeGreaterThan(500);
+  await expect
+    .poll(() => opaquePixelsInLeftBand(page), { timeout: MAGIC_REVEAL_TIMEOUT })
+    .toBeGreaterThan(500);
 });
 
 // Opaque pixel count within a thin band at the TOP canvas edge.
@@ -1423,7 +1446,9 @@ test('the magic brush paints the rotation-lock letterbox margin', async ({ page 
     { x: 440, y: 6 },
     { x: 660, y: 6 },
   ]);
-  await expect.poll(() => opaquePixelsInTopBand(page), { timeout: 4000 }).toBeGreaterThan(500);
+  await expect
+    .poll(() => opaquePixelsInTopBand(page), { timeout: MAGIC_REVEAL_TIMEOUT })
+    .toBeGreaterThan(500);
 });
 
 test('the magic brush reveals a rainbow gradient when no coloring page is applied', async ({
@@ -1438,16 +1463,12 @@ test('the magic brush reveals a rainbow gradient when no coloring page is applie
 
   // Drawing across the blank canvas reveals the pre-generated rainbow — a long
   // stroke crosses many hues, so it lays down many distinct colors, not one.
-  // The rainbow sheet rasterizes asynchronously and a stroke drawn before it is
-  // ready holds its magic ops out of the paper until the fold-in repaint, so a
-  // starved worker can finish painting well past the default poll window.
-  await draw(page, [
+  await drawMagicReveal(page, [
     { x: 100, y: 140 },
     { x: 260, y: 240 },
     { x: 420, y: 160 },
     { x: 560, y: 280 },
   ]);
-  await expect.poll(() => distinctOpaqueColors(page), { timeout: 15_000 }).toBeGreaterThan(4);
 
   // Clearing releases the held rainbow but keeps the magic brush selected (#309)
   // — it draws on a fresh page too, so the child picks up right where they were.
@@ -1456,12 +1477,11 @@ test('the magic brush reveals a rainbow gradient when no coloring page is applie
   await expect.poll(() => distinctOpaqueColors(page)).toBe(0);
 
   // Drawing again still reveals colors (a newly picked gradient).
-  await draw(page, [
+  await drawMagicReveal(page, [
     { x: 120, y: 160 },
     { x: 300, y: 260 },
     { x: 500, y: 180 },
   ]);
-  await expect.poll(() => distinctOpaqueColors(page), { timeout: 15_000 }).toBeGreaterThan(4);
 });
 
 // Count of strongly-opaque canvas pixels.
