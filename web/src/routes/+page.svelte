@@ -1,4 +1,10 @@
 <script lang="ts">
+  // Side-effect import, deliberately static: it puts the engine boot in this
+  // page's module graph so it evaluates (and the prerendered canvas starts
+  // accepting strokes) before the hydration pass, not after it (ADR-0071). A
+  // dynamic import would push init back behind hydration — exactly the wait
+  // this removes.
+  import '$lib/drawing/earlyBoot';
   import { onMount, type Component } from 'svelte';
   import DrawingCanvas from '$lib/components/DrawingCanvas.svelte';
   import ColorPalette from '$lib/components/ColorPalette.svelte';
