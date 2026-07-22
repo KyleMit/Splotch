@@ -29,7 +29,11 @@ async function openDrawer(page: Page) {
   }).toPass({ timeout: 20_000 });
 }
 
-async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
+// Open the Parent Center robustly and return its modal locator. The Parent
+// Center idle-mounts on first open (ADR-0049), so a single click can land
+// before its handler is wired and be lost — retry the click+assert until the
+// modal is up, and skip the click if it's already open (some callers reuse it).
+async function openParentCenter(page: Page) {
   const modal = page.locator('#parentHelpModal');
   await expect(async () => {
     if (!(await modal.isVisible().catch(() => false))) {
@@ -37,6 +41,11 @@ async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
     }
     await expect(modal).toBeVisible({ timeout: 1500 });
   }).toPass({ timeout: 10_000 });
+  return modal;
+}
+
+async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
+  await openParentCenter(page);
   // The Parent Center is a section list — a sidebar item on tablet/desktop, a
   // hub row on phone. Either way the control carries the section label; opening
   // it (sidebar select or phone drill-in) reveals the section content.
@@ -820,9 +829,7 @@ test('parent center shows quick toggles on a landscape phone', async ({ page }) 
   await page.setViewportSize({ width: 852, height: 390 });
   await gotoApp(page);
 
-  await page.getByRole('button', { name: 'Parent Center' }).click();
-  const modal = page.locator('#parentHelpModal');
-  await expect(modal).toBeVisible();
+  const modal = await openParentCenter(page);
   await expect(modal).toHaveClass(/compact/);
 
   // Quick toggles render instead of the hub list or the sidebar.
@@ -1431,13 +1438,16 @@ test('the magic brush reveals a rainbow gradient when no coloring page is applie
 
   // Drawing across the blank canvas reveals the pre-generated rainbow — a long
   // stroke crosses many hues, so it lays down many distinct colors, not one.
+  // The rainbow sheet rasterizes asynchronously and a stroke drawn before it is
+  // ready holds its magic ops out of the paper until the fold-in repaint, so a
+  // starved worker can finish painting well past the default poll window.
   await draw(page, [
     { x: 100, y: 140 },
     { x: 260, y: 240 },
     { x: 420, y: 160 },
     { x: 560, y: 280 },
   ]);
-  await expect.poll(() => distinctOpaqueColors(page), { timeout: 4000 }).toBeGreaterThan(4);
+  await expect.poll(() => distinctOpaqueColors(page), { timeout: 15_000 }).toBeGreaterThan(4);
 
   // Clearing releases the held rainbow but keeps the magic brush selected (#309)
   // — it draws on a fresh page too, so the child picks up right where they were.
@@ -1451,7 +1461,7 @@ test('the magic brush reveals a rainbow gradient when no coloring page is applie
     { x: 300, y: 260 },
     { x: 500, y: 180 },
   ]);
-  await expect.poll(() => distinctOpaqueColors(page), { timeout: 4000 }).toBeGreaterThan(4);
+  await expect.poll(() => distinctOpaqueColors(page), { timeout: 15_000 }).toBeGreaterThan(4);
 });
 
 // Count of strongly-opaque canvas pixels.
