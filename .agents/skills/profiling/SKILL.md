@@ -96,10 +96,21 @@ Read in this order:
 3. **Where the main thread went** (Chromium/Android only) — Scripting vs Rendering vs Painting.
    Painting/raster dominating = GPU/compositing cost (the high-DPR canvas), not JS.
 4. **Per-phase main-thread busy** — which interaction actually costs CPU (busy, not wall-clock —
-   wall is dominated by the scenario's pacing sleeps).
-5. **Top JS by self-time** — corroborates 2–3. `drawImage` = canvas copies (the commit's patch
+   wall is dominated by the scenario's pacing sleeps). Its **Compositor commit** column totals the
+   `Commit` events in the phase — the raster/damage push of the high-DPR canvas (the ADR-0015 cost).
+   A phase whose long tasks are commit-dominated is paying for pixel area (full-canvas damage, e.g.
+   `repaintAll`), not JS.
+5. **Long tasks attributed** — each top >50 ms task tagged with its phase and its largest nested
+   trace events, so the jank names itself: `Commit` = compositor raster; `EventDispatch (pointerup)`
+   = the stroke-end pipeline (check `engine.commit`/`engine.snapshot`); `RunMicrotasks` on an undo
+   phase = the async paper-chain step (blob decode + restore); `MajorGC` = allocation pressure. In
+   `perf:undo` draw phases, huge `Receive mojo message` rows are the harness's synchronous stroke
+   dispatch — an artifact, not app cost.
+6. **Top JS by self-time** — corroborates 2–3. `drawImage` = canvas copies (the commit's patch
    capture, undo restores, the resize blit); `stroke`/`quadraticCurveTo` = live drawing and the
-   commit fold; `getImageData` = the empty-scan.
+   commit fold; `getImageData` = the empty-scan. Playwright/driver plumbing that isn't in
+   `HARNESS_SYMBOLS` yet (e.g. `setupDragListeners`) can still appear — verify a symbol exists in
+   `web/src/` before chasing it.
 
 For a forced-reflow / layout-thrash check, the harness confirmed **0 forced synchronous layouts** in
 the drawing path (the engine caches `canvasRect`). If that ever turns non-zero, look for a new
@@ -121,7 +132,9 @@ The drawing path is already well-optimized; treat these as the baseline:
     for the future.
 
 When you fix something, re-run the same command and compare `summary.json` / `report.md` against the
-prior run in `perf-profiles/`.
+prior run in `perf-profiles/`. A committed baseline to compare against (high-DPI tablet toddler
+session + the seven `perf:undo` scenarios, with a ranked findings write-up) lives in
+`artifacts/perf/2026-07-22-draw-profile/`.
 
 ## Native specifics
 
