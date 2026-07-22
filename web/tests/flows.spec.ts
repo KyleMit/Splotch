@@ -1304,22 +1304,29 @@ test('an adopted down-less pen stream still grows a brush ring', async ({ page }
   await gotoApp(page);
   const ring = page.locator('.brush-ring');
 
-  await page.evaluate(() => {
-    const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    canvas.hasPointerCapture = () => true;
-    canvas.dispatchEvent(
-      new PointerEvent('pointermove', {
-        pointerId: 88,
-        pointerType: 'pen',
-        buttons: 1,
-        clientX: 300,
-        clientY: 220,
-        bubbles: true,
-        cancelable: true,
-      })
-    );
-  });
-  await expect(ring).toHaveCount(1);
+  // The engine boots before hydration and binds its pointer listeners when a
+  // component adopts it on mount (ADR-0072); under parallel load the synthetic
+  // move can land before that binding and be dropped, growing no ring. Retry the
+  // down-less move until the engine adopts it — re-dispatching is safe, the same
+  // pointerId just continues the one adopted stream.
+  await expect(async () => {
+    await page.evaluate(() => {
+      const canvas = document.getElementById('drawingCanvas') as HTMLCanvasElement;
+      canvas.hasPointerCapture = () => true;
+      canvas.dispatchEvent(
+        new PointerEvent('pointermove', {
+          pointerId: 88,
+          pointerType: 'pen',
+          buttons: 1,
+          clientX: 300,
+          clientY: 220,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    });
+    await expect(ring).toHaveCount(1, { timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
 
   await page.evaluate(() => {
     document
