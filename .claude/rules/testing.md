@@ -31,4 +31,13 @@ paths:
   `tests/a11y.spec.ts` — serious/critical violations fail. The toddler-facing canvas chrome is out
   of scope by design; scans of overlays over it are scoped via `AxeBuilder.include()`. Details in
   the `testing` skill.
-* Full guide (commands, Maestro install, CI triggers): the `testing` skill.
+* **Flake-resistance (the suite runs 4 parallel workers, so specs share the CPU):** never assert on
+  a single interaction against a lazily-wired control — wrap open-then-assert in
+  `expect(...).toPass()` or reuse a retrying helper
+  (`openParentCenter`/`openDrawer`/`openStrokeMenu`); use `expect.poll` / web-first assertions
+  instead of a fixed `waitForTimeout` to wait for something to happen (a fixed sleep is fine only to
+  idle *past* a known threshold or to prove a state does *not* change); poll async canvas/relayout
+  state through a retrying assertion with a window sized for a starved worker
+  (`expect(await count()).toBe(n)` races the repaint — use `await expect.poll(() => count())`); and
+  verify a fix with `--repeat-each=10`, never in isolation. Full checklist with examples: the
+  `testing` skill, "Writing flake-resistant specs."

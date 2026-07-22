@@ -953,10 +953,14 @@ test('rotating back restores the exact original layout', async ({ page }) => {
   await rotateTo(page, 90, 400, 300);
   await rotateTo(page, 0, 300, 300);
 
-  const view = await page.evaluate(() => window.__engine.getViewState());
-  expect(view.active).toBe(false);
-  expect(await page.evaluate(() => window.__engine.pixelAt(120, 60)[3])).toBeGreaterThan(0);
-  expect(await count(page)).toBe(before);
+  // The relayout is debounced (RESIZE_SETTLE_MS); under parallel load its rebuild
+  // can land a beat after resizeTo's settle window, so poll the restored state
+  // rather than reading it once and racing the repaint.
+  await expect.poll(() => page.evaluate(() => window.__engine.getViewState().active)).toBe(false);
+  await expect
+    .poll(() => page.evaluate(() => window.__engine.pixelAt(120, 60)[3]))
+    .toBeGreaterThan(0);
+  await expect.poll(() => count(page)).toBe(before);
 });
 
 test('strokes drawn while rotated land on the paper and survive rotating back', async ({

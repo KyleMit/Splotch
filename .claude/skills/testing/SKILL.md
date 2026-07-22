@@ -102,6 +102,60 @@ with `vite preview` (set `DEV_SERVER=1` for fast iteration against `vite dev`). 
 These run on real Chromium but **cannot catch native or WebView boot failures** — that's what the
 Android smoke test is for.
 
+### Writing flake-resistant specs
+
+The full suite runs **4 workers in parallel** (`playwright.config.ts`), so every spec shares the CPU
+with three others. A test that passes alone but fails in the full run is almost always a timing race
+under that contention, not a real regression. Locally `retries: 0` surfaces it immediately; CI sets
+`retries: 2`, so it hides there until a double-flake turns CI red. Write specs that can't race in
+the first place:
+
+* **Never assert on a single interaction against a lazily-wired control.** Overlays that idle-mount
+  (the Parent Center, ADR-0049) can drop the first click before their handler is attached, so a bare
+  `.click()` + `expect(modal).toBeVisible()` flakes. `flows.spec.ts` has a shared
+  `retryOpen(ready,
+  open, opts?)` primitive for this — it retries `open()` until the `ready`
+  sentinel shows, skipping the click when it's already open;
+  `openDrawer`/`openParentCenter`/`openStrokeMenu`/`openBrushMenu`/ `openColoringDialog` are all
+  one-liners over it. Reach for it (or wrap open-then-assert in `expect(...).toPass()`) rather than
+  repeating a bare click.
+* **No fixed `waitForTimeout` to wait for something to *happen*.** Use a web-first assertion that
+  retries until the condition holds (`expect(locator).toBeVisible()`, `expect.poll(() => …)`,
+  `expect(...).toPass()`). A fixed sleep is only legitimate when it is **monotonic-safe under
+  load**: (a) deliberately idling *past* a known threshold to reproduce a timing bug (e.g. the
+  stroke-resume gap in `engine.spec.ts`), or (b) proving a *negative* — that state must **not**
+  change within a window (e.g. the "SW never registers" check in `pwa-registration.spec.ts`). A
+  slower worker only lengthens the real wait in both cases, so they can't false-red. Comment the
+  reason when you keep one.
+* **Poll async render/canvas state; size the window for a *starved* worker.** Canvas reveals and
+  debounced relayouts settle asynchronously and lag hard under contention. The magic brush samples a
+  sheet that rasterizes async, holding a stroke's ops out of the paper until a fold-in repaint
+  (`MAGIC_REVEAL_TIMEOUT` in `flows.spec.ts`); the engine debounces resize by `RESIZE_SETTLE_MS`.
+  Use `expect.poll` with a generous timeout, not a one-shot `await page.evaluate(...)` +
+  `expect(...)`.
+* **Read reactive/engine state *through* a retrying assertion.** `expect(await count(page)).toBe(n)`
+  reads exactly once and races the repaint; `await expect.poll(() => count(page)).toBe(n)` waits for
+  it to settle. Same for `getViewState()`/`pixelAt()` reads after a rotation.
+* **A sequence that must land inside a timing window must retry as a whole.** A triple-tap that has
+  to fall inside dragToClear's 1000ms multi-click window (`clear-tutorial.spec.ts`) can straddle it
+  under load — wrap the entire burst in `toPass()`, don't just add a longer wait between taps.
+* **A control's UI state commits a tick before the imperative engine adopts it — an action taken
+  immediately after can hit the *old* mode.** The tool buttons update `aria-pressed` reactively, but
+  the engine enters that mode through a Svelte `$effect` (e.g. `setMagicMode` in `DrawingCanvas`);
+  under load that effect can lag hundreds of ms behind the button, so a stroke drawn right after
+  selecting the magic brush can paint as a flat **pen** stroke whose pixels are then committed for
+  good (a later mode change never repaints them). Asserting `aria-pressed=true` does **not** prove
+  the engine switched. Retry the whole action until its *effect* is visible — `drawMagicReveal` in
+  `flows.spec.ts` redraws until the reveal shows many colours, undoing each flat miss so exactly one
+  good stroke remains. A metric that a wrong-mode action still satisfies (a canvas-fill pixel count
+  — a pen stroke fills the band too) won't catch the race, so assert on something only the right
+  mode produces.
+* **Prove it's fixed under load, not in isolation.** Flakes only appear under contention, so verify
+  with `npm run test:e2e -- <spec> --repeat-each=10` (which still fans out across the 4 workers)
+  before trusting green — a single isolated pass proves nothing. A stubborn one may only show every
+  ~1-in-5 runs; raise `--repeat-each` until you've seen it both fail on the old code and hold on the
+  new.
+
 ### WebKit critical-path smoke — `tests/webkit-smoke.spec.ts`
 
 The full suite is Chromium-only, but Safari/iOS is the engine `docs/COMPATIBILITY.md` worries about

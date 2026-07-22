@@ -15,17 +15,31 @@ test('triple-tapping the clear button reveals the coachmark', async ({ page }) =
   await gotoApp(page);
 
   const button = page.locator('#clearButton');
-  await button.click();
-  await button.click();
-  await button.click();
-
   const coachmark = page.locator('.clear-coachmark');
-  await expect(coachmark).toHaveClass(/\bvisible\b/);
+
+  // The coachmark only reveals when three taps land inside dragToClear's 1000ms
+  // multi-click window; on a starved worker three separate Playwright clicks can
+  // straddle that window and reset the count, so retry the whole burst until one
+  // set lands in time rather than assuming a single burst always makes it.
+  await expect(async () => {
+    await button.click();
+    await button.click();
+    await button.click();
+    await expect(coachmark).toHaveClass(/\bvisible\b/, { timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
+
   await expect(coachmark).not.toHaveClass(/\bfade-out\b/);
-  // It stays up rather than being torn down a tick later.
-  await page.waitForTimeout(300);
-  await expect(coachmark).toHaveClass(/\bvisible\b/);
+  // The opacity poll settling above 0 confirms it actually painted (the
+  // documented same-tick regression would keep it at 0).
   await expect
     .poll(() => coachmark.evaluate((el) => Number(getComputedStyle(el).opacity)))
     .toBeGreaterThan(0);
+  // It must also *stay* up rather than being torn down a tick later — a
+  // regression could dismiss it slightly after the reveal, not only in the same
+  // tick. A short fixed settle then re-assert is the sanctioned "prove a
+  // negative" wait (a slower worker only lengthens it, so it can't false-red),
+  // not a flake-prone wait-for-something.
+  await page.waitForTimeout(300);
+  await expect(coachmark).toHaveClass(/\bvisible\b/);
+  await expect(coachmark).not.toHaveClass(/\bfade-out\b/);
 });
