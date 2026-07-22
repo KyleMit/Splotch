@@ -216,6 +216,68 @@ describe('cold-snapshot blob validation', () => {
   });
 });
 
+describe('closed crayon passes travel as rasters', () => {
+  function crayonOp(seed: number): PathOp {
+    const op = cmd('#wax').ops[0] as PathOp;
+    op.crayon = true;
+    op.seed = seed;
+    return op;
+  }
+
+  function rasterOp(x: number, y: number, w: number, h: number) {
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    return { kind: 'crayonPassRaster', canvas, x, y, mix: 0.55 } as const;
+  }
+
+  it('replaces exactly the trailing run of crayon ops with the raster', async () => {
+    const m = await freshHistory();
+    m.beginCommand(true);
+    m.recordOp(crayonOp(1));
+    m.recordOp(crayonOp(1));
+    m.recordOp(crayonOp(1));
+    const r1 = rasterOp(4, 6, 10, 12);
+    m.replaceOpenCrayonPassOps(r1);
+    // Second pass after a mid-stroke split: the first raster stops the scan.
+    m.recordOp(crayonOp(2));
+    m.recordOp(crayonOp(2));
+    const r2 = rasterOp(8, 9, 5, 5);
+    m.replaceOpenCrayonPassOps(r2);
+    expect(m.activeCrayonRasterRects()).toEqual([
+      { x: 4, y: 6, w: 10, h: 12 },
+      { x: 8, y: 9, w: 5, h: 5 },
+    ]);
+    m.commitActiveCommand();
+    expect(m.activeCrayonRasterRects()).toEqual([]);
+  });
+
+  it('no-ops between groups, like recordOp', async () => {
+    const m = await freshHistory();
+    expect(() => m.replaceOpenCrayonPassOps(rasterOp(0, 0, 1, 1))).not.toThrow();
+    expect(m.activeCrayonRasterRects()).toEqual([]);
+  });
+
+  it('falls back to a plain flush when a foreign op sits inside the pass run', async () => {
+    // The engine closes an open pass before any non-crayon ink op records
+    // (closeCrayonPassBeforeForeignOp), so the trailing crayon run should
+    // always end at a pass boundary. If it ever doesn't — an eraser op
+    // interleaved inside the run — the raster can't be attributed (it was
+    // cropped from the paper-space accumulation, which never saw the erase),
+    // so the swap must keep the raw ops and record a flush: the re-render
+    // fold replays the interleave in op order and stays correct.
+    const m = await freshHistory();
+    m.beginCommand(true);
+    m.recordOp(crayonOp(1));
+    const erase = cmd('#000').ops[0] as PathOp;
+    erase.erase = true;
+    m.recordOp(erase);
+    m.recordOp(crayonOp(1));
+    m.replaceOpenCrayonPassOps(rasterOp(0, 0, 4, 4));
+    expect(m.activeCrayonRasterRects()).toEqual([]);
+  });
+});
+
 describe('in-flight strokes', () => {
   it('repaints an uncommitted active command on top of the paper', async () => {
     const m = await freshHistory();

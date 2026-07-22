@@ -1,7 +1,11 @@
 // The engine's op vocabulary and its single renderer. Live rendering paints an
 // op onto the visible canvas and records it; the commit fold paints the same
 // ops through the same renderOp() onto the paper raster (ADR-0066), so the
-// committed pixels are bit-identical to what the child saw live.
+// committed pixels are bit-identical to what the child saw live. Closed crayon
+// passes are the carve-out that retires that re-render: they travel as
+// 'crayonPassRaster' ops — pixels captured once from the live paper-space
+// accumulation — so folding them is a blit, and crayon texture is free to stop
+// being deterministic.
 
 import { sheetPatternFor } from './magicBrush';
 import { crayonPatternFor, getCrayonPasses, getCrayonMix } from './crayonBrush';
@@ -32,9 +36,17 @@ export interface PathSeg {
 // the target as a subtractive glaze (see the pass-buffer notes below) — that
 // single stamp is what lets a new pass mix slightly with the ink under it
 // (blue over yellow → green) without the pass ever mixing with its own
-// overlapping per-frame ops. The engine records a flush at every pass close
-// (mid-stroke split, pointer lift, resume jump), so the fold stamps at exactly
-// the live positions in the op order.
+// overlapping per-frame ops.
+// A 'crayonPassRaster' op is a CLOSED pass, carried as its prerendered
+// paper-space pixels instead of its dot/path ops: at pass close the engine
+// crops the live paper-space accumulation buffer and swaps the pass's recorded
+// ops for one raster op (replaceOpenCrayonPassOps). Rendering it is the same
+// two-blit subtractive stamp a flush performs, but from pixels that were
+// painted exactly once, live — so the commit fold, repaints, snapshot pending
+// replay, and export all BLIT the pass rather than re-rendering its pattern
+// fills. This is what frees brush texture from the live-equals-fold
+// determinism contract (ADR-0066): there is no re-render left that must
+// reproduce the live pixels.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -64,6 +76,11 @@ export type StrokeOp =
       seed?: number;
     }
   | { kind: 'crayonFlush' }
+  // x/y = the raster's top-left in paper coordinates (canvas dims are its
+  // size). `mix` is the glaze strength captured at pass close, so the stamp
+  // the fold/repaint performs matches the live preview even if the dev
+  // harness's setCrayonParams changes colorMix before the raster renders.
+  | { kind: 'crayonPassRaster'; canvas: HTMLCanvasElement; x: number; y: number; mix: number }
   | { kind: 'clear' };
 
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
@@ -148,11 +165,13 @@ function paintCrayon(
 //
 // One buffer per target context. For fold/export surfaces (the paper raster,
 // exports) it is an offscreen canvas allocated on demand (WeakMap — GC'd with
-// its target). For the LIVE canvas the engine registers its overlay elements
-// as the buffer: ops paint into BOTH a darken-blended bottom layer and a
-// (1-m)-opacity top layer (the `mirror`), whose CSS compositing reproduces the
-// two-blit stamp exactly — the open pass previews its final mixed pixels with
-// no snap at pass close.
+// its target) — since closed passes travel as prerendered 'crayonPassRaster'
+// ops, these buffers only ever see the OPEN pass's raw ops (a mid-stroke
+// export/repaint) or a command on the mix-0/fallback legacy path. For the
+// LIVE canvas the engine registers its overlay elements as the buffer: ops
+// paint into BOTH a darken-blended bottom layer and a (1-m)-opacity top layer
+// (the `mirror`), whose CSS compositing reproduces the two-blit stamp exactly
+// — the open pass previews its final mixed pixels with no snap at pass close.
 interface CrayonPassBuffer {
   ctx: CanvasRenderingContext2D;
   mirror: CanvasRenderingContext2D | null;
@@ -177,6 +196,99 @@ export function setLiveCrayonBuffer(
 ) {
   liveTarget = buffer ? target : null;
   liveBuffer = buffer ? { ctx: buffer, mirror, dirty: false, bounds: null } : null;
+  if (!buffer) livePaperBuffer = null;
+}
+
+// --- Live paper-space pass accumulation --------------------------------------
+//
+// Alongside the screen-space overlay preview, every live crayon op also paints
+// into a PAPER-SPACE buffer (identity transform — ops are recorded in paper
+// coordinates). At pass close the engine crops this buffer's dirty rect into a
+// standalone raster (closeLiveCrayonPass) that becomes the pass's
+// 'crayonPassRaster' op — the pixels the commit fold will stamp, captured from
+// the one live render instead of re-rendered. Sized like the paper (the
+// max(w,h) square, ensurePaperCovers), so off-viewport ink lands exactly where
+// the fold's own paper-space re-render used to put it, including the same
+// paper-square crop of rotation-locked margin ink (ADR-0066/0050). Allocated
+// lazily on the first crayon op — pen-only sessions never pay the raster.
+let livePaperBuffer: CrayonPassBuffer | null = null;
+let livePaperSide = 0;
+
+// The engine declares the paper's current square side (resizeCanvas). Growth is
+// picked up lazily at the next crayon paint; the wipe a grow implies is
+// repaired by the resize repaint replaying the open pass's ops.
+export function setCrayonPaperSpace(side: number) {
+  livePaperSide = side;
+}
+
+function livePaperBufferFor(): CrayonPassBuffer | null {
+  if (livePaperSide <= 0) return null;
+  if (!livePaperBuffer) {
+    const c = document.createElement('canvas');
+    c.width = livePaperSide;
+    c.height = livePaperSide;
+    const g = c.getContext('2d');
+    if (!g) return null;
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    livePaperBuffer = { ctx: g, mirror: null, dirty: false, bounds: null };
+  } else if (
+    livePaperBuffer.ctx.canvas.width < livePaperSide ||
+    livePaperBuffer.ctx.canvas.height < livePaperSide
+  ) {
+    livePaperBuffer.ctx.canvas.width = livePaperSide;
+    livePaperBuffer.ctx.canvas.height = livePaperSide;
+    livePaperBuffer.ctx.lineCap = 'round';
+    livePaperBuffer.ctx.lineJoin = 'round';
+    livePaperBuffer.dirty = false;
+    livePaperBuffer.bounds = null;
+  }
+  return livePaperBuffer;
+}
+
+// Whether the live canvas currently holds an open (unstamped) crayon pass.
+// The engine checks this before a NON-crayon ink op (eraser, magic, pen — a
+// mid-gesture brush switch can interleave them into the same stroke group)
+// and closes the pass first: the pass raster is cropped from the paper-space
+// accumulation, which never sees foreign ops, so a pass must never span one
+// (see replaceOpenCrayonPassOps' boundary guard).
+export function hasOpenLiveCrayonPass(): boolean {
+  return !!(liveBuffer?.dirty || livePaperBuffer?.dirty);
+}
+
+// A canvas clear wipes the open pass with everything else: drop the live
+// overlays' buffered ink and the paper-space accumulation, so a stroke
+// straddling the clear (drag-to-clear finishing under a drawing finger) closes
+// its pass from post-clear ink only — matching resetActiveCommandForClear,
+// which drops the same ops from the command.
+export function resetLiveCrayonPass() {
+  if (liveBuffer) clearCrayonBounds(liveBuffer);
+  if (livePaperBuffer) clearCrayonBounds(livePaperBuffer);
+}
+
+// Crop the open pass's paper-space pixels into a standalone raster and clear
+// the accumulation buffer. Null when nothing accumulated (mix 0 paints direct,
+// or the pass drew nothing) — the caller then falls back to keeping the raw
+// ops and recording a plain 'crayonFlush'. The buffer is cleared on EVERY
+// close, success or not: a stale dirty region bleeding into the next pass's
+// crop would stamp this pass's ink twice.
+export function closeLiveCrayonPass(): Extract<StrokeOp, { kind: 'crayonPassRaster' }> | null {
+  const pb = livePaperBuffer;
+  if (!pb || !pb.dirty || !pb.bounds) return null;
+  const b = pb.bounds;
+  const w = b.x1 - b.x0;
+  const h = b.y1 - b.y0;
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const g = c.getContext('2d');
+  if (!g) {
+    clearCrayonBounds(pb);
+    return null;
+  }
+  g.drawImage(pb.ctx.canvas, b.x0, b.y0, w, h, 0, 0, w, h);
+  clearCrayonBounds(pb);
+  return { kind: 'crayonPassRaster', canvas: c, x: b.x0, y: b.y0, mix: getCrayonMix() };
 }
 
 function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
@@ -315,6 +427,15 @@ export function clearAllOf(target: CanvasRenderingContext2D) {
   target.restore();
 }
 
+// A repaint that replays the open pass's ops (repaintAll on a mid-stroke
+// resize, or undo beneath a live stroke) rebuilds the live accumulation from
+// scratch, so reset it first. The pattern deposit's replay happens to be
+// idempotent, but no future deposit is required to be (ADR-0068) — replaying
+// over existing accumulation would double-composite any fractional-alpha ink.
+export function resetLiveCrayonForReplay(target: CanvasRenderingContext2D) {
+  if (target === liveTarget) resetLiveCrayonPass();
+}
+
 // Paint one recorded op onto a target context. Used both live (target = the
 // visible ctx) and by the commit fold / repaint paths (target = the paper
 // raster, the visible canvas, or an export surface). Erasing composites
@@ -327,11 +448,30 @@ export function clearAllOf(target: CanvasRenderingContext2D) {
 export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   if (op.kind === 'clear') {
     dropCrayonBuffer(target);
+    if (target === liveTarget && livePaperBuffer) clearCrayonBounds(livePaperBuffer);
     clearAllOf(target);
     return;
   }
   if (op.kind === 'crayonFlush') {
     flushCrayonBuffer(target);
+    return;
+  }
+  if (op.kind === 'crayonPassRaster') {
+    // A closed pass, stamped from its live-captured pixels: the same two-blit
+    // subtractive glaze flushCrayonBuffer performs (see the pass-buffer notes),
+    // drawn in user space at the raster's paper position so the target's own
+    // transform places it — identity on the paper/fold surfaces, the paper
+    // view on the visible canvas. The glaze strength is the op's CAPTURED mix,
+    // not the current option, so the stamp matches the live preview even if
+    // the dev harness changed colorMix since the pass closed.
+    flushCrayonBuffer(target);
+    target.globalCompositeOperation = 'darken';
+    target.globalAlpha = 1;
+    target.drawImage(op.canvas, op.x, op.y);
+    target.globalCompositeOperation = 'source-over';
+    target.globalAlpha = 1 - op.mix;
+    target.drawImage(op.canvas, op.x, op.y);
+    target.globalAlpha = 1;
     return;
   }
   if (op.magic) {
@@ -360,20 +500,39 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     paintCrayon(buf.ctx, op);
     if (buf.mirror) paintCrayon(buf.mirror, op);
     buf.dirty = true;
+    let x0: number;
+    let y0: number;
+    let x1: number;
+    let y1: number;
+    let pad: number;
     if (op.kind === 'dot') {
-      unionCrayonBounds(buf, matrix, op.x, op.y, op.x, op.y, op.radius + 2);
+      x0 = x1 = op.x;
+      y0 = y1 = op.y;
+      pad = op.radius + 2;
     } else {
-      let x0 = op.startX;
-      let y0 = op.startY;
-      let x1 = op.startX;
-      let y1 = op.startY;
+      x0 = x1 = op.startX;
+      y0 = y1 = op.startY;
       for (const s of op.segs) {
         x0 = Math.min(x0, s.cx, s.x);
         y0 = Math.min(y0, s.cy, s.y);
         x1 = Math.max(x1, s.cx, s.x);
         y1 = Math.max(y1, s.cy, s.y);
       }
-      unionCrayonBounds(buf, matrix, x0, y0, x1, y1, op.lineWidth / 2 + 2);
+      pad = op.lineWidth / 2 + 2;
+    }
+    unionCrayonBounds(buf, matrix, x0, y0, x1, y1, pad);
+    // The live stroke also accumulates in paper space, so the pass can close
+    // into a 'crayonPassRaster' instead of leaving ops for the fold to
+    // re-render (see the live paper-space notes above). Identity transform:
+    // op coordinates ARE paper coordinates.
+    if (target === liveTarget) {
+      const pb = livePaperBufferFor();
+      if (pb) {
+        pb.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        paintCrayon(pb.ctx, op);
+        pb.dirty = true;
+        unionCrayonBounds(pb, null, x0, y0, x1, y1, pad);
+      }
     }
     return;
   }
