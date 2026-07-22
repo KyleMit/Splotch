@@ -112,10 +112,13 @@ the first place:
 
 * **Never assert on a single interaction against a lazily-wired control.** Overlays that idle-mount
   (the Parent Center, ADR-0049) can drop the first click before their handler is attached, so a bare
-  `.click()` + `expect(modal).toBeVisible()` flakes. Wrap open-then-assert in
-  `expect(...).toPass()`, or reuse an existing retrying helper — `openParentCenter`, `openDrawer`,
-  `openStrokeMenu`, `openBrushMenu` in `flows.spec.ts` all follow the same shape. Add a helper
-  rather than repeating a bare click.
+  `.click()` + `expect(modal).toBeVisible()` flakes. `flows.spec.ts` has a shared
+  `retryOpen(ready,
+  open, opts?)` primitive for this — it retries `open()` until the `ready`
+  sentinel shows, skipping the click when it's already open;
+  `openDrawer`/`openParentCenter`/`openStrokeMenu`/`openBrushMenu`/ `openColoringDialog` are all
+  one-liners over it. Reach for it (or wrap open-then-assert in `expect(...).toPass()`) rather than
+  repeating a bare click.
 * **No fixed `waitForTimeout` to wait for something to *happen*.** Use a web-first assertion that
   retries until the condition holds (`expect(locator).toBeVisible()`, `expect.poll(() => …)`,
   `expect(...).toPass()`). A fixed sleep is only legitimate when it is **monotonic-safe under

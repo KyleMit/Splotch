@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
 // Svelte component wiring (palette, action drawer, tool/stroke state, AI fetch,
@@ -22,33 +22,45 @@ async function gotoApp(page: Page, path = '/') {
   await expect(page.locator('#drawingCanvas')).toBeVisible();
 }
 
-// The action drawer is collapsed by default (drawerOpen=false), so its buttons
-// (brush menu, undo, screenshot, AI, coloring) aren't rendered until the chevron
-// is tapped. Retrying the tap also rides out any hydration lag on the first click.
-async function openDrawer(page: Page) {
-  const undo = page.locator('#undoButton');
-  if (await undo.isVisible().catch(() => false)) return; // already open (e.g. persisted)
-  // The chevron snaps next to the palette once its width is measured on mount, so
-  // it can shift position on the first frame; under parallel load the dev server
-  // is also slow to hydrate. Give the click room and retry.
+// Open an overlay/flyout/dialog robustly and leave it open. Several of these
+// controls idle-mount (ADR-0049) or reposition on the first frame, so the first
+// click can land before the handler is wired and be dropped; a flyout toggle
+// must also not be re-clicked when it's already open (that would toggle it
+// shut). Retry the whole open until `ready` — the control's presence sentinel —
+// is visible, skipping the click whenever it already is. `open` owns the click
+// (and its own per-click timeout); `settle` is the per-attempt wait for `ready`.
+async function retryOpen(
+  ready: Locator,
+  open: () => Promise<void>,
+  { timeout = 10_000, settle = 1500 }: { timeout?: number; settle?: number } = {}
+) {
   await expect(async () => {
-    await page.locator('button[aria-label="Expand controls"]').click({ timeout: 3000 });
-    await expect(undo).toBeVisible({ timeout: 1500 });
-  }).toPass({ timeout: 20_000 });
+    if (!(await ready.isVisible().catch(() => false))) await open();
+    await expect(ready).toBeVisible({ timeout: settle });
+  }).toPass({ timeout });
 }
 
-// Open the Parent Center robustly and return its modal locator. The Parent
-// Center idle-mounts on first open (ADR-0049), so a single click can land
-// before its handler is wired and be lost — retry the click+assert until the
-// modal is up, and skip the click if it's already open (some callers reuse it).
+// The action drawer is collapsed by default (drawerOpen=false), so its buttons
+// (brush menu, undo, screenshot, AI, coloring) aren't rendered until the chevron
+// is tapped. The chevron also snaps next to the palette once its width is
+// measured on mount, so it can shift on the first frame; retrying the tap rides
+// that out and any first-click hydration lag under parallel load.
+async function openDrawer(page: Page) {
+  await retryOpen(
+    page.locator('#undoButton'),
+    () => page.locator('button[aria-label="Expand controls"]').click({ timeout: 3000 }),
+    { timeout: 20_000 }
+  );
+}
+
+// Open the Parent Center robustly and return its modal locator. It idle-mounts
+// on first open (ADR-0049), so the first click can be lost before its handler is
+// wired — retryOpen rides that out and skips the click when it's already open.
 async function openParentCenter(page: Page) {
   const modal = page.locator('#parentHelpModal');
-  await expect(async () => {
-    if (!(await modal.isVisible().catch(() => false))) {
-      await page.getByRole('button', { name: 'Parent Center' }).click({ timeout: 3000 });
-    }
-    await expect(modal).toBeVisible({ timeout: 1500 });
-  }).toPass({ timeout: 10_000 });
+  await retryOpen(modal, () =>
+    page.getByRole('button', { name: 'Parent Center' }).click({ timeout: 3000 })
+  );
   return modal;
 }
 
@@ -70,32 +82,25 @@ async function submitAiKey(page: Page, value: string) {
   await save.click();
 }
 
-// Open the stroke-width flyout robustly. The button is a toggle, so we click
-// only when the menu isn't already open, and retry — this rides out the action
-// panel repositioning/re-rendering right after a reload without ever toggling a
-// just-opened menu back shut.
+// Open the stroke-width flyout robustly. Its sentinel is present whenever the
+// menu is open — the label is tool-aware (issue #286).
 async function openStrokeMenu(page: Page) {
-  // Present whenever the menu is open — the label is tool-aware (issue #286).
-  const sentinel = page.locator('button[aria-label="Size 3"], button[aria-label="Eraser size 3"]');
-  await expect(async () => {
-    if (!(await sentinel.isVisible().catch(() => false))) {
-      await page.locator('#strokeWidthButton').click({ timeout: 1000 });
-    }
-    await expect(sentinel).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 10_000 });
+  await retryOpen(
+    page.locator('button[aria-label="Size 3"], button[aria-label="Eraser size 3"]'),
+    () => page.locator('#strokeWidthButton').click({ timeout: 1000 }),
+    { settle: 1000 }
+  );
 }
 
-// Open the Brush Menu flyout robustly and leave it open — same retry shape as
-// openStrokeMenu. The eraser and magic brush live in this flyout (they used to
-// be top-level action buttons), so selecting them goes through here.
+// Open the Brush Menu flyout and leave it open. The eraser and magic brush live
+// in this flyout (they used to be top-level action buttons), so selecting them
+// goes through here.
 async function openBrushMenu(page: Page) {
-  const sentinel = page.locator('#penBrushButton');
-  await expect(async () => {
-    if (!(await sentinel.isVisible().catch(() => false))) {
-      await page.locator('#brushButton').click({ timeout: 1000 });
-    }
-    await expect(sentinel).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 10_000 });
+  await retryOpen(
+    page.locator('#penBrushButton'),
+    () => page.locator('#brushButton').click({ timeout: 1000 }),
+    { settle: 1000 }
+  );
 }
 
 // Select a brush from the Brush Menu by its entry id (e.g. '#eraserButton',
@@ -1073,13 +1078,11 @@ test('the AI button posts the drawing and reveals the generated result', async (
 // click fired right after hydration can hit the button before its handler is
 // wired, so re-click until the dialog actually opens.
 async function openColoringDialog(page: Page) {
-  const dialog = page.locator('#coloring-book-dialog');
-  await expect(async () => {
-    if (!(await dialog.isVisible().catch(() => false))) {
-      await page.locator('#coloringBookButton').click({ timeout: 1000 });
-    }
-    await expect(dialog).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 10_000 });
+  await retryOpen(
+    page.locator('#coloring-book-dialog'),
+    () => page.locator('#coloringBookButton').click({ timeout: 1000 }),
+    { settle: 1000 }
+  );
 }
 
 test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
