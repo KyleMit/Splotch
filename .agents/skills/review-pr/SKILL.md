@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: Splotch conventions that augment (not replace) the built-in review flow when reviewing a pull request — check out the PR branch locally for offline diffs and to run the code and empirically verify critiques, anchor every finding to a diff file + line as you analyze, present the full findings for approval, then on the user's go-ahead post each one as an inline review comment. Use in addition to the built-in review whenever asked to review a PR or leave review feedback on one.
+description: Splotch conventions that augment (not replace) the built-in review flow when reviewing a pull request — check out the PR branch locally for offline diffs and to run the code and empirically verify critiques, anchor every finding to a diff file + line as you analyze, present the full findings in the chat reply, then on a typed go-ahead post each one as an inline review comment (or, on request, file the findings as GitHub issues or implement them on a follow-up PR). Use in addition to the built-in review whenever asked to review a PR or leave review feedback on one.
 ---
 
 # Review a PR
@@ -35,6 +35,10 @@ diffs and actually execute the code:
 
 ## Analysis — verify empirically, anchor as you go
 
+* **Review adversarially — in both directions.** Assume the diff contains at least one real defect
+  that will ship, and hunt for it; an agreeable skim produces an empty review. Then turn the same
+  skepticism on your own findings before presenting them: try to refute each one, and drop or
+  downgrade whatever doesn't survive.
 * **Run the code when a critique depends on behavior.** A claimed bug, race, or regression should be
   reproduced, not asserted: run `npm run check`, the tests covering the touched files (see the
   `testing` skill), or the app itself (see `run-splotch`) as the claim requires. A reproduced
@@ -70,11 +74,16 @@ Every finding carries, from the moment it's drafted:
 
 Show the user the full findings before anything is posted: a numbered list with severity,
 `file:line`, and the draft comment text for each, plus the overall verdict and anything destined for
-the summary body. This is the review deliverable; end the turn here.
+the summary body. Deliver this **as the plain chat reply — never via `AskUserQuestion`** (the
+findings are the deliverable, not a multiple-choice prompt), close by offering the next steps, and
+end the turn:
 
-**Post nothing until the user gives an affirmative go-ahead** ("proceed", "do it", "post them", …).
-The user may cull or reword findings first — posting only what survives is the point of the gate. If
-the user never says go, the review stays in chat.
+* a typed affirmative — "proceed", "do it", "post them", … — posts the findings onto the PR (below);
+* "file them as issues" turns the findings into GitHub backlog issues instead (below);
+* "no, implement them" skips commenting entirely and fixes the findings on a follow-up PR (below).
+
+The user may first cull, reword, or reprioritize findings — acting only on what survives is the
+point of the gate. If the user never says go, the review stays in chat.
 
 ## Posting — one pending review, on the go-ahead
 
@@ -96,3 +105,25 @@ anchor or move it to the review body — don't silently drop it.
 Afterwards, report what was posted (comment count, severities, review event) so the author knows
 what to expect — and know that working through those comments is `review-pr-comments`' job on the
 other side.
+
+## Filing as GitHub issues instead
+
+If the user asks for backlog issues rather than PR comments, create one issue per surviving finding
+in the repo's issue format (`docs/ISSUE-WORKFLOW.md` — title, body, and `type:*`/`area:*`/
+`priority:*` labels), linking the anchored code via a permalink to the PR's head SHA and referencing
+the PR it came from. Report the created issue numbers when done.
+
+## Implementing the fixes instead
+
+If the user says to implement the findings rather than post them:
+
+1. Branch off the PR's checked-out head: `git checkout -b <head-branch>-review-fixes`.
+2. Implement each finding — smallest correct change matching the surrounding style, one commit per
+   finding (or per logical group), the same fix discipline as `review-pr-comments`.
+3. Verify composed: `npm run check` plus the tests covering everything touched
+   (`npm run
+   format:check` for Markdown-only fixes).
+4. Push and open a PR whose **base is the original PR's head branch** — not `main` — so the fixes
+   flow into the original PR for its author to review. Map each commit to its finding in the PR body
+   (escaping `#`-numbers that aren't real references), include screenshots per `pr-screenshots` if
+   the UI changed, and leave one conversation comment on the original PR pointing at the fix-up PR.
