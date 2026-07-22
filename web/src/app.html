@@ -5,7 +5,7 @@
     <!-- No user-scalable=no / maximum-scale here on purpose (ADR-0076, supersedes
          ADR-0041). The drawing page still can't be pinch-zoomed — but the lock is
          now scoped to that one route, not the whole document: only the drawing
-         route carries `data-zoom-locked` (seeded on <html> by the boot script
+         route carries `data-app-surface` (seeded on <html> by the boot script
          below, kept current by the / page), which app.css turns into
          `touch-action: none` across the page; the engine's touch preventDefault
          (drawing/engine.ts) is a second layer on the canvas itself. So a
@@ -86,12 +86,13 @@
             window.matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape'
           );
 
-          // Lock pinch/pan on the drawing route only (see app.css / ADR-0076).
-          // Seeded here so the / page is locked from first paint, with no window
-          // where the chrome is briefly zoomable before hydration; the / page's
-          // effect then keeps it correct across client-side navigation. Every
-          // other route stays unlocked (zoomable) by default.
-          el.toggleAttribute('data-zoom-locked', location.pathname === '/');
+          // Mark the drawing route as the immersive app surface (see app.css /
+          // ADR-0076): no scroll, no text selection, no zoom, no iOS callout.
+          // Seeded here so those locks apply from first paint, with no window
+          // where the page scrolls or the chrome is zoomable before hydration;
+          // the / page's effect keeps it correct across client-side navigation.
+          // Every other route stays a normal document by default.
+          el.toggleAttribute('data-app-surface', location.pathname === '/');
 
           var scaleRaw = localStorage.getItem('splotch-action-button-scale');
           var pct = scaleRaw == null ? 100 : parseInt(scaleRaw, 10);

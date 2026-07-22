@@ -40,27 +40,32 @@ The alternatives considered for *recovering zoom for parents* on the drawing pag
 
 ## Decision
 
-**Tier 1 — route-scoped lock, zoom-by-default everywhere else.** Remove `user-scalable=no` and
-`maximum-scale=1.0` from the viewport meta (`web/src/app.html`), keeping
-`width=device-width, initial-scale=1.0, viewport-fit=cover`. Then **invert the default**: rather
-than `body { touch-action: none }` globally (which the old meta reinforced and which forced every
-route — `/admin` included — to stay locked), the lock is now scoped to the **drawing route only**.
-`<html>` carries a `data-zoom-locked` flag, and `app.css` turns it into
-`:root[data-zoom-locked] body { touch-action: none }`:
+**Tier 1 — route-scoped app surface, normal documents everywhere else.** Remove `user-scalable=no`
+and `maximum-scale=1.0` from the viewport meta (`web/src/app.html`), keeping
+`width=device-width, initial-scale=1.0, viewport-fit=cover`. Then **invert the default**: the
+drawing route is an *immersive app surface* — no scroll, no text selection, no zoom, no iOS
+long-press callout — while every other route is a normal document. These locks
+(`touch-action: none`, `overflow: hidden`, `user-select: none`, `-webkit-touch-callout: none`) used
+to sit on `body` globally (set back when `/` was the only page); the old meta reinforced the zoom
+half. That forced every other route to stay locked — `/admin` couldn't even zoom — and made
+`/privacy` and `/admin` each duplicate a `position: fixed` scroll container with `user-select: text`
+to claw scrolling and selection back. They are now scoped to the drawing route: `<html>` carries a
+`data-app-surface` flag, and `app.css` applies all four locks under `:root[data-app-surface] body`.
 
 * The flag is **seeded before first paint** by the `app.html` boot script
-  (`location.pathname === '/'`) so the drawing route is locked with no window where the chrome is
-  briefly zoomable, and **kept correct across client-side navigation** by an `$effect` in
+  (`location.pathname === '/'`) so the locks apply with no window where the page scrolls or the
+  chrome is zoomable, and **kept correct across client-side navigation** by an `$effect` in
   `web/src/routes/+page.svelte` that sets it on mount and clears it on cleanup.
-* It locks the **whole drawing page**, not just the canvas — the button chrome uses
+* The zoom lock covers the **whole drawing page**, not just the canvas — the button chrome uses
   `touch-action: manipulation`, which *permits* pinch, so a page-level rule is required to stop a
   two-finger gesture on the button bar from zooming. The canvas element keeps its own
   `touch-action: none` + engine `preventDefault` (`cancelTouch` on `touchstart`/`touchmove`) as a
   second layer.
-* **Every non-canvas route** (`/privacy`, `/admin`, and any page added later) now defaults to
-  `touch-action: auto` and is freely browser-zoomable for low-vision users — no per-page opt-in
-  needed. Adding a new page gets accessibility for free; a *new* canvas-bearing page would opt into
-  the lock, matching how `/` does.
+* **Every non-canvas route** (`/privacy`, `/admin`, and any page added later) is now a normal
+  scrollable, selectable, browser-zoomable document by default — no per-page opt-in. `/privacy` and
+  `/admin` shed their `user-select: text` / `touch-action: auto` opt-outs (they keep their fixed
+  scroll panels purely as layout). Adding a new page gets accessibility for free; a *new*
+  canvas-bearing page would opt into the surface flag the way `/` does.
 
 This clears the Lighthouse deduction (92 → 100 — confirmed by a category run: the `meta-viewport`
 audit passes).
@@ -98,7 +103,7 @@ standardized in Firefox 126; below that it is a graceful no-op).
 * `\+` The lock is now honestly scoped and test-guarded — a route flag + the canvas's own layers —
   rather than relying on a meta attribute that iOS Safari has ignored for pinch since iOS 10 anyway.
   New non-canvas pages are accessible by default with no per-page opt-in.
-* `−` The drawing page's zoom protection now rests on the `data-zoom-locked` route flag +
+* `−` The drawing page's zoom protection now rests on the `data-app-surface` route flag +
   `touch-action: none` + the engine `preventDefault`; a future edit that weakens any of them (drops
   the flag, loosens the scoped `body` rule) would remove the lock. The `page.spec.ts` inversion
   tests and the multitouch E2E are the regression guards — keep them.

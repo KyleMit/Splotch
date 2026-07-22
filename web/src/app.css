@@ -26,7 +26,6 @@ body {
      height (inherited from body via height: 100%), so an over-tall body pushed them
      up off-center in the browser while the chrome-less PWA looked fine. */
   height: 100dvh;
-  overflow: hidden;
   font-family:
     'Quicksand Variable',
     'Quicksand',
@@ -36,23 +35,29 @@ body {
     Roboto,
     sans-serif;
   background: var(--app-bg);
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none; /* Prevent iOS long-press callout menu */
 }
 
-/* Zoom lock is scoped to the drawing route, not the whole app (ADR-0076). Every
-   non-canvas page (/privacy, /admin, and any page added later) defaults to
-   touch-action: auto so a low-vision user can pinch-zoom it. Only the drawing
-   route sets `data-zoom-locked` on <html> — seeded before first paint by the
-   app.html boot script and kept correct across client-side nav by the / page's
-   effect — which locks pinch/pan across its whole surface (canvas AND the button
-   chrome, since the chrome's `touch-action: manipulation` would otherwise permit
-   a pinch). The canvas element carries its own touch-action:none + engine
-   preventDefault as a second layer, but this page-level rule is what stops a
-   toddler's stray two-finger gesture from zooming the page out from under them. */
-:root[data-zoom-locked] body {
+/* The drawing route is an immersive app surface, not a document: it never
+   scrolls, selects text, zooms, or shows an iOS long-press callout. These locks
+   used to sit on `body` globally (set back when `/` was the only page), which
+   forced every other route to opt back out — /privacy and /admin each duplicated
+   a `position: fixed` scroll container with `user-select: text`. They are now
+   scoped to the drawing route, so every non-canvas page — and any page added
+   later — is a normal scrollable, selectable, zoomable document by default.
+
+   Only the drawing route sets `data-app-surface` on <html>: seeded before first
+   paint by the app.html boot script (so there's no window where the page scrolls
+   or the chrome is zoomable before hydration) and kept current across client-side
+   nav by the / page's effect. `touch-action: none` locks the WHOLE page, not just
+   the canvas — the button chrome's `touch-action: manipulation` would otherwise
+   permit a pinch; the canvas keeps its own touch-action:none + engine
+   preventDefault as a second layer (ADR-0076). */
+:root[data-app-surface] body {
   touch-action: none;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .app-container {

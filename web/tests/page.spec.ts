@@ -24,35 +24,50 @@ test('viewport meta permits browser zoom (no user-scalable=no / maximum-scale)',
   expect(content).not.toContain('maximum-scale');
 });
 
-// ADR-0076: the zoom lock is scoped to the drawing route. Only `/` carries the
-// `data-zoom-locked` flag (→ body touch-action: none); every other route defaults
-// to touch-action: auto and is freely pinch-zoomable for low-vision users.
-const bodyTouchAction = (page: Page) =>
-  page.locator('body').evaluate((el) => getComputedStyle(el).touchAction);
+// ADR-0076: the immersive app-surface locks (no zoom, scroll, text selection, or
+// iOS callout) are scoped to the drawing route. Only `/` carries the
+// `data-app-surface` flag; every other route is a normal document by default.
+const bodySurface = (page: Page) =>
+  page.locator('body').evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { touchAction: s.touchAction, overflowY: s.overflowY, userSelect: s.userSelect };
+  });
 
-test('the drawing route locks page zoom via the data-zoom-locked flag', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.locator('#drawingCanvas')).toBeVisible();
-  expect(await page.locator('html').getAttribute('data-zoom-locked')).not.toBeNull();
-  expect(await bodyTouchAction(page)).toBe('none');
-});
-
-test('non-canvas routes default to browser-zoomable (/privacy, /admin)', async ({ page }) => {
-  await page.goto('/privacy');
-  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
-  expect(await page.locator('html').getAttribute('data-zoom-locked')).toBeNull();
-  expect(await bodyTouchAction(page)).toBe('auto');
-
-  await page.goto('/admin');
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
-  expect(await bodyTouchAction(page)).toBe('auto');
-});
-
-test('client-side nav off the drawing route unlocks zoom (effect cleanup, not a reload)', async ({
+test('the drawing route is an app surface (no zoom/scroll/selection) via the flag', async ({
   page,
 }) => {
   await page.goto('/');
-  expect(await bodyTouchAction(page)).toBe('none');
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  expect(await page.locator('html').getAttribute('data-app-surface')).not.toBeNull();
+  expect(await bodySurface(page)).toEqual({
+    touchAction: 'none',
+    overflowY: 'hidden',
+    userSelect: 'none',
+  });
+});
+
+test('non-canvas routes are normal documents by default (/privacy, /admin)', async ({ page }) => {
+  await page.goto('/privacy');
+  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+  expect(await page.locator('html').getAttribute('data-app-surface')).toBeNull();
+  const privacy = await bodySurface(page);
+  // Zoomable, scrollable, and selectable — none of the app-surface locks apply.
+  expect(privacy.touchAction).toBe('auto');
+  expect(privacy.overflowY).not.toBe('hidden');
+  expect(privacy.userSelect).not.toBe('none');
+
+  await page.goto('/admin');
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+  const admin = await bodySurface(page);
+  expect(admin.touchAction).toBe('auto');
+  expect(admin.userSelect).not.toBe('none');
+});
+
+test('client-side nav off the drawing route drops the app-surface locks (effect cleanup)', async ({
+  page,
+}) => {
+  await page.goto('/');
+  expect((await bodySurface(page)).touchAction).toBe('none');
 
   // Drive a real SvelteKit client-side navigation (no full reload), so it's the
   // / page's effect cleanup — not the boot script, which only runs on load — that
@@ -70,7 +85,9 @@ test('client-side nav off the drawing route unlocks zoom (effect cleanup, not a 
     () => (window as unknown as { __spa?: boolean }).__spa === true
   );
   expect(noReload, 'expected a client-side navigation, not a full reload').toBe(true);
-  expect(await bodyTouchAction(page)).toBe('auto');
+  const after = await bodySurface(page);
+  expect(after.touchAction).toBe('auto');
+  expect(after.userSelect).not.toBe('none');
 });
 
 test('link-preview meta tags are present and match the real OG image', async ({

@@ -43,13 +43,14 @@
     applyDeviceOrientationPreference();
   });
 
-  // Own the drawing route's zoom lock (ADR-0076). Every other route defaults to
-  // zoomable; the drawing page is the override, so it sets the flag app.css keys
-  // off and clears it when the user navigates away (client-side nav to /privacy
-  // etc.). The app.html boot script seeds the same flag for first paint.
+  // Own the drawing route's app-surface locks (ADR-0076): no scroll, selection,
+  // zoom, or iOS callout. Every other route is a normal document; the drawing
+  // page is the override, so it sets the flag app.css keys off and clears it when
+  // the user navigates away (client-side nav to /privacy etc.). The app.html boot
+  // script seeds the same flag for first paint.
   $effect(() => {
-    document.documentElement.setAttribute('data-zoom-locked', '');
-    return () => document.documentElement.removeAttribute('data-zoom-locked');
+    document.documentElement.setAttribute('data-app-surface', '');
+    return () => document.documentElement.removeAttribute('data-app-surface');
   });
 
   // First-visit service worker registration waits for the Install Banner's
