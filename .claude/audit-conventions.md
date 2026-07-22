@@ -146,3 +146,64 @@ free.
 Record only durable **method** knowledge in the skill (how to audit, how to read the output, gotchas
 to avoid). Do **not** record specific findings there — those live in `docs/AUDIT.md` and go stale as
 they're fixed.
+
+## Scheduled runs (Claude Routines)
+
+Every audit skill also runs **automatically** on a schedule, via Claude Code Routines — scheduled
+triggers that each open a fresh cloud session and drive the audit end to end with no user present.
+This section is the source of truth for that automation: if a routine is added, retired, or
+rescheduled, update this table in the same change.
+
+### The schedule
+
+All times UTC; days are spread across the month so at most one audit fires per day.
+
+| Routine                         | Skill                      | Cadence              | Cron (UTC)    |
+| ------------------------------- | -------------------------- | -------------------- | ------------- |
+| Monthly dependency update audit | `/dependency-update-audit` | Monthly, 1st, 12:00  | `0 12 1 * *`  |
+| Monthly code audit              | `/code-audit`              | Monthly, 5th, 11:00  | `0 11 5 * *`  |
+| Monthly extract audit           | `/extract-audit`           | Monthly, 12th, 11:00 | `0 11 12 * *` |
+| Monthly dependency health audit | `/dependency-health-audit` | Monthly, 15th, 11:00 | `0 11 15 * *` |
+| Monthly lighthouse audit        | `lighthouse-audit`         | Monthly, 19th, 11:00 | `0 11 19 * *` |
+| Monthly workflow audit          | `/workflow-audit`          | Monthly, 26th, 11:00 | `0 11 26 * *` |
+
+**`session-audit` is deliberately not scheduled.** It's a retrospective on a live working session; a
+fresh scheduled session has no session history to reflect on. It stays invoke-at-end-of-session
+only.
+
+### The lifecycle — find, verify independently, implement
+
+Each scheduled run handles the **full lifecycle** of its findings, with **one subagent per phase**
+so the orchestrating session keeps only concise phase summaries in context:
+
+1. **Find** — a subagent runs the audit skill itself (for `docs/AUDIT.md` producers, merging
+   findings per §1).
+2. **Verify** — a *fresh* subagent runs `/vet-audits`, so validation is adversarial and independent
+   of the finder's context. Survivors become `type:audit` GitHub issues.
+3. **Implement** — a subagent runs `/fix-audits` to clear the open `type:audit` backlog on its own
+   branch (one commit per issue) and open **one PR**. Issues already covered by an open PR are
+   skipped, so back-to-back routines don't redo in-flight work.
+
+Audits that don't stage through `docs/AUDIT.md` keep the same find → verify → implement spirit with
+their own shapes: **dependency-update-audit** verifies each bump empirically (check + tests) and
+implements as one batched PR; **dependency-health-audit** refreshes `docs/DEPENDENCIES.md`, has a
+fresh subagent independently verify any new risk or replace/investigate claim before acting, then
+files issues and opens a PR with the refreshed doc; **workflow-audit** writes its dated review doc,
+has a fresh subagent independently validate each recommendation (reverting any that don't hold up),
+and opens a PR with the surviving config changes.
+
+### Unattended-run conventions
+
+These apply to every scheduled (or otherwise user-absent) audit run:
+
+* **Skip every `AskUserQuestion` gate** and apply that skill's documented defaults instead. For
+  `dependency-update-audit` (its Phase 2 gate): minor/patch bumps only; defer majors and the
+  coordinated families (list them in the report); `npm run check` + unit tests per package, with the
+  full `npm test` once at the end.
+* **One PR per run.** Per-item commits are preserved inside it. A bump or fix that fails
+  verification is left out and noted in the PR body — never left broken in the branch.
+* **Log rows ride the PR.** The `docs/AUDIT-LOG.md` rows for all phases (§2 applies to each phase's
+  skill) go into the run's PR. A run that produces no fix/upgrade PR still opens a small **log-only
+  chore PR** with just its `AUDIT-LOG.md` rows, so the committed history stays complete.
+* **Finish with a summary** — findings filed, issues fixed or deferred, and the PR URL(s) — even
+  when the run was a no-op.
