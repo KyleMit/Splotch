@@ -11,8 +11,9 @@ paths:
 * Server code is web-only: it never ships in the native bundle. The apps call the hosted endpoints
   via `apiUrl()` (`src/lib/api.ts`). Never import `src/lib/server/*` from client code.
 * `/api/*` sends `Access-Control-Allow-Origin: *` (ADR-0007). That wildcard is only safe because
-  every endpoint is gated by a credential the caller already holds and nothing under `/api` uses
-  cookies — never add a cookie-authenticated `/api` endpoint.
+  every endpoint is either gated by a credential the caller already holds or (the telemetry
+  receivers `report`/`csp-report`) rate-limited and side-effect-bounded to log lines, and nothing
+  under `/api` uses cookies — never add a cookie-authenticated `/api` endpoint.
 * Any unauthenticated oracle (login, code/key verification) must be rate-limited per IP via
   `src/lib/server/rateLimit.ts` (ADR-0014). Throttled responses use `throttled(retryAfter)` from
   `src/lib/server/http.ts` — the standard JSON `429` with `Retry-After` — and JSON bodies are parsed

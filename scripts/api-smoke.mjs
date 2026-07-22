@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Self-contained smoke test for the /api/* HTTP contract (see the `api` skill).
 // Boots a throwaway `vite dev` with test env, exercises the admin auth flow, the
-// public oracles, and generate-image's auth gate against the documented shapes,
+// public oracles, the csp-report receiver, and generate-image's auth gate against the documented shapes,
 // then tears the server down. No Gemini key or Netlify Blobs needed — every
 // generate-image case here is rejected before the model call; successful
 // generation and verify-key (which make live model calls) are out of scope.
@@ -180,6 +180,75 @@ async function run() {
     'report throttled → 429 with Retry-After',
     reportLimited !== null && Boolean(reportLimited.headers.get('retry-after')),
     reportLimited ? 'saw 429' : 'never saw a 429'
+  );
+
+  // --- csp-report: both browser payload formats, caps, and its own bucket ---
+  const cspReport = (body, contentType) =>
+    fetch(`${BASE}/api/csp-report`, {
+      method: 'POST',
+      headers: { 'Content-Type': contentType },
+      body,
+    });
+
+  const reportUriPayload = JSON.stringify({
+    'csp-report': {
+      'document-uri': `${BASE}/`,
+      'blocked-uri': 'https://evil.example/x.js',
+      'effective-directive': 'script-src',
+      disposition: 'enforce',
+    },
+  });
+  const legacyFormat = await cspReport(reportUriPayload, 'application/csp-report');
+  check(
+    'csp-report report-uri payload → 204',
+    legacyFormat.status === 204,
+    `got ${legacyFormat.status}`
+  );
+
+  const reportingApiPayload = JSON.stringify([
+    {
+      type: 'csp-violation',
+      url: `${BASE}/`,
+      body: { documentURL: `${BASE}/`, blockedURL: 'inline', effectiveDirective: 'style-src-attr' },
+    },
+  ]);
+  const modernFormat = await cspReport(reportingApiPayload, 'application/reports+json');
+  check(
+    'csp-report Reporting-API payload → 204',
+    modernFormat.status === 204,
+    `got ${modernFormat.status}`
+  );
+
+  const wrongType = await cspReport(reportUriPayload, 'text/plain');
+  check(
+    'csp-report non-report content type → 415',
+    wrongType.status === 415,
+    `got ${wrongType.status}`
+  );
+
+  const oversize = await cspReport(
+    JSON.stringify({ 'csp-report': { 'blocked-uri': 'x'.repeat(40 * 1024) } }),
+    'application/csp-report'
+  );
+  check('csp-report oversize body → 413', oversize.status === 413, `got ${oversize.status}`);
+
+  const garbage = await cspReport('not json at all', 'application/csp-report');
+  check(
+    'csp-report malformed JSON → dropped with 204',
+    garbage.status === 204,
+    `got ${garbage.status}`
+  );
+
+  // csp-report has its own per-IP bucket (10/min); the five hits above count.
+  let cspLimited = null;
+  for (let i = 0; i < 8 && !cspLimited; i++) {
+    const res = await cspReport(reportUriPayload, 'application/csp-report');
+    if (res.status === 429) cspLimited = res;
+  }
+  check(
+    'csp-report throttled → 429 with Retry-After',
+    cspLimited !== null && Boolean(cspLimited.headers.get('retry-after')),
+    cspLimited ? 'saw 429' : 'never saw a 429'
   );
 
   // --- generate-image auth gate (every case rejected before the model call) ---
