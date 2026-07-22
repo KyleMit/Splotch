@@ -59,6 +59,13 @@ demand the restructure), reorder the remaining items rather than pushing through
 
 ## Triage — validate before touching anything
 
+Triage each comment **adversarially, in both directions** — the same stance `review-pr` takes when
+authoring a review. Try to prove the comment right (assume it found a real defect, and hunt for the
+failure it describes) *and* try to refute it (assume it misread the code, and look for the evidence
+that clears it). Classification follows whichever side the evidence lands on — never the reviewer's
+confidence, seniority, or bot/human status. Agreeably fixing whatever is asked ships wrong changes;
+reflexively defending the code dismisses real defects.
+
 For each remaining comment, read the code it points at **as it exists now** and classify it:
 
 * **Valid** — the comment identifies a real defect, risk, or clear improvement, and the fix is in
@@ -78,9 +85,24 @@ For each remaining comment, read the code it points at **as it exists now** and 
   back. Never resolve a thread you weren't sure about — a wrong "resolved with rationale" reads as
   dismissing the reviewer.
 
-Validate empirically where the comment admits it: if a reviewer claims a bug, try to reproduce it (a
-failing test is the ideal proof the comment is valid — and the regression test then ships with the
-fix).
+### The verify pass — empirical, not rhetorical
+
+A classification is an *evidence-backed verdict*, not a reading. Wherever a comment makes a
+checkable claim, check it before classifying — the branch is checked out locally, so run it:
+
+* **Claimed bug or regression** → try to reproduce it: a targeted test, `npm run check`, or running
+  the app (see `run-splotch`). A failing test is the ideal proof the comment is valid — and the
+  regression test then ships with the fix. A failed reproduction attempt is the strongest basis for
+  an **invalid** verdict — cite what you ran and what it showed.
+* **Claimed better approach** → check it against reality: does it type-check, pass the existing
+  tests, and hold up against the ADRs? A suggestion that breaks under `npm run check` is refuted by
+  the output, not by argument.
+* **Unverifiable claims** (style, preference, product judgment) → these can't be settled
+  empirically; classify on the merits, and lean toward **ambiguous** (ask the user) rather than
+  forcing a verdict the evidence can't support.
+
+Every reply then cites its evidence — the repro, the command output, the test, or the ADR — so the
+reviewer sees a verdict that was checked, not asserted.
 
 ## Fixing the valid ones
 
