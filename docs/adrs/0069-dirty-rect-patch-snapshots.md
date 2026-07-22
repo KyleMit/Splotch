@@ -1,7 +1,8 @@
 # ADR-0069: Undo Snapshots Shrink to Dirty-Rect Patches of the Fold Region
 
 **Status:** Active — amends ADR-0066; the on-device perf gates it inherits from ADR-0066 remain
-pending. **Date:** 2026-07
+pending. Amended by ADR-0074 (clustered multi-rect patches, clear paper swap, rect-limited undo
+repaint). **Date:** 2026-07
 
 ## Context
 

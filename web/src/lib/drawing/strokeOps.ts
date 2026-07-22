@@ -407,6 +407,16 @@ export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
   clearCrayonBounds(buf);
 }
 
+// A 'clear' op's crayon side effects, without the pixel wipe: drop the
+// target's open pass and (for the live canvas) the paper-space accumulation.
+// Exported so undoHistory's fold can honor a clear on a paper it knows is
+// already blank — skipping clearAllOf skips materializing a fresh paper's
+// lazily-allocated backing store inside the pointerup hitch path.
+export function resetCrayonStateForClear(target: CanvasRenderingContext2D) {
+  dropCrayonBuffer(target);
+  if (target === liveTarget && livePaperBuffer) clearCrayonBounds(livePaperBuffer);
+}
+
 // Discard the target's open pass without stamping — a 'clear' wipes everything,
 // open passes included.
 function dropCrayonBuffer(target: CanvasRenderingContext2D) {
@@ -447,8 +457,7 @@ export function resetLiveCrayonForReplay(target: CanvasRenderingContext2D) {
 // flushes an open pass first so compositing order matches the op order.
 export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   if (op.kind === 'clear') {
-    dropCrayonBuffer(target);
-    if (target === liveTarget && livePaperBuffer) clearCrayonBounds(livePaperBuffer);
+    resetCrayonStateForClear(target);
     clearAllOf(target);
     return;
   }

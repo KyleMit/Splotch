@@ -71,6 +71,7 @@ import {
   ensurePaperCovers,
   finalizeDeferredCommand,
   getHistoryDebug,
+  hasUnfoldedCommands,
   popSnapshot,
   pushCommand,
   rebaseActiveCommand,
@@ -1061,12 +1062,29 @@ export function undo(): Promise<void> {
     // finally guarantees an end mark even when a step's decode fails.
     if (PERF_MARKS) performance.mark('engine.undo:start');
     try {
+      // Rect-limited repaint eligibility, decided on BOTH sides of the
+      // restore: with no unfolded commands before the pop (the popped entry's
+      // own ops are in the paper, not replayed on screen) and none after it
+      // (nothing replays on top; a stroke could open mid-decode), the visible
+      // canvas differs from the restored paper only inside the patch rect, so
+      // one blitPaperRect replaces the full clear + whole-paper blit — and,
+      // on device, shrinks the compositor damage from full-canvas to
+      // stroke-sized. A locked paper view falls back: repaintAll is what
+      // drops committed margin ink a rect blit would leave behind (ADR-0050).
+      const foldedOnly = !hasUnfoldedCommands() && isIdentityView(paperView);
       const restored = popSnapshot();
       if (!restored) return;
-      const { wasEmpty } = await restored;
+      const { wasEmpty, rects } = await restored;
       const emptyBeneathLiveStroke = rebaseDeferredCommands(wasEmpty);
       const strokeStillLive = rebaseActiveCommand(emptyBeneathLiveStroke);
-      repaintAll(ctx);
+      const rectOnly = foldedOnly && !hasUnfoldedCommands() && isIdentityView(paperView);
+      if (rectOnly && rects.length > 0) {
+        for (const r of rects) blitPaperRect(ctx, r.x, r.y, r.w, r.h);
+      } else if (!rectOnly) {
+        repaintAll(ctx);
+      }
+      // rectOnly with no rects: the popped fold never touched the paper
+      // and nothing replays on top — the screen already shows the state.
       setCanvasEmptyState(emptyBeneathLiveStroke && !strokeStillLive);
       setCanUndo(snapshotCount() > 0);
     } finally {
