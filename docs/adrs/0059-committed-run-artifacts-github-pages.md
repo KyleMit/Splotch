@@ -2,6 +2,15 @@
 
 **Status:** Active **Date:** 2026-07
 
+> **Amendment (2026-07-22):** the committed tree was renamed **`/artifacts` → `/scrapbook`** (with
+> `artifacts:publish`/`artifacts:index` → `scrapbook:publish`/`scrapbook:index`,
+> `scripts/publish-artifact.mjs` → `publish-scrapbook.mjs`, and
+> `scripts/lib/artifact{s-index,-chrome}.mjs` → `scrapbook-{index,chrome}.mjs`) because "artifact"
+> collided with two unrelated senses in daily use — the Claude Code **Artifact tool** and
+> release/build artifacts. Everything below still holds with `scrapbook` substituted for
+> `artifacts`; live Pages URLs were unaffected (the workflow deploys the folder's *contents* as the
+> site root, so the folder name never appears in URLs). The body below is kept as written.
+
 ## Context
 
 Several Splotch generators produce **reviewable run outputs** worth keeping between sessions:

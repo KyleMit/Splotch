@@ -15,7 +15,7 @@
   # still produces a valid per-commit version.
   command = "git fetch --tags --force || true; npm run build && node scripts/stage-netlify.mjs"
   # Skip the build (exit 0 = skip) when the push touched nothing the web build
-  # consumes — docs, ADRs, ruler-generated agent files, artifacts/, native trees,
+  # consumes — docs, ADRs, ruler-generated agent files, scrapbook/, native trees,
   # asset-gen internals. The watched paths are everything the build reads: the
   # app (web/), the build+prebuild scripts (scripts/), gen:releases input
   # (releases/), the toolchain (package.json + lockfile), and this config.

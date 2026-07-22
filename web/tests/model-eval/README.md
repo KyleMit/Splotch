@@ -23,22 +23,22 @@ before changing it.
   `scripts/model-eval-gen-inputs.mjs`, `scripts/lib/model-eval.mjs`,
   `scripts/lib/model-eval-report.mjs`.
 * The Gemini-authored inputs (`inputs/gen__*.png`) — not reproducible, so committed.
-* The **reference report** lives in the committed `/artifacts` tree (ADR-0059), not here, so GitHub
-  Pages serves it rendered: [`artifacts/model-eval/report/`](../../../artifacts/model-eval/report/)
+* The **reference report** lives in the committed `/scrapbook` tree (ADR-0059), not here, so GitHub
+  Pages serves it rendered: [`scrapbook/model-eval/report/`](../../../scrapbook/model-eval/report/)
   → <https://kylemit.github.io/Splotch/model-eval/report/>. It's a folder — `index.html` plus an
   `assets/` folder of thumbnail files (referenced by relative path, not base64-inlined, so diffs
   stay readable and unchanged thumbnails dedupe in git) and its `results.json` + `summary.json`.
 
 The rest is gitignored: the regenerable local `inputs/` and every `output/<runId>/` run.
 
-## Promoting a new run to `/artifacts`
+## Promoting a new run to `/scrapbook`
 
 A run writes its report bundle to a gitignored `output/<runId>/report/` (`index.html` + `assets/` +
-the JSON). To make a run the published reference, copy that whole folder into the artifacts tree
+the JSON). To make a run the published reference, copy that whole folder into the scrapbook tree
 (ADR-0059) at the stable path so the URL never changes:
 
 ```bash
-npm run artifacts:publish -- web/tests/model-eval/output/<runId>/report model-eval/report
+npm run scrapbook:publish -- web/tests/model-eval/output/<runId>/report model-eval/report
 ```
 
 then commit. The Pages deploy runs on merge to `main`.

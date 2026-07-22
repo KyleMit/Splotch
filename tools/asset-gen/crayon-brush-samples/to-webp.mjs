@@ -7,7 +7,7 @@ import sharp from 'sharp';
 
 const OUT = join(
   dirname(fileURLToPath(import.meta.url)),
-  '../../../artifacts/crayon-brush-samples'
+  '../../../scrapbook/crayon-brush-samples'
 );
 const jpgs = (await readdir(OUT)).filter((f) => /\.jpe?g$/i.test(f));
 

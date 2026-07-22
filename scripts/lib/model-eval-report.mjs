@@ -5,12 +5,12 @@
 // across re-publishes (ADR-0059). Only index.html + assets/ get published; the
 // run's raw results.json / summary.json stay in the (gitignored) run dir, not in
 // the bundle. The report chrome (masthead, breadcrumbs, footer, tokens) comes
-// from the shared design system in ./artifact-chrome.mjs.
+// from the shared design system in ./scrapbook-chrome.mjs.
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { MODELS, RATES } from './model-eval.mjs';
-import { esc, chromeStyle, masthead, siteFooter } from './artifact-chrome.mjs';
+import { esc, chromeStyle, masthead, siteFooter } from './scrapbook-chrome.mjs';
 
 const usd = (n) => (n == null ? '—' : '$' + n.toFixed(4));
 const kb = (n) => (n == null ? '—' : (n / 1024).toFixed(0) + ' KB');
@@ -237,7 +237,7 @@ function renderReportHtml({ runId, results, samples, inThumb, verdictHtml }) {
     title: 'Image-model bake-off',
     tagline,
     home: '../../index.html',
-    crumbs: [{ label: 'Artifacts', href: '../../index.html' }, { label: 'Image-model bake-off' }],
+    crumbs: [{ label: 'Scrapbook', href: '../../index.html' }, { label: 'Image-model bake-off' }],
     stats,
   })}
 <main>
@@ -346,7 +346,7 @@ export async function buildReport({
   writeFileSync(htmlPath, html);
 
   // Provenance stays in the run dir, NOT in the published bundle (ADR-0059: only
-  // index.html + assets/ are promoted to artifacts/).
+  // index.html + assets/ are promoted to scrapbook/).
   const agg = Object.fromEntries(MODELS.map((m) => [m.id, statsFor(results, m.id)]));
   writeFileSync(join(outDir, 'summary.json'), JSON.stringify({ runId, agg }, null, 2));
   return htmlPath;

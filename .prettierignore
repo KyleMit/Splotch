@@ -2,10 +2,10 @@
 **/build/
 **/.netlify/
 **/node_modules/
-# Committed run artifacts (ADR-0059) are generated/promoted output, not
+# Committed scrapbook run outputs (ADR-0059) are generated/promoted output, not
 # hand-authored source — the index.html and any published HTML/CSS/JS reports
-# must not be reformatted. artifacts/README.md is dprint-owned via *.md below.
-artifacts/
+# must not be reformatted. scrapbook/README.md is dprint-owned via *.md below.
+scrapbook/
 android/
 ios/
 package-lock.json
