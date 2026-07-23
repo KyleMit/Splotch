@@ -1,12 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
+  import BrushMenu from './BrushMenu.svelte';
+  import StrokeWidthMenu from './StrokeWidthMenu.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colors, isWhite, isDarkInk } from '$lib/state/colors.svelte';
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
-  import { STROKE_SIZES, setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte';
-  import { toolState, selectBrush, type BrushType } from '$lib/state/tool.svelte';
-  import type { CommonIconName } from './iconTypes';
+  import { setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte';
+  import { toolState, selectBrush, BRUSH_OPTIONS, type BrushType } from '$lib/state/tool.svelte';
   import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
   import { network } from '$lib/state/network.svelte';
@@ -39,17 +40,6 @@
   let openFlyout = $state<'brush' | 'stroke' | null>(null);
 
   const erasing = $derived(toolState.brush === 'eraser');
-
-  // The Brush Menu's entries, in presentation order. The eraser keeps its
-  // long-standing #eraserButton id (and the magic brush #magicBrushButton) from
-  // their days as top-level buttons — the Parent Center's data-off-eraser CSS
-  // and the E2E suite address them by id.
-  const BRUSH_OPTIONS: { brush: BrushType; icon: CommonIconName; label: string; id: string }[] = [
-    { brush: 'pen', icon: 'pen', label: 'Pen', id: 'penBrushButton' },
-    { brush: 'crayon', icon: 'crayon', label: 'Crayon', id: 'crayonBrushButton' },
-    { brush: 'magic', icon: 'magic-brush', label: 'Magic brush', id: 'magicBrushButton' },
-    { brush: 'eraser', icon: 'eraser', label: 'Eraser', id: 'eraserButton' },
-  ];
 
   // Orientation drives the landscape palette-clearing offset below, which needs
   // the measured palette width in JS. Everything else orientation-dependent here
@@ -298,26 +288,13 @@
             <Icon name={opt.icon} class="action-icon" data-brush-face={opt.brush} />
           {/each}
         </button>
-        <div
-          class="flyout-menu brush-menu"
-          class:white-stroke={inkWhite}
-          class:dark-stroke={inkDark}
-          hidden={openFlyout !== 'brush'}
-          style:color={colors.activeColor}
-        >
-          {#each BRUSH_OPTIONS as opt (opt.brush)}
-            <button
-              class="flyout-option"
-              class:active={toolState.brush === opt.brush}
-              id={opt.id}
-              aria-label={opt.label}
-              aria-pressed={toolState.brush === opt.brush}
-              use:scribbleTap={() => handleBrushTypeClick(opt.brush)}
-            >
-              <Icon name={opt.icon} class="action-icon" />
-            </button>
-          {/each}
-        </div>
+        <BrushMenu
+          open={openFlyout === 'brush'}
+          activeColor={colors.activeColor}
+          {inkWhite}
+          {inkDark}
+          onpick={handleBrushTypeClick}
+        />
       </div>
 
       <div class="flyout-wrapper stroke-width-wrapper" bind:this={strokeWrapperEl}>
@@ -333,34 +310,15 @@
         >
           <Icon name={erasing ? 'line-weight-eraser' : 'line-weight'} class="action-icon" />
         </button>
-        <div
-          class="flyout-menu stroke-width-menu"
-          class:white-stroke={whiteStroke}
-          class:dark-stroke={darkStroke}
-          class:eraser-mode={erasing}
-          hidden={openFlyout !== 'stroke'}
-          style:color={strokeMenuColor}
-        >
-          <!-- The previews change shape with the tool, not just color (a pink pen
-               would otherwise look identical to the eraser): the pen shows ink
-               strokes; the eraser shows dashed "holes in the paper" at its true
-               effective size (ERASER_SIZE_MULTIPLIER × the pen's width), filled
-               with --paper so the hole shows the canvas through the flyout. -->
-          {#each STROKE_SIZES as size (size)}
-            <button
-              class="flyout-option"
-              class:active={activeStrokeSize() === size}
-              aria-label={erasing ? `Eraser size ${size}` : `Size ${size}`}
-              aria-pressed={activeStrokeSize() === size}
-              use:scribbleTap={() => handleStrokeSizeClick(size)}
-            >
-              <Icon
-                name={`${erasing ? 'eraser-size' : 'size'}-${size}` as CommonIconName}
-                class="action-icon"
-              />
-            </button>
-          {/each}
-        </div>
+        <StrokeWidthMenu
+          open={openFlyout === 'stroke'}
+          activeSize={activeStrokeSize()}
+          {erasing}
+          menuColor={strokeMenuColor}
+          {whiteStroke}
+          {darkStroke}
+          onpick={handleStrokeSizeClick}
+        />
       </div>
 
       <button
@@ -539,11 +497,8 @@
   :global(html[data-off-stroke]) .stroke-width-wrapper {
     display: none;
   }
-  /* The eraser's Parent Center toggle now hides its Brush Menu entry (the
-     eraser lives in the flyout, not the top-level row). */
-  :global(html[data-off-eraser]) #eraserButton {
-    display: none;
-  }
+  /* The eraser's Parent Center toggle hides its Brush Menu entry — that rule
+     moved into BrushMenu.svelte with the #eraserButton element it targets. */
   :global(html[data-off-coloring]) #coloringBookButton {
     display: none;
   }
@@ -778,63 +733,14 @@
     animation: aiSpin 1s linear infinite;
   }
 
-  /* Flyouts (Brush Menu, Stroke Width): a relative trigger wrapper + an
-     absolute menu popped above it, shared by both. Visibility of the whole
+  /* Flyouts (Brush Menu, Stroke Width): a relative trigger wrapper the parent
+     owns; each menu popover (BrushMenu.svelte / StrokeWidthMenu.svelte) renders
+     as a direct child of it and positions itself absolutely against this
+     wrapper (a Svelte component adds no wrapper DOM). Visibility of the whole
      stroke-width wrapper is gated by the [data-off-stroke] rule above (the
      Parent Center toggle). */
   .flyout-wrapper {
     position: relative;
-  }
-
-  /* Landscape (the base rule; portrait overrides below). The action panel sits
-     along the bottom with little height to spare, so the flyout pops up as a
-     horizontal row — one button tall — instead of a vertical column that would
-     run off the top of a short landscape screen. There's ample width to spread
-     the options rightward. */
-  .flyout-menu {
-    position: absolute;
-    left: 0;
-    bottom: calc(100% + 8px);
-    display: flex;
-    flex-direction: row;
-    gap: 6px;
-    padding: 6px;
-    background: var(--float-surface);
-    border: none;
-    border-radius: 16px;
-    box-shadow: var(--float-shadow-flyout);
-    z-index: 901;
-  }
-
-  @media (orientation: portrait) {
-    .flyout-menu {
-      left: calc(100% + 8px);
-      bottom: 0;
-      flex-direction: row;
-    }
-  }
-
-  /* On phone-width portrait screens the horizontal flyout runs under the
-     bottom-right Parent Center button (and, when narrower, off the right edge):
-     a tap on the rightmost option closes the menu, and the trailing click falls
-     through to the parent button and opens its modal. Stack the options
-     vertically instead so the flyout runs up alongside the other action buttons
-     and clears the parent button. The row layout stays for tablet-width portrait,
-     where there's room to the right of the palette.
-
-     Breakpoint: the row's right edge is fixed (~411px with the 60px option
-     buttons — panel inset + trigger + five buttons); the parent button
-     occupies the rightmost ~56px, so they collide below ~467px of viewport
-     width. Stay in the column up to 540px for headroom (button sizes have grown
-     before) while keeping the row for tablet-width portrait (≥600px devices). */
-  @media (orientation: portrait) and (max-width: 540px) {
-    .flyout-menu {
-      flex-direction: column;
-    }
-  }
-
-  .flyout-menu[hidden] {
-    display: none;
   }
 
   /* The Brush Button wears the active brush's icon: all four faces are always
@@ -855,85 +761,15 @@
     display: inline-flex;
   }
 
-  /* Eraser mode renders the hole previews at the eraser's true pixel sizes:
-     the button padding drops and the icon viewport is pinned at 56px (the
-     unscaled 60px button minus its 2px borders), so the icons' 56-unit
-     viewBox maps 1:1 to CSS px — the level-5 hole is exactly the 44px the
-     eraser actually wipes. Pinning (not 100%) keeps that mapping when the
-     touch target shrinks or grows — the portrait 55px buttons and the Parent
-     Center's --action-btn-scale (70–130%) must never rescale the holes. The
-     SVG is transparent outside the hole, so on the smallest buttons the
-     level-5 hole pokes a couple px past the button edge — honestly. */
-  .stroke-width-menu.eraser-mode .flyout-option {
-    padding: 0;
-  }
-
-  .stroke-width-menu.eraser-mode .flyout-option :global(.action-icon) {
-    width: 56px;
-    height: 56px;
-    flex-shrink: 0;
-  }
-
-  .flyout-option {
-    width: calc(60px * var(--action-btn-scale, 1));
-    height: calc(60px * var(--action-btn-scale, 1));
-    background: var(--float-surface);
-    border: 2px solid var(--float-border);
-    border-radius: 14px;
-    cursor: pointer;
-    /* Inherit the menu's color so the line icons (currentColor) pick up the
-       active pen/eraser color — buttons don't inherit color by default. */
-    color: inherit;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: calc(7px * var(--action-btn-scale, 1));
-    /* Interaction feedback only — the width/height track --action-btn-scale and
-       must snap when the parent drags the Button Size slider (issue #317). */
-    transition:
-      background-color var(--duration-fast) ease,
-      border-color var(--duration-fast) ease,
-      box-shadow var(--duration-fast) ease,
-      transform var(--duration-fast) ease;
-    touch-action: manipulation;
-  }
-
-  @media (hover: hover) {
-    .flyout-option:hover {
-      border-color: var(--brand);
-      background: var(--brand-wash);
-    }
-  }
-
-  .flyout-option:active {
-    transform: scale(0.92);
-  }
-
-  .flyout-option.active {
-    border-color: var(--brand);
-    background: var(--brand-wash);
-    box-shadow: 0 0 0 2px rgba(171, 113, 225, 0.35);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent);
-  }
-
-  /* The selected size reads from the button's purple ring/fill; its line keeps
-     the current color (currentColor), so only tint non-color icons here. */
-  .flyout-option.active :global(.action-icon:not(.icon-color) svg) {
-    fill: var(--brand);
-  }
-
   /* White brush color is invisible on the white buttons, so ring the tinted
      shapes with a solid black edge while white is active. paint-order draws the
      stroke behind the white fill (so only an outer keyline shows), and
      non-scaling-stroke pins it to 2 screen px across the icons' very different
-     viewBoxes (line-weight 409-wide, size lines 960, pen/crayon ~272). The
-     buttons and the Brush Menu stroke only the currentColor paths, leaving each
-     icon's fixed-palette parts (colored pencils, the crayon's wrapper, the
-     magic/eraser entries) untouched; the size menu holds a single currentColor
-     path, so plain `path` suffices. */
-  .action-button.white-stroke :global(svg path[fill='currentColor']),
-  .brush-menu.white-stroke :global(svg path[fill='currentColor']),
-  .stroke-width-menu.white-stroke :global(svg path) {
+     viewBoxes (pen/crayon ~272). Only the currentColor paths are stroked,
+     leaving each icon's fixed-palette parts untouched. The matching keyline
+     rules for the menu popovers live in BrushMenu/StrokeWidthMenu. The #000 is
+     a deliberate one-off — black reads against every pen color and both papers. */
+  .action-button.white-stroke :global(svg path[fill='currentColor']) {
     stroke: #000;
     stroke-width: 2px;
     paint-order: stroke;
@@ -943,9 +779,7 @@
   /* The dark-mode mirror: ring near-black ink with a light keyline so it reads
      on the dark cards. Same paint-order trick; the keyline token is transparent
      in light mode, so this rule is inert there. */
-  .action-button.dark-stroke :global(svg path[fill='currentColor']),
-  .brush-menu.dark-stroke :global(svg path[fill='currentColor']),
-  .stroke-width-menu.dark-stroke :global(svg path) {
+  .action-button.dark-stroke :global(svg path[fill='currentColor']) {
     stroke: var(--dark-ink-keyline);
     stroke-width: 2px;
     paint-order: stroke;
