@@ -110,7 +110,10 @@ function render(tile) {
   ctx.fillRect(0, 0, w, h);
 
   if (view === 'combined' && fill) {
-    if (SOURCE === 'samples') {
+    // Punch the lined fill (samples take, or a git-mode raw-fill fallback) so its
+    // baked-in outline doesn't double the composited line art; shipped fills-only
+    // webps draw as-is (re-punching them dots a ring around every line).
+    if (SOURCE === 'samples' || tile.rawFill) {
       if (!tile.fills) tile.fills = buildFills(fill, lineArt, w, h);
       ctx.drawImage(tile.fills, 0, 0, w, h);
     } else {
@@ -164,6 +167,12 @@ function buildHalf(pair, cell, theme, imgsP) {
     note.textContent = 'no chalk (inverted pen)';
     cap.appendChild(note);
   }
+  if (theme === 'dark' ? cell.nightRaw : cell.lightRaw) {
+    const note = document.createElement('span');
+    note.className = 'note';
+    note.textContent = 'raw fill (pre-fork fallback)';
+    cap.appendChild(note);
+  }
   const pill = document.createElement('span');
   pill.className = 'pill ' + (theme === 'dark' ? 'night' : 'light');
   pill.textContent = theme === 'dark' ? 'NIGHT' : 'LIGHT';
@@ -173,7 +182,17 @@ function buildHalf(pair, cell, theme, imgsP) {
   pair.appendChild(fig);
 
   imgsP.then(([night, lineArt, light, chalk]) => {
-    const tile = { canvas, theme, vlabel: vl, imgs: { night, lineArt, light, chalk }, view: null };
+    // A raw-fill half still carries its own outline, so it must be punched in the
+    // combined view (like a fresh sample take) rather than drawn as-is.
+    const rawFill = theme === 'dark' ? !!cell.nightRaw : !!cell.lightRaw;
+    const tile = {
+      canvas,
+      theme,
+      vlabel: vl,
+      imgs: { night, lineArt, light, chalk },
+      view: null,
+      rawFill,
+    };
     tiles.push(tile);
     frame.addEventListener('click', () => {
       const cur = tile.view || gView;
@@ -189,6 +208,14 @@ function build() {
   for (const c of CELLS) {
     const pair = document.createElement('div');
     pair.className = 'pair ' + c.orient;
+    // git mode: tag each pair before/after so the old-vs-new stack reads at a glance.
+    if (c.era) {
+      pair.classList.add(c.era === 'current' ? 'after' : 'before');
+      const tag = document.createElement('div');
+      tag.className = 'era';
+      tag.textContent = c.era === 'current' ? 'AFTER · current' : 'BEFORE · ' + c.era;
+      pair.appendChild(tag);
+    }
     root.appendChild(pair);
     const imgsP = Promise.all([load(c.night), load(c.lineArt), load(c.light), load(c.chalk)]);
     buildHalf(pair, c, 'light', imgsP);
