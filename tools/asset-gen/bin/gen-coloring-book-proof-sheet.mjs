@@ -111,20 +111,24 @@ async function makeCell(p, orient, era) {
   const read = era ? (abs) => gitDataUri(era, abs) : (abs) => dataUri(abs);
   let night = read(nightPath(p.id, orient));
   let light = read(lightPath(p.id, orient));
-  let rawFill = false;
+  // Tracked per theme: the raw fill carries its own outline, so the half showing
+  // it must be punched (not drawn as-is) and labelled — mixing a raw night with a
+  // shipped light in the same cell is possible.
+  let nightRaw = false;
+  let lightRaw = false;
   if (era) {
     if (!night) {
       const r = gitDataUri(era, nightRawPath(p.id, orient));
       if (r) {
         night = r;
-        rawFill = true;
+        nightRaw = true;
       }
     }
     if (!light) {
       const r = gitDataUri(era, lightRawPath(p.id, orient));
       if (r) {
         light = r;
-        rawFill = true;
+        lightRaw = true;
       }
     }
   }
@@ -133,7 +137,8 @@ async function makeCell(p, orient, era) {
     name: p.name,
     orient,
     era: era ?? (gitRef ? 'current' : null),
-    rawFill,
+    nightRaw,
+    lightRaw,
     night,
     lineArt: read(lineArtPath(p.id, orient)),
     chalk: read(chalkPath(p.id, orient)),
@@ -185,12 +190,18 @@ const clientJs = readFileSync(join(SHEET_DIR, 'coloring-book-proof-sheet.client.
 const sourceLabel = gitRef ? `git:${gitRef} → current` : source;
 const bootData = JSON.stringify({ cells, source, gitRef });
 
+// The ref is user-supplied and lands in the HTML shell, so escape it — the cell
+// data goes in as a JSON global (already safe), but these header interpolations don't.
+const esc = (s) =>
+  String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+const sourceLabelHtml = esc(sourceLabel);
+
 const gitLede = gitRef
-  ? ` Each page shows its committed assets at <b>${gitRef}</b> (before) directly above the current
-    working-tree assets (after), so a regen reads as an old-vs-new pair.`
+  ? ` Each page shows its committed assets at <b>${esc(gitRef)}</b> (before) directly above the
+    current working-tree assets (after), so a regen reads as an old-vs-new pair.`
   : '';
 
-const html = `<title>Splotch coloring-book proof sheet — ${book.name} · ${sourceLabel}</title>
+const html = `<title>Splotch coloring-book proof sheet — ${book.name} · ${sourceLabelHtml}</title>
 <style>
 ${css}</style>
 <div class="wrap">
@@ -201,7 +212,7 @@ ${css}</style>
       <span style="background:var(--c-blue)"></span><span style="background:var(--c-purple)"></span>
       <span style="background:var(--c-pink)"></span>
     </div>
-    <h1>Coloring fills &mdash; ${book.name} <span class="accent">${sourceLabel}</span></h1>
+    <h1>Coloring fills &mdash; ${book.name} <span class="accent">${sourceLabelHtml}</span></h1>
     <p class="lede">Every page <b>light</b> and <b>night</b> side by side, each page&rsquo;s wide row
     followed by its tall row.${gitLede}
     <b>Combined</b> reproduces the real canvas &mdash; the fills-only fill under the themed
