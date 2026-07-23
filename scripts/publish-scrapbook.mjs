@@ -5,23 +5,30 @@
 //
 //   node scripts/publish-scrapbook.mjs <source> <type>/<name>   publish a file or dir
 //   node scripts/publish-scrapbook.mjs --index-only             just rebuild index.html
+//   node scripts/publish-scrapbook.mjs --check                  fail if a collection has no entry page
 //
 // Cross-platform (ADR-0017): pure node:fs, no shell.
 
-import { cpSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { ROOT, fail } from './lib/utils.mjs';
-import { buildScrapbookIndex } from './lib/scrapbook-index.mjs';
+import {
+  buildScrapbookIndex,
+  collectionsMissingEntry,
+  OWNER,
+  REPO,
+} from './lib/scrapbook-index.mjs';
 
-// Project Pages site: https://<owner>.github.io/<repo>/ — the subdomain is
-// lowercased by GitHub, the repo segment keeps its casing. Update if the repo
-// is renamed or moved.
-const PAGES_BASE = 'https://kylemit.github.io/Splotch/';
+// Project Pages site: https://<owner>.github.io/<repo>/ — GitHub lowercases the
+// subdomain, the repo segment keeps its casing. Owner/repo are sourced from
+// scrapbook-index.mjs so this base and its Markdown blob links can't drift.
+const PAGES_BASE = `https://${OWNER.toLowerCase()}.github.io/${REPO}/`;
 
 const SCRAPBOOK_DIR = join(ROOT, 'scrapbook');
+const INDEX_PATH = join(SCRAPBOOK_DIR, 'index.html');
 
 function writeIndex() {
-  writeFileSync(join(SCRAPBOOK_DIR, 'index.html'), buildScrapbookIndex(SCRAPBOOK_DIR));
+  writeFileSync(INDEX_PATH, buildScrapbookIndex(SCRAPBOOK_DIR));
 }
 
 function main() {
@@ -30,6 +37,36 @@ function main() {
   if (args[0] === '--index-only') {
     writeIndex();
     console.log(`Rebuilt scrapbook/index.html → ${PAGES_BASE}`);
+    return;
+  }
+
+  // Drift guard (CI): every collection dir must resolve to at least one linked
+  // entry page, so the index's "N collections" count always matches the cards it
+  // shows — an md-only collection that once vanished now surfaces (issue #490) —
+  // and the committed index.html must be up to date with the tree.
+  if (args[0] === '--check') {
+    const missing = collectionsMissingEntry(SCRAPBOOK_DIR);
+    if (missing.length) {
+      fail(
+        'Scrapbook collections with no reachable entry page (counted in the index but shown as no card):\n' +
+          missing.map((m) => `  - scrapbook/${m}/`).join('\n') +
+          '\nAdd an .html entry page or an .md report, or remove the empty dir. See scrapbook/README.md.'
+      );
+    }
+    // Structural freshness: a collection added/removed without re-running
+    // scrapbook:index would leave the committed page's chip/cards stale while the
+    // reachability check above still passes. Compare a fresh render against the
+    // committed one, ignoring only the mtime-derived "Updated <date>" stamps —
+    // git doesn't preserve mtimes, so those aren't checkout-stable and would
+    // false-positive in CI; the card structure (which the invariant is about) is.
+    const stripDates = (html) => html.replace(/Updated \d{4}-\d{2}-\d{2}/g, 'Updated');
+    const committed = readFileSync(INDEX_PATH, 'utf8');
+    if (stripDates(committed) !== stripDates(buildScrapbookIndex(SCRAPBOOK_DIR))) {
+      fail('scrapbook/index.html is stale — run `npm run scrapbook:index` and commit the result.');
+    }
+    console.log(
+      'scrapbook: every collection resolves to a reachable entry page; index.html is current.'
+    );
     return;
   }
 

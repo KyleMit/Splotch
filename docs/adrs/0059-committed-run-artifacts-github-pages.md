@@ -11,6 +11,16 @@
 > `artifacts`; live Pages URLs were unaffected (the workflow deploys the folder's *contents* as the
 > site root, so the folder name never appears in URLs). The body below is kept as written.
 
+> **Amendment (2026-07-22b):** the index's unknown-type fallback now surfaces **Markdown** report
+> pages as well as HTML — a collection shipping only `.md` (findings/notes, e.g. a profiling run)
+> used to vanish from the index entirely, so its dir was counted in the "N collections" chip but
+> rendered no card. HTML pages link on-site (Pages renders them); `.md` links to its **rendered
+> GitHub blob view**, because Pages serves `.md` as `text/plain` under `.nojekyll`. A new
+> `npm run scrapbook:check` guard (wired into the CI `quality` job) fails if any collection dir has
+> no reachable entry page, keeping the collection count and the rendered-card count in lockstep so
+> nothing published silently goes missing. Raw data (`.json`, …) and `assets/` stay unsurfaced, as
+> before. (Issue #490.)
+
 ## Context
 
 Several Splotch generators produce **reviewable run outputs** worth keeping between sessions:
