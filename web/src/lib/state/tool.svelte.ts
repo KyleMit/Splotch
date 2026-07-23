@@ -1,4 +1,5 @@
-import { readString, writeString } from '../storage';
+import { readString, writeString, onDurableRestore } from '../storage';
+import type { CommonIconName } from '../components/iconTypes';
 
 // The active brush, a single four-way axis picked from the Actions Panel's
 // Brush Menu:
@@ -13,6 +14,23 @@ export type BrushType = 'pen' | 'crayon' | 'magic' | 'eraser';
 
 // Presentation order in the Brush Menu.
 export const BRUSH_TYPES: BrushType[] = ['pen', 'crayon', 'magic', 'eraser'];
+
+// The Brush Menu's entries, in presentation order — the icon/label/id metadata
+// the Brush Button trigger (its stacked faces) and the Brush Menu popover both
+// render. The eraser keeps its long-standing #eraserButton id (and the magic
+// brush #magicBrushButton) from their days as top-level buttons — the Parent
+// Center's data-off-eraser CSS and the E2E suite address them by id.
+export const BRUSH_OPTIONS: {
+  brush: BrushType;
+  icon: CommonIconName;
+  label: string;
+  id: string;
+}[] = [
+  { brush: 'pen', icon: 'pen', label: 'Pen', id: 'penBrushButton' },
+  { brush: 'crayon', icon: 'crayon', label: 'Crayon', id: 'crayonBrushButton' },
+  { brush: 'magic', icon: 'magic-brush', label: 'Magic brush', id: 'magicBrushButton' },
+  { brush: 'eraser', icon: 'eraser', label: 'Eraser', id: 'eraserButton' },
+];
 
 const BRUSH_TYPE_KEY = 'splotch-brush-type';
 const DEFAULT_BRUSH: BrushType = 'pen';
@@ -81,3 +99,5 @@ export function reloadBrushType() {
   toolState.brush = readBrush(toolState.brush);
   if (isInkBrush(toolState.brush)) inkBrush = toolState.brush;
 }
+
+onDurableRestore(reloadBrushType);

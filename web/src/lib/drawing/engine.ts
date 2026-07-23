@@ -58,6 +58,7 @@ import {
 import {
   setCrayonOptions,
   getCrayonOptions,
+  crayonColorMix,
   warmCrayonTiles,
   CrayonPassTracker,
   type CrayonOptions,
@@ -72,6 +73,7 @@ import {
   finalizeDeferredCommand,
   getHistoryDebug,
   hasUnfoldedCommands,
+  pendingCommandCount,
   popSnapshot,
   pushCommand,
   rebaseActiveCommand,
@@ -144,7 +146,7 @@ let crayonOverlaysCreated = false;
 
 function syncCrayonOverlayMix() {
   if (crayonOverlayTop) {
-    crayonOverlayTop.style.opacity = String(1 - getCrayonOptions().colorMix);
+    crayonOverlayTop.style.opacity = String(1 - crayonColorMix());
   }
 }
 
@@ -622,7 +624,7 @@ function commitStrokeGroup() {
   if (!commitActiveCommand(deferBehindRestore)) return;
   if (deferBehindRestore) {
     queueDeferredCommandFold();
-  } else if (rasterRects.length > 0 && getHistoryDebug().pendingCommands === 0) {
+  } else if (rasterRects.length > 0 && pendingCommandCount() === 0) {
     // The fold just stamped this stroke's pass rasters into the paper; blit
     // those rects back so the screen shows the committed pixels exactly (see
     // activeCrayonRasterRects). Skipped when the fold is parked — behind a

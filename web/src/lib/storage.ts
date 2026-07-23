@@ -24,6 +24,17 @@ function track(key: string) {
   managedKeys.add(key);
 }
 
+// Restore-side counterpart to managedKeys: each persisted store registers its
+// reloader here at module init, so hydrateDurableStorage() can refresh every
+// live store after a native recovery without a hand-maintained call-site list
+// (issue #521). Returns a disposer, mainly so tests can unregister.
+const durableRestoreCallbacks = new Set<() => void>();
+
+export function onDurableRestore(cb: () => void) {
+  durableRestoreCallbacks.add(cb);
+  return () => durableRestoreCallbacks.delete(cb);
+}
+
 // localStorage.setItem can throw — QuotaExceededError when storage is full, or
 // SecurityError in locked-down / private-mode WebViews. These run synchronously
 // inside every settings setX handler, so an escaping throw would break the toggle
@@ -179,6 +190,12 @@ export async function hydrateDurableStorage() {
     } catch {
       // If the durable layer is unavailable we simply keep the localStorage copy.
     }
+  }
+  // localStorage is now repopulated, so every registered reloader re-reads fresh
+  // values. Only fire when something actually changed — a no-op restore leaves
+  // the live stores untouched.
+  if (restored) {
+    for (const cb of durableRestoreCallbacks) cb();
   }
   return restored;
 }

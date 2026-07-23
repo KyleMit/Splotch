@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { layout } from './layout.svelte';
 import { network } from './network.svelte';
 import {
+  setAdvancedControls,
   setAiAccessToken,
   setAiImage,
   setColoringBook,
@@ -12,9 +13,15 @@ import {
   ACTION_BUTTON_SCALE_MIN,
   ACTION_BUTTON_SCALE_MAX,
 } from './settings.svelte';
-import { visibleActionButtonCount, maxActionButtonScale } from './actionButtonLayout.svelte';
+import { selectBrush } from './tool.svelte';
+import {
+  visibleActionButtonCount,
+  maxActionButtonScale,
+  publishActionPanelState,
+} from './actionButtonLayout.svelte';
 
 function resetState() {
+  setAdvancedControls(true);
   setStrokeWidthControl(true);
   setEraser(true);
   setColoringBook(true);
@@ -123,5 +130,81 @@ describe('maxActionButtonScale', () => {
     Object.assign(layout.safeArea, { left: 30, right: 30 });
     // 60px of insets off the 335px budget: 275 / 5 = 55px → 91%.
     expect(maxActionButtonScale()).toBe(91);
+  });
+});
+
+// The publish contract mirrors the app.html seed script and BOOL_SETTINGS: an
+// attribute is present only when the value DEVIATES from the default, so the raw
+// prerendered HTML (no attributes) already renders the defaults. These tests pin
+// that polarity so a drifting key or inverted default is caught here.
+describe('publishActionPanelState', () => {
+  it('writes no deviation attributes and clears the brush at the defaults', () => {
+    selectBrush('pen');
+    const el = document.createElement('div');
+    el.setAttribute('data-brush', 'stale'); // proves the pen default clears it
+
+    publishActionPanelState(el, false, 1);
+
+    expect(el.style.getPropertyValue('--action-btn-scale')).toBe('1');
+    expect(el.hasAttribute('data-drawer-open')).toBe(false);
+    for (const attr of [
+      'data-off-adv',
+      'data-off-stroke',
+      'data-off-eraser',
+      'data-off-coloring',
+      'data-off-screenshot',
+      'data-off-undo',
+    ]) {
+      expect(el.hasAttribute(attr)).toBe(false);
+    }
+    expect(el.hasAttribute('data-brush')).toBe(false);
+  });
+
+  it('marks the drawer open and publishes the scale from the arguments', () => {
+    const el = document.createElement('div');
+    publishActionPanelState(el, true, 1.3);
+    expect(el.hasAttribute('data-drawer-open')).toBe(true);
+    expect(el.style.getPropertyValue('--action-btn-scale')).toBe('1.3');
+  });
+
+  it('stamps data-off-<control> only for controls switched off', () => {
+    setStrokeWidthControl(false);
+    setUndoButton(false);
+    const el = document.createElement('div');
+    publishActionPanelState(el, false, 1);
+    expect(el.hasAttribute('data-off-stroke')).toBe(true);
+    expect(el.hasAttribute('data-off-undo')).toBe(true);
+    expect(el.hasAttribute('data-off-coloring')).toBe(false);
+  });
+
+  it('stamps every data-off-<control> when all six controls are switched off', () => {
+    setAdvancedControls(false);
+    setStrokeWidthControl(false);
+    setEraser(false);
+    setColoringBook(false);
+    setScreenshot(false);
+    setUndoButton(false);
+    const el = document.createElement('div');
+    publishActionPanelState(el, false, 1);
+    for (const attr of [
+      'data-off-adv',
+      'data-off-stroke',
+      'data-off-eraser',
+      'data-off-coloring',
+      'data-off-screenshot',
+      'data-off-undo',
+    ]) {
+      expect(el.hasAttribute(attr)).toBe(true);
+    }
+  });
+
+  it('reflects each non-pen brush in data-brush', () => {
+    for (const brush of ['crayon', 'magic', 'eraser'] as const) {
+      selectBrush(brush);
+      const el = document.createElement('div');
+      publishActionPanelState(el, false, 1);
+      expect(el.getAttribute('data-brush')).toBe(brush);
+    }
+    selectBrush('pen');
   });
 });

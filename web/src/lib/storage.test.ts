@@ -30,6 +30,7 @@ import {
   writeInt,
   removeKey,
   hydrateDurableStorage,
+  onDurableRestore,
 } from './storage';
 
 beforeEach(() => {
@@ -186,5 +187,36 @@ describe('hydrateDurableStorage', () => {
     const restored = await hydrateDurableStorage();
     expect(restored).toBe(false); // nothing was restored *into* localStorage
     expect(prefsStore.get('local-only')).toBe('keep'); // but durable store was seeded
+  });
+});
+
+describe('onDurableRestore', () => {
+  it('invokes onDurableRestore callbacks only when a value was restored (native)', async () => {
+    ctrl.native = true;
+    const cb = vi.fn();
+    const off = onDurableRestore(cb);
+    try {
+      readString('evicted', null); // register the key as managed
+      prefsStore.set('evicted', 'recovered'); // durable-only value the WebView lost
+
+      const restored = await hydrateDurableStorage();
+      expect(restored).toBe(true);
+      expect(cb).toHaveBeenCalledTimes(1);
+    } finally {
+      off();
+    }
+  });
+
+  it('does not invoke callbacks when nothing was restored', async () => {
+    ctrl.native = true;
+    const cb = vi.fn();
+    const off = onDurableRestore(cb);
+    try {
+      const restored = await hydrateDurableStorage();
+      expect(restored).toBe(false);
+      expect(cb).not.toHaveBeenCalled();
+    } finally {
+      off();
+    }
   });
 });

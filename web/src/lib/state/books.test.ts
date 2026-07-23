@@ -10,6 +10,17 @@ import {
   thumbPath,
 } from './books';
 
+describe('page defaults', () => {
+  it('every page still ships night + chalk for both orientations', () => {
+    for (const book of BOOKS) {
+      for (const page of book.pages) {
+        expect(Object.keys(page.nightImages).sort()).toEqual(['landscape', 'portrait']);
+        expect(Object.keys(page.chalkImages).sort()).toEqual(['landscape', 'portrait']);
+      }
+    }
+  });
+});
+
 describe('thumbPath', () => {
   it('swaps the .outline variant suffix for .thumb', () => {
     expect(thumbPath('/coloring/farm/cover.outline.webp')).toBe('/coloring/farm/cover.thumb.webp');

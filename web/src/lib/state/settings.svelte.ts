@@ -6,6 +6,7 @@ import {
   readInt,
   writeInt,
   removeKey,
+  onDurableRestore,
 } from '../storage';
 import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage';
 import { applyTheme, isThemePreference, THEME_DEFAULT, type ThemePreference } from '../theme';
@@ -260,6 +261,8 @@ export function reloadSettings() {
   settings.theme = readTheme(settings.theme);
   applyTheme(settings.theme);
 }
+
+onDurableRestore(reloadSettings);
 
 // Pull the saved Gemini key out of secure storage into the live store on boot.
 // One-time migration: if an earlier build left a plaintext key in localStorage,

@@ -266,6 +266,25 @@ export function getCrayonMix(): number {
   return Math.min(0.9, Math.max(0, opts.colorMix));
 }
 
+// Non-cloning read accessors for internal hot-path callers. getCrayonPasses /
+// getCrayonOptions clone (the public/test API); paintCrayon runs up to 3× per op
+// on the drawing hot path and only needs these scalar reads, so it goes through
+// these instead of allocating a throwaway pass array every call.
+export function crayonPassCount(): number {
+  return opts.passes.length;
+}
+
+export function crayonPassWidthScale(i: number): number {
+  return opts.passes[i].widthScale;
+}
+
+// The RAW, unclamped colour mix — for reading the stored option (e.g. the live
+// overlay's top-plane opacity), NOT the glaze strength. getCrayonMix clamps to
+// [0,0.9]; this returns opts.colorMix verbatim.
+export function crayonColorMix(): number {
+  return opts.colorMix;
+}
+
 // Parse a CSS hex/rgb colour to [r,g,b]. The engine hands crayon ops a palette
 // hex (#rgb / #rrggbb) or an rgb() string; anything else falls back to mid-grey
 // so a bad colour can't throw on the hot path.

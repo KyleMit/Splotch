@@ -36,8 +36,14 @@ const BASELINE = new Map(
     // Photographic stage/polaroid whites + the #9559cd download-button hover
     // (≠ --brand-hover #9961d1; converging it is a visible change).
     'lib/components/AiImageResult.svelte': 3,
-    // #000 white-stroke keyline twin + rainbow-gradient/eraser chrome.
+    // #000 white-stroke keyline for the Brush/Stroke trigger faces.
     'lib/components/ActionsPanel.svelte': 1,
+    // #000 white-stroke keyline for the Brush Menu popover (extracted from
+    // ActionsPanel — see the twin rule there).
+    'lib/components/BrushMenu.svelte': 1,
+    // #000 white-stroke keyline for the Stroke Width popover (extracted from
+    // ActionsPanel — see the twin rule there).
+    'lib/components/StrokeWidthMenu.svelte': 1,
     // Constant dim swatch ring + var(--color) usage documented in-file.
     'lib/components/ColorPicker.svelte': 1,
     // Unthemed danger-red chrome (deliberate — reads the same on both papers).

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
   import { apiUrl } from '$lib/api';
+  import { createLatestRequest } from '$lib/latestRequest';
   import { collectDeviceInfo } from '$lib/deviceInfo';
   import { describeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
 
@@ -30,8 +31,7 @@
   let submitting = $derived(status === 'submitting');
   let deviceRows = $derived(device ? describeDeviceInfo(device) : []);
 
-  let requestId = 0;
-  let controller: AbortController | null = null;
+  const latest = createLatestRequest();
 
   function reset() {
     kind = 'bug';
@@ -62,10 +62,7 @@
     const text = message.trim();
     if (!text || submitting) return;
 
-    requestId += 1;
-    const id = requestId;
-    controller?.abort();
-    controller = new AbortController();
+    const { id, signal } = latest.begin();
     status = 'submitting';
     feedback = '';
     resultUrl = '';
@@ -81,12 +78,12 @@
           device: attachDevice ? (device ?? (await collectDeviceInfo())) : undefined,
           hp: honeypot,
         }),
-        signal: controller.signal,
+        signal,
       });
       const data: { ok?: boolean; error?: string; url?: string } = await res
         .json()
         .catch(() => ({}));
-      if (id !== requestId) return;
+      if (!latest.isCurrent(id)) return;
       if (res.ok && data.ok) {
         status = 'success';
         resultUrl = data.url ?? '';
@@ -97,11 +94,9 @@
         feedback = data.error || 'Could not send your report. Please try again.';
       }
     } catch {
-      if (id !== requestId) return;
+      if (!latest.isCurrent(id)) return;
       status = 'error';
       feedback = 'Could not reach the server. Check your connection and try again.';
-    } finally {
-      if (id === requestId) controller = null;
     }
   }
 </script>

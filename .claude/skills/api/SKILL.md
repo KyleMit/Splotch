@@ -33,10 +33,11 @@ The `error` field is user-facing (clients surface it directly). The same module'
 `400 "Expected a JSON body"`. Use both helpers in any new endpoint instead of hand-rolling the parse
 or the 429.
 
-An endpoint that is only an oracle on its *failure* path (generate-image's managed-token check,
-where valid traffic is deliberately keyed per token, not per IP) throttles just that path:
-`peekRateLimit` (read-only) runs before the credential check so a limited IP gets a blind 429, and
-`rateLimit` records the hit only when the check fails — legitimate callers never consume the budget.
+An endpoint that is only an oracle on its *failure* path (`verify-access-code` and generate-image's
+managed-token check, which share one per-IP bucket) throttles just that path: `peekRateLimit`
+(read-only) runs before the credential check so a limited IP gets a blind 429, and `rateLimit`
+records the hit only when the check fails — legitimate callers never consume the budget. (For
+generate-image's managed path, valid traffic is deliberately keyed per token, not per IP.)
 
 ---
 
@@ -89,7 +90,10 @@ rejects them with a 400). Both live in the Gemini adapter, `web/src/lib/server/a
 
 ### `POST /api/verify-access-code`
 
-Checks a "special access" invite code against the managed allowlist. Rate-limited per IP.
+Checks a "special access" invite code against the managed allowlist. Rate-limited per IP on its
+*failure* path only: a limited IP gets a blind 429 before the code is checked, and only a failed
+guess charges the shared per-IP bucket (the same one generate-image's managed-token check peeks), so
+valid families behind one NAT never spend it.
 
 ```json
 // request

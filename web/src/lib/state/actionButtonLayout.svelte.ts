@@ -10,6 +10,7 @@ import {
 } from '$lib/state/settings.svelte';
 import { network } from '$lib/state/network.svelte';
 import { layout } from '$lib/state/layout.svelte';
+import { toolState } from '$lib/state/tool.svelte';
 
 // Keep in sync with the .actions-drawer-inner gap in ActionsPanel.svelte.
 export const ACTION_BUTTON_GAP = 12;
@@ -35,6 +36,24 @@ export const PALETTE_CLEARANCE = 8;
 // screenshot, AI image, undo. The prerendered page sizes for this worst case —
 // the server can't know a stored AI token or toggle states.
 export const MAX_ACTION_BUTTON_COUNT = 6;
+
+// Worst-case fixed chrome the CSS first-paint fallback must budget for: all
+// MAX_ACTION_BUTTON_COUNT buttons (so MAX-1 gaps) plus the panel's screen
+// inset, the drawer→toggle collapse margin, and the drawer toggle. The CSS
+// --action-btn-fallback bakes the resolved totals as literals (188 landscape,
+// 208 portrait) because it owns first paint before any TS loads (ADR-0040);
+// actionButtonLayout.fallback.test.ts guards those literals against these
+// constants so a change here can't silently leave the CSS stale.
+export const WORST_CASE_CHROME =
+  (MAX_ACTION_BUTTON_COUNT - 1) * ACTION_BUTTON_GAP +
+  PANEL_INSET +
+  DRAWER_TOGGLE_MARGIN +
+  DRAWER_TOGGLE_SIZE;
+
+// Stable portrait palette-bar height the CSS portrait fallback reserves so the
+// column clears the palette on short screens (the hydrated formula subtracts
+// the measured palette height instead).
+export const PALETTE_BAR_RESERVE = 76;
 
 export function visibleActionButtonCount(): number {
   return (
@@ -82,4 +101,45 @@ export function maxActionButtonScale(): number {
     layout.orientation === 'portrait' ? ACTION_BUTTON_BASE_PORTRAIT : ACTION_BUTTON_BASE_LANDSCAPE;
   const pct = Math.floor((availablePerButton(visibleActionButtonCount()) / base) * 100);
   return Math.min(ACTION_BUTTON_SCALE_MAX, Math.max(ACTION_BUTTON_SCALE_MIN, pct));
+}
+
+// Publish the Actions Panel's persisted UI state onto <html> so CSS can drive
+// each control's visibility, the drawer's open state, and the Brush Button's
+// face without JS in the render path. The home page is prerendered (ADR-0040),
+// so its static HTML can't reflect a returning user's stored settings — the
+// buttons are always in the DOM and shown/hidden purely by CSS keyed off these
+// attributes. ActionsPanel calls this from a reactive $effect that keeps them
+// live through hydration and every change; the inline head script in app.html
+// seeds the same attributes before first paint (so a returning user's drawer
+// and control toggles render with no flash). Those two writers must stay in
+// lockstep, and the keys/defaults mirror BOOL_SETTINGS in settings.svelte.ts —
+// centralised here so that contract has a single, unit-testable home.
+//
+// Polarity: an attribute marks a DEVIATION from the default, so the raw
+// prerendered HTML (no attributes) already shows the defaults — drawer closed,
+// advanced controls + every control on, pen brush. `data-drawer-open` is
+// present when open; `data-off-*` is present when that control is switched off.
+// --action-btn-scale rides here too (a CSS var, default via the var()
+// fallback, so it's only meaningful when scaled). The reactive reads below run
+// synchronously inside the caller's $effect, so Svelte tracks them as effect
+// dependencies exactly as an inline body would.
+export function publishActionPanelState(
+  el: HTMLElement,
+  drawerExpanded: boolean,
+  buttonScale: number
+): void {
+  el.style.setProperty('--action-btn-scale', String(buttonScale));
+  el.toggleAttribute('data-drawer-open', drawerExpanded);
+  el.toggleAttribute('data-off-adv', !settings.advancedControlsEnabled);
+  el.toggleAttribute('data-off-stroke', !settings.strokeWidthControlEnabled);
+  el.toggleAttribute('data-off-eraser', !settings.eraserEnabled);
+  el.toggleAttribute('data-off-coloring', !settings.coloringBookEnabled);
+  el.toggleAttribute('data-off-screenshot', !settings.screenshotEnabled);
+  el.toggleAttribute('data-off-undo', !settings.undoButtonEnabled);
+  // The Brush Button's face is the active brush's icon. All four icons are in
+  // the DOM and CSS shows the one matching this attribute ({@html} icons can't
+  // swap during hydration — see .claude/rules/svelte.md), absent for the
+  // default pen so the raw prerendered HTML is already correct.
+  if (toolState.brush === 'pen') el.removeAttribute('data-brush');
+  else el.setAttribute('data-brush', toolState.brush);
 }
