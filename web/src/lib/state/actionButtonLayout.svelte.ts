@@ -10,6 +10,7 @@ import {
 } from '$lib/state/settings.svelte';
 import { network } from '$lib/state/network.svelte';
 import { layout } from '$lib/state/layout.svelte';
+import { toolState } from '$lib/state/tool.svelte';
 
 // Keep in sync with the .actions-drawer-inner gap in ActionsPanel.svelte.
 export const ACTION_BUTTON_GAP = 12;
@@ -82,4 +83,45 @@ export function maxActionButtonScale(): number {
     layout.orientation === 'portrait' ? ACTION_BUTTON_BASE_PORTRAIT : ACTION_BUTTON_BASE_LANDSCAPE;
   const pct = Math.floor((availablePerButton(visibleActionButtonCount()) / base) * 100);
   return Math.min(ACTION_BUTTON_SCALE_MAX, Math.max(ACTION_BUTTON_SCALE_MIN, pct));
+}
+
+// Publish the Actions Panel's persisted UI state onto <html> so CSS can drive
+// each control's visibility, the drawer's open state, and the Brush Button's
+// face without JS in the render path. The home page is prerendered (ADR-0040),
+// so its static HTML can't reflect a returning user's stored settings — the
+// buttons are always in the DOM and shown/hidden purely by CSS keyed off these
+// attributes. ActionsPanel calls this from a reactive $effect that keeps them
+// live through hydration and every change; the inline head script in app.html
+// seeds the same attributes before first paint (so a returning user's drawer
+// and control toggles render with no flash). Those two writers must stay in
+// lockstep, and the keys/defaults mirror BOOL_SETTINGS in settings.svelte.ts —
+// centralised here so that contract has a single, unit-testable home.
+//
+// Polarity: an attribute marks a DEVIATION from the default, so the raw
+// prerendered HTML (no attributes) already shows the defaults — drawer closed,
+// advanced controls + every control on, pen brush. `data-drawer-open` is
+// present when open; `data-off-*` is present when that control is switched off.
+// --action-btn-scale rides here too (a CSS var, default via the var()
+// fallback, so it's only meaningful when scaled). The reactive reads below run
+// synchronously inside the caller's $effect, so Svelte tracks them as effect
+// dependencies exactly as an inline body would.
+export function publishActionPanelState(
+  el: HTMLElement,
+  drawerExpanded: boolean,
+  buttonScale: number
+): void {
+  el.style.setProperty('--action-btn-scale', String(buttonScale));
+  el.toggleAttribute('data-drawer-open', drawerExpanded);
+  el.toggleAttribute('data-off-adv', !settings.advancedControlsEnabled);
+  el.toggleAttribute('data-off-stroke', !settings.strokeWidthControlEnabled);
+  el.toggleAttribute('data-off-eraser', !settings.eraserEnabled);
+  el.toggleAttribute('data-off-coloring', !settings.coloringBookEnabled);
+  el.toggleAttribute('data-off-screenshot', !settings.screenshotEnabled);
+  el.toggleAttribute('data-off-undo', !settings.undoButtonEnabled);
+  // The Brush Button's face is the active brush's icon. All four icons are in
+  // the DOM and CSS shows the one matching this attribute ({@html} icons can't
+  // swap during hydration — see .claude/rules/svelte.md), absent for the
+  // default pen so the raw prerendered HTML is already correct.
+  if (toolState.brush === 'pen') el.removeAttribute('data-brush');
+  else el.setAttribute('data-brush', toolState.brush);
 }

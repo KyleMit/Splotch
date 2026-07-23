@@ -22,6 +22,7 @@
     PALETTE_CLEARANCE,
     MAX_ACTION_BUTTON_COUNT,
     visibleActionButtonCount,
+    publishActionPanelState,
   } from '$lib/state/actionButtonLayout.svelte';
   import { undo } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
@@ -124,36 +125,13 @@
   const buttonScale = $derived(settings.actionButtonScale / 100);
 
   // Publish the panel's persisted UI state to <html> so CSS can drive it. The
-  // page is prerendered (ADR-0040), so its static HTML can't reflect a returning
-  // user's stored settings — the buttons are always in the DOM and shown/hidden
-  // purely by CSS keyed off these attributes. The inline head script in app.html
-  // seeds the same attributes before first paint (so a returning user's drawer and
-  // control toggles render with no flash) and this effect keeps them live through
-  // hydration and every change.
-  //
-  // Polarity: an attribute marks a DEVIATION from the default, so the raw
-  // prerendered HTML (no attributes) already shows the defaults — drawer closed,
-  // advanced controls + every control on. `data-drawer-open` is present when open
-  // (default closed); `data-off-*` is present when that control is switched off
-  // (default on). Keep the keys/defaults in app.html in sync with BOOL_SETTINGS in
-  // settings.svelte.ts. --action-btn-scale rides here too (a CSS var, default via
-  // the var() fallback, so it's only meaningful when scaled).
+  // write list, its default polarity, and the app.html/BOOL_SETTINGS contract
+  // live in publishActionPanelState (actionButtonLayout) — this effect only
+  // keeps it live through hydration and every change. The settings/brush reads
+  // happen synchronously inside the call, so Svelte still tracks them as this
+  // effect's dependencies.
   $effect(() => {
-    const el = document.documentElement;
-    el.style.setProperty('--action-btn-scale', String(buttonScale));
-    el.toggleAttribute('data-drawer-open', drawerExpanded);
-    el.toggleAttribute('data-off-adv', !settings.advancedControlsEnabled);
-    el.toggleAttribute('data-off-stroke', !settings.strokeWidthControlEnabled);
-    el.toggleAttribute('data-off-eraser', !settings.eraserEnabled);
-    el.toggleAttribute('data-off-coloring', !settings.coloringBookEnabled);
-    el.toggleAttribute('data-off-screenshot', !settings.screenshotEnabled);
-    el.toggleAttribute('data-off-undo', !settings.undoButtonEnabled);
-    // The Brush Button's face is the active brush's icon. All four icons are in
-    // the DOM and CSS shows the one matching this attribute ({@html} icons
-    // can't swap during hydration — see .claude/rules/svelte.md), absent for
-    // the default pen so the raw prerendered HTML is already correct.
-    if (toolState.brush === 'pen') el.removeAttribute('data-brush');
-    else el.setAttribute('data-brush', toolState.brush);
+    publishActionPanelState(document.documentElement, drawerExpanded, buttonScale);
   });
 
   // The stroke-size lines preview the ink you'll lay down, tinted via
