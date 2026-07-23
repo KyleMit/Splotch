@@ -9,10 +9,15 @@
 //   @media (prefers-color-scheme: dark)
 //     :root:not([data-theme='light'])             — system says dark, no opt-out
 //
-// This module only owns the runtime side: restamping the attribute when the
-// setting changes, and keeping <meta name="theme-color"> (the browser/PWA
-// chrome color) in step with the *resolved* theme, including live OS switches
-// while in system mode.
+// This module is the pure-helper side: restamping the attribute when the
+// setting changes (applyTheme), resolving a preference to a concrete
+// 'light'|'dark' given the current OS preference (resolveTheme), and writing an
+// already-resolved theme onto <meta name="theme-color"> (updateThemeColorMeta).
+// It deliberately owns NO media-query subscription: the single reactive source
+// for the OS preference lives in lib/state/appearance.svelte.ts, which drives
+// both resolvedTheme() and the theme-color meta from one subscription. Keeping
+// matchMedia out of here also keeps module layering acyclic — appearance
+// imports these helpers, so they must not reach back for appearance's state.
 
 import { themes } from './design/tokens';
 
@@ -34,42 +39,23 @@ export function isThemePreference(value: unknown): value is ThemePreference {
   return value === 'light' || value === 'dark' || value === 'system';
 }
 
-let appliedPreference: ThemePreference | null = null;
-let systemWatcherStarted = false;
-
-function systemPrefersDark(): boolean {
-  return typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches;
-}
-
-export function resolveTheme(preference: ThemePreference): 'light' | 'dark' {
-  if (preference === 'system') return systemPrefersDark() ? 'dark' : 'light';
+export function resolveTheme(preference: ThemePreference, systemDark: boolean): 'light' | 'dark' {
+  if (preference === 'system') return systemDark ? 'dark' : 'light';
   return preference;
 }
 
-function updateThemeColorMeta(preference: ThemePreference) {
+// Pure setter: write an already-resolved theme onto the theme-color meta (the
+// browser/PWA chrome color). Callers resolve the theme; this only paints it, so
+// the single reactive source in appearance.svelte.ts can drive it.
+export function updateThemeColorMeta(resolved: 'light' | 'dark') {
+  if (typeof document === 'undefined') return;
   const meta = document.querySelector('meta[name="theme-color"]');
-  meta?.setAttribute(
-    'content',
-    resolveTheme(preference) === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT
-  );
-}
-
-// In system mode the CSS media query recolors the app by itself, but the
-// theme-color meta is plain markup — follow OS switches by hand.
-function ensureSystemWatcher() {
-  if (systemWatcherStarted || typeof matchMedia === 'undefined') return;
-  systemWatcherStarted = true;
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if (appliedPreference === 'system') updateThemeColorMeta('system');
-  });
+  meta?.setAttribute('content', resolved === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
 }
 
 export function applyTheme(preference: ThemePreference) {
   if (typeof document === 'undefined') return;
-  appliedPreference = preference;
   const el = document.documentElement;
   if (preference === 'system') el.removeAttribute('data-theme');
   else el.setAttribute('data-theme', preference);
-  updateThemeColorMeta(preference);
-  ensureSystemWatcher();
 }

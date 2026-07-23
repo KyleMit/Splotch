@@ -109,7 +109,9 @@
   onMount(() => {
     captureAiAccessTokenFromUrl();
     // The app.html head script already stamped data-theme before first paint;
-    // this pass syncs the theme-color meta and arms the OS dark-mode watcher.
+    // this re-stamps it as a fallback if that inline script was blocked. The
+    // theme-color meta and OS-switch tracking now fall out of the single
+    // reactive source in lib/state/appearance.svelte.ts.
     applyTheme(settings.theme);
     // Load the BYOK Gemini key from secure storage into the live store (async,
     // transparent — the AI button is only used long after boot completes).
