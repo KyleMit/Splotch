@@ -9,9 +9,9 @@
 //                                                 upstream release tag (network)
 //   node scripts/gha-versions.mjs --json          machine-readable inventory
 //
-// Two findings need no network and are always reported:
-//   * inconsistent pins — the same action pinned at >1 version across workflows
-//     (e.g. actions/checkout at @v7 in most files but @v4 in one).
+// Two things need no network and are always reported: the full pin inventory,
+// and inconsistent pins — the same action pinned at >1 version across workflows
+// (e.g. actions/checkout at @v7 in most files but @v4 in one).
 // With --check-latest it additionally flags any pin whose major trails the
 // latest published release. The GitHub API is hit best-effort per action; a
 // lookup that fails (rate limit, no releases, offline) degrades to "unknown"
@@ -24,10 +24,11 @@ import { ROOT } from './lib/utils.mjs';
 
 const WORKFLOWS_DIR = join(ROOT, '.github', 'workflows');
 
-// Pull the `owner/repo[/subpath]@ref` out of one `uses:` value. Returns null for
-// local (`./...`) and docker (`docker://...`) actions, which have no upstream
-// release to track. An inline `# v1.2.3` comment (how SHA pins record their tag)
-// is captured as `hint`.
+// Pull the `owner/repo[/subpath]@ref` out of one `uses:` value. The `owner/repo@ref`
+// shape the regex requires already excludes `docker://…` (no `@`) and un-versioned
+// local `./…` actions; the explicit `./` guard drops a versioned local action too.
+// An inline `# v1.2.3` comment (how SHA pins record their tag) is captured as `hint`
+// and used as the effective version for the `--check-latest` major comparison.
 export function parseUses(value) {
   const cleaned = value
     .trim()
@@ -36,7 +37,7 @@ export function parseUses(value) {
   const match = cleaned.match(/^([\w.-]+\/[\w./-]+)@(\S+)(?:\s+#\s*(.+?))?\s*$/);
   if (!match) return null;
   const [, slug, ref, hint] = match;
-  if (slug.startsWith('./') || slug.startsWith('docker:')) return null;
+  if (slug.startsWith('./')) return null;
   const [owner, repo] = slug.split('/');
   return { action: `${owner}/${repo}`, slug, ref, hint: hint?.trim() };
 }
@@ -65,7 +66,9 @@ function listWorkflowFiles() {
     .sort();
 }
 
-// action -> { refs: Map<ref, [{file, line}]> }
+// action -> { refs: Map<ref, { hint, uses: [{file, line}] }> }
+// `hint` is a SHA pin's `# vX` version comment, kept per ref so a commit-pinned
+// action can still be compared by version under --check-latest.
 export function buildInventory(files) {
   const inventory = new Map();
   for (const file of files) {
@@ -73,8 +76,8 @@ export function buildInventory(files) {
     for (const pin of pins) {
       if (!inventory.has(pin.action)) inventory.set(pin.action, { refs: new Map() });
       const refs = inventory.get(pin.action).refs;
-      if (!refs.has(pin.ref)) refs.set(pin.ref, []);
-      refs.get(pin.ref).push({ file, line: pin.line });
+      if (!refs.has(pin.ref)) refs.set(pin.ref, { hint: pin.hint, uses: [] });
+      refs.get(pin.ref).uses.push({ file, line: pin.line });
     }
   }
   return inventory;
@@ -94,7 +97,11 @@ async function fetchLatestTag(action) {
 }
 
 function refSummary(refs) {
-  return [...refs.entries()].map(([ref, uses]) => `${ref} (${uses.length}×)`).join(', ');
+  return [...refs.entries()]
+    .map(([ref, { hint, uses }]) =>
+      hint ? `${ref} (# ${hint}) (${uses.length}×)` : `${ref} (${uses.length}×)`
+    )
+    .join(', ');
 }
 
 async function main() {
@@ -122,7 +129,11 @@ async function main() {
   if (asJson) {
     const out = actions.map((action) => ({
       action,
-      refs: [...inventory.get(action).refs.entries()].map(([ref, uses]) => ({ ref, uses })),
+      refs: [...inventory.get(action).refs.entries()].map(([ref, { hint, uses }]) => ({
+        ref,
+        hint: hint ?? null,
+        uses,
+      })),
       latest: checkLatest ? (latest.get(action) ?? null) : undefined,
     }));
     console.log(JSON.stringify(out, null, 2));
@@ -142,10 +153,12 @@ async function main() {
         line += '   latest: unknown';
       } else {
         const latestMajor = majorOf(tag);
-        const behind = [...refs.keys()].filter((r) => {
-          const m = majorOf(r);
-          return m !== null && latestMajor !== null && m < latestMajor;
-        });
+        const behind = [...refs.entries()]
+          .filter(([r, { hint }]) => {
+            const m = majorOf(hint ?? r);
+            return m !== null && latestMajor !== null && m < latestMajor;
+          })
+          .map(([r]) => r);
         line += behind.length
           ? `   ⚠ behind latest ${tag} (${behind.join(', ')})`
           : `   latest ${tag} ✓`;
@@ -158,7 +171,7 @@ async function main() {
     console.log(`\n⚠ ${inconsistent.length} action(s) pinned at multiple versions:`);
     for (const action of inconsistent) {
       const { refs } = inventory.get(action);
-      for (const [ref, uses] of refs.entries()) {
+      for (const [ref, { uses }] of refs.entries()) {
         console.log(
           `    ${action}@${ref}  —  ${uses.map((u) => `${u.file}:${u.line}`).join(', ')}`
         );
