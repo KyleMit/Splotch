@@ -253,7 +253,6 @@
     "@eslint/js": "^10.0.1",
     "@intellectronica/ruler": "0.3.44",
     "@playwright/test": "^1.61.1",
-    "capacitor-set-version": "^2.2.0",
     "dprint": "^0.55.1",
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
