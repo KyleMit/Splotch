@@ -10,7 +10,7 @@
 // canvas to the recorded device, replays the captured pointer stream + UI actions
 // at their recorded timing (so frame pacing matches real drawing — unlike the
 // synchronous synthetic driver), captures a CDP trace + engine marks, and reports
-// how YOUR input landed on the snapshot stack (depth, live rasters, blob bytes).
+// how YOUR input landed on the snapshot stack (depth, hot rasters, blob bytes).
 
 import { chromium } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';

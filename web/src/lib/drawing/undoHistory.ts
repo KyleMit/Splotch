@@ -15,15 +15,15 @@
 // complexity and frees every brush from replay-determinism constraints
 // (ADR-0065's crayon was the forcing case).
 //
-// Memory is tiered on top of that: the K_LIVE most recent snapshots stay live
-// rasters (patch-sized — a stroke's bounding rect, worst case the full ~30 MB
-// paper at 2× DPR on a 13″ iPad for a canvas-spanning scribble or a clear);
-// older entries are encoded to a lossless blob off the commit path and decoded
-// again only on deep undo. The tier re-balances in both directions: undo (or a
-// commit on an undo-shallowed stack) can raise an encoded entry into the
-// K_LIVE window, and it re-inflates back to a live raster off the hot path
-// (reinflateHotSnapshots), so the window holds after undo-then-draw, not only
-// while the stack grows.
+// Memory is tiered on top of that: the MAX_HOT_RASTERS most recent snapshots
+// stay hot rasters (patch-sized — a stroke's bounding rect, worst case the
+// full ~30 MB paper at 2× DPR on a 13″ iPad for a canvas-spanning scribble or
+// a clear); older entries are encoded to a lossless blob off the commit path
+// and decoded again only on deep undo. The tier re-balances in both
+// directions: undo (or a commit on an undo-shallowed stack) can raise an
+// encoded entry into the hot window, and it re-inflates back to a hot raster
+// off the interaction path (reinflateHotSnapshots), so the window holds after
+// undo-then-draw, not only while the stack grows.
 //
 // Commands are retained as ops (`pendingCommands`) only while the magic sheet
 // is unready — folding a magic op then would bake its intentionally-blank
@@ -50,15 +50,15 @@ import { PERF_MARKS } from './perf';
 
 // The snapshot stack depth — how many strokes a child can take back. Depth 20
 // keeps a child from hitting the wall mid-correction (raised from 10 after
-// user feedback). Beyond K_LIVE live rasters the per-entry cost is an encoded
-// blob (single-digit MB even for crayon-heavy paper), so depth is bounded by
-// blob bytes, not raster count. Exported as the depth-cap test seam.
-export const MAX_UNDO_STACK_SIZE = 20;
+// user feedback). Beyond MAX_HOT_RASTERS hot rasters the per-entry cost is an
+// encoded blob (single-digit MB even for crayon-heavy paper), so depth is
+// bounded by blob bytes, not raster count. Exported as the depth-cap test seam.
+export const MAX_UNDO_DEPTH = 20;
 
-// How many of the most recent snapshots stay live rasters for instant undo;
+// How many of the most recent snapshots stay hot rasters for instant undo;
 // everything deeper demotes to an encoded blob (encodeColdSnapshots), and a
 // blob rising back into the window re-inflates (reinflateHotSnapshots).
-const K_LIVE = 2;
+const MAX_HOT_RASTERS = 2;
 
 let paperCanvas: HTMLCanvasElement | null = null;
 let paperCtx: CanvasRenderingContext2D | null = null;
@@ -81,7 +81,7 @@ export interface PatchRect {
 }
 
 // One captured region of an entry's fold: its paper rect plus the pixels that
-// were there before the fold, as a live raster or (demoted) an encoded blob.
+// were there before the fold, as a hot raster or (demoted) an encoded blob.
 interface SnapshotPatch {
   rect: PatchRect;
   canvas: HTMLCanvasElement | null;
@@ -542,7 +542,7 @@ export function pushCommand(cmd: StrokeGroupCommand) {
       patches,
       pending: [...pendingCommands],
     });
-    while (snapshotStack.length > MAX_UNDO_STACK_SIZE) snapshotStack.shift();
+    while (snapshotStack.length > MAX_UNDO_DEPTH) snapshotStack.shift();
   }
   if (PERF_MARKS) performance.measure('engine.snapshot', 'engine.snapshot:start');
   pendingCommands.push(cmd);
@@ -574,9 +574,9 @@ function foldPendingIntoPaper(count: number) {
   }
 }
 
-function isInLiveWindow(snap: Snapshot): boolean {
+function isInHotWindow(snap: Snapshot): boolean {
   const i = snapshotStack.indexOf(snap);
-  return i >= 0 && i >= snapshotStack.length - K_LIVE;
+  return i >= 0 && i >= snapshotStack.length - MAX_HOT_RASTERS;
 }
 
 // Demotion may only trust a blob that is plausibly the lossless encoding it
@@ -584,7 +584,7 @@ function isInLiveWindow(snap: Snapshot): boolean {
 // losslessly) or the spec-mandated toBlob fallback PNG (lossless everywhere;
 // Safari has no canvas WebP encoder and always takes it). Anything else —
 // null, empty, or an unexpected type from a nonconforming engine — fails
-// here, and the entry keeps its live raster instead: more memory, but undo
+// here, and the entry keeps its hot raster instead: more memory, but undo
 // stays byte-exact. Exported as the unit-test seam for the validation rule.
 export function isValidColdSnapshotBlob(blob: Blob | null): blob is Blob {
   return (
@@ -592,16 +592,16 @@ export function isValidColdSnapshotBlob(blob: Blob | null): blob is Blob {
   );
 }
 
-// Demote snapshots below the K_LIVE window to encoded blobs, freeing their
+// Demote snapshots below the hot window to encoded blobs, freeing their
 // patch rasters (stroke-sized; worst case the full ~30 MB paper for a clear or
 // a canvas-spanning scribble). WebP first (Chromium encodes quality-1 WebP losslessly at a
 // fraction of PNG's size); engines that can't encode WebP hand back a PNG blob
 // (per spec toBlob falls back to image/png), which is lossless everywhere.
 // The returned blob is validated before the raster is dropped — see
-// isValidColdSnapshotBlob. An entry that rose into the live window while its
+// isValidColdSnapshotBlob. An entry that rose into the hot window while its
 // encode was in flight keeps the raster it never lost.
 function encodeColdSnapshots() {
-  for (let i = 0; i < snapshotStack.length - K_LIVE; i++) {
+  for (let i = 0; i < snapshotStack.length - MAX_HOT_RASTERS; i++) {
     const snap = snapshotStack[i];
     for (const patch of snap.patches) {
       if (!patch.canvas || patch.blob || patch.encoding) continue;
@@ -611,7 +611,7 @@ function encodeColdSnapshots() {
         (blob) => {
           patch.encoding = false;
           if (!isValidColdSnapshotBlob(blob)) return; // bad encode — keep the raster
-          if (patch.canvas === source && isInLiveWindow(snap)) return;
+          if (patch.canvas === source && isInHotWindow(snap)) return;
           patch.blob = blob;
           if (patch.canvas === source) patch.canvas = null;
         },
@@ -622,16 +622,16 @@ function encodeColdSnapshots() {
   }
 }
 
-// Re-inflate encoded entries that rise into the K_LIVE window — undo popping
-// the stack, or a commit landing on an undo-shallowed one — so the "K_LIVE
-// most recent snapshots are live rasters" invariant survives undo-then-draw
-// instead of only holding while the stack grows. Fire-and-forget off the hot
-// path, like the encode tier; it never touches the paper, so it cannot race
-// the undo/paper chain — a re-inflating entry popped for undo mid-decode
-// fails the isInLiveWindow re-check and popSnapshot's own decode stays the
-// single restore path.
+// Re-inflate encoded entries that rise into the hot window — undo popping the
+// stack, or a commit landing on an undo-shallowed one — so the
+// "MAX_HOT_RASTERS most recent snapshots are hot rasters" invariant survives
+// undo-then-draw instead of only holding while the stack grows. Fire-and-forget
+// off the interaction path, like the encode tier; it never touches the paper,
+// so it cannot race the undo/paper chain — a re-inflating entry popped for undo
+// mid-decode fails the isInHotWindow re-check and popSnapshot's own decode
+// stays the single restore path.
 function reinflateHotSnapshots() {
-  for (let i = Math.max(0, snapshotStack.length - K_LIVE); i < snapshotStack.length; i++) {
+  for (let i = Math.max(0, snapshotStack.length - MAX_HOT_RASTERS); i < snapshotStack.length; i++) {
     const snap = snapshotStack[i];
     for (const patch of snap.patches) {
       if (patch.canvas || !patch.blob || patch.decoding) continue;
@@ -640,7 +640,7 @@ function reinflateHotSnapshots() {
       createImageBitmap(source).then(
         (bitmap) => {
           patch.decoding = false;
-          if (patch.canvas || patch.blob !== source || !isInLiveWindow(snap)) {
+          if (patch.canvas || patch.blob !== source || !isInHotWindow(snap)) {
             bitmap.close();
             return;
           }
@@ -795,11 +795,12 @@ export function repaintAll(target: CanvasRenderingContext2D) {
 }
 
 // Test/profiling seam: how the undo history is currently stored. `liveRasters`
-// counts ENTRIES still holding any patch canvas (≤ K_LIVE + entries whose
-// encode hasn't landed — entry-level on purpose: the settle gates in
+// counts ENTRIES still holding any patch canvas (≤ MAX_HOT_RASTERS + entries
+// whose encode hasn't landed — entry-level on purpose: the settle gates in
 // engine.spec.ts and scripts/perf/undo-scenarios.mjs compare it against
-// K_LIVE, and a multi-patch entry would overshoot a patch-level count) and
-// `rasterBytes` is the live patches' actual pixel cost (w × h × 4 —
+// MAX_HOT_RASTERS, and a multi-patch entry would overshoot a patch-level
+// count) and
+// `rasterBytes` is the hot patches' actual pixel cost (w × h × 4 —
 // patch-sized since ADR-0069, per-cluster since ADR-0074); `blobBytes` is the
 // encoded tier's total size — together the history memory the perf harness
 // reports; `pendingCommands` counts commands the unready magic sheet is

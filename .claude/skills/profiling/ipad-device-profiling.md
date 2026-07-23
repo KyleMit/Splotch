@@ -228,8 +228,8 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
 ## Reading the results
 
 * **`undo p95 ms` < 50** → the ADR-0066 undo gate (the driver computes p95 per scenario and prints
-  the gate line verbatim). Shallow undos (the K_LIVE = 2 live rasters) should be a near-free blit;
-  deep undos add a lossless blob decode — both are one-off costs at button-press.
+  the gate line verbatim). Shallow undos (the MAX_HOT_RASTERS = 2 hot rasters) should be a near-free
+  blit; deep undos add a lossless blob decode — both are one-off costs at button-press.
 * **`commit max ms` ≈ one 120 Hz frame ≈ 8.3 ms** → the ADR-0066 commit-hitch gate. The commit runs
   once at finger-lift, off the draw frame, but a commit slower than one frame can still drop a frame
   the instant the stroke ends; attribute a hot one via its inner columns — `snap copy max ms`
@@ -237,7 +237,7 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
   Cross-check the Timeline for a long frame at that moment. This is the cost the desktop harness can
   only estimate — SwiftShader exaggerates it wildly.
 * **`history MB`** → real raster memory for that scenario
-  (`(live rasters + the paper) × max(w,h)² × 4 bytes + blob bytes`). On a 12.9″ iPad Pro the square
+  (`(hot rasters + the paper) × max(w,h)² × 4 bytes + blob bytes`). On a 12.9″ iPad Pro the square
   raster is ~28 MB, so the resident tier is ~85 MB plus single-digit-MB blobs per deep entry —
   verify against the ≲150 MB gate with the Xcode memory gauge (no jetsam).
 

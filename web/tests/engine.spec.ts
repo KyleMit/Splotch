@@ -111,7 +111,7 @@ test('the undo stack caps at 20 — you cannot undo all the way past the cap', a
   const box = await page.locator('#engineCanvas').boundingBox();
 
   // 22 distinct strokes → 22 snapshots pushed, but only the last 20 are
-  // retained (MAX_UNDO_STACK_SIZE); the older two drop off the stack while
+  // retained (MAX_UNDO_DEPTH); the older two drop off the stack while
   // their ink stays on the paper.
   for (let i = 0; i < 22; i++) {
     const y = 14 + i * 12;
@@ -1734,7 +1734,7 @@ test('depth caps at 20 and deep entries restore from encoded blobs', async ({ pa
   });
 
   // The cold tier encodes off the commit path — wait for it to settle: only
-  // K_LIVE (2) recent snapshots stay live rasters, the rest demote to blobs.
+  // MAX_HOT_RASTERS (2) recent snapshots stay hot rasters, the rest demote to blobs.
   await expect(async () => {
     const d = await page.evaluate(() => window.__engine.getUndoDebug());
     expect(d.snapshots).toBe(20);
@@ -1915,13 +1915,11 @@ test('drawing immediately after rapid undos folds onto the restored paper (undo 
   expect(s.canUndo).toBe(false);
 });
 
-test('encoded snapshots rising into the K_LIVE window re-inflate to live rasters', async ({
-  page,
-}) => {
-  // The K_LIVE invariant must survive undo-then-draw, not just monotonic
+test('encoded snapshots rising into the hot window re-inflate to hot rasters', async ({ page }) => {
+  // The hot-window invariant must survive undo-then-draw, not just monotonic
   // growth: after deep undos the entries that rise into the top-2 window
-  // decode back to live rasters off the hot path, so the *second* undo tap
-  // after a new stroke is a live blit, not a blob decode.
+  // decode back to hot rasters off the interaction path, so the *second* undo
+  // tap after a new stroke is a synchronous blit, not a blob decode.
   await page.evaluate(() => {
     for (let i = 0; i < 5; i++) {
       const y = 20 + i * 20;
