@@ -134,6 +134,29 @@ h1 {
   gap: clamp(14px, 2.4vw, 28px);
   margin: clamp(22px, 3.5vw, 36px) 0;
 }
+/* git mode: the before/after era tag spans the pair, and a before pair hugs the
+   after pair beneath it so each page's old-vs-new reads as one group. */
+.era {
+  grid-column: 1 / -1;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: -6px;
+}
+.pair.before {
+  margin-bottom: 4px;
+}
+.pair.before .era {
+  color: var(--accent);
+}
+.pair.after {
+  margin-top: 0;
+  margin-bottom: clamp(30px, 4.5vw, 48px);
+}
+.pair.after .era {
+  color: var(--gold);
+}
 figure.half {
   margin: 0;
   min-width: 0;

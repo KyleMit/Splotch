@@ -164,6 +164,12 @@ function buildHalf(pair, cell, theme, imgsP) {
     note.textContent = 'no chalk (inverted pen)';
     cap.appendChild(note);
   }
+  if (cell.rawFill) {
+    const note = document.createElement('span');
+    note.className = 'note';
+    note.textContent = 'raw fill (pre-fork fallback)';
+    cap.appendChild(note);
+  }
   const pill = document.createElement('span');
   pill.className = 'pill ' + (theme === 'dark' ? 'night' : 'light');
   pill.textContent = theme === 'dark' ? 'NIGHT' : 'LIGHT';
@@ -189,6 +195,14 @@ function build() {
   for (const c of CELLS) {
     const pair = document.createElement('div');
     pair.className = 'pair ' + c.orient;
+    // git mode: tag each pair before/after so the old-vs-new stack reads at a glance.
+    if (c.era) {
+      pair.classList.add(c.era === 'current' ? 'after' : 'before');
+      const tag = document.createElement('div');
+      tag.className = 'era';
+      tag.textContent = c.era === 'current' ? 'AFTER · current' : 'BEFORE · ' + c.era;
+      pair.appendChild(tag);
+    }
     root.appendChild(pair);
     const imgsP = Promise.all([load(c.night), load(c.lineArt), load(c.light), load(c.chalk)]);
     buildHalf(pair, c, 'light', imgsP);
