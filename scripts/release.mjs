@@ -6,8 +6,9 @@
 //   node scripts/release.mjs 1.2.0 --no-publish bump, generate, commit, tag locally — no push, no gh
 //   node scripts/release.mjs 1.2.0 --dry-run    bump + generate files only, no git at all
 //
-// Native version numbers are set with capacitor-set-version so Android and iOS
-// stay in sync; package.json is the canonical semver source.
+// Native version numbers are set directly in the Android/iOS project files by
+// scripts/lib/native-version.mjs so the two stay in sync; package.json is the
+// canonical semver source.
 //
 // Bump major/minor here for a real release. The package.json *patch* digit is
 // web-irrelevant: the web build derives its patch from the commit count since
@@ -19,6 +20,7 @@ import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'no
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ROOT, fail, run, capture, parseFrontmatter } from './lib/utils.mjs';
+import { setAndroidVersion, setIosVersion } from './lib/native-version.mjs';
 
 const args = process.argv.slice(2);
 const version = args.find((a) => !a.startsWith('-'));
@@ -64,9 +66,11 @@ console.log(`\nReleasing v${version} (versionCode ${versionCode})\n`);
 // --- 2. bump versions ----------------------------------------------------
 
 // Native (Android always; iOS once the project has been added).
-run('npx', ['capacitor-set-version', 'set:android', '-v', version, '-b', String(versionCode)]);
+setAndroidVersion(ROOT, version, versionCode);
+console.log(`Set Android versionName ${version} / versionCode ${versionCode}`);
 if (existsSync(join(ROOT, 'ios'))) {
-  run('npx', ['capacitor-set-version', 'set:ios', '-v', version, '-b', String(versionCode)]);
+  setIosVersion(ROOT, version, versionCode);
+  console.log(`Set iOS MARKETING_VERSION ${version} / CURRENT_PROJECT_VERSION ${versionCode}`);
 } else {
   console.log('(no ios/ project yet — skipping iOS version bump)');
 }
