@@ -32,9 +32,18 @@ keeps it out of later pickups.
    operation the label already exists and this is a no-op.
 2. **Find the newest unclaimed issue.** Query with the GitHub MCP tools for open issues, newest
    first, excluding anything already claimed:
-   * `search_issues` with `repo:kylemit/splotch is:issue is:open -label:in-progress -label:wont-do`,
-     `sort: created`, `order: desc` — the first result is your pick. (`search_issues` supports the
-     negative `-label:` filter directly; `list_issues` doesn't, so prefer search here.)
+   * Fetch candidates with `list_issues` (`state: OPEN`, `orderBy: CREATED_AT`, `direction: DESC`,
+     paginate as needed), then filter **client-side** — `list_issues` returns each issue's labels,
+     so drop anything carrying `in-progress` or `wont-do`; the newest survivor is your pick.
+     (`list_issues` doesn't accept a negative `-label:` filter, but filtering the returned labels
+     yourself is just as effective and doesn't depend on the search index.)
+   * In cloud/MCP sessions `search_issues` may return 0 even when open issues exist (the search
+     index isn't always available); never conclude the backlog is empty from an empty
+     `search_issues` — confirm with `list_issues` first. `search_issues`
+     (`repo:kylemit/splotch is:issue is:open
+     -label:in-progress -label:wont-do`,
+     `sort: created`, `order: desc`) is a convenience when it works, but `list_issues` is the source
+     of truth.
    * Also skip an issue you can't act on without a decision — one labelled `needs-triage`,
      `needs-scoping`, or `needs-adr` — and move to the next-newest. If the only candidates are
      blocked like that, say so and stop rather than forcing shaky work.
