@@ -1,4 +1,4 @@
-import { readString, writeString } from '../storage';
+import { readString, writeString, onDurableRestore } from '../storage';
 
 // The active brush, a single four-way axis picked from the Actions Panel's
 // Brush Menu:
@@ -81,3 +81,5 @@ export function reloadBrushType() {
   toolState.brush = readBrush(toolState.brush);
   if (isInkBrush(toolState.brush)) inkBrush = toolState.brush;
 }
+
+onDurableRestore(reloadBrushType);

@@ -22,13 +22,10 @@
   import { initInstallPrompt } from '$lib/state/install.svelte';
   import {
     captureAiAccessTokenFromUrl,
-    reloadSettings,
     hydrateApiKey,
     hydrateSaveFolder,
     settings,
   } from '$lib/state/settings.svelte';
-  import { reloadStrokeWidth } from '$lib/state/strokeWidth.svelte';
-  import { reloadBrushType } from '$lib/state/tool.svelte';
   import { hydrateDurableStorage } from '$lib/storage';
   import { initNetwork } from '$lib/state/network.svelte';
   import { isNative } from '$lib/platform';
@@ -122,15 +119,15 @@
     initNetwork();
 
     // Native only: recover any settings the WebView's localStorage may have
-    // evicted from the durable Capacitor Preferences store, then refresh the
-    // live stores if anything was restored. No-op (and instant) on the web.
+    // evicted from the durable Capacitor Preferences store. Each persisted store
+    // registers its own reloader via onDurableRestore (issue #521), so hydrate
+    // refreshes them all — no reload list to keep in sync here. No-op (and
+    // instant) on the web. Orientation is re-applied explicitly: it's an
+    // imperative side effect, not a persisted store, and reloadSettings changing
+    // an orientation setting also re-runs the $effect above, but this guarantees
+    // the apply even when the restored value equals the current one.
     hydrateDurableStorage().then((restored) => {
-      if (restored) {
-        reloadSettings();
-        reloadStrokeWidth();
-        reloadBrushType();
-        applyDeviceOrientationPreference();
-      }
+      if (restored) applyDeviceOrientationPreference();
     });
 
     // Prevent context menu on long press

@@ -1,4 +1,4 @@
-import { readInt, writeInt } from '../storage';
+import { readInt, writeInt, onDurableRestore } from '../storage';
 import { toolState } from './tool.svelte';
 
 export const STROKE_SIZES = [1, 2, 3, 4, 5];
@@ -34,6 +34,8 @@ export function reloadStrokeWidth() {
   strokeState.penSize = readInt(PEN_SIZE_KEY, strokeState.penSize, STROKE_SIZES);
   strokeState.eraserSize = readInt(ERASER_SIZE_KEY, strokeState.eraserSize, STROKE_SIZES);
 }
+
+onDurableRestore(reloadStrokeWidth);
 
 // The level for the tool that's currently active. Reads toolState so it stays
 // reactive inside $derived, $effect, and template expressions.
