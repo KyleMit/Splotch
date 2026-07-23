@@ -8,7 +8,12 @@
 // being deterministic.
 
 import { sheetPatternFor } from './magicBrush';
-import { crayonPatternFor, getCrayonPasses, getCrayonMix } from './crayonBrush';
+import {
+  crayonPassCount,
+  crayonPassWidthScale,
+  crayonPatternFor,
+  getCrayonMix,
+} from './crayonBrush';
 
 // One rendered curve segment: a quadratic with control cx/cy and endpoint x/y.
 export interface PathSeg {
@@ -131,12 +136,12 @@ function paintCrayon(
   op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
 ) {
   const seed = op.seed ?? 0;
-  const passes = getCrayonPasses();
+  const passCount = crayonPassCount();
   target.globalCompositeOperation = 'source-over';
-  for (let i = 0; i < passes.length; i++) {
+  for (let i = 0; i < passCount; i++) {
     const pattern = crayonPatternFor(target, op.color, seed, i);
     if (!pattern) continue;
-    paintOpShape(target, op, pattern, passes[i].widthScale);
+    paintOpShape(target, op, pattern, crayonPassWidthScale(i));
   }
 }
 

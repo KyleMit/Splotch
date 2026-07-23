@@ -58,6 +58,7 @@ import {
 import {
   setCrayonOptions,
   getCrayonOptions,
+  crayonColorMix,
   warmCrayonTiles,
   CrayonPassTracker,
   type CrayonOptions,
@@ -145,7 +146,7 @@ let crayonOverlaysCreated = false;
 
 function syncCrayonOverlayMix() {
   if (crayonOverlayTop) {
-    crayonOverlayTop.style.opacity = String(1 - getCrayonOptions().colorMix);
+    crayonOverlayTop.style.opacity = String(1 - crayonColorMix());
   }
 }
 

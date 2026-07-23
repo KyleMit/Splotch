@@ -4,6 +4,9 @@ import {
   getCrayonOptions,
   setCrayonOptions,
   getCrayonPasses,
+  crayonPassCount,
+  crayonPassWidthScale,
+  crayonColorMix,
   shadeShift,
   CrayonPassTracker,
   CRAYON_DEFAULTS,
@@ -97,6 +100,25 @@ describe('crayon options seam', () => {
     expect(getCrayonPasses()).toHaveLength(1);
     setCrayonOptions(CRAYON_DEFAULTS);
     expect(getCrayonPasses().length).toBe(CRAYON_DEFAULTS.passes.length);
+  });
+
+  it('the non-cloning hot-path accessors agree with getCrayonPasses', () => {
+    const passes = getCrayonPasses();
+    expect(crayonPassCount()).toBe(passes.length);
+    for (let i = 0; i < passes.length; i++) {
+      expect(crayonPassWidthScale(i)).toBe(passes[i].widthScale);
+    }
+    setCrayonOptions({ passes: [{ widthScale: 0.5, coverage: 0.9 }] });
+    expect(crayonPassCount()).toBe(1);
+    expect(crayonPassWidthScale(0)).toBe(0.5);
+  });
+
+  it('crayonColorMix returns the raw, unclamped stored mix (not getCrayonMix)', () => {
+    expect(crayonColorMix()).toBe(getCrayonOptions().colorMix);
+    // getCrayonMix clamps to [0,0.9]; the raw getter must NOT — it drives the
+    // live overlay's top-plane opacity and needs the stored value verbatim.
+    setCrayonOptions({ colorMix: 0.95 });
+    expect(crayonColorMix()).toBe(0.95);
   });
 });
 
