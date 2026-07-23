@@ -331,8 +331,10 @@ keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
    but don't rely on that: delete any it reports.) Never copy a lined fill straight into
    `web/static/coloring/` — the shipped `.night.webp` must be the punched (fills-only) derivation of
    the raw.
-3. Wire the catalog in `web/src/lib/state/books.ts` — the `night` and `chalk` orientation lists per
-   page: `page('nature', 'ant', 'Ant', ['portrait', 'landscape'], ['portrait', 'landscape'])`.
+3. Wire the catalog in `web/src/lib/state/books.ts` — `page()` defaults `night` and `chalk` to both
+   orientations, so a fully-generated page is just `page('nature', 'ant', 'Ant')`. Only pass the
+   `{ nightExcept, chalkExcept }` options object to subtract an orientation whose asset isn't
+   generated yet, e.g. `page('nature', 'ant', 'Ant', { nightExcept: ['portrait'] })`.
 4. Refresh the committed regression fixtures: `npm run gen:coloring-golden:diff` (review the report
    — the changed pages should be exactly the ones you shipped), then
    `npm run gen:coloring-golden:freeze` to adopt the new baseline and `npm run gen:assets:manifest`

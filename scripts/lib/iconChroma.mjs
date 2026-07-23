@@ -36,7 +36,9 @@ function isHue(hex) {
 // or CSS declaration. Ignores hex sitting in titles, ids, or other text.
 function paintHexes(svg) {
   const set = new Set();
-  for (const m of svg.matchAll(/(?:fill|stroke|stop-color)\s*[:=]\s*"?\s*(#[0-9a-fA-F]{3,8})\b/gi))
+  for (const m of svg.matchAll(
+    /(?:fill|stroke|stop-color)\s*[:=]\s*['"]?\s*(#[0-9a-fA-F]{3,8})\b/gi
+  ))
     set.add(m[1].toLowerCase());
   return [...set];
 }

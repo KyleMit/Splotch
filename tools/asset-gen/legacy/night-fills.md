@@ -236,8 +236,9 @@ default 0 keeps the input pixel-faithful. 4. **On the user's approval**, ship:
   ```
   Never copy a lined fill straight into `web/static/coloring/` — the shipped `.night.webp` must be
   the punched (fills-only) derivation of the raw.
-* Wire the catalog in `web/src/lib/state/books.ts` — add the night orientations to each page:
-  `page('farm', 'cat', 'Cat', ['portrait', 'landscape'])`.
+* Wire the catalog in `web/src/lib/state/books.ts` — `page()` defaults night + chalk to both
+  orientations, so a fully-generated page is just `page('farm', 'cat', 'Cat')`. Pass the
+  `{ nightExcept, chalkExcept }` options object only to subtract an orientation with no asset yet.
 * `npm run check:assets` (validates every listed fill exists; also gates strip-native-assets). Then
   `npm run check` + `npm run test:unit`.
 
