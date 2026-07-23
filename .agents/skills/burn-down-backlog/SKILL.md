@@ -57,11 +57,19 @@ keeps it out of later pickups.
 1. **Claim it first.** Before any code: add the `in-progress` label (GitHub MCP `issue_write`), and
    assign the issue to yourself if you have an identity to assign. This is what makes back-to-back
    sessions pick distinct issues, so it happens *before* implementation, not after.
-2. **Name the session.** Rename the session to `#<NN> <short summary>` — the issue number followed
-   by a 3–4 word summary of the fix or area (e.g. `#123 fix undo button`) — so a fan-out of parallel
-   sessions is scannable at a glance. In a cloud session use the `/rename` slash command with the
-   name as its argument: `/rename #<NN> <short summary>` (the argument form needs Claude Code
-   v2.1.205+). Skip silently if `/rename` isn't available.
+2. **Surface a session name for the user to set.** A scannable session name —
+   `#<NN> <short summary>`, the issue number plus a 3–4 word summary of the fix or area (e.g.
+   `#123 fix undo button`) — makes a fan-out of parallel sessions readable at a glance. The agent
+   **can't rename the session itself** (`/rename` is a user-only UI command; the Skill tool and
+   terminal-title escape sequences don't drive it), so print the exact command on its own line for
+   the user to paste:
+
+   ```
+   /rename #<NN> <short summary>
+   ```
+
+   Do this once, right after claiming — don't repeat it or block on it; it's a convenience for the
+   user, not a gate on the work.
 3. **Branch.** From the latest `origin/main`, create a working branch for the issue — e.g.
    `claude/issue-<NN>-<short-slug>` — or reuse the session's designated working branch if one is
    set. Push it with `git push -u origin <branch>`.
