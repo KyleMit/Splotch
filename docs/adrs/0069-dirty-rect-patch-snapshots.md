@@ -7,13 +7,13 @@ repaint). **Date:** 2026-07
 ## Context
 
 ADR-0066 made the committed drawing a raster (the "paper") with a bounded stack of pre-stroke
-snapshots, tiered as `K_LIVE = 2` live rasters + lossless blobs. It shipped with two open costs,
-both proportional to the full canvas rather than to the stroke being committed:
+snapshots, tiered as `MAX_HOT_RASTERS = 2` hot rasters + lossless blobs. It shipped with two open
+costs, both proportional to the full canvas rather than to the stroke being committed:
 
 * **Every commit copied the entire paper** — one full-canvas `drawImage` at pointerup
   (`engine.snapshot`), the reinstated cost ADR-0066 itself flagged as the open device gate, with
   "pooling the copy canvas" and `createImageBitmap` listed as follow-ups if it dropped frames.
-* **Each live snapshot pinned a full paper raster** (~30 MB at 2× DPR on a 13″ iPad), and each cold
+* **Each hot snapshot pinned a full paper raster** (~30 MB at 2× DPR on a 13″ iPad), and each cold
   demotion encoded the whole canvas even when one small mark had changed.
 
 Almost every commit mutates only a small part of the paper: a dot, a short line, one scribble band.
@@ -34,9 +34,9 @@ Alternatives considered:
   on the pointerup path — replacing one GPU-side blit with two full-canvas readbacks and a per-pixel
   loop, i.e. strictly slower than the copy it tries to optimize, and it forfeits the GPU-resident
   restore blit. Rejected.
-* **Compressed full snapshots only** (drop the live tier, encode everything). Deep undo already
+* **Compressed full snapshots only** (drop the hot tier, encode everything). Deep undo already
   decodes blobs; making *every* undo decode would turn the common instant undo into an async decode
-  — the exact UX the `K_LIVE` window exists to protect. Rejected.
+  — the exact UX the `MAX_HOT_RASTERS` window exists to protect. Rejected.
 * **Return to command replay** for small strokes. Re-opens the replay-determinism contract ADR-0066
   just retired. Rejected.
 
@@ -67,10 +67,10 @@ Alternatives considered:
   existing invariants carry the proof: paper mutations serialize through the engine's
   `queuePaperStep` chain (no interleaved restores), and paper *growth* (`ensurePaperCovers`)
   preserves origin and content, so a pre-growth rect stays valid.
-* **The memory tier is unchanged** — `K_LIVE = 2` live rasters, cold entries demoted to lossless
-  WebP/PNG blobs, re-inflation on rise — it just operates on patch-sized canvases and
+* **The memory tier is unchanged** — `MAX_HOT_RASTERS = 2` hot rasters, cold entries demoted to
+  lossless WebP/PNG blobs, re-inflation on rise — it just operates on patch-sized canvases and
   correspondingly smaller, faster encodes.
-* **The debug seam** (`getHistoryDebug` / `getUndoDebug`) gains `rasterBytes`, the live patches'
+* **The debug seam** (`getHistoryDebug` / `getUndoDebug`) gains `rasterBytes`, the hot patches'
   actual `w × h × 4` cost; the perf harnesses (`scripts/perf/undo-scenarios.mjs`,
   `scripts/perf/ipad-console-driver.js`) report it instead of assuming `liveRasters` full-size
   rasters.
@@ -90,7 +90,7 @@ makes an unhandled kind a compile error, which is the intended tripwire).
 * \+ The pointerup capture cost (`engine.snapshot`, ADR-0066's open device gate) drops from a
   full-canvas `drawImage` to a stroke-sized one for every commit except `clear`; the pooling /
   `createImageBitmap` follow-ups ADR-0066 queued up are likely moot.
-* \+ Live-tier memory drops from `K_LIVE` full rasters (~60 MB on the biggest iPad) to two
+* \+ Hot-tier memory drops from `MAX_HOT_RASTERS` full rasters (~60 MB on the biggest iPad) to two
   stroke-sized patches — typically well under a megabyte each; a session's worst case is bounded by
   the same tier as before and is never worse than ADR-0066.
 * \+ Cold-tier encodes get smaller and faster (patch-sized `toBlob`), which matters most on WebKit,
