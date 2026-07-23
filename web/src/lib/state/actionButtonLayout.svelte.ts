@@ -37,6 +37,24 @@ export const PALETTE_CLEARANCE = 8;
 // the server can't know a stored AI token or toggle states.
 export const MAX_ACTION_BUTTON_COUNT = 6;
 
+// Worst-case fixed chrome the CSS first-paint fallback must budget for: all
+// MAX_ACTION_BUTTON_COUNT buttons (so MAX-1 gaps) plus the panel's screen
+// inset, the drawer→toggle collapse margin, and the drawer toggle. The CSS
+// --action-btn-fallback bakes the resolved totals as literals (188 landscape,
+// 208 portrait) because it owns first paint before any TS loads (ADR-0040);
+// actionButtonLayout.fallback.test.ts guards those literals against these
+// constants so a change here can't silently leave the CSS stale.
+export const WORST_CASE_CHROME =
+  (MAX_ACTION_BUTTON_COUNT - 1) * ACTION_BUTTON_GAP +
+  PANEL_INSET +
+  DRAWER_TOGGLE_MARGIN +
+  DRAWER_TOGGLE_SIZE;
+
+// Stable portrait palette-bar height the CSS portrait fallback reserves so the
+// column clears the palette on short screens (the hydrated formula subtracts
+// the measured palette height instead).
+export const PALETTE_BAR_RESERVE = 76;
+
 export function visibleActionButtonCount(): number {
   return (
     1 + // brush menu, always shown (the eraser toggle hides a menu entry, not a button)

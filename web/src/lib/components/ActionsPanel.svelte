@@ -613,8 +613,9 @@
        portrait phones painted tiny buttons that jumped to full size (issue #317).
        Square via width = height so a capped button shrinks like a smaller scale
        instead of squishing. Landscape 100vw (unaffected by the URL bar); the
-       188px = PARENT_BUTTON_RESERVE 64 + worst-case chrome 124 (5·12 gap + 8
-       inset + 8 toggle margin + 48 toggle). */
+       188px = PARENT_BUTTON_RESERVE (64) + WORST_CASE_CHROME (124). These
+       literals mirror the actionButtonLayout constants and are drift-guarded by
+       actionButtonLayout.fallback.test.ts — update both together. */
     --action-btn-fallback: min(
       calc(60px * var(--action-btn-scale, 1)),
       calc((100vw - 188px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 6)
@@ -647,12 +648,13 @@
       /* Portrait first-paint cap: the column stops short of the palette bar.
          100vh is the large viewport (overestimates while the URL bar shows), but
          this is only the pre-hydration fallback — --action-btn-size swaps in the
-         exact visible height right after hydration. 208px = 8px palette clearance
-         + 124px worst-case chrome (see landscape note) + 76px palette bar. The
-         hydrated formula subtracts the measured palette height; reserving the
-         same ~76px here (it's a stable bar height across portrait widths) keeps
-         the column off the palette on short screens instead of relying on the
-         slack from the worst-case /6 divisor. */
+         exact visible height right after hydration. 208px = PALETTE_CLEARANCE
+         (8) + WORST_CASE_CHROME (124) + PALETTE_BAR_RESERVE (76). The hydrated
+         formula subtracts the measured palette height; reserving the same ~76px
+         here (a stable bar height across portrait widths) keeps the column off
+         the palette on short screens instead of relying on the slack from the
+         worst-case /6 divisor. Drift-guarded by
+         actionButtonLayout.fallback.test.ts — update both together. */
       --action-btn-fallback: min(
         calc(55px * var(--action-btn-scale, 1)),
         calc((100vh - 208px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 6)
