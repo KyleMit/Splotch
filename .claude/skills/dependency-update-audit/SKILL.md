@@ -1,6 +1,6 @@
 ---
 name: dependency-update-audit
-description: Audit package.json dependencies for updates (incl. majors), then upgrade them one at a time — read the migration guide, fix all usage, verify, and commit each on its own
+description: Audit package.json dependencies and GitHub Actions pins for updates (incl. majors), then upgrade them one at a time — read the migration guide, fix all usage, verify, and commit each on its own
 argument-hint: "[package-name] (optional — limit the run to a single dependency)"
 disable-model-invocation: true
 ---
@@ -28,6 +28,12 @@ where no user is present to answer questions.
 1. **List what's behind.** Run `npm outdated` (it exits non-zero when anything is outdated — that's
    expected, not a failure). Capture, for each package, the **current**, **wanted**, and **latest**
    versions, and whether it's a `prod` or `dev` dependency.
+   * **GitHub Actions pins count too.** Run `npm run deps:gha` to inventory every `uses:` pin across
+     `.github/workflows/` and flag **drift** — the same action pinned at inconsistent versions
+     across files (network-free). Add `npm run deps:gha -- --check-latest` to also compare each pin
+     against its latest upstream release tag (needs unauthenticated-or-`GITHUB_TOKEN` access to
+     `api.github.com`; it degrades to `latest: unknown` when rate-limited or offline). Treat an
+     outdated or inconsistent Action pin as an upgrade candidate alongside the npm packages.
 2. **Classify each.** For every outdated package decide the jump:
    * **Patch/minor within range** (`wanted` move) — low risk.
    * **Major** (`latest` > `wanted`, crosses a major) — needs a migration guide and a usage audit.
@@ -88,6 +94,14 @@ through the approved list **sequentially**. For each package:
 Keep each commit self-contained and green so any single upgrade can be reverted or bisected on its
 own.
 
+**GitHub Actions pins** follow the same one-change-per-commit discipline, minus the `npm install`:
+edit the `@vN` (or SHA) ref in each `.github/workflows/*.yml` that `npm run deps:gha` flagged —
+bring an inconsistent action onto a single version, and bump behind-latest pins to the current
+major. Check the action's release notes for breaking input/behaviour changes (a major bump can
+rename inputs or drop a Node runtime) before committing. There's nothing to typecheck, so re-run
+`npm run deps:gha` to confirm the drift is gone; the workflow itself is only truly exercised when it
+next runs on CI, so keep each Action bump to its own commit for an easy revert.
+
 ## Phase 4 — Wrap up
 
 11. **Full verification.** After the last upgrade, run the complete `npm test` (unit + E2E) once to
@@ -95,8 +109,9 @@ own.
 12. **ADR check.** If any upgrade changed an architectural constraint or encoded a non-obvious
     decision (e.g. dropping a Capacitor plugin, a build target change, a new pinned floor), consider
     documenting it with **`/create-adr`**. If the Capacitor patch changed, update ADR-0011's notes.
-13. **Report.** Summarize what was upgraded (and to what), what was deferred or reverted and why,
-    and anything still outdated by design. List the commits you made.
+13. **Report.** Summarize what was upgraded (and to what) — npm packages **and** GitHub Actions pins
+    — what was deferred or reverted and why, and anything still outdated by design. List the commits
+    you made.
 
 ## Shared audit conventions
 
