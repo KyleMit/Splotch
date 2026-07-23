@@ -10,7 +10,8 @@
     setAiAccessToken,
     setAiUserApiKey,
   } from '$lib/state/settings.svelte';
-  import { apiUrl } from '$lib/api';
+  import { verifyCredential } from '$lib/aiCredential';
+  import { createLatestRequest } from '$lib/latestRequest';
   import { getPlatform, type Platform } from '$lib/platform';
 
   interface Props {
@@ -31,8 +32,7 @@
   let hasApiKey = $derived(!!settings.aiUserApiKey);
   let hasAccessCode = $derived(!!settings.aiAccessToken);
   let aiLocked = $derived(!hasApiKey && !hasAccessCode);
-  let activeVerification = 0;
-  let verificationController: AbortController | null = null;
+  const latest = createLatestRequest();
 
   // Show the saved key with everything but the last four characters masked, so
   // a parent can recognise it without exposing the whole secret.
@@ -58,15 +58,9 @@
     keyMessage = '';
   }
 
-  function invalidateVerification() {
-    activeVerification += 1;
-    verificationController?.abort();
-    verificationController = null;
-  }
-
   $effect(() => {
     const isOpen = open;
-    invalidateVerification();
+    latest.begin();
     if (isOpen) {
       platform = getPlatform();
       keyInput = '';
@@ -74,97 +68,57 @@
     }
   });
 
-  type VerifyResponse = { ok?: boolean; error?: string; accessCode?: string };
-
-  async function verifyAndSave(opts: {
-    endpoint: string;
-    body: Record<string, string>;
-    persist: (data: VerifyResponse) => unknown | Promise<unknown>;
-    successMessage: string;
-    failureMessage: (data: VerifyResponse) => string;
-    storageFailureMessage?: string;
-    requestId: number;
-    signal: AbortSignal;
-  }): Promise<boolean> {
-    const res = await fetch(apiUrl(opts.endpoint), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(opts.body),
-      signal: opts.signal,
-    });
-    const data: VerifyResponse = await res.json().catch(() => ({}));
-    if (opts.requestId !== activeVerification) return false;
-    if (res.ok && data.ok) {
-      try {
-        await opts.persist(data);
-      } catch {
-        if (opts.requestId === activeVerification) {
-          keyStatus = 'error';
-          keyMessage =
-            opts.storageFailureMessage || 'Your credential works, but could not be saved securely.';
-        }
-        return false;
-      }
-      if (opts.requestId !== activeVerification) return false;
-      setAiImage(true); // turn the feature on the moment a valid credential lands
-      keyInput = '';
-      keyStatus = 'success';
-      keyMessage = opts.successMessage;
-      return true;
-    } else {
-      keyStatus = 'error';
-      keyMessage = opts.failureMessage(data);
-      return false;
-    }
-  }
-
   async function submitKey() {
     const value = keyInput.trim();
     if (!value || keyStatus === 'checking') return;
-    invalidateVerification();
-    const requestId = activeVerification;
-    const controller = new AbortController();
-    verificationController = controller;
+    const { id, signal } = latest.begin();
     keyStatus = 'checking';
     keyMessage = '';
 
-    // Gemini API keys are issued in the form "AIza…". Treat anything else as a
-    // secret access code and check it against the managed allowlist instead.
-    const looksLikeApiKey = /^AIza/.test(value);
-
     try {
-      if (looksLikeApiKey) {
-        await verifyAndSave({
-          endpoint: '/api/verify-key',
-          body: { apiKey: value },
-          persist: () => setAiUserApiKey(value, () => requestId === activeVerification),
-          successMessage: 'Your key works and has been accepted!',
-          failureMessage: (data) =>
-            data.error || "That key didn't work. Double-check it and try again.",
-          storageFailureMessage:
-            'Your key works, but could not be saved securely on this device. Please try again.',
-          requestId,
-          signal: controller.signal,
-        });
-      } else {
-        await verifyAndSave({
-          endpoint: '/api/verify-access-code',
-          body: { code: value },
-          persist: (data) => setAiAccessToken(data.accessCode || value),
-          successMessage: 'Access granted! You have special access — no API key needed.',
-          failureMessage: (data) =>
-            data.error || "That doesn't look like a valid key or access code. Please try again.",
-          requestId,
-          signal: controller.signal,
-        });
+      const result = await verifyCredential(value, { signal });
+      if (!latest.isCurrent(id)) return;
+
+      if (!result.ok) {
+        keyStatus = 'error';
+        keyMessage =
+          result.error ||
+          (result.kind === 'apiKey'
+            ? "That key didn't work. Double-check it and try again."
+            : "That doesn't look like a valid key or access code. Please try again.");
+        return;
       }
+
+      try {
+        if (result.kind === 'apiKey') {
+          await setAiUserApiKey(value, () => latest.isCurrent(id));
+        } else {
+          setAiAccessToken(result.accessCode || value);
+        }
+      } catch {
+        if (latest.isCurrent(id)) {
+          keyStatus = 'error';
+          keyMessage =
+            result.kind === 'apiKey'
+              ? 'Your key works, but could not be saved securely on this device. Please try again.'
+              : 'Your credential works, but could not be saved securely.';
+        }
+        return;
+      }
+      if (!latest.isCurrent(id)) return;
+
+      setAiImage(true); // turn the feature on the moment a valid credential lands
+      keyInput = '';
+      keyStatus = 'success';
+      keyMessage =
+        result.kind === 'apiKey'
+          ? 'Your key works and has been accepted!'
+          : 'Access granted! You have special access — no API key needed.';
     } catch {
-      if (requestId === activeVerification) {
+      if (latest.isCurrent(id)) {
         keyStatus = 'error';
         keyMessage = 'Could not reach the server. Check your connection and try again.';
       }
-    } finally {
-      if (requestId === activeVerification) verificationController = null;
     }
   }
 
