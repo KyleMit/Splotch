@@ -149,6 +149,14 @@ Learned from prior runs:
   recurrence evidence — file it against the hook/doc, and note that silent-at-start failures outrank
   equally-costly visible ones because the next session won't even know why its first `npm run`
   broke.
+* **A forced manual serialization is a tell against the skill that assumed concurrency it never
+  gets.** When a skill's per-item loop reads as synchronous but the harness runs its subagents
+  *async* and in a *shared working tree* (cloud sessions), the orchestrator has to serialize by hand
+  — wait for the completion notification, commit, launch the next — and that discipline is nowhere
+  in the skill. No command fails; the run is just slower and more careful than written, so the cost
+  hides. File it against the skill (add the execution model), not the harness. Tells:
+  `run_in_background: false` didn't make agents synchronous, and there's a wait-on-notification
+  between every item. (This is how the `fix-audits` cloud-execution gap surfaced.)
 
 ## Shared audit conventions
 
