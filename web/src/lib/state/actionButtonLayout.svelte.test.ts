@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { layout } from './layout.svelte';
 import { network } from './network.svelte';
 import {
+  setAdvancedControls,
   setAiAccessToken,
   setAiImage,
   setColoringBook,
@@ -20,6 +21,7 @@ import {
 } from './actionButtonLayout.svelte';
 
 function resetState() {
+  setAdvancedControls(true);
   setStrokeWidthControl(true);
   setEraser(true);
   setColoringBook(true);
@@ -175,11 +177,34 @@ describe('publishActionPanelState', () => {
     expect(el.hasAttribute('data-off-coloring')).toBe(false);
   });
 
-  it('reflects a non-pen brush in data-brush', () => {
-    selectBrush('crayon');
+  it('stamps every data-off-<control> when all six controls are switched off', () => {
+    setAdvancedControls(false);
+    setStrokeWidthControl(false);
+    setEraser(false);
+    setColoringBook(false);
+    setScreenshot(false);
+    setUndoButton(false);
     const el = document.createElement('div');
     publishActionPanelState(el, false, 1);
-    expect(el.getAttribute('data-brush')).toBe('crayon');
+    for (const attr of [
+      'data-off-adv',
+      'data-off-stroke',
+      'data-off-eraser',
+      'data-off-coloring',
+      'data-off-screenshot',
+      'data-off-undo',
+    ]) {
+      expect(el.hasAttribute(attr)).toBe(true);
+    }
+  });
+
+  it('reflects each non-pen brush in data-brush', () => {
+    for (const brush of ['crayon', 'magic', 'eraser'] as const) {
+      selectBrush(brush);
+      const el = document.createElement('div');
+      publishActionPanelState(el, false, 1);
+      expect(el.getAttribute('data-brush')).toBe(brush);
+    }
     selectBrush('pen');
   });
 });
