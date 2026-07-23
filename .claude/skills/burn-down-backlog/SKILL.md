@@ -57,25 +57,30 @@ keeps it out of later pickups.
 1. **Claim it first.** Before any code: add the `in-progress` label (GitHub MCP `issue_write`), and
    assign the issue to yourself if you have an identity to assign. This is what makes back-to-back
    sessions pick distinct issues, so it happens *before* implementation, not after.
-2. **Branch.** From the latest `origin/main`, create a working branch for the issue — e.g.
+2. **Name the session.** Rename the session to `#<NN> <short summary>` — the issue number followed
+   by a 3–4 word summary of the fix or area (e.g. `#123 fix undo button`) — so a fan-out of parallel
+   sessions is scannable at a glance. In a cloud session use the `/rename` slash command with the
+   name as its argument: `/rename #<NN> <short summary>` (the argument form needs Claude Code
+   v2.1.205+). Skip silently if `/rename` isn't available.
+3. **Branch.** From the latest `origin/main`, create a working branch for the issue — e.g.
    `claude/issue-<NN>-<short-slug>` — or reuse the session's designated working branch if one is
    set. Push it with `git push -u origin <branch>`.
-3. **Understand → implement.** Read the issue's what / why / where / done-when. Consult the relevant
+4. **Understand → implement.** Read the issue's what / why / where / done-when. Consult the relevant
    skill for the area it touches (`architecture` to place code, `design` for styling, `api` for
    endpoints, `mobile` for native, `testing` for tests) rather than guessing. The issue's
    description is the spec; if it's genuinely ambiguous enough that you'd be guessing at the
-   intended behaviour, that's a blocked pickup — see step 6.
-4. **Verify — matched to what you touched.**
+   intended behaviour, that's a blocked pickup — see step 7.
+5. **Verify — matched to what you touched.**
    * Code or scripts (`.ts`, `.mjs`, config): run `npm run check` plus the tests covering the
      touched files; add or update tests when the issue is a feature or bug fix.
    * Docs / skills / rules / ADRs only: there's nothing to typecheck — re-read the surrounding
      section for consistency and, if you edited a `.ruler/**` source, run `npm run ruler:apply` so
      the generated files stay in sync (ADR-0058).
-5. **Commit and push.** One or a few well-described commits that **reference the issue so it closes
+6. **Commit and push.** One or a few well-described commits that **reference the issue so it closes
    on merge** — put `Fixes #<NN>` in the commit body — then `git push -u origin <branch>`. Leave the
    `in-progress` label on: the issue is still open until the change merges, and the label keeps
    later runs from re-grabbing it.
-6. **If you get blocked** — the issue turns out to need a product/user decision, is far larger than
+7. **If you get blocked** — the issue turns out to need a product/user decision, is far larger than
    it reads, or is genuinely ambiguous — **remove the `in-progress` label again** (so it returns to
    the pool for a human or a later run) and comment on the issue with exactly what's blocking it.
    Add `needs-triage` or `needs-scoping` if that fits. Don't leave a claimed-but-abandoned issue
@@ -84,7 +89,7 @@ keeps it out of later pickups.
 
 ## Ship it — PR, independent review, address, CI
 
-Runs only when the issue was actually completed (step 5 above), not when it was blocked. **Invoking
+Runs only when the issue was actually completed (step 6 above), not when it was blocked. **Invoking
 this skill is the user's standing approval to open the PR** — don't pause to ask.
 
 1. **Open the PR.** Create a pull request from the working branch into `main`, with `Fixes #<NN>` in
