@@ -122,11 +122,11 @@ function repaintedContent(m: Awaited<ReturnType<typeof freshHistory>>): string[]
 }
 
 describe('snapshot stack depth', () => {
-  it('caps retained snapshots at MAX_UNDO_STACK_SIZE while the paper keeps every stroke', async () => {
+  it('caps retained snapshots at MAX_UNDO_DEPTH while the paper keeps every stroke', async () => {
     const m = await freshHistory();
-    const colors = Array.from({ length: m.MAX_UNDO_STACK_SIZE + 3 }, (_, i) => `#s${i}`);
+    const colors = Array.from({ length: m.MAX_UNDO_DEPTH + 3 }, (_, i) => `#s${i}`);
     for (const c of colors) m.pushCommand(cmd(c));
-    expect(m.snapshotCount()).toBe(m.MAX_UNDO_STACK_SIZE);
+    expect(m.snapshotCount()).toBe(m.MAX_UNDO_DEPTH);
     // Dropping old snapshots loses undo depth, never pixels: the paper holds
     // the full drawing in order.
     expect(repaintedContent(m)).toEqual(colors);
@@ -134,11 +134,11 @@ describe('snapshot stack depth', () => {
 
   it('undoing past the cap stops at the overflow content, not a blank canvas', async () => {
     const m = await freshHistory();
-    const colors = Array.from({ length: m.MAX_UNDO_STACK_SIZE + 2 }, (_, i) => `#s${i}`);
+    const colors = Array.from({ length: m.MAX_UNDO_DEPTH + 2 }, (_, i) => `#s${i}`);
     for (const c of colors) m.pushCommand(cmd(c));
     let undos = 0;
     while (m.popSnapshot()) undos++;
-    expect(undos).toBe(m.MAX_UNDO_STACK_SIZE);
+    expect(undos).toBe(m.MAX_UNDO_DEPTH);
     // The two overflow commands survive on the paper — that's the wall the
     // undo button hits.
     expect(repaintedContent(m)).toEqual(colors.slice(0, 2));
@@ -268,7 +268,7 @@ describe('folding while the magic sheet decodes', () => {
 describe('cold-snapshot blob validation', () => {
   // Guards the demotion path: only a blob that is plausibly a lossless
   // encoding (WebP at quality 1, or the spec's PNG fallback) may replace a
-  // live raster. Everything else keeps the raster so undo stays byte-exact.
+  // hot raster. Everything else keeps the raster so undo stays byte-exact.
   it('accepts only a non-empty webp or png blob', async () => {
     const m = await freshHistory();
     expect(m.isValidColdSnapshotBlob(new Blob(['x'], { type: 'image/webp' }))).toBe(true);
@@ -453,7 +453,7 @@ describe('disjoint multi-finger patches', () => {
     m.pushCommand({ ops: [strokeAt(5, 1), strokeAt(45, 2)], wasEmpty: true });
     const { liveRasters, rasterBytes } = m.getHistoryDebug();
     // liveRasters counts entries, not patches — the settle gates compare it
-    // against K_LIVE.
+    // against MAX_HOT_RASTERS.
     expect(liveRasters).toBe(1);
     // Two 14×14 bands (x−6..x+8, clamped: 0..13 and 39..53), not the 54-wide
     // union.

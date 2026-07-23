@@ -1,6 +1,6 @@
 // Focused undo profile: drives the imperative engine through deliberately-
 // shaped sessions and records, per scenario, how the snapshot stack behaves
-// (depth, live rasters vs encoded blobs), the cost of drawing vs. the cost of
+// (depth, hot rasters vs encoded blobs), the cost of drawing vs. the cost of
 // undoing — the commit hitch (paper copy) and per-step restore — and the
 // memory footprint while history is resident. Built to watch the ADR-0066
 // gates: commit max, snapshot copy max, undo avg/max, history MB.
@@ -33,7 +33,7 @@ import { analyze, renderReport } from './analyze.mjs';
 // 1024×1366 CSS pt. iPads report devicePixelRatio 2 and the engine caps
 // renderScale at min(dpr, 2) = 2, so the backing store is 2048×2732 and the
 // square paper/snapshot raster is 2732² ≈ 29.9 MB each — the real per-raster
-// cost on that device (the K_LIVE tier holds 2 of them + the paper).
+// cost on that device (the hot tier holds 2 of them + the paper).
 const DEVICE = { width: 1024, height: 1366, deviceScaleFactor: 2, label: 'ipad-pro-12.9' };
 
 const args = process.argv.slice(2);
@@ -133,7 +133,7 @@ function multiFingerGesture(gi, width, height, perFinger = MULTI_OPS_PER_FINGER)
   return { multi: fingers };
 }
 
-// Two strokes past MAX_UNDO_STACK_SIZE, so every scenario fills the snapshot
+// Two strokes past MAX_UNDO_DEPTH, so every scenario fills the snapshot
 // stack AND exercises the depth-cap shift path.
 const STROKES = Number(flag('strokes', '22'));
 
@@ -268,21 +268,22 @@ const undoDebug = (page) =>
 // transiently reports hundreds of MB of a healthy tier (nondeterministically,
 // against the ≲150 MB gate) and the undo phase would measure live-raster
 // restores instead of the blob decodes it exists to validate. Mirror the E2E
-// spec (engine.spec.ts): poll until only the K_LIVE window still holds rasters
+// spec (engine.spec.ts): poll until only the hot window still holds rasters
 // — a raster is only dropped after its blob lands and validates, so
-// liveRasters ≤ K_LIVE means every below-window entry is encoded.
-const K_LIVE = 2;
+// liveRasters ≤ MAX_HOT_RASTERS means every below-window entry is encoded.
+const MAX_HOT_RASTERS = 2;
 async function settleColdTier(page, timeoutMs = 10_000) {
   const t0 = Date.now();
   for (;;) {
     const d = await undoDebug(page);
     if (d == null) return null;
-    if (d.liveRasters <= K_LIVE && (d.snapshots <= K_LIVE || d.blobBytes > 0)) return d;
+    if (d.liveRasters <= MAX_HOT_RASTERS && (d.snapshots <= MAX_HOT_RASTERS || d.blobBytes > 0))
+      return d;
     if (Date.now() - t0 > timeoutMs) {
       throw new Error(
         `cold tier never settled within ${timeoutMs} ms: snapshots=${d.snapshots} ` +
           `liveRasters=${d.liveRasters} blobBytes=${d.blobBytes} ` +
-          `(want liveRasters ≤ ${K_LIVE} with below-window entries encoded)`
+          `(want liveRasters ≤ ${MAX_HOT_RASTERS} with below-window entries encoded)`
       );
     }
     await sleep(100);

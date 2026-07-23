@@ -44,25 +44,26 @@ committed source of truth (the "paper" raster, a `max(w,h)` square), with a boun
 pre-stroke snapshots:
 
 * **Commit** (`pushCommand`): copy the pre-stroke paper onto the snapshot stack (depth
-  `MAX_UNDO_STACK_SIZE = 20`), then fold the stroke's ops into the paper via the same shared
-  `renderOp`. One full-canvas `drawImage` per commit at pointerup (`engine.snapshot` mark) — cheaper
-  than pre-ADR-0033, which copied at gesture *start* and kept every snapshot live.
-* **Tiered memory**: the `K_LIVE = 2` most recent snapshots stay live rasters (~30 MB each at 2× DPR
-  on a 13″ iPad — instant common undo); older entries encode to a **lossless blob** off the commit
-  path (`canvas.toBlob('image/webp', 1)` — lossless on Chromium; WebKit falls back to PNG per spec)
-  and decode only on deep undo. Worst-case history is paper + `K_LIVE` × full raster + (20 −
-  `K_LIVE`) × encoded blob, transiently one extra raster while a fresh demotion's encode is in
-  flight. The measured blob sizes are Chromium-lossless-WebP, harness-derived: 1.4–2 MB per
-  crayon-heavy snapshot, so 30 + 2 × 30 + 18 × 1.4–2 ≈ 115–126 MB analytic on the biggest iPad
-  raster (the container harness itself observed ≈ 92–120 MB) — versus ~600 MB for 20 naïve live
-  snapshots. Those blob sizes do not transfer to WebKit: Safari (desktop and iOS) has no canvas WebP
-  encoder, so every cold snapshot takes the PNG fallback, which compresses the crayon's noisy
-  binary-alpha texture markedly worse (plausibly 2–4× per snapshot) and encodes slower — the ≲ 150
-  MB and encode-smoothness gates are therefore decided by the on-device run, whose console driver
-  reports per-entry blob KB. The tier re-balances in both directions: an encoded entry that rises
-  into the `K_LIVE` window (undo popping the stack, or a commit landing on an undo-shallowed one)
-  re-inflates back to a live raster off the hot path (`reinflateHotSnapshots`), so the invariant
-  holds after undo-then-draw, not only while the stack grows.
+  `MAX_UNDO_DEPTH = 20`), then fold the stroke's ops into the paper via the same shared `renderOp`.
+  One full-canvas `drawImage` per commit at pointerup (`engine.snapshot` mark) — cheaper than
+  pre-ADR-0033, which copied at gesture *start* and kept every snapshot live.
+* **Tiered memory**: the `MAX_HOT_RASTERS = 2` most recent snapshots stay hot rasters (~30 MB each
+  at 2× DPR on a 13″ iPad — instant common undo); older entries encode to a **lossless blob** off
+  the commit path (`canvas.toBlob('image/webp', 1)` — lossless on Chromium; WebKit falls back to PNG
+  per spec) and decode only on deep undo. Worst-case history is paper + `MAX_HOT_RASTERS` × full
+  raster + (20 − `MAX_HOT_RASTERS`) × encoded blob, transiently one extra raster while a fresh
+  demotion's encode is in flight. The measured blob sizes are Chromium-lossless-WebP,
+  harness-derived: 1.4–2 MB per crayon-heavy snapshot, so 30 + 2 × 30 + 18 × 1.4–2 ≈ 115–126 MB
+  analytic on the biggest iPad raster (the container harness itself observed ≈ 92–120 MB) — versus
+  ~600 MB for 20 naïve live snapshots. Those blob sizes do not transfer to WebKit: Safari (desktop
+  and iOS) has no canvas WebP encoder, so every cold snapshot takes the PNG fallback, which
+  compresses the crayon's noisy binary-alpha texture markedly worse (plausibly 2–4× per snapshot)
+  and encodes slower — the ≲ 150 MB and encode-smoothness gates are therefore decided by the
+  on-device run, whose console driver reports per-entry blob KB. The tier re-balances in both
+  directions: an encoded entry that rises into the hot window (undo popping the stack, or a commit
+  landing on an undo-shallowed one) re-inflates back to a hot raster off the interaction path
+  (`reinflateHotSnapshots`), so the invariant holds after undo-then-draw, not only while the stack
+  grows.
 * **Undo is queued and async** (`engine.ts undo()`): deep entries decode before they blit, so rapid
   taps serialize through a promise chain; each step repaints, updates undo/empty state, and the
   chain is returned so the E2E harness can await settlement.
@@ -111,14 +112,14 @@ skill runbook).
   magic-pending/in-flight repaint window must match live pixels).
 * \+ ~1000 lines of simplification/keyframe machinery and two perf harnesses deleted; undo, resize,
   remount, and export are one code path (a blit).
-* \+ History memory is bounded and mostly encoded: paper + 2 live rasters + single-digit-MB blobs
-  per deep entry, inside the ≲150 MB gate analytically on Chromium blob sizes; the larger WebKit PNG
+* \+ History memory is bounded and mostly encoded: paper + 2 hot rasters + single-digit-MB blobs per
+  deep entry, inside the ≲150 MB gate analytically on Chromium blob sizes; the larger WebKit PNG
   blobs are what the device gate settles.
 * − Every commit pays a full-canvas `drawImage` at pointerup — the cost ADR-0033 removed, reinstated
   deliberately (once per *commit*, not per gesture start). It is the open device gate; if it drops
   frames on-device, the follow-ups are pooling the copy canvas and moving the copy off the pointerup
   task (`createImageBitmap`), before any return to replay.
-* − Deep undo (past the 2 live rasters) pays a blob decode — asynchronous, so the undo button cannot
+* − Deep undo (past the 2 hot rasters) pays a blob decode — asynchronous, so the undo button cannot
   jank, but a deep restore is no longer instant; proactive re-inflation of the next-deepest blob is
   the noted follow-up.
 * − Blob encodes run after each commit; on-device verification must confirm they don't drop frames
@@ -137,6 +138,6 @@ the mark set drops `engine.keyframe`/`engine.foldBaseline` and gains `engine.sna
 `engine.fold` at commit, with `engine.undo` now paired by an explicit `engine.undo:end` mark. Amends
 **ADR-0004**: `commandSimplify.ts` leaves the sibling-module list, and the undo-memory consequence
 "resolved by ADR-0033" re-opens as the managed snapshot budget above. Amends **ADR-0015**: the
-4×-DPR surface set is the paper + live snapshots (not "backing store + baseline"), and the
-per-commit full-canvas copy returns. Amends **ADR-0043**: magic ops ride snapshots and the pending
-fold, not the command log, and the margin crop is permanent.
+4×-DPR surface set is the paper + hot snapshots (not "backing store + baseline"), and the per-commit
+full-canvas copy returns. Amends **ADR-0043**: magic ops ride snapshots and the pending fold, not
+the command log, and the margin crop is permanent.

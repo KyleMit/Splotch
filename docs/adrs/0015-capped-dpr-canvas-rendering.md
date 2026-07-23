@@ -91,9 +91,10 @@ multiplies — the cap itself, the propagation rules, and the per-session invari
   copying the paper, and ops (retained per stroke only for the commit fold and the
   magic-pending/in-flight repaint) are still recorded in backing-store coordinates.
 * The memory consequence's "live backing store + the baseline (two surfaces, not twelve)" is now the
-  live backing store + the paper + up to `K_LIVE = 2` live snapshot rasters (~30 MB each at 2× on a
-  large tablet), with deeper history as single-digit-MB lossless blobs — a managed budget inside
-  ADR-0066's device-gated ≲ 150 MB, so more than two surfaces but nothing like the naïve twenty.
+  live backing store + the paper + up to `MAX_HOT_RASTERS = 2` hot snapshot rasters (~30 MB each at
+  2× on a large tablet), with deeper history as single-digit-MB lossless blobs — a managed budget
+  inside ADR-0066's device-gated ≲ 150 MB, so more than two surfaces but nothing like the naïve
+  twenty.
 * The fill-rate consequence's "per-stroke full-canvas copies are **both removed**" is
   half-reinstated: each commit again pays one full-canvas `drawImage` at pointerup (the snapshot
   copy) — deliberate, once per commit rather than per gesture start, and it is ADR-0066's open

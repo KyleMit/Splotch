@@ -218,7 +218,7 @@
     };
   }
 
-  // 22 strokes — two past the depth-20 cap (MAX_UNDO_STACK_SIZE, matching
+  // 22 strokes — two past the depth-20 cap (MAX_UNDO_DEPTH, matching
   // scripts/perf/undo-scenarios.mjs) — so history MB is measured with the
   // stack full and the oldest-entry fold + shift overflow path runs on the
   // real device.
