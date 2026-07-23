@@ -5,6 +5,12 @@ cheerful colors, and subtle drawing sounds to create an engaging creative experi
 
 <https://splotch.art/>
 
+## Links
+
+* [Scrapbook](https://kylemit.github.io/Splotch/) — committed run outputs (proof sheets, model
+  bake-offs, the icon gallery, Lighthouse reports), published live
+* [Privacy Policy](https://splotch.art/privacy)
+
 ## Features
 
 * **Simple Drawing Interface** - Just touch and draw with your finger or Apple Pencil
