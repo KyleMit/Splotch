@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
 
 // The admin console has two front doors over one shared core ($lib/server/admin
 // + $lib/server/tokens): the server-rendered /admin (form actions + HTTP-only
@@ -156,4 +157,19 @@ test('admin API requires a valid bearer session', async ({ request }) => {
   const removed = await request.delete('/api/admin/tokens', { headers, data: { token } });
   expect(removed.ok()).toBe(true);
   expect((await removed.json()).tokens).not.toContain(token);
+});
+
+// /admin is function-served (prerender = false), so Netlify's static-only
+// custom headers never reach it — hooks.server.ts stamps the security set on
+// instead, so the credentialed console isn't the least-protected page (issue
+// #470, ADR-0073). The unauthenticated login response is enough: the headers
+// ride every SSR response. Asserting against the shared SECURITY_HEADERS source
+// keeps this in lockstep with what the hook sends.
+test('web /admin SSR response carries the site security headers', async ({ request }) => {
+  const res = await request.get('/admin');
+  expect(res.ok()).toBe(true);
+  const headers = res.headers();
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    expect(headers[name.toLowerCase()]).toBe(value);
+  }
 });

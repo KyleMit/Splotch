@@ -38,7 +38,7 @@ Non-obvious constraints:
 * **Netlify custom headers attach only to CDN/static responses.** The prerendered pages (`/`,
   `/privacy`, `/admin/native`) get the header; function-served SSR responses (`/admin`) ship with no
   custom headers at all. This predates the flip (the report-only header had the same scope) and is
-  documented beside the header block.
+  documented beside the header block. (Closed since — see the Update below.)
 * **`'unsafe-inline'` stays, deliberately.** Script nonces via SvelteKit's `kit.csp` were assessed
   and split to a follow-up: the home page is prerendered, so SvelteKit would deliver its policy via
   `<meta>` (which cannot carry `frame-ancestors`/reporting directives), splitting the policy across
@@ -60,3 +60,14 @@ Non-obvious constraints:
 
 Leans on **ADR-0007** (wildcard CORS model the receiver fits into) and **ADR-0014** (per-IP rate
 limiting for unauthenticated endpoints).
+
+## Update (2026-07): SSR responses now carry the headers
+
+Both `−` consequences above are addressed (issue #470). `web/src/lib/server/securityHeaders.ts` is
+the single source for the header set, and `web/src/hooks.server.ts` stamps it onto every non-`/api`
+SSR response, so `/admin` now ships the same CSP and security headers as the static pages — the
+credentialed console is no longer the least-protected page.
+`web/src/lib/server/securityHeaders.test.ts` parses the `netlify.toml` `for = "/*"` block and
+asserts the two copies match, the drift guard this ADR flagged; `web/tests/admin.spec.ts` asserts
+the live SSR response carries the set. The `'unsafe-inline'` follow-up (script nonces) remains open
+and separate.

@@ -6,7 +6,16 @@
 // can be abused without a valid credential, and none of it relies on cookies
 // (the wildcard origin is incompatible with credentialed requests anyway).
 // Only /api/* is opened up; the rest of the site stays same-origin.
+//
+// The hook also stamps the site's security headers onto function-served SSR
+// responses. Netlify custom headers (netlify.toml `for = "/*"`) reach only
+// CDN/static responses, so `/admin` (prerender = false) — the credentialed
+// console — otherwise ships with no CSP, no X-Frame-Options, nothing. The set
+// lives once in $lib/server/securityHeaders and is guarded against the
+// netlify.toml copy by securityHeaders.test.ts (ADR-0073).
+import { building } from '$app/environment';
 import type { Handle, HandleServerError } from '@sveltejs/kit';
+import { SECURITY_HEADERS } from '$lib/server/securityHeaders';
 
 export const handle: Handle = async ({ event, resolve }) => {
   const isApi = event.url.pathname.startsWith('/api/');
@@ -19,8 +28,16 @@ export const handle: Handle = async ({ event, resolve }) => {
   const response = await resolve(event);
 
   if (isApi) {
-    const headers = corsHeaders();
-    for (const [key, value] of Object.entries(headers)) {
+    // Cross-origin /api/* calls from the native WebView origins (ADR-0007).
+    for (const [key, value] of Object.entries(corsHeaders())) {
+      response.headers.set(key, value);
+    }
+  } else if (!building) {
+    // Runtime-only (`!building`): at build time this hook also runs to
+    // prerender the static pages, but those are served from the CDN with the
+    // netlify.toml headers — the function only serves SSR routes like `/admin`,
+    // and those are the responses that need this set.
+    for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
       response.headers.set(key, value);
     }
   }
