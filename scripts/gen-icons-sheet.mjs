@@ -16,6 +16,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ROOT } from './lib/utils.mjs';
 import { esc, chromeStyle, masthead, siteFooter } from './lib/scrapbook-chrome.mjs';
+import { isSpot } from './lib/iconChroma.mjs';
 
 const ICONS_DIR = join(ROOT, 'web/src/lib/icons');
 const args = process.argv.slice(2);
@@ -30,31 +31,6 @@ const OUT =
         'icons',
         'index.html'
       );
-
-// #rgb / #rrggbb (with optional alpha) -> {s, l} in 0..1. Returns null for the
-// grey axis (r==g==b) so pure black/white/grey never register as a hue.
-function chroma(hex) {
-  let h = hex.slice(1);
-  if (h.length === 3 || h.length === 4) h = h.replace(/./g, (c) => c + c);
-  const r = parseInt(h.slice(0, 2), 16) / 255;
-  const g = parseInt(h.slice(2, 4), 16) / 255;
-  const b = parseInt(h.slice(4, 6), 16) / 255;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  const d = max - min;
-  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
-  return { s, l };
-}
-
-// An icon is colorful when it paints at least one saturated, mid-range hue.
-function isSpot(svg) {
-  const hexes = svg.match(/#[0-9a-fA-F]{3,8}\b/g) || [];
-  return hexes.some((hx) => {
-    const c = chroma(hx);
-    return c.s >= 0.35 && c.l >= 0.14 && c.l <= 0.93;
-  });
-}
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 

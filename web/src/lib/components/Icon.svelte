@@ -1,24 +1,16 @@
-<script lang="ts">
-  import type { CommonIconName } from './iconTypes';
-
-  const modules = import.meta.glob(['../icons/*.svg', '!../icons/splotchy.svg'], {
-    eager: true,
-    query: '?raw',
-    import: 'default',
-  });
-
-  const icons: Record<string, string> = {};
-  for (const [path, src] of Object.entries(modules)) {
-    const key = (path.split('/').pop() ?? '').replace('.svg', '');
-    icons[key] = src as string;
-  }
-
+<script module lang="ts">
   // Full-color "spot" icons carry their own palette, so callers that tint
   // monochrome icons with a CSS `filter` must leave these alone. We tag them
   // with `icon-color` so those filter rules can opt out (see ActionsPanel).
   // Some (pen, crayon, line-weight) mix that fixed palette with currentColor
   // ink parts that ActionsPanel tints to the active drawing color.
-  const COLOR_ICONS = new Set([
+  //
+  // Guarded by Icon.svelte.test.ts: every icon the chroma classifier deems
+  // colorful must appear here, so a newly added full-color SVG can't slip in
+  // un-tagged and render wrongly tinted. The set is an allowed superset — the
+  // stroke-size previews below are monochrome in their raw SVG but still opt
+  // out because they tint via currentColor / theme vars.
+  export const COLOR_ICONS = new Set([
     'camera',
     'crayon',
     'eraser',
@@ -29,6 +21,8 @@
     'pen',
     'shapes',
     'sweep-icon',
+    'trash-closed',
+    'trash-open',
     'undo',
     'wand-stars',
     // Stroke-size previews carry their own coloring — the pen sizes via
@@ -46,6 +40,22 @@
     'eraser-size-4',
     'eraser-size-5',
   ]);
+</script>
+
+<script lang="ts">
+  import type { CommonIconName } from './iconTypes';
+
+  const modules = import.meta.glob(['../icons/*.svg', '!../icons/splotchy.svg'], {
+    eager: true,
+    query: '?raw',
+    import: 'default',
+  });
+
+  const icons: Record<string, string> = {};
+  for (const [path, src] of Object.entries(modules)) {
+    const key = (path.split('/').pop() ?? '').replace('.svg', '');
+    icons[key] = src as string;
+  }
 
   interface Props {
     name: CommonIconName;
