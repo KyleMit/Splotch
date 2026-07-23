@@ -219,12 +219,14 @@ describe("clear snapshot swap (swap-don't-copy)", () => {
     m.pushCommand(clearCmd());
     // Neither folded: the clear queues behind the blocked magic command.
     expect(m.getHistoryDebug().pendingCommands).toBe(2);
+    expect(m.pendingCommandCount()).toBe(2);
     expect(repaintedContent(m)).toEqual([]);
 
     magicSheet.ready = true;
     m.pushCommand(cmd('#after'));
     // The backlog folds through: magic ink, wiped by the clear, then #after.
     expect(m.getHistoryDebug().pendingCommands).toBe(0);
+    expect(m.pendingCommandCount()).toBe(0);
     expect(repaintedContent(m)).toEqual(['#after']);
   });
 });

@@ -72,6 +72,7 @@ import {
   finalizeDeferredCommand,
   getHistoryDebug,
   hasUnfoldedCommands,
+  pendingCommandCount,
   popSnapshot,
   pushCommand,
   rebaseActiveCommand,
@@ -622,7 +623,7 @@ function commitStrokeGroup() {
   if (!commitActiveCommand(deferBehindRestore)) return;
   if (deferBehindRestore) {
     queueDeferredCommandFold();
-  } else if (rasterRects.length > 0 && getHistoryDebug().pendingCommands === 0) {
+  } else if (rasterRects.length > 0 && pendingCommandCount() === 0) {
     // The fold just stamped this stroke's pass rasters into the paper; blit
     // those rects back so the screen shows the committed pixels exactly (see
     // activeCrayonRasterRects). Skipped when the fold is parked — behind a

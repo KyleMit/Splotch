@@ -739,6 +739,13 @@ export function hasUnfoldedCommands(): boolean {
   return pendingCommands.length > 0 || deferredCommands.length > 0 || activeCommand !== null;
 }
 
+// Just the count of commands the unready magic sheet is holding out of the
+// paper — the one field commitStrokeGroup reads, without getHistoryDebug's
+// whole-stack reduces (which it would discard) in the pointerup hitch window.
+export function pendingCommandCount(): number {
+  return pendingCommands.length;
+}
+
 // A clear can arrive while a stroke straddles it (e.g. a second finger drawing
 // while drag-to-clear completes). That stroke's command commits *after* the
 // clear command on lift, so its pre-clear ops must be dropped or the fold
