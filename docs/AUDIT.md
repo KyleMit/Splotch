@@ -7,35 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P2][complexity] `generateAiImage` bundles six concerns in one 95-line try/catch
-
-**File(s):** `web/src/lib/drawing/aiImage.ts:94-188` — pinned at SHA f934d43
-
-#### Problem
-
-`generateAiImage` opens the modal, exports the canvas, sets the preview, encodes WebP, builds auth
-headers, fetches, `switch`es over four response kinds, and drives auto-save — all inside one
-function with a trailing `catch`/`finally`. The auth-header construction (135-140) and the response
-`switch` (150-169) are each self-contained units that obscure the top-level flow.
-
-#### Proposed solution
-
-Extract:
-
-* `function buildGenerateHeaders(uploadBlob: Blob): Record<string,string>` (135-140),
-* `function handleAiResponse(response: AiImageResponse, runId, imageBlob): 'done' | void` — the
-  150-174 switch + finish/auto-save.
-
-`generateAiImage` then reads as: launch → export → upload → dispatch. Keeps the same `runId`
-ownership checks.
-
-#### Verification
-
-`npm run test -- aiImage` (the existing 387-line suite) must stay green — it already exercises
-safety/throttle/error/timeout branches, so an extraction that changes behaviour will fail it.
-
----
-
 ### [P3][duplication] Crayon-buffer allocate-or-resize logic is written three times
 
 **File(s):**
