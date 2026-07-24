@@ -26,6 +26,7 @@ import {
   guardedEdgeAt,
   pointerWasResumed,
   type GuardEdge,
+  type Point,
 } from './strokeMath';
 import {
   computePaperView,
@@ -314,7 +315,7 @@ function pointerToScreen(e: PointerEvent) {
 
 // Paper coordinates — the space ops are recorded and rendered in. Identity
 // unless a rotation has locked the paper (see resizeCanvas / ADR-0050).
-function screenToPaper(pt: { x: number; y: number }): { x: number; y: number } {
+function screenToPaper(pt: Point): Point {
   return isIdentityView(paperView) ? pt : viewToPaper(paperView, pt.x, pt.y);
 }
 
@@ -551,7 +552,7 @@ function renderStrokeStart(ps: PointerState) {
 // and the stroke curves smoothly instead of showing straight-chord corners.
 // Each call is captured as one path op (matching its own beginPath/stroke
 // boundary) so the commit fold reproduces identical pixels and anti-aliasing.
-function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
+function strokeSmoothSegments(ps: PointerState, points: Point[]) {
   if (points.length === 0) return;
   closeCrayonPassBeforeForeignOp(ps);
   const op: StrokeOp = {
@@ -590,8 +591,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
 // identical to the unsplit one — only the pattern phase of the later ops
 // changes. Seeds are stored per op, so the commit fold reproduces the splits
 // byte-for-byte.
-function strokeCrayonSegments(ps: PointerState, points: { x: number; y: number }[]) {
-  let batch: { x: number; y: number }[] = [];
+function strokeCrayonSegments(ps: PointerState, points: Point[]) {
+  let batch: Point[] = [];
   for (const p of points) {
     if (ps.passTracker!.advance(p) === 'split') {
       strokeSmoothSegments(ps, batch);
@@ -606,7 +607,7 @@ function strokeCrayonSegments(ps: PointerState, points: { x: number; y: number }
   strokeSmoothSegments(ps, batch);
 }
 
-function strokeSegments(ps: PointerState, points: { x: number; y: number }[]) {
+function strokeSegments(ps: PointerState, points: Point[]) {
   if (ps.passTracker) strokeCrayonSegments(ps, points);
   else strokeSmoothSegments(ps, points);
 }
@@ -670,7 +671,7 @@ interface PointerState {
   // discarded as an OS edge-swipe (an inward flick). See the edge-swipe notes
   // at startDrawing().
   edgeSwipeGuard: GuardEdge | null;
-  pendingPoints: { x: number; y: number }[];
+  pendingPoints: Point[];
 }
 
 const activePointerIds = new Set<number>();
@@ -802,11 +803,7 @@ function discardPointer(e: PointerEvent) {
 // The buffered points and the direction test stay in screen space (physical
 // edges); commitEdgeSwipe maps them to paper coordinates when they turn out
 // to be a real stroke.
-function advanceEdgeSwipeCandidate(
-  ps: PointerState,
-  screenPoints: { x: number; y: number }[],
-  e: PointerEvent
-) {
+function advanceEdgeSwipeCandidate(ps: PointerState, screenPoints: Point[], e: PointerEvent) {
   ps.pendingPoints.push(...screenPoints);
   const last = screenPoints[screenPoints.length - 1];
   const dx = last.x - ps.startX;
@@ -830,7 +827,7 @@ function advanceEdgeSwipeCandidate(
 // large for continuous contact together mean the finger really lifted, so the
 // stroke is restarted at the resumed point. The gap/jump thresholds and the
 // decision predicate live in ./strokeMath (pointerWasResumed).
-function restartStrokeIfResumed(ps: PointerState, resume: { x: number; y: number }, now: number) {
+function restartStrokeIfResumed(ps: PointerState, resume: Point, now: number) {
   const deltaX = resume.x - ps.x;
   const deltaY = resume.y - ps.y;
   const jump = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -853,7 +850,7 @@ function restartStrokeIfResumed(ps: PointerState, resume: { x: number; y: number
 
 // Speed is sampled from the final event only: one chord per pointermove,
 // matching the cadence the sliding window was tuned for.
-function strokeSpeed(ps: PointerState, last: { x: number; y: number }, now: number): number {
+function strokeSpeed(ps: PointerState, last: Point, now: number): number {
   const deltaX = last.x - ps.x;
   const deltaY = last.y - ps.y;
   const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);

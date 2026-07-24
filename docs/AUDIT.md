@@ -7,39 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P1][readability] Replace the ~9 inline `{ x: number; y: number }` annotations with a named `Point` type
-
-**File(s):** `web/src/lib/drawing/engine.ts:308, 317, 554, 593, 594, 609, 674, 809, 835, 858` —
-pinned at SHA f934d43
-
-#### Problem
-
-The engine's central data shape — a point — is spelled out as an anonymous
-`{ x: number; y: number }` at least nine times across signatures and fields:
-
-```ts
-function screenToPaper(pt: { x: number; y: number }): { x: number; y: number } { ... }
-function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) { ... }
-pendingPoints: { x: number; y: number }[];
-```
-
-`crayonBrush.ts` already defines `CrayonPoint { x; y }` for the same concept, so the vocabulary is
-fragmented. Inline object types add noise to every signature and make "find all the places that pass
-points" ungreppable.
-
-#### Proposed solution
-
-Add `export interface Point { x: number; y: number }` (in `strokeMath.ts` or a small `geometry.ts`)
-and use it throughout `engine.ts` (and reconcile `CrayonPoint` to alias it). Signatures become
-`screenToPaper(pt: Point): Point`, `points: Point[]`, etc.
-
-#### Verification
-
-`npm run check` passes (structurally identical types).
-`grep -rn '{ x: number; y: number }' web/src/lib/drawing/` drops to near zero.
-
----
-
 ### [P2][complexity] `renderOp` is a 95-line dispatcher with a 35-line crayon-bbox block inlined
 
 **File(s):** `web/src/lib/drawing/strokeOps.ts:463-557` (`renderOp`), esp. 499-552 — pinned at SHA
