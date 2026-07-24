@@ -763,6 +763,10 @@ function commandHasMagic(command: StrokeGroupCommand): boolean {
 // activeCommand (its ops are recorded but not yet folded), so replay it last
 // to keep the in-flight stroke; between strokes activeCommand is null and
 // that step is a no-op.
+function replayCommands(target: CanvasRenderingContext2D, commands: StrokeGroupCommand[]): void {
+  for (const cmd of commands) for (const op of cmd.ops) renderOp(target, op);
+}
+
 export function repaintAll(target: CanvasRenderingContext2D) {
   // Replaying the open pass's ops below rebuilds its crayon accumulation from
   // scratch; the live buffers must start empty so a non-idempotent deposit
@@ -770,11 +774,9 @@ export function repaintAll(target: CanvasRenderingContext2D) {
   resetLiveCrayonForReplay(target);
   clearAllOf(target);
   if (paperCanvas) target.drawImage(paperCanvas, 0, 0);
-  for (const cmd of pendingCommands) for (const op of cmd.ops) renderOp(target, op);
-  for (const cmd of deferredCommands) for (const op of cmd.ops) renderOp(target, op);
-  if (activeCommand) {
-    for (const op of activeCommand.ops) renderOp(target, op);
-  }
+  replayCommands(target, pendingCommands);
+  replayCommands(target, deferredCommands);
+  replayCommands(target, activeCommand ? [activeCommand] : []);
 }
 
 // Test/profiling seam: how the undo history is currently stored. `liveRasters`

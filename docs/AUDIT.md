@@ -7,34 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P4][duplication] `repaintAll` triples a command-replay loop that should be one helper
-
-**File(s):** `web/src/lib/drawing/undoHistory.ts:783-795` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-for (const cmd of pendingCommands) for (const op of cmd.ops) renderOp(target, op);
-for (const cmd of deferredCommands) for (const op of cmd.ops) renderOp(target, op);
-if (activeCommand) { for (const op of activeCommand.ops) renderOp(target, op); }
-```
-
-The same "replay these commands' ops through `renderOp`" appears three times, and the identical
-double-loop is also implicit elsewhere. Order matters (pending → deferred → active), so the intent
-is worth naming.
-
-#### Proposed solution
-
-`function replayCommands(target: CanvasRenderingContext2D, commands: StrokeGroupCommand[]): void`
-and call it three times (wrapping `activeCommand` as `activeCommand ? [activeCommand] : []`). The
-ordering reads explicitly.
-
-#### Verification
-
-`npm run test -- undoHistory`; mid-stroke resize + magic-pending repaint E2E unchanged.
-
----
-
 ### [P4][naming] `currentLineWidth = 8` and manual `sqrt` distance are un-named / inconsistent
 
 **File(s):** `web/src/lib/drawing/engine.ts:117 (default width), 838 and 861 (manual distance)` —
