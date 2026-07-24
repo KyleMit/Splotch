@@ -7,33 +7,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P4][readability] `navigator.onLine !== false` is a confusing double-negative
-
-**File(s):** `web/src/lib/state/network.svelte.ts:18` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-network.online = navigator.onLine !== false;
-```
-
-`navigator.onLine` is already a boolean; `!== false` treats a hypothetical `undefined` as online.
-The intent ("assume online unless the browser says otherwise") is defensible but the expression
-reads as an accidental double negative and invites a "why not just `navigator.onLine`?" review
-comment every time.
-
-#### Proposed solution
-
-Either `network.online = navigator.onLine ?? true;` (explicit "default online when unknown") or, if
-the defensiveness is unwanted, just `navigator.onLine`. Add a one-word comment if the `?? true`
-intent (some old WebViews report `undefined`) is load-bearing.
-
-#### Verification
-
-`network`'s init behavior unchanged for the boolean cases; expression reads plainly.
-
----
-
 ### [P4][maintainability] Unnamed luminance threshold `0.15` in `isDarkInk`
 
 **File(s):** `web/src/lib/state/colors.svelte.ts:100-102` — pinned at SHA f934d43
