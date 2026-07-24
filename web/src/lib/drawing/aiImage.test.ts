@@ -82,7 +82,8 @@ describe('generateAiImage request ownership', () => {
     );
 
     const { generateAiImage } = await import('./aiImage');
-    const { closeAiResult, ui } = await import('$lib/state/ui.svelte');
+    const { ui } = await import('$lib/state/ui.svelte');
+    const { closeAiResult } = await import('$lib/state/aiGeneration.svelte');
 
     const runA = generateAiImage();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
@@ -117,7 +118,8 @@ describe('generateAiImage request ownership', () => {
     );
 
     const { generateAiImage } = await import('./aiImage');
-    const { closeAiResult, ui } = await import('$lib/state/ui.svelte');
+    const { ui } = await import('$lib/state/ui.svelte');
+    const { closeAiResult } = await import('$lib/state/aiGeneration.svelte');
 
     const runA = generateAiImage();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
@@ -145,7 +147,8 @@ describe('generateAiImage request ownership', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValueOnce(requestB.promise));
 
     const { generateAiImage } = await import('./aiImage');
-    const { closeAiResult, ui } = await import('$lib/state/ui.svelte');
+    const { ui } = await import('$lib/state/ui.svelte');
+    const { closeAiResult } = await import('$lib/state/aiGeneration.svelte');
 
     const runA = generateAiImage();
     closeAiResult();
@@ -176,7 +179,7 @@ describe('generateAiImage request ownership', () => {
     );
 
     const { generateAiImage } = await import('./aiImage');
-    const { closeAiResult } = await import('$lib/state/ui.svelte');
+    const { closeAiResult } = await import('$lib/state/aiGeneration.svelte');
 
     const runA = generateAiImage();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));

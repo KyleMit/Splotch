@@ -2,13 +2,13 @@
   import { onDestroy } from 'svelte';
   import AiImageResult from '$lib/components/AiImageResult.svelte';
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
+  import { ui } from '$lib/state/ui.svelte';
   import {
-    ui,
     startAiGeneration,
     finishAiGeneration,
     failAiGeneration,
     closeAiResult,
-  } from '$lib/state/ui.svelte';
+  } from '$lib/state/aiGeneration.svelte';
 
   // Sample artifacts stand in for a real generation: the child's drawing (shown
   // blurred behind the dial) and the finished "AI" image that's revealed. They

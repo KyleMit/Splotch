@@ -11,67 +11,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P2][duplication] `ui.svelte.ts` repeats four identical modal open/close pairs and mixes in the whole AI state machine
-
-**File(s):** `web/src/lib/state/ui.svelte.ts:42-184` — pinned at SHA f934d43
-
-#### Problem
-
-Two smells in one module. First, four structurally identical modal pairs:
-
-```ts
-export function openColorPicker(origin) {
-  ui.colorPickerOrigin = origin;
-  ui.colorPickerOpen = true;
-}
-export function closeColorPicker() {
-  ui.colorPickerOpen = false;
-}
-// …repeated verbatim for coloringBook, parentCenter, aiPrompt (lines 76-105)
-```
-
-Each modal contributes an `xOpen: boolean` + `xOrigin: Origin | null` field and an open/close pair —
-pure boilerplate that grows linearly with every new modal.
-
-Second, the module also embeds the entire **AI generation state machine** (lines 34-40 private
-`activeAiGeneration`/`nextAiGenerationId`, plus `startAiGeneration`, `setAiPreview`,
-`finishAiGeneration`, `failAiGeneration`, `endAiGeneration`, `closeAiResult`,
-`isAiGenerationActive`, and `swapObjectUrl` object-URL lifecycle) — ~90 lines that have nothing to
-do with modal visibility yet live in the same object as `clearTutorialVisible` and
-`resizingActionButtons`.
-
-#### Proposed solution
-
-1. Factor a modal primitive:
-
-```ts
-// web/src/lib/state/modal.svelte.ts
-export function createModal() {
-  const s = $state({ open: false, origin: null as Origin | null });
-  return {
-    s,
-    open: (o: Origin | null) => {
-      s.origin = o;
-      s.open = true;
-    },
-    close: () => (s.open = false),
-  };
-}
-```
-
-and build `colorPicker`, `coloringBook`, `parentCenter`, `aiPrompt` from it. 2. Move the
-AI-generation machine (fields + the eight functions + `swapObjectUrl`) into
-`web/src/lib/state/aiGeneration.svelte.ts`. `ui.svelte.ts` keeps only cross-cutting flags
-(`resizingActionButtons`, `clearTutorialVisible`).
-
-#### Verification
-
-`ui.svelte.ts` loses the four duplicated pairs and the AI block; consumers of `ui.aiResultOpen` etc.
-update to the new module; existing behavior verified via the AI-flow E2E and any unit coverage;
-`npm run check` green.
-
----
-
 ### [P2][maintainability] `TRIM_ORDER` re-lists palette hex literals and silently rots when a swatch color changes
 
 **File(s):** `web/src/lib/state/colors.svelte.ts:20-55` — pinned at SHA f934d43

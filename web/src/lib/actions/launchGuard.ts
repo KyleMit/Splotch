@@ -13,7 +13,7 @@
 //
 // modalDialog registers the zone on open and consults it before dismissing on a
 // backdrop tap, so any modal that passes an `origin` is covered automatically.
-import type { Origin } from '$lib/state/ui.svelte';
+import type { Origin } from '$lib/state/modal.svelte';
 
 // Buttons are 48px; a 72px radius covers the target plus the slop of a
 // toddler's aim without reaching neighbouring controls.

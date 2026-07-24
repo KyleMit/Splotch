@@ -1,5 +1,5 @@
+import { ui } from '$lib/state/ui.svelte';
 import {
-  ui,
   startAiGeneration,
   setAiPreview,
   finishAiGeneration,
@@ -7,7 +7,7 @@ import {
   closeAiResult,
   isAiGenerationActive,
   endAiGeneration,
-} from '$lib/state/ui.svelte';
+} from '$lib/state/aiGeneration.svelte';
 import { settings } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api';
 import { exportCanvasBlob } from './engine';

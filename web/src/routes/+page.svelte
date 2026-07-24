@@ -12,7 +12,7 @@
   import ClearButton from '$lib/components/ClearButton.svelte';
   import NotchBand from '$lib/components/NotchBand.svelte';
   import ParentHelpButton from '$lib/components/ParentHelpButton.svelte';
-  import { ui } from '$lib/state/ui.svelte';
+  import { parentCenter } from '$lib/state/ui.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import {
     initPWAUpdates,
@@ -63,13 +63,13 @@
 
   // The Parent Center dialog is the one overlay too heavy even for an idle
   // slice (~200 ms mounted under a 4× throttle), so it waits for its first
-  // open — the tap that flips ui.parentCenterOpen latches the mount, and the
+  // open — the tap that flips parentCenter.open latches the mount, and the
   // dialog's modalDialog $effect shows it as soon as it lands. The corner
   // button that opens it (ParentHelpButton) stays eagerly mounted above.
   let ParentCenter = $state<Component | null>(null);
   let parentCenterWanted = $state(false);
   $effect(() => {
-    if (ui.parentCenterOpen) parentCenterWanted = true;
+    if (parentCenter.open) parentCenterWanted = true;
   });
 
   onMount(() => {

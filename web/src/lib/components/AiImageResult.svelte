@@ -2,7 +2,8 @@
   import Icon from './Icon.svelte';
   import AiDial from './AiDial.svelte';
   import AiConfetti from './AiConfetti.svelte';
-  import { ui, closeAiResult } from '$lib/state/ui.svelte';
+  import { ui } from '$lib/state/ui.svelte';
+  import { closeAiResult } from '$lib/state/aiGeneration.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchZoom } from '$lib/actions/pinchZoom.svelte';

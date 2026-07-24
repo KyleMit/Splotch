@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { ui, closeAiPrompt } from '$lib/state/ui.svelte';
+  import { aiPrompt } from '$lib/state/ui.svelte';
   import { exportCanvasBlob } from '$lib/drawing/engine';
   import { getActiveOverlayImage } from '$lib/drawing/overlay';
   import { generateAiImage } from '$lib/drawing/aiImage';
@@ -41,7 +41,7 @@
     // Picking a style immediately hands off to the result modal, which shows
     // the progress dial (and any error) over the blurred drawing.
     const blob = drawingBlob;
-    closeAiPrompt();
+    aiPrompt.hide();
     generateAiImage({ blob, style });
   }
 </script>
@@ -49,15 +49,15 @@
 <dialog
   class="ai-prompt-modal modal-dialog modal-fly-in modal-shell"
   use:modalDialog={() => ({
-    open: ui.aiPromptOpen,
-    origin: ui.aiPromptOrigin,
-    onRequestClose: closeAiPrompt,
+    open: aiPrompt.open,
+    origin: aiPrompt.origin,
+    onRequestClose: aiPrompt.hide,
     onOpen: loadPreview,
     onClose: cleanupPreview,
   })}
 >
   <div class="ai-prompt-content">
-    <button class="ai-prompt-close modal-close-btn" aria-label="Close" onclick={closeAiPrompt}>
+    <button class="ai-prompt-close modal-close-btn" aria-label="Close" onclick={aiPrompt.hide}>
       <Icon name="close" class="modal-close-icon" />
     </button>
 

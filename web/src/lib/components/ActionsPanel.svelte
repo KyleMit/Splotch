@@ -8,7 +8,7 @@
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
   import { setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte';
   import { toolState, selectBrush, BRUSH_OPTIONS, type BrushType } from '$lib/state/tool.svelte';
-  import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
+  import { ui, coloringBook, aiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
   import { network } from '$lib/state/network.svelte';
   import { layout } from '$lib/state/layout.svelte';
@@ -233,14 +233,14 @@
 
   function handleColoringBookClick() {
     if (!coloringBtnEl) return;
-    openColoringBook(buttonCenter(coloringBtnEl));
+    coloringBook.show(buttonCenter(coloringBtnEl));
   }
 
   async function handleAiImageClick() {
     if (ui.aiGenerating || canvasState.canvasEmpty || !aiBtnEl) return;
 
     if (settings.aiCustomizationEnabled) {
-      openAiPrompt(buttonCenter(aiBtnEl));
+      aiPrompt.show(buttonCenter(aiBtnEl));
       return;
     }
 
