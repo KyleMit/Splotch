@@ -39,6 +39,48 @@ else if (existsSync(join(WORK, 'STOP'))) {
   console.log(`state      STOPPED (STOP file present — rm ${WORK}/STOP to resume)`);
 } else console.log('state      idle');
 
+// While a finding is in flight, report how long it — and the current `claude -p`
+// call — have been running, so a supervising agent can gut-check the duration
+// (thresholds + remediation live in the burn-down-audits skill). Facts only, no
+// verdict. "In flight" means the newest `iter` line is more recent than the
+// newest terminal marker (DONE/DEFERRED/INVALID); between findings, show nothing.
+if (pid) {
+  const runLogPath = join(LOGS, 'run.log');
+  const logLines = existsSync(runLogPath)
+    ? readFileSync(runLogPath, 'utf8').trim().split('\n')
+    : [];
+  const lastIndex = (re) => logLines.reduce((acc, l, i) => (re.test(l) ? i : acc), -1);
+  const iterIdx = lastIndex(/\]\s+iter\d+\b/);
+  const termIdx = lastIndex(/\]\s+(DONE|DEFERRED|INVALID:)/);
+  if (iterIdx >= 0 && iterIdx > termIdx) {
+    const stampSecs = (line) => {
+      const m = line.match(/^\[(\d{2}):(\d{2}):(\d{2})\]/);
+      return m ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) : null;
+    };
+    const now = new Date();
+    const nowSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    const since = (secs) => (secs == null ? null : (nowSecs - secs + 86400) % 86400);
+    const fmt = (s) =>
+      s >= 3600
+        ? `${Math.floor(s / 3600)}h${Math.floor((s % 3600) / 60)}m`
+        : s >= 60
+          ? `${Math.floor(s / 60)}m${String(s % 60).padStart(2, '0')}s`
+          : `${s}s`;
+    const findingSecs = since(stampSecs(logLines[iterIdx]));
+    const title = logLines[iterIdx].replace(/^\[\d{2}:\d{2}:\d{2}\]\s+/, '');
+    if (findingSecs != null) console.log(`in-flight  ${fmt(findingSecs)}  ${title}`);
+    // The current role's `claude -p` child; its ps ELAPSED is the current call's age.
+    const cpid = (runCmd('pgrep', ['-f', 'claude -p']).stdout ?? '')
+      .split('\n')
+      .filter(Boolean)
+      .pop();
+    if (cpid) {
+      const etime = (runCmd('ps', ['-o', 'etime=', '-p', cpid.trim()]).stdout ?? '').trim();
+      if (etime) console.log(`           current claude call ${etime} (pid ${cpid.trim()})`);
+    }
+  }
+}
+
 const prNumberFile = join(WORK, 'pr-number');
 if (existsSync(prNumberFile))
   console.log(`PR         #${readFileSync(prNumberFile, 'utf8').trim()}`);

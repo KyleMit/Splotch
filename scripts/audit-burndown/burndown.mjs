@@ -53,9 +53,13 @@ const PUSH_TEST_CMD = process.env.PUSH_TEST_CMD ?? 'npm test'; // full suite, on
 const MAX_DEFERRALS = Number(process.env.MAX_DEFERRALS ?? 3); // consecutive deferrals before halting
 const RETRIES = Number(process.env.RETRIES ?? 3); // retries for transient claude failures
 
+// Impl/review are pinned to the explicit Opus 5 id, not the `opus` alias: the
+// alias still resolves to opus-4-8 in this environment, so the pin is what
+// actually moves both roles onto Opus 5 (verify stays on Sonnet 5 — the `sonnet`
+// alias already resolves there). Override with MODEL_* to tier for cost/speed.
 const MODEL_VERIFY = process.env.MODEL_VERIFY ?? 'sonnet';
-const MODEL_IMPL = process.env.MODEL_IMPL ?? 'opus';
-const MODEL_REVIEW = process.env.MODEL_REVIEW ?? 'opus';
+const MODEL_IMPL = process.env.MODEL_IMPL ?? 'claude-opus-5';
+const MODEL_REVIEW = process.env.MODEL_REVIEW ?? 'claude-opus-5';
 
 const BUDGET_VERIFY = process.env.BUDGET_VERIFY ?? '3.00'; // verify reads a lot of code; $1 capped complex findings and clustered deferrals (2026-07-24 retro)
 const BUDGET_IMPL = process.env.BUDGET_IMPL ?? '4.00';

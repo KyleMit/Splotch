@@ -64,9 +64,9 @@ LINT_CMD='npx eslint'          # per-finding lint gate, on the fix's changed fil
 PUSH_TEST_CMD='npm test'       # full suite once per batch, before each push
 MAX_DEFERRALS=3       # consecutive deferrals before halting
 RETRIES=3             # retries per claude call before treating it as a deferral
-MODEL_VERIFY=sonnet   # verification is mostly grep-and-confirm
-MODEL_IMPL=opus
-MODEL_REVIEW=opus
+MODEL_VERIFY=sonnet          # verification is mostly grep-and-confirm (`sonnet` alias → Sonnet 5)
+MODEL_IMPL=claude-opus-5     # pinned id, not the `opus` alias — see below
+MODEL_REVIEW=claude-opus-5
 BUDGET_VERIFY=3.00    # --max-budget-usd per call; verify is code-read-heavy — see Tuning & lessons
 BUDGET_IMPL=4.00
 BUDGET_REVIEW=2.00
@@ -138,6 +138,72 @@ commit log only (they carry their reason in the commit message).
   lets you `tmux attach`; without it `overnight.mjs` falls back to a detached `caffeinate` process
   (setsid) that still survives a closed terminal — `brew install tmux` only if you want to attach.
 
+## Responding to control messages mid-run
+
+The driver runs detached, so the user steers it by chatting with **you**, the supervising agent —
+not by touching the process. Four verbs, each a fixed procedure. Never hand-edit `docs/AUDIT.md` or
+the running process; only use the signals below. All four leave a resumable end state (state is
+`docs/AUDIT.md` + git + the draft PR), so this session or a brand-new one can carry out any of them.
+
+### "status" — report without interrupting anything
+
+Read-only: do **not** touch the STOP file or the process. Run `npm run audit:status` and relay the
+counts, run state, and — when a finding is in flight — the two elapsed figures it prints
+(`in-flight <elapsed> <finding>` and `current claude call <etime>`). Then **gut-check the duration**
+against these norms (from real runs on this repo):
+
+| Signal                                       | Normal   | Watch     | Investigate |
+| -------------------------------------------- | -------- | --------- | ----------- |
+| whole finding (`in-flight`)                  | ≤ 15 min | 15–25 min | > 25 min    |
+| single `claude` call (`current claude call`) | ≤ 10 min | 10–15 min | > 15 min    |
+
+Verify is ~150s; impl/review are the long poles; an E2E-gated finding runs longer. Budget and turn
+caps normally terminate a runaway call on their own near these ceilings.
+
+* **Within normal** → just report it; do nothing.
+* **Watch band (maybe too long)** → don't intervene yet. Schedule **one** re-check a few minutes out
+  and see whether it *advanced* (HEAD moved or `run.log` grew). Run it as a background job so it
+  reports back on its own:
+  ```bash
+  before="$(git rev-parse HEAD)$(wc -l < .audit-work/logs/run.log)"
+  sleep 300
+  after="$(git rev-parse HEAD)$(wc -l < .audit-work/logs/run.log)"
+  [ "$before" = "$after" ] && echo "STALLED: no advance in 5m" || echo "ADVANCED"
+  ```
+  Advanced → all is well. Still identical → treat it as *investigate*.
+* **Investigate (too long)** → decide whether remediation is warranted before acting. Check whether
+  the current `claude` child is alive and *working* (`ps -o %cpu,etime -p <pid>`; is its role
+  `.audit-work/logs/*.json` still growing?) versus hung (0% CPU, static log and envelope). A
+  genuinely stuck call: `pkill -TERM -f 'claude -p'` kills only that one call — the driver's
+  `RETRIES` re-attempt it or the finding defers; the orchestrator and every committed fix are
+  untouched and state stays durable. Never kill `burndown.mjs` itself for a merely slow finding.
+
+### "pause" — stop cleanly after the current finding
+
+`touch .audit-work/STOP`. The driver checks it at the top of each iteration, so it **finishes the
+entire in-flight workflow** — verify → implement → review → gates → commit, and the exit flush
+pushes the batch and posts each fix's PR comment — then exits without starting the next finding.
+Wait for the process to exit, then confirm the end state is resumable: no `burndown.mjs` /
+`claude -p` process left, `git rev-parse HEAD` == `origin/<branch>` (nothing unpushed), and the
+durable checkpoint (memory / handoff) reflects the new counts. **Leave the STOP file in place** — it
+holds the pause; a stray relaunch would exit immediately. Stand down any run-log monitor while
+paused.
+
+### "resume" / "continue" — start the next finding
+
+Only after verifying **nothing is already in flight**: `pgrep -f audit-burndown/burndown.mjs` must
+be empty (if it isn't, the run is already going — say so, don't launch a second). Then
+`rm
+.audit-work/STOP`, relaunch with the exact command from the durable checkpoint (including the
+env overrides that dodge the flaky palette snapshots), and re-arm the event-driven monitor.
+
+### "wrap up" — finalize now and mark the PR ready
+
+Terminal, unlike pause. `touch .audit-work/STOP` so the in-flight finding still lands (don't waste a
+nearly-done fix), wait for exit, then run **Closing out a run** below: push anything unpushed, add
+the `docs/AUDIT-LOG.md` row, tidy any emptied `## Source:` sections, and `gh pr ready <PR#>`. The
+backlog may still hold findings — that's expected; wrap-up ships what's done and closes the run out.
+
 ## Surviving the context window (supervising a 100+-finding run)
 
 A full run is many hours; you — the supervising agent — will not last it in one context window. But
@@ -171,10 +237,16 @@ Notes from real runs — set these before a large run rather than discovering th
   is your usage window. A big run self-pauses when the window is exhausted (retries fail → deferrals
   → halt) and resumes cleanly on relaunch. Size a run by wall-clock and usage, not the dollar
   figure.
-* **Scoping is correct; the wall-clock is inherent.** verify=sonnet (cheap confirm + brief),
-  impl=opus, review=opus (adversarial). ~8–10 min/finding is three sequential LLM roles plus
+* **Scoping is correct; the wall-clock is inherent.** verify=Sonnet 5 (cheap confirm + brief),
+  impl=Opus 5, review=Opus 5 (adversarial). ~8–10 min/finding is three sequential LLM roles plus
   independent test gates — and the reviewer running the tests *itself* rather than trusting the
   author is the whole point, so that redundancy stays. A ~100-finding chunk is ~13–16h.
+* **The opus roles are pinned to the explicit `claude-opus-5` id, not the `opus` alias.** The `opus`
+  alias can lag a fresh release (it still resolved to `claude-opus-4-8` right after Opus 5 shipped),
+  so pinning the id is what actually puts impl/review on Opus 5; `sonnet` already resolves to Sonnet
+  5, so verify stays on the alias. When a newer opus lands, re-probe
+  (`claude -p --model
+  <id> --output-format json 'ok'` → check `modelUsage`) and bump the pin.
 * **The one safe speed lever is impl-model tiering.** Much of a `/code-audit` backlog is trivially
   mechanical (P4/P5 dead-code, rename, dedup); routing those to `MODEL_IMPL=sonnet` (the opus review
   still gates them) shaves the long tail, at a sliver of impl-correctness margin — opt in per run,
