@@ -28,18 +28,12 @@
 // ?v= already in the URL means we just tried that version, so we never
 // redirect to it again — one attempt per deployed version, no reload loop.
 
-import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
+import { canvasState } from '$lib/state/canvas.svelte';
 import { scheduleIdle } from '$lib/idle';
 
 let initialized = false;
 let refreshState: 'idle' | 'activating' | 'deferred' = 'idle';
 let registrationScheduled = false;
-
-// The registration gate waits for the shared settled-in signal (the same one
-// the Install Banner uses). Pre-hydration strokes (ADR-0072) don't tick
-// strokeCount, so only post-hydration strokes count — acceptable, it only
-// defers registration slightly further.
-export const STROKES_BEFORE_SW_REGISTER = SETTLED_IN_STROKES;
 
 // Grace period after posting SKIP_WAITING before we give up waiting for the new
 // worker to take control. If controllerchange never arrives, the lifecycle must
