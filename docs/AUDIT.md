@@ -11,47 +11,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P2][maintainability] `TRIM_ORDER` re-lists palette hex literals and silently rots when a swatch color changes
-
-**File(s):** `web/src/lib/state/colors.svelte.ts:20-55` — pinned at SHA f934d43
-
-#### Problem
-
-`PALETTE_COLORS` (lines 20-31) defines each swatch's hex. `TRIM_ORDER` (lines 44-55) then re-types
-those same hex strings by hand, in a different order, keyed only by comments:
-
-```ts
-export const TRIM_ORDER: string[] = [
-  '#B5835A', // Brown  (bonus)
-  '#4FC4C0', // Teal   (bonus)
-  …
-  '#62A2E9', // Blue
-  '#AB71E1', // Purple
-  BLACK_INK, // Black
-];
-```
-
-If anyone re-tunes, say, Blue's hex in `PALETTE_COLORS`, `TRIM_ORDER` keeps the old literal and now
-contains a string that matches no swatch — the trim logic silently drops or mis-orders a color with
-no compile error and no test failure. `TRIM_ORDER` is `string[]`, so there's not even a type link
-back to the palette.
-
-#### Proposed solution
-
-Make trim priority a property of the palette rather than a parallel list of magic hexes. Either add
-a `trimPriority: number` (or `trimRank`) field to each `PaletteColor` and derive `TRIM_ORDER` by
-sorting, or key `TRIM_ORDER` off `label`/a stable id that TypeScript can validate against
-`PALETTE_COLORS`. At minimum, add a unit test asserting
-`TRIM_ORDER.every(hex => PALETTE_COLORS.some(c => c.hex === hex))` and
-`TRIM_ORDER.length === PALETTE_COLORS.length` so a drift fails CI.
-
-#### Verification
-
-The new test fails if you change a palette hex without updating trim; passes at current SHA.
-`colors.svelte.test.ts` still green.
-
----
-
 ### [P3][architecture] `actionButtonLayout.svelte.ts` holds no state — it's geometry + a DOM-mutating writer misfiled under `state/`
 
 **File(s):** `web/src/lib/state/actionButtonLayout.svelte.ts:1-145` — pinned at SHA f934d43
