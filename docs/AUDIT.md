@@ -11,59 +11,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P2][duplication] The `BOOL_SETTINGS` table pattern doesn't cover the non-boolean settings, defeating its own guarantee
-
-**File(s):** `web/src/lib/state/settings.svelte.ts:60-101` (table), `:150-162` (init), `:197-212`
-(setters), `:249-263` (reload) — pinned at SHA f934d43
-
-#### Problem
-
-The `BOOL_SETTINGS` table exists explicitly to make "forgetting the reloadSettings entry …
-impossible" (comment, lines 57-59) by generating the `$state` init, setters, and `reloadSettings()`
-from one source. But that guarantee only holds for booleans. The four non-boolean settings —
-`soundVolume`, `actionButtonScale`, `aiAccessToken`, `theme` — are each hand-wired in **three**
-separate places:
-
-```ts
-// init (150-162):
-soundVolume: clampVolume(readInt(SOUND_VOLUME_KEY, SOUND_VOLUME_DEFAULT)),
-actionButtonScale: clampButtonScale(readInt(ACTION_BUTTON_SCALE_KEY, …)),
-// setters (197-207): setSoundVolume, setActionButtonScale …
-// reload (256-261):
-settings.soundVolume = clampVolume(readInt(SOUND_VOLUME_KEY, settings.soundVolume));
-settings.actionButtonScale = clampButtonScale(readInt(ACTION_BUTTON_SCALE_KEY, …));
-settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);
-settings.theme = readTheme(settings.theme);
-```
-
-`soundVolume` and `actionButtonScale` in particular have the identical shape `[key, default, clamp]`
-and are exactly the class of setting the table was built to protect — yet they're the ones still
-exposed to the forget-a-reload-line bug.
-
-#### Proposed solution
-
-Add an `INT_SETTINGS` table parallel to `BOOL_SETTINGS`, entries `[key, default, clamp]`:
-
-```ts
-const INT_SETTINGS = {
-  soundVolume: [SOUND_VOLUME_KEY, SOUND_VOLUME_DEFAULT, clampVolume],
-  actionButtonScale: [ACTION_BUTTON_SCALE_KEY, ACTION_BUTTON_SCALE_DEFAULT, clampButtonScale],
-} satisfies Record<string, [string, number, (v: number) => number]>;
-```
-
-Generate the `$state` int fields, `makeIntSetter(prop)`, and the `reloadSettings` int loop from it,
-exactly as the bool path does. `theme`/`aiAccessToken` have bespoke read/apply logic (`readTheme` +
-`applyTheme`), so they can stay hand-written but should be called out as the deliberate special
-cases.
-
-#### Verification
-
-`settings.svelte.test.ts` still passes; add a test asserting a round-trip (`setSoundVolume` →
-`reloadSettings` after a durable restore) recovers the value. Confirm no int setting appears in more
-than two locations (table + wrapper export).
-
----
-
 ### [P2][complexity] `settings.svelte.ts` is a god-module bundling four unrelated concerns
 
 **File(s):** `web/src/lib/state/settings.svelte.ts:1-373` — pinned at SHA f934d43

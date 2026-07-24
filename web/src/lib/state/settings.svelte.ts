@@ -122,18 +122,27 @@ function clampButtonScale(v: number) {
   return Math.max(ACTION_BUTTON_SCALE_MIN, Math.min(ACTION_BUTTON_SCALE_MAX, Math.round(v)));
 }
 
+// The integer counterpart to BOOL_SETTINGS: live-state property name ->
+// [localStorage key, default, clamp]. Same generation guarantee — the initial
+// $state, the setters, and reloadSettings() all come from this table, so a new
+// int setting is one entry here plus its named-export wrapper.
+const INT_SETTINGS = {
+  // Drawing sound volume percentage. 50 is the normal authored volume, 100 is 2x.
+  soundVolume: [SOUND_VOLUME_KEY, SOUND_VOLUME_DEFAULT, clampVolume],
+  // Action-center button size percentage (see ACTION_BUTTON_SCALE_* above).
+  actionButtonScale: [ACTION_BUTTON_SCALE_KEY, ACTION_BUTTON_SCALE_DEFAULT, clampButtonScale],
+} satisfies Record<string, [string, number, (v: number) => number]>;
+
+type IntSettingKey = keyof typeof INT_SETTINGS;
+
 function readTheme(fallback: ThemePreference): ThemePreference {
   const raw = readString(THEME_KEY, fallback);
   return isThemePreference(raw) ? raw : fallback;
 }
 
-interface Settings extends Record<BoolSettingKey, boolean> {
+interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey, number> {
   // Appearance: explicit light/dark, or 'system' to follow the OS setting.
   theme: ThemePreference;
-  // Drawing sound volume percentage. 50 is the normal authored volume, 100 is 2x.
-  soundVolume: number;
-  // Action-center button size percentage (see ACTION_BUTTON_SCALE_* above).
-  actionButtonScale: number;
   // String setting (special case): the managed-access token, persisted verbatim.
   aiAccessToken: string;
   // Parent-supplied Gemini API key (BYOK). Held in memory only; hydrated from
@@ -151,11 +160,13 @@ export const settings: Settings = $state({
   ...(Object.fromEntries(
     Object.entries(BOOL_SETTINGS).map(([prop, [key, def]]) => [prop, readBool(key, def)])
   ) as Record<BoolSettingKey, boolean>),
+  ...(Object.fromEntries(
+    Object.entries(INT_SETTINGS).map(([prop, [key, def, clamp]]) => [
+      prop,
+      clamp(readInt(key, def)),
+    ])
+  ) as Record<IntSettingKey, number>),
   theme: readTheme(THEME_DEFAULT),
-  soundVolume: clampVolume(readInt(SOUND_VOLUME_KEY, SOUND_VOLUME_DEFAULT)),
-  actionButtonScale: clampButtonScale(
-    readInt(ACTION_BUTTON_SCALE_KEY, ACTION_BUTTON_SCALE_DEFAULT)
-  ),
   aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
   aiUserApiKey: '',
   saveFolderName: null,
@@ -194,17 +205,18 @@ export function setTheme(v: ThemePreference) {
   applyTheme(v);
 }
 
-export function setSoundVolume(v: number) {
-  const next = clampVolume(v);
-  settings.soundVolume = next;
-  writeInt(SOUND_VOLUME_KEY, next);
+// Build a setter that clamps, updates the live value, and persists it.
+function makeIntSetter(prop: IntSettingKey) {
+  const [key, , clamp] = INT_SETTINGS[prop];
+  return (v: number) => {
+    const next = clamp(v);
+    settings[prop] = next;
+    writeInt(key, next);
+  };
 }
 
-export function setActionButtonScale(v: number) {
-  const next = clampButtonScale(v);
-  settings.actionButtonScale = next;
-  writeInt(ACTION_BUTTON_SCALE_KEY, next);
-}
+export const setSoundVolume = makeIntSetter('soundVolume');
+export const setActionButtonScale = makeIntSetter('actionButtonScale');
 
 export function setAiAccessToken(v: string) {
   settings.aiAccessToken = v;
@@ -253,10 +265,12 @@ export function reloadSettings() {
   ][]) {
     settings[prop] = readBool(key, settings[prop]);
   }
-  settings.soundVolume = clampVolume(readInt(SOUND_VOLUME_KEY, settings.soundVolume));
-  settings.actionButtonScale = clampButtonScale(
-    readInt(ACTION_BUTTON_SCALE_KEY, settings.actionButtonScale)
-  );
+  for (const [prop, [key, , clamp]] of Object.entries(INT_SETTINGS) as [
+    IntSettingKey,
+    [string, number, (v: number) => number],
+  ][]) {
+    settings[prop] = clamp(readInt(key, settings[prop]));
+  }
   settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);
   settings.theme = readTheme(settings.theme);
   applyTheme(settings.theme);
