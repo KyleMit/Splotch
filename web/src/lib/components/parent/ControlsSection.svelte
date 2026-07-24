@@ -1,7 +1,7 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
-  import Slider from '../Slider.svelte';
+  import SliderRow from './SliderRow.svelte';
   import Icon from '../Icon.svelte';
   import type { CommonIconName } from '../iconTypes';
   import {
@@ -107,20 +107,14 @@
 
   {#if settings.advancedControlsEnabled}
     <div class="setting slider-setting button-size-setting" transition:slide={{ duration: 220 }}>
-      <div class="slider-label" id="actionButtonScaleLabel">
-        <span class="slider-label-name">
-          <Icon name="photo-size-select-small" class="setting-icon" />
-          Button Size
-        </span>
-        <span>{displayedScale}%</span>
-      </div>
-      <Slider
+      <SliderRow
+        id="actionButtonScaleLabel"
+        label="Button Size"
+        icon="photo-size-select-small"
         value={displayedScale}
         min={ACTION_BUTTON_SCALE_MIN}
         max={scaleCeiling}
         snap={scaleCeiling > ACTION_BUTTON_SCALE_DEFAULT ? ACTION_BUTTON_SCALE_DEFAULT : undefined}
-        labelId="actionButtonScaleLabel"
-        valueText="{displayedScale}%"
         onInput={setActionButtonScale}
         onActiveChange={onScaleActive}
       />
@@ -172,26 +166,6 @@
 
   .button-size-setting {
     margin: 12px 0 0;
-  }
-
-  .slider-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--text-mid);
-  }
-
-  .slider-label-name {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    font-size: var(--font-size-md);
-    font-weight: 500;
-    color: var(--text);
   }
 
   .chip-block {

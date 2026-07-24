@@ -9,32 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P3][duplication] `.slider-label` block duplicated between SoundSection and ControlsSection
-
-**File(s):** `web/src/lib/components/parent/SoundSection.svelte:71-80` ·
-`web/src/lib/components/parent/ControlsSection.svelte:177-186` — pinned at SHA f934d43
-
-#### Problem
-
-The `.slider-label` rule (flex, space-between, `gap:12px`, `margin-bottom:8px`, `--font-size-sm`,
-`weight 600`, `--text-mid`) is byte-identical in both slider-bearing sections, and both also
-duplicate the `.slider-setting` wrapper concept. A slider label + value + `<Slider>` is a recurring
-unit.
-
-#### Proposed solution
-
-Extract `web/src/lib/components/parent/SliderRow.svelte` encapsulating the label row
-(`<span>name</span><span>value</span>`), the `id`/`labelId` wiring, and the `<Slider>`. Sound and
-Controls both render it (Controls needs an optional leading icon slot for "Button Size"). Removes
-the duplicated `.slider-label` CSS and the shared `labelId` boilerplate.
-
-#### Verification
-
-`grep -rn "slider-label" web/src` shows one definition. Volume and Button-Size sliders still show
-label+percentage and remain operable.
-
----
-
 ### [P3][design-tokens] Hardcoded active-segment shadow `0 1px 4px rgba(0,0,0,0.18)` — no token, duplicated
 
 **File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:131` ·
