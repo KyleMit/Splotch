@@ -22,3 +22,7 @@ export const STYLE_SUFFIXES = {
 export type StyleName = keyof typeof STYLE_SUFFIXES;
 
 export const STYLE_NAMES = Object.keys(STYLE_SUFFIXES) as StyleName[];
+
+export function styleThumbPath(style: StyleName): string {
+  return `/styles/${style.toLowerCase()}.webp`;
+}

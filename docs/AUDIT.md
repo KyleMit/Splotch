@@ -9,31 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P4][maintainability] Style-thumbnail path is derived by inline string interpolation
-
-**File(s):** `web/src/lib/components/AiImagePrompt.svelte:76`; cf. `web/src/lib/ai/styles.ts` —
-pinned at SHA f934d43
-
-#### Problem
-
-`src="/styles/{s.toLowerCase()}.webp"` couples the on-disk asset path convention (lowercased style
-name under `/styles/`, `.webp`) to a template literal in the markup. The same style set drives both
-the picker order and these asset paths, but the path rule lives nowhere near `STYLE_SUFFIXES`. If a
-style name gains a space or the asset dir moves, this breaks silently (broken thumbnail, no type
-error).
-
-#### Proposed solution
-
-Add `export function styleThumbPath(style: StyleName): string` beside `STYLE_SUFFIXES` in styles.ts
-(returning `/styles/${style.toLowerCase()}.webp`), and call it in the template. Centralizes the
-convention and makes it greppable.
-
-#### Verification
-
-`npm run check`; run the app and confirm all eight style thumbnails still load.
-
----
-
 ### [P4][maintainability] AiDial's `ESTIMATE` is an unexplained 10 s with no link to the real deadline ladder
 
 **File(s):** `web/src/lib/components/AiDial.svelte:13`; cf. `web/src/lib/ai/limits.ts` — pinned at

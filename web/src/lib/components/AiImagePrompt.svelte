@@ -4,7 +4,7 @@
   import { exportCanvasBlob } from '$lib/drawing/engine';
   import { getActiveOverlayImage } from '$lib/drawing/overlay';
   import { generateAiImage } from '$lib/drawing/aiImage';
-  import { STYLE_NAMES, type StyleName } from '$lib/ai/styles';
+  import { STYLE_NAMES, type StyleName, styleThumbPath } from '$lib/ai/styles';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { createAiPreviewLoader } from './aiPreview';
 
@@ -73,7 +73,7 @@
           >
             <img
               class="ai-style-thumb"
-              src="/styles/{s.toLowerCase()}.webp"
+              src={styleThumbPath(s)}
               alt=""
               loading="lazy"
               decoding="async"
