@@ -86,3 +86,41 @@ ownership checks.
 safety/throttle/error/timeout branches, so an extraction that changes behaviour will fail it.
 
 ---
+
+### [P3][duplication] Crayon-buffer allocate-or-resize logic is written three times
+
+**File(s):**
+`web/src/lib/drawing/strokeOps.ts:229-252 (`livePaperBufferFor`), 299-322 (`crayonBufferFor`)`; also
+engine `resizeCanvas` overlay loop `web/src/lib/drawing/engine.ts:428-437` — pinned at SHA f934d43
+
+#### Problem
+
+The pattern "create a canvas at WxH, set `lineCap/lineJoin='round'`; on later calls, if the size
+grew, reassign width/height and re-arm caps and reset `dirty`/`bounds`" appears in both
+`livePaperBufferFor` and `crayonBufferFor` almost verbatim, and the cap-arming half repeats again in
+the engine's overlay resize loop.
+
+```ts
+// crayonBufferFor 313-320 and livePaperBufferFor 240-250 — near-identical bodies
+buf.ctx.canvas.width = w;
+buf.ctx.canvas.height = h;
+buf.ctx.lineCap = 'round';
+buf.ctx.lineJoin = 'round';
+buf.dirty = false;
+buf.bounds = null;
+```
+
+#### Proposed solution
+
+`function ensureBufferSize(buf: CrayonPassBuffer, w: number, h: number): void` that grows the
+backing canvas, re-arms round caps, and resets `dirty`/`bounds`. A
+`function newRoundCanvasCtx(w, h): CanvasRenderingContext2D | null` covers first allocation and the
+engine's overlay/snapshot canvases (also duplicated in `undoHistory.ensurePaperCovers`,
+`adoptPaperAsSnapshot`, and `engine.snapshotStrokes`).
+
+#### Verification
+
+`npm run test -- crayonBrush` and the resize/rotation E2E. Unit-test `ensureBufferSize` for the grow
+and no-op paths.
+
+---
