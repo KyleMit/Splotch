@@ -114,6 +114,27 @@ per-commit history rather than a batched dump. `scripts/audit-burndown/comment.m
 a successful push, so a comment never references an unpushed SHA. Deferrals and drops stay in the
 commit log only (they carry their reason in the commit message).
 
+**When there is no PR to post to, the comments are stored, not lost.** `pushBatch` spills them to
+`.audit-work/pending-comments.jsonl` and logs that it did.
+`scripts/audit-burndown/backfill-comments.mjs` is the replay tool:
+
+| Command                                 | Does                                                                                                                                                                                        |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backfill-comments.mjs capture [range]` | Rebuild records for fixes in `range` (default `main..HEAD`) from run.log + role envelopes + git. Idempotent — dedupes by SHA, so re-running after more findings land only adds the new ones |
+| `backfill-comments.mjs post`            | Post the stored records to the branch's open PR, dropping each only as it lands                                                                                                             |
+| `backfill-comments.mjs show`            | Print the rendered comments for review before posting                                                                                                                                       |
+
+`COMMENT_STORE=<path>` overrides the store. Point it at a **committed** path
+(`docs/AUDIT-PENDING-COMMENTS.jsonl`) when comments will sit unposted for a while — `.audit-work/`
+is gitignored, so the default store dies with the machine. Delete the committed store once `post`
+has drained it.
+
+> Iteration log names restart at `iter0001` every run, so `.audit-work/logs/iter0002.fix1.json` may
+> belong to an **earlier** run about a different finding — a shorter run does not clear the longer
+> one's files. `capture` dates each iteration by its own `verify.json` mtime and ignores anything
+> older. Anything else reading these logs by name (`audit:cost` totals every envelope it finds,
+> across all runs) has the same hazard.
+
 **Never wrap a SHA in backticks in GitHub-bound text.** GitHub's native linker turns a bare
 plain-text commit SHA into a link to that commit (rendered as a short, hoverable reference); inside
 a code span it stays dead monospace text, which is exactly the wrong outcome for a comment whose job
@@ -355,6 +376,9 @@ Notes from real runs — set these before a large run rather than discovering th
 * When the backlog is fully drained, `docs/AUDIT.md` should be deleted per
   `.claude/audit-conventions.md` (a partial run may also leave emptied `## Source:` sections — tidy
   them in a final commit).
+* Drain any stored per-commit comments before marking the PR ready: `backfill-comments.mjs capture`
+  then `post` (see above). If a store was committed while the API was down, delete it in the same
+  commit that posts it — a leftover `docs/AUDIT-PENDING-COMMENTS.jsonl` reads as work still owed.
 * Add one row to `docs/AUDIT-LOG.md` per `.claude/audit-conventions.md` §2 (date ·
   `burn-down-audits` · done/deferred/dropped counts + the PR link), then mark the PR ready.
 * The deliberately-unported alternative: driving this loop with in-session subagents. Only worth it
