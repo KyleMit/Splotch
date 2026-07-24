@@ -1,9 +1,8 @@
 # Audit — deferred findings
 
-> Findings the scripted audit burndown (the `burn-down-audits` skill) moved aside instead of
-> fixing — the verifier was unavailable, the implementation failed, or the change never passed
-> adversarial review. Each needs human triage: re-stage it in `docs/AUDIT.md`, file it as an
-> issue, or drop it.
+> Findings the scripted audit burndown (the `burn-down-audits` skill) moved aside instead of fixing
+> — the verifier was unavailable, the implementation failed, or the change never passed adversarial
+> review. Each needs human triage: re-stage it in `docs/AUDIT.md`, file it as an issue, or drop it.
 
 ### [P2][duplication] Extract the two-blit subtractive glaze stamp shared by `flushCrayonBuffer` and `renderOp`
 

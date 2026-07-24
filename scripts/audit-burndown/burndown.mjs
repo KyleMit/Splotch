@@ -36,6 +36,7 @@ import {
   shellOk,
   WORK,
 } from './lib.mjs';
+import { commitCommentBody, findingProblem } from './comment.mjs';
 
 chdirRoot();
 ensureWorkDirs();
@@ -47,6 +48,7 @@ const BRANCH = process.env.BRANCH ?? 'audit/burndown';
 const CHECK_CMD = process.env.CHECK_CMD ?? 'npm run check'; // type-check gate, every finding
 const TEST_CMD = process.env.TEST_CMD ?? 'npm run test:unit'; // fast-test gate, every finding
 const E2E_CMD = process.env.E2E_CMD ?? 'npm run test:e2e --'; // targeted E2E, only UI-touching findings
+const LINT_CMD = process.env.LINT_CMD ?? 'npx eslint'; // per-finding lint gate, on the fix's changed files
 const PUSH_TEST_CMD = process.env.PUSH_TEST_CMD ?? 'npm test'; // full suite, once per batch before push
 const MAX_DEFERRALS = Number(process.env.MAX_DEFERRALS ?? 3); // consecutive deferrals before halting
 const RETRIES = Number(process.env.RETRIES ?? 3); // retries for transient claude failures
@@ -55,7 +57,7 @@ const MODEL_VERIFY = process.env.MODEL_VERIFY ?? 'sonnet';
 const MODEL_IMPL = process.env.MODEL_IMPL ?? 'opus';
 const MODEL_REVIEW = process.env.MODEL_REVIEW ?? 'opus';
 
-const BUDGET_VERIFY = process.env.BUDGET_VERIFY ?? '1.00';
+const BUDGET_VERIFY = process.env.BUDGET_VERIFY ?? '3.00'; // verify reads a lot of code; $1 capped complex findings and clustered deferrals (2026-07-24 retro)
 const BUDGET_IMPL = process.env.BUDGET_IMPL ?? '4.00';
 const BUDGET_REVIEW = process.env.BUDGET_REVIEW ?? '2.00';
 
@@ -163,6 +165,9 @@ function defer(title, why) {
     ? readFileSync(DEFERRED_FILE, 'utf8')
     : DEFERRED_HEADER;
   writeFileSync(DEFERRED_FILE, `${existing.replace(/\n*$/, '\n\n')}${entry.replace(/\n*$/, '\n')}`);
+  // The header + appended entries aren't wrapped at dprint's width, which would
+  // redden CI's Quality (format) job. Normalise before it goes into the commit.
+  runCmd('npx', ['dprint', 'fmt', DEFERRED_FILE]);
   deleteFirstEntry();
   git('add', 'docs/AUDIT.md', DEFERRED_FILE);
   git('commit', '-q', '-m', `chore(audit): defer — ${why}\n\nAudit: ${title}`);
@@ -187,6 +192,47 @@ const prNumberFile = join(WORK, 'pr-number');
 let prNumber = existsSync(prNumberFile) ? readFileSync(prNumberFile, 'utf8').trim() : '';
 let done = 0;
 let sincePush = 0;
+const pending = []; // completed fixes awaiting their per-commit PR comment (posted on the next successful push)
+
+// Push the batch, create the draft PR on the first push, and post one per-commit
+// comment for each pushed fix. Returns false (commits held locally) if the
+// full-suite gate or the push itself fails.
+function pushBatch({ final = false } = {}) {
+  if (!shellOk(PUSH_TEST_CMD)) {
+    logLine(
+      final
+        ? `  ${PUSH_TEST_CMD} red on the final batch — commits held locally, not pushed`
+        : `  ${PUSH_TEST_CMD} red at batch boundary — holding push, will retry next batch`
+    );
+    return false;
+  }
+  if (!gitOk('push', '-u', 'origin', BRANCH)) {
+    logLine('  push failed — continuing, will retry next batch');
+    return false;
+  }
+  sincePush = 0;
+  if (!prNumber) {
+    const created = runCmd('gh', [
+      'pr',
+      'create',
+      '--draft',
+      '--title',
+      'Audit burndown',
+      '--body',
+      'Automated burndown of docs/AUDIT.md. In progress.',
+    ]);
+    prNumber = (created.stdout ?? '').trim().match(/(\d+)$/)?.[1] ?? '';
+    if (prNumber) writeFileSync(prNumberFile, prNumber);
+  }
+  if (prNumber) {
+    for (const rec of pending) {
+      runCmd('gh', ['pr', 'comment', prNumber, '--body', commitCommentBody(rec)]);
+    }
+    pending.length = 0;
+  }
+  return true;
+}
+
 logLine(`starting — target ${MAX_ISSUES} issues on ${BRANCH}`);
 
 // =============================================================================
@@ -299,6 +345,11 @@ while (done < MAX_ISSUES) {
     continue;
   }
 
+  // Captured for the per-commit PR comment: the implementer's own summary of the
+  // fix, and every adversarial catch that forces a revision before approval.
+  const fixSummary = structured(impl.env).summary ?? '';
+  const reviewCatches = [];
+
   // ---- 4/5. REVIEW, at most two fix rounds ----------------------------------
   const briefPath = join(WORK, 'current-brief.md');
   const brief = existsSync(briefPath) ? readFileSync(briefPath, 'utf8') : '';
@@ -337,7 +388,9 @@ while (done < MAX_ISSUES) {
     status = structured(review.env).status ?? 'CHANGES_REQUIRED';
     if (status === 'APPROVED' || round === 3) break;
 
-    const feedback = (structured(review.env).findings ?? []).map((f) => `- ${f}`).join('\n');
+    const roundFindings = structured(review.env).findings ?? [];
+    reviewCatches.push(...roundFindings);
+    const feedback = roundFindings.map((f) => `- ${f}`).join('\n');
     logLine(`  round ${round}: changes required`);
 
     // Resume the SAME implementer session: it retains its full history —
@@ -401,6 +454,20 @@ while (done < MAX_ISSUES) {
     continue;
   }
 
+  // Lint gate — CHECK_CMD type-checks, but eslint rules (no-explicit-any, a raw
+  // Map in a .svelte.ts, ...) are a separate axis: a fix can pass the type-check
+  // yet redden CI's Quality (lint) job. Lint just the files this fix touched —
+  // fast, and attributed to the one finding rather than surfacing a batch later.
+  const lintable = gitOut('diff', '--name-only', baseSha, 'HEAD')
+    .split('\n')
+    .filter((f) => /\.(ts|svelte|mjs|cjs|js)$/.test(f));
+  if (lintable.length && !shellOk(`${LINT_CMD} ${lintable.join(' ')}`)) {
+    logLine(`  lint red after review — rolling back to ${baseSha}`);
+    git('reset', '-q', '--hard', baseSha);
+    defer(title, 'fix introduced a lint violation');
+    continue;
+  }
+
   // Fold the AUDIT.md deletion into the final commit so the file is always an
   // exact record of what remains and a crash leaves nothing to reconcile.
   deleteFirstEntry();
@@ -412,62 +479,29 @@ while (done < MAX_ISSUES) {
 
   logLine(`  DONE  ${sha.slice(0, 12)}`);
   appendFileSync(join(WORK, 'completed.log'), `${sha}  ${title}\n`);
+  pending.push({
+    sha,
+    title,
+    problem: findingProblem(issue),
+    fix: fixSummary,
+    catches: reviewCatches,
+    e2eSpecs,
+  });
   done += 1;
   sincePush += 1;
   consecutive = 0;
 
   // ---- 7. PUSH, batched -----------------------------------------------------
-  if (sincePush >= PUSH_EVERY) {
-    // Full suite once per batch (E2E + asset-gen the per-finding TEST_CMD skips
-    // for speed). Never push a red batch: hold the commits locally and retry at
-    // the next boundary — a transient/flaky E2E clears on the retry, and a real
-    // regression is caught in the morning via audit:status rather than shipped.
-    if (!shellOk(PUSH_TEST_CMD)) {
-      logLine(`  ${PUSH_TEST_CMD} red at batch boundary — holding push, will retry next batch`);
-    } else if (gitOk('push', '-u', 'origin', BRANCH)) {
-      if (!prNumber) {
-        const created = runCmd('gh', [
-          'pr',
-          'create',
-          '--draft',
-          '--title',
-          'Audit burndown',
-          '--body',
-          'Automated burndown of docs/AUDIT.md. In progress.',
-        ]);
-        prNumber = (created.stdout ?? '').trim().match(/(\d+)$/)?.[1] ?? '';
-        if (prNumber) writeFileSync(prNumberFile, prNumber);
-      }
-      if (prNumber) {
-        const recent = readFileSync(join(WORK, 'completed.log'), 'utf8')
-          .trim()
-          .split('\n')
-          .slice(-sincePush)
-          .join('\n');
-        runCmd('gh', [
-          'pr',
-          'comment',
-          prNumber,
-          '--body',
-          `Batch complete — ${done} done, ${deferred} deferred, ${remaining} remaining.\n\n\`\`\`\n${recent}\n\`\`\``,
-        ]);
-      }
-      sincePush = 0;
-    } else {
-      logLine('  push failed — continuing, will retry next batch');
-    }
-  }
+  // Full suite once per batch (E2E + asset-gen the per-finding TEST_CMD skips
+  // for speed). pushBatch never ships a red batch: it holds the commits locally
+  // and retries at the next boundary — a flaky E2E clears on retry, a real
+  // regression surfaces in audit:status rather than shipping.
+  if (sincePush >= PUSH_EVERY) pushBatch();
 }
 
 // ---- finish -----------------------------------------------------------------
 // Flush the trailing sub-batch under the same full-suite gate as the batched
 // pushes, so a red tail never escapes on exit either — held commits stay local
 // for the operator to inspect.
-if (sincePush > 0) {
-  if (!shellOk(PUSH_TEST_CMD)) {
-    logLine(`  ${PUSH_TEST_CMD} red on the final batch — commits held locally, not pushed`);
-  } else {
-    git('push', '-u', 'origin', BRANCH);
-  }
-}
+if (sincePush > 0) pushBatch({ final: true });
 logLine(`finished: ${done} done, ${deferred} deferred, ${countEntries()} remaining`);

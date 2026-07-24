@@ -4,12 +4,15 @@ Read `.audit-work/current-brief.md`. Make the smallest change that fully address
 opportunistically fix unrelated things you notice — they are almost certainly separate entries in
 the same audit backlog, and fixing them here makes the review ambiguous.
 
-Before committing you MUST run the acceptance commands from the brief plus `npm run check` and the
-fast unit tests (`npm run test:unit`). If the brief's acceptance criteria name any Playwright E2E
-specs, run those too (`npm run test:e2e -- <spec>`). Never commit a red tree — the driver re-runs
-the type-check, the unit tests, and any named E2E specs after review and will discard and defer your
-fix if they fail, so a green type-check is not enough. If you cannot reach green, do not commit at
-all: return success=false with an explanation in summary.
+Before committing you MUST run the acceptance commands from the brief plus `npm run check`, the fast
+unit tests (`npm run test:unit`), and `npx eslint` on the files you changed. If the brief's
+acceptance criteria name any Playwright E2E specs, run those too (`npm run test:e2e -- <spec>`).
+Never commit a red tree — the driver re-runs the type-check, the unit tests, eslint on your changed
+files, and any named E2E specs after review and will discard and defer your fix if they fail, so a
+green type-check is not enough. Watch the eslint rules that a type-check misses: no `any`
+(`@typescript-eslint/no-explicit-any` — type it precisely), and no raw `Map`/`Set`/`Date` in a
+`.svelte.ts`/`.svelte` file (use `svelte/reactivity`'s `SvelteMap`/`SvelteSet`). If you cannot reach
+green, do not commit at all: return success=false with an explanation in summary.
 
 Commit message format:
 
