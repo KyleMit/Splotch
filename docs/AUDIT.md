@@ -9,40 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P2][complexity] Split the 95-line `generateAiImage` into named phases
-
-**File(s):** `web/src/lib/drawing/aiImage.ts:94-188` (`generateAiImage`) — pinned at SHA f934d43
-
-#### Problem
-
-`generateAiImage` is a single ~95-line function that does: the re-entrancy guard,
-`AbortController`/timeout setup, canvas export, preview object-URL creation, WebP transcode
-selection, credential-header assembly, endpoint construction, the `fetch`, a four-arm response
-`switch` with per-arm logging, commit, auto-save orchestration, catch, and `finally` teardown. The
-reader has to hold the whole request lifecycle plus the ownership (`isAiGenerationActive(runId)`)
-discipline in their head at once, and the response `switch` (lines 150-169) is buried mid-function.
-This is the highest-traffic module in the scope and the hardest to scan.
-
-#### Proposed solution
-
-Extract cohesive helpers within the module, leaving `generateAiImage` as an orchestrator:
-
-* `async function exportUploadImage(blob, runId): Promise<{ preview: Blob; upload: Blob } | null>` —
-  wraps lines 111-128 (export, preview set, WebP encode).
-* `function buildRequest(uploadBlob, style): { endpoint: string; headers: Record<string,string>; body: Blob }`
-  — lines 135-142 (see the auth-header and endpoint findings below).
-* `function applyResponse(runId, response): 'committed' | 'failed'` — the `switch` at lines 150-169,
-  returning whether it committed so the caller decides on auto-save. Keep the `try/catch/finally`
-  skeleton in `generateAiImage`.
-
-#### Verification
-
-`npm run check` passes; `web/src/lib/drawing/aiImage.test.ts` (the ownership, response-handling, and
-upload-format suites) stays green unchanged — it exercises `generateAiImage` end-to-end, so
-behavior-preserving extraction is proven by an untouched test file.
-
----
-
 ### [P2][testability] Extract the AiDial progress engine out of the component into a testable unit
 
 **File(s):** `web/src/lib/components/AiDial.svelte:13-91` (rAF loop + four `$effect`s) — pinned at

@@ -11,7 +11,7 @@ import {
 import { settings } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api';
 import { exportCanvasBlob } from './engine';
-import { readAiImageResponse } from './aiImageResponse';
+import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 import { getActiveOverlayImage } from './overlay';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 
@@ -91,6 +91,84 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, ownsRun: () => bo
   lastSavedDrawingSig = sig;
 }
 
+// Export the composited drawing and pick the upload encoding. Returns the
+// pristine PNG (for the preview + gallery auto-save) alongside the on-the-wire
+// upload blob, or null when the run went stale mid-export or the export failed —
+// the failed-export case closes the result modal itself, so the caller can bail
+// on null without distinguishing the two.
+async function exportUploadImage(
+  blob: Blob | null,
+  runId: number
+): Promise<{ preview: Blob; upload: Blob } | null> {
+  const imageBlob =
+    blob ?? (await exportCanvasBlob(getActiveOverlayImage(), { includePaperTexture: false }));
+  if (!isAiGenerationActive(runId)) return null;
+  if (!imageBlob) {
+    closeAiResult();
+    return null;
+  }
+  if (!blob) setAiPreview(runId, URL.createObjectURL(imageBlob));
+
+  // Upload a high-quality WebP rather than the PNG: a flat-color toddler drawing
+  // encodes to a fraction of the bytes, so the single buffered generate-image
+  // function (ADR-0063) copies and base64s far less, and the smaller upload eats
+  // less of the 26s budget. Lossy is a non-issue — the model reinterprets the
+  // drawing anyway, and q0.85 is visually lossless on this input (issue #345). We
+  // keep imageBlob (the pristine PNG) for the preview and the gallery auto-save,
+  // and encode a throwaway WebP copy purely for the wire; if the platform can't
+  // encode WebP we fall back to the PNG.
+  const uploadBlob = (await encodeWebpUpload(imageBlob)) ?? imageBlob;
+  return { preview: imageBlob, upload: uploadBlob };
+}
+
+// Send the raw image bytes as the body — no multipart envelope for the server
+// to buffer and parse (ADR-0064). Prefer the parent's own Gemini key (BYOK);
+// fall back to a managed access token. Both are secrets, so they ride in
+// headers, never the query string (which leaks into logs/history). The
+// non-secret style enum is a query param.
+function buildRequest(
+  uploadBlob: Blob,
+  style: string
+): { endpoint: string; headers: Record<string, string>; body: Blob } {
+  const headers: Record<string, string> = {
+    'Content-Type': uploadBlob.type || 'image/png',
+  };
+  if (settings.aiUserApiKey) headers['X-Api-Key'] = settings.aiUserApiKey;
+  else headers['X-Access-Token'] = settings.aiAccessToken;
+
+  const endpoint =
+    apiUrl('/api/generate-image') + (style ? `?style=${encodeURIComponent(style)}` : '');
+  return { endpoint, headers, body: uploadBlob };
+}
+
+// Drive the run's terminal UI transition from the parsed response: fail on any of
+// the three error kinds, or commit the image. Returns 'committed' only when the
+// image landed and the run still owns the UI, so the caller knows whether to
+// auto-save.
+function applyResponse(runId: number, response: AiImageResponse): 'committed' | 'failed' {
+  switch (response.kind) {
+    case 'safety':
+      failAiGeneration(runId, "Let's try drawing something else!", 'safety');
+      return 'failed';
+    case 'throttled':
+      failAiGeneration(runId, undefined, 'retry');
+      console.error(
+        `AI image request throttled (retry after ${response.retryAfter}s): ${response.detail}`
+      );
+      return 'failed';
+    case 'error':
+      // A 5xx is transient — an upstream Gemini failure or the server aborting
+      // a too-slow call under Netlify's 26s ceiling (ADR-0063) — so offer the
+      // same drawing again rather than a dead-end generic error. A 4xx (a
+      // malformed/oversized request the client never actually sends) stays
+      // generic.
+      console.error(`AI image request failed (${response.status}): ${response.detail}`);
+      failAiGeneration(runId, undefined, response.status >= 500 ? 'retry' : 'generic');
+      return 'failed';
+  }
+  return finishAiGeneration(runId, URL.createObjectURL(response.blob)) ? 'committed' : 'failed';
+}
+
 export async function generateAiImage({
   blob = null,
   style = '',
@@ -108,69 +186,20 @@ export async function generateAiImage({
   const timeoutId = setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
 
   try {
-    const imageBlob =
-      blob ?? (await exportCanvasBlob(getActiveOverlayImage(), { includePaperTexture: false }));
-    if (!isAiGenerationActive(runId)) return;
-    if (!imageBlob) {
-      closeAiResult();
-      return;
-    }
-    if (!blob) setAiPreview(runId, URL.createObjectURL(imageBlob));
+    const exported = await exportUploadImage(blob, runId);
+    if (!exported) return;
 
-    // Upload a high-quality WebP rather than the PNG: a flat-color toddler drawing
-    // encodes to a fraction of the bytes, so the single buffered generate-image
-    // function (ADR-0063) copies and base64s far less, and the smaller upload eats
-    // less of the 26s budget. Lossy is a non-issue — the model reinterprets the
-    // drawing anyway, and q0.85 is visually lossless on this input (issue #345). We
-    // keep imageBlob (the pristine PNG) for the preview and the gallery auto-save,
-    // and encode a throwaway WebP copy purely for the wire; if the platform can't
-    // encode WebP we fall back to the PNG.
-    const uploadBlob = (await encodeWebpUpload(imageBlob)) ?? imageBlob;
-
-    // Send the raw image bytes as the body — no multipart envelope for the server
-    // to buffer and parse (ADR-0064). Prefer the parent's own Gemini key (BYOK);
-    // fall back to a managed access token. Both are secrets, so they ride in
-    // headers, never the query string (which leaks into logs/history). The
-    // non-secret style enum is a query param.
-    const headers: Record<string, string> = {
-      'Content-Type': uploadBlob.type || 'image/png',
-    };
-    if (settings.aiUserApiKey) headers['X-Api-Key'] = settings.aiUserApiKey;
-    else headers['X-Access-Token'] = settings.aiAccessToken;
-
-    const endpoint =
-      apiUrl('/api/generate-image') + (style ? `?style=${encodeURIComponent(style)}` : '');
+    const { endpoint, headers, body } = buildRequest(exported.upload, style);
     const res = await fetch(endpoint, {
       method: 'POST',
       headers,
-      body: uploadBlob,
+      body,
       signal: controller.signal,
     });
     const response = await readAiImageResponse(res);
-    switch (response.kind) {
-      case 'safety':
-        failAiGeneration(runId, "Let's try drawing something else!", 'safety');
-        return;
-      case 'throttled':
-        failAiGeneration(runId, undefined, 'retry');
-        console.error(
-          `AI image request throttled (retry after ${response.retryAfter}s): ${response.detail}`
-        );
-        return;
-      case 'error':
-        // A 5xx is transient — an upstream Gemini failure or the server aborting
-        // a too-slow call under Netlify's 26s ceiling (ADR-0063) — so offer the
-        // same drawing again rather than a dead-end generic error. A 4xx (a
-        // malformed/oversized request the client never actually sends) stays
-        // generic.
-        console.error(`AI image request failed (${response.status}): ${response.detail}`);
-        failAiGeneration(runId, undefined, response.status >= 500 ? 'retry' : 'generic');
-        return;
-    }
-    const outBlob = response.blob;
-    const committed = finishAiGeneration(runId, URL.createObjectURL(outBlob));
-    if (committed && settings.autoSaveAiEnabled) {
-      await autoSaveImages(outBlob, imageBlob, () => isAiGenerationActive(runId));
+    const committed = applyResponse(runId, response) === 'committed';
+    if (committed && response.kind === 'image' && settings.autoSaveAiEnabled) {
+      await autoSaveImages(response.blob, exported.preview, () => isAiGenerationActive(runId));
     }
   } catch (err) {
     if (!isAiGenerationActive(runId)) return;
