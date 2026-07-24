@@ -1230,20 +1230,7 @@ export function adoptDrawingCanvas(canvasElement: HTMLCanvasElement, options: In
   return { teardown: teardownEngine };
 }
 
-export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
-  // Re-init over a live engine (dev HMR double-eval, the adopt fallback after
-  // hydration replaced the canvas element) tears the previous instance down
-  // first so window listeners and crayon overlays never double up.
-  teardownEngine();
-  canvas = canvasElement;
-  // NB: no `desynchronized: true` here. It was tried for lower Android ink
-  // latency and rejected — a desynchronized 2D canvas is promoted to a hardware
-  // overlay that does not alpha-composite with content below it, so this
-  // deliberately transparent canvas (the paper sheet + coloring overlay render
-  // beneath it, ADR-0050) rendered as opaque black on the Android WebView. See
-  // ADR-0051.
-  ctx = canvas.getContext('2d')!;
-
+function setupCrayonOverlays(canvas: HTMLCanvasElement): void {
   // The live crayon pass overlays (see the crayonOverlay notes above): adopt
   // the markup-provided pair when present, otherwise create and insert them.
   // Absolute inset-0 inside the canvas's positioned container tracks the
@@ -1274,7 +1261,9 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   crayonOverlayTopCtx = crayonOverlayTop.getContext('2d')!;
   setLiveCrayonBuffer(ctx, crayonOverlayCtx, crayonOverlayTopCtx);
   syncCrayonOverlayMix();
+}
 
+function wireMagicBrushHost(): void {
   // The magic brush's color sheet lives in paper coordinates (like every op) and
   // repaints recorded magic ops once an async fill finishes decoding (ADR-0043).
   initMagicBrush({
@@ -1285,28 +1274,21 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
       if (ctx) repaintAll(ctx);
     },
   });
+}
 
-  attachCallbacks(options);
-  currentColor = options.initialColor || '#AB71E1';
+// Every listener registered through here is removed symmetrically in
+// teardownEngine(), so the add/remove lists can't drift apart.
+function listen<K extends keyof WindowEventMap>(
+  target: EventTarget,
+  type: K | string,
+  handler: (e: never) => void,
+  options?: AddEventListenerOptions | boolean
+) {
+  target.addEventListener(type, handler as EventListener, options);
+  listenerRemovers.push(() => target.removeEventListener(type, handler as EventListener, options));
+}
 
-  renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
-
-  resizeCanvas();
-
-  // Every listener registered through here is removed symmetrically in
-  // teardownEngine(), so the add/remove lists can't drift apart.
-  function listen<K extends keyof WindowEventMap>(
-    target: EventTarget,
-    type: K | string,
-    handler: (e: never) => void,
-    options?: AddEventListenerOptions | boolean
-  ) {
-    target.addEventListener(type, handler as EventListener, options);
-    listenerRemovers.push(() =>
-      target.removeEventListener(type, handler as EventListener, options)
-    );
-  }
-
+function registerEngineListeners(canvas: HTMLCanvasElement): void {
   listen(window, 'resize', handleResize);
   // Scroll/orientation move the canvas in the viewport without resizing it, so
   // refresh the cached rect (left/top) without the full backing-store rebuild.
@@ -1343,6 +1325,31 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   listen(window, 'pointerup', trackPointerLift, true);
   listen(window, 'pointercancel', trackPointerLift, true);
   listen(window, 'pointermove', adoptStrayPenStream, true);
+}
+
+export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
+  // Re-init over a live engine (dev HMR double-eval, the adopt fallback after
+  // hydration replaced the canvas element) tears the previous instance down
+  // first so window listeners and crayon overlays never double up.
+  teardownEngine();
+  canvas = canvasElement;
+  // NB: no `desynchronized: true` here. It was tried for lower Android ink
+  // latency and rejected — a desynchronized 2D canvas is promoted to a hardware
+  // overlay that does not alpha-composite with content below it, so this
+  // deliberately transparent canvas (the paper sheet + coloring overlay render
+  // beneath it, ADR-0050) rendered as opaque black on the Android WebView. See
+  // ADR-0051.
+  ctx = canvas.getContext('2d')!;
+
+  setupCrayonOverlays(canvas);
+  wireMagicBrushHost();
+
+  attachCallbacks(options);
+  currentColor = options.initialColor || '#AB71E1';
+  renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
+  resizeCanvas();
+
+  registerEngineListeners(canvas);
 
   // Warm the export compositor + paper texture at idle: the module is
   // dynamic-imported so it stays out of the startup bundle (issue #461), and

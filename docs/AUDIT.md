@@ -7,52 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P1][complexity] Split the 125-line `initDrawingCanvas` into named setup phases
-
-**File(s):** `web/src/lib/drawing/engine.ts:1233-1358` (`initDrawingCanvas`) — pinned at SHA f934d43
-
-#### Problem
-
-`initDrawingCanvas` is a single ~125-line function that does at least seven unrelated things:
-teardown, `getContext`, crayon-overlay adopt-or-create (1247-1276), magic-brush host wiring
-(1280-1287), callback attach + color/scale defaults (1289-1294), the whole window/canvas listener
-registration block (1298-1345), and the idle export-warm (1352-1354). The reader has to hold all of
-it at once, and the overlay-creation branch alone is 20 lines of DOM construction inlined
-mid-function.
-
-```ts
-export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
-  teardownEngine();
-  canvas = canvasElement;
-  ...
-  const providedOverlays = canvas.parentElement?.querySelectorAll<HTMLCanvasElement>(
-    'canvas[data-crayon-overlay]'
-  );
-  if (providedOverlays && providedOverlays.length >= 2) { ... } else { ...20 lines... }
-  ...
-  listen(canvas, 'pointerdown', startDrawing);
-  ...
-}
-```
-
-#### Proposed solution
-
-Extract cohesive helpers, leaving `initDrawingCanvas` as a readable table of contents:
-
-* `function setupCrayonOverlays(canvas: HTMLCanvasElement): void` (the 1247-1276 adopt/create block)
-* `function wireMagicBrushHost(): void` (1280-1287)
-* `function registerEngineListeners(canvas: HTMLCanvasElement): void` (the `listen(...)` calls,
-  1310-1345), with the local `listen` helper promoted to module scope alongside `listenerRemovers`.
-
-`initDrawingCanvas` then reads as ~15 lines of orchestration.
-
-#### Verification
-
-`npm run check` stays green; the engine E2E (`web/tests/**/engine*.spec.ts`) and any `/dev/engine`
-harness still boot and draw. Behaviour is identical since it is a pure code move.
-
----
-
 ### [P1][dead-code] `PointerState.isDrawing` is never set false — a vestigial field guarding dead branches
 
 **File(s):** `web/src/lib/drawing/engine.ts:655, 742, 876, 927, 959` — pinned at SHA f934d43
