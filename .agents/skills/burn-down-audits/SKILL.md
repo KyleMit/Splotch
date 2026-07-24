@@ -195,7 +195,9 @@ Only after verifying **nothing is already in flight**: `pgrep -f audit-burndown/
 be empty (if it isn't, the run is already going — say so, don't launch a second). Then
 `rm
 .audit-work/STOP`, relaunch with the exact command from the durable checkpoint (including the
-env overrides that dodge the flaky palette snapshots), and re-arm the event-driven monitor.
+env overrides that dodge the flaky palette snapshots), and re-arm the event-driven monitor. The
+launcher self-recovers even in a brand-new session that never saw this run — see **Resuming a
+crashed run** below.
 
 ### "wrap up" — finalize now and mark the PR ready
 
@@ -223,6 +225,35 @@ matter what happens to yours. Exploit that — hold **no** orchestration state i
   watcher that fires only on `HALT` / `hit a cap` / `red at batch` / `finished:` — not by polling
   `audit:status` in a loop, and don't read per-finding logs or the PR back unless you're diagnosing
   something specific.
+
+## Resuming a crashed run (or a brand-new session)
+
+The whole run is reconstructable from git + the draft PR + `docs/AUDIT.md`, so a session that dies
+mid-run — or a completely fresh session, even a fresh clone on another machine with no
+`.audit-work/` — can pick up exactly where it stopped. Relaunch with the overnight launcher
+(`npm run audit:burndown:overnight -- <n>`), which sets `RESUME=1`; startup then reconciles state
+before touching a finding:
+
+* **Latches onto the real branch** — it creates the local branch *from* `origin/<branch>` when a
+  fresh clone has only the remote (a plain `git switch -c` would fork from `main` and silently
+  abandon the run), and fast-forwards to `origin/<branch>` to adopt progress another machine pushed
+  (keeping local commits when it's ahead).
+* **Rediscovers the draft PR** via `gh pr list --head <branch>`. `.audit-work/pr-number` is
+  gitignored and won't survive a fresh clone, so without this the next push would open a
+  **duplicate** draft PR.
+* **Clears crash residue** (`RESUME=1` only) — resets a dirty tree left by a half-done finding back
+  to HEAD and removes a stale `STOP`. The reset loses no accepted work: a finding's `docs/AUDIT.md`
+  entry is deleted only *inside* its fix commit, so an interrupted finding is still listed and
+  simply re-processed. `RESUME` is off for a bare `npm run audit:burndown`, so a canary in a dirty
+  repo still halts rather than discarding real uncommitted changes.
+
+`npm run audit:preflight` (the launcher runs it for you) prints a **resume target** block — the
+branch state and the PR number it will latch onto — so a fresh session can confirm it's continuing
+the real run, not forking a new one, *before* it starts. One self-healing edge: if a crash lands
+between a fix's commit and the `docs/AUDIT.md` fold, that finding is re-verified at HEAD, found
+already fixed, and dropped as invalid — one extra drop commit, no lost work. **Before relaunching,
+commit or stash any real work in progress** — `RESUME=1` treats a dirty tree as crash residue and
+resets it.
 
 ## Tuning & lessons
 

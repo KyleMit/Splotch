@@ -20,6 +20,13 @@ ensureWorkDirs();
 const count = process.argv[2] ?? '600';
 const session = 'burndown';
 
+// An overnight launch is resume-capable by design: default RESUME=1 so a relaunch
+// after a crash recovers a dirty tree / stale STOP instead of halting (a first,
+// clean launch has nothing to recover, so it's a no-op). Set before the preflight
+// spawn — which inherits this env — so preflight warns rather than fails on crash
+// residue. An operator can still force RESUME=0 to keep the strict dirty-tree halt.
+process.env.RESUME = process.env.RESUME ?? '1';
+
 const preflight = spawnSync(process.execPath, ['scripts/audit-burndown/preflight.mjs'], {
   stdio: 'inherit',
 });
@@ -36,6 +43,7 @@ rmSync(join(WORK, 'STOP'), { force: true });
 // tmux and the run would use defaults (e.g. hit the flaky-screenshot gate and
 // never push). Baking them into the command makes overrides work on both paths.
 const KNOBS = [
+  'RESUME',
   'PUSH_EVERY',
   'BRANCH',
   'CHECK_CMD',

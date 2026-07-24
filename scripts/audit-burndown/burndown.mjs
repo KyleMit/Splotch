@@ -17,7 +17,7 @@
 // * `--json-schema` replaces prose parsing: verdicts, SHAs, and review
 //   statuses come back typed in .structured_output.
 
-import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { hasCommand, sleep } from '../lib/utils.mjs';
 import {
@@ -181,19 +181,75 @@ function defer(title, why) {
   if (consecutive >= MAX_DEFERRALS) halt(`${MAX_DEFERRALS} consecutive deferrals`);
 }
 
-// ---- preflight --------------------------------------------------------------
+// ---- preflight & resume recovery -------------------------------------------
+// A run is fully resumable from git + the draft PR + docs/AUDIT.md alone, so a
+// brand-new session (even a fresh clone on another machine, with no .audit-work/)
+// can pick up exactly where a crashed one stopped. RESUME=1 additionally clears
+// crash residue that would otherwise block startup; the overnight launcher sets
+// it. See "Resuming a crashed run" in the burn-down-audits skill.
+const RESUME = process.env.RESUME === '1' || process.env.RESUME === 'true';
+
 for (const bin of ['gh', 'claude']) {
   if (!hasCommand(bin)) halt(`missing dependency: ${bin}`);
 }
-if (!gitOk('diff', '--quiet') || !gitOk('diff', '--cached', '--quiet'))
-  halt('working tree is dirty');
-if (!gitOk('rev-parse', '--verify', BRANCH)) git('switch', '-c', BRANCH);
-git('switch', BRANCH);
+
+// Adopt the branch. A fresh clone has origin/BRANCH but no local BRANCH:
+// `git switch -c BRANCH` there would fork a new branch off the current HEAD
+// (main) and silently abandon the entire run, so create the local branch FROM
+// the remote instead. Fetch first so origin/BRANCH is current.
+git('fetch', 'origin', BRANCH); // best-effort: no-op offline or on the very first run
+const hasLocal = gitOk('rev-parse', '--verify', '--quiet', `refs/heads/${BRANCH}`);
+const hasRemote = gitOk('rev-parse', '--verify', '--quiet', `refs/remotes/origin/${BRANCH}`);
+if (hasLocal) git('switch', BRANCH);
+else if (hasRemote) git('switch', '-c', BRANCH, `origin/${BRANCH}`);
+else git('switch', '-c', BRANCH);
 if (gitOut('rev-parse', '--abbrev-ref', 'HEAD') !== BRANCH) halt(`could not switch to ${BRANCH}`);
+
+// Adopt progress another session/machine pushed, without clobbering local
+// unpushed commits: fast-forward to origin/BRANCH only when we're strictly
+// behind. A no-op when equal; kept local (logged) when we're ahead or diverged.
+if (hasRemote && !gitOk('merge', '--ff-only', `origin/${BRANCH}`))
+  logLine(`  note: local ${BRANCH} is ahead of / diverged from origin — keeping local`);
+
+// Recover crash residue. A run killed mid-finding can leave the implementer's
+// uncommitted edits (or a half-folded docs/AUDIT.md) in the tree. The finding
+// itself is still listed in docs/AUDIT.md — its entry is deleted only inside the
+// fix's commit — so resetting to HEAD loses no accepted work; that one finding is
+// simply re-processed. Gated behind RESUME so a bare canary run in a dirty repo
+// still halts rather than discarding real uncommitted work.
+if (!gitOk('diff', '--quiet') || !gitOk('diff', '--cached', '--quiet')) {
+  if (!RESUME) halt('working tree is dirty (set RESUME=1 to discard crash residue and resume)');
+  logLine('  RESUME: dirty tree from an interrupted run — resetting to HEAD');
+  git('reset', '-q', '--hard', 'HEAD');
+}
+if (RESUME) rmSync(join(WORK, 'STOP'), { force: true }); // a graceful stop leaves STOP behind
+
 if (!shellOk(CHECK_CMD)) halt('tree is already red before we start');
 
+// Discover the draft PR. .audit-work/pr-number is gitignored working state, so a
+// fresh clone won't have it — look up the open PR for this branch on GitHub
+// before pushBatch would otherwise open a second, duplicate draft PR.
 const prNumberFile = join(WORK, 'pr-number');
 let prNumber = existsSync(prNumberFile) ? readFileSync(prNumberFile, 'utf8').trim() : '';
+if (!prNumber) {
+  const found = runCmd('gh', [
+    'pr',
+    'list',
+    '--head',
+    BRANCH,
+    '--state',
+    'open',
+    '--json',
+    'number',
+    '--jq',
+    '.[0].number',
+  ]);
+  prNumber = (found.stdout ?? '').trim();
+  if (prNumber) {
+    writeFileSync(prNumberFile, prNumber);
+    logLine(`  adopted existing draft PR for ${BRANCH} (number ${prNumber})`);
+  }
+}
 let done = 0;
 let sincePush = 0;
 const pending = []; // completed fixes awaiting their per-commit PR comment (posted on the next successful push)

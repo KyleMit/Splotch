@@ -17,6 +17,9 @@ import {
 
 chdirRoot();
 
+const RESUME = process.env.RESUME === '1' || process.env.RESUME === 'true';
+const BRANCH = process.env.BRANCH ?? 'audit/burndown';
+
 let failed = false;
 const ok = (msg) => console.log(`  \x1b[32m✓\x1b[0m ${msg}`);
 const bad = (msg) => {
@@ -43,12 +46,40 @@ else bad('gh not logged in (run: gh auth login)');
 
 console.log('repo');
 if (gitOk('diff', '--quiet') && gitOk('diff', '--cached', '--quiet')) ok('working tree clean');
+else if (RESUME) warn('working tree is dirty — RESUME=1 will reset it to HEAD');
 else bad('working tree is dirty');
 ok(`branch: ${gitOut('rev-parse', '--abbrev-ref', 'HEAD')}`);
 if (existsSync(auditFile())) ok(`${auditFile()} present`);
 else bad(`${auditFile()} missing — nothing staged to burn down`);
 if (/^\.audit-work/m.test(readFileSync('.gitignore', 'utf8'))) ok('.audit-work is gitignored');
 else warn('.audit-work not in .gitignore');
+
+// Resumability: show the branch + draft PR a run would latch onto, so a fresh
+// session can confirm it's resuming the real run (not forking a new one). The
+// driver discovers these from GitHub even without a local .audit-work/pr-number.
+console.log('resume target');
+const branchState = gitOk('rev-parse', '--verify', '--quiet', `refs/heads/${BRANCH}`)
+  ? 'local'
+  : gitOk('rev-parse', '--verify', '--quiet', `refs/remotes/origin/${BRANCH}`)
+    ? 'origin only (fresh clone — will adopt from origin)'
+    : 'none yet (first run — will create)';
+ok(`branch ${BRANCH}: ${branchState}`);
+const openPr = (
+  runCmd('gh', [
+    'pr',
+    'list',
+    '--head',
+    BRANCH,
+    '--state',
+    'open',
+    '--json',
+    'number',
+    '--jq',
+    '.[0].number',
+  ]).stdout ?? ''
+).trim();
+if (openPr) ok(`draft PR for ${BRANCH}: number ${openPr} (will resume it)`);
+else ok(`draft PR for ${BRANCH}: none open (will create on first push)`);
 
 console.log('prompts');
 for (const prompt of ['verifier', 'implementer', 'reviewer']) {
