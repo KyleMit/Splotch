@@ -233,28 +233,45 @@ if (!shellOk(CHECK_CMD)) halt('tree is already red before we start');
 // before pushBatch would otherwise open a second, duplicate draft PR.
 const prNumberFile = join(WORK, 'pr-number');
 let prNumber = existsSync(prNumberFile) ? readFileSync(prNumberFile, 'utf8').trim() : '';
-if (!prNumber) {
-  const found = runCmd('gh', [
-    'pr',
-    'list',
-    '--head',
-    BRANCH,
-    '--state',
-    'open',
-    '--json',
-    'number',
-    '--jq',
-    '.[0].number',
-  ]);
-  prNumber = (found.stdout ?? '').trim();
-  if (prNumber) {
-    writeFileSync(prNumberFile, prNumber);
-    logLine(`  adopted existing draft PR for ${BRANCH} (number ${prNumber})`);
-  }
+const found = runCmd('gh', [
+  'pr',
+  'list',
+  '--head',
+  BRANCH,
+  '--state',
+  'open',
+  '--json',
+  'number',
+  '--jq',
+  '.[0].number',
+]);
+// Only act on the lookup when it actually succeeded: on a network/auth blip an
+// empty stdout would otherwise look like "no open PR" and throw away a good
+// cached number, and pushBatch would then open a duplicate draft PR.
+const openPr = found.status === 0 ? (found.stdout ?? '').trim() : '';
+if (prNumber && found.status === 0 && prNumber !== openPr) {
+  // The cached number outlived its PR — the previous run's PR was merged or
+  // closed. Trusting it would post this run's per-commit comments onto a
+  // landed PR, which is where they are least likely to ever be seen.
+  logLine(`  cached PR number ${prNumber} is not the open PR for ${BRANCH} — discarding it`);
+  rmSync(prNumberFile, { force: true });
+  prNumber = '';
+}
+if (!prNumber && openPr) {
+  prNumber = openPr;
+  writeFileSync(prNumberFile, prNumber);
+  logLine(`  adopted existing draft PR for ${BRANCH} (number ${prNumber})`);
 }
 let done = 0;
 let sincePush = 0;
 const pending = []; // completed fixes awaiting their per-commit PR comment (posted on the next successful push)
+
+const lastLine = (result) =>
+  `${result.stderr ?? ''}\n${result.stdout ?? ''}`
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .pop() ?? 'unknown error';
 
 // Push the batch, create the draft PR on the first push, and post one per-commit
 // comment for each pushed fix. Returns false (commits held locally) if the
@@ -285,11 +302,29 @@ function pushBatch({ final = false } = {}) {
     ]);
     prNumber = (created.stdout ?? '').trim().match(/(\d+)$/)?.[1] ?? '';
     if (prNumber) writeFileSync(prNumberFile, prNumber);
+    // A failed create used to be swallowed entirely: prNumber stayed empty, and
+    // an unattended run would push all night with no PR and no hint in the log.
+    // Last non-empty line, not the first: gh emits warnings ("Warning: N
+    // uncommitted changes") ahead of the actual error, which would otherwise
+    // mask the cause.
+    else logLine(`  gh pr create FAILED — pushed, but no PR: ${lastLine(created)}`);
   }
   if (prNumber) {
     for (const rec of pending) {
       runCmd('gh', ['pr', 'comment', prNumber, '--body', commitCommentBody(rec)]);
     }
+    pending.length = 0;
+  } else if (pending.length) {
+    // Nowhere to post them, so persist instead of letting them die with the
+    // process — the commits are already pushed, and these are the only record
+    // of the reviewer's catches. Re-render later with comment.mjs.
+    appendFileSync(
+      join(WORK, 'pending-comments.jsonl'),
+      `${pending.map((rec) => JSON.stringify(rec)).join('\n')}\n`
+    );
+    logLine(
+      `  no PR to comment on — ${pending.length} comment(s) saved to ${WORK}/pending-comments.jsonl`
+    );
     pending.length = 0;
   }
   return true;

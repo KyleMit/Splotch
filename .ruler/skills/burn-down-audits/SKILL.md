@@ -125,7 +125,18 @@ this is only about SHAs.)
 ## Before the full run
 
 1. `npm run audit:preflight` — fix anything red.
-2. **Canary:** `npm run audit:burndown` (5 findings) and read the commits it makes.
+2. **Canary:** `npm run audit:burndown` (5 findings) and read the commits it makes —
+   `git log main..HEAD -p -- . ':(exclude)docs/AUDIT.md'` keeps the backlog churn out of the diff.
+   Read for **behavior changes smuggled inside a refactor**, which is what this loop gets wrong when
+   it gets anything wrong, and what a green type-check and test suite will not catch:
+   * A dedup finding whose call sites were not actually identical — the classic is three sites where
+     two were guarded and one was not, unified onto the guarded form. Establish that the guard is
+     always satisfied at the third site (or that the difference was real) before accepting it.
+   * A "derive this constant from that one" fix where the two happened to be equal by coincidence
+     rather than by intent — check whether the source is pinned by anything (a comment, a test) or
+     is free to drift.
+   * A narrowed type whose invalid-input tests were made to compile with `as` casts; confirm the
+     runtime guard those tests exercise still exists.
 3. **Force a rejection** to exercise the path a happy-path canary won't: write one deliberately
    vague brief so the reviewer returns `CHANGES_REQUIRED`, then check `.audit-work/logs/*.fix1.json`
    to confirm the resumed implementer references its own earlier work rather than starting over.
@@ -227,13 +238,26 @@ matter what happens to yours. Exploit that — hold **no** orchestration state i
   **PR number**, roughly what's done, and the **closeout tasks**. Use a `project`-type memory
   (Claude Code) or a `docs/handoff/` packet. A fresh or compacted context then resumes from that
   file + `npm run audit:status` — nothing is re-derived.
+* **Record the *contents* of any helper script a knob points at, not just its path.** `.audit-work/`
+  is gitignored, so a `PUSH_TEST_CMD` wrapper (e.g. one excluding screenshot specs that are flaky on
+  this machine) lives on exactly one disk and is invisible to a fresh clone — the very scenario the
+  resume story promises to survive. A checkpoint that says
+  `PUSH_TEST_CMD='bash .audit-work/push-test.sh'` and nothing more is unrecoverable; the next
+  session has to reconstruct it by grepping old `run.log` lines for the command that ran.
 * Because all state is on disk, **compaction is lossless** — compact proactively (or let
   auto-compact fire) when the context fills, rather than letting the window overflow mid-run. Don't
   wait to be forced.
-* Keep the supervising context small so it lasts: monitor the run **event-driven** — a `run.log`
-  watcher that fires only on `HALT` / `hit a cap` / `red at batch` / `finished:` — not by polling
+* Keep the supervising context small so it lasts: monitor the run **event-driven** — not by polling
   `audit:status` in a loop, and don't read per-finding logs or the PR back unless you're diagnosing
-  something specific.
+  something specific. Watch for every terminal *and* degraded state, so silence really does mean
+  "healthy and working":
+  ```bash
+  tail -f -n 0 .audit-work/logs/run.log | grep -E --line-buffered \
+    "HALT|hit a cap|red at batch|red on the final|push failed|gh pr create FAILED|no PR to comment on|DEFERRED|finished:"
+  ```
+  `gh pr create FAILED` / `no PR to comment on` matter as much as a halt: the run keeps committing
+  and pushing perfectly well with no PR behind it, so without that signal you find out hours later
+  that a night of fixes has no PR and no per-commit comments.
 
 ## Resuming a crashed run (or a brand-new session)
 
@@ -296,6 +320,22 @@ Notes from real runs — set these before a large run rather than discovering th
   on the stronger model. Set `MODEL_IMPL_MINOR=claude-opus-5` to switch tiering off for a run where
   correctness dominates. Bigger throughput (parallel git worktrees per finding) is a real redesign,
   not a knob.
+* **The PR is the fragile part of the run; the commits are not.** Pushing is plain git and is
+  reliable; *creating* the draft PR is a GitHub API call that can fail hard and stay failed — a
+  2026-07-24 run hit HTTP 500 on `gh pr create` for over 20 minutes, on both the GraphQL and REST
+  paths and on a freshly-named branch, with githubstatus.com green throughout. Treat "no PR" as an
+  annoyance, not a reason to stop: the commits are pushed and are the durable artifact. `pushBatch`
+  now logs the failure and spills the unpostable per-commit comments to
+  `.audit-work/pending-comments.jsonl` (re-render them with `comment.mjs`) instead of losing them at
+  exit. When diagnosing, read the **last** line of gh's output — it emits warnings ahead of the real
+  error, so `head -1` shows you "Warning: N uncommitted changes" and hides the cause.
+* **A cached `.audit-work/pr-number` can outlive its PR.** The driver prefers that file over
+  rediscovery, so a number left by a previous run whose PR has since merged would send this run's
+  per-commit comments onto a landed PR. Startup now discards a cached number that isn't the branch's
+  open PR (only when the lookup actually succeeded — a network blip must not throw away a good
+  number and cause a duplicate PR), and `audit:preflight` warns about the mismatch before you
+  launch. Worth a glance at the preflight `resume target` block anyway whenever the last run's PR
+  was merged.
 * **`docs/AUDIT-DEFERRED.md` is auto-formatted.** `defer()` runs `dprint fmt` on it before the
   commit, so a deferral no longer reddens CI's Quality (format) job — the file's header used to be
   wrapped narrower than dprint's width.
