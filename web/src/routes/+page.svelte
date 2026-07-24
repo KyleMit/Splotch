@@ -27,11 +27,9 @@
     settings,
   } from '$lib/state/settings.svelte';
   import { hydrateDurableStorage } from '$lib/storage';
-  import { initNetwork } from '$lib/state/network.svelte';
   import { isNative } from '$lib/platform';
   import { applyTheme } from '$lib/theme';
   import { applyDeviceOrientationPreference } from '$lib/orientation';
-  import { initFullscreen } from '$lib/state/fullscreen.svelte';
   import { scheduleIdle } from '$lib/idle';
 
   $effect(() => {
@@ -116,7 +114,6 @@
     // Load the optional saved-photo folder name for the Parent Center display
     // (web/desktop only; no effect on whether saves happen).
     hydrateSaveFolder();
-    initNetwork();
 
     // Native only: recover any settings the WebView's localStorage may have
     // evicted from the durable Capacitor Preferences store. Each persisted store
@@ -152,10 +149,6 @@
     };
     document.addEventListener('pointerdown', onFirstPointerDown, { once: true });
     document.addEventListener('visibilitychange', onVisibilityChange);
-
-    // Seed the opt-in Fullscreen Toggle (Android web only; inert elsewhere) that
-    // dismisses the mobile URL bar a non-scrolling canvas can never scroll away.
-    initFullscreen();
 
     // The service worker only exists in the web build; the native apps bundle
     // their shell on-device, so there's nothing to update-check there. The

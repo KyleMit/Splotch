@@ -35,17 +35,14 @@ export const fullscreen = $state({
   active: false,
 });
 
-let initialized = false;
-
 // Web-only; seeds `supported` and keeps `active` in sync with the platform. The
 // browser can drop out of fullscreen on its own (Esc, the back gesture, a
 // permissions change), so `active` must track the real state, not our requests.
-export function initFullscreen() {
-  if (!browser || initialized) return;
-  initialized = true;
-
-  fullscreen.supported = fullscreenSupported();
-  if (!fullscreen.supported) return;
+// Installed at module load (not from a component), gated on `browser`, so the
+// value is live before the first component renders — FullscreenToggle reads
+// fullscreen.* on mount, before +page.svelte's onMount would run.
+if (browser && fullscreenSupported()) {
+  fullscreen.supported = true;
 
   const sync = () => {
     fullscreen.active = document.fullscreenElement !== null;

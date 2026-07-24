@@ -11,49 +11,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P1][consistency] Two contradictory store-lifecycle patterns (module-load self-init vs explicit `initX()`)
-
-**File(s):** `web/src/lib/state/layout.svelte.ts:66-79`,
-`web/src/lib/state/appearance.svelte.ts:22-41`, `web/src/lib/state/network.svelte.ts:12-34`,
-`web/src/lib/state/fullscreen.svelte.ts:38-55`, `web/src/lib/state/install.svelte.ts:45-120` —
-pinned at SHA f934d43
-
-#### Problem
-
-Listening/side-effecting stores wire themselves up in two mutually exclusive ways with no stated
-rule for which to use:
-
-* **Self-initializing at module load:** `layout.svelte.ts`
-  (`if (browser) { syncViewport(); addEventListener(…) }`) and `appearance.svelte.ts` (a top-level
-  `systemQuery?.addEventListener` plus an `$effect.root`).
-* **Deferred behind an exported `initX()` that `+page.svelte` must remember to call:**
-  `initNetwork()`, `initFullscreen()`, `initInstallPrompt()` — each guarded by a private
-  `let initialized = false`.
-
-`install.svelte.ts` does *both*: its `beforeinstallprompt`/`appinstalled` listeners run at module
-load (lines 82-99) while its state seeding waits for `initInstallPrompt()` (line 103). A contributor
-adding a new listening store has no way to know whether to self-init or export an init function, and
-if they choose "init function" they must also remember to add a call in `+page.svelte:106-167` — an
-unenforced coupling. Forgetting it fails silently (the store just never updates).
-
-#### Proposed solution
-
-Adopt one documented rule. Recommended: **self-init at module load, gated on `browser`** (what
-`layout`/`appearance` already do), eliminating the `initX()` exports, the `initialized` flags, and
-the five hand-maintained call sites in `+page.svelte`. Where an init must be deferred for a real
-reason (e.g. `initInstallPrompt` runs only `!isNative()`), keep it but document the criterion in
-`web/src/lib/state/` orientation (a nested `AGENTS.md`/CLAUDE.md note) so the split is a rule, not
-folklore. Note `install`'s already-split model (listeners eager, seeding lazy) as the explicit
-exception with its rationale.
-
-#### Verification
-
-After consolidating, `grep -rn "initialized = false" web/src/lib/state` shrinks to only the
-documented exceptions; `+page.svelte` no longer needs `initNetwork`/`initFullscreen` calls; unit
-tests for each store still pass (they can invoke the module in a `browser`-true happy-dom env).
-
----
-
 ### [P2][duplication] The `BOOL_SETTINGS` table pattern doesn't cover the non-boolean settings, defeating its own guarantee
 
 **File(s):** `web/src/lib/state/settings.svelte.ts:60-101` (table), `:150-162` (init), `:197-212`

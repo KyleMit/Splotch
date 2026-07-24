@@ -9,12 +9,10 @@ export const network = $state({
   online: true,
 });
 
-let initialized = false;
-
-export function initNetwork() {
-  if (!browser || initialized) return;
-  initialized = true;
-
+// Installed at module load (not from a component), gated on `browser`, so the
+// value is live before the first component renders — ActionsPanel reads
+// network.online on mount, before +page.svelte's onMount would run.
+if (browser) {
   network.online = navigator.onLine !== false;
   window.addEventListener('online', () => (network.online = true));
   window.addEventListener('offline', () => (network.online = false));
