@@ -7,38 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P3][type-safety] `listen<K>` uses an unused generic and an `(e: never)` cast
-
-**File(s):** `web/src/lib/drawing/engine.ts:1298-1308` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-function listen<K extends keyof WindowEventMap>(
-  target: EventTarget, type: K | string,
-  handler: (e: never) => void, options?: ...
-) { target.addEventListener(type, handler as EventListener, options); ... }
-```
-
-`K` is never used to constrain `handler` (the handler is typed `(e: never)`), and `type: K | string`
-collapses to `string`, so the generic buys nothing. `(e: never)` plus `as EventListener` defeats
-type-checking at every call site — `listen(canvas, 'pointerdown', startDrawing)` gets no
-verification that `startDrawing` accepts a `PointerEvent`.
-
-#### Proposed solution
-
-Drop the generic and type it against the concrete targets, e.g. overloads keyed on
-`WindowEventMap`/`HTMLElementEventMap`/`DocumentEventMap`, or minimally
-`handler: (e: Event) => void` and let each handler keep its precise param via a typed wrapper. Even
-a plain `(e: Event)` is stronger than `never`.
-
-#### Verification
-
-`npm run check` still passes and now catches a mismatched handler signature (introduce one to
-confirm it errors, then revert).
-
----
-
 ### [P4][dead-code] `stopDrawing(e?)` — the optional param and `if (!e) return` are unreachable
 
 **File(s):** `web/src/lib/drawing/engine.ts:910-911, 1329-1331` — pinned at SHA f934d43

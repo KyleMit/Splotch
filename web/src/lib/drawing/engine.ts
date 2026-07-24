@@ -1270,9 +1270,33 @@ function wireMagicBrushHost(): void {
 // Every listener registered through here is removed symmetrically in
 // teardownEngine(), so the add/remove lists can't drift apart.
 function listen<K extends keyof WindowEventMap>(
+  target: Window,
+  type: K,
+  handler: (e: WindowEventMap[K]) => void,
+  options?: AddEventListenerOptions | boolean
+): void;
+function listen<K extends keyof DocumentEventMap>(
+  target: Document,
+  type: K,
+  handler: (e: DocumentEventMap[K]) => void,
+  options?: AddEventListenerOptions | boolean
+): void;
+function listen<K extends keyof HTMLElementEventMap>(
+  target: HTMLElement,
+  type: K,
+  handler: (e: HTMLElementEventMap[K]) => void,
+  options?: AddEventListenerOptions | boolean
+): void;
+function listen(
   target: EventTarget,
-  type: K | string,
-  handler: (e: never) => void,
+  type: string,
+  handler: (e: Event) => void,
+  options?: AddEventListenerOptions | boolean
+): void;
+function listen(
+  target: EventTarget,
+  type: string,
+  handler: (e: any) => void,
   options?: AddEventListenerOptions | boolean
 ) {
   target.addEventListener(type, handler as EventListener, options);
