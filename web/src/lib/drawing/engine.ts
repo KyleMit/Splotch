@@ -682,6 +682,14 @@ const activePointers = new Map<number, PointerState>();
 // reacting to every per-frame jitter.
 const SPEED_WINDOW_MS = 100;
 
+// Start a fresh sliding speed window. The first entry is a zero-distance anchor
+// so the very first move has a span to divide by, and lastTime is realigned to
+// the same instant.
+function resetSpeedWindow(ps: PointerState, now: number): void {
+  ps.speedSamples = [{ t: now, distance: 0 }];
+  ps.lastTime = now;
+}
+
 // After a color/tool change, ignore touch/mouse pointerdowns for a short window
 // so the tap that picked the color doesn't immediately start a stray stroke.
 // Pen input is precise enough to skip the debounce.
@@ -758,14 +766,13 @@ function startDrawing(e: PointerEvent) {
     seed: crayonActive ? crayonSeedCounter++ : 0,
     passTracker:
       crayonActive && !eraserActive && !magicActive ? new CrayonPassTracker(x, y, lineWidth) : null,
-    lastTime: now,
-    // Time-stamped distance samples for the sliding speed window. The first
-    // entry is a zero-distance anchor so the very first move has a span to
-    // divide by.
-    speedSamples: [{ t: now, distance: 0 }],
+    // Speed-window fields are seeded by resetSpeedWindow() immediately below.
+    lastTime: 0,
+    speedSamples: [],
     edgeSwipeGuard,
     pendingPoints: [],
   };
+  resetSpeedWindow(pointerState, now);
   activePointers.set(e.pointerId, pointerState);
 
   // A candidate paints nothing yet — renderStrokeStart runs later, on commit.
@@ -793,9 +800,7 @@ function commitEdgeSwipe(ps: PointerState) {
   }
   // Restart speed sampling from the commit point so the buffered span doesn't
   // register as one giant first chord.
-  const now = Date.now();
-  ps.speedSamples = [{ t: now, distance: 0 }];
-  ps.lastTime = now;
+  resetSpeedWindow(ps, Date.now());
 }
 
 // Drop a pointer without rendering anything (an OS edge-swipe). Nothing was
@@ -843,7 +848,7 @@ function restartStrokeIfResumed(ps: PointerState, resume: Point, now: number) {
   ps.y = resume.y;
   ps.midX = resume.x;
   ps.midY = resume.y;
-  ps.speedSamples = [{ t: now, distance: 0 }];
+  resetSpeedWindow(ps, now);
   // The finger really lifted, so a crayon's next contact is physically a fresh
   // pass — close the current one (stamp + recorded flush), new seed, tracker
   // restarted at the resumed point.

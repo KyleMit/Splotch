@@ -7,29 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P4][duplication] Speed-sampling reset is copy-pasted in three places
-
-**File(s):**
-`web/src/lib/drawing/engine.ts:755 (start), 787-789 (commitEdgeSwipe), 844 (restartStrokeIfResumed)`
-— pinned at SHA f934d43
-
-#### Problem
-
-The "start a fresh sliding speed window" reset — `ps.speedSamples = [{ t: now, distance: 0 }]` (plus
-`ps.lastTime = now` in two of them) — appears at pointer creation, on edge-swipe commit, and on
-stroke resume. The zero-distance-anchor invariant (documented at 754) is re-encoded each time.
-
-#### Proposed solution
-
-`function resetSpeedWindow(ps: PointerState, now: number): void { ps.speedSamples = [{ t: now, distance: 0 }]; ps.lastTime = now; }`
-and call it from all three (start can pass its `now`).
-
-#### Verification
-
-`npm run check`; `strokeMath` speed tests + draw-sound E2E unchanged.
-
----
-
 ### [P5][consistency] Two rect shapes (`{x,y,w,h}` literals vs `PatchRect`) describe the same concept
 
 **File(s):**
