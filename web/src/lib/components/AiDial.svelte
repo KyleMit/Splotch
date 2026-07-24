@@ -2,6 +2,7 @@
   import { scale } from 'svelte/transition';
   import { backOut } from 'svelte/easing';
   import { ui } from '$lib/state/ui.svelte';
+  import { createDialProgress } from './aiDialProgress';
 
   interface Props {
     revealed?: boolean;
@@ -14,44 +15,26 @@
 
   let waiting = $state(false);
   let rafId = 0;
-  let startTime = 0;
-  let done = false;
-
-  // Mostly-linear so it advances at a steady, even pace — just a touch of sine
-  // easing softens the very start and end without a slow ramp or a late rush.
-  const fillCurve = (t: number) => 0.55 * t + 0.45 * (-(Math.cos(Math.PI * t) - 1) / 2);
+  const dial = createDialProgress(ESTIMATE);
 
   function loop(now: number) {
-    const elapsed = now - startTime;
-    if (!done) {
-      if (elapsed < ESTIMATE) {
-        progress = 0.92 * fillCurve(elapsed / ESTIMATE);
-        waiting = false;
-      } else {
-        const over = elapsed - ESTIMATE;
-        progress = 0.92 + 0.06 * (1 - Math.exp(-over / 5000));
-        waiting = true;
-      }
-    } else {
-      waiting = false;
-      progress += (1 - progress) * 0.16;
-      if (progress >= 0.999) {
-        progress = 1;
-        revealed = true;
-        rafId = 0;
-        return;
-      }
+    const step = dial.tick(now);
+    progress = step.progress;
+    waiting = step.waiting;
+    if (step.revealed) {
+      revealed = true;
+      rafId = 0;
+      return;
     }
     rafId = requestAnimationFrame(loop);
   }
 
   function startDial() {
     cancelAnimationFrame(rafId);
+    dial.start(performance.now());
     progress = 0;
     revealed = false;
     waiting = false;
-    done = false;
-    startTime = performance.now();
     rafId = requestAnimationFrame(loop);
   }
 
@@ -66,7 +49,7 @@
 
   $effect(() => {
     if (ui.aiResultOpen && !ui.aiGenerating && ui.aiResultUrl) {
-      done = true;
+      dial.markDone();
       if (!rafId) rafId = requestAnimationFrame(loop);
     }
   });
@@ -86,7 +69,6 @@
       progress = 0;
       revealed = false;
       waiting = false;
-      done = false;
     }
   });
 

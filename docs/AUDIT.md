@@ -9,39 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P2][testability] Extract the AiDial progress engine out of the component into a testable unit
-
-**File(s):** `web/src/lib/components/AiDial.svelte:13-91` (rAF loop + four `$effect`s) — pinned at
-SHA f934d43
-
-#### Problem
-
-The dial's fill model is imperative logic tangled into the component: a mutable
-`rafId`/`startTime`/`done` triple (non-`$state`), a `loop()` with three phase branches (lines
-24-46), plus **four** separate `$effect` blocks (lines 63-91) that start/stop the loop on different
-`ui` combinations, and a fifth destroy-cleanup effect. The lifecycle is spread across five reactive
-blocks sharing hidden mutable state, and there is no unit test — the behavior is only covered
-indirectly by `web/tests/ai-timer.spec.ts` (an E2E), precisely because the math is unreachable
-without a DOM. Any change risks a stuck spinner (the exact class of bug the comments at lines 22-45
-and 78-81 are patching around).
-
-#### Proposed solution
-
-Move the pure progress model into `web/src/lib/components/aiDialProgress.ts` (or a `.svelte.ts` rune
-module): `createDialProgress(estimateMs: number)` returning
-`{ start(), markDone(), stop(), tick(now: number): { progress: number; waiting: boolean; revealed: boolean } }`.
-Unit-test the curve, the overrun asymptote, and the done-ramp directly. The component keeps only the
-rAF pump and the `ui`→`start/markDone/stop` wiring, ideally collapsed from four effects to one that
-maps the `(aiResultOpen, aiGenerating, aiResultUrl, aiError)` tuple to a single command.
-
-#### Verification
-
-New Vitest unit test drives `tick()` with synthetic timestamps and asserts monotonic progress,
-`waiting` after `estimateMs`, and `revealed` at completion; `web/tests/ai-timer.spec.ts` still
-passes.
-
----
-
 ### [P2][type-safety] Replace the stringly-typed style with a `StyleName` union
 
 **File(s):** `web/src/lib/ai/styles.ts:5,22`; `web/src/lib/ai/prompt.ts:7-8`;
