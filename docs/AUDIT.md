@@ -7,40 +7,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P5][naming] `isWhite` reimplements a white check instead of reusing `WHITE_INK`, and diverges from `isDarkInk`'s approach
-
-**File(s):** `web/src/lib/state/colors.svelte.ts:91-94` (`isWhite`) vs `:18` (`WHITE_INK`),
-`:100-102` (`isDarkInk`) — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-export const WHITE_INK = '#ffffff'; // line 18
-export function isWhite(hex: string): boolean { // 91-94
-  const v = hex.trim().toLowerCase();
-  return v === '#ffffff' || v === '#fff' || v === 'white';
-}
-```
-
-`isWhite` hardcodes `'#ffffff'` rather than referencing `WHITE_INK`, and its "vanishes against the
-background" purpose is the light-mode mirror of `isDarkInk` — yet one is a hand-rolled string set
-and the other a luminance test. The two conceptually-paired predicates share no implementation
-strategy, so a reader can't infer one from the other.
-
-#### Proposed solution
-
-At minimum reference `WHITE_INK` in the comparison. Ideally, unify the pair conceptually: both
-answer "does this color disappear against its surface?" — consider expressing `isWhite` via
-`relativeLuminance(hex) > <threshold>` (named, symmetric with `DARK_INK_LUMINANCE_MAX`) so the two
-are visibly a matched set, unless the multi-format string check (`#fff`/`white`) is genuinely needed
-for picker inputs (document that if so).
-
-#### Verification
-
-`colors.svelte.test.ts` green; `WHITE_INK` is the single source for the white literal.
-
----
-
 ### [P5][naming] `install.mode: 'none'` is overloaded (already-installed vs unsupported)
 
 **File(s):** `web/src/lib/state/install.svelte.ts:26-31,65-69` — pinned at SHA f934d43

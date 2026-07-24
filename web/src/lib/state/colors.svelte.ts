@@ -90,9 +90,12 @@ export function pickCustomColor(hex: string) {
 // White is the one selectable color that vanishes against the white icon
 // buttons and paper (it's only reachable via the picker's greys ramp — the
 // palette has none), so the stroke-width icons get a dark outline just for it.
+// Exact/shorthand match, not a luminance threshold — input can arrive as
+// 'white'/'#fff', and unlike isDarkInk this needs exact-identity, not
+// near-white, detection.
 export function isWhite(hex: string): boolean {
   const v = hex.trim().toLowerCase();
-  return v === '#ffffff' || v === '#fff' || v === 'white';
+  return v === WHITE_INK || v === '#fff' || v === 'white';
 }
 
 // Tuned perceptual cutoff: below this, ink needs the light keyline against dark
