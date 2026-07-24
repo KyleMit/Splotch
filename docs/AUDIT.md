@@ -9,28 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P5][type-safety] `AiImageResult` casts in event handlers
-
-**File(s):** `web/src/lib/components/AiImageResult.svelte:42` — pinned at SHA f934d43
-
-#### Problem
-
-`const { naturalWidth: w, naturalHeight: h } = e.target as HTMLImageElement;` casts the event
-target. It's safe here (the handler is only on an `<img onload>`), but the `as` bypasses the checker
-and would silently mis-type if the handler were ever reused. Minor.
-
-#### Proposed solution
-
-Use `e.currentTarget` with a typed handler (`onload={(e) => handleImgLoad(e.currentTarget)}` where
-`handleImgLoad(img: HTMLImageElement)`), removing the cast — `currentTarget` is correctly typed as
-the element the listener is bound to.
-
-#### Verification
-
-`npm run check`; the stage still sizes to the loaded image's aspect (run the app, open a result).
-
----
-
 ### [P5][dead-code] `aiPreview` clamp/scale exports exist only for tests
 
 **File(s):** `web/src/lib/components/aiPreview.ts:51-72` (`MIN_SCALE`, `MAX_SCALE`,
