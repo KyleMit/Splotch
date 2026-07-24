@@ -26,4 +26,18 @@ If VALID, write `.audit-work/current-brief.md` containing:
 * A section headed "Acceptance criteria": the exact commands that must pass, and the behaviour that
   must not change
 
+Then decide the finding's **runtime surface**. If the fix could change what the app renders, how it
+handles input, or any user-visible flow (essentially any change under `web/src/` that isn't a
+comment, a type-only edit, or dead-code removal), find the Playwright E2E spec(s) that exercise it —
+grep `web/tests/` for the component, route, or behaviour — and:
+
+* list them in the structured result's `e2e_specs`, as paths relative to `web/`, e.g.
+  `tests/flows.spec.ts` (the driver runs exactly these as a per-finding gate before the fix
+  commits); and
+* name the same commands in the "Acceptance criteria" section.
+
+Leave `e2e_specs` empty for a change with **no behavioural surface** — a pure refactor, a script or
+doc edit, a type-only change. Don't gate a non-UI change on E2E, and don't pad the list: name only
+the spec(s) that actually cover this finding's surface, since the gate re-runs them for real.
+
 Then return the structured result. Set brief_path to the path you wrote.

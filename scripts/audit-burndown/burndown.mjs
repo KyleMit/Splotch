@@ -46,6 +46,7 @@ const PUSH_EVERY = Number(process.env.PUSH_EVERY ?? 10);
 const BRANCH = process.env.BRANCH ?? 'audit/burndown';
 const CHECK_CMD = process.env.CHECK_CMD ?? 'npm run check'; // type-check gate, every finding
 const TEST_CMD = process.env.TEST_CMD ?? 'npm run test:unit'; // fast-test gate, every finding
+const E2E_CMD = process.env.E2E_CMD ?? 'npm run test:e2e --'; // targeted E2E, only UI-touching findings
 const PUSH_TEST_CMD = process.env.PUSH_TEST_CMD ?? 'npm test'; // full suite, once per batch before push
 const MAX_DEFERRALS = Number(process.env.MAX_DEFERRALS ?? 3); // consecutive deferrals before halting
 const RETRIES = Number(process.env.RETRIES ?? 3); // retries for transient claude failures
@@ -77,6 +78,10 @@ const SCHEMA_VERIFY = JSON.stringify({
     verdict: { type: 'string', enum: ['VALID', 'INVALID'] },
     reason: { type: 'string' },
     brief_path: { type: 'string' },
+    // Playwright specs (relative to web/, e.g. "tests/flows.spec.ts") that
+    // exercise this finding's runtime surface — empty for a change with no
+    // behavioural surface. The per-finding E2E gate runs exactly these.
+    e2e_specs: { type: 'array', items: { type: 'string' } },
   },
   required: ['verdict', 'reason'],
 });
@@ -253,6 +258,14 @@ while (done < MAX_ISSUES) {
     continue;
   }
 
+  // Targeted E2E for a UI-touching finding (see the per-finding E2E gate in
+  // close-out). Sanitize hard: these strings are LLM-authored and reach a
+  // shell, so keep only spec-path-shaped values and drop anything else.
+  const e2eSpecs = (structured(verify.env).e2e_specs ?? []).filter(
+    (spec) => typeof spec === 'string' && /^[\w./-]+$/.test(spec)
+  );
+  if (e2eSpecs.length) logLine(`  E2E gate: ${e2eSpecs.join(' ')}`);
+
   const baseSha = gitOut('rev-parse', 'HEAD');
 
   // ---- 3. IMPLEMENT ---------------------------------------------------------
@@ -374,6 +387,17 @@ while (done < MAX_ISSUES) {
     logLine(`  ${TEST_CMD} red after review — rolling back to ${baseSha}`);
     git('reset', '-q', '--hard', baseSha);
     defer(title, 'fix broke the test suite');
+    continue;
+  }
+
+  // Targeted E2E gate — only for findings the verifier flagged as touching a
+  // runtime surface. Catches a behavioural regression before it commits,
+  // attributed to this one finding, without paying full-suite E2E per finding.
+  // The full npm test (with all E2E) still runs once per batch before push.
+  if (e2eSpecs.length && !shellOk(`${E2E_CMD} ${e2eSpecs.join(' ')}`)) {
+    logLine(`  targeted E2E red (${e2eSpecs.join(' ')}) — rolling back to ${baseSha}`);
+    git('reset', '-q', '--hard', baseSha);
+    defer(title, 'fix broke a targeted E2E spec');
     continue;
   }
 

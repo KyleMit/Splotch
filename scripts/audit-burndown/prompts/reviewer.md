@@ -21,9 +21,10 @@ Review for:
   usually fail.
 * Implications: does anything downstream depend on the old behaviour, including invariants
   documented in comments near the changed code?
-* Acceptance: run the acceptance commands, `npm run check`, and the fast unit tests
-  (`npm run test:unit`) yourself. Do not take the author's word that they pass — a fix that
-  type-checks but breaks an unrelated test is the exact defect an unattended run must not ship.
+* Acceptance: run the acceptance commands, `npm run check`, the fast unit tests
+  (`npm run test:unit`), and any Playwright E2E specs the acceptance criteria name
+  (`npm run test:e2e -- <spec>`) yourself. Do not take the author's word that they pass — a fix that
+  type-checks but breaks a test is the exact defect an unattended run must not ship.
 
 Do not raise style preferences, naming opinions, or speculative refactors. Only raise things that
 are wrong, incomplete, or risky. An approval that lets a real defect through is worse than a slow

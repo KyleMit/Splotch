@@ -58,7 +58,8 @@ MAX_ISSUES=5          # how many to complete before stopping (canary default; ov
 PUSH_EVERY=10         # batch pushes and draft-PR comments
 BRANCH=audit/burndown
 CHECK_CMD='npm run check'      # per-finding type-check gate
-TEST_CMD='npm run test:unit'   # per-finding fast-test gate (see the two-tier gate below)
+TEST_CMD='npm run test:unit'   # per-finding fast-test gate (see the layered gate below)
+E2E_CMD='npm run test:e2e --'  # per-finding targeted E2E, only for UI-touching findings
 PUSH_TEST_CMD='npm test'       # full suite once per batch, before each push
 MAX_DEFERRALS=3       # consecutive deferrals before halting
 RETRIES=3             # retries per claude call before treating it as a deferral
@@ -70,19 +71,29 @@ BUDGET_IMPL=4.00
 BUDGET_REVIEW=2.00
 ```
 
-### The two-tier test gate — why type-checking isn't enough
+### The layered test gate — why type-checking isn't enough
 
 Unattended, the expensive failure is a fix that type-checks but breaks a test and commits green. So
-verification is layered by cost:
+verification is layered by cost, catching a regression as early — and as attributed to one finding —
+as possible:
 
 * **Every finding**, after the adversarial review approves, the driver itself re-runs `CHECK_CMD`
   **and** `TEST_CMD` (fast unit tests) — it does not trust the role prompts to have run them. A red
   result rolls the fix back and defers the finding rather than committing it. Keep `TEST_CMD` fast
-  (unit only); the full suite runs later.
+  (unit only).
+* **UI-touching findings only**, at the same point, the driver also runs `E2E_CMD` against the
+  Playwright spec(s) the verifier named for that finding (its `e2e_specs`). This catches a
+  behavioural regression *before it commits*, attributed to the one finding that caused it, without
+  paying full-suite E2E on all 600 findings — only the fraction with a runtime surface run E2E, and
+  only their relevant spec. A pure refactor / script / doc finding names no specs and skips it. The
+  verifier writes the specs into both `e2e_specs` and the acceptance criteria, so the implementer
+  and reviewer run them too; a red spec rolls the fix back and defers it.
 * **Every batch**, right before the push, the driver runs `PUSH_TEST_CMD` (the full `npm test`,
-  including the slow E2E and asset-gen suites the per-finding gate skips). A red batch is **not
-  pushed** — the commits stay local and the push retries at the next boundary, so a flaky E2E clears
-  on retry and a real regression surfaces in `audit:status` instead of shipping.
+  including the whole E2E suite) as a catch-all for cross-finding interactions the per-finding specs
+  can't see. A red batch is **not pushed** — the commits stay local and the push retries at the next
+  boundary, so a flaky E2E clears on retry and a real regression surfaces in `audit:status` instead
+  of shipping. (When pushing to a draft PR whose CI already runs the full suite per push, you can
+  set `PUSH_TEST_CMD` to the fast suites and let CI be the E2E backstop.)
 
 The reviewer is also handed the **original finding**, not just the verifier's acceptance criteria,
 so it can reject a fix that satisfies mis-scoped criteria while missing what the finding asked for —
