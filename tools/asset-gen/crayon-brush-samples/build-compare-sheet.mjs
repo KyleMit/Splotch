@@ -9,7 +9,7 @@
 // points at capture-current.mjs output (default screenshots/crayon-current);
 // `--artifact` also emits a body-only fragment for the Claude Artifact tool.
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';

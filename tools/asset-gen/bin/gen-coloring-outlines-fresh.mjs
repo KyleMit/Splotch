@@ -20,7 +20,7 @@
 // shipped without --apply. After applying, regenerate the page's whole suite —
 // the old chalk, fills, and thumb all belong to the dead drawing.
 import { parseArgs } from 'node:util';
-import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
+import { writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';

@@ -58,7 +58,6 @@ let host: MagicBrushHost | null = null;
 // already transparent, punched at build time), so it's drawn into the sheet directly.
 let fillImage: HTMLImageElement | null = null;
 let fillUrl: string | null = null;
-let fillDecodePending = false;
 
 // Source 2: the generated rainbow. The pool is built lazily and reused; the active
 // gradient is the one currently revealed, held until the canvas is cleared.
@@ -296,9 +295,9 @@ export function sheetPatternFor(target: CanvasRenderingContext2D): CanvasPattern
 // True whenever the sheet cannot currently paint magic ink — i.e. sheetPatternFor
 // would return null. That is any time there is no rasterized sheet: an in-flight
 // fill decode, or a rasterizeSheet that early-returned on an unmounted/zero-size
-// canvas or an absent source (fillDecodePending is false in that second case, which
-// a decode-only signal would miss). sheetReady is set true only after sheetCanvas
-// exists, so !sheetReady is exactly the pattern-null condition. Folding or
+// canvas or an absent source (a decode-only signal would miss that second case).
+// sheetReady is set true only after sheetCanvas exists, so !sheetReady is exactly
+// the pattern-null condition. Folding or
 // keyframing a magic op in this state would bake it to nothing, so the undo history
 // defers until the sheet is ready again.
 export function isMagicSheetUnready(): boolean {
@@ -314,13 +313,9 @@ function loadSheetImage(url: string) {
   img.onload = () => {
     // A newer page may have been requested while this one decoded — drop stale.
     if (fillUrl !== forFillUrl) return;
-    fillDecodePending = false;
     fillImage = img;
     rasterizeSheet();
     host?.repaint();
-  };
-  img.onerror = () => {
-    if (fillUrl === forFillUrl) fillDecodePending = false;
   };
   img.src = url;
 }
@@ -333,7 +328,6 @@ export function setColorSheet(colorUrl: string | null) {
   if (colorUrl === fillUrl) return;
   fillUrl = colorUrl;
   fillImage = null;
-  fillDecodePending = colorUrl !== null;
   if (!colorUrl) {
     // Page removed — the sheet reverts to the gradient source if one exists.
     rasterizeSheet();

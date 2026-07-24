@@ -19,7 +19,7 @@
 //   node tools/asset-gen/idea13-invented-shape-audit.mjs --verbose      per-blob detail for every page
 import { parseArgs } from 'node:util';
 import { readFile, mkdir } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import { glob } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';

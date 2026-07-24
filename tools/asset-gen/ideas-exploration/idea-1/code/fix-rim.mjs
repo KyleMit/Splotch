@@ -14,7 +14,6 @@ import { join } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { dilateMask } from '/home/user/Splotch/tools/asset-gen/lib/morphology.mjs';
 import {
-  sharp,
   loadRgb,
   chalkMask,
   ringBands,

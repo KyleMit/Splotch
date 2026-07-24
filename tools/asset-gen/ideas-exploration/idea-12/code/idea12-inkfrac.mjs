@@ -1,7 +1,6 @@
 // TEMP (idea #12): per-core annulus ink fraction on the PEN mask. Delete after use.
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import sharp from 'sharp';
 import { COLORING_DIR } from './lib/paths.mjs';
 import { findEyeCores } from './lib/eye-fill.mjs';
 

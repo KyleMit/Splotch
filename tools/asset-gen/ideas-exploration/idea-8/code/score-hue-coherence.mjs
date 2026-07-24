@@ -12,7 +12,7 @@
 //   node tools/asset-gen/score-hue-coherence.mjs --json     machine-readable
 import { parseArgs } from 'node:util';
 import { readFile } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import { glob } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';
