@@ -365,6 +365,15 @@ Notes from real runs — set these before a large run rather than discovering th
   `PUSH_TEST_CMD` both carry `--retries=1` so a genuine flake clears on retry; a real regression
   still fails both attempts. A batch hold isn't fatal regardless — the next boundary (or the exit
   flush) retries and pushes.
+* **Reconcile a role's envelope against git, never trust it alone.** `sha` is optional in
+  `SCHEMA_IMPL` (a `success: false` return has no commit to point at), and roughly one implementer
+  in seven finished the entire job — committed, amended, wrote a full summary — while omitting the
+  field. The driver read that as failure, `git reset --hard`-ed a complete tested fix away, and
+  deferred the finding; it cost ~$4 of Opus work in one case before `resolveImplSha` began falling
+  back to `HEAD` when it moved past the base. The general rule: **an optional field in a role schema
+  is a silent work-discard risk.** Where an observable side effect exists (a commit, a file, a
+  branch), check the side effect — it cannot forget. Reserve the envelope for what only the model
+  knows (its summary, its verdict).
 
 ## Closing out a run
 

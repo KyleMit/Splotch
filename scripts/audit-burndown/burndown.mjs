@@ -33,6 +33,7 @@ import {
   logLine,
   LOGS,
   PROMPTS,
+  resolveImplSha,
   runCmd,
   shellOk,
   WORK,
@@ -441,7 +442,13 @@ while (done < MAX_ISSUES) {
   // The session_id is the resume handle. Addressing by session ID rather than
   // by agent name is what makes hundreds of iterations safe.
   const implSession = impl.env.session_id ?? '';
-  let sha = structured(impl.env).sha ?? '';
+  const reportedSha = structured(impl.env).sha ?? '';
+  let sha = resolveImplSha({
+    reported: reportedSha,
+    head: structured(impl.env).success === true ? gitOut('rev-parse', 'HEAD') : '',
+    baseSha,
+  });
+  if (sha && !reportedSha) logLine(`  implementer omitted its sha — recovered ${sha.slice(0, 12)}`);
 
   if (!impl.ok || structured(impl.env).success !== true || !sha) {
     logLine(`  implementer failed — restoring ${baseSha}`);

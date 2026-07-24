@@ -15,6 +15,7 @@ import {
   deleteFirstEntry,
   findingPriority,
   getEntry,
+  resolveImplSha,
 } from '../audit-burndown/lib.mjs';
 
 // Built from a line array so the fenced code block inside the first finding
@@ -179,5 +180,27 @@ describe('findingPriority', () => {
 
   it('only reads a leading tag, not a [P<n>] appearing later in the title', () => {
     expect(findingPriority('[dedupe] see the [P2] finding above')).toBeNull();
+  });
+});
+
+// A missing sha used to mean "roll back and defer", which twice discarded a
+// complete, committed, test-passing fix because the implementer just left the
+// optional field out of its structured output (~$4 of Opus work in one case).
+// git is the source of truth for whether a commit happened; the envelope is not.
+describe('resolveImplSha', () => {
+  const baseSha = 'a'.repeat(40);
+  const head = 'b'.repeat(40);
+
+  it('prefers the sha the implementer reported', () => {
+    expect(resolveImplSha({ reported: head, head: 'c'.repeat(40), baseSha })).toBe(head);
+  });
+
+  it('recovers a committed fix whose sha the implementer forgot to report', () => {
+    expect(resolveImplSha({ reported: '', head, baseSha })).toBe(head);
+  });
+
+  it('stays empty when HEAD never moved, so a genuine no-op still defers', () => {
+    expect(resolveImplSha({ reported: '', head: baseSha, baseSha })).toBe('');
+    expect(resolveImplSha({ reported: '', head: '', baseSha })).toBe('');
   });
 });

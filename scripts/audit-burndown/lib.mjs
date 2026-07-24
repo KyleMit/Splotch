@@ -25,6 +25,17 @@ export function findingPriority(title) {
   return match ? Number(match[1]) : null;
 }
 
+// The implementer reports the sha of the commit it made, but that field is
+// optional in its schema — a success=false return has no commit to point at — so
+// a model that finished the whole job can still omit it, and treating the gap as
+// failure throws away the most expensive work the driver does. Trust git over
+// the envelope: HEAD past the base means it committed, whatever it remembered to
+// report. An unmoved HEAD still yields '' so a genuine no-op defers as before.
+export function resolveImplSha({ reported, head, baseSha }) {
+  if (reported) return reported;
+  return head && head !== baseSha ? head : '';
+}
+
 // Every entry script chdirs to the repo root so relative paths (docs/AUDIT.md,
 // .audit-work/) behave the same no matter where it was invoked from.
 export function chdirRoot() {
