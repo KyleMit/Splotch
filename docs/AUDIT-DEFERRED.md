@@ -374,3 +374,44 @@ compiler flags every miss.
 nothing; every consumer still resolves.
 
 ---
+
+### [P1][duplication] Extract a shared segmented-control primitive — it now exists three times with drift
+
+**File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:32-47,92-138` ·
+`web/src/lib/components/ParentCenter.svelte:222-238,443-490` ·
+`web/src/lib/components/parent/ReportForm.svelte:112-125,233-267` (theme picker / orientation
+selector / report-kind picker) — pinned at SHA f934d43
+
+#### Problem
+
+Three near-identical "iOS-style segmented control" implementations exist. The code comments admit
+the copy-paste: ParentCenter's `.orient-seg` says *"matching the Theme picker in AppearanceSection"*
+(`ParentCenter.svelte:440`) and ReportForm's `.report-kind` says *"mirrors the Appearance theme
+picker"* (`ReportForm.svelte:232`). The design skill's own rule is *"Extract a new primitive at the
+third duplicate"* — this is the third.
+
+They have already drifted, which is exactly the failure the shared list is supposed to prevent:
+
+* Container radius: `var(--radius-md)` (theme picker, `AppearanceSection.svelte:98`) vs raw `10px`
+  (orient-seg, `ParentCenter.svelte:448`) vs `10px` (report-kind, `ReportForm.svelte:239`).
+* Option radius: raw `9px` (`AppearanceSection.svelte:109`) vs `var(--radius-sm)`
+  (`ParentCenter.svelte:460`) vs `7px` (`ReportForm.svelte:250`).
+* Active treatment: raised card w/ `box-shadow: 0 1px 4px rgba(0,0,0,0.18)` (theme/orient) vs brand
+  fill (report-kind).
+* Font size: `var(--font-size-sm)` vs raw `12.5px` (`ParentCenter.svelte:464`).
+
+#### Proposed solution
+
+Add `web/src/lib/components/design/Segmented.svelte` (beside `Button.svelte`) taking
+`options: {value,label,icon?,id?}[]`, `selected`, `onSelect`, and a `variant` (`raised` for
+theme/orientation, `filled` for report-kind), plus an `allowDeselect` flag for the orientation case.
+Style once from tokens (`--radius-md` container, `--radius-sm` option, `--shadow-sm` for the active
+card). Replace all three call sites. Register it in the `design` skill's primitives table.
+
+#### Verification
+
+`grep -rn "segmented\|theme-option\|orient-opt\|report-kind-option"` shows only the new primitive's
+internals. Visually diff `/dev/design` and each of the three sites in light+dark before/after; the
+three should now be pixel-identical modulo variant.
+
+---
