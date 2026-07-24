@@ -1,6 +1,7 @@
 <script lang="ts">
   import { isNative, getPlatform, type Platform } from '$lib/platform';
   import Icon from '../Icon.svelte';
+  import Disclosure from '../design/Disclosure.svelte';
   import {
     install,
     promptInstall,
@@ -181,47 +182,42 @@
   {:else}
     <section class="os-section">
       <h3 class="os-heading">{os === 'ios' ? 'iOS' : 'Android'}</h3>
-      <details class="help-section">
-        <summary>
+      <Disclosure class="help-section">
+        {#snippet summary()}
           <span class="summary-text">
             <span class="section-number">1.</span> Install as App
             {#if install.installed}<span class="install-check">✓</span>{/if}
           </span>
-        </summary>
+        {/snippet}
         {@render installSteps(os)}
-      </details>
+      </Disclosure>
 
-      <details class="help-section">
-        <summary
-          ><span class="summary-text"><span class="section-number">2.</span> {lockTitle(os)}</span
-          ></summary
-        >
+      <Disclosure class="help-section">
+        {#snippet summary()}
+          <span class="summary-text"><span class="section-number">2.</span> {lockTitle(os)}</span>
+        {/snippet}
         {@render lockSteps(os)}
-      </details>
+      </Disclosure>
     </section>
   {/if}
 {/each}
 
 <style>
-  .help-section {
+  /* The accordion's own chrome on the Disclosure primitive — reached with
+     :global() because the class lands on the primitive's own markup. */
+  .os-section :global(.help-section) {
     margin-bottom: 16px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
   }
 
-  .help-section:last-of-type {
+  .os-section :global(.help-section:last-of-type) {
     margin-bottom: 0;
   }
 
-  .help-section summary {
+  .os-section :global(.help-section summary) {
     padding: 16px;
     font-size: var(--font-size-xl);
     font-weight: 600;
     color: var(--text);
-    cursor: pointer;
-    user-select: none;
-    list-style: none;
     background: var(--surface-2);
     transition: background var(--duration-base) ease;
     display: flex;
@@ -231,25 +227,14 @@
   }
 
   @media (hover: hover) {
-    .help-section summary:hover {
+    .os-section :global(.help-section summary:hover) {
       background: var(--surface-hover);
     }
   }
 
-  .help-section summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .help-section summary::after {
-    content: '›';
+  .os-section :global(.help-section summary::after) {
     font-size: 24px;
-    color: var(--text-faint);
-    transition: transform var(--duration-base) ease;
     flex-shrink: 0;
-  }
-
-  .help-section[open] summary::after {
-    transform: rotate(90deg);
   }
 
   .os-section + .os-section {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import Button from '$lib/components/design/Button.svelte';
+  import Disclosure from '$lib/components/design/Disclosure.svelte';
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
   import { brand, scale, themes, toCssVarName, type ThemeTokens } from '$lib/design/tokens';
   import { applyTheme, isThemePreference, type ThemePreference } from '$lib/theme';
@@ -199,6 +200,19 @@
       >
     {/each}
   </section>
+
+  <section>
+    <h2>Disclosure</h2>
+    <p><code>lib/components/design/Disclosure.svelte</code></p>
+    <Disclosure class="disclosure-demo">
+      {#snippet summary()}What does the primitive own?{/snippet}
+      <p class="disclosure-demo-body">
+        The bordered shell, the hidden native marker, and the <code>›</code> chevron that rotates on
+        open. Padding, type, color, and background stay with the call site, through the forwarded
+        <code>class</code>.
+      </p>
+    </Disclosure>
+  </section>
 </main>
 
 <style>
@@ -249,6 +263,22 @@
   .value {
     font-size: var(--font-size-xs);
     color: var(--text-muted);
+  }
+
+  section :global(.disclosure-demo summary) {
+    padding: var(--space-3);
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    color: var(--brand-text);
+    background: var(--surface-2);
+  }
+
+  .disclosure-demo-body {
+    margin: 0;
+    padding: 0 var(--space-3) var(--space-3);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+    color: var(--text-mid);
   }
 
   .theme-toggle {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
   import Icon from '../Icon.svelte';
+  import Disclosure from '../design/Disclosure.svelte';
   import StatusMessage from '../design/StatusMessage.svelte';
   import ToggleRow from './ToggleRow.svelte';
   import {
@@ -146,8 +147,8 @@
         own Google account. We never keep a copy of your key.
       </p>
 
-      <details class="byok-howto">
-        <summary>How do I get a Gemini API key?</summary>
+      <Disclosure class="byok-howto">
+        {#snippet summary()}How do I get a Gemini API key?{/snippet}
         <ol>
           <li>
             Open <a
@@ -161,7 +162,7 @@
           <li>Copy the key (it starts with <code>AIza…</code>) and paste it below.</li>
         </ol>
         <p class="byok-howto-note">The free tier is generous and is plenty for occasional use.</p>
-      </details>
+      </Disclosure>
 
       <label class="access-code-label" for="aiKeyInput">Gemini API Key</label>
       <div class="access-code-row">
@@ -350,40 +351,25 @@
     color: var(--text-mid);
   }
 
-  .byok-howto {
+  /* The how-to's own chrome on the Disclosure primitive — reached with
+     :global() because the class lands on the primitive's own markup. */
+  .byok :global(.byok-howto) {
     margin: 0 0 14px 0;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
     background: var(--surface);
-    overflow: hidden;
   }
 
-  .byok-howto summary {
+  .byok :global(.byok-howto summary) {
     padding: 10px 12px;
     font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--brand);
-    cursor: pointer;
-    user-select: none;
-    list-style: none;
   }
 
-  .byok-howto summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .byok-howto summary::after {
-    content: '›';
+  .byok :global(.byok-howto summary::after) {
     float: right;
-    color: var(--text-faint);
-    transition: transform var(--duration-base) ease;
   }
 
-  .byok-howto[open] summary::after {
-    transform: rotate(90deg);
-  }
-
-  .byok-howto ol {
+  .byok :global(.byok-howto ol) {
     margin: 0;
     padding: 0 16px 8px 32px;
     color: var(--text-mid);
@@ -391,12 +377,12 @@
     line-height: 1.7;
   }
 
-  .byok-howto a {
+  .byok :global(.byok-howto a) {
     color: var(--brand);
     font-weight: 600;
   }
 
-  .byok-howto code {
+  .byok :global(.byok-howto code) {
     background: var(--brand-wash);
     border-radius: var(--radius-xs);
     padding: 1px 5px;

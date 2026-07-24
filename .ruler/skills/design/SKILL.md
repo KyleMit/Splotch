@@ -56,6 +56,8 @@ corner buttons, Clear Button) keep their bespoke paper treatments.
 | Primitive              | Use for                                                                                     |
 | ---------------------- | ------------------------------------------------------------------------------------------- |
 | `Button.svelte`        | Text-labeled actions. Variants `brand` / `wash` / `danger` / `ghost`, sizes `md` / `sm`     |
+| `Disclosure.svelte`    | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the        |
+|                        | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`) |
 | `StatusMessage.svelte` | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error` |
 
 Shared *global* patterns (modal shell, close button, corner buttons, dialog fly-in) remain classes

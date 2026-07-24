@@ -9,34 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P2][duplication] Extract a disclosure/`<details>` primitive — the chevron idiom is copied three times
-
-**File(s):** `web/src/lib/components/parent/SetupInstructions.svelte:239-253` ·
-`web/src/lib/components/parent/AiKeyManager.svelte:378-391` ·
-`web/src/lib/components/parent/ReportForm.svelte:357-368` — pinned at SHA f934d43
-
-#### Problem
-
-Three components each hand-roll the same collapsible-`<details>` styling:
-`summary { list-style: none }`, `summary::-webkit-details-marker { display: none }`, a
-`::after { content: '›' }` chevron, and `[open] summary::after { transform: rotate(90deg) }`.
-ReportForm's comment even points at the shared idiom: *"same chevron idiom as the BYOK how-to"*
-(`ReportForm.svelte:339`). Any change to the disclosure affordance must be made in three places.
-
-#### Proposed solution
-
-Add `web/src/lib/components/design/Disclosure.svelte` wrapping `<details><summary>` with the chevron
-and marker-reset baked in, exposing `summary` text/snippet and body via children. Replace the three
-call sites (SetupInstructions' `.help-section`, AiKeyManager's `.byok-howto`, ReportForm's
-`.report-device-details`), keeping only their body-specific styles.
-
-#### Verification
-
-`grep -rn "details-marker\|content: '›'" web/src` returns one hit (the primitive). Expand/collapse
-each of the three sections and confirm the chevron rotates identically.
-
----
-
 ### [P2][type-safety] `SetupInstructions` passes OS around as bare `string`, losing the `'ios'|'android'` union
 
 **File(s):** `web/src/lib/components/parent/SetupInstructions.svelte:47-58,91,112,136,166-202` —
