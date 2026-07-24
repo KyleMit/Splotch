@@ -323,3 +323,54 @@ the element the listener is bound to.
 `npm run check`; the stage still sizes to the loaded image's aspect (run the app, open a result).
 
 ---
+
+### [P1][consistency] Unify the exported `$state` object naming across state modules
+
+**File(s):** `web/src/lib/state/canvas.svelte.ts:6`, `web/src/lib/state/strokeWidth.svelte.ts:26`,
+`web/src/lib/state/tool.svelte.ts:54`, `web/src/lib/state/colors.svelte.ts:59`,
+`web/src/lib/state/settings.svelte.ts:150`, `web/src/lib/state/ui.svelte.ts:42`,
+`web/src/lib/state/layout.svelte.ts:29`, `web/src/lib/state/install.svelte.ts:37`,
+`web/src/lib/state/network.svelte.ts:8`, `web/src/lib/state/fullscreen.svelte.ts:31` — pinned at SHA
+f934d43
+
+#### Problem
+
+The primary `$state` export follows two different naming conventions with no rule a newcomer can
+predict. Three modules use a `…State` suffix:
+
+```ts
+export const canvasState = $state({ … });   // canvas.svelte.ts:6
+export const strokeState = $state({ … });    // strokeWidth.svelte.ts:26
+export const toolState = $state({ … });      // tool.svelte.ts:54
+```
+
+Seven use the bare noun:
+
+```ts
+export const colors   = $state({ … });   // colors.svelte.ts:59
+export const settings = $state({ … });    // settings.svelte.ts:150
+export const ui       = $state({ … });    // ui.svelte.ts:42
+export const layout   = $state({ … });    // layout.svelte.ts:29
+export const install  = $state({ … });    // install.svelte.ts:37
+export const network  = $state({ … });    // network.svelte.ts:8
+export const fullscreen = $state({ … });  // fullscreen.svelte.ts:31
+```
+
+To import a store you must first remember (or grep) whether its module happens to append `State`.
+This is pure friction and the single most visible inconsistency in the section.
+
+#### Proposed solution
+
+Pick one convention and apply it repo-wide. The bare-noun form is the majority (7 vs 3) and reads
+more naturally at call sites (`settings.soundEnabled`, `colors.activeColor`), so rename
+`canvasState → canvas`, `strokeState → stroke` (or `strokeWidth`), `toolState → tool`. Because
+`tool.svelte.ts` already exports `BrushType`/`BRUSH_TYPES` and the filename is `tool`,
+`toolState → tool` is clean. Do it as a mechanical rename across the ~10 consuming components; the
+compiler flags every miss.
+
+#### Verification
+
+`npm run check` passes after the rename; `grep -rn "State = \$state" web/src/lib/state` returns
+nothing; every consumer still resolves.
+
+---
