@@ -9,31 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P3][readability] Name the opaque progress-curve constants in AiDial's `loop`
-
-**File(s):** `web/src/lib/components/AiDial.svelte:22-46` — pinned at SHA f934d43
-
-#### Problem
-
-`loop()` is dense with unexplained literals: `0.92 * fillCurve(...)`,
-`0.92 + 0.06 * (1 - Math.exp(-over / 5000))`, `progress += (1 - progress) * 0.16`,
-`progress >= 0.999`, and `fillCurve = t => 0.55 * t + 0.45 * (…)`. The reader can't tell that `0.92`
-is "the ceiling the estimate phase creeps toward," `0.06` is "the extra headroom the overrun phase
-adds (→0.98)," `5000` is the overrun time-constant in ms, and `0.16` is the reveal-ramp rate. This
-is the mechanism most likely to be tuned and most likely to be broken by a stray edit.
-
-#### Proposed solution
-
-Introduce named constants at module top: `ESTIMATE_CEILING = 0.92`, `OVERRUN_HEADROOM = 0.06`,
-`OVERRUN_TAU_MS = 5000`, `REVEAL_RATE = 0.16`, `REVEAL_EPSILON = 0.999`, and `LINEAR_MIX = 0.55`
-inside `fillCurve`. If the AiDial-engine extraction (P2) lands, do this as part of that module.
-
-#### Verification
-
-`npm run check`; `web/tests/ai-timer.spec.ts` still passes (values unchanged, only named).
-
----
-
 ### [P3][duplication] The `isAiGenerationActive(runId)` ownership guard is threaded ad hoc through both functions
 
 **File(s):** `web/src/lib/drawing/aiImage.ts:66-92,113,118,146-176` — pinned at SHA f934d43
