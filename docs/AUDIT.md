@@ -9,38 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P2][complexity] `ParentCenter.svelte` is 771 lines with four shells inlined — extract the compact quick-toggles shell
-
-**File(s):** `web/src/lib/components/ParentCenter.svelte:60-86,183-249,405-533` (compact
-landscape-phone shell) — pinned at SHA f934d43
-
-#### Problem
-
-This one component holds routing state, four distinct render branches (compact / wide sidebar /
-phone hub / drilled section), and a self-contained sub-feature: the compact landscape-phone shell
-with its own `LockedOrientation` type, `orientationOptions`, and `lockOrientation()` logic
-(`:60-86`), ~65 lines of markup (`:183-249`), and ~130 lines of dedicated CSS (`.quick-toggles`,
-`.orient-seg`, `.about-cell`, `.portrait-note`, `:405-533`). None of it is shared with the other
-three shells. The `<style>` block alone is 446 lines.
-
-#### Proposed solution
-
-Extract `web/src/lib/components/parent/CompactShell.svelte` owning the orientation-selector state
-and the quick-toggles grid, rendered by ParentCenter as
-`{#if compact}<CompactShell />{:else if wide}…`. That removes the
-`LockedOrientation`/`orientationOptions`/`lockOrientation` block and the
-`orient-*`/`about-cell`/`portrait-note`/`quick-toggles` CSS from ParentCenter, leaving it to own
-only shell selection and the section list. If the Segmented primitive (P1) lands, `orient-seg`
-collapses into it.
-
-#### Verification
-
-`npm run check` clean; ParentCenter drops well under 500 lines. Manually rotate a phone-sized
-viewport to confirm the compact shell still mounts and the orientation selector still toggles the
-lock.
-
----
-
 ### [P2][duplication] Extract a shared status-message component (`report-message` / `byok-message` are the same block)
 
 **File(s):** `web/src/lib/components/parent/ReportForm.svelte:193-206,439-455` ·
