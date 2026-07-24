@@ -9,31 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P4][readability] AiConfetti's deterministic-hash constants are wholly opaque
-
-**File(s):** `web/src/lib/components/AiConfetti.svelte:2-20` — pinned at SHA f934d43
-
-#### Problem
-
-The confetti field is generated from a pile of unexplained literals: `length: 38`, the per-property
-seeds `12.9, 57.3, 31.7, 45.1, 8.3, 77.7, 51.3, 27.1`, and the shaping constants (`2 + r*96`,
-`-r*9`, `5.5 + r*4.5`, `(16 + r*24)`, `6 + r*6`, `r < 0.4`). The `Math.sin((i+1)*seed) * 10000`
-fract-hash is a non-obvious idiom. The WHY comment (deterministic for SSR) is good, but the
-constants themselves — count, ranges — are magic. This is decorative, hence low priority, but the
-block is unreadable at a glance.
-
-#### Proposed solution
-
-Name the tunables: `const CONFETTI_COUNT = 38;`, and give the derived values ranges via small
-helpers or named min/span pairs (`LEFT_MIN/LEFT_SPAN`, `DURATION_MIN/DURATION_SPAN`,
-`ROUND_FRACTION = 0.4`). Optionally hoist the fract-hash to a named `hashUnit(i, seed)` local.
-
-#### Verification
-
-Visual: the confetti still animates identically (constants unchanged, only named). `npm run check`.
-
----
-
 ### [P4][readability] `AiImageResult` magic aspect/blur constants
 
 **File(s):** `web/src/lib/components/AiImageResult.svelte:20,47` — pinned at SHA f934d43
