@@ -9,37 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P5][maintainability] `VerifyResponse` and `VerifyCredentialResult` overlap without a shared shape
-
-**File(s):** `web/src/lib/aiCredential.ts:11-18` — pinned at SHA f934d43
-
-#### Problem
-
-`VerifyResponse` (`{ ok?; error?; accessCode? }`, line 18) is the wire shape and
-`VerifyCredentialResult` (lines 11-16) is the returned shape; they share `error`/`accessCode` fields
-declared independently. Small, but the two can drift (e.g. server adds a field) and the
-`.catch(() => ({}))` on line 37 means a parse failure yields an untyped `{}` widened to
-`VerifyResponse`.
-
-#### Proposed solution
-
-Minor: keep both but derive the overlap
-(`type VerifyPayload = { ok?: boolean; error?: string; accessCode?: string }` reused in
-`VerifyResponse`), or inline `VerifyResponse` since it's used once. Not urgent.
-
-#### Verification
-
-`aiCredential.test.ts` (success, rejected, ok:false, abort passthrough) stays green;
-`npm run check`.
-
----
-
-That's 24 findings. Highest-value structural work: splitting `generateAiImage` (aiImage.ts:94-188),
-extracting the AiDial progress engine into a testable module, introducing a `StyleName` union across
-the stringly-typed style plumbing, and relocating the pinch-zoom engine out of
-`components/aiPreview.ts`. The rest are named-constant/duplication/type cleanups. All scoped files
-were read at SHA `f934d43`; line numbers verified against that revision.
-
 ## Source: Code audit — App state (Svelte 5 runes)
 
 ### [P1][consistency] Unify the exported `$state` object naming across state modules
