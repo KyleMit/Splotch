@@ -72,18 +72,20 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, runId: number) {
   // result modal, so it must degrade like any other silent save failure rather
   // than bubbling into generateAiImage's error UI.
   let saveImageBlob: (typeof import('./screenshot'))['saveImageBlob'];
+  let AI_IMAGE_BASENAME: string;
+  let DRAWING_BASENAME: string;
   try {
-    ({ saveImageBlob } = await import('./screenshot'));
+    ({ saveImageBlob, AI_IMAGE_BASENAME, DRAWING_BASENAME } = await import('./screenshot'));
   } catch (err) {
     console.error('Auto-save failed:', err);
     return;
   }
-  await saveImageBlob(aiBlob, 'splotch-ai');
+  await saveImageBlob(aiBlob, AI_IMAGE_BASENAME);
   if (!isAiGenerationActive(runId)) return;
   const sig = await blobSignature(drawingBlob);
   if (!isAiGenerationActive(runId)) return;
   if (sig === null || sig !== lastSavedDrawingSig) {
-    await saveImageBlob(drawingBlob, 'splotch');
+    await saveImageBlob(drawingBlob, DRAWING_BASENAME);
   }
   // Record the signature of the drawing we just saved even if ownership was lost
   // during that save: the drawing is already in the gallery, so a later owning run

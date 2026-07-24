@@ -9,31 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P4][duplication] The gallery tag strings `'splotch-ai'` / `'splotch'` are duplicated across modules
-
-**File(s):** `web/src/lib/drawing/aiImage.ts:80,85`;
-`web/src/lib/components/AiImageResult.svelte:56` — pinned at SHA f934d43
-
-#### Problem
-
-`autoSaveImages` saves with the literal tags `'splotch-ai'` (line 80) and `'splotch'` (line 85), and
-`AiImageResult.handleDownload` builds `splotch-ai-${timestamp()}.png` (line 56) with the same
-`splotch-ai` prefix as a separate literal. `web/src/lib/drawing/screenshot.ts` also defaults
-`baseName = 'splotch'`. The download filename and the auto-save tag are meant to match but are
-independent strings; changing the brand prefix means hunting every literal.
-
-#### Proposed solution
-
-Export named constants (e.g. `AI_IMAGE_BASENAME = 'splotch-ai'` and `DRAWING_BASENAME = 'splotch'`)
-from `screenshot.ts` and import them at both call sites.
-
-#### Verification
-
-`npm run check`; grep confirms `'splotch-ai'` is defined once; `aiImage.test.ts`'s tag assertions
-(`tags.filter(t => t === 'splotch-ai')`) still pass.
-
----
-
 ### [P4][maintainability] Name the HTTP status magic numbers in `readAiImageResponse`
 
 **File(s):** `web/src/lib/drawing/aiImageResponse.ts:19-20`; `web/src/lib/drawing/aiImage.ts:167` —

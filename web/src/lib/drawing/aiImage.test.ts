@@ -12,7 +12,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('./engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
 vi.mock('./overlay', () => ({ getActiveOverlayImage: vi.fn(() => null) }));
-vi.mock('./screenshot', () => ({ saveImageBlob: mocks.saveImageBlob }));
+vi.mock('./screenshot', () => ({
+  saveImageBlob: mocks.saveImageBlob,
+  AI_IMAGE_BASENAME: 'splotch-ai',
+  DRAWING_BASENAME: 'splotch',
+}));
 vi.mock('$lib/state/settings.svelte', () => ({ settings: mocks.settings }));
 
 interface Deferred<T> {

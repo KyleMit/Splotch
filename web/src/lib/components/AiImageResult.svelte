@@ -6,7 +6,7 @@
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
-  import { timestamp, triggerDownload } from '$lib/drawing/screenshot';
+  import { timestamp, triggerDownload, AI_IMAGE_BASENAME } from '$lib/drawing/screenshot';
 
   let dialogEl: HTMLDialogElement;
   let zoomLayerEl = $state<HTMLDivElement | undefined>();
@@ -56,7 +56,7 @@
 
   function handleDownload() {
     if (!ui.aiResultUrl || exiting) return;
-    triggerDownload(ui.aiResultUrl, `splotch-ai-${timestamp()}.png`);
+    triggerDownload(ui.aiResultUrl, `${AI_IMAGE_BASENAME}-${timestamp()}.png`);
 
     // Morph the modal into a polaroid, hold it in the center, then let it fly
     // off to the bottom-left. The fly-out animation's end dismisses the modal.
