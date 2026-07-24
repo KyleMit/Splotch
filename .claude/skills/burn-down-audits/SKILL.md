@@ -57,7 +57,9 @@ All environment variables on `audit:burndown`, all with defaults:
 MAX_ISSUES=5          # how many to complete before stopping (canary default; overnight passes 600)
 PUSH_EVERY=10         # batch pushes and draft-PR comments
 BRANCH=audit/burndown
-CHECK_CMD='npm run check'
+CHECK_CMD='npm run check'      # per-finding type-check gate
+TEST_CMD='npm run test:unit'   # per-finding fast-test gate (see the two-tier gate below)
+PUSH_TEST_CMD='npm test'       # full suite once per batch, before each push
 MAX_DEFERRALS=3       # consecutive deferrals before halting
 RETRIES=3             # retries per claude call before treating it as a deferral
 MODEL_VERIFY=sonnet   # verification is mostly grep-and-confirm
@@ -67,6 +69,24 @@ BUDGET_VERIFY=1.00    # --max-budget-usd per call
 BUDGET_IMPL=4.00
 BUDGET_REVIEW=2.00
 ```
+
+### The two-tier test gate — why type-checking isn't enough
+
+Unattended, the expensive failure is a fix that type-checks but breaks a test and commits green. So
+verification is layered by cost:
+
+* **Every finding**, after the adversarial review approves, the driver itself re-runs `CHECK_CMD`
+  **and** `TEST_CMD` (fast unit tests) — it does not trust the role prompts to have run them. A red
+  result rolls the fix back and defers the finding rather than committing it. Keep `TEST_CMD` fast
+  (unit only); the full suite runs later.
+* **Every batch**, right before the push, the driver runs `PUSH_TEST_CMD` (the full `npm test`,
+  including the slow E2E and asset-gen suites the per-finding gate skips). A red batch is **not
+  pushed** — the commits stay local and the push retries at the next boundary, so a flaky E2E clears
+  on retry and a real regression surfaces in `audit:status` instead of shipping.
+
+The reviewer is also handed the **original finding**, not just the verifier's acceptance criteria,
+so it can reject a fix that satisfies mis-scoped criteria while missing what the finding asked for —
+the verifier is the one role with no independent check.
 
 ## Before the full run
 

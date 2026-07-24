@@ -4,9 +4,10 @@ Read `.audit-work/current-brief.md`. Make the smallest change that fully address
 opportunistically fix unrelated things you notice — they are almost certainly separate entries in
 the same audit backlog, and fixing them here makes the review ambiguous.
 
-Before committing you MUST run the acceptance commands from the brief plus `npm run check`. Never
-commit a red tree. If you cannot reach green, do not commit at all: return success=false with an
-explanation in summary.
+Before committing you MUST run the acceptance commands from the brief plus `npm run check` and the
+fast unit tests (`npm run test:unit`). Never commit a red tree — the driver re-runs the tests after
+review and will discard and defer your fix if they fail, so a green type-check is not enough. If you
+cannot reach green, do not commit at all: return success=false with an explanation in summary.
 
 Commit message format:
 

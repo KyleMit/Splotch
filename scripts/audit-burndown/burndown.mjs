@@ -44,7 +44,9 @@ ensureWorkDirs();
 const MAX_ISSUES = Number(process.env.MAX_ISSUES ?? 5); // canary default; raise once proven
 const PUSH_EVERY = Number(process.env.PUSH_EVERY ?? 10);
 const BRANCH = process.env.BRANCH ?? 'audit/burndown';
-const CHECK_CMD = process.env.CHECK_CMD ?? 'npm run check';
+const CHECK_CMD = process.env.CHECK_CMD ?? 'npm run check'; // type-check gate, every finding
+const TEST_CMD = process.env.TEST_CMD ?? 'npm run test:unit'; // fast-test gate, every finding
+const PUSH_TEST_CMD = process.env.PUSH_TEST_CMD ?? 'npm test'; // full suite, once per batch before push
 const MAX_DEFERRALS = Number(process.env.MAX_DEFERRALS ?? 3); // consecutive deferrals before halting
 const RETRIES = Number(process.env.RETRIES ?? 3); // retries for transient claude failures
 
@@ -299,7 +301,7 @@ while (done < MAX_ISSUES) {
   let status = 'CHANGES_REQUIRED';
   for (let round = 1; round <= 3; round++) {
     const review = await claudeStep(`${tag}.review${round}`, [
-      `Adversarially review commit ${sha}.\n\nAcceptance criteria the change must satisfy:\n${acceptance}`,
+      `Adversarially review commit ${sha}.\n\nThe original finding this fix must resolve:\n${issue}\n\nAcceptance criteria the verifier derived from it (which may themselves be mis-scoped):\n${acceptance}`,
       '--append-system-prompt-file',
       join(PROMPTS, 'reviewer.md'),
       '--model',
@@ -363,6 +365,18 @@ while (done < MAX_ISSUES) {
     continue;
   }
 
+  // Independent fast-test gate. CHECK_CMD (and the roles) only type-check plus
+  // run the finding's own acceptance commands, so a fix that type-checks but
+  // breaks an unrelated unit test would otherwise commit green unattended —
+  // the main silent-defect path over a long run. Catch it here and defer the
+  // finding instead of letting a red commit onto the branch.
+  if (!shellOk(TEST_CMD)) {
+    logLine(`  ${TEST_CMD} red after review — rolling back to ${baseSha}`);
+    git('reset', '-q', '--hard', baseSha);
+    defer(title, 'fix broke the test suite');
+    continue;
+  }
+
   // Fold the AUDIT.md deletion into the final commit so the file is always an
   // exact record of what remains and a crash leaves nothing to reconcile.
   deleteFirstEntry();
@@ -380,7 +394,13 @@ while (done < MAX_ISSUES) {
 
   // ---- 7. PUSH, batched -----------------------------------------------------
   if (sincePush >= PUSH_EVERY) {
-    if (gitOk('push', '-u', 'origin', BRANCH)) {
+    // Full suite once per batch (E2E + asset-gen the per-finding TEST_CMD skips
+    // for speed). Never push a red batch: hold the commits locally and retry at
+    // the next boundary — a transient/flaky E2E clears on the retry, and a real
+    // regression is caught in the morning via audit:status rather than shipped.
+    if (!shellOk(PUSH_TEST_CMD)) {
+      logLine(`  ${PUSH_TEST_CMD} red at batch boundary — holding push, will retry next batch`);
+    } else if (gitOk('push', '-u', 'origin', BRANCH)) {
       if (!prNumber) {
         const created = runCmd('gh', [
           'pr',
@@ -416,5 +436,14 @@ while (done < MAX_ISSUES) {
 }
 
 // ---- finish -----------------------------------------------------------------
-if (sincePush > 0) git('push', '-u', 'origin', BRANCH);
+// Flush the trailing sub-batch under the same full-suite gate as the batched
+// pushes, so a red tail never escapes on exit either — held commits stay local
+// for the operator to inspect.
+if (sincePush > 0) {
+  if (!shellOk(PUSH_TEST_CMD)) {
+    logLine(`  ${PUSH_TEST_CMD} red on the final batch — commits held locally, not pushed`);
+  } else {
+    git('push', '-u', 'origin', BRANCH);
+  }
+}
 logLine(`finished: ${done} done, ${deferred} deferred, ${countEntries()} remaining`);
