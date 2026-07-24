@@ -7,38 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P2][maintainability] `activePointerIds` Set redundantly shadows `activePointers` Map keys
-
-**File(s):** `web/src/lib/drawing/engine.ts:677-678, 760, 796, 932, 970-978` — pinned at SHA f934d43
-
-#### Problem
-
-Two collections track the same pointer identities in lockstep:
-
-```ts
-const activePointerIds = new Set<number>();
-const activePointers = new Map<number, PointerState>();
-```
-
-Every `activePointers.set(id, …)` is paired with `activePointerIds.add(id)` and every delete with a
-matching delete. The Set exists only so `releaseAllPointers` can iterate ids *after*
-`activePointers.clear()` (965 clears the map, 970 iterates the Set). This is duplicated bookkeeping
-that can silently drift (add to one, forget the other) and doubles the mental model of "which
-pointers are live."
-
-#### Proposed solution
-
-Drop `activePointerIds`. In `releaseAllPointers`, snapshot keys before clearing:
-`const ids = [...activePointers.keys()]; activePointers.clear(); for (const id of ids) { …releaseCaptureSafe(id) }`.
-Every other add/delete site loses its second line.
-
-#### Verification
-
-`npm run check` + engine E2E (navigate-away-mid-stroke and multi-touch release cases).
-Pointer-capture release count is unchanged.
-
----
-
 ### [P2][complexity] `generateAiImage` bundles six concerns in one 95-line try/catch
 
 **File(s):** `web/src/lib/drawing/aiImage.ts:94-188` — pinned at SHA f934d43

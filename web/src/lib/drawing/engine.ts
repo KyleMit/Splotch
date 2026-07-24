@@ -674,7 +674,6 @@ interface PointerState {
   pendingPoints: Point[];
 }
 
-const activePointerIds = new Set<number>();
 const activePointers = new Map<number, PointerState>();
 
 // Pointer speed (which drives the drawing sound) is averaged over the most
@@ -756,7 +755,6 @@ function startDrawing(e: PointerEvent) {
     pendingPoints: [],
   };
   activePointers.set(e.pointerId, pointerState);
-  activePointerIds.add(e.pointerId);
 
   // A candidate paints nothing yet — renderStrokeStart runs later, on commit.
   if (!edgeSwipeGuard) renderStrokeStart(pointerState);
@@ -792,7 +790,6 @@ function commitEdgeSwipe(ps: PointerState) {
 // painted, so undo/empty state and the group flag are left untouched.
 function discardPointer(e: PointerEvent) {
   activePointers.delete(e.pointerId);
-  activePointerIds.delete(e.pointerId);
   ctx.beginPath();
   try {
     canvas.releasePointerCapture(e.pointerId);
@@ -924,7 +921,6 @@ function stopDrawing(e?: PointerEvent) {
   }
 
   activePointers.delete(e.pointerId);
-  activePointerIds.delete(e.pointerId);
 
   ctx.beginPath();
 
@@ -957,20 +953,19 @@ export function releaseAllPointers() {
     }
   }
 
+  const ids = [...activePointers.keys()];
   activePointers.clear();
   groupHasDrawn = false;
   commitStrokeGroup();
   if (onDrawStopCallback) onDrawStopCallback();
 
-  activePointerIds.forEach((pointerId) => {
+  ids.forEach((pointerId) => {
     try {
       if (canvas.hasPointerCapture && canvas.hasPointerCapture(pointerId)) {
         canvas.releasePointerCapture(pointerId);
       }
     } catch {}
   });
-
-  activePointerIds.clear();
 }
 
 // --- WebKit merged-stream pen quirks ---------------------------------------
