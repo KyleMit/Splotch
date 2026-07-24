@@ -4,7 +4,7 @@
 // strip per motif with each occurrence's CHALK DISPLAY crop (negated, as dark
 // mode shows it) and, when the page has a night raw, the NIGHT COMPOSITE crop
 // underneath. Usage: node tmp-motif-strip.mjs <registry.json> <outDir>
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';

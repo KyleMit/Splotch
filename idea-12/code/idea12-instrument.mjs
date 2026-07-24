@@ -28,7 +28,7 @@ for (const rel of pagesArg) {
     : nightRaw;
   const night = await scoreEyeFill(judged, pen);
 
-  const { cores, w, h } = await findEyeCores(pen);
+  const { w, h } = await findEyeCores(pen);
   console.log(`\n=== ${rel} (${w}x${h}) — ${light.cores.length} measurable cores ===`);
   console.log(
     'idx |   x,y      | core bbox px | LIGHT core/dark/light lively ref | NIGHT core/dark/light lively | verdict'

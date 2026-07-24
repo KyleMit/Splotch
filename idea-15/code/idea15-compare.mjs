@@ -1,7 +1,7 @@
 // TEMP (idea #15): same-spot crops for the region-mean punch variant plus
 // display-scale composite simulations for shipped (nearest-bleed) vs region-mean.
 // Reads hotspots.json produced by idea15-hotspots.mjs. Writes only to IDEA15_OUT.
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
@@ -68,7 +68,7 @@ for (const [spec, spots] of bySpec) {
   const linePath = theme === 'night' && existsSync(chalkPath) ? chalkPath : penPath;
 
   const {
-    data: shipped,
+    data: _shipped,
     info: { width, height },
   } = await loadRgb(shippedPath);
   const { data: rm } = await loadRgb(rmPath);

@@ -119,7 +119,7 @@ export async function compositePunched(fillRgb, chalkPath, w, h) {
 // is the punched fill relative to the "true" local fill sampled at distance
 // refD (well clear of any re-inked rim)? Reports the count/share of band pixels
 // darker than their reference by more than `gap` luma.
-export function rimStats(fillRgb, bands, w, h) {
+export function rimStats(fillRgb, bands, _w, _h) {
   const stats = [];
   for (let d = 0; d < bands.length; d++) {
     const lumas = bands[d].map((p) => lumaOf(fillRgb, p));

@@ -11,7 +11,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { COLORING_DIR, FILL_SRC_DIR } from './lib/paths.mjs';
+import { COLORING_DIR } from './lib/paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from './lib/outline-match.mjs';
 import { compositeNight } from './lib/night-composite.mjs';
 
@@ -21,7 +21,6 @@ const WORK = join(IDEA_DIR, 'work');
 
 const INK_LUMA = 150; // matches punch-fill OUTLINE_LUMA_THRESHOLD
 const TINY_REGION_PX = 80; // smaller regions get bled over, not labeled
-const PAPER_DARK = [0x21, 0x1f, 0x29];
 
 // Curated palettes. Light = cheerful coloring-book flats on white paper.
 // Night = deeper/jewel versions of the same hue families that pop on the dark

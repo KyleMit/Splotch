@@ -32,7 +32,6 @@ if (res.skipped) fail('page has no open background to inject into');
 // Find deep-interior open-background spots: erode the candidate mask until few
 // pixels survive; survivors sit far from every source line and the border.
 const { w, h, cand } = res;
-let mask = cand;
 let last = cand;
 for (let r = 2; r <= 40; r += 2) {
   const next = erodeMask(cand, w, h, r);

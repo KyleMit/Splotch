@@ -53,14 +53,6 @@ function bleedUnderMask(rgb, mask, width, height) {
   }
 }
 
-async function rawRgb(input, opts = {}) {
-  const pipeline =
-    typeof input === 'string'
-      ? sharp(await readFile(input))
-      : sharp(input, opts.raw ? { raw: opts.raw } : {});
-  return pipeline.removeAlpha().raw().toBuffer({ resolveWithObject: true });
-}
-
 function punch(fill, line, width, height) {
   const mask = new Uint8Array(width * height);
   for (let p = 0, i = 0; p < width * height; p++, i += 3) {

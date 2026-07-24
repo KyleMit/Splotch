@@ -3,7 +3,7 @@
 // scored against the same source gen-coloring-fills-dark.mjs uses (chalk if
 // forked, else pen). Prints a sorted table + per-category summary as JSON.
 import { readFile } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import { glob } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';
