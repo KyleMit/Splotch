@@ -11,42 +11,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P3][consistency] "Which action buttons exist" is encoded in four places that must stay in lockstep
-
-**File(s):** `web/src/lib/state/actionButtonLayout.svelte.ts:38` (`MAX_ACTION_BUTTON_COUNT`),
-`:58-67` (`visibleActionButtonCount`), `:133-138` (`publishActionPanelState` `data-off-*`);
-`web/src/lib/state/settings.svelte.ts:60-101` (`BOOL_SETTINGS` toggles) — pinned at SHA f934d43
-
-#### Problem
-
-The set of Actions-Panel buttons is enumerated independently in multiple spots that a reader must
-manually reconcile:
-
-* `MAX_ACTION_BUTTON_COUNT = 6` (a bare literal).
-* `visibleActionButtonCount()` sums six hand-written conditionals (`strokeWidthControlEnabled`,
-  `coloringBookEnabled`, `screenshotEnabled`, `aiAccessToken && aiImageEnabled && network.online`,
-  `undoButtonEnabled`, brush).
-* `publishActionPanelState` toggles a matching-but-separate list of `data-off-*` attributes
-  (`data-off-stroke`, `data-off-coloring`, `data-off-screenshot`, `data-off-undo`, …).
-* The underlying toggles live in `BOOL_SETTINGS`. Adding or removing a button means editing all four
-  in agreement, with nothing but comments ("Every button the panel can show…") to enforce it.
-  `MAX_ACTION_BUTTON_COUNT` in particular is a literal `6` that must equal the count of terms in
-  `visibleActionButtonCount`.
-
-#### Proposed solution
-
-Define a single descriptor array — one entry per optional button with `{ settingKey, dataAttr }` —
-and derive `MAX_ACTION_BUTTON_COUNT` (`= descriptors.length + 1` for the always-on brush), the
-`visibleActionButtonCount` sum, and the `publishActionPanelState` `data-off-*` loop from it. That
-collapses four edit sites to one and makes `MAX` self-maintaining.
-
-#### Verification
-
-Add a test asserting `visibleActionButtonCount()` with all toggles on equals
-`MAX_ACTION_BUTTON_COUNT`; it should hold now and after any button add/remove. `npm test` green.
-
----
-
 ### [P3][duplication] The idempotent-init idiom (`let initialized`) is copy-pasted across three stores
 
 **File(s):** `web/src/lib/state/fullscreen.svelte.ts:38,43-45`,
