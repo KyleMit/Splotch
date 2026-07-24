@@ -1,9 +1,11 @@
 import { apiUrl } from '$lib/api';
 
+const GEMINI_KEY_PREFIX = 'AIza';
+
 // Gemini API keys are issued in the form "AIza…". Anything else is treated as a
 // secret access code and checked against the managed allowlist instead.
 export function looksLikeApiKey(value: string): boolean {
-  return /^AIza/.test(value);
+  return value.startsWith(GEMINI_KEY_PREFIX);
 }
 
 export type CredentialKind = 'apiKey' | 'accessCode';

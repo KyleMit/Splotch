@@ -9,34 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P4][naming] Name the Gemini key prefix in `looksLikeApiKey`
-
-**File(s):** `web/src/lib/aiCredential.ts:5-7` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-export function looksLikeApiKey(value: string): boolean {
-  return /^AIza/.test(value);
-}
-```
-
-The `AIza` prefix is a meaningful, provider-specific magic string embedded in a regex. The comment
-above explains it, but the literal itself is un-named and not greppable alongside other Gemini
-constants.
-
-#### Proposed solution
-
-`const GEMINI_KEY_PREFIX = 'AIza';` and `value.startsWith(GEMINI_KEY_PREFIX)` (a `startsWith` also
-reads clearer than an anchored regex for a literal prefix, and the existing test "false for a value
-that merely contains AIza later on" still holds).
-
-#### Verification
-
-`aiCredential.test.ts`'s `looksLikeApiKey` cases all pass unchanged.
-
----
-
 ### [P4][readability] Extract the WebP-upload guard predicate in `encodeWebpUpload`
 
 **File(s):** `web/src/lib/drawing/aiImage.ts:37-43` — pinned at SHA f934d43
