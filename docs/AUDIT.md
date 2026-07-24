@@ -7,38 +7,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P3][consistency] State-mutation ownership is inconsistent: some stores are setter-guarded, others are written directly by components
-
-**File(s):** `web/src/lib/state/canvas.svelte.ts:6-19` (no setters) vs
-`web/src/lib/state/settings.svelte.ts:164-212` (setter-only); writers at
-`web/src/lib/components/DrawingCanvas.svelte:158,161,164,168` — pinned at SHA f934d43
-
-#### Problem
-
-`.claude/rules/svelte.md` says "Components read state and call setters; they never own shared
-state." But `canvasState` exposes no setters and `DrawingCanvas.svelte` mutates it directly
-(`canvasState.canUndo = …`, `canvasState.strokeCount++`, `canvasState.paperOrientation = …`), while
-`settings` forbids direct writes and routes everything through `setX`. `colors` is a hybrid
-(exported functions mutate, but the object is also directly writable). The result: to answer "who
-can change `strokeCount`?" you must grep the whole `web/src`, whereas for `soundEnabled` the setter
-is the single choke point. Grepability — a stated audit goal — is uneven across the section.
-
-#### Proposed solution
-
-Either (a) accept the engine-bridge exception explicitly: document that `canvas.svelte.ts` is a thin
-imperative bridge whose only writer is the engine adoption in `DrawingCanvas.svelte`, and note that
-in the module's header comment; or (b) give it setters (`markUndoState`, `markEmpty`,
-`incrementStrokeCount`, `setPaperOrientation`) so mutation is greppable like the rest. Given
-ADR-0004's imperative-bridge intent, (a) + a one-line "sole writer" note is likely enough, but the
-inconsistency should be a deliberate, documented carve-out rather than silent.
-
-#### Verification
-
-Reader can locate every writer of any state field by grepping a setter name or by a documented "sole
-writer" note. No functional change under option (a).
-
----
-
 ### [P3][naming] `customColor` default duplicates the Purple swatch hex as a magic literal
 
 **File(s):** `web/src/lib/state/colors.svelte.ts:20-21,62` — pinned at SHA f934d43
