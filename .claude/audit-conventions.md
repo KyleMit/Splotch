@@ -20,6 +20,11 @@ a shared rule, change it **here** — the skills point at this file on purpose.
 list against the current code, drops what doesn't hold up, and **files each survivor as a GitHub
 issue** labeled `type:audit` (draining and deleting the file); `/fix-audits` then burns down the
 open `type:audit` issues autonomously on its own branch + PR — it no longer reads `docs/AUDIT.md`.
+For a backlog too large to file issue-by-issue (hundreds of findings), `burn-down-audits` is the
+bulk consumer: a scripted overnight loop (`npm run audit:burndown`, `scripts/audit-burndown/`) that
+verifies, implements, and adversarially reviews each finding in one-shot `claude -p` subprocesses,
+deleting each entry in the same commit as its fix — replacing both the vet and fix stages for that
+backlog.
 
 ### The audit lifecycle — `docs/AUDIT.md` is a staging area, GitHub issues are the backlog
 

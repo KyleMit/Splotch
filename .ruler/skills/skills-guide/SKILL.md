@@ -50,6 +50,7 @@ staging file, `fix-audits` burns the issues down.
 | Produce    | `session-audit`           | End-of-session retrospective on repo friction → `docs/AUDIT.md`                    |
 | Vet        | `vet-audits`              | Adversarially validate findings; file survivors as `type:audit` issues             |
 | Fix        | `fix-audits`              | Autonomously clear open `type:audit` issues, one commit each, on its own branch    |
+| Vet + fix  | `burn-down-audits`        | Bulk path for a huge `docs/AUDIT.md`: scripted overnight verify→implement→review   |
 | Standalone | `dependency-update-audit` | Upgrade dependencies one at a time with migration guides (user-invoke only)        |
 | Standalone | `dependency-health-audit` | Provenance/license/maintenance review of every dependency → `docs/DEPENDENCIES.md` |
 | Standalone | `workflow-audit`          | Claude Code config + session-history review vs. best practice → dated review doc   |
