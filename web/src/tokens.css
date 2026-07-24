@@ -37,6 +37,7 @@
   --font-size-xl: 18px;
   --font-size-2xl: 22px;
   --font-size-3xl: 28px;
+  --input-font-size: max(16px, var(--font-size-md));
   --duration-fast: 0.15s;
   --duration-base: 0.2s;
   --duration-slow: 0.35s;

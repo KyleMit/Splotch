@@ -60,6 +60,12 @@ export const scale = {
   fontSize2xl: '22px',
   fontSize3xl: '28px',
 
+  // Text-input font-size floor: iOS Safari / WKWebView zooms the visual
+  // viewport when a focused input's font-size is < 16px, which on the
+  // drawing route would strand the canvas zoomed with no way to reset it
+  // (ADR-0076). Every parent-center text input must reference this.
+  inputFontSize: 'max(16px, var(--font-size-md))',
+
   durationFast: '0.15s',
   durationBase: '0.2s',
   durationSlow: '0.35s',
