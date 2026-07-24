@@ -278,3 +278,26 @@ three-part contract.
 green.
 
 ---
+
+### [P5][readability] Duplicated 6-line mask gradient in AiConfetti
+
+**File(s):** `web/src/lib/components/AiConfetti.svelte:44-55` — pinned at SHA f934d43
+
+#### Problem
+
+`-webkit-mask-image` (lines 44-49) and `mask-image` (lines 50-55) are byte-identical six-line
+`radial-gradient(...)` blocks. It's the standard vendor-prefix pattern, but the full gradient is
+copy-pasted, so a tweak to the mask shape must be made twice and kept in sync by hand.
+
+#### Proposed solution
+
+Hoist the gradient into a CSS custom property on the element
+(`--confetti-mask: radial-gradient(...)`) and set both
+`-webkit-mask-image: var(--confetti-mask); mask-image: var(--confetti-mask);`. One source, both
+prefixes.
+
+#### Verification
+
+Visual: confetti mask hole unchanged in WebKit and non-WebKit; `webkit-smoke` E2E path unaffected.
+
+---
