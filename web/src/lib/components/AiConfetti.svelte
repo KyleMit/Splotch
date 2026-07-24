@@ -33,8 +33,9 @@
 <style>
   /* Punch a circular hole where the dial sits so leaves don't show through its
      translucent face — they fall behind it and vanish into it. The ellipse is
-     sized in % of the stage, tracking the fixed horizontal radius (31% of width)
-     via the --confetti-ry CSS var set by the parent on .ai-stage. */
+     sized in % of the stage; both radii arrive as --confetti-rx/--confetti-ry
+     CSS vars set by the parent on .ai-stage (from its DIAL_MASK_RX constant).
+     The literal fallbacks (31%/41%) mirror the 4:3 default. */
   .confetti-layer {
     position: absolute;
     inset: 0;
@@ -42,13 +43,13 @@
     pointer-events: none;
     overflow: hidden;
     -webkit-mask-image: radial-gradient(
-      ellipse 31% var(--confetti-ry, 41%) at 50% 50%,
+      ellipse var(--confetti-rx, 31%) var(--confetti-ry, 41%) at 50% 50%,
       transparent 0,
       transparent 95%,
       #000 100%
     );
     mask-image: radial-gradient(
-      ellipse 31% var(--confetti-ry, 41%) at 50% 50%,
+      ellipse var(--confetti-rx, 31%) var(--confetti-ry, 41%) at 50% 50%,
       transparent 0,
       transparent 95%,
       #000 100%

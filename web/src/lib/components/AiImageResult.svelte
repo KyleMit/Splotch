@@ -47,9 +47,12 @@
   const previewBlur = $derived(`${2 + 16 * (1 - progress)}px`);
 
   // Keep the confetti's circular mask hole aligned with the round dial as the
-  // stage aspect changes: the vertical radius (% of height) tracks the fixed
-  // horizontal radius (31% of width). At 4:3 this resolves to the original 41%.
-  const confettiMaskRy = $derived(`${(31 * imgAspect).toFixed(1)}%`);
+  // stage aspect changes. The one load-bearing value is DIAL_MASK_RX (% of
+  // width); the vertical radius (% of height) tracks it by the stage aspect.
+  // Both are handed to AiConfetti via --confetti-rx/--confetti-ry on .ai-stage.
+  // At 4:3 this resolves to the original 41%.
+  const DIAL_MASK_RX = 31;
+  const confettiMaskRy = $derived(`${(DIAL_MASK_RX * imgAspect).toFixed(1)}%`);
 
   function handleDownload() {
     if (!ui.aiResultUrl || exiting) return;
@@ -110,7 +113,7 @@
     {:else}
       <div
         class="ai-stage"
-        style="--confetti-ry: {confettiMaskRy};"
+        style="--confetti-rx: {DIAL_MASK_RX}%; --confetti-ry: {confettiMaskRy};"
         use:pinchZoom={() => ({
           target: zoomLayerEl!,
           // Only once the finished picture is on screen — the loading dial and

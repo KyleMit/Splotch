@@ -9,33 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P3][maintainability] The dial-mask radius `31` is duplicated across two files, coupled only by a comment
-
-**File(s):** `web/src/lib/components/AiImageResult.svelte:52`;
-`web/src/lib/components/AiConfetti.svelte:44-55` — pinned at SHA f934d43
-
-#### Problem
-
-The confetti's circular mask hole must stay aligned with the round dial. The horizontal radius `31%`
-is hard-coded in AiConfetti's CSS (`ellipse 31% var(--confetti-ry, 41%)`, lines 44 and 51), while
-AiImageResult computes the vertical radius as `31 * imgAspect` (line 52) to match it — the two `31`s
-are the same physical quantity split across a component boundary and kept in sync only by prose
-comments (AiImageResult:49-52, AiConfetti:34-37). The fallback `41%` on line 44/51 is yet another
-copy of "31 × (4/3)". Change the dial size and three literals in two files must move together.
-
-#### Proposed solution
-
-Define the horizontal radius once — e.g. AiImageResult sets both `--confetti-rx` and `--confetti-ry`
-CSS vars on `.ai-stage` from a single `DIAL_MASK_RX = 31` constant, and AiConfetti's gradient reads
-`ellipse var(--confetti-rx) var(--confetti-ry)`. The default (`41%`) is then computed, not re-typed.
-
-#### Verification
-
-Run the app (`run-splotch` skill), open the AI result modal, confirm the confetti still masks
-cleanly around the dial at 4:3 and at a tall portrait aspect; no visual regression.
-
----
-
 ### [P3][readability] Name the opaque progress-curve constants in AiDial's `loop`
 
 **File(s):** `web/src/lib/components/AiDial.svelte:22-46` — pinned at SHA f934d43
