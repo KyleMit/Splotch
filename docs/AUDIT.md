@@ -7,31 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P5][consistency] Two rect shapes (`{x,y,w,h}` literals vs `PatchRect`) describe the same concept
-
-**File(s):**
-`web/src/lib/drawing/undoHistory.ts:76-81 (`PatchRect`), 208-217 (`activeCrayonRasterRects`returns inline`{x,y,w,h}`)`;
-consumed in `engine.ts:623-634` — pinned at SHA f934d43
-
-#### Problem
-
-`PatchRect { x; y; w; h }` is the named paper-rect type, yet `activeCrayonRasterRects` returns an
-inline `{ x: number; y: number; w: number; h: number }[]` for the same idea, and the engine iterates
-it as `r.x, r.y, r.w, r.h`. The engine also passes rects to `blitPaperRect(target, x, y, w, h)`
-positionally, so three representations of "a paper rectangle" coexist.
-
-#### Proposed solution
-
-Have `activeCrayonRasterRects` return `PatchRect[]`, and consider a
-`blitPaperRect(target, rect: PatchRect)` overload so callers pass the struct. One rectangle
-vocabulary across the module.
-
-#### Verification
-
-`npm run check`; crayon commit blit-back E2E unchanged.
-
----
-
 ### [P5][readability] `paper.pxW > 0 && paper.pxH > 0` guard repeated in the magic-brush host closures
 
 **File(s):** `web/src/lib/drawing/engine.ts:1281-1283` — pinned at SHA f934d43

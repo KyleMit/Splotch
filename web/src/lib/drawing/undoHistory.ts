@@ -207,9 +207,9 @@ export function recordOp(op: StrokeOp) {
 // premultiplied rounding), so without the reconcile a rebuild would differ
 // from the live stamp at the byte level — imperceptibly, but undo and remount
 // must reproduce the screen exactly.
-export function activeCrayonRasterRects(): { x: number; y: number; w: number; h: number }[] {
+export function activeCrayonRasterRects(): PatchRect[] {
   if (!activeCommand) return [];
-  const rects: { x: number; y: number; w: number; h: number }[] = [];
+  const rects: PatchRect[] = [];
   for (const op of activeCommand.ops) {
     if (op.kind === 'crayonPassRaster') {
       rects.push({ x: op.x, y: op.y, w: op.canvas.width, h: op.canvas.height });
@@ -221,13 +221,8 @@ export function activeCrayonRasterRects(): { x: number; y: number; w: number; h:
 // Copy a committed paper rect onto a target, replacing what the target showed
 // there. Coordinates are paper-space; the target's own transform places the
 // rect (identity on the visible canvas normally, the paper view when locked).
-export function blitPaperRect(
-  target: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number
-) {
+export function blitPaperRect(target: CanvasRenderingContext2D, rect: PatchRect) {
+  const { x, y, w, h } = rect;
   if (!paperCanvas) return;
   const x0 = Math.max(0, x);
   const y0 = Math.max(0, y);

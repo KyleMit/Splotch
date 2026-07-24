@@ -633,7 +633,7 @@ function commitStrokeGroup() {
     // pending restore or an unready magic sheet — where the paper doesn't
     // hold this stroke yet; the op replay keeps the screen right there, and
     // the eventual fold's next repaint reconciles.
-    for (const r of rasterRects) blitPaperRect(ctx, r.x, r.y, r.w, r.h);
+    for (const r of rasterRects) blitPaperRect(ctx, r);
   }
   setCanUndo(true);
   if (onStrokeEnd) onStrokeEnd();
@@ -1076,7 +1076,7 @@ export function undo(): Promise<void> {
       const strokeStillLive = rebaseActiveCommand(emptyBeneathLiveStroke);
       const rectOnly = foldedOnly && !hasUnfoldedCommands() && isIdentityView(paperView);
       if (rectOnly && rects.length > 0) {
-        for (const r of rects) blitPaperRect(ctx, r.x, r.y, r.w, r.h);
+        for (const r of rects) blitPaperRect(ctx, r);
       } else if (!rectOnly) {
         repaintAll(ctx);
       }
