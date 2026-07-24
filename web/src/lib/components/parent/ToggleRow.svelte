@@ -13,10 +13,9 @@
     checked: boolean;
     onToggle: (next: boolean) => void;
     help?: string;
-    disabled?: boolean;
   }
 
-  let { icon, label, id, checked, onToggle, help = '', disabled = false }: Props = $props();
+  let { icon, label, id, checked, onToggle, help = '' }: Props = $props();
 </script>
 
 <div class="setting-toggle">
@@ -28,7 +27,6 @@
     class="toggle-switch"
     class:active={checked}
     {id}
-    {disabled}
     role="switch"
     aria-label={label}
     aria-checked={checked}
@@ -118,16 +116,5 @@
 
   .toggle-switch.active .toggle-switch-thumb {
     transform: translateX(20px);
-  }
-
-  .toggle-switch:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-
-  @media (hover: hover) {
-    .toggle-switch:disabled:hover {
-      background: var(--control-track);
-    }
   }
 </style>

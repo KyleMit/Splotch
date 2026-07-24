@@ -9,31 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P3][dead-code] `ToggleRow` exposes a `disabled` prop that no caller uses
-
-**File(s):** `web/src/lib/components/parent/ToggleRow.svelte:16,19,123-132` — pinned at SHA f934d43
-
-#### Problem
-
-`ToggleRow`'s `Props` declares `disabled?: boolean` (`:16`), it's destructured (`:19`), wired into
-the button, and carries ~10 lines of `:disabled` CSS (`:123-132`). No consumer ever passes it — a
-`grep` for `disabled=` in `parent/` finds only ReportForm's submit button, SetupInstructions'
-one-tap button, and AiKeyManager's save button, none of which are ToggleRow. It's untested dead
-surface area.
-
-#### Proposed solution
-
-Either remove `disabled` (and its CSS) until a real need appears, or — if a disabled toggle is
-genuinely coming — leave it but confirm with a call site. Given "don't gold-plate," removal is the
-default.
-
-#### Verification
-
-After removal `npm run check` and `npm test` pass; `grep -rn "ToggleRow" web/src` shows no site
-relying on `disabled`.
-
----
-
 ### [P3][accessibility] `ToggleRow` help text isn't associated with the switch (`aria-describedby` missing)
 
 **File(s):** `web/src/lib/components/parent/ToggleRow.svelte:27-42` — pinned at SHA f934d43
