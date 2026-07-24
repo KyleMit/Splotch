@@ -9,55 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P3][maintainability] Magic `30px` indent hardcodes "icon width + gap" in two places
-
-**File(s):** `web/src/lib/components/parent/ToggleRow.svelte:52` ·
-`web/src/lib/components/parent/SoundSection.svelte:69` — pinned at SHA f934d43
-
-#### Problem
-
-`.setting-help { margin: 6px 0 0 30px }` and `.slider-setting { margin: 12px 0 2px 30px }` both use
-`30px` to align sub-content under a toggle's label — a value that only equals icon width (`20px`,
-`.setting-icon`) + gap (`10px`, `.setting-info`). If the icon size or gap changes, these silently
-misalign, and the coupling is invisible. ControlsSection's `.slider-label-name` uses `gap:10px` for
-the same alignment intent but doesn't indent, so the family is already inconsistent.
-
-#### Proposed solution
-
-Derive it from the same tokens/vars (e.g. `calc(20px + 10px)` with a comment, or a shared
-`--toggle-indent` custom property set once), or better, have the extracted `SliderRow` (P3 above)
-own the indent so it can't drift from the icon.
-
-#### Verification
-
-Change the icon size and confirm help/slider indent tracks it (or the comment/`calc` makes the
-dependency explicit). Visual check that help lines still align under labels.
-
----
-
-### [P4][design-tokens] Magic font sizes in `ParentCenter` headers/nav (24px, 20px, 15px, 12.5px)
-
-**File(s):** `web/src/lib/components/ParentCenter.svelte:396,401,464,697` — pinned at SHA f934d43
-
-#### Problem
-
-Header `h2` is `font-size: 24px` (`:396`), sub-header `h2` is `20px` (`:401`), nav item is `15px`
-(`:697`), and `.orient-opt` is `12.5px` (`:464`). None are type tokens (`--font-size-*` =
-12/13/14/16/18/22/28); `24`/`20`/`15`/`12.5` are unnamed. The design skill bars raw px font sizes
-where a token exists. `12.5px` in particular is a fractional magic number with no rationale.
-
-#### Proposed solution
-
-Map each to the nearest token (`--font-size-2xl` 22 or `-3xl` 28 for the header; `-lg` 16 for nav;
-`-xs`/`-sm` for orient-opt), adjusting the value or, if 24px is genuinely needed, add a token. The
-`12.5px` should become `--font-size-xs` or `-sm` once inside the Segmented primitive (P1).
-
-#### Verification
-
-`npm run lint:tokens`; visual check headers/nav in both shells.
-
----
-
 ### [P4][design-tokens] Sub-`--font-size-xs` magic sizes: WhatsNew `15px`, ReportForm `11px`
 
 **File(s):** `web/src/lib/components/parent/WhatsNewSection.svelte:57` ·

@@ -27,29 +27,39 @@
   const displayedValueText = $derived(valueText ?? `${value}%`);
 </script>
 
-<div class="slider-label" {id}>
-  {#if icon}
-    <span class="slider-label-name">
-      <Icon name={icon} class="setting-icon" />
-      {label}
-    </span>
-  {:else}
-    <span>{label}</span>
-  {/if}
-  <span>{displayedValueText}</span>
+<div class="slider-row" class:indented={!icon}>
+  <div class="slider-label" {id}>
+    {#if icon}
+      <span class="slider-label-name">
+        <Icon name={icon} class="setting-icon" />
+        {label}
+      </span>
+    {:else}
+      <span>{label}</span>
+    {/if}
+    <span>{displayedValueText}</span>
+  </div>
+  <Slider
+    {value}
+    {min}
+    {max}
+    {snap}
+    labelId={id}
+    valueText={displayedValueText}
+    {onInput}
+    {onActiveChange}
+  />
 </div>
-<Slider
-  {value}
-  {min}
-  {max}
-  {snap}
-  labelId={id}
-  valueText={displayedValueText}
-  {onInput}
-  {onActiveChange}
-/>
 
 <style>
+  /* An icon-less row is a sub-setting of the ToggleRow above it, so the whole
+     row — label and track — shifts past that toggle's icon column to line up
+     with its label. Mirrors ToggleRow's .setting-icon width + .setting-info
+     gap; there's no shared token for that pairing. */
+  .slider-row.indented {
+    margin-left: calc(20px + 10px);
+  }
+
   .slider-label {
     display: flex;
     justify-content: space-between;

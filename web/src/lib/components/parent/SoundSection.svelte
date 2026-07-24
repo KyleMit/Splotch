@@ -60,8 +60,7 @@
 </section>
 
 <style>
-  /* Volume sits indented under its toggle. */
   .slider-setting {
-    margin: 12px 0 2px 30px;
+    margin: 12px 0 2px;
   }
 </style>

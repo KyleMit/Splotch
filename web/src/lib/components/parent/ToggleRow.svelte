@@ -47,8 +47,10 @@
     align-items: center;
   }
 
+  /* Indented past the icon column so the help line starts under the label:
+     .setting-icon's width + .setting-info's gap, both declared below. */
   .setting-help {
-    margin: 6px 0 0 30px;
+    margin: 6px 0 0 calc(20px + 10px);
     font-size: var(--font-size-sm);
     color: var(--text-muted);
     line-height: 1.4;
