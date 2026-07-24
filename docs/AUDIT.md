@@ -7,32 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P3][duplication] The path/dot geometric bounding-box is computed in two modules
-
-**File(s):** `web/src/lib/drawing/strokeOps.ts:522-536` and
-`web/src/lib/drawing/undoHistory.ts:326-341` (`opPaddedBounds`) — pinned at SHA f934d43
-
-#### Problem
-
-Both compute an op's bounds by `min/max`-scanning `startX/startY` and each seg's `cx,cy,x,y`, then
-padding by half line width (+ AA pad). `strokeOps` uses `pad = op.lineWidth/2 + 2`; `undoHistory`
-uses `PATCH_AA_PAD = 2` with a crayon scale. The `2` in strokeOps is the same AA pad, un-named. Two
-implementations of one geometric fact will diverge (they nearly have: the crayon width-scale
-handling only exists in one).
-
-#### Proposed solution
-
-A single `export function opGeometricBounds(op: DotOp | PathOp): Box` in a shared module, plus a
-shared `AA_PAD = 2` constant. `strokeOps.renderOp` and `undoHistory.opPaddedBounds` both derive from
-it, applying their own scale/pad on top.
-
-#### Verification
-
-`npm run test -- undoHistory strokeMath`; the `foldRegionsForCommands` rect-math unit tests already
-exist — they must still pass with the shared bounds source.
-
----
-
 ### [P3][maintainability] Engine-created overlay CSS duplicates DrawingCanvas's `.crayon-overlay` styles
 
 **File(s):** `web/src/lib/drawing/engine.ts:1261-1268` and

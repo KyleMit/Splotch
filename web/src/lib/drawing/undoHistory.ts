@@ -36,7 +36,9 @@
 // (ADR-0004).
 
 import {
+  AA_PAD,
   clearAllOf,
+  opGeometricExtent,
   renderOp,
   resetCrayonStateForClear,
   resetLiveCrayonForReplay,
@@ -288,12 +290,6 @@ export function commitActiveCommand(defer = false): boolean {
   return true;
 }
 
-// AA bleed pad in paper px around an op's geometric bounds, matching
-// strokeOps' unionCrayonBounds — it covers anti-aliased edges, and keeps the
-// crayon flush stamp inside the rect (the pass buffer bounds its stamp with
-// this same pad).
-const PATCH_AA_PAD = 2;
-
 // Padded float bounding boxes, merged toward disjointness before they round
 // to patch rects.
 interface Box {
@@ -314,30 +310,17 @@ function opPaddedBounds(op: StrokeOp, crayonScale: number): Box | null {
   if (op.kind === 'clear' || op.kind === 'crayonFlush') return null;
   if (op.kind === 'crayonPassRaster') {
     return {
-      x0: op.x - PATCH_AA_PAD,
-      y0: op.y - PATCH_AA_PAD,
-      x1: op.x + op.canvas.width + PATCH_AA_PAD,
-      y1: op.y + op.canvas.height + PATCH_AA_PAD,
+      x0: op.x - AA_PAD,
+      y0: op.y - AA_PAD,
+      x1: op.x + op.canvas.width + AA_PAD,
+      y1: op.y + op.canvas.height + AA_PAD,
     };
   }
   // Magic and erase render at base width (renderOp routes them before the
   // crayon branch); only a crayon ink op picks up the pass scale.
   const scale = op.crayon && !op.erase && !op.magic ? crayonScale : 1;
-  if (op.kind === 'dot') {
-    const pad = op.radius * scale + PATCH_AA_PAD;
-    return { x0: op.x - pad, y0: op.y - pad, x1: op.x + pad, y1: op.y + pad };
-  }
-  let x0 = op.startX;
-  let y0 = op.startY;
-  let x1 = op.startX;
-  let y1 = op.startY;
-  for (const s of op.segs) {
-    x0 = Math.min(x0, s.cx, s.x);
-    y0 = Math.min(y0, s.cy, s.y);
-    x1 = Math.max(x1, s.cx, s.x);
-    y1 = Math.max(y1, s.cy, s.y);
-  }
-  const pad = (op.lineWidth / 2) * scale + PATCH_AA_PAD;
+  const { x0, y0, x1, y1, halfWidth } = opGeometricExtent(op);
+  const pad = halfWidth * scale + AA_PAD;
   return { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
 }
 

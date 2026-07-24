@@ -89,6 +89,7 @@ export type StrokeOp =
   | { kind: 'clear' };
 
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
+export type DotOp = Extract<StrokeOp, { kind: 'dot' }>;
 
 // One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is
 // the canvas-empty state before the group drew, so undo can restore the flag
@@ -447,38 +448,51 @@ export function resetLiveCrayonForReplay(target: CanvasRenderingContext2D) {
   if (target === liveTarget) resetLiveCrayonPass();
 }
 
+// AA bleed pad in paper px around an op's geometric bounds: it covers
+// anti-aliased edges and keeps the crayon flush stamp inside the rect (the pass
+// buffer bounds its stamp with this same pad). Shared with undoHistory's
+// opPaddedBounds so the dirty-rect and undo-patch math stay single-sourced.
+export const AA_PAD = 2;
+
+// An op's raw user-space geometric extent (no padding): a dot's point, a path's
+// min/max over the start point and every seg's control and end points.
+// `halfWidth` is the op's stroke half-width — the one per-kind number each
+// caller scales before adding AA_PAD.
+export function opGeometricExtent(op: DotOp | PathOp): {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  halfWidth: number;
+} {
+  if (op.kind === 'dot') {
+    return { x0: op.x, y0: op.y, x1: op.x, y1: op.y, halfWidth: op.radius };
+  }
+  let x0 = op.startX;
+  let y0 = op.startY;
+  let x1 = op.startX;
+  let y1 = op.startY;
+  for (const s of op.segs) {
+    x0 = Math.min(x0, s.cx, s.x);
+    y0 = Math.min(y0, s.cy, s.y);
+    x1 = Math.max(x1, s.cx, s.x);
+    y1 = Math.max(y1, s.cy, s.y);
+  }
+  return { x0, y0, x1, y1, halfWidth: op.lineWidth / 2 };
+}
+
 // The op's user-space bounding box plus the pad that covers its stroke
-// half-width and AA bleed: a dot's point ± its radius, a path's min/max over the
-// start point and every seg's control and end points. Fed straight into
-// unionCrayonBounds to grow a pass buffer's dirty region.
-function opDeviceBounds(op: Extract<StrokeOp, { kind: 'dot' | 'path' }>): {
+// half-width and AA bleed. Fed straight into unionCrayonBounds to grow a pass
+// buffer's dirty region.
+function opDeviceBounds(op: DotOp | PathOp): {
   x0: number;
   y0: number;
   x1: number;
   y1: number;
   pad: number;
 } {
-  let x0: number;
-  let y0: number;
-  let x1: number;
-  let y1: number;
-  let pad: number;
-  if (op.kind === 'dot') {
-    x0 = x1 = op.x;
-    y0 = y1 = op.y;
-    pad = op.radius + 2;
-  } else {
-    x0 = x1 = op.startX;
-    y0 = y1 = op.startY;
-    for (const s of op.segs) {
-      x0 = Math.min(x0, s.cx, s.x);
-      y0 = Math.min(y0, s.cy, s.y);
-      x1 = Math.max(x1, s.cx, s.x);
-      y1 = Math.max(y1, s.cy, s.y);
-    }
-    pad = op.lineWidth / 2 + 2;
-  }
-  return { x0, y0, x1, y1, pad };
+  const { x0, y0, x1, y1, halfWidth } = opGeometricExtent(op);
+  return { x0, y0, x1, y1, pad: halfWidth + AA_PAD };
 }
 
 // Accumulate a crayon ink op into the target's open pass buffer (see the
