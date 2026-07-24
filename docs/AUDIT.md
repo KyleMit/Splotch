@@ -7,39 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P1][dead-code] `PointerState.isDrawing` is never set false — a vestigial field guarding dead branches
-
-**File(s):** `web/src/lib/drawing/engine.ts:655, 742, 876, 927, 959` — pinned at SHA f934d43
-
-#### Problem
-
-`isDrawing` is initialized `true` at pointer creation (742) and **never assigned `false` anywhere**.
-Yet three sites branch on it as if it can be false:
-
-```ts
-if (!pointerState || !pointerState.isDrawing) return;          // 876 — the guard can never fire on isDrawing
-if (pointerState?.isDrawing && pointerState.passTracker && ...) // 927 — isDrawing always true
-if (ps.isDrawing && ps.passTracker && !ps.edgeSwipeGuard) {     // 959 — isDrawing always true
-```
-
-A pointer is removed from `activePointers` when it stops, so "is this pointer still drawing" is
-already answered by map membership. The field and its guards are misleading: a newcomer reads
-`!isDrawing` and assumes there is a paused-but-tracked state that does not exist.
-
-#### Proposed solution
-
-Remove the `isDrawing` field from `PointerState` and drop the `.isDrawing` conjuncts from lines
-876/927/959 (the `!pointerState` / `?.` map-membership checks already carry the real condition).
-Update the teardown comment at 1184 that references it. If a genuine "buffered candidate vs live"
-distinction is wanted, it is already expressed by `edgeSwipeGuard !== null`.
-
-#### Verification
-
-`grep -n 'isDrawing' web/src/lib/drawing/engine.ts` shows zero writes of `false`. After removal,
-`npm run check` passes and the engine E2E spec (multi-touch + edge-swipe cases) is unchanged.
-
----
-
 ### [P1][readability] Replace the ~9 inline `{ x: number; y: number }` annotations with a named `Point` type
 
 **File(s):** `web/src/lib/drawing/engine.ts:308, 317, 554, 593, 594, 609, 674, 809, 835, 858` —

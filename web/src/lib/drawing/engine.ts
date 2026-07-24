@@ -652,7 +652,6 @@ interface PointerState {
   midY: number;
   startX: number;
   startY: number;
-  isDrawing: boolean;
   color: string;
   lineWidth: number;
   erase: boolean;
@@ -739,7 +738,6 @@ function startDrawing(e: PointerEvent) {
     midY: y,
     startX: screen.x,
     startY: screen.y,
-    isDrawing: true,
     color: currentColor,
     lineWidth,
     erase: eraserActive,
@@ -873,7 +871,7 @@ function draw(e: PointerEvent) {
     return;
   }
 
-  if (!pointerState || !pointerState.isDrawing) return;
+  if (!pointerState) return;
 
   if (PERF_MARKS) performance.mark('engine.draw:start');
 
@@ -924,7 +922,7 @@ function stopDrawing(e?: PointerEvent) {
   // onto the canvas (mixing with the ink under it) and record the flush so the
   // commit fold stamps at the same point in the op order. Skipped for a
   // discarded edge-swipe candidate (nothing was rendered).
-  if (pointerState?.isDrawing && pointerState.passTracker && !pointerState.edgeSwipeGuard) {
+  if (pointerState?.passTracker && !pointerState.edgeSwipeGuard) {
     recordCrayonFlush();
   }
 
@@ -956,7 +954,7 @@ export function releaseAllPointers() {
   // committed command ends stamped (one flush covers every open pass — the
   // buffer is shared per target).
   for (const ps of activePointers.values()) {
-    if (ps.isDrawing && ps.passTracker && !ps.edgeSwipeGuard) {
+    if (ps.passTracker && !ps.edgeSwipeGuard) {
       recordCrayonFlush();
       break;
     }
@@ -1181,7 +1179,7 @@ function teardownEngine() {
   }
   // Pointer-input state must not outlive the mount, unlike the drawing
   // state (see the persistence note in undoHistory.ts): a stale
-  // activePointers entry still marked isDrawing would let hover moves paint
+  // activePointers entry surviving into a remount would let hover moves paint
   // after a remount reuses its pointerId, and liveDownIds loses its
   // self-healing window trackers above. releaseAllPointers also commits any
   // mid-flight stroke into the log, so navigating away mid-stroke keeps
