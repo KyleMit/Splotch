@@ -19,7 +19,7 @@
 //
 // Defaults: --url https://splotch.art/  --out lighthouse-reports  --device both --visits both
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { platform } from 'node:os';
@@ -39,7 +39,7 @@ const pickedVisits = VISITS === 'both' ? ['first', 'repeat'] : [VISITS];
 
 mkdirSync(OUT, { recursive: true });
 const chromePath = resolveChrome();
-const sandboxFlags = buildSandboxChromeFlags(URL);
+const sandboxFlags = buildSandboxChromeFlags();
 
 console.log(`Target : ${URL}`);
 console.log(`Output : ${OUT}`);
@@ -132,13 +132,13 @@ function reportLine(name, rc) {
 // allowlist those CA public keys via --ignore-certificate-errors-spki-list — and
 // (3) speak TLS 1.2, because the gateway RESETS Chrome's TLS 1.3 ClientHello.
 // Returns [] when not in the sandbox (no proxy env), so off-cloud runs are clean.
-function buildSandboxChromeFlags(url) {
+function buildSandboxChromeFlags() {
   const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
   if (!proxy || platform() !== 'linux') return [];
   const caBundle = process.env.NODE_EXTRA_CA_CERTS || '/root/.ccr/ca-bundle.crt';
   if (!existsSync(caBundle)) return [];
 
-  const spki = spkiAllowlist(caBundle, url);
+  const spki = spkiAllowlist(caBundle);
   const flags = [`--proxy-server=${proxy}`, '--ssl-version-max=tls1.2'];
   if (spki) flags.push(`--ignore-certificate-errors-spki-list=${spki}`);
   return flags;
@@ -148,7 +148,7 @@ function buildSandboxChromeFlags(url) {
 // mention Anthropic). Falling back to the whole bundle if none match keeps this
 // working if the CA naming changes. Matching any cert in the served chain is
 // enough for Chrome to accept the MITM leaf.
-function spkiAllowlist(caBundle, url) {
+function spkiAllowlist(caBundle) {
   try {
     const pem = readFileSync(caBundle, 'utf8');
     const certs = pem

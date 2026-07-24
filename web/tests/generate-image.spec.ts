@@ -102,7 +102,7 @@ test('still accepts the legacy multipart contract (shipped native clients)', asy
   expect(res.status()).not.toBe(415);
 });
 
-test('throttles a managed token hammered in a burst', async ({ request, baseURL }, testInfo) => {
+test('throttles a managed token hammered in a burst', async ({ request }, testInfo) => {
   // Use a deliberately unsupported type (gif → 415) so each request is rejected
   // *before* the Gemini call — the per-token rate limiter counts the hit first,
   // so we exhaust the window without spending any real quota.

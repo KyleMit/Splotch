@@ -3,7 +3,7 @@
 // whitened (chalk ink beyond the dilated pen strokes, not on the open
 // background) and report each region's bbox/area so motifs treated as SOLID
 // WHITE can be grouped and compared across sibling pages.
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { glob } from 'node:fs/promises';
 import { existsSync } from 'node:fs';

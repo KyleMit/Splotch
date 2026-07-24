@@ -1,6 +1,6 @@
 // TEMPORARY (idea #24 experiment) — author a missing-orientation PEN outline by
 // conditioning Gemini on the page's existing sibling orientation. Deleted after use.
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
