@@ -389,3 +389,16 @@ describe('generateAiImage upload format', () => {
     expect(uploadedImage().type).toBe('image/png');
   });
 });
+
+describe('createDrawingDeduper', () => {
+  it('dedupes a repeated signature but not against a fresh instance', async () => {
+    const { createDrawingDeduper } = await import('./aiImage');
+    const deduper = createDrawingDeduper();
+    expect(deduper.isDuplicate('sig-a')).toBe(false);
+    deduper.record('sig-a');
+    expect(deduper.isDuplicate('sig-a')).toBe(true);
+    expect(deduper.isDuplicate('sig-b')).toBe(false);
+
+    expect(createDrawingDeduper().isDuplicate('sig-a')).toBe(false);
+  });
+});

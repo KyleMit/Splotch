@@ -48,10 +48,24 @@ async function encodeWebpUpload(png: Blob): Promise<Blob | null> {
   }
 }
 
-// Signature of the drawing saved on the previous AI run. Lets us skip re-saving
-// the child's artwork when they re-roll a new style on an unchanged drawing —
-// the AI image is always fresh, but the drawing copy would just be a duplicate.
-let lastSavedDrawingSig: string | null = null;
+// Tracks the signature of the drawing saved on the previous AI run so we can skip
+// re-saving the child's artwork when they re-roll a new style on an unchanged
+// drawing — the AI image is always fresh, but the drawing copy would just be a
+// duplicate. Constructible so tests can exercise the dedupe in isolation instead
+// of driving it end-to-end through a shared module instance.
+export function createDrawingDeduper() {
+  let lastSavedDrawingSig: string | null = null;
+  return {
+    isDuplicate(sig: string | null): boolean {
+      return sig !== null && sig === lastSavedDrawingSig;
+    },
+    record(sig: string | null): void {
+      lastSavedDrawingSig = sig;
+    },
+  };
+}
+
+const drawingSaver = createDrawingDeduper();
 
 async function blobSignature(blob: Blob): Promise<string | null> {
   try {
@@ -85,14 +99,14 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, runId: number) {
   if (!isAiGenerationActive(runId)) return;
   const sig = await blobSignature(drawingBlob);
   if (!isAiGenerationActive(runId)) return;
-  if (sig === null || sig !== lastSavedDrawingSig) {
+  if (!drawingSaver.isDuplicate(sig)) {
     await saveImageBlob(drawingBlob, DRAWING_BASENAME);
   }
   // Record the signature of the drawing we just saved even if ownership was lost
   // during that save: the drawing is already in the gallery, so a later owning run
   // on the same unchanged drawing must dedupe against it. Returning here (the old
   // post-save ownership check) left the signature stale and re-saved a duplicate.
-  lastSavedDrawingSig = sig;
+  drawingSaver.record(sig);
 }
 
 // Export the composited drawing and pick the upload encoding. Returns the

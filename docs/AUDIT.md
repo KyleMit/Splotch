@@ -9,33 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P4][maintainability] `lastSavedDrawingSig` is unresettable module-global mutable state
-
-**File(s):** `web/src/lib/drawing/aiImage.ts:52,84-91` — pinned at SHA f934d43
-
-#### Problem
-
-`let lastSavedDrawingSig: string | null = null;` is module-level mutable state that persists for the
-life of the tab and across every call to `generateAiImage`. It has no reset path, so its behavior is
-only observable through side effects and is impossible to unit-test in isolation (the existing test
-"saves the child drawing once across re-rolls" relies on module load order via `vi.resetModules()`).
-Hidden cross-call state in a module is a smell that makes the dedupe logic hard to reason about
-independently.
-
-#### Proposed solution
-
-Move the dedupe into a tiny stateful helper —
-`const drawingSaver = createDrawingDeduper(saveImageBlob)` exposing `save(blob): Promise<void>` — so
-the signature lives in an object that a test can construct fresh. Keeps `autoSaveImages` declarative
-and makes the "save once per unchanged drawing" rule directly testable.
-
-#### Verification
-
-New focused unit test constructs the deduper and asserts the second identical blob is skipped;
-existing re-roll test still passes.
-
----
-
 ### [P4][readability] AiConfetti's deterministic-hash constants are wholly opaque
 
 **File(s):** `web/src/lib/components/AiConfetti.svelte:2-20` — pinned at SHA f934d43
