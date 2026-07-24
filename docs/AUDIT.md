@@ -9,31 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P4][maintainability] AiDial's `ESTIMATE` is an unexplained 10 s with no link to the real deadline ladder
-
-**File(s):** `web/src/lib/components/AiDial.svelte:13`; cf. `web/src/lib/ai/limits.ts` — pinned at
-SHA f934d43
-
-#### Problem
-
-`const ESTIMATE = 10000;` is the dial's assumed generation time, but the module gives no rationale
-and no connection to the actual server budget in `limits.ts` (`GENERATE_DEADLINE_MS = 24_000`,
-`CLIENT_REQUEST_TIMEOUT_MS = 27_000`). A reader can't tell whether 10 s is a measured median, an
-arbitrary feel-good number, or something that should track the deadline. The bare unit-less `10000`
-also invites confusion with the ms constants next door.
-
-#### Proposed solution
-
-Rename to `ESTIMATE_MS`, add a one-line WHY comment (e.g. "typical successful generation ≈ 10 s; the
-overrun phase covers the tail up to the 24 s server deadline"), and if it is meant to track anything
-in `limits.ts`, import that rather than re-literal it.
-
-#### Verification
-
-`npm run check`; `ai-timer.spec.ts` unaffected.
-
----
-
 ### [P5][readability] Duplicated 6-line mask gradient in AiConfetti
 
 **File(s):** `web/src/lib/components/AiConfetti.svelte:44-55` — pinned at SHA f934d43

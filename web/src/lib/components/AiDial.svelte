@@ -11,11 +11,14 @@
 
   let { revealed = $bindable(false), progress = $bindable(0) }: Props = $props();
 
-  const ESTIMATE = 10000;
+  // Typical successful generation time; the dial's overrun phase (aiDialProgress.ts) covers the
+  // tail beyond this up to the ~24s server deadline in ai/limits.ts. Not derived from that
+  // constant — this paces the UI's fill curve, not a hard timeout.
+  const ESTIMATE_MS = 10000;
 
   let waiting = $state(false);
   let rafId = 0;
-  const dial = createDialProgress(ESTIMATE);
+  const dial = createDialProgress(ESTIMATE_MS);
 
   function loop(now: number) {
     const step = dial.tick(now);
