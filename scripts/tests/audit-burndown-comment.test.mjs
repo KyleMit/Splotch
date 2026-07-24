@@ -35,7 +35,27 @@ describe('findingProblem', () => {
     const long = ['### [x] t', '', '#### Problem', '', 'x'.repeat(2000)].join('\n');
     const p = findingProblem(long);
     expect(p.length).toBeLessThan(1000);
-    expect(p.endsWith('…')).toBe(true);
+    expect(p).toContain('…');
+  });
+
+  it('balances a code fence left dangling by truncation', () => {
+    const codey = [
+      '### [x] t',
+      '',
+      '#### Problem',
+      '',
+      'Here is the offending code:',
+      '',
+      '```ts',
+      ...Array.from(
+        { length: 60 },
+        (_, i) => `const line${i} = ${i}; // padding to force truncation`
+      ),
+      '```',
+    ].join('\n');
+    const p = findingProblem(codey);
+    // truncated mid-block, but the ``` fences must still be balanced (even count)
+    expect((p.match(/```/g) ?? []).length % 2).toBe(0);
   });
 });
 

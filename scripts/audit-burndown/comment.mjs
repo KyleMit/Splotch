@@ -20,7 +20,15 @@ export function findingProblem(issue) {
     .slice(start + 1, end)
     .join('\n')
     .trim();
-  if (text.length > 800) text = `${text.slice(0, 800).trimEnd()}…`;
+  if (text.length > 800) {
+    // Cut at a line boundary (not mid-line) so a snippet stays readable.
+    const cut = text.slice(0, 800);
+    const nl = cut.lastIndexOf('\n');
+    text = `${(nl > 0 ? cut.slice(0, nl) : cut).trimEnd()}\n…`;
+  }
+  // Balance a dangling ``` fence — from truncation, or a malformed finding — so
+  // the rest of the comment doesn't render as one big code block.
+  if ((text.match(/```/g)?.length ?? 0) % 2 === 1) text += '\n```';
   return text;
 }
 
