@@ -6,7 +6,7 @@
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
-  import { timestamp, triggerDownload } from '$lib/drawing/screenshot';
+  import { timestamp, triggerDownload, AI_IMAGE_BASENAME } from '$lib/drawing/screenshot';
 
   let dialogEl: HTMLDialogElement;
   let zoomLayerEl = $state<HTMLDivElement | undefined>();
@@ -15,9 +15,13 @@
   let progress = $state(0);
   let exiting = $state(false);
 
+  const DEFAULT_ASPECT = 4 / 3;
+  const MIN_BLUR_PX = 2;
+  const MAX_EXTRA_BLUR_PX = 16;
+
   // Seed the stage with the window's aspect ratio as soon as generation starts
   // so the placeholder box closely matches the preview that slots in a beat later.
-  let imgAspect = $state(4 / 3);
+  let imgAspect = $state(DEFAULT_ASPECT);
   $effect(() => {
     if (ui.aiResultOpen && ui.aiGenerating) {
       if (typeof window !== 'undefined' && window.innerHeight > 0) {
@@ -44,16 +48,19 @@
   }
 
   // The drawing stays blurry to keep the suspense, sharpening as we progress.
-  const previewBlur = $derived(`${2 + 16 * (1 - progress)}px`);
+  const previewBlur = $derived(`${MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - progress)}px`);
 
   // Keep the confetti's circular mask hole aligned with the round dial as the
-  // stage aspect changes: the vertical radius (% of height) tracks the fixed
-  // horizontal radius (31% of width). At 4:3 this resolves to the original 41%.
-  const confettiMaskRy = $derived(`${(31 * imgAspect).toFixed(1)}%`);
+  // stage aspect changes. The one load-bearing value is DIAL_MASK_RX (% of
+  // width); the vertical radius (% of height) tracks it by the stage aspect.
+  // Both are handed to AiConfetti via --confetti-rx/--confetti-ry on .ai-stage.
+  // At 4:3 this resolves to the original 41%.
+  const DIAL_MASK_RX = 31;
+  const confettiMaskRy = $derived(`${(DIAL_MASK_RX * imgAspect).toFixed(1)}%`);
 
   function handleDownload() {
     if (!ui.aiResultUrl || exiting) return;
-    triggerDownload(ui.aiResultUrl, `splotch-ai-${timestamp()}.png`);
+    triggerDownload(ui.aiResultUrl, `${AI_IMAGE_BASENAME}-${timestamp()}.png`);
 
     // Morph the modal into a polaroid, hold it in the center, then let it fly
     // off to the bottom-left. The fly-out animation's end dismisses the modal.
@@ -110,7 +117,7 @@
     {:else}
       <div
         class="ai-stage"
-        style="--confetti-ry: {confettiMaskRy};"
+        style="--confetti-rx: {DIAL_MASK_RX}%; --confetti-ry: {confettiMaskRy};"
         use:pinchZoom={() => ({
           target: zoomLayerEl!,
           // Only once the finished picture is on screen — the loading dial and

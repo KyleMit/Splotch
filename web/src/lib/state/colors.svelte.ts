@@ -30,6 +30,8 @@ export const PALETTE_COLORS: PaletteColor[] = [
   { hex: BLACK_INK, label: 'Black' },
 ];
 
+export const DEFAULT_STROKE_COLOR = PALETTE_COLORS[0].hex;
+
 // The color a palette swatch actually shows and paints for the current theme:
 // the Black swatch flips to white on dark paper; every other swatch is itself.
 export function themedSwatchColor(hex: string, dark: boolean): string {

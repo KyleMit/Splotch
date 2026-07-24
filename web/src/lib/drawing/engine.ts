@@ -18,6 +18,7 @@
 //   emptyScan.ts        cheap blank-canvas detection
 //   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
+import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
 import { ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte';
 import {
   calculateStrokeSpeed,
@@ -26,6 +27,7 @@ import {
   guardedEdgeAt,
   pointerWasResumed,
   type GuardEdge,
+  type Point,
 } from './strokeMath';
 import {
   computePaperView,
@@ -111,7 +113,8 @@ interface InitOptions {
 let canvas!: HTMLCanvasElement;
 let ctx!: CanvasRenderingContext2D;
 let currentColor = '';
-let currentLineWidth = 8;
+const DEFAULT_LINE_WIDTH_PX = 8;
+let currentLineWidth = DEFAULT_LINE_WIDTH_PX;
 let eraserActive = false;
 let magicActive = false;
 let crayonActive = false;
@@ -314,7 +317,7 @@ function pointerToScreen(e: PointerEvent) {
 
 // Paper coordinates — the space ops are recorded and rendered in. Identity
 // unless a rotation has locked the paper (see resizeCanvas / ADR-0050).
-function screenToPaper(pt: { x: number; y: number }): { x: number; y: number } {
+function screenToPaper(pt: Point): Point {
   return isIdentityView(paperView) ? pt : viewToPaper(paperView, pt.x, pt.y);
 }
 
@@ -516,6 +519,16 @@ function closeCrayonPassBeforeForeignOp(ps: PointerState) {
   if (!(ps.crayon && !ps.erase) && hasOpenLiveCrayonPass()) recordCrayonFlush();
 }
 
+// The five style modifiers every `dot`/`path` op carries. Erasing clears pixels
+// via destination-out; the stroke color is irrelevant there, only its (opaque)
+// alpha matters. A magic op ignores `color` too — it reveals the sheet — but
+// carries it so every op is style-complete.
+function strokeStyleOf(
+  ps: PointerState
+): Pick<PointerState, 'color' | 'erase' | 'magic' | 'crayon' | 'seed'> {
+  return { color: ps.color, erase: ps.erase, magic: ps.magic, crayon: ps.crayon, seed: ps.seed };
+}
+
 // Paint the round dot that anchors a stroke at its start point, and kick the
 // drawing sound. Used both for a normal pointerdown and when a deferred
 // edge-swipe candidate commits.
@@ -523,19 +536,12 @@ function renderStrokeStart(ps: PointerState) {
   beginStrokeGroup();
   closeCrayonPassBeforeForeignOp(ps);
 
-  // Erasing clears pixels via destination-out; the stroke color is irrelevant
-  // there, only its (opaque) alpha matters. A magic op ignores `color` too —
-  // it reveals the sheet — but carries it so every op is style-complete.
   const dot: StrokeOp = {
     kind: 'dot',
     x: ps.x,
     y: ps.y,
     radius: ps.lineWidth / 2,
-    color: ps.color,
-    erase: ps.erase,
-    magic: ps.magic,
-    crayon: ps.crayon,
-    seed: ps.seed,
+    ...strokeStyleOf(ps),
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -551,7 +557,7 @@ function renderStrokeStart(ps: PointerState) {
 // and the stroke curves smoothly instead of showing straight-chord corners.
 // Each call is captured as one path op (matching its own beginPath/stroke
 // boundary) so the commit fold reproduces identical pixels and anti-aliasing.
-function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }[]) {
+function strokeSmoothSegments(ps: PointerState, points: Point[]) {
   if (points.length === 0) return;
   closeCrayonPassBeforeForeignOp(ps);
   const op: StrokeOp = {
@@ -560,12 +566,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
     startX: ps.midX,
     startY: ps.midY,
     segs: [],
-    color: ps.color,
     lineWidth: ps.lineWidth,
-    erase: ps.erase,
-    magic: ps.magic,
-    crayon: ps.crayon,
-    seed: ps.seed,
+    ...strokeStyleOf(ps),
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
@@ -590,8 +592,8 @@ function strokeSmoothSegments(ps: PointerState, points: { x: number; y: number }
 // identical to the unsplit one — only the pattern phase of the later ops
 // changes. Seeds are stored per op, so the commit fold reproduces the splits
 // byte-for-byte.
-function strokeCrayonSegments(ps: PointerState, points: { x: number; y: number }[]) {
-  let batch: { x: number; y: number }[] = [];
+function strokeCrayonSegments(ps: PointerState, points: Point[]) {
+  let batch: Point[] = [];
   for (const p of points) {
     if (ps.passTracker!.advance(p) === 'split') {
       strokeSmoothSegments(ps, batch);
@@ -606,7 +608,7 @@ function strokeCrayonSegments(ps: PointerState, points: { x: number; y: number }
   strokeSmoothSegments(ps, batch);
 }
 
-function strokeSegments(ps: PointerState, points: { x: number; y: number }[]) {
+function strokeSegments(ps: PointerState, points: Point[]) {
   if (ps.passTracker) strokeCrayonSegments(ps, points);
   else strokeSmoothSegments(ps, points);
 }
@@ -631,7 +633,7 @@ function commitStrokeGroup() {
     // pending restore or an unready magic sheet — where the paper doesn't
     // hold this stroke yet; the op replay keeps the screen right there, and
     // the eventual fold's next repaint reconciles.
-    for (const r of rasterRects) blitPaperRect(ctx, r.x, r.y, r.w, r.h);
+    for (const r of rasterRects) blitPaperRect(ctx, r);
   }
   setCanUndo(true);
   if (onStrokeEnd) onStrokeEnd();
@@ -652,7 +654,6 @@ interface PointerState {
   midY: number;
   startX: number;
   startY: number;
-  isDrawing: boolean;
   color: string;
   lineWidth: number;
   erase: boolean;
@@ -671,16 +672,23 @@ interface PointerState {
   // discarded as an OS edge-swipe (an inward flick). See the edge-swipe notes
   // at startDrawing().
   edgeSwipeGuard: GuardEdge | null;
-  pendingPoints: { x: number; y: number }[];
+  pendingPoints: Point[];
 }
 
-const activePointerIds = new Set<number>();
 const activePointers = new Map<number, PointerState>();
 
 // Pointer speed (which drives the drawing sound) is averaged over the most
 // recent slice of the stroke so the audio cue tracks gesture speed without
 // reacting to every per-frame jitter.
 const SPEED_WINDOW_MS = 100;
+
+// Start a fresh sliding speed window. The first entry is a zero-distance anchor
+// so the very first move has a span to divide by, and lastTime is realigned to
+// the same instant.
+function resetSpeedWindow(ps: PointerState, now: number): void {
+  ps.speedSamples = [{ t: now, distance: 0 }];
+  ps.lastTime = now;
+}
 
 // After a color/tool change, ignore touch/mouse pointerdowns for a short window
 // so the tap that picked the color doesn't immediately start a stray stroke.
@@ -691,6 +699,17 @@ const COLOR_CHANGE_DEBOUNCE_MS = 100;
 // only to additionally guard a tablet's long bottom edge in landscape (see the
 // edge-swipe notes at startDrawing).
 let safeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+
+// Release pointer capture without throwing when the pointer isn't (or is no
+// longer) captured — the hasPointerCapture pre-check plus the swallow-all catch
+// make this safe to call unconditionally at every teardown site.
+function releaseCaptureSafe(id: number): void {
+  try {
+    if (canvas.hasPointerCapture && canvas.hasPointerCapture(id)) {
+      canvas.releasePointerCapture(id);
+    }
+  } catch {}
+}
 
 // The iPad/Android system gesture for the home/menu bar is a swipe inward from
 // the device's physical-bottom edge, so a touch starting in that edge's gesture
@@ -739,7 +758,6 @@ function startDrawing(e: PointerEvent) {
     midY: y,
     startX: screen.x,
     startY: screen.y,
-    isDrawing: true,
     color: currentColor,
     lineWidth,
     erase: eraserActive,
@@ -748,16 +766,14 @@ function startDrawing(e: PointerEvent) {
     seed: crayonActive ? crayonSeedCounter++ : 0,
     passTracker:
       crayonActive && !eraserActive && !magicActive ? new CrayonPassTracker(x, y, lineWidth) : null,
-    lastTime: now,
-    // Time-stamped distance samples for the sliding speed window. The first
-    // entry is a zero-distance anchor so the very first move has a span to
-    // divide by.
-    speedSamples: [{ t: now, distance: 0 }],
+    // Speed-window fields are seeded by resetSpeedWindow() immediately below.
+    lastTime: 0,
+    speedSamples: [],
     edgeSwipeGuard,
     pendingPoints: [],
   };
+  resetSpeedWindow(pointerState, now);
   activePointers.set(e.pointerId, pointerState);
-  activePointerIds.add(e.pointerId);
 
   // A candidate paints nothing yet — renderStrokeStart runs later, on commit.
   if (!edgeSwipeGuard) renderStrokeStart(pointerState);
@@ -784,31 +800,22 @@ function commitEdgeSwipe(ps: PointerState) {
   }
   // Restart speed sampling from the commit point so the buffered span doesn't
   // register as one giant first chord.
-  const now = Date.now();
-  ps.speedSamples = [{ t: now, distance: 0 }];
-  ps.lastTime = now;
+  resetSpeedWindow(ps, Date.now());
 }
 
 // Drop a pointer without rendering anything (an OS edge-swipe). Nothing was
 // painted, so undo/empty state and the group flag are left untouched.
 function discardPointer(e: PointerEvent) {
   activePointers.delete(e.pointerId);
-  activePointerIds.delete(e.pointerId);
   ctx.beginPath();
-  try {
-    canvas.releasePointerCapture(e.pointerId);
-  } catch {}
+  releaseCaptureSafe(e.pointerId);
 }
 
 // Edge-gesture candidate: withhold rendering until the direction is decided.
 // The buffered points and the direction test stay in screen space (physical
 // edges); commitEdgeSwipe maps them to paper coordinates when they turn out
 // to be a real stroke.
-function advanceEdgeSwipeCandidate(
-  ps: PointerState,
-  screenPoints: { x: number; y: number }[],
-  e: PointerEvent
-) {
+function advanceEdgeSwipeCandidate(ps: PointerState, screenPoints: Point[], e: PointerEvent) {
   ps.pendingPoints.push(...screenPoints);
   const last = screenPoints[screenPoints.length - 1];
   const dx = last.x - ps.startX;
@@ -832,16 +839,16 @@ function advanceEdgeSwipeCandidate(
 // large for continuous contact together mean the finger really lifted, so the
 // stroke is restarted at the resumed point. The gap/jump thresholds and the
 // decision predicate live in ./strokeMath (pointerWasResumed).
-function restartStrokeIfResumed(ps: PointerState, resume: { x: number; y: number }, now: number) {
+function restartStrokeIfResumed(ps: PointerState, resume: Point, now: number) {
   const deltaX = resume.x - ps.x;
   const deltaY = resume.y - ps.y;
-  const jump = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  const jump = Math.hypot(deltaX, deltaY);
   if (!pointerWasResumed(now - ps.lastTime, jump, Math.min(paper.pxW, paper.pxH))) return;
   ps.x = resume.x;
   ps.y = resume.y;
   ps.midX = resume.x;
   ps.midY = resume.y;
-  ps.speedSamples = [{ t: now, distance: 0 }];
+  resetSpeedWindow(ps, now);
   // The finger really lifted, so a crayon's next contact is physically a fresh
   // pass — close the current one (stamp + recorded flush), new seed, tracker
   // restarted at the resumed point.
@@ -855,10 +862,10 @@ function restartStrokeIfResumed(ps: PointerState, resume: { x: number; y: number
 
 // Speed is sampled from the final event only: one chord per pointermove,
 // matching the cadence the sliding window was tuned for.
-function strokeSpeed(ps: PointerState, last: { x: number; y: number }, now: number): number {
+function strokeSpeed(ps: PointerState, last: Point, now: number): number {
   const deltaX = last.x - ps.x;
   const deltaY = last.y - ps.y;
-  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  const distance = Math.hypot(deltaX, deltaY);
   return calculateStrokeSpeed(ps.speedSamples, { t: now, distance }, SPEED_WINDOW_MS);
 }
 
@@ -873,7 +880,7 @@ function draw(e: PointerEvent) {
     return;
   }
 
-  if (!pointerState || !pointerState.isDrawing) return;
+  if (!pointerState) return;
 
   if (PERF_MARKS) performance.mark('engine.draw:start');
 
@@ -907,9 +914,7 @@ function draw(e: PointerEvent) {
   if (PERF_MARKS) performance.measure('engine.draw', 'engine.draw:start');
 }
 
-function stopDrawing(e?: PointerEvent) {
-  if (!e) return;
-
+function stopDrawing(e: PointerEvent) {
   const pointerState = activePointers.get(e.pointerId);
 
   // An edge-band touch that lifted before its direction was decided was a tap,
@@ -924,12 +929,11 @@ function stopDrawing(e?: PointerEvent) {
   // onto the canvas (mixing with the ink under it) and record the flush so the
   // commit fold stamps at the same point in the op order. Skipped for a
   // discarded edge-swipe candidate (nothing was rendered).
-  if (pointerState?.isDrawing && pointerState.passTracker && !pointerState.edgeSwipeGuard) {
+  if (pointerState?.passTracker && !pointerState.edgeSwipeGuard) {
     recordCrayonFlush();
   }
 
   activePointers.delete(e.pointerId);
-  activePointerIds.delete(e.pointerId);
 
   ctx.beginPath();
 
@@ -943,9 +947,7 @@ function stopDrawing(e?: PointerEvent) {
     if (onDrawStopCallback) onDrawStopCallback();
   }
 
-  try {
-    canvas.releasePointerCapture(e.pointerId);
-  } catch {}
+  releaseCaptureSafe(e.pointerId);
 }
 
 export function releaseAllPointers() {
@@ -956,26 +958,19 @@ export function releaseAllPointers() {
   // committed command ends stamped (one flush covers every open pass — the
   // buffer is shared per target).
   for (const ps of activePointers.values()) {
-    if (ps.isDrawing && ps.passTracker && !ps.edgeSwipeGuard) {
+    if (ps.passTracker && !ps.edgeSwipeGuard) {
       recordCrayonFlush();
       break;
     }
   }
 
+  const ids = [...activePointers.keys()];
   activePointers.clear();
   groupHasDrawn = false;
   commitStrokeGroup();
   if (onDrawStopCallback) onDrawStopCallback();
 
-  activePointerIds.forEach((pointerId) => {
-    try {
-      if (canvas.hasPointerCapture && canvas.hasPointerCapture(pointerId)) {
-        canvas.releasePointerCapture(pointerId);
-      }
-    } catch {}
-  });
-
-  activePointerIds.clear();
+  ids.forEach(releaseCaptureSafe);
 }
 
 // --- WebKit merged-stream pen quirks ---------------------------------------
@@ -1081,7 +1076,7 @@ export function undo(): Promise<void> {
       const strokeStillLive = rebaseActiveCommand(emptyBeneathLiveStroke);
       const rectOnly = foldedOnly && !hasUnfoldedCommands() && isIdentityView(paperView);
       if (rectOnly && rects.length > 0) {
-        for (const r of rects) blitPaperRect(ctx, r.x, r.y, r.w, r.h);
+        for (const r of rects) blitPaperRect(ctx, r);
       } else if (!rectOnly) {
         repaintAll(ctx);
       }
@@ -1181,7 +1176,7 @@ function teardownEngine() {
   }
   // Pointer-input state must not outlive the mount, unlike the drawing
   // state (see the persistence note in undoHistory.ts): a stale
-  // activePointers entry still marked isDrawing would let hover moves paint
+  // activePointers entry surviving into a remount would let hover moves paint
   // after a remount reuses its pointerId, and liveDownIds loses its
   // self-healing window trackers above. releaseAllPointers also commits any
   // mid-flight stroke into the log, so navigating away mid-stroke keeps
@@ -1230,20 +1225,7 @@ export function adoptDrawingCanvas(canvasElement: HTMLCanvasElement, options: In
   return { teardown: teardownEngine };
 }
 
-export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
-  // Re-init over a live engine (dev HMR double-eval, the adopt fallback after
-  // hydration replaced the canvas element) tears the previous instance down
-  // first so window listeners and crayon overlays never double up.
-  teardownEngine();
-  canvas = canvasElement;
-  // NB: no `desynchronized: true` here. It was tried for lower Android ink
-  // latency and rejected — a desynchronized 2D canvas is promoted to a hardware
-  // overlay that does not alpha-composite with content below it, so this
-  // deliberately transparent canvas (the paper sheet + coloring overlay render
-  // beneath it, ADR-0050) rendered as opaque black on the Android WebView. See
-  // ADR-0051.
-  ctx = canvas.getContext('2d')!;
-
+function setupCrayonOverlays(canvas: HTMLCanvasElement): void {
   // The live crayon pass overlays (see the crayonOverlay notes above): adopt
   // the markup-provided pair when present, otherwise create and insert them.
   // Absolute inset-0 inside the canvas's positioned container tracks the
@@ -1274,39 +1256,61 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   crayonOverlayTopCtx = crayonOverlayTop.getContext('2d')!;
   setLiveCrayonBuffer(ctx, crayonOverlayCtx, crayonOverlayTopCtx);
   syncCrayonOverlayMix();
+}
 
+function paperIsSized(): boolean {
+  return paper.pxW > 0 && paper.pxH > 0;
+}
+
+function wireMagicBrushHost(): void {
   // The magic brush's color sheet lives in paper coordinates (like every op) and
   // repaints recorded magic ops once an async fill finishes decoding (ADR-0043).
   initMagicBrush({
-    paperSize: () =>
-      paper.pxW > 0 && paper.pxH > 0 ? { width: paper.pxW, height: paper.pxH } : null,
-    sheetBounds: () => (paper.pxW > 0 && paper.pxH > 0 ? sheetBoundsPaper() : null),
+    paperSize: () => (paperIsSized() ? { width: paper.pxW, height: paper.pxH } : null),
+    sheetBounds: () => (paperIsSized() ? sheetBoundsPaper() : null),
     repaint: () => {
       if (ctx) repaintAll(ctx);
     },
   });
+}
 
-  attachCallbacks(options);
-  currentColor = options.initialColor || '#AB71E1';
+// Every listener registered through here is removed symmetrically in
+// teardownEngine(), so the add/remove lists can't drift apart.
+function listen<K extends keyof WindowEventMap>(
+  target: Window,
+  type: K,
+  handler: (e: WindowEventMap[K]) => void,
+  options?: AddEventListenerOptions | boolean
+): void;
+function listen<K extends keyof DocumentEventMap>(
+  target: Document,
+  type: K,
+  handler: (e: DocumentEventMap[K]) => void,
+  options?: AddEventListenerOptions | boolean
+): void;
+function listen<K extends keyof HTMLElementEventMap>(
+  target: HTMLElement,
+  type: K,
+  handler: (e: HTMLElementEventMap[K]) => void,
+  options?: AddEventListenerOptions | boolean
+): void;
+function listen(
+  target: EventTarget,
+  type: string,
+  handler: (e: Event) => void,
+  options?: AddEventListenerOptions | boolean
+): void;
+function listen(
+  target: EventTarget,
+  type: string,
+  handler: (e: Event) => void,
+  options?: AddEventListenerOptions | boolean
+) {
+  target.addEventListener(type, handler as EventListener, options);
+  listenerRemovers.push(() => target.removeEventListener(type, handler as EventListener, options));
+}
 
-  renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
-
-  resizeCanvas();
-
-  // Every listener registered through here is removed symmetrically in
-  // teardownEngine(), so the add/remove lists can't drift apart.
-  function listen<K extends keyof WindowEventMap>(
-    target: EventTarget,
-    type: K | string,
-    handler: (e: never) => void,
-    options?: AddEventListenerOptions | boolean
-  ) {
-    target.addEventListener(type, handler as EventListener, options);
-    listenerRemovers.push(() =>
-      target.removeEventListener(type, handler as EventListener, options)
-    );
-  }
-
+function registerEngineListeners(canvas: HTMLCanvasElement): void {
   listen(window, 'resize', handleResize);
   // Scroll/orientation move the canvas in the viewport without resizing it, so
   // refresh the cached rect (left/top) without the full backing-store rebuild.
@@ -1343,6 +1347,31 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   listen(window, 'pointerup', trackPointerLift, true);
   listen(window, 'pointercancel', trackPointerLift, true);
   listen(window, 'pointermove', adoptStrayPenStream, true);
+}
+
+export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
+  // Re-init over a live engine (dev HMR double-eval, the adopt fallback after
+  // hydration replaced the canvas element) tears the previous instance down
+  // first so window listeners and crayon overlays never double up.
+  teardownEngine();
+  canvas = canvasElement;
+  // NB: no `desynchronized: true` here. It was tried for lower Android ink
+  // latency and rejected — a desynchronized 2D canvas is promoted to a hardware
+  // overlay that does not alpha-composite with content below it, so this
+  // deliberately transparent canvas (the paper sheet + coloring overlay render
+  // beneath it, ADR-0050) rendered as opaque black on the Android WebView. See
+  // ADR-0051.
+  ctx = canvas.getContext('2d')!;
+
+  setupCrayonOverlays(canvas);
+  wireMagicBrushHost();
+
+  attachCallbacks(options);
+  currentColor = options.initialColor || DEFAULT_STROKE_COLOR;
+  renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
+  resizeCanvas();
+
+  registerEngineListeners(canvas);
 
   // Warm the export compositor + paper texture at idle: the module is
   // dynamic-imported so it stays out of the startup bundle (issue #461), and

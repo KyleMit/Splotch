@@ -10,6 +10,8 @@
 // engine.ts owns all state; everything here is a pure function so the mapping
 // math is unit-testable.
 
+import type { Point } from './strokeMath';
+
 export type ViewRotation = 0 | 90 | 180 | 270;
 
 // Maps paper coordinates to visible-canvas coordinates:
@@ -87,14 +89,14 @@ export function viewMatrix(view: PaperView): [number, number, number, number, nu
   }
 }
 
-export function paperToView(view: PaperView, x: number, y: number): { x: number; y: number } {
+export function paperToView(view: PaperView, x: number, y: number): Point {
   const [a, b, c, d, e, f] = viewMatrix(view);
   return { x: a * x + c * y + e, y: b * x + d * y + f };
 }
 
 // Inverse mapping — visible-canvas (pointer) coordinates back to paper
 // coordinates, so live input lands in the space ops are recorded in.
-export function viewToPaper(view: PaperView, x: number, y: number): { x: number; y: number } {
+export function viewToPaper(view: PaperView, x: number, y: number): Point {
   const u = (x - view.tx) / view.scale;
   const v = (y - view.ty) / view.scale;
   switch (view.rotate) {

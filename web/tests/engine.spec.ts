@@ -1224,8 +1224,8 @@ test('the drawing persists across teardown + re-init (client-side navigation)', 
 test('a pointer held through teardown cannot keep painting after remount', async ({ page }) => {
   // Navigating away mid-stroke tears the engine down with a finger still on the
   // glass. teardown() must commit the in-flight stroke and forget the pointer:
-  // a stale activePointers entry (isDrawing true) would otherwise let hover
-  // moves paint when the browser reuses the same pointerId after remount.
+  // a stale activePointers entry would otherwise let hover moves paint when
+  // the browser reuses the same pointerId after remount.
   const result = await page.evaluate(() => {
     const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
     const rect = canvas.getBoundingClientRect();

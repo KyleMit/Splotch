@@ -36,7 +36,9 @@
 // (ADR-0004).
 
 import {
+  AA_PAD,
   clearAllOf,
+  opGeometricExtent,
   renderOp,
   resetCrayonStateForClear,
   resetLiveCrayonForReplay,
@@ -205,9 +207,9 @@ export function recordOp(op: StrokeOp) {
 // premultiplied rounding), so without the reconcile a rebuild would differ
 // from the live stamp at the byte level — imperceptibly, but undo and remount
 // must reproduce the screen exactly.
-export function activeCrayonRasterRects(): { x: number; y: number; w: number; h: number }[] {
+export function activeCrayonRasterRects(): PatchRect[] {
   if (!activeCommand) return [];
-  const rects: { x: number; y: number; w: number; h: number }[] = [];
+  const rects: PatchRect[] = [];
   for (const op of activeCommand.ops) {
     if (op.kind === 'crayonPassRaster') {
       rects.push({ x: op.x, y: op.y, w: op.canvas.width, h: op.canvas.height });
@@ -219,13 +221,8 @@ export function activeCrayonRasterRects(): { x: number; y: number; w: number; h:
 // Copy a committed paper rect onto a target, replacing what the target showed
 // there. Coordinates are paper-space; the target's own transform places the
 // rect (identity on the visible canvas normally, the paper view when locked).
-export function blitPaperRect(
-  target: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number
-) {
+export function blitPaperRect(target: CanvasRenderingContext2D, rect: PatchRect) {
+  const { x, y, w, h } = rect;
   if (!paperCanvas) return;
   const x0 = Math.max(0, x);
   const y0 = Math.max(0, y);
@@ -288,12 +285,6 @@ export function commitActiveCommand(defer = false): boolean {
   return true;
 }
 
-// AA bleed pad in paper px around an op's geometric bounds, matching
-// strokeOps' unionCrayonBounds — it covers anti-aliased edges, and keeps the
-// crayon flush stamp inside the rect (the pass buffer bounds its stamp with
-// this same pad).
-const PATCH_AA_PAD = 2;
-
 // Padded float bounding boxes, merged toward disjointness before they round
 // to patch rects.
 interface Box {
@@ -314,30 +305,17 @@ function opPaddedBounds(op: StrokeOp, crayonScale: number): Box | null {
   if (op.kind === 'clear' || op.kind === 'crayonFlush') return null;
   if (op.kind === 'crayonPassRaster') {
     return {
-      x0: op.x - PATCH_AA_PAD,
-      y0: op.y - PATCH_AA_PAD,
-      x1: op.x + op.canvas.width + PATCH_AA_PAD,
-      y1: op.y + op.canvas.height + PATCH_AA_PAD,
+      x0: op.x - AA_PAD,
+      y0: op.y - AA_PAD,
+      x1: op.x + op.canvas.width + AA_PAD,
+      y1: op.y + op.canvas.height + AA_PAD,
     };
   }
   // Magic and erase render at base width (renderOp routes them before the
   // crayon branch); only a crayon ink op picks up the pass scale.
   const scale = op.crayon && !op.erase && !op.magic ? crayonScale : 1;
-  if (op.kind === 'dot') {
-    const pad = op.radius * scale + PATCH_AA_PAD;
-    return { x0: op.x - pad, y0: op.y - pad, x1: op.x + pad, y1: op.y + pad };
-  }
-  let x0 = op.startX;
-  let y0 = op.startY;
-  let x1 = op.startX;
-  let y1 = op.startY;
-  for (const s of op.segs) {
-    x0 = Math.min(x0, s.cx, s.x);
-    y0 = Math.min(y0, s.cy, s.y);
-    x1 = Math.max(x1, s.cx, s.x);
-    y1 = Math.max(y1, s.cy, s.y);
-  }
-  const pad = (op.lineWidth / 2) * scale + PATCH_AA_PAD;
+  const { x0, y0, x1, y1, halfWidth } = opGeometricExtent(op);
+  const pad = halfWidth * scale + AA_PAD;
   return { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
 }
 
@@ -780,6 +758,10 @@ function commandHasMagic(command: StrokeGroupCommand): boolean {
 // activeCommand (its ops are recorded but not yet folded), so replay it last
 // to keep the in-flight stroke; between strokes activeCommand is null and
 // that step is a no-op.
+function replayCommands(target: CanvasRenderingContext2D, commands: StrokeGroupCommand[]): void {
+  for (const cmd of commands) for (const op of cmd.ops) renderOp(target, op);
+}
+
 export function repaintAll(target: CanvasRenderingContext2D) {
   // Replaying the open pass's ops below rebuilds its crayon accumulation from
   // scratch; the live buffers must start empty so a non-idempotent deposit
@@ -787,11 +769,9 @@ export function repaintAll(target: CanvasRenderingContext2D) {
   resetLiveCrayonForReplay(target);
   clearAllOf(target);
   if (paperCanvas) target.drawImage(paperCanvas, 0, 0);
-  for (const cmd of pendingCommands) for (const op of cmd.ops) renderOp(target, op);
-  for (const cmd of deferredCommands) for (const op of cmd.ops) renderOp(target, op);
-  if (activeCommand) {
-    for (const op of activeCommand.ops) renderOp(target, op);
-  }
+  replayCommands(target, pendingCommands);
+  replayCommands(target, deferredCommands);
+  replayCommands(target, activeCommand ? [activeCommand] : []);
 }
 
 // Test/profiling seam: how the undo history is currently stored. `liveRasters`
