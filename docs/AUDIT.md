@@ -9,32 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P3][duplication] The `.setting-group .setting + .setting { margin-top: 6px }` rule is copied into three sections
-
-**File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:75-77` ·
-`web/src/lib/components/parent/SavingSection.svelte:65-67` ·
-`web/src/lib/components/parent/ControlsSection.svelte:165-167` — pinned at SHA f934d43
-
-#### Problem
-
-The identical adjacent-sibling spacing rule appears verbatim in three section components.
-ParentCenter already owns the shared `.setting-group`/`.setting` styling globally
-(`ParentCenter.svelte:747-759`, with the comment *"keeps these rules in one place instead of copied
-into each section component"*) — this rule contradicts that intent by living copied in the leaves.
-
-#### Proposed solution
-
-Move `.setting-group .setting + .setting { margin-top: var(--space-1) + 2 }` (6px → keep as-is or
-promote to a token) into ParentCenter's `.parent-help-content :global(.setting)` block and delete
-the three copies.
-
-#### Verification
-
-`grep -rn "setting + .setting" web/src` returns one hit. Sections with stacked `.setting` rows
-(Appearance orientation toggles, Saving folder row, Controls) keep their 6px gap.
-
----
-
 ### [P3][duplication] `.slider-label` block duplicated between SoundSection and ControlsSection
 
 **File(s):** `web/src/lib/components/parent/SoundSection.svelte:71-80` ·
