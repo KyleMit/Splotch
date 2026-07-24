@@ -248,3 +248,33 @@ Minor, but it removes the manual encoding and reads as intent.
 `npm run check`; `aiImage.test.ts` upload tests still hit `/api/generate-image`.
 
 ---
+
+### [P4][readability] Extract the WebP-upload guard predicate in `encodeWebpUpload`
+
+**File(s):** `web/src/lib/drawing/aiImage.ts:37-43` — pinned at SHA f934d43
+
+#### Problem
+
+The decisive line
+
+```ts
+return webp && webp.type === 'image/webp' && webp.size < png.size ? webp : null;
+```
+
+packs three distinct conditions (encoder produced something, it's actually WebP not a PNG fallback,
+and it's genuinely smaller) into one ternary whose meaning is carried entirely by the preceding
+comment. The `'image/webp'` MIME literal is also a magic string that recurs in the test.
+
+#### Proposed solution
+
+Name a local predicate:
+`const isSmallerWebp = !!webp && webp.type === 'image/webp' && webp.size < png.size;` (with a
+`const WEBP_MIME = 'image/webp'`), then `return isSmallerWebp ? webp : null;`. Self-documents the
+three-part contract.
+
+#### Verification
+
+`aiImage.test.ts`'s upload-format suite ("uploads a WebP copy…", "falls back to the PNG…") stays
+green.
+
+---
