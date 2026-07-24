@@ -7,38 +7,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P4][duplication] `install.svelte.ts` repeats the oneTap→manual fallback three times
-
-**File(s):** `web/src/lib/state/install.svelte.ts:129,141,149` — pinned at SHA f934d43
-
-#### Problem
-
-The same demotion appears three times across `promptInstall`:
-
-```ts
-if (install.mode === 'oneTap') install.mode = manualMode();  // 129 and 141
-…
-install.mode = manualMode();                                  // 149 (declined branch)
-```
-
-Lines 129 and 141 are byte-identical; 149 is the unconditional variant. The "a spent/stale one-tap
-prompt drops to the manual hint" rule is scattered.
-
-#### Proposed solution
-
-Extract
-`function fallBackToManualHint() { if (install.mode === 'oneTap') install.mode = manualMode(); }`
-and call it at the two `'unavailable'` exits; keep the declined branch's unconditional
-`manualMode()` (it also calls `dismissInstall()`), or route it through the same helper if the guard
-is harmless there.
-
-#### Verification
-
-`install.svelte.test.ts` (the `promptInstall` describe block) passes unchanged; the literal
-`if (install.mode === 'oneTap')` appears once.
-
----
-
 ### [P4][naming] Comments point to `storage.js`, but the file is `storage.ts`
 
 **File(s):** `web/src/lib/state/strokeWidth.svelte.ts:32`,
