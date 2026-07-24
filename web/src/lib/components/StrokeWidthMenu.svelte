@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { STROKE_SIZES } from '$lib/state/strokeWidth.svelte';
+  import { STROKE_SIZES, type StrokeSize } from '$lib/state/strokeWidth.svelte';
   import type { CommonIconName } from './iconTypes';
   import { scribbleTap } from '$lib/actions/scribbleGuard';
 
@@ -18,12 +18,12 @@
     onpick,
   }: {
     open: boolean;
-    activeSize: number;
+    activeSize: StrokeSize;
     erasing: boolean;
     menuColor: string;
     whiteStroke: boolean;
     darkStroke: boolean;
-    onpick: (size: number) => void;
+    onpick: (size: StrokeSize) => void;
   } = $props();
 </script>
 

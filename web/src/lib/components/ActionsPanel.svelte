@@ -6,7 +6,7 @@
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colors, isWhite, isDarkInk } from '$lib/state/colors.svelte';
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
-  import { setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte';
+  import { setStrokeSize, activeStrokeSize, type StrokeSize } from '$lib/state/strokeWidth.svelte';
   import { toolState, selectBrush, BRUSH_OPTIONS, type BrushType } from '$lib/state/tool.svelte';
   import { ui, coloringBook, aiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
@@ -226,7 +226,7 @@
     openFlyout = null;
   }
 
-  function handleStrokeSizeClick(size: number) {
+  function handleStrokeSizeClick(size: StrokeSize) {
     setStrokeSize(size);
     openFlyout = null;
   }

@@ -141,7 +141,11 @@ export function removeKey(key: string) {
   }
 }
 
-export function readInt(key: string, fallback: number, allowed: number[] | null = null): number {
+export function readInt(
+  key: string,
+  fallback: number,
+  allowed: readonly number[] | null = null
+): number {
   track(key);
   if (!browser) return fallback;
   return safeRead(() => {

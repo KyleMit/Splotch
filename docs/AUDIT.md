@@ -7,36 +7,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P4][type-safety] Stroke sizes are numerically typed (`number`) where a `1|2|3|4|5` union would prevent invalid levels
-
-**File(s):** `web/src/lib/state/strokeWidth.svelte.ts:4,18-24,58-63` — pinned at SHA f934d43
-
-#### Problem
-
-`STROKE_SIZES = [1,2,3,4,5]` is `number[]`, `SIZE_TO_PX: Record<number, number>`, and every function
-takes `size: number`. Nothing at the type level constrains a caller to a valid level, so
-`getStrokeWidthPx(7)` type-checks and silently falls back
-(`SIZE_TO_PX[size] ?? SIZE_TO_PX[DEFAULT_SIZE]`, line 59). The valid domain is a fixed five-value
-set — ideal for a union.
-
-#### Proposed solution
-
-```ts
-export type StrokeSize = 1 | 2 | 3 | 4 | 5;
-export const STROKE_SIZES: readonly StrokeSize[] = [1, 2, 3, 4, 5];
-const SIZE_TO_PX: Record<StrokeSize, number> = { 1: 2, 2: 4, 3: 8, 4: 14, 5: 22 };
-```
-
-Type `penSize`/`eraserSize`/params as `StrokeSize`. `readInt(..., STROKE_SIZES)` already validates
-at the runtime boundary, so the cast lives only where values enter from storage.
-
-#### Verification
-
-`npm run check` passes; passing a literal outside 1-5 to `getStrokeWidthPx` becomes a compile error.
-`strokeWidth.svelte.test.ts` green.
-
----
-
 ### [P4][complexity] `setAiUserApiKey`'s version+queue+ownership concurrency logic is dense and untestable in isolation
 
 **File(s):** `web/src/lib/state/settings.svelte.ts:213-244` — pinned at SHA f934d43
