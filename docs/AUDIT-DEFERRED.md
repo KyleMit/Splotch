@@ -124,3 +124,36 @@ engine's overlay/snapshot canvases (also duplicated in `undoHistory.ensurePaperC
 and no-op paths.
 
 ---
+
+### [P3][maintainability] Engine-created overlay CSS duplicates DrawingCanvas's `.crayon-overlay` styles
+
+**File(s):** `web/src/lib/drawing/engine.ts:1261-1268` and
+`web/src/lib/components/DrawingCanvas.svelte:477-489` — pinned at SHA f934d43
+
+#### Problem
+
+The engine builds overlay elements with an inline CSS string:
+
+```ts
+const overlayCss = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;';
+... crayonOverlay.style.cssText = overlayCss + 'mix-blend-mode:darken;';
+```
+
+and the Svelte component re-declares the same geometry + `mix-blend-mode:darken` in
+`.crayon-overlay`. The component comment even says "keep the two in sync." Two sources of truth for
+the same visual contract; a z-index or blend change must be made twice or the `/dev/engine` harness
+silently diverges from production.
+
+#### Proposed solution
+
+Since the harness path constructs elements in JS, keep one source: give the JS-created overlays the
+same class names (`crayon-overlay`, `crayon-overlay-top`) and move the styling entirely into a
+shared (non-scoped) stylesheet or a `:global` rule the harness also loads, so the `cssText` string
+disappears. At minimum, hoist the shared declarations into a single exported constant.
+
+#### Verification
+
+Load `/dev/engine` (harness-created overlays) and `/` (template overlays); crayon preview
+compositing is identical. `grep` for the duplicated properties returns one location.
+
+---
