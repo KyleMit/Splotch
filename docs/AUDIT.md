@@ -7,33 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P3][naming] Hard-coded default color `'#AB71E1'` is an ungreppable magic string
-
-**File(s):** `web/src/lib/drawing/engine.ts:1290` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-currentColor = options.initialColor || '#AB71E1';
-```
-
-The engine's fallback color is a bare hex literal with no name. It encodes palette knowledge (a
-specific swatch) that lives elsewhere in `state/colors`. A designer changing the default swatch
-would never find this, and there is no link between the literal and the palette it came from.
-
-#### Proposed solution
-
-Import/define a named `DEFAULT_STROKE_COLOR` (ideally sourced from the palette module) and use it
-here. If the palette can't be imported at this layer, define the constant once with a comment tying
-it to the palette entry.
-
-#### Verification
-
-`grep -rn 'AB71E1' web/src` shows a single named definition. `npm run check` passes; first-boot
-stroke color unchanged.
-
----
-
 ### [P3][duplication] Op-modifier fields are hand-copied when building `dot` and `path` ops
 
 **File(s):**

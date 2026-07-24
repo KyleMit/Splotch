@@ -18,6 +18,7 @@
 //   emptyScan.ts        cheap blank-canvas detection
 //   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
+import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
 import { ERASER_SIZE_MULTIPLIER } from '$lib/state/strokeWidth.svelte';
 import {
   calculateStrokeSpeed,
@@ -1336,7 +1337,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
   wireMagicBrushHost();
 
   attachCallbacks(options);
-  currentColor = options.initialColor || '#AB71E1';
+  currentColor = options.initialColor || DEFAULT_STROKE_COLOR;
   renderScale = Math.min(window.devicePixelRatio || 1, MAX_RENDER_SCALE);
   resizeCanvas();
 
