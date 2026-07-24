@@ -20,6 +20,7 @@
   import { setResizingActionButtons } from '$lib/state/ui.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { maxActionButtonScale } from '$lib/actionButtonLayout';
+  import { SECTION_SLIDE } from './sections';
 
   // Ceiling the Button Size slider at what the current screen can actually
   // fit, so the parent can't pick a size the Actions Panel would have to cap
@@ -106,7 +107,7 @@
   </div>
 
   {#if settings.advancedControlsEnabled}
-    <div class="setting slider-setting button-size-setting" transition:slide={{ duration: 220 }}>
+    <div class="setting slider-setting button-size-setting" transition:slide={SECTION_SLIDE}>
       <SliderRow
         id="actionButtonScaleLabel"
         label="Button Size"
@@ -120,7 +121,7 @@
       />
     </div>
 
-    <div class="chip-block" transition:slide={{ duration: 220 }}>
+    <div class="chip-block" transition:slide={SECTION_SLIDE}>
       <h4 class="chip-heading">Show these buttons</h4>
       <div class="chip-grid">
         {#each buttonChips as chip (chip.id)}
@@ -142,7 +143,7 @@
   {/if}
 
   {#if settings.applePencilSeen}
-    <div class="setting pencil-eraser" transition:slide={{ duration: 220 }}>
+    <div class="setting pencil-eraser" transition:slide={SECTION_SLIDE}>
       <ToggleRow
         icon="eraser"
         label="Apple Pencil double-tap to erase"

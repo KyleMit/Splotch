@@ -38,6 +38,11 @@ export const SECTIONS: SectionMeta[] = [
   { id: 'about', label: 'About', icon: 'splotchy' },
 ];
 
+// Reveal timing shared by every conditional settings block inside a section.
+// It lives here rather than in tokens.css because `transition:slide` takes a JS
+// number, not a `var(--duration-*)` string.
+export const SECTION_SLIDE = { duration: 220 };
+
 const THEME_LABEL = { light: 'Light', dark: 'Dark', system: 'System' } as const;
 
 // The one-line status shown under each row in the phone hub. Reads live

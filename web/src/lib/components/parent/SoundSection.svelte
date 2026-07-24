@@ -9,6 +9,7 @@
     SOUND_VOLUME_DEFAULT,
   } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound } from '$lib/audio/drawingSound';
+  import { SECTION_SLIDE } from './sections';
 
   const PREVIEW_SPEED = 0.45;
   let previewingVolume = false;
@@ -42,7 +43,7 @@
       onToggle={setSound}
     />
     {#if settings.soundEnabled}
-      <div class="slider-setting" transition:slide={{ duration: 220 }}>
+      <div class="slider-setting" transition:slide={SECTION_SLIDE}>
         <SliderRow
           id="soundVolumeLabel"
           label="Volume"

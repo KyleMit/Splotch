@@ -15,6 +15,7 @@
   import { verifyCredential } from '$lib/aiCredential';
   import { createLatestRequest } from '$lib/latestRequest';
   import { getPlatform, type Platform } from '$lib/platform';
+  import { SECTION_SLIDE } from './sections';
 
   interface Props {
     // `open` flips true when the Parent Center modal opens; we use it to clear
@@ -251,7 +252,7 @@
       </div>
 
       {#if settings.aiImageEnabled}
-        <div class="setting" transition:slide={{ duration: 220 }}>
+        <div class="setting" transition:slide={SECTION_SLIDE}>
           <ToggleRow
             icon="customize"
             label="AI Customization"
@@ -261,7 +262,7 @@
           />
         </div>
 
-        <div class="setting" transition:slide={{ duration: 220 }}>
+        <div class="setting" transition:slide={SECTION_SLIDE}>
           <ToggleRow
             icon="download"
             label="Auto-Save AI Images"

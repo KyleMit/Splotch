@@ -9,32 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P3][design-tokens] `slide={{ duration: 220 }}` magic number repeated across six sections
-
-**File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:61` · `SoundSection.svelte:45`
-· `ControlsSection.svelte:109,129,151` · `AiKeyManager.svelte:260,270` (plus
-`ReportForm.svelte:146,153` at 180/160) — pinned at SHA f934d43
-
-#### Problem
-
-The section reveal transition uses the bare literal `220` in eight places (and ReportForm uses
-ad-hoc `180`/`160`). `220` is not a motion token (`--duration-fast/base/slow` = 150/200/350ms), so
-the "standard section expand" timing is an unnamed magic number scattered across the tree; changing
-it means editing eight call sites, and ReportForm has already diverged.
-
-#### Proposed solution
-
-Export a shared constant, e.g. `export const SECTION_SLIDE = { duration: 220 }` from `sections.ts`
-(or add a `--duration-*` token if 220ms earns a name) and use `transition:slide={SECTION_SLIDE}`
-everywhere. Decide deliberately whether ReportForm's 180/160 should join it.
-
-#### Verification
-
-`grep -rn "duration: 220" web/src/lib/components/parent` returns nothing; `npm run check` clean;
-section reveals still animate.
-
----
-
 ### [P3][dead-code] `ToggleRow` exposes a `disabled` prop that no caller uses
 
 **File(s):** `web/src/lib/components/parent/ToggleRow.svelte:16,19,123-132` — pinned at SHA f934d43
