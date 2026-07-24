@@ -128,7 +128,7 @@
   .theme-option.active {
     background: var(--surface);
     color: var(--text-strong);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--shadow-segment);
   }
 
   :global(.theme-option-icon) {

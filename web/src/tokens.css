@@ -45,6 +45,7 @@
   --ease-pop-strong: cubic-bezier(0.34, 1.56, 0.64, 1);
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.12);
   --shadow-pop: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-segment: 0 1px 4px rgba(0, 0, 0, 0.18);
 
   --app-bg: #f5f5f5;
   --surface: #ffffff;

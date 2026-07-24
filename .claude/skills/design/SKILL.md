@@ -39,7 +39,9 @@ pierce Svelte's style scoping, so every component references them directly via `
 | Type      | `--font-size-xs/sm/md/lg/xl/2xl/3xl` (12–28px)                                                            |
 | Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s), `--ease-pop` (overshoot), `--ease-pop-strong` (harder       |
 |           | overshoot — visibly springier than `--ease-pop`, don't converge them), `--ease-glide` (settle)            |
-| Elevation | `--shadow-sm`, `--shadow-pop` (neutral); `--float-shadow`, `--float-shadow-flyout` (themed, paper cards)  |
+| Elevation | `--shadow-sm`, `--shadow-pop`, `--shadow-segment` (neutral; the last is the tight active-segment          |
+|           | lift — tighter and harder than `--shadow-sm`, don't converge them); `--float-shadow`,                     |
+|           | `--float-shadow-flyout` (themed, paper cards)                                                             |
 | Theme     | surfaces, borders, text ramp, icon inks, brand/success/danger washes, paper, float-card chrome — the full |
 |           | list with per-token docs is in `tokens.ts` (`ThemeTokens`)                                                |
 

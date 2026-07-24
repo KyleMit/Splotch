@@ -9,31 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P3][design-tokens] Hardcoded active-segment shadow `0 1px 4px rgba(0,0,0,0.18)` — no token, duplicated
-
-**File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:131` ·
-`web/src/lib/components/ParentCenter.svelte:483` — pinned at SHA f934d43
-
-#### Problem
-
-Both active segmented-control states use the raw literal
-`box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);`. The design skill forbids raw shadow literals where a
-token exists; `--shadow-sm` (`0 2px 6px rgba(0,0,0,0.12)`) is the intended elevation token. The
-literal is also duplicated, so the two "identical" controls could drift.
-
-#### Proposed solution
-
-Either use `var(--shadow-sm)`, or if this specific tight lift is intentional and reused, mint one
-elevation token in `tokens.ts` (`--shadow-segment` / reuse an existing step) and reference it. Folds
-into the Segmented primitive (P1) if that lands.
-
-#### Verification
-
-`npm run lint:tokens` / `gen:tokens:check` clean; `grep -rn "rgba(0, 0, 0, 0.18)" web/src` returns
-nothing.
-
----
-
 ### [P3][design-tokens] `slide={{ duration: 220 }}` magic number repeated across six sections
 
 **File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:61` · `SoundSection.svelte:45`

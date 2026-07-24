@@ -31,7 +31,7 @@
   const spaceKeys = Object.keys(scale).filter((k) => k.startsWith('space'));
   const radiusKeys = Object.keys(scale).filter((k) => k.startsWith('radius') && k !== 'radiusPill');
   const fontSizeKeys = Object.keys(scale).filter((k) => k.startsWith('fontSize'));
-  const shadowKeys = ['shadowSm', 'shadowPop'] as const;
+  const shadowKeys = Object.keys(scale).filter((k) => k.startsWith('shadow'));
   const motionEntries = Object.entries(scale).filter(
     ([k]) => k.startsWith('duration') || k.startsWith('ease')
   );

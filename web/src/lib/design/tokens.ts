@@ -76,6 +76,10 @@ export const scale = {
   // one shadow reads correctly on both themes.
   shadowSm: '0 2px 6px rgba(0, 0, 0, 0.12)',
   shadowPop: '0 8px 32px rgba(0, 0, 0, 0.3)',
+  // The tight lift on the selected segment of a segmented toggle (theme,
+  // orientation). Deliberately harder and closer than --shadow-sm so the
+  // thumb reads as sitting just above its track — don't converge the two.
+  shadowSegment: '0 1px 4px rgba(0, 0, 0, 0.18)',
 } as const;
 
 // Themed tokens. Dark mode swaps these — and only these — so themed chrome
