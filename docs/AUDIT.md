@@ -7,30 +7,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P5][naming] `install.mode: 'none'` is overloaded (already-installed vs unsupported)
-
-**File(s):** `web/src/lib/state/install.svelte.ts:26-31,65-69` — pinned at SHA f934d43
-
-#### Problem
-
-`'none'` means both "already installed / native shell" and "unsupported browser with no manual path"
-— two states a consumer might want to distinguish (e.g. show nothing vs. show a generic "not
-available" note). The comment at lines 30 and 69 acknowledges the conflation. Today
-`installDeviceOs()` partly compensates, but the mode alone is ambiguous.
-
-#### Proposed solution
-
-If no consumer needs the distinction, leave it but keep the documenting comment. If any does, split
-into `'installed'` vs `'none'` (unsupported). Low priority — flag only so a future consumer doesn't
-assume `'none'` is unambiguous.
-
-#### Verification
-
-Consumers of `install.mode` reviewed; if none branch on the two meanings, no change needed beyond
-the note.
-
----
-
 ### [P5][readability] `SETTLED_IN_STROKES` is re-aliased by every consumer instead of used directly
 
 **File(s):** `web/src/lib/state/canvas.svelte.ts:4`; consumers
