@@ -138,6 +138,26 @@ commit log only (they carry their reason in the commit message).
   lets you `tmux attach`; without it `overnight.mjs` falls back to a detached `caffeinate` process
   (setsid) that still survives a closed terminal — `brew install tmux` only if you want to attach.
 
+## Surviving the context window (supervising a 100+-finding run)
+
+A full run is many hours; you — the supervising agent — will not last it in one context window. But
+the driver is a **subprocess** that needs none of your conversation: its state is `docs/AUDIT.md` +
+git + `.audit-work/` + the draft PR, so it keeps running (and a fresh context can take over) no
+matter what happens to yours. Exploit that — hold **no** orchestration state in the conversation:
+
+* The moment you know them, write everything needed to launch, monitor, and close out to a **durable
+  file** and keep it current: the exact **relaunch command** (with every non-default override), the
+  **PR number**, roughly what's done, and the **closeout tasks**. Use a `project`-type memory
+  (Claude Code) or a `docs/handoff/` packet. A fresh or compacted context then resumes from that
+  file + `npm run audit:status` — nothing is re-derived.
+* Because all state is on disk, **compaction is lossless** — compact proactively (or let
+  auto-compact fire) when the context fills, rather than letting the window overflow mid-run. Don't
+  wait to be forced.
+* Keep the supervising context small so it lasts: monitor the run **event-driven** — a `run.log`
+  watcher that fires only on `HALT` / `hit a cap` / `red at batch` / `finished:` — not by polling
+  `audit:status` in a loop, and don't read per-finding logs or the PR back unless you're diagnosing
+  something specific.
+
 ## Tuning & lessons
 
 Notes from real runs — set these before a large run rather than discovering them at 3am:
