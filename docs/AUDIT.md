@@ -9,34 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P3][architecture] Split `aiPreview.ts` — the pinch-zoom engine doesn't belong in a "preview loader" component file
-
-**File(s):** `web/src/lib/components/aiPreview.ts:1-163`; imported by
-`web/src/lib/actions/pinchZoom.svelte.ts:1` — pinned at SHA f934d43
-
-#### Problem
-
-`aiPreview.ts` holds two unrelated concerns: `createAiPreviewLoader` (a load-race deduper, lines
-1-23) and a full DOM-free pinch-zoom gesture accumulator with its geometry helpers and clamp math
-(lines 25-163). They share nothing. Worse for discoverability, the Svelte **action**
-`pinchZoom.svelte.ts` reaches into `$lib/components/aiPreview` for `createPinchZoom`/`Point` —
-gesture math imported from a file named after image previews. Someone looking for the zoom engine
-won't find it; someone reading the loader wades through 140 lines of unrelated geometry.
-
-#### Proposed solution
-
-Split into two modules: keep `createAiPreviewLoader` in `aiPreview.ts` (or `aiPreviewLoader.ts`),
-and move lines 25-163 into `web/src/lib/actions/pinchZoomCore.ts` (co-located with its only
-consumer, the action). Split the test file `aiPreview.test.ts` accordingly. Update the two import
-sites (`AiImagePrompt.svelte`, `pinchZoom.svelte.ts`).
-
-#### Verification
-
-`npm run check` + `npm run test:unit` green; grep confirms no remaining `aiPreview` import
-references the zoom exports.
-
----
-
 ### [P3][duplication] Extract credential-header assembly; stop hard-coding the auth header names client-side
 
 **File(s):** `web/src/lib/drawing/aiImage.ts:135-142` — pinned at SHA f934d43
