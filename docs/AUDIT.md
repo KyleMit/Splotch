@@ -9,38 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P2][type-safety] Replace the stringly-typed style with a `StyleName` union
-
-**File(s):** `web/src/lib/ai/styles.ts:5,22`; `web/src/lib/ai/prompt.ts:7-8`;
-`web/src/lib/drawing/aiImage.ts:95`; `web/src/lib/components/AiImagePrompt.svelte:39` — pinned at
-SHA f934d43
-
-#### Problem
-
-The style is untyped end to end: `STYLE_SUFFIXES: Record<string, string>` (styles.ts:5),
-`STYLE_NAMES = Object.keys(...)` yields `string[]` (styles.ts:22),
-`buildPromptForStyle(style: unknown, …)` (prompt.ts:8),
-`generateAiImage({ style = '' }: { style?: string })` (aiImage.ts:95), and
-`handleSelectStyle(style: string)` (AiImagePrompt.svelte:39). A typo in a style name compiles fine
-and silently falls back to the base prompt. The set of valid styles is a fixed enum but the compiler
-enforces nothing.
-
-#### Proposed solution
-
-In styles.ts derive and export `export type StyleName = keyof typeof STYLE_SUFFIXES;` and type
-`STYLE_SUFFIXES: Record<StyleName, string>` and `STYLE_NAMES: StyleName[]`
-(`Object.keys(...) as StyleName[]`). Thread `StyleName` through `handleSelectStyle`,
-`generateAiImage`'s `style`, and the `?style=` param. Keep `buildPromptForStyle`'s parameter as
-`string | null | undefined` (see its own finding) since the server receives an untrusted query value
-— but the client-side call sites become type-checked.
-
-#### Verification
-
-`npm run check`; deliberately introduce a mistyped style constant in a scratch edit and confirm the
-compiler flags it, then revert.
-
----
-
 ### [P3][architecture] Split `aiPreview.ts` — the pinch-zoom engine doesn't belong in a "preview loader" component file
 
 **File(s):** `web/src/lib/components/aiPreview.ts:1-163`; imported by

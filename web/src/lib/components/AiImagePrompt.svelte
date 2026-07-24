@@ -4,7 +4,7 @@
   import { exportCanvasBlob } from '$lib/drawing/engine';
   import { getActiveOverlayImage } from '$lib/drawing/overlay';
   import { generateAiImage } from '$lib/drawing/aiImage';
-  import { STYLE_NAMES } from '$lib/ai/styles';
+  import { STYLE_NAMES, type StyleName } from '$lib/ai/styles';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { createAiPreviewLoader } from './aiPreview';
 
@@ -36,7 +36,7 @@
   // still open, so the preview's object URL doesn't outlive the component.
   $effect(() => () => cleanupPreview());
 
-  function handleSelectStyle(style: string) {
+  function handleSelectStyle(style: StyleName) {
     if (!drawingBlob) return;
     // Picking a style immediately hands off to the result modal, which shows
     // the progress dial (and any error) over the blurred drawing.

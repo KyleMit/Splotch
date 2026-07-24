@@ -14,6 +14,7 @@ import { exportCanvasBlob } from './engine';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 import { getActiveOverlayImage } from './overlay';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
+import type { StyleName } from '$lib/ai/styles';
 
 const UPLOAD_WEBP_QUALITY = 0.85;
 
@@ -172,7 +173,7 @@ function applyResponse(runId: number, response: AiImageResponse): 'committed' | 
 export async function generateAiImage({
   blob = null,
   style = '',
-}: { blob?: Blob | null; style?: string } = {}) {
+}: { blob?: Blob | null; style?: StyleName | '' } = {}) {
   if (ui.aiGenerating) return;
 
   const controller = new AbortController();
