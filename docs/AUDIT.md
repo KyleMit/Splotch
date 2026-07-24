@@ -9,32 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P4][readability] Manual query-string concatenation for the generate-image endpoint
-
-**File(s):** `web/src/lib/drawing/aiImage.ts:141-142` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-const endpoint = apiUrl('/api/generate-image')
-  + (style ? `?style=${encodeURIComponent(style)}` : '');
-```
-
-Hand-rolled `?key=` concatenation with a conditional and a manual `encodeURIComponent`. It works,
-but it's the kind of string surgery that breaks the moment a second query param is added, and it
-mixes "is there a style" branching into the URL literal.
-
-#### Proposed solution
-
-Build with `URLSearchParams`: `const params = style ?`?${new URLSearchParams({ style })}`: '';`.
-Minor, but it removes the manual encoding and reads as intent.
-
-#### Verification
-
-`npm run check`; `aiImage.test.ts` upload tests still hit `/api/generate-image`.
-
----
-
 ### [P4][naming] Name the Gemini key prefix in `looksLikeApiKey`
 
 **File(s):** `web/src/lib/aiCredential.ts:5-7` — pinned at SHA f934d43
