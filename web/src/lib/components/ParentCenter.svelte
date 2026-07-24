@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
-  import SplotchyIcon from './SplotchyIcon.svelte';
+  import SectionIcon from './SectionIcon.svelte';
   import { ui, parentCenter } from '$lib/state/ui.svelte';
   import AppearanceSection from './parent/AppearanceSection.svelte';
   import SoundSection from './parent/SoundSection.svelte';
@@ -144,11 +144,7 @@
               aria-current={section.id === activeSection ? 'page' : undefined}
               onclick={() => openSection(section.id)}
             >
-              {#if section.icon === 'splotchy'}
-                <SplotchyIcon class="pc-nav-icon" />
-              {:else}
-                <Icon name={section.icon} class="pc-nav-icon" />
-              {/if}
+              <SectionIcon icon={section.icon} class="pc-nav-icon" />
               <span>{section.label}</span>
             </button>
           {/each}
@@ -172,11 +168,7 @@
               <li>
                 <button class="hub-row" onclick={() => openSection(section.id)}>
                   <span class="hub-icon">
-                    {#if section.icon === 'splotchy'}
-                      <SplotchyIcon class="hub-icon-svg" />
-                    {:else}
-                      <Icon name={section.icon} class="hub-icon-svg" />
-                    {/if}
+                    <SectionIcon icon={section.icon} class="hub-icon-svg" />
                   </span>
                   <span class="hub-text">
                     <span class="hub-title">{section.label}</span>

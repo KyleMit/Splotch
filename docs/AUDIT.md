@@ -9,32 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P4][naming] `section.icon === 'splotchy'` magic-string special-case repeated
-
-**File(s):** `web/src/lib/components/ParentCenter.svelte:264-268,292-296` — pinned at SHA f934d43
-
-#### Problem
-
-The nav and hub renderers each branch on the literal `section.icon === 'splotchy'` to swap in
-`<SplotchyIcon>` because the brand mark isn't in the `Icon` name union. The magic string
-`'splotchy'` is repeated, and `sections.ts:37` uses it as an `icon` value that isn't actually a real
-`IconName` for `<Icon>` — a latent inconsistency (the type says `IconName`, but this value is only
-valid for the special-case path).
-
-#### Proposed solution
-
-Introduce a small `SectionIcon.svelte` wrapper that renders `SplotchyIcon` for `'splotchy'` and
-`<Icon>` otherwise, used by nav, hub, and (P-independently) AboutSection. Removes both branches and
-centralizes the exception. Optionally widen `SectionMeta.icon` to `IconName | 'splotchy'` to make
-the exception type-visible.
-
-#### Verification
-
-`grep -rn "'splotchy'" web/src` shows only the wrapper and the section list. Both shells still
-render the Splotchy mark on the About row.
-
----
-
 ### [P4][complexity] `AiKeyManager` mixes credential verification, secure persistence, masking, feedback, and three feature toggles
 
 **File(s):** `web/src/lib/components/parent/AiKeyManager.svelte:1-136` (script) — pinned at SHA
