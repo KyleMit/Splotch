@@ -9,32 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P5][dead-code] `aiPreview` clamp/scale exports exist only for tests
-
-**File(s):** `web/src/lib/components/aiPreview.ts:51-72` (`MIN_SCALE`, `MAX_SCALE`,
-`IDENTITY_TRANSFORM`, `clampScale`, `clampTransform`, `Bounds`, `Transform`) — pinned at SHA f934d43
-
-#### Problem
-
-`clampScale`, `clampTransform`, `MIN_SCALE`, `MAX_SCALE`, and the `Bounds`/`Transform` types are
-exported but have no non-test consumer (confirmed by grep across `web/src` excluding tests and the
-module itself) — only `createPinchZoom` (same file) and `aiPreview.test.ts` use them. That's a
-legitimate test seam, but the broad public surface makes it look like shared API and clutters the
-module's exports.
-
-#### Proposed solution
-
-This is acceptable as a test seam, so the lightest fix is a one-line comment marking them "exported
-for unit testing of the gesture math." If the P3 split lands and these move to `pinchZoomCore.ts`,
-revisit whether `clampScale`/`clampTransform` need `export` at all or can be tested via
-`createPinchZoom`'s public surface.
-
-#### Verification
-
-Grep confirms no runtime consumer; `aiPreview.test.ts` still imports them.
-
----
-
 ### [P5][maintainability] `VerifyResponse` and `VerifyCredentialResult` overlap without a shared shape
 
 **File(s):** `web/src/lib/aiCredential.ts:11-18` — pinned at SHA f934d43

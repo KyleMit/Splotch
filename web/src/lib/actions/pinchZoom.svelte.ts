@@ -15,20 +15,24 @@ export interface Point {
 
 // Applied as `translate(x, y) scale(scale)` with a top-left transform origin, so
 // a content point `c` maps to surface point `scale * c + (x, y)`.
-export interface Transform {
+interface Transform {
   scale: number;
   x: number;
   y: number;
 }
 
-export interface Bounds {
+interface Bounds {
   width: number;
   height: number;
 }
 
+// MIN_SCALE/MAX_SCALE/clampScale/clampTransform are exported so
+// pinchZoom.svelte.test.ts can unit-test the pure gesture math directly (incl.
+// edge cases like NaN) rather than only through createPinchZoom's pointer-event
+// surface.
 export const MIN_SCALE = 1;
 export const MAX_SCALE = 4;
-export const IDENTITY_TRANSFORM: Transform = { scale: 1, x: 0, y: 0 };
+const IDENTITY_TRANSFORM: Transform = { scale: 1, x: 0, y: 0 };
 
 export function clampScale(scale: number): number {
   if (!Number.isFinite(scale)) return MIN_SCALE;
