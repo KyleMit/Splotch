@@ -7,40 +7,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P5][readability] `SETTLED_IN_STROKES` is re-aliased by every consumer instead of used directly
-
-**File(s):** `web/src/lib/state/canvas.svelte.ts:4`; consumers
-`web/src/lib/components/InstallBanner.svelte:11` (`STROKES_BEFORE_PROMPT = SETTLED_IN_STROKES`),
-`web/src/lib/pwa/updates.ts:42` (`STROKES_BEFORE_SW_REGISTER = SETTLED_IN_STROKES`) — pinned at SHA
-f934d43
-
-#### Problem
-
-`canvas.svelte.ts` exports `SETTLED_IN_STROKES = 3` as a deliberately shared threshold, but both
-consumers immediately re-alias it to a local constant (`STROKES_BEFORE_PROMPT`,
-`STROKES_BEFORE_SW_REGISTER`). The aliasing obscures that the two features intentionally share one
-signal (the whole point of the exported constant, per its comment) — a reader sees two
-differently-named thresholds and has to trace both back to confirm they're the same number.
-
-#### Proposed solution
-
-Use `SETTLED_IN_STROKES` directly at each site (it's already descriptively named), or if a local
-name aids readability, keep the alias but drop the indirection where the imported name reads fine on
-its own. Minor; the finding is really that the shared-signal intent is diluted by renaming.
-
-#### Verification
-
-Behavior identical; `grep SETTLED_IN_STROKES` shows direct use at consumers. Tests unaffected.
-
----
-
-That's 24 findings against the App-state section. Summary of the highest-leverage themes: (1) two
-cross-cutting consistency debts — store naming (`…State` vs bare) and store lifecycle (self-init vs
-`initX()`) — that every new state module inherits; (2) the `BOOL_SETTINGS` table's guarantee not
-extending to int/string settings, which is the exact duplication it was built to kill; (3) three
-modules over-scoped (`settings`, `ui`, and the misfiled `actionButtonLayout`); and (4)
-`TRIM_ORDER`'s hand-copied palette hexes as the one silent-rot data hazard worth a guard test.
-
 ## Source: Code audit — Parent Center / settings
 
 ### [P1][duplication] Extract a shared segmented-control primitive — it now exists three times with drift
