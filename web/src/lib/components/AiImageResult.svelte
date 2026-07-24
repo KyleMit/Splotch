@@ -15,9 +15,13 @@
   let progress = $state(0);
   let exiting = $state(false);
 
+  const DEFAULT_ASPECT = 4 / 3;
+  const MIN_BLUR_PX = 2;
+  const MAX_EXTRA_BLUR_PX = 16;
+
   // Seed the stage with the window's aspect ratio as soon as generation starts
   // so the placeholder box closely matches the preview that slots in a beat later.
-  let imgAspect = $state(4 / 3);
+  let imgAspect = $state(DEFAULT_ASPECT);
   $effect(() => {
     if (ui.aiResultOpen && ui.aiGenerating) {
       if (typeof window !== 'undefined' && window.innerHeight > 0) {
@@ -44,7 +48,7 @@
   }
 
   // The drawing stays blurry to keep the suspense, sharpening as we progress.
-  const previewBlur = $derived(`${2 + 16 * (1 - progress)}px`);
+  const previewBlur = $derived(`${MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - progress)}px`);
 
   // Keep the confetti's circular mask hole aligned with the round dial as the
   // stage aspect changes. The one load-bearing value is DIAL_MASK_RX (% of

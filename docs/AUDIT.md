@@ -9,28 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P4][readability] `AiImageResult` magic aspect/blur constants
-
-**File(s):** `web/src/lib/components/AiImageResult.svelte:20,47` — pinned at SHA f934d43
-
-#### Problem
-
-`let imgAspect = $state(4 / 3);` (line 20) and `const previewBlur = $derived(`${2 + 16 * (1 -
-progress)}px`);` (line 47) carry unexplained literals: `4/3` is the seed aspect, `2` is the min blur
-(fully revealed), `16` is the extra blur at zero progress. The blur math in particular reads as
-noise without knowing it maps `progress 0→1` to `18px→2px`.
-
-#### Proposed solution
-
-`const DEFAULT_ASPECT = 4 / 3;`, `const MIN_BLUR_PX = 2;`, `const MAX_EXTRA_BLUR_PX = 16;`, then
-`${MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - progress)}px`.
-
-#### Verification
-
-`npm run check`; visual check that the reveal still sharpens from blurred to crisp.
-
----
-
 ### [P4][maintainability] Style-thumbnail path is derived by inline string interpolation
 
 **File(s):** `web/src/lib/components/AiImagePrompt.svelte:76`; cf. `web/src/lib/ai/styles.ts` —
