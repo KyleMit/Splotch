@@ -1,5 +1,6 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
+  import StatusMessage from '../design/StatusMessage.svelte';
   import { apiUrl } from '$lib/api';
   import { createLatestRequest } from '$lib/latestRequest';
   import { collectDeviceInfo } from '$lib/deviceInfo';
@@ -191,18 +192,14 @@
   </div>
 
   {#if feedback}
-    <p
-      class="report-message"
-      class:error={status === 'error'}
-      class:success={status === 'success'}
-      role={status === 'error' ? 'alert' : 'status'}
-      aria-live="polite"
-    >
+    <StatusMessage status={status === 'error' ? 'error' : 'success'}>
       {feedback}
       {#if status === 'success' && resultUrl}
-        <a href={resultUrl} target="_blank" rel="noopener noreferrer">View your report ↗</a>
+        <a class="report-message-link" href={resultUrl} target="_blank" rel="noopener noreferrer"
+          >View your report ↗</a
+        >
       {/if}
-    </p>
+    </StatusMessage>
   {/if}
 </section>
 
@@ -436,25 +433,7 @@
     cursor: not-allowed;
   }
 
-  .report-message {
-    margin: 12px 0 0 0;
-    padding: 10px 12px;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-sm);
-    line-height: 1.5;
-  }
-
-  .report-message.success {
-    background: var(--success-wash);
-    color: var(--success-text);
-  }
-
-  .report-message.error {
-    background: var(--danger-wash);
-    color: var(--danger-text);
-  }
-
-  .report-message a {
+  .report-message-link {
     display: inline-block;
     margin-left: 4px;
     color: inherit;

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
   import Icon from '../Icon.svelte';
+  import StatusMessage from '../design/StatusMessage.svelte';
   import ToggleRow from './ToggleRow.svelte';
   import {
     settings,
@@ -233,15 +234,7 @@
   {/if}
 
   {#if keyMessage}
-    <p
-      class="byok-message"
-      class:error={keyStatus === 'error'}
-      class:success={keyStatus === 'success'}
-      role={keyStatus === 'error' ? 'alert' : 'status'}
-      aria-live="polite"
-    >
-      {keyMessage}
-    </p>
+    <StatusMessage status={keyStatus === 'error' ? 'error' : 'success'}>{keyMessage}</StatusMessage>
   {/if}
 
   {#if !aiLocked}
@@ -465,23 +458,5 @@
     .access-code-submit.forget:hover {
       background: var(--control-track);
     }
-  }
-
-  .byok-message {
-    margin: 12px 0 0 0;
-    padding: 10px 12px;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-sm);
-    line-height: 1.4;
-  }
-
-  .byok-message.success {
-    background: var(--success-wash);
-    color: var(--success-text);
-  }
-
-  .byok-message.error {
-    background: var(--danger-wash);
-    color: var(--danger-text);
   }
 </style>

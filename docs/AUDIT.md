@@ -9,38 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P2][duplication] Extract a shared status-message component (`report-message` / `byok-message` are the same block)
-
-**File(s):** `web/src/lib/components/parent/ReportForm.svelte:193-206,439-455` ·
-`web/src/lib/components/parent/AiKeyManager.svelte:235-245,470-486` — pinned at SHA f934d43
-
-#### Problem
-
-Both files render an identical inline status/alert region:
-
-```svelte
-<p class="X-message" class:error={status==='error'} class:success={status==='success'}
-   role={status === 'error' ? 'alert' : 'status'} aria-live="polite">
-```
-
-and duplicate the same CSS (`.X-message` + `.X-message.success` → `--success-wash`/`--success-text`,
-`.X-message.error` → `--danger-wash`/`--danger-text`). The a11y wiring (role swap by status,
-`aria-live="polite"`) is subtle and easy to get subtly wrong on the next copy.
-
-#### Proposed solution
-
-Add `web/src/lib/components/parent/FormMessage.svelte` (or a `design/` primitive) taking
-`status: 'idle'|'error'|'success'` and message text via a child snippet (ReportForm needs the
-trailing "View your report ↗" link). Both sites render `<FormMessage {status}>…</FormMessage>`.
-
-#### Verification
-
-Trigger a failed and a successful submit in both ReportForm and AiKeyManager; confirm the alert
-role/aria-live and the wash colors match in both themes. `grep -rn "message.success\|message.error"`
-shows one definition.
-
----
-
 ### [P2][duplication] Extract a disclosure/`<details>` primitive — the chevron idiom is copied three times
 
 **File(s):** `web/src/lib/components/parent/SetupInstructions.svelte:239-253` ·

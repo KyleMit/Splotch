@@ -53,9 +53,10 @@ Shared UI primitives live in **`web/src/lib/components/design/`**. They style th
 from tokens and are for modal/parent/admin surfaces — the canvas-floating controls (Actions Panel,
 corner buttons, Clear Button) keep their bespoke paper treatments.
 
-| Primitive       | Use for                                                                                 |
-| --------------- | --------------------------------------------------------------------------------------- |
-| `Button.svelte` | Text-labeled actions. Variants `brand` / `wash` / `danger` / `ghost`, sizes `md` / `sm` |
+| Primitive              | Use for                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------- |
+| `Button.svelte`        | Text-labeled actions. Variants `brand` / `wash` / `danger` / `ghost`, sizes `md` / `sm`     |
+| `StatusMessage.svelte` | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error` |
 
 Shared *global* patterns (modal shell, close button, corner buttons, dialog fly-in) remain classes
 in `app.css` because dialogs and imperative DOM need them unscoped.

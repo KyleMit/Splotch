@@ -1,6 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import Button from '$lib/components/design/Button.svelte';
+  import StatusMessage from '$lib/components/design/StatusMessage.svelte';
   import { brand, scale, themes, toCssVarName, type ThemeTokens } from '$lib/design/tokens';
   import { applyTheme, isThemePreference, type ThemePreference } from '$lib/theme';
 
@@ -39,6 +40,7 @@
   const themeOptions: ThemePreference[] = ['light', 'system', 'dark'];
   const buttonVariants = ['brand', 'wash', 'danger', 'ghost'] as const;
   const buttonSizes = ['md', 'sm'] as const;
+  const statusMessageStatuses = ['success', 'error'] as const;
 </script>
 
 <svelte:head>
@@ -185,6 +187,16 @@
         {/each}
         <Button variant="brand" {size} disabled>disabled</Button>
       </div>
+    {/each}
+  </section>
+
+  <section>
+    <h2>Status message</h2>
+    <p><code>lib/components/design/StatusMessage.svelte</code></p>
+    {#each statusMessageStatuses as status (status)}
+      <StatusMessage {status}
+        >The {status} wash, as a form shows it after a submit resolves.</StatusMessage
+      >
     {/each}
   </section>
 </main>
