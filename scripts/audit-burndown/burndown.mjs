@@ -180,7 +180,6 @@ const prNumberFile = join(WORK, 'pr-number');
 let prNumber = existsSync(prNumberFile) ? readFileSync(prNumberFile, 'utf8').trim() : '';
 let done = 0;
 let sincePush = 0;
-let remaining = countEntries() ?? 0;
 logLine(`starting — target ${MAX_ISSUES} issues on ${BRANCH}`);
 
 // =============================================================================
@@ -200,7 +199,7 @@ while (done < MAX_ISSUES) {
   }
   writeFileSync(join(WORK, 'current-issue.md'), `${issue}\n`);
   const title = issue.split('\n', 1)[0].replace(/^### /, '');
-  remaining = countEntries();
+  const remaining = countEntries();
   logLine(`${tag}  (${remaining} remaining)  ${title}`);
 
   // ---- 2. VERIFY ------------------------------------------------------------
