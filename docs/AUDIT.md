@@ -9,31 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P4][maintainability] Name the HTTP status magic numbers in `readAiImageResponse`
-
-**File(s):** `web/src/lib/drawing/aiImageResponse.ts:19-20`; `web/src/lib/drawing/aiImage.ts:167` —
-pinned at SHA f934d43
-
-#### Problem
-
-`if (response.status === 422) return { kind: 'safety' };` and `if (response.status === 429)` (lines
-19-20) map bare status codes to domain meanings that are non-obvious — 422 meaning "Gemini safety
-refusal" is a project convention shared with the server, not standard semantics. Likewise
-`response.status >= 500 ? 'retry' : 'generic'` in aiImage.ts:167 encodes the transient-vs-permanent
-rule as a magic `500`.
-
-#### Proposed solution
-
-Add named constants (`const SAFETY_REFUSAL_STATUS = 422; const THROTTLED_STATUS = 429;` in
-aiImageResponse.ts, and `const FIRST_SERVER_ERROR_STATUS = 500;` where the retry decision is made).
-This also makes the contract greppable against the server that produces these codes.
-
-#### Verification
-
-`aiImageResponse.test.ts` (which drives 200/422/429/502/503) stays green; `npm run check`.
-
----
-
 ### [P4][readability] Manual query-string concatenation for the generate-image endpoint
 
 **File(s):** `web/src/lib/drawing/aiImage.ts:141-142` — pinned at SHA f934d43

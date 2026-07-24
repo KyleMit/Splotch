@@ -17,6 +17,7 @@ import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import type { StyleName } from '$lib/ai/styles';
 
 const UPLOAD_WEBP_QUALITY = 0.85;
+const FIRST_SERVER_ERROR_STATUS = 500;
 
 // Transcode the composited drawing to WebP for the upload only. Decoding the PNG
 // and re-encoding is exact on the source pixels, so the model sees the same
@@ -166,7 +167,11 @@ function applyResponse(runId: number, response: AiImageResponse): 'committed' | 
       // malformed/oversized request the client never actually sends) stays
       // generic.
       console.error(`AI image request failed (${response.status}): ${response.detail}`);
-      failAiGeneration(runId, undefined, response.status >= 500 ? 'retry' : 'generic');
+      failAiGeneration(
+        runId,
+        undefined,
+        response.status >= FIRST_SERVER_ERROR_STATUS ? 'retry' : 'generic'
+      );
       return 'failed';
   }
   return finishAiGeneration(runId, URL.createObjectURL(response.blob)) ? 'committed' : 'failed';
