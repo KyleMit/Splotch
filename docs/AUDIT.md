@@ -7,35 +7,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P4][complexity] `setAiUserApiKey`'s version+queue+ownership concurrency logic is dense and untestable in isolation
-
-**File(s):** `web/src/lib/state/settings.svelte.ts:213-244` — pinned at SHA f934d43
-
-#### Problem
-
-`setAiUserApiKey` interleaves three concurrency guards — a monotonically increasing
-`aiKeyWriteVersion`, a serializing `aiKeyWriteQueue`, and an `ownsRequest()` re-check that on loss
-re-persists the *previous* value (lines 231-233) — inside a single 30-line closure. The correctness
-argument ("an older save already in flight cannot finish after a replacement") is subtle and the
-branch that restores `settings.aiUserApiKey` on lost ownership is easy to misread. It's buried in
-the settings module (see the god-module finding), which makes it hard to unit-test the ordering
-guarantees directly.
-
-#### Proposed solution
-
-When extracting the AI-key concern (see the settings god-module finding), lift this into a small
-named unit — e.g. an `orderedSecretWriter` that takes
-`(persist: (v) => Promise<void>, commit: (v) => void, ownsRequest)` — so the version/queue mechanism
-is one testable primitive and `setAiUserApiKey` becomes a thin call. Add tests for the two race
-outcomes (superseded write; ownership lost mid-flight).
-
-#### Verification
-
-New unit tests cover "second call supersedes an in-flight first" and "ownership lost → prior
-credential restored"; existing `settings.svelte.test.ts` AI-key behavior unchanged.
-
----
-
 ### [P4][duplication] Three near-identical `reloadX` functions each re-derive their init lines
 
 **File(s):** `web/src/lib/state/settings.svelte.ts:249-265`,

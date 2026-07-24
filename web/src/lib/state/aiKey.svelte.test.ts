@@ -89,6 +89,7 @@ describe('setAiUserApiKey', () => {
 
     expect(await firstWrite).toBe(false);
     expect(settings.aiUserApiKey).toBe('second');
+    expect(secureStore.apiKey).toBe('second');
   });
 
   it('ownership lost mid-flight restores the prior credential', async () => {
