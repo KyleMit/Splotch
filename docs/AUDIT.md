@@ -5,10 +5,6 @@
 > then deletes this file. `/fix-audits` burns down those issues. Never treat this file as a
 > long-lived backlog.
 
-## Source: Code audit — Drawing / canvas engine
-
-## Source: Code audit — AI image generation
-
 ## Source: Code audit — App state (Svelte 5 runes)
 
 ### [P3][consistency] State-mutation ownership is inconsistent: some stores are setter-guarded, others are written directly by components
