@@ -1258,13 +1258,16 @@ function setupCrayonOverlays(canvas: HTMLCanvasElement): void {
   syncCrayonOverlayMix();
 }
 
+function paperIsSized(): boolean {
+  return paper.pxW > 0 && paper.pxH > 0;
+}
+
 function wireMagicBrushHost(): void {
   // The magic brush's color sheet lives in paper coordinates (like every op) and
   // repaints recorded magic ops once an async fill finishes decoding (ADR-0043).
   initMagicBrush({
-    paperSize: () =>
-      paper.pxW > 0 && paper.pxH > 0 ? { width: paper.pxW, height: paper.pxH } : null,
-    sheetBounds: () => (paper.pxW > 0 && paper.pxH > 0 ? sheetBoundsPaper() : null),
+    paperSize: () => (paperIsSized() ? { width: paper.pxW, height: paper.pxH } : null),
+    sheetBounds: () => (paperIsSized() ? sheetBoundsPaper() : null),
     repaint: () => {
       if (ctx) repaintAll(ctx);
     },

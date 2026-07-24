@@ -7,30 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P5][readability] `paper.pxW > 0 && paper.pxH > 0` guard repeated in the magic-brush host closures
-
-**File(s):** `web/src/lib/drawing/engine.ts:1281-1283` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-paperSize: () => paper.pxW > 0 && paper.pxH > 0 ? { width: paper.pxW, height: paper.pxH } : null,
-sheetBounds: () => (paper.pxW > 0 && paper.pxH > 0 ? sheetBoundsPaper() : null),
-```
-
-The "paper has been sized yet" predicate is inlined twice with the raw comparison, obscuring intent.
-
-#### Proposed solution
-
-`function paperIsSized(): boolean { return paper.pxW > 0 && paper.pxH > 0; }` used by both closures
-(and reusable anywhere else that gates on an initialized paper).
-
-#### Verification
-
-`npm run check`; magic-sheet init/rasterize E2E unchanged.
-
----
-
 ### [P5][testability] `emptyScan` / `strokeOps` module-singleton scratch state has no reset seam
 
 **File(s):** `web/src/lib/drawing/emptyScan.ts:14-15` (`scratchCanvas`/`scratchCtx`),
