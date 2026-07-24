@@ -691,6 +691,17 @@ const COLOR_CHANGE_DEBOUNCE_MS = 100;
 // edge-swipe notes at startDrawing).
 let safeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 
+// Release pointer capture without throwing when the pointer isn't (or is no
+// longer) captured — the hasPointerCapture pre-check plus the swallow-all catch
+// make this safe to call unconditionally at every teardown site.
+function releaseCaptureSafe(id: number): void {
+  try {
+    if (canvas.hasPointerCapture && canvas.hasPointerCapture(id)) {
+      canvas.releasePointerCapture(id);
+    }
+  } catch {}
+}
+
 // The iPad/Android system gesture for the home/menu bar is a swipe inward from
 // the device's physical-bottom edge, so a touch starting in that edge's gesture
 // band is probably not a stroke. Such a touch is buffered, not drawn, until it
@@ -791,9 +802,7 @@ function commitEdgeSwipe(ps: PointerState) {
 function discardPointer(e: PointerEvent) {
   activePointers.delete(e.pointerId);
   ctx.beginPath();
-  try {
-    canvas.releasePointerCapture(e.pointerId);
-  } catch {}
+  releaseCaptureSafe(e.pointerId);
 }
 
 // Edge-gesture candidate: withhold rendering until the direction is decided.
@@ -934,9 +943,7 @@ function stopDrawing(e?: PointerEvent) {
     if (onDrawStopCallback) onDrawStopCallback();
   }
 
-  try {
-    canvas.releasePointerCapture(e.pointerId);
-  } catch {}
+  releaseCaptureSafe(e.pointerId);
 }
 
 export function releaseAllPointers() {
@@ -959,13 +966,7 @@ export function releaseAllPointers() {
   commitStrokeGroup();
   if (onDrawStopCallback) onDrawStopCallback();
 
-  ids.forEach((pointerId) => {
-    try {
-      if (canvas.hasPointerCapture && canvas.hasPointerCapture(pointerId)) {
-        canvas.releasePointerCapture(pointerId);
-      }
-    } catch {}
-  });
+  ids.forEach(releaseCaptureSafe);
 }
 
 // --- WebKit merged-stream pen quirks ---------------------------------------

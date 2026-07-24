@@ -7,28 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P3][duplication] `try { canvas.releasePointerCapture(id) } catch {}` repeated in four handlers
-
-**File(s):** `web/src/lib/drawing/engine.ts:770-772, 798-800, 946-948, 970-976` — pinned at SHA
-f934d43
-
-#### Problem
-
-The identical guarded release appears in `startDrawing`, `discardPointer`, `stopDrawing`, and (a
-`hasPointerCapture`-checked variant) `releaseAllPointers`. The empty `catch {}` and its rationale
-live in four spots.
-
-#### Proposed solution
-
-`function releaseCaptureSafe(id: number): void { try { canvas.releasePointerCapture(id); } catch {} }`
-and call it from all four. Fold the `hasPointerCapture` pre-check into it.
-
-#### Verification
-
-`npm run check`; engine E2E pointer lifecycle cases unchanged.
-
----
-
 ### [P3][duplication] The path/dot geometric bounding-box is computed in two modules
 
 **File(s):** `web/src/lib/drawing/strokeOps.ts:522-536` and
