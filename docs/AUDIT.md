@@ -7,41 +7,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P4][duplication] Three near-identical `reloadX` functions each re-derive their init lines
-
-**File(s):** `web/src/lib/state/settings.svelte.ts:249-265`,
-`web/src/lib/state/strokeWidth.svelte.ts:33-38`, `web/src/lib/state/tool.svelte.ts:98-103` — pinned
-at SHA f934d43
-
-#### Problem
-
-Each persisted store hand-writes a `reloadX()` that re-reads the same keys the `$state` initializer
-already read, then registers it via `onDurableRestore`. For `strokeWidth`:
-
-```ts
-// init:   penSize: readInt(PEN_SIZE_KEY, DEFAULT_SIZE, STROKE_SIZES)
-// reload: strokeState.penSize = readInt(PEN_SIZE_KEY, strokeState.penSize, STROKE_SIZES)
-```
-
-The init expression and the reload expression are the same read with a different fallback —
-duplicated per field, per store. The `onDurableRestore(reloadX)` registration is likewise
-copy-pasted in each module.
-
-#### Proposed solution
-
-For table-driven stores (once `INT_SETTINGS` exists, per the earlier finding), generate
-`reloadSettings` entirely from the tables so init and reload share one descriptor — eliminating the
-hand-written reload lines. For `strokeWidth`/`tool`, a light `persisted(key, read, apply)` helper
-that returns both the initial value and a reloader would collapse the init/reload duplication. At
-minimum, note the init↔reload mirroring as a maintenance hazard the tables are meant to solve.
-
-#### Verification
-
-`storage.restore.integration.test.ts` and each store's reload test pass; a durable restore still
-refreshes every field.
-
----
-
 ### [P4][readability] `navigator.onLine !== false` is a confusing double-negative
 
 **File(s):** `web/src/lib/state/network.svelte.ts:18` — pinned at SHA f934d43

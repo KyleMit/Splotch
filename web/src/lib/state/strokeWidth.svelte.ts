@@ -24,20 +24,20 @@ const SIZE_TO_PX: Record<StrokeSize, number> = {
   5: 22,
 };
 
+function readStrokeLevel(key: string, fallback: StrokeSize): StrokeSize {
+  return readInt(key, fallback, STROKE_SIZES) as StrokeSize;
+}
+
 export const strokeState = $state({
-  penSize: readInt(PEN_SIZE_KEY, DEFAULT_SIZE, STROKE_SIZES) as StrokeSize,
-  eraserSize: readInt(ERASER_SIZE_KEY, DEFAULT_SIZE, STROKE_SIZES) as StrokeSize,
+  penSize: readStrokeLevel(PEN_SIZE_KEY, DEFAULT_SIZE),
+  eraserSize: readStrokeLevel(ERASER_SIZE_KEY, DEFAULT_SIZE),
 });
 
 // Re-read the persisted pen/eraser levels into the live store after the durable
 // storage layer recovers values evicted by the native WebView (see storage.ts).
 export function reloadStrokeWidth() {
-  strokeState.penSize = readInt(PEN_SIZE_KEY, strokeState.penSize, STROKE_SIZES) as StrokeSize;
-  strokeState.eraserSize = readInt(
-    ERASER_SIZE_KEY,
-    strokeState.eraserSize,
-    STROKE_SIZES
-  ) as StrokeSize;
+  strokeState.penSize = readStrokeLevel(PEN_SIZE_KEY, strokeState.penSize);
+  strokeState.eraserSize = readStrokeLevel(ERASER_SIZE_KEY, strokeState.eraserSize);
 }
 
 onDurableRestore(reloadStrokeWidth);
