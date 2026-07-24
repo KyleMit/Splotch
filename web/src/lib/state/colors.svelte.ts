@@ -95,10 +95,12 @@ export function isWhite(hex: string): boolean {
   return v === '#ffffff' || v === '#fff' || v === 'white';
 }
 
-// The dark-mode mirror of isWhite: near-black ink vanishes against the dark
-// action-button cards, so those colors get a light outline there. Applied as a
-// class in every theme — the keyline color token (--dark-ink-keyline) is
-// transparent in light mode, so only dark mode ever shows it.
+// Tuned perceptual cutoff: below this, ink needs the light keyline against dark
+// action-button cards (mirrors the --dark-ink-keyline trigger, per ADR-0052).
+// Deliberately a different mechanism from isWhite's string compare, not an
+// oversight.
+const DARK_INK_LUMINANCE_MAX = 0.15;
+
 export function isDarkInk(hex: string): boolean {
-  return relativeLuminance(hex) < 0.15;
+  return relativeLuminance(hex) < DARK_INK_LUMINANCE_MAX;
 }

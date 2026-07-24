@@ -7,35 +7,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P4][maintainability] Unnamed luminance threshold `0.15` in `isDarkInk`
-
-**File(s):** `web/src/lib/state/colors.svelte.ts:100-102` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-export function isDarkInk(hex: string): boolean {
-  return relativeLuminance(hex) < 0.15;
-}
-```
-
-`0.15` is a tuned perceptual cutoff (the point below which ink needs the light keyline against dark
-cards) with no name — a reader can't tell it's deliberate vs arbitrary, and the sibling `isWhite`
-uses a totally different mechanism (string compare), so the two "does this color vanish?" checks
-look unrelated.
-
-#### Proposed solution
-
-Name it: `const DARK_INK_LUMINANCE_MAX = 0.15;` with a one-line WHY (mirrors the
-`--dark-ink-keyline` trigger, per ADR-0052). Optionally note the intentional asymmetry with
-`isWhite`.
-
-#### Verification
-
-`colors.svelte.test.ts` green; the constant is greppable and its rationale visible.
-
----
-
 ### [P5][naming] `isWhite` reimplements a white check instead of reusing `WHITE_INK`, and diverges from `isDarkInk`'s approach
 
 **File(s):** `web/src/lib/state/colors.svelte.ts:91-94` (`isWhite`) vs `:18` (`WHITE_INK`),
