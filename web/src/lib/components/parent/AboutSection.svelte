@@ -1,9 +1,8 @@
 <script lang="ts">
   import Icon from '../Icon.svelte';
   import SplotchyIcon from '../SplotchyIcon.svelte';
+  import { APP_VERSION } from '$lib/appVersion';
   import { settings, setAdminLinkVisible } from '$lib/state/settings.svelte';
-
-  const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
   // Hidden admin unlock: tapping the version text 5 times reveals the link to
   // the admin console. The reveal is persisted (so it survives a refresh) and

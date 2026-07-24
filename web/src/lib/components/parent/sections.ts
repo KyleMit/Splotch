@@ -1,4 +1,5 @@
 import type { IconName } from '../icon-names';
+import { APP_VERSION } from '$lib/appVersion';
 import { settings } from '$lib/state/settings.svelte';
 
 // The Parent Center is one flat list of sections (ADR-0061). Both shells — the
@@ -36,8 +37,6 @@ export const SECTIONS: SectionMeta[] = [
   { id: 'feedback', label: 'Submit Feedback', icon: 'more-horiz' },
   { id: 'about', label: 'About', icon: 'splotchy' },
 ];
-
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
 const THEME_LABEL = { light: 'Light', dark: 'Dark', system: 'System' } as const;
 

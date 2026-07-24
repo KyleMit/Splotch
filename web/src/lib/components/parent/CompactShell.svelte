@@ -2,6 +2,7 @@
   import Icon from '../Icon.svelte';
   import SplotchyIcon from '../SplotchyIcon.svelte';
   import ToggleRow from './ToggleRow.svelte';
+  import { APP_VERSION } from '$lib/appVersion';
   import {
     settings,
     setSound,
@@ -52,8 +53,6 @@
     setForceLandscapeOrientation(value === 'landscape');
     setLockRotation(true);
   }
-
-  const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 </script>
 
 <!-- Landscape phone: too cramped for the full section list, so just the

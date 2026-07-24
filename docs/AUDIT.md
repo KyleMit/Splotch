@@ -9,32 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P3][duplication] Single source of truth for `APP_VERSION` — it's redefined four times
-
-**File(s):** `web/src/lib/components/parent/sections.ts:40` ·
-`web/src/lib/components/parent/AboutSection.svelte:6` ·
-`web/src/lib/components/ParentCenter.svelte:88` (also `web/src/lib/deviceInfo.ts:5`) — pinned at SHA
-f934d43
-
-#### Problem
-
-The exact expression `typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'` is
-copy-pasted in four modules. It's low-risk but pure duplication of a compile-time constant guard,
-and it's not grep-discoverable as "the app version" — each site reinvents it.
-
-#### Proposed solution
-
-Export `export const APP_VERSION = …` once (e.g. `web/src/lib/appVersion.ts` or add it to
-`sections.ts` which already defines it and is imported broadly), and import it everywhere. This
-scope's three sites plus `deviceInfo.ts` then share one definition.
-
-#### Verification
-
-`grep -rn "__APP_VERSION__" web/src` returns a single occurrence (the shared module).
-`npm run check` clean.
-
----
-
 ### [P3][duplication] The `.setting-group .setting + .setting { margin-top: 6px }` rule is copied into three sections
 
 **File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:75-77` ·

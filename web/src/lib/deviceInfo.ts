@@ -1,8 +1,7 @@
 import { browser } from '$app/environment';
+import { APP_VERSION } from '$lib/appVersion';
 import { getPlatform, isStandalone } from '$lib/platform';
 import type { DeviceInfo } from '$lib/deviceReport';
-
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
 const PLATFORM_LABEL: Record<string, string> = { web: 'Web', ios: 'iOS', android: 'Android' };
 
