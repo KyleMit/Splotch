@@ -188,6 +188,9 @@ interface CrayonPassBuffer {
   bounds: { x0: number; y0: number; x1: number; y1: number } | null;
 }
 
+// Intentionally has no reset seam: a WeakMap keyed by each target's own context
+// self-cleans per key — a fresh target/mount gets a fresh entry, and the old
+// key+value are GC'd once the old context is unreachable. Nothing to null out.
 const bufferByTarget = new WeakMap<CanvasRenderingContext2D, CrayonPassBuffer>();
 let liveTarget: CanvasRenderingContext2D | null = null;
 let liveBuffer: CrayonPassBuffer | null = null;
@@ -202,7 +205,13 @@ export function setLiveCrayonBuffer(
 ) {
   liveTarget = buffer ? target : null;
   liveBuffer = buffer ? { ctx: buffer, mirror, dirty: false, bounds: null } : null;
-  if (!buffer) livePaperBuffer = null;
+  if (!buffer) {
+    livePaperBuffer = null;
+    // A torn-down engine has no paper size either; resizeCanvas re-declares it
+    // via setCrayonPaperSpace before any crayon op can paint on the next mount,
+    // so zeroing here is a no-op for production and a clean slate for tests.
+    livePaperSide = 0;
+  }
 }
 
 // --- Live paper-space pass accumulation --------------------------------------

@@ -44,3 +44,11 @@ export function scanCanvasIsEmpty(source: HTMLCanvasElement, renderScale: number
   if (PERF_MARKS) performance.measure('engine.scanEmpty', 'engine.scanEmpty:start');
   return empty;
 }
+
+// Test-only seam: production code never calls this — the scratch canvas is a
+// deliberate perf cache that outlives engine teardown/remounts (see the file
+// header). Exists so a unit test can force a clean re-alloc between cases.
+export function resetEmptyScanScratch(): void {
+  scratchCanvas = null;
+  scratchCtx = null;
+}

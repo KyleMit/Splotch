@@ -7,41 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P5][testability] `emptyScan` / `strokeOps` module-singleton scratch state has no reset seam
-
-**File(s):** `web/src/lib/drawing/emptyScan.ts:14-15` (`scratchCanvas`/`scratchCtx`),
-`web/src/lib/drawing/strokeOps.ts:190-192, 219` (`bufferByTarget`, `liveBuffer`, `livePaperBuffer`)
-— pinned at SHA f934d43
-
-#### Problem
-
-These modules hold process-lifetime mutable singletons (scratch canvas, per-target crayon buffers,
-live paper buffer). `strokeOps` exposes `setLiveCrayonBuffer(null, null)` as a partial reset, but
-`emptyScan`'s scratch and `strokeOps`' `bufferByTarget`/`livePaperSide` have no teardown/reset. Unit
-tests that want a clean slate (and the engine teardown itself) cannot fully reset this state, so
-tests can leak buffers between cases and the "outlives teardown" behavior is implicit rather than
-expressed.
-
-#### Proposed solution
-
-Add small explicit reset seams where teardown needs them — e.g. `resetEmptyScanScratch()` and ensure
-`setLiveCrayonBuffer(null,null)` (already called in `teardownEngine`) also clears `livePaperSide`.
-Document which singletons deliberately persist (paper raster, per ADR-0004) versus which should
-reset on teardown. This is a seam addition, not a rewrite of the singleton design.
-
-#### Verification
-
-Add a Vitest that renders a crayon op, tears down, and asserts buffer state is clean; it should fail
-before the seam and pass after. `npm run test -- strokeOps emptyScan`.
-
----
-
-That is 24 findings. The three P1 items — the oversized `initDrawingCanvas`, the vestigial
-always-true `isDrawing` field, and the pervasive inline point type — are the highest-leverage. Every
-finding was verified against the files at SHA `f934d43`; the `isDrawing`, `fillDecodePending`, and
-`activePointerIds` dead/redundant-state claims were confirmed by grep (no false-write / no read /
-lockstep mutation respectively).
-
 ## Source: Code audit — AI image generation
 
 ### [P2][complexity] Split the 95-line `generateAiImage` into named phases
