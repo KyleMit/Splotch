@@ -7,32 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P4][naming] `currentLineWidth = 8` and manual `sqrt` distance are un-named / inconsistent
-
-**File(s):** `web/src/lib/drawing/engine.ts:117 (default width), 838 and 861 (manual distance)` —
-pinned at SHA f934d43
-
-#### Problem
-
-Two small self-documentation gaps: (a) `let currentLineWidth = 8;` — the interim default before a
-component pushes a real width — is a bare literal with no name; (b) distance is computed as
-`Math.sqrt(deltaX * deltaX + deltaY * deltaY)` in `restartStrokeIfResumed` (838) and `strokeSpeed`
-(861), while the rest of the drawing code (e.g. `crayonBrush`, `advanceEdgeSwipeCandidate` at 816)
-uses `Math.hypot`. The inconsistency makes the two forms look intentionally different when they are
-not.
-
-#### Proposed solution
-
-Name the default (`const DEFAULT_LINE_WIDTH_PX = 8;`) and replace both manual `sqrt` forms with
-`Math.hypot(deltaX, deltaY)` to match the surrounding style.
-
-#### Verification
-
-`npm run check`; `strokeMath` speed tests unaffected (`calculateStrokeSpeed` already takes
-precomputed distance).
-
----
-
 ### [P4][maintainability] Group the four crayon-overlay module variables into one nullable struct
 
 **File(s):** `web/src/lib/drawing/engine.ts:141-145, 1194-1201, 428-437` — pinned at SHA f934d43

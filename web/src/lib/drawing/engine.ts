@@ -113,7 +113,8 @@ interface InitOptions {
 let canvas!: HTMLCanvasElement;
 let ctx!: CanvasRenderingContext2D;
 let currentColor = '';
-let currentLineWidth = 8;
+const DEFAULT_LINE_WIDTH_PX = 8;
+let currentLineWidth = DEFAULT_LINE_WIDTH_PX;
 let eraserActive = false;
 let magicActive = false;
 let crayonActive = false;
@@ -836,7 +837,7 @@ function advanceEdgeSwipeCandidate(ps: PointerState, screenPoints: Point[], e: P
 function restartStrokeIfResumed(ps: PointerState, resume: Point, now: number) {
   const deltaX = resume.x - ps.x;
   const deltaY = resume.y - ps.y;
-  const jump = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  const jump = Math.hypot(deltaX, deltaY);
   if (!pointerWasResumed(now - ps.lastTime, jump, Math.min(paper.pxW, paper.pxH))) return;
   ps.x = resume.x;
   ps.y = resume.y;
@@ -859,7 +860,7 @@ function restartStrokeIfResumed(ps: PointerState, resume: Point, now: number) {
 function strokeSpeed(ps: PointerState, last: Point, now: number): number {
   const deltaX = last.x - ps.x;
   const deltaY = last.y - ps.y;
-  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  const distance = Math.hypot(deltaX, deltaY);
   return calculateStrokeSpeed(ps.speedSamples, { t: now, distance }, SPEED_WINDOW_MS);
 }
 
