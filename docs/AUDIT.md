@@ -9,31 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P4][design-tokens] Sub-`--font-size-xs` magic sizes: WhatsNew `15px`, ReportForm `11px`
-
-**File(s):** `web/src/lib/components/parent/WhatsNewSection.svelte:57` ·
-`web/src/lib/components/parent/ReportForm.svelte:400` — pinned at SHA f934d43
-
-#### Problem
-
-`.whats-new-date { font-size: 15px }` sits between `--font-size-md` (14) and `--font-size-lg` (16)
-with no token, and `.report-device-note { font-size: 11px }` is below the smallest token
-(`--font-size-xs` = 12) — an off-ramp value with no name. Both are raw px where the type ramp is
-meant to be authoritative.
-
-#### Proposed solution
-
-Snap `15px` to `--font-size-md` or `-lg`; snap `11px` to `--font-size-xs` (the device-note is
-already the least-important text, so 12px is fine). If a sub-12 size is truly needed, that's a
-signal to add a token with a WHY comment per the design skill.
-
-#### Verification
-
-`npm run lint:tokens`; the What's New date and device-info note still render at a sensible size in
-both themes.
-
----
-
 ### [P4][duplication] The iOS-zoom input comment + `max(16px, var(--font-size-md))` is copy-pasted
 
 **File(s):** `web/src/lib/components/parent/ReportForm.svelte:281-284` ·

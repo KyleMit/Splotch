@@ -383,7 +383,7 @@
   .report-device-note {
     margin: 0;
     padding: 4px 12px 10px;
-    font-size: 11px;
+    font-size: var(--font-size-xs);
     color: var(--text-faint);
     line-height: 1.4;
   }
