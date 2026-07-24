@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import actionsPanelSource from '../components/ActionsPanel.svelte?raw';
+import actionsPanelSource from './components/ActionsPanel.svelte?raw';
 import {
   ACTION_BUTTON_BASE_LANDSCAPE,
   ACTION_BUTTON_BASE_PORTRAIT,
@@ -8,7 +8,7 @@ import {
   PALETTE_CLEARANCE,
   PARENT_BUTTON_RESERVE,
   WORST_CASE_CHROME,
-} from './actionButtonLayout.svelte';
+} from './actionButtonLayout';
 
 // The CSS `--action-btn-fallback` in ActionsPanel.svelte owns the action-button
 // size at first paint (before any TS loads — ADR-0040), so it bakes the sizing

@@ -11,39 +11,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P3][architecture] `actionButtonLayout.svelte.ts` holds no state — it's geometry + a DOM-mutating writer misfiled under `state/`
-
-**File(s):** `web/src/lib/state/actionButtonLayout.svelte.ts:1-145` — pinned at SHA f934d43
-
-#### Problem
-
-Every other file in `state/` owns a `$state` object. This one owns none: it's a bundle of (a)
-CSS-mirroring layout constants (lines 16-56), (b) pure geometry functions reading *other* stores —
-`visibleActionButtonCount`, `availablePerButton`, `maxActionButtonScale` (58-104), and (c)
-`publishActionPanelState` (126-145), which **imperatively mutates the DOM** (`el.style.setProperty`,
-`el.toggleAttribute`, `el.setAttribute`). A DOM side-effect writer and screen-geometry math sitting
-in the shared-state directory is a category error: the file `.svelte.ts` extension implies runes
-state, and a reader looking for "app state" finds neither. It reads from `settings`, `network`,
-`layout`, `toolState` but is read-only against them.
-
-#### Proposed solution
-
-Move it out of `state/`. It's Actions-Panel layout logic: relocate to `web/src/lib/components/`
-(co-located with `ActionsPanel.svelte`) or a new `web/src/lib/layout/actionButtonLayout.ts`. It has
-no `$state`, so it doesn't need the `.svelte.ts` extension unless a consumer relies on rune tracking
-of its reads (they read reactive stores, which stay reactive regardless of this file's extension —
-verify the `$effect` caller in `ActionsPanel.svelte`). Update the `architecture` skill source map
-accordingly.
-
-#### Verification
-
-`npm run check` + the `actionButtonLayout.fallback.test.ts` / `actionButtonLayout.svelte.test.ts`
-suites pass after the move (adjust import paths); confirm `publishActionPanelState`'s `$effect` in
-`ActionsPanel.svelte` still tracks `settings.*`/`toolState.brush` reads (it will — they're
-reactive-source reads, not local state).
-
----
-
 ### [P3][consistency] "Which action buttons exist" is encoded in four places that must stay in lockstep
 
 **File(s):** `web/src/lib/state/actionButtonLayout.svelte.ts:38` (`MAX_ACTION_BUTTON_COUNT`),

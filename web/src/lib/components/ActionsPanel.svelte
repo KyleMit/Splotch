@@ -24,7 +24,7 @@
     MAX_ACTION_BUTTON_COUNT,
     visibleActionButtonCount,
     publishActionPanelState,
-  } from '$lib/state/actionButtonLayout.svelte';
+  } from '$lib/actionButtonLayout';
   import { undo } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
@@ -434,7 +434,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    /* Keep in sync with ACTION_BUTTON_GAP in actionButtonLayout.svelte.ts. */
+    /* Keep in sync with ACTION_BUTTON_GAP in actionButtonLayout.ts. */
     gap: 12px;
     min-width: 0;
     min-height: 0;
