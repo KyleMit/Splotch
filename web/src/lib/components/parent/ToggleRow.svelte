@@ -30,13 +30,14 @@
     role="switch"
     aria-label={label}
     aria-checked={checked}
+    aria-describedby={help ? `${id}-help` : undefined}
     onclick={() => onToggle(!checked)}
   >
     <span class="toggle-switch-thumb"></span>
   </button>
 </div>
 {#if help}
-  <p class="setting-help">{help}</p>
+  <p id="{id}-help" class="setting-help">{help}</p>
 {/if}
 
 <style>

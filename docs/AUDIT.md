@@ -9,31 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P3][accessibility] `ToggleRow` help text isn't associated with the switch (`aria-describedby` missing)
-
-**File(s):** `web/src/lib/components/parent/ToggleRow.svelte:27-42` — pinned at SHA f934d43
-
-#### Problem
-
-When `help` is provided, it renders as a sibling `<p class="setting-help">` (`:40-42`) with no `id`,
-and the `role="switch"` button (`:27-38`) has no `aria-describedby` pointing to it. A screen-reader
-user focusing the switch hears the label but never the explanatory help (e.g. "Saves the current
-drawing each time the page is cleared"). The component already threads a unique `id`, so wiring the
-description is cheap. This is a maintainability smell too: the `help` prop looks fully supported but
-is only half-wired.
-
-#### Proposed solution
-
-Give the help `<p>` `id="{id}-help"` and add `aria-describedby={help ? \`${id}-help\` : undefined}`
-to the switch button.
-
-#### Verification
-
-Inspect a help-bearing toggle (e.g. `saveOnDeleteToggle`) in the a11y tree; the switch's accessible
-description now includes the help text.
-
----
-
 ### [P3][maintainability] Magic `30px` indent hardcodes "icon width + gap" in two places
 
 **File(s):** `web/src/lib/components/parent/ToggleRow.svelte:52` ·
