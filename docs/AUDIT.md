@@ -7,38 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P4][maintainability] Group the four crayon-overlay module variables into one nullable struct
-
-**File(s):** `web/src/lib/drawing/engine.ts:141-145, 1194-1201, 428-437` — pinned at SHA f934d43
-
-#### Problem
-
-Five module-level variables — `crayonOverlay`, `crayonOverlayCtx`, `crayonOverlayTop`,
-`crayonOverlayTopCtx`, `crayonOverlaysCreated` — represent one thing (the overlay pair) and are
-always created together, resized together (428-437), and nulled together in teardown (1194-1201).
-Spread across the module they are easy to update partially.
-
-```ts
-let crayonOverlay: HTMLCanvasElement | null = null;
-let crayonOverlayCtx: CanvasRenderingContext2D | null = null;
-let crayonOverlayTop: HTMLCanvasElement | null = null;
-let crayonOverlayTopCtx: CanvasRenderingContext2D | null = null;
-let crayonOverlaysCreated = false;
-```
-
-#### Proposed solution
-
-`let crayonOverlays: { bottom: HTMLCanvasElement; bottomCtx: ...; top: ...; topCtx: ...; created: boolean } | null = null;`
-— one atomic value that is set, resized, and cleared as a unit; `syncCrayonOverlayMix`,
-`resizeCanvas`, and `teardownEngine` each touch one variable.
-
-#### Verification
-
-`npm run check`; `/dev/engine` and `/` crayon overlays behave identically across
-mount/resize/teardown.
-
----
-
 ### [P4][duplication] Speed-sampling reset is copy-pasted in three places
 
 **File(s):**
