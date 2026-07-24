@@ -9,31 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P4][duplication] The iOS-zoom input comment + `max(16px, var(--font-size-md))` is copy-pasted
-
-**File(s):** `web/src/lib/components/parent/ReportForm.svelte:281-284` ·
-`web/src/lib/components/parent/AiKeyManager.svelte:309-312` — pinned at SHA f934d43
-
-#### Problem
-
-Both text inputs carry the identical four-line comment (*"Never below 16px: iOS Safari / WKWebView
-zoom … (ADR-0076)"*) followed by `font-size: max(16px, var(--font-size-md));`. This constraint
-applies to every parent-center input; duplicating the rationale invites one copy drifting or a new
-input forgetting it entirely.
-
-#### Proposed solution
-
-Promote to a token or shared class: e.g. `--input-font-size: max(16px, var(--font-size-md))` in
-`tokens.ts` with the ADR-0076 note once, or a shared `.pc-text-input` class in ParentCenter's global
-block. Both inputs reference it; future inputs inherit the safeguard.
-
-#### Verification
-
-`grep -rn "Never below 16px" web/src` collapses to one occurrence; focusing either input on iOS
-still doesn't zoom the viewport.
-
----
-
 ### [P4][naming] `section.icon === 'splotchy'` magic-string special-case repeated
 
 **File(s):** `web/src/lib/components/ParentCenter.svelte:264-268,292-296` — pinned at SHA f934d43

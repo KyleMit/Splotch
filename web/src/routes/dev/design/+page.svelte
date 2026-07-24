@@ -146,6 +146,12 @@
           <span class="value">{scale[key as keyof typeof scale]}</span>
         </div>
       {/each}
+      <div class="scale-row">
+        <code>{toCssVarName('inputFontSize')}</code>
+        <span class="type-sample" style:font-size={cssVar('inputFontSize')}>Splotch says hello</span
+        >
+        <span class="value">{scale.inputFontSize}</span>
+      </div>
     </div>
   </section>
 
