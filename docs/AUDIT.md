@@ -7,35 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P3][duplication] Op-modifier fields are hand-copied when building `dot` and `path` ops
-
-**File(s):**
-`web/src/lib/drawing/engine.ts:529-539 (`renderStrokeStart`) and 557-569 (`strokeSmoothSegments`)` —
-pinned at SHA f934d43
-
-#### Problem
-
-Both op constructors copy the same five style modifiers off `PointerState`:
-
-```ts
-color: ps.color, erase: ps.erase, magic: ps.magic, crayon: ps.crayon, seed: ps.seed,
-```
-
-Adding a future modifier (or renaming one) requires touching both, and it is easy to miss one (they
-would then disagree between the start dot and the stroke body).
-
-#### Proposed solution
-
-`function strokeStyleOf(ps: PointerState): { color; erase; magic; crayon; seed }` and spread it:
-`{ kind: 'dot', x, y, radius, ...strokeStyleOf(ps) }`. Single definition of "the style fields an op
-carries."
-
-#### Verification
-
-`npm run check`; engine E2E stroke replay/undo unchanged (ops are structurally identical).
-
----
-
 ### [P3][type-safety] `listen<K>` uses an unused generic and an `(e: never)` cast
 
 **File(s):** `web/src/lib/drawing/engine.ts:1298-1308` — pinned at SHA f934d43

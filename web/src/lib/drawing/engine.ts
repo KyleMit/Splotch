@@ -518,6 +518,16 @@ function closeCrayonPassBeforeForeignOp(ps: PointerState) {
   if (!(ps.crayon && !ps.erase) && hasOpenLiveCrayonPass()) recordCrayonFlush();
 }
 
+// The five style modifiers every `dot`/`path` op carries. Erasing clears pixels
+// via destination-out; the stroke color is irrelevant there, only its (opaque)
+// alpha matters. A magic op ignores `color` too — it reveals the sheet — but
+// carries it so every op is style-complete.
+function strokeStyleOf(
+  ps: PointerState
+): Pick<PointerState, 'color' | 'erase' | 'magic' | 'crayon' | 'seed'> {
+  return { color: ps.color, erase: ps.erase, magic: ps.magic, crayon: ps.crayon, seed: ps.seed };
+}
+
 // Paint the round dot that anchors a stroke at its start point, and kick the
 // drawing sound. Used both for a normal pointerdown and when a deferred
 // edge-swipe candidate commits.
@@ -525,19 +535,12 @@ function renderStrokeStart(ps: PointerState) {
   beginStrokeGroup();
   closeCrayonPassBeforeForeignOp(ps);
 
-  // Erasing clears pixels via destination-out; the stroke color is irrelevant
-  // there, only its (opaque) alpha matters. A magic op ignores `color` too —
-  // it reveals the sheet — but carries it so every op is style-complete.
   const dot: StrokeOp = {
     kind: 'dot',
     x: ps.x,
     y: ps.y,
     radius: ps.lineWidth / 2,
-    color: ps.color,
-    erase: ps.erase,
-    magic: ps.magic,
-    crayon: ps.crayon,
-    seed: ps.seed,
+    ...strokeStyleOf(ps),
   };
   renderOp(ctx, dot);
   recordOp(dot);
@@ -562,12 +565,8 @@ function strokeSmoothSegments(ps: PointerState, points: Point[]) {
     startX: ps.midX,
     startY: ps.midY,
     segs: [],
-    color: ps.color,
     lineWidth: ps.lineWidth,
-    erase: ps.erase,
-    magic: ps.magic,
-    crayon: ps.crayon,
-    seed: ps.seed,
+    ...strokeStyleOf(ps),
   };
   for (const { x, y } of points) {
     const midX = (ps.x + x) / 2;
