@@ -130,8 +130,11 @@ async function run() {
     `got ${goodCode.status} ${JSON.stringify(goodCodeBody)}`
   );
 
-  // --- report: validation + honeypot + graceful-unconfigured (no GITHUB token
-  // in the smoke env, so no real issue is ever created) ---
+  // --- report: validation + honeypot + graceful-unconfigured. GITHUB_ISSUE_TOKEN
+  // is force-cleared in the server env (see spawnViteServer below), so reporting is
+  // always unconfigured here and a valid submission gets a 503 — never a real issue.
+  // Without that clear, a developer's local web/.env token would make the valid
+  // case (and the burst loop below) open real issues on every run. ---
   const report = (payload) =>
     fetch(`${BASE}/api/report`, {
       method: 'POST',
@@ -351,6 +354,12 @@ try {
   ({ stop } = spawnViteServer(PORT, {
     ADMIN_ACCESS_TOKEN: ADMIN_SECRET,
     ALLOWED_TOKENS_LIST: SEED_TOKENS,
+    // Force reporting unconfigured regardless of the ambient env or web/.env, so
+    // the report contract cases assert the 503 path and never create a real GitHub
+    // issue. An empty value passed here wins over any .env token (same precedence
+    // ADMIN_ACCESS_TOKEN above relies on). Removing this makes the smoke test open
+    // live issues for anyone with a GITHUB_ISSUE_TOKEN in their local env.
+    GITHUB_ISSUE_TOKEN: '',
   }));
 
   await waitForUrl(`${BASE}/api/admin/tokens`, 45_000, (res) => res.status === 401);
