@@ -19,7 +19,7 @@
   } from '$lib/state/settings.svelte';
   import { setResizingActionButtons } from '$lib/state/ui.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
-  import { maxActionButtonScale } from '$lib/state/actionButtonLayout.svelte';
+  import { maxActionButtonScale } from '$lib/actionButtonLayout';
 
   // Ceiling the Button Size slider at what the current screen can actually
   // fit, so the parent can't pick a size the Actions Panel would have to cap

@@ -5,10 +5,8 @@ import {
   writeString,
   readInt,
   writeInt,
-  removeKey,
   onDurableRestore,
 } from '../storage';
-import { saveApiKey, loadApiKey, clearApiKey, requestPersistentStorage } from '../secureStorage';
 import { applyTheme, isThemePreference, THEME_DEFAULT, type ThemePreference } from '../theme';
 
 const SOUND_KEY = 'splotch-sound-enabled';
@@ -25,14 +23,6 @@ const AI_CUSTOMIZATION_KEY = 'splotch-ai-customization-enabled';
 const AUTO_SAVE_AI_KEY = 'splotch-auto-save-ai';
 const AI_ACCESS_TOKEN_KEY = 'splotch-ai-access-token';
 const AI_ACCESS_TOKEN_PARAM = 'ai_access_token';
-// The parent's own Gemini API key (BYOK). Stored only on this device and sent
-// with each AI request so the server bills the parent's Google account instead
-// of ours. Either this OR aiAccessToken being set unlocks the AI features.
-// The key itself is no longer kept here in plaintext — it lives in secure
-// storage (Keychain/Keystore on native, an encrypted IndexedDB payload on the
-// web). This constant only names the legacy localStorage slot so hydrateApiKey
-// can migrate and scrub any key written by an earlier build.
-const AI_USER_API_KEY = 'splotch-ai-user-api-key';
 const ADVANCED_CONTROLS_KEY = 'splotch-advanced-controls';
 const DRAWER_OPEN_KEY = 'splotch-drawer-open';
 const ADMIN_LINK_VISIBLE_KEY = 'splotch-admin-link-visible';
@@ -122,18 +112,27 @@ function clampButtonScale(v: number) {
   return Math.max(ACTION_BUTTON_SCALE_MIN, Math.min(ACTION_BUTTON_SCALE_MAX, Math.round(v)));
 }
 
+// The integer counterpart to BOOL_SETTINGS: live-state property name ->
+// [localStorage key, default, clamp]. Same generation guarantee — the initial
+// $state, the setters, and reloadSettings() all come from this table, so a new
+// int setting is one entry here plus its named-export wrapper.
+const INT_SETTINGS = {
+  // Drawing sound volume percentage. 50 is the normal authored volume, 100 is 2x.
+  soundVolume: [SOUND_VOLUME_KEY, SOUND_VOLUME_DEFAULT, clampVolume],
+  // Action-center button size percentage (see ACTION_BUTTON_SCALE_* above).
+  actionButtonScale: [ACTION_BUTTON_SCALE_KEY, ACTION_BUTTON_SCALE_DEFAULT, clampButtonScale],
+} satisfies Record<string, [string, number, (v: number) => number]>;
+
+type IntSettingKey = keyof typeof INT_SETTINGS;
+
 function readTheme(fallback: ThemePreference): ThemePreference {
   const raw = readString(THEME_KEY, fallback);
   return isThemePreference(raw) ? raw : fallback;
 }
 
-interface Settings extends Record<BoolSettingKey, boolean> {
+interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey, number> {
   // Appearance: explicit light/dark, or 'system' to follow the OS setting.
   theme: ThemePreference;
-  // Drawing sound volume percentage. 50 is the normal authored volume, 100 is 2x.
-  soundVolume: number;
-  // Action-center button size percentage (see ACTION_BUTTON_SCALE_* above).
-  actionButtonScale: number;
   // String setting (special case): the managed-access token, persisted verbatim.
   aiAccessToken: string;
   // Parent-supplied Gemini API key (BYOK). Held in memory only; hydrated from
@@ -151,11 +150,13 @@ export const settings: Settings = $state({
   ...(Object.fromEntries(
     Object.entries(BOOL_SETTINGS).map(([prop, [key, def]]) => [prop, readBool(key, def)])
   ) as Record<BoolSettingKey, boolean>),
+  ...(Object.fromEntries(
+    Object.entries(INT_SETTINGS).map(([prop, [key, def, clamp]]) => [
+      prop,
+      clamp(readInt(key, def)),
+    ])
+  ) as Record<IntSettingKey, number>),
   theme: readTheme(THEME_DEFAULT),
-  soundVolume: clampVolume(readInt(SOUND_VOLUME_KEY, SOUND_VOLUME_DEFAULT)),
-  actionButtonScale: clampButtonScale(
-    readInt(ACTION_BUTTON_SCALE_KEY, ACTION_BUTTON_SCALE_DEFAULT)
-  ),
   aiAccessToken: readString(AI_ACCESS_TOKEN_KEY, ''),
   aiUserApiKey: '',
   saveFolderName: null,
@@ -194,53 +195,22 @@ export function setTheme(v: ThemePreference) {
   applyTheme(v);
 }
 
-export function setSoundVolume(v: number) {
-  const next = clampVolume(v);
-  settings.soundVolume = next;
-  writeInt(SOUND_VOLUME_KEY, next);
+// Build a setter that clamps, updates the live value, and persists it.
+function makeIntSetter(prop: IntSettingKey) {
+  const [key, , clamp] = INT_SETTINGS[prop];
+  return (v: number) => {
+    const next = clamp(v);
+    settings[prop] = next;
+    writeInt(key, next);
+  };
 }
 
-export function setActionButtonScale(v: number) {
-  const next = clampButtonScale(v);
-  settings.actionButtonScale = next;
-  writeInt(ACTION_BUTTON_SCALE_KEY, next);
-}
+export const setSoundVolume = makeIntSetter('soundVolume');
+export const setActionButtonScale = makeIntSetter('actionButtonScale');
 
 export function setAiAccessToken(v: string) {
   settings.aiAccessToken = v;
   writeString(AI_ACCESS_TOKEN_KEY, v);
-}
-let aiKeyWriteVersion = 0;
-// Keep secure writes ordered so an older save already in flight cannot finish
-// after a replacement and become the credential restored on the next launch.
-let aiKeyWriteQueue = Promise.resolve();
-
-async function persistAiUserApiKey(v: string) {
-  if (v) await saveApiKey(v);
-  else await clearApiKey();
-}
-
-export function setAiUserApiKey(v: string, ownsRequest: () => boolean = () => true) {
-  const writeVersion = ++aiKeyWriteVersion;
-  const operation = aiKeyWriteQueue.then(async () => {
-    if (writeVersion !== aiKeyWriteVersion || !ownsRequest()) return false;
-
-    await persistAiUserApiKey(v);
-
-    if (writeVersion !== aiKeyWriteVersion) return false;
-    if (!ownsRequest()) {
-      await persistAiUserApiKey(settings.aiUserApiKey);
-      return false;
-    }
-
-    settings.aiUserApiKey = v;
-    return true;
-  });
-  aiKeyWriteQueue = operation.then(
-    () => undefined,
-    () => undefined
-  );
-  return operation;
 }
 
 // Re-read every persisted setting into the live store. Used after the durable
@@ -253,113 +223,18 @@ export function reloadSettings() {
   ][]) {
     settings[prop] = readBool(key, settings[prop]);
   }
-  settings.soundVolume = clampVolume(readInt(SOUND_VOLUME_KEY, settings.soundVolume));
-  settings.actionButtonScale = clampButtonScale(
-    readInt(ACTION_BUTTON_SCALE_KEY, settings.actionButtonScale)
-  );
+  for (const [prop, [key, , clamp]] of Object.entries(INT_SETTINGS) as [
+    IntSettingKey,
+    [string, number, (v: number) => number],
+  ][]) {
+    settings[prop] = clamp(readInt(key, settings[prop]));
+  }
   settings.aiAccessToken = readString(AI_ACCESS_TOKEN_KEY, settings.aiAccessToken);
   settings.theme = readTheme(settings.theme);
   applyTheme(settings.theme);
 }
 
 onDurableRestore(reloadSettings);
-
-// Pull the saved Gemini key out of secure storage into the live store on boot.
-// One-time migration: if an earlier build left a plaintext key in localStorage,
-// move it into secure storage and scrub the plaintext copy. Safe to call on the
-// web and on native; never throws.
-export async function hydrateApiKey() {
-  // Best-effort: ask the browser not to evict our encrypted IndexedDB (web only).
-  requestPersistentStorage();
-
-  let key = await loadApiKey();
-
-  if (!key) {
-    const legacy = readString(AI_USER_API_KEY, '');
-    if (legacy) {
-      await saveApiKey(legacy);
-      removeKey(AI_USER_API_KEY); // remove the plaintext copy now that it's secured
-      key = legacy;
-    }
-  }
-
-  if (key) settings.aiUserApiKey = key;
-}
-
-// folderSave is save-time-only, so it loads on demand and stays out of the
-// startup bundle (issue #461). The first load registers the stale-folder
-// listener: a save that discovers the chosen folder is gone (moved/deleted)
-// drops the stored handle itself, and this mirror keeps the Parent Center pill
-// from naming a folder that no longer receives saves. Saves reach folderSave
-// through the same module instance (screenshot.ts's static import), and on any
-// platform that can save to a folder the boot hydration below has already run
-// this loader — so the listener is armed before a save can fire it.
-let folderSaveModule: Promise<typeof import('$lib/drawing/folderSave')> | null = null;
-
-function loadFolderSave() {
-  // A failed chunk fetch must not pin the memo to a rejected promise — the
-  // next tap should retry the import instead of replaying the old failure.
-  folderSaveModule ??= import('$lib/drawing/folderSave').then(
-    (m) => {
-      m.onSaveFolderCleared(() => {
-        settings.saveFolderName = null;
-      });
-      return m;
-    },
-    (err) => {
-      folderSaveModule = null;
-      throw err;
-    }
-  );
-  return folderSaveModule;
-}
-
-// These three are UI/boot entry points wired straight into onclick/onMount, so
-// a chunk-load failure must be contained here — not surface as an unhandled
-// rejection on a Parent Center tap.
-async function tryLoadFolderSave() {
-  try {
-    return await loadFolderSave();
-  } catch (err) {
-    console.error('Folder-save module failed to load:', err);
-    return null;
-  }
-}
-
-// Pick (or re-pick) the optional destination folder for web saves. Must be
-// called from a click handler so the picker keeps its user activation (the
-// import resolves from the module cache — the Parent Center section that hosts
-// this action already loaded folderSave). Keeps the current folder if the
-// parent cancels. Purely a convenience — it doesn't enable or disable any save
-// action; saves work the same with or without a folder.
-export async function changeSaveFolder() {
-  const mod = await tryLoadFolderSave();
-  if (!mod) return;
-  const name = await mod.chooseSaveFolder();
-  if (name) settings.saveFolderName = name;
-}
-
-// Forget the chosen folder, so web saves revert to the browser's default
-// download location. Doesn't stop anything from saving.
-export async function forgetSaveFolder() {
-  const mod = await tryLoadFolderSave();
-  if (!mod) return;
-  await mod.clearSaveFolder();
-  settings.saveFolderName = null;
-}
-
-// Boot hydration (web/desktop only): read the remembered folder name from the
-// directory handle in IndexedDB into the live store so the Parent Center can
-// show it. No side effects on the save features. The support check is inlined
-// (same predicate as folderSaveSupported) so unsupported platforms — every
-// phone — never fetch the folder-save chunk just to learn there's nothing to
-// hydrate.
-export async function hydrateSaveFolder() {
-  if (typeof window === 'undefined' || !('showDirectoryPicker' in window)) return;
-  const mod = await tryLoadFolderSave();
-  if (!mod) return;
-  settings.saveFolderName = await mod.getSaveFolderName();
-}
 
 export function captureAiAccessTokenFromUrl() {
   if (typeof window === 'undefined') return;

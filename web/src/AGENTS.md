@@ -13,7 +13,19 @@ Where things live (full file-by-file map: `architecture` skill):
   pointer tracking, public API; callbacks out, direct function calls in — ADR-0004); ops/undo/export
   live in sibling modules (`strokeOps`, `undoHistory`, `exportDrawing` — map in the `architecture`
   skill).
-* `lib/state/` — all shared state, as Svelte 5 rune modules (`*.svelte.ts`).
+* `lib/state/` — all shared state, as Svelte 5 rune modules (`*.svelte.ts`). A
+  listening/side-effecting store self-initializes at module load, gated on `browser` — never behind
+  an exported `initX()` a route must remember to call (see `layout.svelte.ts`,
+  `appearance.svelte.ts`, `network.svelte.ts`, `fullscreen.svelte.ts`). `install.svelte.ts` is the
+  one exception: its one-shot `beforeinstallprompt` listener must be eager (a deferred listener
+  could miss an event that fires before hydration), but its state seeding stays behind
+  `initInstallPrompt()`, called from `+page.svelte`'s `onMount` — kept split for now to avoid
+  touching its well-tested surface, not because the seeding itself needs to be deferred. Shared
+  derived values are exposed as plain getter functions that recompute per call (`resolvedTheme()` in
+  `appearance.svelte.ts`, `activeStrokeSize()` in `strokeWidth.svelte.ts`), never module-level
+  `$derived` — the getter reads reactive state so a caller opts into reactivity locally by wrapping
+  it in its own `$derived` when a template needs it (e.g. `ColorPalette.svelte`), yet stays callable
+  as a plain function from a unit test with no reactive context.
 * `lib/components/` — UI components with scoped styles.
 * `lib/actions/` — Svelte actions for gestures and dialog wiring.
 * `lib/server/` — server-only modules (tokens, admin, rate limiting). Never imported client-side;

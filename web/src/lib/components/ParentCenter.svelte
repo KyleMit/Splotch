@@ -2,7 +2,7 @@
   import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
   import SplotchyIcon from './SplotchyIcon.svelte';
-  import { ui, closeParentCenter } from '$lib/state/ui.svelte';
+  import { ui, parentCenter } from '$lib/state/ui.svelte';
   import AppearanceSection from './parent/AppearanceSection.svelte';
   import SoundSection from './parent/SoundSection.svelte';
   import SavingSection from './parent/SavingSection.svelte';
@@ -114,7 +114,7 @@
 
   // Each reopen lands on the hub (phone) / first section (tablet).
   $effect(() => {
-    if (ui.parentCenterOpen) view = 'hub';
+    if (parentCenter.open) view = 'hub';
   });
 
   function openSection(id: SectionId) {
@@ -132,7 +132,7 @@
   let zoomTarget = $state<HTMLElement>();
   const textZoom = () => ({
     target: zoomTarget,
-    enabled: ui.parentCenterOpen,
+    enabled: parentCenter.open,
     resetKey: view,
   });
 </script>
@@ -147,13 +147,13 @@
   {:else if id === 'controls'}
     <ControlsSection />
   {:else if id === 'ai'}
-    <AiKeyManager open={ui.parentCenterOpen} />
+    <AiKeyManager open={parentCenter.open} />
   {:else if id === 'setup'}
-    <SetupInstructions open={ui.parentCenterOpen} />
+    <SetupInstructions open={parentCenter.open} />
   {:else if id === 'whatsnew'}
     <WhatsNewSection />
   {:else if id === 'feedback'}
-    <ReportForm open={ui.parentCenterOpen} />
+    <ReportForm open={parentCenter.open} />
   {:else if id === 'about'}
     <AboutSection />
   {/if}
@@ -166,16 +166,16 @@
   class:compact
   id="parentHelpModal"
   use:modalDialog={() => ({
-    open: ui.parentCenterOpen,
-    origin: ui.parentCenterOrigin,
-    onRequestClose: closeParentCenter,
+    open: parentCenter.open,
+    origin: parentCenter.origin,
+    onRequestClose: parentCenter.hide,
   })}
 >
   <div class="parent-help-content">
     <button
       class="parent-help-close modal-close-btn"
       aria-label="Close"
-      onclick={closeParentCenter}
+      onclick={parentCenter.hide}
     >
       <Icon name="close" class="modal-close-icon" />
     </button>

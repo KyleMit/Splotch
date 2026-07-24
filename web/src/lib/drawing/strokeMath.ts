@@ -6,6 +6,11 @@
 
 export type GuardEdge = 'bottom' | 'left' | 'right';
 
+export interface Point {
+  x: number;
+  y: number;
+}
+
 export interface SpeedSample {
   t: number;
   distance: number;

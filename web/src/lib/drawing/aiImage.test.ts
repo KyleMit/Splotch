@@ -12,7 +12,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('./engine', () => ({ exportCanvasBlob: mocks.exportCanvasBlob }));
 vi.mock('./overlay', () => ({ getActiveOverlayImage: vi.fn(() => null) }));
-vi.mock('./screenshot', () => ({ saveImageBlob: mocks.saveImageBlob }));
+vi.mock('./screenshot', () => ({
+  saveImageBlob: mocks.saveImageBlob,
+  AI_IMAGE_BASENAME: 'splotch-ai',
+  DRAWING_BASENAME: 'splotch',
+}));
 vi.mock('$lib/state/settings.svelte', () => ({ settings: mocks.settings }));
 
 interface Deferred<T> {
@@ -78,7 +82,8 @@ describe('generateAiImage request ownership', () => {
     );
 
     const { generateAiImage } = await import('./aiImage');
-    const { closeAiResult, ui } = await import('$lib/state/ui.svelte');
+    const { ui } = await import('$lib/state/ui.svelte');
+    const { closeAiResult } = await import('$lib/state/aiGeneration.svelte');
 
     const runA = generateAiImage();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
@@ -113,7 +118,8 @@ describe('generateAiImage request ownership', () => {
     );
 
     const { generateAiImage } = await import('./aiImage');
-    const { closeAiResult, ui } = await import('$lib/state/ui.svelte');
+    const { ui } = await import('$lib/state/ui.svelte');
+    const { closeAiResult } = await import('$lib/state/aiGeneration.svelte');
 
     const runA = generateAiImage();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
@@ -141,7 +147,8 @@ describe('generateAiImage request ownership', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValueOnce(requestB.promise));
 
     const { generateAiImage } = await import('./aiImage');
-    const { closeAiResult, ui } = await import('$lib/state/ui.svelte');
+    const { ui } = await import('$lib/state/ui.svelte');
+    const { closeAiResult } = await import('$lib/state/aiGeneration.svelte');
 
     const runA = generateAiImage();
     closeAiResult();
@@ -172,7 +179,7 @@ describe('generateAiImage request ownership', () => {
     );
 
     const { generateAiImage } = await import('./aiImage');
-    const { closeAiResult } = await import('$lib/state/ui.svelte');
+    const { closeAiResult } = await import('$lib/state/aiGeneration.svelte');
 
     const runA = generateAiImage();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
@@ -383,5 +390,18 @@ describe('generateAiImage upload format', () => {
     await generateAiImage();
 
     expect(uploadedImage().type).toBe('image/png');
+  });
+});
+
+describe('createDrawingDeduper', () => {
+  it('dedupes a repeated signature but not against a fresh instance', async () => {
+    const { createDrawingDeduper } = await import('./aiImage');
+    const deduper = createDrawingDeduper();
+    expect(deduper.isDuplicate('sig-a')).toBe(false);
+    deduper.record('sig-a');
+    expect(deduper.isDuplicate('sig-a')).toBe(true);
+    expect(deduper.isDuplicate('sig-b')).toBe(false);
+
+    expect(createDrawingDeduper().isDuplicate('sig-a')).toBe(false);
   });
 });

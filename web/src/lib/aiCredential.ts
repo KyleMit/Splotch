@@ -1,21 +1,21 @@
 import { apiUrl } from '$lib/api';
 
+const GEMINI_KEY_PREFIX = 'AIza';
+
 // Gemini API keys are issued in the form "AIza…". Anything else is treated as a
 // secret access code and checked against the managed allowlist instead.
 export function looksLikeApiKey(value: string): boolean {
-  return /^AIza/.test(value);
+  return value.startsWith(GEMINI_KEY_PREFIX);
 }
 
 export type CredentialKind = 'apiKey' | 'accessCode';
 
-export interface VerifyCredentialResult {
-  kind: CredentialKind;
-  ok: boolean;
-  accessCode?: string;
-  error?: string;
-}
+type VerifyPayload = { ok?: boolean; error?: string; accessCode?: string };
 
-type VerifyResponse = { ok?: boolean; error?: string; accessCode?: string };
+export interface VerifyCredentialResult extends VerifyPayload {
+  kind: CredentialKind;
+  ok: boolean; // narrowed from optional to required — verifyCredential always sets it
+}
 
 // Classifies the entered value, calls the matching verify endpoint, and reports
 // the outcome. Persisting the credential and the UI state machine stay with the
@@ -34,7 +34,7 @@ export async function verifyCredential(
     body: JSON.stringify(body),
     signal,
   });
-  const data: VerifyResponse = await res.json().catch(() => ({}));
+  const data: VerifyPayload = await res.json().catch(() => ({}));
 
   return {
     kind,

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { layout } from './layout.svelte';
-import { network } from './network.svelte';
+import { layout } from './state/layout.svelte';
+import { network } from './state/network.svelte';
 import {
   setAdvancedControls,
   setAiAccessToken,
@@ -12,13 +12,13 @@ import {
   setUndoButton,
   ACTION_BUTTON_SCALE_MIN,
   ACTION_BUTTON_SCALE_MAX,
-} from './settings.svelte';
-import { selectBrush } from './tool.svelte';
+} from './state/settings.svelte';
+import { selectBrush } from './state/tool.svelte';
 import {
   visibleActionButtonCount,
   maxActionButtonScale,
   publishActionPanelState,
-} from './actionButtonLayout.svelte';
+} from './actionButtonLayout';
 
 function resetState() {
   setAdvancedControls(true);

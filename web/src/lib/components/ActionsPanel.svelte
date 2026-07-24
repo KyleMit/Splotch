@@ -8,7 +8,7 @@
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
   import { setStrokeSize, activeStrokeSize } from '$lib/state/strokeWidth.svelte';
   import { toolState, selectBrush, BRUSH_OPTIONS, type BrushType } from '$lib/state/tool.svelte';
-  import { ui, openColoringBook, openAiPrompt, buttonCenter } from '$lib/state/ui.svelte';
+  import { ui, coloringBook, aiPrompt, buttonCenter } from '$lib/state/ui.svelte';
   import { browser } from '$app/environment';
   import { network } from '$lib/state/network.svelte';
   import { layout } from '$lib/state/layout.svelte';
@@ -24,7 +24,7 @@
     MAX_ACTION_BUTTON_COUNT,
     visibleActionButtonCount,
     publishActionPanelState,
-  } from '$lib/state/actionButtonLayout.svelte';
+  } from '$lib/actionButtonLayout';
   import { undo } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
@@ -233,14 +233,14 @@
 
   function handleColoringBookClick() {
     if (!coloringBtnEl) return;
-    openColoringBook(buttonCenter(coloringBtnEl));
+    coloringBook.show(buttonCenter(coloringBtnEl));
   }
 
   async function handleAiImageClick() {
     if (ui.aiGenerating || canvasState.canvasEmpty || !aiBtnEl) return;
 
     if (settings.aiCustomizationEnabled) {
-      openAiPrompt(buttonCenter(aiBtnEl));
+      aiPrompt.show(buttonCenter(aiBtnEl));
       return;
     }
 
@@ -434,7 +434,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    /* Keep in sync with ACTION_BUTTON_GAP in actionButtonLayout.svelte.ts. */
+    /* Keep in sync with ACTION_BUTTON_GAP in actionButtonLayout.ts. */
     gap: 12px;
     min-width: 0;
     min-height: 0;

@@ -21,6 +21,9 @@ export function triggerDownload(url: string, filename: string) {
 
 const ALBUM_NAME = 'Splotch';
 
+export const DRAWING_BASENAME = 'splotch';
+export const AI_IMAGE_BASENAME = 'splotch-ai';
+
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -38,7 +41,7 @@ async function findAlbumId(Media: MediaPlugin, name: string): Promise<string | u
 // Native: drop the PNG straight into the device photo library. Android requires
 // an album identifier, so we tuck drawings into a "Splotch" album (creating it
 // once); iOS saves to the camera roll with add-only permission.
-async function saveToGallery(blob: Blob, baseName = 'splotch') {
+async function saveToGallery(blob: Blob, baseName = DRAWING_BASENAME) {
   const { Media } = await import('@capacitor-community/media');
   const dataUrl = await blobToDataUrl(blob);
 
@@ -67,7 +70,7 @@ async function saveToGallery(blob: Blob, baseName = 'splotch') {
 // polaroid animation — the caller owns its own feedback.
 export async function saveImageBlob(
   blob: Blob | null,
-  baseName = 'splotch',
+  baseName = DRAWING_BASENAME,
   opts?: { allowPrompt?: boolean }
 ) {
   if (!blob) return;

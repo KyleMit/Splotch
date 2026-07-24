@@ -1,12 +1,12 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { openParentCenter, buttonCenter } from '$lib/state/ui.svelte';
+  import { parentCenter, buttonCenter } from '$lib/state/ui.svelte';
 
   let buttonEl: HTMLButtonElement;
 
   function openModal() {
     if (!buttonEl) return;
-    openParentCenter(buttonCenter(buttonEl));
+    parentCenter.show(buttonCenter(buttonEl));
   }
 </script>
 

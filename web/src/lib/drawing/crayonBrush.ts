@@ -51,6 +51,7 @@
 // reproduces it by the same mechanism as everything else.
 
 import { scheduleIdle } from '../idle';
+import type { Point } from './strokeMath';
 
 // A density pass: stroke the op at `widthScale` of its line width, filled with
 // tooth at `coverage` (fraction opaque). Passes are drawn widest-first so the
@@ -462,10 +463,7 @@ const PROXIMITY_FRACTION = 0.45;
 const EXCLUDE_ARC_FRACTION = 2.5;
 const ANCHOR_SPACING_FRACTION = 0.25;
 
-export interface CrayonPoint {
-  x: number;
-  y: number;
-}
+export type CrayonPoint = Point;
 
 // Decides where a crayon gesture's polyline must start a new deposition pass
 // (here: a fresh seed phase, so the new pass fills tooth the current one left

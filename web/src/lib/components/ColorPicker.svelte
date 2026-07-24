@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ui, closeColorPicker } from '$lib/state/ui.svelte';
+  import { colorPicker } from '$lib/state/ui.svelte';
   import { pickCustomColor, colors } from '$lib/state/colors.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
@@ -25,7 +25,7 @@
   function selectColor(hex: string) {
     pickCustomColor(hex);
     releaseAllPointers();
-    closeColorPicker();
+    colorPicker.hide();
     hoveredHex = null;
     isTrackingDrag = false;
   }
@@ -120,9 +120,9 @@
   class="color-picker modal-dialog modal-fly-in"
   use:scribbleGuard
   use:modalDialog={() => ({
-    open: ui.colorPickerOpen,
-    origin: ui.colorPickerOrigin,
-    onRequestClose: closeColorPicker,
+    open: colorPicker.open,
+    origin: colorPicker.origin,
+    onRequestClose: colorPicker.hide,
     onClose: () => {
       hoveredHex = null;
       isTrackingDrag = false;

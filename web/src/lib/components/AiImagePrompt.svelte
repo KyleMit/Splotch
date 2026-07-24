@@ -1,10 +1,10 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { ui, closeAiPrompt } from '$lib/state/ui.svelte';
+  import { aiPrompt } from '$lib/state/ui.svelte';
   import { exportCanvasBlob } from '$lib/drawing/engine';
   import { getActiveOverlayImage } from '$lib/drawing/overlay';
   import { generateAiImage } from '$lib/drawing/aiImage';
-  import { STYLE_NAMES } from '$lib/ai/styles';
+  import { STYLE_NAMES, type StyleName, styleThumbPath } from '$lib/ai/styles';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { createAiPreviewLoader } from './aiPreview';
 
@@ -36,12 +36,12 @@
   // still open, so the preview's object URL doesn't outlive the component.
   $effect(() => () => cleanupPreview());
 
-  function handleSelectStyle(style: string) {
+  function handleSelectStyle(style: StyleName) {
     if (!drawingBlob) return;
     // Picking a style immediately hands off to the result modal, which shows
     // the progress dial (and any error) over the blurred drawing.
     const blob = drawingBlob;
-    closeAiPrompt();
+    aiPrompt.hide();
     generateAiImage({ blob, style });
   }
 </script>
@@ -49,15 +49,15 @@
 <dialog
   class="ai-prompt-modal modal-dialog modal-fly-in modal-shell"
   use:modalDialog={() => ({
-    open: ui.aiPromptOpen,
-    origin: ui.aiPromptOrigin,
-    onRequestClose: closeAiPrompt,
+    open: aiPrompt.open,
+    origin: aiPrompt.origin,
+    onRequestClose: aiPrompt.hide,
     onOpen: loadPreview,
     onClose: cleanupPreview,
   })}
 >
   <div class="ai-prompt-content">
-    <button class="ai-prompt-close modal-close-btn" aria-label="Close" onclick={closeAiPrompt}>
+    <button class="ai-prompt-close modal-close-btn" aria-label="Close" onclick={aiPrompt.hide}>
       <Icon name="close" class="modal-close-icon" />
     </button>
 
@@ -73,7 +73,7 @@
           >
             <img
               class="ai-style-thumb"
-              src="/styles/{s.toLowerCase()}.webp"
+              src={styleThumbPath(s)}
               alt=""
               loading="lazy"
               decoding="async"

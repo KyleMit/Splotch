@@ -20,6 +20,13 @@ ensureWorkDirs();
 const count = process.argv[2] ?? '600';
 const session = 'burndown';
 
+// An overnight launch is resume-capable by design: default RESUME=1 so a relaunch
+// after a crash recovers a dirty tree / stale STOP instead of halting (a first,
+// clean launch has nothing to recover, so it's a no-op). Set before the preflight
+// spawn — which inherits this env — so preflight warns rather than fails on crash
+// residue. An operator can still force RESUME=0 to keep the strict dirty-tree halt.
+process.env.RESUME = process.env.RESUME ?? '1';
+
 const preflight = spawnSync(process.execPath, ['scripts/audit-burndown/preflight.mjs'], {
   stdio: 'inherit',
 });
@@ -30,9 +37,38 @@ if (preflight.status !== 0) {
 
 rmSync(join(WORK, 'STOP'), { force: true });
 
+// Forward the burndown's env knobs into the job command itself, not just this
+// process's env — `tmux new-session` does not reliably inherit the caller's
+// arbitrary environment, so an override like E2E_CMD would silently vanish under
+// tmux and the run would use defaults (e.g. hit the flaky-screenshot gate and
+// never push). Baking them into the command makes overrides work on both paths.
+const KNOBS = [
+  'RESUME',
+  'PUSH_EVERY',
+  'BRANCH',
+  'CHECK_CMD',
+  'TEST_CMD',
+  'E2E_CMD',
+  'LINT_CMD',
+  'PUSH_TEST_CMD',
+  'MAX_DEFERRALS',
+  'RETRIES',
+  'MODEL_VERIFY',
+  'MODEL_IMPL',
+  'MODEL_REVIEW',
+  'BUDGET_VERIFY',
+  'BUDGET_IMPL',
+  'BUDGET_REVIEW',
+];
+const shq = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
+const forwarded = KNOBS.filter((k) => process.env[k] != null).map(
+  (k) => `${k}=${shq(process.env[k])}`
+);
+
 // -i prevents idle system sleep, -m keeps the disk awake, -s prevents system
 // sleep (AC power only).
-const job = `env MAX_ISSUES=${count} node scripts/audit-burndown/burndown.mjs`;
+const envPrefix = [`MAX_ISSUES=${count}`, ...forwarded].join(' ');
+const job = `env ${envPrefix} node scripts/audit-burndown/burndown.mjs`;
 const cmd = process.platform === 'darwin' ? `caffeinate -ims ${job}` : job;
 
 if (hasCommand('tmux')) {

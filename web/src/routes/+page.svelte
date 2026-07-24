@@ -12,7 +12,7 @@
   import ClearButton from '$lib/components/ClearButton.svelte';
   import NotchBand from '$lib/components/NotchBand.svelte';
   import ParentHelpButton from '$lib/components/ParentHelpButton.svelte';
-  import { ui } from '$lib/state/ui.svelte';
+  import { parentCenter } from '$lib/state/ui.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import {
     initPWAUpdates,
@@ -20,18 +20,13 @@
     STROKES_BEFORE_SW_REGISTER,
   } from '$lib/pwa/updates';
   import { initInstallPrompt } from '$lib/state/install.svelte';
-  import {
-    captureAiAccessTokenFromUrl,
-    hydrateApiKey,
-    hydrateSaveFolder,
-    settings,
-  } from '$lib/state/settings.svelte';
+  import { captureAiAccessTokenFromUrl, settings } from '$lib/state/settings.svelte';
+  import { hydrateApiKey } from '$lib/state/aiKey.svelte';
+  import { hydrateSaveFolder } from '$lib/state/saveFolder.svelte';
   import { hydrateDurableStorage } from '$lib/storage';
-  import { initNetwork } from '$lib/state/network.svelte';
   import { isNative } from '$lib/platform';
   import { applyTheme } from '$lib/theme';
   import { applyDeviceOrientationPreference } from '$lib/orientation';
-  import { initFullscreen } from '$lib/state/fullscreen.svelte';
   import { scheduleIdle } from '$lib/idle';
 
   $effect(() => {
@@ -68,13 +63,13 @@
 
   // The Parent Center dialog is the one overlay too heavy even for an idle
   // slice (~200 ms mounted under a 4× throttle), so it waits for its first
-  // open — the tap that flips ui.parentCenterOpen latches the mount, and the
+  // open — the tap that flips parentCenter.open latches the mount, and the
   // dialog's modalDialog $effect shows it as soon as it lands. The corner
   // button that opens it (ParentHelpButton) stays eagerly mounted above.
   let ParentCenter = $state<Component | null>(null);
   let parentCenterWanted = $state(false);
   $effect(() => {
-    if (ui.parentCenterOpen) parentCenterWanted = true;
+    if (parentCenter.open) parentCenterWanted = true;
   });
 
   onMount(() => {
@@ -116,7 +111,6 @@
     // Load the optional saved-photo folder name for the Parent Center display
     // (web/desktop only; no effect on whether saves happen).
     hydrateSaveFolder();
-    initNetwork();
 
     // Native only: recover any settings the WebView's localStorage may have
     // evicted from the durable Capacitor Preferences store. Each persisted store
@@ -152,10 +146,6 @@
     };
     document.addEventListener('pointerdown', onFirstPointerDown, { once: true });
     document.addEventListener('visibilitychange', onVisibilityChange);
-
-    // Seed the opt-in Fullscreen Toggle (Android web only; inert elsewhere) that
-    // dismisses the mobile URL bar a non-scrolling canvas can never scroll away.
-    initFullscreen();
 
     // The service worker only exists in the web build; the native apps bundle
     // their shell on-device, so there's nothing to update-check there. The
