@@ -9,33 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P4][complexity] `AiKeyManager` mixes credential verification, secure persistence, masking, feedback, and three feature toggles
-
-**File(s):** `web/src/lib/components/parent/AiKeyManager.svelte:1-136` (script) — pinned at SHA
-f934d43
-
-#### Problem
-
-One component owns: platform detection + storage-note copy (`:47-54`), key masking (`:39-45`), the
-async verify→persist→feedback state machine with `latestRequest` guarding (`:71-123`), forget
-handlers, *and* the three downstream feature toggles (`:247-282`). It's a lot of unrelated concerns
-in a single 488-line file; the toggles at the bottom have nothing to do with credential handling and
-only render when `!aiLocked`.
-
-#### Proposed solution
-
-Split the credential panel (`aiLocked`/`byok-active` markup + verify/forget logic) from the
-feature-toggle group. Extract `AiFeatureToggles.svelte` (the `.ai-controls` block, `:247-282`)
-rendered by `AiKeyManager` when unlocked. Optionally move `maskSecret` and `keyStorageNote` to a
-small helper module so the component is presentation + orchestration only.
-
-#### Verification
-
-`npm run check`/`npm test` pass; entering a key, forgetting it, and toggling the three AI features
-all still work.
-
----
-
 ### [P4][accessibility] Two identical segmented controls use inconsistent ARIA semantics (radiogroup vs group/pressed)
 
 **File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:32-45` (radiogroup/radio) ·
