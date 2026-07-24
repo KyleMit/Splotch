@@ -7,32 +7,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P4][naming] Comments point to `storage.js`, but the file is `storage.ts`
-
-**File(s):** `web/src/lib/state/strokeWidth.svelte.ts:32`,
-`web/src/lib/state/settings.svelte.ts:248` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-// storage layer recovers values evicted by the native WebView (see storage.js).   // strokeWidth:32
-// hydrateDurableStorage in storage.js). A no-op visually when nothing changed.     // settings:248
-```
-
-There is no `storage.js` — the module is `web/src/lib/storage.ts` (and `tool.svelte.ts:97` correctly
-says `storage.ts`). A reader following the reference greps for a file that doesn't exist. The repo
-convention is TypeScript-only (`No plain .js source files in src/`), so `.js` here is stale.
-
-#### Proposed solution
-
-Replace `storage.js` → `storage.ts` in both comments.
-
-#### Verification
-
-`grep -rn "storage\.js" web/src/lib/state` returns nothing.
-
----
-
 ### [P4][type-safety] Stroke sizes are numerically typed (`number`) where a `1|2|3|4|5` union would prevent invalid levels
 
 **File(s):** `web/src/lib/state/strokeWidth.svelte.ts:4,18-24,58-63` — pinned at SHA f934d43

@@ -215,7 +215,7 @@ export function setAiAccessToken(v: string) {
 
 // Re-read every persisted setting into the live store. Used after the durable
 // storage layer recovers values that the native WebView had evicted (see
-// hydrateDurableStorage in storage.js). A no-op visually when nothing changed.
+// hydrateDurableStorage in storage.ts). A no-op visually when nothing changed.
 export function reloadSettings() {
   for (const [prop, [key]] of Object.entries(BOOL_SETTINGS) as [
     BoolSettingKey,
