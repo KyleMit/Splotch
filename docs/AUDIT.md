@@ -11,39 +11,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P3][consistency] No module uses `$derived`; every reactive-computed value is a getter function
-
-**File(s):** `web/src/lib/state/appearance.svelte.ts:26-28` (`resolvedTheme`),
-`web/src/lib/state/strokeWidth.svelte.ts:42-44` (`activeStrokeSize`),
-`web/src/lib/state/actionButtonLayout.svelte.ts:58-104` (`visibleActionButtonCount`,
-`maxActionButtonScale`) — pinned at SHA f934d43
-
-#### Problem
-
-Every derived value in the section is expressed as a plain function that recomputes on each call
-rather than a `$derived`. `resolvedTheme()` re-runs
-`resolveTheme(settings.theme, appearance.systemDark)` per call; `activeStrokeSize()` re-branches per
-call; `visibleActionButtonCount()` re-sums per call. The section literally contains zero `$derived`
-(verified: the only "derived" hit in `strokeWidth.svelte.ts:41` is inside a comment). This is a
-legitimate convention choice — module-scope `$derived` has its own caveats — but it's undocumented,
-so a newcomer can't tell whether reaching for `$derived` is encouraged, discouraged, or forbidden
-here, and may inconsistently introduce one.
-
-#### Proposed solution
-
-Make the convention explicit. Either (a) document in the `state/` orientation that shared derived
-values are exposed as getter functions (not module-level `$derived`) and why, so it's a rule; or (b)
-convert the pure, dependency-only ones (`resolvedTheme`) to exported `$derived` and standardize.
-Given the getter-function form is 100% consistent today, option (a) — codify it — is the lower-risk
-fix. The key deliverable is a written rule so the next contributor doesn't guess.
-
-#### Verification
-
-The rule appears in `web/src/lib/state`'s CLAUDE.md/AGENTS.md source; a reviewer can cite it. No
-behavior change if documenting.
-
----
-
 ### [P3][consistency] State-mutation ownership is inconsistent: some stores are setter-guarded, others are written directly by components
 
 **File(s):** `web/src/lib/state/canvas.svelte.ts:6-19` (no setters) vs
