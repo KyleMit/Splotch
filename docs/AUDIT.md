@@ -9,32 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P2][type-safety] `SetupInstructions` passes OS around as bare `string`, losing the `'ios'|'android'` union
-
-**File(s):** `web/src/lib/components/parent/SetupInstructions.svelte:47-58,91,112,136,166-202` —
-pinned at SHA f934d43
-
-#### Problem
-
-`setupOsList` is a `$derived` that produces `string[]` (`:47-53`, elements are string literals with
-no annotation), and every consumer is typed `os: string`: `lockTitle(os: string)` (`:55`) and the
-snippets `installSteps(os: string)` (`:91`), `lockSteps` (`:112`), `exitSteps` (`:136`). The whole
-file then branches on `os === 'ios'` string comparisons. A typo (`'IOS'`, `'andriod'`) compiles fine
-and silently falls through to the Android branch, and there's no exhaustiveness guarantee.
-
-#### Proposed solution
-
-Introduce `type SetupOs = 'ios' | 'android'`, annotate `setupOsList` as `SetupOs[]` (the
-`native ? [...] : [...]` arms already only ever produce those two literals), and change
-`lockTitle`/the three snippets to `os: SetupOs`. `InstallDeviceOs` from `install.svelte` may already
-be this union — reuse it if so.
-
-#### Verification
-
-`npm run check` passes; changing an `os === 'ios'` to `os === 'iOS'` now produces a type error.
-
----
-
 ### [P3][duplication] Single source of truth for `APP_VERSION` — it's redefined four times
 
 **File(s):** `web/src/lib/components/parent/sections.ts:40` ·

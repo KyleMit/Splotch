@@ -9,6 +9,8 @@
     type InstallDeviceOs,
   } from '$lib/state/install.svelte';
 
+  type SetupOs = 'ios' | 'android';
+
   let installing = $state(false);
 
   async function oneTapInstall() {
@@ -45,7 +47,7 @@
 
   // Which OS setup sections to render. On native we know the exact platform, so
   // we show just that one; on the web we show both, detected OS first.
-  let setupOsList = $derived(
+  let setupOsList = $derived<SetupOs[]>(
     native
       ? [platform === 'android' ? 'android' : 'ios']
       : deviceOs === 'android'
@@ -53,7 +55,7 @@
         : ['ios', 'android']
   );
 
-  function lockTitle(os: string) {
+  function lockTitle(os: SetupOs) {
     if (deviceLocked) return os === 'ios' ? 'Guided Access is on' : 'App Pinning is on';
     return os === 'ios' ? 'Enable Guided Access' : 'Enable App Pinning';
   }
@@ -89,7 +91,7 @@
 
 <!-- The two checklists are authored once here and reused across the web
      accordion and the flat native view. -->
-{#snippet installSteps(os: string)}
+{#snippet installSteps(os: SetupOs)}
   {#if os === 'ios'}
     <ol class="steps">
       <li>
@@ -110,7 +112,7 @@
   {/if}
 {/snippet}
 
-{#snippet lockSteps(os: string)}
+{#snippet lockSteps(os: SetupOs)}
   {#if os === 'ios'}
     <ol class="steps">
       <li>Go to <strong>Settings → Accessibility → Guided Access</strong></li>
@@ -134,7 +136,7 @@
 
 <!-- Shown in place of the enable steps once the lock is already active, so the parent
      just needs to know how to get back out. -->
-{#snippet exitSteps(os: string)}
+{#snippet exitSteps(os: SetupOs)}
   {#if os === 'ios'}
     <ol class="steps">
       <li>Triple-click the <strong>side button</strong> (or Home button)</li>
