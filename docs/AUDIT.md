@@ -7,39 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P2][complexity] `renderOp` is a 95-line dispatcher with a 35-line crayon-bbox block inlined
-
-**File(s):** `web/src/lib/drawing/strokeOps.ts:463-557` (`renderOp`), esp. 499-552 — pinned at SHA
-f934d43
-
-#### Problem
-
-`renderOp` switches on six op kinds, and the `op.crayon && !op.erase` arm (499-552) is by itself a
-50-line block that: sets up the buffer, mirrors the transform, paints, sets `dirty`, then computes
-an op bounding box inline (517-537) and repeats the paint+bounds into the paper-space buffer
-(542-550). The bbox computation (dot vs path min/max over segs) is buried procedural code inside a
-dispatcher.
-
-```ts
-let x0: number; let y0: number; let x1: number; let y1: number; let pad: number;
-if (op.kind === 'dot') { x0 = x1 = op.x; ... pad = op.radius + 2; }
-else { ... for (const s of op.segs) { x0 = Math.min(x0, s.cx, s.x); ... } pad = op.lineWidth / 2 + 2; }
-```
-
-#### Proposed solution
-
-Extract two helpers: `function opDeviceBounds(op: DotOp | PathOp): { x0; y0; x1; y1; pad }` (the
-517-537 block), and `function renderCrayonOp(target, op): void` (the whole 499-552 arm). `renderOp`
-then dispatches in one line per kind. The extracted `opDeviceBounds` also lets `unionCrayonBounds`
-be fed a struct instead of six positional args.
-
-#### Verification
-
-`npm run test -- crayonBrush` and the engine crayon E2E stay green; extracted `opDeviceBounds` gets
-a direct unit test (dot radius, multi-seg path). Pixel output is unchanged.
-
----
-
 ### [P2][duplication] Extract the two-blit subtractive glaze stamp shared by `flushCrayonBuffer` and `renderOp`
 
 **File(s):** `web/src/lib/drawing/strokeOps.ts:395-413` and `473-489` — pinned at SHA f934d43

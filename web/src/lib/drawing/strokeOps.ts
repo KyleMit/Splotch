@@ -333,11 +333,7 @@ function existingBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer |
 function unionCrayonBounds(
   buf: CrayonPassBuffer,
   matrix: DOMMatrix | null,
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-  pad: number
+  { x0, y0, x1, y1, pad }: { x0: number; y0: number; x1: number; y1: number; pad: number }
 ) {
   x0 -= pad;
   y0 -= pad;
@@ -451,6 +447,83 @@ export function resetLiveCrayonForReplay(target: CanvasRenderingContext2D) {
   if (target === liveTarget) resetLiveCrayonPass();
 }
 
+// The op's user-space bounding box plus the pad that covers its stroke
+// half-width and AA bleed: a dot's point ± its radius, a path's min/max over the
+// start point and every seg's control and end points. Fed straight into
+// unionCrayonBounds to grow a pass buffer's dirty region.
+function opDeviceBounds(op: Extract<StrokeOp, { kind: 'dot' | 'path' }>): {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  pad: number;
+} {
+  let x0: number;
+  let y0: number;
+  let x1: number;
+  let y1: number;
+  let pad: number;
+  if (op.kind === 'dot') {
+    x0 = x1 = op.x;
+    y0 = y1 = op.y;
+    pad = op.radius + 2;
+  } else {
+    x0 = x1 = op.startX;
+    y0 = y1 = op.startY;
+    for (const s of op.segs) {
+      x0 = Math.min(x0, s.cx, s.x);
+      y0 = Math.min(y0, s.cy, s.y);
+      x1 = Math.max(x1, s.cx, s.x);
+      y1 = Math.max(y1, s.cy, s.y);
+    }
+    pad = op.lineWidth / 2 + 2;
+  }
+  return { x0, y0, x1, y1, pad };
+}
+
+// Accumulate a crayon ink op into the target's open pass buffer (see the
+// pass-buffer notes above). Paints into the buffer through the target's own
+// transform, grows the buffer's dirty region by the op's bounds, and — for the
+// live target — mirrors the paint into the paper-space buffer so the pass can
+// close into a 'crayonPassRaster'.
+function renderCrayonOp(
+  target: CanvasRenderingContext2D,
+  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
+) {
+  // Zero mix = the pre-mixing pipeline exactly: paint the target directly
+  // (opaque wax, no buffer, no stamp) — the dev harness's A/B baseline and a
+  // cheap escape hatch. Flushes become no-ops on a clean buffer.
+  if (getCrayonMix() === 0) {
+    paintCrayon(target, op);
+    return;
+  }
+  const buf = crayonBufferFor(target);
+  let matrix: DOMMatrix | null = null;
+  if (typeof target.getTransform === 'function') {
+    matrix = target.getTransform();
+    buf.ctx.setTransform(matrix);
+    buf.mirror?.setTransform(matrix);
+  }
+  paintCrayon(buf.ctx, op);
+  if (buf.mirror) paintCrayon(buf.mirror, op);
+  buf.dirty = true;
+  const bounds = opDeviceBounds(op);
+  unionCrayonBounds(buf, matrix, bounds);
+  // The live stroke also accumulates in paper space, so the pass can close
+  // into a 'crayonPassRaster' instead of leaving ops for the fold to
+  // re-render (see the live paper-space notes above). Identity transform:
+  // op coordinates ARE paper coordinates.
+  if (target === liveTarget) {
+    const pb = livePaperBufferFor();
+    if (pb) {
+      pb.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      paintCrayon(pb.ctx, op);
+      pb.dirty = true;
+      unionCrayonBounds(pb, null, bounds);
+    }
+  }
+}
+
 // Paint one recorded op onto a target context. Used both live (target = the
 // visible ctx) and by the commit fold / repaint paths (target = the paper
 // raster, the visible canvas, or an export surface). Erasing composites
@@ -497,57 +570,7 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   if (op.crayon && !op.erase) {
-    // Zero mix = the pre-mixing pipeline exactly: paint the target directly
-    // (opaque wax, no buffer, no stamp) — the dev harness's A/B baseline and a
-    // cheap escape hatch. Flushes become no-ops on a clean buffer.
-    if (getCrayonMix() === 0) {
-      paintCrayon(target, op);
-      return;
-    }
-    const buf = crayonBufferFor(target);
-    let matrix: DOMMatrix | null = null;
-    if (typeof target.getTransform === 'function') {
-      matrix = target.getTransform();
-      buf.ctx.setTransform(matrix);
-      buf.mirror?.setTransform(matrix);
-    }
-    paintCrayon(buf.ctx, op);
-    if (buf.mirror) paintCrayon(buf.mirror, op);
-    buf.dirty = true;
-    let x0: number;
-    let y0: number;
-    let x1: number;
-    let y1: number;
-    let pad: number;
-    if (op.kind === 'dot') {
-      x0 = x1 = op.x;
-      y0 = y1 = op.y;
-      pad = op.radius + 2;
-    } else {
-      x0 = x1 = op.startX;
-      y0 = y1 = op.startY;
-      for (const s of op.segs) {
-        x0 = Math.min(x0, s.cx, s.x);
-        y0 = Math.min(y0, s.cy, s.y);
-        x1 = Math.max(x1, s.cx, s.x);
-        y1 = Math.max(y1, s.cy, s.y);
-      }
-      pad = op.lineWidth / 2 + 2;
-    }
-    unionCrayonBounds(buf, matrix, x0, y0, x1, y1, pad);
-    // The live stroke also accumulates in paper space, so the pass can close
-    // into a 'crayonPassRaster' instead of leaving ops for the fold to
-    // re-render (see the live paper-space notes above). Identity transform:
-    // op coordinates ARE paper coordinates.
-    if (target === liveTarget) {
-      const pb = livePaperBufferFor();
-      if (pb) {
-        pb.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        paintCrayon(pb.ctx, op);
-        pb.dirty = true;
-        unionCrayonBounds(pb, null, x0, y0, x1, y1, pad);
-      }
-    }
+    renderCrayonOp(target, op);
     return;
   }
   flushCrayonBuffer(target);
