@@ -1,12 +1,8 @@
 <script lang="ts">
   import ToggleRow from './ToggleRow.svelte';
   import Icon from '../Icon.svelte';
-  import {
-    settings,
-    setSaveOnDelete,
-    changeSaveFolder,
-    forgetSaveFolder,
-  } from '$lib/state/settings.svelte';
+  import { settings, setSaveOnDelete } from '$lib/state/settings.svelte';
+  import { changeSaveFolder, forgetSaveFolder } from '$lib/state/saveFolder.svelte';
   import { folderSaveSupported } from '$lib/drawing/folderSave';
 
   // The optional save folder is desktop-Chromium only (File System Access API).

@@ -11,47 +11,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P2][complexity] `settings.svelte.ts` is a god-module bundling four unrelated concerns
-
-**File(s):** `web/src/lib/state/settings.svelte.ts:1-373` — pinned at SHA f934d43
-
-#### Problem
-
-At 373 lines this module mixes four concerns that share nothing but the word "settings":
-
-1. The actual settings store + table (lines 45-207, 249-265).
-2. A BYOK Gemini-key **secure-write concurrency queue** — `aiKeyWriteVersion`, `aiKeyWriteQueue`,
-   `persistAiUserApiKey`, `setAiUserApiKey`, `hydrateApiKey` (lines 213-287), including the subtle
-   "ordered writes so a stale save can't win" logic.
-3. **Folder-save lazy-loading** — `folderSaveModule`, `loadFolderSave`, `tryLoadFolderSave`,
-   `changeSaveFolder`, `forgetSaveFolder`, `hydrateSaveFolder` (lines 289-362), a self-contained
-   dynamic-import memo with its own error handling.
-4. URL token capture — `captureAiAccessTokenFromUrl` (364-372).
-
-Concerns 2 and 3 are each ~65-75 lines of intricate, independently-testable logic that a reader
-scanning for "where is the soundEnabled default" must scroll past. They also drag
-`saveApiKey`/`secureStorage` and `folderSave` imports into the settings module's dependency surface.
-
-#### Proposed solution
-
-Extract two sibling modules under `web/src/lib/state/` (or `web/src/lib/`):
-
-* `aiKey.svelte.ts` — owns `settings.aiUserApiKey` slice or exposes
-  `setAiUserApiKey(v, ownsRequest)` + `hydrateApiKey()`; keeps the write-queue local.
-* `saveFolder.svelte.ts` — owns `settings.saveFolderName` +
-  `changeSaveFolder`/`forgetSaveFolder`/`hydrateSaveFolder` and the `loadFolderSave` memo.
-
-Both can still write into the shared `settings` object (or hold their own `$state` slice).
-`settings.svelte.ts` shrinks to the table-driven core + theme/token specials.
-
-#### Verification
-
-`settings.svelte.ts` drops below ~200 lines; `settings.svelte.test.ts` splits cleanly (the existing
-`hydrateApiKey` describe block, tests 225-261, moves with the code); `npm run check` + `npm test`
-green.
-
----
-
 ### [P2][duplication] `ui.svelte.ts` repeats four identical modal open/close pairs and mixes in the whole AI state machine
 
 **File(s):** `web/src/lib/state/ui.svelte.ts:42-184` — pinned at SHA f934d43

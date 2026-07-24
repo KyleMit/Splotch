@@ -20,12 +20,9 @@
     STROKES_BEFORE_SW_REGISTER,
   } from '$lib/pwa/updates';
   import { initInstallPrompt } from '$lib/state/install.svelte';
-  import {
-    captureAiAccessTokenFromUrl,
-    hydrateApiKey,
-    hydrateSaveFolder,
-    settings,
-  } from '$lib/state/settings.svelte';
+  import { captureAiAccessTokenFromUrl, settings } from '$lib/state/settings.svelte';
+  import { hydrateApiKey } from '$lib/state/aiKey.svelte';
+  import { hydrateSaveFolder } from '$lib/state/saveFolder.svelte';
   import { hydrateDurableStorage } from '$lib/storage';
   import { isNative } from '$lib/platform';
   import { applyTheme } from '$lib/theme';
