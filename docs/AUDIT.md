@@ -7,33 +7,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P3][naming] `customColor` default duplicates the Purple swatch hex as a magic literal
-
-**File(s):** `web/src/lib/state/colors.svelte.ts:20-21,62` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-export const PALETTE_COLORS = [{ hex: '#AB71E1', label: 'Purple' }, …];  // line 21
-export const colors = $state({ …, customColor: '#AB71E1', … });          // line 62
-```
-
-`'#AB71E1'` is hand-copied as the custom-color seed. It also appears a third time in `TRIM_ORDER`
-(line 53). Nothing links them, so the "custom color starts at the default swatch" intent is implicit
-and drifts if Purple is re-tuned.
-
-#### Proposed solution
-
-Seed from the source of truth: `customColor: PALETTE_COLORS[0].hex`. (The comment at line 6 already
-promises "Purple must stay at index 0 — it's the default selection," so this reads correctly.)
-
-#### Verification
-
-`grep -c "#AB71E1" web/src/lib/state/colors.svelte.ts` drops to 1 (the palette definition) plus the
-`TRIM_ORDER` occurrence if that finding isn't also addressed; `colors.svelte.test.ts` green.
-
----
-
 ### [P4][duplication] `install.svelte.ts` repeats the oneTap→manual fallback three times
 
 **File(s):** `web/src/lib/state/install.svelte.ts:129,141,149` — pinned at SHA f934d43

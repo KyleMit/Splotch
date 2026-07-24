@@ -61,7 +61,7 @@ export const CUSTOM_SWATCH = 'custom';
 export const colors = $state({
   activeSwatch: PALETTE_COLORS[0].hex,
   activeColor: PALETTE_COLORS[0].hex,
-  customColor: '#AB71E1',
+  customColor: PALETTE_COLORS[0].hex,
   customColorSelected: false,
 });
 
