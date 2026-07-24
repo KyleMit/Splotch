@@ -11,52 +11,6 @@
 
 ## Source: Code audit — App state (Svelte 5 runes)
 
-### [P3][duplication] The idempotent-init idiom (`let initialized`) is copy-pasted across three stores
-
-**File(s):** `web/src/lib/state/fullscreen.svelte.ts:38,43-45`,
-`web/src/lib/state/network.svelte.ts:12,14-16`, `web/src/lib/state/install.svelte.ts:46,103-105` —
-pinned at SHA f934d43
-
-#### Problem
-
-Three modules repeat the same guard:
-
-```ts
-let initialized = false;
-export function initX() {
-  if (!browser || initialized) return;   // install adds || isNative()
-  initialized = true;
-  …
-}
-```
-
-Same shape, same failure mode if a store forgets it. Small, but it's the kind of boilerplate that
-invites a subtle divergence (e.g. `install` folds in `isNative()` — easy to miss which guard a given
-store uses).
-
-#### Proposed solution
-
-If the P1 lifecycle-consolidation finding lands (self-init at module load), this idiom largely
-disappears. Otherwise extract a tiny helper:
-
-```ts
-// web/src/lib/state/once.ts
-export function once(fn: () => void): () => void {
-  let done = false;
-  return () => { if (!done) { done = true; fn(); } };
-}
-export const initNetwork = once(() => { if (!browser) return; … });
-```
-
-so the guard is written once and each store declares only its extra conditions.
-
-#### Verification
-
-`grep -rn "initialized = false" web/src/lib/state` returns nothing (or only documented exceptions);
-each store's init test still asserts a second call is a no-op.
-
----
-
 ### [P3][consistency] No module uses `$derived`; every reactive-computed value is a getter function
 
 **File(s):** `web/src/lib/state/appearance.svelte.ts:26-28` (`resolvedTheme`),
