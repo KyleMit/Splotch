@@ -9,34 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P3][duplication] The `isAiGenerationActive(runId)` ownership guard is threaded ad hoc through both functions
-
-**File(s):** `web/src/lib/drawing/aiImage.ts:66-92,113,118,146-176` — pinned at SHA f934d43
-
-#### Problem
-
-The "am I still the current run?" check appears ~7 times: as `ownsRun()` guards in `autoSaveImages`
-(lines 67, 81, 83) plus the signature-write guard reasoning (84-91), and as
-`isAiGenerationActive(runId)` at lines 113, 146, 173, 176 in `generateAiImage`. Every state-mutating
-helper (`setAiPreview`, `finishAiGeneration`, `failAiGeneration`) *also* re-checks ownership
-internally in `ui.svelte.ts`. The concept is load-bearing (it's what makes the latest-request race
-correct) but expressed inconsistently — a `boolean` predicate passed one place, an `id` re-checked
-another — so a reader can't quickly confirm every early-return path is covered.
-
-#### Proposed solution
-
-Standardize on one shape. Since the state setters already guard by `id`, pass `runId` consistently
-and give `autoSaveImages` the `runId` directly (`ownsRun = () => isAiGenerationActive(runId)`
-becomes redundant). Document the invariant once ("only the owning run mutates UI or saves") at the
-top of `generateAiImage` rather than re-deriving it in scattered comments (lines 84-91).
-
-#### Verification
-
-`aiImage.test.ts`'s ownership suite ("lets only the replacement run commit…", "never auto-saves a
-stale run…") must stay green — it is the regression net for this exact logic.
-
----
-
 ### [P4][duplication] The gallery tag strings `'splotch-ai'` / `'splotch'` are duplicated across modules
 
 **File(s):** `web/src/lib/drawing/aiImage.ts:80,85`;

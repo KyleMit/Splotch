@@ -64,8 +64,8 @@ async function blobSignature(blob: Blob): Promise<string | null> {
 // Drop the finished AI image into the gallery (a download on the web), and tuck
 // the child's own drawing in alongside it — but only when the drawing actually
 // changed since the last AI run, so duplicates don't pile up.
-async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, ownsRun: () => boolean) {
-  if (!ownsRun()) return;
+async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, runId: number) {
+  if (!isAiGenerationActive(runId)) return;
   // The save pipeline loads on demand so this module — statically imported by
   // ActionsPanel — doesn't drag it into the startup bundle (issue #461). A
   // failed chunk load is contained here: the AI image already committed to the
@@ -79,9 +79,9 @@ async function autoSaveImages(aiBlob: Blob, drawingBlob: Blob, ownsRun: () => bo
     return;
   }
   await saveImageBlob(aiBlob, 'splotch-ai');
-  if (!ownsRun()) return;
+  if (!isAiGenerationActive(runId)) return;
   const sig = await blobSignature(drawingBlob);
-  if (!ownsRun()) return;
+  if (!isAiGenerationActive(runId)) return;
   if (sig === null || sig !== lastSavedDrawingSig) {
     await saveImageBlob(drawingBlob, 'splotch');
   }
@@ -200,7 +200,7 @@ export async function generateAiImage({
     const response = await readAiImageResponse(res);
     const committed = applyResponse(runId, response) === 'committed';
     if (committed && response.kind === 'image' && settings.autoSaveAiEnabled) {
-      await autoSaveImages(response.blob, exported.preview, () => isAiGenerationActive(runId));
+      await autoSaveImages(response.blob, exported.preview, runId);
     }
   } catch (err) {
     if (!isAiGenerationActive(runId)) return;
