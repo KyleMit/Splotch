@@ -37,7 +37,9 @@
   that reads or edits `docs/AUDIT.md` at that scale; `lib.mjs` holds the shared runners, which
   deliberately return status instead of exiting (the driver handles every failure itself — don't
   swap them for `run()`/`capture()`); `prompts/*.md` are the role system prompts. Entry points are
-  the `audit:*` npm scripts.
+  the `audit:*` npm scripts. The `AUDIT.md` surgery is locked by
+  `scripts/tests/audit-burndown-lib.test.mjs` (`npm run test:scripts`, in CI) — extend that test
+  when touching `lib.mjs`'s parsing or seam logic.
 * The app-driving `gen:*` generators that stay here — `gen:shots` (`store-shots.mjs`) and
   `gen:large-image` (`gen-large-image.mjs`) — drive the live app by selector through
   `scripts/lib/app-driver.mjs` and only run on demand, so that module rots silently when app markup,

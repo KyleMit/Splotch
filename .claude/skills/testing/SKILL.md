@@ -7,14 +7,15 @@ description: Full testing guide — the three-tier strategy (Vitest unit, Playwr
 
 # Splotch — Testing Guide
 
-Splotch has four core automated suites across three test layers. The app-unit, asset-pipeline, and
-E2E suites run on every push/PR; real-device launch tests are heavy, so they run only on tagged
-releases and on demand.
+Splotch has five core automated suites across three test layers. The app-unit, asset-pipeline,
+repo-script, and E2E suites run on every push/PR; real-device launch tests are heavy, so they run
+only on tagged releases and on demand.
 
 | Layer                 | Tool                | Command                  | Runs in CI                              |
 | --------------------- | ------------------- | ------------------------ | --------------------------------------- |
 | Unit (app)            | Vitest (happy-dom)  | `npm run test:unit`      | every push / PR                         |
 | Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen` | every push / PR                         |
+| Unit (repo scripts)   | Vitest (Node)       | `npm run test:scripts`   | every push / PR                         |
 | E2E (web)             | Playwright          | `npm run test:e2e`       | every push / PR                         |
 | Smoke (Android)       | Maestro + emulator  | `npm run test:android`   | **tagged releases only**                |
 | Smoke (iOS)           | Maestro + simulator | `npm run test:ios`       | **tagged releases only** (macOS runner) |
@@ -24,9 +25,9 @@ A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
 integration below. Two additional server-contract smoke tests, `test:api:smoke` and
 `test:blobs:smoke`, run on demand rather than on every push.
 
-`npm test` runs the first three (`test:unit` + `test:asset-gen` + `test:e2e`). The native smoke
-tests are intentionally **not** part of `npm test` — they need an emulator/simulator and the native
-toolchains.
+`npm test` runs the first four (`test:unit` + `test:asset-gen` + `test:scripts` + `test:e2e`). The
+native smoke tests are intentionally **not** part of `npm test` — they need an emulator/simulator
+and the native toolchains.
 
 ## Deploy smoke tests — `test:api:smoke`, `test:blobs:smoke`
 
@@ -75,6 +76,18 @@ Configured in `tools/asset-gen/vitest.config.mjs`. These run in Node against com
 mocked generator workflows, with no Gemini calls or network access. CI runs them immediately after
 the app-unit suite and before installing Playwright's browser dependencies, so image-analysis gate
 regressions fail fast.
+
+## Repo-script unit tests — Vitest
+
+```bash
+npm run test:scripts
+```
+
+Configured in `scripts/vitest.config.mjs` (Node env), tests in `scripts/tests/`. Covers repo
+automation helpers whose regressions would be silent — currently the audit-burndown `docs/AUDIT.md`
+surgery in `scripts/audit-burndown/lib.mjs` (entry-boundary parsing, pure block removal,
+dprint-clean seams; see the `burn-down-audits` skill). Add a test here when a `scripts/` helper's
+failure mode is corrupting state rather than crashing.
 
 ## E2E web tests — Playwright
 
