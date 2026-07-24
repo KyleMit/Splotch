@@ -1303,7 +1303,7 @@ function listen(
 function listen(
   target: EventTarget,
   type: string,
-  handler: (e: any) => void,
+  handler: (e: Event) => void,
   options?: AddEventListenerOptions | boolean
 ) {
   target.addEventListener(type, handler as EventListener, options);

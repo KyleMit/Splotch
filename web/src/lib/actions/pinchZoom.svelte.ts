@@ -6,6 +6,8 @@
 // everything is clamped to the preview's own bounds — the drawing surface stays
 // locked.
 
+import { SvelteMap } from 'svelte/reactivity';
+
 export interface Point {
   x: number;
   y: number;
@@ -65,7 +67,7 @@ function spread(a: Point, b: Point): number {
 // coordinates) and read back the clamped transform. The Svelte action wires real
 // PointerEvents to it; tests drive it with synthetic points.
 export function createPinchZoom(getBounds: () => Bounds) {
-  const pointers = new Map<number, Point>();
+  const pointers = new SvelteMap<number, Point>();
   let transform: Transform = { ...IDENTITY_TRANSFORM };
   // Snapshot at the start of each gesture segment (whenever a finger lands or
   // lifts) so scaling and panning stay relative to that instant — no jumps when
