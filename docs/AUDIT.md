@@ -7,35 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P2][dead-code] `fillDecodePending` is written three times and never read
-
-**File(s):** `web/src/lib/drawing/magicBrush.ts:61, 317, 323, 336` — pinned at SHA f934d43
-
-#### Problem
-
-`fillDecodePending` is assigned in `setColorSheet` (336), `loadSheetImage.onload` (317), and
-`onerror` (323), but there is **no read** — the only other occurrence (299) is a comment in
-`isMagicSheetUnready` explaining why it is *not* used (`!sheetReady` is the real signal). It is pure
-dead state that a maintainer must still reason about ("does the unready check depend on this?").
-
-```ts
-let fillDecodePending = false;   // 61 — written, never read
-...
-fillDecodePending = colorUrl !== null;  // 336
-```
-
-#### Proposed solution
-
-Delete the field and its three assignments. Update the parenthetical in the `isMagicSheetUnready`
-comment (299-300) that references it.
-
-#### Verification
-
-`grep -n 'fillDecodePending' web/src/lib/drawing/magicBrush.ts` returns only the comment after
-removal; `npm run test -- magicBrush` and `npm run check` pass.
-
----
-
 ### [P2][maintainability] `activePointerIds` Set redundantly shadows `activePointers` Map keys
 
 **File(s):** `web/src/lib/drawing/engine.ts:677-678, 760, 796, 932, 970-978` — pinned at SHA f934d43
