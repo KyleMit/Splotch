@@ -189,3 +189,37 @@ let crayonOverlaysCreated = false;
 mount/resize/teardown.
 
 ---
+
+### [P3][duplication] Extract credential-header assembly; stop hard-coding the auth header names client-side
+
+**File(s):** `web/src/lib/drawing/aiImage.ts:135-142` — pinned at SHA f934d43
+
+#### Problem
+
+The upload's auth headers are built inline with bare string literals:
+
+```ts
+const headers: Record<string, string> = { 'Content-Type': uploadBlob.type || 'image/png' };
+if (settings.aiUserApiKey) headers['X-Api-Key'] = settings.aiUserApiKey;
+else headers['X-Access-Token'] = settings.aiAccessToken;
+```
+
+The header names `X-Api-Key` / `X-Access-Token` also appear as literals in the server CORS list
+(`web/src/hooks.server.ts:63`) with no shared source of truth — rename one and the two drift
+silently. The BYOK-vs-managed selection is also request-shaping logic that reads cleaner as its own
+function.
+
+#### Proposed solution
+
+Add named constants (e.g. in `web/src/lib/ai/limits.ts` or a small `web/src/lib/ai/headers.ts` that
+both client and server import):
+`export const API_KEY_HEADER = 'X-Api-Key'; export const ACCESS_TOKEN_HEADER = 'X-Access-Token';`.
+Extract `function buildAuthHeaders(uploadType: string): Record<string,string>` in aiImage.ts using
+those constants, and reference them from the server CORS list too.
+
+#### Verification
+
+`npm run check`; `aiImage.test.ts`'s `uploadedImage()` helper still reads the `Content-Type`; grep
+shows the header strings defined once.
+
+---
