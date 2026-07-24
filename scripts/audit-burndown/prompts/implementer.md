@@ -23,6 +23,10 @@ Commit message format:
 Report the full 40-character SHA from `git rev-parse HEAD`, never the short form — short SHAs can
 become ambiguous as the branch grows.
 
+The `summary` you return becomes this fix's PR comment, so make it a concise 1–3 sentences on **what
+you changed and why**. The reader already has the finding and the diff — don't restate the finding's
+title, don't recap which checks passed, and don't include the SHA (all captured elsewhere).
+
 You do not have permission to push. Do not attempt it.
 
 WHEN RESUMED WITH REVIEWER FEEDBACK: you still have your full history from the first pass, so build

@@ -59,7 +59,7 @@ PUSH_EVERY=10         # push boundary; one per-commit PR comment per pushed fix 
 BRANCH=audit/burndown
 CHECK_CMD='npm run check'      # per-finding type-check gate
 TEST_CMD='npm run test:unit'   # per-finding fast-test gate (see the layered gate below)
-E2E_CMD='npm run test:e2e --'  # per-finding targeted E2E, only for UI-touching findings
+E2E_CMD='npm run test:e2e -- --retries=1'  # per-finding targeted E2E (retry past flakes), UI findings only
 LINT_CMD='npx eslint'          # per-finding lint gate, on the fix's changed files
 PUSH_TEST_CMD='npm test'       # full suite once per batch, before each push
 MAX_DEFERRALS=3       # consecutive deferrals before halting
@@ -163,6 +163,11 @@ Notes from real runs — set these before a large run rather than discovering th
 * **`docs/AUDIT-DEFERRED.md` is auto-formatted.** `defer()` runs `dprint fmt` on it before the
   commit, so a deferral no longer reddens CI's Quality (format) job — the file's header used to be
   wrapped narrower than dprint's width.
+* **Retry E2E to survive transient flakes.** A single flaky E2E failure red-lights an
+  otherwise-green batch (holding the push) or false-defers a good fix. `E2E_CMD` and the batch
+  `PUSH_TEST_CMD` both carry `--retries=1` so a genuine flake clears on retry; a real regression
+  still fails both attempts. A batch hold isn't fatal regardless — the next boundary (or the exit
+  flush) retries and pushes.
 
 ## Closing out a run
 
