@@ -25,6 +25,7 @@ import {
   countEntries,
   deleteFirstEntry,
   ensureWorkDirs,
+  findingPriority,
   getEntry,
   git,
   gitOk,
@@ -59,6 +60,7 @@ const RETRIES = Number(process.env.RETRIES ?? 3); // retries for transient claud
 // alias already resolves there). Override with MODEL_* to tier for cost/speed.
 const MODEL_VERIFY = process.env.MODEL_VERIFY ?? 'sonnet';
 const MODEL_IMPL = process.env.MODEL_IMPL ?? 'claude-opus-5';
+const MODEL_IMPL_MINOR = process.env.MODEL_IMPL_MINOR ?? 'sonnet'; // P4/P5 mechanical tail
 const MODEL_REVIEW = process.env.MODEL_REVIEW ?? 'claude-opus-5';
 
 const BUDGET_VERIFY = process.env.BUDGET_VERIFY ?? '3.00'; // verify reads a lot of code; $1 capped complex findings and clustered deferrals (2026-07-24 retro)
@@ -375,12 +377,20 @@ while (done < MAX_ISSUES) {
   const baseSha = gitOut('rev-parse', 'HEAD');
 
   // ---- 3. IMPLEMENT ---------------------------------------------------------
+  // Impl-model tiering: P4/P5 findings are the mechanical tail (dead code,
+  // renames, dedup), where the cheaper model shaves the long pole and the
+  // unchanged adversarial review still gates the result. Anything more
+  // consequential — or untagged, so unknown — stays on the stronger model.
+  const priority = findingPriority(title);
+  const implModel = priority !== null && priority >= 4 ? MODEL_IMPL_MINOR : MODEL_IMPL;
+  if (implModel !== MODEL_IMPL) logLine(`  impl model: ${implModel} (P${priority})`);
+
   let impl = await claudeStep(`${tag}.impl`, [
     'Implement the fix described in .audit-work/current-brief.md.',
     '--append-system-prompt-file',
     join(PROMPTS, 'implementer.md'),
     '--model',
-    MODEL_IMPL,
+    implModel,
     '--allowedTools',
     TOOLS_IMPL,
     '--permission-mode',

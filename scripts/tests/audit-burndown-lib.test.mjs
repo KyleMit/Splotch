@@ -10,7 +10,12 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { countEntries, deleteFirstEntry, getEntry } from '../audit-burndown/lib.mjs';
+import {
+  countEntries,
+  deleteFirstEntry,
+  findingPriority,
+  getEntry,
+} from '../audit-burndown/lib.mjs';
 
 // Built from a line array so the fenced code block inside the first finding
 // doesn't fight the template literal.
@@ -152,5 +157,27 @@ describe('deleteFirstEntry', () => {
     expect(deleteFirstEntry(file)).toBe(false);
     expect(content()).toBe(drained);
     expect(deleteFirstEntry(missing())).toBe(false);
+  });
+});
+
+// Drives impl-model tiering in burndown.mjs: P4/P5 route to the cheaper model,
+// everything else (including an untagged title) stays on the stronger one. A
+// regression here silently downgrades the model for consequential findings.
+describe('findingPriority', () => {
+  it('reads the priority off a normal finding title', () => {
+    expect(findingPriority('[P1][complexity] Split initDrawingCanvas')).toBe(1);
+    expect(findingPriority('[P4][naming] Comments point to storage.js')).toBe(4);
+    expect(findingPriority('[P5][dead-code] Unused export')).toBe(5);
+  });
+
+  it('returns null for a title with no [P<n>] tag, so the caller keeps the safe model', () => {
+    expect(findingPriority('[dead-code] Unused export')).toBeNull();
+    expect(findingPriority('Split initDrawingCanvas')).toBeNull();
+    expect(findingPriority('')).toBeNull();
+    expect(findingPriority(undefined)).toBeNull();
+  });
+
+  it('only reads a leading tag, not a [P<n>] appearing later in the title', () => {
+    expect(findingPriority('[dedupe] see the [P2] finding above')).toBeNull();
   });
 });

@@ -66,6 +66,7 @@ MAX_DEFERRALS=3       # consecutive deferrals before halting
 RETRIES=3             # retries per claude call before treating it as a deferral
 MODEL_VERIFY=sonnet          # verification is mostly grep-and-confirm (`sonnet` alias → Sonnet 5)
 MODEL_IMPL=claude-opus-5     # pinned id, not the `opus` alias — see below
+MODEL_IMPL_MINOR=sonnet      # impl model for P4/P5 findings only — see Tuning & lessons
 MODEL_REVIEW=claude-opus-5
 BUDGET_VERIFY=3.00    # --max-budget-usd per call; verify is code-read-heavy — see Tuning & lessons
 BUDGET_IMPL=4.00
@@ -112,6 +113,14 @@ per-commit history rather than a batched dump. `scripts/audit-burndown/comment.m
 (unit-tested in `scripts/tests/audit-burndown-comment.test.mjs`); `pushBatch` posts them only after
 a successful push, so a comment never references an unpushed SHA. Deferrals and drops stay in the
 commit log only (they carry their reason in the commit message).
+
+**Never wrap a SHA in backticks in GitHub-bound text.** GitHub's native linker turns a bare
+plain-text commit SHA into a link to that commit (rendered as a short, hoverable reference); inside
+a code span it stays dead monospace text, which is exactly the wrong outcome for a comment whose job
+is to point at a commit. The renderer emits the heading as `### <sha12> — <title>` for that reason,
+and a unit test pins it. The same applies to any SHA you write by hand into a PR body, PR comment,
+or issue comment — leave it bare. (Backticks around *file paths and spec names* are still correct;
+this is only about SHAs.)
 
 ## Before the full run
 
@@ -278,11 +287,15 @@ Notes from real runs — set these before a large run rather than discovering th
   5, so verify stays on the alias. When a newer opus lands, re-probe
   (`claude -p --model
   <id> --output-format json 'ok'` → check `modelUsage`) and bump the pin.
-* **The one safe speed lever is impl-model tiering.** Much of a `/code-audit` backlog is trivially
-  mechanical (P4/P5 dead-code, rename, dedup); routing those to `MODEL_IMPL=sonnet` (the opus review
-  still gates them) shaves the long tail, at a sliver of impl-correctness margin — opt in per run,
-  don't default it on when correctness dominates. Bigger throughput (parallel git worktrees per
-  finding) is a real redesign, not a knob.
+* **Impl-model tiering is on by default, scoped to P4/P5.** Much of a `/code-audit` backlog is
+  trivially mechanical (P4/P5 dead-code, rename, dedup), so the driver routes those findings to
+  `MODEL_IMPL_MINOR` (default `sonnet`) and keeps P1–P3 on `MODEL_IMPL`. The Opus review still gates
+  every fix, so the cheaper model buys wall-clock at a sliver of impl-correctness margin exactly
+  where the stakes are lowest. The priority comes from the finding's leading `[P<n>]` tag
+  (`findingPriority` in `lib.mjs`, unit-tested); a title with no tag is treated as unknown and stays
+  on the stronger model. Set `MODEL_IMPL_MINOR=claude-opus-5` to switch tiering off for a run where
+  correctness dominates. Bigger throughput (parallel git worktrees per finding) is a real redesign,
+  not a knob.
 * **`docs/AUDIT-DEFERRED.md` is auto-formatted.** `defer()` runs `dprint fmt` on it before the
   commit, so a deferral no longer reddens CI's Quality (format) job — the file's header used to be
   wrapped narrower than dprint's width.

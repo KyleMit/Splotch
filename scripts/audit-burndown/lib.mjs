@@ -15,6 +15,16 @@ export const PROMPTS = 'scripts/audit-burndown/prompts';
 
 export const auditFile = () => process.env.AUDIT_FILE || 'docs/AUDIT.md';
 
+// Findings are titled `[P3][consistency] …`. The priority drives impl-model
+// tiering: P4/P5 are the mechanical tail (dead code, renames, dedup) that a
+// cheaper model implements fine under the same adversarial review. Returns null
+// for a title with no [P<n>] tag so the caller falls back to the safe model
+// rather than guessing a priority the finding never claimed.
+export function findingPriority(title) {
+  const match = /^\[P(\d)\]/.exec(title ?? '');
+  return match ? Number(match[1]) : null;
+}
+
 // Every entry script chdirs to the repo root so relative paths (docs/AUDIT.md,
 // .audit-work/) behave the same no matter where it was invoked from.
 export function chdirRoot() {
