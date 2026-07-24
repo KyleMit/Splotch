@@ -9,41 +9,6 @@
 
 ## Source: Code audit — AI image generation
 
-### [P3][dead-code] `buildPromptForStyle`'s `defaultPrompt` parameter is never overridden, and its `style` is typed `unknown`
-
-**File(s):** `web/src/lib/ai/prompt.ts:7-14` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-export function buildPromptForStyle(
-  style: unknown,
-  suffixes: Record<string, string>,
-  defaultPrompt: string = DEFAULT_PROMPT,
-): string;
-```
-
-Both call sites (`web/src/routes/api/generate-image/+server.ts:117` and
-`tools/asset-gen/bin/gen-style-covers.mjs:30`) call `buildPromptForStyle(style, STYLE_SUFFIXES)`
-with two args — the third `defaultPrompt` parameter is dead. It adds an untested branch and misleads
-readers into thinking the base prompt is configurable. Separately, `style: unknown` forces the
-`typeof style === 'string'` guard on line 12 even though every real caller passes a string.
-
-#### Proposed solution
-
-Drop the `defaultPrompt` parameter and use `DEFAULT_PROMPT` directly inside the function. Narrow
-`style` to `string | null | undefined` (the server passes a possibly-absent query param),
-simplifying line 12 to `Object.hasOwn(suffixes, style ?? '')`. Also narrow `suffixes` to
-`Record<string, string>` unchanged (or `Partial<Record<StyleName,string>>` if the union finding
-lands).
-
-#### Verification
-
-`npm run check`; asset-gen tests (`npm run test:asset-gen`) and the generate-image server test still
-pass with the two-arg calls.
-
----
-
 ### [P3][maintainability] The dial-mask radius `31` is duplicated across two files, coupled only by a comment
 
 **File(s):** `web/src/lib/components/AiImageResult.svelte:52`;
