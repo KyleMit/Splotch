@@ -908,9 +908,7 @@ function draw(e: PointerEvent) {
   if (PERF_MARKS) performance.measure('engine.draw', 'engine.draw:start');
 }
 
-function stopDrawing(e?: PointerEvent) {
-  if (!e) return;
-
+function stopDrawing(e: PointerEvent) {
   const pointerState = activePointers.get(e.pointerId);
 
   // An edge-band touch that lifted before its direction was decided was a tap,

@@ -7,33 +7,6 @@
 
 ## Source: Code audit — Drawing / canvas engine
 
-### [P4][dead-code] `stopDrawing(e?)` — the optional param and `if (!e) return` are unreachable
-
-**File(s):** `web/src/lib/drawing/engine.ts:910-911, 1329-1331` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-function stopDrawing(e?: PointerEvent) {
-  if (!e) return;
-```
-
-`stopDrawing` is only ever registered as an event listener (pointerup/out/cancel), which always
-supplies an event. Nothing calls it with no argument. The optional `?` and guard imply a call path
-that does not exist.
-
-#### Proposed solution
-
-Make the parameter required: `function stopDrawing(e: PointerEvent)` and delete the guard.
-(Force-stop with no event is already `releaseAllPointers`.)
-
-#### Verification
-
-`grep -n 'stopDrawing(' web/src/lib/drawing/engine.ts` shows only listener registrations.
-`npm run check` + engine E2E pass.
-
----
-
 ### [P4][duplication] `repaintAll` triples a command-replay loop that should be one helper
 
 **File(s):** `web/src/lib/drawing/undoHistory.ts:783-795` — pinned at SHA f934d43
