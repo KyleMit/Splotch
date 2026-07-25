@@ -13,6 +13,14 @@
   const STROKES_BEFORE_AUTO_CLEAR = 5;
   const PARTING_MESSAGE_MS = 4000;
 
+  // Shared motion vocabulary for the banner's enter/exit transitions.
+  const BANNER_FLY_Y = 120;
+  const BANNER_ENTER_MS = 420;
+  const BANNER_EXIT_MS = 300;
+  const BANNER_SHRINK_EXIT_MS = 550;
+  const PARTING_FADE_MS = 200;
+  const HINT_FADE_MS = 160;
+
   // iOS / Android manual flows have no one-tap API, so the button expands an
   // inline how-to instead of firing a dialog.
   let showHint = $state(false);
@@ -49,13 +57,15 @@
   // message's "it lives in the Parent Center" lands visually too. Manual
   // dismiss / completed install keep the plain fly-down.
   function bannerExit(node: HTMLElement) {
-    if (!exitIntoParentButton) return fly(node, { y: 120, duration: 300 });
+    if (!exitIntoParentButton) return fly(node, { y: BANNER_FLY_Y, duration: BANNER_EXIT_MS });
     const target = document.getElementById(PARENT_HELP_BUTTON_ID)?.getBoundingClientRect();
     const from = node.getBoundingClientRect();
     const dx = target ? target.left + target.width / 2 - (from.left + from.width / 2) : 0;
-    const dy = target ? target.top + target.height / 2 - (from.top + from.height / 2) : 120;
+    const dy = target
+      ? target.top + target.height / 2 - (from.top + from.height / 2)
+      : BANNER_FLY_Y;
     return {
-      duration: 550,
+      duration: BANNER_SHRINK_EXIT_MS,
       easing: cubicIn,
       css: (t: number, u: number) =>
         // The resting position already carries translateX(-50%) — restate it so
@@ -81,9 +91,13 @@
 </script>
 
 {#if visible || parting}
-  <div class="install-banner" in:fly={{ y: 120, duration: 420, easing: backOut }} out:bannerExit>
+  <div
+    class="install-banner"
+    in:fly={{ y: BANNER_FLY_Y, duration: BANNER_ENTER_MS, easing: backOut }}
+    out:bannerExit
+  >
     {#if parting}
-      <div class="install-parting" in:fade={{ duration: 200 }}>
+      <div class="install-parting" in:fade={{ duration: PARTING_FADE_MS }}>
         <span class="install-mascot" aria-hidden="true">
           <SplotchyIcon class="install-mascot-icon" />
         </span>
@@ -119,7 +133,7 @@
       </div>
 
       {#if showHint && install.mode !== 'oneTap'}
-        <div class="install-hint" transition:fade={{ duration: 160 }}>
+        <div class="install-hint" transition:fade={{ duration: HINT_FADE_MS }}>
           {#if install.mode === 'ios'}
             <p>
               Tap <Icon name="share-ios" class="install-inline-icon" aria-label="Share" /> Share at the

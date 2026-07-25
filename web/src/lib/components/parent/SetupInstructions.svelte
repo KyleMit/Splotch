@@ -1,6 +1,7 @@
 <script lang="ts">
   import { isNative, getPlatform, type Platform } from '$lib/platform';
   import Icon from '../Icon.svelte';
+  import Button from '../design/Button.svelte';
   import Disclosure from '../design/Disclosure.svelte';
   import {
     install,
@@ -157,10 +158,10 @@
      the OS lists below stay as the fallback. Never true on native. -->
 {#if install.mode === 'oneTap'}
   <div class="one-tap">
-    <button class="one-tap-btn" onclick={oneTapInstall} disabled={installing} type="button">
+    <Button variant="brand" onclick={oneTapInstall} disabled={installing}>
       <Icon name="home" class="one-tap-icon" />
       Install Splotch
-    </button>
+    </Button>
     <p class="one-tap-hint">One tap — your browser will do the rest.</p>
   </div>
 {/if}
@@ -282,30 +283,6 @@
   .one-tap {
     margin-bottom: 20px;
     text-align: center;
-  }
-
-  .one-tap-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 22px;
-    border: none;
-    border-radius: 14px;
-    background: var(--brand);
-    color: var(--on-brand);
-    font-size: 17px;
-    font-weight: 700;
-    cursor: pointer;
-    touch-action: manipulation;
-  }
-
-  .one-tap-btn:active {
-    transform: scale(0.97);
-  }
-
-  .one-tap-btn:disabled {
-    opacity: 0.6;
-    cursor: default;
   }
 
   :global(.one-tap-icon) {

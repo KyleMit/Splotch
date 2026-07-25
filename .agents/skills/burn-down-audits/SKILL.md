@@ -228,11 +228,24 @@ this is only about SHAs.)
 
 ## Before the full run
 
-1. `npm run audit:preflight` — fix anything red. Then **open the draft PR** with
-   `mcp__github__create_pull_request` (`draft: true`, head = `BRANCH`) and keep the number to hand:
-   the driver will not create one, and without it the per-commit comments have nowhere to go and CI
-   — the only full-suite gate in this configuration — never runs.
-2. **Canary:** `npm run audit:burndown` (5 findings) and read the commits it makes —
+1. `npm run audit:preflight` — fix anything red. **Check `BRANCH` first**: it defaults to
+   `audit/burndown`, but a cloud session is usually told to develop on a specific `claude/<topic>`
+   branch, and the driver silently uses the default otherwise. If you override it, the override must
+   ride on *every* relaunch — put it in the durable checkpoint (step 2), not just in the shell you
+   happen to be in.
+2. **Write the durable checkpoint and commit it to the branch** — the relaunch command with every
+   override, the closeout tasks, roughly what's done (see **Surviving the context window**). It has
+   to be written anyway, and doing it now solves the ordering problem in step 3.
+3. **Open the draft PR** with `mcp__github__create_pull_request` (`draft: true`, head = `BRANCH`)
+   and keep the number to hand: the driver will not create one, and without it the per-commit
+   comments have nowhere to go and CI — the only full-suite gate in this configuration — never runs.
+
+   **A PR needs a diff.** A freshly-forked branch is identical to `main`, and GitHub refuses to open
+   a PR with no commits between them, so this cannot be the literal first step however much the
+   ordering suggests it. Committing the checkpoint in step 2 is what gives the PR something to open
+   against. (Opening it after the canary's first push works too, but then the canary's commits land
+   with no CI and no PR to comment on.)
+4. **Canary:** `npm run audit:burndown` (5 findings) and read the commits it makes —
    `git log main..HEAD -p -- . ':(exclude)docs/AUDIT.md'` keeps the backlog churn out of the diff.
    Read for **behavior changes smuggled inside a refactor**, which is what this loop gets wrong when
    it gets anything wrong, and what a green type-check and test suite will not catch:
@@ -244,16 +257,31 @@ this is only about SHAs.)
      is free to drift.
    * A narrowed type whose invalid-input tests were made to compile with `as` casts; confirm the
      runtime guard those tests exercise still exists.
-3. **Confirm the resume handoff actually fired.** Extra rounds happen on their own — a typical run
+5. **Count the backlog entries each commit deleted — it must be exactly one.** The canary's own diff
+   hides this: `':(exclude)docs/AUDIT.md'` is what makes the code readable, and it is also what
+   hides a finding being destroyed. Check it separately:
+   ```bash
+   for sha in $(git rev-list --reverse main..HEAD); do
+     echo "$(git log -1 --format='%h %s' $sha | cut -c1-70) removed=$(git show $sha -- docs/AUDIT.md | grep -c '^-### ')"
+   done
+   ```
+   A `removed=2` means that commit deleted its own finding **and** an unrelated one that was never
+   verified, implemented, or reviewed — gone from the backlog with no record it ever existed.
+   Recover it from the pre-run file (`git show <base>:docs/AUDIT.md`) and re-file it before
+   continuing. A `removed=0` on a non-final commit is normal (a fix round commits before the driver
+   amends the excision in); judge per finding, not per commit. The driver now deletes by title so
+   this should be structurally impossible — check anyway, because the first time it happened it hit
+   three of five findings and nothing in the log or the run's counts said so.
+6. **Confirm the resume handoff actually fired.** Extra rounds happen on their own — a typical run
    logs `round 1: changes required` (a reviewer rejection) or `round 1: gates red — …` (a red gate,
    which is now also a recoverable round) every few findings — so read one instead of staging one.
    Find either line in the canary's log, open that iteration's `fix1.json`, and confirm the resumed
    implementer references its own earlier work rather than re-deriving the change from the feedback
    text. That handoff is the whole design. Only if the canary produced no extra round at all is it
    worth forcing one with a deliberately vague brief.
-4. `npm run audit:cost` — multiply the per-issue average by the backlog before committing to a full
+7. `npm run audit:cost` — multiply the per-issue average by the backlog before committing to a full
    run.
-5. `npm run audit:burndown:overnight -- 600`.
+8. `npm run audit:burndown:overnight -- 600`.
 
 ## While it runs
 
@@ -316,10 +344,24 @@ hard** — with `MODEL_IMPL_MINOR` tiering on, P4/P5 findings land in 3–5 min 
 takes two fix rounds runs 20–30 and is still healthy. Check the finding's `[P<n>]` tag before
 reading a duration as slow; the table above describes a mid-priority finding, not every finding.
 
-> These figures were measured **before** the `EFFORT_*` knobs and the gate reordering (which
-> together cut a full suite run out of every review round), so they are now a conservative ceiling
-> rather than a norm. Re-baseline them from the first long run under the new defaults and update
-> this table.
+Measured under the current defaults (2026-07-25, cloud, `EFFORT_*` and gate reordering in place).
+**Ten findings — a small sample, and every one of them P2–P5**, so treat this as shape rather than
+distribution:
+
+| Finding shape                 | Elapsed  |
+| ----------------------------- | -------- |
+| dropped at verify (`INVALID`) | ~1.5 min |
+| P4/P5, no fix round           | ~4 min   |
+| P4/P5, one fix round          | 8–12 min |
+| P3, one fix round             | ~11 min  |
+| P2, one fix round             | ~18 min  |
+| P2, two fix rounds + E2E gate | ~26 min  |
+
+The headline: **fix rounds dominate, and priority sets how many you get.** A finding that clears
+review first time lands in a third the wall-clock of one that doesn't, at the same priority. The
+26-minute P2 above was entirely healthy — it would have tripped the `> 25 min` investigate
+threshold, which is why the priority caveat above the table is doing more work than the table
+itself. No `claude` call in the sample exceeded ~13 min.
 
 * **Within normal** → just report it; do nothing.
 * **Watch band (maybe too long)** → don't intervene yet. Schedule **one** re-check a few minutes out
@@ -611,9 +653,13 @@ Notes from real runs — set these before a large run rather than discovering th
   `.claude/audit-conventions.md` (a partial run may also leave emptied `## Source:` sections — tidy
   them in a final commit).
 * Drain the comment store before marking the PR ready — `next` / post / `done` until empty, and
-  `capture` first if any fix landed without a record. If `COMMENT_STORE` was pointed at a committed
-  path, delete that file in the same commit that finishes draining it: a leftover
-  `docs/AUDIT-PENDING-COMMENTS.jsonl` reads as work still owed.
+  `capture` first if any fix landed without a record. Running `capture` **after** the drain is safe
+  and worth doing as a completeness check: `done` records each posted sha, so capture reports
+  `skipped N already posted` rather than re-arming comments you have already published. (It did
+  re-arm them before 2026-07-25, when it deduped against the store alone — and the store is empty
+  exactly when the drain succeeded.) If `COMMENT_STORE` was pointed at a committed path, delete that
+  file in the same commit that finishes draining it: a leftover `docs/AUDIT-PENDING-COMMENTS.jsonl`
+  reads as work still owed.
 * Confirm CI is green on the final push before marking the PR ready. It is the only full-suite gate
   in this configuration, so "the run finished" and "the branch is sound" are genuinely different
   claims here.

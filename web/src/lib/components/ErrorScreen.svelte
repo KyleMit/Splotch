@@ -32,6 +32,7 @@
   }
 
   .error-blob {
+    /* standalone crash screen, no sizing token exists for this yet */
     width: 96px;
     height: 96px;
     background: var(--brand, #ab71e1);
@@ -41,7 +42,9 @@
 
   h1 {
     margin: 0;
-    font-size: 32px;
+    /* fallback intentionally stays 32px (not the token's 28px) to preserve today's
+       crash-path rendering size if tokens.css fails to load */
+    font-size: var(--font-size-3xl, 32px);
     font-weight: 700;
   }
 

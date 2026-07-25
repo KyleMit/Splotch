@@ -421,11 +421,12 @@
     grid-template-columns: 1fr;
     align-items: center;
     margin-right: 8px;
-    transition:
-      grid-template-columns 0.28s ease,
-      grid-template-rows 0.28s ease,
-      opacity var(--duration-base) ease,
-      margin 0.28s ease;
+    --drawer-collapse: 0.28s;
+    --drawer-transition:
+      grid-template-columns var(--drawer-collapse) ease,
+      grid-template-rows var(--drawer-collapse) ease, opacity var(--duration-base) ease,
+      margin var(--drawer-collapse) ease;
+    transition: var(--drawer-transition);
   }
 
   .actions-drawer-inner {
@@ -454,15 +455,12 @@
     pointer-events: none;
     /* Inert when closed: out of hit-testing, the a11y tree, and tab order (unlike
        opacity alone). visibility flips to hidden only after the collapse finishes
-       (0.28s transition-delay) so the close still animates; opening restores it
-       instantly because the base rule doesn't transition visibility. */
+       (--drawer-collapse transition-delay) so the close still animates; opening
+       restores it instantly because the base rule doesn't transition visibility. */
     visibility: hidden;
     transition:
-      grid-template-columns 0.28s ease,
-      grid-template-rows 0.28s ease,
-      opacity var(--duration-base) ease,
-      margin 0.28s ease,
-      visibility 0s 0.28s;
+      var(--drawer-transition),
+      visibility 0s var(--drawer-collapse);
   }
 
   @media (orientation: portrait) {
@@ -518,8 +516,6 @@
      in app.css, shared with the Parent Center button) so it doesn't compete
      with the tools. */
   .drawer-toggle {
-    width: 48px;
-    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -46,9 +46,10 @@ function inkColors(svg) {
 
 // Inline-ready copy: strip the root width/height (CSS sizes it, viewBox scales)
 // and tag it. A plain glyph painted in a SINGLE ink color — whatever that color
-// is (black `#1f1f1f`, or a white Material export like trash.svg) — has that one
-// ink remapped to currentColor so it follows the theme and stays legible on the
-// card. Two-tone plain icons (e.g. the grey eraser-size rings) keep their colors.
+// is (usually black `#1f1f1f`, but a white Material export counts too) — has
+// that one ink remapped to currentColor so it follows the theme and stays
+// legible on the card. Two-tone plain icons (e.g. the grey eraser-size rings)
+// keep their colors.
 function inlineSvg(svg, spot) {
   let out = svg.replace(/<svg\b[^>]*>/, (tag) => {
     let t = tag.replace(/\s(width|height)="[^"]*"/g, '');

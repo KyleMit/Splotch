@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from '../Icon.svelte';
+  import Button from '../design/Button.svelte';
   import Disclosure from '../design/Disclosure.svelte';
   import StatusMessage from '../design/StatusMessage.svelte';
   import AiFeatureToggles from './AiFeatureToggles.svelte';
@@ -176,13 +177,14 @@
           bind:value={keyInput}
           onkeydown={(e) => e.key === 'Enter' && submitKey()}
         />
-        <button
+        <Button
+          variant="brand"
           class="access-code-submit"
           onclick={submitKey}
           disabled={!keyInput.trim() || keyStatus === 'checking'}
         >
           {keyStatus === 'checking' ? 'Checking…' : 'Save'}
-        </button>
+        </Button>
       </div>
       <p class="byok-storage-note">
         <Icon name="lock" class="byok-storage-icon" />{keyStorageNote}
@@ -206,7 +208,7 @@
             aria-label="Saved Gemini API key (masked)"
             value={maskedKey}
           />
-          <button class="access-code-submit forget" onclick={forgetKey}>Forget</button>
+          <Button variant="danger" class="access-code-submit" onclick={forgetKey}>Forget</Button>
         </div>
         <p class="byok-storage-note">
           <Icon name="lock" class="byok-storage-icon" />{keyStorageNote}
@@ -226,7 +228,9 @@
             aria-label="Saved access code"
             value={settings.aiAccessToken}
           />
-          <button class="access-code-submit forget" onclick={forgetAccessCode}>Forget</button>
+          <Button variant="danger" class="access-code-submit" onclick={forgetAccessCode}>
+            Forget
+          </Button>
         </div>
       {/if}
     </div>
@@ -272,28 +276,10 @@
     border-color: var(--brand);
   }
 
-  .access-code-submit {
-    padding: 8px 16px;
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    color: var(--on-brand);
-    background: var(--brand);
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: background var(--duration-base) ease;
+  /* Chrome comes from the Button primitive; the row only stops it shrinking
+     next to the input. */
+  .access-code-row :global(.access-code-submit) {
     flex-shrink: 0;
-  }
-
-  @media (hover: hover) {
-    .access-code-submit:hover {
-      background: var(--brand-hover);
-    }
-  }
-
-  .access-code-submit:disabled {
-    background: var(--control-track-hover);
-    cursor: not-allowed;
   }
 
   /* BYOK (bring your own key) panel */
@@ -390,16 +376,5 @@
     color: var(--text-muted);
     font-family: var(--font-mono);
     letter-spacing: 0.5px;
-  }
-
-  .access-code-submit.forget {
-    background: var(--slider-track);
-    color: var(--danger-text);
-  }
-
-  @media (hover: hover) {
-    .access-code-submit.forget:hover {
-      background: var(--control-track);
-    }
   }
 </style>

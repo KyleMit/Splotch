@@ -14,7 +14,7 @@
 // the role envelopes for the implementer's summary and the reviewer's catches,
 // and the commit's own docs/AUDIT.md deletion for the finding text.
 
-import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chdirRoot, gitOut, LOGS, logLine, WORK } from './lib.mjs';
 import { commitCommentBody, findingProblem } from './comment.mjs';
@@ -22,6 +22,22 @@ import { commitCommentBody, findingProblem } from './comment.mjs';
 chdirRoot();
 
 const STORE = process.env.COMMENT_STORE ?? join(WORK, 'pending-comments.jsonl');
+
+// Every sha `done` has dropped, so `capture` can tell "never recorded" from
+// "already posted". Without it `capture` deduped against the store alone — and
+// the store is empty precisely when the drain succeeded, so the natural
+// closeout instinct ("did I miss any?") silently re-armed every comment that
+// had just been posted. Observed on the 2026-07-25 run: a post-drain capture
+// re-added all 9.
+//
+// Deliberately not beside a committed COMMENT_STORE: it is a within-run guard,
+// and a container that dies loses it, after which capture re-offers the posted
+// records. That is the safe direction — the drain loop is at-least-once by
+// design, and a duplicate comment beats a lost one.
+const POSTED = join(WORK, 'posted-comments.log');
+
+const readPosted = () =>
+  new Set(existsSync(POSTED) ? readFileSync(POSTED, 'utf8').split('\n').filter(Boolean) : []);
 
 const readStore = () =>
   existsSync(STORE)
@@ -134,11 +150,14 @@ if (mode === 'capture') {
   const inRange = new Set(gitOut('rev-list', range).split('\n').filter(Boolean));
   const store = readStore();
   const known = new Set(store.map((r) => r.sha));
+  const posted = readPosted();
   let added = 0;
+  let skipped = 0;
 
   for (const it of completedIterations()) {
     const sha = gitOut('rev-parse', it.shaShort);
-    if (!sha || !inRange.has(sha) || known.has(sha)) continue;
+    if (sha && posted.has(sha) && !known.has(sha)) skipped += 1;
+    if (!sha || !inRange.has(sha) || known.has(sha) || posted.has(sha)) continue;
     const record = recordFor(it);
     if (!record) continue;
     store.push(record);
@@ -148,6 +167,9 @@ if (mode === 'capture') {
   }
 
   writeStore(store);
+  // Say what was skipped rather than staying silent about it: "0 captured" on a
+  // run whose comments all landed reads like the tool failed.
+  if (skipped) console.log(`skipped ${skipped} already posted`);
   console.log(`\n${added} captured, ${store.length} total in ${STORE}`);
 } else if (mode === 'next') {
   // One record at a time, because the thing that posts it is an agent calling
@@ -175,7 +197,9 @@ if (mode === 'capture') {
     console.error(`no pending record matching ${sha}`);
     process.exit(1);
   }
+  const [dropped] = store.filter((r) => r.sha.startsWith(sha));
   writeStore(remaining);
+  appendFileSync(POSTED, `${dropped.sha}\n`);
   logLine(`  posted per-commit comment for ${sha.slice(0, 12)}`);
   console.log(`dropped ${sha.slice(0, 12)} — ${remaining.length} still pending in ${STORE}`);
 } else if (mode === 'show') {

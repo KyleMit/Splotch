@@ -26,10 +26,8 @@
      Safe-area insets are already applied by .app-container, so none here. */
   .fullscreen-toggle {
     position: absolute;
-    top: 8px;
-    left: 8px;
-    width: 44px;
-    height: 44px;
+    top: var(--space-2);
+    left: var(--space-2);
     /* .canvas-container establishes no stacking context (position: relative,
        no z-index), so this competes in the ROOT context with the 900+ chrome —
        it just sits below all of it, above DrawingCanvas's own 0–3 layers. */

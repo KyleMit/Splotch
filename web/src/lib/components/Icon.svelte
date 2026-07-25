@@ -20,7 +20,6 @@
     'more-colors',
     'pen',
     'shapes',
-    'sweep-icon',
     'trash-closed',
     'trash-open',
     'undo',

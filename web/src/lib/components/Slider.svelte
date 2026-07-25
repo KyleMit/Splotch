@@ -24,6 +24,10 @@
     onActiveChange?: (active: boolean) => void;
   }
 
+  // Half-width of the snap band, in value units: ~4.5% of the track, so the
+  // detent feels the same size on any range (0–100 volume or 70–130 size).
+  const SNAP_BAND_FRACTION = 0.045;
+
   let {
     value,
     min = 0,
@@ -37,9 +41,7 @@
     onActiveChange,
   }: Props = $props();
 
-  // Half-width of the snap band, in value units: ~4.5% of the track, so the
-  // detent feels the same size on any range (0–100 volume or 70–130 size).
-  const snapBand = $derived((max - min) * 0.045);
+  const snapBand = $derived((max - min) * SNAP_BAND_FRACTION);
 
   let trackEl: HTMLDivElement;
   let dragPointerId: number | null = null;
