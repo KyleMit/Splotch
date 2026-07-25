@@ -23,7 +23,9 @@ paths:
 * New icons: drop the SVG in `src/lib/icons/`, run `npm run gen:icons`, then use
   `<Icon name="..." />` — the `name` prop is type-checked against the generated union. `<Icon>` sets
   `data-icon={name}` so the icon is assertable in tests (the SVG itself goes in via `{@html}` and
-  carries no identity).
+  carries no identity). A full-color/"spot" icon must also be added to the `COLOR_ICONS` set in
+  `Icon.svelte` (so it gets the `icon-color` class instead of the monochrome tint filter) —
+  `Icon.svelte.test.ts` enforces this against every icon's chroma.
 * **`{@html}` is not reconciled against SSR markup during hydration.** `Icon.svelte` renders its SVG
   via `{@html}`, so an icon whose value depends on client-only state (orientation, a
   `localStorage`-backed setting) keeps the *server-rendered* SVG after hydration until something

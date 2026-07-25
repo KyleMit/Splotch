@@ -7,32 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P4][maintainability] Adding an icon touches two hand-edited surfaces with no single onboarding note
-
-**File(s):** `web/src/lib/components/Icon.svelte:13-42`, `.claude/rules/svelte.md:23` — pinned at
-SHA f934d43
-
-#### Problem
-
-`svelte.md` documents the happy path ("drop the SVG, run `gen:icons`, use `<Icon>`") but omits that
-a **full-color** icon also requires a manual `COLOR_ICONS` edit — otherwise it renders wrongly
-tinted on modal surfaces. The test catches the omission in CI, but the contributor learns this only
-by failing CI, not from the rule. Grepability of "how do I add a colored icon" is therefore
-incomplete.
-
-#### Proposed solution
-
-Extend the `svelte.md` "New icons" bullet with the color-icon step (or, better, adopt the
-generated-`COLORFUL_ICONS` approach from the earlier finding, which removes the manual step entirely
-and makes the rule accurate by construction).
-
-#### Verification
-
-The rule text describes the exact steps that keep CI green for both mono and color icons; a new
-colored icon added per the doc passes `npm test` first try.
-
----
-
 ### [P4][consistency] `toCssVarName` lives in the token data module but is pure generator logic
 
 **File(s):** `web/src/lib/design/tokens.ts:259-262` — pinned at SHA f934d43
