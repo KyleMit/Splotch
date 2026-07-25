@@ -976,3 +976,35 @@ current finding (`readStore` bundles store-open/read/seed/confirmation-loop/fall
 verifier returned VALID without ever rewriting the brief. Implementing the stale brief would have
 redone rejected work and caused the driver to delete the unfixed `readStore` entry by title, so the
 finding needs re-verification to produce a real brief before it can be implemented.
+
+### [P4][maintainability] Session cookie name, scope, and 10-year max-age are scattered inline
+
+**File(s):** `web/src/routes/admin/+page.server.ts:28-38, 107` — pinned at SHA f934d43
+
+#### Problem
+
+`SESSION_COOKIE` and `SESSION_MAX_AGE` are named (good), but the cookie *options* —
+`path: '/admin'`, `httpOnly`, `sameSite: 'strict'` — are spelled out at the `set` site (`:32-37`)
+and the `path: '/admin'` is independently repeated at the `delete` site (`:107`). If the scope ever
+changes, `set` and `delete` must stay in lockstep by hand or logout silently fails to clear the
+cookie (a delete with a mismatched path is a no-op). The `60 * 60 * 24 * 365 * 10` arithmetic is
+fine but the whole option bundle wants to be one constant.
+
+#### Proposed solution
+
+```ts
+const SESSION_COOKIE_OPTS = { path: '/admin', httpOnly: true, sameSite: 'strict' } as const;
+// set: cookies.set(SESSION_COOKIE, sessionToken(), { ...SESSION_COOKIE_OPTS, maxAge: SESSION_MAX_AGE });
+// delete: cookies.delete(SESSION_COOKIE, { path: SESSION_COOKIE_OPTS.path });
+```
+
+#### Verification
+
+`tests/admin.spec.ts` logout clears the session (login form reappears). Grep shows `'/admin'` cookie
+path defined once.
+
+---
+
+#### Why it was deferred
+
+verifier gave no usable brief
