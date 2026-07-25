@@ -14,3 +14,9 @@ issue/PR reference.** Prefer one of:
 This applies everywhere agent-authored text lands on GitHub — PR descriptions, PR comments, review
 comments, and issue comments. A `#`-number you *do* mean as a reference (e.g. "fixes #123") should
 stay unescaped.
+
+The mirror-image rule holds for **commit SHAs: leave them bare, never in backticks.** GitHub
+auto-links a plain-text SHA into a link to that commit; a code span suppresses the linker and it
+renders as dead monospace text. So write "fixed in 863ee85aaa43", not ``"fixed in `863ee85aaa43`"``.
+Backticks around file paths, identifiers, and commands are still correct — this is only about SHAs
+(and the `#`-numbers above, where backticks are one of the ways to *defuse* an unwanted link).

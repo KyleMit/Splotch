@@ -1,8 +1,9 @@
 import { readInt, writeInt, onDurableRestore } from '../storage';
 import { toolState } from './tool.svelte';
 
-export const STROKE_SIZES = [1, 2, 3, 4, 5];
-export const DEFAULT_SIZE = 3;
+export type StrokeSize = 1 | 2 | 3 | 4 | 5;
+export const STROKE_SIZES: readonly StrokeSize[] = [1, 2, 3, 4, 5];
+export const DEFAULT_SIZE: StrokeSize = 3;
 
 // The eraser runs noticeably larger than the pen at the same stroke level — a
 // toddler erasing wants big sweeps, not precision, and 1.4× was too subtle to
@@ -15,7 +16,7 @@ export const ERASER_SIZE_MULTIPLIER = 2;
 const PEN_SIZE_KEY = 'splotch-stroke-width-size'; // drawing brushes (existing key)
 const ERASER_SIZE_KEY = 'splotch-eraser-width-size'; // eraser (independent)
 
-const SIZE_TO_PX: Record<number, number> = {
+const SIZE_TO_PX: Record<StrokeSize, number> = {
   1: 2,
   2: 4,
   3: 8,
@@ -23,28 +24,32 @@ const SIZE_TO_PX: Record<number, number> = {
   5: 22,
 };
 
+function readStrokeLevel(key: string, fallback: StrokeSize): StrokeSize {
+  return readInt(key, fallback, STROKE_SIZES) as StrokeSize;
+}
+
 export const strokeState = $state({
-  penSize: readInt(PEN_SIZE_KEY, DEFAULT_SIZE, STROKE_SIZES),
-  eraserSize: readInt(ERASER_SIZE_KEY, DEFAULT_SIZE, STROKE_SIZES),
+  penSize: readStrokeLevel(PEN_SIZE_KEY, DEFAULT_SIZE),
+  eraserSize: readStrokeLevel(ERASER_SIZE_KEY, DEFAULT_SIZE),
 });
 
 // Re-read the persisted pen/eraser levels into the live store after the durable
-// storage layer recovers values evicted by the native WebView (see storage.js).
+// storage layer recovers values evicted by the native WebView (see storage.ts).
 export function reloadStrokeWidth() {
-  strokeState.penSize = readInt(PEN_SIZE_KEY, strokeState.penSize, STROKE_SIZES);
-  strokeState.eraserSize = readInt(ERASER_SIZE_KEY, strokeState.eraserSize, STROKE_SIZES);
+  strokeState.penSize = readStrokeLevel(PEN_SIZE_KEY, strokeState.penSize);
+  strokeState.eraserSize = readStrokeLevel(ERASER_SIZE_KEY, strokeState.eraserSize);
 }
 
 onDurableRestore(reloadStrokeWidth);
 
 // The level for the tool that's currently active. Reads toolState so it stays
 // reactive inside $derived, $effect, and template expressions.
-export function activeStrokeSize() {
+export function activeStrokeSize(): StrokeSize {
   return toolState.brush === 'eraser' ? strokeState.eraserSize : strokeState.penSize;
 }
 
 // Set the level for the active tool, persisting only that tool's value.
-export function setStrokeSize(size: number) {
+export function setStrokeSize(size: StrokeSize) {
   if (!STROKE_SIZES.includes(size)) return;
   if (toolState.brush === 'eraser') {
     strokeState.eraserSize = size;
@@ -55,10 +60,10 @@ export function setStrokeSize(size: number) {
   }
 }
 
-export function getStrokeWidthPx(size: number = strokeState.penSize): number {
+export function getStrokeWidthPx(size: StrokeSize = strokeState.penSize): number {
   return SIZE_TO_PX[size] ?? SIZE_TO_PX[DEFAULT_SIZE];
 }
 
-export function getEraserWidthPx(size: number = strokeState.eraserSize): number {
+export function getEraserWidthPx(size: StrokeSize = strokeState.eraserSize): number {
   return getStrokeWidthPx(size) * ERASER_SIZE_MULTIPLIER;
 }

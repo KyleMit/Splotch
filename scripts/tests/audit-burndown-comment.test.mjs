@@ -69,11 +69,19 @@ describe('commitCommentBody', () => {
 
   it('renders the sha heading, issue, and fix', () => {
     const body = commitCommentBody(base);
-    expect(body).toContain('### `863ee85aaa43` — [P1][complexity] Split initDrawingCanvas');
+    expect(body).toContain('### 863ee85aaa43 — [P1][complexity] Split initDrawingCanvas');
     expect(body).toContain('**Issue**');
     expect(body).toContain('The function is 125 lines.');
     expect(body).toContain('**Fix**');
     expect(body).toContain('Extracted five named setup helpers.');
+  });
+
+  it('leaves the sha bare so GitHub can auto-link it to the commit', () => {
+    // A code span suppresses GitHub's native commit linker, so the sha must
+    // never be wrapped in backticks — it would render as dead monospace text.
+    const body = commitCommentBody(base);
+    expect(body).not.toContain('`863ee85aaa43`');
+    expect(body.split('\n')[0]).toMatch(/^### [0-9a-f]{12} — /);
   });
 
   it('marks a clean first-pass approval when there were no catches', () => {

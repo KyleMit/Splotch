@@ -11,7 +11,7 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { brand, scale, themes, toCssVarName } from '../web/src/lib/design/tokens.ts';
+import { brand, scale, themes, toCssVarName, zIndex } from '../web/src/lib/design/tokens.ts';
 import { ROOT } from './lib/utils.mjs';
 
 const OUT_PATH = resolve(ROOT, 'web/src/tokens.css');
@@ -40,6 +40,8 @@ function render() {
 ${declarations(brand, '  ')}
 
 ${declarations(scale, '  ')}
+
+${declarations(zIndex, '  ')}
 
 ${declarations(themes.light, '  ')}
 }

@@ -1,5 +1,7 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
+  import Disclosure from '../design/Disclosure.svelte';
+  import StatusMessage from '../design/StatusMessage.svelte';
   import { apiUrl } from '$lib/api';
   import { createLatestRequest } from '$lib/latestRequest';
   import { collectDeviceInfo } from '$lib/deviceInfo';
@@ -150,21 +152,25 @@
         </label>
 
         {#if includeDevice}
-          <details class="report-device-details" transition:slide={{ duration: 160 }}>
-            <summary>What will be sent?</summary>
-            {#if deviceRows.length}
-              <ul class="report-device-list">
-                {#each deviceRows as row (row.label)}
-                  <li><span class="report-device-key">{row.label}:</span> {row.value}</li>
-                {/each}
-              </ul>
-            {:else}
-              <p class="report-device-empty">Gathering device info…</p>
-            {/if}
-            <p class="report-device-note">
-              No names, accounts, or location — just the basics about your device and app version.
-            </p>
-          </details>
+          <!-- The slide rides a wrapper: transition directives only attach to DOM
+               elements, never to a component instance. -->
+          <div transition:slide={{ duration: 160 }}>
+            <Disclosure class="report-device-details">
+              {#snippet summary()}What will be sent?{/snippet}
+              {#if deviceRows.length}
+                <ul class="report-device-list">
+                  {#each deviceRows as row (row.label)}
+                    <li><span class="report-device-key">{row.label}:</span> {row.value}</li>
+                  {/each}
+                </ul>
+              {:else}
+                <p class="report-device-empty">Gathering device info…</p>
+              {/if}
+              <p class="report-device-note">
+                No names, accounts, or location — just the basics about your device and app version.
+              </p>
+            </Disclosure>
+          </div>
         {/if}
       </div>
     {/if}
@@ -191,18 +197,14 @@
   </div>
 
   {#if feedback}
-    <p
-      class="report-message"
-      class:error={status === 'error'}
-      class:success={status === 'success'}
-      role={status === 'error' ? 'alert' : 'status'}
-      aria-live="polite"
-    >
+    <StatusMessage status={status === 'error' ? 'error' : 'success'}>
       {feedback}
       {#if status === 'success' && resultUrl}
-        <a href={resultUrl} target="_blank" rel="noopener noreferrer">View your report ↗</a>
+        <a class="report-message-link" href={resultUrl} target="_blank" rel="noopener noreferrer"
+          >View your report ↗</a
+        >
       {/if}
-    </p>
+    </StatusMessage>
   {/if}
 </section>
 
@@ -278,10 +280,7 @@
     resize: vertical;
     min-height: 88px;
     padding: 10px 12px;
-    /* Never below 16px: iOS Safari / WKWebView zoom the visual viewport when a
-       focused input's font-size is < 16px, and on the drawing route that would
-       strand the canvas zoomed with no way to reset it (ADR-0076). */
-    font-size: max(16px, var(--font-size-md));
+    font-size: var(--input-font-size);
     font-family: inherit;
     line-height: 1.5;
     color: var(--text-strong);
@@ -336,37 +335,21 @@
     color: var(--text-muted);
   }
 
-  /* Collapsible device-info preview — same chevron idiom as the BYOK how-to. */
-  .report-device-details {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+  /* The device-info preview's own chrome on the Disclosure primitive — reached
+     with :global() because the class lands on the primitive's own markup. */
+  .report-device :global(.report-device-details) {
     background: var(--surface);
-    overflow: hidden;
   }
 
-  .report-device-details summary {
+  .report-device :global(.report-device-details summary) {
     padding: 8px 12px;
     font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--brand);
-    cursor: pointer;
-    user-select: none;
-    list-style: none;
   }
 
-  .report-device-details summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .report-device-details summary::after {
-    content: '›';
+  .report-device :global(.report-device-details summary::after) {
     float: right;
-    color: var(--text-faint);
-    transition: transform var(--duration-base) ease;
-  }
-
-  .report-device-details[open] summary::after {
-    transform: rotate(90deg);
   }
 
   .report-device-list {
@@ -397,7 +380,7 @@
   .report-device-note {
     margin: 0;
     padding: 4px 12px 10px;
-    font-size: 11px;
+    font-size: var(--font-size-xs);
     color: var(--text-faint);
     line-height: 1.4;
   }
@@ -436,25 +419,7 @@
     cursor: not-allowed;
   }
 
-  .report-message {
-    margin: 12px 0 0 0;
-    padding: 10px 12px;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-sm);
-    line-height: 1.5;
-  }
-
-  .report-message.success {
-    background: var(--success-wash);
-    color: var(--success-text);
-  }
-
-  .report-message.error {
-    background: var(--danger-wash);
-    color: var(--danger-text);
-  }
-
-  .report-message a {
+  .report-message-link {
     display: inline-block;
     margin-left: 4px;
     color: inherit;

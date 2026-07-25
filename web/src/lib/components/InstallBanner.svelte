@@ -6,10 +6,6 @@
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
   import { install, promptInstall, dismissInstall } from '$lib/state/install.svelte';
 
-  // Wait until the child has actually drawn a little, so the prompt feels earned
-  // and never competes with the very first finger-on-screen moment.
-  const STROKES_BEFORE_PROMPT = SETTLED_IN_STROKES;
-
   // The banner sits above the corner controls (actions toggle, Parent Help), so
   // it must not linger: once the child has kept drawing past it, clear it and
   // hand off to the Parent Center setup guide with a short parting message.
@@ -24,11 +20,13 @@
   let shownAtStroke: number | null = null;
   let exitIntoParentButton = false;
 
+  // Wait until the child has actually drawn a little, so the prompt feels earned
+  // and never competes with the very first finger-on-screen moment.
   const visible = $derived(
     !install.installed &&
       !install.dismissed &&
       install.mode !== 'none' &&
-      canvasState.strokeCount >= STROKES_BEFORE_PROMPT
+      canvasState.strokeCount >= SETTLED_IN_STROKES
   );
 
   $effect(() => {
@@ -148,9 +146,9 @@
     left: 50%;
     bottom: calc(16px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
-    /* Above the corner controls (actions toggle 901, Parent Help 900): on phones
+    /* Above the corner controls (--z-panel, --z-corner-button): on phones
        the banner overlaps them, and the auto-clear keeps that takeover short. */
-    z-index: 950;
+    z-index: var(--z-banner);
     width: min(92vw, 420px);
     box-sizing: border-box;
     padding: 14px 16px;

@@ -146,11 +146,14 @@ media queries + the head-script stamp in `app.html`).
 > * **Float canvas-overlay controls inside `.canvas-container`** (`DrawingCanvas.svelte`,
 >   `position: relative`), using `position: absolute`, rather than a fixed viewport corner — that
 >   container already tracks the drawing area across orientations. The **Fullscreen Toggle**
->   (`top: 8px; left: 8px; z-index: 4`) is the reference example.
-> * **Bottom edge is contested**: the **Parent Help Button** (`#parentHelpButton`, `z-index: 900`,
->   bottom-right, `ParentHelpButton.svelte`) and the **Actions Panel** flyouts (`z-index: 901`,
->   bottom-left, `ActionsPanel.svelte`) share it and collide on small viewports — a bug that's
->   invisible from either file alone. Check both when changing sizes or breakpoints down there.
+>   (`top: 8px; left: 8px; z-index: var(--z-canvas-chrome)`) is the reference example. Note
+>   `.canvas-container` sets up no stacking context, so such a control still competes with the
+>   viewport chrome below — it just sits under all of it.
+> * **Bottom edge is contested**: the **Parent Help Button** (`#parentHelpButton`,
+>   `var(--z-corner-button)`, bottom-right, `ParentHelpButton.svelte`) and the **Actions Panel**
+>   flyouts (`var(--z-panel)`/`var(--z-flyout)`, bottom-left, `ActionsPanel.svelte`) share it and
+>   collide on small viewports — a bug that's invisible from either file alone. Check both when
+>   changing sizes or breakpoints down there. Every `--z-*` value lives in `lib/design/tokens.ts`.
 
 * **Color Palette** - Container bar holding all color swatches. **Top-edge row in portrait,
   left-edge column in landscape** (`ColorPalette.svelte`) — see Layout notes above.

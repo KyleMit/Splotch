@@ -1,7 +1,7 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
-  import Slider from '../Slider.svelte';
+  import SliderRow from './SliderRow.svelte';
   import {
     settings,
     setSound,
@@ -9,6 +9,7 @@
     SOUND_VOLUME_DEFAULT,
   } from '$lib/state/settings.svelte';
   import { playDrawSound, stopDrawSound } from '$lib/audio/drawingSound';
+  import { SECTION_SLIDE } from './sections';
 
   const PREVIEW_SPEED = 0.45;
   let previewingVolume = false;
@@ -42,18 +43,14 @@
       onToggle={setSound}
     />
     {#if settings.soundEnabled}
-      <div class="slider-setting" transition:slide={{ duration: 220 }}>
-        <div class="slider-label" id="soundVolumeLabel">
-          <span>Volume</span>
-          <span>{settings.soundVolume}%</span>
-        </div>
-        <Slider
+      <div class="slider-setting" transition:slide={SECTION_SLIDE}>
+        <SliderRow
+          id="soundVolumeLabel"
+          label="Volume"
           value={settings.soundVolume}
           min={0}
           max={100}
           snap={SOUND_VOLUME_DEFAULT}
-          labelId="soundVolumeLabel"
-          valueText="{settings.soundVolume}%"
           onInput={onVolumeInput}
           onActiveChange={onVolumeActive}
         />
@@ -63,19 +60,7 @@
 </section>
 
 <style>
-  /* Volume sits indented under its toggle. */
   .slider-setting {
-    margin: 12px 0 2px 30px;
-  }
-
-  .slider-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--text-mid);
+    margin: 12px 0 2px;
   }
 </style>

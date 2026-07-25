@@ -13,6 +13,7 @@ import {
   gitOut,
   PROMPTS,
   runCmd,
+  WORK,
 } from './lib.mjs';
 
 chdirRoot();
@@ -78,7 +79,19 @@ const openPr = (
     '.[0].number',
   ]).stdout ?? ''
 ).trim();
-if (openPr) ok(`draft PR for ${BRANCH}: number ${openPr} (will resume it)`);
+// The driver prefers .audit-work/pr-number over this lookup, so preflight has to
+// report what the driver will actually use — not just what GitHub says. A number
+// left behind by a previous run whose PR has since merged is the dangerous case:
+// unreported, the run posts its per-commit comments onto a landed PR.
+const cachedPr = existsSync(join(WORK, 'pr-number'))
+  ? readFileSync(join(WORK, 'pr-number'), 'utf8').trim()
+  : '';
+if (cachedPr && cachedPr !== openPr) {
+  warn(
+    `cached PR number ${cachedPr} is not the open PR for ${BRANCH}` +
+      `${openPr ? ` (${openPr} is)` : ' (none is open)'} — the run will discard it`
+  );
+} else if (openPr) ok(`draft PR for ${BRANCH}: number ${openPr} (will resume it)`);
 else ok(`draft PR for ${BRANCH}: none open (will create on first push)`);
 
 console.log('prompts');

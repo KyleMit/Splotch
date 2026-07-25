@@ -46,8 +46,12 @@ const BASELINE = new Map(
     'lib/components/StrokeWidthMenu.svelte': 1,
     // Constant dim swatch ring + var(--color) usage documented in-file.
     'lib/components/ColorPicker.svelte': 1,
-    // Unthemed danger-red chrome (deliberate — reads the same on both papers).
-    'lib/components/ClearButton.svelte': 6,
+    // Unthemed danger-red chrome (deliberate — reads the same on both papers;
+    // ADR-0052 and the ThemeTokens doc comment in lib/design/tokens.ts).
+    'lib/components/ClearButton.svelte': 4,
+    // The coachmark ghost button's copy of that same unthemed danger-red
+    // gradient (extracted from ClearButton — see the twin rule there).
+    'lib/components/ClearCoachmark.svelte': 2,
     // Eraser-hole preview chrome and the rainbow conic gradient.
     'lib/components/DrawingCanvas.svelte': 9,
     // Confetti particle colors are content, not chrome.

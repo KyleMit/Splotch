@@ -9,6 +9,7 @@ import {
   getStrokeWidthPx,
   getEraserWidthPx,
   reloadStrokeWidth,
+  type StrokeSize,
 } from './strokeWidth.svelte';
 import { selectBrush } from './tool.svelte';
 
@@ -30,8 +31,8 @@ describe('getStrokeWidthPx', () => {
 
   it('falls back to the default level for out-of-range or garbage input', () => {
     const defaultPx = getStrokeWidthPx(DEFAULT_SIZE);
-    expect(getStrokeWidthPx(0)).toBe(defaultPx);
-    expect(getStrokeWidthPx(99)).toBe(defaultPx);
+    expect(getStrokeWidthPx(0 as StrokeSize)).toBe(defaultPx);
+    expect(getStrokeWidthPx(99 as StrokeSize)).toBe(defaultPx);
     expect(getStrokeWidthPx(undefined)).toBe(defaultPx);
   });
 });
@@ -81,8 +82,8 @@ describe('setStrokeSize / activeStrokeSize', () => {
   it('ignores levels outside STROKE_SIZES and persists nothing', () => {
     selectBrush('pen');
     setStrokeSize(3);
-    setStrokeSize(7); // invalid
-    setStrokeSize(0); // invalid
+    setStrokeSize(7 as StrokeSize); // invalid
+    setStrokeSize(0 as StrokeSize); // invalid
     expect(strokeState.penSize).toBe(3);
     expect(localStorage.getItem(PEN_KEY)).toBe('3');
   });

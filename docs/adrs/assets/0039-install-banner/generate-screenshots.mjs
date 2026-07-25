@@ -125,7 +125,7 @@ async function waitForCanvas(page, url) {
   }
 }
 
-// The banner only appears after STROKES_BEFORE_PROMPT committed strokes.
+// The banner only appears after SETTLED_IN_STROKES committed strokes.
 async function drawThreeStrokes(page) {
   const box = await page.locator('#drawingCanvas').boundingBox();
   const cx = box.x + box.width / 2;

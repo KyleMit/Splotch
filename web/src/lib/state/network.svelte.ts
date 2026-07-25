@@ -13,7 +13,8 @@ export const network = $state({
 // value is live before the first component renders — ActionsPanel reads
 // network.online on mount, before +page.svelte's onMount would run.
 if (browser) {
-  network.online = navigator.onLine !== false;
+  // Some old WebViews report `undefined` for navigator.onLine; assume online then.
+  network.online = navigator.onLine ?? true;
   window.addEventListener('online', () => (network.online = true));
   window.addEventListener('offline', () => (network.online = false));
 

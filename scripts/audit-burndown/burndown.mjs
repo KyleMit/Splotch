@@ -25,6 +25,7 @@ import {
   countEntries,
   deleteFirstEntry,
   ensureWorkDirs,
+  findingPriority,
   getEntry,
   git,
   gitOk,
@@ -32,6 +33,7 @@ import {
   logLine,
   LOGS,
   PROMPTS,
+  resolveImplSha,
   runCmd,
   shellOk,
   WORK,
@@ -59,11 +61,12 @@ const RETRIES = Number(process.env.RETRIES ?? 3); // retries for transient claud
 // alias already resolves there). Override with MODEL_* to tier for cost/speed.
 const MODEL_VERIFY = process.env.MODEL_VERIFY ?? 'sonnet';
 const MODEL_IMPL = process.env.MODEL_IMPL ?? 'claude-opus-5';
+const MODEL_IMPL_MINOR = process.env.MODEL_IMPL_MINOR ?? 'sonnet'; // P4/P5 mechanical tail
 const MODEL_REVIEW = process.env.MODEL_REVIEW ?? 'claude-opus-5';
 
 const BUDGET_VERIFY = process.env.BUDGET_VERIFY ?? '3.00'; // verify reads a lot of code; $1 capped complex findings and clustered deferrals (2026-07-24 retro)
 const BUDGET_IMPL = process.env.BUDGET_IMPL ?? '4.00';
-const BUDGET_REVIEW = process.env.BUDGET_REVIEW ?? '2.00';
+const BUDGET_REVIEW = process.env.BUDGET_REVIEW ?? '3.00'; // $2 capped a P4 review mid-verdict, discarding a sound fix (2026-07-24 retro)
 
 // ---- tool scopes ------------------------------------------------------------
 // NOTE the space before each '*'. `Bash(git diff *)` prefix-matches correctly;
@@ -231,28 +234,49 @@ if (!shellOk(CHECK_CMD)) halt('tree is already red before we start');
 // before pushBatch would otherwise open a second, duplicate draft PR.
 const prNumberFile = join(WORK, 'pr-number');
 let prNumber = existsSync(prNumberFile) ? readFileSync(prNumberFile, 'utf8').trim() : '';
-if (!prNumber) {
-  const found = runCmd('gh', [
-    'pr',
-    'list',
-    '--head',
-    BRANCH,
-    '--state',
-    'open',
-    '--json',
-    'number',
-    '--jq',
-    '.[0].number',
-  ]);
-  prNumber = (found.stdout ?? '').trim();
-  if (prNumber) {
-    writeFileSync(prNumberFile, prNumber);
-    logLine(`  adopted existing draft PR for ${BRANCH} (number ${prNumber})`);
-  }
+const found = runCmd('gh', [
+  'pr',
+  'list',
+  '--head',
+  BRANCH,
+  '--state',
+  'open',
+  '--json',
+  'number',
+  '--jq',
+  '.[0].number',
+]);
+// Only act on the lookup when it actually succeeded: on a network/auth blip an
+// empty stdout would otherwise look like "no open PR" and throw away a good
+// cached number, and pushBatch would then open a duplicate draft PR.
+const openPr = found.status === 0 ? (found.stdout ?? '').trim() : '';
+if (prNumber && found.status === 0 && prNumber !== openPr) {
+  // The cached number outlived its PR — the previous run's PR was merged or
+  // closed. Trusting it would post this run's per-commit comments onto a
+  // landed PR, which is where they are least likely to ever be seen.
+  logLine(`  cached PR number ${prNumber} is not the open PR for ${BRANCH} — discarding it`);
+  rmSync(prNumberFile, { force: true });
+  prNumber = '';
 }
+if (!prNumber && openPr) {
+  prNumber = openPr;
+  writeFileSync(prNumberFile, prNumber);
+  logLine(`  adopted existing draft PR for ${BRANCH} (number ${prNumber})`);
+}
+// Fixes and drops are both "handled", but only fixes are work — conflating them
+// in the summary makes the closeout AUDIT-LOG row wrong in the flattering
+// direction, so they are counted apart.
 let done = 0;
+let dropped = 0;
 let sincePush = 0;
 const pending = []; // completed fixes awaiting their per-commit PR comment (posted on the next successful push)
+
+const lastLine = (result) =>
+  `${result.stderr ?? ''}\n${result.stdout ?? ''}`
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .pop() ?? 'unknown error';
 
 // Push the batch, create the draft PR on the first push, and post one per-commit
 // comment for each pushed fix. Returns false (commits held locally) if the
@@ -283,11 +307,29 @@ function pushBatch({ final = false } = {}) {
     ]);
     prNumber = (created.stdout ?? '').trim().match(/(\d+)$/)?.[1] ?? '';
     if (prNumber) writeFileSync(prNumberFile, prNumber);
+    // A failed create used to be swallowed entirely: prNumber stayed empty, and
+    // an unattended run would push all night with no PR and no hint in the log.
+    // Last non-empty line, not the first: gh emits warnings ("Warning: N
+    // uncommitted changes") ahead of the actual error, which would otherwise
+    // mask the cause.
+    else logLine(`  gh pr create FAILED — pushed, but no PR: ${lastLine(created)}`);
   }
   if (prNumber) {
     for (const rec of pending) {
       runCmd('gh', ['pr', 'comment', prNumber, '--body', commitCommentBody(rec)]);
     }
+    pending.length = 0;
+  } else if (pending.length) {
+    // Nowhere to post them, so persist instead of letting them die with the
+    // process — the commits are already pushed, and these are the only record
+    // of the reviewer's catches. Re-render later with comment.mjs.
+    appendFileSync(
+      join(WORK, 'pending-comments.jsonl'),
+      `${pending.map((rec) => JSON.stringify(rec)).join('\n')}\n`
+    );
+    logLine(
+      `  no PR to comment on — ${pending.length} comment(s) saved to ${WORK}/pending-comments.jsonl`
+    );
     pending.length = 0;
   }
   return true;
@@ -354,7 +396,7 @@ while (done < MAX_ISSUES) {
       join(WORK, 'completed.log'),
       `${gitOut('rev-parse', 'HEAD')}  [invalid]  ${title}\n`
     );
-    done += 1;
+    dropped += 1;
     sincePush += 1;
     consecutive = 0;
     continue;
@@ -375,12 +417,20 @@ while (done < MAX_ISSUES) {
   const baseSha = gitOut('rev-parse', 'HEAD');
 
   // ---- 3. IMPLEMENT ---------------------------------------------------------
+  // Impl-model tiering: P4/P5 findings are the mechanical tail (dead code,
+  // renames, dedup), where the cheaper model shaves the long pole and the
+  // unchanged adversarial review still gates the result. Anything more
+  // consequential — or untagged, so unknown — stays on the stronger model.
+  const priority = findingPriority(title);
+  const implModel = priority !== null && priority >= 4 ? MODEL_IMPL_MINOR : MODEL_IMPL;
+  if (implModel !== MODEL_IMPL) logLine(`  impl model: ${implModel} (P${priority})`);
+
   let impl = await claudeStep(`${tag}.impl`, [
     'Implement the fix described in .audit-work/current-brief.md.',
     '--append-system-prompt-file',
     join(PROMPTS, 'implementer.md'),
     '--model',
-    MODEL_IMPL,
+    implModel,
     '--allowedTools',
     TOOLS_IMPL,
     '--permission-mode',
@@ -396,7 +446,13 @@ while (done < MAX_ISSUES) {
   // The session_id is the resume handle. Addressing by session ID rather than
   // by agent name is what makes hundreds of iterations safe.
   const implSession = impl.env.session_id ?? '';
-  let sha = structured(impl.env).sha ?? '';
+  const reportedSha = structured(impl.env).sha ?? '';
+  let sha = resolveImplSha({
+    reported: reportedSha,
+    head: structured(impl.env).success === true ? gitOut('rev-parse', 'HEAD') : '',
+    baseSha,
+  });
+  if (sha && !reportedSha) logLine(`  implementer omitted its sha — recovered ${sha.slice(0, 12)}`);
 
   if (!impl.ok || structured(impl.env).success !== true || !sha) {
     logLine(`  implementer failed — restoring ${baseSha}`);
@@ -423,6 +479,8 @@ while (done < MAX_ISSUES) {
           .join('\n');
 
   let status = 'CHANGES_REQUIRED';
+  let reviewUnavailable = false;
+  let fixRounds = 0;
   for (let round = 1; round <= 3; round++) {
     const review = await claudeStep(`${tag}.review${round}`, [
       `Adversarially review commit ${sha}.\n\nThe original finding this fix must resolve:\n${issue}\n\nAcceptance criteria the verifier derived from it (which may themselves be mis-scoped):\n${acceptance}`,
@@ -441,8 +499,14 @@ while (done < MAX_ISSUES) {
       '--max-budget-usd',
       BUDGET_REVIEW,
     ]);
+    // A reviewer that never ran (budget/turn cap, API error) has not rejected
+    // anything — it produced no verdict at all. Recording that as
+    // CHANGES_REQUIRED would roll the fix back and file it under "failed
+    // adversarial review", telling whoever triages the deferral that the work
+    // was judged and found wanting when nothing ever looked at it. Roll back
+    // either way (unreviewed work must not ship) but say which happened.
     if (!review.ok) {
-      status = 'CHANGES_REQUIRED';
+      reviewUnavailable = true;
       break;
     }
     status = structured(review.env).status ?? 'CHANGES_REQUIRED';
@@ -452,6 +516,7 @@ while (done < MAX_ISSUES) {
     reviewCatches.push(...roundFindings);
     const feedback = roundFindings.map((f) => `- ${f}`).join('\n');
     logLine(`  round ${round}: changes required`);
+    fixRounds += 1;
 
     // Resume the SAME implementer session: it retains its full history —
     // every prior tool call, result, and reasoning step — so it fixes its own
@@ -485,9 +550,12 @@ while (done < MAX_ISSUES) {
 
   // ---- 6. CLOSE OUT ---------------------------------------------------------
   if (status !== 'APPROVED') {
-    logLine(`  unresolved after 2 fix rounds — rolling back to ${baseSha}`);
+    const why = reviewUnavailable
+      ? 'reviewer never returned a verdict'
+      : `unresolved after ${fixRounds} fix round${fixRounds === 1 ? '' : 's'}`;
+    logLine(`  ${why} — rolling back to ${baseSha}`);
     git('reset', '-q', '--hard', baseSha);
-    defer(title, 'failed adversarial review');
+    defer(title, reviewUnavailable ? 'reviewer unavailable' : 'failed adversarial review');
     continue;
   }
 
@@ -564,4 +632,6 @@ while (done < MAX_ISSUES) {
 // pushes, so a red tail never escapes on exit either — held commits stay local
 // for the operator to inspect.
 if (sincePush > 0) pushBatch({ final: true });
-logLine(`finished: ${done} done, ${deferred} deferred, ${countEntries()} remaining`);
+logLine(
+  `finished: ${done} fixed, ${dropped} dropped, ${deferred} deferred, ${countEntries()} remaining`
+);

@@ -374,3 +374,140 @@ compiler flags every miss.
 nothing; every consumer still resolves.
 
 ---
+
+### [P1][duplication] Extract a shared segmented-control primitive — it now exists three times with drift
+
+**File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:32-47,92-138` ·
+`web/src/lib/components/ParentCenter.svelte:222-238,443-490` ·
+`web/src/lib/components/parent/ReportForm.svelte:112-125,233-267` (theme picker / orientation
+selector / report-kind picker) — pinned at SHA f934d43
+
+#### Problem
+
+Three near-identical "iOS-style segmented control" implementations exist. The code comments admit
+the copy-paste: ParentCenter's `.orient-seg` says *"matching the Theme picker in AppearanceSection"*
+(`ParentCenter.svelte:440`) and ReportForm's `.report-kind` says *"mirrors the Appearance theme
+picker"* (`ReportForm.svelte:232`). The design skill's own rule is *"Extract a new primitive at the
+third duplicate"* — this is the third.
+
+They have already drifted, which is exactly the failure the shared list is supposed to prevent:
+
+* Container radius: `var(--radius-md)` (theme picker, `AppearanceSection.svelte:98`) vs raw `10px`
+  (orient-seg, `ParentCenter.svelte:448`) vs `10px` (report-kind, `ReportForm.svelte:239`).
+* Option radius: raw `9px` (`AppearanceSection.svelte:109`) vs `var(--radius-sm)`
+  (`ParentCenter.svelte:460`) vs `7px` (`ReportForm.svelte:250`).
+* Active treatment: raised card w/ `box-shadow: 0 1px 4px rgba(0,0,0,0.18)` (theme/orient) vs brand
+  fill (report-kind).
+* Font size: `var(--font-size-sm)` vs raw `12.5px` (`ParentCenter.svelte:464`).
+
+#### Proposed solution
+
+Add `web/src/lib/components/design/Segmented.svelte` (beside `Button.svelte`) taking
+`options: {value,label,icon?,id?}[]`, `selected`, `onSelect`, and a `variant` (`raised` for
+theme/orientation, `filled` for report-kind), plus an `allowDeselect` flag for the orientation case.
+Style once from tokens (`--radius-md` container, `--radius-sm` option, `--shadow-sm` for the active
+card). Replace all three call sites. Register it in the `design` skill's primitives table.
+
+#### Verification
+
+`grep -rn "segmented\|theme-option\|orient-opt\|report-kind-option"` shows only the new primitive's
+internals. Visually diff `/dev/design` and each of the three sites in light+dark before/after; the
+three should now be pixel-identical modulo variant.
+
+---
+
+### [P3][duplication] The `.setting-group .setting + .setting { margin-top: 6px }` rule is copied into three sections
+
+**File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:75-77` ·
+`web/src/lib/components/parent/SavingSection.svelte:65-67` ·
+`web/src/lib/components/parent/ControlsSection.svelte:165-167` — pinned at SHA f934d43
+
+#### Problem
+
+The identical adjacent-sibling spacing rule appears verbatim in three section components.
+ParentCenter already owns the shared `.setting-group`/`.setting` styling globally
+(`ParentCenter.svelte:747-759`, with the comment *"keeps these rules in one place instead of copied
+into each section component"*) — this rule contradicts that intent by living copied in the leaves.
+
+#### Proposed solution
+
+Move `.setting-group .setting + .setting { margin-top: var(--space-1) + 2 }` (6px → keep as-is or
+promote to a token) into ParentCenter's `.parent-help-content :global(.setting)` block and delete
+the three copies.
+
+#### Verification
+
+`grep -rn "setting + .setting" web/src` returns one hit. Sections with stacked `.setting` rows
+(Appearance orientation toggles, Saving folder row, Controls) keep their 6px gap.
+
+---
+
+### [P4][accessibility] Two identical segmented controls use inconsistent ARIA semantics (radiogroup vs group/pressed)
+
+**File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:32-45` (radiogroup/radio) ·
+`web/src/lib/components/ParentCenter.svelte:223-237` (group + aria-pressed) — pinned at SHA f934d43
+
+#### Problem
+
+The theme picker exposes `role="radiogroup"` with `role="radio"` + `aria-checked` children, while
+the visually-identical orientation selector uses `role="group"` with `aria-pressed` toggle buttons.
+Both are single-select segmented controls (the report-kind picker is a *third* pattern, radiogroup
+again). Screen-reader users get inconsistent announcements for the same idiom, and neither
+radiogroup implements roving-tabindex/arrow-key navigation the role implies. This intersects
+maintainability: whichever pattern the Segmented primitive (P1) standardizes on must be chosen
+deliberately.
+
+#### Proposed solution
+
+Decide one semantic for the Segmented primitive: `radiogroup`/`radio` for mandatory single-select
+(theme, report-kind) with arrow-key roving, and document that the orientation selector — which
+*allows* deselecting to "free rotation" — legitimately differs (toggle buttons). Encode the choice
+in the primitive's props (`mode: 'radio' | 'toggle'`).
+
+#### Verification
+
+Navigate each control with a screen reader + keyboard; announcements and arrow-key behavior are
+consistent within each mode.
+
+---
+
+### [P1][duplication] White/dark ink keyline CSS is triplicated across ActionsPanel, BrushMenu, and StrokeWidthMenu
+
+**File(s):** `web/src/lib/components/ActionsPanel.svelte:772-787`,
+`web/src/lib/components/BrushMenu.svelte:155-170`,
+`web/src/lib/components/StrokeWidthMenu.svelte:175-190` — pinned at SHA f934d43
+
+#### Problem
+
+The same "ring the currentColor ink with a keyline so white/near-black reads on the buttons" trick
+is written out three times, each with the same four declarations:
+
+```css
+stroke: #000;              /* white-stroke */  or  var(--dark-ink-keyline);  /* dark-stroke */
+stroke-width: 2px;
+paint-order: stroke;
+vector-effect: non-scaling-stroke;
+```
+
+ActionsPanel targets `svg path[fill='currentColor']`, BrushMenu the same, StrokeWidthMenu widens to
+`svg path` (single path). The identical comment paragraph explaining the `#000` one-off is pasted in
+all three. Changing the keyline width, adding a token for the `#000`, or adjusting the selector
+means editing three files that must not drift.
+
+#### Proposed solution
+
+Promote `.white-stroke`/`.dark-stroke` to shared global utility classes in `app.css` (they already
+ride on the container element in each case), keyed off
+`:where(.white-stroke) svg path[fill='currentColor']` and a dark mirror. Each component keeps only
+the class toggle. Fold StrokeWidthMenu's `svg path` variant in by making the selector match both
+(`path[fill='currentColor'], svg:has(path):not(:has(path[fill='currentColor'])) path` is overkill —
+simpler: tag the single-path icon so `[fill='currentColor']` applies there too, then one selector
+covers all three).
+
+#### Verification
+
+Grep `paint-order: stroke` across the components — should collapse to one definition. Select white
+ink and near-black ink (dark theme) with each of brush trigger, brush menu, stroke trigger, stroke
+menu open, and confirm the keyline still renders in `run-splotch`.
+
+---

@@ -60,6 +60,15 @@ export const scale = {
   fontSize2xl: '22px',
   fontSize3xl: '28px',
 
+  // Text-input font-size floor: iOS Safari / WKWebView zooms the visual
+  // viewport when a focused input's font-size is < 16px, which on the
+  // drawing route would strand the canvas zoomed with no way to reset it
+  // (ADR-0076). Every parent-center text input must reference this.
+  inputFontSize: 'max(16px, var(--font-size-md))',
+
+  // Raw code/version values (masked API keys, version strings, inline code).
+  fontMono: "'Courier New', monospace",
+
   durationFast: '0.15s',
   durationBase: '0.2s',
   durationSlow: '0.35s',
@@ -76,6 +85,58 @@ export const scale = {
   // one shadow reads correctly on both themes.
   shadowSm: '0 2px 6px rgba(0, 0, 0, 0.12)',
   shadowPop: '0 8px 32px rgba(0, 0, 0, 0.3)',
+  // The tight lift on the selected segment of a segmented toggle (theme,
+  // orientation). Deliberately harder and closer than --shadow-sm so the
+  // thumb reads as sitting just above its track — don't converge the two.
+  shadowSegment: '0 1px 4px rgba(0, 0, 0, 0.18)',
+} as const;
+
+// The cross-component stacking order, low to high. Scoped to "chrome" — the
+// fixed/absolute-positioned UI that can visually collide with something outside
+// its own component. Layers sealed inside a real stacking context (everything
+// under DrawingCanvas's .canvas-stack, which sets isolation: isolate; the close
+// buttons on the AI and coloring-book cards; the hovered palette hexagon) stay
+// as local integers: tokenizing them would imply a global relationship they
+// don't have.
+//
+// These are ONE ordered list but not one stacking context, so a bigger number
+// does not always win. Every value except zFlyout resolves in the root context
+// — notably .canvas-container is position: relative with no z-index, so it
+// establishes nothing and its children compete directly with the fixed chrome.
+// zFlyout is the exception (see its note). The tiers are a convention, not a
+// containment guarantee.
+export const zIndex = {
+  // FullscreenToggle — the floor of that shared root context, not a separate
+  // local scale. It clears DrawingCanvas's other root-level layers
+  // (.paper-sheet 0, .canvas-stack 1, .paper-view 2, .brush-ring/.eraser-bubble
+  // 3) and deliberately loses to every persistent control below.
+  zCanvasChrome: 4,
+
+  // Clear Button drag feedback: the paper wash previewing the clear, then the
+  // confirmation ripple over it. Both are full-viewport, both sit above the
+  // canvas and below every persistent control.
+  zClearPreview: 400,
+  zRipple: 500,
+
+  zCornerButton: 900, // ParentHelpButton
+  zPanel: 901, // ActionsPanel
+  // app.css .flyout-menu (Brush Menu + Stroke Width Menu) — the one value here
+  // that is NOT in the root context. .actions-panel is position: fixed with a
+  // z-index, so it establishes its own, and this only orders the flyout inside
+  // that subtree. Hence the tie with zPanel is inert; hence also raising this
+  // past zBanner would change nothing, because zPanel caps the whole subtree.
+  // Lifting a flyout over the banner means raising zPanel, not this.
+  zFlyout: 901,
+  zBanner: 950, // InstallBanner — takes over the corner controls while shown
+  zClearAcceptZone: 999, // below the button it rings, so the button stays on top
+  zClearButton: 1000,
+  // Pre-existing tie with zClearButton: both are fixed, and which one paints on
+  // top is DOM order today. Preserved deliberately — resolving it is a visual
+  // change, not a rename.
+  zNotch: 1000,
+  zClearCoachmark: 1001, // the ghost button, above the real one
+  zPalette: 1002,
+  zScreenshotFlash: 10000, // app.css .polaroid-overlay
 } as const;
 
 // Themed tokens. Dark mode swaps these — and only these — so themed chrome

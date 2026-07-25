@@ -13,10 +13,9 @@
     checked: boolean;
     onToggle: (next: boolean) => void;
     help?: string;
-    disabled?: boolean;
   }
 
-  let { icon, label, id, checked, onToggle, help = '', disabled = false }: Props = $props();
+  let { icon, label, id, checked, onToggle, help = '' }: Props = $props();
 </script>
 
 <div class="setting-toggle">
@@ -28,17 +27,17 @@
     class="toggle-switch"
     class:active={checked}
     {id}
-    {disabled}
     role="switch"
     aria-label={label}
     aria-checked={checked}
+    aria-describedby={help ? `${id}-help` : undefined}
     onclick={() => onToggle(!checked)}
   >
     <span class="toggle-switch-thumb"></span>
   </button>
 </div>
 {#if help}
-  <p class="setting-help">{help}</p>
+  <p id="{id}-help" class="setting-help">{help}</p>
 {/if}
 
 <style>
@@ -48,8 +47,10 @@
     align-items: center;
   }
 
+  /* Indented past the icon column so the help line starts under the label:
+     .setting-icon's width + .setting-info's gap, both declared below. */
   .setting-help {
-    margin: 6px 0 0 30px;
+    margin: 6px 0 0 calc(20px + 10px);
     font-size: var(--font-size-sm);
     color: var(--text-muted);
     line-height: 1.4;
@@ -118,16 +119,5 @@
 
   .toggle-switch.active .toggle-switch-thumb {
     transform: translateX(20px);
-  }
-
-  .toggle-switch:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-
-  @media (hover: hover) {
-    .toggle-switch:disabled:hover {
-      background: var(--control-track);
-    }
   }
 </style>

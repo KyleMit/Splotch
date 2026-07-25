@@ -2,6 +2,7 @@
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
   import Icon from '../Icon.svelte';
+  import { SECTION_SLIDE } from './sections';
   import {
     settings,
     setLockRotation,
@@ -58,7 +59,7 @@
     </div>
 
     {#if settings.lockRotationEnabled}
-      <div class="setting" transition:slide={{ duration: 220 }}>
+      <div class="setting" transition:slide={SECTION_SLIDE}>
         <ToggleRow
           icon={settings.forceLandscapeOrientation ? 'mobile-landscape' : 'mobile-portrait'}
           label="Force landscape orientation"
@@ -128,7 +129,7 @@
   .theme-option.active {
     background: var(--surface);
     color: var(--text-strong);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--shadow-segment);
   }
 
   :global(.theme-option-icon) {

@@ -65,6 +65,49 @@ describe('setAiUserApiKey', () => {
     expect(settings.aiUserApiKey).toBe('');
     expect(secureStore.apiKey).toBeNull();
   });
+
+  it('a second call supersedes an in-flight first write', async () => {
+    let finishSave!: () => void;
+    vi.mocked(saveApiKey).mockImplementationOnce(
+      (value: string) =>
+        new Promise<void>((resolve) => {
+          finishSave = () => {
+            secureStore.apiKey = value;
+            resolve();
+          };
+        })
+    );
+
+    const firstWrite = setAiUserApiKey('first');
+    await vi.waitFor(() => expect(saveApiKey).toHaveBeenCalledOnce());
+
+    const secondWrite = setAiUserApiKey('second');
+    finishSave();
+
+    expect(await secondWrite).toBe(true);
+    expect(settings.aiUserApiKey).toBe('second');
+
+    expect(await firstWrite).toBe(false);
+    expect(settings.aiUserApiKey).toBe('second');
+    expect(secureStore.apiKey).toBe('second');
+  });
+
+  it('ownership lost mid-flight restores the prior credential', async () => {
+    settings.aiUserApiKey = 'prior-key';
+    secureStore.apiKey = 'prior-key';
+
+    let ownsRequest = true;
+    vi.mocked(saveApiKey).mockImplementationOnce(async (value: string) => {
+      secureStore.apiKey = value;
+      ownsRequest = false;
+    });
+
+    const result = await setAiUserApiKey('new-key', () => ownsRequest);
+
+    expect(result).toBe(false);
+    expect(settings.aiUserApiKey).toBe('prior-key');
+    expect(secureStore.apiKey).toBe('prior-key');
+  });
 });
 
 describe('hydrateApiKey', () => {

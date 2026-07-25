@@ -36,10 +36,16 @@ pierce Svelte's style scoping, so every component references them directly via `
 | Brand     | `--brand`, `--brand-hover`, `--brand-tint-filter`, `--on-brand` (text/icon ink on brand fills)            |
 | Spacing   | `--space-1` (4px) … `--space-8` (40px), a 4px-based ramp                                                  |
 | Radius    | `--radius-xs/sm/md/lg/xl` (4/8/12/16/22px), `--radius-pill`                                               |
-| Type      | `--font-size-xs/sm/md/lg/xl/2xl/3xl` (12–28px)                                                            |
+| Type      | `--font-size-xs/sm/md/lg/xl/2xl/3xl` (12–28px), `--font-mono`                                             |
 | Motion    | `--duration-fast/base/slow` (0.15/0.2/0.35s), `--ease-pop` (overshoot), `--ease-pop-strong` (harder       |
 |           | overshoot — visibly springier than `--ease-pop`, don't converge them), `--ease-glide` (settle)            |
-| Elevation | `--shadow-sm`, `--shadow-pop` (neutral); `--float-shadow`, `--float-shadow-flyout` (themed, paper cards)  |
+| Elevation | `--shadow-sm`, `--shadow-pop`, `--shadow-segment` (neutral; the last is the tight active-segment          |
+|           | lift — tighter and harder than `--shadow-sm`, don't converge them); `--float-shadow`,                     |
+|           | `--float-shadow-flyout` (themed, paper cards)                                                             |
+| Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-screenshot-flash`          |
+|           | (10000), listed low-to-high in `tokens.ts`. One list, not one context: all root-context except            |
+|           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under      |
+|           | `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers                           |
 | Theme     | surfaces, borders, text ramp, icon inks, brand/success/danger washes, paper, float-card chrome — the full |
 |           | list with per-token docs is in `tokens.ts` (`ThemeTokens`)                                                |
 
@@ -53,12 +59,21 @@ Shared UI primitives live in **`web/src/lib/components/design/`**. They style th
 from tokens and are for modal/parent/admin surfaces — the canvas-floating controls (Actions Panel,
 corner buttons, Clear Button) keep their bespoke paper treatments.
 
-| Primitive       | Use for                                                                                 |
-| --------------- | --------------------------------------------------------------------------------------- |
-| `Button.svelte` | Text-labeled actions. Variants `brand` / `wash` / `danger` / `ghost`, sizes `md` / `sm` |
+| Primitive              | Use for                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------- |
+| `Button.svelte`        | Text-labeled actions. Variants `brand` / `wash` / `danger` / `ghost`, sizes `md` / `sm`     |
+| `Disclosure.svelte`    | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the        |
+|                        | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`) |
+| `StatusMessage.svelte` | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error` |
 
-Shared *global* patterns (modal shell, close button, corner buttons, dialog fly-in) remain classes
-in `app.css` because dialogs and imperative DOM need them unscoped.
+Shared *global* patterns (modal shell, close button, corner buttons, dialog fly-in, flyout menu +
+its options) remain classes in `app.css` for one of two reasons: dialogs and imperative DOM need
+them unscoped, or the pattern is chrome that several components share verbatim but that hasn't
+earned a primitive yet (`.corner-button` across the drawer toggle / Fullscreen Toggle / Parent Help
+Button; `.flyout-menu` + `.flyout-option` across BrushMenu and StrokeWidthMenu). That second case is
+how a canvas-floating control de-duplicates: hoist the shared *rules* to `app.css` with a comment
+naming the consumers, leaving each component only what genuinely differs — not a wrapper component,
+which the bespoke-paper-treatment carve-out above rules out anyway.
 
 **Extract a new primitive at the third duplicate**, not before — and add it to `/dev/design` and
 this table when you do.

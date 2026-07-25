@@ -66,10 +66,11 @@ MAX_DEFERRALS=3       # consecutive deferrals before halting
 RETRIES=3             # retries per claude call before treating it as a deferral
 MODEL_VERIFY=sonnet          # verification is mostly grep-and-confirm (`sonnet` alias → Sonnet 5)
 MODEL_IMPL=claude-opus-5     # pinned id, not the `opus` alias — see below
+MODEL_IMPL_MINOR=sonnet      # impl model for P4/P5 findings only — see Tuning & lessons
 MODEL_REVIEW=claude-opus-5
 BUDGET_VERIFY=3.00    # --max-budget-usd per call; verify is code-read-heavy — see Tuning & lessons
 BUDGET_IMPL=4.00
-BUDGET_REVIEW=2.00
+BUDGET_REVIEW=3.00
 ```
 
 ### The layered test gate — why type-checking isn't enough
@@ -113,14 +114,56 @@ per-commit history rather than a batched dump. `scripts/audit-burndown/comment.m
 a successful push, so a comment never references an unpushed SHA. Deferrals and drops stay in the
 commit log only (they carry their reason in the commit message).
 
+**When there is no PR to post to, the comments are stored, not lost.** `pushBatch` spills them to
+`.audit-work/pending-comments.jsonl` and logs that it did.
+`scripts/audit-burndown/backfill-comments.mjs` is the replay tool:
+
+| Command                                 | Does                                                                                                                                                                                        |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backfill-comments.mjs capture [range]` | Rebuild records for fixes in `range` (default `main..HEAD`) from run.log + role envelopes + git. Idempotent — dedupes by SHA, so re-running after more findings land only adds the new ones |
+| `backfill-comments.mjs post`            | Post the stored records to the branch's open PR, dropping each only as it lands                                                                                                             |
+| `backfill-comments.mjs show`            | Print the rendered comments for review before posting                                                                                                                                       |
+
+`COMMENT_STORE=<path>` overrides the store. Point it at a **committed** path
+(`docs/AUDIT-PENDING-COMMENTS.jsonl`) when comments will sit unposted for a while — `.audit-work/`
+is gitignored, so the default store dies with the machine. Delete the committed store once `post`
+has drained it.
+
+> Iteration log names restart at `iter0001` every run, so `.audit-work/logs/iter0002.fix1.json` may
+> belong to an **earlier** run about a different finding — a shorter run does not clear the longer
+> one's files. `capture` dates each iteration by its own `verify.json` mtime and ignores anything
+> older. Anything else reading these logs by name (`audit:cost` totals every envelope it finds,
+> across all runs) has the same hazard.
+
+**Never wrap a SHA in backticks in GitHub-bound text.** GitHub's native linker turns a bare
+plain-text commit SHA into a link to that commit (rendered as a short, hoverable reference); inside
+a code span it stays dead monospace text, which is exactly the wrong outcome for a comment whose job
+is to point at a commit. The renderer emits the heading as `### <sha12> — <title>` for that reason,
+and a unit test pins it. The same applies to any SHA you write by hand into a PR body, PR comment,
+or issue comment — leave it bare. (Backticks around *file paths and spec names* are still correct;
+this is only about SHAs.)
+
 ## Before the full run
 
 1. `npm run audit:preflight` — fix anything red.
-2. **Canary:** `npm run audit:burndown` (5 findings) and read the commits it makes.
-3. **Force a rejection** to exercise the path a happy-path canary won't: write one deliberately
-   vague brief so the reviewer returns `CHANGES_REQUIRED`, then check `.audit-work/logs/*.fix1.json`
-   to confirm the resumed implementer references its own earlier work rather than starting over.
-   That handoff is the whole design.
+2. **Canary:** `npm run audit:burndown` (5 findings) and read the commits it makes —
+   `git log main..HEAD -p -- . ':(exclude)docs/AUDIT.md'` keeps the backlog churn out of the diff.
+   Read for **behavior changes smuggled inside a refactor**, which is what this loop gets wrong when
+   it gets anything wrong, and what a green type-check and test suite will not catch:
+   * A dedup finding whose call sites were not actually identical — the classic is three sites where
+     two were guarded and one was not, unified onto the guarded form. Establish that the guard is
+     always satisfied at the third site (or that the difference was real) before accepting it.
+   * A "derive this constant from that one" fix where the two happened to be equal by coincidence
+     rather than by intent — check whether the source is pinned by anything (a comment, a test) or
+     is free to drift.
+   * A narrowed type whose invalid-input tests were made to compile with `as` casts; confirm the
+     runtime guard those tests exercise still exists.
+3. **Confirm the resume handoff actually fired.** Rejections happen on their own — a typical run
+   logs `round 1: changes required` every few findings — so read one instead of staging one. Find a
+   `round N: changes required` in the canary's log, open that iteration's `fix1.json`, and confirm
+   the resumed implementer references its own earlier work rather than re-deriving the change from
+   the review text. That handoff is the whole design. Only if the canary produced no rejection at
+   all is it worth forcing one with a deliberately vague brief.
 4. `npm run audit:cost` — multiply the per-issue average by the backlog before committing to a full
    run.
 5. `npm run audit:burndown:overnight -- 600`.
@@ -129,9 +172,19 @@ commit log only (they carry their reason in the commit message).
 
 * Stop gracefully with `touch .audit-work/STOP` (exits after the current finding; `rm` it before
   resuming). Stop hard with `pkill -TERM -f 'claude -p'`.
+* **Never edit a tracked file while the driver is running.** Its rollback paths run
+  `git reset -q --hard <baseSha>`, which wipes uncommitted working-tree edits with no warning and no
+  reflog entry — and at a realistic deferral rate that fires within the hour. Committing mid-run is
+  worse: you are racing the driver's own `git commit`/`--amend` on the same branch. If you find a
+  bug in the driver worth fixing now, **pause first** (`touch .audit-work/STOP`, wait for exit),
+  then edit. Writing to `.audit-work/`, to memory, or to a scratchpad is safe — those are outside
+  the reset's blast radius.
 * Transient API failures are retried with exponential backoff; a budget/turn cap is treated as a
-  real answer and deferred, not retried. Three *consecutive* deferrals halt the run — that shape
-  means something systemic (auth, disk, a red tree), not three unlucky findings.
+  real answer and deferred, not retried. That is right for verify and impl (a cap means the role
+  could not finish its work) but read the reviewer's cap differently: it produced *no verdict*, so
+  the finding is deferred `reviewer unavailable`, never "failed adversarial review". Three
+  *consecutive* deferrals halt the run — that shape means something systemic (auth, disk, a red
+  tree), not three unlucky findings.
 * macOS overnight gotchas: `caffeinate -s` only holds on AC power (stay plugged in; closed lid
   additionally needs `sudo pmset -a disablesleep 1`, then `... 0` afterwards), and automatic macOS
   updates can reboot at 3am (turn off "Install macOS updates"). `tmux` is optional: when present it
@@ -158,7 +211,10 @@ against these norms (from real runs on this repo):
 | single `claude` call (`current claude call`) | ≤ 10 min | 10–15 min | > 15 min    |
 
 Verify is ~150s; impl/review are the long poles; an E2E-gated finding runs longer. Budget and turn
-caps normally terminate a runaway call on their own near these ceilings.
+caps normally terminate a runaway call on their own near these ceilings. **Priority skews this
+hard** — with `MODEL_IMPL_MINOR` tiering on, P4/P5 findings land in 3–5 min while a P1 refactor that
+takes two fix rounds runs 20–30 and is still healthy. Check the finding's `[P<n>]` tag before
+reading a duration as slow; the table above describes a mid-priority finding, not every finding.
 
 * **Within normal** → just report it; do nothing.
 * **Watch band (maybe too long)** → don't intervene yet. Schedule **one** re-check a few minutes out
@@ -192,12 +248,20 @@ paused.
 ### "resume" / "continue" — start the next finding
 
 Only after verifying **nothing is already in flight**: `pgrep -f audit-burndown/burndown.mjs` must
-be empty (if it isn't, the run is already going — say so, don't launch a second). Then
-`rm
-.audit-work/STOP`, relaunch with the exact command from the durable checkpoint (including the
-env overrides that dodge the flaky palette snapshots), and re-arm the event-driven monitor. The
-launcher self-recovers even in a brand-new session that never saw this run — see **Resuming a
-crashed run** below.
+be empty (if it isn't, the run is already going — say so, don't launch a second). Note the launcher
+matches **two** processes once running — the `node` driver and its `caffeinate` wrapper, whose
+command line embeds the same path — so a count of 2 is healthy and only the `node` line identifies
+the driver itself. Then `rm .audit-work/STOP`, relaunch with the exact command from the durable
+checkpoint (including the env overrides that dodge the flaky palette snapshots), and re-arm the
+event-driven monitor. The launcher self-recovers even in a brand-new session that never saw this run
+— see **Resuming a crashed run** below.
+
+**Monitor hygiene, both directions.** A monitor tailing `run.log` does *not* reliably survive the
+run it was watching, so after every relaunch confirm the new one is actually armed rather than
+assuming it — a dead monitor is indistinguishable from a quiet run, and that silence reads as "all
+is well" for hours. The mirror failure is just as easy: a monitor from a *previous* run can still be
+alive and will double-report every event, so stop the old one before arming the new one instead of
+stacking them.
 
 ### "wrap up" — finalize now and mark the PR ready
 
@@ -205,6 +269,25 @@ Terminal, unlike pause. `touch .audit-work/STOP` so the in-flight finding still 
 nearly-done fix), wait for exit, then run **Closing out a run** below: push anything unpushed, add
 the `docs/AUDIT-LOG.md` row, tidy any emptied `## Source:` sections, and `gh pr ready <PR#>`. The
 backlog may still hold findings — that's expected; wrap-up ships what's done and closes the run out.
+
+### No verb — pausing on your own initiative
+
+The four verbs above are user-initiated, but the user is usually away, and a run that is quietly
+destroying work will keep doing so until someone stops it. **Pause without asking when the run is
+actively losing work at a measurable rate and you can fix the cause.** `STOP` is designed to be
+cheap and reversible — the in-flight finding lands, state stays durable, and a relaunch resumes — so
+the downside of pausing wrongly is one relaunch, while the downside of waiting is hours of discarded
+fixes.
+
+The bar is *demonstrated recurrence*, not one bad finding. One deferral is noise; the same failure
+twice with a mechanism you can point at is a rate. Establish the rate before acting (two hits in
+fourteen findings is ~14%, and projecting that over the remaining backlog is the argument), then
+pause, fix, relaunch, and report what you did and why — never narrate it as though the user approved
+it. A background event is not a reply, and neither is your own earlier message proposing the action.
+
+Do **not** self-pause for a failure that is merely *safe* — a deferral that rolls back cleanly and
+labels itself honestly costs one finding and nothing else. Note it, keep running, and fix it at the
+next natural boundary. Reserve the interrupt for work being silently lost.
 
 ## Surviving the context window (supervising a 100+-finding run)
 
@@ -218,13 +301,26 @@ matter what happens to yours. Exploit that — hold **no** orchestration state i
   **PR number**, roughly what's done, and the **closeout tasks**. Use a `project`-type memory
   (Claude Code) or a `docs/handoff/` packet. A fresh or compacted context then resumes from that
   file + `npm run audit:status` — nothing is re-derived.
+* **Record the *contents* of any helper script a knob points at, not just its path.** `.audit-work/`
+  is gitignored, so a `PUSH_TEST_CMD` wrapper (e.g. one excluding screenshot specs that are flaky on
+  this machine) lives on exactly one disk and is invisible to a fresh clone — the very scenario the
+  resume story promises to survive. A checkpoint that says
+  `PUSH_TEST_CMD='bash .audit-work/push-test.sh'` and nothing more is unrecoverable; the next
+  session has to reconstruct it by grepping old `run.log` lines for the command that ran.
 * Because all state is on disk, **compaction is lossless** — compact proactively (or let
   auto-compact fire) when the context fills, rather than letting the window overflow mid-run. Don't
   wait to be forced.
-* Keep the supervising context small so it lasts: monitor the run **event-driven** — a `run.log`
-  watcher that fires only on `HALT` / `hit a cap` / `red at batch` / `finished:` — not by polling
+* Keep the supervising context small so it lasts: monitor the run **event-driven** — not by polling
   `audit:status` in a loop, and don't read per-finding logs or the PR back unless you're diagnosing
-  something specific.
+  something specific. Watch for every terminal *and* degraded state, so silence really does mean
+  "healthy and working":
+  ```bash
+  tail -f -n 0 .audit-work/logs/run.log | grep -E --line-buffered \
+    "HALT|hit a cap|red at batch|red on the final|push failed|gh pr create FAILED|no PR to comment on|DEFERRED|finished:"
+  ```
+  `gh pr create FAILED` / `no PR to comment on` matter as much as a halt: the run keeps committing
+  and pushing perfectly well with no PR behind it, so without that signal you find out hours later
+  that a night of fixes has no PR and no per-commit comments.
 
 ## Resuming a crashed run (or a brand-new session)
 
@@ -263,7 +359,10 @@ Notes from real runs — set these before a large run rather than discovering th
   at HEAD (~150s median on this repo) and occasionally needs more than $1. The old
   `BUDGET_VERIFY=1.00` clipped complex findings (`error_max_budget_usd` → deferral), and a cluster of
   those nearly tripped the three-consecutive-deferral halt. Default is now `3.00`; don't drop it
-  below ~$2.50 for a big run.
+  below ~$2.50 for a big run. `BUDGET_REVIEW` was raised from `2.00` to `3.00` for the same reason:
+  a cap mid-verdict costs the *whole finding*, since the fix rolls back unreviewed. A budget knob
+  set too tight doesn't save money — it converts finished work into a deferral and pays for it again
+  on the re-run.
 * **On a Claude subscription the `audit:cost` dollars are notional** — no API bill; the real ceiling
   is your usage window. A big run self-pauses when the window is exhausted (retries fail → deferrals
   → halt) and resumes cleanly on relaunch. Size a run by wall-clock and usage, not the dollar
@@ -278,11 +377,31 @@ Notes from real runs — set these before a large run rather than discovering th
   5, so verify stays on the alias. When a newer opus lands, re-probe
   (`claude -p --model
   <id> --output-format json 'ok'` → check `modelUsage`) and bump the pin.
-* **The one safe speed lever is impl-model tiering.** Much of a `/code-audit` backlog is trivially
-  mechanical (P4/P5 dead-code, rename, dedup); routing those to `MODEL_IMPL=sonnet` (the opus review
-  still gates them) shaves the long tail, at a sliver of impl-correctness margin — opt in per run,
-  don't default it on when correctness dominates. Bigger throughput (parallel git worktrees per
-  finding) is a real redesign, not a knob.
+* **Impl-model tiering is on by default, scoped to P4/P5.** Much of a `/code-audit` backlog is
+  trivially mechanical (P4/P5 dead-code, rename, dedup), so the driver routes those findings to
+  `MODEL_IMPL_MINOR` (default `sonnet`) and keeps P1–P3 on `MODEL_IMPL`. The Opus review still gates
+  every fix, so the cheaper model buys wall-clock at a sliver of impl-correctness margin exactly
+  where the stakes are lowest. The priority comes from the finding's leading `[P<n>]` tag
+  (`findingPriority` in `lib.mjs`, unit-tested); a title with no tag is treated as unknown and stays
+  on the stronger model. Set `MODEL_IMPL_MINOR=claude-opus-5` to switch tiering off for a run where
+  correctness dominates. Bigger throughput (parallel git worktrees per finding) is a real redesign,
+  not a knob.
+* **The PR is the fragile part of the run; the commits are not.** Pushing is plain git and is
+  reliable; *creating* the draft PR is a GitHub API call that can fail hard and stay failed — a
+  2026-07-24 run hit HTTP 500 on `gh pr create` for over 20 minutes, on both the GraphQL and REST
+  paths and on a freshly-named branch, with githubstatus.com green throughout. Treat "no PR" as an
+  annoyance, not a reason to stop: the commits are pushed and are the durable artifact. `pushBatch`
+  now logs the failure and spills the unpostable per-commit comments to
+  `.audit-work/pending-comments.jsonl` (re-render them with `comment.mjs`) instead of losing them at
+  exit. When diagnosing, read the **last** line of gh's output — it emits warnings ahead of the real
+  error, so `head -1` shows you "Warning: N uncommitted changes" and hides the cause.
+* **A cached `.audit-work/pr-number` can outlive its PR.** The driver prefers that file over
+  rediscovery, so a number left by a previous run whose PR has since merged would send this run's
+  per-commit comments onto a landed PR. Startup now discards a cached number that isn't the branch's
+  open PR (only when the lookup actually succeeded — a network blip must not throw away a good
+  number and cause a duplicate PR), and `audit:preflight` warns about the mismatch before you
+  launch. Worth a glance at the preflight `resume target` block anyway whenever the last run's PR
+  was merged.
 * **`docs/AUDIT-DEFERRED.md` is auto-formatted.** `defer()` runs `dprint fmt` on it before the
   commit, so a deferral no longer reddens CI's Quality (format) job — the file's header used to be
   wrapped narrower than dprint's width.
@@ -291,6 +410,30 @@ Notes from real runs — set these before a large run rather than discovering th
   `PUSH_TEST_CMD` both carry `--retries=1` so a genuine flake clears on retry; a real regression
   still fails both attempts. A batch hold isn't fatal regardless — the next boundary (or the exit
   flush) retries and pushes.
+* **Never let a tooling failure masquerade as a model verdict.** This bit twice in one day, in two
+  different roles, and it is the single most expensive class of bug in this driver:
+  * `sha` is optional in `SCHEMA_IMPL` (a `success: false` return has no commit to point at), and
+    roughly one implementer in seven finished the entire job — committed, amended, wrote a full
+    summary — while omitting the field. The driver read that as failure, `git reset --hard`-ed a
+    complete tested fix away, and deferred the finding; ~$4 of Opus work in one case.
+    `resolveImplSha` now falls back to `HEAD` when it moved past the base.
+  * A reviewer that hit its budget cap was recorded as `CHANGES_REQUIRED` — so a fix nothing had
+    looked at was rolled back and filed under "failed adversarial review", which is a lie to whoever
+    triages `docs/AUDIT-DEFERRED.md` later. It now defers as `reviewer unavailable`, and the log
+    reports the real fix-round count instead of a hardcoded "2".
+
+  Two rules fall out. **An optional field in a role schema is a silent work-discard risk** — where
+  an observable side effect exists (a commit, a file, a branch), check the side effect, because it
+  cannot forget; reserve the envelope for what only the model knows. And **when a role fails to run,
+  say so in the deferral reason.** Rolling back unreviewed work is right; calling it rejected is
+  not. A deferral reason is read months later by someone deciding whether to re-stage the finding.
+* **Scope every `run.log` grep to the current run.** `run.log` accumulates across runs and iteration
+  numbers restart at `iter0001` each time, so a bare `grep iter0008` silently matches a different
+  finding from hours ago. Anchor on the run's start line:
+  `awk '/HH:MM:SS\] starting/{f=1} f' .audit-work/logs/run.log`. Unscoped reads also cost context: a
+  `sed`/`grep` range over a multi-run log can dump hundreds of lines of unrelated history into the
+  window you are trying to conserve. The per-iteration JSON envelopes collide the same way — see the
+  blockquote under **Per-commit PR comments**.
 
 ## Closing out a run
 
@@ -302,8 +445,18 @@ Notes from real runs — set these before a large run rather than discovering th
 * When the backlog is fully drained, `docs/AUDIT.md` should be deleted per
   `.claude/audit-conventions.md` (a partial run may also leave emptied `## Source:` sections — tidy
   them in a final commit).
+* Drain any stored per-commit comments before marking the PR ready: `backfill-comments.mjs capture`
+  then `post` (see above). If a store was committed while the API was down, delete it in the same
+  commit that posts it — a leftover `docs/AUDIT-PENDING-COMMENTS.jsonl` reads as work still owed.
 * Add one row to `docs/AUDIT-LOG.md` per `.claude/audit-conventions.md` §2 (date ·
-  `burn-down-audits` · done/deferred/dropped counts + the PR link), then mark the PR ready.
+  `burn-down-audits` · done/deferred/dropped counts + the PR link), then mark the PR ready. **Take
+  the counts from each run's `finished:` line** (`N fixed, N dropped, N deferred`) and cross-check
+  them against the commit record — `chore(audit): defer` and `drop invalid finding` subjects are one
+  per finding, so they are exact. Do **not** count fix commits: a finding whose review demanded
+  changes can land two or three commits, so commits-with-an-`Audit:`-trailer over-reports fixes.
+  Ignore `audit:status`'s `of <total>` denominator here; it is derived from `completed.log` (which
+  is gitignored, machine-local, and accumulates across runs) plus a cumulative deferred file, so it
+  drifts by a finding or two and is not an auditable figure. `remaining` is the trustworthy number.
 * The deliberately-unported alternative: driving this loop with in-session subagents. Only worth it
   to watch and steer a handful of findings interactively — and that path already exists as
   `/fix-audits`.

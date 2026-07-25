@@ -72,7 +72,7 @@
      physical top: that's the top edge in portrait and a side edge in landscape. */
   .notch-band {
     position: fixed;
-    z-index: 1000;
+    z-index: var(--z-notch);
     pointer-events: none;
     transition: background-color 250ms ease;
   }

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
-  import Slider from '../Slider.svelte';
+  import SliderRow from './SliderRow.svelte';
   import Icon from '../Icon.svelte';
   import type { CommonIconName } from '../iconTypes';
   import {
@@ -20,6 +20,7 @@
   import { setResizingActionButtons } from '$lib/state/ui.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { maxActionButtonScale } from '$lib/actionButtonLayout';
+  import { SECTION_SLIDE } from './sections';
 
   // Ceiling the Button Size slider at what the current screen can actually
   // fit, so the parent can't pick a size the Actions Panel would have to cap
@@ -41,13 +42,15 @@
   // The per-button on/off list is a 2-column chip grid: tap a chip to show or
   // hide that Actions Panel button. Each chip reads live `settings` so its
   // on-state stays reactive.
-  const buttonChips: {
+  interface SettingChip {
     id: string;
     label: string;
     icon: CommonIconName;
     checked: () => boolean;
     toggle: (next: boolean) => void;
-  }[] = [
+  }
+
+  const buttonChips: SettingChip[] = [
     {
       id: 'strokeWidthToggle',
       label: 'Stroke Width',
@@ -106,27 +109,21 @@
   </div>
 
   {#if settings.advancedControlsEnabled}
-    <div class="setting slider-setting button-size-setting" transition:slide={{ duration: 220 }}>
-      <div class="slider-label" id="actionButtonScaleLabel">
-        <span class="slider-label-name">
-          <Icon name="photo-size-select-small" class="setting-icon" />
-          Button Size
-        </span>
-        <span>{displayedScale}%</span>
-      </div>
-      <Slider
+    <div class="setting slider-setting button-size-setting" transition:slide={SECTION_SLIDE}>
+      <SliderRow
+        id="actionButtonScaleLabel"
+        label="Button Size"
+        icon="photo-size-select-small"
         value={displayedScale}
         min={ACTION_BUTTON_SCALE_MIN}
         max={scaleCeiling}
         snap={scaleCeiling > ACTION_BUTTON_SCALE_DEFAULT ? ACTION_BUTTON_SCALE_DEFAULT : undefined}
-        labelId="actionButtonScaleLabel"
-        valueText="{displayedScale}%"
         onInput={setActionButtonScale}
         onActiveChange={onScaleActive}
       />
     </div>
 
-    <div class="chip-block" transition:slide={{ duration: 220 }}>
+    <div class="chip-block" transition:slide={SECTION_SLIDE}>
       <h4 class="chip-heading">Show these buttons</h4>
       <div class="chip-grid">
         {#each buttonChips as chip (chip.id)}
@@ -148,7 +145,7 @@
   {/if}
 
   {#if settings.applePencilSeen}
-    <div class="setting pencil-eraser" transition:slide={{ duration: 220 }}>
+    <div class="setting pencil-eraser" transition:slide={SECTION_SLIDE}>
       <ToggleRow
         icon="eraser"
         label="Apple Pencil double-tap to erase"
@@ -172,26 +169,6 @@
 
   .button-size-setting {
     margin: 12px 0 0;
-  }
-
-  .slider-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--text-mid);
-  }
-
-  .slider-label-name {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    font-size: var(--font-size-md);
-    font-weight: 500;
-    color: var(--text);
   }
 
   .chip-block {

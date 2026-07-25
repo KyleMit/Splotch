@@ -1,9 +1,8 @@
 <script lang="ts">
   import Icon from '../Icon.svelte';
   import SplotchyIcon from '../SplotchyIcon.svelte';
+  import { APP_VERSION } from '$lib/appVersion';
   import { settings, setAdminLinkVisible } from '$lib/state/settings.svelte';
-
-  const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
   // Hidden admin unlock: tapping the version text 5 times reveals the link to
   // the admin console. The reveal is persisted (so it survives a refresh) and
@@ -17,13 +16,14 @@
   // flag avoids a subtle bug — a runtime isNative() read inside a $derived
   // memoizes on first render, and if window.Capacitor isn't injected yet it
   // sticks on '/admin', whose full-navigation white-screens in the WebView.
+  const ADMIN_UNLOCK_TAPS = 5;
   let versionClicks = $state(0);
   let showAdminLink = $derived(settings.adminLinkVisible);
   const adminHref =
     typeof __IS_CAPACITOR__ !== 'undefined' && __IS_CAPACITOR__ ? '/admin/native' : '/admin';
   function handleVersionClick() {
     versionClicks += 1;
-    if (versionClicks < 5) return;
+    if (versionClicks < ADMIN_UNLOCK_TAPS) return;
     versionClicks = 0;
     setAdminLinkVisible(true);
   }
@@ -107,8 +107,8 @@
     }
   }
 
-  .github-link {
-    margin: 12px 0 !important;
+  .about-links > p.github-link {
+    margin: 12px 0;
   }
 
   .github-link a {
@@ -153,7 +153,7 @@
     text-align: center;
     font-size: var(--font-size-xs);
     color: var(--text-faint);
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-mono);
     user-select: none;
   }
 

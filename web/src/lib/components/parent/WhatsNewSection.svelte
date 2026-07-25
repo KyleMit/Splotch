@@ -53,7 +53,7 @@
   }
 
   .whats-new-date {
-    font-size: 15px;
+    font-size: var(--font-size-md);
     font-weight: 700;
     color: var(--text-strong);
   }

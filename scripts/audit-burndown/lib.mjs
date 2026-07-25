@@ -15,6 +15,27 @@ export const PROMPTS = 'scripts/audit-burndown/prompts';
 
 export const auditFile = () => process.env.AUDIT_FILE || 'docs/AUDIT.md';
 
+// Findings are titled `[P3][consistency] …`. The priority drives impl-model
+// tiering: P4/P5 are the mechanical tail (dead code, renames, dedup) that a
+// cheaper model implements fine under the same adversarial review. Returns null
+// for a title with no [P<n>] tag so the caller falls back to the safe model
+// rather than guessing a priority the finding never claimed.
+export function findingPriority(title) {
+  const match = /^\[P(\d)\]/.exec(title ?? '');
+  return match ? Number(match[1]) : null;
+}
+
+// The implementer reports the sha of the commit it made, but that field is
+// optional in its schema — a success=false return has no commit to point at — so
+// a model that finished the whole job can still omit it, and treating the gap as
+// failure throws away the most expensive work the driver does. Trust git over
+// the envelope: HEAD past the base means it committed, whatever it remembered to
+// report. An unmoved HEAD still yields '' so a genuine no-op defers as before.
+export function resolveImplSha({ reported, head, baseSha }) {
+  if (reported) return reported;
+  return head && head !== baseSha ? head : '';
+}
+
 // Every entry script chdirs to the repo root so relative paths (docs/AUDIT.md,
 // .audit-work/) behave the same no matter where it was invoked from.
 export function chdirRoot() {

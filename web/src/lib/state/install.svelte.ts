@@ -68,6 +68,12 @@ function manualMode(): InstallMode {
   return 'none';
 }
 
+// A spent/stale one-tap prompt drops to the manual hint so the UI falls back to
+// something a tap can actually do.
+function fallBackToManualHint() {
+  if (install.mode === 'oneTap') install.mode = manualMode();
+}
+
 function markInstalled() {
   deferredPrompt = null;
   install.installed = true;
@@ -126,7 +132,7 @@ export function initInstallPrompt() {
 // something a tap can actually do.
 export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unavailable'> {
   if (!deferredPrompt) {
-    if (install.mode === 'oneTap') install.mode = manualMode();
+    fallBackToManualHint();
     return 'unavailable';
   }
   const evt = deferredPrompt;
@@ -138,7 +144,7 @@ export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unava
   } catch {
     // The stashed event went stale (e.g. Chrome revoked installability since
     // capture). Swallow it — callers must never be left with a stuck busy flag.
-    if (install.mode === 'oneTap') install.mode = manualMode();
+    fallBackToManualHint();
     return 'unavailable';
   }
   if (outcome === 'accepted') {
@@ -146,7 +152,7 @@ export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unava
   } else {
     // Declined: the one-shot prompt is spent. Drop to the manual menu hint and
     // stop nagging with the banner on this device.
-    install.mode = manualMode();
+    fallBackToManualHint();
     dismissInstall();
   }
   return outcome;

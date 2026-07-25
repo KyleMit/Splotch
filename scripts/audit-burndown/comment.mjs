@@ -37,8 +37,11 @@ export function findingProblem(issue) {
 // unrelated PR (CLAUDE.md, "Writing on GitHub").
 export const escapeHashRefs = (s) => s.replace(/#(\d)/g, '\\#$1');
 
+// The SHA is deliberately bare, never in backticks: GitHub's native commit
+// linker only picks up a plain-text SHA, and a code span suppresses it — the
+// heading would render as dead monospace text instead of a link to the commit.
 export function commitCommentBody({ sha, title, problem, fix, catches, e2eSpecs }) {
-  const b = [`### \`${(sha ?? '').slice(0, 12)}\` — ${title}`, ''];
+  const b = [`### ${(sha ?? '').slice(0, 12)} — ${title}`, ''];
   if (problem) b.push('**Issue**', '', problem, '');
   b.push('**Fix**', '', fix || '_(implementer reported no summary)_', '');
   if (catches?.length) {

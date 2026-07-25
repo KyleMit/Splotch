@@ -10,7 +10,13 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { countEntries, deleteFirstEntry, getEntry } from '../audit-burndown/lib.mjs';
+import {
+  countEntries,
+  deleteFirstEntry,
+  findingPriority,
+  getEntry,
+  resolveImplSha,
+} from '../audit-burndown/lib.mjs';
 
 // Built from a line array so the fenced code block inside the first finding
 // doesn't fight the template literal.
@@ -152,5 +158,49 @@ describe('deleteFirstEntry', () => {
     expect(deleteFirstEntry(file)).toBe(false);
     expect(content()).toBe(drained);
     expect(deleteFirstEntry(missing())).toBe(false);
+  });
+});
+
+// Drives impl-model tiering in burndown.mjs: P4/P5 route to the cheaper model,
+// everything else (including an untagged title) stays on the stronger one. A
+// regression here silently downgrades the model for consequential findings.
+describe('findingPriority', () => {
+  it('reads the priority off a normal finding title', () => {
+    expect(findingPriority('[P1][complexity] Split initDrawingCanvas')).toBe(1);
+    expect(findingPriority('[P4][naming] Comments point to storage.js')).toBe(4);
+    expect(findingPriority('[P5][dead-code] Unused export')).toBe(5);
+  });
+
+  it('returns null for a title with no [P<n>] tag, so the caller keeps the safe model', () => {
+    expect(findingPriority('[dead-code] Unused export')).toBeNull();
+    expect(findingPriority('Split initDrawingCanvas')).toBeNull();
+    expect(findingPriority('')).toBeNull();
+    expect(findingPriority(undefined)).toBeNull();
+  });
+
+  it('only reads a leading tag, not a [P<n>] appearing later in the title', () => {
+    expect(findingPriority('[dedupe] see the [P2] finding above')).toBeNull();
+  });
+});
+
+// A missing sha used to mean "roll back and defer", which twice discarded a
+// complete, committed, test-passing fix because the implementer just left the
+// optional field out of its structured output (~$4 of Opus work in one case).
+// git is the source of truth for whether a commit happened; the envelope is not.
+describe('resolveImplSha', () => {
+  const baseSha = 'a'.repeat(40);
+  const head = 'b'.repeat(40);
+
+  it('prefers the sha the implementer reported', () => {
+    expect(resolveImplSha({ reported: head, head: 'c'.repeat(40), baseSha })).toBe(head);
+  });
+
+  it('recovers a committed fix whose sha the implementer forgot to report', () => {
+    expect(resolveImplSha({ reported: '', head, baseSha })).toBe(head);
+  });
+
+  it('stays empty when HEAD never moved, so a genuine no-op still defers', () => {
+    expect(resolveImplSha({ reported: '', head: baseSha, baseSha })).toBe('');
+    expect(resolveImplSha({ reported: '', head: '', baseSha })).toBe('');
   });
 });

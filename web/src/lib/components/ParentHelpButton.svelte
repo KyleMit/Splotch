@@ -28,6 +28,6 @@
     width: 48px;
     height: 48px;
     color: #999;
-    z-index: 900;
+    z-index: var(--z-corner-button);
   }
 </style>

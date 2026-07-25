@@ -13,12 +13,8 @@
   import NotchBand from '$lib/components/NotchBand.svelte';
   import ParentHelpButton from '$lib/components/ParentHelpButton.svelte';
   import { parentCenter } from '$lib/state/ui.svelte';
-  import { canvasState } from '$lib/state/canvas.svelte';
-  import {
-    initPWAUpdates,
-    registerDeferredServiceWorker,
-    STROKES_BEFORE_SW_REGISTER,
-  } from '$lib/pwa/updates';
+  import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
+  import { initPWAUpdates, registerDeferredServiceWorker } from '$lib/pwa/updates';
   import { initInstallPrompt } from '$lib/state/install.svelte';
   import { captureAiAccessTokenFromUrl, settings } from '$lib/state/settings.svelte';
   import { hydrateApiKey } from '$lib/state/aiKey.svelte';
@@ -49,8 +45,12 @@
   // "a few strokes drawn" signal so the ~39 MB precache never lands on top of
   // boot or the first strokes (issue #462). Repeat visits don't pass through
   // here — initPWAUpdates re-registers an existing registration at idle.
+  // The gate waits for the shared settled-in signal (the same one the Install
+  // Banner uses). Pre-hydration strokes (ADR-0072) don't tick strokeCount, so
+  // only post-hydration strokes count — acceptable, it only defers
+  // registration slightly further.
   $effect(() => {
-    if (canvasState.strokeCount < STROKES_BEFORE_SW_REGISTER) return;
+    if (canvasState.strokeCount < SETTLED_IN_STROKES) return;
     if (!isNative()) registerDeferredServiceWorker();
   });
 
