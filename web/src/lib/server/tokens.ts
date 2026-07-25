@@ -161,21 +161,26 @@ export async function isAllowedToken(token: unknown) {
 const MUTATION_ATTEMPTS = 3;
 export const TOKEN_CONFLICT_ERROR = 'The token list changed while saving — please try again';
 
-type MutationResult = { ok: true; tokens: string[] } | { ok: false; error: string };
+// `reason` is what callers branch on (HTTP status, form handling) — the `error`
+// string is UX copy and rewording it must never change behaviour.
+export type MutationFailure = { ok: false; error: string; reason: 'invalid' | 'conflict' };
+
+type MutationResult = { ok: true; tokens: string[] } | MutationFailure;
 
 /** Add a token. Returns `{ ok, tokens }` or `{ ok: false, error }`. */
 export async function addToken(token: unknown): Promise<MutationResult> {
   const t = String(token ?? '').trim();
-  if (!t) return { ok: false, error: 'Token cannot be empty' };
+  if (!t) return { ok: false, error: 'Token cannot be empty', reason: 'invalid' };
   for (let attempt = 1; attempt <= MUTATION_ATTEMPTS; attempt++) {
     const read = await readStore();
-    if (read.source === 'unconfirmed') return { ok: false, error: TOKEN_CONFLICT_ERROR };
+    if (read.source === 'unconfirmed')
+      return { ok: false, error: TOKEN_CONFLICT_ERROR, reason: 'conflict' };
     const { store, list, etag } = read;
-    if (list.includes(t)) return { ok: false, error: 'Token already exists' };
+    if (list.includes(t)) return { ok: false, error: 'Token already exists', reason: 'invalid' };
     const next = [...list, t];
     if (await persist(store, next, etag)) return { ok: true, tokens: next };
   }
-  return { ok: false, error: TOKEN_CONFLICT_ERROR };
+  return { ok: false, error: TOKEN_CONFLICT_ERROR, reason: 'conflict' };
 }
 
 /** Remove a token. Returns `{ ok, tokens }` or `{ ok: false, error }`. */
@@ -183,7 +188,8 @@ export async function removeToken(token: unknown): Promise<MutationResult> {
   const t = String(token ?? '').trim();
   for (let attempt = 1; attempt <= MUTATION_ATTEMPTS; attempt++) {
     const read = await readStore();
-    if (read.source === 'unconfirmed') return { ok: false, error: TOKEN_CONFLICT_ERROR };
+    if (read.source === 'unconfirmed')
+      return { ok: false, error: TOKEN_CONFLICT_ERROR, reason: 'conflict' };
     const { store, list, etag } = read;
     const next = list.filter((x: string) => x !== t);
     // A no-op remove must not rewrite the blob: under eventual consistency the
@@ -195,5 +201,5 @@ export async function removeToken(token: unknown): Promise<MutationResult> {
       return { ok: true, tokens: next };
     }
   }
-  return { ok: false, error: TOKEN_CONFLICT_ERROR };
+  return { ok: false, error: TOKEN_CONFLICT_ERROR, reason: 'conflict' };
 }

@@ -9,53 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P1][maintainability] HTTP status is chosen by string-comparing the error message
-
-**File(s):** `web/src/routes/api/admin/tokens/+server.ts:50-55` (`mutationError`) — pinned at SHA
-f934d43
-
-#### Problem
-
-The endpoint decides between `409` (retryable CAS conflict) and `400` (bad input) by comparing the
-returned message text to a sentinel:
-
-```ts
-function mutationError(message: string) {
-  return json(
-    { ok: false, error: message },
-    { status: message === TOKEN_CONFLICT_ERROR ? 409 : 400 },
-  );
-}
-```
-
-The response *status* — a real part of the API contract, asserted by clients and smoke tests —
-hinges on an exact-match of a human-readable string that is also shown to users. Reword
-`TOKEN_CONFLICT_ERROR` (line `tokens.ts:162`) for UX and every conflict silently becomes a `400`.
-The coupling is invisible: nothing links the wording to the status code.
-
-#### Proposed solution
-
-Have the token core classify the failure instead of the route re-deriving it. Change
-`MutationResult`'s failure arm to carry a discriminant:
-
-```ts
-// tokens.ts
-type MutationResult =
-  | { ok: true; tokens: string[] }
-  | { ok: false; error: string; reason: 'invalid' | 'conflict' };
-```
-
-Then `mutationError` maps `reason === 'conflict'` → 409, else 400 — no message comparison. The web
-form action (`+page.server.ts`) can use the same `reason` to stop returning `fail(400)` for
-conflicts (see separate finding).
-
-#### Verification
-
-`npm run test:api:smoke` conflict path still returns 409; add a unit test asserting `addToken` on a
-colliding list returns `reason: 'conflict'`. Grep shows no remaining `=== TOKEN_CONFLICT_ERROR`.
-
----
-
 ### [P2][type-safety] Native page hand-rolls type guards that duplicate the server's response shape
 
 **File(s):** `web/src/routes/admin/native/+page.svelte:45-70`
