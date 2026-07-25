@@ -144,6 +144,15 @@ as possible:
   run**. Set `PUSH_TEST_CMD='npm test'` to restore the old blocking behaviour when nobody will be
   watching.
 
+  **CI coverage is per-push, not per-commit, and pushing every finding thins it.** `test.yml` sets
+  `concurrency: cancel-in-progress: true`, so each push cancels the previous run if it is still
+  going. A finding that lands 3 minutes after the last one (P4/P5 on the minor model routinely do)
+  cancels a suite that needed longer, and only the newest push runs to completion. The last push
+  always finishes, so "the branch is sound at the end" holds — but "every intermediate commit was
+  green" does not, and bisecting a regression to one finding may mean re-running the suite at that
+  commit by hand. Judge a run by the *final* CI result plus the per-finding gates, not by a green
+  tick on every commit.
+
 **The gates run *before* the review, not after it** — and that ordering does two jobs at once. A red
 gate becomes a **fix round** the implementer can still recover from (it is holding the same session)
 instead of discarding a finished finding at the very end; and the reviewer only ever sees a commit
