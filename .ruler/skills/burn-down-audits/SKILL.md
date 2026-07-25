@@ -244,16 +244,31 @@ this is only about SHAs.)
      is free to drift.
    * A narrowed type whose invalid-input tests were made to compile with `as` casts; confirm the
      runtime guard those tests exercise still exists.
-3. **Confirm the resume handoff actually fired.** Extra rounds happen on their own — a typical run
+3. **Count the backlog entries each commit deleted — it must be exactly one.** The canary's own diff
+   hides this: `':(exclude)docs/AUDIT.md'` is what makes the code readable, and it is also what
+   hides a finding being destroyed. Check it separately:
+   ```bash
+   for sha in $(git rev-list --reverse main..HEAD); do
+     echo "$(git log -1 --format='%h %s' $sha | cut -c1-70) removed=$(git show $sha -- docs/AUDIT.md | grep -c '^-### ')"
+   done
+   ```
+   A `removed=2` means that commit deleted its own finding **and** an unrelated one that was never
+   verified, implemented, or reviewed — gone from the backlog with no record it ever existed.
+   Recover it from the pre-run file (`git show <base>:docs/AUDIT.md`) and re-file it before
+   continuing. A `removed=0` on a non-final commit is normal (a fix round commits before the driver
+   amends the excision in); judge per finding, not per commit. The driver now deletes by title so
+   this should be structurally impossible — check anyway, because the first time it happened it hit
+   three of five findings and nothing in the log or the run's counts said so.
+4. **Confirm the resume handoff actually fired.** Extra rounds happen on their own — a typical run
    logs `round 1: changes required` (a reviewer rejection) or `round 1: gates red — …` (a red gate,
    which is now also a recoverable round) every few findings — so read one instead of staging one.
    Find either line in the canary's log, open that iteration's `fix1.json`, and confirm the resumed
    implementer references its own earlier work rather than re-deriving the change from the feedback
    text. That handoff is the whole design. Only if the canary produced no extra round at all is it
    worth forcing one with a deliberately vague brief.
-4. `npm run audit:cost` — multiply the per-issue average by the backlog before committing to a full
+5. `npm run audit:cost` — multiply the per-issue average by the backlog before committing to a full
    run.
-5. `npm run audit:burndown:overnight -- 600`.
+6. `npm run audit:burndown:overnight -- 600`.
 
 ## While it runs
 

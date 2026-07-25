@@ -540,6 +540,57 @@ the current run, and taking closeout counts from `finished:` rather than from co
 54caf9a2 also **removed** something: the canary checklist's "force a rejection" step, which no run
 ever actually performed, replaced by reading a rejection the run produced on its own.
 
+### The reviewer talked the implementer into destroying findings (2026-07-25)
+
+The fourth live run's canary lost **three findings out of five**, and every gate was green
+throughout. The most expensive single bug this driver has had, and the one that came closest to
+shipping — the run was five minutes from launching at 600.
+
+The chain needed three independently reasonable things to line up:
+
+1. The driver folds the `docs/AUDIT.md` excision into the fix commit by **amending, after the review
+   approves**. So every *landed* burndown commit contains its entry deletion.
+2. The reviewer reads the diff of the commit under review, and can see neighbouring commits on the
+   branch. It observed that the previous two burndown commits excised their entry and this one did
+   not, and rejected: *"The finding's entry was not deleted from docs/AUDIT.md — it is still present
+   at docs/AUDIT.md:10, unlike neighboring burndown commits 86b98e5 and 6ee1fd4 which excise the
+   entry in the same commit as the fix."* That is a genuinely good observation from a blind
+   reviewer. It is also exactly wrong, and nothing in its prompt could have told it so.
+3. The implementer complied — it ran `pop.mjs --delete`, confirmed it was entry #1, and said so in
+   its summary. Then the driver ran its own `deleteFirstEntry()`, which now pointed at the **next**
+   finding, and amended it into the same commit.
+
+Net effect per occurrence: one unrelated finding — never verified, never implemented, never reviewed
+— deleted from the backlog inside a commit about something else. `finished: 5 fixed` was true and
+the remaining count dropped by 8.
+
+**Why nothing caught it.** The canary checklist reads the diff with `':(exclude)docs/AUDIT.md'`,
+which is what makes the code reviewable and is also precisely what hides this. The counts look
+consistent unless you difference them (506 → 505 → 503 → 502 → 500 → 498, and the drop-by-2s are the
+tell). No log line, no deferral, no red gate. The `run.log` correlation — every finding that logged
+`round 1: changes required` deleted two entries, and the two that did not deleted one — is what made
+it findable at all.
+
+**The fix is identity, not vigilance.** `deleteEntryByTitle(title)` at all three call sites (fix,
+drop, defer). Positional deletion is only correct while the entry being worked on is still first,
+and a role can invalidate that mid-finding; keying on the title makes a duplicated delete a no-op
+instead of a data loss. The success path logs `entry already gone — a role edited the audit file`,
+which is both the tripwire and the monitor grep. Both prompts were also corrected (reviewer: the
+excision is the driver's job, never raise it; implementer: never edit the file or run `pop.mjs`, and
+push back if a round asks you to) — but those are the backstop, not the fix. A prompt that asks a
+model not to do something is not a guarantee; the lib change is.
+
+Two general lessons, both of which generalise past this bug:
+
+* **A positional operation on shared mutable state is a bug waiting for a second writer.** The
+  driver was the only thing that deleted entries right up until the moment a role could be talked
+  into it, and `deleteFirstEntry` had no way to notice it was deleting the wrong thing. Anything the
+  driver mutates by index should be keyed on identity if a role can touch the same file.
+* **The reviewer's frame is the commit, and the commit is not the whole truth.** It cannot see the
+  post-approval amend, so any convention the driver applies *after* review looks to the reviewer
+  like a step the implementer skipped. If more post-approval driver behaviour is added, the reviewer
+  prompt has to be told about it in the same change, or it will reject on the difference.
+
 ### The cloud cutover (2026-07-25)
 
 The third live run was the first in a Claude Code cloud session rather than on the author's Mac, and
@@ -818,6 +869,7 @@ the stale timing table for free.
 | 2026-07-25 | 6096ff99 | Opus 5 scope and length gaps in the role prompts                          |
 | 2026-07-25 | 6ec397a8 | PR comment no longer describes a superseded commit                        |
 | 2026-07-25 | —        | Cloud cutover: minted `--session-id`, no `gh`, push every finding         |
+| 2026-07-25 | f389dd39 | Delete backlog entries by title — the canary destroyed 3 findings in 5    |
 
 <!-- Source: .ruler/skill-notes/README.md -->
 
