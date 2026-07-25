@@ -9,26 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P5][naming] Magic `5` for the hidden admin unlock tap count
-
-**File(s):** `web/src/lib/components/parent/AboutSection.svelte:24-29` — pinned at SHA f934d43
-
-#### Problem
-
-`handleVersionClick` compares `versionClicks < 5` with the threshold inlined. The number of taps
-that reveals the admin link is a meaningful, testable constant buried as a literal; a test or a
-future tweak has to hunt for it.
-
-#### Proposed solution
-
-`const ADMIN_UNLOCK_TAPS = 5;` at module top, used in the guard. Cheap self-documentation.
-
-#### Verification
-
-`grep -rn "ADMIN_UNLOCK_TAPS" web/src`; tapping the version 5× still reveals the admin link.
-
----
-
 ### [P5][readability] `.github-link` overrides shared spacing with `!important`
 
 **File(s):** `web/src/lib/components/parent/AboutSection.svelte:110-112` — pinned at SHA f934d43

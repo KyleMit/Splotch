@@ -16,13 +16,14 @@
   // flag avoids a subtle bug — a runtime isNative() read inside a $derived
   // memoizes on first render, and if window.Capacitor isn't injected yet it
   // sticks on '/admin', whose full-navigation white-screens in the WebView.
+  const ADMIN_UNLOCK_TAPS = 5;
   let versionClicks = $state(0);
   let showAdminLink = $derived(settings.adminLinkVisible);
   const adminHref =
     typeof __IS_CAPACITOR__ !== 'undefined' && __IS_CAPACITOR__ ? '/admin/native' : '/admin';
   function handleVersionClick() {
     versionClicks += 1;
-    if (versionClicks < 5) return;
+    if (versionClicks < ADMIN_UNLOCK_TAPS) return;
     versionClicks = 0;
     setAdminLinkVisible(true);
   }
