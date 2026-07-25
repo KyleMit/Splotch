@@ -1,5 +1,3 @@
-<!-- Source: .ruler/skill-notes/burn-down-audits.md -->
-
 # `burn-down-audits` — design notes
 
 Design history and open questions for the bulk audit burndown: the `burn-down-audits` skill

@@ -11,7 +11,7 @@
 // that does not sleep, and what actually ends a run early is the container being
 // reclaimed for inactivity, which no local wakelock addresses. What protects the
 // work is pushing every finding (PUSH_EVERY in burndown.mjs), not keeping this
-// process alive. See ADR-0077.
+// process alive.
 
 import { spawn, spawnSync } from 'node:child_process';
 import { openSync, rmSync } from 'node:fs';

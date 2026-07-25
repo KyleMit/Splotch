@@ -29,7 +29,7 @@ const bad = (msg) => {
 };
 const warn = (msg) => console.log(`  \x1b[33m!\x1b[0m ${msg}`);
 
-// No `gh` here, by design — the driver never calls GitHub. See ADR-0077.
+// No `gh` here, by design — the driver never calls GitHub.
 console.log('dependencies');
 for (const bin of ['claude', 'git', 'npm']) {
   if (!hasCommand(bin)) {

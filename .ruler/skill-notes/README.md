@@ -1,5 +1,3 @@
-<!-- Source: .ruler/skill-notes/README.md -->
-
 # Skill notes
 
 Design history and open questions for the agent **skills** in this repo — one file per skill, named

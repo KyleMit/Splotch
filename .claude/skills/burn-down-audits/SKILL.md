@@ -10,8 +10,8 @@ verify → implement → review → fix, entirely inside one-shot `claude -p` su
 accumulates in a long-lived context window. The driver is `scripts/audit-burndown/burndown.mjs`;
 this skill is the runbook for launching, watching, and closing out a run.
 
-**This runs in a Claude Code cloud session** (ADR-0077). Two facts shape everything below and are
-not negotiable knobs:
+**This runs in a Claude Code cloud session.** Two facts shape everything below and are not
+negotiable knobs:
 
 * **The driver never talks to GitHub.** There is no usable github.com credential in the container,
   and `origin` is a local git proxy URL that `gh` rejects as a non-GitHub host — so `gh` cannot work
@@ -562,10 +562,10 @@ Notes from real runs — set these before a large run rather than discovering th
   not a knob.
 * **The PR is the fragile part of the run; the commits are not.** Pushing is plain git and is
   reliable; anything touching the GitHub API is not. That asymmetry is why the driver was taken out
-  of the GitHub business altogether (ADR-0077) rather than being taught to retry: it used to create
-  the draft PR and post comments with `gh`, and every failure mode was the same shape — a night of
-  perfectly good commits on origin with no PR behind them and the comments swallowed. A 2026-07-24
-  run hit HTTP 500 on `gh pr create` for over 20 minutes with githubstatus.com green throughout; a
+  of the GitHub business altogether rather than being taught to retry: it used to create the draft
+  PR and post comments with `gh`, and every failure mode was the same shape — a night of perfectly
+  good commits on origin with no PR behind them and the comments swallowed. A 2026-07-24 run hit
+  HTTP 500 on `gh pr create` for over 20 minutes with githubstatus.com green throughout; a
   2026-07-25 cloud run found `gh` structurally unusable (no github.com credential, and an `origin`
   the CLI won't recognise as GitHub). Treat "no PR yet" as an annoyance, never a reason to stop: the
   commits are pushed and are the durable artifact.

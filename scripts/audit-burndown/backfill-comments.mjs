@@ -6,7 +6,7 @@
 //   node scripts/audit-burndown/backfill-comments.mjs done <sha>
 //
 // The driver appends one record per fix to the store and never posts anything —
-// it has no GitHub credential (ADR-0077). Posting is the supervising agent's
+// it has no GitHub credential. Posting is the supervising agent's
 // job, through the GitHub MCP tools, driven by the `next` → post → `done` loop.
 //
 // `capture` rebuilds records for fixes whose comments were never recorded,

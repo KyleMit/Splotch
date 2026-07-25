@@ -33,7 +33,7 @@
     "format:check": "prettier --check . && npm run format:md:check",
     "format:md": "dprint fmt",
     "format:md:check": "dprint check",
-    "ruler:apply": "ruler apply && dprint fmt",
+    "ruler:apply": "ruler apply && node scripts/mirror-skill-notes.mjs && dprint fmt",
     "ruler:check": "node scripts/ruler-check.mjs",
     "ruler:dry-run": "ruler apply --dry-run --verbose",
     "test": "npm run test:unit && npm run test:asset-gen && npm run test:scripts && npm run test:e2e",

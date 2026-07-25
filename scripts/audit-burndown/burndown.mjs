@@ -19,8 +19,7 @@
 // * `--json-schema` replaces prose parsing: verdicts, SHAs, and review
 //   statuses come back typed in .structured_output.
 // * The driver never talks to GitHub. It commits and pushes; the supervising
-//   agent opens the PR and drains COMMENT_STORE through the GitHub MCP tools
-//   (ADR-0077).
+//   agent opens the PR and drains COMMENT_STORE through the GitHub MCP tools.
 
 import { appendFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -385,7 +384,7 @@ let sincePush = 0;
 // it is authenticated). Both were previously `gh` calls that failed hard and
 // silently swallowed a night of per-commit comments. GitHub is now entirely the
 // supervising agent's job, via the MCP tools; the driver's contract is commits
-// on origin plus the comment records staged in COMMENT_STORE. See ADR-0077.
+// on origin plus the comment records staged in COMMENT_STORE.
 function pushBatch({ final = false } = {}) {
   if (PUSH_TEST_CMD && !shellOk(PUSH_TEST_CMD)) {
     logLine(

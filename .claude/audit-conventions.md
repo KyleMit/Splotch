@@ -24,8 +24,8 @@ For a backlog too large to file issue-by-issue (hundreds of findings), `burn-dow
 bulk consumer: a scripted unattended loop (`npm run audit:burndown`, `scripts/audit-burndown/`) that
 verifies, implements, and adversarially reviews each finding in one-shot `claude -p` subprocesses,
 deleting each entry in the same commit as its fix — replacing both the vet and fix stages for that
-backlog. It runs cloud-native (ADR-0077): the driver commits and pushes, and the supervising agent
-owns the PR and its per-commit comments through the GitHub MCP tools.
+backlog. It runs cloud-native: the driver commits and pushes, and the supervising agent owns the PR
+and its per-commit comments through the GitHub MCP tools.
 
 ### The audit lifecycle — `docs/AUDIT.md` is a staging area, GitHub issues are the backlog
 
