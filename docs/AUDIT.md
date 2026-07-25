@@ -7,29 +7,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P3][duplication] Coachmark ghost button re-hardcodes the real button's gradient and shadow
-
-**File(s):** `web/src/lib/components/ClearButton.svelte:184,187` vs `404-405` — pinned at SHA
-f934d43
-
-#### Problem
-
-`.coachmark-button` (404-405) repeats `.clear-button`'s `linear-gradient(135deg, #ff6b6b, #ee5a6f)`
-and a near-identical `box-shadow`, so the tutorial's ghost stays a faithful mimic of the real
-control. But the coupling is by copy: restyle the real button and the ghost silently diverges from
-what it's supposed to teach. (Compounds the P1 clear-palette finding.)
-
-#### Proposed solution
-
-Once the clear reds are tokens, both rules reference the same token, so they can't drift.
-Alternatively share a `.clear-face` class between the real button and the ghost.
-
-#### Verification
-
-Change the button gradient token and confirm the coachmark ghost updates with it.
-
----
-
 ### [P3][maintainability] Cross-component coupling via the magic string id 'parentHelpButton'
 
 **File(s):** `web/src/lib/components/InstallBanner.svelte:54` — pinned at SHA f934d43

@@ -42,6 +42,9 @@ pierce Svelte's style scoping, so every component references them directly via `
 | Elevation | `--shadow-sm`, `--shadow-pop`, `--shadow-segment` (neutral; the last is the tight active-segment          |
 |           | lift — tighter and harder than `--shadow-sm`, don't converge them); `--float-shadow`,                     |
 |           | `--float-shadow-flyout` (themed, paper cards)                                                             |
+| Fill      | `--clear-gradient-rest` — the Clear Button's at-rest red, painted identically by the                      |
+|           | drag-to-clear coachmark ghost so the tutorial can't drift from the real control. Unthemed on              |
+|           | purpose (ADR-0052): it reads the same on both papers                                                      |
 | Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-screenshot-flash`          |
 |           | (10000), listed low-to-high in `tokens.ts`. One list, not one context: all root-context except            |
 |           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under      |

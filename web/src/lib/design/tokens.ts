@@ -32,7 +32,9 @@ export const brand = {
 
 // Theme-independent scales. These are the vocabulary for component styles —
 // prefer them over literal px/shadow/easing values so spacing, corners, type,
-// and motion stay on one ramp app-wide.
+// and motion stay on one ramp app-wide. It also holds the handful of unthemed
+// *fills*: chrome color that reads the same on both papers, so it has no
+// light/dark pair to live in ThemeTokens.
 export const scale = {
   space1: '4px',
   space2: '8px',
