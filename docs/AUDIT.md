@@ -7,34 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P3][architecture] Shared component chrome in `app.css` (`.corner-button`, `.modal-close-btn`) duplicates the primitive layer with raw values
-
-**File(s):** `web/src/app.css:124-245` — pinned at SHA f934d43
-
-#### Problem
-
-`app.css` hosts several reusable UI patterns — `.modal-shell`, `.modal-close-btn`, `.corner-button`
-— that are conceptually "primitives" but live as global classes with a mix of tokens and raw values
-(see the token finding above). The `design` skill explicitly says global patterns "remain classes in
-`app.css` because dialogs and imperative DOM need them," so their existence is intentional — but
-they sit outside every guardrail the design system applies to `.svelte` primitives (no ratchet, no
-styleguide entry, no token enforcement), so they drift most easily. There's no cross-reference from
-the `design` skill's Primitives table to these global classes, so a newcomer doesn't know they're
-the sanctioned path for close/corner buttons.
-
-#### Proposed solution
-
-Document these global classes in the `design` skill (a "global primitives" sub-table) and, per the
-token finding, bring their covered values onto tokens so they're visibly first-class. No need to
-convert them to components — just close the guardrail gap and make them discoverable.
-
-#### Verification
-
-The `design` skill lists `.corner-button`/`.modal-close-btn`/`.modal-shell`; a token audit of
-`app.css` shows only intentional one-offs remain raw.
-
----
-
 ### [P3][design-tokens] `Button` hardcodes `font-weight: 600` and a `1px` border with no system token
 
 **File(s):** `web/src/lib/components/design/Button.svelte:36,82` — pinned at SHA f934d43
