@@ -11,36 +11,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P2][complexity] The coachmark tutorial should be its own component, not 180 lines inside ClearButton
-
-**File(s):** `web/src/lib/components/ClearButton.svelte:18-99,148-162,359-522` — pinned at SHA
-f934d43
-
-#### Problem
-
-ClearButton (540 lines) mixes the actual clear control (button + `dragToClear` wiring, 102-146) with
-a self-contained animated tutorial: state (`tutorialVisible`, `tutorialFadeOut`,
-`tutorialDismissTimer`, 18-23), imperative geometry positioning of ghost/ring in viewport coords
-(`showTutorial`, 29-68), dismiss/reset lifecycle (70-99), its markup (148-162), and ~160 lines of
-coachmark CSS + two big keyframe blocks (359-522). None of it is needed to render or operate the
-clear button; it's only shown when `dragToClear` calls `onTutorialShow`. The two concerns share
-nothing but the button's bounding rect.
-
-#### Proposed solution
-
-Extract `ClearCoachmark.svelte` taking the anchor rect (or the button element) and an imperative
-`show()/dismiss()` handle, owning its own state, timer, positioning, and CSS. ClearButton renders
-`<ClearCoachmark bind:this={coachmark}/>` and forwards
-`onTutorialShow`/`onTutorialDismiss`/orientation-reset to it. This also isolates the
-`getAcceptRadius` duplication (next finding) to one place.
-
-#### Verification
-
-ClearButton drops ~250 lines. The tutorial still fires on first-run drag-to-clear and dismisses
-after 6s / on orientation change (existing behavior). `run-splotch` first-run flow.
-
----
-
 ### [P2][duplication] Accept-radius factor 0.4 is duplicated as a magic literal instead of importing the named constant
 
 **File(s):** `web/src/lib/components/ClearButton.svelte:26` — pinned at SHA f934d43
