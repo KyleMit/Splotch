@@ -1,13 +1,8 @@
 // Generates web/src/tokens.css from the design-token source of truth in
 // web/src/lib/design/tokens.ts (ADR-0071). Run via `npm run gen:tokens`;
 // `--check` is the CI drift gate (regenerate and fail if the committed file
-// differs, like ruler:check).
-//
-// The dark declarations are emitted twice — under :root[data-theme='dark']
-// and under the prefers-color-scheme media query — because CSS has no way to
-// share a declaration block between an attribute selector and a media query
-// at our browser floor (light-dark() needs Chrome 123 / Safari 17.5). The
-// generator is what guarantees the two blocks stay identical.
+// differs, like ruler:check). See the emitted banner in render() below for why
+// the dark declarations are emitted twice.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
