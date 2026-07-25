@@ -90,7 +90,7 @@ Draining the per-commit comments (there is no `gh`; you post these yourself):
 All environment variables on `audit:burndown`, all with defaults:
 
 ```bash
-MAX_ISSUES=5          # how many to complete before stopping (canary default; unattended passes 600)
+MAX_ISSUES=5          # how many to FIX before stopping — drops/deferrals don't count (see step 4)
 PUSH_EVERY=1          # push after every finding — the container is ephemeral (see below)
 BRANCH=audit/burndown
 CHECK_CMD='npm run check'      # per-finding type-check gate
@@ -133,6 +133,15 @@ as possible:
   only their relevant spec. A pure refactor / script / doc finding names no specs and skips it. The
   verifier writes the specs into both `e2e_specs` and the acceptance criteria, so the implementer
   runs them too.
+* **The four gates do not cover the repo's bespoke lint/drift scripts, and a ratchet fails in both
+  directions.** A 2026-07-25 run reddened CI's Quality job on `npm run lint:tokens`: one finding
+  hoisted AdminConsole's hex literals into `--admin-*` properties, taking its raw-hex count 49 → 34
+  — and the ratchet demands the baseline come *down* to match, so **an improvement fails exactly
+  like a regression**. A second finding extracted a component into a new file, carrying four hexes
+  into a path with no baseline entry. Both fixes were correct; nothing in `CHECK_CMD`, `TEST_CMD`,
+  `LINT_CMD` or a targeted spec can see either. Set
+  `CHECK_CMD='npm run check && npm run lint:tokens'` for a few seconds per finding, and check
+  `.github/workflows/` for any other bespoke gate before a long run.
 * **Cross-finding interactions the per-finding specs can't see are CI's job, not the driver's.**
   `PUSH_TEST_CMD` (the local full-suite gate) defaults to empty and does not run. Every finding is
   pushed to the draft PR, and the PR's CI runs the whole suite on that push — in parallel, off the
@@ -217,6 +226,12 @@ finding text. Idempotent — it dedupes by SHA.
 > `[ -f iter0001.impl.json ]` returns instantly against the *previous* run's file, and the stale
 > envelope it hands you looks exactly like a real one. Always filter by mtime against the run's
 > start line: `find .audit-work/logs -name 'iter*.json' -newermt '<HH:MM>'`.
+>
+> **Names also collide *within* a single run, on every drop.** The tag is
+> `iter${done + deferred + 1}` — `dropped` is not in it — so the finding after a dropped one reuses
+> the same `iterNNNN` and overwrites its envelopes. Two different findings legitimately logging
+> `iter0002` in one run is not a bug, but it means the tag is not a finding identifier: correlate by
+> the `run.log` line and its timestamp, not by iteration number.
 
 **Never wrap a SHA in backticks in GitHub-bound text.** GitHub's native linker turns a bare
 plain-text commit SHA into a link to that commit (rendered as a short, hoverable reference); inside
@@ -252,7 +267,9 @@ this is only about SHAs.)
    ordering suggests it. Committing the checkpoint in step 2 is what gives the PR something to open
    against. (Opening it after the canary's first push works too, but then the canary's commits land
    with no CI and no PR to comment on.)
-4. **Canary:** `npm run audit:burndown` (5 findings) and read the commits it makes —
+4. **Canary:** `npm run audit:burndown` and read the commits it makes. It stops at **5 fixes, not 5
+   findings** — `MAX_ISSUES` gates the `done` counter and neither a deferral nor a drop increments
+   it, so a canary that defers twice processes seven findings and takes proportionally longer. —
    `git log main..HEAD -p -- . ':(exclude)docs/AUDIT.md'` keeps the backlog churn out of the diff.
    Read for **behavior changes smuggled inside a refactor**, which is what this loop gets wrong when
    it gets anything wrong, and what a green type-check and test suite will not catch:
@@ -286,9 +303,17 @@ this is only about SHAs.)
    implementer references its own earlier work rather than re-deriving the change from the feedback
    text. That handoff is the whole design. Only if the canary produced no extra round at all is it
    worth forcing one with a deliberately vague brief.
-7. `npm run audit:cost` — multiply the per-issue average by the backlog before committing to a full
-   run.
-8. `npm run audit:burndown:overnight -- 600`.
+7. **Check CI on the canary's pushes, and do not launch the full run until it is green.** The
+   cheapest step here and the easiest to skip, because every per-finding gate passes and the run log
+   says nothing. `PUSH_TEST_CMD` is empty by design, so CI is the *only* thing running the repo's
+   bespoke gates, and the canary is the first moment a breakage in them is visible. Launch over a
+   red canary and every later finding lands on a broken base. A 2026-07-25 run went red on its first
+   canary commit and stayed red through ten more; nothing surfaced it until closeout.
+8. `npm run audit:cost` — multiply the per-issue average by the backlog before committing to a full
+   run. Sanity-check the **wall-clock** as well as the dollars: per-issue elapsed × the backlog is
+   what decides whether this is one overnight run or a multi-day campaign needing a live session for
+   each relaunch. At ~9 min/finding a 468-finding backlog is ~70 hours, not a night.
+9. `npm run audit:burndown:overnight -- 600`.
 
 ## While it runs
 
@@ -301,17 +326,29 @@ this is only about SHAs.)
   bug in the driver worth fixing now, **pause first** (`touch .audit-work/STOP`, wait for exit),
   then edit. Writing to `.audit-work/`, to memory, or to a scratchpad is safe — those are outside
   the reset's blast radius.
-* **Burndown commits land unsigned, and a session hook will nag you about it every turn. Ignore
-  it.** The cloud container sets `commit.gpgsign=true` with `gpg.format=ssh` but ships a
-  **zero-byte** signing key, so every commit — yours and the driver's hundreds — is `%G? = N` and
-  GitHub renders it "Unverified". The identity itself is already correct
-  (`Claude <noreply@anthropic.com>`), so the hook's stock advice conflates two causes and only the
-  unfixable half applies here.
+
+  **The same hazard applies to your *own* `git reset --hard`, at any time — including after the run
+  has ended.** A closeout session used one to roll back a one-off probe commit and silently
+  destroyed a half-finished set of uncommitted doc edits. If you are holding uncommitted work,
+  commit or stash it before any hard reset, and prefer `git reset --soft HEAD~1` when all you want
+  is to undo a commit.
+* **A session hook will nag every turn that the commits are unsigned. It is a false positive —
+  ignore it.** Verified 2026-07-25 by reading the commit objects: they *do* carry
+  `gpgsig -----BEGIN SSH SIGNATURE-----`. Signing is delegated to `gpg.ssh.program=/tmp/code-sign`
+  (a session-provisioned symlink to the environment manager), and it works. What fails is *local
+  verification*: `gpg.ssh.allowedSignersFile` is unset, so `git log --format=%G?` cannot check an
+  SSH signature and reports `N` — which the hook reads as "missing signature". The identity is also
+  already correct (`Claude <noreply@anthropic.com>`), so neither half of its advice applies.
+
+  The 0-byte `~/.ssh/commit_signing_key.pub` that `user.signingkey` points at is a placeholder the
+  signing program ignores; it is **not** the cause, and an earlier version of this runbook said it
+  was. Don't re-derive that story from the file's size — check
+  `git cat-file commit HEAD | grep gpgsig`.
 
   **Never act on the suggested remedy during a run.** `git commit --amend --reset-author` and
-  `git rebase --exec …` cannot add a signature with no private key, and both rewrite history the
-  driver is actively committing onto — an amend races its own `--amend`, and a rebase would orphan
-  every pushed fix and demand a force-push. There is nothing to fix; say so once and move on.
+  `git rebase --exec …` fix nothing here, and both rewrite history the driver is actively committing
+  onto — an amend races its own `--amend`, and a rebase would orphan every pushed fix and demand a
+  force-push. Say so once and move on.
 * **The stop hook's "uncommitted changes" warning is expected while a finding is in flight.** The
   dirty tree is the implementer's work-in-progress and the unpushed commit is the finding's own; the
   driver commits and pushes when it completes. Committing them on the hook's behalf corrupts the
@@ -575,9 +612,12 @@ The whole run is reconstructable from git + the draft PR + `docs/AUDIT.md`, so a
 mid-run — or a completely fresh container with no `.audit-work/` at all — can pick up exactly where
 it stopped. **If the container survived, start by reading `.audit-work/compact-snapshot.md`** (see
 above) — it carries the launch command verbatim, which is the one thing the git/PR/`AUDIT.md` triad
-cannot tell you. Then relaunch with the unattended launcher
-(`npm run audit:burndown:overnight -- <n>`), which sets `RESUME=1`; startup then reconciles state
-before touching a finding:
+cannot tell you. `.audit-work/launch-command` carries the same string, but note **the driver writes
+it after its startup reconciliation, not when the launcher spawns** — so reading it in the seconds
+after a launch returns the *previous* run's command, which looks like a live one and can differ in
+`MAX_ISSUES`. Check its mtime against the run's `starting — target` line before believing it. Then
+relaunch with the unattended launcher (`npm run audit:burndown:overnight -- <n>`), which sets
+`RESUME=1`; startup then reconciles state before touching a finding:
 
 * **Latches onto the real branch** — it creates the local branch *from* `origin/<branch>` when a
   fresh container has only the remote (a plain `git switch -c` would fork from `main` and silently

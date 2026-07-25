@@ -734,12 +734,22 @@ operator error rather than design.
   minutes old, and the correction cost a round trip. The clamp itself was already documented; that
   it is not a clock was not.
 * **The unsigned-commit hook fires every turn and its remedy is actively dangerous here.** The
-  container sets `commit.gpgsign=true` / `gpg.format=ssh` with a **zero-byte** key file, so commits
-  are `%G? = N` and GitHub marks them Unverified. The identity is already
-  `Claude <noreply@anthropic.com>`, so only the unfixable half of the hook's message applies — and
-  its suggested `--amend --reset-author` / `rebase --exec` would race the driver's own `--amend`
-  mid-run and, on a run with hundreds of pushed commits, demand a force-push to fix nothing. Worth
-  documenting purely so the next session spends one sentence on it instead of investigating.
+  identity is already `Claude <noreply@anthropic.com>`, and its suggested `--amend --reset-author` /
+  `rebase --exec` would race the driver's own `--amend` mid-run and, on a run with hundreds of
+  pushed commits, demand a force-push. Worth documenting purely so the next session spends one
+  sentence on it instead of investigating.
+
+  **The mechanism recorded here on 2026-07-25 was wrong, and it is a clean instance of principle 1
+  turning up inside these notes themselves.** The original claim — a zero-byte key file means
+  commits are unsigned — was inferred from `ls` on `user.signingkey` plus the hook's own wording,
+  and never checked against a commit object. Checked on 2026-07-25: commits **are** signed
+  (`git cat-file commit HEAD` shows `gpgsig -----BEGIN SSH SIGNATURE-----`). Signing is delegated to
+  `gpg.ssh.program=/tmp/code-sign`, a session-provisioned symlink to the environment manager, and
+  the 0-byte `.pub` is a placeholder that program ignores. What actually fails is *local
+  verification*: `gpg.ssh.allowedSignersFile` is unset, so `%G?` cannot check an SSH signature and
+  returns `N`, which the hook reports as a missing signature. The practical advice was unchanged by
+  any of this — which is exactly why the wrong mechanism survived three sessions of being repeated
+  back to the user as fact.
 
 The through-line: **most of these are the supervising agent mistaking its own footprint for the
 run's state.** The driver is deliberately independent of the conversation, and the cost of that
