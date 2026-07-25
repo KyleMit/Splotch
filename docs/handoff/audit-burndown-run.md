@@ -1,7 +1,8 @@
 # Handoff — audit burndown run
 
-> 2026-07-25 · branch `claude/audit-burn-down-cexhfp` · PR TBD · Burn down the 496-finding
-> `docs/AUDIT.md` backlog with the scripted `burn-down-audits` driver.
+> 2026-07-25 · branch `claude/audit-burn-down-cexhfp` · PR
+> [#544](https://github.com/KyleMit/Splotch/pull/544) · Burn down the 496-finding `docs/AUDIT.md`
+> backlog with the scripted `burn-down-audits` driver.
 
 This is the **durable checkpoint** for a `burn-down-audits` run (see
 `.claude/skills/burn-down-audits/SKILL.md`). It exists so a compacted or brand-new session can
@@ -34,7 +35,7 @@ is lost. All other knobs are at their documented defaults, notably `PUSH_EVERY=1
 ## State
 
 * **Branch:** `claude/audit-burn-down-cexhfp`, forked from `main` at 95a9616.
-* **PR:** opened as a draft immediately after this checkpoint commits — find it again with
+* **PR:** [#544](https://github.com/KyleMit/Splotch/pull/544), draft. Find it again with
   `mcp__github__list_pull_requests` filtered by head branch. The driver never opens or comments on
   one; that is the supervising agent's job.
 * **Backlog at launch:** 496 findings.
