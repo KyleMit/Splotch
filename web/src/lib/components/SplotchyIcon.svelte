@@ -1,7 +1,8 @@
 <script lang="ts">
-  interface Props {
+  import type { HTMLAttributes } from 'svelte/elements';
+
+  interface Props extends HTMLAttributes<HTMLSpanElement> {
     class?: string;
-    [key: string]: unknown;
   }
   let { class: className = '', ...rest }: Props = $props();
 </script>

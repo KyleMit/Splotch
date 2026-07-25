@@ -7,37 +7,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P3][type-safety] SplotchyIcon's open-ended prop bag spreads arbitrary attributes with an `unknown` index signature
-
-**File(s):** `web/src/lib/components/SplotchyIcon.svelte:2-9` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-interface Props {
-  class?: string;
-  [key: string]: unknown;
-}
-let { class: className = '', ...rest }: Props = $props();
-```
-
-`...rest` is spread onto the `<span>` with a fully permissive `[key: string]: unknown`, so any
-typo'd or invalid attribute passes typechecking and lands on the DOM node. Callers pass
-`aria-hidden`, but nothing constrains the surface. Compared with the strongly-typed `Props` in
-Slider/Breadcrumb/ErrorScreen, this is the odd one out.
-
-#### Proposed solution
-
-Type `rest` as `SvelteHTMLElements['span']` (or `HTMLAttributes<HTMLSpanElement>`) instead of
-`[key: string]: unknown`, giving real attribute checking on the spread.
-
-#### Verification
-
-Add a bogus attribute to a `<SplotchyIcon>` usage and confirm `npm run check` flags it after the
-change; existing usages still compile.
-
----
-
 ### [P3][dead-code] ActionsPanel portrait rule re-declares identical left/bottom values
 
 **File(s):** `web/src/lib/components/ActionsPanel.svelte:394-409` — pinned at SHA f934d43
