@@ -7,41 +7,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P4][readability] Bearer-header parsing uses inline magic strings in `requireSession`
-
-**File(s):** `web/src/routes/api/admin/tokens/+server.ts:24-30` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-const auth = request.headers.get('authorization') ?? '';
-const token = auth.startsWith('Bearer ') ? auth.slice('Bearer '.length).trim() : '';
-```
-
-`'Bearer '` appears twice (prefix test and slice length) and `'authorization'` is a bare header
-name. The `slice('Bearer '.length)` idiom re-derives the prefix length from the literal, so the two
-copies must stay identical. This is exactly the kind of auth-transport detail the API skill flags as
-shared across doors, yet it lives as loose literals in one route.
-
-#### Proposed solution
-
-```ts
-const BEARER_PREFIX = 'Bearer ';
-export function bearerToken(request: Request): string {
-  const auth = request.headers.get('authorization') ?? '';
-  return auth.startsWith(BEARER_PREFIX) ? auth.slice(BEARER_PREFIX.length).trim() : '';
-}
-```
-
-Place in `$lib/server/admin.ts` (or `http.ts`) so any future bearer endpoint shares it;
-`requireSession` calls `verifySessionToken(bearerToken(request))`.
-
-#### Verification
-
-`npm run test:api:smoke` bearer-gate cases (valid, missing, malformed → 401) pass.
-
----
-
 ### [P4][type-safety] `removeToken` lacks the empty-input guard `addToken` has, and re-annotates the filter callback
 
 **File(s):** `web/src/lib/server/tokens.ts:167-169, 182-192` — pinned at SHA f934d43
