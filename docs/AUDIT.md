@@ -7,55 +7,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P4][naming] InstallBanner scatters unexplained magic numbers (auto-clear count, fly distance)
-
-**File(s):** `web/src/lib/components/InstallBanner.svelte:16,54-57,85` — pinned at SHA f934d43
-
-#### Problem
-
-`STROKES_BEFORE_AUTO_CLEAR = 5` (16) is named, but the fly-out distance `120` is a bare literal
-repeated three times (`fly({ y: 120 })` at 85, and `dy = … : 120` fallback at 57), and
-`PARTING_MESSAGE_MS = 4000` sits beside a separate inline `duration: 550`/`300`/`420` set with no
-shared motion vocabulary. The `120` in particular carries meaning ("slide fully below the fold") but
-is duplicated as a raw number.
-
-#### Proposed solution
-
-Name the exit distance (`const EXIT_FLY_Y = 120`) and reuse it in both the `fly` and the
-`bannerExit` fallback; group the banner's motion constants together.
-
-#### Verification
-
-Grep `120` in the file → single named constant. Banner enter/exit motion unchanged.
-
----
-
-### [P5][discoverability] SplotchyIcon renders `<img src="/splotchy.svg">`, bypassing the Icon system
-
-**File(s):** `web/src/lib/components/SplotchyIcon.svelte:9-11` — pinned at SHA f934d43
-
-#### Problem
-
-Every other glyph in scope goes through `Icon.svelte` (inline `{@html}` SVG, `data-icon`,
-type-checked `name` union, `fill`-based theming). The mascot instead points an `<img>` at a static
-`/splotchy.svg`, so it can't be tinted via the icon-ink rules, isn't part of the `name` union, and
-won't appear when someone greps the icon set. It carries `class="… icon-color"` and
-`data-icon="splotchy"` to *look* like an Icon output without being one. A contributor searching for
-how icons work will miss it.
-
-#### Proposed solution
-
-If the mascot is intentionally full-color raster/SVG-as-image, document that in the file (a one-line
-WHY comment) and/or register it in the icon pipeline as an `icon-color` entry so it's discoverable
-through the same channel. If it can be inlined, route it through `Icon`/`gen:icons`.
-
-#### Verification
-
-A grep for the mascot from the icon catalog finds it; theme/tinting behavior verified in light and
-dark.
-
----
-
 ### [P5][design-tokens] ErrorScreen uses bare off-scale sizes for its heading and blob
 
 **File(s):** `web/src/lib/components/ErrorScreen.svelte:35-40,44` — pinned at SHA f934d43
