@@ -9,44 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P3][duplication] Request-field extraction `typeof body?.X === 'string' ? body.X : ''` is repeated across every admin endpoint
-
-**File(s):** `web/src/routes/api/admin/login/+server.ts:25`,
-`web/src/routes/api/admin/tokens/+server.ts:68,78` — pinned at SHA f934d43
-
-#### Problem
-
-Every JSON endpoint pulls its one field the same defensive way:
-
-```ts
-const key = typeof body?.key === 'string' ? body.key : ''; // login
-addToken(typeof body?.token === 'string' ? body.token : ''); // tokens POST
-removeToken(typeof body?.token === 'string' ? body.token : ''); // tokens DELETE
-```
-
-Three copies of a fiddly type-narrowing expression that's easy to get subtly wrong (e.g. forgetting
-the `?.`). It reads as noise around the actual logic.
-
-#### Proposed solution
-
-Add one helper beside `readJsonBody` in `$lib/server/http.ts`:
-
-```ts
-export function stringField(body: Record<string, unknown> | null, name: string): string {
-  const v = body?.[name];
-  return typeof v === 'string' ? v : '';
-}
-```
-
-Callers become `stringField(body, 'key')` / `stringField(body, 'token')`.
-
-#### Verification
-
-`npm run test:api:smoke` unchanged. Grep for the `typeof body?.` pattern under `routes/api/admin`
-returns nothing.
-
----
-
 ### [P3][naming] `ai_access_token` invite param is hardcoded despite an existing named constant
 
 **File(s):** `web/src/lib/server/admin.ts:48-53` (`buildInvites`) vs
