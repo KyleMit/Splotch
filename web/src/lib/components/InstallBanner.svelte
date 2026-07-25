@@ -5,6 +5,7 @@
   import SplotchyIcon from './SplotchyIcon.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
   import { install, promptInstall, dismissInstall } from '$lib/state/install.svelte';
+  import { PARENT_HELP_BUTTON_ID } from '$lib/state/ui.svelte';
 
   // The banner sits above the corner controls (actions toggle, Parent Help), so
   // it must not linger: once the child has kept drawing past it, clear it and
@@ -49,7 +50,7 @@
   // dismiss / completed install keep the plain fly-down.
   function bannerExit(node: HTMLElement) {
     if (!exitIntoParentButton) return fly(node, { y: 120, duration: 300 });
-    const target = document.getElementById('parentHelpButton')?.getBoundingClientRect();
+    const target = document.getElementById(PARENT_HELP_BUTTON_ID)?.getBoundingClientRect();
     const from = node.getBoundingClientRect();
     const dx = target ? target.left + target.width / 2 - (from.left + from.width / 2) : 0;
     const dy = target ? target.top + target.height / 2 - (from.top + from.height / 2) : 120;

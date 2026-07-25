@@ -7,33 +7,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P3][maintainability] Cross-component coupling via the magic string id 'parentHelpButton'
-
-**File(s):** `web/src/lib/components/InstallBanner.svelte:54` — pinned at SHA f934d43
-
-#### Problem
-
-`bannerExit` does `document.getElementById('parentHelpButton')` to fly the banner into a button
-owned by a *different* component (`ParentHelpButton.svelte:15`). The linkage is an untyped string
-with no compile-time or grep-time guarantee: rename or remove that id and the banner exit silently
-falls back to `dy = 120` (57) with no error. This id-string coupling pattern also appears with
-`#brushButton`/`#coloringBookButton`/etc. used for CSS in ActionsPanel, but the cross-component
-runtime lookup here is the fragile one.
-
-#### Proposed solution
-
-Export the id as a shared constant (e.g. `PARENT_HELP_BUTTON_ID` from a `lib/domIds.ts` or from
-`ui.svelte`) consumed by both the button and the banner, or publish the button's rect through the
-existing `ui`/`layout` state so the banner reads state instead of the DOM. At minimum, centralize
-the id string.
-
-#### Verification
-
-Grep `parentHelpButton` — both producer and consumer reference one constant. Trigger the auto-clear
-exit and confirm the banner still homes on the button.
-
----
-
 ### [P3][type-safety] SplotchyIcon's open-ended prop bag spreads arbitrary attributes with an `unknown` index signature
 
 **File(s):** `web/src/lib/components/SplotchyIcon.svelte:2-9` — pinned at SHA f934d43
