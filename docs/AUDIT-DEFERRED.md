@@ -579,6 +579,55 @@ references, not three parallel string literals. `npm test` still passes.
 
 ---
 
+#### Why it was deferred
+
+failed adversarial review after 2 fix rounds
+
+Reviewer's unresolved objections:
+
+* `icon-orphans.test.ts:73` — the new `it.each(Object.keys(globLiteralSources))` guard silently
+  becomes a no-op if the glob resolves nothing (a rename of `Icon.svelte.test.ts`, a move of
+  `Icon.svelte`, or Vite ceasing to resolve wildcard-free literal paths in `import.meta.glob`): zero
+  keys means zero generated cases and a green suite, which is the same "authoritative only by
+  comment" failure this commit exists to close. Assert the glob actually resolved both files (e.g.
+  `expect(Object.keys(globLiteralSources).sort()).toEqual(['./Icon.svelte', './Icon.svelte.test.ts'])`)
+  before the `it.each`.
+* `icon-orphans.test.ts:24-26` — the new comment says "`sources` above excludes Icon.svelte and
+  every *.test.ts", but `sources` is declared below this block; say "below".
+
+#### What was tried
+
+(mtime 17:31)
+
+**Summary:** Took the stronger of the two offered options: extended the guard instead of narrowing
+the comment.
+
+`icon-orphans.test.ts` now raw-imports `Icon.svelte` and `Icon.svelte.test.ts` via their own
+`import.meta.glob` — needed because the existing `sources` glob excludes Icon.svelte and every
+*.test.ts — and asserts, per file, that the `!../icons/<name>.svg` patterns in its source are
+exactly `NON_RENDERABLE_ICONS`. Together with the pre-existing filesystem difference covering this
+file's own literal, all three literals are enforced.
+
+Verified by mutation: adding `'!../icons/camera.svg'` to Icon.svelte's glob alone reddens the new
+spec (`expected [ 'camera', 'splotchy' ] to deeply equal [ 'splotchy' ]`), then reverted —
+`git diff --stat` confirms Icon.svelte is untouched by the commit.
+
+The `iconTypes.ts` parenthetical no longer overclaims: it reads "all three glob literals
+(icon-orphans.test.ts checks each of them against this constant and fails on a mismatch)".
+
+Gates: `npm run check` 0 errors; `npm run test:unit` 641 passed (up 2, one case per checked file);
+eslint clean on the three changed files; `npm run test:e2e -- flows.spec.ts` 43 passed.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-duplication-the-icon-glob-splotchy-exclusion-is-repeated-in-three-pla.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-duplication-the-icon-glob-splotchy-exclusion-is-repeated-in-three-pla.patch`.
+*Only the final review round and the last fix round survive: the earlier envelopes for this finding
+were overwritten by a later run reusing the same `iter0002` filename.*
+
 ### [P3][maintainability] `COLOR_ICONS` is a 24-entry hand-maintained allowlist mixing two unrelated concepts
 
 **File(s):** `web/src/lib/components/Icon.svelte:13-42` — pinned at SHA f934d43
@@ -606,6 +655,19 @@ Adding a new spot SVG + `gen:icons` auto-tags it (no manual `COLOR_ICONS` edit);
 on `/dev/design` is unchanged for all current icons.
 
 ---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+No change was made: `.audit-work/current-brief.md` was stale — it still held the *previous*
+finding's brief, whose work had already landed, while `current-issue.md` had advanced to this
+finding. The verifier marked this finding VALID but never wrote its brief. Committing anything would
+have attributed the work to — and deleted by title — a finding nothing had implemented, so the
+implementer deferred instead to keep the entry recoverable. This is a driver defect, not a problem
+with the finding: re-stage it as-is.
 
 ### [P4][consistency] `iconTypes.ts` imports `IconName` and separately re-exports it — redundant
 
@@ -636,6 +698,19 @@ fine, but reference `./icon-names` once. Minor tidy.
 `npm run check` passes; consumers of both `IconName` and `CommonIconName` still resolve.
 
 ---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+The brief's proposed fix does not work: replacing the `import type { IconName }` line and keeping
+only `export type { IconName } from './icon-names'` fails `npm run check` with "Cannot find name
+'IconName'" at the `Exclude<IconName, 'splotchy'>` line — a re-export statement does not create a
+local type binding in TypeScript, contrary to the brief's claim. The edit was reverted and the file
+left unchanged rather than substituting a different consolidation the brief did not ask for.
+Re-staging this finding needs a corrected proposal, not a retry.
 
 ### [P2][type-safety] Native page hand-rolls type guards that duplicate the server's response shape
 
@@ -692,3 +767,65 @@ at compile time; type the login parse against `LoginResponse | { ok: false; erro
 `tests/admin.spec.ts` native flow still passes.
 
 ---
+
+#### Why it was deferred
+
+failed adversarial review after 2 fix rounds
+
+Reviewer's unresolved objections:
+
+* `web/src/routes/api/admin/wire.integration.test.ts:25,166` — the mocked conflict message 'Could
+  not save. Please try again.' appears nowhere else in the repo; the real 409 body carries
+  `TOKEN_CONFLICT_ERROR` ('The token list changed while saving — please try again',
+  `web/src/lib/server/tokens.ts:162`). Its sibling 'Token already exists' is verbatim real, so the
+  pair reads as mirrored while half of it is invented — in a file whose header claims it pins "the
+  bytes on the wire". Use the real conflict string in the mock and the expectation (inline, since
+  `vi.mock` replaces the module so the constant can't be imported).
+
+#### What was tried
+
+1. Exported `TokenSnapshot` from `api/admin/tokens/+server.ts` and `LoginResponse` from
+   `api/admin/login/+server.ts`, and had the native admin page use them for `isSnapshot`'s guard
+   annotation and the login-response parse, so the client's view of those payloads is the endpoints'
+   own shape rather than a hand-copied literal and an untyped `any`. The login-error read became
+   `(data && !data.ok ? data.error : null) ?? 'Sign in failed.'` because the brief's literal
+   `data?.error` doesn't compile against the union's `ok: true` arm — runtime behavior is unchanged
+   for every shape either endpoint can return, `throttled()`'s 429 included. A stronger version of
+   this fix would also annotate `snapshot()`'s `json(...)` payload (e.g. `satisfies TokenSnapshot`)
+   so that adding a server field actually surfaces as a client type error; the brief scopes the
+   change to the client side, so I left the server payload untyped as specified.
+2. Addressed all three review points in 936b6ef85882ef7fce60af03f7ab3717ba8417a4. (1) Bound the
+   producers: `snapshot()` builds `const payload: TokenSnapshot` before `json(payload)`, and both
+   login bodies use `satisfies LoginResponse` — verified load-bearing by temporarily adding an
+   `extra` field, which `npm run check` rejected. (2) Dropped the
+   `$lib/components/admin/AdminConsole.svelte` import from the endpoint; `TokenSnapshot.invites` is
+   now `ReturnType<typeof buildInvites>`, so it tracks the server-side producer and no longer
+   carries the `usage` field the endpoint never emits (still assignable to the console's `Invite[]`
+   on the client, since `usage` is optional). (3) Added
+   `web/src/routes/api/admin/wire.integration.test.ts`: 5 tests driving the real login/tokens
+   handlers, each asserting the parsed payload against a wire-type-annotated expectation, so type
+   and bytes are pinned to each other; the same mutation failed 2 of them. Gates green: check 0
+   errors, unit 650 passed, eslint clean, tests/admin.spec.ts 8 passed, api:smoke 27 passed,
+   format:check clean.
+3. Addressed the review point in eb4124986614705691a181da1762841bb8a1c0ad. Exported
+   `TokenMutationError` from `api/admin/tokens/+server.ts` and bound `mutationError()`'s body to it
+   with `satisfies` — narrower than `MutationFailure` on purpose, since `reason` picks the 400/409
+   status and must not reach the wire. Typed `applySnapshot`'s parse as
+   `TokenSnapshot | TokenMutationError | null`, so the client no longer reads an `any`;
+   `responseError` keeps its `unknown` parameter and runtime probing per the original brief's "keep
+   the runtime guards", but the shape it probes is now a named producer-bound type. Extended
+   `wire.integration.test.ts` with both rejection paths (duplicate → 400, CAS conflict → 409)
+   asserted against a `TokenMutationError`-typed expectation. Verified load-bearing by temporarily
+   leaking `reason` into the body: it failed both `npm run check` and the new test. Gates green:
+   check 0 errors, unit 651 passed (60 files), eslint clean, tests/admin.spec.ts 8 passed, api:smoke
+   27 passed, format:check clean.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-type-safety-native-page-hand-rolls-type-guards-that-duplicate-the-ser.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-type-safety-native-page-hand-rolls-type-guards-that-duplicate-the-ser.patch`.
+*Three review rounds; the first two were fully addressed. Only the last objection above remained,
+and it is narrow — a wrong string literal in a new test fixture.*

@@ -16,9 +16,11 @@ import {
   deferralReason,
   deleteEntryByTitle,
   deleteFirstEntry,
+  draftPatchPath,
   findingPriority,
   getEntry,
   launchCommand,
+  renderDeferralNotes,
   resolveImplSha,
 } from '../audit-burndown/lib.mjs';
 
@@ -345,5 +347,81 @@ describe('launchCommand', () => {
     expect(launchCommand({ HOME: '/root', PATH: '/usr/bin' })).toBe(
       `npm run audit:burndown:overnight -- ${DEFAULT_MAX_ISSUES}`
     );
+  });
+});
+
+describe('draftPatchPath', () => {
+  it('slugs a tagged finding title into a patch path under the draft dir', () => {
+    expect(draftPatchPath('[P2][type-safety] Native page hand-rolls type guards')).toBe(
+      'docs/audit-deferred/p2-type-safety-native-page-hand-rolls-type-guards.patch'
+    );
+  });
+
+  it('strips backticks and punctuation rather than emitting them into a filename', () => {
+    expect(draftPatchPath('[P4] `COLOR_ICONS` is a 24-entry allowlist!')).toBe(
+      'docs/audit-deferred/p4-color-icons-is-a-24-entry-allowlist.patch'
+    );
+  });
+
+  it('never ends the slug on a separator when the title is truncated', () => {
+    const path = draftPatchPath(`[P1] ${'word '.repeat(40)}`);
+    expect(path).not.toMatch(/-\.patch$/);
+  });
+
+  it('falls back to a placeholder rather than producing a dotfile', () => {
+    expect(draftPatchPath('!!!')).toBe('docs/audit-deferred/untitled.patch');
+  });
+});
+
+describe('renderDeferralNotes', () => {
+  it('records the reviewer objections that actually stopped the fix', () => {
+    const notes = renderDeferralNotes({
+      why: 'failed adversarial review after 2 fix rounds',
+      catches: ['`Icon.svelte:61` — widening `class` lets an array render as `a,b`'],
+    });
+    expect(notes).toContain('#### Why it was deferred');
+    expect(notes).toContain('failed adversarial review after 2 fix rounds');
+    expect(notes).toContain("Reviewer's unresolved objections:");
+    expect(notes).toContain('- `Icon.svelte:61`');
+  });
+
+  it('numbers each round when more than one was tried, so the order is legible', () => {
+    const notes = renderDeferralNotes({ why: 'x', tried: ['first pass', 'second pass'] });
+    expect(notes).toContain('1. first pass');
+    expect(notes).toContain('2. second pass');
+  });
+
+  it('does not number a single attempt', () => {
+    const notes = renderDeferralNotes({ why: 'x', tried: ['only pass'] });
+    expect(notes).toContain('only pass');
+    expect(notes).not.toContain('1. only pass');
+  });
+
+  it('points at the draft and says it is applyable, not scrap', () => {
+    const notes = renderDeferralNotes({
+      why: 'x',
+      patchPath: 'docs/audit-deferred/thing.patch',
+      draftCommits: 3,
+    });
+    expect(notes).toContain('#### Draft implementation');
+    expect(notes).toContain('(3 commits)');
+    expect(notes).toContain('git apply docs/audit-deferred/thing.patch');
+  });
+
+  it('omits the draft section entirely when nothing was committed', () => {
+    const notes = renderDeferralNotes({ why: 'implementation failed', tried: ['brief was wrong'] });
+    expect(notes).not.toContain('#### Draft implementation');
+  });
+
+  it('names a red gate as the gate rather than as a review rejection', () => {
+    const notes = renderDeferralNotes({
+      why: 'fix broke the type-check',
+      gateDetail: 'npm run check is red',
+    });
+    expect(notes).toContain('gates were red at the final round: npm run check is red');
+  });
+
+  it('never claims a reason it was not given', () => {
+    expect(renderDeferralNotes()).toContain('No reason recorded.');
   });
 });

@@ -105,6 +105,66 @@ export function deferralReason({ reviewUnavailable, implFailed, gateRed }) {
   return gateRed?.reason ?? 'failed adversarial review';
 }
 
+export const DRAFT_DIR = 'docs/audit-deferred';
+
+export function draftPatchPath(title, dir = DRAFT_DIR) {
+  const slug = String(title ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 72)
+    .replace(/-+$/, '');
+  return `${dir}/${slug || 'untitled'}.patch`;
+}
+
+// What someone triaging docs/AUDIT-DEFERRED.md months later needs and cannot
+// reconstruct: which objection actually stopped the fix, what was already
+// tried, and where the rejected draft went. All three are in the driver's hands
+// at the moment it rolls back and nowhere afterwards — the role envelopes are
+// gitignored, container-local, and overwritten by the next run's same-numbered
+// iteration, so a deferral that records only its one-line reason throws the
+// expensive part away.
+export function renderDeferralNotes({
+  why = '',
+  catches = [],
+  tried = [],
+  gateDetail = '',
+  patchPath = '',
+  draftCommits = 0,
+} = {}) {
+  const out = ['#### Why it was deferred', '', why.trim() || 'No reason recorded.', ''];
+
+  if (gateDetail) out.push(`The driver's gates were red at the final round: ${gateDetail}.`, '');
+
+  if (catches.length) {
+    out.push("Reviewer's unresolved objections:", '');
+    out.push(...catches.map((c) => `- ${String(c).trim()}`), '');
+  }
+
+  if (tried.length) {
+    out.push('#### What was tried', '');
+    out.push(
+      ...tried.map((t, i) =>
+        tried.length === 1 ? String(t).trim() : `${i + 1}. ${String(t).trim()}`
+      ),
+      ''
+    );
+  }
+
+  if (patchPath) {
+    const commits = draftCommits ? ` (${draftCommits} commit${draftCommits === 1 ? '' : 's'})` : '';
+    out.push('#### Draft implementation', '');
+    out.push(
+      `The rolled-back draft is kept at \`${patchPath}\`${commits}. It passed the driver's ` +
+        `type-check, unit-test and lint gates — the review is what it did not pass — so it is a ` +
+        `starting point rather than scrap. Apply with \`git apply ${patchPath}\`.`,
+      ''
+    );
+  }
+
+  return `${out.join('\n').replace(/\n*$/, '')}\n`;
+}
+
 // Every entry script chdirs to the repo root so relative paths (docs/AUDIT.md,
 // .audit-work/) behave the same no matter where it was invoked from.
 export function chdirRoot() {
