@@ -338,20 +338,22 @@ state in the conversation:
   auto-compact fire) when the context fills, rather than letting the window overflow mid-run. Don't
   wait to be forced. A `PreCompact` hook (`.claude/hooks/precompact-burndown-snapshot.sh`) backstops
   this automatically: whenever a run is in flight or left work owed, it writes
-  **`.audit-work/compact-snapshot.md`** — the relaunch command the driver recorded at startup,
-  `audit:status`, which run-log monitors are actually running, and the current run's log tail. It
-  no-ops otherwise and never blocks compaction. A companion `SessionStart` hook (matcher `compact`,
-  `.claude/hooks/session-start-burndown-snapshot.sh`) is what actually *tells* the next session the
-  snapshot is there — `PreCompact` has no `additionalContext` support, so its own stdout reaches the
-  transcript but never the post-compaction model.
+  **`.audit-work/compact-snapshot.md`** — the relaunch command the driver recorded once its
+  preflight gates passed, `audit:status`, which run-log monitors are actually running, and the
+  current run's log tail. It no-ops otherwise and never blocks compaction. A companion
+  `SessionStart` hook (matcher `compact`, `.claude/hooks/session-start-burndown-snapshot.sh`) is
+  what actually *tells* the next session the snapshot is there — `PreCompact` has no
+  `additionalContext` support, so its own stdout reaches the transcript but never the
+  post-compaction model.
 * **Read `.audit-work/compact-snapshot.md` first** when you come back to a burndown with no memory
   of starting it — after a compaction, or as a fresh session. It is the most concrete account of how
   the run was launched. But it is **point-in-time, not live**: it is rewritten only when compaction
-  fires, never when the run's state changes, so a run that finished without a subsequent compaction
-  leaves a snapshot still asserting "a run is IN FLIGHT". Check its header timestamp, and confirm
-  any pid it names is still alive (`ps -p <pid>`) before acting on that claim. Its other limit: it
-  lives in gitignored `.audit-work/`, so it is **machine-local** and absent on a fresh clone. The
-  order to trust:
+  fires, never when the run's state changes. A clean finish deletes it, and the `SessionStart` hook
+  stays quiet about one older than a day with no driver running — but a hard-killed run leaves a
+  snapshot that can still assert "a run is IN FLIGHT" hours later. Check its header timestamp, and
+  confirm any pid it names is still alive (`ps -p <pid>`) before acting on that claim. Its other
+  limit: it lives in gitignored `.audit-work/`, so it is **machine-local** and absent on a fresh
+  clone. The order to trust:
 
   1. `npm run audit:status` + git + the PR — always authoritative for counts, what landed, and
      whether anything is actually running. Tells you nothing about *how the run was launched*.
