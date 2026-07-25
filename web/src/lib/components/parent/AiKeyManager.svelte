@@ -383,7 +383,7 @@
   .access-code-input[readonly] {
     background: var(--surface-hover);
     color: var(--text-muted);
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-mono);
     letter-spacing: 0.5px;
   }
 

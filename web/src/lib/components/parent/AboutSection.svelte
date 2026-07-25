@@ -152,7 +152,7 @@
     text-align: center;
     font-size: var(--font-size-xs);
     color: var(--text-faint);
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-mono);
     user-select: none;
   }
 

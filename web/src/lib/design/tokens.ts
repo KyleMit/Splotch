@@ -66,6 +66,9 @@ export const scale = {
   // (ADR-0076). Every parent-center text input must reference this.
   inputFontSize: 'max(16px, var(--font-size-md))',
 
+  // Raw code/version values (masked API keys, version strings, inline code).
+  fontMono: "'Courier New', monospace",
+
   durationFast: '0.15s',
   durationBase: '0.2s',
   durationSlow: '0.35s',

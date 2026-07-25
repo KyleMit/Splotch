@@ -480,7 +480,7 @@
   }
 
   .flash-warning code {
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-mono);
     font-size: 0.92em;
     background: #fdefc7;
     padding: 1px 5px;

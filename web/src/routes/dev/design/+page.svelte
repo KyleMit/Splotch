@@ -152,6 +152,11 @@
         >
         <span class="value">{scale.inputFontSize}</span>
       </div>
+      <div class="scale-row">
+        <code>{toCssVarName('fontMono')}</code>
+        <span class="type-sample" style:font-family={cssVar('fontMono')}>Splotch says hello</span>
+        <span class="value">{scale.fontMono}</span>
+      </div>
     </div>
   </section>
 

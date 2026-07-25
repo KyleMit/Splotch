@@ -9,31 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P4][maintainability] Hardcoded `'Courier New', monospace` font stack in two places
-
-**File(s):** `web/src/lib/components/parent/AboutSection.svelte:156` ·
-`web/src/lib/components/parent/AiKeyManager.svelte:455` — pinned at SHA f934d43
-
-#### Problem
-
-The version text (`.version-text`) and the masked/readonly key input
-(`.access-code-input[readonly]`) both hardcode `font-family: 'Courier New', monospace`. There's no
-monospace token, so the app's mono treatment is defined ad hoc in leaf components; a future third
-use (or a brand mono choice) has nothing to reference.
-
-#### Proposed solution
-
-If a monospace face is a real design element, add `--font-mono` to `tokens.ts` and reference it in
-both. If it's incidental, at minimum unify on the same string. Prefer the token given it's already
-used twice for a semantic ("this is a raw code/version value").
-
-#### Verification
-
-`grep -rn "Courier New" web/src` is empty (token) or single-sourced; version text and masked key
-still render monospaced.
-
----
-
 ### [P4][maintainability] `sectionSubtitle('ai')` re-derives AiKeyManager's credential-precedence logic
 
 **File(s):** `web/src/lib/components/parent/sections.ts:64-67` ·
