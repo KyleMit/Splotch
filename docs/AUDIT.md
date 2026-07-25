@@ -9,42 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P3][maintainability] `timeAgo` relative-time formatter and its unit table are trapped inside the component, untested
-
-**File(s):** `web/src/lib/components/admin/AdminConsole.svelte:99-118` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-function timeAgo(iso: string) {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return '';
-  ...
-  const units: [Intl.RelativeTimeFormatUnit, number][] = [
-    ['year', 31_536_000], ['month', 2_592_000], ...
-  ];
-  ...
-}
-```
-
-This is general-purpose date logic with real edge cases (NaN fallback, unit thresholds, sign flip)
-sitting in a presentational component where it can't be tested without a DOM mount, and can't be
-reused by any other surface that shows a timestamp. There is no test covering the threshold
-boundaries.
-
-#### Proposed solution
-
-Move to `web/src/lib/adminFormat.ts` (or a shared `web/src/lib/time.ts`) and cover the boundaries
-directly (just-now, exactly 1 day, > 1 year, invalid ISO → `''`). See the extraction in the
-"868-line component" finding.
-
-#### Verification
-
-New `timeAgo` unit test passes at each unit boundary; component still renders the same labels in
-`tests/admin.spec.ts`.
-
----
-
 ### [P3][duplication] Copy-key string `\`${invite.token}:code\`` is rebuilt inline 12 times
 
 **File(s):** `web/src/lib/components/admin/AdminConsole.svelte:282-321, 345-360` (12 occurrences) —
