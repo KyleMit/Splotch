@@ -158,10 +158,12 @@ this is only about SHAs.)
      is free to drift.
    * A narrowed type whose invalid-input tests were made to compile with `as` casts; confirm the
      runtime guard those tests exercise still exists.
-3. **Force a rejection** to exercise the path a happy-path canary won't: write one deliberately
-   vague brief so the reviewer returns `CHANGES_REQUIRED`, then check `.audit-work/logs/*.fix1.json`
-   to confirm the resumed implementer references its own earlier work rather than starting over.
-   That handoff is the whole design.
+3. **Confirm the resume handoff actually fired.** Rejections happen on their own — a typical run
+   logs `round 1: changes required` every few findings — so read one instead of staging one. Find a
+   `round N: changes required` in the canary's log, open that iteration's `fix1.json`, and confirm
+   the resumed implementer references its own earlier work rather than re-deriving the change from
+   the review text. That handoff is the whole design. Only if the canary produced no rejection at
+   all is it worth forcing one with a deliberately vague brief.
 4. `npm run audit:cost` — multiply the per-issue average by the backlog before committing to a full
    run.
 5. `npm run audit:burndown:overnight -- 600`.
@@ -170,9 +172,19 @@ this is only about SHAs.)
 
 * Stop gracefully with `touch .audit-work/STOP` (exits after the current finding; `rm` it before
   resuming). Stop hard with `pkill -TERM -f 'claude -p'`.
+* **Never edit a tracked file while the driver is running.** Its rollback paths run
+  `git reset -q --hard <baseSha>`, which wipes uncommitted working-tree edits with no warning and no
+  reflog entry — and at a realistic deferral rate that fires within the hour. Committing mid-run is
+  worse: you are racing the driver's own `git commit`/`--amend` on the same branch. If you find a
+  bug in the driver worth fixing now, **pause first** (`touch .audit-work/STOP`, wait for exit),
+  then edit. Writing to `.audit-work/`, to memory, or to a scratchpad is safe — those are outside
+  the reset's blast radius.
 * Transient API failures are retried with exponential backoff; a budget/turn cap is treated as a
-  real answer and deferred, not retried. Three *consecutive* deferrals halt the run — that shape
-  means something systemic (auth, disk, a red tree), not three unlucky findings.
+  real answer and deferred, not retried. That is right for verify and impl (a cap means the role
+  could not finish its work) but read the reviewer's cap differently: it produced *no verdict*, so
+  the finding is deferred `reviewer unavailable`, never "failed adversarial review". Three
+  *consecutive* deferrals halt the run — that shape means something systemic (auth, disk, a red
+  tree), not three unlucky findings.
 * macOS overnight gotchas: `caffeinate -s` only holds on AC power (stay plugged in; closed lid
   additionally needs `sudo pmset -a disablesleep 1`, then `... 0` afterwards), and automatic macOS
   updates can reboot at 3am (turn off "Install macOS updates"). `tmux` is optional: when present it
@@ -199,7 +211,10 @@ against these norms (from real runs on this repo):
 | single `claude` call (`current claude call`) | ≤ 10 min | 10–15 min | > 15 min    |
 
 Verify is ~150s; impl/review are the long poles; an E2E-gated finding runs longer. Budget and turn
-caps normally terminate a runaway call on their own near these ceilings.
+caps normally terminate a runaway call on their own near these ceilings. **Priority skews this
+hard** — with `MODEL_IMPL_MINOR` tiering on, P4/P5 findings land in 3–5 min while a P1 refactor that
+takes two fix rounds runs 20–30 and is still healthy. Check the finding's `[P<n>]` tag before
+reading a duration as slow; the table above describes a mid-priority finding, not every finding.
 
 * **Within normal** → just report it; do nothing.
 * **Watch band (maybe too long)** → don't intervene yet. Schedule **one** re-check a few minutes out
@@ -233,12 +248,20 @@ paused.
 ### "resume" / "continue" — start the next finding
 
 Only after verifying **nothing is already in flight**: `pgrep -f audit-burndown/burndown.mjs` must
-be empty (if it isn't, the run is already going — say so, don't launch a second). Then
-`rm
-.audit-work/STOP`, relaunch with the exact command from the durable checkpoint (including the
-env overrides that dodge the flaky palette snapshots), and re-arm the event-driven monitor. The
-launcher self-recovers even in a brand-new session that never saw this run — see **Resuming a
-crashed run** below.
+be empty (if it isn't, the run is already going — say so, don't launch a second). Note the launcher
+matches **two** processes once running — the `node` driver and its `caffeinate` wrapper, whose
+command line embeds the same path — so a count of 2 is healthy and only the `node` line identifies
+the driver itself. Then `rm .audit-work/STOP`, relaunch with the exact command from the durable
+checkpoint (including the env overrides that dodge the flaky palette snapshots), and re-arm the
+event-driven monitor. The launcher self-recovers even in a brand-new session that never saw this run
+— see **Resuming a crashed run** below.
+
+**Monitor hygiene, both directions.** A monitor tailing `run.log` does *not* reliably survive the
+run it was watching, so after every relaunch confirm the new one is actually armed rather than
+assuming it — a dead monitor is indistinguishable from a quiet run, and that silence reads as "all
+is well" for hours. The mirror failure is just as easy: a monitor from a *previous* run can still be
+alive and will double-report every event, so stop the old one before arming the new one instead of
+stacking them.
 
 ### "wrap up" — finalize now and mark the PR ready
 
@@ -246,6 +269,25 @@ Terminal, unlike pause. `touch .audit-work/STOP` so the in-flight finding still 
 nearly-done fix), wait for exit, then run **Closing out a run** below: push anything unpushed, add
 the `docs/AUDIT-LOG.md` row, tidy any emptied `## Source:` sections, and `gh pr ready <PR#>`. The
 backlog may still hold findings — that's expected; wrap-up ships what's done and closes the run out.
+
+### No verb — pausing on your own initiative
+
+The four verbs above are user-initiated, but the user is usually away, and a run that is quietly
+destroying work will keep doing so until someone stops it. **Pause without asking when the run is
+actively losing work at a measurable rate and you can fix the cause.** `STOP` is designed to be
+cheap and reversible — the in-flight finding lands, state stays durable, and a relaunch resumes — so
+the downside of pausing wrongly is one relaunch, while the downside of waiting is hours of discarded
+fixes.
+
+The bar is *demonstrated recurrence*, not one bad finding. One deferral is noise; the same failure
+twice with a mechanism you can point at is a rate. Establish the rate before acting (two hits in
+fourteen findings is ~14%, and projecting that over the remaining backlog is the argument), then
+pause, fix, relaunch, and report what you did and why — never narrate it as though the user approved
+it. A background event is not a reply, and neither is your own earlier message proposing the action.
+
+Do **not** self-pause for a failure that is merely *safe* — a deferral that rolls back cleanly and
+labels itself honestly costs one finding and nothing else. Note it, keep running, and fix it at the
+next natural boundary. Reserve the interrupt for work being silently lost.
 
 ## Surviving the context window (supervising a 100+-finding run)
 
@@ -388,10 +430,10 @@ Notes from real runs — set these before a large run rather than discovering th
 * **Scope every `run.log` grep to the current run.** `run.log` accumulates across runs and iteration
   numbers restart at `iter0001` each time, so a bare `grep iter0008` silently matches a different
   finding from hours ago. Anchor on the run's start line:
-  `awk '/HH:MM:SS\] starting/{f=1} f' .audit-work/logs/run.log`. The same collision corrupts
-  `.audit-work/logs/iterNNNN.*.json` — a shorter run leaves the previous run's envelopes beside the
-  current one's, which is why `backfill-comments.mjs` dates each iteration by its own `verify.json`
-  mtime. Anything reading those logs by iteration number needs the same guard.
+  `awk '/HH:MM:SS\] starting/{f=1} f' .audit-work/logs/run.log`. Unscoped reads also cost context: a
+  `sed`/`grep` range over a multi-run log can dump hundreds of lines of unrelated history into the
+  window you are trying to conserve. The per-iteration JSON envelopes collide the same way — see the
+  blockquote under **Per-commit PR comments**.
 
 ## Closing out a run
 
@@ -407,7 +449,14 @@ Notes from real runs — set these before a large run rather than discovering th
   then `post` (see above). If a store was committed while the API was down, delete it in the same
   commit that posts it — a leftover `docs/AUDIT-PENDING-COMMENTS.jsonl` reads as work still owed.
 * Add one row to `docs/AUDIT-LOG.md` per `.claude/audit-conventions.md` §2 (date ·
-  `burn-down-audits` · done/deferred/dropped counts + the PR link), then mark the PR ready.
+  `burn-down-audits` · done/deferred/dropped counts + the PR link), then mark the PR ready. **Take
+  the counts from each run's `finished:` line** (`N fixed, N dropped, N deferred`) and cross-check
+  them against the commit record — `chore(audit): defer` and `drop invalid finding` subjects are one
+  per finding, so they are exact. Do **not** count fix commits: a finding whose review demanded
+  changes can land two or three commits, so commits-with-an-`Audit:`-trailer over-reports fixes.
+  Ignore `audit:status`'s `of <total>` denominator here; it is derived from `completed.log` (which
+  is gitignored, machine-local, and accumulates across runs) plus a cumulative deferred file, so it
+  drifts by a finding or two and is not an auditable figure. `remaining` is the trustworthy number.
 * The deliberately-unported alternative: driving this loop with in-session subagents. Only worth it
   to watch and steer a handful of findings interactively — and that path already exists as
   `/fix-audits`.

@@ -263,7 +263,11 @@ if (!prNumber && openPr) {
   writeFileSync(prNumberFile, prNumber);
   logLine(`  adopted existing draft PR for ${BRANCH} (number ${prNumber})`);
 }
+// Fixes and drops are both "handled", but only fixes are work — conflating them
+// in the summary makes the closeout AUDIT-LOG row wrong in the flattering
+// direction, so they are counted apart.
 let done = 0;
+let dropped = 0;
 let sincePush = 0;
 const pending = []; // completed fixes awaiting their per-commit PR comment (posted on the next successful push)
 
@@ -392,7 +396,7 @@ while (done < MAX_ISSUES) {
       join(WORK, 'completed.log'),
       `${gitOut('rev-parse', 'HEAD')}  [invalid]  ${title}\n`
     );
-    done += 1;
+    dropped += 1;
     sincePush += 1;
     consecutive = 0;
     continue;
@@ -628,4 +632,6 @@ while (done < MAX_ISSUES) {
 // pushes, so a red tail never escapes on exit either — held commits stay local
 // for the operator to inspect.
 if (sincePush > 0) pushBatch({ final: true });
-logLine(`finished: ${done} done, ${deferred} deferred, ${countEntries()} remaining`);
+logLine(
+  `finished: ${done} fixed, ${dropped} dropped, ${deferred} deferred, ${countEntries()} remaining`
+);
