@@ -98,7 +98,7 @@
   .clear-coachmark {
     position: fixed;
     inset: 0;
-    z-index: 1001; /* Above the real button (1000) so the ghost is always visible */
+    z-index: var(--z-clear-coachmark); /* Above the real button so the ghost is always visible */
     pointer-events: none; /* Never blocks the real button underneath */
     opacity: 0;
     visibility: hidden;

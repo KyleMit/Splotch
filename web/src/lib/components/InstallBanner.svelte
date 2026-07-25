@@ -146,9 +146,9 @@
     left: 50%;
     bottom: calc(16px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
-    /* Above the corner controls (actions toggle 901, Parent Help 900): on phones
+    /* Above the corner controls (--z-panel, --z-corner-button): on phones
        the banner overlaps them, and the auto-clear keeps that takeover short. */
-    z-index: 950;
+    z-index: var(--z-banner);
     width: min(92vw, 420px);
     box-sizing: border-box;
     padding: 14px 16px;

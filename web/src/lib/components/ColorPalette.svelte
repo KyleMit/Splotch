@@ -165,7 +165,7 @@
     padding: 12px;
     background: var(--surface);
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-    z-index: 1002; /* Above clear-accept-zone (1001) */
+    z-index: var(--z-palette); /* Above the clear coachmark, the tallest chrome below it */
     flex-shrink: 0;
     position: relative;
     overflow: hidden;

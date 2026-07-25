@@ -91,6 +91,41 @@ export const scale = {
   shadowSegment: '0 1px 4px rgba(0, 0, 0, 0.18)',
 } as const;
 
+// The cross-component stacking order, low to high. Scoped to "chrome" — the
+// fixed/absolute-positioned UI that can visually collide with something outside
+// its own component. Layers that are private to one component's stacking
+// context (DrawingCanvas's own 0–3 sheet/overlay stack, the close buttons on
+// the AI and coloring-book cards, the hovered palette hexagon) stay as local
+// integers: tokenizing them would imply a global relationship they don't have.
+export const zIndex = {
+  // FullscreenToggle. Absolute inside DrawingCanvas's .canvas-container, so it
+  // only has to outrank that component's internal layers (max 3) — it is NOT
+  // part of the 900+ global chrome tier below.
+  zCanvasChrome: 4,
+
+  // Clear Button drag feedback: the paper wash previewing the clear, then the
+  // confirmation ripple over it. Both are full-viewport, both sit above the
+  // canvas and below every persistent control.
+  zClearPreview: 400,
+  zRipple: 500,
+
+  zCornerButton: 900, // ParentHelpButton
+  zPanel: 901, // ActionsPanel
+  // app.css .flyout-menu (Brush Menu + Stroke Width Menu). Nested inside the
+  // panel's own stacking context, so the tie with zPanel is inert.
+  zFlyout: 901,
+  zBanner: 950, // InstallBanner — takes over the corner controls while shown
+  zClearAcceptZone: 999, // below the button it rings, so the button stays on top
+  zClearButton: 1000,
+  // Pre-existing tie with zClearButton: both are fixed, and which one paints on
+  // top is DOM order today. Preserved deliberately — resolving it is a visual
+  // change, not a rename.
+  zNotch: 1000,
+  zClearCoachmark: 1001, // the ghost button, above the real one
+  zPalette: 1002,
+  zScreenshotFlash: 10000, // app.css .polaroid-overlay
+} as const;
+
 // Themed tokens. Dark mode swaps these — and only these — so themed chrome
 // must reference colors through them. The one deliberately unthemed control
 // is the Clear Button — its red danger chrome reads the same on light or

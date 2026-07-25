@@ -397,7 +397,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    z-index: 901;
+    z-index: var(--z-panel);
   }
 
   @media (orientation: portrait) {

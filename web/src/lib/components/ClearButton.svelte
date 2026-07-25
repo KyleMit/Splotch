@@ -88,7 +88,7 @@
     position: fixed;
     top: calc(20px + env(safe-area-inset-top));
     right: calc(-10px + env(safe-area-inset-right));
-    z-index: 1000;
+    z-index: var(--z-clear-button);
     pointer-events: none; /* Allow clicks through container to children */
     transition: transform 0.4s var(--ease-pop-strong);
   }
@@ -171,7 +171,7 @@
     position: fixed;
     pointer-events: none;
     display: none;
-    z-index: 999; /* Below clear-container (1000) so the button sits on top */
+    z-index: var(--z-clear-accept-zone); /* Below .clear-container so the button sits on top */
     border-radius: 50%;
     border: 4px dashed rgba(255, 56, 56, 0.45);
     background: radial-gradient(circle, rgba(255, 56, 56, 0) 55%, rgba(255, 56, 56, 0.06) 100%);
@@ -208,7 +208,7 @@
   .clear-preview {
     position: fixed;
     inset: 0;
-    z-index: 400; /* above the canvas, below the confirmation ripple (500) */
+    z-index: var(--z-clear-preview); /* above the canvas, below the confirmation ripple */
     pointer-events: none;
     opacity: var(--clear-progress, 0);
     background: radial-gradient(
@@ -257,7 +257,7 @@
     border-radius: 50%;
     background: var(--paper, white);
     pointer-events: none;
-    z-index: 500;
+    z-index: var(--z-ripple);
     transform: translate(-50%, -50%) scale(0);
     opacity: 0;
   }

@@ -76,7 +76,7 @@ body {
      --app-bg, so the top safe-area band reads as a seamless extension of the
      bar instead of a dark line above it (stark in dark mode: --app-bg #17171d
      vs --surface #23232b). On true-notch devices the Notch Band (fixed,
-     z-index 1000) still paints the active color over this region; this only
+     --z-notch) still paints the active color over this region; this only
      recolors the shallow status-bar strip it leaves transparent. */
   background: var(--surface);
 }
@@ -266,7 +266,7 @@ body {
   border: none;
   border-radius: 16px;
   box-shadow: var(--float-shadow-flyout);
-  z-index: 901;
+  z-index: var(--z-flyout);
 }
 
 @media (orientation: portrait) {
@@ -353,7 +353,7 @@ body {
 .polaroid-overlay {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: var(--z-screenshot-flash);
   pointer-events: none;
   display: flex;
   align-items: center;
