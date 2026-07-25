@@ -7,35 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P3][design-tokens] `Button` hardcodes `font-weight: 600` and a `1px` border with no system token
-
-**File(s):** `web/src/lib/components/design/Button.svelte:36,82` — pinned at SHA f934d43
-
-#### Problem
-
-```css
-.btn { ... font-weight: 600; ... }
-.ghost { ... border: 1px solid var(--border); }
-```
-
-`600` and `1px` are raw. The token vocabulary has no font-weight or border-width scale at all, so
-the same magic weight/hairline reappears uncontrolled across components (parent buttons, admin,
-etc.). For a design system whose stated rule is "no raw values where a token exists," the gap is
-that the tokens *don't* exist for two of the most-repeated values.
-
-#### Proposed solution
-
-If `600` and `1px` recur (they do — grep confirms `font-weight: 600` across many components), mint
-`--font-weight-semibold: 600` and `--border-width: 1px` (or `--hairline`) in `scale`, regenerate,
-and reference them. If they're deemed genuinely universal constants not worth tokenizing, note that
-decision in the `design` skill so the omission is a choice, not an oversight.
-
-#### Verification
-
-`grep -rn "font-weight: 600" web/src` count before/after adoption; `/dev/design` renders unchanged.
-
----
-
 ### [P4][maintainability] `app.css` comment points to `screenshot.js`, which is now `screenshot.ts`
 
 **File(s):** `web/src/app.css:256` — pinned at SHA f934d43
