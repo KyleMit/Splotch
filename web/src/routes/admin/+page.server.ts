@@ -3,6 +3,7 @@ import { sessionToken, beginAdminLogin, verifySessionToken, buildInvites } from 
 import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
 import type { MutationResult } from '$lib/server/tokens';
 import { getUsage } from '$lib/server/usage';
+import { ASSUME_PERSISTENT } from '$lib/adminFormat';
 import type { Actions, PageServerLoad } from './$types';
 
 // Must be server-rendered: it has form actions and validates the admin secret
@@ -59,7 +60,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
     return {
       authed: false,
       hasSession,
-      persistent: true,
+      persistent: ASSUME_PERSISTENT,
       invites: [] as { token: string; url: string }[],
     };
   }

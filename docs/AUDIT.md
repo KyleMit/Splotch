@@ -7,34 +7,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P4][architecture] `persistent` defaults to `true` as a magic initial value in three unrelated spots
-
-**File(s):** `web/src/routes/admin/+page.server.ts:68`,
-`web/src/routes/admin/native/+page.svelte:18,28`,
-`web/src/lib/components/admin/AdminConsole.svelte:52` (prop) — pinned at SHA f934d43
-
-#### Problem
-
-The unauthenticated web loader returns `persistent: true` (`+page.server.ts:67`), native page state
-initializes `persistent = $state(true)` (`:18`) and resets it to `true` in `signOutLocally` (`:28`).
-Three independent "assume durable until proven otherwise" defaults with a one-line comment only at
-the loader. The choice (default *true* so the scary "Blobs unavailable" banner doesn't flash before
-the first real read) is a genuine decision, but it's re-encoded as a bare literal in each place;
-flip the intent in one and the surfaces disagree.
-
-#### Proposed solution
-
-Name it once — `const ASSUME_PERSISTENT = true` in the shared admin module (or a comment-anchored
-constant on `AdminConsole`'s prop default) — and reference it from the three seed points, so the
-rationale lives in one place.
-
-#### Verification
-
-`tests/admin.spec.ts` never shows the not-persistent banner on the login screen or before the first
-snapshot. Behavior unchanged.
-
----
-
 ### [P4][readability] Bearer-header parsing uses inline magic strings in `requireSession`
 
 **File(s):** `web/src/routes/api/admin/tokens/+server.ts:24-30` — pinned at SHA f934d43

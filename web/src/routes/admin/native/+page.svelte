@@ -4,6 +4,7 @@
   import { apiUrl } from '$lib/api';
   import { saveAdminSession, loadAdminSession, clearAdminSession } from '$lib/secureStorage';
   import { setAdminLinkVisible } from '$lib/state/settings.svelte';
+  import { ASSUME_PERSISTENT } from '$lib/adminFormat';
 
   // API-backed twin of /admin for the native apps, whose static bundle has no
   // server to run the form actions. Same console UI, but auth rides as a
@@ -15,7 +16,7 @@
   let session = $state('');
   let authed = $state(false);
   let invites = $state<Invite[]>([]);
-  let persistent = $state(true);
+  let persistent = $state(ASSUME_PERSISTENT);
   let flash = $state<Flash | null>(null);
   let loginError = $state<string | null>(null);
   // Don't flash the login form while the stored session is still being checked.
@@ -25,7 +26,7 @@
     session = '';
     authed = false;
     invites = [];
-    persistent = true;
+    persistent = ASSUME_PERSISTENT;
     loginError = message;
     setAdminLinkVisible(false);
     void clearAdminSession();
