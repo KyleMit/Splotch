@@ -362,6 +362,18 @@ through.
   (`/^[\w./-]+$/`) — anything with whitespace or shell metacharacters is dropped.
 * **Lint gate** (aed45eb7). A fix can type-check and still ship an `any` or a raw `Map` in a
   `.svelte.ts` and redden CI. `eslint` now runs on each fix's changed files.
+* **The gate ladder still misses the repo's bespoke gates, and CI catches them hours later.** The
+  2026-07-25 run reddened Quality on `npm run lint:tokens` — a *ratchet* lint that fails in **both**
+  directions. One finding hoisted AdminConsole's hex literals into `--admin-*` properties, dropping
+  its raw-hex count 49 → 34, and the ratchet demands the baseline be lowered to match; another
+  extracted the overflow modal into a new `InviteMenu.svelte`, which carried four hexes into a file
+  with no baseline entry at all. Both are correct fixes, and neither `CHECK_CMD`, `TEST_CMD`,
+  `LINT_CMD` (eslint on changed files) nor a targeted E2E spec can see either. **A fix that improves
+  a ratcheted metric fails CI exactly like a regression** — worth internalising, because the run log
+  and the per-finding gates read fully green throughout.
+  `CHECK_CMD='npm run check && npm run lint:tokens'` closes it for a run at the cost of a few
+  seconds per finding; the same hazard applies to any other bespoke `npm run lint:*`/drift gate CI
+  runs that the four default gates do not.
 * **E2E retry** (401820f5). One flaky E2E failure red-lit a whole batch and held the push; the
   re-run was fully green. `--retries=1` lets a genuine flake clear while a real regression still
   fails twice.
@@ -593,6 +605,41 @@ Two general lessons, both of which generalise past this bug:
   like a step the implementer skipped. If more post-approval driver behaviour is added, the reviewer
   prompt has to be told about it in the same change, or it will reject on the difference.
 
+### The same data loss through a second door: a stale brief (2026-07-25)
+
+The sibling of the bug above, and it survived the `deleteEntryByTitle` fix because it defeats it by
+construction. The verifier writes `.audit-work/current-brief.md` itself; twice now it has returned
+`VALID` **without writing one**, leaving the *previous* finding's brief on disk while
+`current-issue.md` names the new finding. The implementer then opens a brief for work that has
+already landed.
+
+Both occurrences were caught only because the implementer noticed and refused to commit — the second
+one reasoning that a commit "would be attributed to — and would delete by title — an unfixed
+finding". Had it simply executed the stale brief, it would have committed a no-op or a duplicate and
+the driver would have deleted *this* finding's entry on approval. `deleteEntryByTitle` is no
+defence: the title it is handed really is the current finding's, and that entry really is present.
+**The title-keyed delete fixed the case where a role deletes the wrong entry, not the case where the
+driver deletes the right entry for the wrong work.**
+
+Fixed by `briefIsStale(issueWrittenAtMs, briefMtimeMs)` in `lib.mjs`, checked between the `VALID`
+verdict and the implementer call; a stale or missing brief defers as
+`verifier gave no usable
+brief`.
+
+**Why mtime rather than the identity check these notes originally proposed.** The obvious design —
+have the verifier write the finding's title into the brief and have the driver compare — needs the
+verifier's cooperation, and *a role that skipped writing the file would skip the title too*. The
+guard would be absent in exactly the case it exists for. The driver writes `current-issue.md` itself
+and the verifier only runs afterwards, so comparing the two mtimes uses facts the driver owns
+outright. Equal timestamps count as stale: a false deferral is cheap, a mis-attributed commit is
+not.
+
+Note this was fixed **without** reproducing the root cause, reversing what these notes previously
+recommended. Why the verifier skips the write on a `VALID` verdict is still unknown — but the guard
+does not depend on knowing, and a second occurrence inside a five-finding canary (~14%) made waiting
+for a reproduction the more expensive option. The root cause is still open; the data-loss path is
+not.
+
 ### Smaller frictions from the same run (2026-07-25)
 
 Three things that cost time without breaking anything, all fixed in the same pass:
@@ -687,12 +734,22 @@ operator error rather than design.
   minutes old, and the correction cost a round trip. The clamp itself was already documented; that
   it is not a clock was not.
 * **The unsigned-commit hook fires every turn and its remedy is actively dangerous here.** The
-  container sets `commit.gpgsign=true` / `gpg.format=ssh` with a **zero-byte** key file, so commits
-  are `%G? = N` and GitHub marks them Unverified. The identity is already
-  `Claude <noreply@anthropic.com>`, so only the unfixable half of the hook's message applies — and
-  its suggested `--amend --reset-author` / `rebase --exec` would race the driver's own `--amend`
-  mid-run and, on a run with hundreds of pushed commits, demand a force-push to fix nothing. Worth
-  documenting purely so the next session spends one sentence on it instead of investigating.
+  identity is already `Claude <noreply@anthropic.com>`, and its suggested `--amend --reset-author` /
+  `rebase --exec` would race the driver's own `--amend` mid-run and, on a run with hundreds of
+  pushed commits, demand a force-push. Worth documenting purely so the next session spends one
+  sentence on it instead of investigating.
+
+  **The mechanism recorded here on 2026-07-25 was wrong, and it is a clean instance of principle 1
+  turning up inside these notes themselves.** The original claim — a zero-byte key file means
+  commits are unsigned — was inferred from `ls` on `user.signingkey` plus the hook's own wording,
+  and never checked against a commit object. Checked on 2026-07-25: commits **are** signed
+  (`git cat-file commit HEAD` shows `gpgsig -----BEGIN SSH SIGNATURE-----`). Signing is delegated to
+  `gpg.ssh.program=/tmp/code-sign`, a session-provisioned symlink to the environment manager, and
+  the 0-byte `.pub` is a placeholder that program ignores. What actually fails is *local
+  verification*: `gpg.ssh.allowedSignersFile` is unset, so `%G?` cannot check an SSH signature and
+  returns `N`, which the hook reports as a missing signature. The practical advice was unchanged by
+  any of this — which is exactly why the wrong mechanism survived three sessions of being repeated
+  back to the user as fact.
 
 The through-line: **most of these are the supervising agent mistaking its own footprint for the
 run's state.** The driver is deliberately independent of the conversation, and the cost of that
@@ -925,26 +982,6 @@ in `EFFORT_IMPL`, comparing deferral rate, wall-clock, and `audit:cost` per role
 A 20-finding sample is badly powered — findings are not homogeneous, and a canary that happens to
 draw three P1 refactors is not comparable to one drawing P4 renames. A full run also re-baselines
 the stale timing table for free.
-
-### 3. The verifier can return VALID without writing its brief — unfixed
-
-Observed once on 2026-07-25 (canary `iter0006`). The verifier marked a finding `VALID` and the
-driver advanced `current-issue.md`, but `current-brief.md` was never rewritten, so the implementer
-opened the *previous* finding's brief — whose work had already landed. It noticed the mismatch and
-refused to commit, reasoning that any commit "would be attributed to — and would delete by title —
-an unfixed finding".
-
-**That refusal is a prompt-level backstop, not a guarantee.** Had the implementer simply executed
-the stale brief, it would have committed a no-op (or a duplicate) and the driver would have deleted
-*this* finding's entry by title on approval — the same shape as the f389dd39 data-loss bug, arriving
-through a different door. `deleteEntryByTitle` does not help here: the title it is handed *is* the
-current finding's, and the entry really is present.
-
-The fix is structural and cheap: make the brief's identity checkable. Have the verifier write the
-finding title into `current-brief.md` and have the driver refuse to proceed when it does not match
-`current-issue.md` — a deferral (`verifier gave no usable brief`) instead of a silent
-mis-attribution. Not yet implemented; the root cause (why the write was skipped on a `VALID`
-verdict) has not been reproduced either, and reproducing it should come first.
 
 ### 4. Smaller, unvalidated
 

@@ -26,11 +26,15 @@
     kind: 'success' | 'error';
     text: string;
   }
+  export type CopyTarget = 'code' | 'url';
+  export const copyKey = (token: string, target: CopyTarget) => `${token}:${target}`;
 </script>
 
 <script lang="ts">
   import Icon from '../Icon.svelte';
   import Breadcrumb from '../Breadcrumb.svelte';
+  import InviteMenu from './InviteMenu.svelte';
+  import { timeAgo, usageDetail } from '$lib/adminFormat';
 
   let {
     authed,
@@ -96,35 +100,6 @@
     });
   }
 
-  // Compact "3 days ago" label for a last-used timestamp, falling back to a
-  // plain date if the value won't parse.
-  function timeAgo(iso: string) {
-    const then = new Date(iso).getTime();
-    if (Number.isNaN(then)) return '';
-    const secondsAgo = Math.round((Date.now() - then) / 1000);
-    const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
-    const units: [Intl.RelativeTimeFormatUnit, number][] = [
-      ['year', 31_536_000],
-      ['month', 2_592_000],
-      ['week', 604_800],
-      ['day', 86_400],
-      ['hour', 3_600],
-      ['minute', 60],
-    ];
-    for (const [unit, secs] of units) {
-      if (Math.abs(secondsAgo) >= secs) return rtf.format(-Math.round(secondsAgo / secs), unit);
-    }
-    return rtf.format(-secondsAgo, 'second');
-  }
-
-  // Detail shown on hover/long-press, for auditing a token that looks busy.
-  function usageDetail(usage: Usage) {
-    const parts = [`First used ${new Date(usage.firstUsed).toLocaleString()}`];
-    if (usage.lastStyle) parts.push(`Last style: ${usage.lastStyle}`);
-    if (usage.lastPrompt) parts.push(`Last prompt: ${usage.lastPrompt}`);
-    return parts.join('\n');
-  }
-
   // Per-button "copied" feedback. The key distinguishes which cell flashed
   // (e.g. `token:code` vs `token:url`) so only the clicked button reacts.
   let copied = $state('');
@@ -140,23 +115,13 @@
     }
   }
 
-  // The narrow layout collapses the per-row actions into a single "Copy" plus a
-  // "⋯" button that opens this modal sheet — the same Copy code / Copy link /
-  // Remove actions, just one tap deeper. `menuInvite` is the row it belongs to.
+  // The row the overflow menu belongs to, or null when it's closed.
   let menuInvite = $state<Invite | null>(null);
-  let menuEl = $state<HTMLDialogElement>();
+  let inviteMenu = $state<ReturnType<typeof InviteMenu>>();
 
   function openMenu(invite: Invite) {
     menuInvite = invite;
-    menuEl?.showModal();
-  }
-  function closeMenu() {
-    menuEl?.close();
-  }
-  // A click whose target is the <dialog> itself (not its content) landed on the
-  // ::backdrop, so dismiss.
-  function onMenuClick(event: MouseEvent) {
-    if (event.target === menuEl) closeMenu();
+    inviteMenu?.open();
   }
 </script>
 
@@ -279,18 +244,18 @@
                   <button
                     type="button"
                     class="btn btn-ghost"
-                    class:copied={copied === `${invite.token}:code`}
-                    onclick={() => copy(`${invite.token}:code`, invite.token)}
+                    class:copied={copied === copyKey(invite.token, 'code')}
+                    onclick={() => copy(copyKey(invite.token, 'code'), invite.token)}
                   >
-                    {copied === `${invite.token}:code` ? 'Copied!' : 'Copy code'}
+                    {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy code'}
                   </button>
                   <button
                     type="button"
                     class="btn btn-ghost"
-                    class:copied={copied === `${invite.token}:url`}
-                    onclick={() => copy(`${invite.token}:url`, invite.url)}
+                    class:copied={copied === copyKey(invite.token, 'url')}
+                    onclick={() => copy(copyKey(invite.token, 'url'), invite.url)}
                   >
-                    {copied === `${invite.token}:url` ? 'Copied!' : 'Copy link'}
+                    {copied === copyKey(invite.token, 'url') ? 'Copied!' : 'Copy link'}
                   </button>
                   <button
                     type="button"
@@ -307,10 +272,10 @@
                   <button
                     type="button"
                     class="btn btn-ghost"
-                    class:copied={copied === `${invite.token}:code`}
-                    onclick={() => copy(`${invite.token}:code`, invite.token)}
+                    class:copied={copied === copyKey(invite.token, 'code')}
+                    onclick={() => copy(copyKey(invite.token, 'code'), invite.token)}
                   >
-                    {copied === `${invite.token}:code` ? 'Copied!' : 'Copy'}
+                    {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
                   </button>
                   <button
                     type="button"
@@ -329,50 +294,14 @@
     {/if}
   </main>
 
-  <dialog
-    class="more-menu"
-    bind:this={menuEl}
-    onclick={onMenuClick}
+  <InviteMenu
+    bind:this={inviteMenu}
+    invite={menuInvite}
+    {busy}
+    oncopy={copy}
+    onremove={(token) => run(() => onremove(token))}
     onclose={() => (menuInvite = null)}
-  >
-    {#if menuInvite}
-      {@const inv = menuInvite}
-      <div class="more-menu-card">
-        <p class="more-menu-title">{inv.token}</p>
-        <button
-          type="button"
-          class="more-menu-item"
-          onclick={() => {
-            copy(`${inv.token}:code`, inv.token);
-            closeMenu();
-          }}
-        >
-          Copy code
-        </button>
-        <button
-          type="button"
-          class="more-menu-item"
-          onclick={() => {
-            copy(`${inv.token}:url`, inv.url);
-            closeMenu();
-          }}
-        >
-          Copy link
-        </button>
-        <button
-          type="button"
-          class="more-menu-item more-menu-item-danger"
-          disabled={busy}
-          onclick={() => {
-            closeMenu();
-            run(() => onremove(inv.token));
-          }}
-        >
-          Remove
-        </button>
-      </div>
-    {/if}
-  </dialog>
+  />
 </div>
 
 <style>
@@ -387,6 +316,15 @@
      is a normal scrollable, selectable, zoomable document — the drawing-route
      app-surface locks (app.css) don't reach this route, so no opt-out is needed. */
   .admin-page {
+    --admin-accent: #7c4dcf;
+    --admin-accent-hover: #6b3fbe;
+    --admin-accent-tint: #f5f0fc;
+    --admin-accent-tint-strong: #f0e9fb;
+    --admin-accent-tint-hover: #ece0fb;
+    --admin-hairline: #f0f0f0;
+    --admin-ink-muted: #666;
+    --admin-ink-subtle: #757575;
+
     position: fixed;
     inset: 0;
     overflow-y: auto;
@@ -421,8 +359,9 @@
     width: 52px;
     height: 52px;
     border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, var(--brand), #7c4dcf);
+    background: linear-gradient(135deg, var(--brand), var(--admin-accent));
     box-shadow: 0 6px 16px rgba(124, 77, 207, 0.35);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--admin-accent) 35%, transparent);
     flex-shrink: 0;
   }
 
@@ -441,7 +380,7 @@
 
   .subtitle {
     margin: 2px 0 0;
-    color: #666;
+    color: var(--admin-ink-muted);
     font-size: 15px;
     font-weight: 500;
   }
@@ -522,8 +461,8 @@
     height: 24px;
     padding: 0 8px;
     border-radius: var(--radius-pill);
-    background: #f0e9fb;
-    color: #7c4dcf;
+    background: var(--admin-accent-tint-strong);
+    color: var(--admin-accent);
     font-size: var(--font-size-sm);
     font-weight: 700;
   }
@@ -605,7 +544,7 @@
   .btn-primary {
     padding: 11px 18px;
     color: #fff;
-    background: #7c4dcf;
+    background: var(--admin-accent);
     flex-shrink: 0;
   }
 
@@ -613,19 +552,19 @@
      keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
     .btn-primary:hover {
-      background: #6b3fbe;
+      background: var(--admin-accent-hover);
     }
   }
 
   .btn-ghost {
     padding: 8px 14px;
-    color: #7c4dcf;
-    background: #f5f0fc;
+    color: var(--admin-accent);
+    background: var(--admin-accent-tint);
   }
 
   @media (hover: hover) {
     .btn-ghost:hover {
-      background: #ece0fb;
+      background: var(--admin-accent-tint-hover);
     }
   }
 
@@ -660,7 +599,7 @@
 
   @media (hover: hover) {
     .btn-icon:hover {
-      background: #f0f0f0;
+      background: var(--admin-hairline);
     }
   }
 
@@ -683,7 +622,7 @@
     justify-content: space-between;
     gap: 12px;
     padding: 14px 4px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--admin-hairline);
   }
 
   .invite:last-child {
@@ -711,11 +650,11 @@
   .usage {
     font-size: 12.5px;
     font-weight: 500;
-    color: #666;
+    color: var(--admin-ink-muted);
   }
 
   .usage strong {
-    color: #7c4dcf;
+    color: var(--admin-accent);
     font-weight: 700;
   }
 
@@ -726,7 +665,7 @@
 
   .usage-none {
     font-style: italic;
-    color: #757575;
+    color: var(--admin-ink-subtle);
   }
 
   .invite-actions {
@@ -746,82 +685,12 @@
     display: none;
   }
 
-  /* Modal sheet opened by the "⋯" button on narrow screens. */
-  .more-menu {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    margin: 0;
-    width: min(340px, calc(100vw - 48px));
-    padding: 0;
-    border: none;
-    border-radius: 18px;
-    background: #fff;
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
-  }
-
-  .more-menu::backdrop {
-    background: rgba(20, 16, 30, 0.45);
-  }
-
-  .more-menu-title {
-    margin: 0;
-    padding: 16px 20px 12px;
-    font-size: var(--font-size-xs);
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #757575;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  .more-menu-item {
-    display: block;
-    width: 100%;
-    padding: 16px 20px;
-    text-align: left;
-    font-family: inherit;
-    font-size: var(--font-size-lg);
-    font-weight: 600;
-    color: #7c4dcf;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid #f0f0f0;
-    cursor: pointer;
-  }
-
-  .more-menu-item:last-child {
-    border-bottom: none;
-  }
-
-  @media (hover: hover) {
-    .more-menu-item:hover {
-      background: #faf7ff;
-    }
-  }
-
-  .more-menu-item-danger {
-    color: #d92d20;
-  }
-
-  @media (hover: hover) {
-    .more-menu-item-danger:hover {
-      background: #fff5f5;
-    }
-  }
-
-  .more-menu-item:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
-
   /* Empty state. #666, not #999: 2.85:1 on the white card is an axe serious
      the suite can't see (the logged-in scan populates a row first). */
   .empty {
     text-align: center;
     padding: 24px 12px;
-    color: #666;
+    color: var(--admin-ink-muted);
   }
 
   :global(.empty .empty-icon) {

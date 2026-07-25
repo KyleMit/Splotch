@@ -165,7 +165,7 @@ export const TOKEN_CONFLICT_ERROR = 'The token list changed while saving — ple
 // string is UX copy and rewording it must never change behaviour.
 export type MutationFailure = { ok: false; error: string; reason: 'invalid' | 'conflict' };
 
-type MutationResult = { ok: true; tokens: string[] } | MutationFailure;
+export type MutationResult = { ok: true; tokens: string[] } | MutationFailure;
 
 type Transform = (
   list: string[]

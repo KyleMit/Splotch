@@ -2,7 +2,7 @@ import { error, json } from '@sveltejs/kit';
 import { verifySessionToken, buildInvites } from '$lib/server/admin';
 import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
 import type { MutationFailure } from '$lib/server/tokens';
-import { readJsonBody } from '$lib/server/http';
+import { readJsonBody, stringField } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 // JSON twin of the /admin console's token management, for clients that can't
@@ -66,7 +66,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
   requireSession(request);
 
   const body = await readJsonBody(request);
-  const result = await addToken(typeof body?.token === 'string' ? body.token : '');
+  const result = await addToken(stringField(body, 'token'));
   if (!result.ok) return mutationError(result);
   return snapshot(url.origin, result.tokens);
 };
@@ -76,7 +76,7 @@ export const DELETE: RequestHandler = async ({ request, url }) => {
   requireSession(request);
 
   const body = await readJsonBody(request);
-  const result = await removeToken(typeof body?.token === 'string' ? body.token : '');
+  const result = await removeToken(stringField(body, 'token'));
   if (!result.ok) return mutationError(result);
   return snapshot(url.origin, result.tokens);
 };

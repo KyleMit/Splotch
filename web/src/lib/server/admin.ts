@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { rateLimit } from './rateLimit';
+import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 
 // Shared admin-auth core used by both front doors into token management:
 // the server-rendered /admin console (cookie session, form actions) and the
@@ -9,6 +10,9 @@ import { rateLimit } from './rateLimit';
 // derive the same session token, so a session minted by either is honored by
 // both — the only difference is the transport (HTTP-only cookie vs.
 // Authorization header).
+
+export const SESSION_LABEL = 'admin-session-v1';
+const HMAC_ALG = 'sha256';
 
 // The session credential is HMAC-SHA256(key = ADMIN_ACCESS_TOKEN,
 // "admin-session-v1") rather than the secret verbatim. It's a deterministic,
@@ -21,7 +25,7 @@ import { rateLimit } from './rateLimit';
 export function sessionToken() {
   const secret = env.ADMIN_ACCESS_TOKEN;
   if (!secret) return '';
-  return createHmac('sha256', secret).update('admin-session-v1').digest('hex');
+  return createHmac(HMAC_ALG, secret).update(SESSION_LABEL).digest('hex');
 }
 
 // Constant-time secret comparison. The length check happens first and is not
@@ -78,6 +82,6 @@ export function verifySessionToken(token: string | undefined) {
 export function buildInvites(tokens: string[], origin: string) {
   return tokens.map((token) => ({
     token,
-    url: `${origin}/?ai_access_token=${encodeURIComponent(token)}`,
+    url: `${origin}/?${AI_ACCESS_TOKEN_PARAM}=${encodeURIComponent(token)}`,
   }));
 }
