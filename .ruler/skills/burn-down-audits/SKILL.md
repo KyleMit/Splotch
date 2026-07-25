@@ -32,7 +32,9 @@ consequences worth internalising before touching the driver:
 * **State is `docs/AUDIT.md` plus git.** A finding's entry is deleted in the *same commit* as its
   fix, so the file is always an exact record of remaining work and a crash mid-run leaves nothing to
   reconcile. Re-running resumes where it stopped. Everything else (`.audit-work/`) is disposable,
-  gitignored working state.
+  gitignored working state — which cuts both ways: it is safe to delete and safe from the driver's
+  `git reset --hard` rollback, but it does not survive a fresh clone, so nothing that *only* lives
+  there (a `PUSH_TEST_CMD` wrapper, `compact-snapshot.md`) can be the sole record of anything.
 
 No agent — including you — should read or edit `docs/AUDIT.md` directly at burndown scale (~19k
 lines): `scripts/audit-burndown/pop.mjs` is the only thing that touches it (`--count`, print,
@@ -71,6 +73,9 @@ MODEL_REVIEW=claude-opus-5
 BUDGET_VERIFY=3.00    # --max-budget-usd per call; verify is code-read-heavy — see Tuning & lessons
 BUDGET_IMPL=4.00
 BUDGET_REVIEW=3.00
+EFFORT_VERIFY=medium  # --effort per role; the main wall-clock lever — see Tuning & lessons
+EFFORT_IMPL=high
+EFFORT_REVIEW=medium
 ```
 
 ### The layered test gate — why type-checking isn't enough
@@ -79,11 +84,10 @@ Unattended, the expensive failure is a fix that type-checks but breaks a test an
 verification is layered by cost, catching a regression as early — and as attributed to one finding —
 as possible:
 
-* **Every finding**, after the adversarial review approves, the driver itself re-runs `CHECK_CMD`
-  **and** `TEST_CMD` (fast unit tests) **and** `LINT_CMD` on the files the fix changed — it does not
-  trust the role prompts to have run them. A red result rolls the fix back and defers the finding
-  rather than committing it. Keep `TEST_CMD` fast (unit only). The lint gate exists because a
-  type-check is a different axis from eslint: a fix can pass `CHECK_CMD` yet ship a stray `any`
+* **Every finding, at the top of every review round**, the driver itself runs `CHECK_CMD` **and**
+  `TEST_CMD` (fast unit tests) **and** `LINT_CMD` on the files the fix changed — it does not trust
+  the role prompts to have run them. Keep `TEST_CMD` fast (unit only). The lint gate exists because
+  a type-check is a different axis from eslint: a fix can pass `CHECK_CMD` yet ship a stray `any`
   (`@typescript-eslint/no-explicit-any`) or a raw `Map` in a `.svelte.ts`
   (`prefer-svelte-reactivity`) — both slipped an early run onto the branch and reddened CI's Quality
   (lint) job.
@@ -93,7 +97,7 @@ as possible:
   paying full-suite E2E on all 600 findings — only the fraction with a runtime surface run E2E, and
   only their relevant spec. A pure refactor / script / doc finding names no specs and skips it. The
   verifier writes the specs into both `e2e_specs` and the acceptance criteria, so the implementer
-  and reviewer run them too; a red spec rolls the fix back and defers it.
+  runs them too.
 * **Every batch**, right before the push, the driver runs `PUSH_TEST_CMD` (the full `npm test`,
   including the whole E2E suite) as a catch-all for cross-finding interactions the per-finding specs
   can't see. A red batch is **not pushed** — the commits stay local and the push retries at the next
@@ -101,9 +105,23 @@ as possible:
   of shipping. (When pushing to a draft PR whose CI already runs the full suite per push, you can
   set `PUSH_TEST_CMD` to the fast suites and let CI be the E2E backstop.)
 
+**The gates run *before* the review, not after it** — and that ordering does two jobs at once. A red
+gate becomes a **fix round** the implementer can still recover from (it is holding the same session)
+instead of discarding a finished finding at the very end; and the reviewer only ever sees a commit
+that already passes, so it does not re-run any of this. Re-running was the single largest slice of
+review wall-clock and could only ever confirm what the driver already knew. The reviewer therefore
+has **no `npm`/`npx` in its tool scope at all** — the constraint is structural, not a request in the
+prompt — and its brief is the part no test run can do: reading the diff for behaviour smuggled
+inside a refactor, stragglers left by a rename, and changed behaviour that nothing covers.
+
 The reviewer is also handed the **original finding**, not just the verifier's acceptance criteria,
 so it can reject a fix that satisfies mis-scoped criteria while missing what the finding asked for —
 the verifier is the one role with no independent check.
+
+A deferral now names the role that actually failed: `fix broke the test suite` /
+`fix broke a targeted E2E spec` / `fix introduced a lint violation` / `fix broke the type-check` for
+a gate that never went green, `implementer failed to deliver a fix round`, `reviewer unavailable`,
+and `failed adversarial review` **only** when a reviewer genuinely rejected the work.
 
 ### Per-commit PR comments
 
@@ -158,12 +176,13 @@ this is only about SHAs.)
      is free to drift.
    * A narrowed type whose invalid-input tests were made to compile with `as` casts; confirm the
      runtime guard those tests exercise still exists.
-3. **Confirm the resume handoff actually fired.** Rejections happen on their own — a typical run
-   logs `round 1: changes required` every few findings — so read one instead of staging one. Find a
-   `round N: changes required` in the canary's log, open that iteration's `fix1.json`, and confirm
-   the resumed implementer references its own earlier work rather than re-deriving the change from
-   the review text. That handoff is the whole design. Only if the canary produced no rejection at
-   all is it worth forcing one with a deliberately vague brief.
+3. **Confirm the resume handoff actually fired.** Extra rounds happen on their own — a typical run
+   logs `round 1: changes required` (a reviewer rejection) or `round 1: gates red — …` (a red gate,
+   which is now also a recoverable round) every few findings — so read one instead of staging one.
+   Find either line in the canary's log, open that iteration's `fix1.json`, and confirm the resumed
+   implementer references its own earlier work rather than re-deriving the change from the feedback
+   text. That handoff is the whole design. Only if the canary produced no extra round at all is it
+   worth forcing one with a deliberately vague brief.
 4. `npm run audit:cost` — multiply the per-issue average by the backlog before committing to a full
    run.
 5. `npm run audit:burndown:overnight -- 600`.
@@ -198,6 +217,14 @@ not by touching the process. Four verbs, each a fixed procedure. Never hand-edit
 the running process; only use the signals below. All four leave a resumable end state (state is
 `docs/AUDIT.md` + git + the draft PR), so this session or a brand-new one can carry out any of them.
 
+Do the verb you were given, at the scope it implies, and stop there — a status request is a status
+report, not an investigation, and something adjacent you notice is worth one sentence in your reply
+rather than a detour into fixing it. If the run's setup looks wrong or a better approach exists, say
+so and carry out the verb as asked. Delegate to a subagent only to keep a large diagnostic read (a
+multi-run `run.log` sweep, a per-finding envelope) out of this context — that is what protects the
+window you are trying to conserve. Never delegate to double-check the driver, and never for work
+that is a handful of tool calls.
+
 ### "status" — report without interrupting anything
 
 Read-only: do **not** touch the STOP file or the process. Run `npm run audit:status` and relay the
@@ -215,6 +242,11 @@ caps normally terminate a runaway call on their own near these ceilings. **Prior
 hard** — with `MODEL_IMPL_MINOR` tiering on, P4/P5 findings land in 3–5 min while a P1 refactor that
 takes two fix rounds runs 20–30 and is still healthy. Check the finding's `[P<n>]` tag before
 reading a duration as slow; the table above describes a mid-priority finding, not every finding.
+
+> These figures were measured **before** the `EFFORT_*` knobs and the gate reordering (which
+> together cut a full suite run out of every review round), so they are now a conservative ceiling
+> rather than a norm. Re-baseline them from the first long run under the new defaults and update
+> this table.
 
 * **Within normal** → just report it; do nothing.
 * **Watch band (maybe too long)** → don't intervene yet. Schedule **one** re-check a few minutes out
@@ -291,10 +323,13 @@ next natural boundary. Reserve the interrupt for work being silently lost.
 
 ## Surviving the context window (supervising a 100+-finding run)
 
-A full run is many hours; you — the supervising agent — will not last it in one context window. But
-the driver is a **subprocess** that needs none of your conversation: its state is `docs/AUDIT.md` +
-git + `.audit-work/` + the draft PR, so it keeps running (and a fresh context can take over) no
-matter what happens to yours. Exploit that — hold **no** orchestration state in the conversation:
+A full run is many hours — longer than one supervising context, even on Opus 5's 1M-token window
+(confirmed live: Claude Code reports `contextWindow: 1000000` for `claude-opus-5`, so the ceiling is
+further off than it used to be, but a 13–16h run still outlasts it). Plan for the handover rather
+than hoping to avoid it. The driver is a **subprocess** that needs none of your conversation: its
+state is `docs/AUDIT.md` + git + `.audit-work/` + the draft PR, so it keeps running (and a fresh
+context can take over) no matter what happens to yours. Exploit that — hold **no** orchestration
+state in the conversation:
 
 * The moment you know them, write everything needed to launch, monitor, and close out to a **durable
   file** and keep it current: the exact **relaunch command** (with every non-default override), the
@@ -309,7 +344,34 @@ matter what happens to yours. Exploit that — hold **no** orchestration state i
   session has to reconstruct it by grepping old `run.log` lines for the command that ran.
 * Because all state is on disk, **compaction is lossless** — compact proactively (or let
   auto-compact fire) when the context fills, rather than letting the window overflow mid-run. Don't
-  wait to be forced.
+  wait to be forced. A `PreCompact` hook (`.claude/hooks/precompact-burndown-snapshot.sh`) backstops
+  this automatically: whenever a run is in flight or left work owed, it writes
+  **`.audit-work/compact-snapshot.md`** — the relaunch command the driver recorded once its
+  preflight gates passed, `audit:status`, which run-log monitors are actually running, and the
+  current run's log tail. It no-ops otherwise and never blocks compaction. A companion
+  `SessionStart` hook (matcher `compact`, `.claude/hooks/session-start-burndown-snapshot.sh`) is
+  what actually *tells* the next session the snapshot is there — `PreCompact` has no
+  `additionalContext` support, so its own stdout reaches the transcript but never the
+  post-compaction model.
+* **Read `.audit-work/compact-snapshot.md` first** when you come back to a burndown with no memory
+  of starting it — after a compaction, or as a fresh session. It is the most concrete account of how
+  the run was launched. But it is **point-in-time, not live**: it is rewritten only when compaction
+  fires, never when the run's state changes. A clean finish deletes it, and the `SessionStart` hook
+  stays quiet about one older than a day with no driver running — but a hard-killed run leaves a
+  snapshot that can still assert "a run is IN FLIGHT" hours later. Check its header timestamp, and
+  confirm any pid it names is still alive (`ps -p <pid>`) before acting on that claim. Its other
+  limit: it lives in gitignored `.audit-work/`, so it is **machine-local** and absent on a fresh
+  clone. The order to trust:
+
+  1. `npm run audit:status` + git + the PR — always authoritative for counts, what landed, and
+     whether anything is actually running. Tells you nothing about *how the run was launched*.
+  2. `.audit-work/compact-snapshot.md` — the most specific record of the launch, and the only one
+     with the log tail; same machine only, and only as of its timestamp.
+  3. The durable checkpoint (`project` memory / `docs/handoff/` packet) — survives a clone, but only
+     as current as the last time someone updated it.
+
+  The first two answer different questions, which is why the ordering flipped: ask `audit:status`
+  what is true *now*, and the snapshot how the run was *started*.
 * Keep the supervising context small so it lasts: monitor the run **event-driven** — not by polling
   `audit:status` in a loop, and don't read per-finding logs or the PR back unless you're diagnosing
   something specific. Watch for every terminal *and* degraded state, so silence really does mean
@@ -326,7 +388,9 @@ matter what happens to yours. Exploit that — hold **no** orchestration state i
 
 The whole run is reconstructable from git + the draft PR + `docs/AUDIT.md`, so a session that dies
 mid-run — or a completely fresh session, even a fresh clone on another machine with no
-`.audit-work/` — can pick up exactly where it stopped. Relaunch with the overnight launcher
+`.audit-work/` — can pick up exactly where it stopped. **On the same machine, start by reading
+`.audit-work/compact-snapshot.md`** (see above) — it carries the launch command verbatim, which is
+the one thing the git/PR/`AUDIT.md` triad cannot tell you. Then relaunch with the overnight launcher
 (`npm run audit:burndown:overnight -- <n>`), which sets `RESUME=1`; startup then reconciles state
 before touching a finding:
 
@@ -368,9 +432,33 @@ Notes from real runs — set these before a large run rather than discovering th
   → halt) and resumes cleanly on relaunch. Size a run by wall-clock and usage, not the dollar
   figure.
 * **Scoping is correct; the wall-clock is inherent.** verify=Sonnet 5 (cheap confirm + brief),
-  impl=Opus 5, review=Opus 5 (adversarial). ~8–10 min/finding is three sequential LLM roles plus
-  independent test gates — and the reviewer running the tests *itself* rather than trusting the
-  author is the whole point, so that redundancy stays. A ~100-finding chunk is ~13–16h.
+  impl=Opus 5, review=Opus 5 (adversarial). Most of a finding's elapsed time is three sequential LLM
+  roles plus the driver's independent gates, and that shape is the design rather than overhead. What
+  *was* overhead — the reviewer re-running the same suite the driver had just run — is gone; see the
+  gate-ordering note above.
+* **The loop is tuned for Opus 5 specifically** (per Anthropic's `prompting-claude-opus-5` guidance,
+  2026-07). Three things follow from that model's documented behaviour, and all three are worth
+  re-reading before swapping a role onto a different model:
+  * **`--effort` is the wall-clock lever, and it governs tool calls too** — not just thinking depth,
+    so a lower level also means fewer tool calls. Defaults: `EFFORT_VERIFY=medium`,
+    `EFFORT_IMPL=high`, `EFFORT_REVIEW=medium`. Verify does not go lower because an `INVALID`
+    verdict *deletes a finding permanently* — the one role whose mistakes are unrecoverable. Review
+    sits at `medium` on the documented finding that Opus 5's review accuracy holds at reduced
+    effort, with the deterministic gates as the backstop. Raise both to `high` for a run where
+    correctness dominates and you are willing to pay the hours.
+  * **Every role is hard-restricted with `--tools`.** `--allowedTools` only pre-approves a tool, it
+    does not remove one: without `--tools`, every role could still reach `Agent` and `Workflow` and
+    fan out into subagents — and Opus 5 delegates markedly more readily than earlier models. A role
+    that starts spawning agents burns its whole `BUDGET_*` before doing any work, and budget caps
+    are already this driver's main deferral source. (Verified empirically: with `--tools` set,
+    `Agent`/`Workflow`/`WebFetch` are absent from the session's tool list entirely.)
+  * **Don't re-add "verify your work" instructions to the role prompts.** Opus 5 self-verifies
+    unprompted; explicit re-check instructions compound with that and cost tokens without improving
+    results. The load-bearing part is telling a role *which* commands the driver gates on — it
+    cannot guess `npm run test:unit` over `npm test` — not instructing it to check twice. The
+    separate adversarial reviewer is a different thing and stays: it is a blind writer-verifier
+    pair, which is a pattern Opus 5 is documented as good at, and unlike self-verification it
+    returns a typed verdict the driver can actually act on.
 * **The opus roles are pinned to the explicit `claude-opus-5` id, not the `opus` alias.** The `opus`
   alias can lag a fresh release (it still resolved to `claude-opus-4-8` right after Opus 5 shipped),
   so pinning the id is what actually puts impl/review on Opus 5; `sonnet` already resolves to Sonnet

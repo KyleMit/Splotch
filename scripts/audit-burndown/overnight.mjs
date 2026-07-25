@@ -12,7 +12,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { openSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { hasCommand, sleep } from '../lib/utils.mjs';
-import { chdirRoot, ensureWorkDirs, LOGS, runCmd, WORK } from './lib.mjs';
+import { chdirRoot, ensureWorkDirs, LAUNCH_KNOBS, LOGS, runCmd, shellQuote, WORK } from './lib.mjs';
 
 chdirRoot();
 ensureWorkDirs();
@@ -42,28 +42,9 @@ rmSync(join(WORK, 'STOP'), { force: true });
 // arbitrary environment, so an override like E2E_CMD would silently vanish under
 // tmux and the run would use defaults (e.g. hit the flaky-screenshot gate and
 // never push). Baking them into the command makes overrides work on both paths.
-const KNOBS = [
-  'RESUME',
-  'PUSH_EVERY',
-  'BRANCH',
-  'CHECK_CMD',
-  'TEST_CMD',
-  'E2E_CMD',
-  'LINT_CMD',
-  'PUSH_TEST_CMD',
-  'MAX_DEFERRALS',
-  'RETRIES',
-  'MODEL_VERIFY',
-  'MODEL_IMPL',
-  'MODEL_IMPL_MINOR',
-  'MODEL_REVIEW',
-  'BUDGET_VERIFY',
-  'BUDGET_IMPL',
-  'BUDGET_REVIEW',
-];
-const shq = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
-const forwarded = KNOBS.filter((k) => process.env[k] != null).map(
-  (k) => `${k}=${shq(process.env[k])}`
+// The list lives in lib.mjs because burndown.mjs needs the same one.
+const forwarded = LAUNCH_KNOBS.filter((knob) => process.env[knob] != null).map(
+  (knob) => `${knob}=${shellQuote(process.env[knob])}`
 );
 
 // -i prevents idle system sleep, -m keeps the disk awake, -s prevents system

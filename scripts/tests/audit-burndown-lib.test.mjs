@@ -12,9 +12,12 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   countEntries,
+  DEFAULT_MAX_ISSUES,
+  deferralReason,
   deleteFirstEntry,
   findingPriority,
   getEntry,
+  launchCommand,
   resolveImplSha,
 } from '../audit-burndown/lib.mjs';
 
@@ -202,5 +205,92 @@ describe('resolveImplSha', () => {
   it('stays empty when HEAD never moved, so a genuine no-op still defers', () => {
     expect(resolveImplSha({ reported: '', head: baseSha, baseSha })).toBe('');
     expect(resolveImplSha({ reported: '', head: '', baseSha })).toBe('');
+  });
+});
+
+// The reason lands in a docs/AUDIT-DEFERRED.md commit message that someone
+// reads months later to decide whether to re-stage the finding. Attributing a
+// tooling failure to the reviewer sends them hunting a quality problem that
+// never existed — the same bug class that already bit this driver twice.
+describe('deferralReason', () => {
+  const gateRed = { reason: 'fix broke the test suite', detail: 'npm run test:unit is red' };
+
+  it('blames the reviewer only for a genuine rejection', () => {
+    expect(deferralReason({})).toBe('failed adversarial review');
+  });
+
+  it('says the reviewer never ran rather than calling the work rejected', () => {
+    expect(deferralReason({ reviewUnavailable: true })).toBe('reviewer unavailable');
+  });
+
+  it('names the gate that stayed red', () => {
+    expect(deferralReason({ gateRed })).toBe('fix broke the test suite');
+  });
+
+  it('names a failed implementer round ahead of an earlier round’s gate result', () => {
+    expect(deferralReason({ implFailed: true, gateRed })).toBe(
+      'implementer failed to deliver a fix round'
+    );
+  });
+
+  it('reports an unavailable reviewer ahead of every other cause', () => {
+    expect(deferralReason({ reviewUnavailable: true, implFailed: true, gateRed })).toBe(
+      'reviewer unavailable'
+    );
+  });
+});
+
+// The launch command is the one fact about a run that cannot be recovered from
+// git, the PR, or docs/AUDIT.md — and it cannot be scraped from `ps` either,
+// because `env VAR=… node …` execs node and the overrides never enter argv. The
+// driver records this at startup; the PreCompact hook reads it back.
+describe('launchCommand', () => {
+  // The bare case must render the driver's own canary default, not a full-run
+  // number: an unset MAX_ISSUES means burndown.mjs runs 5 findings, and a recorded
+  // command reading `-- 600` would relaunch a run 120x longer than the one it
+  // claims to reproduce.
+  it('emits a bare relaunch at the driver default when nothing was overridden', () => {
+    expect(launchCommand({})).toBe(`npm run audit:burndown:overnight -- ${DEFAULT_MAX_ISSUES}`);
+  });
+
+  it('carries MAX_ISSUES through as the run length argument', () => {
+    expect(launchCommand({ MAX_ISSUES: '50' })).toBe('npm run audit:burndown:overnight -- 50');
+  });
+
+  // How the driver actually calls it: it passes the count it already resolved,
+  // so the recorded command cannot drift from the run in progress.
+  it('prefers an explicitly passed count over the environment', () => {
+    expect(launchCommand({ MAX_ISSUES: '600' }, 5)).toBe('npm run audit:burndown:overnight -- 5');
+  });
+
+  // Dropped from the tmux job once already: preflight inherits the full env and
+  // passes, so a missing knob only surfaces as the driver burning down the wrong
+  // file, unattended.
+  it('records AUDIT_FILE, which retargets the whole run', () => {
+    expect(launchCommand({ AUDIT_FILE: 'docs/OTHER.md' })).toContain("AUDIT_FILE='docs/OTHER.md'");
+  });
+
+  it('records every non-default knob as a shell-quoted assignment', () => {
+    expect(launchCommand({ MAX_ISSUES: '600', BRANCH: 'audit/other', EFFORT_REVIEW: 'high' })).toBe(
+      "BRANCH='audit/other' EFFORT_REVIEW='high' npm run audit:burndown:overnight -- 600"
+    );
+  });
+
+  it('quotes a command knob containing spaces so it survives a copy-paste relaunch', () => {
+    expect(launchCommand({ E2E_CMD: 'npm run test:e2e -- --retries=1' })).toContain(
+      "E2E_CMD='npm run test:e2e -- --retries=1'"
+    );
+  });
+
+  it('escapes an embedded single quote rather than terminating the assignment', () => {
+    expect(launchCommand({ PUSH_TEST_CMD: "sh -c 'npm test'" })).toContain(
+      "PUSH_TEST_CMD='sh -c '\\''npm test'\\'''"
+    );
+  });
+
+  it('ignores env vars that are not run knobs', () => {
+    expect(launchCommand({ HOME: '/root', PATH: '/usr/bin' })).toBe(
+      `npm run audit:burndown:overnight -- ${DEFAULT_MAX_ISSUES}`
+    );
   });
 });

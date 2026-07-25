@@ -36,6 +36,76 @@ export function resolveImplSha({ reported, head, baseSha }) {
   return head && head !== baseSha ? head : '';
 }
 
+// Every env knob that changes how a run behaves, and is therefore part of that
+// run's relaunch command. ONE list with two consumers, deliberately: overnight.mjs
+// bakes these into the tmux job (tmux does not reliably inherit arbitrary env),
+// and burndown.mjs records them to .audit-work/launch-command so a later session
+// can recover them. Keeping two lists in sync by hand already failed twice — the
+// EFFORT_* knobs and AUDIT_FILE were added elsewhere and missed here. An omission
+// fails silently and late: preflight is spawned directly and inherits the full
+// env, so it passes, and only the driver inside tmux runs without the knob. Add
+// new knobs here and both paths get them.
+export const LAUNCH_KNOBS = [
+  'RESUME',
+  'PUSH_EVERY',
+  'BRANCH',
+  'AUDIT_FILE',
+  'CHECK_CMD',
+  'TEST_CMD',
+  'E2E_CMD',
+  'LINT_CMD',
+  'PUSH_TEST_CMD',
+  'MAX_DEFERRALS',
+  'RETRIES',
+  'MODEL_VERIFY',
+  'MODEL_IMPL',
+  'MODEL_IMPL_MINOR',
+  'MODEL_REVIEW',
+  'BUDGET_VERIFY',
+  'BUDGET_IMPL',
+  'BUDGET_REVIEW',
+  'EFFORT_VERIFY',
+  'EFFORT_IMPL',
+  'EFFORT_REVIEW',
+];
+
+export const shellQuote = (value) => `'${String(value).replace(/'/g, `'\\''`)}'`;
+
+// The canary default, shared with burndown.mjs so the recorded relaunch command
+// can never disagree with the run it claims to reproduce: an unset MAX_ISSUES
+// means a 5-finding canary, and a command reading `-- 600` would relaunch a run
+// 120× longer under a heading promising "this exact run".
+export const DEFAULT_MAX_ISSUES = 5;
+
+// The command that relaunches this exact run, reconstructed from the driver's own
+// environment. It cannot be recovered from the process list: overnight.mjs launches
+// via `env VAR=… node …`, and `env` EXECS node, so the assignments live in the
+// environment and never appear in argv. On macOS the surviving `caffeinate` parent
+// happens to retain the full string in its own argv; on Linux caffeinate is not
+// used and nothing retains it, so scraping `ps` there recovers nothing at all.
+// The driver passes its own already-resolved MAX_ISSUES rather than letting this
+// re-derive one, so the two can't drift apart.
+export function launchCommand(env = process.env, maxIssues = env.MAX_ISSUES ?? DEFAULT_MAX_ISSUES) {
+  const overrides = LAUNCH_KNOBS.filter((knob) => env[knob] != null).map(
+    (knob) => `${knob}=${shellQuote(env[knob])}`
+  );
+  return `${overrides.join(' ')}${overrides.length ? ' ' : ''}npm run audit:burndown:overnight -- ${maxIssues}`;
+}
+
+// Which role actually failed, for the docs/AUDIT-DEFERRED.md commit message.
+// Rolling unreviewed or ungated work back is always right; describing it as
+// rejected is not. Someone triages this file months later deciding whether to
+// re-stage the finding, and "failed adversarial review" on a fix no reviewer
+// ever saw sends them looking for a quality problem that does not exist. The
+// order matters: a reviewer that never ran, and an implementer that never
+// delivered, both take precedence over a stale gate result from an earlier
+// round. Only a real CHANGES_REQUIRED verdict is attributed to the reviewer.
+export function deferralReason({ reviewUnavailable, implFailed, gateRed }) {
+  if (reviewUnavailable) return 'reviewer unavailable';
+  if (implFailed) return 'implementer failed to deliver a fix round';
+  return gateRed?.reason ?? 'failed adversarial review';
+}
+
 // Every entry script chdirs to the repo root so relative paths (docs/AUDIT.md,
 // .audit-work/) behave the same no matter where it was invoked from.
 export function chdirRoot() {
