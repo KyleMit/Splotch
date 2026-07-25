@@ -23,10 +23,8 @@
 <style>
   .parent-help-button {
     position: fixed;
-    bottom: calc(8px + env(safe-area-inset-bottom));
-    right: calc(8px + env(safe-area-inset-right));
-    width: 48px;
-    height: 48px;
+    bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
+    right: calc(var(--space-2) + env(safe-area-inset-right));
     color: #999;
     z-index: var(--z-corner-button);
   }

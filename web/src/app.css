@@ -202,13 +202,15 @@ body {
 
 /* Muted corner-button chrome shared by the drawer toggle, Fullscreen Toggle,
    and Parent Help Button: a transparent button whose whole-button opacity and
-   gray icon tint both step up idle → hover → pressed. Positioning, size, and
+   gray icon tint both step up idle → hover → pressed. Positioning and
    z-index stay in each component. */
 .corner-button {
   background: transparent;
   border: none;
   cursor: pointer;
   padding: 8px;
+  width: 48px;
+  height: 48px;
   opacity: 0.4;
   transition: opacity 0.2s ease;
   touch-action: manipulation;

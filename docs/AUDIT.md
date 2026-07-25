@@ -7,31 +7,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P4][consistency] corner-button consumers use inconsistent sizes (44 vs 48 px)
-
-**File(s):** `web/src/lib/components/FullscreenToggle.svelte:30-34` vs
-`web/src/lib/components/ActionsPanel.svelte:522-529` — pinned at SHA f934d43
-
-#### Problem
-
-Both the Fullscreen Toggle and the drawer toggle share `.corner-button` chrome (app.css) and sit in
-screen corners, but Fullscreen is `44×44` (30-31) while the drawer toggle is `48×48` (523-524).
-Nothing documents why two members of the same visual family differ; it reads as drift. Both also
-hardcode `8px` offsets (raw, not `--space-2`).
-
-#### Proposed solution
-
-Pick one corner-button touch-target size (48 to meet the comfortable-target guidance) and apply it
-to `.corner-button` in app.css so all members inherit it, overriding only where genuinely required
-(documented). Use `--space-2` for the `8px` insets.
-
-#### Verification
-
-Measure both corner buttons in `run-splotch`; confirm they match and clear the palette in both
-orientations.
-
----
-
 ### [P4][naming] InstallBanner scatters unexplained magic numbers (auto-clear count, fly distance)
 
 **File(s):** `web/src/lib/components/InstallBanner.svelte:16,54-57,85` — pinned at SHA f934d43

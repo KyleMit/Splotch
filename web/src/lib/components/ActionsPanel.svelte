@@ -518,8 +518,6 @@
      in app.css, shared with the Parent Center button) so it doesn't compete
      with the tools. */
   .drawer-toggle {
-    width: 48px;
-    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
