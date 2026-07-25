@@ -7,41 +7,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P4][readability] `snapshot()`'s optional `tokens?` param encodes a subtle read-after-write rule
-
-**File(s):** `web/src/routes/api/admin/tokens/+server.ts:41-45` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-async function snapshot(origin: string, tokens?: string[]) {
-  const { tokens: current, persistent } = await getTokensStatus();
-  const list = tokens ?? current;
-  return json({ ok: true, tokens: list, invites: buildInvites(list, origin), persistent });
-}
-```
-
-The function *always* reads `getTokensStatus()` (a full Blobs round-trip) but then throws away its
-`tokens` when a caller passes the post-mutation list — the read exists only to obtain `persistent`.
-The "use the caller's tokens but the fresh persistent flag" invariant is real and
-correctness-relevant (read-after-write safety under eventual consistency, per the `:32-40` comment)
-but it's expressed only as an optional positional param plus a `??`. A reader can't tell from the
-signature why GET omits the arg and the mutations pass it, or that the read is half-wasted.
-
-#### Proposed solution
-
-Make the two intents explicit rather than overloading one param — e.g. a `persistenceFlag()` helper
-that fetches only `persistent`, and have mutations build the snapshot from their known `tokens` +
-that flag, while GET fetches both. Or rename to `snapshotFrom(origin, { tokens })` with a doc line
-stating the read-after-write contract at the signature.
-
-#### Verification
-
-`npm run test:api:smoke` add/remove round-trip returns the mutated list; GET returns the live list.
-Behavior identical.
-
----
-
 ### [P4][maintainability] Session cookie name, scope, and 10-year max-age are scattered inline
 
 **File(s):** `web/src/routes/admin/+page.server.ts:28-38, 107` — pinned at SHA f934d43
