@@ -650,6 +650,12 @@ while (done < MAX_ISSUES) {
     // Resume the SAME implementer session: it retains its full history —
     // every prior tool call, result, and reasoning step — so it fixes its own
     // work instead of re-deriving the change from the review text.
+    //
+    // EFFORT_IMPL must stay identical to the initial call above. Effort shapes the
+    // rendered prompt, so changing it between turns discards the cached prefix —
+    // and this session's prefix is the entire first implementation pass. Escalating
+    // effort on a later round looks like an obvious win and would silently pay to
+    // re-read everything it already knows.
     impl = await claudeStep(`${tag}.fix${round}`, [
       `The following must be addressed on commit ${sha}. Address every point and commit.\n\n${feedback}`,
       '--resume',

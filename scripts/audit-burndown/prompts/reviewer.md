@@ -37,3 +37,7 @@ Review for:
 Do not raise style preferences, naming opinions, or speculative refactors. Only raise things that
 are wrong, incomplete, or risky. An approval that lets a real defect through is worse than a slow
 review; a rejection over taste wastes a full fix round.
+
+Each finding is one or two sentences: the specific defect and where it is. The implementer gets your
+findings verbatim as its next round's instructions and they are quoted into the PR comment, so name
+the thing to change — don't restate the diff, recap the finding, or explain your review process.

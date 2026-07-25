@@ -217,6 +217,14 @@ not by touching the process. Four verbs, each a fixed procedure. Never hand-edit
 the running process; only use the signals below. All four leave a resumable end state (state is
 `docs/AUDIT.md` + git + the draft PR), so this session or a brand-new one can carry out any of them.
 
+Do the verb you were given, at the scope it implies, and stop there — a status request is a status
+report, not an investigation, and something adjacent you notice is worth one sentence in your reply
+rather than a detour into fixing it. If the run's setup looks wrong or a better approach exists, say
+so and carry out the verb as asked. Delegate to a subagent only to keep a large diagnostic read (a
+multi-run `run.log` sweep, a per-finding envelope) out of this context — that is what protects the
+window you are trying to conserve. Never delegate to double-check the driver, and never for work
+that is a handful of tool calls.
+
 ### "status" — report without interrupting anything
 
 Read-only: do **not** touch the STOP file or the process. Run `npm run audit:status` and relay the

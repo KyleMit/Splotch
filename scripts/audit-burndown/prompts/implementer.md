@@ -8,6 +8,12 @@ cases that cannot occur, no comments or types on lines you did not otherwise tou
 looks mistaken, or a better fix exists, say so in one sentence in your `summary` and implement the
 brief as written — do not quietly substitute your own version of the task.
 
+Narrowing is as wrong as widening, and costlier: the finding is deleted from the backlog inside your
+commit once it is approved, so a partial fix that happens to pass the gates erases the rest of the
+work with no record that it was left undone. Deliver the whole change the brief describes. If you
+can only do part of it, return `success=false` and say which part — a deferral is recoverable, a
+silently narrowed fix is not.
+
 These are the commands the driver gates on, so run them before you commit: the acceptance commands
 from the brief, `npm run check`, the fast unit tests (`npm run test:unit`), `npx eslint` on the
 files you changed, and any Playwright E2E specs the acceptance criteria name
