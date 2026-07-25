@@ -7,32 +7,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P4][type-safety] `removeToken` lacks the empty-input guard `addToken` has, and re-annotates the filter callback
-
-**File(s):** `web/src/lib/server/tokens.ts:167-169, 182-192` — pinned at SHA f934d43
-
-#### Problem
-
-`addToken` rejects empty input up front (`:169`,
-`if (!t) return { ok: false, error: 'Token cannot be empty' }`), but `removeToken` silently accepts
-`''`/whitespace, runs a full read-modify cycle, finds no match, and returns `{ ok: true }`. The
-asymmetry isn't wrong but is unexplained — a reader can't tell whether removing "" is intentionally
-a no-op or an oversight. Separately, `list.filter((x: string) => x !== t)` (`:186`) carries a
-redundant `: string` annotation (`list` is already `string[]`), a small inconsistency with the rest
-of the module.
-
-#### Proposed solution
-
-Either add a symmetric early return for empty input in `removeToken` (documented as "nothing to
-remove") or add a one-line comment stating the empty-remove no-op is intentional. Drop the redundant
-`(x: string)` annotation.
-
-#### Verification
-
-`tokens.test.ts` `removeToken` no-op case still passes; `npm run check` clean.
-
----
-
 ### [P4][duplication] Native page reimplements session-state bookkeeping the cookie flow gets from the server
 
 **File(s):** `web/src/routes/admin/native/+page.svelte:24-32` (`signOutLocally`) — pinned at SHA
