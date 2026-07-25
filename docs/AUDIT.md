@@ -5,8 +5,6 @@
 > then deletes this file. `/fix-audits` burns down those issues. Never treat this file as a
 > long-lived backlog.
 
-## Source: Code audit — Core UI controls
-
 ## Source: Code audit — Design system + icons
 
 ### [P2][type-safety] `COLOR_ICONS` is an untyped `Set<string>` — stale/typo entries can't be caught by the compiler
