@@ -7,32 +7,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P3][accessibility] Clearing the canvas is pointer-only — no keyboard or AT path
-
-**File(s):** `web/src/lib/components/ClearButton.svelte:103-137` — pinned at SHA f934d43
-
-#### Problem
-
-`#clearButton` has `aria-label="Clear drawing"` and is a real `<button>`, so keyboard and
-screen-reader users can focus and activate it — but the only behavior is wired through
-`use:dragToClear` (a pointer-gesture action). There is no `onclick`/keyboard handler, so pressing
-Enter/Space on the focused button does nothing; the clear action is unreachable without a pointer
-drag. The `aria-label` advertises an action the control can't actually perform for those users.
-
-#### Proposed solution
-
-Add a keyboard/click affordance that triggers the same `onClear` path (with a confirm or the
-existing threshold semantics) when activated without a drag — e.g. `dragToClear` reports a plain
-activation, or a fallback `onclick` that runs the clear when `matchMedia('(pointer: coarse)')` isn't
-the sole modality. At minimum, don't label a drag-only surface as an actionable button.
-
-#### Verification
-
-Tab to the clear button, press Enter, confirm the canvas clears (or that a documented alternative
-exists). Axe/keyboard pass.
-
----
-
 ### [P3][design-tokens] NotchBand hardcodes a 250ms transition off the duration scale
 
 **File(s):** `web/src/lib/components/NotchBand.svelte:77` — pinned at SHA f934d43
