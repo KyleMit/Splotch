@@ -143,8 +143,9 @@
     justify-content: center;
   }
 
-  /* :global() — Icon.svelte renders its SVG via {@html} under its own
-     style-scope hash, so a scoped selector here would never match. */
+  /* :global() — this class lands on Icon.svelte's own <span>, which carries
+     Icon's style-scope hash, not this component's, so a scoped selector here
+     would never match. */
   :global(.coachmark-trash) {
     width: 45px;
     height: 45px;
