@@ -1,7 +1,11 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { STROKE_SIZES, type StrokeSize } from '$lib/state/strokeWidth.svelte';
-  import type { CommonIconName } from './iconTypes';
+  import {
+    STROKE_SIZES,
+    SIZE_ICON,
+    ERASER_SIZE_ICON,
+    type StrokeSize,
+  } from '$lib/state/strokeWidth.svelte';
   import { scribbleTap } from '$lib/actions/scribbleGuard';
 
   // Presentational Stroke Width popover: the parent (ActionsPanel) owns the
@@ -48,10 +52,7 @@
       aria-pressed={activeSize === size}
       use:scribbleTap={() => onpick(size)}
     >
-      <Icon
-        name={`${erasing ? 'eraser-size' : 'size'}-${size}` as CommonIconName}
-        class="action-icon"
-      />
+      <Icon name={erasing ? ERASER_SIZE_ICON[size] : SIZE_ICON[size]} class="action-icon" />
     </button>
   {/each}
 </div>

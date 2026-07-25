@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { parentCenter, buttonCenter } from '$lib/state/ui.svelte';
+  import { parentCenter, buttonCenter, PARENT_HELP_BUTTON_ID } from '$lib/state/ui.svelte';
 
   let buttonEl: HTMLButtonElement;
 
@@ -12,7 +12,7 @@
 
 <button
   class="parent-help-button corner-button"
-  id="parentHelpButton"
+  id={PARENT_HELP_BUTTON_ID}
   aria-label="Parent Center"
   bind:this={buttonEl}
   onclick={openModal}

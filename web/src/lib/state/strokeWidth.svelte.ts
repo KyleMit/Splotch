@@ -1,9 +1,29 @@
 import { readInt, writeInt, onDurableRestore } from '../storage';
 import { toolState } from './tool.svelte';
+import type { CommonIconName } from '$lib/components/iconTypes';
 
 export type StrokeSize = 1 | 2 | 3 | 4 | 5;
 export const STROKE_SIZES: readonly StrokeSize[] = [1, 2, 3, 4, 5];
 export const DEFAULT_SIZE: StrokeSize = 3;
+
+// Spelled out rather than built from a template string: each literal is checked
+// against the generated icon union, so a renamed or deleted SVG is a compile
+// error here instead of a blank icon at runtime.
+export const SIZE_ICON: Record<StrokeSize, CommonIconName> = {
+  1: 'size-1',
+  2: 'size-2',
+  3: 'size-3',
+  4: 'size-4',
+  5: 'size-5',
+};
+
+export const ERASER_SIZE_ICON: Record<StrokeSize, CommonIconName> = {
+  1: 'eraser-size-1',
+  2: 'eraser-size-2',
+  3: 'eraser-size-3',
+  4: 'eraser-size-4',
+  5: 'eraser-size-5',
+};
 
 // The eraser runs noticeably larger than the pen at the same stroke level — a
 // toddler erasing wants big sweeps, not precision, and 1.4× was too subtle to

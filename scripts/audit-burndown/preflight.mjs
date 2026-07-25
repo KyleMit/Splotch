@@ -29,8 +29,9 @@ const bad = (msg) => {
 };
 const warn = (msg) => console.log(`  \x1b[33m!\x1b[0m ${msg}`);
 
+// No `gh` here, by design — the driver never calls GitHub.
 console.log('dependencies');
-for (const bin of ['gh', 'claude', 'git', 'npm']) {
+for (const bin of ['claude', 'git', 'npm']) {
   if (!hasCommand(bin)) {
     bad(`${bin} not found`);
     continue;
@@ -42,8 +43,6 @@ for (const bin of ['gh', 'claude', 'git', 'npm']) {
 console.log('auth');
 if (runCmd('claude', ['auth', 'status']).status === 0) ok('claude logged in');
 else bad('claude not logged in (run: claude auth login)');
-if (runCmd('gh', ['auth', 'status']).status === 0) ok('gh logged in');
-else bad('gh not logged in (run: gh auth login)');
 
 console.log('repo');
 if (gitOk('diff', '--quiet') && gitOk('diff', '--cached', '--quiet')) ok('working tree clean');
@@ -55,44 +54,32 @@ else bad(`${auditFile()} missing — nothing staged to burn down`);
 if (/^\.audit-work/m.test(readFileSync('.gitignore', 'utf8'))) ok('.audit-work is gitignored');
 else warn('.audit-work not in .gitignore');
 
-// Resumability: show the branch + draft PR a run would latch onto, so a fresh
-// session can confirm it's resuming the real run (not forking a new one). The
-// driver discovers these from GitHub even without a local .audit-work/pr-number.
+// Resumability: show the branch a run would latch onto, so a fresh session can
+// confirm it's resuming the real run rather than forking a new one. The PR is
+// not checked here because the driver neither creates nor reads one — opening it
+// and draining the comment store is the supervising agent's job.
 console.log('resume target');
 const branchState = gitOk('rev-parse', '--verify', '--quiet', `refs/heads/${BRANCH}`)
   ? 'local'
   : gitOk('rev-parse', '--verify', '--quiet', `refs/remotes/origin/${BRANCH}`)
-    ? 'origin only (fresh clone — will adopt from origin)'
+    ? 'origin only (fresh container — will adopt from origin)'
     : 'none yet (first run — will create)';
 ok(`branch ${BRANCH}: ${branchState}`);
-const openPr = (
-  runCmd('gh', [
-    'pr',
-    'list',
-    '--head',
-    BRANCH,
-    '--state',
-    'open',
-    '--json',
-    'number',
-    '--jq',
-    '.[0].number',
-  ]).stdout ?? ''
-).trim();
-// The driver prefers .audit-work/pr-number over this lookup, so preflight has to
-// report what the driver will actually use — not just what GitHub says. A number
-// left behind by a previous run whose PR has since merged is the dangerous case:
-// unreported, the run posts its per-commit comments onto a landed PR.
-const cachedPr = existsSync(join(WORK, 'pr-number'))
-  ? readFileSync(join(WORK, 'pr-number'), 'utf8').trim()
-  : '';
-if (cachedPr && cachedPr !== openPr) {
-  warn(
-    `cached PR number ${cachedPr} is not the open PR for ${BRANCH}` +
-      `${openPr ? ` (${openPr} is)` : ' (none is open)'} — the run will discard it`
-  );
-} else if (openPr) ok(`draft PR for ${BRANCH}: number ${openPr} (will resume it)`);
-else ok(`draft PR for ${BRANCH}: none open (will create on first push)`);
+// A push that cannot reach origin turns every commit into work that dies with the
+// container, which is the one failure this setup cannot tolerate. Checked with a
+// dry run so preflight stays read-only.
+if (
+  !gitOk('rev-parse', '--verify', '--quiet', 'refs/remotes/origin/HEAD') &&
+  !gitOk('ls-remote', '--exit-code', 'origin')
+)
+  bad('origin is unreachable — commits could not be pushed');
+else ok('origin reachable');
+
+const store = process.env.COMMENT_STORE ?? join(WORK, 'pending-comments.jsonl');
+if (existsSync(store)) {
+  const lines = readFileSync(store, 'utf8').split('\n').filter(Boolean).length;
+  if (lines) warn(`${lines} unposted PR comment(s) in ${store} — post them before they age out`);
+}
 
 console.log('prompts');
 for (const prompt of ['verifier', 'implementer', 'reviewer']) {
@@ -114,19 +101,6 @@ console.log('build');
 const checkCmd = process.env.CHECK_CMD ?? 'npm run check';
 if (runCmd(checkCmd, [], { shell: true, stdio: 'ignore' }).status === 0) ok(`${checkCmd} passes`);
 else bad(`${checkCmd} fails — fix before starting`);
-
-console.log('power (macOS)');
-if (process.platform === 'darwin') {
-  const assertions = runCmd('pmset', ['-g', 'assertions']).stdout ?? '';
-  if (/PreventUserIdleSystemSleep\s+1/.test(assertions)) ok('a sleep assertion is held');
-  else warn('no sleep assertion — launch via npm run audit:burndown:overnight (caffeinate)');
-  const sleepLine = (runCmd('pmset', ['-g']).stdout ?? '')
-    .split('\n')
-    .find((line) => /^ *sleep/.test(line));
-  if (sleepLine) console.log(`    ${sleepLine.trim()}`);
-} else {
-  warn('not macOS — sleep checks skipped');
-}
 
 console.log();
 if (failed) {

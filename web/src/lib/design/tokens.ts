@@ -32,7 +32,9 @@ export const brand = {
 
 // Theme-independent scales. These are the vocabulary for component styles —
 // prefer them over literal px/shadow/easing values so spacing, corners, type,
-// and motion stay on one ramp app-wide.
+// and motion stay on one ramp app-wide. It also holds the handful of unthemed
+// *fills*: chrome color that reads the same on both papers, so it has no
+// light/dark pair to live in ThemeTokens.
 export const scale = {
   space1: '4px',
   space2: '8px',
@@ -89,6 +91,10 @@ export const scale = {
   // orientation). Deliberately harder and closer than --shadow-sm so the
   // thumb reads as sitting just above its track — don't converge the two.
   shadowSegment: '0 1px 4px rgba(0, 0, 0, 0.18)',
+
+  // The Clear Button's at-rest fill, mirrored by the drag-to-clear coachmark
+  // ghost so the tutorial always matches the real control.
+  clearGradientRest: 'linear-gradient(135deg, #ff6b6b, #ee5a6f)',
 } as const;
 
 // The cross-component stacking order, low to high. Scoped to "chrome" — the

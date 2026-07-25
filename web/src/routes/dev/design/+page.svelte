@@ -86,6 +86,18 @@
   </section>
 
   <section>
+    <h2>Unthemed fills</h2>
+    <p>Constant chrome color — it reads the same on both papers, so it has no light/dark pair.</p>
+    <div class="swatch-grid">
+      <div class="swatch-card">
+        <div class="swatch" style:background={cssVar('clearGradientRest')}></div>
+        <code>--clear-gradient-rest</code>
+        <span class="value">{scale.clearGradientRest}</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
     <h2>Theme colors</h2>
     <p>Swatches paint the live CSS variable — flip the theme above to see the dark values.</p>
     <div class="swatch-grid">

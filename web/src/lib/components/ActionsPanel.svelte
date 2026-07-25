@@ -403,8 +403,6 @@
   @media (orientation: portrait) {
     .actions-panel {
       flex-direction: column-reverse;
-      left: calc(8px + env(safe-area-inset-left));
-      bottom: calc(8px + env(safe-area-inset-bottom));
     }
   }
 

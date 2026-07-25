@@ -5,6 +5,7 @@
   import SplotchyIcon from './SplotchyIcon.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
   import { install, promptInstall, dismissInstall } from '$lib/state/install.svelte';
+  import { PARENT_HELP_BUTTON_ID } from '$lib/state/ui.svelte';
 
   // The banner sits above the corner controls (actions toggle, Parent Help), so
   // it must not linger: once the child has kept drawing past it, clear it and
@@ -49,7 +50,7 @@
   // dismiss / completed install keep the plain fly-down.
   function bannerExit(node: HTMLElement) {
     if (!exitIntoParentButton) return fly(node, { y: 120, duration: 300 });
-    const target = document.getElementById('parentHelpButton')?.getBoundingClientRect();
+    const target = document.getElementById(PARENT_HELP_BUTTON_ID)?.getBoundingClientRect();
     const from = node.getBoundingClientRect();
     const dx = target ? target.left + target.width / 2 - (from.left + from.width / 2) : 0;
     const dy = target ? target.top + target.height / 2 - (from.top + from.height / 2) : 120;
@@ -155,7 +156,7 @@
     background: var(--surface);
     border: 2px solid var(--brand, #ab71e1);
     border-radius: var(--radius-xl);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--shadow-pop);
     font-family: inherit;
   }
 
@@ -235,7 +236,7 @@
 
   .install-copy strong {
     color: var(--text-strong);
-    font-size: 15px;
+    font-size: var(--font-size-lg);
     font-weight: 700;
   }
 
@@ -252,10 +253,10 @@
     gap: 6px;
     padding: 10px 16px;
     border: none;
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     background: var(--brand, #ab71e1);
     color: var(--on-brand, #fff);
-    font-size: 15px;
+    font-size: var(--font-size-lg);
     font-weight: 700;
     cursor: pointer;
     touch-action: manipulation;

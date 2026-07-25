@@ -137,7 +137,7 @@
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    background: var(--clear-gradient-rest);
     box-shadow: -6px 6px 24px rgba(0, 0, 0, 0.35);
     display: flex;
     align-items: center;

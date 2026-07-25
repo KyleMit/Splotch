@@ -273,7 +273,6 @@ body {
   .flyout-menu {
     left: calc(100% + 8px);
     bottom: 0;
-    flex-direction: row;
   }
 }
 

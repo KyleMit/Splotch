@@ -1,10 +1,11 @@
 // Drift guard for the ruler-generated agent files (ADR-0058). Every
-// CLAUDE.md/AGENTS.md plus the .claude/skills/ and .agents/skills/ trees are
-// generated from .ruler/ sources and committed, so CI re-applies and fails if
-// git sees any resulting change (modified or untracked) — that means a .ruler
-// edit landed without `npm run ruler:apply`, or a generated file was edited
-// directly. The .ruler/ sources themselves are excluded so local uncommitted
-// source edits don't read as drift once they've been applied.
+// CLAUDE.md/AGENTS.md plus the .claude/skills/, .agents/skills/, and
+// skill-notes/ trees are generated from .ruler/ sources and committed, so CI
+// re-applies and fails if git sees any resulting change (modified or untracked)
+// — that means a .ruler edit landed without `npm run ruler:apply`, or a
+// generated file was edited directly. The .ruler/ sources themselves are
+// excluded so local uncommitted source edits don't read as drift once they've
+// been applied.
 
 import { run, capture, fail } from './lib/utils.mjs';
 
@@ -15,6 +16,8 @@ const generatedPathspecs = [
   '*AGENTS.md',
   '.claude/skills',
   '.agents/skills',
+  '.claude/skill-notes',
+  '.agents/skill-notes',
   ':(exclude).ruler',
 ];
 // Only worktree-side changes (second status column) and untracked files count
