@@ -1,5 +1,5 @@
 import { error, json } from '@sveltejs/kit';
-import { verifySessionToken, buildInvites } from '$lib/server/admin';
+import { verifySessionToken, buildInvites, bearerToken } from '$lib/server/admin';
 import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
 import type { MutationFailure } from '$lib/server/tokens';
 import { readJsonBody, stringField } from '$lib/server/http';
@@ -23,9 +23,7 @@ export const prerender = false;
  * an oracle for anything beyond "not a valid session".
  */
 function requireSession(request: Request) {
-  const auth = request.headers.get('authorization') ?? '';
-  const token = auth.startsWith('Bearer ') ? auth.slice('Bearer '.length).trim() : '';
-  if (!verifySessionToken(token)) {
+  if (!verifySessionToken(bearerToken(request))) {
     throw error(401, 'Unauthorized');
   }
 }

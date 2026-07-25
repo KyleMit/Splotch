@@ -78,6 +78,14 @@ export function verifySessionToken(token: string | undefined) {
   return secretMatches(token, sessionToken());
 }
 
+const BEARER_PREFIX = 'Bearer ';
+
+/** Extract the bearer token from an `Authorization: Bearer <token>` header, or '' if absent/malformed. */
+export function bearerToken(request: Request): string {
+  const auth = request.headers.get('authorization') ?? '';
+  return auth.startsWith(BEARER_PREFIX) ? auth.slice(BEARER_PREFIX.length).trim() : '';
+}
+
 /** Pair each access token with the invite URL an admin hands out. */
 export function buildInvites(tokens: string[], origin: string) {
   return tokens.map((token) => ({
