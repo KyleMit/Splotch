@@ -421,11 +421,12 @@
     grid-template-columns: 1fr;
     align-items: center;
     margin-right: 8px;
+    --drawer-collapse: 0.28s;
     transition:
-      grid-template-columns 0.28s ease,
-      grid-template-rows 0.28s ease,
+      grid-template-columns var(--drawer-collapse) ease,
+      grid-template-rows var(--drawer-collapse) ease,
       opacity var(--duration-base) ease,
-      margin 0.28s ease;
+      margin var(--drawer-collapse) ease;
   }
 
   .actions-drawer-inner {
@@ -454,15 +455,15 @@
     pointer-events: none;
     /* Inert when closed: out of hit-testing, the a11y tree, and tab order (unlike
        opacity alone). visibility flips to hidden only after the collapse finishes
-       (0.28s transition-delay) so the close still animates; opening restores it
-       instantly because the base rule doesn't transition visibility. */
+       (--drawer-collapse transition-delay) so the close still animates; opening
+       restores it instantly because the base rule doesn't transition visibility. */
     visibility: hidden;
     transition:
-      grid-template-columns 0.28s ease,
-      grid-template-rows 0.28s ease,
+      grid-template-columns var(--drawer-collapse) ease,
+      grid-template-rows var(--drawer-collapse) ease,
       opacity var(--duration-base) ease,
-      margin 0.28s ease,
-      visibility 0s 0.28s;
+      margin var(--drawer-collapse) ease,
+      visibility 0s var(--drawer-collapse);
   }
 
   @media (orientation: portrait) {
