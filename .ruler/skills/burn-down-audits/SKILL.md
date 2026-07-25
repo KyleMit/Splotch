@@ -200,11 +200,14 @@ recorded at all (default range `main..HEAD`), reading run.log for the iteration�
 role envelopes for the summary and catches, and the commit's own `docs/AUDIT.md` deletion for the
 finding text. Idempotent — it dedupes by SHA.
 
-> Iteration log names restart at `iter0001` every run, so `.audit-work/logs/iter0002.fix1.json` may
-> belong to an **earlier** run about a different finding — a shorter run does not clear the longer
-> one's files. `capture` dates each iteration by its own `verify.json` mtime and ignores anything
-> older. Anything else reading these logs by name (`audit:cost` totals every envelope it finds,
-> across all runs) has the same hazard.
+> **Iteration log names restart at `iter0001` every run**, so `.audit-work/logs/iter0002.fix1.json`
+> may belong to an **earlier** run about a different finding — a shorter run does not clear the
+> longer one's files. `capture` dates each iteration by its own `verify.json` mtime and ignores
+> anything older. Anything else reading these logs by name (`audit:cost` totals every envelope it
+> finds, across all runs) has the same hazard — **including you, reading one by hand.** Waiting on
+> `[ -f iter0001.impl.json ]` returns instantly against the *previous* run's file, and the stale
+> envelope it hands you looks exactly like a real one. Always filter by mtime against the run's
+> start line: `find .audit-work/logs -name 'iter*.json' -newermt '<HH:MM>'`.
 
 **Never wrap a SHA in backticks in GitHub-bound text.** GitHub's native linker turns a bare
 plain-text commit SHA into a link to that commit (rendered as a short, hoverable reference); inside

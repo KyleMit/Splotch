@@ -274,6 +274,14 @@ function defer(title, why) {
   git('commit', '-q', '-m', `chore(audit): defer — ${why}\n\nAudit: ${title}`);
   deferred += 1;
   consecutive += 1;
+  // A deferral is a commit like any other and has to count toward the push
+  // cadence. It did not, so a run whose last finding deferred exited with that
+  // commit sitting unpushed — the exit flush is guarded on `sincePush > 0`, and
+  // nothing had incremented it. Observed on the 2026-07-25 smoke run. Both
+  // non-fix outcomes `continue` past the loop's own push check, so they push
+  // here instead; `pushBatch` is a hoisted declaration.
+  sincePush += 1;
+  if (sincePush >= PUSH_EVERY) pushBatch();
   logLine(`  DEFERRED (${why})`);
   if (consecutive >= MAX_DEFERRALS) halt(`${MAX_DEFERRALS} consecutive deferrals`);
 }
@@ -480,6 +488,9 @@ while (done < MAX_ISSUES) {
     dropped += 1;
     sincePush += 1;
     consecutive = 0;
+    // Same reason as in defer(): this path `continue`s past the loop's push
+    // check, so a run ending on a drop would leave that commit unpushed.
+    if (sincePush >= PUSH_EVERY) pushBatch();
     continue;
   }
   if (verdict !== 'VALID') {
