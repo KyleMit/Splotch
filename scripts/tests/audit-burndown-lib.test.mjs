@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   countEntries,
+  DEFAULT_MAX_ISSUES,
   deferralReason,
   deleteFirstEntry,
   findingPriority,
@@ -244,12 +245,29 @@ describe('deferralReason', () => {
 // because `env VAR=… node …` execs node and the overrides never enter argv. The
 // driver records this at startup; the PreCompact hook reads it back.
 describe('launchCommand', () => {
-  it('emits a bare relaunch when nothing was overridden', () => {
-    expect(launchCommand({})).toBe('npm run audit:burndown:overnight -- 600');
+  // The bare case must render the driver's own canary default, not a full-run
+  // number: an unset MAX_ISSUES means burndown.mjs runs 5 findings, and a recorded
+  // command reading `-- 600` would relaunch a run 120x longer than the one it
+  // claims to reproduce.
+  it('emits a bare relaunch at the driver default when nothing was overridden', () => {
+    expect(launchCommand({})).toBe(`npm run audit:burndown:overnight -- ${DEFAULT_MAX_ISSUES}`);
   });
 
   it('carries MAX_ISSUES through as the run length argument', () => {
     expect(launchCommand({ MAX_ISSUES: '50' })).toBe('npm run audit:burndown:overnight -- 50');
+  });
+
+  // How the driver actually calls it: it passes the count it already resolved,
+  // so the recorded command cannot drift from the run in progress.
+  it('prefers an explicitly passed count over the environment', () => {
+    expect(launchCommand({ MAX_ISSUES: '600' }, 5)).toBe('npm run audit:burndown:overnight -- 5');
+  });
+
+  // Dropped from the tmux job once already: preflight inherits the full env and
+  // passes, so a missing knob only surfaces as the driver burning down the wrong
+  // file, unattended.
+  it('records AUDIT_FILE, which retargets the whole run', () => {
+    expect(launchCommand({ AUDIT_FILE: 'docs/OTHER.md' })).toContain("AUDIT_FILE='docs/OTHER.md'");
   });
 
   it('records every non-default knob as a shell-quoted assignment', () => {
@@ -272,7 +290,7 @@ describe('launchCommand', () => {
 
   it('ignores env vars that are not run knobs', () => {
     expect(launchCommand({ HOME: '/root', PATH: '/usr/bin' })).toBe(
-      'npm run audit:burndown:overnight -- 600'
+      `npm run audit:burndown:overnight -- ${DEFAULT_MAX_ISSUES}`
     );
   });
 });
