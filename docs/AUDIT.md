@@ -9,53 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P3][duplication] Web form actions `add`/`remove` are near-identical and diverge from the API on status
-
-**File(s):** `web/src/routes/admin/+page.server.ts:110-125` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-add: async ({ request, cookies }) => {
-  requireAdmin(cookies);
-  const form = await request.formData();
-  const token = String(form.get('token') ?? '').trim();
-  const result = await addToken(token);
-  if (!result.ok) return fail(400, { error: result.error });
-  return { success: true, message: `Added “${token}”` };
-},
-remove: async ({ request, cookies }) => { /* same, removeToken, “Removed …” */ },
-```
-
-Two responsibilities differ (which core fn, which verb in the message); everything else — auth, form
-parse, `.trim()`, the `fail(400)` shape — is duplicated. Worse, both collapse *every* failure to
-`fail(400)`, including the retryable CAS conflict that the JSON endpoint deliberately distinguishes
-as `409` (`tokens/+server.ts:50-55`). So the two front doors disagree on the semantics of the same
-underlying error, and a conflict is mislabeled as a client input error on the web path.
-
-#### Proposed solution
-
-Extract a shared action body:
-
-```ts
-async function tokenMutation(
-  cookies: Cookies,
-  request: Request,
-  op: (t: string) => Promise<MutationResult>,
-  verb: 'Added' | 'Removed',
-);
-```
-
-and, once `MutationResult` carries `reason` (see the `mutationError` finding), map
-`reason === 'conflict'` to `fail(409, ...)` here too so both doors agree.
-
-#### Verification
-
-`tests/admin.spec.ts` add/remove flows pass; add a case asserting a conflict surfaces distinctly.
-`npm run check` clean.
-
----
-
 ### [P3][complexity] AdminConsole is an 868-line component mixing presentation, formatting utilities, clipboard, and modal state
 
 **File(s):** `web/src/lib/components/admin/AdminConsole.svelte:1-867` — pinned at SHA f934d43
