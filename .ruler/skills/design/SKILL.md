@@ -59,15 +59,18 @@ tokens need both light and dark values (the compiler enforces this).
 ## Primitives
 
 Shared UI primitives live in **`web/src/lib/components/design/`**. They style themselves entirely
-from tokens and are for modal/parent/admin surfaces — the canvas-floating controls (Actions Panel,
-corner buttons, Clear Button) keep their bespoke paper treatments.
+from tokens and are for modal/parent surfaces — the canvas-floating controls (Actions Panel, corner
+buttons, Clear Button) keep their bespoke paper treatments, and **`/admin` is excluded**: the
+primitives are built from themed washes, which would flip on a page that is deliberately light-only
+(see the ADR-0071 amendments).
 
-| Primitive              | Use for                                                                                     |
-| ---------------------- | ------------------------------------------------------------------------------------------- |
-| `Button.svelte`        | Text-labeled actions. Variants `brand` / `wash` / `danger` / `ghost`, sizes `md` / `sm`     |
-| `Disclosure.svelte`    | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the        |
-|                        | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`) |
-| `StatusMessage.svelte` | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error` |
+| Primitive              | Use for                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------- |
+| `Button.svelte`        | Text-labeled actions. Variants `brand` / `wash` / `danger` / `ghost`, sizes `md` / `sm`. Not |
+|                        | for `role="radio"` segments (theme picker, report-kind row) — those are pickers, not actions |
+| `Disclosure.svelte`    | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the         |
+|                        | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`)  |
+| `StatusMessage.svelte` | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error`  |
 
 Shared *global* patterns (modal shell, close button, corner buttons, dialog fly-in, flyout menu +
 its options) remain classes in `app.css` for one of two reasons: dialogs and imperative DOM need

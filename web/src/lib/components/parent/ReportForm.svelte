@@ -1,5 +1,6 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
+  import Button from '../design/Button.svelte';
   import Disclosure from '../design/Disclosure.svelte';
   import StatusMessage from '../design/StatusMessage.svelte';
   import { apiUrl } from '$lib/api';
@@ -186,14 +187,14 @@
       bind:value={honeypot}
     />
 
-    <button
-      type="button"
+    <Button
+      variant="brand"
       class="report-submit"
       onclick={submit}
       disabled={!message.trim() || submitting}
     >
       {submitting ? 'Sending…' : 'Send report'}
-    </button>
+    </Button>
   </div>
 
   {#if feedback}
@@ -395,28 +396,9 @@
     pointer-events: none;
   }
 
-  .report-submit {
+  /* Chrome comes from the Button primitive; the call site only places it. */
+  .report-card :global(.report-submit) {
     align-self: flex-start;
-    padding: 9px 18px;
-    font-size: var(--font-size-md);
-    font-weight: 600;
-    color: var(--on-brand);
-    background: var(--brand);
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: background var(--duration-base) ease;
-  }
-
-  @media (hover: hover) {
-    .report-submit:hover {
-      background: var(--brand-hover);
-    }
-  }
-
-  .report-submit:disabled {
-    background: var(--control-track-hover);
-    cursor: not-allowed;
   }
 
   .report-message-link {

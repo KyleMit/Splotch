@@ -1,6 +1,7 @@
 <script lang="ts">
   import ToggleRow from './ToggleRow.svelte';
   import Icon from '../Icon.svelte';
+  import Button from '../design/Button.svelte';
   import { settings, setSaveOnDelete } from '$lib/state/settings.svelte';
   import { changeSaveFolder, forgetSaveFolder } from '$lib/state/saveFolder.svelte';
   import { folderSaveSupported } from '$lib/drawing/folderSave';
@@ -49,9 +50,15 @@
           </button>
         </div>
       {:else}
-        <button class="folder-change" id="changeSaveFolderButton" onclick={changeSaveFolder}>
+        <Button
+          variant="brand"
+          size="sm"
+          class="folder-change"
+          id="changeSaveFolderButton"
+          onclick={changeSaveFolder}
+        >
           Choose folder
-        </button>
+        </Button>
       {/if}
     </div>
   {/if}
@@ -83,21 +90,11 @@
     white-space: nowrap;
   }
 
-  /* Empty state: primary CTA to pick a folder. */
-  .folder-change {
+  /* Empty state: primary CTA to pick a folder. Chrome comes from the Button
+     primitive; the pill radius is this row's own shape, matching .folder-pill. */
+  .folder-location :global(.folder-change) {
     flex-shrink: 0;
-    border: none;
     border-radius: var(--radius-pill);
-    padding: 7px 16px;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--on-brand);
-    background: var(--brand);
-    cursor: pointer;
-  }
-
-  .folder-change:hover {
-    background: var(--brand-hover);
   }
 
   .folder-actions {
