@@ -11,38 +11,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P1][complexity] ActionsPanel.svelte is 788 lines carrying five unrelated responsibilities
-
-**File(s):** `web/src/lib/components/ActionsPanel.svelte:1-788` (whole file) — pinned at SHA f934d43
-
-#### Problem
-
-This single component owns: (a) the button-size/offset layout math (`leftOffset`, `buttonCount`,
-`buttonSpread`, `buttonSize`, lines 59-104), (b) the persisted-state publish effect (123-125), (c)
-the ink-keyline flag derivations `inkWhite`/`inkDark`/`whiteStroke`/`darkStroke` (131-150), (d)
-flyout open/close + outside-click coordination (40, 159-180, 212-232), (e) the undo end-of-history
-nudge state machine (186-195), and (f) the save/AI/coloring-book tap handlers with lazy imports
-(202-248). The script alone is 248 lines before a 396-line `<style>`. The layout math is already
-partly delegated to `actionButtonLayout.svelte.ts`, but the derived-CSS-string assembly still lives
-inline with heavy prose comments, making the reactive surface hard to hold in one's head.
-
-#### Proposed solution
-
-Move the pure layout-string derivations (`leftOffset`, `buttonSpread`, `buttonSize`) into
-`actionButtonLayout.svelte.ts` as functions taking `{isPortrait, layout, buttonCount, browser}` so
-ActionsPanel just binds their results. Extract the flyout outside-click + open-state coordination
-into a small Svelte action or `useFlyout` rune module in `lib/actions/` (the svelte.md rule already
-says "dialog wiring are Svelte actions"). Consider lifting the undo-nudge to a tiny
-`UndoButton.svelte`. Target: the component becomes markup + thin bindings.
-
-#### Verification
-
-`wc -l` drops substantially; the extracted math is unit-testable in isolation (add cases to the
-existing `actionButtonLayout` tests). Full E2E for drawer/flyout/undo must stay green; `run-splotch`
-sanity in both orientations.
-
----
-
 ### [P1][design-tokens] ClearButton hardcodes an entire red/coral palette that exists in no token
 
 **File(s):**
