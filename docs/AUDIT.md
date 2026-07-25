@@ -7,35 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P4][design-tokens] `fontSizeSm` (13px) and `fontSizeMd` (14px) are a 1px-apart near-duplicate ramp step
-
-**File(s):** `web/src/lib/design/tokens.ts:56-57` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-fontSizeSm: '13px',
-fontSizeMd: '14px',
-```
-
-The `design` skill says "prefer reusing an existing step of a ramp over minting a near-duplicate,"
-and a 1px delta between two adjacent type steps is exactly the near-duplicate the guidance warns
-about — the two are visually indistinguishable at body sizes and invite arbitrary choice between
-them. (The spacing ramp, by contrast, jumps 4→8→12→16, a clean geometric-ish ramp.)
-
-#### Proposed solution
-
-Audit consumers of `--font-size-sm` vs `--font-size-md`; if the 1px difference isn't load-bearing,
-collapse to one step and remap references. If both are genuinely needed (e.g. dense admin vs body),
-add a one-line rationale in `tokens.ts` so the near-duplicate is defended.
-
-#### Verification
-
-Grep `--font-size-sm`/`--font-size-md` usage; after any merge, `/dev/design` type ramp and consuming
-surfaces are reviewed in both themes.
-
----
-
 ### [P4][consistency] `iconTypes.ts` imports `IconName` and separately re-exports it — redundant
 
 **File(s):** `web/src/lib/components/iconTypes.ts:1-4` — pinned at SHA f934d43
