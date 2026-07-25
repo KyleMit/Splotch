@@ -7,41 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P3][type-safety] `Icon` `Props` index signature `[key: string]: unknown` defeats prop checking
-
-**File(s):** `web/src/lib/components/Icon.svelte:60-65` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-interface Props {
-  name: CommonIconName;
-  class?: string;
-  [key: string]: unknown;
-}
-let { name, class: className = '', ...rest }: Props = $props();
-```
-
-The catch-all index signature turns every unlisted prop into `unknown`, then `{...rest}` sprays them
-onto the `<span>`. A caller can pass `<Icon name="pen" onclik={...} widht={20} />` (typos) and
-TypeScript stays silent. It also allows arbitrary attributes with no relation to what a `<span>`
-accepts, and weakens the guarantee the generated `name` union is supposed to provide. Compare
-`Button.svelte`, which extends the typed `HTMLButtonAttributes` for exactly this reason.
-
-#### Proposed solution
-
-Replace the index signature with the typed element attribute set:
-`interface Props extends HTMLAttributes<HTMLSpanElement> { name: CommonIconName; }` (import
-`HTMLAttributes` from `svelte/elements`, mirroring Button). That keeps the rest-spread working while
-type-checking the passthrough attributes.
-
-#### Verification
-
-`npm run check` passes with the typed interface; passing a bogus attribute (`widht={1}`) now errors.
-Existing `<Icon>` call sites still compile.
-
----
-
 ### [P3][consistency] `Icon` builds its class with string concatenation while `Button` uses the class array API
 
 **File(s):** `web/src/lib/components/Icon.svelte:65,68,75` vs

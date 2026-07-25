@@ -58,8 +58,11 @@
     icons[key] = src as string;
   }
 
+  // `class` is narrowed back to a string because the span interpolates it —
+  // HTMLAttributes' ClassValue would render an array or object as junk.
   interface Props extends HTMLAttributes<HTMLSpanElement> {
     name: CommonIconName;
+    class?: string;
   }
   let { name, class: className = '', ...rest }: Props = $props();
 
