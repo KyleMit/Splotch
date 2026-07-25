@@ -7,39 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P2][type-safety] `COLOR_ICONS` is an untyped `Set<string>` — stale/typo entries can't be caught by the compiler
-
-**File(s):** `web/src/lib/components/Icon.svelte:13-42` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-export const COLOR_ICONS = new Set([
-  'camera', 'crayon', 'eraser', ...
-]);
-```
-
-The set is inferred as `Set<string>`, so nothing ties its 24 entries to the `CommonIconName` union.
-A misspelled entry (`'camara'`), or an entry for an icon that was later renamed/deleted (see the
-`sweep-icon` orphan above), compiles clean and silently does nothing — the icon it was meant to
-protect renders wrongly tinted. `COLOR_ICONS.has(name)` on line 68 also accepts any string. The
-runtime test (`Icon.svelte.test.ts`) only checks the *forward* direction (every colorful SVG is
-present); a stale/typo'd extra entry is invisible to both compiler and test.
-
-#### Proposed solution
-
-Type the set: `export const COLOR_ICONS = new Set<CommonIconName>([...])` (or
-`satisfies ReadonlySet<CommonIconName>` via an `as const` tuple). That makes every literal checked
-against the union and turns a renamed/deleted icon into a compile error. Optionally add the reverse
-test assertion: every `COLOR_ICONS` member exists in the globbed icon set.
-
-#### Verification
-
-Introduce a bogus entry `'camara'` — with the type annotation, `npm run check` fails; without it, it
-passes today. Confirm the real set still type-checks after annotation.
-
----
-
 ### [P2][duplication] The icon glob + `splotchy` exclusion is repeated in three places with no shared source
 
 **File(s):** `web/src/lib/components/Icon.svelte:48`,

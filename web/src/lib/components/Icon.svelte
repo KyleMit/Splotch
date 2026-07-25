@@ -1,4 +1,6 @@
 <script module lang="ts">
+  import type { CommonIconName } from './iconTypes';
+
   // Full-color "spot" icons carry their own palette, so callers that tint
   // monochrome icons with a CSS `filter` must leave these alone. We tag them
   // with `icon-color` so those filter rules can opt out (see ActionsPanel).
@@ -10,7 +12,7 @@
   // un-tagged and render wrongly tinted. The set is an allowed superset — the
   // stroke-size previews below are monochrome in their raw SVG but still opt
   // out because they tint via currentColor / theme vars.
-  export const COLOR_ICONS = new Set([
+  export const COLOR_ICONS = new Set<CommonIconName>([
     'camera',
     'crayon',
     'eraser',
@@ -42,8 +44,6 @@
 </script>
 
 <script lang="ts">
-  import type { CommonIconName } from './iconTypes';
-
   const modules = import.meta.glob(['../icons/*.svg', '!../icons/splotchy.svg'], {
     eager: true,
     query: '?raw',
