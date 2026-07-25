@@ -103,7 +103,7 @@
     position: relative;
     width: 70px;
     height: 70px;
-    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    background: var(--clear-gradient-rest);
     border: none;
     border-radius: 50% 0 0 50%;
     box-shadow: -4px 4px 20px rgba(0, 0, 0, 0.3);

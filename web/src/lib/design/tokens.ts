@@ -89,6 +89,10 @@ export const scale = {
   // orientation). Deliberately harder and closer than --shadow-sm so the
   // thumb reads as sitting just above its track — don't converge the two.
   shadowSegment: '0 1px 4px rgba(0, 0, 0, 0.18)',
+
+  // The Clear Button's at-rest fill, mirrored by the drag-to-clear coachmark
+  // ghost so the tutorial always matches the real control.
+  clearGradientRest: 'linear-gradient(135deg, #ff6b6b, #ee5a6f)',
 } as const;
 
 // The cross-component stacking order, low to high. Scoped to "chrome" — the
