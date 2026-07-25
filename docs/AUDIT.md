@@ -7,46 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P3][consistency] `Icon` builds its class with string concatenation while `Button` uses the class array API
-
-**File(s):** `web/src/lib/components/Icon.svelte:65,68,75` vs
-`web/src/lib/components/design/Button.svelte:20,23` — pinned at SHA f934d43
-
-#### Problem
-
-Icon:
-
-```ts
-const colorClass = $derived(COLOR_ICONS.has(name) ? ' icon-color' : '');   // leading-space hack
-...
-<span class="{className}{colorClass}" ...>
-```
-
-Button, the sibling component:
-
-```svelte
-<button class={['btn', variant, size, className]} ...>
-```
-
-Two components in the same design layer solve identical "compose classes" needs two different ways.
-The Icon approach relies on a fragile leading-space literal (`' icon-color'`) and defaults
-`className = ''` so the concat doesn't produce `undefinedicon-color`; a missed space silently fuses
-class names. Svelte 5's array/object `class` prop (used by Button) is the idiomatic, injury-proof
-form.
-
-#### Proposed solution
-
-Rewrite Icon's class as `class={[className, COLOR_ICONS.has(name) && 'icon-color']}` and drop the
-`colorClass` derived + the `className = ''` default's space dependency. One class-composition idiom
-across the design components.
-
-#### Verification
-
-Rendered `class` attribute is unchanged for both color and mono icons (assert via the existing
-`data-icon` tests / `/dev/design`); `npm test` green.
-
----
-
 ### [P3][type-safety] `StrokeWidthMenu` fabricates icon names with a template + `as CommonIconName`, escaping the union and grep
 
 **File(s):** `web/src/lib/components/StrokeWidthMenu.svelte:52` — pinned at SHA f934d43

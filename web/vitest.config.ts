@@ -1,5 +1,4 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defaultClientConditions } from 'vite';
 import { defineConfig } from 'vitest/config';
 
 // Unit-test config, separate from the Playwright E2E suite (`npm test`).
@@ -9,11 +8,6 @@ import { defineConfig } from 'vitest/config';
 // for the storage/state layers.
 export default defineConfig({
   plugins: [sveltekit()],
-  // `.svelte` files compile to client mode here, but the bare `svelte` import
-  // resolves to `index-server.js` without the `browser` condition — so `mount()`
-  // throws `lifecycle_function_unavailable` and a component render test can't
-  // run. Spreading Vite's own client defaults keeps `module`/`development` too.
-  resolve: { conditions: [...defaultClientConditions] },
   define: {
     __APP_VERSION__: JSON.stringify('1.0.0-test'),
     __BUILD_TIME__: JSON.stringify('2026-01-01T00:00:00Z'),

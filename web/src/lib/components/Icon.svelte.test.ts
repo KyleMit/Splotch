@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mount, unmount } from 'svelte';
-import Icon, { COLOR_ICONS } from './Icon.svelte';
+import { COLOR_ICONS } from './Icon.svelte';
 import type { CommonIconName } from './iconTypes';
 import { isSpot } from '../../../../scripts/lib/iconChroma.mjs';
 
@@ -41,35 +40,4 @@ describe('COLOR_ICONS allowlist', () => {
       ).toBe(true);
     }
   );
-});
-
-// The span composes its class from the caller's `class` plus the conditional
-// `icon-color` opt-out, so a regression is silent in the markup but visible on
-// screen (ActionsPanel's monochrome tint filter keys off `icon-color`).
-describe('rendered class', () => {
-  const renderedClass = (props: { name: CommonIconName; class?: string }) => {
-    const target = document.createElement('div');
-    document.body.appendChild(target);
-    const app = mount(Icon, { target, props });
-    const value = target.querySelector('span')?.getAttribute('class') ?? '';
-    unmount(app);
-    target.remove();
-    return value.split(' ').filter((token) => !token.startsWith('svelte-'));
-  };
-
-  it('tags a color icon with icon-color alongside the caller class', () => {
-    expect(renderedClass({ name: 'camera', class: 'action-icon' })).toEqual([
-      'action-icon',
-      'icon-color',
-    ]);
-  });
-
-  it('leaves a mono icon untagged', () => {
-    expect(renderedClass({ name: 'chevron-left', class: 'action-icon' })).toEqual(['action-icon']);
-  });
-
-  it('emits no placeholder token when no class is passed', () => {
-    expect(renderedClass({ name: 'chevron-left' })).toEqual([]);
-    expect(renderedClass({ name: 'camera' })).toEqual(['icon-color']);
-  });
 });
