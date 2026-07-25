@@ -7,34 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P3][maintainability] `COLOR_ICONS` is a 24-entry hand-maintained allowlist mixing two unrelated concepts
-
-**File(s):** `web/src/lib/components/Icon.svelte:13-42` — pinned at SHA f934d43
-
-#### Problem
-
-The set conflates two distinct reasons an icon skips the monochrome tint: (1) it's genuinely
-full-color (derivable — `iconChroma.mjs`/`isSpot` already computes this), and (2) it's a monochrome
-preview that self-tints via `currentColor`/theme vars (`size-*`, `eraser-size-*`). Category 1 is
-machine-detectable yet is still hand-listed, so the list carries ~14 entries that a build step could
-generate, plus a test (`Icon.svelte.test.ts`) whose sole job is to police the hand-list against the
-classifier. That's a lot of machinery to keep a derivable set in sync by hand.
-
-#### Proposed solution
-
-Split the concerns: generate the color-icon portion at build time (extend `gen:icons` to emit a
-`COLORFUL_ICONS` const from `isSpot`, the classifier already lives in `scripts/lib/iconChroma.mjs`),
-and keep only the *self-tinting monochrome opt-outs* (`size-*`, `eraser-size-*`) as a small,
-clearly-named hand list (`SELF_TINTING_ICONS`). `Icon.svelte` unions the two. The guard test then
-becomes redundant for category 1.
-
-#### Verification
-
-Adding a new spot SVG + `gen:icons` auto-tags it (no manual `COLOR_ICONS` edit); the tint behavior
-on `/dev/design` is unchanged for all current icons.
-
----
-
 ### [P3][complexity] `gen-tokens.mjs` emits the dark block via two different call styles
 
 **File(s):** `scripts/gen-tokens.mjs:25-59` — pinned at SHA f934d43
