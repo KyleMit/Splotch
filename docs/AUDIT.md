@@ -7,37 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P3][type-safety] `StrokeWidthMenu` fabricates icon names with a template + `as CommonIconName`, escaping the union and grep
-
-**File(s):** `web/src/lib/components/StrokeWidthMenu.svelte:52` — pinned at SHA f934d43
-
-#### Problem
-
-```svelte
-name={`${erasing ? 'eraser-size' : 'size'}-${size}` as CommonIconName}
-```
-
-This is the one place the whole point of the generated `IconName` union is defeated: the name is
-assembled at runtime and force-cast, so the compiler never verifies `size-4`/`eraser-size-3`
-actually exist. It also destroys grepability — a newcomer searching for where `size-3` or
-`eraser-size-5` is used finds *nothing* (confirmed: `grep 'size-3'` across `.svelte` hits only the
-icon file). Ten of the 62 icons are reachable only through this cast. If someone deletes
-`size-5.svg`, nothing errors until a toddler picks the widest brush.
-
-#### Proposed solution
-
-Replace the cast with a lookup keyed by an explicit typed map, e.g.
-`const SIZE_ICONS: Record<StrokeSize, CommonIconName> = { 1: 'size-1', ... }` and
-`ERASER_SIZE_ICONS` similarly (or a single `satisfies` const). Now every `size-N` literal is
-greppable and union-checked, and a missing SVG is a compile error.
-
-#### Verification
-
-`grep -rn "'size-3'" web/src` finds the map entry; deleting `size-3.svg` + `gen:icons` makes
-`npm run check` fail. Stroke menu renders identically.
-
----
-
 ### [P3][maintainability] `COLOR_ICONS` is a 24-entry hand-maintained allowlist mixing two unrelated concepts
 
 **File(s):** `web/src/lib/components/Icon.svelte:13-42` — pinned at SHA f934d43
