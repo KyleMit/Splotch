@@ -7,44 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P2][design-tokens] `app.css` uses raw px/seconds where tokens exist and is outside the token ratchet
-
-**File(s):** `web/src/app.css:154-245` (`.modal-close-btn`, `.corner-button`), transitions at
-`:189,:213,:226` — pinned at SHA f934d43
-
-#### Problem
-
-The `design` skill's hard rule #2 is "no raw values where a token exists," and the same file already
-uses tokens elsewhere (`var(--duration-base)` in `.modal-close-btn`'s transition, `:169-172`). Yet a
-few lines down the icon-fill transitions are raw:
-
-```css
-.modal-close-icon svg { transition: fill 0.2s ease; }      /* :189 */
-.corner-button        { transition: opacity 0.2s ease; }   /* :213 */
-.corner-button-icon svg { transition: fill 0.2s ease; }    /* :226 */
-```
-
-`0.2s` is exactly `--duration-base`. Likewise `.modal-close-btn` hardcodes `top/right: 12px`
-(`--space-3`), `padding: 10px`, `.corner-button { padding: 8px }` (`--space-2`). The `lint:tokens`
-ratchet only scans **hex** in **`.svelte`** `<style>` blocks (`lint-token-styles.mjs:76`), so
-`app.css` — a `.css` file, with non-hex values — is entirely unguarded, which is exactly why this
-drift persists.
-
-#### Proposed solution
-
-Swap the covered raw values in `app.css` for tokens: the three `0.2s` → `var(--duration-base)`,
-`12px` → `var(--space-3)`, `8px` → `var(--space-2)`. Leave genuine one-offs (`44px` touch target,
-`2px` border, `10px`) as-is or mint a `--touch-target`/`--border-width` token only if reused.
-Consider extending the ratchet to also scan `app.css` and `--duration-*`/`--space-*` literals so
-this class of drift is caught.
-
-#### Verification
-
-Grep `app.css` for `0.2s`/bare `12px`/`8px` returns only intentional exceptions. Visual diff on
-`/dev/design` and modal/corner buttons shows zero change (values are equal).
-
----
-
 ### [P3][type-safety] `Icon` `Props` index signature `[key: string]: unknown` defeats prop checking
 
 **File(s):** `web/src/lib/components/Icon.svelte:60-65` — pinned at SHA f934d43
