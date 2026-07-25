@@ -7,36 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P4][consistency] `iconTypes.ts` imports `IconName` and separately re-exports it — redundant
-
-**File(s):** `web/src/lib/components/iconTypes.ts:1-4` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-import type { IconName } from './icon-names';
-export type { IconName } from './icon-names'; // re-export
-export type CommonIconName = Exclude<IconName, 'splotchy'>;
-```
-
-`IconName` is both imported (line 1, to build `CommonIconName`) and independently re-exported from
-the same module (line 3). It works, but the doubled reference to `./icon-names` is easy to misread
-as two different symbols and drifts if the source path changes.
-
-#### Proposed solution
-
-Collapse to `export type { IconName } from './icon-names';` plus
-`import type { IconName } from './icon-names';` is unnecessary — TypeScript allows
-`export type CommonIconName = Exclude<import('./icon-names').IconName, 'splotchy'>` or simply keep
-the single `import type` and add `export type { IconName }` to it: `export { type IconName }` is
-fine, but reference `./icon-names` once. Minor tidy.
-
-#### Verification
-
-`npm run check` passes; consumers of both `IconName` and `CommonIconName` still resolve.
-
----
-
 ### [P4][maintainability] Adding an icon touches two hand-edited surfaces with no single onboarding note
 
 **File(s):** `web/src/lib/components/Icon.svelte:13-42`, `.claude/rules/svelte.md:23` — pinned at
