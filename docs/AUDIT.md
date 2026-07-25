@@ -7,25 +7,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P3][design-tokens] NotchBand hardcodes a 250ms transition off the duration scale
-
-**File(s):** `web/src/lib/components/NotchBand.svelte:77` — pinned at SHA f934d43
-
-#### Problem
-
-`transition: background-color 250ms ease;` — 250ms isn't a token (`--duration-base:0.2s`,
-`--duration-slow:0.35s`). A one-off duration in an otherwise token-driven codebase.
-
-#### Proposed solution
-
-Use `--duration-slow` (or add the value to the motion scale if 250ms is deliberate).
-
-#### Verification
-
-Grep `250ms` → gone; band color transition still smooth on theme/tool change.
-
----
-
 ### [P3][duplication] NotchBand runs two near-identical status-bar effects that each re-import the plugin
 
 **File(s):** `web/src/lib/components/NotchBand.svelte:40-58` — pinned at SHA f934d43

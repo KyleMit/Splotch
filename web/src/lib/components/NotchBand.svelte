@@ -74,7 +74,7 @@
     position: fixed;
     z-index: var(--z-notch);
     pointer-events: none;
-    transition: background-color 250ms ease;
+    transition: background-color var(--duration-base) ease;
   }
   .notch-band--top {
     top: 0;
