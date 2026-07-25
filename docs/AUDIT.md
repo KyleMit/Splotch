@@ -7,30 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P4][maintainability] `app.css` comment points to `screenshot.js`, which is now `screenshot.ts`
-
-**File(s):** `web/src/app.css:256` — pinned at SHA f934d43
-
-#### Problem
-
-```css
-/* ...are created imperatively in src/lib/drawing/screenshot.js and appended... */
-```
-
-The file is `web/src/lib/drawing/screenshot.ts` (verified — no `.js` exists). The project mandates
-"no plain `.js` source files in `src/`," so the stale `.js` reference both misdirects a reader
-following the pointer and implies a convention violation that isn't real.
-
-#### Proposed solution
-
-Update the comment to `screenshot.ts`.
-
-#### Verification
-
-`ls web/src/lib/drawing/screenshot.*` shows only `.ts`; the comment matches.
-
----
-
 ### [P4][dead-code] `generate-icon-names.mjs` carries Windows path-normalization that ADR-0062 made dead
 
 **File(s):** `scripts/generate-icon-names.mjs:13-14` — pinned at SHA f934d43
