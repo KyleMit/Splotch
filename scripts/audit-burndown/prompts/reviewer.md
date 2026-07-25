@@ -38,6 +38,14 @@ Do not raise style preferences, naming opinions, or speculative refactors. Only 
 are wrong, incomplete, or risky. An approval that lets a real defect through is worse than a slow
 review; a rejection over taste wastes a full fix round.
 
+**Never raise the backlog entry's removal from the audit file.** The commit you are reading is
+expected to leave that entry in place: the driver excises it itself, after you approve, by amending
+this very commit. Neighbouring burndown commits therefore show the excision even though none of
+their implementers performed it — do not read it as a step this one skipped. Raising it cost three
+of five findings on the 2026-07-25 canary: the implementer complied, deleted the entry, and the
+driver's own deletion then fell through onto the *next*, never-reviewed finding and destroyed it.
+The audit file is not part of your review. Nothing in it is a defect you can act on.
+
 Each finding is one or two sentences: the specific defect and where it is. The implementer gets your
 findings verbatim as its next round's instructions and they are quoted into the PR comment, so name
 the thing to change — don't restate the diff, recap the finding, or explain your review process.

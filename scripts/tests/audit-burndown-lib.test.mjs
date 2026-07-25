@@ -14,6 +14,7 @@ import {
   countEntries,
   DEFAULT_MAX_ISSUES,
   deferralReason,
+  deleteEntryByTitle,
   deleteFirstEntry,
   findingPriority,
   getEntry,
@@ -161,6 +162,50 @@ describe('deleteFirstEntry', () => {
     expect(deleteFirstEntry(file)).toBe(false);
     expect(content()).toBe(drained);
     expect(deleteFirstEntry(missing())).toBe(false);
+  });
+});
+
+// The driver deletes by title, never by position. A role that deletes the entry
+// itself used to make the driver's positional delete fall through onto the next,
+// never-verified finding and destroy it — three times in five on the 2026-07-25
+// canary. These lock the identity keying that makes that impossible.
+describe('deleteEntryByTitle', () => {
+  const SECOND = '[P2][dead-code] Second finding';
+
+  it('removes the named entry from the middle, leaving its neighbours intact', () => {
+    const first = getEntry(1, file);
+    const third = getEntry(3, file);
+    expect(deleteEntryByTitle(SECOND, file)).toBe(true);
+    expect(countEntries(file)).toBe(2);
+    expect(getEntry(1, file)).toBe(first);
+    expect(getEntry(2, file)).toBe(third);
+    expect(content()).not.toContain('Second body.');
+  });
+
+  it('is a no-op when the entry is already gone — it never falls through to another', () => {
+    deleteEntryByTitle(SECOND, file);
+    const after = content();
+    expect(deleteEntryByTitle(SECOND, file)).toBe(false);
+    expect(content()).toBe(after);
+    expect(countEntries(file)).toBe(2);
+  });
+
+  it('matches the whole title exactly, not a prefix or substring', () => {
+    expect(deleteEntryByTitle('[P2][dead-code] Second', file)).toBe(false);
+    expect(deleteEntryByTitle('Second finding', file)).toBe(false);
+    expect(deleteEntryByTitle(`### ${SECOND}`, file)).toBe(false);
+    expect(countEntries(file)).toBe(3);
+  });
+
+  // The fixture's first entry holds two blank lines inside a code fence, which
+  // are legal and must survive — so this drains it too rather than asserting
+  // against a file that still contains them.
+  it('keeps the file dprint-clean and returns false on a missing file', () => {
+    deleteEntryByTitle(SECOND, file);
+    expect(deleteEntryByTitle('[P1][complexity] First finding', file)).toBe(true);
+    expect(content()).not.toContain('\n\n\n');
+    expect(countEntries(file)).toBe(1);
+    expect(deleteEntryByTitle(SECOND, missing())).toBe(false);
   });
 });
 

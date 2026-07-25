@@ -192,10 +192,31 @@ export function getEntry(index = 1, file = auditFile()) {
 // Remove the first entry in place. Collapses the blank-line seam the excision
 // leaves so the file stays dprint-clean, and trims trailing blank lines.
 export function deleteFirstEntry(file = auditFile()) {
+  return deleteEntryAt(entryStarts(readLines(file) ?? [])[0], file);
+}
+
+// Remove the entry whose heading matches `title` (the heading line minus its
+// leading `### `). Returns false when no such entry exists.
+//
+// The driver deletes by title rather than by position because "delete the first
+// entry" is only correct while the entry being worked on is still the first one
+// — and a role can invalidate that mid-finding. On the 2026-07-25 canary the
+// reviewer rejected three of five fixes for "not deleting the AUDIT.md entry"
+// (it saw the excision in neighbouring burndown commits and read its absence as
+// an omission), the implementer complied by running `pop.mjs --delete`, and the
+// driver's own positional delete then removed what had become the first entry:
+// the NEXT, never-verified finding, silently, inside an unrelated fix commit.
+// Keying on identity makes that whole class impossible — a duplicated delete is
+// now a no-op instead of destroying a finding.
+export function deleteEntryByTitle(title, file = auditFile()) {
   const lines = readLines(file);
   if (!lines) return false;
-  const start = entryStarts(lines)[0];
-  if (start === undefined) return false;
+  const start = entryStarts(lines).find((i) => lines[i].replace(/^### /, '') === title);
+  return deleteEntryAt(start, file, lines);
+}
+
+function deleteEntryAt(start, file, lines = readLines(file)) {
+  if (!lines || start === undefined) return false;
   const { end } = entryRange(lines, start);
   lines.splice(start, end - start + 1);
   while (start > 0 && lines[start - 1]?.trim() === '' && lines[start]?.trim() === '') {

@@ -30,7 +30,7 @@ import {
   countEntries,
   DEFAULT_MAX_ISSUES,
   deferralReason,
-  deleteFirstEntry,
+  deleteEntryByTitle,
   ensureWorkDirs,
   findingPriority,
   getEntry,
@@ -268,7 +268,7 @@ function defer(title, why) {
   // The header + appended entries aren't wrapped at dprint's width, which would
   // redden CI's Quality (format) job. Normalise before it goes into the commit.
   runCmd('npx', ['dprint', 'fmt', DEFERRED_FILE]);
-  deleteFirstEntry();
+  deleteEntryByTitle(title);
   git('add', 'docs/AUDIT.md', DEFERRED_FILE);
   git('commit', '-q', '-m', `chore(audit): defer — ${why}\n\nAudit: ${title}`);
   deferred += 1;
@@ -472,7 +472,7 @@ while (done < MAX_ISSUES) {
   if (verdict === 'INVALID') {
     const reason = structured(verify.env).reason ?? 'no reason given';
     logLine(`  INVALID: ${reason}`);
-    deleteFirstEntry();
+    deleteEntryByTitle(title);
     git('add', 'docs/AUDIT.md');
     git(
       'commit',
@@ -736,7 +736,10 @@ while (done < MAX_ISSUES) {
 
   // Fold the AUDIT.md deletion into the final commit so the file is always an
   // exact record of what remains and a crash leaves nothing to reconcile.
-  deleteFirstEntry();
+  // Keyed on the title: a role that deleted the entry itself (which the prompts
+  // forbid, but the reviewer talked the implementer into it three times on the
+  // 2026-07-25 canary) makes this a no-op instead of eating the next finding.
+  if (!deleteEntryByTitle(title)) logLine('  entry already gone — a role edited the audit file');
   git('add', 'docs/AUDIT.md');
   git('commit', '-q', '--amend', '--no-edit');
   sha = gitOut('rev-parse', 'HEAD');

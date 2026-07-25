@@ -9,6 +9,91 @@
 
 ## Source: Code audit — Design system + icons
 
+### [P4][readability] ActionsPanel duplicates the drawer transition list verbatim across two rules
+
+**File(s):** `web/src/lib/components/ActionsPanel.svelte:426-431,462-467` — pinned at SHA f934d43
+
+#### Problem
+
+The four-line
+`transition: grid-template-columns 0.28s ease, grid-template-rows 0.28s ease, opacity var(--duration-base) ease, margin 0.28s ease;`
+is written in the base `.actions-drawer` (426-431) and again in the closed-state rule (462-467,
+which only adds a `visibility 0s 0.28s` segment). The `0.28s` literal appears four+ times and is
+flagged "keep in sync with ACTION_BUTTON_GAP"-style comments elsewhere. Editing the drawer timing
+means touching multiple identical blocks.
+
+#### Proposed solution
+
+Introduce a `--drawer-collapse: 0.28s` custom property (or a motion token) and reference it; keep
+the transition list in the base rule and only append `visibility` in the closed rule rather than
+restating the whole list.
+
+#### Verification
+
+Grep `0.28s` → single source. Drawer open/close animation unchanged in both orientations.
+
+---
+
+---
+
+### [P5][discoverability] SplotchyIcon renders `<img src="/splotchy.svg">`, bypassing the Icon system
+
+**File(s):** `web/src/lib/components/SplotchyIcon.svelte:9-11` — pinned at SHA f934d43
+
+#### Problem
+
+Every other glyph in scope goes through `Icon.svelte` (inline `{@html}` SVG, `data-icon`,
+type-checked `name` union, `fill`-based theming). The mascot instead points an `<img>` at a static
+`/splotchy.svg`, so it can't be tinted via the icon-ink rules, isn't part of the `name` union, and
+won't appear when someone greps the icon set. It carries `class="… icon-color"` and
+`data-icon="splotchy"` to *look* like an Icon output without being one. A contributor searching for
+how icons work will miss it.
+
+#### Proposed solution
+
+If the mascot is intentionally full-color raster/SVG-as-image, document that in the file (a one-line
+WHY comment) and/or register it in the icon pipeline as an `icon-color` entry so it's discoverable
+through the same channel. If it can be inlined, route it through `Icon`/`gen:icons`.
+
+#### Verification
+
+A grep for the mascot from the icon catalog finds it; theme/tinting behavior verified in light and
+dark.
+
+---
+
+---
+
+### [P5][readability] Slider's snap-band width is an unexplained-magnitude magic fraction
+
+**File(s):** `web/src/lib/components/Slider.svelte:42` — pinned at SHA f934d43
+
+#### Problem
+
+`const snapBand = $derived((max - min) * 0.045);` — the `0.045` ("~4.5% of the track") is a bare
+literal. It's commented, but as a tuning constant that governs detent feel it would be clearer and
+more grep-able as a named constant, especially since Slider is a reusable primitive backing multiple
+settings.
+
+#### Proposed solution
+
+`const SNAP_BAND_FRACTION = 0.045;` at module scope with the rationale, referenced in the derived.
+
+#### Verification
+
+Grep `0.045` → named. Detent still engages within the same band on both the volume (0–100) and
+button-size (70–130) sliders.
+
+---
+
+**Scope note:** Findings are confined to the assigned Core UI controls files. The
+`rgba(171, 113, 225, …)` values in ActionsPanel/BrushMenu/StrokeWidthMenu and the `#000` keyline are
+intentional pre-`color-mix` fallbacks / documented one-offs per `docs/COMPATIBILITY.md`, so I did
+not flag them. The CSS literals mirroring `actionButtonLayout` constants (188/208/6) are already
+drift-guarded by `actionButtonLayout.fallback.test.ts` and were likewise left alone.
+
+---
+
 ### [P2][dead-code] `Button` design primitive has no production consumers
 
 **File(s):** `web/src/lib/components/design/Button.svelte:1-105` (whole component); consumers
