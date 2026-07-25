@@ -9,15 +9,21 @@
 // Graceful stop:  touch .audit-work/STOP
 // Hard stop:      pkill -TERM -f 'claude -p'
 //
-// Two design points worth knowing before editing (see the burn-down-audits
+// Three design points worth knowing before editing (see the burn-down-audits
 // skill for the full architecture):
-// * `--resume` is the handoff: the implementer's session_id is captured from
-//   the JSON envelope and passed back on fix rounds, so it resumes with its
-//   full history instead of re-deriving the change from review text.
+// * `--resume` is the handoff: the driver MINTS each role's session id with
+//   `--session-id` and passes the implementer's back on fix rounds, so it
+//   resumes with its full history instead of re-deriving the change from review
+//   text. Minting rather than reading `session_id` back off the envelope is
+//   load-bearing — see claudeStep.
 // * `--json-schema` replaces prose parsing: verdicts, SHAs, and review
 //   statuses come back typed in .structured_output.
+// * The driver never talks to GitHub. It commits and pushes; the supervising
+//   agent opens the PR and drains COMMENT_STORE through the GitHub MCP tools
+//   (ADR-0077).
 
 import { appendFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { hasCommand, sleep } from '../lib/utils.mjs';
 import {
@@ -41,20 +47,42 @@ import {
   shellOk,
   WORK,
 } from './lib.mjs';
-import { commitCommentBody, findingProblem } from './comment.mjs';
+import { findingProblem } from './comment.mjs';
 
 chdirRoot();
 ensureWorkDirs();
 
 // ---- knobs ------------------------------------------------------------------
 const MAX_ISSUES = Number(process.env.MAX_ISSUES ?? DEFAULT_MAX_ISSUES); // canary; raise once proven
-const PUSH_EVERY = Number(process.env.PUSH_EVERY ?? 10);
+// Push after EVERY finding. The run lives in an ephemeral cloud container that
+// is reclaimed without warning, so an unpushed commit is a commit at risk: the
+// only durable artifact is what is on origin. Batching existed to amortise a
+// full-suite gate that no longer runs here (see PUSH_TEST_CMD), which leaves
+// nothing to amortise — a push is a second, and a lost hour of Opus work is an
+// hour. Raise it only if you are pushing somewhere rate-limited.
+const PUSH_EVERY = Number(process.env.PUSH_EVERY ?? 1);
 const BRANCH = process.env.BRANCH ?? 'audit/burndown';
 const CHECK_CMD = process.env.CHECK_CMD ?? 'npm run check'; // type-check gate, every finding
 const TEST_CMD = process.env.TEST_CMD ?? 'npm run test:unit'; // fast-test gate, every finding
 const E2E_CMD = process.env.E2E_CMD ?? 'npm run test:e2e -- --retries=1'; // targeted E2E (retry past transient flakes), UI-touching findings only
 const LINT_CMD = process.env.LINT_CMD ?? 'npx eslint'; // per-finding lint gate, on the fix's changed files
-const PUSH_TEST_CMD = process.env.PUSH_TEST_CMD ?? 'npm test'; // full suite, once per batch before push
+// Local full-suite gate before a push — OFF by default. Every push lands on the
+// draft PR, whose CI runs the whole suite anyway, in parallel, without sitting
+// on the critical path of the next finding. Running it locally too would cost
+// ~1–2 min per finding to learn the same thing later than CI does. The tradeoff
+// is real and deliberate: cross-finding regressions the per-finding targeted
+// specs cannot see now surface in CI (asynchronously) rather than blocking the
+// push, so the supervising agent has to actually watch CI. Set it to `npm test`
+// to restore the blocking local gate.
+const PUSH_TEST_CMD = process.env.PUSH_TEST_CMD ?? '';
+// Per-commit PR comment records: one line appended the moment its fix lands, for
+// the supervising agent to render and post through the GitHub MCP tools. It
+// deliberately lives OUTSIDE git — a tracked file would be caught by the
+// rollback paths' `git reset --hard`, which is precisely how pending records
+// would get destroyed. Point it at a committed path (and drain + delete that
+// file at closeout) when a run will go unwatched long enough that losing the
+// container would matter.
+const COMMENT_STORE = process.env.COMMENT_STORE ?? join(WORK, 'pending-comments.jsonl');
 const MAX_DEFERRALS = Number(process.env.MAX_DEFERRALS ?? 3); // consecutive deferrals before halting
 const RETRIES = Number(process.env.RETRIES ?? 3); // retries for transient claude failures
 
@@ -162,11 +190,36 @@ function halt(message) {
 // Distinguishes a transient failure (network blip, rate limit, overload) from
 // a real answer. WITHOUT this, a 20-minute outage at 2am trips the consecutive
 // deferral limit and you wake to 40 issues done instead of 300.
-// Returns { ok, env } where env is the parsed JSON envelope (or {}).
+// Returns { ok, env, sessionId } where env is the parsed JSON envelope (or {})
+// and sessionId is the id this call ran under ('' on a --resume call, which
+// inherits one).
+//
+// EVERY fresh role call gets a minted `--session-id`, and the resume handle is
+// that minted id — NOT `env.session_id` read back off the envelope. This is not
+// belt-and-braces; it is the only thing that makes the handoff work in a cloud
+// session. Claude Code on the web pins CLAUDE_CODE_SESSION_ID in the container
+// environment, every `claude -p` child inherits it, and all of them then report
+// the SAME session_id and append to ONE transcript file. `--resume <that id>`
+// resolves to whatever wrote to that transcript last — which, at a fix round, is
+// the reviewer that just rejected the work, or even the supervising agent's own
+// tool output. The 2026-07-25 canary confirmed it: both fix rounds resumed the
+// reviewer's leaf, so the implementer was handed the critic's context instead of
+// its own and the blind writer/verifier pairing was silently void. Unsetting the
+// env var does not help; minting the id does.
+//
+// A fresh id per ATTEMPT, not per call: a retry that reused the id of a partial
+// session would collide with it.
 async function claudeStep(tag, args) {
   let env = {};
+  let sessionId = '';
+  const resuming = args.includes('--resume');
   for (let attempt = 1; attempt <= RETRIES; attempt++) {
-    const result = runCmd('claude', ['-p', ...args, '--output-format', 'json']);
+    const idArgs = [];
+    if (!resuming) {
+      sessionId = randomUUID();
+      idArgs.push('--session-id', sessionId);
+    }
+    const result = runCmd('claude', ['-p', ...args, ...idArgs, '--output-format', 'json']);
     const out = result.stdout ?? '';
     writeFileSync(join(LOGS, `${tag}.json`), out);
     if (result.stderr) appendFileSync(join(LOGS, `${tag}.err`), result.stderr);
@@ -176,20 +229,20 @@ async function claudeStep(tag, args) {
     } catch {
       env = {};
     }
-    if (out && env.is_error !== true && result.status === 0) return { ok: true, env };
+    if (out && env.is_error !== true && result.status === 0) return { ok: true, env, sessionId };
 
     const subtype = env.subtype ?? 'no_output';
     if (subtype === 'error_max_budget_usd' || subtype === 'error_max_turns') {
       // A cap is a real answer, not a blip. Don't burn retries on it.
       logLine(`  ${tag} hit a cap (${subtype}) — not retrying`);
-      return { ok: false, env };
+      return { ok: false, env, sessionId };
     }
 
     const wait = attempt * attempt * 30;
     logLine(`  ${tag} attempt ${attempt}/${RETRIES} failed (${subtype}) — backing off ${wait}s`);
     await sleep(wait * 1000);
   }
-  return { ok: false, env };
+  return { ok: false, env, sessionId };
 }
 
 const structured = (env) => env.structured_output ?? {};
@@ -266,16 +319,14 @@ function gateFailure(baseSha, specs) {
 }
 
 // ---- preflight & resume recovery -------------------------------------------
-// A run is fully resumable from git + the draft PR + docs/AUDIT.md alone, so a
-// brand-new session (even a fresh clone on another machine, with no .audit-work/)
-// can pick up exactly where a crashed one stopped. RESUME=1 additionally clears
-// crash residue that would otherwise block startup; the overnight launcher sets
-// it. See "Resuming a crashed run" in the burn-down-audits skill.
+// A run is fully resumable from git + docs/AUDIT.md alone, so a brand-new session
+// (even a fresh container, with no .audit-work/) can pick up exactly where a
+// crashed one stopped. RESUME=1 additionally clears crash residue that would
+// otherwise block startup; the unattended launcher sets it. See "Resuming a
+// crashed run" in the burn-down-audits skill.
 const RESUME = process.env.RESUME === '1' || process.env.RESUME === 'true';
 
-for (const bin of ['gh', 'claude']) {
-  if (!hasCommand(bin)) halt(`missing dependency: ${bin}`);
-}
+if (!hasCommand('claude')) halt('missing dependency: claude');
 
 // Adopt the branch. A fresh clone has origin/BRANCH but no local BRANCH:
 // `git switch -c BRANCH` there would fork a new branch off the current HEAD
@@ -310,60 +361,25 @@ if (RESUME) rmSync(join(WORK, 'STOP'), { force: true }); // a graceful stop leav
 
 if (!shellOk(CHECK_CMD)) halt('tree is already red before we start');
 
-// Discover the draft PR. .audit-work/pr-number is gitignored working state, so a
-// fresh clone won't have it — look up the open PR for this branch on GitHub
-// before pushBatch would otherwise open a second, duplicate draft PR.
-const prNumberFile = join(WORK, 'pr-number');
-let prNumber = existsSync(prNumberFile) ? readFileSync(prNumberFile, 'utf8').trim() : '';
-const found = runCmd('gh', [
-  'pr',
-  'list',
-  '--head',
-  BRANCH,
-  '--state',
-  'open',
-  '--json',
-  'number',
-  '--jq',
-  '.[0].number',
-]);
-// Only act on the lookup when it actually succeeded: on a network/auth blip an
-// empty stdout would otherwise look like "no open PR" and throw away a good
-// cached number, and pushBatch would then open a duplicate draft PR.
-const openPr = found.status === 0 ? (found.stdout ?? '').trim() : '';
-if (prNumber && found.status === 0 && prNumber !== openPr) {
-  // The cached number outlived its PR — the previous run's PR was merged or
-  // closed. Trusting it would post this run's per-commit comments onto a
-  // landed PR, which is where they are least likely to ever be seen.
-  logLine(`  cached PR number ${prNumber} is not the open PR for ${BRANCH} — discarding it`);
-  rmSync(prNumberFile, { force: true });
-  prNumber = '';
-}
-if (!prNumber && openPr) {
-  prNumber = openPr;
-  writeFileSync(prNumberFile, prNumber);
-  logLine(`  adopted existing draft PR for ${BRANCH} (number ${prNumber})`);
-}
 // Fixes and drops are both "handled", but only fixes are work — conflating them
 // in the summary makes the closeout AUDIT-LOG row wrong in the flattering
 // direction, so they are counted apart.
 let done = 0;
 let dropped = 0;
 let sincePush = 0;
-const pending = []; // completed fixes awaiting their per-commit PR comment (posted on the next successful push)
 
-const lastLine = (result) =>
-  `${result.stderr ?? ''}\n${result.stdout ?? ''}`
-    .split('\n')
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .pop() ?? 'unknown error';
-
-// Push the batch, create the draft PR on the first push, and post one per-commit
-// comment for each pushed fix. Returns false (commits held locally) if the
-// full-suite gate or the push itself fails.
+// Push what has been committed. Returns false (commits held locally) if the
+// optional full-suite gate or the push itself fails.
+//
+// The driver does NOT create the PR or post comments — it has no GitHub
+// credential and, in a cloud session, not even a github.com remote (origin
+// points at a local git proxy, which is why `gh` cannot work here no matter how
+// it is authenticated). Both were previously `gh` calls that failed hard and
+// silently swallowed a night of per-commit comments. GitHub is now entirely the
+// supervising agent's job, via the MCP tools; the driver's contract is commits
+// on origin plus the comment records staged in COMMENT_STORE. See ADR-0077.
 function pushBatch({ final = false } = {}) {
-  if (!shellOk(PUSH_TEST_CMD)) {
+  if (PUSH_TEST_CMD && !shellOk(PUSH_TEST_CMD)) {
     logLine(
       final
         ? `  ${PUSH_TEST_CMD} red on the final batch — commits held locally, not pushed`
@@ -376,52 +392,15 @@ function pushBatch({ final = false } = {}) {
     return false;
   }
   sincePush = 0;
-  if (!prNumber) {
-    const created = runCmd('gh', [
-      'pr',
-      'create',
-      '--draft',
-      '--title',
-      'Audit burndown',
-      '--body',
-      'Automated burndown of docs/AUDIT.md. In progress.',
-    ]);
-    prNumber = (created.stdout ?? '').trim().match(/(\d+)$/)?.[1] ?? '';
-    if (prNumber) writeFileSync(prNumberFile, prNumber);
-    // A failed create used to be swallowed entirely: prNumber stayed empty, and
-    // an unattended run would push all night with no PR and no hint in the log.
-    // Last non-empty line, not the first: gh emits warnings ("Warning: N
-    // uncommitted changes") ahead of the actual error, which would otherwise
-    // mask the cause.
-    else logLine(`  gh pr create FAILED — pushed, but no PR: ${lastLine(created)}`);
-  }
-  if (prNumber) {
-    for (const rec of pending) {
-      runCmd('gh', ['pr', 'comment', prNumber, '--body', commitCommentBody(rec)]);
-    }
-    pending.length = 0;
-  } else if (pending.length) {
-    // Nowhere to post them, so persist instead of letting them die with the
-    // process — the commits are already pushed, and these are the only record
-    // of the reviewer's catches. Re-render later with comment.mjs.
-    appendFileSync(
-      join(WORK, 'pending-comments.jsonl'),
-      `${pending.map((rec) => JSON.stringify(rec)).join('\n')}\n`
-    );
-    logLine(
-      `  no PR to comment on — ${pending.length} comment(s) saved to ${WORK}/pending-comments.jsonl`
-    );
-    pending.length = 0;
-  }
   return true;
 }
 
 // Record how this run was launched, while the process that knows still exists.
 // Nothing else can recover it: overnight.mjs launches via `env VAR=… node …`, and
-// `env` execs node, so the overrides live in the environment and never reach argv
-// — scraping `ps` gets them only on macOS, and only via the incidental caffeinate
-// parent. This file is what .claude/hooks/precompact-burndown-snapshot.sh reads,
-// and it is the one fact a post-compaction session genuinely cannot re-derive.
+// `env` execs node, so the overrides live in the environment and never reach argv,
+// leaving nothing for `ps` to scrape. This file is what
+// .claude/hooks/precompact-burndown-snapshot.sh reads, and it is the one fact a
+// post-compaction session genuinely cannot re-derive.
 //
 // It is written HERE, below every halt() gate, and not up in preflight: halt()
 // exits without restoring the file, so a launch that dies on a missing binary, a
@@ -549,9 +528,11 @@ while (done < MAX_ISSUES) {
     BUDGET_IMPL,
   ]);
 
-  // The session_id is the resume handle. Addressing by session ID rather than
+  // The resume handle is the id the driver MINTED for this call, not the one the
+  // envelope reports — in a cloud session those differ, and the envelope's is
+  // shared by every role (see claudeStep). Addressing by session id rather than
   // by agent name is what makes hundreds of iterations safe.
-  const implSession = impl.env.session_id ?? '';
+  const implSession = impl.sessionId ?? '';
   const reportedSha = structured(impl.env).sha ?? '';
   let sha = resolveImplSha({
     reported: reportedSha,
@@ -667,10 +648,20 @@ while (done < MAX_ISSUES) {
     // and this session's prefix is the entire first implementation pass. Escalating
     // effort on a later round looks like an obvious win and would silently pay to
     // re-read everything it already knows.
+    // No minted id means the first impl call never produced one, so there is no
+    // history to resume. Re-deriving the change from the feedback is worse than
+    // resuming but far better than `--resume ''`, which just errors out and
+    // burns the finding on a retry loop. The resumed path inherits its system
+    // prompt from the session, so it is re-supplied only on the fallback.
+    const resumeArgs = implSession
+      ? ['--resume', implSession]
+      : ['--append-system-prompt-file', join(PROMPTS, 'implementer.md')];
+    if (!implSession)
+      logLine(`  round ${round}: no impl session to resume — fixing without history`);
+
     impl = await claudeStep(`${tag}.fix${round}`, [
       `The following must be addressed on commit ${sha}. Address every point and commit.\n\n${feedback}`,
-      '--resume',
-      implSession,
+      ...resumeArgs,
       '--effort',
       EFFORT_IMPL,
       '--tools',
@@ -744,30 +735,33 @@ while (done < MAX_ISSUES) {
 
   logLine(`  DONE  ${sha.slice(0, 12)}`);
   appendFileSync(join(WORK, 'completed.log'), `${sha}  ${title}\n`);
-  pending.push({
-    sha,
-    title,
-    problem: findingProblem(issue),
-    fix: fixSummaries,
-    catches: reviewCatches,
-    e2eSpecs,
-  });
+  // Written the instant the fix lands, not held in memory until a push: the
+  // previous version accumulated records in an array and only spilled them to
+  // disk when it found it had no PR, so a kill between two pushes took every
+  // reviewer catch since the last one with it.
+  appendFileSync(
+    COMMENT_STORE,
+    `${JSON.stringify({
+      sha,
+      title,
+      problem: findingProblem(issue),
+      fix: fixSummaries,
+      catches: reviewCatches,
+      e2eSpecs,
+    })}\n`
+  );
   done += 1;
   sincePush += 1;
   consecutive = 0;
 
-  // ---- 7. PUSH, batched -----------------------------------------------------
-  // Full suite once per batch (E2E + asset-gen the per-finding TEST_CMD skips
-  // for speed). pushBatch never ships a red batch: it holds the commits locally
-  // and retries at the next boundary — a flaky E2E clears on retry, a real
-  // regression surfaces in audit:status rather than shipping.
+  // ---- 7. PUSH --------------------------------------------------------------
+  // Every finding by default. The commit is the durable artifact and the
+  // container is not, so there is no reason to sit on one.
   if (sincePush >= PUSH_EVERY) pushBatch();
 }
 
 // ---- finish -----------------------------------------------------------------
-// Flush the trailing sub-batch under the same full-suite gate as the batched
-// pushes, so a red tail never escapes on exit either — held commits stay local
-// for the operator to inspect.
+// Flush anything the last boundary held back (a failed push, or PUSH_EVERY > 1).
 if (sincePush > 0) pushBatch({ final: true });
 
 // Retire the compaction snapshot: nothing else deletes it, and its reader hook

@@ -81,9 +81,13 @@ if (pid) {
   }
 }
 
-const prNumberFile = join(WORK, 'pr-number');
-if (existsSync(prNumberFile))
-  console.log(`PR         #${readFileSync(prNumberFile, 'utf8').trim()}`);
+// Unposted per-commit comments are work the supervising agent still owes the PR,
+// and nothing else surfaces them — the driver only ever appends to this file.
+const store = process.env.COMMENT_STORE ?? join(WORK, 'pending-comments.jsonl');
+if (existsSync(store)) {
+  const pending = readFileSync(store, 'utf8').split('\n').filter(Boolean).length;
+  if (pending) console.log(`comments   ${pending} unposted (${store})`);
+}
 
 console.log('\nlast 10 audit commits');
 const commits = gitOut('log', '--oneline', '-10', '--grep=^Audit:');

@@ -263,11 +263,19 @@ describe('launchCommand', () => {
     expect(launchCommand({ MAX_ISSUES: '600' }, 5)).toBe('npm run audit:burndown:overnight -- 5');
   });
 
-  // Dropped from the tmux job once already: preflight inherits the full env and
-  // passes, so a missing knob only surfaces as the driver burning down the wrong
-  // file, unattended.
+  // Dropped from the forwarded job env once already: preflight inherits the full
+  // env and passes, so a missing knob only surfaces as the driver burning down
+  // the wrong file, unattended.
   it('records AUDIT_FILE, which retargets the whole run', () => {
     expect(launchCommand({ AUDIT_FILE: 'docs/OTHER.md' })).toContain("AUDIT_FILE='docs/OTHER.md'");
+  });
+
+  // Same failure shape: a relaunch that forgets the store writes its per-commit
+  // comments somewhere the agent draining them is not looking.
+  it('records COMMENT_STORE, which relocates the pending-comment records', () => {
+    expect(launchCommand({ COMMENT_STORE: 'docs/PENDING.jsonl' })).toContain(
+      "COMMENT_STORE='docs/PENDING.jsonl'"
+    );
   });
 
   it('records every non-default knob as a shell-quoted assignment', () => {

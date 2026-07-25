@@ -26,7 +26,12 @@ would break one of these, it is a redesign rather than a tweak.
    reviewer is deliberately not told how the author intended to fix the problem, and it is a
    separate process, not the implementer checking itself.
 4. **The driver's gates are deterministic.** Type-check, unit tests, lint, named E2E specs. These
-   are exit codes, not model judgement, and they are what makes an unattended overnight run safe.
+   are exit codes, not model judgement, and they are what makes an unattended run safe.
+
+A fifth arrived with the cloud cutover (ADR-0077) and behaves like an invariant even though it is
+younger: **the driver does not talk to GitHub.** It commits and pushes; the supervising agent owns
+the PR and the comments. Every GitHub failure this project has hit — a 20-minute API outage, an
+unusable CLI — was survivable precisely because the commits were independent of it.
 
 ## Recurring principles
 
@@ -285,6 +290,59 @@ the current run, and taking closeout counts from `finished:` rather than from co
 54caf9a2 also **removed** something: the canary checklist's "force a rejection" step, which no run
 ever actually performed, replaced by reading a rejection the run produced on its own.
 
+### The cloud cutover (ADR-0077)
+
+The third live run was the first in a Claude Code cloud session rather than on the author's Mac, and
+it was the run that paid for the canary checklist. Five findings, all fixed, nothing deferred — and
+underneath that clean result, two of the skill's load-bearing claims were false.
+
+**The `--resume` handoff was inverted, and nothing in any log said so.** CCR pins
+`CLAUDE_CODE_SESSION_ID`; every `claude -p` child inherits it, so all of them report the same
+`session_id` and append to one transcript file. `--resume <that id>` lands on the file's most recent
+leaf. Walking `parentUuid` chains showed both of the run's fix rounds attached to the *reviewer's*
+leaf — the implementer was fixing its work while holding the critic's context. Invariant 3 (the
+reviewer is blind, in both directions) was void for every fix round the loop had ever run in this
+environment.
+
+Three things are worth keeping from how that was found, because none of them were obvious:
+
+* **The symptom was cosmetic.** The observation that started it was "every role envelope has the
+  same `session_id`" — noticed incidentally while reading `fix1.json` for the canary checklist's
+  step 3, which exists to confirm the handoff fired. The checklist earned its keep. It also nearly
+  failed: `fix1`'s summary *did* reference the earlier work in convincing detail, because the review
+  feedback quoted enough of it. Reading the summary and stopping there would have confirmed a
+  handoff that was not happening.
+* **The transcript is a forest, not a conversation.** 167 root messages (`parentUuid == null`) in
+  one file, no `isSidechain` markers. That structure is what makes "resume the session" ambiguous,
+  and it is the thing to check first if this ever regresses.
+* **One measurement contradicted itself and had to be withdrawn mid-investigation.** A grep for the
+  fix-round prompt string matched six times, four of which were the investigation's own output
+  echoing into the shared transcript. Anchoring on `startsWith` gave the true count (2, both
+  reviewer-resumed). The false positives were themselves a second demonstration of the root cause —
+  the supervising agent writes to the same transcript the roles do — but only after being caught.
+  Principle 1 applies to your own diagnostics, not just to the driver's.
+
+The fix is `--session-id <uuid>`, minted per call by the driver. Unsetting the env var does not
+work; that was tried first. Verified end-to-end with a codeword planted in one session and read back
+after a resume.
+
+**`gh` was structurally unusable, and the driver degraded quietly rather than failing.** No
+github.com credential, *and* an `origin` pointing at a local git proxy that `gh` refuses as a
+non-GitHub host. The run pushed everything correctly and then logged `gh pr create FAILED` and
+spilled five comments to a gitignored file. That is the same shape as the 2026-07-24 macOS incident
+(20-minute HTTP 500 on `gh pr create`) arriving from a completely different direction, which is what
+turned "harden the PR path" into "take the driver out of the GitHub business entirely". The
+supervising agent has MCP tools; the subprocess has nothing. Split it there.
+
+The choice of **full cutover over capability-detection** was the user's, and it is the one decision
+here that a future maintainer might reasonably revisit — the conditional version was a real option
+and is written up in the ADR's alternatives. Two of the three changes went in unconditionally
+because they are improvements on any runtime (minted session ids, per-finding pushes), so a re-port
+to macOS would start from a better driver than the one that was cut over.
+
+One more thing the run demonstrated, at no cost: the container restarted mid-session. The disk
+happened to survive. `PUSH_EVERY=1` exists because next time it might not.
+
 ## Rejected, and why
 
 Proposals that were considered on their merits and turned down. Each is here so it does not get
@@ -446,29 +504,30 @@ the stale timing table for free.
 
 ## Timeline
 
-| Date       | Commit   | What                                                                      |
-| ---------- | -------- | ------------------------------------------------------------------------- |
-| 2026-07-24 | 1df27d7e | Port the kit as a skill + Node scripts (PR #533)                          |
-| 2026-07-24 | 9b975335 | Two-tier test gate; reviewer gets the original finding                    |
-| 2026-07-24 | 9fb02e59 | Conditional per-finding E2E gate, with spec sanitizing                    |
-| 2026-07-24 | aed45eb7 | Per-commit PR comments, lint gate, `BUDGET_VERIFY` 1→3                    |
-| 2026-07-24 | 401820f5 | E2E `--retries=1` for flakes; concise fix summaries                       |
-| 2026-07-24 | 70cabfac | Forward env knobs through the overnight launcher; context-window survival |
-| 2026-07-24 | ea4b3731 | Mid-run control verbs; explicit `claude-opus-5` pin                       |
-| 2026-07-24 | 8845f470 | Resumable from any fresh session or clone                                 |
-| 2026-07-24 | 6646f9db | P4/P5 impl tiering; bare SHAs in comments                                 |
-| 2026-07-24 | a40f534f | Harden the PR path; self-heal a stale `pr-number`                         |
-| 2026-07-24 | 732c6b60 | Comment backfill tool                                                     |
-| 2026-07-24 | e98cc383 | Stop discarding a committed fix over a missing SHA                        |
-| 2026-07-24 | 85a1be1c | Honest deferral reasons; `BUDGET_REVIEW` 2→3                              |
-| 2026-07-24 | 54caf9a2 | Count drops separately; run retrospective into the skill                  |
-| 2026-07-24 | 1f825972 | Tune for Opus 5: `--tools`, `--effort`, gates before review               |
-| 2026-07-24 | b1a9a6b7 | `PreCompact` snapshot hook                                                |
-| 2026-07-24 | d755a0b6 | Record the launch command from the driver's own env; `LAUNCH_KNOBS`       |
-| 2026-07-24 | 9577548e | Four accuracy defects in the snapshot                                     |
-| 2026-07-24 | 2f508555 | `SessionStart` companion hook                                             |
-| 2026-07-25 | 6e735b87 | `AUDIT_FILE` knob; shared `DEFAULT_MAX_ISSUES`                            |
-| 2026-07-25 | edbcba52 | Only a started run records itself; pid cross-check                        |
-| 2026-07-25 | a9550627 | Snapshot stops speaking for a finished run                                |
-| 2026-07-25 | 6096ff99 | Opus 5 scope and length gaps in the role prompts                          |
-| 2026-07-25 | 6ec397a8 | PR comment no longer describes a superseded commit                        |
+| Date       | Commit   | What                                                                         |
+| ---------- | -------- | ---------------------------------------------------------------------------- |
+| 2026-07-24 | 1df27d7e | Port the kit as a skill + Node scripts (PR #533)                             |
+| 2026-07-24 | 9b975335 | Two-tier test gate; reviewer gets the original finding                       |
+| 2026-07-24 | 9fb02e59 | Conditional per-finding E2E gate, with spec sanitizing                       |
+| 2026-07-24 | aed45eb7 | Per-commit PR comments, lint gate, `BUDGET_VERIFY` 1→3                       |
+| 2026-07-24 | 401820f5 | E2E `--retries=1` for flakes; concise fix summaries                          |
+| 2026-07-24 | 70cabfac | Forward env knobs through the overnight launcher; context-window survival    |
+| 2026-07-24 | ea4b3731 | Mid-run control verbs; explicit `claude-opus-5` pin                          |
+| 2026-07-24 | 8845f470 | Resumable from any fresh session or clone                                    |
+| 2026-07-24 | 6646f9db | P4/P5 impl tiering; bare SHAs in comments                                    |
+| 2026-07-24 | a40f534f | Harden the PR path; self-heal a stale `pr-number`                            |
+| 2026-07-24 | 732c6b60 | Comment backfill tool                                                        |
+| 2026-07-24 | e98cc383 | Stop discarding a committed fix over a missing SHA                           |
+| 2026-07-24 | 85a1be1c | Honest deferral reasons; `BUDGET_REVIEW` 2→3                                 |
+| 2026-07-24 | 54caf9a2 | Count drops separately; run retrospective into the skill                     |
+| 2026-07-24 | 1f825972 | Tune for Opus 5: `--tools`, `--effort`, gates before review                  |
+| 2026-07-24 | b1a9a6b7 | `PreCompact` snapshot hook                                                   |
+| 2026-07-24 | d755a0b6 | Record the launch command from the driver's own env; `LAUNCH_KNOBS`          |
+| 2026-07-24 | 9577548e | Four accuracy defects in the snapshot                                        |
+| 2026-07-24 | 2f508555 | `SessionStart` companion hook                                                |
+| 2026-07-25 | 6e735b87 | `AUDIT_FILE` knob; shared `DEFAULT_MAX_ISSUES`                               |
+| 2026-07-25 | edbcba52 | Only a started run records itself; pid cross-check                           |
+| 2026-07-25 | a9550627 | Snapshot stops speaking for a finished run                                   |
+| 2026-07-25 | 6096ff99 | Opus 5 scope and length gaps in the role prompts                             |
+| 2026-07-25 | 6ec397a8 | PR comment no longer describes a superseded commit                           |
+| 2026-07-25 | —        | Cloud cutover: minted `--session-id`, no `gh`, push every finding (ADR-0077) |

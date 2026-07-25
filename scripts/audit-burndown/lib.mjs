@@ -38,13 +38,13 @@ export function resolveImplSha({ reported, head, baseSha }) {
 
 // Every env knob that changes how a run behaves, and is therefore part of that
 // run's relaunch command. ONE list with two consumers, deliberately: overnight.mjs
-// bakes these into the tmux job (tmux does not reliably inherit arbitrary env),
-// and burndown.mjs records them to .audit-work/launch-command so a later session
-// can recover them. Keeping two lists in sync by hand already failed twice — the
-// EFFORT_* knobs and AUDIT_FILE were added elsewhere and missed here. An omission
-// fails silently and late: preflight is spawned directly and inherits the full
-// env, so it passes, and only the driver inside tmux runs without the knob. Add
-// new knobs here and both paths get them.
+// bakes these into the detached job's command line, and burndown.mjs records them
+// to .audit-work/launch-command so a later session can recover them. Keeping two
+// lists in sync by hand already failed twice — the EFFORT_* knobs and AUDIT_FILE
+// were added elsewhere and missed here. An omission fails silently and late:
+// preflight is spawned directly and inherits the full env, so it passes, and only
+// the detached driver runs without the knob. Add new knobs here and both paths
+// get them.
 export const LAUNCH_KNOBS = [
   'RESUME',
   'PUSH_EVERY',
@@ -55,6 +55,7 @@ export const LAUNCH_KNOBS = [
   'E2E_CMD',
   'LINT_CMD',
   'PUSH_TEST_CMD',
+  'COMMENT_STORE',
   'MAX_DEFERRALS',
   'RETRIES',
   'MODEL_VERIFY',
@@ -80,11 +81,9 @@ export const DEFAULT_MAX_ISSUES = 5;
 // The command that relaunches this exact run, reconstructed from the driver's own
 // environment. It cannot be recovered from the process list: overnight.mjs launches
 // via `env VAR=… node …`, and `env` EXECS node, so the assignments live in the
-// environment and never appear in argv. On macOS the surviving `caffeinate` parent
-// happens to retain the full string in its own argv; on Linux caffeinate is not
-// used and nothing retains it, so scraping `ps` there recovers nothing at all.
-// The driver passes its own already-resolved MAX_ISSUES rather than letting this
-// re-derive one, so the two can't drift apart.
+// environment and never appear in argv — nothing retains the string, so scraping
+// `ps` recovers nothing at all. The driver passes its own already-resolved
+// MAX_ISSUES rather than letting this re-derive one, so the two can't drift apart.
 export function launchCommand(env = process.env, maxIssues = env.MAX_ISSUES ?? DEFAULT_MAX_ISSUES) {
   const overrides = LAUNCH_KNOBS.filter((knob) => env[knob] != null).map(
     (knob) => `${knob}=${shellQuote(env[knob])}`

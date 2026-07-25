@@ -1,27 +1,27 @@
-// Reconstruct and replay the burndown's per-commit PR comments.
+// Render and drain the burndown's per-commit PR comments.
 //
 //   node scripts/audit-burndown/backfill-comments.mjs capture [range]
-//   node scripts/audit-burndown/backfill-comments.mjs post
 //   node scripts/audit-burndown/backfill-comments.mjs show
+//   node scripts/audit-burndown/backfill-comments.mjs next
+//   node scripts/audit-burndown/backfill-comments.mjs done <sha>
 //
-// pushBatch posts one comment per pushed fix, but only when there is a PR to
-// post to. When PR creation fails (GitHub 500s are real and can last many
-// minutes) the comments have nowhere to go, so they are spilled to a store and
-// replayed later — that is what `post` is for. `capture` rebuilds records for
-// fixes whose comments were lost *before* the spill existed, reading the same
-// facts the driver had: run.log for the iteration→sha mapping, the role
-// envelopes for the implementer's summary and the reviewer's catches, and the
-// commit's own docs/AUDIT.md deletion for the finding text.
+// The driver appends one record per fix to the store and never posts anything —
+// it has no GitHub credential (ADR-0077). Posting is the supervising agent's
+// job, through the GitHub MCP tools, driven by the `next` → post → `done` loop.
+//
+// `capture` rebuilds records for fixes whose comments were never recorded,
+// reading the same facts the driver had: run.log for the iteration→sha mapping,
+// the role envelopes for the implementer's summary and the reviewer's catches,
+// and the commit's own docs/AUDIT.md deletion for the finding text.
 
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { chdirRoot, gitOut, LOGS, logLine, runCmd, WORK } from './lib.mjs';
+import { chdirRoot, gitOut, LOGS, logLine, WORK } from './lib.mjs';
 import { commitCommentBody, findingProblem } from './comment.mjs';
 
 chdirRoot();
 
 const STORE = process.env.COMMENT_STORE ?? join(WORK, 'pending-comments.jsonl');
-const BRANCH = process.env.BRANCH ?? 'audit/burndown';
 
 const readStore = () =>
   existsSync(STORE)
@@ -149,54 +149,40 @@ if (mode === 'capture') {
 
   writeStore(store);
   console.log(`\n${added} captured, ${store.length} total in ${STORE}`);
-} else if (mode === 'post') {
-  const store = readStore();
-  if (!store.length) {
-    console.log(`nothing to post — ${STORE} is empty`);
+} else if (mode === 'next') {
+  // One record at a time, because the thing that posts it is an agent calling
+  // the GitHub MCP tools, not this script — there is no credential here. The
+  // agent renders one, posts it, then calls `done <sha>`; that ordering makes
+  // the loop at-least-once (a crash between the two re-offers the same record)
+  // rather than at-most-once, which is the right way round for a comment.
+  const [record] = readStore();
+  if (!record) {
+    console.log(`nothing pending in ${STORE}`);
     process.exit(0);
   }
-  const pr = (
-    runCmd('gh', [
-      'pr',
-      'list',
-      '--head',
-      BRANCH,
-      '--state',
-      'open',
-      '--json',
-      'number',
-      '--jq',
-      '.[0].number',
-    ]).stdout ?? ''
-  ).trim();
-  if (!pr) {
-    console.error(`no open PR for ${BRANCH} — leaving all ${store.length} record(s) in ${STORE}`);
+  console.log(`SHA ${record.sha}`);
+  console.log('---8<--- body below ---8<---');
+  console.log(commitCommentBody(record));
+} else if (mode === 'done') {
+  const sha = rangeArg;
+  if (!sha) {
+    console.error('usage: backfill-comments.mjs done <sha>');
     process.exit(1);
   }
-
-  // Drop each record only as it lands, so an interruption or a mid-run API
-  // failure replays the remainder instead of losing it.
-  const remaining = [...store];
-  let posted = 0;
-  for (const record of store) {
-    const result = runCmd('gh', ['pr', 'comment', pr, '--body', commitCommentBody(record)]);
-    if (result.status !== 0) {
-      console.error(`failed on ${record.sha.slice(0, 12)}: ${(result.stderr ?? '').trim()}`);
-      break;
-    }
-    remaining.shift();
-    posted += 1;
-    console.log(`posted ${record.sha.slice(0, 12)}  ${record.title}`);
+  const store = readStore();
+  const remaining = store.filter((r) => !r.sha.startsWith(sha));
+  if (remaining.length === store.length) {
+    console.error(`no pending record matching ${sha}`);
+    process.exit(1);
   }
   writeStore(remaining);
-  logLine(`  backfilled ${posted} per-commit comment(s) onto PR ${pr}`);
-  console.log(`\n${posted} posted, ${remaining.length} still pending in ${STORE}`);
-  if (remaining.length) process.exit(1);
+  logLine(`  posted per-commit comment for ${sha.slice(0, 12)}`);
+  console.log(`dropped ${sha.slice(0, 12)} — ${remaining.length} still pending in ${STORE}`);
 } else if (mode === 'show') {
   const store = readStore();
   console.log(`${store.length} pending comment(s) in ${STORE}\n`);
   for (const record of store) console.log(`${commitCommentBody(record)}\n\n---\n`);
 } else {
-  console.error('usage: backfill-comments.mjs capture [range] | post | show');
+  console.error('usage: backfill-comments.mjs capture [range] | show | next | done <sha>');
   process.exit(1);
 }
