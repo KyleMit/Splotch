@@ -1,7 +1,8 @@
 # Handoff — audit burndown run
 
-> 2026-07-25 · branch `claude/audit-burn-down-skill-3u35d2` · PR TBD · Bulk-burn the 475-finding
-> `docs/AUDIT.md` backlog with the `burn-down-audits` driver.
+> 2026-07-25 · branch `claude/audit-burn-down-skill-3u35d2` · PR
+> [#545](https://github.com/KyleMit/Splotch/pull/545) · Bulk-burn the 475-finding `docs/AUDIT.md`
+> backlog with the `burn-down-audits` driver.
 
 This is the **durable checkpoint** for a live `burn-down-audits` run, per that skill's "Surviving
 the context window" section. A fresh or compacted session resumes from this file plus
@@ -41,7 +42,7 @@ BRANCH=claude/audit-burn-down-skill-3u35d2 npm run audit:burndown
 | Fact              | Value                                                            |
 | ----------------- | ---------------------------------------------------------------- |
 | Branch            | `claude/audit-burn-down-skill-3u35d2` (forked from `main`)       |
-| PR                | *fill in once opened — draft, head = this branch*                |
+| PR                | **[#545](https://github.com/KyleMit/Splotch/pull/545)** (draft)  |
 | Backlog at launch | **475** findings (`node scripts/audit-burndown/pop.mjs --count`) |
 | Base commit       | `daa0752` (merge of PR #544)                                     |
 
