@@ -648,7 +648,14 @@ Notes from real runs — set these before a large run rather than discovering th
 * Verified fixes land one commit each on the branch (`Audit: <title>` trailer), pushed as they land,
   each with its own per-commit comment (see above). Invalid findings are dropped with a reasoned
   `chore(audit): drop invalid finding` commit. Un-fixable findings move to `docs/AUDIT-DEFERRED.md`
-  (committed) — triage these by hand afterwards: re-stage, file as issues, or drop.
+  (committed) — triage these by hand afterwards: re-stage, file as issues, or drop. **A deferred
+  entry carries its own post-mortem**: the reviewer's unresolved objections, the implementer's
+  account of each round, and — when a draft was committed before the rollback — a
+  `docs/audit-deferred/<slug>.patch` you can `git apply`. That draft passed the type-check, unit and
+  lint gates; the review is what it did not pass, so it is a starting point rather than scrap. Read
+  the `#### What was tried` section before re-staging: an `implementation failed` deferral is
+  routinely a brief that *cannot* be executed (a proposed fix that does not compile), and re-staging
+  it unchanged just buys the same failure again.
 * When the backlog is fully drained, `docs/AUDIT.md` should be deleted per
   `.claude/audit-conventions.md` (a partial run may also leave emptied `## Source:` sections — tidy
   them in a final commit).
