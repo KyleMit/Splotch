@@ -12,6 +12,7 @@
   // hand off to the Parent Center setup guide with a short parting message.
   const STROKES_BEFORE_AUTO_CLEAR = 5;
   const PARTING_MESSAGE_MS = 4000;
+  const EXIT_FLY_Y = 120;
 
   // iOS / Android manual flows have no one-tap API, so the button expands an
   // inline how-to instead of firing a dialog.
@@ -49,11 +50,11 @@
   // message's "it lives in the Parent Center" lands visually too. Manual
   // dismiss / completed install keep the plain fly-down.
   function bannerExit(node: HTMLElement) {
-    if (!exitIntoParentButton) return fly(node, { y: 120, duration: 300 });
+    if (!exitIntoParentButton) return fly(node, { y: EXIT_FLY_Y, duration: 300 });
     const target = document.getElementById(PARENT_HELP_BUTTON_ID)?.getBoundingClientRect();
     const from = node.getBoundingClientRect();
     const dx = target ? target.left + target.width / 2 - (from.left + from.width / 2) : 0;
-    const dy = target ? target.top + target.height / 2 - (from.top + from.height / 2) : 120;
+    const dy = target ? target.top + target.height / 2 - (from.top + from.height / 2) : EXIT_FLY_Y;
     return {
       duration: 550,
       easing: cubicIn,
@@ -81,7 +82,11 @@
 </script>
 
 {#if visible || parting}
-  <div class="install-banner" in:fly={{ y: 120, duration: 420, easing: backOut }} out:bannerExit>
+  <div
+    class="install-banner"
+    in:fly={{ y: EXIT_FLY_Y, duration: 420, easing: backOut }}
+    out:bannerExit
+  >
     {#if parting}
       <div class="install-parting" in:fade={{ duration: 200 }}>
         <span class="install-mascot" aria-hidden="true">
