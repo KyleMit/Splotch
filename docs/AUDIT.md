@@ -9,62 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P2][type-safety] Native page hand-rolls type guards that duplicate the server's response shape
-
-**File(s):** `web/src/routes/admin/native/+page.svelte:45-70`
-(`isInvite`/`isSnapshot`/`responseError`), `:113-136` (`login`) — pinned at SHA f934d43
-
-#### Problem
-
-The snapshot contract (`{ ok, tokens, invites, persistent }`) is defined authoritatively where it's
-produced (`tokens/+server.ts:44`, `snapshot()`), but the native client re-describes it by hand as
-runtime guards plus an inline type annotation:
-
-```ts
-function isSnapshot(value: unknown): value is {
-  ok: true; tokens: string[]; invites: Invite[]; persistent: boolean
-} { ... }
-```
-
-and `login` parses the login response with no type at all:
-
-```ts
-const data = await response.json().catch(() => null);
-if (!response.ok || !data?.ok || typeof data?.session !== 'string') { ... }
-```
-
-The shape now lives in three places (server `json(...)`, this guard, the API skill). A field added
-server-side won't surface here as a type error — the client just silently ignores it. `data?.ok` /
-`data?.session` are untyped property access on `any`.
-
-#### Proposed solution
-
-Define the wire types once next to the endpoint and import them:
-
-```ts
-// tokens/+server.ts (or a shared web/src/lib/adminApi.ts)
-export interface TokenSnapshot {
-  ok: true;
-  tokens: string[];
-  invites: Invite[];
-  persistent: boolean;
-}
-export interface LoginResponse {
-  ok: true;
-  session: string;
-}
-```
-
-Keep the runtime guard, but type it as `value is TokenSnapshot` so a shape change breaks the guard
-at compile time; type the login parse against `LoginResponse | { ok: false; error?: string }`.
-
-#### Verification
-
-`npm run check` fails if the server shape and client guard diverge after the change.
-`tests/admin.spec.ts` native flow still passes.
-
----
-
 ### [P2][duplication] Add/remove token mutations share an entire retry scaffold
 
 **File(s):** `web/src/lib/server/tokens.ts:167-199` (`addToken`, `removeToken`) — pinned at SHA
