@@ -16,12 +16,13 @@ import {
   verifySessionToken,
   buildInvites,
   beginAdminLogin,
+  SESSION_LABEL,
 } from './admin';
 
 // Mirror of the derivation in admin.ts, so the test pins the exact algorithm and
 // label rather than just "some hex".
 const expectedSession = (secret: string) =>
-  createHmac('sha256', secret).update('admin-session-v1').digest('hex');
+  createHmac('sha256', secret).update(SESSION_LABEL).digest('hex');
 
 describe('sessionToken', () => {
   beforeEach(() => {

@@ -11,6 +11,9 @@ import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 // both — the only difference is the transport (HTTP-only cookie vs.
 // Authorization header).
 
+export const SESSION_LABEL = 'admin-session-v1';
+const HMAC_ALG = 'sha256';
+
 // The session credential is HMAC-SHA256(key = ADMIN_ACCESS_TOKEN,
 // "admin-session-v1") rather than the secret verbatim. It's a deterministic,
 // one-way function of the secret: the server can recompute and verify it on
@@ -22,7 +25,7 @@ import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 export function sessionToken() {
   const secret = env.ADMIN_ACCESS_TOKEN;
   if (!secret) return '';
-  return createHmac('sha256', secret).update('admin-session-v1').digest('hex');
+  return createHmac(HMAC_ALG, secret).update(SESSION_LABEL).digest('hex');
 }
 
 // Constant-time secret comparison. The length check happens first and is not
