@@ -23,6 +23,7 @@ import { hasCommand, sleep } from '../lib/utils.mjs';
 import {
   chdirRoot,
   countEntries,
+  deferralReason,
   deleteFirstEntry,
   ensureWorkDirs,
   findingPriority,
@@ -68,7 +69,40 @@ const BUDGET_VERIFY = process.env.BUDGET_VERIFY ?? '3.00'; // verify reads a lot
 const BUDGET_IMPL = process.env.BUDGET_IMPL ?? '4.00';
 const BUDGET_REVIEW = process.env.BUDGET_REVIEW ?? '3.00'; // $2 capped a P4 review mid-verdict, discarding a sound fix (2026-07-24 retro)
 
+// Effort (`claude --effort`) is Opus 5's primary cost/latency control, and it
+// governs ALL tokens — thinking, prose, and tool calls — so a lower level also
+// means fewer tool calls, not just shorter reasoning. Wall-clock, not dollars,
+// is what actually bounds a 600-finding run, which makes this the highest-value
+// knob here. Anthropic's Opus 5 guidance is to use low/medium liberally and
+// step up only where evals show it buys something.
+//   verify  stays mid: an INVALID verdict *deletes a finding permanently*, so
+//           it is the one role whose mistakes are unrecoverable.
+//   impl    stays high: this is where correctness is actually manufactured.
+//   review  runs mid on the documented finding that Opus 5's review accuracy
+//           holds at reduced effort, with the deterministic gates as backstop.
+// Raise review (and verify) to `high` for a run where correctness dominates.
+const EFFORT_VERIFY = process.env.EFFORT_VERIFY ?? 'medium';
+const EFFORT_IMPL = process.env.EFFORT_IMPL ?? 'high';
+const EFFORT_REVIEW = process.env.EFFORT_REVIEW ?? 'medium';
+
 // ---- tool scopes ------------------------------------------------------------
+// TWO different flags, doing two different jobs — both are needed:
+//   --tools        which tools EXIST for the session (coarse: `Bash`, no args)
+//   --allowedTools which of them run WITHOUT a permission prompt (fine-grained:
+//                  `Bash(git show *)`)
+// --allowedTools alone does not remove a tool, it only pre-approves one. Left to
+// itself every role could still reach `Agent` and `Workflow` and fan out into
+// subagents — and Opus 5 delegates markedly more readily than earlier models, so
+// a role that starts spawning agents burns its whole BUDGET_* before doing any
+// work, and budget caps are already this driver's main deferral source. Each
+// role gets exactly the tools its job needs and nothing else; delegation, web
+// access, and background tasks are simply absent rather than discouraged in
+// prose. Verified: with --tools set, `Agent`/`Workflow`/`WebFetch` do not appear
+// in the session's tool list at all.
+const AVAIL_VERIFY = 'Read,Grep,Glob,Write,Bash';
+const AVAIL_IMPL = 'Read,Edit,Write,Grep,Glob,Bash';
+const AVAIL_REVIEW = 'Read,Grep,Glob,Bash';
+
 // NOTE the space before each '*'. `Bash(git diff *)` prefix-matches correctly;
 // `Bash(git diff*)` would also match `git diff-index`.
 // Also note: acceptEdits auto-approves file writes and common fs commands
@@ -77,8 +111,13 @@ const TOOLS_VERIFY =
   'Read,Grep,Glob,Write,Bash(git show *),Bash(git log *),Bash(git rev-parse *),Bash(rg *),Bash(grep *),Bash(mkdir *)';
 const TOOLS_IMPL =
   'Read,Edit,Write,Grep,Glob,Bash(npm *),Bash(npx *),Bash(node *),Bash(git add *),Bash(git commit *),Bash(git status *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git rev-parse *),Bash(rg *),Bash(grep *)';
+// The reviewer deliberately has NO npm/npx: the driver has already run the
+// type-check, unit tests, lint and targeted E2E on this exact commit before the
+// review starts, so a reviewer re-running them can only confirm what is already
+// known — at Opus rates, on the critical path of every finding. Withholding the
+// commands enforces that structurally instead of asking the model nicely.
 const TOOLS_REVIEW =
-  'Read,Grep,Glob,Bash(git show *),Bash(git diff *),Bash(git log *),Bash(git rev-parse *),Bash(npm run *),Bash(npx *),Bash(rg *),Bash(grep *)';
+  'Read,Grep,Glob,Bash(git show *),Bash(git diff *),Bash(git log *),Bash(git rev-parse *),Bash(rg *),Bash(grep *)';
 
 // ---- structured output schemas ---------------------------------------------
 const SCHEMA_VERIFY = JSON.stringify({
@@ -182,6 +221,46 @@ function defer(title, why) {
   consecutive += 1;
   logLine(`  DEFERRED (${why})`);
   if (consecutive >= MAX_DEFERRALS) halt(`${MAX_DEFERRALS} consecutive deferrals`);
+}
+
+// ---- deterministic gates ----------------------------------------------------
+// The layered gate, run by the driver on every implementer commit BEFORE the
+// adversarial review. Two things follow from that ordering:
+//
+//   * A red tree comes back to the implementer as a fix round it can still
+//     recover from, instead of discarding a finished finding at the very end.
+//   * The reviewer only ever sees a commit that already passes, so it does not
+//     re-run any of this — it reviews the diff. Re-running was the single
+//     largest slice of review wall-clock and bought nothing the driver's own
+//     run doesn't already guarantee (see prompts/reviewer.md).
+//
+// Returns null when green, else { reason, detail }: `reason` is the deferral
+// label a human reads months later in docs/AUDIT-DEFERRED.md, `detail` is what
+// the implementer is told to fix.
+function gateFailure(baseSha, specs) {
+  if (!shellOk(CHECK_CMD))
+    return { reason: 'fix broke the type-check', detail: `${CHECK_CMD} is red` };
+  if (!shellOk(TEST_CMD))
+    return { reason: 'fix broke the test suite', detail: `${TEST_CMD} is red` };
+  // Targeted E2E — only for findings the verifier flagged as touching a runtime
+  // surface. Catches a behavioural regression attributed to this one finding,
+  // without paying full-suite E2E per finding; the batch push still runs it all.
+  if (specs.length && !shellOk(`${E2E_CMD} ${specs.join(' ')}`))
+    return {
+      reason: 'fix broke a targeted E2E spec',
+      detail: `the Playwright spec(s) ${specs.join(' ')} are red`,
+    };
+  // Lint is a separate axis from the type-check: a fix can satisfy CHECK_CMD yet
+  // ship a stray `any` or a raw Map in a .svelte.ts and redden CI's Quality job.
+  const lintable = gitOut('diff', '--name-only', baseSha, 'HEAD')
+    .split('\n')
+    .filter((f) => /\.(ts|svelte|mjs|cjs|js)$/.test(f));
+  if (lintable.length && !shellOk(`${LINT_CMD} ${lintable.join(' ')}`))
+    return {
+      reason: 'fix introduced a lint violation',
+      detail: `${LINT_CMD} is red on ${lintable.join(' ')}`,
+    };
+  return null;
 }
 
 // ---- preflight & resume recovery -------------------------------------------
@@ -364,6 +443,10 @@ while (done < MAX_ISSUES) {
     join(PROMPTS, 'verifier.md'),
     '--model',
     MODEL_VERIFY,
+    '--effort',
+    EFFORT_VERIFY,
+    '--tools',
+    AVAIL_VERIFY,
     '--allowedTools',
     TOOLS_VERIFY,
     '--permission-mode',
@@ -431,6 +514,10 @@ while (done < MAX_ISSUES) {
     join(PROMPTS, 'implementer.md'),
     '--model',
     implModel,
+    '--effort',
+    EFFORT_IMPL,
+    '--tools',
+    AVAIL_IMPL,
     '--allowedTools',
     TOOLS_IMPL,
     '--permission-mode',
@@ -480,51 +567,78 @@ while (done < MAX_ISSUES) {
 
   let status = 'CHANGES_REQUIRED';
   let reviewUnavailable = false;
+  let implFailed = false;
   let fixRounds = 0;
+  let gateRed = null;
   for (let round = 1; round <= 3; round++) {
-    const review = await claudeStep(`${tag}.review${round}`, [
-      `Adversarially review commit ${sha}.\n\nThe original finding this fix must resolve:\n${issue}\n\nAcceptance criteria the verifier derived from it (which may themselves be mis-scoped):\n${acceptance}`,
-      '--append-system-prompt-file',
-      join(PROMPTS, 'reviewer.md'),
-      '--model',
-      MODEL_REVIEW,
-      '--allowedTools',
-      TOOLS_REVIEW,
-      '--permission-mode',
-      'dontAsk',
-      '--json-schema',
-      SCHEMA_REVIEW,
-      '--max-turns',
-      '50',
-      '--max-budget-usd',
-      BUDGET_REVIEW,
-    ]);
-    // A reviewer that never ran (budget/turn cap, API error) has not rejected
-    // anything — it produced no verdict at all. Recording that as
-    // CHANGES_REQUIRED would roll the fix back and file it under "failed
-    // adversarial review", telling whoever triages the deferral that the work
-    // was judged and found wanting when nothing ever looked at it. Roll back
-    // either way (unreviewed work must not ship) but say which happened.
-    if (!review.ok) {
-      reviewUnavailable = true;
-      break;
-    }
-    status = structured(review.env).status ?? 'CHANGES_REQUIRED';
-    if (status === 'APPROVED' || round === 3) break;
+    // Gate BEFORE reviewing. The reviewer is expensive and read-only, so there
+    // is nothing to gain from spending it on a commit the driver is about to
+    // roll back — and a red gate caught here is still recoverable, because the
+    // implementer is holding the same session and can fix it in a fix round.
+    gateRed = gateFailure(baseSha, e2eSpecs);
+    let feedback;
 
-    const roundFindings = structured(review.env).findings ?? [];
-    reviewCatches.push(...roundFindings);
-    const feedback = roundFindings.map((f) => `- ${f}`).join('\n');
-    logLine(`  round ${round}: changes required`);
+    if (gateRed) {
+      logLine(`  round ${round}: gates red — ${gateRed.detail}`);
+      status = 'CHANGES_REQUIRED';
+      feedback = `- The commit does not pass the driver's gates: ${gateRed.detail}. Fix that before anything else; the fix is discarded if it never goes green.`;
+    } else {
+      const review = await claudeStep(`${tag}.review${round}`, [
+        `Adversarially review commit ${sha}.\n\nThe original finding this fix must resolve:\n${issue}\n\nAcceptance criteria the verifier derived from it (which may themselves be mis-scoped):\n${acceptance}`,
+        '--append-system-prompt-file',
+        join(PROMPTS, 'reviewer.md'),
+        '--model',
+        MODEL_REVIEW,
+        '--effort',
+        EFFORT_REVIEW,
+        '--tools',
+        AVAIL_REVIEW,
+        '--allowedTools',
+        TOOLS_REVIEW,
+        '--permission-mode',
+        'dontAsk',
+        '--json-schema',
+        SCHEMA_REVIEW,
+        '--max-turns',
+        '50',
+        '--max-budget-usd',
+        BUDGET_REVIEW,
+      ]);
+      // A reviewer that never ran (budget/turn cap, API error) has not rejected
+      // anything — it produced no verdict at all. Recording that as
+      // CHANGES_REQUIRED would roll the fix back and file it under "failed
+      // adversarial review", telling whoever triages the deferral that the work
+      // was judged and found wanting when nothing ever looked at it. Roll back
+      // either way (unreviewed work must not ship) but say which happened.
+      if (!review.ok) {
+        reviewUnavailable = true;
+        break;
+      }
+      status = structured(review.env).status ?? 'CHANGES_REQUIRED';
+      if (status === 'APPROVED') break;
+
+      // Only real reviewer findings become PR-comment "catches" — a red gate is
+      // the driver's own bookkeeping, not an adversarial catch worth publishing.
+      const roundFindings = structured(review.env).findings ?? [];
+      reviewCatches.push(...roundFindings);
+      feedback = roundFindings.map((f) => `- ${f}`).join('\n');
+      logLine(`  round ${round}: changes required`);
+    }
+
+    if (round === 3) break;
     fixRounds += 1;
 
     // Resume the SAME implementer session: it retains its full history —
     // every prior tool call, result, and reasoning step — so it fixes its own
     // work instead of re-deriving the change from the review text.
     impl = await claudeStep(`${tag}.fix${round}`, [
-      `A reviewer raised the following on commit ${sha}. Address every point, re-run the acceptance commands, and commit.\n\n${feedback}`,
+      `The following must be addressed on commit ${sha}. Address every point and commit.\n\n${feedback}`,
       '--resume',
       implSession,
+      '--effort',
+      EFFORT_IMPL,
+      '--tools',
+      AVAIL_IMPL,
       '--allowedTools',
       TOOLS_IMPL,
       '--permission-mode',
@@ -538,61 +652,45 @@ while (done < MAX_ISSUES) {
     ]);
     if (!impl.ok) {
       status = 'CHANGES_REQUIRED';
+      implFailed = true;
       break;
     }
-    const newSha = structured(impl.env).sha ?? '';
+    // Same HEAD fallback the first implementer call gets: `sha` is optional in
+    // SCHEMA_IMPL, and an implementer that finishes the job but omits the field
+    // would otherwise have a complete, tested fix reset away. Trust the observable
+    // side effect (the commit) over the envelope — a commit cannot forget itself.
+    // The base to compare against is the commit under review, NOT this finding's
+    // original baseSha: HEAD is already past baseSha from the previous round, so
+    // comparing to that would resolve a round that committed nothing back to the
+    // same rejected sha and re-review it unchanged.
+    const newSha = resolveImplSha({
+      reported: structured(impl.env).sha ?? '',
+      head: structured(impl.env).success === true ? gitOut('rev-parse', 'HEAD') : '',
+      baseSha: sha,
+    });
     if (!newSha) {
       status = 'CHANGES_REQUIRED';
+      implFailed = true;
       break;
     }
     sha = newSha;
   }
 
   // ---- 6. CLOSE OUT ---------------------------------------------------------
+  // Anything that reaches here APPROVED has already cleared the gates: they run
+  // at the top of every round on the very commit the reviewer then read, and the
+  // reviewer cannot mutate the tree. So there is nothing left to re-run — only
+  // the post-amend CHECK_CMD below, which guards the amend itself.
   if (status !== 'APPROVED') {
+    const reason = deferralReason({ reviewUnavailable, implFailed, gateRed });
     const why = reviewUnavailable
       ? 'reviewer never returned a verdict'
-      : `unresolved after ${fixRounds} fix round${fixRounds === 1 ? '' : 's'}`;
+      : gateRed && !implFailed
+        ? `gates never went green (${gateRed.detail})`
+        : `${reason} after ${fixRounds} fix round${fixRounds === 1 ? '' : 's'}`;
     logLine(`  ${why} — rolling back to ${baseSha}`);
     git('reset', '-q', '--hard', baseSha);
-    defer(title, reviewUnavailable ? 'reviewer unavailable' : 'failed adversarial review');
-    continue;
-  }
-
-  // Independent fast-test gate. CHECK_CMD (and the roles) only type-check plus
-  // run the finding's own acceptance commands, so a fix that type-checks but
-  // breaks an unrelated unit test would otherwise commit green unattended —
-  // the main silent-defect path over a long run. Catch it here and defer the
-  // finding instead of letting a red commit onto the branch.
-  if (!shellOk(TEST_CMD)) {
-    logLine(`  ${TEST_CMD} red after review — rolling back to ${baseSha}`);
-    git('reset', '-q', '--hard', baseSha);
-    defer(title, 'fix broke the test suite');
-    continue;
-  }
-
-  // Targeted E2E gate — only for findings the verifier flagged as touching a
-  // runtime surface. Catches a behavioural regression before it commits,
-  // attributed to this one finding, without paying full-suite E2E per finding.
-  // The full npm test (with all E2E) still runs once per batch before push.
-  if (e2eSpecs.length && !shellOk(`${E2E_CMD} ${e2eSpecs.join(' ')}`)) {
-    logLine(`  targeted E2E red (${e2eSpecs.join(' ')}) — rolling back to ${baseSha}`);
-    git('reset', '-q', '--hard', baseSha);
-    defer(title, 'fix broke a targeted E2E spec');
-    continue;
-  }
-
-  // Lint gate — CHECK_CMD type-checks, but eslint rules (no-explicit-any, a raw
-  // Map in a .svelte.ts, ...) are a separate axis: a fix can pass the type-check
-  // yet redden CI's Quality (lint) job. Lint just the files this fix touched —
-  // fast, and attributed to the one finding rather than surfacing a batch later.
-  const lintable = gitOut('diff', '--name-only', baseSha, 'HEAD')
-    .split('\n')
-    .filter((f) => /\.(ts|svelte|mjs|cjs|js)$/.test(f));
-  if (lintable.length && !shellOk(`${LINT_CMD} ${lintable.join(' ')}`)) {
-    logLine(`  lint red after review — rolling back to ${baseSha}`);
-    git('reset', '-q', '--hard', baseSha);
-    defer(title, 'fix introduced a lint violation');
+    defer(title, reason);
     continue;
   }
 

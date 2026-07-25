@@ -36,6 +36,20 @@ export function resolveImplSha({ reported, head, baseSha }) {
   return head && head !== baseSha ? head : '';
 }
 
+// Which role actually failed, for the docs/AUDIT-DEFERRED.md commit message.
+// Rolling unreviewed or ungated work back is always right; describing it as
+// rejected is not. Someone triages this file months later deciding whether to
+// re-stage the finding, and "failed adversarial review" on a fix no reviewer
+// ever saw sends them looking for a quality problem that does not exist. The
+// order matters: a reviewer that never ran, and an implementer that never
+// delivered, both take precedence over a stale gate result from an earlier
+// round. Only a real CHANGES_REQUIRED verdict is attributed to the reviewer.
+export function deferralReason({ reviewUnavailable, implFailed, gateRed }) {
+  if (reviewUnavailable) return 'reviewer unavailable';
+  if (implFailed) return 'implementer failed to deliver a fix round';
+  return gateRed?.reason ?? 'failed adversarial review';
+}
+
 // Every entry script chdirs to the repo root so relative paths (docs/AUDIT.md,
 // .audit-work/) behave the same no matter where it was invoked from.
 export function chdirRoot() {
