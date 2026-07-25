@@ -9,45 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P2][maintainability] AdminConsole hardcodes one accent color as a hex literal 8 times
-
-**File(s):**
-`web/src/lib/components/admin/AdminConsole.svelte:424,517,528,605,621,632,706 area,720,788`
-(`#7c4dcf` occurrences) — pinned at SHA f934d43
-
-#### Problem
-
-The comment at `:378-384` justifies *not* adopting the theme tokens (this is a deliberately
-light-only surface). Fair — but it doesn't justify repeating the raw accent value inline. `#7c4dcf`
-appears 8 times (`.count`, `.btn-primary`, `.btn-ghost`, `.usage strong`, `.more-menu-item`, badge
-gradient, …), its hover shade `#6b3fbe` and `#7c4dcf`-tinted backgrounds (`#f5f0fc`, `#f0e9fb`,
-`#ece0fb`) several more, and neutral `#f0f0f0`/`#666`/`#757575` ~10 times. Retuning the console's
-accent means a find-replace across the whole `<style>` block with no single source of truth, and
-it's easy to miss one (there are already two near-identical purples: `#7c4dcf` and `var(--brand)`).
-
-#### Proposed solution
-
-Define page-local custom properties on `.admin-page` and reference them — this stays fully within
-the "raw, un-themed" decision the comment defends, it just names the constants:
-
-```css
-.admin-page {
-  --admin-accent: #7c4dcf;
-  --admin-accent-hover: #6b3fbe;
-  --admin-accent-tint: #f5f0fc;
-  --admin-hairline: #f0f0f0;
-  --admin-ink-muted: #666;
-}
-```
-
-#### Verification
-
-`grep -c '#7c4dcf' AdminConsole.svelte` → 0 after the change (one definition on `--admin-accent`).
-The `tests/a11y.spec.ts` axe scan of `/admin` still passes (contrast unchanged). Visual diff via
-`run-splotch` on `/admin`.
-
----
-
 ### [P2][duplication] The three per-invite action groups are triplicated markup
 
 **File(s):** `web/src/lib/components/admin/AdminConsole.svelte:278-304` (full), `:306-323`

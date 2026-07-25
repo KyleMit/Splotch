@@ -392,6 +392,9 @@
     --admin-accent-tint: #f5f0fc;
     --admin-accent-tint-strong: #f0e9fb;
     --admin-accent-tint-hover: #ece0fb;
+    --admin-hairline: #f0f0f0;
+    --admin-ink-muted: #666;
+    --admin-ink-subtle: #757575;
 
     position: fixed;
     inset: 0;
@@ -429,6 +432,7 @@
     border-radius: var(--radius-lg);
     background: linear-gradient(135deg, var(--brand), var(--admin-accent));
     box-shadow: 0 6px 16px rgba(124, 77, 207, 0.35);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--admin-accent) 35%, transparent);
     flex-shrink: 0;
   }
 
@@ -447,7 +451,7 @@
 
   .subtitle {
     margin: 2px 0 0;
-    color: #666;
+    color: var(--admin-ink-muted);
     font-size: 15px;
     font-weight: 500;
   }
@@ -666,7 +670,7 @@
 
   @media (hover: hover) {
     .btn-icon:hover {
-      background: #f0f0f0;
+      background: var(--admin-hairline);
     }
   }
 
@@ -689,7 +693,7 @@
     justify-content: space-between;
     gap: 12px;
     padding: 14px 4px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--admin-hairline);
   }
 
   .invite:last-child {
@@ -717,7 +721,7 @@
   .usage {
     font-size: 12.5px;
     font-weight: 500;
-    color: #666;
+    color: var(--admin-ink-muted);
   }
 
   .usage strong {
@@ -732,7 +736,7 @@
 
   .usage-none {
     font-style: italic;
-    color: #757575;
+    color: var(--admin-ink-subtle);
   }
 
   .invite-actions {
@@ -778,8 +782,8 @@
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #757575;
-    border-bottom: 1px solid #f0f0f0;
+    color: var(--admin-ink-subtle);
+    border-bottom: 1px solid var(--admin-hairline);
   }
 
   .more-menu-item {
@@ -793,7 +797,7 @@
     color: var(--admin-accent);
     background: transparent;
     border: none;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--admin-hairline);
     cursor: pointer;
   }
 
@@ -827,7 +831,7 @@
   .empty {
     text-align: center;
     padding: 24px 12px;
-    color: #666;
+    color: var(--admin-ink-muted);
   }
 
   :global(.empty .empty-icon) {
