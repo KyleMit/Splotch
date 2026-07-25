@@ -7,29 +7,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P3][dead-code] ActionsPanel portrait rule re-declares identical left/bottom values
-
-**File(s):** `web/src/lib/components/ActionsPanel.svelte:394-409` — pinned at SHA f934d43
-
-#### Problem
-
-The base `.actions-panel` sets `left: calc(8px + env(safe-area-inset-left))` (396) and
-`bottom: calc(8px + env(safe-area-inset-bottom))` (395). The portrait override (403-409) sets
-`flex-direction: column-reverse` (the only real change) but then re-declares `left` and `bottom`
-with the exact same `calc(...)` values (406-407). Those two lines are inert — noise that suggests a
-portrait-specific offset exists when it doesn't.
-
-#### Proposed solution
-
-Drop the redundant `left`/`bottom` from the portrait block; keep only `flex-direction`.
-
-#### Verification
-
-Visually unchanged in portrait (`run-splotch` portrait). Removing the two lines produces no
-computed-style diff.
-
----
-
 ### [P3][dead-code] Flyout portrait media query re-sets flex-direction to its base value
 
 **File(s):** `web/src/lib/components/BrushMenu.svelte:70-76`,
