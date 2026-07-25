@@ -7,35 +7,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P2][type-safety] StrokeWidthMenu casts a template-string icon name to CommonIconName, defeating the generated union
-
-**File(s):** `web/src/lib/components/StrokeWidthMenu.svelte:52-54` — pinned at SHA f934d43
-
-#### Problem
-
-```svelte
-<Icon name={`${erasing ? 'eraser-size' : 'size'}-${size}` as CommonIconName} class="action-icon" />
-```
-
-The whole point of the generated `name` union (svelte.md:23-26) is that a missing or misnamed icon
-is a compile error. The `as CommonIconName` cast erases that guarantee: if `size-6` or
-`eraser-size-2` is added to `STROKE_SIZES` without a matching icon, `npm run check` stays green and
-the icon silently fails to paint at runtime.
-
-#### Proposed solution
-
-Derive the names through a typed lookup instead of a cast — e.g. a
-`const SIZE_ICON: Record<number, CommonIconName>` (or two maps for pen/eraser) built once, so a
-missing entry is a type error, or a helper `strokeIcon(size, erasing): CommonIconName` with an
-exhaustive mapping. Keep `STROKE_SIZES` and the map co-located in `strokeWidth.svelte.ts`.
-
-#### Verification
-
-Remove one icon from `lib/icons/` and rerun `gen:icons` + `npm run check`: with the map, the build
-fails; with the cast, it passes. Confirm all sizes still render.
-
----
-
 ### [P3][duplication] Coachmark ghost button re-hardcodes the real button's gradient and shadow
 
 **File(s):** `web/src/lib/components/ClearButton.svelte:184,187` vs `404-405` — pinned at SHA
