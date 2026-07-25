@@ -62,8 +62,14 @@ corner buttons, Clear Button) keep their bespoke paper treatments.
 |                        | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`) |
 | `StatusMessage.svelte` | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error` |
 
-Shared *global* patterns (modal shell, close button, corner buttons, dialog fly-in) remain classes
-in `app.css` because dialogs and imperative DOM need them unscoped.
+Shared *global* patterns (modal shell, close button, corner buttons, dialog fly-in, flyout menu +
+its options) remain classes in `app.css` for one of two reasons: dialogs and imperative DOM need
+them unscoped, or the pattern is chrome that several components share verbatim but that hasn't
+earned a primitive yet (`.corner-button` across the drawer toggle / Fullscreen Toggle / Parent Help
+Button; `.flyout-menu` + `.flyout-option` across BrushMenu and StrokeWidthMenu). That second case is
+how a canvas-floating control de-duplicates: hoist the shared *rules* to `app.css` with a comment
+naming the consumers, leaving each component only what genuinely differs — not a wrapper component,
+which the bespoke-paper-treatment carve-out above rules out anyway.
 
 **Extract a new primitive at the third duplicate**, not before — and add it to `/dev/design` and
 this table when you do.

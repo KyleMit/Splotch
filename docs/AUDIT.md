@@ -11,47 +11,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P1][duplication] BrushMenu and StrokeWidthMenu duplicate ~90% of their markup and style blocks — extract a shared flyout primitive
-
-**File(s):** `web/src/lib/components/BrushMenu.svelte:27-171`,
-`web/src/lib/components/StrokeWidthMenu.svelte:30-191` — pinned at SHA f934d43
-
-#### Problem
-
-The two flyout popovers are near-identical presentational components. Both render
-`<div class="flyout-menu … " hidden={!open} style:color={…}>` wrapping an `{#each}` of
-`.flyout-option` buttons that report a pick via `onpick`. Their `<style>` blocks are copy-paste: the
-entire `.flyout-menu` rule
-(position/left/bottom/flex/gap/padding/`--float-surface`/`border-radius:16px`/`--float-shadow-flyout`/`z-index:901`),
-the two portrait media queries (`orientation: portrait` and
-`(orientation: portrait) and (max-width: 540px)`), `.flyout-menu[hidden]`, and the full
-`.flyout-option` rule (width/height `calc(60px * var(--action-btn-scale,1))`, `border-radius:14px`,
-padding, transition list, `:hover`, `:active { transform: scale(0.92) }`, `.active`, and
-`.active … fill: var(--brand)`) are byte-for-byte the same in both files. Any change to flyout
-sizing, the 540px breakpoint, or the active-state ring has to be made twice and kept in sync by
-hand.
-
-#### Proposed solution
-
-Extract a `FlyoutMenu.svelte` primitive in `lib/components/` that owns the `.flyout-menu` container,
-the positioning/portrait CSS, the shared `.flyout-option` chrome (as a slotted/snippet-rendered
-button or exposed via a `.flyout-option` global class in a shared stylesheet), and the
-`open`/`onpick` contract. BrushMenu and StrokeWidthMenu keep only what differs: brush vs. size
-iteration, the eraser-mode padding override (StrokeWidthMenu:111-119), and their icon rendering.
-Alternatively, since the CSS is the bulk of the duplication, move the
-`.flyout-menu`/`.flyout-option` rules into `app.css` (like `.corner-button`) and have both
-components consume the classes.
-
-#### Verification
-
-Diff the two `<style>` blocks
-(`diff <(sed -n '48,171p' BrushMenu.svelte) <(sed -n '59,191p' StrokeWidthMenu.svelte)`) to confirm
-the overlap. After extraction, the shared rules exist once; visually verify both flyouts in
-`/dev/design` and via `run-splotch` (portrait phone <540px, portrait tablet, landscape) plus the
-existing E2E for brush/stroke selection.
-
----
-
 ### [P1][duplication] White/dark ink keyline CSS is triplicated across ActionsPanel, BrushMenu, and StrokeWidthMenu
 
 **File(s):** `web/src/lib/components/ActionsPanel.svelte:772-787`,
