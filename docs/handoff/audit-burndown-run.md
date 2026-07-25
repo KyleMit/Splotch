@@ -1,8 +1,8 @@
 # Handoff — audit burndown run
 
-> 2026-07-25 · branch `claude/burn-down-audit-skill-qd23tg` · PR (opened at first push — find with
-> `mcp__github__list_pull_requests` filtered by head branch) · drive the scripted bulk burndown of
-> the 506-finding `docs/AUDIT.md` backlog to completion.
+> 2026-07-25 · branch `claude/burn-down-audit-skill-qd23tg` · PR
+> [#543](https://github.com/KyleMit/Splotch/pull/543) · drive the scripted bulk burndown of the
+> 506-finding `docs/AUDIT.md` backlog to completion.
 
 This is the **durable checkpoint** for a `burn-down-audits` run, per that skill's "Surviving the
 context window" section. It exists so a compacted or brand-new session can take over without
