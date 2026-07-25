@@ -167,39 +167,50 @@ export type MutationFailure = { ok: false; error: string; reason: 'invalid' | 'c
 
 type MutationResult = { ok: true; tokens: string[] } | MutationFailure;
 
-/** Add a token. Returns `{ ok, tokens }` or `{ ok: false, error }`. */
-export async function addToken(token: unknown): Promise<MutationResult> {
-  const t = String(token ?? '').trim();
-  if (!t) return { ok: false, error: 'Token cannot be empty', reason: 'invalid' };
+type Transform = (
+  list: string[]
+) => { next: string[] } | { error: string; reason: 'invalid' } | { noop: true };
+
+async function mutateList(
+  transform: Transform,
+  afterPersist?: (next: string[]) => Promise<void>
+): Promise<MutationResult> {
   for (let attempt = 1; attempt <= MUTATION_ATTEMPTS; attempt++) {
     const read = await readStore();
     if (read.source === 'unconfirmed')
       return { ok: false, error: TOKEN_CONFLICT_ERROR, reason: 'conflict' };
     const { store, list, etag } = read;
-    if (list.includes(t)) return { ok: false, error: 'Token already exists', reason: 'invalid' };
-    const next = [...list, t];
-    if (await persist(store, next, etag)) return { ok: true, tokens: next };
+    const result = transform(list);
+    if ('error' in result) return { ok: false, error: result.error, reason: result.reason };
+    if ('noop' in result) return { ok: true, tokens: [...list] };
+    if (await persist(store, result.next, etag)) {
+      if (afterPersist) await afterPersist(result.next);
+      return { ok: true, tokens: result.next };
+    }
   }
   return { ok: false, error: TOKEN_CONFLICT_ERROR, reason: 'conflict' };
+}
+
+/** Add a token. Returns `{ ok, tokens }` or `{ ok: false, error }`. */
+export async function addToken(token: unknown): Promise<MutationResult> {
+  const t = String(token ?? '').trim();
+  if (!t) return { ok: false, error: 'Token cannot be empty', reason: 'invalid' };
+  return mutateList((list) =>
+    list.includes(t) ? { error: 'Token already exists', reason: 'invalid' } : { next: [...list, t] }
+  );
 }
 
 /** Remove a token. Returns `{ ok, tokens }` or `{ ok: false, error }`. */
 export async function removeToken(token: unknown): Promise<MutationResult> {
   const t = String(token ?? '').trim();
-  for (let attempt = 1; attempt <= MUTATION_ATTEMPTS; attempt++) {
-    const read = await readStore();
-    if (read.source === 'unconfirmed')
-      return { ok: false, error: TOKEN_CONFLICT_ERROR, reason: 'conflict' };
-    const { store, list, etag } = read;
-    const next = list.filter((x: string) => x !== t);
-    // A no-op remove must not rewrite the blob: under eventual consistency the
-    // list may be a stale replica read, and persisting it would clobber a token
-    // another admin just added.
-    if (next.length === list.length) return { ok: true, tokens: next };
-    if (await persist(store, next, etag)) {
-      await deleteUsage(t);
-      return { ok: true, tokens: next };
-    }
-  }
-  return { ok: false, error: TOKEN_CONFLICT_ERROR, reason: 'conflict' };
+  return mutateList(
+    (list) => {
+      const next = list.filter((x) => x !== t);
+      // A no-op remove must not rewrite the blob: under eventual consistency the
+      // list may be a stale replica read, and persisting it would clobber a token
+      // another admin just added.
+      return next.length === list.length ? { noop: true } : { next };
+    },
+    () => deleteUsage(t)
+  );
 }

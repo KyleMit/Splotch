@@ -9,55 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P2][duplication] Add/remove token mutations share an entire retry scaffold
-
-**File(s):** `web/src/lib/server/tokens.ts:167-199` (`addToken`, `removeToken`) — pinned at SHA
-f934d43
-
-#### Problem
-
-The two exported mutations are the same read-modify-CAS-retry loop with only the transform
-differing:
-
-```ts
-for (let attempt = 1; attempt <= MUTATION_ATTEMPTS; attempt++) {
-  const read = await readStore();
-  if (read.source === 'unconfirmed') return { ok: false, error: TOKEN_CONFLICT_ERROR };
-  const { store, list, etag } = read;
-  // ...compute `next`...
-  if (await persist(store, next, etag)) return { ok: true, tokens: next };
-}
-return { ok: false, error: TOKEN_CONFLICT_ERROR };
-```
-
-The retry count, the unconfirmed-source bailout, the conflict sentinel, and the loop structure are
-duplicated. A change to the concurrency strategy (attempt count, backoff, how `unconfirmed` is
-handled) must be edited in two spots, and the `removeToken` copy has an extra `deleteUsage` side
-effect wired into the middle of the copied loop.
-
-#### Proposed solution
-
-Extract the loop into one internal helper parameterized by a pure transform that returns either the
-next list or a validation error:
-
-```ts
-async function mutateList(
-  transform: (list: string[]) => { next: string[] } | { error: string } | { noop: true },
-  afterPersist?: (removed: string) => Promise<void>,
-): Promise<MutationResult>;
-```
-
-`addToken`/`removeToken` become thin: validate input, then delegate. The `removeToken`
-no-op-short-circuit (`next.length === list.length`) becomes a `{ noop: true }` return the helper
-honors.
-
-#### Verification
-
-The existing `tokens.test.ts` concurrent-mutation suite (`raceOnce`/`raceAlways`, exhaustion, no-op
-remove, usage cleanup) is the regression net — all cases must still pass unchanged.
-
----
-
 ### [P2][maintainability] AdminConsole hardcodes one accent color as a hex literal 8 times
 
 **File(s):**
