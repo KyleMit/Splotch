@@ -7,37 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P4][dead-code] `generate-icon-names.mjs` carries Windows path-normalization that ADR-0062 made dead
-
-**File(s):** `scripts/generate-icon-names.mjs:13-14` — pinned at SHA f934d43
-
-#### Problem
-
-```js
-.map((path) =>
-  path
-    .replace(/\\/g, '/')   // backslash→slash: only matters on Windows
-    .split('/')
-```
-
-`node:fs` `globSync` returns POSIX-separated paths on macOS/Linux, the only supported dev platforms
-(ADR-0017, Windows dropped in ADR-0062). The `\\`→`/` replace can never fire, and its presence
-implies Windows is still a target. (The `scripts/` CLAUDE.md explicitly states Windows support was
-dropped.)
-
-#### Proposed solution
-
-Remove the `.replace(/\\/g, '/')` step. If a defensive normalize is still wanted, centralize a
-`basenameNoExt(path, ext)` helper in `scripts/lib/utils.mjs` and reuse it here and in the Icon
-key-derivation sites rather than re-implementing splitting logic.
-
-#### Verification
-
-`node scripts/generate-icon-names.mjs` produces an identical `icon-names.d.ts`;
-`npm run gen:icons:check` (if present) / diff is clean.
-
----
-
 ### [P4][design-tokens] `fontSizeSm` (13px) and `fontSizeMd` (14px) are a 1px-apart near-duplicate ramp step
 
 **File(s):** `web/src/lib/design/tokens.ts:56-57` — pinned at SHA f934d43
