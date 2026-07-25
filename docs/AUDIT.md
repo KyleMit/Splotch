@@ -9,33 +9,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P4][readability] ActionsPanel duplicates the drawer transition list verbatim across two rules
-
-**File(s):** `web/src/lib/components/ActionsPanel.svelte:426-431,462-467` — pinned at SHA f934d43
-
-#### Problem
-
-The four-line
-`transition: grid-template-columns 0.28s ease, grid-template-rows 0.28s ease, opacity var(--duration-base) ease, margin 0.28s ease;`
-is written in the base `.actions-drawer` (426-431) and again in the closed-state rule (462-467,
-which only adds a `visibility 0s 0.28s` segment). The `0.28s` literal appears four+ times and is
-flagged "keep in sync with ACTION_BUTTON_GAP"-style comments elsewhere. Editing the drawer timing
-means touching multiple identical blocks.
-
-#### Proposed solution
-
-Introduce a `--drawer-collapse: 0.28s` custom property (or a motion token) and reference it; keep
-the transition list in the base rule and only append `visibility` in the closed rule rather than
-restating the whole list.
-
-#### Verification
-
-Grep `0.28s` → single source. Drawer open/close animation unchanged in both orientations.
-
----
-
----
-
 ### [P5][discoverability] SplotchyIcon renders `<img src="/splotchy.svg">`, bypassing the Icon system
 
 **File(s):** `web/src/lib/components/SplotchyIcon.svelte:9-11` — pinned at SHA f934d43

@@ -422,11 +422,11 @@
     align-items: center;
     margin-right: 8px;
     --drawer-collapse: 0.28s;
-    transition:
+    --drawer-transition:
       grid-template-columns var(--drawer-collapse) ease,
-      grid-template-rows var(--drawer-collapse) ease,
-      opacity var(--duration-base) ease,
+      grid-template-rows var(--drawer-collapse) ease, opacity var(--duration-base) ease,
       margin var(--drawer-collapse) ease;
+    transition: var(--drawer-transition);
   }
 
   .actions-drawer-inner {
@@ -459,10 +459,7 @@
        restores it instantly because the base rule doesn't transition visibility. */
     visibility: hidden;
     transition:
-      grid-template-columns var(--drawer-collapse) ease,
-      grid-template-rows var(--drawer-collapse) ease,
-      opacity var(--duration-base) ease,
-      margin var(--drawer-collapse) ease,
+      var(--drawer-transition),
       visibility 0s var(--drawer-collapse);
   }
 
