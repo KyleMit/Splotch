@@ -9,42 +9,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P2][maintainability] Unreferenced icon assets (`trash`, `sweep-icon`) ship in the union and glob
-
-**File(s):** `web/src/lib/icons/trash.svg`, `web/src/lib/icons/sweep-icon.svg`;
-`web/src/lib/components/icon-names.d.ts:54,59` — pinned at SHA f934d43
-
-#### Problem
-
-`Icon.svelte` eager-globs every SVG in `lib/icons/` into the bundle and `generate-icon-names.mjs`
-emits every filename into the `IconName` union. Two icons are never referenced anywhere in
-`web/src`:
-
-```
-trash      -> 0 files
-sweep-icon -> 0 files
-```
-
-(`trash-closed`/`trash-open` are the live pair; `trash` is an orphan.) They inflate the generated
-union, the eager glob, and — for `sweep-icon` — sit in the hand-maintained `COLOR_ICONS` set
-(`Icon.svelte:22`) as permanent dead weight. Because the union is generated from the directory,
-nothing flags an icon that no component consumes.
-
-#### Proposed solution
-
-Delete `trash.svg` and `sweep-icon.svg` (and `sweep-icon` from `COLOR_ICONS`), then
-`npm run gen:icons`. To make this self-policing, add a unit test (or extend `test:driver:smoke`)
-that scans `.svelte`/`.ts` sources for each `IconName` and fails on any name with zero references —
-the same shape as the existing `COLOR_ICONS` guard test.
-
-#### Verification
-
-After deletion + `gen:icons`, `trash` and `sweep-icon` are gone from `icon-names.d.ts`;
-`npm run check`/`npm test` pass. The new orphan-icon test fails if either is re-added without a
-consumer.
-
----
-
 ### [P2][type-safety] `COLOR_ICONS` is an untyped `Set<string>` — stale/typo entries can't be caught by the compiler
 
 **File(s):** `web/src/lib/components/Icon.svelte:13-42` — pinned at SHA f934d43

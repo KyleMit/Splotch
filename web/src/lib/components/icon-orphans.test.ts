@@ -25,18 +25,24 @@ const sources = import.meta.glob<string>(
   { eager: true, query: '?raw', import: 'default' }
 );
 
-// chevron-up is unreferenced too: the drawer's chevron is a single chevron-right
-// rotated with CSS. Grandfathered rather than deleted here — this guard's job is
-// to stop *new* orphans appearing.
-const KNOWN_ORPHANS = ['chevron-up'];
+// Pre-existing orphans, grandfathered rather than deleted here — this guard's
+// job is to stop *new* orphans appearing. chevron-up: the drawer's chevron is a
+// single chevron-right rotated with CSS. settings: nothing renders it; the only
+// mentions of the word are prose about the `settings` state module.
+const KNOWN_ORPHANS = ['chevron-up', 'settings'];
 
 const iconName = (path: string) => (path.split('/').pop() ?? '').replace('.svg', '');
 
-// Whole-name match, not a bare substring: `trash-closed` must not make a
-// re-added `trash.svg` look referenced.
+// Only a quoted string literal counts — `name="close"`, `icon: 'theme-auto'`,
+// the ERASER_SIZE_ICON maps. That's the form every real reference takes, and
+// requiring the quotes is what makes the guard work at all for icons named
+// after ordinary English words: a bare-substring scan for `close`, `download`,
+// or `home` is satisfied forever by unrelated code and prose, so those icons
+// could never be flagged. The closing quote also stops `'trash-closed'` from
+// vouching for a re-added trash.svg.
 const isReferenced = (name: string) => {
-  const mention = new RegExp(`(?<![\\w-])${name}(?![\\w-])`);
-  return Object.values(sources).some((src) => mention.test(src));
+  const literal = new RegExp(`(['"])${name}\\1`);
+  return Object.values(sources).some((src) => literal.test(src));
 };
 
 describe('no orphan icons', () => {
