@@ -9,34 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P2][duplication] The three per-invite action groups are triplicated markup
-
-**File(s):** `web/src/lib/components/admin/AdminConsole.svelte:278-304` (full), `:306-323`
-(compact), `:338-373` (more-menu) — pinned at SHA f934d43
-
-#### Problem
-
-"Copy code / Copy link / Remove" for one invite is written out three times with slightly different
-wrappers: the wide-screen labelled row, the narrow-screen "Copy + ⋯" pair, and the modal sheet. Each
-restates `copy(\`${invite.token}:code\`,
-invite.token)`, the`class:copied`toggle, and the remove`run(() =>
-onremove(...))`wiring. Adding a fourth action (or renaming an existing one) is a three-place edit, and the copies have already drifted — the full row's button label is "Copy code" while the compact one is "Copy", and only the full/compact rows show the`copied`
-flash, not the menu.
-
-#### Proposed solution
-
-Extract the action buttons into a small child component (`InviteActions.svelte`) taking `invite`,
-`copied`, `busy`, and the `copy`/`onremove` callbacks, rendered in all three layout contexts. Or,
-minimally, a `{#snippet actionButtons(invite)}` reused by the full row and the menu. The
-compact/full/modal split then only differs in the container, not the buttons.
-
-#### Verification
-
-`tests/admin.spec.ts` copy-code/copy-link/remove assertions pass at both wide and narrow viewports.
-`npm run check` clean.
-
----
-
 ### [P2][complexity] `readStore` bundles store-open, read, seed, confirmation-loop, and fallback into one function
 
 **File(s):** `web/src/lib/server/tokens.ts:67-111` — pinned at SHA f934d43

@@ -829,3 +829,105 @@ not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-type-safety-native-page-hand-rolls-type-guards-that-duplicate-the-ser.patch`.
 *Three review rounds; the first two were fully addressed. Only the last objection above remained,
 and it is narrow — a wrong string literal in a new test fixture.*
+
+### [P2][duplication] The three per-invite action groups are triplicated markup
+
+**File(s):** `web/src/lib/components/admin/AdminConsole.svelte:278-304` (full), `:306-323`
+(compact), `:338-373` (more-menu) — pinned at SHA f934d43
+
+#### Problem
+
+"Copy code / Copy link / Remove" for one invite is written out three times with slightly different
+wrappers: the wide-screen labelled row, the narrow-screen "Copy + ⋯" pair, and the modal sheet. Each
+restates `copy(\`${invite.token}:code\`,
+invite.token)`, the`class:copied`toggle, and the remove`run(() =>
+onremove(...))`wiring. Adding a fourth action (or renaming an existing one) is a three-place edit, and the copies have already drifted — the full row's button label is "Copy code" while the compact one is "Copy", and only the full/compact rows show the`copied`
+flash, not the menu.
+
+#### Proposed solution
+
+Extract the action buttons into a small child component (`InviteActions.svelte`) taking `invite`,
+`copied`, `busy`, and the `copy`/`onremove` callbacks, rendered in all three layout contexts. Or,
+minimally, a `{#snippet actionButtons(invite)}` reused by the full row and the menu. The
+compact/full/modal split then only differs in the container, not the buttons.
+
+#### Verification
+
+`tests/admin.spec.ts` copy-code/copy-link/remove assertions pass at both wide and narrow viewports.
+`npm run check` clean.
+
+---
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* The more-menu's `copied` flash can never render: `copyAction`'s handler calls `copy()` (which
+  assigns `copied` only after awaiting the clipboard write) and then `closeMenu()` synchronously,
+  and the dialog's `onclose` nulls `menuInvite` so the sheet unmounts. The new
+  `.more-menu-item.copied` rule at AdminConsole.svelte:800 is dead CSS and the sheet items never
+  show "Copied!" — either keep the sheet open long enough for the flash to be visible, or drop the
+  menu-only flash and its CSS rule.
+* The menu copy items now render `copied === key ? 'Copied!' : label`, so `copied` set from another
+  surface leaks into them: tapping the compact row's "Copy" and then opening the ⋯ sheet within the
+  1500 ms window shows the sheet's "Copy code" item labelled "Copied!" despite never being clicked.
+  Gate the menu items' label on something scoped to the menu, or leave them showing their static
+  label.
+* The new comment above `copyAction` in `web/src/lib/components/admin/AdminConsole.svelte:162-168`
+  ends with "The row underneath flashes once the sheet closes", which is false for the `url` action:
+  at narrow widths `.invite-actions-full` is `display: none` and the compact row only renders the
+  `code` copy button, so copying a link from the sheet produces no feedback anywhere. Since this
+  comment is the sole justification for deliberately not adding the flash the acceptance criteria
+  asked for, correct it to say the code copy flashes on the compact row and the link copy has no
+  visible feedback on narrow screens.
+* The behaviour this commit changes is entirely untested: `web/tests/admin.spec.ts` only asserts the
+  wide-viewport "Copy link" button is visible (line 29) and never opens the more-menu, exercises the
+  compact row, or asserts on the "Copied!" flash. Add a narrow-viewport spec covering the "⋯"
+  sheet's copy/remove items and asserting the sheet's items do not render "Copied!", so the leak
+  this commit closes cannot silently return.
+* web/tests/admin.spec.ts:144 and :153 read the clipboard with a non-retrying
+  `expect(await page.evaluate(() => navigator.clipboard.readText()))` immediately after the sheet
+  item's click. `copy()` awaits `navigator.clipboard.writeText` while `closeMenu()` runs
+  synchronously, so `await expect(sheet).toBeHidden()` can resolve before the write lands and the
+  read returns the stale value — empty on the first (link) read, the previous URL on the second
+  (code) read, which `toBe(token)` fails on. Wrap both in `expect.poll(() => page.evaluate(...))`
+  (the idiom already used in flows.spec.ts) so the assertion retries.
+
+#### What was tried
+
+1. Replaced the three copies of the per-invite copy/remove buttons with two component-local snippets
+   (`copyAction`, `removeAction`) that close over the existing `copied`/`busy`/`copy`/`run` state,
+   parameterised by the copy target, the label (so the compact row keeps its deliberate short
+   "Copy"), and an `inMenu` flag that swaps in the sheet's list-item chrome and dismisses it. The
+   more-menu's copy items now get the same `class:copied` flash as the other two surfaces, backed by
+   a new `.more-menu-item.copied` rule; unifying the markup also gives the menu's Remove the
+   `Remove {token}` aria-label the full row already had, which is the one behaviour change beyond
+   the two the brief named.
+2. Dropped the more-menu's `copied` flash and its dead `.more-menu-item.copied` rule: the sheet
+   dismisses synchronously so it unmounts before `copy()` resolves, and `copied` is keyed by
+   token+kind rather than by surface, so the only thing the menu items ever rendered was another
+   surface's flash leaking in. `flashed = !inMenu && copied === key` now gates both the class and
+   the label, making the sheet's markup byte-equivalent to the pre-refactor original while the row
+   underneath still flashes after the sheet closes. Verified with a throwaway spec (deleted) that
+   reproduces the leak scenario and the sheet's copy/remove paths, plus
+   check/eslint/unit/admin-E2E/format all green.
+3. Corrected the comment to say the code copy flashes the compact row while the link copy has no
+   visible feedback at narrow widths, and added a narrow-viewport spec driving the ⋯ sheet's
+   copy/remove items plus a guard on the flash leak. The first guard I wrote was vacuous — web-first
+   assertions retry, so it waited out the 1.5s flash and passed against a deliberately reintroduced
+   leak; the committed version takes one synchronous snapshot of the sheet items, the flashing row
+   and the sheet title, asserts with non-retrying expect, and is wrapped in toPass for the window
+   race (verified to fail against the reintroduced leak). The two specs were merged into one because
+   /api/admin/login is capped at 10 hits per IP per minute and the suite already spent 8; a note
+   above signIn records the budget. 10/10 repeats pass, with failures only from the limiter on the
+   11th login.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p2-duplication-the-three-per-invite-action-groups-are-triplicated-markup.patch`
+(3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p2-duplication-the-three-per-invite-action-groups-are-triplicated-markup.patch`.
