@@ -7,59 +7,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P5][design-tokens] ErrorScreen uses bare off-scale sizes for its heading and blob
-
-**File(s):** `web/src/lib/components/ErrorScreen.svelte:35-40,44` — pinned at SHA f934d43
-
-#### Problem
-
-The crash fallback deliberately uses `var(--token, literal)` fallbacks so it renders even if
-`tokens.css` failed to load (documented intent, 1-3) — that part is fine. But
-`h1 { font-size: 32px }` (44) and the `.error-blob` `96px` box (35-36) are bare literals with no
-token and no fallback rationale; `--font-size-3xl` is 28 and there's no 32 token. Low stakes given
-the standalone nature, but it's untokenized sizing that could reference the scale where the
-component still has token access.
-
-#### Proposed solution
-
-Use `var(--font-size-3xl, 32px)` for the heading (keeping the crash-safe fallback pattern the rest
-of the file already uses) and consider a sizing token for the blob, or leave with an explicit
-"standalone, intentionally literal" note.
-
-#### Verification
-
-Heading/blob render identically; if tokens load, they now track the scale.
-
----
-
-### [P5][readability] Slider's snap-band width is an unexplained-magnitude magic fraction
-
-**File(s):** `web/src/lib/components/Slider.svelte:42` — pinned at SHA f934d43
-
-#### Problem
-
-`const snapBand = $derived((max - min) * 0.045);` — the `0.045` ("~4.5% of the track") is a bare
-literal. It's commented, but as a tuning constant that governs detent feel it would be clearer and
-more grep-able as a named constant, especially since Slider is a reusable primitive backing multiple
-settings.
-
-#### Proposed solution
-
-`const SNAP_BAND_FRACTION = 0.045;` at module scope with the rationale, referenced in the derived.
-
-#### Verification
-
-Grep `0.045` → named. Detent still engages within the same band on both the volume (0–100) and
-button-size (70–130) sliders.
-
----
-
-**Scope note:** Findings are confined to the assigned Core UI controls files. The
-`rgba(171, 113, 225, …)` values in ActionsPanel/BrushMenu/StrokeWidthMenu and the `#000` keyline are
-intentional pre-`color-mix` fallbacks / documented one-offs per `docs/COMPATIBILITY.md`, so I did
-not flag them. The CSS literals mirroring `actionButtonLayout` constants (188/208/6) are already
-drift-guarded by `actionButtonLayout.fallback.test.ts` and were likewise left alone.
-
 ## Source: Code audit — Design system + icons
 
 ### [P2][dead-code] `Button` design primitive has no production consumers
