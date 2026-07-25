@@ -1008,3 +1008,58 @@ path defined once.
 #### Why it was deferred
 
 verifier gave no usable brief
+
+### [P4][duplication] Native page reimplements session-state bookkeeping the cookie flow gets from the server
+
+**File(s):** `web/src/routes/admin/native/+page.svelte:24-32` (`signOutLocally`) — pinned at SHA
+f934d43
+
+#### Problem
+
+`signOutLocally` manually resets five reactive fields plus the admin-link visibility and clears
+secure storage:
+
+```ts
+session = '';
+authed = false;
+invites = [];
+persistent = true;
+loginError = message;
+setAdminLinkVisible(false);
+void clearAdminSession();
+```
+
+This "what does a signed-out console look like" definition is the native mirror of what the web
+loader's unauthenticated branch returns (`+page.server.ts:63-70`), but expressed as imperative field
+resets that must be kept consistent with the initial `$state` declarations (`:15-22`) by hand. The
+two lists have already drifted subtly (initial state sets `ready`/`flash`, sign-out doesn't touch
+them — correct here, but nothing enforces it). It's easy to add a sixth session field and forget one
+of the reset sites.
+
+#### Proposed solution
+
+Define one `signedOutState` object literal and assign from it in both the initial declarations and
+`signOutLocally`, so "the empty session" is described once. Keep the side effects
+(`setAdminLinkVisible`, `clearAdminSession`) explicit in `signOutLocally`.
+
+#### Verification
+
+`tests/admin.spec.ts` native sign-out returns to the login card with the link hidden;
+expired-session (401) path still resets cleanly.
+
+---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+Implemented the shared signedOutState() helper in web/src/routes/admin/native/+page.svelte exactly
+as the brief specifies, used to seed the initial $state values and inside signOutLocally so the two
+five-field lists can no longer drift independently. npm run check, eslint on the changed file, and
+npm run test:unit (660 passed) all passed, and the named E2E gate (tests/admin.spec.ts, all 8 tests)
+passed. However the full npm test run (asset-pipeline + repo-script + full Playwright suite)
+required by the acceptance criteria was still executing in the background when a response was
+required, so I could not confirm it green and have not committed — deferring so a partial/unverified
+state isn't recorded as done.
