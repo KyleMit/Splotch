@@ -114,6 +114,18 @@ through.
   (`/^[\w./-]+$/`) — anything with whitespace or shell metacharacters is dropped.
 * **Lint gate** (aed45eb7). A fix can type-check and still ship an `any` or a raw `Map` in a
   `.svelte.ts` and redden CI. `eslint` now runs on each fix's changed files.
+* **The gate ladder still misses the repo's bespoke gates, and CI catches them hours later.** The
+  2026-07-25 run reddened Quality on `npm run lint:tokens` — a *ratchet* lint that fails in **both**
+  directions. One finding hoisted AdminConsole's hex literals into `--admin-*` properties, dropping
+  its raw-hex count 49 → 34, and the ratchet demands the baseline be lowered to match; another
+  extracted the overflow modal into a new `InviteMenu.svelte`, which carried four hexes into a file
+  with no baseline entry at all. Both are correct fixes, and neither `CHECK_CMD`, `TEST_CMD`,
+  `LINT_CMD` (eslint on changed files) nor a targeted E2E spec can see either. **A fix that improves
+  a ratcheted metric fails CI exactly like a regression** — worth internalising, because the run log
+  and the per-finding gates read fully green throughout.
+  `CHECK_CMD='npm run check && npm run lint:tokens'` closes it for a run at the cost of a few
+  seconds per finding; the same hazard applies to any other bespoke `npm run lint:*`/drift gate CI
+  runs that the four default gates do not.
 * **E2E retry** (401820f5). One flaky E2E failure red-lit a whole batch and held the push; the
   re-run was fully green. `--retries=1` lets a genuine flake clear while a real regression still
   fails twice.

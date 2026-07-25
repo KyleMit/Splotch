@@ -28,7 +28,12 @@ const BASELINE = new Map(
     // Light-only surface with its own WCAG-tuned accent palette (#7c4dcf
     // family); themed color tokens would half-dark-theme it. See the note at
     // the top of its <style> block.
-    'lib/components/admin/AdminConsole.svelte': 49,
+    'lib/components/admin/AdminConsole.svelte': 34,
+    // The /admin overflow modal, lifted out of AdminConsole with its
+    // `.more-menu*` rules intact — same light-only surface, same reasoning.
+    // Its four are the sheet white, the hover tint, and the destructive
+    // red + its tint; none has an --admin-* equivalent to point at.
+    'lib/components/admin/InviteMenu.svelte': 4,
     // Light-only page, same reasoning as /admin.
     'routes/privacy/+page.svelte': 8,
     // Deliberate constants: contrast-pinned #666 on hardcoded-light host pages.
