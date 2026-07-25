@@ -7,30 +7,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P3][dead-code] Flyout portrait media query re-sets flex-direction to its base value
-
-**File(s):** `web/src/lib/components/BrushMenu.svelte:70-76`,
-`web/src/lib/components/StrokeWidthMenu.svelte:81-87` — pinned at SHA f934d43
-
-#### Problem
-
-The base `.flyout-menu` is `flex-direction: row` (58/66). The `@media (orientation: portrait)` block
-changes `left`/`bottom` but also writes `flex-direction: row` again (75/86) — a no-op that's
-immediately overridden anyway by the `max-width: 540px` block's `column`. It reads as though
-portrait deliberately re-affirms row, obscuring that the meaningful axis switch is the 540px
-breakpoint.
-
-#### Proposed solution
-
-Remove `flex-direction: row` from the plain portrait block in both files (it's redundant with the
-base). Same fix lands once if these merge into the shared flyout primitive (P1).
-
-#### Verification
-
-No computed-style change at any width; confirm flyout still stacks column only below 540px portrait.
-
----
-
 ### [P3][accessibility] Clearing the canvas is pointer-only — no keyboard or AT path
 
 **File(s):** `web/src/lib/components/ClearButton.svelte:103-137` — pinned at SHA f934d43
