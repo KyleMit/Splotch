@@ -387,6 +387,12 @@
      is a normal scrollable, selectable, zoomable document — the drawing-route
      app-surface locks (app.css) don't reach this route, so no opt-out is needed. */
   .admin-page {
+    --admin-accent: #7c4dcf;
+    --admin-accent-hover: #6b3fbe;
+    --admin-accent-tint: #f5f0fc;
+    --admin-accent-tint-strong: #f0e9fb;
+    --admin-accent-tint-hover: #ece0fb;
+
     position: fixed;
     inset: 0;
     overflow-y: auto;
@@ -421,7 +427,7 @@
     width: 52px;
     height: 52px;
     border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, var(--brand), #7c4dcf);
+    background: linear-gradient(135deg, var(--brand), var(--admin-accent));
     box-shadow: 0 6px 16px rgba(124, 77, 207, 0.35);
     flex-shrink: 0;
   }
@@ -522,8 +528,8 @@
     height: 24px;
     padding: 0 8px;
     border-radius: var(--radius-pill);
-    background: #f0e9fb;
-    color: #7c4dcf;
+    background: var(--admin-accent-tint-strong);
+    color: var(--admin-accent);
     font-size: var(--font-size-sm);
     font-weight: 700;
   }
@@ -605,7 +611,7 @@
   .btn-primary {
     padding: 11px 18px;
     color: #fff;
-    background: #7c4dcf;
+    background: var(--admin-accent);
     flex-shrink: 0;
   }
 
@@ -613,19 +619,19 @@
      keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
     .btn-primary:hover {
-      background: #6b3fbe;
+      background: var(--admin-accent-hover);
     }
   }
 
   .btn-ghost {
     padding: 8px 14px;
-    color: #7c4dcf;
-    background: #f5f0fc;
+    color: var(--admin-accent);
+    background: var(--admin-accent-tint);
   }
 
   @media (hover: hover) {
     .btn-ghost:hover {
-      background: #ece0fb;
+      background: var(--admin-accent-tint-hover);
     }
   }
 
@@ -715,7 +721,7 @@
   }
 
   .usage strong {
-    color: #7c4dcf;
+    color: var(--admin-accent);
     font-weight: 700;
   }
 
@@ -784,7 +790,7 @@
     font-family: inherit;
     font-size: var(--font-size-lg);
     font-weight: 600;
-    color: #7c4dcf;
+    color: var(--admin-accent);
     background: transparent;
     border: none;
     border-bottom: 1px solid #f0f0f0;
