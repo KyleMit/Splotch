@@ -34,25 +34,24 @@
   });
 
   // Native: flip the system clock/battery icons light or dark for contrast.
-  // The literal __IS_CAPACITOR__ (here and below) keeps the status-bar plugin
-  // out of the web bundle; the inline import() resolves to the module
-  // namespace, never the plugin proxy, and repeat calls share one module.
-  $effect(() => {
-    const style = band.statusBarStyle;
-    if (__IS_CAPACITOR__ && isNative() && style) {
-      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
-        StatusBar.setStyle({ style: style === 'DARK' ? Style.Dark : Style.Light }).catch(() => {});
-      });
-    }
-  });
-
+  // The literal __IS_CAPACITOR__ keeps the status-bar plugin out of the web
+  // bundle; the inline import() resolves to the module namespace, never the
+  // plugin proxy, and repeat calls share one module.
   // Android native: hide the status bar in landscape to reclaim the long top
   // edge as canvas; show it again in portrait. null elsewhere = leave it alone.
   $effect(() => {
+    const style = band.statusBarStyle;
     const hidden = band.statusBarHidden;
-    if (__IS_CAPACITOR__ && isNative() && hidden !== null) {
-      import('@capacitor/status-bar').then(({ StatusBar }) => {
-        (hidden ? StatusBar.hide() : StatusBar.show()).catch(() => {});
+    if (__IS_CAPACITOR__ && isNative()) {
+      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+        if (style) {
+          StatusBar.setStyle({ style: style === 'DARK' ? Style.Dark : Style.Light }).catch(
+            () => {}
+          );
+        }
+        if (hidden !== null) {
+          (hidden ? StatusBar.hide() : StatusBar.show()).catch(() => {});
+        }
       });
     }
   });

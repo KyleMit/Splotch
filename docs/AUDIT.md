@@ -7,55 +7,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P3][duplication] NotchBand runs two near-identical status-bar effects that each re-import the plugin
-
-**File(s):** `web/src/lib/components/NotchBand.svelte:40-58` — pinned at SHA f934d43
-
-#### Problem
-
-Two separate `$effect`s both guard on `__IS_CAPACITOR__ && isNative()` and both
-`import('@capacitor/status-bar').then(...)` — one to set `Style`, one to `hide()/show()`. The import
-boilerplate and the platform guard are duplicated, and the two effects fire independently on the
-same `band` recompute. It's more code to read and two places to keep the guard correct.
-
-#### Proposed solution
-
-Merge into one `$effect` that reads `band.statusBarStyle` and `band.statusBarHidden`, imports the
-plugin once, and applies both. (Keep them split only if the dependency granularity is deliberately
-different — it isn't here; both derive from `band`.)
-
-#### Verification
-
-`grep -c "@capacitor/status-bar"` in the file drops to 1. Native smoke (Maestro) for status-bar
-style/visibility across orientation still passes.
-
----
-
-### [P4][readability] ActionsPanel duplicates the drawer transition list verbatim across two rules
-
-**File(s):** `web/src/lib/components/ActionsPanel.svelte:426-431,462-467` — pinned at SHA f934d43
-
-#### Problem
-
-The four-line
-`transition: grid-template-columns 0.28s ease, grid-template-rows 0.28s ease, opacity var(--duration-base) ease, margin 0.28s ease;`
-is written in the base `.actions-drawer` (426-431) and again in the closed-state rule (462-467,
-which only adds a `visibility 0s 0.28s` segment). The `0.28s` literal appears four+ times and is
-flagged "keep in sync with ACTION_BUTTON_GAP"-style comments elsewhere. Editing the drawer timing
-means touching multiple identical blocks.
-
-#### Proposed solution
-
-Introduce a `--drawer-collapse: 0.28s` custom property (or a motion token) and reference it; keep
-the transition list in the base rule and only append `visibility` in the closed rule rather than
-restating the whole list.
-
-#### Verification
-
-Grep `0.28s` → single source. Drawer open/close animation unchanged in both orientations.
-
----
-
 ### [P4][consistency] corner-button consumers use inconsistent sizes (44 vs 48 px)
 
 **File(s):** `web/src/lib/components/FullscreenToggle.svelte:30-34` vs
