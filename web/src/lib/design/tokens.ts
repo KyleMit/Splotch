@@ -93,14 +93,21 @@ export const scale = {
 
 // The cross-component stacking order, low to high. Scoped to "chrome" — the
 // fixed/absolute-positioned UI that can visually collide with something outside
-// its own component. Layers that are private to one component's stacking
-// context (DrawingCanvas's own 0–3 sheet/overlay stack, the close buttons on
-// the AI and coloring-book cards, the hovered palette hexagon) stay as local
-// integers: tokenizing them would imply a global relationship they don't have.
+// its own component. Layers sealed inside a real stacking context (everything
+// under DrawingCanvas's .canvas-stack, which sets isolation: isolate; the close
+// buttons on the AI and coloring-book cards; the hovered palette hexagon) stay
+// as local integers: tokenizing them would imply a global relationship they
+// don't have.
+//
+// Every token below shares ONE context — the root. .canvas-container is
+// position: relative with no z-index, so it establishes nothing and its
+// children compete directly with the fixed chrome; the tiers here are a
+// convention, not a containment guarantee.
 export const zIndex = {
-  // FullscreenToggle. Absolute inside DrawingCanvas's .canvas-container, so it
-  // only has to outrank that component's internal layers (max 3) — it is NOT
-  // part of the 900+ global chrome tier below.
+  // FullscreenToggle — the floor of that shared root context, not a separate
+  // local scale. It clears DrawingCanvas's other root-level layers
+  // (.paper-sheet 0, .canvas-stack 1, .paper-view 2, .brush-ring/.eraser-bubble
+  // 3) and deliberately loses to every persistent control below.
   zCanvasChrome: 4,
 
   // Clear Button drag feedback: the paper wash previewing the clear, then the

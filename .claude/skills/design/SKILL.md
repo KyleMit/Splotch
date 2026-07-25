@@ -42,9 +42,9 @@ pierce Svelte's style scoping, so every component references them directly via `
 | Elevation | `--shadow-sm`, `--shadow-pop`, `--shadow-segment` (neutral; the last is the tight active-segment          |
 |           | lift — tighter and harder than `--shadow-sm`, don't converge them); `--float-shadow`,                     |
 |           | `--float-shadow-flyout` (themed, paper cards)                                                             |
-| Stacking  | `--z-*` — the cross-component chrome order, `--z-clear-preview` (400) up to `--z-screenshot-flash`        |
-|           | (10000), listed low-to-high in `tokens.ts`. Layers private to one component's own stacking context        |
-|           | (DrawingCanvas's 0–3 sheet stack, card close buttons) stay plain integers                                 |
+| Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-screenshot-flash`          |
+|           | (10000), listed low-to-high in `tokens.ts`. All of it shares the root stacking context. Layers sealed     |
+|           | inside a real one (under `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers  |
 | Theme     | surfaces, borders, text ramp, icon inks, brand/success/danger washes, paper, float-card chrome — the full |
 |           | list with per-token docs is in `tokens.ts` (`ThemeTokens`)                                                |
 

@@ -3,7 +3,7 @@
   import Button from '$lib/components/design/Button.svelte';
   import Disclosure from '$lib/components/design/Disclosure.svelte';
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
-  import { brand, scale, themes, toCssVarName, type ThemeTokens } from '$lib/design/tokens';
+  import { brand, scale, themes, toCssVarName, zIndex, type ThemeTokens } from '$lib/design/tokens';
   import { applyTheme, isThemePreference, type ThemePreference } from '$lib/theme';
 
   // Start from whatever data-theme the app has already stamped on <html> (no
@@ -35,6 +35,9 @@
   const motionEntries = Object.entries(scale).filter(
     ([k]) => k.startsWith('duration') || k.startsWith('ease')
   );
+  // Already authored low-to-high in tokens.ts; render it in that order so the
+  // page shows the stacking order, not just the values.
+  const zIndexEntries = Object.entries(zIndex);
 
   const cssVar = (key: string) => `var(${toCssVarName(key)})`;
 
@@ -184,6 +187,20 @@
     <h2>Motion</h2>
     <ul class="raw-list">
       {#each motionEntries as [key, value] (key)}
+        <li><code>{toCssVarName(key)}</code> <span class="value">{value}</span></li>
+      {/each}
+    </ul>
+  </section>
+
+  <section>
+    <h2>Stacking</h2>
+    <p>
+      The cross-component chrome order, low to high — all of it in the root stacking context. Ties
+      are deliberate: <code>--z-panel</code>/<code>--z-flyout</code> (the flyout nests inside the
+      panel) and <code>--z-clear-button</code>/<code>--z-notch</code> (resolved by DOM order).
+    </p>
+    <ul class="raw-list">
+      {#each zIndexEntries as [key, value] (key)}
         <li><code>{toCssVarName(key)}</code> <span class="value">{value}</span></li>
       {/each}
     </ul>

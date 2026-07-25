@@ -30,8 +30,9 @@
     left: 8px;
     width: 44px;
     height: 44px;
-    /* Local to .canvas-container, so this only outranks DrawingCanvas's own
-       layers — not the 900+ chrome tier the other overlays live in. */
+    /* .canvas-container establishes no stacking context (position: relative,
+       no z-index), so this competes in the ROOT context with the 900+ chrome —
+       it just sits below all of it, above DrawingCanvas's own 0–3 layers. */
     z-index: var(--z-canvas-chrome);
   }
 </style>
