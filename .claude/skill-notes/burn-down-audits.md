@@ -410,6 +410,47 @@ than deferred. The run's last finding died to a container restart mid-fix-round;
 removed from `docs/AUDIT.md`, so a future run re-verifies it from scratch. Filing a stale patch
 under `docs/audit-deferred/` for a finding that is not deferred would misrepresent the backlog.
 
+### Supervising-agent friction, third cloud run (2026-07-25)
+
+None of these touched the driver. They are all things the *supervising* session got wrong or wasted
+time on, which is exactly the material that never makes it into a runbook because it feels like
+operator error rather than design.
+
+* **The liveness check was measuring itself.** The documented stall check compared `HEAD` and
+  `wc -l < run.log` across five minutes. Both are surfaces the supervising agent writes to —
+  `backfill-comments.mjs done` appends a line to `run.log`, and any `git reset` of your own moves
+  HEAD — so it returned a confident `ADVANCED` for a driver that had been dead for half an hour. The
+  envelope count in `.audit-work/logs/` is written only by role calls, which is why the check now
+  uses it. Generalisation worth keeping: **a liveness probe must read a surface the observer cannot
+  write.** The same instinct as principle 1, one level up.
+* **A new terminal state: the orphaned driver.** The container restarted *without* being reclaimed —
+  disk survived, the Node process survived, its in-flight `claude -p` child did not. The driver then
+  waited forever on a child that would never report. What makes it nasty is that it emits nothing:
+  no `HALT`, no `DEFERRED`, no log line, so an event-driven monitor is silent and silence is the
+  designated "healthy" signal. This is the only case where killing `burndown.mjs` is right, and the
+  diagnostic that identifies it is `pgrep -f 'claude -p'` returning nothing while the driver lives.
+  Distinct from the documented "container reclaimed" case, which loses everything and is obvious.
+* **`pkill -f 'audit-burndown/burndown.mjs'` kills your own shell too**, because `-f` matches whole
+  command lines and the wrapper contains the pattern. Exit 144 reads like a failure; the kill had
+  actually worked. It also took out a background waiter whose command line mentioned the same path.
+* **Elapsed time was twice inferred from a monitor's death.** A `Monitor` times out 30 minutes after
+  it was *armed*, which is unrelated to when the current finding started. Reading the timeout as
+  "this finding has run 30 minutes" produced an investigate-band alarm for a P4 that was three
+  minutes old, and the correction cost a round trip. The clamp itself was already documented; that
+  it is not a clock was not.
+* **The unsigned-commit hook fires every turn and its remedy is actively dangerous here.** The
+  container sets `commit.gpgsign=true` / `gpg.format=ssh` with a **zero-byte** key file, so commits
+  are `%G? = N` and GitHub marks them Unverified. The identity is already
+  `Claude <noreply@anthropic.com>`, so only the unfixable half of the hook's message applies — and
+  its suggested `--amend --reset-author` / `rebase --exec` would race the driver's own `--amend`
+  mid-run and, on a run with hundreds of pushed commits, demand a force-push to fix nothing. Worth
+  documenting purely so the next session spends one sentence on it instead of investigating.
+
+The through-line: **most of these are the supervising agent mistaking its own footprint for the
+run's state.** The driver is deliberately independent of the conversation, and the cost of that
+independence is that every shared surface — the log, the branch, the working tree — carries both
+parties' writes with no way to tell them apart after the fact.
+
 ### The cloud cutover (2026-07-25)
 
 The third live run was the first in a Claude Code cloud session rather than on the author's Mac, and
