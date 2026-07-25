@@ -7,37 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P4][complexity] `render()` header comment duplicates the emitted `tokens.css` banner
-
-**File(s):** `scripts/gen-tokens.mjs:1-10` and the template banner `:27-35` — pinned at SHA f934d43
-
-#### Problem
-
-The generator has two long explanatory blocks that say nearly the same thing: the module-level
-comment (`:1-10`, "dark declarations emitted twice … generator guarantees the two blocks stay
-identical") and the emitted banner inside the template literal (`:27-35`, "generator emits the dark
-block twice so the two forms can never drift"). Maintaining the same rationale in two prose blocks
-invites drift between them.
-
-#### Proposed solution
-
-Keep the rationale in one place — the emitted banner (which ships to readers of `tokens.css`) — and
-trim the module comment to a one-line pointer, or vice versa. Not worth a big refactor; just
-deduplicate the prose.
-
-#### Verification
-
-Output `tokens.css` unchanged; the two comment blocks no longer restate each other.
-
----
-
-I reviewed all in-scope files plus the supporting `iconChroma.mjs`/`utils.mjs`. Notable
-cross-cutting themes: (1) the icon system's type-safety leaks — an untyped `COLOR_ICONS`, an `Icon`
-index signature, and a `StrokeWidthMenu` cast — collectively undercut the generated union that is
-the system's whole selling point; (2) the `Button` primitive and two icon assets are effectively
-dead; (3) `app.css` sits entirely outside the token guardrails and has drifted to raw values the
-tokens already cover.
-
 ## Source: Code audit — Admin console + token backend
 
 ### [P1][duplication] Login flow (rate-limit + secret verify) is copy-pasted across the two front doors
