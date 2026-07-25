@@ -7,33 +7,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P2][design-tokens] InstallBanner uses off-scale font sizes, radius, and an ad-hoc shadow
-
-**File(s):** `web/src/lib/components/InstallBanner.svelte:160,241,257,259,160` — pinned at SHA
-f934d43
-
-#### Problem
-
-`.install-copy strong` and `.install-cta` set `font-size: 15px` (241, 259) — 15 is not on the type
-scale (`--font-size-md:14`, `--font-size-lg:16`). `.install-cta` uses `border-radius: 14px` (257),
-off the radius scale (`--radius-md:12`, `--radius-lg:16`). `.install-banner` uses
-`box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18)` (160), a one-off instead of
-`--shadow-pop`/`--shadow-sm`. Mixed in are legitimate token usages, which makes the off-scale values
-look intentional when they're likely drift.
-
-#### Proposed solution
-
-Round the 15px to `--font-size-lg` (16) or add a token if 15 is deliberate; use `--radius-lg` for
-the CTA; replace the banner shadow with a token (or add `--shadow-banner`). Same for the `120`px fly
-distance if a motion token is warranted.
-
-#### Verification
-
-Grep `15px|14px|rgba(0, 0, 0, 0.18)` in the file → resolved. Compare banner rendering before/after
-in `run-splotch`.
-
----
-
 ### [P2][type-safety] StrokeWidthMenu casts a template-string icon name to CommonIconName, defeating the generated union
 
 **File(s):** `web/src/lib/components/StrokeWidthMenu.svelte:52-54` — pinned at SHA f934d43

@@ -155,7 +155,7 @@
     background: var(--surface);
     border: 2px solid var(--brand, #ab71e1);
     border-radius: var(--radius-xl);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--shadow-pop);
     font-family: inherit;
   }
 
@@ -235,7 +235,7 @@
 
   .install-copy strong {
     color: var(--text-strong);
-    font-size: 15px;
+    font-size: var(--font-size-lg);
     font-weight: 700;
   }
 
@@ -252,10 +252,10 @@
     gap: 6px;
     padding: 10px 16px;
     border: none;
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     background: var(--brand, #ab71e1);
     color: var(--on-brand, #fff);
-    font-size: 15px;
+    font-size: var(--font-size-lg);
     font-weight: 700;
     cursor: pointer;
     touch-action: manipulation;
