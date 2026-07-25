@@ -11,7 +11,7 @@ vi.mock('$env/dynamic/private', () => ({ env: envState }));
 
 import {
   sessionToken,
-  secretMatches,
+  constantTimeEqual,
   verifyAdminSecret,
   verifySessionToken,
   buildInvites,
@@ -52,24 +52,24 @@ describe('sessionToken', () => {
   });
 });
 
-describe('secretMatches', () => {
+describe('constantTimeEqual', () => {
   it('rejects missing provided or expected values', () => {
-    expect(secretMatches(undefined, 'x')).toBe(false);
-    expect(secretMatches('x', undefined)).toBe(false);
-    expect(secretMatches('', 'x')).toBe(false);
-    expect(secretMatches('x', '')).toBe(false);
+    expect(constantTimeEqual(undefined, 'x')).toBe(false);
+    expect(constantTimeEqual('x', undefined)).toBe(false);
+    expect(constantTimeEqual('', 'x')).toBe(false);
+    expect(constantTimeEqual('x', '')).toBe(false);
   });
 
   it('rejects values of differing length', () => {
-    expect(secretMatches('short', 'longer-value')).toBe(false);
+    expect(constantTimeEqual('short', 'longer-value')).toBe(false);
   });
 
   it('rejects same-length but different values', () => {
-    expect(secretMatches('aaaa', 'bbbb')).toBe(false);
+    expect(constantTimeEqual('aaaa', 'bbbb')).toBe(false);
   });
 
   it('accepts an exact match', () => {
-    expect(secretMatches('matching', 'matching')).toBe(true);
+    expect(constantTimeEqual('matching', 'matching')).toBe(true);
   });
 });
 

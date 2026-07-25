@@ -7,34 +7,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P5][readability] `secretMatches` name doesn't convey it's a constant-time compare, and its two callers restate the intent
-
-**File(s):** `web/src/lib/server/admin.ts:29-45` — pinned at SHA f934d43
-
-#### Problem
-
-`secretMatches(provided, expected)` reads like an ordinary equality check; the constant-time
-property — the entire reason the function exists rather than `a === b` — lives only in a comment
-(`:26-28`). A future caller comparing something non-secret might reasonably reuse it (harmless) or,
-worse, someone might "simplify" `verifySessionToken`/`verifyAdminSecret` to `===` not realizing the
-timing guarantee is load-bearing (the server-api rule mandates `timingSafeEqual`). The two one-line
-wrappers `verifyAdminSecret`/`verifySessionToken` (`:38-45`) add little beyond binding an env read.
-
-#### Proposed solution
-
-Rename to `constantTimeEqual` (states the guarantee in the name) so the property is visible at every
-call site; keep the two verify wrappers but let their bodies read
-`constantTimeEqual(key, env.ADMIN_ACCESS_TOKEN)`. No behavior change.
-
-#### Verification
-
-`admin.test.ts` (`secretMatches` describe block) updated to the new name and passes; grep confirms
-no `===` comparison of secrets crept in.
-
----
-
-That's 24 findings across the admin console + token backend scope.
-
 ## Source: Code audit — Routes / app shell / dev pages
 
 ### [P1][architecture] The drawing-page shell buries ~140 lines of imperative boot logic inline across three `onMount` and four `$effect` blocks
