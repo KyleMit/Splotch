@@ -4,7 +4,12 @@
 // unrelated issues/PRs).
 
 import { describe, expect, it } from 'vitest';
-import { commitCommentBody, escapeHashRefs, findingProblem } from '../audit-burndown/comment.mjs';
+import {
+  commitCommentBody,
+  escapeHashRefs,
+  findingProblem,
+  renderFix,
+} from '../audit-burndown/comment.mjs';
 
 const FINDING = [
   '### [P3][duplication] Extract the shared glaze stamp',
@@ -114,6 +119,38 @@ describe('commitCommentBody', () => {
   it('handles a missing fix summary without throwing', () => {
     const body = commitCommentBody({ ...base, fix: '' });
     expect(body).toContain('_(implementer reported no summary)_');
+  });
+});
+
+// The driver reassigns `impl` on every fix round, so the summary has to be
+// accumulated rather than read once — a single read describes the first commit
+// while the comment is published against the final one.
+describe('renderFix', () => {
+  it('renders a single-round fix as plain prose', () => {
+    expect(renderFix(['Extracted five named setup helpers.'])).toBe(
+      'Extracted five named setup helpers.'
+    );
+  });
+
+  it('labels later rounds so a revision cannot read as part of the original fix', () => {
+    const body = renderFix(['Extracted five named setup helpers.', 'Restored the null guard.']);
+    expect(body).toBe(
+      'Extracted five named setup helpers.\n\n_Revised before approval:_ Restored the null guard.'
+    );
+  });
+
+  // pending-comments.jsonl records written before rounds were tracked stored a
+  // plain string; the backfill tool still renders them.
+  it('accepts a bare string from a pre-existing stored record', () => {
+    expect(renderFix('Extracted five named setup helpers.')).toBe(
+      'Extracted five named setup helpers.'
+    );
+  });
+
+  it('drops empty and missing entries rather than emitting blank revisions', () => {
+    expect(renderFix(['Did the thing.', '', null, '  '])).toBe('Did the thing.');
+    expect(renderFix([])).toBe('');
+    expect(renderFix(undefined)).toBe('');
   });
 });
 

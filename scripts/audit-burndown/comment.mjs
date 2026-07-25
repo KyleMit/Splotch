@@ -37,13 +37,25 @@ export function findingProblem(issue) {
 // unrelated PR (CLAUDE.md, "Writing on GitHub").
 export const escapeHashRefs = (s) => s.replace(/#(\d)/g, '\\#$1');
 
+// `fix` is the implementer's own account of the change: an array with one entry
+// per round for a fix that went through review revisions, or a plain string from
+// a record written before rounds were tracked. Entries after the first are the
+// implementer answering a rejection, so they are labelled rather than run
+// together — otherwise a revision reads as part of the original description.
+export function renderFix(fix) {
+  const parts = (Array.isArray(fix) ? fix : [fix]).map((t) => (t ?? '').trim()).filter(Boolean);
+  return parts
+    .map((text, i) => (i === 0 ? text : `_Revised before approval:_ ${text}`))
+    .join('\n\n');
+}
+
 // The SHA is deliberately bare, never in backticks: GitHub's native commit
 // linker only picks up a plain-text SHA, and a code span suppresses it — the
 // heading would render as dead monospace text instead of a link to the commit.
 export function commitCommentBody({ sha, title, problem, fix, catches, e2eSpecs }) {
   const b = [`### ${(sha ?? '').slice(0, 12)} — ${title}`, ''];
   if (problem) b.push('**Issue**', '', problem, '');
-  b.push('**Fix**', '', fix || '_(implementer reported no summary)_', '');
+  b.push('**Fix**', '', renderFix(fix) || '_(implementer reported no summary)_', '');
   if (catches?.length) {
     b.push(
       '**Adversarial review** — reviewer caught the following; addressed before approval:',

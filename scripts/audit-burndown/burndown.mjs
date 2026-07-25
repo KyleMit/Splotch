@@ -569,7 +569,18 @@ while (done < MAX_ISSUES) {
 
   // Captured for the per-commit PR comment: the implementer's own summary of the
   // fix, and every adversarial catch that forces a revision before approval.
-  const fixSummary = structured(impl.env).summary ?? '';
+  //
+  // Accumulated across rounds rather than captured once. `impl` is reassigned on
+  // every fix round, so a single read here describes the FIRST commit while the
+  // comment is published against the final one — and when a round changed the
+  // approach rather than patching it, that description is not merely stale but
+  // wrong about the code it sits under.
+  const fixSummaries = [];
+  const captureSummary = () => {
+    const text = (structured(impl.env).summary ?? '').trim();
+    if (text) fixSummaries.push(text);
+  };
+  captureSummary();
   const reviewCatches = [];
 
   // ---- 4/5. REVIEW, at most two fix rounds ----------------------------------
@@ -699,6 +710,9 @@ while (done < MAX_ISSUES) {
       break;
     }
     sha = newSha;
+    // What this round changed to clear the rejection. The reviewer's catches are
+    // published separately; this is the implementer's account of answering them.
+    captureSummary();
   }
 
   // ---- 6. CLOSE OUT ---------------------------------------------------------
@@ -734,7 +748,7 @@ while (done < MAX_ISSUES) {
     sha,
     title,
     problem: findingProblem(issue),
-    fix: fixSummary,
+    fix: fixSummaries,
     catches: reviewCatches,
     e2eSpecs,
   });
