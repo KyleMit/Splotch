@@ -105,6 +105,27 @@ export function deferralReason({ reviewUnavailable, implFailed, gateRed }) {
   return gateRed?.reason ?? 'failed adversarial review';
 }
 
+// The verifier writes .audit-work/current-brief.md itself, and has been seen
+// returning VALID without doing so. The driver then hands the implementer the
+// PREVIOUS finding's brief while current-issue.md names this one, so anything
+// it commits is attributed to — and deletes by title — a finding nobody
+// verified or implemented. deleteEntryByTitle cannot catch this one: the title
+// it is handed really is the current finding's, and that entry really is
+// present. Both observed occurrences were caught only because the implementer
+// noticed the mismatch and refused to commit, which is a prompt-level backstop
+// rather than a guarantee.
+//
+// Compared by mtime rather than by having the verifier echo the finding's
+// title into the brief: a role that skipped writing the file would skip the
+// title too, so a guard needing its cooperation fails in exactly the case it
+// exists for. The driver writes current-issue.md itself and the verifier only
+// runs afterwards, so this compares two facts the driver owns. A missing brief
+// is stale by the same rule.
+export function briefIsStale(issueWrittenAtMs, briefMtimeMs) {
+  if (typeof briefMtimeMs !== 'number') return true;
+  return briefMtimeMs <= issueWrittenAtMs;
+}
+
 export const DRAFT_DIR = 'docs/audit-deferred';
 
 export function draftPatchPath(title, dir = DRAFT_DIR) {

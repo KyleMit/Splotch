@@ -27,6 +27,7 @@ import {
   mkdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -34,6 +35,7 @@ import { join } from 'node:path';
 import { hasCommand, sleep } from '../lib/utils.mjs';
 import {
   auditFile,
+  briefIsStale,
   chdirRoot,
   countEntries,
   DEFAULT_MAX_ISSUES,
@@ -474,7 +476,10 @@ while (done < MAX_ISSUES) {
     logLine('backlog empty');
     break;
   }
-  writeFileSync(join(WORK, 'current-issue.md'), `${issue}\n`);
+  const issuePath = join(WORK, 'current-issue.md');
+  const briefPath = join(WORK, 'current-brief.md');
+  writeFileSync(issuePath, `${issue}\n`);
+  const issueWrittenAt = statSync(issuePath).mtimeMs;
   const title = issue.split('\n', 1)[0].replace(/^### /, '');
   const remaining = countEntries();
   logLine(`${tag}  (${remaining} remaining)  ${title}`);
@@ -532,6 +537,16 @@ while (done < MAX_ISSUES) {
   }
   if (verdict !== 'VALID') {
     defer(title, 'verifier gave no usable verdict');
+    continue;
+  }
+
+  // A VALID verdict is only actionable if the verifier actually wrote this
+  // finding's brief; otherwise the implementer opens the previous finding's
+  // one. See briefIsStale — deferring here is a cheap, honest loss, whereas
+  // proceeding mis-attributes a commit and destroys an unrelated finding.
+  if (briefIsStale(issueWrittenAt, existsSync(briefPath) ? statSync(briefPath).mtimeMs : null)) {
+    logLine('  brief not rewritten for this finding — verifier returned VALID without one');
+    defer(title, 'verifier gave no usable brief');
     continue;
   }
 
@@ -617,7 +632,6 @@ while (done < MAX_ISSUES) {
   const reviewCatches = [];
 
   // ---- 4/5. REVIEW, at most two fix rounds ----------------------------------
-  const briefPath = join(WORK, 'current-brief.md');
   const brief = existsSync(briefPath) ? readFileSync(briefPath, 'utf8') : '';
   const acceptanceAt = brief.split('\n').findIndex((line) => /acceptance/i.test(line));
   const acceptance =

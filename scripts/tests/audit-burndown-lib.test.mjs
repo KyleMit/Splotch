@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  briefIsStale,
   countEntries,
   DEFAULT_MAX_ISSUES,
   deferralReason,
@@ -259,6 +260,30 @@ describe('resolveImplSha', () => {
 // reads months later to decide whether to re-stage the finding. Attributing a
 // tooling failure to the reviewer sends them hunting a quality problem that
 // never existed — the same bug class that already bit this driver twice.
+// Guards the seam where a VALID verdict with no brief write would hand the
+// implementer the PREVIOUS finding's brief — the failure that destroys an
+// unrelated backlog entry by title, which deleteEntryByTitle cannot detect.
+describe('briefIsStale', () => {
+  const issueWrittenAt = 1_000;
+
+  it('accepts a brief the verifier wrote after this finding was staged', () => {
+    expect(briefIsStale(issueWrittenAt, issueWrittenAt + 1)).toBe(false);
+  });
+
+  it('rejects a brief left over from the previous finding', () => {
+    expect(briefIsStale(issueWrittenAt, issueWrittenAt - 1)).toBe(true);
+  });
+
+  it('treats an untouched brief as stale rather than assuming a same-ms rewrite', () => {
+    expect(briefIsStale(issueWrittenAt, issueWrittenAt)).toBe(true);
+  });
+
+  it('treats a missing brief as stale', () => {
+    expect(briefIsStale(issueWrittenAt, null)).toBe(true);
+    expect(briefIsStale(issueWrittenAt, undefined)).toBe(true);
+  });
+});
+
 describe('deferralReason', () => {
   const gateRed = { reason: 'fix broke the test suite', detail: 'npm run test:unit is red' };
 
