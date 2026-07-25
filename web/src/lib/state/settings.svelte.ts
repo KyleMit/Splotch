@@ -213,6 +213,16 @@ export function setAiAccessToken(v: string) {
   writeString(AI_ACCESS_TOKEN_KEY, v);
 }
 
+export type AiCredentialKind = 'apiKey' | 'accessCode' | 'none';
+
+// Which AI credential is "active" when both happen to be set (nothing clears
+// one when the other is submitted): a BYOK key wins over an access code.
+export function aiCredentialKind(): AiCredentialKind {
+  if (settings.aiUserApiKey) return 'apiKey';
+  if (settings.aiAccessToken) return 'accessCode';
+  return 'none';
+}
+
 // Re-read every persisted setting into the live store. Used after the durable
 // storage layer recovers values that the native WebView had evicted (see
 // hydrateDurableStorage in storage.ts). A no-op visually when nothing changed.

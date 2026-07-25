@@ -3,7 +3,12 @@
   import Disclosure from '../design/Disclosure.svelte';
   import StatusMessage from '../design/StatusMessage.svelte';
   import AiFeatureToggles from './AiFeatureToggles.svelte';
-  import { settings, setAiImage, setAiAccessToken } from '$lib/state/settings.svelte';
+  import {
+    settings,
+    setAiImage,
+    setAiAccessToken,
+    aiCredentialKind,
+  } from '$lib/state/settings.svelte';
   import { setAiUserApiKey } from '$lib/state/aiKey.svelte';
   import { verifyCredential } from '$lib/aiCredential';
   import { createLatestRequest } from '$lib/latestRequest';
@@ -24,9 +29,9 @@
   let keyInput = $state('');
   let keyStatus = $state<'idle' | 'checking' | 'error' | 'success'>('idle');
   let keyMessage = $state('');
-  let hasApiKey = $derived(!!settings.aiUserApiKey);
-  let hasAccessCode = $derived(!!settings.aiAccessToken);
-  let aiLocked = $derived(!hasApiKey && !hasAccessCode);
+  let credentialKind = $derived(aiCredentialKind());
+  let hasApiKey = $derived(credentialKind === 'apiKey');
+  let aiLocked = $derived(credentialKind === 'none');
   const latest = createLatestRequest();
 
   // Show the saved key with everything but the last four characters masked, so

@@ -9,33 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P4][maintainability] `sectionSubtitle('ai')` re-derives AiKeyManager's credential-precedence logic
-
-**File(s):** `web/src/lib/components/parent/sections.ts:64-67` ·
-`web/src/lib/components/parent/AiKeyManager.svelte:32-34` — pinned at SHA f934d43
-
-#### Problem
-
-`sections.ts` decides the AI subtitle with
-`if (settings.aiUserApiKey) … else if (settings.aiAccessToken) …` (key-over-code precedence), and
-`AiKeyManager` independently derives `hasApiKey`/`hasAccessCode`/`aiLocked` from the same fields.
-The precedence rule ("a BYOK key wins over an access code") now lives in two places; changing how
-credentials resolve requires editing both, and they can silently disagree about what the hub says vs
-what the panel shows.
-
-#### Proposed solution
-
-Add derived helpers to the settings state module (e.g.
-`aiCredentialKind(): 'apiKey' | 'accessCode' | 'none'`) and have both the subtitle and AiKeyManager
-read from it.
-
-#### Verification
-
-Set a key, then an access code; the hub subtitle and the AI panel agree on which credential is
-active. `grep` shows the precedence logic in one module.
-
----
-
 ### [P5][naming] Magic `5` for the hidden admin unlock tap count
 
 **File(s):** `web/src/lib/components/parent/AboutSection.svelte:24-29` — pinned at SHA f934d43
