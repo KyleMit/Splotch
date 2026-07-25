@@ -32,7 +32,9 @@ consequences worth internalising before touching the driver:
 * **State is `docs/AUDIT.md` plus git.** A finding's entry is deleted in the *same commit* as its
   fix, so the file is always an exact record of remaining work and a crash mid-run leaves nothing to
   reconcile. Re-running resumes where it stopped. Everything else (`.audit-work/`) is disposable,
-  gitignored working state.
+  gitignored working state — which cuts both ways: it is safe to delete and safe from the driver's
+  `git reset --hard` rollback, but it does not survive a fresh clone, so nothing that *only* lives
+  there (a `PUSH_TEST_CMD` wrapper, `compact-snapshot.md`) can be the sole record of anything.
 
 No agent — including you — should read or edit `docs/AUDIT.md` directly at burndown scale (~19k
 lines): `scripts/audit-burndown/pop.mjs` is the only thing that touches it (`--count`, print,
@@ -309,7 +311,22 @@ matter what happens to yours. Exploit that — hold **no** orchestration state i
   session has to reconstruct it by grepping old `run.log` lines for the command that ran.
 * Because all state is on disk, **compaction is lossless** — compact proactively (or let
   auto-compact fire) when the context fills, rather than letting the window overflow mid-run. Don't
-  wait to be forced.
+  wait to be forced. A `PreCompact` hook (`.claude/hooks/precompact-burndown-snapshot.sh`) backstops
+  this automatically: whenever a run is in flight or left work owed, it writes
+  **`.audit-work/compact-snapshot.md`** — the live relaunch command reconstructed from the process
+  itself, `audit:status`, which run-log monitors are actually running, and the current run's log
+  tail. It no-ops otherwise and never blocks compaction.
+* **Read `.audit-work/compact-snapshot.md` first** when you come back to a burndown with no memory
+  of starting it — after a compaction, or as a fresh session. It is the most concrete and most
+  recent account of the run, and unlike the hand-maintained checkpoint it cannot be stale, because
+  it is rewritten at the moment context is summarized. Its one limit: it lives in gitignored
+  `.audit-work/`, so it is **machine-local** and absent on a fresh clone. The order to trust:
+
+  1. `.audit-work/compact-snapshot.md` — freshest and most specific; same machine only.
+  2. The durable checkpoint (`project` memory / `docs/handoff/` packet) — survives a clone, but only
+     as current as the last time someone updated it.
+  3. `npm run audit:status` + git + the PR — always authoritative for counts and what landed, but
+     tells you nothing about *how the run was launched*.
 * Keep the supervising context small so it lasts: monitor the run **event-driven** — not by polling
   `audit:status` in a loop, and don't read per-finding logs or the PR back unless you're diagnosing
   something specific. Watch for every terminal *and* degraded state, so silence really does mean
@@ -326,7 +343,9 @@ matter what happens to yours. Exploit that — hold **no** orchestration state i
 
 The whole run is reconstructable from git + the draft PR + `docs/AUDIT.md`, so a session that dies
 mid-run — or a completely fresh session, even a fresh clone on another machine with no
-`.audit-work/` — can pick up exactly where it stopped. Relaunch with the overnight launcher
+`.audit-work/` — can pick up exactly where it stopped. **On the same machine, start by reading
+`.audit-work/compact-snapshot.md`** (see above) — it carries the launch command verbatim, which is
+the one thing the git/PR/`AUDIT.md` triad cannot tell you. Then relaunch with the overnight launcher
 (`npm run audit:burndown:overnight -- <n>`), which sets `RESUME=1`; startup then reconciles state
 before touching a finding:
 
