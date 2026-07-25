@@ -11,32 +11,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P2][duplication] Accept-radius factor 0.4 is duplicated as a magic literal instead of importing the named constant
-
-**File(s):** `web/src/lib/components/ClearButton.svelte:26` — pinned at SHA f934d43
-
-#### Problem
-
-`getAcceptRadius()` computes `Math.min(window.innerWidth, window.innerHeight) * 0.4` to size the
-coachmark ring so it matches the real accept zone. But `dragToClear.ts:6` already defines
-`const ACCEPT_RADIUS_FACTOR = 0.4;` and uses it (`dragToClear.ts:51`) for the *actual* threshold.
-The magic `0.4` is copied into the component. If the real threshold factor changes, the coachmark
-ring silently misrepresents where the user must drag — a correctness bug hidden as a duplicated
-literal.
-
-#### Proposed solution
-
-Export `ACCEPT_RADIUS_FACTOR` (and ideally the whole `getAcceptRadius` computation) from
-`dragToClear.ts` and import it in ClearButton (or the extracted ClearCoachmark). One source of truth
-for the threshold geometry.
-
-#### Verification
-
-Grep `0.4` / `ACCEPT_RADIUS_FACTOR` — the factor lives in one module. Change the exported constant
-and confirm both the live accept zone and the coachmark ring move together.
-
----
-
 ### [P2][maintainability] z-index values are magic numbers scattered across components with no shared scale
 
 **File(s):** `web/src/lib/components/ClearButton.svelte:169,252,289,338,365`, `NotchBand.svelte:75`,

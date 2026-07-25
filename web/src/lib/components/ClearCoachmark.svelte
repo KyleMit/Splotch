@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { ACCEPT_RADIUS_FACTOR } from '$lib/actions/dragToClear';
   import Icon from './Icon.svelte';
 
   let coachmarkRingEl: HTMLDivElement;
@@ -11,7 +12,7 @@
   let tutorialDismissTimer: ReturnType<typeof setTimeout> | null = null;
 
   function getAcceptRadius() {
-    return Math.min(window.innerWidth, window.innerHeight) * 0.4;
+    return Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
   }
 
   export function show(anchorEl: HTMLElement) {
