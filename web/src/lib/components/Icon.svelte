@@ -44,6 +44,8 @@
 </script>
 
 <script lang="ts">
+  import type { HTMLAttributes } from 'svelte/elements';
+
   const modules = import.meta.glob(['../icons/*.svg', '!../icons/splotchy.svg'], {
     eager: true,
     query: '?raw',
@@ -56,10 +58,8 @@
     icons[key] = src as string;
   }
 
-  interface Props {
+  interface Props extends HTMLAttributes<HTMLSpanElement> {
     name: CommonIconName;
-    class?: string;
-    [key: string]: unknown;
   }
   let { name, class: className = '', ...rest }: Props = $props();
 
