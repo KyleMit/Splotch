@@ -195,9 +195,13 @@
   <section>
     <h2>Stacking</h2>
     <p>
-      The cross-component chrome order, low to high — all of it in the root stacking context. Ties
-      are deliberate: <code>--z-panel</code>/<code>--z-flyout</code> (the flyout nests inside the
-      panel) and <code>--z-clear-button</code>/<code>--z-notch</code> (resolved by DOM order).
+      The cross-component chrome order, low to high — one list, but not one stacking context, so a
+      bigger number doesn't always win. Everything resolves in the root context except
+      <code>--z-flyout</code>, which only orders the flyout inside <code>.actions-panel</code>
+      (<code>position: fixed</code> + <code>--z-panel</code>): raising it past
+      <code>--z-banner</code> would do nothing, because the panel caps its whole subtree. That makes
+      the <code>--z-panel</code>/<code>--z-flyout</code> tie inert; the
+      <code>--z-clear-button</code>/<code>--z-notch</code> tie is real and resolved by DOM order.
     </p>
     <ul class="raw-list">
       {#each zIndexEntries as [key, value] (key)}

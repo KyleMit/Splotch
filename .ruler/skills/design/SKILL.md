@@ -43,8 +43,9 @@ pierce Svelte's style scoping, so every component references them directly via `
 |           | lift — tighter and harder than `--shadow-sm`, don't converge them); `--float-shadow`,                     |
 |           | `--float-shadow-flyout` (themed, paper cards)                                                             |
 | Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-screenshot-flash`          |
-|           | (10000), listed low-to-high in `tokens.ts`. All of it shares the root stacking context. Layers sealed     |
-|           | inside a real one (under `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers  |
+|           | (10000), listed low-to-high in `tokens.ts`. One list, not one context: all root-context except            |
+|           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under      |
+|           | `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers                           |
 | Theme     | surfaces, borders, text ramp, icon inks, brand/success/danger washes, paper, float-card chrome — the full |
 |           | list with per-token docs is in `tokens.ts` (`ThemeTokens`)                                                |
 

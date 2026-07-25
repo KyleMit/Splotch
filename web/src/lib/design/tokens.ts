@@ -99,10 +99,12 @@ export const scale = {
 // as local integers: tokenizing them would imply a global relationship they
 // don't have.
 //
-// Every token below shares ONE context — the root. .canvas-container is
-// position: relative with no z-index, so it establishes nothing and its
-// children compete directly with the fixed chrome; the tiers here are a
-// convention, not a containment guarantee.
+// These are ONE ordered list but not one stacking context, so a bigger number
+// does not always win. Every value except zFlyout resolves in the root context
+// — notably .canvas-container is position: relative with no z-index, so it
+// establishes nothing and its children compete directly with the fixed chrome.
+// zFlyout is the exception (see its note). The tiers are a convention, not a
+// containment guarantee.
 export const zIndex = {
   // FullscreenToggle — the floor of that shared root context, not a separate
   // local scale. It clears DrawingCanvas's other root-level layers
@@ -118,8 +120,12 @@ export const zIndex = {
 
   zCornerButton: 900, // ParentHelpButton
   zPanel: 901, // ActionsPanel
-  // app.css .flyout-menu (Brush Menu + Stroke Width Menu). Nested inside the
-  // panel's own stacking context, so the tie with zPanel is inert.
+  // app.css .flyout-menu (Brush Menu + Stroke Width Menu) — the one value here
+  // that is NOT in the root context. .actions-panel is position: fixed with a
+  // z-index, so it establishes its own, and this only orders the flyout inside
+  // that subtree. Hence the tie with zPanel is inert; hence also raising this
+  // past zBanner would change nothing, because zPanel caps the whole subtree.
+  // Lifting a flyout over the banner means raising zPanel, not this.
   zFlyout: 901,
   zBanner: 950, // InstallBanner — takes over the corner controls while shown
   zClearAcceptZone: 999, // below the button it rings, so the button stays on top

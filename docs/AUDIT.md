@@ -11,37 +11,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P2][maintainability] z-index values are magic numbers scattered across components with no shared scale
-
-**File(s):** `web/src/lib/components/ClearButton.svelte:169,252,289,338,365`, `NotchBand.svelte:75`,
-`InstallBanner.svelte:153`, `ActionsPanel.svelte:400`, `BrushMenu.svelte:67`,
-`StrokeWidthMenu.svelte:78`, `FullscreenToggle.svelte:33` — pinned at SHA f934d43
-
-#### Problem
-
-Stacking order is coordinated entirely by hand-written literals and prose: ClearButton uses
-1000/999/500/400/1001, NotchBand 1000 (collides with ClearButton's container at the same 1000),
-InstallBanner 950 with a comment reciting "actions toggle 901, Parent Help 900",
-ActionsPanel/BrushMenu/StrokeWidthMenu 901, FullscreenToggle 4. The relationships live only in
-comments ("Below clear-container (1000)", "Above the real button (1000)"). There is no z-index token
-scale in `tokens.css`. A new overlay author has to grep every component and read comments to find a
-safe layer, and the NotchBand/ClearButton 1000 tie is exactly the kind of accidental collision this
-invites.
-
-#### Proposed solution
-
-Add a named z-index scale to `lib/design/tokens.ts` (e.g. `--z-canvas-chrome`, `--z-panel`,
-`--z-flyout`, `--z-banner`, `--z-clear-button`, `--z-clear-coachmark`, `--z-notch`, `--z-ripple`)
-with documented ordering, regenerate `tokens.css`, and replace the literals. The ordering becomes
-reviewable in one place.
-
-#### Verification
-
-Grep `z-index:` across `lib/components` — values reference tokens, not integers. Confirm layering
-unchanged in `run-splotch` (open a flyout over the banner, drag-to-clear with notch band present).
-
----
-
 ### [P2][design-tokens] InstallBanner uses off-scale font sizes, radius, and an ad-hoc shadow
 
 **File(s):** `web/src/lib/components/InstallBanner.svelte:160,241,257,259,160` — pinned at SHA
