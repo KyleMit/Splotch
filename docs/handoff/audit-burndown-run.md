@@ -1,7 +1,8 @@
 # Handoff — audit burndown run
 
-> 2026-07-25 · branch `claude/burn-down-audit-skill-cb9nv1` · PR *(pending — fill in once opened)* ·
-> Burn down the 465-finding `docs/AUDIT.md` backlog in bulk with the `burn-down-audits` driver.
+> 2026-07-25 · branch `claude/burn-down-audit-skill-cb9nv1` · PR
+> [#546](https://github.com/KyleMit/Splotch/pull/546) · Burn down the 465-finding `docs/AUDIT.md`
+> backlog in bulk with the `burn-down-audits` driver.
 
 This is the **durable checkpoint** for a live `burn-down-audits` run, per that skill's "Surviving
 the context window" section. Any session — compacted, fresh, or on a brand-new container — should be
