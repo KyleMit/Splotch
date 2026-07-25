@@ -7,46 +7,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P3][error-handling] `applySnapshot` conflates transport status, JSON parsing, and four pieces of UI state mutation
-
-**File(s):** `web/src/routes/admin/native/+page.svelte:75-93` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-async function applySnapshot(response: Response) {
-  if (response.status === 401) { signOutLocally(...); return false; }
-  const data = await response.json().catch(() => null);
-  if (!response.ok || !isSnapshot(data)) {
-    const text = responseError(data) ?? 'Something went wrong. Please try again.';
-    if (authed) flash = {...}; else loginError = text;
-    return false;
-  }
-  invites = data.invites; persistent = data.persistent; authed = true;
-  return true;
-}
-```
-
-One function decides auth-expiry policy, parses the body, branches error routing on whether the user
-is `authed`, *and* commits four `$state` writes. The `if (authed) flash else loginError` routing
-(which error surface to paint) is a UI concern tangled into what reads like a data-parsing helper,
-and the function is called from three different contexts (onMount, login, mutate) that each have
-different expectations of that routing.
-
-#### Proposed solution
-
-Split "parse a response into a result" from "apply a result to state". A pure
-`parseSnapshot(response): Promise<{ ok: true; snapshot } | { ok: false; expired?: true; error: string }>`,
-then a small caller that maps the result onto `invites/persistent/authed` and picks the error
-surface. The 401→`signOutLocally` decision moves to the caller that knows the context.
-
-#### Verification
-
-`tests/admin.spec.ts` native flows (login, list, add, remove, expired-session) pass; the parse
-function is independently unit-testable with fake `Response`s.
-
----
-
 ### [P4][readability] `snapshot()`'s optional `tokens?` param encodes a subtle read-after-write rule
 
 **File(s):** `web/src/routes/api/admin/tokens/+server.ts:41-45` — pinned at SHA f934d43

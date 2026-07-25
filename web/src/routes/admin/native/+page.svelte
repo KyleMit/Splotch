@@ -69,25 +69,43 @@
     return typeof error === 'string' ? error : null;
   }
 
+  type SnapshotResult =
+    | { ok: true; invites: Invite[]; persistent: boolean }
+    | { ok: false; expired: true }
+    | { ok: false; expired: false; error: string };
+
+  async function parseSnapshot(response: Response): Promise<SnapshotResult> {
+    if (response.status === 401) return { ok: false, expired: true };
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !isSnapshot(data)) {
+      return {
+        ok: false,
+        expired: false,
+        error: responseError(data) ?? 'Something went wrong. Please try again.',
+      };
+    }
+    return { ok: true, invites: data.invites, persistent: data.persistent };
+  }
+
   // Every /api/admin/tokens response carries the full { tokens, invites, persistent }
   // snapshot, so one handler covers list/add/remove. A 401 means the session
   // was invalidated server-side (secret rotated) — drop back to the login form.
   async function applySnapshot(response: Response) {
-    if (response.status === 401) {
-      signOutLocally('Your session has expired. Please sign in again.');
+    const result = await parseSnapshot(response);
+    if (!result.ok) {
+      if (result.expired) {
+        signOutLocally('Your session has expired. Please sign in again.');
+      } else if (authed) {
+        // The console renders `flash` only when authed; before then (the stored-
+        // session check and the post-login snapshot) only `loginError` is visible.
+        flash = { kind: 'error', text: result.error };
+      } else {
+        loginError = result.error;
+      }
       return false;
     }
-    const data = await response.json().catch(() => null);
-    if (!response.ok || !isSnapshot(data)) {
-      const text = responseError(data) ?? 'Something went wrong. Please try again.';
-      // The console renders `flash` only when authed; before then (the stored-
-      // session check and the post-login snapshot) only `loginError` is visible.
-      if (authed) flash = { kind: 'error', text };
-      else loginError = text;
-      return false;
-    }
-    invites = data.invites;
-    persistent = data.persistent;
+    invites = result.invites;
+    persistent = result.persistent;
     authed = true;
     return true;
   }
