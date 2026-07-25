@@ -158,7 +158,7 @@
      the OS lists below stay as the fallback. Never true on native. -->
 {#if install.mode === 'oneTap'}
   <div class="one-tap">
-    <Button variant="brand" class="one-tap-btn" onclick={oneTapInstall} disabled={installing}>
+    <Button variant="brand" onclick={oneTapInstall} disabled={installing}>
       <Icon name="home" class="one-tap-icon" />
       Install Splotch
     </Button>

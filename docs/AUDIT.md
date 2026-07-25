@@ -9,48 +9,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P2][dead-code] `Button` design primitive has no production consumers
-
-**File(s):** `web/src/lib/components/design/Button.svelte:1-105` (whole component); consumers
-verified — pinned at SHA f934d43
-
-#### Problem
-
-`Button.svelte` is the only shared design primitive (per the `design` skill it is "the shared chrome
-for text-labeled buttons on modal/parent surfaces"), but a repo-wide search shows the *only* file
-that imports or renders it is the styleguide harness:
-
-```
-=== all <Button usages ===
-./routes/dev/design/+page.svelte:58 / :184 / :186
-=== import Button (any) ===
-./routes/dev/design/+page.svelte:3
-```
-
-No modal, parent, or admin surface actually uses it. The real parent/modal buttons (`ParentCenter`,
-`AppearanceSection`, etc.) still hand-roll `<button class="...">`. So the primitive is aspirational:
-it is maintained, screenshotted, and documented, yet ink on modal surfaces bypasses it — the exact
-drift the primitive exists to prevent. A design primitive with zero real callers is worse than none,
-because a newcomer assumes it is the sanctioned path and the styleguide implies coverage that
-doesn't exist.
-
-#### Proposed solution
-
-Either (a) adopt it: migrate the text-labeled buttons in `ParentCenter.svelte`,
-`AppearanceSection.svelte`, and the admin/dialog action buttons to `<Button>`, retiring their
-bespoke `.btn`-style blocks; or (b) if the parent surfaces deliberately keep bespoke chrome, delete
-`Button.svelte` and its styleguide section and drop the "Primitives" claim from the `design` skill.
-Track the decision in the ADR-0071 lineage. Prefer (a) — the variants already map cleanly to the
-existing parent-button styles.
-
-#### Verification
-
-`grep -rIn "<Button" web/src --include=*.svelte` should list production surfaces, not just
-`routes/dev/design`. If deleted, `npm run check` + `npm test` stay green and `/dev/design` no longer
-references it.
-
----
-
 ### [P2][maintainability] Unreferenced icon assets (`trash`, `sweep-icon`) ship in the union and glob
 
 **File(s):** `web/src/lib/icons/trash.svg`, `web/src/lib/icons/sweep-icon.svg`;

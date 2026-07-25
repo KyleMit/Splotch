@@ -31,14 +31,16 @@
       </div>
       {#if settings.saveFolderName}
         <div class="folder-actions">
-          <button
+          <Button
+            variant="wash"
+            size="sm"
             class="folder-pill"
             id="changeSaveFolderButton"
             title="Change folder"
             onclick={changeSaveFolder}
           >
             {settings.saveFolderName}
-          </button>
+          </Button>
           <button
             class="folder-clear"
             id="forgetSaveFolderButton"
@@ -104,25 +106,18 @@
     min-width: 0;
   }
 
-  /* Selected state: secondary (lighter) pill showing the current folder. */
-  .folder-pill {
+  /* Selected state: the wash variant carries the secondary (lighter) fill; this
+     row supplies the pill shape and the ellipsis for a long folder name. The
+     display override matters — the primitive is inline-flex, which would wrap
+     the label in an anonymous flex item that text-overflow can't clip. */
+  .folder-actions :global(.folder-pill) {
+    display: block;
     min-width: 0;
     max-width: 190px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    border: none;
     border-radius: var(--radius-pill);
-    padding: 7px 14px;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--brand-text);
-    background: var(--brand-wash);
-    cursor: pointer;
-  }
-
-  .folder-pill:hover {
-    background: var(--brand-wash-hover);
   }
 
   .folder-clear {

@@ -67,7 +67,9 @@ primitives are built from themed washes, which would flip on a page that is deli
 | Primitive              | Use for                                                                                      |
 | ---------------------- | -------------------------------------------------------------------------------------------- |
 | `Button.svelte`        | Text-labeled actions. Variants `brand` / `wash` / `danger` / `ghost`, sizes `md` / `sm`. Not |
-|                        | for `role="radio"` segments (theme picker, report-kind row) — those are pickers, not actions |
+|                        | for controls with a **selected state**, whether `role="radio"` (theme picker, report-kind    |
+|                        | row) or `aria-pressed` (the controls chips, the orientation segment) — those are pickers,    |
+|                        | not actions, and the primitive has no selected variant                                       |
 | `Disclosure.svelte`    | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the         |
 |                        | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`)  |
 | `StatusMessage.svelte` | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error`  |
