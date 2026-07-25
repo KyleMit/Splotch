@@ -9,33 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P3][complexity] AdminConsole is an 868-line component mixing presentation, formatting utilities, clipboard, and modal state
-
-**File(s):** `web/src/lib/components/admin/AdminConsole.svelte:1-867` — pinned at SHA f934d43
-
-#### Problem
-
-One component owns: prop contract + exported interfaces, login/add form handling, an in-flight busy
-guard, clipboard-copy feedback state, a relative-time formatter, a usage-tooltip builder, the
-overflow-modal open/close/backdrop logic, three action layouts, and ~490 lines of scoped CSS. That's
-many independent concerns in a single file; the `<script>` alone spans `:31-161` before any markup.
-It's hard to navigate ("where's the copy logic vs the menu logic?") and impossible to unit-test the
-pure helpers without mounting the whole component.
-
-#### Proposed solution
-
-Peel off the parts that aren't about *this* component's rendering: move `timeAgo` and `usageDetail`
-into a plain `web/src/lib/adminFormat.ts` (unit-testable, no DOM); extract the overflow modal into
-its own child (`InviteMenu.svelte`) alongside the `InviteActions.svelte` from the triplication
-finding. What remains is the console layout binding props to child components.
-
-#### Verification
-
-`npm run check` clean; `tests/admin.spec.ts` unchanged; new unit tests for `timeAgo`/`usageDetail`
-in `adminFormat.test.ts` (`// @vitest-environment node`).
-
----
-
 ### [P3][maintainability] `timeAgo` relative-time formatter and its unit table are trapped inside the component, untested
 
 **File(s):** `web/src/lib/components/admin/AdminConsole.svelte:99-118` — pinned at SHA f934d43
