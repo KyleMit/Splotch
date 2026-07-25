@@ -58,23 +58,23 @@
     icons[key] = src as string;
   }
 
-  // `class` is narrowed back to a string because the span interpolates it —
-  // HTMLAttributes' ClassValue would render an array or object as junk.
   interface Props extends HTMLAttributes<HTMLSpanElement> {
     name: CommonIconName;
-    class?: string;
   }
-  let { name, class: className = '', ...rest }: Props = $props();
+  let { name, class: className, ...rest }: Props = $props();
 
   const markup = $derived(icons[name] ?? '');
-  const colorClass = $derived(COLOR_ICONS.has(name) ? ' icon-color' : '');
 </script>
 
 <!-- data-icon exposes the icon identity to the DOM: the SVG goes in via {@html}, so
      the name is otherwise invisible to tests (and to the {@html} hydration caveat in
      .claude/rules/svelte.md). -->
-<!-- eslint-disable-next-line svelte/no-at-html-tags markup is a first-party SVG string from the build-generated icon map -->
-<span class="{className}{colorClass}" {...rest} data-icon={name}>{@html markup}</span>
+<!-- eslint-disable svelte/no-at-html-tags markup is a first-party SVG string from the build-generated icon map -->
+<span class={[className, COLOR_ICONS.has(name) && 'icon-color']} {...rest} data-icon={name}
+  >{@html markup}</span
+>
+
+<!-- eslint-enable svelte/no-at-html-tags -->
 
 <style>
   span {
