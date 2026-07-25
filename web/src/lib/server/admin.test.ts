@@ -19,8 +19,10 @@ import {
   SESSION_LABEL,
 } from './admin';
 
-// Mirror of the derivation in admin.ts, so the test pins the exact algorithm and
-// label rather than just "some hex".
+// Mirror of the derivation in admin.ts: the algorithm is pinned here as a
+// literal, while the label comes from the exported SESSION_LABEL so a rotation
+// bump in source is tracked automatically rather than checked against a stale
+// hand-typed copy.
 const expectedSession = (secret: string) =>
   createHmac('sha256', secret).update(SESSION_LABEL).digest('hex');
 

@@ -9,43 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P3][maintainability] HMAC label and algorithm are inline literals, re-hardcoded in the test
-
-**File(s):** `web/src/lib/server/admin.ts:20-24` (`sessionToken`), mirrored in
-`web/src/lib/server/admin.test.ts:22-23` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-return createHmac('sha256', secret).update('admin-session-v1').digest('hex');
-```
-
-The session-derivation label `'admin-session-v1'` is documented (`:12-19`) as a rotation lever —
-"bump the label to invalidate every outstanding session at once" — yet it's a bare string the
-operator has to know to find. The test re-hardcodes the exact same literal (`admin.test.ts:23`)
-rather than importing it, so the "pins the exact algorithm" comment there is aspirational: bump the
-label in source and the test keeps passing against its own stale copy only if both are edited.
-
-#### Proposed solution
-
-Name it and export it so the test imports the real value:
-
-```ts
-export const SESSION_LABEL = 'admin-session-v1';
-const HMAC_ALG = 'sha256';
-```
-
-`admin.test.ts` imports `SESSION_LABEL` for its `expectedSession` mirror. The version suffix now has
-an obvious home for the next bump.
-
-#### Verification
-
-`npm run test:unit -- admin` passes; changing `SESSION_LABEL` in source makes the test's derived
-value track it automatically (the assertion still holds), while a *mismatched* hand-edit would now
-fail.
-
----
-
 ### [P3][duplication] Web form actions `add`/`remove` are near-identical and diverge from the API on status
 
 **File(s):** `web/src/routes/admin/+page.server.ts:110-125` — pinned at SHA f934d43
