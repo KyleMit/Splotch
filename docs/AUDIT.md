@@ -5,10 +5,6 @@
 > then deletes this file. `/fix-audits` burns down those issues. Never treat this file as a
 > long-lived backlog.
 
-## Source: Code audit — App state (Svelte 5 runes)
-
-## Source: Code audit — Parent Center / settings
-
 ## Source: Code audit — Core UI controls
 
 ### [P2][design-tokens] InstallBanner uses off-scale font sizes, radius, and an ad-hoc shadow

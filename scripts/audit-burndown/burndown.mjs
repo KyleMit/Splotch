@@ -66,7 +66,7 @@ const MODEL_REVIEW = process.env.MODEL_REVIEW ?? 'claude-opus-5';
 
 const BUDGET_VERIFY = process.env.BUDGET_VERIFY ?? '3.00'; // verify reads a lot of code; $1 capped complex findings and clustered deferrals (2026-07-24 retro)
 const BUDGET_IMPL = process.env.BUDGET_IMPL ?? '4.00';
-const BUDGET_REVIEW = process.env.BUDGET_REVIEW ?? '2.00';
+const BUDGET_REVIEW = process.env.BUDGET_REVIEW ?? '3.00'; // $2 capped a P4 review mid-verdict, discarding a sound fix (2026-07-24 retro)
 
 // ---- tool scopes ------------------------------------------------------------
 // NOTE the space before each '*'. `Bash(git diff *)` prefix-matches correctly;
@@ -475,6 +475,8 @@ while (done < MAX_ISSUES) {
           .join('\n');
 
   let status = 'CHANGES_REQUIRED';
+  let reviewUnavailable = false;
+  let fixRounds = 0;
   for (let round = 1; round <= 3; round++) {
     const review = await claudeStep(`${tag}.review${round}`, [
       `Adversarially review commit ${sha}.\n\nThe original finding this fix must resolve:\n${issue}\n\nAcceptance criteria the verifier derived from it (which may themselves be mis-scoped):\n${acceptance}`,
@@ -493,8 +495,14 @@ while (done < MAX_ISSUES) {
       '--max-budget-usd',
       BUDGET_REVIEW,
     ]);
+    // A reviewer that never ran (budget/turn cap, API error) has not rejected
+    // anything — it produced no verdict at all. Recording that as
+    // CHANGES_REQUIRED would roll the fix back and file it under "failed
+    // adversarial review", telling whoever triages the deferral that the work
+    // was judged and found wanting when nothing ever looked at it. Roll back
+    // either way (unreviewed work must not ship) but say which happened.
     if (!review.ok) {
-      status = 'CHANGES_REQUIRED';
+      reviewUnavailable = true;
       break;
     }
     status = structured(review.env).status ?? 'CHANGES_REQUIRED';
@@ -504,6 +512,7 @@ while (done < MAX_ISSUES) {
     reviewCatches.push(...roundFindings);
     const feedback = roundFindings.map((f) => `- ${f}`).join('\n');
     logLine(`  round ${round}: changes required`);
+    fixRounds += 1;
 
     // Resume the SAME implementer session: it retains its full history —
     // every prior tool call, result, and reasoning step — so it fixes its own
@@ -537,9 +546,12 @@ while (done < MAX_ISSUES) {
 
   // ---- 6. CLOSE OUT ---------------------------------------------------------
   if (status !== 'APPROVED') {
-    logLine(`  unresolved after 2 fix rounds — rolling back to ${baseSha}`);
+    const why = reviewUnavailable
+      ? 'reviewer never returned a verdict'
+      : `unresolved after ${fixRounds} fix round${fixRounds === 1 ? '' : 's'}`;
+    logLine(`  ${why} — rolling back to ${baseSha}`);
     git('reset', '-q', '--hard', baseSha);
-    defer(title, 'failed adversarial review');
+    defer(title, reviewUnavailable ? 'reviewer unavailable' : 'failed adversarial review');
     continue;
   }
 

@@ -70,7 +70,7 @@ MODEL_IMPL_MINOR=sonnet      # impl model for P4/P5 findings only — see Tuning
 MODEL_REVIEW=claude-opus-5
 BUDGET_VERIFY=3.00    # --max-budget-usd per call; verify is code-read-heavy — see Tuning & lessons
 BUDGET_IMPL=4.00
-BUDGET_REVIEW=2.00
+BUDGET_REVIEW=3.00
 ```
 
 ### The layered test gate — why type-checking isn't enough
@@ -317,7 +317,10 @@ Notes from real runs — set these before a large run rather than discovering th
   at HEAD (~150s median on this repo) and occasionally needs more than $1. The old
   `BUDGET_VERIFY=1.00` clipped complex findings (`error_max_budget_usd` → deferral), and a cluster of
   those nearly tripped the three-consecutive-deferral halt. Default is now `3.00`; don't drop it
-  below ~$2.50 for a big run.
+  below ~$2.50 for a big run. `BUDGET_REVIEW` was raised from `2.00` to `3.00` for the same reason:
+  a cap mid-verdict costs the *whole finding*, since the fix rolls back unreviewed. A budget knob
+  set too tight doesn't save money — it converts finished work into a deferral and pays for it again
+  on the re-run.
 * **On a Claude subscription the `audit:cost` dollars are notional** — no API bill; the real ceiling
   is your usage window. A big run self-pauses when the window is exhausted (retries fail → deferrals
   → halt) and resumes cleanly on relaunch. Size a run by wall-clock and usage, not the dollar
@@ -365,15 +368,30 @@ Notes from real runs — set these before a large run rather than discovering th
   `PUSH_TEST_CMD` both carry `--retries=1` so a genuine flake clears on retry; a real regression
   still fails both attempts. A batch hold isn't fatal regardless — the next boundary (or the exit
   flush) retries and pushes.
-* **Reconcile a role's envelope against git, never trust it alone.** `sha` is optional in
-  `SCHEMA_IMPL` (a `success: false` return has no commit to point at), and roughly one implementer
-  in seven finished the entire job — committed, amended, wrote a full summary — while omitting the
-  field. The driver read that as failure, `git reset --hard`-ed a complete tested fix away, and
-  deferred the finding; it cost ~$4 of Opus work in one case before `resolveImplSha` began falling
-  back to `HEAD` when it moved past the base. The general rule: **an optional field in a role schema
-  is a silent work-discard risk.** Where an observable side effect exists (a commit, a file, a
-  branch), check the side effect — it cannot forget. Reserve the envelope for what only the model
-  knows (its summary, its verdict).
+* **Never let a tooling failure masquerade as a model verdict.** This bit twice in one day, in two
+  different roles, and it is the single most expensive class of bug in this driver:
+  * `sha` is optional in `SCHEMA_IMPL` (a `success: false` return has no commit to point at), and
+    roughly one implementer in seven finished the entire job — committed, amended, wrote a full
+    summary — while omitting the field. The driver read that as failure, `git reset --hard`-ed a
+    complete tested fix away, and deferred the finding; ~$4 of Opus work in one case.
+    `resolveImplSha` now falls back to `HEAD` when it moved past the base.
+  * A reviewer that hit its budget cap was recorded as `CHANGES_REQUIRED` — so a fix nothing had
+    looked at was rolled back and filed under "failed adversarial review", which is a lie to whoever
+    triages `docs/AUDIT-DEFERRED.md` later. It now defers as `reviewer unavailable`, and the log
+    reports the real fix-round count instead of a hardcoded "2".
+
+  Two rules fall out. **An optional field in a role schema is a silent work-discard risk** — where
+  an observable side effect exists (a commit, a file, a branch), check the side effect, because it
+  cannot forget; reserve the envelope for what only the model knows. And **when a role fails to run,
+  say so in the deferral reason.** Rolling back unreviewed work is right; calling it rejected is
+  not. A deferral reason is read months later by someone deciding whether to re-stage the finding.
+* **Scope every `run.log` grep to the current run.** `run.log` accumulates across runs and iteration
+  numbers restart at `iter0001` each time, so a bare `grep iter0008` silently matches a different
+  finding from hours ago. Anchor on the run's start line:
+  `awk '/HH:MM:SS\] starting/{f=1} f' .audit-work/logs/run.log`. The same collision corrupts
+  `.audit-work/logs/iterNNNN.*.json` — a shorter run leaves the previous run's envelopes beside the
+  current one's, which is why `backfill-comments.mjs` dates each iteration by its own `verify.json`
+  mtime. Anything reading those logs by iteration number needs the same guard.
 
 ## Closing out a run
 
