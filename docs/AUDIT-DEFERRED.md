@@ -537,3 +537,44 @@ Tab to the clear button, press Enter, confirm the canvas clears (or that a docum
 exists). Axe/keyboard pass.
 
 ---
+
+### [P2][duplication] The icon glob + `splotchy` exclusion is repeated in three places with no shared source
+
+**File(s):** `web/src/lib/components/Icon.svelte:48`,
+`web/src/lib/components/Icon.svelte.test.ts:14`, `web/src/lib/components/iconTypes.ts:4` — pinned at
+SHA f934d43
+
+#### Problem
+
+The rule "render every icon except `splotchy`" is encoded independently three times:
+
+```ts
+// Icon.svelte:48
+import.meta.glob(['../icons/*.svg', '!../icons/splotchy.svg'], {...})
+// Icon.svelte.test.ts:14
+import.meta.glob<string>(['../icons/*.svg', '!../icons/splotchy.svg'], {...})
+// iconTypes.ts:4
+export type CommonIconName = Exclude<IconName, 'splotchy'>;
+```
+
+The test's comment even admits it must "Mirror Icon.svelte's own glob (splotchy is excluded there
+too)." Add a second special-cased icon (e.g. another brand asset) and a contributor must remember
+all three sites; miss one and the type says an icon is renderable that the glob won't load (or vice
+versa), producing an empty `markup` fallback at runtime. The `key`-derivation logic is also
+duplicated: `Icon.svelte:56` (`.split('/').pop()...replace('.svg','')`) vs `Icon.svelte.test.ts:20`
+(`iconName`).
+
+#### Proposed solution
+
+Centralize the exclusion list in one module, e.g. `iconTypes.ts` exporting
+`const NON_RENDERABLE_ICONS = ['splotchy'] as const` and a shared `iconNameFromPath(path)` helper;
+derive `CommonIconName` as `Exclude<IconName, typeof NON_RENDERABLE_ICONS[number]>`, and have both
+globs reference the same excluded-glob array (import.meta.glob needs literal patterns, so at minimum
+share the constant + a comment linking the three, and share the path→name helper).
+
+#### Verification
+
+Grep for `splotchy` in `web/src/lib/components` returns one authoritative definition plus
+references, not three parallel string literals. `npm test` still passes.
+
+---
