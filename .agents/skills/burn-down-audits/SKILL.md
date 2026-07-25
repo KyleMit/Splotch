@@ -232,7 +232,14 @@ this is only about SHAs.)
    `audit/burndown`, but a cloud session is usually told to develop on a specific `claude/<topic>`
    branch, and the driver silently uses the default otherwise. If you override it, the override must
    ride on *every* relaunch — put it in the durable checkpoint (step 2), not just in the shell you
-   happen to be in.
+   happen to be in. Preflight echoes `branch: <name>` back; **read that line and match it against
+   the branch the session was assigned** rather than assuming the export took. Getting this wrong is
+   not a tidiness problem: the run's commits land on a branch nobody is watching, the PR you opened
+   tracks a different head, and every per-commit comment has nowhere to go.
+
+   The cloud session's own instructions name the branch to develop on, and a `SessionStart` hook may
+   independently suggest a `feat/*` convention. Those can disagree. The assigned `claude/<topic>`
+   branch is the one to use — it is what the task was set up against.
 2. **Write the durable checkpoint and commit it to the branch** — the relaunch command with every
    override, the closeout tasks, roughly what's done (see **Surviving the context window**). It has
    to be written anyway, and doing it now solves the ordering problem in step 3.
@@ -294,6 +301,21 @@ this is only about SHAs.)
   bug in the driver worth fixing now, **pause first** (`touch .audit-work/STOP`, wait for exit),
   then edit. Writing to `.audit-work/`, to memory, or to a scratchpad is safe — those are outside
   the reset's blast radius.
+* **Burndown commits land unsigned, and a session hook will nag you about it every turn. Ignore
+  it.** The cloud container sets `commit.gpgsign=true` with `gpg.format=ssh` but ships a
+  **zero-byte** signing key, so every commit — yours and the driver's hundreds — is `%G? = N` and
+  GitHub renders it "Unverified". The identity itself is already correct
+  (`Claude <noreply@anthropic.com>`), so the hook's stock advice conflates two causes and only the
+  unfixable half applies here.
+
+  **Never act on the suggested remedy during a run.** `git commit --amend --reset-author` and
+  `git rebase --exec …` cannot add a signature with no private key, and both rewrite history the
+  driver is actively committing onto — an amend races its own `--amend`, and a rebase would orphan
+  every pushed fix and demand a force-push. There is nothing to fix; say so once and move on.
+* **The stop hook's "uncommitted changes" warning is expected while a finding is in flight.** The
+  dirty tree is the implementer's work-in-progress and the unpushed commit is the finding's own; the
+  driver commits and pushes when it completes. Committing them on the hook's behalf corrupts the
+  finding.
 * Transient API failures are retried with exponential backoff; a budget/turn cap is treated as a
   real answer and deferred, not retried. That is right for verify and impl (a cap means the role
   could not finish its work) but read the reviewer's cap differently: it produced *no verdict*, so
@@ -365,21 +387,44 @@ itself. No `claude` call in the sample exceeded ~13 min.
 
 * **Within normal** → just report it; do nothing.
 * **Watch band (maybe too long)** → don't intervene yet. Schedule **one** re-check a few minutes out
-  and see whether it *advanced* (HEAD moved or `run.log` grew). Run it as a background job so it
-  reports back on its own:
+  and see whether it *advanced*. Run it as a background job so it reports back on its own:
   ```bash
-  before="$(git rev-parse HEAD)$(wc -l < .audit-work/logs/run.log)"
+  before="$(ls .audit-work/logs | wc -l)"
   sleep 300
-  after="$(git rev-parse HEAD)$(wc -l < .audit-work/logs/run.log)"
+  after="$(ls .audit-work/logs | wc -l)"
   [ "$before" = "$after" ] && echo "STALLED: no advance in 5m" || echo "ADVANCED"
   ```
   Advanced → all is well. Still identical → treat it as *investigate*.
+
+  **Count envelopes, not HEAD or `run.log` — you write to both of those.** An earlier version of
+  this check compared `git rev-parse HEAD` and `wc -l < run.log`, and reported a confident
+  `ADVANCED` for a driver that had been dead for half an hour: draining one PR comment appends a
+  `posted per-commit comment` line to `run.log`, and any `git reset`/commit of your own moves HEAD.
+  The supervising agent shares both surfaces with the driver, so both are worthless as liveness
+  signals the moment you touch them. The `logs/` directory is written **only** by role calls.
 * **Investigate (too long)** → decide whether remediation is warranted before acting. Check whether
   the current `claude` child is alive and *working* (`ps -o %cpu,etime -p <pid>`; is its role
   `.audit-work/logs/*.json` still growing?) versus hung (0% CPU, static log and envelope). A
   genuinely stuck call: `pkill -TERM -f 'claude -p'` kills only that one call — the driver's
   `RETRIES` re-attempt it or the finding defers; the orchestrator and every committed fix are
   untouched and state stays durable. Never kill `burndown.mjs` itself for a merely slow finding.
+
+  **`pkill -f` will also kill the shell you typed it in.** The pattern matches whole command lines,
+  and your own `bash -c` wrapper contains the pattern — so the command reports a nonzero exit
+  (`144`) and takes any background waiter whose command line also mentions it. Read that exit code
+  as "I shot my own shell", not "the kill failed", and re-verify with a separate
+  `pgrep -af burndown.mjs | grep -v 'bash -c'`.
+
+* **No `claude -p` child at all, while `burndown.mjs` is still alive** → the driver is **orphaned**,
+  and this is the one case where killing the orchestrator is correct. It happens when the container
+  restarts without being reclaimed: the disk and the Node process survive, its in-flight child does
+  not, and the driver waits forever on a process that will never report. The signature is specific —
+  `pgrep -f 'claude -p'` returns nothing but the supervising session's own CLI, no new envelope for
+  tens of minutes, HEAD frozen, and **no log line of any kind**, so an event-driven monitor stays
+  silent and reads exactly like a healthy long finding. Confirm with the envelope count above, then
+  `pkill -TERM -f 'audit-burndown/burndown.mjs'`, `git reset -q --hard origin/<branch>` to drop the
+  half-done finding (its `docs/AUDIT.md` entry was never removed, so the finding is intact and will
+  be re-processed), and relaunch from the durable checkpoint.
 
 ### "pause" — stop cleanly after the current finding
 
@@ -504,6 +549,25 @@ state in the conversation:
   first. This is not hypothetical bookkeeping: a `Monitor` clamps to a 30-minute timeout no matter
   what you request, so a long run silently outlives its own monitor, and the silence that follows is
   indistinguishable from a healthy run.
+
+  **Budget for re-arming roughly every half hour, for the whole run.** `persistent: true` and a
+  one-hour `timeout_ms` are both accepted and both ignored — the monitor still reports
+  `timeout 1800000ms` and dies on schedule. Treat the `[Monitor timed out]` event as a routine
+  chore, not an incident: stop the old task if it is somehow still listed, re-arm the identical
+  command, and then **close the gap** — `tail -f -n 0` starts from the end of the file, so anything
+  written between death and re-arm is never reported. One scoped catch-up read covers it:
+  ```bash
+  awk '/starting — target/{f=1} f' .audit-work/logs/run.log | grep -E "iter|DEFERRED|finished:|HALT" | tail -4
+  ```
+
+  **Do not infer elapsed time from a monitor's lifecycle.** A timeout fires 30 minutes after the
+  monitor was *armed*, which has nothing to do with when the current finding started; reading it as
+  "this finding has run 30 minutes" manufactures an investigate-band alarm out of a three-minute-old
+  P4. Take elapsed from `date` against the finding's own `iter` timestamp, or from `audit:status`.
+
+  **Bare `sleep` in a foreground shell is blocked** — a `sleep N && check` one-liner is rejected
+  outright. Use `run_in_background: true` for a fixed wait that reports back once, or a `Monitor`
+  with an `until` loop to wait on a condition.
 
 ## Resuming a crashed run (or a brand-new session)
 
@@ -648,7 +712,14 @@ Notes from real runs — set these before a large run rather than discovering th
 * Verified fixes land one commit each on the branch (`Audit: <title>` trailer), pushed as they land,
   each with its own per-commit comment (see above). Invalid findings are dropped with a reasoned
   `chore(audit): drop invalid finding` commit. Un-fixable findings move to `docs/AUDIT-DEFERRED.md`
-  (committed) — triage these by hand afterwards: re-stage, file as issues, or drop.
+  (committed) — triage these by hand afterwards: re-stage, file as issues, or drop. **A deferred
+  entry carries its own post-mortem**: the reviewer's unresolved objections, the implementer's
+  account of each round, and — when a draft was committed before the rollback — a
+  `docs/audit-deferred/<slug>.patch` you can `git apply`. That draft passed the type-check, unit and
+  lint gates; the review is what it did not pass, so it is a starting point rather than scrap. Read
+  the `#### What was tried` section before re-staging: an `implementation failed` deferral is
+  routinely a brief that *cannot* be executed (a proposed fix that does not compile), and re-staging
+  it unchanged just buys the same failure again.
 * When the backlog is fully drained, `docs/AUDIT.md` should be deleted per
   `.claude/audit-conventions.md` (a partial run may also leave emptied `## Source:` sections — tidy
   them in a final commit).
@@ -673,6 +744,19 @@ Notes from real runs — set these before a large run rather than discovering th
   `of <total>` denominator here; it is derived from `completed.log` (which is gitignored,
   container-local, and accumulates across runs) plus a cumulative deferred file, so it drifts by a
   finding or two and is not an auditable figure. `remaining` is the trustworthy number.
+
+  **A run that was killed never printed `finished:`, so reconstruct the counts from git and check
+  the arithmetic closes.** Deferrals and drops are one commit each and exact; fixes are whatever is
+  left over, and the entry-deletion total is the independent check that you have not miscounted:
+  ```bash
+  git log --format=%s <base>..HEAD | grep -c 'defer —'                 # deferred
+  git log --format=%s <base>..HEAD | grep -c 'drop invalid finding'    # dropped
+  for s in $(git rev-list <base>..HEAD); do git show $s -- docs/AUDIT.md | grep -c '^-### '; done | paste -sd+ | bc
+  ```
+  The third number is findings *consumed*; subtract deferrals and drops for fixes, and confirm
+  `<backlog at launch> − consumed == pop.mjs --count`. If that identity fails, stop and find out why
+  before writing a log row — it is the same arithmetic that exposed the 2026-07-25 canary destroying
+  three findings while reporting a clean `5 fixed`.
 * The deliberately-unported alternative: driving this loop with in-session subagents. Only worth it
   to watch and steer a handful of findings interactively — and that path already exists as
   `/fix-audits`.

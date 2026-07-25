@@ -185,7 +185,11 @@ describe('stale-empty seed races', () => {
     );
     expect(await isAllowedToken('legacy')).toBe(false);
     expect(await isAllowedToken('current')).toBe(false);
-    expect(await addToken('mine')).toEqual({ ok: false, error: TOKEN_CONFLICT_ERROR });
+    expect(await addToken('mine')).toEqual({
+      ok: false,
+      error: TOKEN_CONFLICT_ERROR,
+      reason: 'conflict',
+    });
     expect(await storeFor('access-tokens').get('list')).toEqual(['current']);
   });
 });
@@ -200,12 +204,20 @@ describe('addToken', () => {
 
   it('rejects an empty token', async () => {
     const { addToken } = await freshTokens('');
-    expect(await addToken('   ')).toEqual({ ok: false, error: 'Token cannot be empty' });
+    expect(await addToken('   ')).toEqual({
+      ok: false,
+      error: 'Token cannot be empty',
+      reason: 'invalid',
+    });
   });
 
   it('rejects a duplicate token', async () => {
     const { addToken } = await freshTokens('existing');
-    expect(await addToken('existing')).toEqual({ ok: false, error: 'Token already exists' });
+    expect(await addToken('existing')).toEqual({
+      ok: false,
+      error: 'Token already exists',
+      reason: 'invalid',
+    });
   });
 });
 
@@ -267,8 +279,16 @@ describe('concurrent mutations against Blobs', () => {
   it('surfaces an error instead of clobbering once retries exhaust', async () => {
     const { addToken, removeToken, TOKEN_CONFLICT_ERROR } = await freshTokensWithBlobs(['a']);
     raceAlways();
-    expect(await addToken('mine')).toEqual({ ok: false, error: TOKEN_CONFLICT_ERROR });
-    expect(await removeToken('winner')).toEqual({ ok: false, error: TOKEN_CONFLICT_ERROR });
+    expect(await addToken('mine')).toEqual({
+      ok: false,
+      error: TOKEN_CONFLICT_ERROR,
+      reason: 'conflict',
+    });
+    expect(await removeToken('winner')).toEqual({
+      ok: false,
+      error: TOKEN_CONFLICT_ERROR,
+      reason: 'conflict',
+    });
   });
 });
 

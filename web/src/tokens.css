@@ -5,8 +5,10 @@
    Dark tokens are applied two ways: an explicit parent choice stamps
    data-theme="dark" on <html>, while the default "system" setting leaves the
    attribute off and lets prefers-color-scheme decide (data-theme="light" opts
-   out of it). The generator emits the dark block twice so the two forms can
-   never drift. */
+   out of it). CSS has no way to share a declaration block between an
+   attribute selector and a media query at our browser floor (light-dark()
+   needs Chrome 123 / Safari 17.5), so the generator emits the dark block
+   twice — that's what guarantees the two forms can never drift. */
 
 :root {
   color-scheme: light;
@@ -30,6 +32,7 @@
   --radius-lg: 16px;
   --radius-xl: 22px;
   --radius-pill: 999px;
+  --border-width: 1px;
   --font-size-xs: 12px;
   --font-size-sm: 13px;
   --font-size-md: 14px;
@@ -39,6 +42,7 @@
   --font-size-3xl: 28px;
   --input-font-size: max(16px, var(--font-size-md));
   --font-mono: 'Courier New', monospace;
+  --font-weight-semibold: 600;
   --duration-fast: 0.15s;
   --duration-base: 0.2s;
   --duration-slow: 0.35s;

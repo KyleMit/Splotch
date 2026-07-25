@@ -624,6 +624,81 @@ fix rounds took 26 minutes, past the table's own `> 25 min` investigate threshol
 priority caveat matters more than the thresholds do. Ten findings is a thin sample and the note says
 so.
 
+### A deferral used to throw away everything expensive about the attempt (2026-07-25)
+
+`defer()` wrote the original finding and a one-line reason. Everything that cost real money to
+produce evaporated: the reviewer's unresolved objections, the implementer's account of each round,
+and the draft itself — `git reset --hard` leaves it reachable only through a reflog that dies with
+the container. So `docs/AUDIT-DEFERRED.md` could not distinguish a fix rejected on one narrow point
+(a wrong string literal in a new test fixture) from a brief that *cannot be executed at all*, and a
+triager's only move was to re-stage and pay for the discovery again.
+
+Two things made this concrete rather than theoretical on the run that fixed it:
+
+* **Both `implementation failed` deferrals were briefs at fault, not models.** One proposed
+  collapsing an import to `export type { X } from './y'`, which does not compile — a re-export
+  statement creates no local type binding, so the `Exclude<X, …>` below it loses its reference. The
+  implementer proved that, reverted, and *declined to substitute a different fix the brief did not
+  ask for*. Re-staging that finding unchanged buys the identical failure. Nothing in the old
+  deferral record said so.
+* **Part of the record was already gone before anyone looked.** Recovering the reasoning by hand
+  found `iter0002`'s envelopes were a *mix* — `review3`/`fix2` from the canary, `impl`/`review1`/
+  `review2` overwritten by a later run's own `iter0002`. Which is the argument for capturing inside
+  `defer()` rather than reading envelopes afterwards: by the time you want them, the iteration-name
+  collision has eaten an arbitrary subset.
+
+The draft is captured **before** the reset (afterwards its commits are unreachable) and the patch
+filename suffixes on collision, because silently overwriting a draft is the exact loss the feature
+exists to prevent. `renderDeferralNotes` and `draftPatchPath` live in `lib.mjs` with unit tests; one
+of them pins that a single attempt is not numbered and that a deferral with no commit gets no
+`#### Draft implementation` section at all — an empty pointer would be worse than none.
+
+**What was deliberately not done:** capturing a draft for a finding that was *interrupted* rather
+than deferred. The run's last finding died to a container restart mid-fix-round; its entry was never
+removed from `docs/AUDIT.md`, so a future run re-verifies it from scratch. Filing a stale patch
+under `docs/audit-deferred/` for a finding that is not deferred would misrepresent the backlog.
+
+### Supervising-agent friction, third cloud run (2026-07-25)
+
+None of these touched the driver. They are all things the *supervising* session got wrong or wasted
+time on, which is exactly the material that never makes it into a runbook because it feels like
+operator error rather than design.
+
+* **The liveness check was measuring itself.** The documented stall check compared `HEAD` and
+  `wc -l < run.log` across five minutes. Both are surfaces the supervising agent writes to —
+  `backfill-comments.mjs done` appends a line to `run.log`, and any `git reset` of your own moves
+  HEAD — so it returned a confident `ADVANCED` for a driver that had been dead for half an hour. The
+  envelope count in `.audit-work/logs/` is written only by role calls, which is why the check now
+  uses it. Generalisation worth keeping: **a liveness probe must read a surface the observer cannot
+  write.** The same instinct as principle 1, one level up.
+* **A new terminal state: the orphaned driver.** The container restarted *without* being reclaimed —
+  disk survived, the Node process survived, its in-flight `claude -p` child did not. The driver then
+  waited forever on a child that would never report. What makes it nasty is that it emits nothing:
+  no `HALT`, no `DEFERRED`, no log line, so an event-driven monitor is silent and silence is the
+  designated "healthy" signal. This is the only case where killing `burndown.mjs` is right, and the
+  diagnostic that identifies it is `pgrep -f 'claude -p'` returning nothing while the driver lives.
+  Distinct from the documented "container reclaimed" case, which loses everything and is obvious.
+* **`pkill -f 'audit-burndown/burndown.mjs'` kills your own shell too**, because `-f` matches whole
+  command lines and the wrapper contains the pattern. Exit 144 reads like a failure; the kill had
+  actually worked. It also took out a background waiter whose command line mentioned the same path.
+* **Elapsed time was twice inferred from a monitor's death.** A `Monitor` times out 30 minutes after
+  it was *armed*, which is unrelated to when the current finding started. Reading the timeout as
+  "this finding has run 30 minutes" produced an investigate-band alarm for a P4 that was three
+  minutes old, and the correction cost a round trip. The clamp itself was already documented; that
+  it is not a clock was not.
+* **The unsigned-commit hook fires every turn and its remedy is actively dangerous here.** The
+  container sets `commit.gpgsign=true` / `gpg.format=ssh` with a **zero-byte** key file, so commits
+  are `%G? = N` and GitHub marks them Unverified. The identity is already
+  `Claude <noreply@anthropic.com>`, so only the unfixable half of the hook's message applies — and
+  its suggested `--amend --reset-author` / `rebase --exec` would race the driver's own `--amend`
+  mid-run and, on a run with hundreds of pushed commits, demand a force-push to fix nothing. Worth
+  documenting purely so the next session spends one sentence on it instead of investigating.
+
+The through-line: **most of these are the supervising agent mistaking its own footprint for the
+run's state.** The driver is deliberately independent of the conversation, and the cost of that
+independence is that every shared surface — the log, the branch, the working tree — carries both
+parties' writes with no way to tell them apart after the fact.
+
 ### The cloud cutover (2026-07-25)
 
 The third live run was the first in a Claude Code cloud session rather than on the author's Mac, and
@@ -851,7 +926,27 @@ A 20-finding sample is badly powered — findings are not homogeneous, and a can
 draw three P1 refactors is not comparable to one drawing P4 renames. A full run also re-baselines
 the stale timing table for free.
 
-### 3. Smaller, unvalidated
+### 3. The verifier can return VALID without writing its brief — unfixed
+
+Observed once on 2026-07-25 (canary `iter0006`). The verifier marked a finding `VALID` and the
+driver advanced `current-issue.md`, but `current-brief.md` was never rewritten, so the implementer
+opened the *previous* finding's brief — whose work had already landed. It noticed the mismatch and
+refused to commit, reasoning that any commit "would be attributed to — and would delete by title —
+an unfixed finding".
+
+**That refusal is a prompt-level backstop, not a guarantee.** Had the implementer simply executed
+the stale brief, it would have committed a no-op (or a duplicate) and the driver would have deleted
+*this* finding's entry by title on approval — the same shape as the f389dd39 data-loss bug, arriving
+through a different door. `deleteEntryByTitle` does not help here: the title it is handed *is* the
+current finding's, and the entry really is present.
+
+The fix is structural and cheap: make the brief's identity checkable. Have the verifier write the
+finding title into `current-brief.md` and have the driver refuse to proceed when it does not match
+`current-issue.md` — a deferral (`verifier gave no usable brief`) instead of a silent
+mis-attribution. Not yet implemented; the root cause (why the write was skipped on a `VALID`
+verdict) has not been reproduced either, and reproducing it should come first.
+
+### 4. Smaller, unvalidated
 
 * **The acceptance-criteria slice is fragile** (`burndown.mjs`, the `acceptanceAt` block).
   `findIndex` matches the *first* line containing "acceptance" anywhere — including prose in an

@@ -52,6 +52,8 @@ export const scale = {
   radiusXl: '22px',
   radiusPill: '999px',
 
+  borderWidth: '1px',
+
   // Named --font-size-*, not --text-*, so the type ramp can't collide with
   // the themed text-color family (--text, --text-strong, --text-muted, …).
   fontSizeXs: '12px',
@@ -70,6 +72,8 @@ export const scale = {
 
   // Raw code/version values (masked API keys, version strings, inline code).
   fontMono: "'Courier New', monospace",
+
+  fontWeightSemibold: '600',
 
   durationFast: '0.15s',
   durationBase: '0.2s',

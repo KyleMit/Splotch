@@ -21,16 +21,26 @@
 // * The driver never talks to GitHub. It commits and pushes; the supervising
 //   agent opens the PR and drains COMMENT_STORE through the GitHub MCP tools.
 
-import { appendFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { hasCommand, sleep } from '../lib/utils.mjs';
 import {
+  auditFile,
   chdirRoot,
   countEntries,
   DEFAULT_MAX_ISSUES,
   deferralReason,
   deleteEntryByTitle,
+  DRAFT_DIR,
+  draftPatchPath,
   ensureWorkDirs,
   findingPriority,
   getEntry,
@@ -41,6 +51,7 @@ import {
   logLine,
   LOGS,
   PROMPTS,
+  renderDeferralNotes,
   resolveImplSha,
   runCmd,
   shellOk,
@@ -259,17 +270,44 @@ const DEFERRED_HEADER = `# Audit — deferred findings
 let deferred = 0;
 let consecutive = 0;
 
-function defer(title, why) {
+// Two findings whose titles slug to the same 72 characters would otherwise have
+// the second silently overwrite the first — losing a draft is the exact failure
+// this capture exists to prevent, so suffix instead.
+function uniqueDraftPath(title) {
+  const base = draftPatchPath(title);
+  if (!existsSync(base)) return base;
+  for (let n = 2; ; n++) {
+    const candidate = base.replace(/\.patch$/, `-${n}.patch`);
+    if (!existsSync(candidate)) return candidate;
+  }
+}
+
+// `notes` carries what only this moment knows: the reviewer's unresolved
+// objections, the implementer's account of each round, and the draft diff —
+// captured BEFORE the caller's `git reset --hard`, because the draft's commits
+// are unreachable afterwards and the role envelopes do not survive the next run.
+function defer(title, why, notes = {}) {
   const entry = readFileSync(join(WORK, 'current-issue.md'), 'utf8');
+  const { draftPatch = '', draftCommits = 0, ...rest } = notes;
+  const patchPath = draftPatch.trim() ? uniqueDraftPath(title) : '';
+  if (patchPath) {
+    mkdirSync(DRAFT_DIR, { recursive: true });
+    writeFileSync(patchPath, draftPatch.replace(/\n*$/, '\n'));
+  }
   const existing = existsSync(DEFERRED_FILE)
     ? readFileSync(DEFERRED_FILE, 'utf8')
     : DEFERRED_HEADER;
-  writeFileSync(DEFERRED_FILE, `${existing.replace(/\n*$/, '\n\n')}${entry.replace(/\n*$/, '\n')}`);
+  const record = renderDeferralNotes({ ...rest, why, patchPath, draftCommits });
+  writeFileSync(
+    DEFERRED_FILE,
+    `${existing.replace(/\n*$/, '\n\n')}${entry.replace(/\n*$/, '\n')}\n${record}`
+  );
   // The header + appended entries aren't wrapped at dprint's width, which would
   // redden CI's Quality (format) job. Normalise before it goes into the commit.
   runCmd('npx', ['dprint', 'fmt', DEFERRED_FILE]);
   deleteEntryByTitle(title);
   git('add', 'docs/AUDIT.md', DEFERRED_FILE);
+  if (patchPath) git('add', patchPath);
   git('commit', '-q', '-m', `chore(audit): defer — ${why}\n\nAudit: ${title}`);
   deferred += 1;
   consecutive += 1;
@@ -553,8 +591,12 @@ while (done < MAX_ISSUES) {
 
   if (!impl.ok || structured(impl.env).success !== true || !sha) {
     logLine(`  implementer failed — restoring ${baseSha}`);
+    // Its own account of why — routinely the most useful thing on the record,
+    // because a brief that cannot be executed (a proposed fix that does not
+    // compile, a stale brief) reads as a model failure until you see the reason.
+    const tried = [(structured(impl.env).summary ?? '').trim()].filter(Boolean);
     git('reset', '-q', '--hard', baseSha);
-    defer(title, 'implementation failed');
+    defer(title, 'implementation failed', { tried });
     continue;
   }
 
@@ -729,8 +771,23 @@ while (done < MAX_ISSUES) {
         ? `gates red at the final round (${gateRed.detail})`
         : `${reason} after ${fixRounds} fix round${fixRounds === 1 ? '' : 's'}`;
     logLine(`  ${why} — rolling back to ${baseSha}`);
+    // Captured before the reset: afterwards the draft's commits are unreachable
+    // and only a reflog that dies with the container still names them.
+    const draftPatch =
+      sha && sha !== baseSha
+        ? gitOut('diff', baseSha, sha, '--', '.', `:(exclude)${auditFile()}`)
+        : '';
+    const draftCommits = draftPatch
+      ? gitOut('rev-list', '--count', `${baseSha}..${sha}`).trim()
+      : 0;
     git('reset', '-q', '--hard', baseSha);
-    defer(title, reason);
+    defer(title, reason, {
+      catches: reviewCatches,
+      tried: fixSummaries,
+      gateDetail: gateRed && !implFailed ? gateRed.detail : '',
+      draftPatch,
+      draftCommits: Number(draftCommits) || 0,
+    });
     continue;
   }
 

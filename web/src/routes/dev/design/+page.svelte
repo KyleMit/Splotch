@@ -149,6 +149,14 @@
         <span class="value">{scale.radiusPill}</span>
       </div>
     </div>
+    <h3>Border width</h3>
+    <div class="radius-grid">
+      <div class="swatch-card">
+        <div class="border-box"></div>
+        <code>{toCssVarName('borderWidth')}</code>
+        <span class="value">{scale.borderWidth}</span>
+      </div>
+    </div>
   </section>
 
   <section>
@@ -171,6 +179,13 @@
         <code>{toCssVarName('fontMono')}</code>
         <span class="type-sample" style:font-family={cssVar('fontMono')}>Splotch says hello</span>
         <span class="value">{scale.fontMono}</span>
+      </div>
+      <div class="scale-row">
+        <code>{toCssVarName('fontWeightSemibold')}</code>
+        <span class="type-sample" style:font-weight={cssVar('fontWeightSemibold')}
+          >Splotch says hello</span
+        >
+        <span class="value">{scale.fontWeightSemibold}</span>
       </div>
     </div>
   </section>
@@ -386,6 +401,13 @@
 
   .radius-box.pill {
     height: var(--space-6);
+  }
+
+  .border-box {
+    height: var(--space-8);
+    background: var(--surface);
+    border: var(--border-width) solid var(--brand);
+    border-radius: var(--radius-md);
   }
 
   .shadow-box {

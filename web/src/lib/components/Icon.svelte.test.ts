@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { COLOR_ICONS } from './Icon.svelte';
+import type { CommonIconName } from './iconTypes';
 import { isSpot } from '../../../../scripts/lib/iconChroma.mjs';
 
 // Guards the hand-maintained COLOR_ICONS allowlist (Icon.svelte) against a
@@ -34,7 +35,7 @@ describe('COLOR_ICONS allowlist', () => {
     (name) => {
       if (!isSpot(svgs[`../icons/${name}.svg`])) return;
       expect(
-        COLOR_ICONS.has(name),
+        COLOR_ICONS.has(name as CommonIconName),
         `${name} paints a saturated hue but is missing from COLOR_ICONS`
       ).toBe(true);
     }

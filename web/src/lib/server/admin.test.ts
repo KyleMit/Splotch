@@ -15,6 +15,7 @@ import {
   verifyAdminSecret,
   verifySessionToken,
   buildInvites,
+  beginAdminLogin,
 } from './admin';
 
 // Mirror of the derivation in admin.ts, so the test pins the exact algorithm and
@@ -96,6 +97,41 @@ describe('verifySessionToken', () => {
     envState.ADMIN_ACCESS_TOKEN = undefined;
     expect(verifySessionToken('')).toBe(false);
     expect(verifySessionToken('anything')).toBe(false);
+  });
+});
+
+// The limiter keeps state in a module-level Map that persists for the whole
+// file, so every case here uses its own IP. That both front doors draw on the
+// same bucket is proved end-to-end in routes/admin/login.integration.test.ts —
+// these cases cover the sequence itself.
+describe('beginAdminLogin', () => {
+  beforeEach(() => {
+    envState.ADMIN_ACCESS_TOKEN = 'the-raw-secret';
+  });
+
+  it('mints the derived session for the raw secret and 403s anything else', () => {
+    const attempt = beginAdminLogin('10.0.0.1');
+    if (!attempt.ok) throw new Error('expected a first attempt to pass the throttle');
+    expect(attempt.verify('the-raw-secret')).toEqual({
+      ok: true,
+      session: expectedSession('the-raw-secret'),
+    });
+    expect(attempt.verify('wrong')).toEqual({ ok: false, status: 403 });
+  });
+
+  it('spends one hit per call, so a caller that never verifies still exhausts its budget', () => {
+    // The throttle is charged up front precisely so each transport can answer
+    // 429 before it parses its payload.
+    for (let i = 0; i < 10; i++) expect(beginAdminLogin('10.0.0.2').ok).toBe(true);
+    const limited = beginAdminLogin('10.0.0.2');
+    if (limited.ok) throw new Error('expected the eleventh attempt to be throttled');
+    expect(limited.status).toBe(429);
+    expect(limited.retryAfter).toBeGreaterThanOrEqual(1);
+  });
+
+  it('buckets per IP, so one client cannot lock another out', () => {
+    for (let i = 0; i < 11; i++) beginAdminLogin('10.0.0.3');
+    expect(beginAdminLogin('10.0.0.4').ok).toBe(true);
   });
 });
 

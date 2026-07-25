@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { rateLimit } from './rateLimit';
 
 // Shared admin-auth core used by both front doors into token management:
 // the server-rendered /admin console (cookie session, form actions) and the
@@ -37,6 +38,35 @@ export function secretMatches(provided: string | undefined, expected: string | u
 /** Whether `key` is the raw admin secret (the login check). */
 export function verifyAdminSecret(key: string | undefined) {
   return secretMatches(key, env.ADMIN_ACCESS_TOKEN);
+}
+
+// Both front doors throttle into this one bucket so an attacker can't double
+// their guessing budget by alternating between the form action and the JSON
+// endpoint.
+const ADMIN_LOGIN_BUCKET = (ip: string) => `admin-login:${ip}`;
+
+export type AdminLoginVerdict = { ok: true; session: string } | { ok: false; status: 403 };
+
+export type AdminLoginAttempt =
+  | { ok: false; status: 429; retryAfter: number }
+  | { ok: true; verify: (key: string) => AdminLoginVerdict };
+
+/**
+ * The shared login sequence, split in two so the throttle can short-circuit an
+ * unauthenticated request before its transport parses any payload: take the
+ * bucket hit first, then `verify(key)` once the credential has been read.
+ * Each transport maps the outcome onto its own response (cookie + redirect for
+ * the /admin form action, JSON for /api/admin/login). One call spends one hit,
+ * whether or not `verify` is reached.
+ */
+export function beginAdminLogin(ip: string): AdminLoginAttempt {
+  const { limited, retryAfter } = rateLimit(ADMIN_LOGIN_BUCKET(ip));
+  if (limited) return { ok: false, status: 429, retryAfter };
+  return {
+    ok: true,
+    verify: (key: string) =>
+      verifyAdminSecret(key) ? { ok: true, session: sessionToken() } : { ok: false, status: 403 },
+  };
 }
 
 /** Whether `token` is a currently valid derived session token. */

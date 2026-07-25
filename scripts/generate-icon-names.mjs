@@ -11,7 +11,6 @@ const OUT = 'web/src/lib/components/icon-names.d.ts';
 const names = globSync('web/src/lib/icons/*.svg')
   .map((path) =>
     path
-      .replace(/\\/g, '/')
       .split('/')
       .pop()
       .replace(/\.svg$/, '')
