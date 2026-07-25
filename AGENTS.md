@@ -52,8 +52,14 @@ generated files.** A generated file carries a `<!-- Source: ... -->` marker poin
 source.
 
 Not generated — edit in place: `.claude/rules/` (path-scoped rules), `.claude/hooks/`,
-`.claude/settings.json`, `.claude/audit-conventions.md`, `.claude/cloud/`, and everything under
-`docs/`.
+`.claude/settings.json`, `.claude/audit-conventions.md`, `.claude/cloud/`, `.claude/skill-notes/`,
+and everything under `docs/`.
+
+`.claude/skill-notes/` holds the **design history and open questions** for a skill — why it is
+shaped the way it is, which failures earned which rule, what was rejected, what is still
+unvalidated. It is deliberately *not* linked from any `SKILL.md`: a skill pays context for
+everything it references, and this material is for someone working on the skill, not running it. See
+its `README.md` for the convention.
 
 <!-- Source: .ruler/commands.md -->
 
