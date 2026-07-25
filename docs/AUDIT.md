@@ -7,32 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P4][consistency] `toCssVarName` lives in the token data module but is pure generator logic
-
-**File(s):** `web/src/lib/design/tokens.ts:259-262` — pinned at SHA f934d43
-
-#### Problem
-
-`tokens.ts` is documented as "the design-token single source of truth" — a data module the app
-imports for JS-side token values (canvas fill, Notch Band). The camelCase→kebab CSS-var name mapping
-is build-time concern used only by `gen-tokens.mjs` (and its test), not by any runtime consumer, yet
-it ships inside the runtime-imported data module. It's minor coupling, but it means the app bundle
-carries a regex helper it never calls, and the "source of truth for values" file also owns "how CSS
-var names are spelled."
-
-#### Proposed solution
-
-Move `toCssVarName` to `scripts/gen-tokens.mjs` (or a `scripts/lib/` helper) alongside the only code
-that emits CSS, and update `tokens.test.ts`'s import. Keeps `tokens.ts` purely declarative data +
-the `ThemeTokens` contract.
-
-#### Verification
-
-`npm run gen:tokens` and `tokens.test.ts` pass after the move; `tokens.ts` no longer exports
-build-only functions.
-
----
-
 ### [P4][complexity] `render()` header comment duplicates the emitted `tokens.css` banner
 
 **File(s):** `scripts/gen-tokens.mjs:1-10` and the template banner `:27-35` — pinned at SHA f934d43
