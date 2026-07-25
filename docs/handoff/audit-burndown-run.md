@@ -56,19 +56,41 @@ is lost. All other knobs are at their documented defaults, notably `PUSH_EVERY=1
 
 ## Unverified assumptions
 
-* None outstanding — preflight passed green (deps, auth, clean tree, origin reachable, 496 findings
-  parsed, `npm run check`).
+* None outstanding — preflight and the full canary checklist both passed (below).
 
 ## Done & verified
 
 * `BRANCH=claude/audit-burn-down-cexhfp npm run audit:preflight` → `PREFLIGHT OK` (2026-07-25).
+* **Canary: 5 fixed · 1 dropped · 2 deferred**, 496 → 488. Every checklist item passed:
+  * **Entry deletion:** 8 commits with `removed=1`, none with `removed=2`; 496 − 8 = 488 closes
+    exactly. No finding silently destroyed.
+  * **Diffs read** for behavior smuggled inside a refactor — none found. The `app.css` token
+    substitution was verified byte-exact against `tokens.ts` (`space2: '8px'`, `space3: '12px'`,
+    `durationBase: '0.2s'`), so it is not a coincidental-equality fix. The one `as CommonIconName`
+    cast added to `Icon.svelte.test.ts` is on the test's own glob-derived loop variable and does not
+    disable the runtime guard the test exercises.
+  * **Resume handoff confirmed structurally**, not just by reading a summary: within an iteration
+    `impl` and `fix1` share one minted session id while each `review*` has its own, and **none**
+    match the container's pinned `CLAUDE_CODE_SESSION_ID`. The blind writer/verifier pairing
+    (invariant 3) genuinely holds here.
+  * **No capped or errored calls**, so the budget knobs are sized correctly and the one
+    `implementation failed` deferral was a real failure, not budget truncation.
+
+## Cost & wall-clock (measured, 8 findings)
+
+`$27.03` total, `$4.50`/finding → **`$2198` projected** for the remaining 488 — *notional* on a
+Claude subscription; the real ceiling is the usage window.
+
+**Wall-clock is the binding constraint: 65 min for 8 findings ≈ 8 min each → ~65 hours for 488.**
+That is ~4× the skill's 13–16h reference figure, so this run will span many container lifetimes.
+That is survivable by design (`PUSH_EVERY=1`, state is git + `docs/AUDIT.md`), but it means the run
+is expected to be stopped by a `wrap up` long before the backlog drains.
 
 ## Risks & next 3 steps
 
-1. Open the draft PR against this branch and record its number here.
-2. Run the 5-finding canary and work the canary checklist (skill steps 4–7) — especially the
-   per-commit `removed=` count, which must be exactly 1.
-3. Launch the full run with the command above.
+1. Drain the comment store onto PR #544 as fixes land — `.audit-work/` dies with the container.
+2. Watch CI on #544; it is the only full-suite gate.
+3. On `wrap up`: run the closeout tasks below. The backlog will still hold findings — expected.
 
 ## Closeout tasks
 
