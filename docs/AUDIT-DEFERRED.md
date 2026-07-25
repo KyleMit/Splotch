@@ -931,3 +931,48 @@ The rolled-back draft is kept at
 (3 commits). It passed the driver's type-check, unit-test and lint gates — the review is what it did
 not pass — so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p2-duplication-the-three-per-invite-action-groups-are-triplicated-markup.patch`.
+
+### [P2][complexity] `readStore` bundles store-open, read, seed, confirmation-loop, and fallback into one function
+
+**File(s):** `web/src/lib/server/tokens.ts:67-111` — pinned at SHA f934d43
+
+#### Problem
+
+`readStore` is the module's linchpin and carries five distinct responsibilities in one 45-line body:
+open the store, read the key, run the env-seed-on-empty branch, run the multi-attempt seed-race
+confirmation loop (`:88-98`), and degrade to the memory fallback on transient error. The
+deeply-nested confirmation loop (a `for` with an inner `try/catch` inside the outer `try`) is the
+subtle, correctness-critical part (ADR-0025 lost-seed-race handling) but it's buried where it's hard
+to read or test in isolation.
+
+#### Proposed solution
+
+Split the seed-race confirmation into a named helper the reader can grasp and unit-test directly:
+
+```ts
+async function confirmSeedRaceWinner(store: TokenStore): Promise<StoreRead>; // the :88-100 block
+```
+
+`readStore` then reads as: open → get → (present ? blobs : seed-then-`confirmSeedRaceWinner`) →
+catch → memory. The existing `freshTokensWithSeedRace` test helper can target
+`confirmSeedRaceWinner` more pointedly.
+
+#### Verification
+
+The `stale-empty seed races` describe block in `tokens.test.ts` still passes; the extracted helper
+is directly unit-testable.
+
+---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+I made no changes and committed nothing: `.audit-work/current-brief.md` is stale — it describes the
+invite-action-triplication finding that this run deferred and rolled back minutes earlier, not the
+current finding (`readStore` bundles store-open/read/seed/confirmation-loop/fallback), whose
+verifier returned VALID without ever rewriting the brief. Implementing the stale brief would have
+redone rejected work and caused the driver to delete the unfixed `readStore` entry by title, so the
+finding needs re-verification to produce a real brief before it can be implemented.

@@ -9,38 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P2][complexity] `readStore` bundles store-open, read, seed, confirmation-loop, and fallback into one function
-
-**File(s):** `web/src/lib/server/tokens.ts:67-111` — pinned at SHA f934d43
-
-#### Problem
-
-`readStore` is the module's linchpin and carries five distinct responsibilities in one 45-line body:
-open the store, read the key, run the env-seed-on-empty branch, run the multi-attempt seed-race
-confirmation loop (`:88-98`), and degrade to the memory fallback on transient error. The
-deeply-nested confirmation loop (a `for` with an inner `try/catch` inside the outer `try`) is the
-subtle, correctness-critical part (ADR-0025 lost-seed-race handling) but it's buried where it's hard
-to read or test in isolation.
-
-#### Proposed solution
-
-Split the seed-race confirmation into a named helper the reader can grasp and unit-test directly:
-
-```ts
-async function confirmSeedRaceWinner(store: TokenStore): Promise<StoreRead>; // the :88-100 block
-```
-
-`readStore` then reads as: open → get → (present ? blobs : seed-then-`confirmSeedRaceWinner`) →
-catch → memory. The existing `freshTokensWithSeedRace` test helper can target
-`confirmSeedRaceWinner` more pointedly.
-
-#### Verification
-
-The `stale-empty seed races` describe block in `tokens.test.ts` still passes; the extracted helper
-is directly unit-testable.
-
----
-
 ### [P3][duplication] Request-field extraction `typeof body?.X === 'string' ? body.X : ''` is repeated across every admin endpoint
 
 **File(s):** `web/src/routes/api/admin/login/+server.ts:25`,
