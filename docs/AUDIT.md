@@ -9,62 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P1][duplication] Login flow (rate-limit + secret verify) is copy-pasted across the two front doors
-
-**File(s):** `web/src/routes/api/admin/login/+server.ts:16-30` and
-`web/src/routes/admin/+page.server.ts:89-105` (login handlers) — pinned at SHA f934d43
-
-#### Problem
-
-Both doors independently re-implement the identical login sequence: build the same bucket key,
-throttle, extract the credential, and verify it.
-
-```ts
-// login/+server.ts
-const { limited, retryAfter } = rateLimit(`admin-login:${getClientAddress()}`);
-if (limited) return throttled(retryAfter);
-const key = typeof body?.key === 'string' ? body.key : '';
-if (!verifyAdminSecret(key)) { ... }
-```
-
-```ts
-// +page.server.ts login action
-const { limited, retryAfter } = rateLimit(`admin-login:${getClientAddress()}`);
-if (limited) { return fail(429, ...); }
-const key = String(form.get('access-key') ?? '');
-if (!verifyAdminSecret(key)) { return fail(403, ...); }
-```
-
-The `admin-login:${getClientAddress()}` bucket key is a load-bearing shared string (the API skill
-and the code both state the two doors *must* share one bucket) yet it exists as a bare literal in
-two files. If someone edits one and not the other, the shared-budget guarantee silently breaks with
-no test catching the drift. The `verifyAdminSecret` decision is also duplicated, so any future
-hardening (e.g. logging failed attempts) has to be added twice.
-
-#### Proposed solution
-
-Extract the throttle-and-verify core into `$lib/server/admin.ts`, returning a discriminated outcome
-the transport layer maps to its own response type:
-
-```ts
-// admin.ts
-export const ADMIN_LOGIN_BUCKET = (ip: string) => `admin-login:${ip}`;
-export function attemptAdminLogin(ip: string, key: string):
-  | { ok: true; session: string }
-  | { ok: false; status: 429; retryAfter: number }
-  | { ok: false; status: 403 };
-```
-
-The API endpoint maps that to `throttled()`/`json(403)`; the form action maps it to
-`fail(429)`/`fail(403)`/`setSession + redirect`.
-
-#### Verification
-
-`grep -rn 'admin-login:' web/src` returns one definition. `npm run test:api:smoke` (login
-success/failure/429) and `tests/admin.spec.ts` still pass.
-
----
-
 ### [P1][maintainability] HTTP status is chosen by string-comparing the error message
 
 **File(s):** `web/src/routes/api/admin/tokens/+server.ts:50-55` (`mutationError`) — pinned at SHA

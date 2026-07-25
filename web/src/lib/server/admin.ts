@@ -45,21 +45,28 @@ export function verifyAdminSecret(key: string | undefined) {
 // endpoint.
 const ADMIN_LOGIN_BUCKET = (ip: string) => `admin-login:${ip}`;
 
-export type AdminLoginResult =
-  | { ok: true; session: string }
+export type AdminLoginVerdict = { ok: true; session: string } | { ok: false; status: 403 };
+
+export type AdminLoginAttempt =
   | { ok: false; status: 429; retryAfter: number }
-  | { ok: false; status: 403 };
+  | { ok: true; verify: (key: string) => AdminLoginVerdict };
 
 /**
- * The shared login sequence: throttle the caller, verify the raw secret, and
- * mint a session token. Each transport maps the result onto its own response
- * (cookie + redirect for the /admin form action, JSON for /api/admin/login).
+ * The shared login sequence, split in two so the throttle can short-circuit an
+ * unauthenticated request before its transport parses any payload: take the
+ * bucket hit first, then `verify(key)` once the credential has been read.
+ * Each transport maps the outcome onto its own response (cookie + redirect for
+ * the /admin form action, JSON for /api/admin/login). One call spends one hit,
+ * whether or not `verify` is reached.
  */
-export function attemptAdminLogin(ip: string, key: string): AdminLoginResult {
+export function beginAdminLogin(ip: string): AdminLoginAttempt {
   const { limited, retryAfter } = rateLimit(ADMIN_LOGIN_BUCKET(ip));
   if (limited) return { ok: false, status: 429, retryAfter };
-  if (!verifyAdminSecret(key)) return { ok: false, status: 403 };
-  return { ok: true, session: sessionToken() };
+  return {
+    ok: true,
+    verify: (key: string) =>
+      verifyAdminSecret(key) ? { ok: true, session: sessionToken() } : { ok: false, status: 403 },
+  };
 }
 
 /** Whether `token` is a currently valid derived session token. */

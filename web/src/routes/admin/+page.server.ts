@@ -1,10 +1,5 @@
 import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
-import {
-  sessionToken,
-  attemptAdminLogin,
-  verifySessionToken,
-  buildInvites,
-} from '$lib/server/admin';
+import { sessionToken, beginAdminLogin, verifySessionToken, buildInvites } from '$lib/server/admin';
 import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
 import { getUsage } from '$lib/server/usage';
 import type { Actions, PageServerLoad } from './$types';
@@ -86,14 +81,14 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 
 export const actions: Actions = {
   login: async ({ request, cookies, getClientAddress }) => {
+    const attempt = beginAdminLogin(getClientAddress());
+    if (!attempt.ok) {
+      return fail(429, { loginError: `Too many attempts. Please wait ${attempt.retryAfter}s.` });
+    }
+
     const form = await request.formData();
     const key = String(form.get('access-key') ?? '');
-
-    const result = attemptAdminLogin(getClientAddress(), key);
-    if (!result.ok) {
-      if (result.status === 429) {
-        return fail(429, { loginError: `Too many attempts. Please wait ${result.retryAfter}s.` });
-      }
+    if (!attempt.verify(key).ok) {
       return fail(403, { loginError: 'Incorrect access key.' });
     }
     setSession(cookies);

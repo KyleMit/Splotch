@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { attemptAdminLogin } from '$lib/server/admin';
+import { beginAdminLogin } from '$lib/server/admin';
 import { readJsonBody, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
@@ -13,12 +13,13 @@ import type { RequestHandler } from './$types';
  * never the raw secret.
  */
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+  const attempt = beginAdminLogin(getClientAddress());
+  if (!attempt.ok) return throttled(attempt.retryAfter);
+
   const body = await readJsonBody(request);
   const key = typeof body?.key === 'string' ? body.key : '';
-
-  const result = attemptAdminLogin(getClientAddress(), key);
+  const result = attempt.verify(key);
   if (!result.ok) {
-    if (result.status === 429) return throttled(result.retryAfter);
     return json({ ok: false, error: 'Incorrect access key.' }, { status: 403 });
   }
   return json({ ok: true, session: result.session });
