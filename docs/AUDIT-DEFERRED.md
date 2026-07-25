@@ -470,3 +470,44 @@ Navigate each control with a screen reader + keyboard; announcements and arrow-k
 consistent within each mode.
 
 ---
+
+### [P1][duplication] White/dark ink keyline CSS is triplicated across ActionsPanel, BrushMenu, and StrokeWidthMenu
+
+**File(s):** `web/src/lib/components/ActionsPanel.svelte:772-787`,
+`web/src/lib/components/BrushMenu.svelte:155-170`,
+`web/src/lib/components/StrokeWidthMenu.svelte:175-190` — pinned at SHA f934d43
+
+#### Problem
+
+The same "ring the currentColor ink with a keyline so white/near-black reads on the buttons" trick
+is written out three times, each with the same four declarations:
+
+```css
+stroke: #000;              /* white-stroke */  or  var(--dark-ink-keyline);  /* dark-stroke */
+stroke-width: 2px;
+paint-order: stroke;
+vector-effect: non-scaling-stroke;
+```
+
+ActionsPanel targets `svg path[fill='currentColor']`, BrushMenu the same, StrokeWidthMenu widens to
+`svg path` (single path). The identical comment paragraph explaining the `#000` one-off is pasted in
+all three. Changing the keyline width, adding a token for the `#000`, or adjusting the selector
+means editing three files that must not drift.
+
+#### Proposed solution
+
+Promote `.white-stroke`/`.dark-stroke` to shared global utility classes in `app.css` (they already
+ride on the container element in each case), keyed off
+`:where(.white-stroke) svg path[fill='currentColor']` and a dark mirror. Each component keeps only
+the class toggle. Fold StrokeWidthMenu's `svg path` variant in by making the selector match both
+(`path[fill='currentColor'], svg:has(path):not(:has(path[fill='currentColor'])) path` is overkill —
+simpler: tag the single-path icon so `[fill='currentColor']` applies there too, then one selector
+covers all three).
+
+#### Verification
+
+Grep `paint-order: stroke` across the components — should collapse to one definition. Select white
+ink and near-black ink (dark theme) with each of brush trigger, brush menu, stroke trigger, stroke
+menu open, and confirm the keyline still renders in `run-splotch`.
+
+---
