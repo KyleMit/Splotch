@@ -11,41 +11,6 @@
 
 ## Source: Code audit — Core UI controls
 
-### [P1][design-tokens] ClearButton hardcodes an entire red/coral palette that exists in no token
-
-**File(s):**
-`web/src/lib/components/ClearButton.svelte:184,187,209,232,234,254-255,276,389-390,404-405,472,494,518,520`
-— pinned at SHA f934d43
-
-#### Problem
-
-The clear button and its accept-zone/coachmark introduce a full color system inline with zero
-tokens: `linear-gradient(135deg, #ff6b6b, #ee5a6f)` (button, 184; coachmark button, 404),
-`linear-gradient(135deg, #ff3838, #d63031)` (delete-ready, 232), and a dozen `rgba(255, 56, 56, …)`
-"alarm red" values (accept-zone border/gradient/threshold, 254-255, 276) alongside
-`rgba(255, 107, 107, …)` "friendly coral" (coachmark ring, 389-390) and `rgba(238, 90, 111, …)`
-(coachmark ready state, 494, 520). Comments even distinguish the semantics ("the friendlier coral,
-not the alarm-red of the live threshold", 384) — two named color roles that never became tokens.
-`tokens.css` has only muted `--danger-*` (#b04a4a), nothing vivid. This is the largest concentration
-of untokenized color in the scoped files, and the same shades repeat across button, ghost, ring, and
-reduced-motion fallbacks.
-
-#### Proposed solution
-
-Add `--clear-red`, `--clear-red-deep` (delete-ready), and `--clear-coral` (+ their alpha-derived
-washes via `color-mix`) to `lib/design/tokens.ts`, regenerate `tokens.css`, and replace the
-literals. Keep a light-value fallback comment where a pre-`color-mix` fallback is genuinely needed
-(the app already does this pattern for `--paper`). This also fixes the button/coachmark drift risk
-in the next finding.
-
-#### Verification
-
-Grep `#ff6b6b|#ee5a6f|255, 56, 56|255, 107, 107|238, 90, 111` in ClearButton — should reach zero.
-Visual check of rest / dragging / delete-ready / accept-zone / coachmark states via `run-splotch`,
-light and dark.
-
----
-
 ### [P2][complexity] The coachmark tutorial should be its own component, not 180 lines inside ClearButton
 
 **File(s):** `web/src/lib/components/ClearButton.svelte:18-99,148-162,359-522` — pinned at SHA
