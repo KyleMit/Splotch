@@ -36,6 +36,52 @@ export function resolveImplSha({ reported, head, baseSha }) {
   return head && head !== baseSha ? head : '';
 }
 
+// Every env knob that changes how a run behaves, and is therefore part of that
+// run's relaunch command. ONE list with two consumers, deliberately: overnight.mjs
+// bakes these into the tmux job (tmux does not reliably inherit arbitrary env),
+// and burndown.mjs records them to .audit-work/launch-command so a later session
+// can recover them. Keeping two lists in sync by hand already failed once — the
+// EFFORT_* knobs were added to the driver and missed here, which would have
+// dropped them silently under tmux. Add new knobs here and both paths get them.
+export const LAUNCH_KNOBS = [
+  'RESUME',
+  'PUSH_EVERY',
+  'BRANCH',
+  'CHECK_CMD',
+  'TEST_CMD',
+  'E2E_CMD',
+  'LINT_CMD',
+  'PUSH_TEST_CMD',
+  'MAX_DEFERRALS',
+  'RETRIES',
+  'MODEL_VERIFY',
+  'MODEL_IMPL',
+  'MODEL_IMPL_MINOR',
+  'MODEL_REVIEW',
+  'BUDGET_VERIFY',
+  'BUDGET_IMPL',
+  'BUDGET_REVIEW',
+  'EFFORT_VERIFY',
+  'EFFORT_IMPL',
+  'EFFORT_REVIEW',
+];
+
+export const shellQuote = (value) => `'${String(value).replace(/'/g, `'\\''`)}'`;
+
+// The command that relaunches this exact run, reconstructed from the driver's own
+// environment. It cannot be recovered from the process list: overnight.mjs launches
+// via `env VAR=… node …`, and `env` EXECS node, so the assignments live in the
+// environment and never appear in argv. On macOS the surviving `caffeinate` parent
+// happens to retain the full string in its own argv; on Linux caffeinate is not
+// used and nothing retains it, so scraping `ps` there recovers nothing at all.
+export function launchCommand(env = process.env) {
+  const overrides = LAUNCH_KNOBS.filter((knob) => env[knob] != null).map(
+    (knob) => `${knob}=${shellQuote(env[knob])}`
+  );
+  const count = env.MAX_ISSUES ?? '600';
+  return `${overrides.join(' ')}${overrides.length ? ' ' : ''}npm run audit:burndown:overnight -- ${count}`;
+}
+
 // Which role actually failed, for the docs/AUDIT-DEFERRED.md commit message.
 // Rolling unreviewed or ungated work back is always right; describing it as
 // rejected is not. Someone triages this file months later deciding whether to

@@ -16,6 +16,7 @@ import {
   deleteFirstEntry,
   findingPriority,
   getEntry,
+  launchCommand,
   resolveImplSha,
 } from '../audit-burndown/lib.mjs';
 
@@ -234,6 +235,44 @@ describe('deferralReason', () => {
   it('reports an unavailable reviewer ahead of every other cause', () => {
     expect(deferralReason({ reviewUnavailable: true, implFailed: true, gateRed })).toBe(
       'reviewer unavailable'
+    );
+  });
+});
+
+// The launch command is the one fact about a run that cannot be recovered from
+// git, the PR, or docs/AUDIT.md — and it cannot be scraped from `ps` either,
+// because `env VAR=… node …` execs node and the overrides never enter argv. The
+// driver records this at startup; the PreCompact hook reads it back.
+describe('launchCommand', () => {
+  it('emits a bare relaunch when nothing was overridden', () => {
+    expect(launchCommand({})).toBe('npm run audit:burndown:overnight -- 600');
+  });
+
+  it('carries MAX_ISSUES through as the run length argument', () => {
+    expect(launchCommand({ MAX_ISSUES: '50' })).toBe('npm run audit:burndown:overnight -- 50');
+  });
+
+  it('records every non-default knob as a shell-quoted assignment', () => {
+    expect(launchCommand({ MAX_ISSUES: '600', BRANCH: 'audit/other', EFFORT_REVIEW: 'high' })).toBe(
+      "BRANCH='audit/other' EFFORT_REVIEW='high' npm run audit:burndown:overnight -- 600"
+    );
+  });
+
+  it('quotes a command knob containing spaces so it survives a copy-paste relaunch', () => {
+    expect(launchCommand({ E2E_CMD: 'npm run test:e2e -- --retries=1' })).toContain(
+      "E2E_CMD='npm run test:e2e -- --retries=1'"
+    );
+  });
+
+  it('escapes an embedded single quote rather than terminating the assignment', () => {
+    expect(launchCommand({ PUSH_TEST_CMD: "sh -c 'npm test'" })).toContain(
+      "PUSH_TEST_CMD='sh -c '\\''npm test'\\'''"
+    );
+  });
+
+  it('ignores env vars that are not run knobs', () => {
+    expect(launchCommand({ HOME: '/root', PATH: '/usr/bin' })).toBe(
+      'npm run audit:burndown:overnight -- 600'
     );
   });
 });

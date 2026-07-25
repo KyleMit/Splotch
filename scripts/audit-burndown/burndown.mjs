@@ -31,6 +31,7 @@ import {
   git,
   gitOk,
   gitOut,
+  launchCommand,
   logLine,
   LOGS,
   PROMPTS,
@@ -270,6 +271,14 @@ function gateFailure(baseSha, specs) {
 // crash residue that would otherwise block startup; the overnight launcher sets
 // it. See "Resuming a crashed run" in the burn-down-audits skill.
 const RESUME = process.env.RESUME === '1' || process.env.RESUME === 'true';
+
+// Record how this run was launched, while the process that knows still exists.
+// Nothing else can recover it: overnight.mjs launches via `env VAR=… node …`, and
+// `env` execs node, so the overrides live in the environment and never reach argv
+// — scraping `ps` gets them only on macOS, and only via the incidental caffeinate
+// parent. This file is what .claude/hooks/precompact-burndown-snapshot.sh reads,
+// and it is the one fact a post-compaction session genuinely cannot re-derive.
+writeFileSync(join(WORK, 'launch-command'), `${launchCommand()}\n`);
 
 for (const bin of ['gh', 'claude']) {
   if (!hasCommand(bin)) halt(`missing dependency: ${bin}`);
