@@ -1,13 +1,12 @@
 import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
 import {
   sessionToken,
-  verifyAdminSecret,
+  attemptAdminLogin,
   verifySessionToken,
   buildInvites,
 } from '$lib/server/admin';
 import { getTokensStatus, addToken, removeToken } from '$lib/server/tokens';
 import { getUsage } from '$lib/server/usage';
-import { rateLimit } from '$lib/server/rateLimit';
 import type { Actions, PageServerLoad } from './$types';
 
 // Must be server-rendered: it has form actions and validates the admin secret
@@ -87,17 +86,14 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 
 export const actions: Actions = {
   login: async ({ request, cookies, getClientAddress }) => {
-    // Throttle per IP: this is an unauthenticated oracle for guessing the admin
-    // secret, so cap brute-force bursts before checking the key — the same
-    // limiter the AI credential-verification endpoints use.
-    const { limited, retryAfter } = rateLimit(`admin-login:${getClientAddress()}`);
-    if (limited) {
-      return fail(429, { loginError: `Too many attempts. Please wait ${retryAfter}s.` });
-    }
-
     const form = await request.formData();
     const key = String(form.get('access-key') ?? '');
-    if (!verifyAdminSecret(key)) {
+
+    const result = attemptAdminLogin(getClientAddress(), key);
+    if (!result.ok) {
+      if (result.status === 429) {
+        return fail(429, { loginError: `Too many attempts. Please wait ${result.retryAfter}s.` });
+      }
       return fail(403, { loginError: 'Incorrect access key.' });
     }
     setSession(cookies);

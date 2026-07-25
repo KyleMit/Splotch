@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { rateLimit } from './rateLimit';
 
 // Shared admin-auth core used by both front doors into token management:
 // the server-rendered /admin console (cookie session, form actions) and the
@@ -37,6 +38,28 @@ export function secretMatches(provided: string | undefined, expected: string | u
 /** Whether `key` is the raw admin secret (the login check). */
 export function verifyAdminSecret(key: string | undefined) {
   return secretMatches(key, env.ADMIN_ACCESS_TOKEN);
+}
+
+// Both front doors throttle into this one bucket so an attacker can't double
+// their guessing budget by alternating between the form action and the JSON
+// endpoint.
+const ADMIN_LOGIN_BUCKET = (ip: string) => `admin-login:${ip}`;
+
+export type AdminLoginResult =
+  | { ok: true; session: string }
+  | { ok: false; status: 429; retryAfter: number }
+  | { ok: false; status: 403 };
+
+/**
+ * The shared login sequence: throttle the caller, verify the raw secret, and
+ * mint a session token. Each transport maps the result onto its own response
+ * (cookie + redirect for the /admin form action, JSON for /api/admin/login).
+ */
+export function attemptAdminLogin(ip: string, key: string): AdminLoginResult {
+  const { limited, retryAfter } = rateLimit(ADMIN_LOGIN_BUCKET(ip));
+  if (limited) return { ok: false, status: 429, retryAfter };
+  if (!verifyAdminSecret(key)) return { ok: false, status: 403 };
+  return { ok: true, session: sessionToken() };
 }
 
 /** Whether `token` is a currently valid derived session token. */
