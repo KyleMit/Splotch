@@ -9,35 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P4][accessibility] Two identical segmented controls use inconsistent ARIA semantics (radiogroup vs group/pressed)
-
-**File(s):** `web/src/lib/components/parent/AppearanceSection.svelte:32-45` (radiogroup/radio) ·
-`web/src/lib/components/ParentCenter.svelte:223-237` (group + aria-pressed) — pinned at SHA f934d43
-
-#### Problem
-
-The theme picker exposes `role="radiogroup"` with `role="radio"` + `aria-checked` children, while
-the visually-identical orientation selector uses `role="group"` with `aria-pressed` toggle buttons.
-Both are single-select segmented controls (the report-kind picker is a *third* pattern, radiogroup
-again). Screen-reader users get inconsistent announcements for the same idiom, and neither
-radiogroup implements roving-tabindex/arrow-key navigation the role implies. This intersects
-maintainability: whichever pattern the Segmented primitive (P1) standardizes on must be chosen
-deliberately.
-
-#### Proposed solution
-
-Decide one semantic for the Segmented primitive: `radiogroup`/`radio` for mandatory single-select
-(theme, report-kind) with arrow-key roving, and document that the orientation selector — which
-*allows* deselecting to "free rotation" — legitimately differs (toggle buttons). Encode the choice
-in the primitive's props (`mode: 'radio' | 'toggle'`).
-
-#### Verification
-
-Navigate each control with a screen reader + keyboard; announcements and arrow-key behavior are
-consistent within each mode.
-
----
-
 ### [P4][maintainability] Hardcoded `'Courier New', monospace` font stack in two places
 
 **File(s):** `web/src/lib/components/parent/AboutSection.svelte:156` ·
