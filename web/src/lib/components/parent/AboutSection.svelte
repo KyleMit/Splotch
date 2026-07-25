@@ -107,8 +107,8 @@
     }
   }
 
-  .github-link {
-    margin: 12px 0 !important;
+  .about-links > p.github-link {
+    margin: 12px 0;
   }
 
   .github-link a {

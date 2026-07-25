@@ -9,30 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P5][readability] `.github-link` overrides shared spacing with `!important`
-
-**File(s):** `web/src/lib/components/parent/AboutSection.svelte:110-112` — pinned at SHA f934d43
-
-#### Problem
-
-`.github-link { margin: 12px 0 !important; }` uses `!important` solely to beat the earlier
-`.about-links p { margin: 0 0 8px 0 }` (`:94-96`). `!important` in scoped component CSS to override
-a sibling rule in the *same* file is a specificity smell — the two rules fight instead of being
-ordered/structured to cooperate.
-
-#### Proposed solution
-
-Reorder or restructure so the override is unnecessary: e.g. drop the blanket `.about-links p` bottom
-margin and set per-child spacing, or target `.about-links > p.github-link` for higher specificity
-without `!important`.
-
-#### Verification
-
-Remove `!important`; the GitHub link still has its 12px vertical spacing and the other footer links
-keep their 8px. Visual check of the About footer.
-
----
-
 ### [P5][type-safety] `buttonChips` uses an inline structural type with stringly-typed ids
 
 **File(s):** `web/src/lib/components/parent/ControlsSection.svelte:44-86` — pinned at SHA f934d43
