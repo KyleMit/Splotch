@@ -338,20 +338,30 @@ state in the conversation:
   auto-compact fire) when the context fills, rather than letting the window overflow mid-run. Don't
   wait to be forced. A `PreCompact` hook (`.claude/hooks/precompact-burndown-snapshot.sh`) backstops
   this automatically: whenever a run is in flight or left work owed, it writes
-  **`.audit-work/compact-snapshot.md`** — the live relaunch command reconstructed from the process
-  itself, `audit:status`, which run-log monitors are actually running, and the current run's log
-  tail. It no-ops otherwise and never blocks compaction.
+  **`.audit-work/compact-snapshot.md`** — the relaunch command the driver recorded at startup,
+  `audit:status`, which run-log monitors are actually running, and the current run's log tail. It
+  no-ops otherwise and never blocks compaction. A companion `SessionStart` hook (matcher `compact`,
+  `.claude/hooks/session-start-burndown-snapshot.sh`) is what actually *tells* the next session the
+  snapshot is there — `PreCompact` has no `additionalContext` support, so its own stdout reaches the
+  transcript but never the post-compaction model.
 * **Read `.audit-work/compact-snapshot.md` first** when you come back to a burndown with no memory
-  of starting it — after a compaction, or as a fresh session. It is the most concrete and most
-  recent account of the run, and unlike the hand-maintained checkpoint it cannot be stale, because
-  it is rewritten at the moment context is summarized. Its one limit: it lives in gitignored
-  `.audit-work/`, so it is **machine-local** and absent on a fresh clone. The order to trust:
+  of starting it — after a compaction, or as a fresh session. It is the most concrete account of how
+  the run was launched. But it is **point-in-time, not live**: it is rewritten only when compaction
+  fires, never when the run's state changes, so a run that finished without a subsequent compaction
+  leaves a snapshot still asserting "a run is IN FLIGHT". Check its header timestamp, and confirm
+  any pid it names is still alive (`ps -p <pid>`) before acting on that claim. Its other limit: it
+  lives in gitignored `.audit-work/`, so it is **machine-local** and absent on a fresh clone. The
+  order to trust:
 
-  1. `.audit-work/compact-snapshot.md` — freshest and most specific; same machine only.
-  2. The durable checkpoint (`project` memory / `docs/handoff/` packet) — survives a clone, but only
+  1. `npm run audit:status` + git + the PR — always authoritative for counts, what landed, and
+     whether anything is actually running. Tells you nothing about *how the run was launched*.
+  2. `.audit-work/compact-snapshot.md` — the most specific record of the launch, and the only one
+     with the log tail; same machine only, and only as of its timestamp.
+  3. The durable checkpoint (`project` memory / `docs/handoff/` packet) — survives a clone, but only
      as current as the last time someone updated it.
-  3. `npm run audit:status` + git + the PR — always authoritative for counts and what landed, but
-     tells you nothing about *how the run was launched*.
+
+  The first two answer different questions, which is why the ordering flipped: ask `audit:status`
+  what is true *now*, and the snapshot how the run was *started*.
 * Keep the supervising context small so it lasts: monitor the run **event-driven** — not by polling
   `audit:status` in a loop, and don't read per-finding logs or the PR back unless you're diagnosing
   something specific. Watch for every terminal *and* degraded state, so silence really does mean
