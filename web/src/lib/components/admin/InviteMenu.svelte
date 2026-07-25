@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Invite } from './AdminConsole.svelte';
+  import { copyKey, type Invite } from './AdminConsole.svelte';
 
   // The narrow layout collapses the per-row actions into a single "Copy" plus a
   // "⋯" button that opens this modal sheet — the same Copy code / Copy link /
@@ -42,7 +42,7 @@
         type="button"
         class="more-menu-item"
         onclick={() => {
-          oncopy(`${inv.token}:code`, inv.token);
+          oncopy(copyKey(inv.token, 'code'), inv.token);
           closeMenu();
         }}
       >
@@ -52,7 +52,7 @@
         type="button"
         class="more-menu-item"
         onclick={() => {
-          oncopy(`${inv.token}:url`, inv.url);
+          oncopy(copyKey(inv.token, 'url'), inv.url);
           closeMenu();
         }}
       >

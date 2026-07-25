@@ -9,44 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P3][duplication] Copy-key string `\`${invite.token}:code\`` is rebuilt inline 12 times
-
-**File(s):** `web/src/lib/components/admin/AdminConsole.svelte:282-321, 345-360` (12 occurrences) —
-pinned at SHA f934d43
-
-#### Problem
-
-The per-cell copy-feedback key is assembled ad hoc everywhere it's needed:
-
-```ts
-class:copied={copied === `${invite.token}:code`}
-onclick={() => copy(`${invite.token}:code`, invite.token)}
-...
-onclick={() => copy(`${invite.token}:url`, invite.url)}
-```
-
-The `${token}:code` / `${token}:url` convention is an implicit contract between the `class:copied`
-check and the `copy()` call, restated 12 times across three layouts. A typo in one (`:codes`)
-silently breaks only that cell's flash with no error.
-
-#### Proposed solution
-
-Give the key a single constructor and let `copy` distinguish by an enum:
-
-```ts
-const copyKey = (token: string, what: 'code' | 'url') => `${token}:${what}`;
-```
-
-or, cleaner, fold the flash key into the `InviteActions` extraction so the string never appears in
-the template at all.
-
-#### Verification
-
-`grep -c ':code`' AdminConsole.svelte`drops to the single constructor.`tests/admin.spec.ts`
-copy-feedback assertions pass.
-
----
-
 ### [P3][error-handling] `applySnapshot` conflates transport status, JSON parsing, and four pieces of UI state mutation
 
 **File(s):** `web/src/routes/admin/native/+page.svelte:75-93` — pinned at SHA f934d43

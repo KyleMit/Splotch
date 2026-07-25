@@ -26,6 +26,8 @@
     kind: 'success' | 'error';
     text: string;
   }
+  export type CopyTarget = 'code' | 'url';
+  export const copyKey = (token: string, target: CopyTarget) => `${token}:${target}`;
 </script>
 
 <script lang="ts">
@@ -242,18 +244,18 @@
                   <button
                     type="button"
                     class="btn btn-ghost"
-                    class:copied={copied === `${invite.token}:code`}
-                    onclick={() => copy(`${invite.token}:code`, invite.token)}
+                    class:copied={copied === copyKey(invite.token, 'code')}
+                    onclick={() => copy(copyKey(invite.token, 'code'), invite.token)}
                   >
-                    {copied === `${invite.token}:code` ? 'Copied!' : 'Copy code'}
+                    {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy code'}
                   </button>
                   <button
                     type="button"
                     class="btn btn-ghost"
-                    class:copied={copied === `${invite.token}:url`}
-                    onclick={() => copy(`${invite.token}:url`, invite.url)}
+                    class:copied={copied === copyKey(invite.token, 'url')}
+                    onclick={() => copy(copyKey(invite.token, 'url'), invite.url)}
                   >
-                    {copied === `${invite.token}:url` ? 'Copied!' : 'Copy link'}
+                    {copied === copyKey(invite.token, 'url') ? 'Copied!' : 'Copy link'}
                   </button>
                   <button
                     type="button"
@@ -270,10 +272,10 @@
                   <button
                     type="button"
                     class="btn btn-ghost"
-                    class:copied={copied === `${invite.token}:code`}
-                    onclick={() => copy(`${invite.token}:code`, invite.token)}
+                    class:copied={copied === copyKey(invite.token, 'code')}
+                    onclick={() => copy(copyKey(invite.token, 'code'), invite.token)}
                   >
-                    {copied === `${invite.token}:code` ? 'Copied!' : 'Copy'}
+                    {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
                   </button>
                   <button
                     type="button"
