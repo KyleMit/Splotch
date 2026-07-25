@@ -23,6 +23,7 @@ import { hasCommand, sleep } from '../lib/utils.mjs';
 import {
   chdirRoot,
   countEntries,
+  DEFAULT_MAX_ISSUES,
   deferralReason,
   deleteFirstEntry,
   ensureWorkDirs,
@@ -46,7 +47,7 @@ chdirRoot();
 ensureWorkDirs();
 
 // ---- knobs ------------------------------------------------------------------
-const MAX_ISSUES = Number(process.env.MAX_ISSUES ?? 5); // canary default; raise once proven
+const MAX_ISSUES = Number(process.env.MAX_ISSUES ?? DEFAULT_MAX_ISSUES); // canary; raise once proven
 const PUSH_EVERY = Number(process.env.PUSH_EVERY ?? 10);
 const BRANCH = process.env.BRANCH ?? 'audit/burndown';
 const CHECK_CMD = process.env.CHECK_CMD ?? 'npm run check'; // type-check gate, every finding
@@ -272,14 +273,6 @@ function gateFailure(baseSha, specs) {
 // it. See "Resuming a crashed run" in the burn-down-audits skill.
 const RESUME = process.env.RESUME === '1' || process.env.RESUME === 'true';
 
-// Record how this run was launched, while the process that knows still exists.
-// Nothing else can recover it: overnight.mjs launches via `env VAR=… node …`, and
-// `env` execs node, so the overrides live in the environment and never reach argv
-// — scraping `ps` gets them only on macOS, and only via the incidental caffeinate
-// parent. This file is what .claude/hooks/precompact-burndown-snapshot.sh reads,
-// and it is the one fact a post-compaction session genuinely cannot re-derive.
-writeFileSync(join(WORK, 'launch-command'), `${launchCommand()}\n`);
-
 for (const bin of ['gh', 'claude']) {
   if (!hasCommand(bin)) halt(`missing dependency: ${bin}`);
 }
@@ -422,6 +415,23 @@ function pushBatch({ final = false } = {}) {
   }
   return true;
 }
+
+// Record how this run was launched, while the process that knows still exists.
+// Nothing else can recover it: overnight.mjs launches via `env VAR=… node …`, and
+// `env` execs node, so the overrides live in the environment and never reach argv
+// — scraping `ps` gets them only on macOS, and only via the incidental caffeinate
+// parent. This file is what .claude/hooks/precompact-burndown-snapshot.sh reads,
+// and it is the one fact a post-compaction session genuinely cannot re-derive.
+//
+// It is written HERE, below every halt() gate, and not up in preflight: halt()
+// exits without restoring the file, so a launch that dies on a missing binary, a
+// dirty tree, or an already-red check would otherwise overwrite the record of a
+// run that is still going — handing the operator a defaults-only command labelled
+// "every non-default override, verbatim". Only a run that actually starts records
+// itself. The pid goes in its own file so launch-command stays a pasteable line;
+// the snapshot hook cross-checks it against the driver pid it finds in `pgrep`.
+writeFileSync(join(WORK, 'launch-command'), `${launchCommand(process.env, MAX_ISSUES)}\n`);
+writeFileSync(join(WORK, 'launch-pid'), `${process.pid}\n`);
 
 logLine(`starting — target ${MAX_ISSUES} issues on ${BRANCH}`);
 
@@ -695,7 +705,7 @@ while (done < MAX_ISSUES) {
     const why = reviewUnavailable
       ? 'reviewer never returned a verdict'
       : gateRed && !implFailed
-        ? `gates never went green (${gateRed.detail})`
+        ? `gates red at the final round (${gateRed.detail})`
         : `${reason} after ${fixRounds} fix round${fixRounds === 1 ? '' : 's'}`;
     logLine(`  ${why} — rolling back to ${baseSha}`);
     git('reset', '-q', '--hard', baseSha);
@@ -739,6 +749,13 @@ while (done < MAX_ISSUES) {
 // pushes, so a red tail never escapes on exit either — held commits stay local
 // for the operator to inspect.
 if (sincePush > 0) pushBatch({ final: true });
+
+// Retire the compaction snapshot: nothing else deletes it, and its reader hook
+// would otherwise announce "a burndown was in progress" to every post-compaction
+// session on this machine forever. Only the compact-snapshot goes — launch-command
+// stays, since recovering a finished run's overrides is exactly what it is for.
+rmSync(join(WORK, 'compact-snapshot.md'), { force: true });
+
 logLine(
   `finished: ${done} fixed, ${dropped} dropped, ${deferred} deferred, ${countEntries()} remaining`
 );

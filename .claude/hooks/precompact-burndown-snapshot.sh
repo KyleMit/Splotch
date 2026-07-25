@@ -68,7 +68,11 @@ fi
 # the header silently rendered "unknown" on every single compaction.
 reason="unknown"
 if command -v jq >/dev/null 2>&1; then
+  # On EMPTY stdin jq emits nothing and exits 0, so the `|| echo unknown` never
+  # fires and reason ends up the empty string — rendering "(source: )". Only
+  # malformed-but-nonempty input takes the fallback. Re-default explicitly.
   reason="$(cat 2>/dev/null | jq -r '.source // "unknown"' 2>/dev/null || echo unknown)"
+  reason="${reason:-unknown}"
 fi
 
 {
@@ -109,9 +113,18 @@ fi
     echo '```bash'
     cat "$LAUNCH_FILE" 2>/dev/null
     echo '```'
+    # The driver stamps its pid beside the command, so "is this record the run I
+    # can see?" is answerable rather than assumed. They disagree when a second
+    # driver started and exited after the one still running recorded itself.
+    recorded_pid="$(head -1 "$WORK/launch-pid" 2>/dev/null)"
     if [ -z "$driver_pid" ]; then
       echo
       echo 'That is the *last* run launched on this machine, not necessarily one still going.'
+    elif [ -n "$recorded_pid" ] && [ "$recorded_pid" != "$driver_pid" ]; then
+      echo
+      echo "WARNING: this command was recorded by pid $recorded_pid, but the running driver is pid"
+      echo "$driver_pid — different runs, so the overrides above are NOT the live run's. Treat them"
+      echo 'as a starting point, not a record.'
     fi
   else
     echo 'No launch record — this run predates `.audit-work/launch-command`, or was started by'
