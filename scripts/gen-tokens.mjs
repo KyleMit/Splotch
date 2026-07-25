@@ -23,7 +23,6 @@ function declarations(tokens, indent) {
 }
 
 function render() {
-  const darkBody = declarations(themes.dark, '  ');
   return `/* GENERATED FILE — do not edit.
    Source: web/src/lib/design/tokens.ts (ADR-0071)
    Regenerate: npm run gen:tokens · CI drift gate: npm run gen:tokens:check
@@ -48,7 +47,7 @@ ${declarations(themes.light, '  ')}
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-${darkBody}
+${declarations(themes.dark, '  ')}
 }
 
 @media (prefers-color-scheme: dark) {

@@ -7,48 +7,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P3][complexity] `gen-tokens.mjs` emits the dark block via two different call styles
-
-**File(s):** `scripts/gen-tokens.mjs:25-59` — pinned at SHA f934d43
-
-#### Problem
-
-```js
-function render() {
-  const darkBody = declarations(themes.dark, '  '); // computed…
-  return `...
-:root[data-theme='dark'] {
-  color-scheme: dark;
-${darkBody}                                            // …used here
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-${declarations(themes.dark, '    ')}                   // …recomputed inline here
-  }
-}`;
-}
-```
-
-The dark declarations are produced two ways in one function — a precomputed `darkBody` for one
-selector, an inline `declarations(themes.dark, ...)` for the other, differing only in indent string.
-It reads as if the two blocks are unrelated when they're the same data at different nesting. The
-`'  '`/`'    '` indentation strings are also magic literals scattered through the template.
-
-#### Proposed solution
-
-Iterate over selector descriptors:
-`const themedBlocks = [{sel: ":root[data-theme='dark']", tokens: themes.dark, indent: '  '}, {sel: "...", tokens: themes.dark, indent: '    '}]`
-and `.map` them, or factor a `block(selector, tokens, indent)` helper and call it uniformly for all
-three token blocks. Drop `darkBody`. One code path renders every declaration block.
-
-#### Verification
-
-`npm run gen:tokens` produces a byte-identical `tokens.css` (compare before/after);
-`npm run gen:tokens:check` passes.
-
----
-
 ### [P3][architecture] Shared component chrome in `app.css` (`.corner-button`, `.modal-close-btn`) duplicates the primitive layer with raw values
 
 **File(s):** `web/src/app.css:124-245` — pinned at SHA f934d43
