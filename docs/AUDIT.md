@@ -5,8 +5,6 @@
 > then deletes this file. `/fix-audits` burns down those issues. Never treat this file as a
 > long-lived backlog.
 
-## Source: Code audit — Design system + icons
-
 ## Source: Code audit — Admin console + token backend
 
 ### [P3][error-handling] `applySnapshot` conflates transport status, JSON parsing, and four pieces of UI state mutation
