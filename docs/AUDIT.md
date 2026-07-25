@@ -9,34 +9,6 @@
 
 ## Source: Code audit — Design system + icons
 
-### [P5][discoverability] SplotchyIcon renders `<img src="/splotchy.svg">`, bypassing the Icon system
-
-**File(s):** `web/src/lib/components/SplotchyIcon.svelte:9-11` — pinned at SHA f934d43
-
-#### Problem
-
-Every other glyph in scope goes through `Icon.svelte` (inline `{@html}` SVG, `data-icon`,
-type-checked `name` union, `fill`-based theming). The mascot instead points an `<img>` at a static
-`/splotchy.svg`, so it can't be tinted via the icon-ink rules, isn't part of the `name` union, and
-won't appear when someone greps the icon set. It carries `class="… icon-color"` and
-`data-icon="splotchy"` to *look* like an Icon output without being one. A contributor searching for
-how icons work will miss it.
-
-#### Proposed solution
-
-If the mascot is intentionally full-color raster/SVG-as-image, document that in the file (a one-line
-WHY comment) and/or register it in the icon pipeline as an `icon-color` entry so it's discoverable
-through the same channel. If it can be inlined, route it through `Icon`/`gen:icons`.
-
-#### Verification
-
-A grep for the mascot from the icon catalog finds it; theme/tinting behavior verified in light and
-dark.
-
----
-
----
-
 ### [P5][readability] Slider's snap-band width is an unexplained-magnitude magic fraction
 
 **File(s):** `web/src/lib/components/Slider.svelte:42` — pinned at SHA f934d43
