@@ -591,6 +591,37 @@ Two general lessons, both of which generalise past this bug:
   like a step the implementer skipped. If more post-approval driver behaviour is added, the reviewer
   prompt has to be told about it in the same change, or it will reject on the difference.
 
+### Smaller frictions from the same run (2026-07-25)
+
+Three things that cost time without breaking anything, all fixed in the same pass:
+
+* **The documented launch order was impossible.** Step 1 said "preflight, then open the draft PR
+  (head = `BRANCH`)" — but a freshly-forked branch is byte-identical to `main`, and GitHub refuses
+  to open a PR with no commits between them. Every run hits this and has to invent a way out. The
+  resolution reorders rather than adds: write and commit the durable checkpoint *first* (it has to
+  exist anyway, and the skill already demanded it), which gives the PR something to open against.
+  The alternative — open the PR after the canary's first push — leaves the canary's commits with no
+  CI and nowhere to comment.
+* **`capture` re-armed already-posted comments.** It deduped against the store alone, and the store
+  is empty exactly when the drain succeeded — so the natural closeout instinct ("did I miss any?")
+  silently re-added all 9 posted records. Nothing distinguishes them from real work owed, so the
+  next step would have been posting 9 duplicates. `done` now appends to
+  `.audit-work/posted-comments.log` and `capture` skips those, reporting `skipped N already posted`.
+  Kept in `.audit-work/` rather than beside a committed `COMMENT_STORE`: a dead container loses it
+  and capture then re-offers, which is the at-least-once direction the drain loop already chose.
+* **`BRANCH` is not the branch a cloud session is told to use.** It defaults to `audit/burndown`
+  while a CCR session is usually assigned `claude/<topic>`, and the driver takes the default
+  silently. The override then has to ride on every relaunch, which is a checkpoint concern, not a
+  shell concern. Named in step 1 now.
+
+The timing table was also re-baselined from this run's ten findings (it had carried a "measured
+before the `EFFORT_*` knobs" warning). The finding worth keeping: **fix rounds dominate wall-clock,
+and priority sets how many you get** — a finding that clears review first time lands in about a
+third the elapsed time of one that doesn't, at the same priority. A perfectly healthy P2 with two
+fix rounds took 26 minutes, past the table's own `> 25 min` investigate threshold, which is why the
+priority caveat matters more than the thresholds do. Ten findings is a thin sample and the note says
+so.
+
 ### The cloud cutover (2026-07-25)
 
 The third live run was the first in a Claude Code cloud session rather than on the author's Mac, and
