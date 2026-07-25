@@ -8,6 +8,7 @@ import {
   onDurableRestore,
 } from '../storage';
 import { applyTheme, isThemePreference, THEME_DEFAULT, type ThemePreference } from '../theme';
+import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 
 const SOUND_KEY = 'splotch-sound-enabled';
 const SOUND_VOLUME_KEY = 'splotch-sound-volume';
@@ -22,7 +23,6 @@ const AI_IMAGE_KEY = 'splotch-ai-image-enabled';
 const AI_CUSTOMIZATION_KEY = 'splotch-ai-customization-enabled';
 const AUTO_SAVE_AI_KEY = 'splotch-auto-save-ai';
 const AI_ACCESS_TOKEN_KEY = 'splotch-ai-access-token';
-const AI_ACCESS_TOKEN_PARAM = 'ai_access_token';
 const ADVANCED_CONTROLS_KEY = 'splotch-advanced-controls';
 const DRAWER_OPEN_KEY = 'splotch-drawer-open';
 const ADMIN_LINK_VISIBLE_KEY = 'splotch-admin-link-visible';

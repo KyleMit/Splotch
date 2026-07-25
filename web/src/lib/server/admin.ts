@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { rateLimit } from './rateLimit';
+import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 
 // Shared admin-auth core used by both front doors into token management:
 // the server-rendered /admin console (cookie session, form actions) and the
@@ -78,6 +79,6 @@ export function verifySessionToken(token: string | undefined) {
 export function buildInvites(tokens: string[], origin: string) {
   return tokens.map((token) => ({
     token,
-    url: `${origin}/?ai_access_token=${encodeURIComponent(token)}`,
+    url: `${origin}/?${AI_ACCESS_TOKEN_PARAM}=${encodeURIComponent(token)}`,
   }));
 }

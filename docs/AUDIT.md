@@ -9,39 +9,6 @@
 
 ## Source: Code audit — Admin console + token backend
 
-### [P3][naming] `ai_access_token` invite param is hardcoded despite an existing named constant
-
-**File(s):** `web/src/lib/server/admin.ts:48-53` (`buildInvites`) vs
-`web/src/lib/state/settings.svelte.ts:27` (`AI_ACCESS_TOKEN_PARAM`) — pinned at SHA f934d43
-
-#### Problem
-
-`buildInvites` embeds the query-parameter name as a literal:
-
-```ts
-url: `${origin}/?ai_access_token=${encodeURIComponent(token)}`,
-```
-
-but the very name the app *reads* that param under is already a named constant elsewhere
-(`settings.svelte.ts:27`, `AI_ACCESS_TOKEN_PARAM = 'ai_access_token'`). The producer and consumer of
-the same URL contract use different representations of the same string, so a rename on the consumer
-side wouldn't be caught by the compiler and every issued invite link would silently stop working.
-Grepping `ai_access_token` returns a scatter of literals across server, client, tests, and docs with
-no single owner.
-
-#### Proposed solution
-
-Promote the param name to a shared, client-and-server-safe module (e.g. `web/src/lib/inviteLink.ts`
-or an existing shared constants file — not `settings.svelte.ts`, which is client state), export
-`AI_ACCESS_TOKEN_PARAM`, and import it in both `buildInvites` and `settings.svelte.ts`.
-
-#### Verification
-
-`grep -rn "'ai_access_token'" web/src` shows a single definition. `admin.test.ts` `buildInvites`
-assertion still passes; `tests/flows.spec.ts` (which uses the param) still passes.
-
----
-
 ### [P3][maintainability] HMAC label and algorithm are inline literals, re-hardcoded in the test
 
 **File(s):** `web/src/lib/server/admin.ts:20-24` (`sessionToken`), mirrored in
