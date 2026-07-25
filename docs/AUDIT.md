@@ -9,39 +9,6 @@
 
 ## Source: Code audit — Parent Center / settings
 
-### [P5][type-safety] `buttonChips` uses an inline structural type with stringly-typed ids
-
-**File(s):** `web/src/lib/components/parent/ControlsSection.svelte:44-86` — pinned at SHA f934d43
-
-#### Problem
-
-The `buttonChips` array is declared with a large inline object type
-(`{ id: string; label: string; icon: CommonIconName; checked: () => boolean; toggle: (next: boolean) => void }[]`).
-The `id: string` is really a DOM/test id (`'strokeWidthToggle'`, etc.) with no constraint, and the
-closure-per-chip `checked: () => boolean` pattern is a slightly unusual reactivity workaround worth
-a named type so the intent is discoverable and reusable (the ControlsSection chip grid and any
-future settings chip grid share the shape).
-
-#### Proposed solution
-
-Hoist a named
-`interface SettingChip { id: string; label: string; icon: CommonIconName; checked: () => boolean; toggle: (next: boolean) => void }`
-(near `sections.ts` or a local types file) and annotate the array. Improves grepability and makes a
-future shared chip-grid extraction straightforward.
-
-#### Verification
-
-`npm run check` clean; the type is referenced by name and the chip grid still toggles each Actions
-Panel button.
-
----
-
-That's 25 findings. Notable cross-cutting theme: the `*Section.svelte` files repeatedly hand-roll
-the same three UI idioms (segmented control, status message, disclosure `<details>`) and the same
-spacing/motion literals — the highest-leverage fixes (P1–P2) are extracting those into
-`lib/components/design/` primitives per the design skill's "third duplicate" rule, and splitting the
-oversized `ParentCenter.svelte` (771 lines) and `AiKeyManager.svelte` (488 lines).
-
 ## Source: Code audit — Core UI controls
 
 ### [P1][duplication] BrushMenu and StrokeWidthMenu duplicate ~90% of their markup and style blocks — extract a shared flyout primitive

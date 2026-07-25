@@ -42,13 +42,15 @@
   // The per-button on/off list is a 2-column chip grid: tap a chip to show or
   // hide that Actions Panel button. Each chip reads live `settings` so its
   // on-state stays reactive.
-  const buttonChips: {
+  interface SettingChip {
     id: string;
     label: string;
     icon: CommonIconName;
     checked: () => boolean;
     toggle: (next: boolean) => void;
-  }[] = [
+  }
+
+  const buttonChips: SettingChip[] = [
     {
       id: 'strokeWidthToggle',
       label: 'Stroke Width',
