@@ -20,33 +20,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P4][error-handling] IO error responsibility is split inconsistently within `folderSave` — `loadHandle` swallows, `storeHandle` throws
-
-**File(s):** `web/src/lib/drawing/folderSave.ts:44-65` (`loadHandle` vs `storeHandle`) — pinned at
-SHA f934d43
-
-#### Problem
-
-`loadHandle` wraps its `db.get` in try/catch and degrades to "no folder" internally (lines 51-57),
-but `storeHandle` (62-65) has no internal handling — its caller `chooseSaveFolder` wraps it
-(94-100), while `clearSaveFolder` wraps its own inline `db.delete` (109-114). So three IndexedDB
-operations in one module use three different error-ownership conventions (callee-swallows,
-caller-wraps, caller-wraps-inline). A reader can't infer from a call whether it must guard the IO.
-
-#### Proposed solution
-
-Pick one convention. Simplest: make each IO helper own its degrade policy (all return a success
-boolean or degrade internally, like `loadHandle` does), so callers don't each re-implement the
-try/catch. The shared `idbKvStore` helper (see that finding) is the natural place to standardize
-this.
-
-#### Verification
-
-`folderSave.test.ts` "keeps the folder for the session when persisting it fails" (115-125) and
-"degrades to no-folder when IndexedDB is unavailable" (148-154) pass unchanged.
-
----
-
 ### [P5][duplication] The multi-line `__IS_CAPACITOR__` tree-shaking explainer is copy-pasted verbatim across the storage modules
 
 **File(s):** `web/src/lib/storage.ts:73-81, 83-87` and `web/src/lib/secureStorage.ts:32-42, 118-120`
