@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { rateLimit } from '$lib/server/rateLimit';
 import { reportBucket } from '$lib/server/rateLimitKeys';
+import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import { readJsonBody, throttled } from '$lib/server/http';
 import { createIssue, escapeIssueMarkdown, isReportingConfigured } from '$lib/server/github';
 import { describeDeviceInfo, sanitizeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
@@ -54,10 +55,10 @@ function bodyFor(kind: Kind, message: string, device: DeviceInfo | null): string
  * write; the limit is deliberately tighter than the read-only oracles.
  */
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-  const { limited, retryAfter } = rateLimit(reportBucket(getClientAddress()), {
-    limit: 5,
-    windowMs: 60_000,
-  });
+  const { limited, retryAfter } = rateLimit(
+    reportBucket(getClientAddress()),
+    rateLimitPolicy.report
+  );
   if (limited) return throttled(retryAfter);
 
   const body = await readJsonBody(request);

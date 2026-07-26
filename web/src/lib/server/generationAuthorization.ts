@@ -7,11 +7,8 @@ import {
   generateImageByokBucket,
   verifyAccessCodeBucket,
 } from './rateLimitKeys';
+import { rateLimitPolicy } from './rateLimitPolicy';
 import { isAllowedToken } from './tokens';
-
-const GENERATE_LIMIT = 15;
-const GENERATE_WINDOW_MS = 60_000;
-const BYOK_LIMIT = 30;
 
 export type GenerationAuthorization =
   | { usingByok: true; effectiveKey: string; managedToken: null }
@@ -30,18 +27,15 @@ export async function authorizeGenerationRequest(input: {
   // per-IP budget so valid families behind one NAT never consume it.
   if (!usingByok) {
     const guessKey = verifyAccessCodeBucket(input.clientAddress);
-    const guess = peekRateLimit(guessKey);
+    const guess = peekRateLimit(guessKey, rateLimitPolicy.verifyAccessCode);
     if (guess.limited) return throttled(guess.retryAfter);
     if (typeof input.token !== 'string' || !(await isAllowedToken(input.token))) {
-      rateLimit(guessKey);
+      rateLimit(guessKey, rateLimitPolicy.verifyAccessCode);
       throw error(403, 'Invalid access token');
     }
 
     // Valid managed traffic is keyed per token to contain a leaked credential.
-    const generation = rateLimit(generateImageBucket(input.token), {
-      limit: GENERATE_LIMIT,
-      windowMs: GENERATE_WINDOW_MS,
-    });
+    const generation = rateLimit(generateImageBucket(input.token), rateLimitPolicy.generateToken);
     if (generation.limited) return throttled(generation.retryAfter);
     return {
       usingByok: false,
@@ -52,10 +46,10 @@ export async function authorizeGenerationRequest(input: {
 
   // BYOK is keyed per IP because the provider result is still a key-validity
   // oracle, even though successful calls spend the parent's own quota.
-  const generation = rateLimit(generateImageByokBucket(input.clientAddress), {
-    limit: BYOK_LIMIT,
-    windowMs: GENERATE_WINDOW_MS,
-  });
+  const generation = rateLimit(
+    generateImageByokBucket(input.clientAddress),
+    rateLimitPolicy.generateByok
+  );
   if (generation.limited) return throttled(generation.retryAfter);
   return { usingByok: true, effectiveKey: userKey, managedToken: null };
 }

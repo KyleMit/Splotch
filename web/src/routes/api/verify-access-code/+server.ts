@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import { isAllowedToken } from '$lib/server/tokens';
 import { peekRateLimit, rateLimit } from '$lib/server/rateLimit';
 import { verifyAccessCodeBucket } from '$lib/server/rateLimitKeys';
+import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import { readJsonBody, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
@@ -19,7 +20,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   // blind 429 with no oracle answer — then charge the bucket only on a failed
   // guess, so valid families behind one NAT never spend it.
   const key = verifyAccessCodeBucket(getClientAddress());
-  const guess = peekRateLimit(key);
+  const guess = peekRateLimit(key, rateLimitPolicy.verifyAccessCode);
   if (guess.limited) return throttled(guess.retryAfter);
 
   const body = await readJsonBody(request);
@@ -27,7 +28,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   if (!code) return json({ ok: false, error: 'No access code provided' });
 
   if (!(await isAllowedToken(code))) {
-    rateLimit(key);
+    rateLimit(key, rateLimitPolicy.verifyAccessCode);
     return json({ ok: false, error: 'That access code was not recognized.' });
   }
   return json({ ok: true, accessCode: code });
