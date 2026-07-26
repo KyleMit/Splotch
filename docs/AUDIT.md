@@ -26,32 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P3][type-safety] `Book.id`, `ColoringPage.id`, and `page()`'s `book`/`id`/`name` are bare `string`
-
-**File(s):** `web/src/lib/state/books.ts:51-74,92-97` — pinned at SHA f934d43
-
-#### Problem
-
-`id: string` on both `Book` and `ColoringPage`, and the three positional strings on
-`page(book, id, name, …)`, are an open type over a closed, hand-maintained set.
-`BOOKS.find((b) => b.id === 'space')` (used in tests and `ColoringBook`) has no compile-time
-guarantee `'space'` exists, and `setOverlayPage`/lookup code can't be narrowed. Combined with the P1
-duplication of book id, nothing prevents a typo'd id from type-checking.
-
-#### Proposed solution
-
-At minimum brand the ids (`type BookId = string & { readonly __book: unique symbol }`) or, better,
-derive a `BookId` union from the catalog (`type BookId = typeof BOOKS[number]['id']`) and type
-lookups against it. If a full union is impractical because the catalog is data-first, a runtime
-`bookById(id): Book | undefined` accessor at least funnels lookups through one greppable function.
-
-#### Verification
-
-`npm run check`; a deliberately misspelled `BOOKS.find(b => b.id === 'spce')` should fail to
-type-check (or the accessor returns `undefined` at a single guarded call site).
-
----
-
 ### [P3][duplication] Four near-identical page accessors differ only by field and null-handling
 
 **File(s):** `web/src/lib/state/books.ts:244-261` — pinned at SHA f934d43
