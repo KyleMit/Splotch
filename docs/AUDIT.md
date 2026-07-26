@@ -7,35 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P4][naming] `EFFECTIVE_DATE` is displayed under the label "Last updated" — the constant name and the UI text describe different concepts
-
-**File(s):** `web/src/routes/privacy/+page.svelte:9, 27` — pinned at SHA f934d43
-
-#### Problem
-
-```js
-const EFFECTIVE_DATE = 'July 16, 2026';
-...
-<p class="updated">Last updated: {EFFECTIVE_DATE}</p>
-```
-
-"Effective date" and "last updated" are distinct legal concepts; naming the constant one thing and
-labeling it the other invites confusion about which date this is meant to be, and the bump
-instruction in the header comment says "Bump EFFECTIVE_DATE whenever the wording changes" — i.e.
-it's really a last-updated date.
-
-#### Proposed solution
-
-Rename the constant to `LAST_UPDATED` (matching the label and the bump semantics), or change the
-label to "Effective date" — pick the one that reflects the intended legal meaning and make name +
-label agree.
-
-#### Verification
-
-Name and rendered label match; header comment references the same term.
-
----
-
 ### [P4][complexity] `ai-timer` hotkey bindings are duplicated between the `onKeyDown` switch and the on-screen hint text
 
 **File(s):** `web/src/routes/dev/ai-timer/+page.svelte:72-81, 129-134` — pinned at SHA f934d43

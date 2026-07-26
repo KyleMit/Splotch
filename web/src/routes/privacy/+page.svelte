@@ -4,9 +4,9 @@
   // deliberately types into the optional feedback form (see "Sending feedback"),
   // and this page exists mostly to *prove* that. It's required by the app stores
   // (see MOBILE.md). Keep the tone simple enough for a parent to skim in 30
-  // seconds. Bump EFFECTIVE_DATE whenever the wording changes.
+  // seconds. Bump LAST_UPDATED whenever the wording changes.
 
-  const EFFECTIVE_DATE = 'July 16, 2026';
+  const LAST_UPDATED = 'July 16, 2026';
   // Splotch has no email; questions/concerns go through GitHub issues.
   const CONTACT_URL = 'https://github.com/KyleMit/Splotch/issues/new/choose';
 </script>
@@ -24,7 +24,7 @@
     <a class="back" href="/">← Back to drawing</a>
 
     <h1>Privacy Policy <span aria-hidden="true">🎨</span></h1>
-    <p class="updated">Last updated: {EFFECTIVE_DATE}</p>
+    <p class="updated">Last updated: {LAST_UPDATED}</p>
 
     <p class="intro">
       Splotch is a drawing app made for little kids. We built it to be safe and simple, so the short
