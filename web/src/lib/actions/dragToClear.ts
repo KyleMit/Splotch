@@ -122,8 +122,8 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
     const rect = node.getBoundingClientRect();
     const center = {
-      x: (rect.left + rect.right) / 2,
-      y: (rect.top + rect.bottom) / 2,
+      x: rect.x + rect.width / 2,
+      y: rect.y + rect.height / 2,
     };
 
     o.containerEl.classList.add('dragging-active');

@@ -9,35 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P4][naming] `dragToClear` computes the button center by hand instead of using rect width/height
-
-**File(s):** `web/src/lib/actions/dragToClear.ts:89-93` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-const rect = node.getBoundingClientRect();
-homeButtonCenter = {
-  x: (rect.left + rect.right) / 2,
-  y: (rect.top + rect.bottom) / 2,
-};
-```
-
-The `(left+right)/2` / `(top+bottom)/2` form obscures that this is simply the rect center;
-`rect.x + rect.width/2` reads as "center" at a glance and matches how `getAcceptRadius` reasons
-about width/height.
-
-#### Proposed solution
-
-Use `{ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }`, or a `rectCenter(rect)` helper if
-reused.
-
-#### Verification
-
-Numerically identical; `npm run test:unit -- dragToClear`.
-
----
-
 ### [P4][architecture] `launchGuard` holds all dead zones in module-global mutable state
 
 **File(s):** `web/src/lib/actions/launchGuard.ts:32` (`let zones: DeadZone[] = []`) — pinned at SHA
