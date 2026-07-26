@@ -32,32 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P3][architecture] `golden-catalog.mjs` bundles a composite eye scorer with the golden-diff registry and has no header
-
-**File(s):** `tools/asset-gen/lib/golden-catalog.mjs:1-16` (`scoreGoldenNightEyes`) vs `18-80`
-(`GOLDEN_METRICS`/`GOLDEN_VERDICTS`/`diffGoldenPage`) — pinned at SHA f934d43
-
-#### Problem
-
-This file holds two unrelated responsibilities: (a) `scoreGoldenNightEyes`, which composes
-`judgeNightEyes` + `scoreCompositeEyes` into a night-eye verdict, and (b) the golden regression
-comparison engine (metric noise/direction table, verdict list, `diffGoldenPage`). It is also the
-only lib module with no top-of-file header comment explaining what it is — every sibling opens with
-a paragraph. A reader grepping for "how the golden diff decides regression vs info" has no signpost.
-
-#### Proposed solution
-
-Split into `lib/golden-diff.mjs` (metrics/verdicts/`diffGoldenPage`) and `lib/golden-eyes.mjs`
-(`scoreGoldenNightEyes`), or at minimum add a header comment. `audit-golden.mjs` imports both
-symbols already, so the split is a two-line import change.
-
-#### Verification
-
-`tests/golden-catalog.test.mjs` re-pointed at the new module(s); `npm run gen:coloring-golden:diff`
-output unchanged.
-
----
-
 ### [P3][maintainability] "Source dark = a line" (`110`) is a magic number copied across four scorers
 
 **File(s):** `tools/asset-gen/lib/outline-match.mjs:23` (`THRESHOLD`), `night-scores.mjs:21`
