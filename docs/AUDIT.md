@@ -20,30 +20,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P4][naming] `aria-label={shown === hex ? label : 'White'}` hardcodes the only themed label
-
-**File(s):** `web/src/lib/components/ColorPalette.svelte:133` — pinned at SHA f934d43
-
-#### Problem
-
-The accessible label falls back to the literal `'White'` whenever the shown color differs from the
-swatch identity — which today only happens for the Black→white dark-mode flip. The label is derived
-from an implicit "the only themed swatch is black, and it becomes white" assumption. If another
-swatch ever gets a themed variant (`themedSwatchColor`), the label silently says "White" for it.
-
-#### Proposed solution
-
-Drive the label from data: give the themed swatch an explicit alt-label (e.g. extend `PaletteColor`
-with `darkLabel`, or compute from `WHITE_INK`). At minimum comment the coupling and reference
-`WHITE_INK` instead of the string `'White'`.
-
-#### Verification
-
-Dark-mode a11y snapshot still labels the black swatch "White"; a second themed swatch would get a
-correct label.
-
----
-
 ### [P4][architecture] `$effect` that syncs `activeColor` from theme is derived state written imperatively
 
 **File(s):** `web/src/lib/components/ColorPalette.svelte:35-39` — pinned at SHA f934d43
