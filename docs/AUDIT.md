@@ -22,53 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P2][duplication] Extract the oversized-body guard shared by generate-image and csp-report
-
-**File(s):** `web/src/routes/api/generate-image/+server.ts:83-92` and
-`web/src/routes/api/csp-report/+server.ts:114-122` — pinned at SHA f934d43
-
-#### Problem
-
-Both endpoints implement the same two-stage cap — reject on declared `Content-Length` first, then
-re-check the actual byte length after reading — with the same subtle reasoning (a code-unit length
-check would under-count multibyte payloads):
-
-```ts
-// generate-image
-const declaredLength = Number(request.headers.get('content-length'));
-if (Number.isFinite(declaredLength) && declaredLength > MAX_IMAGE_BYTES) throw error(413, ...);
-const bytes = Buffer.from(await request.arrayBuffer());
-if (bytes.byteLength > MAX_IMAGE_BYTES) throw error(413, ...);
-// csp-report
-const declaredLength = Number(request.headers.get('content-length'));
-if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) return new Response(null,{status:413});
-const raw = await request.text();
-if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) return new Response(null,{status:413});
-```
-
-Two copies of a security-relevant limit; a fix to one (e.g. handling chunked encoding) won't reach
-the other.
-
-#### Proposed solution
-
-Add helpers to `http.ts`:
-
-```ts
-export function declaredLengthExceeds(request: Request, maxBytes: number): boolean;
-export async function readCappedBuffer(request: Request, maxBytes: number): Promise<Buffer>; // throws error(413)
-export async function readCappedText(request: Request, maxBytes: number): Promise<string>; // throws error(413)
-```
-
-Route `generate-image`'s raw branch through `readCappedBuffer` and csp-report through
-`readCappedText`.
-
-#### Verification
-
-Unit test each helper with declared-vs-actual mismatch and a multibyte payload.
-`npm run test:api:smoke` exercises csp-report's cap.
-
----
-
 ### [P2][complexity] Split the long generate-image POST handler into named stages
 
 **File(s):** `web/src/routes/api/generate-image/+server.ts:98-152` (`POST`) — pinned at SHA f934d43
