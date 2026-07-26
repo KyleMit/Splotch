@@ -1402,37 +1402,3 @@ references `swatchEls` (`rg swatchEls`).
 #### Why it was deferred
 
 verifier unavailable
-
-### [P3][maintainability] The `4.5px` selection-ring width is a magic number repeated across JS and CSS
-
-**File(s):** `web/src/lib/components/ColorPalette.svelte:68, 72, 208, 211` — pinned at SHA f934d43
-
-#### Problem
-
-The ring width `4.5px` (and the coupled `-4.5px` inset) appears in `ringShadow`,
-`gradientRingShadow`, `.color-swatch::before { inset: -4.5px; border: 4.5px … }`. These must move
-together (the expand animation must land exactly on the box-shadow ring) but are four independent
-literals. Same for the `0.5px` seam.
-
-#### Proposed solution
-
-Introduce `--selection-ring-width: 4.5px` (and `--selection-ring-seam: 0.5px`) as custom properties
-on `.color-palette`; reference them in the CSS `::before` and interpolate into the JS shadow strings
-via `calc`/`var` where possible, or read from a single JS constant `SELECTION_RING_WIDTH_PX` used by
-both builders.
-
-#### Verification
-
-Confirm the animated ring still lands flush on the resting ring; grep shows one definition.
-
----
-
-#### Why it was deferred
-
-implementation failed
-
-#### What was tried
-
-Implemented the requested component-local selection-ring properties, but the required E2E gate could
-not start because the sandbox denied binding localhost:4173 (`EPERM` on both IPv6 and IPv4). Per
-instruction, I did not commit.
