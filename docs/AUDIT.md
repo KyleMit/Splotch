@@ -22,30 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P4][consistency] `report` builds Retry-After manually-shaped via `throttled` but other size/format caps use raw responses
-
-**File(s):** `web/src/routes/api/report/+server.ts:56-60,73,89,104` — pinned at SHA f934d43
-
-#### Problem
-
-Within `report`, the 429 uses the shared `throttled()` (good), but the 400/502/503 hand-build
-`json({ ok:false, error }, { status })` inline three times with slightly different messages. It's
-the same `{ ok:false, error }`-with-status pattern repeated; combined with the shape-inconsistency
-finding, `report` would be the cleanest place to demonstrate a single `fail(status, error)` helper
-(three call sites collapse).
-
-#### Proposed solution
-
-After introducing `fail()` (see the P1 shape finding), rewrite report's three inline
-`json({ ok:false, error }, { status })` calls as `fail(400, '…')`, `fail(503, '…')`,
-`fail(502, '…')`. Pure readability/consistency once the helper exists.
-
-#### Verification
-
-`npm run test:api:smoke` covers report's validation + unconfigured path.
-
----
-
 ### [P5][readability] `requireEffectiveGenerationKey` reads as a getter but throws
 
 **File(s):** `web/src/lib/server/generationAuthorization.ts:58-63` — pinned at SHA f934d43
