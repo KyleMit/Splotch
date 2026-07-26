@@ -6,6 +6,7 @@ import { aiProvider } from '$lib/server/ai/provider';
 import {
   authorizeGenerationRequest,
   requireEffectiveGenerationKey,
+  type GenerationAuthorization,
 } from '$lib/server/generationAuthorization';
 import type { RequestHandler } from './$types';
 
@@ -95,6 +96,29 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
   };
 }
 
+function recordGenerationUsage(
+  authorization: GenerationAuthorization,
+  style: string | null,
+  finalPrompt: string,
+  platform?: App.Platform,
+): void {
+  // Only the managed tokens are worth a per-token tally (to spot one going
+  // rogue). BYOK requests run on the parent's own quota, so just log them.
+  if (authorization.usingByok) {
+    console.log(`[ai-usage] byok style=${style || 'none'} at=${new Date().toISOString()}`);
+  } else {
+    // The synchronous audit log inside recordTokenUsage runs immediately; only
+    // the Blobs write is async, and we don't make the image wait on it. waitUntil
+    // keeps the function alive long enough to finish on Netlify; without it
+    // (local dev) it's a fire-and-forget whose errors are caught internally.
+    const usage = recordTokenUsage(authorization.managedToken, {
+      style: typeof style === 'string' ? style : null,
+      prompt: finalPrompt,
+    });
+    platform?.context?.waitUntil?.(usage);
+  }
+}
+
 export const POST: RequestHandler = async ({ request, url, platform, getClientAddress }) => {
   const source = await readGenerationRequest(request, url);
 
@@ -116,21 +140,7 @@ export const POST: RequestHandler = async ({ request, url, platform, getClientAd
 
   const finalPrompt = buildPromptForStyle(style, STYLE_SUFFIXES);
 
-  // Only the managed tokens are worth a per-token tally (to spot one going
-  // rogue). BYOK requests run on the parent's own quota, so just log them.
-  if (authorization.usingByok) {
-    console.log(`[ai-usage] byok style=${style || 'none'} at=${new Date().toISOString()}`);
-  } else {
-    // The synchronous audit log inside recordTokenUsage runs immediately; only
-    // the Blobs write is async, and we don't make the image wait on it. waitUntil
-    // keeps the function alive long enough to finish on Netlify; without it
-    // (local dev) it's a fire-and-forget whose errors are caught internally.
-    const usage = recordTokenUsage(authorization.managedToken, {
-      style: typeof style === 'string' ? style : null,
-      prompt: finalPrompt,
-    });
-    platform?.context?.waitUntil?.(usage);
-  }
+  recordGenerationUsage(authorization, style, finalPrompt, platform);
 
   const inputBase64 = inputBytes.toString('base64');
 
