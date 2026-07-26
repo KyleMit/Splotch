@@ -26,42 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P2][complexity] `bookAssetPaths` inlines four labeled `flatMap` blocks that read as named sub-lists
-
-**File(s):** `web/src/lib/state/books.ts:288-323` (`bookAssetPaths`) — pinned at SHA f934d43
-
-#### Problem
-
-The function is one ~35-line expression whose four segments (`lineArt`, `lightFills`, `nightFills`,
-`chalkOutlines`) each need a comment to explain what they are, and two of them repeat the same
-inline orientation loop with a cast:
-
-```ts
-const nightFills = book.pages.flatMap((page) =>
-  (['portrait', 'landscape'] as BookOrientation[])
-    .map((o) => page.nightImages[o])
-    .filter((p): p is string => !!p));
-const chalkOutlines = book.pages.flatMap((page) =>
-  (['portrait', 'landscape'] as BookOrientation[])   // same block, chalkImages
-    ...
-```
-
-The comments are doing the naming that extracted functions would do for free.
-
-#### Proposed solution
-
-Extract each segment to a small named function — `lineArtPaths(book)`, `lightFillPaths(book)`,
-`nightFillPaths(book)`, `chalkOutlinePaths(book)` (the last two share
-`presentVariantPaths(book, 'night'|'chalk')`) — and have `bookAssetPaths` compose them plus the
-thumbnails. `bookAssetPaths` becomes a short assembly of self-describing calls.
-
-#### Verification
-
-`bookAssetPaths` tests in both test files (exact set membership + thumb counts,
-`books.test.ts:59-108`) stay green.
-
----
-
 ### [P2][architecture] The `armHoverOnMouseMove` gesture action is defined inline instead of in `lib/actions/`
 
 **File(s):** `web/src/lib/components/ColoringBook.svelte:75-88` — pinned at SHA f934d43
