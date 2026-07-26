@@ -28,34 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P4][naming] `THEME_COLOR_LIGHT` hardcodes `'#ffffff'` while its dark twin reads from a token
-
-**File(s):** `web/src/lib/theme.ts:30-31` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-const THEME_COLOR_LIGHT = '#ffffff';
-const THEME_COLOR_DARK = themes.dark.appBg;
-```
-
-ADR-0071 made design tokens the single source of truth and the dark value dutifully reads
-`themes.dark.appBg`, but the light value is a hand-typed `'#ffffff'` with a comment saying it
-matches "app.html's original white." If `themes.light.appBg` (or app.html's meta) ever changes, this
-silently drifts — the exact failure mode ADR-0071 set out to kill.
-
-#### Proposed solution
-
-Source it from the token: `const THEME_COLOR_LIGHT = themes.light.appBg;` (verify that token is
-`#ffffff` today). If light theme-color is deliberately app-bg-white rather than paper, name that
-intent; otherwise unify with the dark path.
-
-#### Verification
-
-`appearance.svelte.test.ts` still asserts the light meta value; `npm run check`.
-
----
-
 ### [P4][maintainability] `stopDrawSound` disconnects the gain node but never the source node
 
 **File(s):** `web/src/lib/audio/drawingSound.ts:85-95` — pinned at SHA f934d43
