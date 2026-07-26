@@ -18,7 +18,9 @@ The two standing priorities are **token efficiency** and **reducing repetitive p
 2. **Project config** — `.claude/settings.json`, `.claude/settings.local.json`, `.claude/rules/*`,
    and the `.ruler/` sources (skills in `.ruler/skills/*`, root + nested instruction files —
    generated into `CLAUDE.md`/`AGENTS.md` and the skill trees per ADR-0058; propose edits against
-   the sources, never the generated copies).
+   the sources, never the generated copies). The exception is `burn-down-audits`: inspect and edit
+   its direct Claude package under `.claude/` without syncing the independent Codex package under
+   `.agents/`.
 3. **Session history** — the JSONL transcripts under
    `~/.claude/projects/-Users-kylemit-Code-Splotch/`. Aggregate across sessions; do not read them
    one line at a time in the main context. Pull out:

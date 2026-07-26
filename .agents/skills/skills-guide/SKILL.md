@@ -96,11 +96,16 @@ All three augment the built-in PR flows rather than replacing them.
 
 ## Keeping this guide current
 
-Every generated skill — shared under `.ruler/skills/` or isolated under `.ruler/skill-forks/` — must
-appear here, in exactly one primary group (cross-reference a second group in prose when a skill
-genuinely spans two, as `lighthouse-audit` does). **When you add, rename, or delete a skill, update
-this guide in the same change**, then run `npm run ruler:apply`. If a new skill fits no existing
-group, add a group rather than forcing it into one.
+Every skill must appear here in exactly one primary group (cross-reference a second group in prose
+when a skill genuinely spans two, as `lighthouse-audit` does). Most skills are generated from
+`.ruler/skills/` or `.ruler/skill-forks/`. `burn-down-audits` is the exception: Claude and Codex
+have complete, directly maintained implementations under `.claude/skills/burn-down-audits/` and
+`.agents/skills/burn-down-audits/`, with independent notes in the parallel `skill-notes/` trees.
+When editing it, change only the intended provider; never copy one implementation over the other.
+
+**When you add, rename, or delete a skill, update this guide in the same change**, then run
+`npm run ruler:apply` for generated surfaces. If a new skill fits no existing group, add a group
+rather than forcing it into one.
 
 Naming: workflow skills (perform a procedure with side effects) get verb-noun names (`create-adr`,
 `fix-audits`); reference skills (only load knowledge) get plain noun names (`architecture`, `adrs`).

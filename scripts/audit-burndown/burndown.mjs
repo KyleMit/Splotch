@@ -101,8 +101,8 @@ const COMMENT_STORE = process.env.COMMENT_STORE ?? join(WORK, 'pending-comments.
 const MAX_DEFERRALS = Number(process.env.MAX_DEFERRALS ?? 3); // consecutive deferrals before halting
 const RETRIES = Number(process.env.RETRIES ?? 3); // retries for transient agent failures
 
-// The generated runner-specific skills set this explicitly. Claude remains the
-// default for backward compatibility with existing launch commands.
+// The runner-specific skills set this explicitly. Claude remains the default
+// for backward compatibility with existing launch commands.
 const AGENT_RUNNER = normalizeAgentRunner(process.env.AGENT_RUNNER);
 const RUNNER_DEFAULTS = agentRunnerDefaults(AGENT_RUNNER);
 const MODEL_VERIFY = process.env.MODEL_VERIFY ?? RUNNER_DEFAULTS.verifyModel;
