@@ -29,6 +29,12 @@ interface CspViolation {
   sample: string;
 }
 
+interface ReportingApiEntry {
+  type: 'csp-violation';
+  body: Record<string, unknown>;
+  url?: unknown;
+}
+
 function str(value: unknown): string {
   return typeof value === 'string' ? value.slice(0, MAX_FIELD_LENGTH) : '';
 }
@@ -63,18 +69,20 @@ function fromReportingApiPayload(body: Record<string, unknown>, url: unknown): C
   };
 }
 
+function isReportingApiEntry(item: unknown): item is ReportingApiEntry {
+  if (typeof item !== 'object' || item === null) return false;
+
+  const entry = item as Record<string, unknown>;
+  return (
+    entry.type === 'csp-violation' && typeof entry.body === 'object' && entry.body !== null
+  );
+}
+
 function extractViolations(payload: unknown): CspViolation[] {
   if (Array.isArray(payload)) {
     return payload
-      .filter(
-        (item): item is Record<string, unknown> =>
-          typeof item === 'object' &&
-          item !== null &&
-          (item as Record<string, unknown>).type === 'csp-violation' &&
-          typeof (item as Record<string, unknown>).body === 'object' &&
-          (item as Record<string, unknown>).body !== null
-      )
-      .map((item) => fromReportingApiPayload(item.body as Record<string, unknown>, item.url));
+      .filter(isReportingApiEntry)
+      .map((entry) => fromReportingApiPayload(entry.body, entry.url));
   }
   if (typeof payload === 'object' && payload !== null) {
     const report = (payload as Record<string, unknown>)['csp-report'];
