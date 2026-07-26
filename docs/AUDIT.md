@@ -22,30 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P4][naming] `readImage` thunk field obscures that it also validates size/emptiness
-
-**File(s):** `web/src/routes/api/generate-image/+server.ts:39-96` (`GenerationRequest.readImage`) —
-pinned at SHA f934d43
-
-#### Problem
-
-`readImage: () => Promise<{ bytes; mimeType }>` reads as a pure getter, but each implementation also
-enforces the 413 cap and the 400-empty/missing checks (lines 71-72, 85-92) and can throw
-`error(...)`. The name hides that calling it is where request validation and rejection happen — a
-maintainer moving the call (currently line 108, after authorization) could unknowingly change when a
-413/400 is emitted relative to auth.
-
-#### Proposed solution
-
-Rename to `readValidatedImage` (or `readImageOrThrow`) and add a one-line comment that it enforces
-the size/emptiness caps and may throw 413/400. Purely a clarity change.
-
-#### Verification
-
-`npm run check`; behavior identical.
-
----
-
 ### [P4][maintainability] `GITHUB_API` base is hard-coded and the User-Agent is a bare literal
 
 **File(s):** `web/src/lib/server/github.ts:7,67` — pinned at SHA f934d43

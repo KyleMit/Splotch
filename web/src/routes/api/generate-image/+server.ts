@@ -39,10 +39,10 @@ interface GenerationRequest {
   token: string | null;
   apiKey: string | null;
   style: string | null;
-  // Deferred so the ≤15 MB body isn't buffered until authorization succeeds — an
-  // unauthorized request never costs us the read. (The multipart shape has
+  // Deferred so the ≤15 MB body isn't read or validated until authorization
+  // succeeds — the thunk can throw 400 or 413. (The multipart shape has
   // already buffered by necessity; only the raw path actually saves the read.)
-  readImage: () => Promise<{ bytes: Buffer; mimeType: string }>;
+  readValidatedImage: () => Promise<{ bytes: Buffer; mimeType: string }>;
 }
 
 // Two request shapes are accepted (ADR-0064):
@@ -66,7 +66,7 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
       token: asString(form.get('token')),
       apiKey: asString(form.get('apiKey')),
       style: asString(form.get('style')),
-      readImage: async () => {
+      readValidatedImage: async () => {
         if (!(imageFile instanceof Blob)) throw error(400, 'Missing image');
         if (imageFile.size > MAX_IMAGE_BYTES) throw error(413, 'Image is too large');
         return { bytes: Buffer.from(await imageFile.arrayBuffer()), mimeType: imageFile.type };
@@ -77,7 +77,7 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
     token: request.headers.get(ACCESS_TOKEN_HEADER),
     apiKey: request.headers.get(API_KEY_HEADER),
     style: url.searchParams.get('style'),
-    readImage: async () => {
+    readValidatedImage: async () => {
       // Reject an oversized body before buffering it. Content-Length can be
       // absent or wrong, so the byte length is re-checked after the read.
       const declaredLength = Number(request.headers.get('content-length'));
@@ -127,7 +127,7 @@ export const POST: RequestHandler = async ({ request, url, platform, getClientAd
   });
   if (authorization instanceof Response) return authorization;
 
-  const { bytes: inputBytes, mimeType } = await source.readImage();
+  const { bytes: inputBytes, mimeType } = await source.readValidatedImage();
   // An empty type is fine (default to PNG below); only reject a type that's
   // present and not on the allowlist.
   if (mimeType && !ALLOWED_IMAGE_TYPES.includes(mimeType)) {
