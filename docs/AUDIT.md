@@ -32,42 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P2][duplication] Every module reimplements RGB decode + luma; the luma coefficients live in six files
-
-**File(s):** `tools/asset-gen/lib/eye-fill.mjs:41-50,217-218` (`inkMask`),
-`night-scores.mjs:90,133`, `punch-fill.mjs:124`, `solid-regions.mjs:171-172`, `night-halo.mjs:31-36`
-(`loadRgb`/`lumaOf`), `composite-eye.mjs:80-88` (`grayResized`) — pinned at SHA f934d43
-
-#### Problem
-
-The Rec.601 weighting `0.299*R + 0.587*G + 0.114*B` is hand-written in at least six modules, and the
-`sharp(buf).removeAlpha().raw().toBuffer({resolveWithObject:true})` decode preamble is copy-pasted
-into nearly all of them. `eye-fill.inkMask`, `night-halo.loadRgb`, and `solid-regions.scoreSolidity`
-each open with a byte-identical decode-and-luma loop:
-
-```js
-const luma = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-```
-
-Any future change to the luma definition (or a bug in one copy) silently forks the pipeline's notion
-of "brightness" — the exact class of drift the CLAUDE.md warns about with "the mask math can never
-fork between them."
-
-#### Proposed solution
-
-Add `lib/pixels.mjs` exporting `async function loadRgb(buf)` → `{ rgb, width, height }`,
-`luma(rgb, p)` (index into an interleaved RGB buffer), and `lumaAt(r,g,b)`. Replace each module's
-private decode+luma with imports. `night-halo.mjs`'s `loadRgb`/`lumaOf` are already the right shape
-— promote them.
-
-#### Verification
-
-`grep -c "0\.299" lib/**` drops to 1. Re-run `npm test` (the per-module unit tests under `tests/`)
-and `npm run gen:coloring-golden:diff` — scores must be byte-identical since the arithmetic is
-unchanged.
-
----
-
 ### [P2][duplication] Background flood-fill is written twice in lib (and a third time in bin)
 
 **File(s):** `tools/asset-gen/lib/night-scores.mjs:57-83` (`scoreNightness`) and
