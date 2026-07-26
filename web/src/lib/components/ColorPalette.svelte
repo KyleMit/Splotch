@@ -277,7 +277,8 @@
        • ≥ 444px → 6 fit  (ranks 0–1 trimmed)
      Below 444px a 3rd swatch would have to go, so we fall back to the roomier
      2-column grid (the default layout) — which fits all 8 again, then trims in
-     pairs. */
+     pairs. See design/trimGeometry.ts for the executable form of this formula,
+     pinned against these values by trimGeometry.test.ts. */
   @media (orientation: landscape) and (min-height: 444px) {
     .color-palette {
       grid-template-columns: 1fr;
@@ -317,6 +318,10 @@
      rules use bounded min/max ranges instead, since a rank can become visible
      again when the layout switches to two columns. The gradient swatch has no
      trim rank, so it is never hidden.
+
+     Every threshold below is derived arithmetically; design/trimGeometry.ts is
+     the executable form of all four ladders, and trimGeometry.test.ts asserts
+     it still produces exactly the values written here.
 
      PORTRAIT — palette is a full-width row (55px swatches, 8px gaps, 10px side
      padding) plus the always-present gradient. k core swatches + gradient fit
