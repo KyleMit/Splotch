@@ -1,15 +1,21 @@
-// Perceived brightness of a hex color on a 0–1 scale (ITU-R BT.601 weights).
-// Accepts `#rgb`, `#rrggbb`, or the same without the leading `#`.
-export function relativeLuminance(color: string): number {
+function hexToRgb(color: string): { r: number; g: number; b: number } {
   let hex = color.replace('#', '');
   if (hex.length === 3)
     hex = hex
       .split('')
       .map((c) => c + c)
       .join('');
-  const r = parseInt(hex.substr(0, 2), 16);
-  const g = parseInt(hex.substr(2, 2), 16);
-  const b = parseInt(hex.substr(4, 2), 16);
+  return {
+    r: parseInt(hex.substr(0, 2), 16),
+    g: parseInt(hex.substr(2, 2), 16),
+    b: parseInt(hex.substr(4, 2), 16),
+  };
+}
+
+// Perceived brightness of a hex color on a 0–1 scale (ITU-R BT.601 weights).
+// Accepts `#rgb`, `#rrggbb`, or the same without the leading `#`.
+export function relativeLuminance(color: string): number {
+  const { r, g, b } = hexToRgb(color);
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 }
 
@@ -24,15 +30,7 @@ export function isLightColor(color: string): boolean {
 // black) darkening is invisible, so we lighten instead. Pure function, kept out
 // of the .svelte component so it can be unit-tested directly.
 export function getRingColor(color: string): string {
-  let hex = color.replace('#', '');
-  if (hex.length === 3)
-    hex = hex
-      .split('')
-      .map((c) => c + c)
-      .join('');
-  const r = parseInt(hex.substr(0, 2), 16);
-  const g = parseInt(hex.substr(2, 2), 16);
-  const b = parseInt(hex.substr(4, 2), 16);
+  const { r, g, b } = hexToRgb(color);
 
   const shift =
     relativeLuminance(color) < 0.2

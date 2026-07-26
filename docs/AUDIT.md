@@ -22,38 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P2][duplication] Hex-normalize-and-parse logic is duplicated between `relativeLuminance` and `getRingColor`
-
-**File(s):** `web/src/lib/colorRing.ts:3-14` and `:26-44` — pinned at SHA f934d43
-
-#### Problem
-
-Both functions open with byte-identical hex handling:
-
-```ts
-let hex = color.replace('#', '');
-if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
-const r = parseInt(hex.substr(0, 2), 16);
-const g = parseInt(hex.substr(2, 2), 16);
-const b = parseInt(hex.substr(4, 2), 16);
-```
-
-The 3→6 expansion and channel parse appear twice. A fix to one (e.g. validating input, supporting
-`#rrggbbaa`) will drift from the other.
-
-#### Proposed solution
-
-Extract `function hexToRgb(color: string): { r: number; g: number; b: number }` at the top of
-`colorRing.ts` and call it from both. `relativeLuminance` becomes a one-line weighted sum;
-`getRingColor` destructures `{ r, g, b }`.
-
-#### Verification
-
-Existing `colorRing.test.ts` still passes unchanged (it exercises both functions and
-shorthand/missing-hash cases). Add a direct `hexToRgb` unit test.
-
----
-
 ### [P2][duplication] `ringShadow` and `gradientRingShadow` differ only in whether the ring color is derived
 
 **File(s):** `web/src/lib/components/ColorPalette.svelte:66-73` — pinned at SHA f934d43
