@@ -22,41 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P4][readability] `createUniqueFile` uses an unbounded `for (;;)` probe loop with no iteration cap
-
-**File(s):** `web/src/lib/drawing/folderSave.ts:120-138` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-for (let i = 0;; i++) {
-  const candidate = i === 0 ? filename : `${stem} (${i})${ext}`;
-  try {
-    await dir.getFileHandle(candidate);
-  } // exists → keep looking
-  catch (err) {
-    if (NotFoundError) return create;
-    throw err;
-  }
-}
-```
-
-The only exit is a `NotFoundError`. Each iteration is a full async round-trip, and there's no upper
-bound — a folder pathology (or a getFileHandle that never throws NotFoundError for a novel name)
-spins indefinitely. It also probes O(n) files for the n-th same-second save.
-
-#### Proposed solution
-
-Add a sane cap (e.g. `i < 1000`) after which it falls back to a timestamp/random suffix and returns,
-so the loop can't hang the save path. Optionally document the linear-probe cost.
-
-#### Verification
-
-Unit test with a handle whose `getFileHandle` always resolves; assert the function returns (via
-fallback) rather than never settling.
-
----
-
 ### [P4][maintainability] `onSaveFolderCleared` stores a single listener slot, silently clobbering any prior registration
 
 **File(s):** `web/src/lib/drawing/folderSave.ts:35-42` — pinned at SHA f934d43
