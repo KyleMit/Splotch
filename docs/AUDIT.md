@@ -22,28 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P4][naming] `safeLocalStorage` / `safeRead` are an asymmetric name pair for a symmetric read/write guard
-
-**File(s):** `web/src/lib/storage.ts:44-53, 60-70` — pinned at SHA f934d43
-
-#### Problem
-
-The write guard is named after the API (`safeLocalStorage`) and returns void; the read guard is
-named after the action (`safeRead`) and returns a value. They're a matched pair (both wrap a
-throwing localStorage op) but their names don't signal that, so a reader scanning the module doesn't
-see them as counterparts.
-
-#### Proposed solution
-
-Rename to `safeWrite` / `safeRead` (action-named pair), or `guardWrite` / `guardRead`. Purely a
-rename.
-
-#### Verification
-
-`npm run check`; all internal call sites updated.
-
----
-
 ### [P4][error-handling] A single `storageWarned` flag silences read *and* write warnings across each other
 
 **File(s):** `web/src/lib/storage.ts:43, 48-51, 64-67` — pinned at SHA f934d43

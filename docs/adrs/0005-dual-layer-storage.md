@@ -35,7 +35,7 @@ Implement **dual-layer storage** in `src/lib/storage.ts`:
 * Secure API-key hydration runs after durable reconciliation so the legacy plaintext migration key
   can be recovered from Preferences, moved into secure storage, and then removed from both plaintext
   layers.
-* `localStorage.setItem()` calls are wrapped in a try/catch (`safeLocalStorage`) to handle
+* `localStorage.setItem()` calls are wrapped in a try/catch (`safeStorageMutation`) to handle
   `QuotaExceededError` and `SecurityError` without interrupting the toggle that triggered the write.
 
 On web, `isNative()` returns false and the Preferences layer is never touched.
