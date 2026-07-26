@@ -5,8 +5,6 @@
 > then deletes this file. `/fix-audits` burns down those issues. Never treat this file as a
 > long-lived backlog.
 
-## Source: Code audit — Admin console + token backend
-
 ## Source: Code audit — Routes / app shell / dev pages
 
 ### [P3][maintainability] `ai-timer` comments reference `.js` filenames for modules that are `.ts`, contradicting the TypeScript-everywhere convention
