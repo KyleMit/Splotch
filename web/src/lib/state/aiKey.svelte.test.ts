@@ -140,6 +140,7 @@ describe('hydrateApiKey', () => {
 
     expect(settings.aiUserApiKey).toBe('secure-key');
     expect(secureStore.apiKey).toBe('secure-key');
+    expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
   });
 
   it('two boots racing the legacy migration both end with the key intact', async () => {

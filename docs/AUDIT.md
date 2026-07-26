@@ -22,36 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P2][architecture] `managedKeys` is populated as an implicit side effect of the first read/write — durable restore silently depends on import ordering
-
-**File(s):** `web/src/lib/storage.ts:18-25, 169-201` (`track`, `managedKeys`,
-`hydrateDurableStorage`) — pinned at SHA f934d43
-
-#### Problem
-
-The set of keys the durable layer restores is built by `track(key)` firing inside every
-`read*/write*` call (lines 97, 107, 115, 124, 133, 145, 155). The comment (lines 18-20) concedes the
-fragility: *"State stores read their keys at init (before hydrate runs), so this set is complete by
-then."* So correctness of native eviction-recovery depends on every persisted key being touched, at
-least once, before `hydrateDurableStorage()` runs. A key that is only ever *written conditionally*
-(never read at module init) is absent from `managedKeys` and silently will not be restored after a
-WebView eviction — with no test able to catch it, because the whole mechanism is data-driven by call
-history. `storage.restore.integration.test.ts` exists precisely because this coupling is invisible.
-
-#### Proposed solution
-
-Make the key set explicit rather than observed: derive `managedKeys` from the `STORAGE_KEYS`
-registry proposed above (all keys are known statically), and drop `track()` from the hot read/write
-path. `hydrateDurableStorage` then iterates the declared registry, not an accumulated Set, removing
-the "must be touched before hydrate" invariant entirely.
-
-#### Verification
-
-Remove a store's module-init read; the integration test should still restore its key. After the fix,
-restoration is independent of whether the key was read at boot.
-
----
-
 ### [P2][error-handling] `lazyIdbDatabase` memoizes a rejected open promise forever — one transient IndexedDB failure disables persistence for the whole session
 
 **File(s):** `web/src/lib/idb.ts:9-21` (`lazyIdbDatabase`) — pinned at SHA f934d43

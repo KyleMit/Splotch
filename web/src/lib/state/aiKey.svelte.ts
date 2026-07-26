@@ -51,15 +51,13 @@ export async function hydrateApiKey() {
   requestPersistentStorage();
 
   let key = await loadApiKey();
+  const legacy = readString(STORAGE_KEYS.legacyAiUserApiKey, '');
 
-  if (!key) {
-    const legacy = readString(STORAGE_KEYS.legacyAiUserApiKey, '');
-    if (legacy) {
-      await saveApiKey(legacy);
-      removeKey(STORAGE_KEYS.legacyAiUserApiKey); // remove the plaintext copy now that it's secured
-      key = legacy;
-    }
+  if (!key && legacy) {
+    await saveApiKey(legacy);
+    key = legacy;
   }
 
+  if (legacy) removeKey(STORAGE_KEYS.legacyAiUserApiKey);
   if (key) settings.aiUserApiKey = key;
 }

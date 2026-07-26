@@ -186,13 +186,13 @@ describe('hydrateDurableStorage', () => {
     expect(prefsStore.get(STORAGE_KEYS.drawerOpen)).toBe('keep'); // but durable store was seeded
   });
 
-  it('does not restore the scrub-only legacy API key from Preferences', async () => {
+  it('restores the legacy API key for secure-storage migration', async () => {
     ctrl.native = true;
     prefsStore.set(STORAGE_KEYS.legacyAiUserApiKey, 'stale-plaintext-key');
 
     const restored = await hydrateDurableStorage();
-    expect(restored).toBe(false);
-    expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
+    expect(restored).toBe(true);
+    expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBe('stale-plaintext-key');
   });
 });
 

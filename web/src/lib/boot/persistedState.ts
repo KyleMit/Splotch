@@ -3,10 +3,7 @@ import { hydrateSaveFolder } from '$lib/state/saveFolder.svelte';
 import { hydrateDurableStorage } from '$lib/storage';
 import { applyDeviceOrientationPreference } from '$lib/orientation';
 
-export function hydratePersistedState(): void {
-  // Load the BYOK Gemini key from secure storage into the live store (async,
-  // transparent — the AI button is only used long after boot completes).
-  hydrateApiKey();
+export async function hydratePersistedState(): Promise<void> {
   // Load the optional saved-photo folder name for the Parent Center display
   // (web/desktop only; no effect on whether saves happen).
   hydrateSaveFolder();
@@ -20,7 +17,11 @@ export function hydratePersistedState(): void {
   // an orientation setting also re-runs the orientation $effect in the shell,
   // but this guarantees the apply even when the restored value equals the
   // current one.
-  hydrateDurableStorage().then((restored) => {
-    if (restored) applyDeviceOrientationPreference();
-  });
+  const restored = await hydrateDurableStorage();
+  if (restored) applyDeviceOrientationPreference();
+
+  // Durable hydration must finish before the BYOK Gemini key migration so a
+  // legacy plaintext key that survived only in Preferences can move into secure
+  // storage before both plaintext copies are scrubbed.
+  await hydrateApiKey();
 }
