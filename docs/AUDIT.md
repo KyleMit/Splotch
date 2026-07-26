@@ -9,32 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P3][dead-code] `LaunchGuardOptions` (radius/duration) is never exercised in production
-
-**File(s):** `web/src/lib/actions/launchGuard.ts:34-52`, consumed at
-`web/src/lib/actions/modalDialog.svelte.ts:120` — pinned at SHA f934d43
-
-#### Problem
-
-`guardLaunchZone` accepts a `LaunchGuardOptions { radius?, durationMs? }`, but the only production
-caller is `modalDialog`, which always calls `guardLaunchZone(o.origin ?? null)` with no options — so
-`DEFAULT_RADIUS`/`DEFAULT_DURATION_MS` always win. The per-call override exists solely for
-`launchGuard.test.ts`. That's speculative API surface: readers assume some modal tunes the zone, but
-none does.
-
-#### Proposed solution
-
-Either (a) drop the `options` parameter and inline the two defaults (tests assert against the
-defaults), or (b) if per-modal tuning is genuinely wanted, thread `radius`/`durationMs` through
-`ModalOptions` so a real caller can set them. Prefer (a) until a caller needs it.
-
-#### Verification
-
-`launchGuard.test.ts` would need the option calls updated under (a).
-`npm run test:unit -- launchGuard`; `npm run check`.
-
----
-
 ### [P3][type-safety] `initPencilEraser` swallows a rejected `addListener` promise
 
 **File(s):** `web/src/lib/plugins/pencilEraser.ts:40-43` — pinned at SHA f934d43

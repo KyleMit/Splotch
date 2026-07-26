@@ -17,10 +17,10 @@ import type { Origin } from '$lib/state/modal.svelte';
 
 // Buttons are 48px; a 72px radius covers the target plus the slop of a
 // toddler's aim without reaching neighbouring controls.
-const DEFAULT_RADIUS = 72;
+export const DEFAULT_RADIUS = 72;
 // Fly-in is 0.35s (app.css); hold a little past it so the dialog is plainly
 // present before the backdrop goes live.
-const DEFAULT_DURATION_MS = 600;
+export const DEFAULT_DURATION_MS = 600;
 
 interface DeadZone {
   x: number;
@@ -31,23 +31,16 @@ interface DeadZone {
 
 let zones: DeadZone[] = [];
 
-export interface LaunchGuardOptions {
-  radius?: number;
-  durationMs?: number;
-}
-
 // Arm a dead zone at the launching button's center. A null origin (a modal
 // opened with no anchor, e.g. via keyboard) simply arms nothing.
-export function guardLaunchZone(origin: Origin | null, options: LaunchGuardOptions = {}) {
+export function guardLaunchZone(origin: Origin | null) {
   if (!origin) return;
-  const radius = options.radius ?? DEFAULT_RADIUS;
-  const durationMs = options.durationMs ?? DEFAULT_DURATION_MS;
   zones = liveZones();
   zones.push({
     x: origin.x,
     y: origin.y,
-    radiusSq: radius * radius,
-    expiresAt: Date.now() + durationMs,
+    radiusSq: DEFAULT_RADIUS * DEFAULT_RADIUS,
+    expiresAt: Date.now() + DEFAULT_DURATION_MS,
   });
 }
 
