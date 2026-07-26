@@ -22,45 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P3][maintainability] Centralize the credential header names shared by route, CORS, and client
-
-**File(s):** `web/src/routes/api/generate-image/+server.ts:30-31`
-(`ACCESS_TOKEN_HEADER`/`API_KEY_HEADER`); `web/src/hooks.server.ts:63`;
-`web/src/lib/drawing/aiImage.ts:138-139` — pinned at SHA f934d43
-
-#### Problem
-
-`X-Access-Token` and `X-Api-Key` are load-bearing in three places that must agree, expressed as
-unrelated literals:
-
-* generate-image reads them as consts (lowercased) `x-access-token` / `x-api-key`.
-* `hooks.server.ts:63` lists them in
-  `Access-Control-Allow-Headers: 'Content-Type, Authorization, X-Access-Token, X-Api-Key'`.
-* `aiImage.ts:138-139` sets `headers['X-Api-Key']` / `headers['X-Access-Token']` on the request.
-
-Drop one from the CORS allow-list and cross-origin native requests break, with nothing linking the
-three. There's no single symbol for the header contract.
-
-#### Proposed solution
-
-Put the canonical names in a shared client-safe module (they're not server-only — the client sends
-them):
-
-```ts
-export const ACCESS_TOKEN_HEADER = 'X-Access-Token';
-export const API_KEY_HEADER = 'X-Api-Key';
-```
-
-Reference from all three sites (route compares case-insensitively, CORS list builds from them,
-client sets them).
-
-#### Verification
-
-`grep -rin 'x-access-token\|x-api-key'` shows only the shared constant plus its references.
-`npm run test:api:smoke` + the native CORS path still work.
-
----
-
 ### [P3][maintainability] Route all env-var access through a typed, named accessor
 
 **File(s):** `web/src/lib/server/generationAuthorization.ts:43` (`GEMINI_API_KEY`);

@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { STYLE_SUFFIXES } from '$lib/ai/styles';
 import { buildPromptForStyle } from '$lib/ai/prompt';
+import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
 import { recordTokenUsage } from '$lib/server/usage';
 import { aiProvider } from '$lib/server/ai/provider';
 import {
@@ -28,9 +29,6 @@ const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 // token and (especially) a parent's BYO Gemini key are secrets, and query
 // strings leak into server/CDN access logs, browser history, and Referer
 // headers. The non-secret style enum is a plain query param. See ADR-0064.
-const ACCESS_TOKEN_HEADER = 'x-access-token';
-const API_KEY_HEADER = 'x-api-key';
-
 const contentTypeOf = (request: Request) =>
   (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
 

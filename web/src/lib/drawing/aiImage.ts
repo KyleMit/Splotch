@@ -10,6 +10,7 @@ import {
 } from '$lib/state/aiGeneration.svelte';
 import { settings } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api';
+import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
 import { exportCanvasBlob } from './engine';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 import { getActiveOverlayImage } from './overlay';
@@ -154,8 +155,8 @@ function buildRequest(
   const headers: Record<string, string> = {
     'Content-Type': uploadBlob.type || 'image/png',
   };
-  if (settings.aiUserApiKey) headers['X-Api-Key'] = settings.aiUserApiKey;
-  else headers['X-Access-Token'] = settings.aiAccessToken;
+  if (settings.aiUserApiKey) headers[API_KEY_HEADER] = settings.aiUserApiKey;
+  else headers[ACCESS_TOKEN_HEADER] = settings.aiAccessToken;
 
   const endpoint =
     apiUrl('/api/generate-image') + (style ? `?style=${encodeURIComponent(style)}` : '');
