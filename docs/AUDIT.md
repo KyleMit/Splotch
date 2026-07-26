@@ -9,35 +9,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P2][complexity] The overlay idle-mount pump (recursive `mountNext` + `stopped` flag + queue-by-length) is intricate inline logic that belongs in a named helper
-
-**File(s):** `web/src/routes/+page.svelte:80-104` (app shell) — pinned at SHA f934d43
-
-#### Problem
-
-The first `onMount` hand-rolls a staged mounter: it dynamically imports `bootHiddenOverlays`, builds
-a `queue`, and drives a recursion (`mountNext`) that appends `queue[overlays.length]` per idle
-callback, guarded by a `stopped` flag because "the cancel handle scheduleIdle returns can't reach
-the async import().then continuation." Indexing the queue by `overlays.length` couples the loop's
-progress to render state, and the cancellation is a bespoke closure flag. This is real machinery
-(perf-motivated, per the comments) but it sits raw in the shell.
-
-#### Proposed solution
-
-Extract to `web/src/lib/boot/mountOverlaysAtIdle.ts`:
-`export function mountOverlaysAtIdle(onParentCenter: (c: Component) => void, pushOverlay: (c: Component) => void): () => void`
-that owns the import, the queue, the idle recursion, and returns a single cancel function (setting
-the internal `stopped` flag). The shell then calls it in `onMount` and returns its canceler — the
-intricate part is named and independently testable.
-
-#### Verification
-
-Unit-test the helper with a fake `scheduleIdle` to assert one overlay per tick and that the returned
-canceler halts further mounts. In-app, overlays still appear one-per-idle and unmount cleanly on
-navigation.
-
----
-
 ### [P2][complexity] `$effect` bodies use bare member-access statements purely to register reactive dependencies — a fragile, non-obvious pattern
 
 **File(s):** `web/src/routes/+page.svelte:37-41` (app shell) — pinned at SHA f934d43
