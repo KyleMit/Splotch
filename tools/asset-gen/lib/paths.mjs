@@ -30,11 +30,11 @@ export const SAMPLES_DARK_DIR = join(REPO_ROOT, '.coloring-samples-dark');
 
 export async function resolveNightLineArt(penPath, pen = null) {
   const chalkPath = penPath.replace(/\.outline\.webp$/, '.chalk.webp');
-  if (!existsSync(chalkPath)) {
-    return { sourcePath: penPath, source: pen ?? (await readFile(penPath)), chalk: null };
-  }
-  const chalk = await readFile(chalkPath);
-  return { sourcePath: chalkPath, source: chalk, chalk };
+  const chalked = existsSync(chalkPath);
+  const sourcePath = chalked ? chalkPath : penPath;
+  if (!existsSync(sourcePath)) return { sourcePath, source: null, chalk: null };
+  const source = chalked ? await readFile(sourcePath) : (pen ?? (await readFile(sourcePath)));
+  return { sourcePath, source, chalk: chalked ? source : null };
 }
 
 export function fail(message) {

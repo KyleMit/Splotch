@@ -30,41 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P2][duplication] Extract the "score against chalk when forked, else pen" source-selection
-
-**File(s):** `audit-golden.mjs:101-103`; `audit-invented-shapes.mjs:121-123`;
-`audit-night-halo.mjs:40-43`; `audit-fill-eyes.mjs:49-55`; `gen-coloring-fills-dark.mjs:378-380` —
-pinned at SHA f934d43
-
-#### Problem
-
-The load-bearing rule "a night fill scores/composites against the chalk outline when the page has
-forked, otherwise the pen" is re-derived in five places with slightly different shapes:
-`chalk ?? pen` (golden, dark), `theme === 'night' && existsSync(chalk) ? chalk : pen` (invented),
-`existsSync(chalk) ? chalk : pen` (halo), `const chalked = existsSync(chalkPath)` then branch
-(fill-eyes). Because it is copy-pasted, a future change to the fork convention (or the composite
-step) must be found and fixed in five spots — exactly the kind of pipeline rule the docs stress is
-easy to get subtly wrong.
-
-#### Proposed solution
-
-Add to `lib/paths.mjs` or a new `lib/line-art.mjs`:
-
-```
-export function chalkPathFor(outlinePath)      // path swap
-export async function nightSource(outlinePath) // returns { source, chalk|null } reading chalk when present, else pen
-```
-
-Callers use `const { source, chalk } = await nightSource(page)`; the `compositeNight(raw, chalk)` vs
-`raw` branch can also live behind a helper.
-
-#### Verification
-
-Golden freeze/diff unchanged. `grep -rn 'chalk ?? pen\|existsSync(chalkPath)' bin/` collapses to the
-lib.
-
----
-
 ### [P2][complexity] Wrap the top-level procedural page loops in a `main()`
 
 **File(s):** `gen-coloring-fills-dark.mjs:327-440`; `gen-coloring-chalk.mjs:318-455`;
