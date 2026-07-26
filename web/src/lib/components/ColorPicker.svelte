@@ -1,10 +1,10 @@
 <script lang="ts">
   import { colorPicker } from '$lib/state/ui.svelte';
-  import { pickCustomColor, colors } from '$lib/state/colors.svelte';
+  import { pickCustomColor, colors, isWhite } from '$lib/state/colors.svelte';
   import { releaseAllPointers } from '$lib/drawing/engine';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
-  import { PORTRAIT_ROWS, LANDSCAPE_ROWS } from '$lib/hexPickerLayout';
+  import { PORTRAIT_ROWS, LANDSCAPE_ROWS, PICKER_DIM_BORDER } from '$lib/hexPickerLayout';
 
   // Both grid arrangements are rendered; CSS media queries pick one per
   // orientation and progressively trim it (see the trim ladders in the style
@@ -152,8 +152,8 @@
               <button
                 class="hexagon c{c + 1}"
                 class:hover={hoveredHex === hex}
-                class:border={hex === '#ffffff'}
-                class:border-dim={hex === '#1A1F24'}
+                class:border={isWhite(hex)}
+                class:border-dim={hex === PICKER_DIM_BORDER}
                 class:selected={colors.customColor.toLowerCase() === hex.toLowerCase()}
                 style="--color: {hex};"
                 data-color={hex}

@@ -22,37 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P2][maintainability] Special-case swatch colors are magic string literals in the picker markup
-
-**File(s):** `web/src/lib/components/ColorPicker.svelte:155-157` — pinned at SHA f934d43
-
-#### Problem
-
-```svelte
-class:border={hex === '#ffffff'}
-class:border-dim={hex === '#1A1F24'}
-class:selected={colors.customColor.toLowerCase() === hex.toLowerCase()}
-```
-
-`#ffffff` is literally `WHITE_INK` (already exported from `colors.svelte.ts`), and `#1A1F24` is the
-darkest grey shade (defined once in `hexPickerLayout.ts:145`). Both are re-typed as bare literals
-with no link back to their definitions, and the white check is case-sensitive (`=== '#ffffff'`)
-while the grey ramp's white is coincidentally already lowercase — brittle. `rg '#1A1F24'` won't
-connect the CSS-class trigger to the palette entry.
-
-#### Proposed solution
-
-Import `WHITE_INK` and add a named export for the dim-border color (e.g.
-`PICKER_DIM_BORDER = '#1A1F24'`) in `hexPickerLayout.ts`; compare via a case-insensitive helper
-(`isWhite(hex)` already exists in `colors.svelte.ts`). Reference those constants in the markup.
-
-#### Verification
-
-`rg "'#ffffff'|'#1A1F24'"` in `ColorPicker.svelte` returns nothing; the border/border-dim classes
-still apply to the same two hexagons in a running picker.
-
----
-
 ### [P2][duplication] The hexagon `clip-path` polygon is duplicated verbatim
 
 **File(s):** `web/src/lib/components/ColorPicker.svelte:377, 392` — pinned at SHA f934d43
