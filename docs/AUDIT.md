@@ -24,36 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P2][architecture] InstallBanner reaches into another component's DOM by a hard-coded element id for its exit animation
-
-**File(s):** `web/src/lib/components/InstallBanner.svelte:52-66` (`bannerExit`), specifically line
-54 — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-const target = document.getElementById('parentHelpButton')?.getBoundingClientRect();
-```
-
-The banner's "shrink into the Parent Help button" animation depends on a magic string id owned by a
-*different* component (`ParentHelpButton`). If that component renames or removes the id, the
-transition silently degrades to the `dy = 120` fallback with no error and no test coverage of the
-coupling. This cross-component DOM reach-through is exactly the kind of implicit coupling that rots.
-
-#### Proposed solution
-
-Expose the id as a shared constant (e.g. `export const PARENT_HELP_BUTTON_ID = 'parentHelpButton'`
-in a UI-ids module or on the ui state), consumed by both `ParentHelpButton.svelte` and here, so a
-rename is a compile-time break. Longer term, prefer passing the target rect/ref through shared state
-rather than a global `getElementById`.
-
-#### Verification
-
-`grep -rn parentHelpButton web/src` should resolve to one definition + two references. Manually:
-draw past the auto-clear threshold and confirm the pill still flies into the Parent Help button.
-
----
-
 ### [P3][naming] `refreshState` machine (`idle`/`activating`/`deferred`) is under-documented and the states aren't self-describing
 
 **File(s):** `web/src/lib/pwa/updates.ts:35,162-169,176-210` — pinned at SHA f934d43
