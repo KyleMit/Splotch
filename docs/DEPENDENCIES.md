@@ -455,8 +455,9 @@ Non-`keep` rows first.
 ### @intellectronica/ruler
 
 * **Version:** `0.3.44` declared (pinned, no caret) · 0.3.44 locked · dev
-* **Used for:** Generating all agent instruction files (`CLAUDE.md`/`AGENTS.md`, skills) from
-  `.ruler/` sources (ADR-0058) — `ruler:apply`/`ruler:check`.
+* **Used for:** Generating `CLAUDE.md`/`AGENTS.md` and most skills from `.ruler/` sources (ADR-0058)
+  — `ruler:apply`/`ruler:check`. The provider-specific `burn-down-audits` packages are maintained
+  directly.
 * **Source:** npm · [github.com/intellectronica/ruler](https://github.com/intellectronica/ruler) ·
   published by Eleanor Berger (intellectronica)
 * **License:** MIT

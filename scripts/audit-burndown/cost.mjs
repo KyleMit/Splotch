@@ -4,7 +4,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseSavedAgentOutput } from './agent-runner.mjs';
-import { chdirRoot, countEntries, LOGS, WORK } from './lib.mjs';
+import { chdirRoot, countEntries, LOGS } from './lib.mjs';
 
 chdirRoot();
 
@@ -51,11 +51,10 @@ const totalCost = sum(calls, 'cost');
 const totalInput = sum(calls, 'inputTokens');
 const totalCached = sum(calls, 'cachedInputTokens');
 const totalOutput = sum(calls, 'outputTokens');
-const done = existsSync(join(WORK, 'completed.log'))
-  ? readFileSync(join(WORK, 'completed.log'), 'utf8')
-      .split('\n')
-      .filter((l) => l.trim()).length
-  : 0;
+// Keep the denominator in the same scope as the numerator. completed.log is a
+// durable campaign-wide ledger, while LOGS contains the role calls available
+// to this report; mixing them understated the 2026-07-26 Codex run by 5×.
+const done = calls.filter((call) => call.file.includes('.verify')).length;
 const remaining = countEntries() ?? 0;
 
 console.log();

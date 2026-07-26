@@ -7,8 +7,8 @@
 // the very skill it is deliberately kept out of — so they get their own top-level
 // source tree and their own copier.
 //
-// The copy is exact in both directions: files that no longer exist in the source
-// are deleted from the targets, so removing a note removes its copies.
+// The copy is exact in both directions for generated notes. Direct provider
+// notes are preserved in place.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -18,13 +18,16 @@ process.chdir(ROOT);
 
 const SOURCE = join('.ruler', 'skill-notes');
 const TARGETS = [join('.claude', 'skill-notes'), join('.agents', 'skill-notes')];
+const DIRECT_NOTES = new Set(['burn-down-audits.md']);
 
 const sourceFiles = existsSync(SOURCE) ? readdirSync(SOURCE).filter((f) => f.endsWith('.md')) : [];
 
 for (const target of TARGETS) {
   mkdirSync(target, { recursive: true });
 
-  for (const stale of readdirSync(target).filter((f) => !sourceFiles.includes(f))) {
+  for (const stale of readdirSync(target).filter(
+    (file) => !sourceFiles.includes(file) && !DIRECT_NOTES.has(file)
+  )) {
     rmSync(join(target, stale), { force: true });
   }
 

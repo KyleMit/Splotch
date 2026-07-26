@@ -1,17 +1,14 @@
-<!-- Source: .ruler/skill-forks/claude/skill-notes/burn-down-audits.md.template -->
-
 # `burn-down-audits` — design notes
 
 Design history and open questions for the Claude Code bulk audit burndown: the `burn-down-audits`
-skill (`.ruler/skill-forks/claude/skills/burn-down-audits/SKILL.md.template`), the driver under
-`scripts/audit-burndown/`, the role prompts in `scripts/audit-burndown/prompts/`, and the two
-compaction hooks in `.claude/hooks/`.
+skill (`.claude/skills/burn-down-audits/SKILL.md`), the driver under `scripts/audit-burndown/`, the
+role prompts in `scripts/audit-burndown/prompts/`, and the two compaction hooks in `.claude/hooks/`.
 
-Read the `README.md` beside this file first if you are wondering why this is here rather than in
-`docs/adrs/`. **The skill does not link here, deliberately** — do not add a pointer to it.
+This note and the Claude skill are maintained directly. The Codex implementation lives under the
+parallel `.agents/` paths and is maintained independently; never synchronize either provider's
+runbook from the other. **The skill does not link here, deliberately** — do not add a pointer to it.
 
-Paths in this file are repo-root-relative and deliberately not links: the template source and its
-generated `.claude/skill-notes/` copy sit at different depths.
+Paths in this file are repo-root-relative and deliberately not links.
 
 Current as of **2026-07-25**. The skill is young: it was born on 2026-07-24 and nearly everything
 below was earned by two live runs on the following two days.
@@ -72,8 +69,8 @@ translation:
 
 * Bash orchestration became Node `.mjs` under `scripts/audit-burndown/`, because ADR-0017 rejected
   bash for `scripts/`. Registered as `audit:*` npm scripts with `scripts-info` entries per ADR-0019.
-* The runbook became a skill in `.ruler/skills/`, registered in `skills-guide`, `audit-conventions`,
-  the knowledge map, and the `scripts/` orientation.
+* The runbook became a skill, registered in `skills-guide`, `audit-conventions`, the knowledge map,
+  and the `scripts/` orientation.
 * The verifier prompt reads the pin SHA from each finding instead of the kit's hardcoded `f934d43`.
 * `pop.mjs` keeps the excision seam dprint-clean, because CI runs `dprint check` on `AUDIT.md`.
 * `jq` was dropped entirely — Node parses the `claude -p` envelopes.

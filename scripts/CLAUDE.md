@@ -30,18 +30,20 @@
   gates, per-category runbook) lives in `tools/asset-gen/docs/pipeline.md` — read it before
   generating more.
 * `scripts/audit-burndown/` is the scripted bulk burndown of `docs/AUDIT.md` (the runner-specific
-  `burn-down-audits` skill — read the one for the active agent before touching these):
-  `burndown.mjs` drives one isolated Claude Code or Codex session per role per finding (verify →
-  implement → adversarial review → fix); `agent-runner.mjs` owns native auth, invocation,
-  session-resume, model defaults, and output normalization; `pop.mjs` is the **only** thing that
-  reads or edits `docs/AUDIT.md` at that scale; `lib.mjs` holds the shared state helpers, which
-  deliberately return status instead of exiting. `prompts/*.md` are runner-neutral role prompts.
-  Entry points are the `audit:*` npm scripts. The backlog surgery and runner seam are locked by
+  `burn-down-audits` skill — read the one for the active agent before touching these). Its Claude
+  package under `.claude/` and Codex package under `.agents/` are direct sources maintained
+  independently; do not edit it through Ruler or sync one provider from the other. `burndown.mjs`
+  drives one isolated Claude Code or Codex session per role per finding (verify → implement →
+  adversarial review → fix); `agent-runner.mjs` owns native auth, invocation, session-resume, model
+  defaults, and output normalization; `pop.mjs` is the **only** thing that reads or edits
+  `docs/AUDIT.md` at that scale; `lib.mjs` holds the shared state helpers, which deliberately return
+  status instead of exiting. `prompts/*.md` are runner-neutral role prompts. Entry points are the
+  `audit:*` npm scripts. The backlog surgery and runner seam are locked by
   `scripts/tests/audit-burndown-*.test.mjs` (`npm run test:scripts`, in CI).
-* `apply-ruler-skill-forks.mjs` replaces complete generated packages for the exceptional skills
-  whose Claude and Codex implementations are intentionally isolated. It rejects incomplete runner
-  pairs, shared/fork name collisions, and raw Markdown sources;
-  `scripts/tests/ruler-skill-forks.test.mjs` locks that seam.
+* `ruler-apply.mjs` snapshots and restores the direct provider skill paths around Ruler's atomic
+  skill-tree replacement, including on failure. `apply-ruler-skill-forks.mjs` then replaces complete
+  generated packages for any Ruler-managed exceptional skills. The focused
+  `scripts/tests/ruler-*.test.mjs` files lock both seams.
 * The app-driving `gen:*` generators that stay here — `gen:shots` (`store-shots.mjs`) and
   `gen:large-image` (`gen-large-image.mjs`) — drive the live app by selector through
   `scripts/lib/app-driver.mjs` and only run on demand, so that module rots silently when app markup,

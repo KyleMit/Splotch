@@ -78,7 +78,9 @@
           var el = document.documentElement;
           var on = function (key, def) {
             var raw = localStorage.getItem(key);
-            return raw == null ? def : raw === 'true';
+            if (raw === 'true') return true;
+            if (raw === 'false') return false;
+            return def;
           };
 
           el.setAttribute(

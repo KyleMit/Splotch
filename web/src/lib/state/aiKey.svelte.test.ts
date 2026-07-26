@@ -13,14 +13,17 @@ vi.mock('../secureStorage', () => ({
   clearApiKey: vi.fn(async () => {
     secureStore.apiKey = null;
   }),
+}));
+
+vi.mock('../idb', () => ({
   requestPersistentStorage: vi.fn(async () => false),
 }));
 
 import { settings } from './settings.svelte';
 import { hydrateApiKey, setAiUserApiKey } from './aiKey.svelte';
 import { saveApiKey } from '../secureStorage';
-
-const LEGACY_AI_USER_API_KEY = 'splotch-ai-user-api-key';
+import { requestPersistentStorage } from '../idb';
+import { STORAGE_KEYS } from '../storage';
 
 beforeEach(() => {
   localStorage.clear();
@@ -31,6 +34,7 @@ beforeEach(() => {
     .mockImplementation(async (value: string) => {
       secureStore.apiKey = value;
     });
+  vi.mocked(requestPersistentStorage).mockReset().mockResolvedValue(false);
 });
 
 describe('setAiUserApiKey', () => {
@@ -111,6 +115,14 @@ describe('setAiUserApiKey', () => {
 });
 
 describe('hydrateApiKey', () => {
+  it('starts persistence without waiting for it', async () => {
+    vi.mocked(requestPersistentStorage).mockImplementationOnce(() => new Promise(() => {}));
+
+    await hydrateApiKey();
+
+    expect(requestPersistentStorage).toHaveBeenCalledOnce();
+  });
+
   it('hydrates the live store from secure storage', async () => {
     secureStore.apiKey = 'stored-key';
     await hydrateApiKey();
@@ -124,32 +136,33 @@ describe('hydrateApiKey', () => {
   });
 
   it('migrates a legacy plaintext key into secure storage and scrubs the plaintext copy', async () => {
-    localStorage.setItem(LEGACY_AI_USER_API_KEY, 'legacy-key');
+    localStorage.setItem(STORAGE_KEYS.legacyAiUserApiKey, 'legacy-key');
 
     await hydrateApiKey();
 
     expect(settings.aiUserApiKey).toBe('legacy-key');
     expect(secureStore.apiKey).toBe('legacy-key');
-    expect(localStorage.getItem(LEGACY_AI_USER_API_KEY)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
   });
 
   it('prefers the secure copy over a stale legacy plaintext key', async () => {
     secureStore.apiKey = 'secure-key';
-    localStorage.setItem(LEGACY_AI_USER_API_KEY, 'stale-legacy-key');
+    localStorage.setItem(STORAGE_KEYS.legacyAiUserApiKey, 'stale-legacy-key');
 
     await hydrateApiKey();
 
     expect(settings.aiUserApiKey).toBe('secure-key');
     expect(secureStore.apiKey).toBe('secure-key');
+    expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
   });
 
   it('two boots racing the legacy migration both end with the key intact', async () => {
-    localStorage.setItem(LEGACY_AI_USER_API_KEY, 'legacy-key');
+    localStorage.setItem(STORAGE_KEYS.legacyAiUserApiKey, 'legacy-key');
 
     await Promise.all([hydrateApiKey(), hydrateApiKey()]);
 
     expect(settings.aiUserApiKey).toBe('legacy-key');
     expect(secureStore.apiKey).toBe('legacy-key');
-    expect(localStorage.getItem(LEGACY_AI_USER_API_KEY)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { draw, firstOpaquePixel, gotoApp } from './helpers';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
@@ -713,10 +714,16 @@ test('pen and eraser keep independent stroke sizes that persist across reload', 
 test('a persisted-open drawer, with a control toggled off, is correct at first paint', async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem('splotch-drawer-open', 'true');
-    localStorage.setItem('splotch-eraser-enabled', 'false');
-  });
+  await page.addInitScript(
+    ({ drawerOpen, eraserEnabled }) => {
+      localStorage.setItem(drawerOpen, 'true');
+      localStorage.setItem(eraserEnabled, 'false');
+    },
+    {
+      drawerOpen: STORAGE_KEYS.drawerOpen,
+      eraserEnabled: STORAGE_KEYS.eraserEnabled,
+    }
+  );
   await gotoApp(page);
 
   // The <html> stamp the CSS keys off is present before hydration.
@@ -730,6 +737,36 @@ test('a persisted-open drawer, with a control toggled off, is correct at first p
   await openBrushMenu(page);
   await expect(page.locator('#crayonBrushButton')).toBeVisible();
   await expect(page.locator('#eraserButton')).toBeHidden();
+});
+
+test('a corrupt default-on setting stays enabled before and after hydration', async ({ page }) => {
+  await page.addInitScript(
+    ({ eraserEnabled }) => {
+      localStorage.setItem(eraserEnabled, 'garbage');
+      const toggleAttribute = HTMLElement.prototype.toggleAttribute;
+      HTMLElement.prototype.toggleAttribute = function (name, force) {
+        if (this === document.documentElement && name === 'data-off-eraser') {
+          (window as Window & { preHydrationEraserOff?: boolean }).preHydrationEraserOff ??= force;
+        }
+        return toggleAttribute.call(this, name, force);
+      };
+    },
+    { eraserEnabled: STORAGE_KEYS.eraserEnabled }
+  );
+  await page.goto('/');
+
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as Window & { preHydrationEraserOff?: boolean }).preHydrationEraserOff
+      )
+    )
+    .toBe(false);
+
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  await openDrawer(page);
+  await openBrushMenu(page);
+  await expect(page.locator('#eraserButton')).toBeVisible();
 });
 
 // The brush choice is a persisted user setting (default pen; the eraser is
@@ -1051,7 +1088,10 @@ test('only the current API key verification can persist across a close and reope
 
 test('the AI button posts the drawing and reveals the generated result', async ({ page }) => {
   // Skip the style picker so the button generates directly.
-  await page.addInitScript(() => localStorage.setItem('splotch-ai-customization-enabled', 'false'));
+  await page.addInitScript(
+    (aiCustomizationEnabled) => localStorage.setItem(aiCustomizationEnabled, 'false'),
+    STORAGE_KEYS.aiCustomizationEnabled
+  );
 
   const png = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',

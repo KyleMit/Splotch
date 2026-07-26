@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { STORAGE_KEYS } from '../storage';
 import {
   STROKE_SIZES,
   DEFAULT_SIZE,
@@ -12,9 +13,6 @@ import {
   type StrokeSize,
 } from './strokeWidth.svelte';
 import { selectBrush } from './tool.svelte';
-
-const PEN_KEY = 'splotch-stroke-width-size';
-const ERASER_KEY = 'splotch-eraser-width-size';
 
 beforeEach(() => {
   localStorage.clear();
@@ -51,8 +49,8 @@ describe('setStrokeSize / activeStrokeSize', () => {
     setStrokeSize(5);
     expect(strokeState.penSize).toBe(5);
     expect(activeStrokeSize()).toBe(5);
-    expect(localStorage.getItem(PEN_KEY)).toBe('5');
-    expect(localStorage.getItem(ERASER_KEY)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.strokeWidthSize)).toBe('5');
+    expect(localStorage.getItem(STORAGE_KEYS.eraserWidthSize)).toBeNull();
   });
 
   it('writes the eraser level to the eraser key when the eraser is active', () => {
@@ -60,8 +58,8 @@ describe('setStrokeSize / activeStrokeSize', () => {
     setStrokeSize(1);
     expect(strokeState.eraserSize).toBe(1);
     expect(activeStrokeSize()).toBe(1);
-    expect(localStorage.getItem(ERASER_KEY)).toBe('1');
-    expect(localStorage.getItem(PEN_KEY)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.eraserWidthSize)).toBe('1');
+    expect(localStorage.getItem(STORAGE_KEYS.strokeWidthSize)).toBeNull();
   });
 
   it('keeps pen and eraser levels independent', () => {
@@ -85,14 +83,14 @@ describe('setStrokeSize / activeStrokeSize', () => {
     setStrokeSize(7 as StrokeSize); // invalid
     setStrokeSize(0 as StrokeSize); // invalid
     expect(strokeState.penSize).toBe(3);
-    expect(localStorage.getItem(PEN_KEY)).toBe('3');
+    expect(localStorage.getItem(STORAGE_KEYS.strokeWidthSize)).toBe('3');
   });
 });
 
 describe('reloadStrokeWidth', () => {
   it('re-reads persisted levels into the live store (durable-recovery path)', () => {
-    localStorage.setItem(PEN_KEY, '4');
-    localStorage.setItem(ERASER_KEY, '1');
+    localStorage.setItem(STORAGE_KEYS.strokeWidthSize, '4');
+    localStorage.setItem(STORAGE_KEYS.eraserWidthSize, '1');
     reloadStrokeWidth();
     expect(strokeState.penSize).toBe(4);
     expect(strokeState.eraserSize).toBe(1);
@@ -100,7 +98,7 @@ describe('reloadStrokeWidth', () => {
 
   it('rejects a persisted level not in STROKE_SIZES, keeping the current value', () => {
     strokeState.penSize = 2;
-    localStorage.setItem(PEN_KEY, '99'); // not an allowed level
+    localStorage.setItem(STORAGE_KEYS.strokeWidthSize, '99'); // not an allowed level
     reloadStrokeWidth();
     expect(strokeState.penSize).toBe(2);
   });

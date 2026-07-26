@@ -1,10 +1,8 @@
-<!-- Source: .ruler/skill-forks/codex/skill-notes/burn-down-audits.md.template -->
-
 # `burn-down-audits` for Codex — design notes
 
 Design history and open questions for the Codex implementation of the `burn-down-audits` skill. This
-note belongs only to the Codex fork under `.ruler/skill-forks/codex/`; it is not a shared contract
-with the Claude Code implementation.
+note belongs only to the directly maintained Codex package under `.agents/`; it is not a shared
+contract with the Claude Code implementation.
 
 Current as of **2026-07-26**. The Codex runner was validated with direct CLI probes and a live
 canary before its runbook was separated from the Claude Code skill.
@@ -88,29 +86,42 @@ Reviewing only `git show HEAD` can hide the implementation the reviewer is meant
 The reviewer remains fresh and read-only. It receives the original finding, verifier brief, and
 complete accepted range, but not the implementer's intentions or conversational history.
 
-## Ruler isolation
+## CI supervision earned by the first full run
 
-Ruler 0.3.44 copies one `.ruler/skills/` tree to every configured agent and cannot select a
-different source for one skill. The project extends the apply pipeline with
-`scripts/apply-ruler-skill-forks.mjs`.
+The first full Codex continuation showed two distinct red signals that the original runbook
+conflated. Commit `758b0ef` had a green Quality job and green unit/asset/script/E2E steps, but its
+workflow concluded `cancelled` when the next push interrupted app-driver smoke. Commit `aada7eca`
+then completed fully green. The first real failure was `d8b86096`: an unformatted overload in
+`web/src/lib/storage.ts` failed Quality's format step while every completed Tests job passed.
 
-The complete Codex package and this note live under:
+The format failure completed more than two minutes before the next implementation commit, but the
+supervisor did not inspect CI because the runbook tied CI checks to draining PR comments and all
+comments were held until closeout. The failure then survived every later push until the final format
+pass.
+
+The earned rules are:
+
+* Put the repository's cheap format check in the per-finding deterministic gate. A full local test
+  suite per push would not have caught this failure any better; formatting is a separate axis.
+* Poll CI independently from comment posting and stop on a completed `failure`.
+* Treat `cancelled` as inconclusive because `cancel-in-progress` routinely interrupts healthy runs.
+* Track separate last-Quality-green and last-fully-green SHAs, and force a terminal full-CI
+  checkpoint periodically so continuous pushes cannot starve the full-suite backstop forever.
+
+## Provider ownership
+
+The complete Codex package and this note are maintained directly:
 
 ```text
-.ruler/skill-forks/codex/
-├── skills/burn-down-audits/
-└── skill-notes/burn-down-audits.md.template
+.agents/
+├── skills/burn-down-audits/SKILL.md
+└── skill-notes/burn-down-audits.md
 ```
 
-The apply step replaces the complete generated skill directory. It rejects a fork that also exists
-in the shared `.ruler/skills/` or `.ruler/skill-notes/` tree, so no shared implementation file can
-silently leak into this fork. The `.template` suffix keeps Ruler's recursive Markdown rule loader
-from concatenating fork content into the root instruction files.
-
-The shared knowledge map and `skills-guide` registration describe only the high-level capability:
-iteratively consume `docs/AUDIT.md`, preserve accepted progress in Git, and support operational
-requests such as status, pause, resume, and wrap up. The Codex runbook owns every implementation
-choice beneath that boundary.
+They are deliberately absent from `.ruler/skills/` and `.ruler/skill-forks/`. Ruler preserves the
+direct package, and its drift guard excludes it. The Claude implementation and notes live under the
+parallel `.claude/` paths and are maintained independently; never copy one provider's runbook over
+the other.
 
 ## Open questions
 
@@ -130,5 +141,7 @@ choice beneath that boundary.
 | 2026-07-26 | Move listener-based E2E from nested implementers to the outer driver    |
 | 2026-07-26 | Move bounded Git staging and commits to the outer driver                |
 | 2026-07-26 | Pass gate output to repairs and review the complete finding range       |
-| 2026-07-26 | Separate the Codex skill package and design notes at the Ruler source   |
+| 2026-07-26 | Separate the Codex and Claude packages at the Ruler source              |
 | 2026-07-26 | Rewind clean incomplete implementation chains during crash recovery     |
+| 2026-07-26 | Add per-finding formatting and independent CI checkpoints               |
+| 2026-07-26 | Move both provider packages to direct, independent maintenance          |

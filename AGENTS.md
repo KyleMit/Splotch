@@ -5,11 +5,12 @@
 # Splotch – Agent Instructions
 
 > [!IMPORTANT]
-> Every `CLAUDE.md` and `AGENTS.md` in this repo, plus the `.claude/skills/` and `.agents/skills/`
-> trees, is **generated** by [ruler](https://github.com/intellectronica/ruler) — never edit those
-> files directly. Edit the sources in `.ruler/` (or the nested `<dir>/.ruler/`); fully independent
-> runner-specific skills live in `.ruler/skill-forks/<runner>/`. Then run `npm run ruler:apply` and
-> commit the regenerated output. CI fails on drift (`npm run ruler:check`).
+> Every `CLAUDE.md` and `AGENTS.md` in this repo and nearly every package in `.claude/skills/` and
+> `.agents/skills/` is **generated** by [ruler](https://github.com/intellectronica/ruler) — never
+> edit generated files directly. Edit their `.ruler/` source, run `npm run ruler:apply`, and commit
+> the output. The one exception is `burn-down-audits`: its Claude package under `.claude/` and Codex
+> package under `.agents/` are direct, provider-specific sources maintained independently. Edit only
+> the provider package and note you intend to change; never sync one from the other.
 
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
 
@@ -31,10 +32,9 @@ build-time branches instead.
 
 ## Agent instruction files (ruler)
 
-`.ruler/` is the single source of truth for the instructions coding agents load — Claude Code (local
-and cloud sessions) reads the generated `CLAUDE.md` files and `.claude/skills/`; OpenAI Codex and
-other AGENTS.md-standard agents read the generated `AGENTS.md` files and `.agents/skills/`. See
-ADR-0058.
+`.ruler/` is the source of truth for generated agent instructions and shared skills. Claude Code
+(local and cloud sessions) reads `CLAUDE.md` files and `.claude/skills/`; OpenAI Codex and other
+AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-0058.
 
 * Root instructions live in `.ruler/*.md` (concatenated in sorted order, `AGENTS.md` first); each
   nested `<dir>/.ruler/AGENTS.md` holds that directory's orientation and generates the sibling
@@ -49,22 +49,29 @@ ADR-0058.
   inheriting shared implementation files or disappearing from one agent. Markdown fork sources end
   in `.template`; the suffix is removed at the destination and keeps Ruler's recursive rule loader
   from concatenating them into root instructions.
+* `burn-down-audits` is the explicit direct-maintained exception to both generated layouts. Its
+  Claude implementation and design note live under `.claude/`; its Codex implementation and note
+  live under `.agents/`. They are provider forks, not mirrors: edit each directly and independently,
+  never through `.ruler/` and never by copying one provider's package over the other.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md` and mirrored to `.claude/skill-notes/`
   and `.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs`. A forked skill's independent note
   instead lives under `.ruler/skill-forks/<runner>/skill-notes/` and must be absent from the shared
-  note tree. Notes are deliberately *not* part of a skill — see below.
-* `npm run ruler:apply` runs Ruler, mirrors shared skill notes, applies complete skill forks, and
-  dprint-formats the output. `npm run ruler:check` repeats that pipeline and fails if anything
-  changed — the CI drift gate. `npm run ruler:dry-run` previews Ruler's shared output only; it does
-  not preview the post-apply forks.
+  note tree. The direct `burn-down-audits` notes stay beside their direct provider trees. Notes are
+  deliberately *not* part of a skill — see below.
+* `npm run ruler:apply` snapshots the direct `burn-down-audits` provider paths, runs Ruler, mirrors
+  shared skill notes, applies managed skill forks, restores the direct paths even on failure, and
+  dprint-formats the output. `npm run ruler:check` repeats that pipeline and fails if generated
+  output changed — the CI drift gate. `npm run ruler:dry-run` previews Ruler's shared output only;
+  it does not preview the post-apply layers.
 
 **If asked to update agent instructions, docs, or skills: change `.ruler/**` sources, never the
 generated files.** A generated file carries a `<!-- Source: ... -->` marker pointing back to its
-source.
+source. For `burn-down-audits` only, edit the selected provider's direct `.claude/` or `.agents/`
+package and note instead.
 
-Not generated — edit in place: `.claude/rules/` (path-scoped rules), `.claude/hooks/`,
-`.claude/settings.json`, `.claude/audit-conventions.md`, `.claude/cloud/`, and everything under
-`docs/`.
+Not generated — edit in place: both provider implementations and notes for `burn-down-audits`,
+`.claude/rules/` (path-scoped rules), `.claude/hooks/`, `.claude/settings.json`,
+`.claude/audit-conventions.md`, `.claude/cloud/`, and everything under `docs/`.
 
 `.ruler/skill-notes/` and the fork-specific `skill-notes/` directories hold the **design history and
 open questions** for a skill — why it is shaped the way it is, which failures earned which rule,
@@ -146,8 +153,9 @@ Backticks around file paths, identifiers, and commands are still correct — thi
 On-demand **skills** (consult when the topic comes up — don't guess from memory). Claude Code
 auto-invokes them by description (or via `/name`); agents without skill support should read the
 skill's `SKILL.md` directly from `.agents/skills/<name>/` (or `.claude/skills/<name>/`). Most are
-identical; fully independent runner implementations may be produced from
-`.ruler/skill-forks/<runner>/`:
+generated from `.ruler/`; managed runner forks may be produced from `.ruler/skill-forks/<runner>/`.
+`burn-down-audits` is different: its `.claude/` and `.agents/` packages are direct provider-specific
+sources maintained independently.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                          |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -168,12 +176,13 @@ workflow it belongs to and how related skills chain together (the audit lifecycl
 handoffs, ADRs) — is the `skills-guide` skill (`/skills-guide`). Consult it when unsure which skill
 applies or how skills relate.
 
-**Prefer skills over slash commands.** Every reusable agent workflow in this repo is authored as a
-skill in `.ruler/skills/<name>/SKILL.md` (or, when implementations must be isolated, as complete
-packages under `.ruler/skill-forks/<runner>/`), not as a command in `.claude/commands/`. A skill
-with a good `description` is both user-invocable (`/name`) *and* model-invocable, so Claude can
-reach for it on its own — a plain command can't. When authoring a new reusable workflow, create a
-skill: give it a `name` and a `description` that says both what it does and when to use it (add
+**Prefer skills over slash commands.** Reusable agent workflows are normally authored in
+`.ruler/skills/<name>/SKILL.md` or, when managed implementations must be isolated, as complete
+packages under `.ruler/skill-forks/<runner>/`; `burn-down-audits` alone is authored directly in its
+two provider trees. Do not create workflows as commands in `.claude/commands/`. A skill with a good
+`description` is both user-invocable (`/name`) and model-invocable, so Claude can reach for it on
+its own — a plain command can't. When authoring a new reusable workflow, create a skill: give it a
+`name` and a `description` that says both what it does and when to use it (add
 `disable-model-invocation: true` if it should stay user-only), and **register it in the
 `skills-guide` skill** (`.ruler/skills/skills-guide/SKILL.md`) under the group it belongs to — same
 when renaming or deleting a skill. If the user asks to create a *command*, ask whether they'd like a
@@ -279,6 +288,10 @@ A fully forked skill keeps its independent notes beside its independent packages
 `scripts/apply-ruler-skill-forks.mjs` writes each note only to its matching agent tree. A fork note
 must not also exist here; that guard prevents runner-specific design history from silently becoming
 a shared contract.
+
+`burn-down-audits` is the one unmanaged provider fork. Its independent notes are edited directly at
+`.claude/skill-notes/burn-down-audits.md` and `.agents/skill-notes/burn-down-audits.md`, beside the
+provider trees they describe. Neither note has a `.ruler/` source, and the two must not be synced.
 
 A skill's `SKILL.md` is a runbook: it tells an agent what to do *now*, and every line it carries is
 context the agent pays for on each invocation. That leaves no room for the other half of the story —

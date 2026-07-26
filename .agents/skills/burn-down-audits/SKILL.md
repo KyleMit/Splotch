@@ -114,7 +114,7 @@ not an implementation verdict.
 The default gates do not cover bespoke repository ratchets. For this repository use:
 
 ```bash
-CHECK_CMD='npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check'
+CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check'
 TEST_CMD='npm run test:unit && npm run test:scripts'
 ```
 
@@ -122,8 +122,8 @@ Do not put `npm run ruler:check` in `CHECK_CMD`; it writes by reapplying Ruler. 
 `.ruler/**` must run `npm run ruler:apply` and commit the generated output itself.
 
 Leave `PUSH_TEST_CMD` empty while actively supervising a draft PR: CI is the full-suite backstop.
-Set it to `npm test` only for a run nobody will watch. GitHub Actions cancels older runs on each
-push, so judge the branch by the final CI result plus the per-finding gates.
+Set it to `npm test` only for a run nobody will watch. Keep `PUSH_EVERY=1`: every accepted finding
+must reach origin before an ephemeral environment can be reclaimed.
 
 ## Before a run
 
@@ -142,7 +142,7 @@ push, so judge the branch by the final CI result plus the per-finding gates.
    ```bash
    AGENT_RUNNER=codex \
    BRANCH='<branch>' \
-   CHECK_CMD='npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check' \
+   CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check' \
    TEST_CMD='npm run test:unit && npm run test:scripts' \
    npm run audit:preflight
    ```
@@ -190,7 +190,7 @@ push, so judge the branch by the final CI result plus the per-finding gates.
     ```bash
     AGENT_RUNNER=codex \
     BRANCH='<branch>' \
-    CHECK_CMD='npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check' \
+    CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check' \
     TEST_CMD='npm run test:unit && npm run test:scripts' \
     npm run audit:burndown:overnight -- 600
     ```
@@ -204,8 +204,18 @@ tail -f -n 0 .audit-work/logs/run.log | grep -E --line-buffered \
   "HALT|red at batch|red on the final|push failed|no impl session|DEFERRED|finished:|iter"
 ```
 
-Check CI whenever comments are drained. Pause and diagnose a repeatable red CI base; do not let
-later findings pile onto it.
+Treat CI supervision as independent from comment posting:
+
+* After each pushed `DONE`, or at least every two minutes, inspect the newest completed Quality job.
+  Track the last Quality-green SHA and the last fully-green SHA.
+* Treat `cancelled` as inconclusive, not as a regression. A newer push can cancel a healthy run.
+  Treat `failure` as red even when a newer run is queued or cancelled.
+* On any failed job, create `.audit-work/STOP` immediately, let the in-flight finding finish, and
+  diagnose the first failing SHA before resuming. At most one extra finding should land on the red
+  base.
+* After every five handled findings or 20 minutes, whichever comes first, require one workflow on
+  the exact branch HEAD to finish fully green before allowing another push. Drain comments during
+  this checkpoint, but never use comment draining as the CI trigger.
 
 Use `npm run audit:status` for a user-requested status. A mid-priority finding is normally under 15
 minutes; 15–25 minutes merits one later recheck; over 25 minutes merits diagnosis. Priority and fix
@@ -284,7 +294,8 @@ committed handoff across machines.
 5. Tidy empty `## Source:` sections; delete `docs/AUDIT.md` only when the backlog is empty.
 6. Add the `burn-down-audits` row to `docs/AUDIT-LOG.md` with fixed/deferred/dropped counts and the
    PR link.
-7. Run the relevant quality checks, confirm final CI green, and mark the PR ready.
+7. Run `npm run format:check`, the relevant quality checks, and the full test suite; confirm final
+   CI green, then mark the PR ready.
 8. Delete the consumed `docs/handoff/audit-burndown-run.md`.
 
 A deferral keeps its post-mortem in `docs/AUDIT-DEFERRED.md` and, when available, its rejected draft

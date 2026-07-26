@@ -9,7 +9,6 @@ vi.mock('../secureStorage', () => ({
   saveApiKey: vi.fn(async () => {}),
   loadApiKey: vi.fn(async () => null),
   clearApiKey: vi.fn(async () => {}),
-  requestPersistentStorage: vi.fn(async () => false),
 }));
 
 const THEME_COLOR_LIGHT = '#ffffff';

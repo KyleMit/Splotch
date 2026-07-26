@@ -22,10 +22,12 @@ issue** labeled `type:audit` (draining and deleting the file); `/fix-audits` the
 open `type:audit` issues autonomously on its own branch + PR — it no longer reads `docs/AUDIT.md`.
 For a backlog too large to file issue-by-issue (hundreds of findings), `burn-down-audits` is the
 bulk consumer: a scripted unattended loop (`npm run audit:burndown`, `scripts/audit-burndown/`) that
-verifies, implements, and adversarially reviews each finding in one-shot `claude -p` subprocesses,
-deleting each entry in the same commit as its fix — replacing both the vet and fix stages for that
-backlog. It runs cloud-native: the driver commits and pushes, and the supervising agent owns the PR
-and its per-commit comments through the GitHub MCP tools.
+verifies, implements, and adversarially reviews each finding in isolated provider-native
+subprocesses, deleting each entry in the same commit as its fix — replacing both the vet and fix
+stages for that backlog. Its Claude runbook under `.claude/` and Codex runbook under `.agents/` are
+direct, independently maintained provider implementations; edit only the active provider's package.
+The driver commits and pushes, and the supervising agent owns the PR and its per-commit comments
+through GitHub tooling.
 
 ### The audit lifecycle — `docs/AUDIT.md` is a staging area, GitHub issues are the backlog
 

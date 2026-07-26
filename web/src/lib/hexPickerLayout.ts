@@ -140,7 +140,7 @@ export const COLOR_FAMILIES: ColorFamily[] = [
   {
     name: 'greys',
     shades: [
-      '#ffffff',
+      '#FFFFFF',
       '#90A4AE',
       '#78909C',
       '#607D8B',

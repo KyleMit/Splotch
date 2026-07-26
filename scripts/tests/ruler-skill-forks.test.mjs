@@ -27,38 +27,38 @@ describe('applyRulerSkillForks', () => {
     const root = makeRoot();
     write(
       root,
-      '.ruler/skill-forks/claude/skills/burn-down-audits/SKILL.md.template',
+      '.ruler/skill-forks/claude/skills/provider-workflow/SKILL.md.template',
       'claude skill\n'
     );
     write(
       root,
-      '.ruler/skill-forks/codex/skills/burn-down-audits/SKILL.md.template',
+      '.ruler/skill-forks/codex/skills/provider-workflow/SKILL.md.template',
       'codex skill\n'
     );
     write(
       root,
-      '.ruler/skill-forks/claude/skill-notes/burn-down-audits.md.template',
+      '.ruler/skill-forks/claude/skill-notes/provider-workflow.md.template',
       'claude note\n'
     );
     write(
       root,
-      '.ruler/skill-forks/codex/skill-notes/burn-down-audits.md.template',
+      '.ruler/skill-forks/codex/skill-notes/provider-workflow.md.template',
       'codex note\n'
     );
-    write(root, '.claude/skills/burn-down-audits/stale.txt', 'stale\n');
+    write(root, '.claude/skills/provider-workflow/stale.txt', 'stale\n');
     write(root, '.claude/skills/shared/SKILL.md', 'shared\n');
 
     expect(applyRulerSkillForks(root)).toEqual({ skills: 2, notes: 2 });
-    expect(readFileSync(join(root, '.claude/skills/burn-down-audits/SKILL.md'), 'utf8')).toBe(
+    expect(readFileSync(join(root, '.claude/skills/provider-workflow/SKILL.md'), 'utf8')).toBe(
       'claude skill\n'
     );
-    expect(readFileSync(join(root, '.agents/skills/burn-down-audits/SKILL.md'), 'utf8')).toBe(
+    expect(readFileSync(join(root, '.agents/skills/provider-workflow/SKILL.md'), 'utf8')).toBe(
       'codex skill\n'
     );
-    expect(existsSync(join(root, '.claude/skills/burn-down-audits/stale.txt'))).toBe(false);
+    expect(existsSync(join(root, '.claude/skills/provider-workflow/stale.txt'))).toBe(false);
     expect(readFileSync(join(root, '.claude/skills/shared/SKILL.md'), 'utf8')).toBe('shared\n');
-    expect(readFileSync(join(root, '.agents/skill-notes/burn-down-audits.md'), 'utf8')).toBe(
-      '<!-- Source: .ruler/skill-forks/codex/skill-notes/burn-down-audits.md.template -->\n\ncodex note\n'
+    expect(readFileSync(join(root, '.agents/skill-notes/provider-workflow.md'), 'utf8')).toBe(
+      '<!-- Source: .ruler/skill-forks/codex/skill-notes/provider-workflow.md.template -->\n\ncodex note\n'
     );
   });
 
@@ -66,10 +66,10 @@ describe('applyRulerSkillForks', () => {
     const root = makeRoot();
     write(
       root,
-      '.ruler/skill-forks/claude/skills/burn-down-audits/SKILL.md.template',
+      '.ruler/skill-forks/claude/skills/provider-workflow/SKILL.md.template',
       'claude skill\n'
     );
-    write(root, '.ruler/skills/burn-down-audits/SKILL.md', 'shared skill\n');
+    write(root, '.ruler/skills/provider-workflow/SKILL.md', 'shared skill\n');
 
     expect(() => applyRulerSkillForks(root)).toThrow(
       'ruler skill fork must not also have a shared implementation'
@@ -80,12 +80,12 @@ describe('applyRulerSkillForks', () => {
     const root = makeRoot();
     write(
       root,
-      '.ruler/skill-forks/claude/skills/burn-down-audits/SKILL.md.template',
+      '.ruler/skill-forks/claude/skills/provider-workflow/SKILL.md.template',
       'claude skill\n'
     );
 
     expect(() => applyRulerSkillForks(root)).toThrow(
-      'ruler skill fork burn-down-audits is missing complete package(s) for: codex'
+      'ruler skill fork provider-workflow is missing complete package(s) for: codex'
     );
   });
 
@@ -93,10 +93,10 @@ describe('applyRulerSkillForks', () => {
     const root = makeRoot();
     write(
       root,
-      '.ruler/skill-forks/codex/skills/burn-down-audits/SKILL.md.template',
+      '.ruler/skill-forks/codex/skills/provider-workflow/SKILL.md.template',
       'codex skill\n'
     );
-    write(root, '.ruler/skill-forks/codex/skills/burn-down-audits/reference.md', 'unsafe\n');
+    write(root, '.ruler/skill-forks/codex/skills/provider-workflow/reference.md', 'unsafe\n');
 
     expect(() => applyRulerSkillForks(root)).toThrow(
       'Markdown in a ruler skill fork must end in .md.template'
@@ -105,7 +105,7 @@ describe('applyRulerSkillForks', () => {
 
   it('rejects a fork note without a matching runner-specific skill', () => {
     const root = makeRoot();
-    write(root, '.ruler/skill-forks/codex/skill-notes/burn-down-audits.md.template', 'orphan\n');
+    write(root, '.ruler/skill-forks/codex/skill-notes/provider-workflow.md.template', 'orphan\n');
 
     expect(() => applyRulerSkillForks(root)).toThrow('ruler skill fork note has no matching skill');
   });

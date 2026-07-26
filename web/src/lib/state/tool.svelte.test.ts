@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { STORAGE_KEYS } from '../storage';
 import {
   toolState,
   BRUSH_TYPES,
@@ -9,8 +10,6 @@ import {
   resetToolAfterClear,
   reloadBrushType,
 } from './tool.svelte';
-
-const BRUSH_KEY = 'splotch-brush-type';
 
 describe('tool state', () => {
   beforeEach(() => {
@@ -32,18 +31,18 @@ describe('tool state', () => {
 
   it('persists pen, crayon, and magic selections', () => {
     selectBrush('crayon');
-    expect(localStorage.getItem(BRUSH_KEY)).toBe('crayon');
+    expect(localStorage.getItem(STORAGE_KEYS.brushType)).toBe('crayon');
     selectBrush('magic');
-    expect(localStorage.getItem(BRUSH_KEY)).toBe('magic');
+    expect(localStorage.getItem(STORAGE_KEYS.brushType)).toBe('magic');
     selectBrush('pen');
-    expect(localStorage.getItem(BRUSH_KEY)).toBe('pen');
+    expect(localStorage.getItem(STORAGE_KEYS.brushType)).toBe('pen');
   });
 
   it('never persists the eraser (a relaunch on a blank page must not restore it)', () => {
     selectBrush('crayon');
     selectBrush('eraser');
     expect(toolState.brush).toBe('eraser');
-    expect(localStorage.getItem(BRUSH_KEY)).toBe('crayon');
+    expect(localStorage.getItem(STORAGE_KEYS.brushType)).toBe('crayon');
   });
 
   it('toggleEraser flips between the ink brush and the eraser', () => {
@@ -106,23 +105,23 @@ describe('reloadBrushType', () => {
   });
 
   it('re-reads the persisted brush into the live store (durable-recovery path)', () => {
-    localStorage.setItem(BRUSH_KEY, 'crayon');
+    localStorage.setItem(STORAGE_KEYS.brushType, 'crayon');
     reloadBrushType();
     expect(toolState.brush).toBe('crayon');
   });
 
   it('rejects garbage and a persisted eraser, keeping the current brush', () => {
-    localStorage.setItem(BRUSH_KEY, 'sparkles');
+    localStorage.setItem(STORAGE_KEYS.brushType, 'sparkles');
     reloadBrushType();
     expect(toolState.brush).toBe('pen');
 
-    localStorage.setItem(BRUSH_KEY, 'eraser');
+    localStorage.setItem(STORAGE_KEYS.brushType, 'eraser');
     reloadBrushType();
     expect(toolState.brush).toBe('pen');
   });
 
   it('rebuilds the ink-brush memory from the recovered value', () => {
-    localStorage.setItem(BRUSH_KEY, 'crayon');
+    localStorage.setItem(STORAGE_KEYS.brushType, 'crayon');
     reloadBrushType();
     selectBrush('eraser');
     selectInkBrush();

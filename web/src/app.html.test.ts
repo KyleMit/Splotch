@@ -5,6 +5,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
+import { STORAGE_KEYS } from './lib/storage';
 import {
   ACTION_BUTTON_SCALE_DEFAULT,
   ACTION_BUTTON_SCALE_MAX,
@@ -18,10 +19,8 @@ import {
 // flip a default and the stamp silently seeds the wrong first-paint attribute,
 // with no type error and no failing test.
 //
-// The clamp bounds are imported because settings.svelte.ts exports them; the
-// keys and boolean defaults are parsed as text because the `*_KEY` constants
-// and BOOL_SETTINGS itself are module-private, so there is nothing importable
-// to compare against.
+// The registry and clamp bounds are imported directly. Boolean defaults are
+// parsed as text because BOOL_SETTINGS itself is module-private.
 
 const bootScript = (() => {
   const html = readFileSync(new URL('./app.html', import.meta.url), 'utf8');
@@ -30,30 +29,17 @@ const bootScript = (() => {
   return match![1];
 })();
 
-function keyConstants(source: string): Map<string, string> {
-  return new Map(
-    [...source.matchAll(/\b(\w+_KEY) = '(splotch-[\w-]+)'/g)].map((m) => [m[1], m[2]])
-  );
-}
-
 const settingsSource = readFileSync(
   new URL('./lib/state/settings.svelte.ts', import.meta.url),
   'utf8'
 );
-const settingsKeys = keyConstants(settingsSource);
+const registryKeys = new Set(Object.values(STORAGE_KEYS));
 
-const sourceOfTruthKeys = new Set([
-  ...settingsKeys.values(),
-  ...keyConstants(
-    readFileSync(new URL('./lib/state/tool.svelte.ts', import.meta.url), 'utf8')
-  ).values(),
-]);
-
-// BOOL_SETTINGS entries are `propName: [SOME_KEY, default]`; re-key them by the
-// key's string literal, which is the only handle the boot script has.
-const boolDefaults = new Map(
-  [...settingsSource.matchAll(/\[(\w+_KEY), (true|false)\]/g)].flatMap((m) => {
-    const key = settingsKeys.get(m[1]);
+// BOOL_SETTINGS entries are `propName: [STORAGE_KEYS.someKey, default]`; re-key
+// them by the key's string literal, which is the only handle the boot script has.
+const boolDefaults: Map<string, boolean> = new Map(
+  [...settingsSource.matchAll(/\[STORAGE_KEYS\.(\w+), (true|false)\]/g)].flatMap((m) => {
+    const key = STORAGE_KEYS[m[1] as keyof typeof STORAGE_KEYS];
     return key ? [[key, m[2] === 'true'] as const] : [];
   })
 );
@@ -80,7 +66,7 @@ describe("app.html's boot script mirrors the state modules", () => {
 
   it('parses keys and boolean defaults out of both sides', () => {
     expect(bootKeys.length).toBeGreaterThan(0);
-    expect(sourceOfTruthKeys.size).toBeGreaterThan(0);
+    expect(registryKeys.size).toBeGreaterThan(0);
     expect(boolDefaults.size).toBeGreaterThan(0);
 
     // Fail closed: the per-key guards below are generated from what the pair
@@ -95,8 +81,8 @@ describe("app.html's boot script mirrors the state modules", () => {
   // attribute (splotch-sound-enabled, for one), so the boot script is expected
   // to read a subset.
   for (const key of bootKeys) {
-    it(`${key} is defined by a state module`, () => {
-      expect([...sourceOfTruthKeys]).toContain(key);
+    it(`${key} is defined by the storage registry`, () => {
+      expect([...registryKeys]).toContain(key);
     });
   }
 

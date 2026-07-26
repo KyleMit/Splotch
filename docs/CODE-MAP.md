@@ -16,7 +16,8 @@ numbers reflect **hand-written code and config**, not assets or generated duplic
   `capacitor.config.json`, `.claude/settings.json`, `netlify.toml`, svelte/vite/playwright configs,
   …).
 * **Ruler dedup:** dropped every generated `CLAUDE.md` / `AGENTS.md`, `.claude/skills/**`, and the
-  entire `.agents/**` tree (all produced by `npm run ruler:apply`). Kept `.ruler/**` sources; a
+  entire `.agents/**` tree. The later direct-maintained `burn-down-audits` provider packages remain
+  excluded from this historical snapshot under the same path filter. Kept `.ruler/**` sources; a
   `.md` file is counted only if it's a `.ruler` source or independently authored (docs, ADRs,
   release notes, README).
 
