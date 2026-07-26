@@ -22,50 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P3][maintainability] Centralize HTTP status codes used across the API
-
-**File(s):** `web/src/routes/api/generate-image/+server.ts:16,71,72,85,91,92,111,143`;
-`web/src/routes/api/report/+server.ts:73,78,89,104`;
-`web/src/routes/api/csp-report/+server.ts:109,117,128,135`;
-`web/src/lib/server/generationAuthorization.ts:32,60` — pinned at SHA f934d43
-
-#### Problem
-
-Only one status code in the whole surface is named — `SAFETY_STATUS = 422` (generate-image:16).
-Everything else is an inline literal: `400`, `403`, `413`, `415`, `500`, `502`, `503`, `204`, `429`.
-The 4xx/5xx contract (documented at length in the api skill) is spread across five files with no way
-to see it in one place, and the meanings (413 = too large, 415 = unsupported type, 422 = safety, 502
-= upstream) live only in comments at each call site.
-
-#### Proposed solution
-
-Add a shared `HTTP` constant map (in `http.ts`), naming the codes the API actually uses:
-
-```ts
-export const HTTP = {
-  BAD_REQUEST: 400,
-  FORBIDDEN: 403,
-  PAYLOAD_TOO_LARGE: 413,
-  UNSUPPORTED_MEDIA_TYPE: 415,
-  UNPROCESSABLE: 422,
-  TOO_MANY: 429,
-  SERVER_ERROR: 500,
-  BAD_GATEWAY: 502,
-  UNAVAILABLE: 503,
-  NO_CONTENT: 204,
-} as const;
-```
-
-Reference these at each call site. Keeps the endpoint's failure vocabulary greppable and
-self-documenting.
-
-#### Verification
-
-`grep -rn "status: [0-9]\|error(4\|error(5" web/src/routes/api` shows only the constant references.
-`npm run test:api:smoke`.
-
----
-
 ### [P3][maintainability] Collect the per-endpoint rate-limit budgets into one table
 
 **File(s):** `web/src/lib/server/generationAuthorization.ts:7-9` (`GENERATE_LIMIT=15`,
