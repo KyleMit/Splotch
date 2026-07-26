@@ -28,32 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P3][type-safety] `PLATFORM_LABEL` typed `Record<string, string>` defeats exhaustiveness against `Platform`
-
-**File(s):** `web/src/lib/deviceInfo.ts:7`, used `24` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-const PLATFORM_LABEL: Record<string, string> = { web: 'Web', ios: 'iOS', android: 'Android' };
-```
-
-Keyed by `string`, so TypeScript won't flag a missing platform or a typo'd key, and the
-`?? platform` fallback at line 24 silently papers over a gap. The union `Platform` already exists
-two imports away.
-
-#### Proposed solution
-
-`const PLATFORM_LABEL: Record<Platform, string> = { web: 'Web', ios: 'iOS', android: 'Android' };`.
-Now adding a `Platform` member without a label is a compile error, and the `?? platform` fallback
-becomes dead (can drop or keep as belt-and-suspenders).
-
-#### Verification
-
-`npm run check` errors if a `Platform` member is unlabeled.
-
----
-
 ### [P3][naming] `supportsOrientationLock` hides its tablet cutoff behind a bare `600`
 
 **File(s):** `web/src/lib/platform.ts:90-94` — pinned at SHA f934d43
