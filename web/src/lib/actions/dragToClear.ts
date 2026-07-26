@@ -302,6 +302,14 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
   return {
     destroy() {
+      if (activePointerId !== null) {
+        const o = getOptions();
+        finishDrag(o, activePointerId);
+        resetDragVisuals(o);
+        // finishDrag only hides the zone on a delayed timer, and the resetTimers
+        // sweep below cancels it before it can fire.
+        o.acceptZoneEl.style.display = 'none';
+      }
       node.removeEventListener('pointerdown', onPointerDown);
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);

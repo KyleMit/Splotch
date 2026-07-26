@@ -9,37 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P3][lifecycle] `dragToClear.destroy` leaves in-flight visual state on shared DOM
-
-**File(s):** `web/src/lib/actions/dragToClear.ts:273-284` (`destroy`) — pinned at SHA f934d43
-
-#### Problem
-
-`destroy` removes listeners and clears timers/rAF, but does **not** undo any visual state the action
-wrote to elements *outside* `node`. If the component unmounts mid-drag, these persist:
-
-* `document.documentElement.style` `--clear-progress` (set on every move, line 143) is left non-zero
-  on the global root.
-* `o.containerEl.style.transform` / `.dragging-active` class remain applied.
-* `o.acceptZoneEl` may be left `display:block`/`.visible`.
-
-Because `--clear-progress` is on `documentElement` (explicitly "any element can read it"), a leaked
-value can affect the next-mounted UI, not just the torn-down subtree.
-
-#### Proposed solution
-
-Have `destroy` call the shared reset (see the P2 cleanup finding) when a drag is active — reset
-`--clear-progress` to `0`, clear `containerEl` transform/class, hide the accept zone — before
-removing listeners.
-
-#### Verification
-
-Add a `dragToClear.test.ts` case: start a drag (`pointerdown` + `pointermove`), call
-`action.destroy()`, assert `--clear-progress` is `0` and `containerEl` has no `dragging-active`
-class. `npm run test:unit -- dragToClear`.
-
----
-
 ### [P3][maintainability] `dragToClear` mixes two timer-tracking mechanisms
 
 **File(s):** `web/src/lib/actions/dragToClear.ts:32-48,279-282` — pinned at SHA f934d43

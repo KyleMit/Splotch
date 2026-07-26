@@ -226,4 +226,25 @@ describe('dragToClear pointer identity', () => {
     expect(options.acceptZoneEl.style.display).toBe('none');
     expect(options.acceptZoneEl.classList.contains('visible')).toBe(false);
   });
+
+  it('resets shared visual state when destroyed mid-drag', () => {
+    const { node, options, action } = setup();
+    const far = 100 + acceptRadius() + 10;
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    node.dispatchEvent(pointerEvent('pointermove', 1, far, 100));
+
+    expect(clearProgress()).toBe('1');
+
+    action.destroy();
+
+    expect(clearProgress()).toBe('0');
+    expect(options.containerEl.classList.contains('dragging-active')).toBe(false);
+    expect(options.containerEl.style.transform).toBe('');
+    expect(node.classList.contains('dragging')).toBe(false);
+    expect(node.classList.contains('delete-ready')).toBe(false);
+    expect(options.acceptZoneEl.classList.contains('visible')).toBe(false);
+    expect(options.acceptZoneEl.classList.contains('threshold-reached')).toBe(false);
+    expect(options.acceptZoneEl.style.display).toBe('none');
+  });
 });
