@@ -31,16 +31,15 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { COLORING_DIR, FILL_SRC_DIR, fail } from '../lib/paths.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, fail, resolveNightLineArt } from '../lib/paths.mjs';
 import { scoreLineColor } from '../lib/night-scores.mjs';
 import { scoreNightHalo, DELTA_RIM, HALO_DARK, HALO_PROTECT_BLACK } from '../lib/night-halo.mjs';
 
 async function auditPage(page) {
   const rawBuf = await readFile(join(FILL_SRC_DIR, `${page}.night.raw.webp`));
-  const chalkPath = join(COLORING_DIR, `${page}.chalk.webp`);
   const penPath = join(COLORING_DIR, `${page}.outline.webp`);
   // the line art the shipped fill was punched against (as lib/punch-fill.mjs)
-  const lineArtBuf = await readFile(existsSync(chalkPath) ? chalkPath : penPath);
+  const { source: lineArtBuf } = await resolveNightLineArt(penPath);
   const shippedBuf = await readFile(join(COLORING_DIR, `${page}.night.webp`));
 
   const { lineWhite: lineW } = await scoreLineColor(rawBuf, lineArtBuf);

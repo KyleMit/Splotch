@@ -11,7 +11,7 @@
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { COLORING_DIR, FILL_SRC_DIR, fail } from '../lib/paths.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, fail, resolveNightLineArt } from '../lib/paths.mjs';
 import { scoreEyeFill, judgeLightEyes, judgeNightEyes } from '../lib/eye-fill.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
@@ -46,13 +46,13 @@ for (const page of pages) {
   // whites and the punch enforces them, so the night raw is judged as the
   // simulated final composite; without one the raw IS what dark mode reveals.
   const nightPath = join(FILL_SRC_DIR, `${rel}.night.raw.webp`);
-  const chalkPath = page.replace(/\.outline\.webp$/, '.chalk.webp');
   let night = null;
   let orb = null;
   if (existsSync(nightPath)) {
     const raw = await readFile(nightPath);
-    const chalked = existsSync(chalkPath);
-    const judged = chalked ? await compositeNight(raw, await readFile(chalkPath)) : raw;
+    const { chalk } = await resolveNightLineArt(page, source);
+    const chalked = chalk !== null;
+    const judged = chalk ? await compositeNight(raw, chalk) : raw;
     night = judgeNightEyes(await scoreEyeFill(judged, source), light, { chalked });
     // The whole-eye composite check only applies to the chalk-over-night render.
     if (chalked) orb = await scoreCompositeEyes(judged, lightBuf, source);

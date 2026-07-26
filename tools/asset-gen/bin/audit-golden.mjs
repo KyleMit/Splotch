@@ -25,7 +25,13 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import { ASSET_GEN_DIR, COLORING_DIR, FILL_SRC_DIR, fail } from '../lib/paths.mjs';
+import {
+  ASSET_GEN_DIR,
+  COLORING_DIR,
+  FILL_SRC_DIR,
+  fail,
+  resolveNightLineArt,
+} from '../lib/paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from '../lib/solid-regions.mjs';
 import {
@@ -98,9 +104,7 @@ async function scorePage(outlinePath) {
     const nightRaw = await readFile(nightPath);
     // Score against the line art the fill must sit under: the chalk when the
     // page has forked, else the pen — mirroring gen-coloring-fills-dark.mjs.
-    const chalkPath = outlinePath.replace(/\.outline\.webp$/, '.chalk.webp');
-    const chalk = existsSync(chalkPath) ? await readFile(chalkPath) : null;
-    const source = chalk ?? pen;
+    const { source, chalk } = await resolveNightLineArt(outlinePath, pen);
     const [drift, night, line] = await Promise.all([
       scoreDrift(nightRaw, source),
       scoreNightness(nightRaw, source),

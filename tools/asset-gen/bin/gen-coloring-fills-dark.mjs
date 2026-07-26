@@ -49,7 +49,14 @@ import { existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DARK_DIR, fail } from '../lib/paths.mjs';
+import {
+  REPO_ROOT,
+  COLORING_DIR,
+  FILL_SRC_DIR,
+  SAMPLES_DARK_DIR,
+  fail,
+  resolveNightLineArt,
+} from '../lib/paths.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
@@ -375,9 +382,7 @@ for (const page of pages) {
   // The page's chalk outline (ink-on-white), when the fork has happened — the
   // line art dark mode actually renders, so it is both the model's input and
   // the registration/scoring reference. Un-forked pages fall back to the pen.
-  const chalkPath = page.replace(/\.outline\.webp$/, '.chalk.webp');
-  const chalk = existsSync(chalkPath) ? await readFile(chalkPath) : null;
-  const source = chalk ?? pen;
+  const { source, chalk } = await resolveNightLineArt(page, pen);
   const darkInput = await toDarkInput(source, cfg.dilateLines);
   // Eye reference: which nested cores the committed light fill paints as lively
   // eyes — cores keyed off the PEN outline on both sides of the comparison.
