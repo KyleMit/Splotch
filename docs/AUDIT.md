@@ -22,40 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P3][type-safety] `lazyIdbDatabase` returns an unparameterized `IDBPDatabase`, forcing `any` on every consumer
-
-**File(s):** `web/src/lib/idb.ts:4-8` (return type), consumed at `secureStorage.ts:68,94,99` and
-`folderSave.ts:53,63,111` — pinned at SHA f934d43
-
-#### Problem
-
-The factory returns `() => Promise<import('idb').IDBPDatabase>` with no `DBSchema` generic, so
-`db.get`/`db.put`/`db.delete` are all `any` at every call site. That `any` is the root of the
-secure-storage payload type weakness (separate finding) and the untyped `FileSystemDirectoryHandle`
-round-trip in folderSave — the store contents are entirely unchecked.
-
-#### Proposed solution
-
-Add a schema type param threaded to `openDB`:
-
-```ts
-export function lazyIdbDatabase<S extends import('idb').DBSchema>(
-  dbName: string,
-  storeName: string & keyof S,
-  version?: number,
-): () => Promise<import('idb').IDBPDatabase<S>>;
-```
-
-`secureStorage` passes `SecureDB`, `folderSave` passes a
-`{ handles: { key: string; value: FileSystemDirectoryHandle } }` schema.
-
-#### Verification
-
-`npm run check` with the typed schemas in place; confirm `db.get` results are no longer `any` (e.g.
-hover/`tsc --noEmit` shows the value type).
-
----
-
 ### [P3][duplication] `secureStorage` and `folderSave` each hand-roll the same IndexedDB key-value wrapper
 
 **File(s):** `web/src/lib/secureStorage.ts:26-45, 85-115` and

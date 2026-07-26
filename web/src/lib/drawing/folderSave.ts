@@ -1,3 +1,4 @@
+import type { DBSchema } from 'idb';
 import { browser } from '$app/environment';
 import { STORAGE_KEYS, readBool, writeBool, removeKey } from '$lib/storage';
 import { lazyIdbDatabase } from '$lib/idb';
@@ -23,7 +24,15 @@ import { lazyIdbDatabase } from '$lib/idb';
 const DB_NAME = 'splotch-fs';
 const STORE = 'handles';
 const HANDLE_KEY = 'saveDir';
-const getDb = lazyIdbDatabase(DB_NAME, STORE);
+
+interface FolderSaveDb extends DBSchema {
+  handles: {
+    key: string;
+    value: FileSystemDirectoryHandle;
+  };
+}
+
+const getDb = lazyIdbDatabase<FolderSaveDb>(DB_NAME, STORE);
 
 // In-memory copy of the stored handle (undefined = not read yet, null = none),
 // so only the first save of a session touches IndexedDB.
