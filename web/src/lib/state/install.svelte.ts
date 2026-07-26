@@ -14,12 +14,6 @@ import { STORAGE_KEYS, readBool, writeBool } from '$lib/storage';
 // Inside the native Capacitor shell the app is already "installed", so the whole
 // feature is inert there.
 
-// Chromium-only event; not in the default TS DOM lib.
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
-}
-
 // How (if at all) we can offer install on this device/browser right now:
 //   'oneTap'  — Chromium fired beforeinstallprompt; tap = native install dialog.
 //   'android' — Android browser without a live prompt; guide to the ⋮ menu.
@@ -86,7 +80,7 @@ if (browser && !isNative()) {
   window.addEventListener('beforeinstallprompt', (e) => {
     // Stop Chrome's default mini-infobar — we own the timing and presentation.
     e.preventDefault();
-    deferredPrompt = e as BeforeInstallPromptEvent;
+    deferredPrompt = e;
     // The browser only fires this when the app is NOT currently installed, so
     // it outranks a stale persisted flag (installed once, later uninstalled —
     // localStorage survives a PWA uninstall).

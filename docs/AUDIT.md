@@ -24,37 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P3][type-safety] `BeforeInstallPromptEvent` requires a cast because `WindowEventMap` isn't augmented
-
-**File(s):** `web/src/lib/state/install.svelte.ts:21-24,83-86` — pinned at SHA f934d43
-
-#### Problem
-
-The event type is declared locally, then the listener callback receives a plain `Event` and casts:
-
-```ts
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e as BeforeInstallPromptEvent;   // cast
-```
-
-The `as` cast defeats type-checking at the exact boundary where the shape matters, and
-`'appinstalled'` is likewise untyped. `app.d.ts` already augments global types (File System Access
-API), so this is the established pattern for exactly this situation.
-
-#### Proposed solution
-
-Move the interface to `app.d.ts` and augment
-`interface WindowEventMap { beforeinstallprompt: BeforeInstallPromptEvent }`. The listener parameter
-then types automatically and the cast disappears; `deferredPrompt` keeps its precise type.
-
-#### Verification
-
-`npm run check` passes with the cast removed; the listener body still type-checks
-`e.prompt`/`e.userChoice`.
-
----
-
 ### [P3][architecture] Auto-clear/dismiss lifecycle policy lives in the banner component, not the install state module
 
 **File(s):** `web/src/lib/components/InstallBanner.svelte:34-47` (auto-clear `$effect`) — pinned at
