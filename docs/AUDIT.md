@@ -26,47 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P3][duplication] Four near-identical page accessors differ only by field and null-handling
-
-**File(s):** `web/src/lib/state/books.ts:244-261` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-export function pageImage(page, orientation) {
-  return page.images[orientation];
-}
-export function pageColorImage(page, orientation) {
-  return page.colorImages[orientation];
-}
-export function pageNightImage(page, orientation) {
-  return page.nightImages[orientation] ?? null;
-}
-export function pageChalkImage(page, orientation) {
-  return page.chalkImages[orientation] ?? null;
-}
-```
-
-Four one-line functions, two guaranteed (`Record`) and two optional (`Partial<Record>`), each just
-indexing a field. The asymmetry (string vs string|null) is meaningful but the repetition is
-boilerplate that grows with each new asset variant.
-
-#### Proposed solution
-
-Keep the four public names (they read well at call sites and encode the return-type contract), but
-note this is a symptom of the data model: a single
-`variants: Record<VariantKind, Partial<Record<BookOrientation,string>>>` per page with one accessor
-`pageAsset(page, kind, orientation): string | null` would collapse them. If the
-guaranteed-vs-optional distinction is worth keeping, leave as-is but document why four exist. Low
-urgency — flag rather than force.
-
-#### Verification
-
-If consolidated, existing accessor-based tests (`coloringBook.svelte.test.ts:49-81`) confirm
-behavior parity.
-
----
-
 ### [P3][dead-code] `booksForPlatform`'s `?? ['web', 'mobile']` default is unreachable — every book sets `platforms`
 
 **File(s):** `web/src/lib/state/books.ts:239-242`; every `BOOKS` entry sets `platforms`
