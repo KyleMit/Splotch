@@ -53,7 +53,9 @@ for (const page of pages) {
   if (!existsSync(fill)) continue; // no fill generated for this page yet
   try {
     const [source, filled] = await Promise.all([readFile(page), readFile(fill)]);
-    const { keep, localKeep, worstTile, overlay } = await outlineMatch(source, filled);
+    const { keep, localKeep, worstTile, overlay } = await outlineMatch(source, filled, {
+      overlay: values.overlay,
+    });
     const failed = keep < KEEP_THRESHOLD || localKeep < LOCAL_KEEP_THRESHOLD;
     rows.push({ rel, keep, localKeep, worstTile, failed });
     if (values.overlay && failed) {

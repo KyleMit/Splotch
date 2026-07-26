@@ -171,7 +171,7 @@ async function renderClean(source, width, height, slot) {
     const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
     const [{ keep, drift, localKeep, worstTile, overlay }, white, eyeScore] = await Promise.all([
-      outlineMatch(source, colored),
+      outlineMatch(source, colored, { overlay: true }),
       whiteFraction(colored),
       scoreEyeFill(colored, source),
     ]);

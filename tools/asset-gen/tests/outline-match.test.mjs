@@ -20,6 +20,14 @@ describe('outlineMatch — localized drift the global keep buries', () => {
     expect(r.localKeep).toBeGreaterThanOrEqual(LOCAL_KEEP_THRESHOLD);
     expect(r.keep).toBeCloseTo(1, 2);
     expect(r.localKeep).toBeCloseTo(1, 2);
+    expect(r.overlay).toBeNull();
+  });
+
+  it('returns a PNG overlay only when requested', async () => {
+    const src = await matchSource();
+    const r = await outlineMatch(src, await matchSource(), { overlay: true });
+    expect(Buffer.isBuffer(r.overlay)).toBe(true);
+    expect(r.overlay.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
   });
 
   it('flags a locally-drifted feature that passes the GLOBAL bar', async () => {

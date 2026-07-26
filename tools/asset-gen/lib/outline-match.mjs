@@ -74,21 +74,20 @@ function nearby(mask, i, r) {
 //   localKeep = the worst tile's keep (min over tiles with >= TILE_MIN_INK source
 //               ink) — the localized-drift score the global keep can hide.
 //   worstTile = { x, y, keep } of that worst tile, for reporting.
-//   overlay   = PNG showing ONLY genuine mismatches: source ink that drifted = red,
-//               candidate ink far from any source line (invented detail / dark fill)
-//               = blue, everything aligned = near-black.
-export async function outlineMatch(sourceBuf, filledBuf) {
+//   overlay   = requested PNG showing ONLY genuine mismatches: source ink that
+//               drifted = red, candidate ink far from any source line (invented
+//               detail / dark fill) = blue, everything aligned = near-black.
+export async function outlineMatch(sourceBuf, filledBuf, { overlay = false } = {}) {
   const src = await darkMask(sourceBuf);
   const fill = await darkMask(filledBuf);
   let srcCount = 0;
   let covered = 0;
   const tileSrc = new Int32Array(GRID * GRID);
   const tileCov = new Int32Array(GRID * GRID);
-  const rgb = Buffer.alloc(OUTLINE_MASK_SIZE * OUTLINE_MASK_SIZE * 3, 255);
+  const rgb = overlay ? Buffer.alloc(OUTLINE_MASK_SIZE * OUTLINE_MASK_SIZE * 3, 255) : null;
   for (let i = 0; i < src.length; i++) {
     const s = src[i];
     const f = fill[i];
-    const p = i * 3;
     if (s) {
       srcCount++;
       const tx = Math.min(GRID - 1, (((i % OUTLINE_MASK_SIZE) / OUTLINE_MASK_SIZE) * GRID) | 0);
@@ -101,15 +100,20 @@ export async function outlineMatch(sourceBuf, filledBuf) {
       if (nearby(fill, i, TOL)) {
         covered++;
         tileCov[t]++;
-        rgb[p] = 30;
-        rgb[p + 1] = 30;
-        rgb[p + 2] = 30;
-      } else {
+        if (rgb) {
+          const p = i * 3;
+          rgb[p] = 30;
+          rgb[p + 1] = 30;
+          rgb[p + 2] = 30;
+        }
+      } else if (rgb) {
+        const p = i * 3;
         rgb[p] = 230;
         rgb[p + 1] = 50;
         rgb[p + 2] = 50;
       }
-    } else if (f && !nearby(src, i, TOL)) {
+    } else if (rgb && f && !nearby(src, i, TOL)) {
+      const p = i * 3;
       rgb[p] = 80;
       rgb[p + 1] = 120;
       rgb[p + 2] = 235;
@@ -129,10 +133,12 @@ export async function outlineMatch(sourceBuf, filledBuf) {
       }
     }
   }
-  const overlay = await sharp(rgb, {
-    raw: { width: OUTLINE_MASK_SIZE, height: OUTLINE_MASK_SIZE, channels: 3 },
-  })
-    .png()
-    .toBuffer();
-  return { keep, drift: 1 - keep, localKeep, worstTile, overlay };
+  const overlayBuffer = rgb
+    ? await sharp(rgb, {
+        raw: { width: OUTLINE_MASK_SIZE, height: OUTLINE_MASK_SIZE, channels: 3 },
+      })
+        .png()
+        .toBuffer()
+    : null;
+  return { keep, drift: 1 - keep, localKeep, worstTile, overlay: overlayBuffer };
 }
