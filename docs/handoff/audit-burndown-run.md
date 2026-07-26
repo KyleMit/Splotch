@@ -1,7 +1,8 @@
 # Handoff — audit burndown run
 
-> 2026-07-26 · branch `claude/burn-down-audit-skill-zyb764` · PR TBD · Burn down the 449-finding
-> `docs/AUDIT.md` backlog with the `burn-down-audits` driver.
+> 2026-07-26 · branch `claude/burn-down-audit-skill-zyb764` · PR
+> [#547](https://github.com/KyleMit/Splotch/pull/547) · Burn down the 449-finding `docs/AUDIT.md`
+> backlog with the `burn-down-audits` driver.
 
 This is the **durable checkpoint** for a `burn-down-audits` run, written per that skill's "Surviving
 the context window" section. A fresh or compacted session resumes from this file plus
@@ -98,7 +99,7 @@ regenerated output in the same commit. Nothing enforces this; CI catches it.
 
 ## Risks & next 3 steps
 
-1. Open the draft PR (head = this branch) and record its number in this file.
+1. ~~Open the draft PR~~ — done, PR #547 (draft).
 2. Canary (`MAX_ISSUES=5`), then run the skill's canary checklist — especially the **entry-deletion
    count per commit must be exactly one**, and CI green on the canary's pushes.
 3. Launch the full run and supervise it event-driven, re-arming the run-log monitor about every 30
