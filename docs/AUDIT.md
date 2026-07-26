@@ -20,28 +20,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P4][readability] BT.601 luma weights are inline magic numbers
-
-**File(s):** `web/src/lib/colorRing.ts:13` — pinned at SHA f934d43
-
-#### Problem
-
-`return (0.299 * r + 0.587 * g + 0.114 * b) / 255;` — the three weights are documented in the header
-comment but embedded as literals in the expression. Lower severity because the comment names the
-standard, but a named tuple would make the standard self-evident at the call site and prevent typo
-drift (e.g. someone "fixing" one weight).
-
-#### Proposed solution
-
-`const LUMA_WEIGHTS = { r: 0.299, g: 0.587, b: 0.114 } as const;` and dot the channels. Optional but
-tidies the one computational line.
-
-#### Verification
-
-Identical numeric output; `colorRing.test.ts` green.
-
----
-
 ### [P4][readability] `--pop-scale: 1.12` and its `calc(100% / var(--pop-scale))` sizing math is opaque
 
 **File(s):** `web/src/lib/components/ColorPalette.svelte:240, 256-257, 268` — pinned at SHA f934d43
