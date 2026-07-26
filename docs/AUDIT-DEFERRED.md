@@ -1460,3 +1460,55 @@ Implemented the normalized API failures and verified the code, but Ruler regener
 update `.agents/skills/api/SKILL.md` because the nested sandbox denies writes under `.agents`. The
 source and `.claude` copy are updated; the `.agents` copy remains stale, so the scoped change is
 incomplete.
+
+### [P2][duplication] Move content-type parsing into a shared `http.ts` helper
+
+**File(s):** `web/src/routes/api/generate-image/+server.ts:33-34` (`contentTypeOf`) and
+`web/src/routes/api/csp-report/+server.ts:104-107` — pinned at SHA f934d43
+
+#### Problem
+
+The exact "strip params, trim, lowercase the Content-Type" logic is written twice:
+
+```ts
+// generate-image:33
+const contentTypeOf = (request: Request) =>
+  (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+// csp-report:104
+const contentType = (request.headers.get('content-type') ?? '')
+  .split(';')[0].trim().toLowerCase();
+```
+
+Both endpoints branch on Content-Type for correctness (multipart vs raw; allowed telemetry formats).
+Divergence here is a real behavioral bug risk, and the pattern is a natural shared helper next to
+`readJsonBody`.
+
+#### Proposed solution
+
+Add to `http.ts`:
+
+```ts
+export function contentType(request: Request): string {
+  return (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+}
+```
+
+Use it in both routes (generate-image both for the multipart branch and the raw mimeType at line
+93).
+
+#### Verification
+
+`grep -rn "split(';')\[0\]" web/src/routes` returns nothing after. `npm run test:api:smoke` covers
+csp-report's two formats + 415.
+
+---
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+Implemented the shared content-type normalizer and updated both routes with focused passing tests.
+Verification cannot complete because `npm run test:unit` fails in two pre-existing, unrelated
+untracked test files; I left them untouched and made no commit.
