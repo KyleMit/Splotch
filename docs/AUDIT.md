@@ -32,32 +32,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · lib (pipeline core)
 
-### [P2][duplication] Background flood-fill is written twice in lib (and a third time in bin)
-
-**File(s):** `tools/asset-gen/lib/night-scores.mjs:57-83` (`scoreNightness`) and
-`tools/asset-gen/lib/invented-shapes.mjs:55-82` (`detectInventedShapes`) — pinned at SHA f934d43
-
-#### Problem
-
-Both modules flood the open background from the border through source-light pixels with the same
-`push(x,y)` closure, the same four border-seeding loops, and the same `while(stack.length)`
-pop-and-spread. `invented-shapes.mjs:14` even documents the copy: "the same machinery as
-scoreNightness." `bin/gen-coloring-chalk.mjs:113` reimplements it a third time. Three copies of a
-border flood-fill, each with its own `SRC_LIGHT`/`NIGHT_SRC_LIGHT` constant (both 170).
-
-#### Proposed solution
-
-Extract `export function floodBackground(gray, w, h, lightThreshold)` → `Uint8Array` into
-`lib/pixels.mjs` (or a new `lib/regions.mjs`). Both scorers call it; `invented-shapes` keeps its own
-`cand` post-filter. Fold the two `170` constants into one exported `BG_LIGHT_THRESHOLD`.
-
-#### Verification
-
-`tests/night-scores.test.mjs` and `tests/invented-shapes.test.mjs` still pass; the `bgFrac`/`bgLuma`
-outputs are unchanged on fixtures.
-
----
-
 ### [P2][duplication] `solid-regions.mjs` reimplements the erode/dilate that `morphology.mjs` already exports
 
 **File(s):** `tools/asset-gen/lib/solid-regions.mjs:46-85` (`erode`, `dilate`) vs
