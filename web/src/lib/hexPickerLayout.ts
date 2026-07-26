@@ -19,6 +19,8 @@ export interface ColorFamily {
 // dimmed keyline instead of the white one.
 export const PICKER_DIM_BORDER = '#1A1F24';
 
+export const SHADE_COUNT = 9;
+
 // Rainbow order. Column/row trimming samples positions evenly (endpoints
 // last to go), so this order doubles as the guarantee that any trimmed
 // subset still reads as a rainbow.
@@ -151,6 +153,8 @@ export const COLOR_FAMILIES: ColorFamily[] = [
   },
 ];
 
+export const FAMILY_COUNT = COLOR_FAMILIES.length;
+
 export interface PickerRow {
   key: string;
   colors: string[];
@@ -163,7 +167,7 @@ export const PORTRAIT_ROWS: PickerRow[] = COLOR_FAMILIES.map((f) => ({
 }));
 
 /** Landscape grid: the transpose — one row per shade level, families across. */
-export const LANDSCAPE_ROWS: PickerRow[] = COLOR_FAMILIES[0].shades.map((_, s) => ({
+export const LANDSCAPE_ROWS: PickerRow[] = Array.from({ length: SHADE_COUNT }, (_, s) => ({
   key: `shade-${s + 1}`,
   colors: COLOR_FAMILIES.map((f) => f.shades[s]),
 }));

@@ -21,8 +21,12 @@ import {
 // `width: 60px` without re-deriving the ladder and this goes red, which is the
 // drift the hand-computed thresholds could never catch.
 
+function sourceFile(path: string): string {
+  return readFileSync(new URL(path, import.meta.url), 'utf8');
+}
+
 function styleBlock(path: string): string {
-  const source = readFileSync(new URL(path, import.meta.url), 'utf8');
+  const source = sourceFile(path);
   const match = source.match(/<style>([\s\S]*)<\/style>/);
   expect(match, `${path} has a <style> block`).not.toBeNull();
   return match![1];
@@ -47,7 +51,14 @@ function declaration(body: string, property: string, unit: string): number {
   return Number(match![1]);
 }
 
-const px = (body: string, property: string) => declaration(body, property, 'px');
+function px(body: string, property: string, variables = body): number {
+  const variable = body.match(
+    new RegExp(`(?:^|[\\s;{])${property}:\\s*(calc\\(\\s*-1\\s*\\*\\s*)?var\\((--[\\w-]+)\\)`)
+  );
+  if (!variable) return declaration(body, property, 'px');
+  const value = declaration(variables, variable[2], 'px');
+  return variable[1] ? -value : value;
+}
 
 /** `max-height: 90vh` → 0.9, the fraction of the viewport the grid may use. */
 const viewportFraction = (body: string, property: string, unit: 'vw' | 'vh') =>
@@ -156,6 +167,7 @@ describe('ColorPalette', () => {
 
 describe('ColorPicker', () => {
   const css = styleBlock('../components/ColorPicker.svelte');
+  const tokens = sourceFile('../../tokens.css');
   const rules = mediaRules(css);
   const rowTrim = rules.filter((rule) => has(rule, 'max-height'));
   const columnTrim = rules.filter((rule) => has(rule, 'max-width'));
@@ -177,14 +189,16 @@ describe('ColorPicker', () => {
     expect(HEX_GRID_GEOMETRY.firstRowPx).toBe(px(hexagon, 'height'));
     expect(HEX_GRID_GEOMETRY.columnPitchPx).toBe(px(hexagon, 'width'));
     // Later rows overlap upward, so the pitch is the hexagon minus that pull.
-    expect(HEX_GRID_GEOMETRY.rowPitchPx).toBe(px(hexagon, 'height') + px(laterRow, 'margin-top'));
-    expect(HEX_GRID_GEOMETRY.rowOffsetPx).toBe(px(offsetRow, 'margin-left'));
-    expect(HEX_GRID_GEOMETRY.paddingPx).toBe(2 * px(picker, 'padding'));
+    expect(HEX_GRID_GEOMETRY.rowPitchPx).toBe(
+      px(hexagon, 'height') + px(laterRow, 'margin-top', picker)
+    );
+    expect(HEX_GRID_GEOMETRY.rowOffsetPx).toBe(px(offsetRow, 'margin-left', picker));
+    expect(HEX_GRID_GEOMETRY.paddingPx).toBe(2 * px(picker, 'padding', tokens));
     expect(HEX_GRID_GEOMETRY.viewportFraction).toBe(viewportFraction(dialog, 'max-height', 'vh'));
     expect(HEX_GRID_GEOMETRY.viewportFraction).toBe(viewportFraction(dialog, 'max-width', 'vw'));
     // firstRowPx counts the first hexagon whole, which only holds while the
     // first row's negative margin is cancelled by the picker's own.
-    expect(px(picker, 'margin-top') + px(firstRow, 'margin-top')).toBe(0);
+    expect(px(picker, 'margin-top') + px(firstRow, 'margin-top', picker)).toBe(0);
   });
 
   it('drops a honeycomb row at a time', () => {

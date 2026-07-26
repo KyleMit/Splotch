@@ -17,10 +17,16 @@
     { name: 'portrait', rows: PORTRAIT_ROWS },
   ];
 
+  interface HexCenter {
+    color: string;
+    cx: number;
+    cy: number;
+  }
+
   let pickerEl: HTMLDivElement;
   let hoveredHex = $state<string | null>(null);
   let isTrackingDrag = false;
-  let hexCenters: { color: string; cx: number; cy: number }[] | null = null;
+  let hexCenters: HexCenter[] | null = null;
 
   function selectColor(hex: string) {
     pickCustomColor(hex);
@@ -58,7 +64,7 @@
   const HEX_SNAP_RADIUS = 40;
 
   function snapshotHexCenters() {
-    const centers: { color: string; cx: number; cy: number }[] = [];
+    const centers: HexCenter[] = [];
     for (const hex of pickerEl.querySelectorAll<HTMLElement>('.hexagon')) {
       const color = hex.dataset.color;
       if (!color) continue;
@@ -189,8 +195,11 @@
 
   .picker {
     display: inline-flex;
-    padding: 16px;
-    margin-top: 15px;
+    padding: var(--space-4);
+    margin-top: var(--hex-first-row-overlap);
+    --hex-offset: 31px;
+    --hex-first-row-overlap: 15px;
+    --hex-row-overlap: 18px;
     --hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   }
 
@@ -201,11 +210,11 @@
 
   .row {
     display: flex;
-    margin-top: -15px;
+    margin-top: calc(-1 * var(--hex-first-row-overlap));
   }
 
   .row:not(:first-child) {
-    margin-top: -18px;
+    margin-top: calc(-1 * var(--hex-row-overlap));
   }
 
   /* ── Responsive trimming (ADR-0048) ──────────────────────────────────────
@@ -245,7 +254,7 @@
   .r4,
   .r6,
   .r8 {
-    margin-left: 31px;
+    margin-left: var(--hex-offset);
   }
 
   @media (max-height: 564.98px) {
@@ -257,7 +266,7 @@
     .r5,
     .r7,
     .r9 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r4,
     .r6,
@@ -273,7 +282,7 @@
     .r3,
     .r6,
     .r8 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r5,
     .r7,
@@ -289,7 +298,7 @@
     .r3,
     .r7,
     .r9 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r5,
     .r8 {
@@ -303,7 +312,7 @@
     }
     .r3,
     .r7 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r5,
     .r9 {
@@ -317,7 +326,7 @@
     }
     .r5,
     .r9 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r7 {
       margin-left: 0;
@@ -329,7 +338,7 @@
       display: none;
     }
     .r5 {
-      margin-left: 31px;
+      margin-left: var(--hex-offset);
     }
     .r9 {
       margin-left: 0;

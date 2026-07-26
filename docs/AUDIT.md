@@ -5,8 +5,6 @@
 > then deletes this file. `/fix-audits` burns down those issues. Never treat this file as a
 > long-lived backlog.
 
-## Source: Code audit — Routes / app shell / dev pages
-
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
 ## Summary
@@ -21,130 +19,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 `modalDialog.svelte.ts` are largely clean (only minor notes). No code was changed — report only.
 
 ## Source: Code audit — Color palette & picker
-
-### [P3][maintainability] The `4.5px` selection-ring width is a magic number repeated across JS and CSS
-
-**File(s):** `web/src/lib/components/ColorPalette.svelte:68, 72, 208, 211` — pinned at SHA f934d43
-
-#### Problem
-
-The ring width `4.5px` (and the coupled `-4.5px` inset) appears in `ringShadow`,
-`gradientRingShadow`, `.color-swatch::before { inset: -4.5px; border: 4.5px … }`. These must move
-together (the expand animation must land exactly on the box-shadow ring) but are four independent
-literals. Same for the `0.5px` seam.
-
-#### Proposed solution
-
-Introduce `--selection-ring-width: 4.5px` (and `--selection-ring-seam: 0.5px`) as custom properties
-on `.color-palette`; reference them in the CSS `::before` and interpolate into the JS shadow strings
-via `calc`/`var` where possible, or read from a single JS constant `SELECTION_RING_WIDTH_PX` used by
-both builders.
-
-#### Verification
-
-Confirm the animated ring still lands flush on the resting ring; grep shows one definition.
-
----
-
-### [P3][design-tokens] Honeycomb offset `31px` and picker paddings are un-tokenized repeated literals
-
-**File(s):** `web/src/lib/components/ColorPicker.svelte:237-330` (`margin-left: 31px` ~15×),
-`:193-208` (`padding: 16px`, `margin-top: 15px/-15px/-18px`) — pinned at SHA f934d43
-
-#### Problem
-
-`margin-left: 31px` is restated in every trim breakpoint (the honeycomb interlock offset) — over a
-dozen copies of the same magic number. The `16px` picker padding equals `--space-4`;
-`15px`/`-15px`/`-18px` row overlaps are geometry literals with no name. Changing the honeycomb
-offset means editing ~15 lines.
-
-#### Proposed solution
-
-Define `--hex-offset: 31px` (and `--hex-row-overlap`) on `.grid`/`.picker`, and use
-`var(--hex-offset)` in every trim rule. Swap the `16px` padding for `var(--space-4)`.
-
-#### Verification
-
-`rg '31px' ColorPicker.svelte` collapses to one definition; honeycomb still interlocks at every
-breakpoint; `lint:tokens` unaffected.
-
----
-
-### [P3][type-safety] The hex-center record type is declared inline twice
-
-**File(s):** `web/src/lib/components/ColorPicker.svelte:23, 61` — pinned at SHA f934d43
-
-#### Problem
-
-`{ color: string; cx: number; cy: number }[]` is written out for both the `hexCenters` field
-(line 23) and `snapshotHexCenters`'s local (line 61). The shape is duplicated; a field rename must
-touch both.
-
-#### Proposed solution
-
-Declare `interface HexCenter { color: string; cx: number; cy: number }` once and type
-`hexCenters: HexCenter[] | null` and the accumulator against it.
-
-#### Verification
-
-`npm run check` passes; behavior unchanged.
-
----
-
-### [P3][maintainability] `LANDSCAPE_ROWS` transpose keys off `COLOR_FAMILIES[0]` and assumes uniform shade counts
-
-**File(s):** `web/src/lib/hexPickerLayout.ts:162-165` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-export const LANDSCAPE_ROWS = COLOR_FAMILIES[0].shades.map((_, s) => ({
-  key: `shade-${s + 1}`,
-  colors: COLOR_FAMILIES.map((f) => f.shades[s]),
-}));
-```
-
-The transpose is driven by the *first* family's shade count. If any family had a different length
-(the interface comment only says "Every family has the same count" — nothing enforces it), the
-shorter families produce `undefined` entries pushed into `colors: string[]`, typed as `string` but
-actually `undefined`, and the picker renders `style="--color: undefined"` swatches with no type
-error.
-
-#### Proposed solution
-
-Add a `SHADE_COUNT` constant and either validate
-(`COLOR_FAMILIES.every(f => f.shades.length === SHADE_COUNT)` at module load, throwing in dev) or
-type the family shades as a fixed-length tuple `[string, string, …]`. Build the transpose from
-`SHADE_COUNT`.
-
-#### Verification
-
-`hexPickerLayout.test.ts` already checks 9×9 uniqueness; add an assertion that no `LANDSCAPE_ROWS`
-color is `undefined`.
-
----
-
-### [P3][naming] `9×9` grid dimensions are unnamed magic across the module
-
-**File(s):** `web/src/lib/hexPickerLayout.ts:12-165` — pinned at SHA f934d43
-
-#### Problem
-
-The "9 families × 9 shades" invariant is asserted in the header comment and enforced only by the
-literal shape of `COLOR_FAMILIES` and by the test. There is no `FAMILY_COUNT`/`SHADE_COUNT`
-constant, so the r/c CSS trim classes in `ColorPicker.svelte` (`.r1..r9`, `.c1..c9`) are coupled to
-a count that lives nowhere as a value.
-
-#### Proposed solution
-
-Export `SHADE_COUNT = 9` and `FAMILY_COUNT = COLOR_FAMILIES.length`; use `SHADE_COUNT` in the
-transpose and reference the counts in the test instead of the literal `9`/`81`.
-
-#### Verification
-
-`hexPickerLayout.test.ts` derives `81` from `FAMILY_COUNT * SHADE_COUNT`; still green.
-
----
 
 ### [P3][maintainability] `data-trim-rank` numeric coupling between `TRIM_ORDER` and ~15 CSS selectors is invisible
 
