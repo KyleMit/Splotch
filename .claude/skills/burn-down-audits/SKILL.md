@@ -1,6 +1,6 @@
 ---
 name: burn-down-audits
-description: Drive the scripted bulk burndown of docs/AUDIT.md with isolated Claude Code subprocesses per role and finding (verify → implement → adversarial review → fix). Use when the staged audit backlog is too large to vet-and-file as GitHub issues, or when asked to launch, resume, supervise, pause, report on, or close out an audit burndown from Claude Code.
+description: Drive the scripted bulk burndown of docs/AUDIT.md — one one-shot `claude -p` subprocess per role per finding (verify → implement → adversarial review → fix), orchestrated by scripts/audit-burndown/ and built to run unattended. Use when the staged audit backlog is too large to vet-and-file as GitHub issues (hundreds of findings) and the user asks to burn it down in bulk, run the audit burndown, or launch/check on a run.
 ---
 
 # Burn down audits
@@ -9,9 +9,6 @@ Progressive, adversarial burndown of a large `docs/AUDIT.md` backlog. Each findi
 verify → implement → review → fix, entirely inside one-shot `claude -p` subprocesses, so nothing
 accumulates in a long-lived context window. The driver is `scripts/audit-burndown/burndown.mjs`;
 this skill is the runbook for launching, watching, and closing out a run.
-
-This is the Claude Code-generated variant and uses the driver's default `AGENT_RUNNER=claude`. Codex
-receives its own generated runbook and sets `AGENT_RUNNER=codex`.
 
 **This runs in a Claude Code cloud session.** Two facts shape everything below and are not
 negotiable knobs:
@@ -93,7 +90,6 @@ Draining the per-commit comments (there is no `gh`; you post these yourself):
 All environment variables on `audit:burndown`, all with defaults:
 
 ```bash
-AGENT_RUNNER=claude   # this generated runner variant; Codex uses its own runbook
 MAX_ISSUES=5          # how many to FIX before stopping — drops/deferrals don't count (see step 4)
 PUSH_EVERY=1          # push after every finding — the container is ephemeral (see below)
 BRANCH=audit/burndown
@@ -180,25 +176,16 @@ as possible:
 
 **The gates run *before* the review, not after it** — and that ordering does two jobs at once. A red
 gate becomes a **fix round** the implementer can still recover from (it is holding the same session)
-instead of discarding a finished finding at the very end; and the reviewer only ever sees a finding
-range whose head already passes, so it does not re-run any of this. Re-running was the single
-largest slice of review wall-clock and could only ever confirm what the driver already knew. The
-reviewer therefore has **no `npm`/`npx` in its tool scope at all** — the constraint is structural,
-not a request in the prompt — and its brief is the part no test run can do: reading the diff for
-behaviour smuggled inside a refactor, stragglers left by a rename, and changed behaviour that
-nothing covers.
-
-When a gate is red, the driver captures a bounded, ANSI-free tail of that command's output and
-includes it in the fix-round feedback. Preserve that diagnostic path for every runner. A generic
-"Playwright is red" verdict forces an implementer to guess at a failure the driver already observed,
-which turns a recoverable gate into snapshot churn or a deferral.
+instead of discarding a finished finding at the very end; and the reviewer only ever sees a commit
+that already passes, so it does not re-run any of this. Re-running was the single largest slice of
+review wall-clock and could only ever confirm what the driver already knew. The reviewer therefore
+has **no `npm`/`npx` in its tool scope at all** — the constraint is structural, not a request in the
+prompt — and its brief is the part no test run can do: reading the diff for behaviour smuggled
+inside a refactor, stragglers left by a rename, and changed behaviour that nothing covers.
 
 The reviewer is also handed the **original finding**, not just the verifier's acceptance criteria,
 so it can reject a fix that satisfies mis-scoped criteria while missing what the finding asked for —
-the verifier is the one role with no independent check. It reviews the complete
-`<finding-base>..<current-head>` range, not only the latest fix-round commit: later rounds are
-separate commits and a head-only diff can hide the actual source change or make a test-only repair
-look like the whole implementation.
+the verifier is the one role with no independent check.
 
 A deferral now names the role that actually failed: `fix broke the test suite` /
 `fix broke a targeted E2E spec` / `fix introduced a lint violation` / `fix broke the type-check` for

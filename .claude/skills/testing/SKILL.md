@@ -87,8 +87,10 @@ npm run test:scripts
 Configured in `scripts/vitest.config.mjs` (Node env), tests in `scripts/tests/`. Covers repo
 automation helpers whose regressions would be silent — currently the audit-burndown `docs/AUDIT.md`
 surgery in `scripts/audit-burndown/lib.mjs` (entry-boundary parsing, pure block removal,
-dprint-clean seams; see the `burn-down-audits` skill). Add a test here when a `scripts/` helper's
-failure mode is corrupting state rather than crashing.
+dprint-clean seams; see the `burn-down-audits` skill) and complete runner-specific skill replacement
+in `scripts/apply-ruler-skill-forks.mjs` (package isolation, paired-runner coverage, and
+shared-source collision guards). Add a test here when a `scripts/` helper's failure mode is
+corrupting state rather than crashing.
 
 ## E2E web tests — Playwright
 

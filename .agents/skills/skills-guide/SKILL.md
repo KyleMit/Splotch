@@ -50,7 +50,7 @@ staging file, `fix-audits` burns the issues down.
 | Produce    | `session-audit`           | End-of-session retrospective on repo friction → `docs/AUDIT.md`                    |
 | Vet        | `vet-audits`              | Adversarially validate findings; file survivors as `type:audit` issues             |
 | Fix        | `fix-audits`              | Autonomously clear open `type:audit` issues, one commit each, on its own branch    |
-| Vet + fix  | `burn-down-audits`        | Bulk path for a huge `docs/AUDIT.md`: scripted overnight verify→implement→review   |
+| Vet + fix  | `burn-down-audits`        | Iteratively clears a huge `docs/AUDIT.md` with durable progress and run controls   |
 | Standalone | `dependency-update-audit` | Upgrade dependencies one at a time with migration guides (user-invoke only)        |
 | Standalone | `dependency-health-audit` | Provenance/license/maintenance review of every dependency → `docs/DEPENDENCIES.md` |
 | Standalone | `workflow-audit`          | Claude Code config + session-history review vs. best practice → dated review doc   |
@@ -96,10 +96,11 @@ All three augment the built-in PR flows rather than replacing them.
 
 ## Keeping this guide current
 
-Every skill in `.ruler/skills/` must appear here, in exactly one primary group (cross-reference a
-second group in prose when a skill genuinely spans two, as `lighthouse-audit` does). **When you add,
-rename, or delete a skill, update this guide in the same change**, then run `npm run ruler:apply`.
-If a new skill fits no existing group, add a group rather than forcing it into one.
+Every generated skill — shared under `.ruler/skills/` or isolated under `.ruler/skill-forks/` — must
+appear here, in exactly one primary group (cross-reference a second group in prose when a skill
+genuinely spans two, as `lighthouse-audit` does). **When you add, rename, or delete a skill, update
+this guide in the same change**, then run `npm run ruler:apply`. If a new skill fits no existing
+group, add a group rather than forcing it into one.
 
 Naming: workflow skills (perform a procedure with side effects) get verb-noun names (`create-adr`,
 `fix-audits`); reference skills (only load knowledge) get plain noun names (`architecture`, `adrs`).

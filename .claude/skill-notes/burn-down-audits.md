@@ -1,16 +1,17 @@
-<!-- Source: .ruler/skill-notes/burn-down-audits.md -->
+<!-- Source: .ruler/skill-forks/claude/skill-notes/burn-down-audits.md.template -->
 
 # `burn-down-audits` — design notes
 
-Design history and open questions for the bulk audit burndown: the `burn-down-audits` skill
-(`.ruler/skills/burn-down-audits/SKILL.md`), the driver under `scripts/audit-burndown/`, the role
-prompts in `scripts/audit-burndown/prompts/`, and the two compaction hooks in `.claude/hooks/`.
+Design history and open questions for the Claude Code bulk audit burndown: the `burn-down-audits`
+skill (`.ruler/skill-forks/claude/skills/burn-down-audits/SKILL.md.template`), the driver under
+`scripts/audit-burndown/`, the role prompts in `scripts/audit-burndown/prompts/`, and the two
+compaction hooks in `.claude/hooks/`.
 
 Read the `README.md` beside this file first if you are wondering why this is here rather than in
 `docs/adrs/`. **The skill does not link here, deliberately** — do not add a pointer to it.
 
-Paths in this file are repo-root-relative and deliberately not links: the same text is mirrored into
-`.claude/skill-notes/` and `.agents/skill-notes/`, so no relative link could resolve from all three.
+Paths in this file are repo-root-relative and deliberately not links: the template source and its
+generated `.claude/skill-notes/` copy sit at different depths.
 
 Current as of **2026-07-25**. The skill is young: it was born on 2026-07-24 and nearly everything
 below was earned by two live runs on the following two days.
@@ -135,12 +136,6 @@ through.
   reviewer then reads — so a red gate becomes a recoverable fix round, and the reviewer lost `npm`
   and `npx` from its tool scope entirely. This is why `reviewer.md` can state "the commit you are
   reading is already green."
-* **A red gate without its output is not recoverable** (2026-07-26 Codex canary). The driver knew
-  Playwright's exact screenshot mismatch but sent only "the spec is red" into two fix rounds. The
-  implementer could not run a localhost listener in its sandbox, guessed by updating snapshots, and
-  the reviewer correctly rejected the unrelated churn. Gate failures now carry a bounded,
-  ANSI-stripped output tail into feedback. This is runner-independent: even a role that can rerun
-  the command should not have to rediscover a fact the driver already measured.
 
 Related, from the same review: **the reviewer is given the original finding, not only the verifier's
 acceptance criteria.** Until then the reviewer *"graded the diff against the same frame that
@@ -150,12 +145,6 @@ called this *"the hardest failure to catch after the fact"*. The finding was alr
 `.audit-work/current-issue.md`, so including it cost nothing: most of the benefit of a second
 verifier without paying for one. A diff that ticks every acceptance box while missing what the
 finding asked for is `CHANGES_REQUIRED`.
-
-The same 2026-07-26 canary exposed the second half of that reviewer input: **review the complete
-finding range, not only the latest commit.** Driver-owned Codex fix rounds produced an initial
-source commit followed by a snapshot/test repair. `git show <head>` made the reviewer see only three
-PNGs and forced it to reconstruct the parent chain itself. The task now names
-`<finding-base>..<current-head>`, and `reviewer.md` tells every runner to diff that range.
 
 ### Tooling failure must never be recorded as a model verdict
 
@@ -865,63 +854,6 @@ the stale timing table for free.
 * **Parallelism** — git worktrees per finding — is named in the skill as "a real redesign, not a
   knob". Still true, still unattempted.
 
-## Codex runner port (2026-07-26)
-
-The original invariant said “one-shot `claude -p` subprocesses.” The durable part was never the
-vendor binary; it was **isolated one-shot role processes with an exact implementer-session resume**.
-`scripts/audit-burndown/agent-runner.mjs` now owns that seam:
-
-* `AGENT_RUNNER=claude` preserves the existing backend and remains the default for old checkpoint
-  commands.
-* `AGENT_RUNNER=codex` uses schema-constrained `codex exec --json` calls, reads the authoritative
-  `thread.started.thread_id`, and resumes fix rounds with `codex exec resume <thread-id>`.
-* The model mapping is role-for-role: Sonnet-tier verify/minor-implementation → `gpt-5.6-terra`;
-  Opus-tier implementation/review → `gpt-5.6-sol`.
-* Codex reviewers start in a read-only sandbox; verifier/implementer start in workspace-write.
-  `multi_agent` and `multi_agent_v2` are disabled in every subprocess, preserving one process per
-  role rather than letting a nested role fan out.
-* Saved envelopes stay under the existing `iter*.json` names. Claude writes one JSON object; Codex
-  writes JSONL events. One parser normalizes both for the driver, cost report, and comment backfill.
-
-The first live canary exposed a runner boundary the direct probes could not: an outer unsandboxed
-driver does not make its nested `codex exec --sandbox workspace-write` role unsandboxed. The first
-Sol implementer completed the change and passed type-check, all unit tests, and scoped ESLint, then
-refused to commit because Playwright's preview server hit `listen EPERM` on both `::1:4173` and
-`127.0.0.1:4173`. The driver never got the commit, so its own E2E gate — which runs outside the
-nested sandbox — never had a chance to validate it.
-
-The Codex implementer prompt now makes that ownership explicit: it must not start Playwright or
-another listener and leaves verifier-selected E2E to the driver's deterministic pre-review gate.
-Giving the implementer `danger-full-access` would also make the port bind, but would throw away the
-filesystem boundary for every implementation; duplicating the already-authoritative driver gate is
-not worth that expansion.
-
-The prompt-only fix exposed the same boundary one layer deeper on the retry. The Sol implementer
-again completed the change and passed every permitted check, followed the new instruction not to run
-E2E, and then hit `Permission denied` creating `.git/index.lock`. Codex's workspace-write sandbox
-protects Git metadata as well as listener creation. The durable answer is still not
-`danger-full-access`: the outer driver now owns Codex commits. A Codex implementer leaves a dirty
-worktree and returns `success=true` with an empty `sha`; the driver enumerates tracked, staged, and
-untracked changed paths, rejects changes to `docs/AUDIT.md`, deferral state, or rejected-draft
-state, stages only those paths, and commits with the finding identity in the message. Claude keeps
-its existing role-owned commit flow.
-
-This also changes the fix-round seam. A resumed Codex implementer edits on top of the rejected
-commit but still leaves Git alone; the outer driver creates a new round commit before re-running
-gates. The exact Codex thread remains the conversational handoff, while the driver-owned commit
-becomes the deterministic Git handoff.
-
-The resume mechanism was probed before the port: a Terra thread was given a codeword, resumed by its
-reported thread id with the same JSON schema, and returned the codeword. The probe also confirmed
-the installed CLI accepts `gpt-5.6-terra`, `--output-schema`, and per-call reasoning effort.
-
-Ruler 0.3.44 copies skills verbatim and cannot take per-agent skill sources. The shared Claude
-runbook therefore remains in `.ruler/skills/burn-down-audits/`, while the Codex-native runbook lives
-under `.ruler/agent-overrides/codex/skills/burn-down-audits/SKILL.md.template` (the suffix keeps
-Ruler from concatenating it into root instructions). `scripts/apply-ruler-agent-overrides.mjs` runs
-immediately after `ruler apply` and before dprint. This is documented as an amendment to ADR-0058
-rather than hidden in the apply script.
-
 ## Timeline
 
 | Date       | Commit   | What                                                                      |
@@ -954,7 +886,3 @@ rather than hidden in the apply script.
 | 2026-07-25 | f389dd39 | Delete backlog entries by title — the canary destroyed 3 findings in 5    |
 | 2026-07-26 | 049d5e35 | Stop the verifier naming `npm test` — it discarded a finished, green fix  |
 | 2026-07-26 | —        | Verifier must name which kind of "stale" on INVALID; HALT env-cause note  |
-| 2026-07-26 | —        | Codex runner backend + runner-specific Ruler skill overlay                |
-| 2026-07-26 | —        | Codex implementer leaves listener-based E2E to the outer driver           |
-| 2026-07-26 | —        | Codex implementer leaves Git commits to the outer driver                  |
-| 2026-07-26 | —        | Gate feedback carries output; reviewer reads the full finding range       |

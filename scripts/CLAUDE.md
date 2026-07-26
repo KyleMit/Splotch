@@ -38,6 +38,10 @@
   deliberately return status instead of exiting. `prompts/*.md` are runner-neutral role prompts.
   Entry points are the `audit:*` npm scripts. The backlog surgery and runner seam are locked by
   `scripts/tests/audit-burndown-*.test.mjs` (`npm run test:scripts`, in CI).
+* `apply-ruler-skill-forks.mjs` replaces complete generated packages for the exceptional skills
+  whose Claude and Codex implementations are intentionally isolated. It rejects incomplete runner
+  pairs, shared/fork name collisions, and raw Markdown sources;
+  `scripts/tests/ruler-skill-forks.test.mjs` locks that seam.
 * The app-driving `gen:*` generators that stay here — `gen:shots` (`store-shots.mjs`) and
   `gen:large-image` (`gen-large-image.mjs`) — drive the live app by selector through
   `scripts/lib/app-driver.mjs` and only run on demand, so that module rots silently when app markup,

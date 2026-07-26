@@ -3,8 +3,8 @@
 > [!IMPORTANT]
 > Every `CLAUDE.md` and `AGENTS.md` in this repo, plus the `.claude/skills/` and `.agents/skills/`
 > trees, is **generated** by [ruler](https://github.com/intellectronica/ruler) — never edit those
-> files directly. Edit the sources in `.ruler/` (or the nested `<dir>/.ruler/`); runner-specific
-> skill variants live in `.ruler/agent-overrides/<runner>/`. Then run `npm run ruler:apply` and
+> files directly. Edit the sources in `.ruler/` (or the nested `<dir>/.ruler/`); fully independent
+> runner-specific skills live in `.ruler/skill-forks/<runner>/`. Then run `npm run ruler:apply` and
 > commit the regenerated output. CI fails on drift (`npm run ruler:check`).
 
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
