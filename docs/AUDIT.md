@@ -22,41 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P3][duplication] The `getPrefs().then(...).catch()` native-Preferences pattern is hand-copied three times
-
-**File(s):** `web/src/lib/storage.ts:88-94, 133-142, 169-189` (`mirror`, `removeKey`,
-`hydrateDurableStorage`) — pinned at SHA f934d43
-
-#### Problem
-
-The `__IS_CAPACITOR__ && isNative()` → `getPrefs().then(({ Preferences }) => …).catch(() => {})`
-shape appears in `mirror` (set), `removeKey` (remove), and `hydrateDurableStorage` (get/set). Three
-copies of the same guard + lazy-load + swallow. Adding a new durable operation means copying the
-boilerplate a fourth time.
-
-#### Proposed solution
-
-Extract a single fire-and-forget dispatcher:
-
-```ts
-function durable(op: (p: typeof import('@capacitor/preferences').Preferences) => Promise<unknown>) {
-  if (__IS_CAPACITOR__ && isNative()) {
-    getPrefs().then(({ Preferences }) => op(Preferences)).catch(() => {});
-  }
-}
-```
-
-`mirror` becomes `durable((P) => P.set({ key, value }))`; `removeKey`'s native arm becomes
-`durable((P) => P.remove({ key }))`. `hydrateDurableStorage` still needs the awaited variant but can
-share the guard.
-
-#### Verification
-
-`storage.test.ts`'s mirror/remove/hydrate suites pass unchanged; the `__IS_CAPACITOR__` guard still
-tree-shakes on web (check the web bundle has no `@capacitor/preferences` chunk).
-
----
-
 ### [P3][duplication] `saveSecret` / `loadSecret` / `clearSecret` triplicate the native-vs-web dispatch
 
 **File(s):** `web/src/lib/secureStorage.ts:121-159` — pinned at SHA f934d43

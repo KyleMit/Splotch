@@ -173,27 +173,27 @@ function notifyDurableRestore() {
  * Returns true if localStorage was changed, so callers can reload their stores.
  */
 export async function hydrateDurableStorage() {
-  const restored =
-    (await runWithDurablePreferences(async (Preferences) => {
-      let restoredValue = false;
-      // Fire every durable get concurrently rather than one serial bridge
-      // round-trip per declared key on the cold-start critical path.
-      const durable = await Promise.all(hydrationKeys.map((key) => Preferences.get({ key })));
-      const backups: Promise<unknown>[] = [];
-      hydrationKeys.forEach((key, i) => {
-        const local = localStorage.getItem(key);
-        const { value } = durable[i];
-        const action = reconcileStorageValues(local, value);
-        if (action.restore !== undefined) {
-          localStorage.setItem(key, action.restore); // WebView lost it — recover from durable store
-          restoredValue = true;
-        } else if (action.backup !== undefined) {
-          backups.push(Preferences.set({ key, value: action.backup })); // back up the existing value
-        }
-      });
-      await Promise.all(backups);
-      return restoredValue;
-    })) ?? false;
+  let restored = false;
+  const completedRestore = await runWithDurablePreferences(async (Preferences) => {
+    // Fire every durable get concurrently rather than one serial bridge
+    // round-trip per declared key on the cold-start critical path.
+    const durable = await Promise.all(hydrationKeys.map((key) => Preferences.get({ key })));
+    const backups: Promise<unknown>[] = [];
+    hydrationKeys.forEach((key, i) => {
+      const local = localStorage.getItem(key);
+      const { value } = durable[i];
+      const action = reconcileStorageValues(local, value);
+      if (action.restore !== undefined) {
+        localStorage.setItem(key, action.restore); // WebView lost it — recover from durable store
+        restored = true;
+      } else if (action.backup !== undefined) {
+        backups.push(Preferences.set({ key, value: action.backup })); // back up the existing value
+      }
+    });
+    await Promise.all(backups);
+    return restored;
+  });
+  if (completedRestore !== undefined) restored = completedRestore;
   // localStorage is now repopulated, so every registered reloader re-reads fresh
   // values. Only fire when something actually changed — a no-op restore leaves
   // the live stores untouched.

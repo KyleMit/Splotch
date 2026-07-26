@@ -11,12 +11,16 @@ vi.mock('./platform', () => ({
 
 // In-memory stand-in for the durable Capacitor Preferences store.
 const prefsStore = vi.hoisted(() => new Map<string, string>());
+const prefsSetFailure = vi.hoisted(() => ({ key: null as string | null }));
 vi.mock('@capacitor/preferences', () => ({
   Preferences: {
     get: async ({ key }: { key: string }) => ({
       value: prefsStore.has(key) ? prefsStore.get(key) : null,
     }),
-    set: async ({ key, value }: { key: string; value: string }) => void prefsStore.set(key, value),
+    set: async ({ key, value }: { key: string; value: string }) => {
+      if (prefsSetFailure.key === key) throw new Error('Preferences set failed');
+      prefsStore.set(key, value);
+    },
     remove: async ({ key }: { key: string }) => void prefsStore.delete(key),
   },
 }));
@@ -38,6 +42,7 @@ import {
 beforeEach(() => {
   localStorage.clear();
   prefsStore.clear();
+  prefsSetFailure.key = null;
   ctrl.native = false;
 });
 
@@ -223,6 +228,25 @@ describe('hydrateDurableStorage', () => {
     const restored = await hydrateDurableStorage();
     expect(restored).toBe(true);
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBe('stale-plaintext-key');
+  });
+
+  it('reports a completed restore when a concurrent back-fill fails', async () => {
+    ctrl.native = true;
+    prefsStore.set(STORAGE_KEYS.strokeWidthSize, 'recovered');
+    localStorage.setItem(STORAGE_KEYS.drawerOpen, 'keep');
+    prefsSetFailure.key = STORAGE_KEYS.drawerOpen;
+    const cb = vi.fn();
+    const off = onDurableRestore(cb);
+    try {
+      const restored = await hydrateDurableStorage();
+
+      expect(restored).toBe(true);
+      expect(localStorage.getItem(STORAGE_KEYS.strokeWidthSize)).toBe('recovered');
+      expect(prefsStore.has(STORAGE_KEYS.drawerOpen)).toBe(false);
+      expect(cb).toHaveBeenCalledTimes(1);
+    } finally {
+      off();
+    }
   });
 });
 
