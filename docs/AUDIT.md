@@ -28,28 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P5][dead-code] `osFromUserAgent` carries a Windows-only branch the app can't reach meaningfully
-
-**File(s):** `web/src/lib/deviceInfo.ts:72-74` — pinned at SHA f934d43
-
-#### Problem
-
-`osFromUserAgent` maps `Windows NT 10` → `'Windows 10/11'` and other `Windows NT` versions, but this
-is a toddler drawing app whose web target is overwhelmingly mobile/tablet, and the function's own
-comment notes the raw UA is *always* sent alongside on web, so a Windows miss "loses nothing." The
-Windows branches add parsing surface for a value that is redundant (raw UA present) on the only
-platform (web) where a Windows UA can appear — native builds are Android/iOS only.
-
-#### Proposed solution
-
-This is minor; either keep it (harmless) or trim the OS map to the platforms the app actually
-targets (Android/iOS/macOS/ChromeOS/Linux), relying on the always-attached raw UA for the desktop
-long tail. Not worth churn on its own — fold into the P3 `collectDeviceInfo` extraction if touched.
-
-#### Verification
-
-`deviceReport`/web-arm unit test still maps mobile UAs correctly; raw UA still attached on web.
-
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
 ### [P1][duplication] Extract the six near-identical Gemini `generateContent` wrappers into `lib/gemini.mjs`
