@@ -9,45 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P2][duplication] Extract the repeated distance-vs-threshold computation in `dragToClear`
-
-**File(s):** `web/src/lib/actions/dragToClear.ts:133-138` (`onPointerMove`) and `198-203`
-(`onPointerUp`) — pinned at SHA f934d43
-
-#### Problem
-
-Both handlers recompute the drag distance and the accept threshold with identical code:
-
-```ts
-const dx = clientX - startPointerX;
-const dy = clientY - startPointerY;
-const distance = Math.sqrt(dx * dx + dy * dy);
-const threshold = getAcceptRadius();
-```
-
-The "have we crossed the accept radius?" test is the gesture's central predicate and is expressed
-twice; a change to how distance is measured (e.g. squared-distance to drop the `sqrt`) must be made
-in two places.
-
-#### Proposed solution
-
-Add a helper:
-
-```ts
-function dragDistance(clientX: number, clientY: number): number {
-  return Math.hypot(clientX - startPointerX, clientY - startPointerY);
-}
-```
-
-and use `dragDistance(...) >= getAcceptRadius()` at both call sites (also switching
-`Math.sqrt(dx*dx+dy*dy)` to `Math.hypot`, matching the pinch actions).
-
-#### Verification
-
-`npm run test:unit -- dragToClear` — the commit and cancel-past-radius cases exercise both branches.
-
----
-
 ### [P2][duplication] Fold the duplicated post-drag cleanup in `onPointerCancel` / `onPointerUp` else-branch into one helper
 
 **File(s):** `web/src/lib/actions/dragToClear.ts:236-266` — pinned at SHA f934d43

@@ -55,6 +55,10 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     return Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
   }
 
+  function dragDistance(clientX: number, clientY: number): number {
+    return Math.hypot(clientX - startPointerX, clientY - startPointerY);
+  }
+
   // True when the tap completed a multi-tap run and showed the tutorial, in which
   // case the caller must not start a drag.
   function registerTap(now: number, o: DragToClearOptions): boolean {
@@ -153,7 +157,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const dy = clientY - startPointerY;
     o.containerEl.style.transform = `translate(${dx}px, ${dy}px)`;
 
-    const distance = Math.sqrt(dx * dx + dy * dy);
+    const distance = dragDistance(clientX, clientY);
     const threshold = getAcceptRadius();
 
     // Continuous 0→1 drag progress drives the radial paper wash that previews
@@ -251,9 +255,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
     const clientX = e.clientX;
     const clientY = e.clientY;
-    const dx = clientX - startPointerX;
-    const dy = clientY - startPointerY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+    const distance = dragDistance(clientX, clientY);
     const threshold = getAcceptRadius();
 
     finishDrag(o, e.pointerId);
