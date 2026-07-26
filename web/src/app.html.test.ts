@@ -4,6 +4,7 @@
 // default (.claude/rules/testing.md).
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
 import {
   ACTION_BUTTON_SCALE_DEFAULT,
   ACTION_BUTTON_SCALE_MAX,
@@ -63,6 +64,12 @@ function bootLiteral(pattern: RegExp): number {
   return Number(match![1]);
 }
 
+function bootStringLiteral(pattern: RegExp): string {
+  const match = bootScript.match(pattern);
+  expect(match, `app.html's boot script matches ${pattern}`).not.toBeNull();
+  return match![1];
+}
+
 describe("app.html's boot script mirrors the state modules", () => {
   const bootKeys = [...new Set([...bootScript.matchAll(/'(splotch-[\w-]+)'/g)].map((m) => m[1]))];
   // `\s*` between the tokens so a prettier reflow of a long `on(...)` call
@@ -108,5 +115,11 @@ describe("app.html's boot script mirrors the state modules", () => {
     expect(bootLiteral(/scaleRaw == null \? (\d+)/)).toBe(ACTION_BUTTON_SCALE_DEFAULT);
     expect(bootLiteral(/isNaN\(pct\)\) pct = (\d+)/)).toBe(ACTION_BUTTON_SCALE_DEFAULT);
     expect(bootLiteral(/pct !== (\d+)/)).toBe(ACTION_BUTTON_SCALE_DEFAULT);
+  });
+
+  it('seeds data-app-surface for DRAWING_ROUTE', () => {
+    expect(
+      bootStringLiteral(/toggleAttribute\('data-app-surface', location\.pathname === '([^']*)'\)/)
+    ).toBe(DRAWING_ROUTE);
   });
 });
