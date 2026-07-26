@@ -28,31 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P3][complexity] `collectDeviceInfo` is a ~40-line function mixing web + native collection
-
-**File(s):** `web/src/lib/deviceInfo.ts:20-60` — pinned at SHA f934d43
-
-#### Problem
-
-The function seeds base fields, then branches into a native path (dynamic-import
-`@capacitor/device`, merge OS/model/language, UA fallback) and a web path (display mode, UA OS, full
-UA), all inline. The two collection strategies are logically separable but interleaved, and the
-`try/catch` + fallback nesting makes the native arm the densest part of the file.
-
-#### Proposed solution
-
-Extract `async function collectNativeDeviceInfo(info: DeviceInfo): Promise<void>` and
-`function collectWebDeviceInfo(info: DeviceInfo): void`, leaving `collectDeviceInfo` as the ~10-line
-orchestrator (seed → `browser` guard → common screen/viewport fields → branch). Keep the
-`__IS_CAPACITOR__` gate at the call site so tree-shaking is unaffected.
-
-#### Verification
-
-`npm run check`; `ReportForm.svelte` still gets the same payload; add a node-env unit test for the
-web arm (UA→OS mapping) which currently has none.
-
----
-
 ### [P3][naming] `haptics.ts` web-fallback vibrates for a magic `15` ms
 
 **File(s):** `web/src/lib/haptics.ts:31` — pinned at SHA f934d43
