@@ -28,44 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P2][duplication] Three uncoordinated writers to `<meta name="theme-color">`; NotchBand re-inlines the setter
-
-**File(s):** `web/src/lib/theme.ts:50-54` (`updateThemeColorMeta`),
-`web/src/lib/components/NotchBand.svelte:31-34`, `web/src/app.html:24` — pinned at SHA f934d43
-
-#### Problem
-
-`theme.ts` owns a pure setter `updateThemeColorMeta()` that does
-`document.querySelector('meta[name="theme-color"]')?.setAttribute('content', …)`, driven by
-`appearance.svelte.ts` to reflect the resolved light/dark theme. But `NotchBand.svelte:33` writes
-the *same* meta element directly with the active drawing color, re-inlining the exact
-`querySelector('meta[name="theme-color"]')?.setAttribute(...)` string rather than reusing a shared
-setter:
-
-```js
-document.querySelector('meta[name="theme-color"]')?.setAttribute('content', band.themeColor);
-```
-
-Two reactive sources fight over one DOM element with no defined precedence (last effect to run
-wins), and the selector/attribute logic is duplicated. A future change to the meta mechanism (e.g. a
-second meta for `media`) must be made in two places that don't know about each other.
-
-#### Proposed solution
-
-Extract a single low-level `setThemeColorMeta(color: string)` in `theme.ts` and have both
-`updateThemeColorMeta` and NotchBand call it, so the DOM write lives in one place. Document the
-ownership rule (NotchBand's active-color write is the intended override while drawing; appearance's
-resolved-theme write is the baseline) in a comment or ADR reference, since ADR-0052 already notes
-"the only JS followers are the theme-color meta and the Notch Band."
-
-#### Verification
-
-`git grep "meta\[name=\"theme-color\"\]"` in `src/` (excluding tests) resolves to one setter;
-`appearance.svelte.test.ts` still passes; manual check that drawing color still reaches the
-Android-web status bar.
-
----
-
 ### [P2][maintainability] `drawingSound.ts` audio graph is five module-level mutable globals — untestable singleton
 
 **File(s):** `web/src/lib/audio/drawingSound.ts:13-17` (module state), `19-104` (all functions) —

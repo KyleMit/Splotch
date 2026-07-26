@@ -45,13 +45,16 @@ export function resolveTheme(preference: ThemePreference, systemDark: boolean): 
   return preference;
 }
 
-// Pure setter: write an already-resolved theme onto the theme-color meta (the
-// browser/PWA chrome color). Callers resolve the theme; this only paints it, so
-// the single reactive source in appearance.svelte.ts can drive it.
-export function updateThemeColorMeta(resolved: ResolvedTheme) {
+// Appearance sets the resolved-theme baseline; NotchBand intentionally
+// overrides it with the active drawing or paper color for the status-bar surface.
+export function setThemeColorMeta(color: string) {
   if (typeof document === 'undefined') return;
   const meta = document.querySelector('meta[name="theme-color"]');
-  meta?.setAttribute('content', resolved === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
+  meta?.setAttribute('content', color);
+}
+
+export function updateThemeColorMeta(resolved: ResolvedTheme) {
+  setThemeColorMeta(resolved === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
 }
 
 export function applyTheme(preference: ThemePreference) {
