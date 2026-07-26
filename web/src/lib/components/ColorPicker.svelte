@@ -407,7 +407,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background-color: var(--color, #007bff);
+    background-color: var(--color);
     clip-path: var(--hex-clip);
     transition:
       inset 0.1s ease,
@@ -463,7 +463,7 @@
        engines keep a neutral dark ring instead of losing the selection indicator
        entirely (the base .hexagon background is transparent). */
     background-color: rgba(0, 0, 0, 0.2);
-    background-color: color-mix(in srgb, var(--color, #007bff), black 20%);
+    background-color: color-mix(in srgb, var(--color), black 20%);
   }
 
   .hexagon.selected::after {

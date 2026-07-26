@@ -20,30 +20,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P3][maintainability] `#007bff` is an off-palette fallback color repeated in the picker CSS
-
-**File(s):** `web/src/lib/components/ColorPicker.svelte:391, 447` — pinned at SHA f934d43
-
-#### Problem
-
-`background-color: var(--color, #007bff)` (line 391) and
-`color-mix(in srgb, var(--color, #007bff), black 20%)` (line 447) fall back to a bootstrap-blue that
-is in neither the palette nor the token set. `--color` is always set on `.hexagon` (line 159), so
-the fallback is dead — but if it ever fired it would paint a foreign blue, and its presence twice
-implies it's meaningful.
-
-#### Proposed solution
-
-Drop the fallback (`var(--color)`), since `--color` is guaranteed set; or if a defensive default is
-wanted, use `transparent` (matching the base `.hexagon` background) rather than an arbitrary blue.
-De-duplicate either way.
-
-#### Verification
-
-`rg '#007bff'` returns nothing; hexagons render identically (fallback never fired).
-
----
-
 ### [P4][maintainability] Inconsistent hex casing in `COLOR_FAMILIES` (greys use lowercase, rest uppercase)
 
 **File(s):** `web/src/lib/hexPickerLayout.ts:137` (`#ffffff`) vs. the other 80 uppercase entries —
