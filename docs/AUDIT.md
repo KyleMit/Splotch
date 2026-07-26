@@ -22,34 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P4][maintainability] csp-report's caps and formats are undiscoverable from the CSP header source
-
-**File(s):** `web/src/routes/api/csp-report/+server.ts:7-17`; cross-ref
-`web/src/lib/server/securityHeaders.ts:28-29,39` — pinned at SHA f934d43
-
-#### Problem
-
-The receiver's accepted Content-Types (`application/csp-report`, `application/reports+json`,
-`application/json`) and the `report-uri /api/csp-report` +
-`Reporting-Endpoints: csp="/api/csp-report"` directives that *drive* it live in two files with no
-link between them. The path `/api/csp-report` is a literal string in `securityHeaders.ts` (28, 39)
-and the route folder name; nothing ties the producer (CSP header) to the consumer (route). A rename
-of the route silently drops all CSP telemetry with no failing test.
-
-#### Proposed solution
-
-Export the endpoint path as a shared constant (e.g. `CSP_REPORT_PATH = '/api/csp-report'` in a
-shared module) and reference it from `securityHeaders.ts` (interpolating into the CSP directive +
-`Reporting-Endpoints`). The route folder can't be a variable, but a `securityHeaders.test.ts`
-assertion that the CSP `report-uri` equals `CSP_REPORT_PATH` closes the drift gap.
-
-#### Verification
-
-`securityHeaders.test.ts` gains an assertion linking the CSP directive to the constant;
-`grep -n "/api/csp-report"` shows the constant plus the route folder only.
-
----
-
 ### [P4][consistency] `report` builds Retry-After manually-shaped via `throttled` but other size/format caps use raw responses
 
 **File(s):** `web/src/routes/api/report/+server.ts:56-60,73,89,104` — pinned at SHA f934d43
