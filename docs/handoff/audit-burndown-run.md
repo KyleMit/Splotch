@@ -15,8 +15,7 @@ subagents, edit `docs/AUDIT.md` directly, or mix unrelated work into the branch.
 * PR: [#551](https://github.com/KyleMit/Splotch/pull/551) (draft)
 * Start point: e8bb26563df15f5c4c1ef7181affe198be6185f5e
 * Backlog at start: 362 remaining of 511 total
-* Run state: first canary segment halted after one fix, three drops, and three consecutive
-  implementation deferrals; rollback cleanup repaired and verified; canary relaunch pending
+* Run state: repaired canary complete and fully green; full overnight launch pending
 * Gate overrides:
   * `CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check'`
   * `TEST_CMD='npm run test:unit && npm run test:scripts'`
@@ -67,13 +66,27 @@ subagents, edit `docs/AUDIT.md` directly, or mix unrelated work into the branch.
   treats untracked files as dirty in preflight/resume, and adds regression coverage.
 * Verified the repair with the untracked-only preflight probe, the repository quality gate, 728 app
   unit tests, and 96 script tests.
+* Repaired canary segment:
+  * Fixed five findings, dropped two invalid findings, and deferred one finding.
+  * Finished cleanly with 347 findings remaining.
+* Canary totals across both segments: six fixed, five dropped, and four deferred.
+* Inspected the complete code-only diff; no non-equivalent call sites, accidental constant coupling,
+  or erased runtime guards found.
+* Reconciled every branch commit: each consumed finding removed exactly one audit entry, and no
+  commit removed two.
+* Confirmed every current repair round resumed the exact implementer thread while each reviewer used
+  a distinct thread.
+* Posted all six pending per-fix comments to PR [#551](https://github.com/KyleMit/Splotch/pull/551).
+* Required exact-head CI on 25ceeaaba7c958b1572df6fa0905d2d679151462: Quality and Tests both passed.
+* Cost projection at the canary checkpoint: 347 findings, about 477 million tokens, and roughly 21
+  hours at the observed rate.
 
 ## Risks & next 3 steps
 
-1. Commit and push this updated checkpoint, rerun preflight, then resume and inspect the five-fix
-   foreground canary.
-2. Require canary CI green and drain its pending per-commit comments.
-3. Inspect cost and launch the durable full-run command above under active supervision.
+1. Commit and push this updated checkpoint, then launch the durable full-run command above.
+2. Supervise driver events, independent CI checkpoints, and per-fix comments; stop immediately on a
+   completed CI failure.
+3. Complete the recorded closeout tasks when the backlog drains or the user requests wrap-up.
 
 Closeout must stop cleanly, match local HEAD to origin, capture and drain all per-commit comments,
 reconcile every `finished:` line, tidy the audit backlog, add the `burn-down-audits` row to
