@@ -1,0 +1,36 @@
+diff --git a/web/src/lib/pwa/updates.ts b/web/src/lib/pwa/updates.ts
+index 3ae66bab..c0b7a17d 100644
+--- a/web/src/lib/pwa/updates.ts
++++ b/web/src/lib/pwa/updates.ts
+@@ -89,6 +89,11 @@ export function createPWAUpdates() {
+     scheduleRegistration();
+   }
+ 
++  function reloadForUpdate() {
++    updateReload = 'none';
++    window.location.reload();
++  }
++
+   function initPWAUpdates(): (() => void) | undefined {
+     if (import.meta.env.DEV) return;
+     if (!serviceWorkerSupported()) return;
+@@ -160,8 +165,7 @@ export function createPWAUpdates() {
+         updateReload = 'owed';
+         return;
+       }
+-      updateReload = 'none';
+-      window.location.reload();
++      reloadForUpdate();
+     };
+     navigator.serviceWorker.addEventListener('controllerchange', onControllerChange, {
+       once: true,
+@@ -191,8 +195,7 @@ export function createPWAUpdates() {
+     try {
+       if (updateReload === 'owed') {
+         if (canvasState.canvasEmpty) {
+-          updateReload = 'none';
+-          window.location.reload();
++          reloadForUpdate();
+         }
+         return;
+       }

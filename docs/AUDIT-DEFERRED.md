@@ -1688,3 +1688,56 @@ I added the requested build-literal guards, but the brief’s verification note 
 defines `__IS_CAPACITOR__` as true, making 15 web install-state tests inert before mocked
 `isNative()` is reached. Fixing the gate requires an out-of-scope test-config change, so the exact
 scoped implementation remains uncommitted.
+
+### [P4][duplication] Reload-side-effect pair (`refreshState = 'idle'; window.location.reload()`) is repeated across three lifecycle paths
+
+**File(s):** `web/src/lib/pwa/updates.ts:164-166,184-186` — pinned at SHA f934d43
+
+#### Problem
+
+The "commit the reload" step appears in the `'deferred'` guard (164-166) and in `onControllerChange`
+(184-186):
+
+```ts
+refreshState = 'idle';
+window.location.reload();
+```
+
+plus the inverse "defer instead" pair (`refreshState = 'deferred'; return;`) at 181-183. The reload
+discipline (always reset state before reloading) is a rule enforced by copy-paste; a future path
+that reloads without resetting would strand the state machine.
+
+#### Proposed solution
+
+Extract `function reloadForUpdate() { refreshState = 'idle'; window.location.reload(); }` and
+`function deferReload() { refreshState = 'deferred'; }`, and call them from all paths. The invariant
+becomes a single definition.
+
+#### Verification
+
+`updates.test.ts` reload-count assertions (e.g. `toHaveBeenCalledTimes(1)`) still hold.
+
+---
+
+#### Why it was deferred
+
+implementer failed to deliver a fix round
+
+Reviewer's unresolved objections:
+
+* The `updateReload = 'owed'` deferral transition remains inline in `onControllerChange`, so the
+  original finding’s requested centralization of both lifecycle outcomes is incomplete; extract and
+  call a `deferReload()` helper alongside `reloadForUpdate()`.
+
+#### What was tried
+
+The duplicated reset-and-reload transition is now one private helper, used by both empty-canvas
+update paths.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/p4-duplication-reload-side-effect-pair-refreshstate-idle-window-location.patch`
+(1 commit). It passed the driver's type-check, unit-test and lint gates — the review is what it did
+not pass — so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/p4-duplication-reload-side-effect-pair-refreshstate-idle-window-location.patch`.

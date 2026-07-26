@@ -24,36 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P4][duplication] Reload-side-effect pair (`refreshState = 'idle'; window.location.reload()`) is repeated across three lifecycle paths
-
-**File(s):** `web/src/lib/pwa/updates.ts:164-166,184-186` — pinned at SHA f934d43
-
-#### Problem
-
-The "commit the reload" step appears in the `'deferred'` guard (164-166) and in `onControllerChange`
-(184-186):
-
-```ts
-refreshState = 'idle';
-window.location.reload();
-```
-
-plus the inverse "defer instead" pair (`refreshState = 'deferred'; return;`) at 181-183. The reload
-discipline (always reset state before reloading) is a rule enforced by copy-paste; a future path
-that reloads without resetting would strand the state machine.
-
-#### Proposed solution
-
-Extract `function reloadForUpdate() { refreshState = 'idle'; window.location.reload(); }` and
-`function deferReload() { refreshState = 'deferred'; }`, and call them from all paths. The invariant
-becomes a single definition.
-
-#### Verification
-
-`updates.test.ts` reload-count assertions (e.g. `toHaveBeenCalledTimes(1)`) still hold.
-
----
-
 ### [P4][type-safety] Save-Data `connection` type is cast inline instead of shared
 
 **File(s):** `web/src/lib/pwa/updates.ts:62-65`; duplicated shape in `updates.test.ts:344-352` —
