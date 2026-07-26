@@ -9,47 +9,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P1][platform-branching] Web-only PWA code is gated by runtime `isNative()` where a build-time `__IS_CAPACITOR__` branch would tree-shake it out of the native bundle
-
-**File(s):** `web/src/routes/+page.svelte:57-60, 163-167` (app shell);
-`web/src/lib/platform.ts:9-11` — pinned at SHA f934d43
-
-#### Problem
-
-`web/src/CLAUDE.md` and the root CLAUDE.md both state the convention: prefer the compile-time
-`__IS_CAPACITOR__` constant over a runtime `isNative()` for platform branches, because `isNative()`
-"alone can't tree-shake." Two web-only paths violate this:
-
-```js
-if (canvasState.strokeCount < STROKES_BEFORE_SW_REGISTER) return;
-if (!isNative()) registerDeferredServiceWorker();   // line 59
-...
-if (!isNative()) {
-  teardownPWAUpdates = initPWAUpdates();
-  initInstallPrompt();                                // lines 164-167
-}
-```
-
-Because the guard is a runtime call, the native build still bundles `registerDeferredServiceWorker`,
-`initPWAUpdates`, and `initInstallPrompt` (and their imports) even though they can never run there —
-dead weight in the Capacitor bundle, and a runtime branch that could be a build-time one.
-
-#### Proposed solution
-
-Replace `!isNative()` with `!__IS_CAPACITOR__` on these purely web-vs-native gates so Rollup drops
-the branch and its imports from the native build. Keep `isNative()` only where the distinction is
-genuinely runtime (e.g. `@capacitor/core` loaded on the web). Confirm the imports (`initPWAUpdates`,
-`initInstallPrompt`, `registerDeferredServiceWorker`) are reachable only through these guards so
-they eliminate cleanly.
-
-#### Verification
-
-`CAPACITOR=true npm run build:cap` and inspect the output/chunk graph to confirm the PWA/install
-modules no longer appear in the native bundle; web build (`npm run build`) still registers the SW
-after `STROKES_BEFORE_SW_REGISTER`. `npm run check` green.
-
----
-
 ### [P1][maintainability] The `app.html` pre-paint boot script re-hardcodes every persisted `localStorage` key, the boolean-setting list, and the scale clamp — kept in sync only by a comment
 
 **File(s):** `web/src/app.html:75-121` (inline boot IIFE); mirrors
