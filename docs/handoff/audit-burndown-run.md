@@ -1,6 +1,7 @@
 # Handoff — Codex audit burndown
 
-> 2026-07-26 · branch `codex/audit-burndown-20260726` · Adapt the bulk audit driver to Codex and
+> 2026-07-26 · branch `codex/audit-burndown-20260726` · PR
+> [#548](https://github.com/KyleMit/Splotch/pull/548) · Adapt the bulk audit driver to Codex and
 > resume the 399-finding backlog.
 
 This is the durable checkpoint required by the `burn-down-audits` skill. A fresh session resumes
@@ -40,7 +41,7 @@ compatibility.
 * Branch forked from current `main` at 899fd035191b, the merge of PR #547.
 * Backlog before this continuation: **399 findings**.
 * The prior Claude run fixed 40 findings, dropped 6, and deferred 4; its PR #547 is merged.
-* The runner adaptation is implemented locally and awaiting its checkpoint commit and draft PR.
+* The runner adaptation is committed and pushed on draft PR #548.
 * Ruler 0.3.44 cannot select different skill source trees per agent. The deterministic
   `scripts/apply-ruler-agent-overrides.mjs` post-step overlays `.template` sources after
   `ruler apply`; Claude retains the shared skill while Codex receives the generated `.agents`
@@ -50,6 +51,10 @@ compatibility.
 * Actual nested `codex exec` calls must be launched outside the outer filesystem sandbox. A direct
   Codex JSONL, schema, and resume probe passed; the same call failed only when deliberately run
   inside the outer sandbox with `Operation not permitted`.
+
+| Commit       | What landed                                                          |
+| ------------ | -------------------------------------------------------------------- |
+| 9777726c0285 | Codex runner, runner-specific skill generation, tests, docs, and ADR |
 
 ## Decisions made
 
@@ -99,7 +104,7 @@ failure is expected because that gate intentionally reports unstaged generated o
 
 ## Risks & next 3 steps
 
-1. Commit and push the runner adaptation plus this checkpoint; open the draft PR and record it here.
+1. Commit and push this PR-number update to complete the durable checkpoint.
 2. Run exact-override preflight, then the five-finding foreground Codex canary.
 3. Inspect all canary diffs and audit-entry removals, require final-HEAD CI green, report cost, then
    launch the full continuation command.
