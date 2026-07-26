@@ -9,29 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P4][readability] Repeated `e.preventDefault(); e.stopPropagation();` tail in every `dragToClear` handler
-
-**File(s):** `web/src/lib/actions/dragToClear.ts:111-112,161-162,244-245,264-265` — pinned at SHA
-f934d43
-
-#### Problem
-
-Each of the four pointer handlers ends with the same two-line
-`e.preventDefault(); e.stopPropagation();`. It's noise repeated verbatim four times, and because
-it's the *last* thing each handler does, an early `return` in a future edit silently skips it (the
-multi-click early return at line 63-64 already does, which is intended but non-obvious).
-
-#### Proposed solution
-
-A tiny `function suppress(e: Event) { e.preventDefault(); e.stopPropagation(); }` used at each site
-makes the intent named and the early-return exceptions visible by their absence.
-
-#### Verification
-
-Pure readability; `npm run test:unit -- dragToClear` unchanged.
-
----
-
 ### [P4][naming] `dragToClear` computes the button center by hand instead of using rect width/height
 
 **File(s):** `web/src/lib/actions/dragToClear.ts:89-93` — pinned at SHA f934d43

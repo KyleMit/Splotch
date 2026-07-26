@@ -14,6 +14,11 @@ const DRAW_SOUND_STOP_DELAY = 300;
 const PAGE_TURN_DURATION = 600;
 const EXIT_RETURN_DELAY = 650;
 
+function suppress(e: Event) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+
 export interface DragToClearOptions {
   containerEl: HTMLDivElement;
   acceptZoneEl: HTMLDivElement;
@@ -128,8 +133,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
     o.onDragStart?.();
 
-    e.preventDefault();
-    e.stopPropagation();
+    suppress(e);
   }
 
   function onPointerMove(e: PointerEvent) {
@@ -179,8 +183,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       clearReady = false;
     }
 
-    e.preventDefault();
-    e.stopPropagation();
+    suppress(e);
   }
 
   function finishDrag(o: DragToClearOptions, pointerId: number) {
@@ -273,8 +276,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
     o.onDragEnd?.();
 
-    e.preventDefault();
-    e.stopPropagation();
+    suppress(e);
   }
 
   function onPointerCancel(e: PointerEvent) {
@@ -292,8 +294,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     stopDrawSound();
     o.onDragEnd?.();
 
-    e.preventDefault();
-    e.stopPropagation();
+    suppress(e);
   }
 
   node.addEventListener('pointerdown', onPointerDown);
