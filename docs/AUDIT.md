@@ -7,29 +7,6 @@
 
 ## Source: Code audit — Routes / app shell / dev pages
 
-### [P5][type-safety] `app.d.ts` leaves `App.Error`, `Locals`, `PageData`, `PageState` as commented-out stubs while a concrete error shape is already in use
-
-**File(s):** `web/src/app.d.ts:4-7` — pinned at SHA f934d43
-
-#### Problem
-
-The `App.Error` interface is left commented (defaulting to `{ message: string }`), yet both hooks
-return exactly that shape and could return a richer one (e.g. an error id). Leaving the namespace as
-default-stub is fine functionally but means the app's error contract isn't declared where SvelteKit
-expects it, and a future richer error object would be untyped until someone remembers this file.
-
-#### Proposed solution
-
-Declare `interface Error { message: string }` explicitly (documenting the contract the hooks
-satisfy) and remove the other stubs if genuinely unused, so the file states what's intentional
-rather than leaving four commented placeholders.
-
-#### Verification
-
-`npm run check` green; the hooks' return types are checked against the declared `App.Error`.
-
----
-
 ### [P5][readability] Font-warm and wake-lock rely on unnamed magic strings (`'1em "Quicksand Variable"'`, `'screen'`)
 
 **File(s):** `web/src/routes/+layout.svelte:23`, `web/src/routes/+page.svelte:143` — pinned at SHA

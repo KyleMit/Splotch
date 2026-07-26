@@ -1,12 +1,11 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts for the App namespace.
 declare global {
   namespace App {
+    // Pins the shape both hooks.client.ts's and hooks.server.ts's `handleError`
+    // already return: `{ message: GENERIC_ERROR_MESSAGE }`.
     interface Error {
       message: string;
     }
-    // interface Locals {}
-    // interface PageData {}
-    // interface PageState {}
 
     // The Netlify adapter exposes the function invocation context here.
     // `waitUntil` keeps the function alive past the response for background
