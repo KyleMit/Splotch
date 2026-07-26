@@ -22,39 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Color palette & picker
 
-### [P3][maintainability] `LANDSCAPE_ROWS` transpose keys off `COLOR_FAMILIES[0]` and assumes uniform shade counts
-
-**File(s):** `web/src/lib/hexPickerLayout.ts:162-165` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-export const LANDSCAPE_ROWS = COLOR_FAMILIES[0].shades.map((_, s) => ({
-  key: `shade-${s + 1}`,
-  colors: COLOR_FAMILIES.map((f) => f.shades[s]),
-}));
-```
-
-The transpose is driven by the *first* family's shade count. If any family had a different length
-(the interface comment only says "Every family has the same count" — nothing enforces it), the
-shorter families produce `undefined` entries pushed into `colors: string[]`, typed as `string` but
-actually `undefined`, and the picker renders `style="--color: undefined"` swatches with no type
-error.
-
-#### Proposed solution
-
-Add a `SHADE_COUNT` constant and either validate
-(`COLOR_FAMILIES.every(f => f.shades.length === SHADE_COUNT)` at module load, throwing in dev) or
-type the family shades as a fixed-length tuple `[string, string, …]`. Build the transpose from
-`SHADE_COUNT`.
-
-#### Verification
-
-`hexPickerLayout.test.ts` already checks 9×9 uniqueness; add an assertion that no `LANDSCAPE_ROWS`
-color is `undefined`.
-
----
-
 ### [P3][naming] `9×9` grid dimensions are unnamed magic across the module
 
 **File(s):** `web/src/lib/hexPickerLayout.ts:12-165` — pinned at SHA f934d43
