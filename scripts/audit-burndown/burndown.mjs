@@ -48,6 +48,7 @@ import {
   git,
   gitOk,
   gitOut,
+  incompleteAuditCommitPlan,
   implementationCommitMessage,
   launchCommand,
   logLine,
@@ -376,7 +377,32 @@ if (hasRemote && !gitOk('merge', '--ff-only', `origin/${BRANCH}`))
 if (!gitOk('diff', '--quiet') || !gitOk('diff', '--cached', '--quiet')) {
   if (!RESUME) halt('working tree is dirty (set RESUME=1 to discard crash residue and resume)');
   logLine('  RESUME: dirty tree from an interrupted run — resetting to HEAD');
-  git('reset', '-q', '--hard', 'HEAD');
+  if (git('reset', '-q', '--hard', 'HEAD').status !== 0) halt('could not reset crash residue');
+}
+if (RESUME) {
+  const headSha = gitOut('rev-parse', 'HEAD');
+  const rollback = incompleteAuditCommitPlan({
+    headSha,
+    auditBody: existsSync(auditFile()) ? readFileSync(auditFile(), 'utf8') : '',
+    commitAt: (sha) => ({
+      message: gitOut('show', '-s', '--format=%B', sha),
+      parentSha: gitOut('rev-parse', `${sha}^`),
+    }),
+  });
+
+  if (rollback) {
+    if (hasRemote && gitOk('merge-base', '--is-ancestor', headSha, `origin/${BRANCH}`))
+      halt(
+        `incomplete implementation for ${rollback.title} is already published; refusing to rewrite origin/${BRANCH}`
+      );
+    logLine(
+      `  RESUME: rewinding ${rollback.count} incomplete implementation commit${
+        rollback.count === 1 ? '' : 's'
+      } for ${rollback.title}`
+    );
+    if (git('reset', '-q', '--hard', rollback.baseSha).status !== 0)
+      halt(`could not rewind incomplete implementation for ${rollback.title}`);
+  }
 }
 if (RESUME) rmSync(join(WORK, 'STOP'), { force: true }); // a graceful stop leaves STOP behind
 

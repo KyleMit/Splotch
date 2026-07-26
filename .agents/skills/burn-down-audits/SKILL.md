@@ -265,6 +265,11 @@ The unattended launcher sets `RESUME=1`. It adopts `origin/<branch>`, fast-forwa
 resets only crash residue from a half-finished finding, clears stale `STOP`, and starts with the
 same `docs/AUDIT.md` entry because deletion happens only inside an approved commit.
 
+Codex implementation and repair rounds are clean, driver-owned commits before gates and review. When
+the exact `Audit:` finding is still present, resume rewinds that contiguous local-only commit chain
+to the finding base before re-verifying it. It refuses to rewrite the chain if it has already been
+published.
+
 Before relaunching, commit or stash real work: `RESUME=1` treats a dirty tree as crash residue. The
 exact launch command is in `.audit-work/launch-command` while that local state survives and in the
 committed handoff across machines.

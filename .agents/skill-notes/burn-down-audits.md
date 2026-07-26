@@ -22,6 +22,9 @@ canary before its runbook was separated from the Claude Code skill.
    cannot bind Playwright listeners or write `.git/index.lock`.
 5. **The driver does not talk to GitHub.** It pushes commits and records pending comments; the
    supervising Codex agent owns the PR, comments, and CI supervision through the GitHub connector.
+6. **A pending audit entry makes clean implementation commits provisional.** Resume rewinds the
+   contiguous local-only `Audit:` chain before verification; only the amended commit that also
+   removes the exact entry is durable progress.
 
 ## Native Codex runner
 
@@ -63,6 +66,13 @@ edits, stages only the bounded change, and commits it.
 
 A repair round follows the same contract: resume the exact implementer thread, edit on top of the
 rejected commit, leave Git metadata alone, and let the outer driver create the next round commit.
+
+That contract creates clean commits before gates and adversarial review. A crash at that point used
+to preserve the local-ahead commit while leaving the finding in `docs/AUDIT.md`; re-verification
+could then call the finding already fixed and drop it without ever gating or reviewing the change.
+`RESUME=1` now recognizes the exact `Audit:` trailer while the matching entry heading remains,
+rewinds the entire contiguous implementation and repair chain, and reprocesses the finding. It halts
+instead of rewriting if that incomplete chain was somehow published.
 
 ## Diagnostics and review input
 
@@ -121,3 +131,4 @@ choice beneath that boundary.
 | 2026-07-26 | Move bounded Git staging and commits to the outer driver                |
 | 2026-07-26 | Pass gate output to repairs and review the complete finding range       |
 | 2026-07-26 | Separate the Codex skill package and design notes at the Ruler source   |
+| 2026-07-26 | Rewind clean incomplete implementation chains during crash recovery     |

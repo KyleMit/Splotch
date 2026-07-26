@@ -21,6 +21,7 @@ import {
   draftPatchPath,
   findingPriority,
   getEntry,
+  incompleteAuditCommitPlan,
   implementationCommitMessage,
   launchCommand,
   protectedImplementationPaths,
@@ -279,6 +280,102 @@ describe('Codex driver-owned commits', () => {
         'docs/audit-deferred/rejected.patch',
       ])
     ).toEqual(['docs/AUDIT.md', 'docs/AUDIT-DEFERRED.md', 'docs/audit-deferred/rejected.patch']);
+  });
+});
+
+describe('incomplete audit commit recovery', () => {
+  const title = '[P3][maintainability] Name the shared ring width';
+  const otherTitle = '[P4][readability] Rename the palette helper';
+  const baseSha = 'a'.repeat(40);
+  const initialSha = 'b'.repeat(40);
+  const roundOneSha = 'c'.repeat(40);
+  const roundTwoSha = 'd'.repeat(40);
+  const previousSha = 'e'.repeat(40);
+  const pendingAudit = `${FIXTURE}\n### ${title}\n\n#### Problem\n\nRepeated magic number.\n`;
+
+  const plan = (headSha, commits, auditBody = pendingAudit) =>
+    incompleteAuditCommitPlan({
+      headSha,
+      auditBody,
+      commitAt: (sha) => commits.get(sha),
+    });
+
+  it('rewinds a clean initial implementation whose exact finding remains pending', () => {
+    const commits = new Map([
+      [
+        initialSha,
+        {
+          message: implementationCommitMessage(title),
+          parentSha: baseSha,
+        },
+      ],
+      [baseSha, { message: 'chore: previous work', parentSha: previousSha }],
+    ]);
+
+    expect(plan(initialSha, commits)).toEqual({ title, baseSha, count: 1 });
+  });
+
+  it('rewinds the complete contiguous repair chain to the finding base', () => {
+    const commits = new Map([
+      [
+        roundTwoSha,
+        {
+          message: implementationCommitMessage(title, 2),
+          parentSha: roundOneSha,
+        },
+      ],
+      [
+        roundOneSha,
+        {
+          message: implementationCommitMessage(title, 1),
+          parentSha: initialSha,
+        },
+      ],
+      [
+        initialSha,
+        {
+          message: implementationCommitMessage(title),
+          parentSha: baseSha,
+        },
+      ],
+      [
+        baseSha,
+        {
+          message: implementationCommitMessage(otherTitle),
+          parentSha: previousSha,
+        },
+      ],
+    ]);
+
+    expect(plan(roundTwoSha, commits)).toEqual({ title, baseSha, count: 3 });
+  });
+
+  it('preserves an approved commit after its exact audit entry was removed', () => {
+    const commits = new Map([
+      [
+        initialSha,
+        {
+          message: implementationCommitMessage(title),
+          parentSha: baseSha,
+        },
+      ],
+    ]);
+
+    expect(plan(initialSha, commits, FIXTURE)).toBeNull();
+  });
+
+  it('does not confuse a title mentioned in prose with a pending entry heading', () => {
+    const commits = new Map([
+      [
+        initialSha,
+        {
+          message: implementationCommitMessage(title),
+          parentSha: baseSha,
+        },
+      ],
+    ]);
+
+    expect(plan(initialSha, commits, `${FIXTURE}\nSee ${title} for context.\n`)).toBeNull();
   });
 });
 
