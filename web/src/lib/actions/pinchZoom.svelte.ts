@@ -209,6 +209,7 @@ export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions)
     }
   }
 
+  // Deliberately unguarded by `enabled` — a pointer down while enabled still needs its capture released here if `enabled` flips false before it lifts.
   function onPointerUp(e: PointerEvent) {
     zoom.up(e.pointerId);
     releasePointer(node, e.pointerId);

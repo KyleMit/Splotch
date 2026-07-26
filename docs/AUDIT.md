@@ -9,33 +9,6 @@
 
 ## Source: Code audit — Gestures / Svelte actions / native plugins
 
-### [P4][readability] `pinchZoom.onPointerUp` runs even when the gesture is disabled
-
-**File(s):** `web/src/lib/actions/pinchZoom.svelte.ts:77-84` — pinned at SHA f934d43
-
-#### Problem
-
-`onPointerDown` and `onPointerMove` both early-return on `!getOptions().enabled`, but `onPointerUp`
-unconditionally calls `zoom.up(e.pointerId)`, `releasePointerCapture`, and
-`apply(getOptions().target)`. When `enabled` is false the accumulator never received a matching
-`down`, so `zoom.up` is a no-op-ish call, but the asymmetry (two guarded handlers, one unguarded)
-reads as an oversight and forces the reader to confirm it's harmless. The `enabled` check is missing
-where the other two have it.
-
-#### Proposed solution
-
-Either add the same `if (!getOptions().enabled) return;` guard for symmetry, or add a short comment
-explaining `pointerup` is intentionally unguarded so a pointer that went down while enabled still
-releases capture if `enabled` flips mid-gesture. Confirm which behavior is intended and make it
-explicit.
-
-#### Verification
-
-`npm run test:unit` for pinch; visually confirm in `AiImageResult` that toggling `enabled` mid-pinch
-releases capture correctly.
-
----
-
 ### [P5][readability] `scribbleGuard` reuses one `cancel` handler for three events without naming the shared listener options
 
 **File(s):** `web/src/lib/actions/scribbleGuard.ts:17-34` — pinned at SHA f934d43
