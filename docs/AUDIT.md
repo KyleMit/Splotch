@@ -20,31 +20,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P5][duplication] The multi-line `__IS_CAPACITOR__` tree-shaking explainer is copy-pasted verbatim across the storage modules
-
-**File(s):** `web/src/lib/storage.ts:73-81, 83-87` and `web/src/lib/secureStorage.ts:32-42, 118-120`
-— pinned at SHA f934d43
-
-#### Problem
-
-The same ~5-line comment ("The `__IS_CAPACITOR__` ternary keeps the import() itself out of the web
-bundle… the reject arm is unreachable…") is duplicated in `storage.ts` (getPrefs) and
-`secureStorage.ts` (getPlugin), and the "isNative() alone is a runtime check it can't tree-shake"
-note is repeated at each guard. This is the actual mechanism `lazyPluginModule` exists to
-encapsulate, yet the rationale is re-narrated at every use.
-
-#### Proposed solution
-
-State the rationale once on `lazyPluginModule` in `nativePlugin.ts` and reduce each call site to a
-one-line pointer (`// see lazyPluginModule`). Keeps the WHY discoverable without four copies
-drifting out of sync.
-
-#### Verification
-
-Doc-only; no behavior change. Confirm `nativePlugin.ts` carries the canonical explanation.
-
----
-
 ### [P5][readability] `removeKey`'s native arm re-inlines the Preferences pattern instead of expressing intent
 
 **File(s):** `web/src/lib/storage.ts:133-142` — pinned at SHA f934d43
