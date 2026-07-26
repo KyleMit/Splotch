@@ -1,7 +1,9 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts for the App namespace.
 declare global {
   namespace App {
-    // interface Error {}
+    interface Error {
+      message: string;
+    }
     // interface Locals {}
     // interface PageData {}
     // interface PageState {}
