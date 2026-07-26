@@ -30,34 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P2][complexity] Wrap the top-level procedural page loops in a `main()`
-
-**File(s):** `gen-coloring-fills-dark.mjs:327-440`; `gen-coloring-chalk.mjs:318-455`;
-`normalize-outline-strokes.mjs:196-336`; `gen-coloring-fills.mjs:221-283` — pinned at SHA f934d43
-
-#### Problem
-
-These scripts run 100–140 lines of imperative work (target resolution, the per-page loop, gating,
-writing, the summary) at module top level with `let failures = 0` module globals and top-level
-`await`. There is no `main()` and no single place a reader can see the shape of the program; the
-per-page body (e.g. dark:346-437) is a ~90-line block mixing lever resolution, file reads, the
-attempt ladder, encode, and a multi-branch status-string assembly. This is the "procedural `main`
-blob" pattern flagged as the top CLI smell.
-
-#### Proposed solution
-
-Introduce `async function main()` and, within it, factor the loop body into named steps:
-`resolvePageInputs(page, cfg)`, `writeCandidate(...)`, `formatStatusLine(take, cfg)`. Call
-`main().catch(err => fail(err.message))` at the bottom. This also gives one place to own the exit
-code.
-
-#### Verification
-
-Behavior identical (same stdout, same exit code on `--dry-run`); the diff is pure extraction.
-`node --check` passes and a dry-run prints the same lever report.
-
----
-
 ### [P2][consistency] Unify CLI argument parsing — three different mechanisms in one directory
 
 **File(s):** `parseArgs` in most files; `process.argv.slice(2)` in audit-fill-eyes.mjs:23 and
