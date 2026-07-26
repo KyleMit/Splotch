@@ -28,32 +28,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Misc lib utilities + Audio
 
-### [P4][performance] `playDrawSound` calls `preloadDrawSounds()` on every pointermove
-
-**File(s):** `web/src/lib/audio/drawingSound.ts:57-59`; engine call site `drawing/engine.ts:905` —
-pinned at SHA f934d43
-
-#### Problem
-
-`onDrawSoundCallback({ speed })` fires on every `pointermove` (engine line 905), and `playDrawSound`
-starts with `preloadDrawSounds()`. Preload early-returns on `loadStarted`, but it's still a function
-call + branch on the hottest path in the app (every move of every stroke). It reads as defensive
-coupling — preload is already triggered from `DrawingCanvas.svelte:215` via `scheduleIdle` and on
-the first `pointerdown`.
-
-#### Proposed solution
-
-Move the `preloadDrawSounds()` call into the stroke-start branch (inside `if (!currentSource)`),
-where it's needed at most once per stroke, rather than per move. The `if (!ctx || !buffers) return`
-guard already handles the not-yet-loaded case.
-
-#### Verification
-
-`profiling` harness shows the per-move path unchanged in behavior; sound still starts on first
-stroke of a fresh load.
-
----
-
 ### [P4][maintainability] `orientation.ts` memoizes through a module-level `lastRequested` — hidden global, hard to reset
 
 **File(s):** `web/src/lib/orientation.ts:12`, `27-29` — pinned at SHA f934d43

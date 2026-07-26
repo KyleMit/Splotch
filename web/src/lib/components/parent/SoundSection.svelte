@@ -26,8 +26,7 @@
     if (active) {
       preloadDrawSounds();
       previewVolume();
-    }
-    else stopDrawSound();
+    } else stopDrawSound();
   }
 
   function onVolumeInput(value: number) {
