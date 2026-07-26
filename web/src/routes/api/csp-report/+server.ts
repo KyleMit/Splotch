@@ -35,37 +35,38 @@ interface ReportingApiEntry {
   url?: unknown;
 }
 
-function str(value: unknown): string {
+function cappedString(value: unknown): string {
   return typeof value === 'string' ? value.slice(0, MAX_FIELD_LENGTH) : '';
 }
 
-function num(value: unknown): number | null {
+function finiteNumberOrNull(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 function fromReportUriPayload(report: Record<string, unknown>): CspViolation {
   return {
-    documentURL: str(report['document-uri']),
-    blockedURL: str(report['blocked-uri']),
-    directive: str(report['effective-directive']) || str(report['violated-directive']),
-    disposition: str(report['disposition']) || 'enforce',
-    sourceFile: str(report['source-file']),
-    line: num(report['line-number']),
-    column: num(report['column-number']),
-    sample: str(report['script-sample']),
+    documentURL: cappedString(report['document-uri']),
+    blockedURL: cappedString(report['blocked-uri']),
+    directive:
+      cappedString(report['effective-directive']) || cappedString(report['violated-directive']),
+    disposition: cappedString(report['disposition']) || 'enforce',
+    sourceFile: cappedString(report['source-file']),
+    line: finiteNumberOrNull(report['line-number']),
+    column: finiteNumberOrNull(report['column-number']),
+    sample: cappedString(report['script-sample']),
   };
 }
 
 function fromReportingApiPayload(body: Record<string, unknown>, url: unknown): CspViolation {
   return {
-    documentURL: str(body.documentURL) || str(url),
-    blockedURL: str(body.blockedURL),
-    directive: str(body.effectiveDirective),
-    disposition: str(body.disposition) || 'enforce',
-    sourceFile: str(body.sourceFile),
-    line: num(body.lineNumber),
-    column: num(body.columnNumber),
-    sample: str(body.sample),
+    documentURL: cappedString(body.documentURL) || cappedString(url),
+    blockedURL: cappedString(body.blockedURL),
+    directive: cappedString(body.effectiveDirective),
+    disposition: cappedString(body.disposition) || 'enforce',
+    sourceFile: cappedString(body.sourceFile),
+    line: finiteNumberOrNull(body.lineNumber),
+    column: finiteNumberOrNull(body.columnNumber),
+    sample: cappedString(body.sample),
   };
 }
 

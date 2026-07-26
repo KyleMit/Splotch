@@ -22,32 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P4][readability] Rename the terse `str`/`num` coercers in csp-report
-
-**File(s):** `web/src/routes/api/csp-report/+server.ts:30-36` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-function str(value: unknown): string { ... }   // also length-caps to MAX_FIELD_LENGTH
-function num(value: unknown): number | null { ... }
-```
-
-`str` does more than its name says (it also truncates), and both are one-off abbreviations. In the
-mappers they read as `str(report['blocked-uri'])` — the truncation side-effect is invisible at the
-call site.
-
-#### Proposed solution
-
-Rename to intent-revealing names: `cappedString(value)` / `finiteNumberOrNull(value)` (or
-`field`/`lineNumber`). No behavior change.
-
-#### Verification
-
-`npm run check`; csp tests unchanged in behavior.
-
----
-
 ### [P4][readability] Redundant `typeof style === 'string'` on an already-`string | null` value
 
 **File(s):** `web/src/routes/api/generate-image/+server.ts:114,129` — pinned at SHA f934d43
