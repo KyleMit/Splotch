@@ -7,8 +7,10 @@
 // Fixtures are synthetic (tests/fixtures/synthetic.mjs): one night line-art
 // source and night fills that inject exactly one defect apiece, so each gate
 // sees the failure it owns and passes the others' fixtures.
-import { describe, it, expect } from 'vitest';
+import sharp from 'sharp';
+import { describe, it, expect, vi } from 'vitest';
 import {
+  prepareSourceScore,
   scoreNightness,
   scoreDrift,
   scoreLineColor,
@@ -16,6 +18,7 @@ import {
   DRIFT_THRESHOLD_DEFAULT,
   LINE_WHITE_MIN_DEFAULT,
 } from '../lib/night-scores.mjs';
+import { OUTLINE_MASK_SIZE } from '../lib/outline-match.mjs';
 import {
   nightSource,
   nightFillGood,
@@ -23,6 +26,11 @@ import {
   nightFillDrift,
   nightFillReinked,
 } from './fixtures/synthetic.mjs';
+
+vi.mock('sharp', async (importOriginal) => {
+  const { default: actualSharp } = await importOriginal();
+  return { default: vi.fn((...args) => actualSharp(...args)) };
+});
 
 describe('scoreNightness — the background must read as night', () => {
   it('flags a bright daytime background', async () => {
@@ -57,6 +65,22 @@ describe('scoreLineColor — the outlines must stay white', () => {
     const r = await scoreLineColor(await nightFillGood(), await nightSource());
     expect(r.lineWhite).toBeGreaterThanOrEqual(LINE_WHITE_MIN_DEFAULT);
   });
+});
+
+it('shares one 512px source preparation between drift and line-color scoring', async () => {
+  const source = await nightSource();
+  const fill = await nightFillGood();
+  vi.mocked(sharp).mockClear();
+
+  const preparedSource = await prepareSourceScore(source);
+  const drift = await scoreDrift(fill, source, preparedSource);
+  const line = await scoreLineColor(fill, source, preparedSource);
+
+  expect(preparedSource.info.width).toBe(OUTLINE_MASK_SIZE);
+  expect(preparedSource.info.height).toBe(OUTLINE_MASK_SIZE);
+  expect(sharp.mock.calls.filter(([input]) => input === source)).toHaveLength(1);
+  expect(drift.ratio).toBeLessThanOrEqual(DRIFT_THRESHOLD_DEFAULT);
+  expect(line.lineWhite).toBeGreaterThanOrEqual(LINE_WHITE_MIN_DEFAULT);
 });
 
 it('each night gate separates its two classes with margin', async () => {

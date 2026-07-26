@@ -9,7 +9,7 @@
 //   scoreLineColor() — the model re-inked the white outlines DARK.
 import sharp from 'sharp';
 import { dilateMask, erodeMask } from './morphology.mjs';
-import { OUTLINE_INK_CUTOFF } from './outline-match.mjs';
+import { OUTLINE_INK_CUTOFF, OUTLINE_MASK_SIZE } from './outline-match.mjs';
 
 // --- Drift detection ----------------------------------------------------------
 // A night fill's white pixels are outlines; the model has drifted when it draws a
@@ -18,7 +18,6 @@ import { OUTLINE_INK_CUTOFF } from './outline-match.mjs';
 // dilate that mask to absorb registration slack + the fill's glow, then count
 // fill white/low-chroma pixels that fall outside it. Normalized by the source
 // outline mass so pages of different line density compare on one scale.
-const SOURCE_SCORE_W = 512; // working width for source-based comparisons
 const DRIFT_DILATE = 6; // px of slack around each source line (registration + glow)
 const DRIFT_THIN = 3; // white strokes up to ~2*this px wide are outline-like, not fills
 const DRIFT_LUMA_WHITE = 185; // fill pixel this bright...
@@ -42,7 +41,7 @@ const NIGHT_MIN_BG_FRAC = 0.04; // skip the check if there's barely any open bac
 
 export async function prepareSourceScore(sourceBuf) {
   return sharp(sourceBuf)
-    .resize(SOURCE_SCORE_W, null, { fit: 'inside' })
+    .resize(OUTLINE_MASK_SIZE, null, { fit: 'inside' })
     .grayscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -106,7 +105,7 @@ export async function scoreNightness(fillBuf, sourceBuf) {
 export async function scoreDrift(fillBuf, sourceBuf, preparedSource) {
   const s = preparedSource ?? (await prepareSourceScore(sourceBuf));
   const t = await sharp(fillBuf)
-    .resize(SOURCE_SCORE_W, null, { fit: 'inside' })
+    .resize(OUTLINE_MASK_SIZE, null, { fit: 'inside' })
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -165,7 +164,7 @@ export const LINE_WHITE_MIN_DEFAULT = 150; // median outline brightness below th
 export async function scoreLineColor(fillBuf, sourceBuf, preparedSource) {
   const s = preparedSource ?? (await prepareSourceScore(sourceBuf));
   const t = await sharp(fillBuf)
-    .resize(SOURCE_SCORE_W, null, { fit: 'inside' })
+    .resize(OUTLINE_MASK_SIZE, null, { fit: 'inside' })
     .grayscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
