@@ -24,33 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P4][readability] `bannerExit` inline transition is ~14 lines of geometry with a duplicated fallback distance
-
-**File(s):** `web/src/lib/components/InstallBanner.svelte:52-66` — pinned at SHA f934d43
-
-#### Problem
-
-`bannerExit` computes a FLIP-style translate from the banner's rect to the Parent Help button's rect
-inline in the component script, including a `translateX(-50%)`-restating `css` callback. The
-fallback vertical distance `120` is repeated here (57) and in the plain-exit branch
-(`fly(node, { y: 120 … })` line 53 and the entrance `y: 120` at line 85) as an unnamed magic number
-appearing four times across the file.
-
-#### Proposed solution
-
-Name the travel distance (`const BANNER_FLY_Y = 120`) and reuse it for entrance, plain exit, and the
-fallback. Optionally extract the geometry math to a small helper
-`flyToElement(node, targetId, fallbackY)` in `lib/actions/` or a local function, keeping the
-transition declaration a one-liner. Per `.claude/rules/svelte.md`, non-trivial transition wiring is
-a reasonable extraction target.
-
-#### Verification
-
-`npm run check`; visually confirm both exit paths (manual dismiss → plain fly-down; auto-clear →
-shrink into button) still animate.
-
----
-
 ### [P5][readability] Deferred-prompt bookkeeping is spread across the listener, `markInstalled`, and `promptInstall`
 
 **File(s):** `web/src/lib/state/install.svelte.ts:45,71-76,86,132-133,144-149` — pinned at SHA
