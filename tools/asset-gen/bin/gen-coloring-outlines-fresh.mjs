@@ -33,6 +33,10 @@ import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSaf
 
 const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 90;
+const BORDER_WHITE_LEVEL = 235;
+// Lightweight fraction gate, intentionally independent of the registration mask resolution.
+const INK_SCAN_SIZE = 360;
+const INK_DARK = 150;
 
 const args = parseArgs({
   allowPositionals: true,
@@ -110,7 +114,7 @@ async function borderWhiteFraction(buf) {
     for (let x = 0; x < info.width; x++) {
       if (!edgeRow && x >= margin && x < info.width - margin) continue;
       total++;
-      if (data[(y * info.width + x) * ch] >= 235) white++;
+      if (data[(y * info.width + x) * ch] >= BORDER_WHITE_LEVEL) white++;
     }
   }
   return white / total;
@@ -120,13 +124,13 @@ async function borderWhiteFraction(buf) {
 // regardless of the other gates.
 async function inkFraction(buf) {
   const { data, info } = await sharp(buf)
-    .resize(360, 360, { fit: 'fill' })
+    .resize(INK_SCAN_SIZE, INK_SCAN_SIZE, { fit: 'fill' })
     .raw()
     .toBuffer({ resolveWithObject: true });
   const ch = info.channels;
   let dark = 0;
   const n = info.width * info.height;
-  for (let i = 0; i < data.length; i += ch) if (data[i] < 150) dark++;
+  for (let i = 0; i < data.length; i += ch) if (data[i] < INK_DARK) dark++;
   return dark / n;
 }
 

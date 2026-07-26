@@ -15,12 +15,12 @@
 //                   flower tile. Gate on this, not just the global keep.
 import sharp from 'sharp';
 
-// Work resolution for the masks. Everything is compared at this fixed size so the
-// tolerance and tile grid mean the same thing regardless of the page's native pixels.
-const MASK_W = 512;
+// Shared registration/new-ink mask space. Everything is compared at this fixed
+// size so the tolerance and tile grid mean the same thing regardless of native pixels.
+export const OUTLINE_MASK_SIZE = 512;
 // A grayscale pixel darker than this counts as ink (outline — or a genuinely dark
 // fill, which the ±TOL tolerance and the overlay's blue channel account for).
-const THRESHOLD = 110;
+export const OUTLINE_INK_CUTOFF = 110;
 // Match tolerance in mask pixels: a 1px-thicker or anti-aliased line still counts as
 // aligned, so only real movement reads as drift.
 const TOL = 2;
@@ -42,26 +42,26 @@ export const LOCAL_KEEP_THRESHOLD = 0.8;
 async function darkMask(buf) {
   const { data } = await sharp(buf)
     .grayscale()
-    .resize(MASK_W, MASK_W, { fit: 'fill' })
+    .resize(OUTLINE_MASK_SIZE, OUTLINE_MASK_SIZE, { fit: 'fill' })
     .raw()
     .toBuffer({ resolveWithObject: true });
-  const mask = new Uint8Array(MASK_W * MASK_W);
-  for (let i = 0; i < data.length; i++) mask[i] = data[i] < THRESHOLD ? 1 : 0;
+  const mask = new Uint8Array(OUTLINE_MASK_SIZE * OUTLINE_MASK_SIZE);
+  for (let i = 0; i < data.length; i++) mask[i] = data[i] < OUTLINE_INK_CUTOFF ? 1 : 0;
   return mask;
 }
 
 // Whether a mask has any set pixel within `r` of index i (a cheap dilation test),
 // so a slightly thicker or anti-aliased line still counts as a match.
 function nearby(mask, i, r) {
-  const x = i % MASK_W;
-  const y = (i / MASK_W) | 0;
+  const x = i % OUTLINE_MASK_SIZE;
+  const y = (i / OUTLINE_MASK_SIZE) | 0;
   for (let dy = -r; dy <= r; dy++) {
     const yy = y + dy;
-    if (yy < 0 || yy >= MASK_W) continue;
+    if (yy < 0 || yy >= OUTLINE_MASK_SIZE) continue;
     for (let dx = -r; dx <= r; dx++) {
       const xx = x + dx;
-      if (xx < 0 || xx >= MASK_W) continue;
-      if (mask[yy * MASK_W + xx]) return true;
+      if (xx < 0 || xx >= OUTLINE_MASK_SIZE) continue;
+      if (mask[yy * OUTLINE_MASK_SIZE + xx]) return true;
     }
   }
   return false;
@@ -84,15 +84,21 @@ export async function outlineMatch(sourceBuf, filledBuf) {
   let covered = 0;
   const tileSrc = new Int32Array(GRID * GRID);
   const tileCov = new Int32Array(GRID * GRID);
-  const rgb = Buffer.alloc(MASK_W * MASK_W * 3, 255);
+  const rgb = Buffer.alloc(OUTLINE_MASK_SIZE * OUTLINE_MASK_SIZE * 3, 255);
   for (let i = 0; i < src.length; i++) {
     const s = src[i];
     const f = fill[i];
     const p = i * 3;
     if (s) {
       srcCount++;
-      const tx = Math.min(GRID - 1, (((i % MASK_W) / MASK_W) * GRID) | 0);
-      const ty = Math.min(GRID - 1, ((((i / MASK_W) | 0) / MASK_W) * GRID) | 0);
+      const tx = Math.min(
+        GRID - 1,
+        (((i % OUTLINE_MASK_SIZE) / OUTLINE_MASK_SIZE) * GRID) | 0
+      );
+      const ty = Math.min(
+        GRID - 1,
+        ((((i / OUTLINE_MASK_SIZE) | 0) / OUTLINE_MASK_SIZE) * GRID) | 0
+      );
       const t = ty * GRID + tx;
       tileSrc[t]++;
       if (nearby(fill, i, TOL)) {
@@ -126,7 +132,9 @@ export async function outlineMatch(sourceBuf, filledBuf) {
       }
     }
   }
-  const overlay = await sharp(rgb, { raw: { width: MASK_W, height: MASK_W, channels: 3 } })
+  const overlay = await sharp(rgb, {
+    raw: { width: OUTLINE_MASK_SIZE, height: OUTLINE_MASK_SIZE, channels: 3 },
+  })
     .png()
     .toBuffer();
   return { keep, drift: 1 - keep, localKeep, worstTile, overlay };

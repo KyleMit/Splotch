@@ -80,9 +80,11 @@ async function generateColoredPage(ai, { imageBytes, mimeType, temperature }) {
 // blank areas the child's coloring would leave looking untouched. Tiny highlights
 // (eye glints, shine) stay well under the reject threshold.
 const WHITE_LEVEL = 248;
+// Lightweight fraction gate, intentionally independent of the registration mask resolution.
+const WHITE_SCAN_SIZE = 360;
 async function whiteFraction(buf) {
   const { data, info } = await sharp(buf)
-    .resize(360, 360, { fit: 'fill' })
+    .resize(WHITE_SCAN_SIZE, WHITE_SCAN_SIZE, { fit: 'fill' })
     .raw()
     .toBuffer({ resolveWithObject: true });
   const ch = info.channels;

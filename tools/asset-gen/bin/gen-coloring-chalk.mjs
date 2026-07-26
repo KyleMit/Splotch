@@ -59,7 +59,13 @@ import { parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/cli
 import { makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
-import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
+import {
+  outlineMatch,
+  KEEP_THRESHOLD,
+  LOCAL_KEEP_THRESHOLD,
+  OUTLINE_MASK_SIZE,
+  OUTLINE_INK_CUTOFF,
+} from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { crispInk } from '../lib/crisp-ink.mjs';
 import { dilateMask } from '../lib/morphology.mjs';
@@ -82,8 +88,6 @@ const OUT_DIR = join(SAMPLES_DARK_DIR, 'chalk');
 // judged by thickness (opening) misread every whitened sclera as an "invented
 // thin stroke" and rejected 9 of nature's 12 perfectly-good chalks. Same
 // working scale and ink bar as lib/outline-match.mjs so the masks agree.
-const INK_W = 512;
-const INK_DARK = 110; // grayscale px darker than this = ink
 const PEN_SLACK = 2; // px of registration slack around pen strokes (outline-match TOL)
 // Background-invention test uses a wider berth: local stroke thickening and the
 // residue of an align-corrected nudge hug the pen lines, while a genuinely
@@ -99,11 +103,12 @@ const WHITE_FRAC_MAX_DEFAULT = 0.1;
 async function inkMask(buf) {
   const { data } = await sharp(buf)
     .grayscale()
-    .resize(INK_W, INK_W, { fit: 'fill' })
+    .resize(OUTLINE_MASK_SIZE, OUTLINE_MASK_SIZE, { fit: 'fill' })
     .raw()
     .toBuffer({ resolveWithObject: true });
-  const mask = new Uint8Array(INK_W * INK_W);
-  for (let i = 0; i < data.length; i++) mask[i] = data[i] < INK_DARK ? 1 : 0;
+  const mask = new Uint8Array(OUTLINE_MASK_SIZE * OUTLINE_MASK_SIZE);
+  for (let i = 0; i < data.length; i++)
+    mask[i] = data[i] < OUTLINE_INK_CUTOFF ? 1 : 0;
   return mask;
 }
 
@@ -111,8 +116,8 @@ async function inkMask(buf) {
 // border (same flood the night-fill mood scorer uses). A chalk must never
 // whiten it — chalk whites live in pen-bounded interiors.
 function openBackground(penMask) {
-  const w = INK_W;
-  const h = INK_W;
+  const w = OUTLINE_MASK_SIZE;
+  const h = OUTLINE_MASK_SIZE;
   const bg = new Uint8Array(w * h);
   const stack = [];
   const push = (x, y) => {
@@ -147,9 +152,9 @@ function openBackground(penMask) {
 async function scoreNewInk(penBuf, candidateBuf) {
   const pen = await inkMask(penBuf);
   const cand = await inkMask(candidateBuf);
-  const n = INK_W * INK_W;
-  const allowed = dilateMask(pen, INK_W, INK_W, PEN_SLACK);
-  const bgSafe = dilateMask(pen, INK_W, INK_W, BG_SLACK);
+  const n = OUTLINE_MASK_SIZE * OUTLINE_MASK_SIZE;
+  const allowed = dilateMask(pen, OUTLINE_MASK_SIZE, OUTLINE_MASK_SIZE, PEN_SLACK);
+  const bgSafe = dilateMask(pen, OUTLINE_MASK_SIZE, OUTLINE_MASK_SIZE, BG_SLACK);
   const bg = openBackground(pen);
   let penMass = 0;
   let invented = 0;
