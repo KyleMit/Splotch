@@ -32,3 +32,23 @@ export function lazyIdbDatabase(
     return dbPromise;
   };
 }
+
+export function idbKvStore<
+  Schema extends import('idb').DBSchema,
+  StoreName extends import('idb').StoreNames<Schema> = import('idb').StoreNames<Schema>,
+>(dbName: string, storeName: StoreName) {
+  const getDb = lazyIdbDatabase<Schema>(dbName, storeName);
+  return {
+    get: async (key: import('idb').StoreKey<Schema, StoreName>) =>
+      (await getDb()).get(storeName, key),
+    put: async (
+      key: import('idb').StoreKey<Schema, StoreName>,
+      value: import('idb').StoreValue<Schema, StoreName>
+    ): Promise<void> => {
+      await (await getDb()).put(storeName, value, key);
+    },
+    delete: async (key: import('idb').StoreKey<Schema, StoreName>): Promise<void> => {
+      await (await getDb()).delete(storeName, key);
+    },
+  };
+}

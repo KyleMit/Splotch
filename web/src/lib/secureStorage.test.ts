@@ -61,6 +61,11 @@ vi.mock('./idb', () => {
   };
   return {
     lazyIdbDatabase: () => () => Promise.resolve(db as unknown as import('idb').IDBPDatabase),
+    idbKvStore: () => ({
+      get: (key: string) => db.get('secrets', key),
+      put: (key: string, value: unknown) => db.put('secrets', value, key),
+      delete: (key: string) => db.delete('secrets', key),
+    }),
   };
 });
 

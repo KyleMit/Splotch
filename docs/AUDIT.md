@@ -22,45 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Storage / persistence
 
-### [P3][duplication] `secureStorage` and `folderSave` each hand-roll the same IndexedDB key-value wrapper
-
-**File(s):** `web/src/lib/secureStorage.ts:26-45, 85-115` and
-`web/src/lib/drawing/folderSave.ts:23-29, 44-65, 105-115` — pinned at SHA f934d43
-
-#### Problem
-
-Both modules independently declare `DB_NAME`/`DB_VERSION`/`STORE` constants, call
-`lazyIdbDatabase(...)`, and then wrap `db.get`/`db.put`/`db.delete` in ad-hoc helpers
-(`webSave`/`webLoad`/`webClear` vs `loadHandle`/`storeHandle` + the inline `db.delete` in
-`clearSaveFolder`). The two IndexedDB consumers in the codebase share only `lazyIdbDatabase` and
-re-implement the same get/put/delete-by-key boilerplate above it.
-
-#### Proposed solution
-
-Promote a typed KV helper into `idb.ts`:
-
-```ts
-export function idbKvStore<V>(dbName: string, storeName: string) {
-  const getDb = lazyIdbDatabase(dbName, storeName);
-  return {
-    get: async (k: string) => (await getDb()).get(storeName, k) as Promise<V | undefined>,
-    put: async (k: string, v: V) => void (await getDb()).put(storeName, v, k),
-    delete: async (k: string) => void (await getDb()).delete(storeName, k),
-  };
-}
-```
-
-`folderSave` uses `idbKvStore<FileSystemDirectoryHandle>('splotch-fs','handles')`; `secureStorage`
-uses `idbKvStore<CryptoKey | SecretPayload>('splotch-secure','secrets')` (its transactional
-master-key path stays bespoke).
-
-#### Verification
-
-Both modules' unit tests pass against the shared helper; `openDbCalls`-style memoization assertions
-in `folderSave.test.ts:182-190` still hold.
-
----
-
 ### [P3][complexity] `saveBlobToFolder` mixes permission negotiation, unique-naming, the write, and stale-handle recovery in one function
 
 **File(s):** `web/src/lib/drawing/folderSave.ts:147-181` — pinned at SHA f934d43

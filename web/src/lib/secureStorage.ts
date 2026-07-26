@@ -2,7 +2,7 @@ import type { DBSchema, IDBPDatabase } from 'idb';
 import { browser } from '$app/environment';
 import { isNative } from './platform';
 import { lazyPluginModule } from './nativePlugin';
-import { lazyIdbDatabase } from './idb';
+import { idbKvStore, lazyIdbDatabase } from './idb';
 
 // Secure home for the app's client-held secrets — the parent's Gemini API key
 // and the admin session token (used by the native apps to authenticate against
@@ -41,6 +41,13 @@ interface SecureDb extends DBSchema {
   };
 }
 
+interface SecretPayloadDb extends DBSchema {
+  secrets: {
+    key: string;
+    value: SecretPayload;
+  };
+}
+
 // Native plugin, loaded lazily so it's never pulled in on the web or during SSR.
 // Returns the module namespace, not the SecureStorage proxy — see
 // lazyPluginModule for why that distinction is load-bearing.
@@ -55,6 +62,7 @@ const getPlugin = lazyPluginModule(() =>
 
 // --- web: IndexedDB via idb (also lazy) ---
 const getDb = lazyIdbDatabase<SecureDb>(DB_NAME, STORE);
+const payloadStore = idbKvStore<SecretPayloadDb>(DB_NAME, STORE);
 
 function isSecretPayload(value: unknown): value is SecretPayload {
   return (
@@ -117,22 +125,21 @@ async function webSave(name: string, value: string) {
     new TextEncoder().encode(value)
   );
   const payload: SecretPayload = { iv, data };
-  await db.put(STORE, payload, name);
+  await payloadStore.put(name, payload);
 }
 
 async function webLoad(name: string) {
-  const db = await getDb();
-  const record = await db.get(STORE, name);
+  const record = await payloadStore.get(name);
   if (record === undefined) return null;
   if (!isSecretPayload(record)) throw new Error('Malformed secure-storage payload');
+  const db = await getDb();
   const key = await getMasterKey(db);
   const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: record.iv }, key, record.data);
   return new TextDecoder().decode(plain);
 }
 
 async function webClear(name: string) {
-  const db = await getDb();
-  await db.delete(STORE, name);
+  await payloadStore.delete(name);
   // The master key is left in place: it's useless without a payload and lets a
   // re-entered secret reuse the same sandboxed key object.
 }

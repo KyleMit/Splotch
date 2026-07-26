@@ -1,7 +1,7 @@
 import type { DBSchema } from 'idb';
 import { browser } from '$app/environment';
 import { STORAGE_KEYS, readBool, writeBool, removeKey } from '$lib/storage';
-import { lazyIdbDatabase } from '$lib/idb';
+import { idbKvStore } from '$lib/idb';
 
 // Silent folder save for the web target. On desktop Chromium (in-tab or
 // installed PWA) the File System Access API lets the parent optionally pick a
@@ -32,7 +32,7 @@ interface FolderSaveDb extends DBSchema {
   };
 }
 
-const getDb = lazyIdbDatabase<FolderSaveDb>(DB_NAME, STORE);
+const handleStore = idbKvStore<FolderSaveDb>(DB_NAME, STORE);
 
 // In-memory copy of the stored handle (undefined = not read yet, null = none),
 // so only the first save of a session touches IndexedDB.
@@ -55,8 +55,7 @@ async function loadHandle(): Promise<FileSystemDirectoryHandle | null> {
   }
   let handle: FileSystemDirectoryHandle | null = null;
   try {
-    const db = await getDb();
-    handle = (await db.get(STORE, HANDLE_KEY)) ?? null;
+    handle = (await handleStore.get(HANDLE_KEY)) ?? null;
   } catch {
     // IndexedDB unavailable (corruption, embedded context, private mode):
     // behave as if no folder is set, so saves degrade to plain downloads.
@@ -66,8 +65,7 @@ async function loadHandle(): Promise<FileSystemDirectoryHandle | null> {
 }
 
 async function storeHandle(handle: FileSystemDirectoryHandle): Promise<void> {
-  const db = await getDb();
-  await db.put(STORE, handle, HANDLE_KEY);
+  await handleStore.put(HANDLE_KEY, handle);
 }
 
 /** Whether the browser exposes the File System Access directory picker. */
@@ -113,8 +111,7 @@ export async function clearSaveFolder(): Promise<void> {
   cachedHandle = null;
   removeKey(STORAGE_KEYS.saveFolderChosen);
   try {
-    const db = await getDb();
-    await db.delete(STORE, HANDLE_KEY);
+    await handleStore.delete(HANDLE_KEY);
   } catch {
     // The chosen-flag is authoritative, so a failed delete only orphans a row.
   }
