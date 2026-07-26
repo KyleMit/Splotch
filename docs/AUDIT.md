@@ -26,36 +26,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Coloring books
 
-### [P4][design-tokens] Hardcoded brand RGB `171,113,225` fallback will silently drift from `--brand`
-
-**File(s):** `web/src/lib/components/ColoringBook.svelte:296-298` — pinned at SHA f934d43
-
-#### Problem
-
-```ts
-box-shadow: 0 4px 12px rgba(171, 113, 225, 0.25);
-box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 25%, transparent);
-```
-
-The rgba line is the documented pre-`color-mix` fallback (same pattern as the label at 365-368), so
-it's intentional — but it bakes `--brand`'s literal RGB into the component. If the brand token is
-retuned, this fallback keeps the old color on browsers that hit it, and nothing links the two. The
-`4px`/`12px` offsets are also raw.
-
-#### Proposed solution
-
-If the compat floor still needs a color-mix fallback (per `docs/COMPATIBILITY.md`), centralize a
-`--brand-shadow` token (or a `--brand-rgb` triple) so the literal lives once beside `--brand`;
-otherwise drop the fallback if the floor now supports `color-mix` unconditionally. Tokenize the
-offsets against the elevation scale.
-
-#### Verification
-
-Check `docs/COMPATIBILITY.md` for whether the color-mix fallback is still required at the current
-floor; visual diff of tile hover shadow.
-
----
-
 ### [P4][maintainability] Comment hardcodes "eight full covers" — drifts as the catalog grows
 
 **File(s):** `web/src/lib/components/ColoringBook.svelte:32-34` — pinned at SHA f934d43
