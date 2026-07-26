@@ -91,10 +91,7 @@ export async function outlineMatch(sourceBuf, filledBuf) {
     const p = i * 3;
     if (s) {
       srcCount++;
-      const tx = Math.min(
-        GRID - 1,
-        (((i % OUTLINE_MASK_SIZE) / OUTLINE_MASK_SIZE) * GRID) | 0
-      );
+      const tx = Math.min(GRID - 1, (((i % OUTLINE_MASK_SIZE) / OUTLINE_MASK_SIZE) * GRID) | 0);
       const ty = Math.min(
         GRID - 1,
         ((((i / OUTLINE_MASK_SIZE) | 0) / OUTLINE_MASK_SIZE) * GRID) | 0

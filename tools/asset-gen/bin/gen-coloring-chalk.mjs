@@ -107,8 +107,7 @@ async function inkMask(buf) {
     .raw()
     .toBuffer({ resolveWithObject: true });
   const mask = new Uint8Array(OUTLINE_MASK_SIZE * OUTLINE_MASK_SIZE);
-  for (let i = 0; i < data.length; i++)
-    mask[i] = data[i] < OUTLINE_INK_CUTOFF ? 1 : 0;
+  for (let i = 0; i < data.length; i++) mask[i] = data[i] < OUTLINE_INK_CUTOFF ? 1 : 0;
   return mask;
 }
 

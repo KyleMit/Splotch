@@ -30,35 +30,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — tools/asset-gen · bin (pipeline CLIs)
 
-### [P4][duplication] Working-resolution and threshold magic numbers scattered across pixel scans
-
-**File(s):** `gen-coloring-fills.mjs:102` (`WHITE_LEVEL = 248`) & `:104` (`resize(360, 360)`);
-`gen-coloring-outlines-fresh.mjs:124` (`>= 235` border white), `:136` (`resize(360,360)`), `:140`
-(`< 150` ink); `gen-coloring-chalk.mjs:82-83` (`INK_W = 512`, `INK_DARK = 110`) — pinned at SHA
-f934d43
-
-#### Problem
-
-Down-sampling to a working resolution before a pixel loop is done at `360×360` in two files and
-`512×512` in a third, and the "is this pixel white/ink" luma thresholds (248, 235, 150, 110) are
-bare literals inside each scan function. Some are named (`WHITE_LEVEL`, `INK_DARK`), some are inline
-(`>= 235`, `< 150`). A reader can't tell whether the differing working sizes are deliberate
-(accuracy vs speed) or accidental, and the luma cutoffs that must roughly agree with
-`lib/outline-match.mjs`'s ink bar (chalk:81 says "same ink bar") aren't traceably linked.
-
-#### Proposed solution
-
-Name every threshold at the top of its file (or share `INK_LUMA_MAX`/`WHITE_LUMA_MIN`/`SCAN_EDGE`
-from a `lib/pixels.mjs` where the value genuinely must match `outline-match`). Add a one-line WHY
-where 360 vs 512 is a real speed/accuracy choice.
-
-#### Verification
-
-Golden diff clean (values unchanged, only named). The chalk↔outline-match agreement is now a shared
-import, not a comment.
-
----
-
 ### [P4][consistency] Progress written to `stderr` in one audit, `stdout` in the rest
 
 **File(s):** `audit-night-halo.mjs:98-100` and `:111` (`console.error` for progress and timing) vs
