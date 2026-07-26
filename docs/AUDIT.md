@@ -22,43 +22,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — Server / API backend
 
-### [P2][consistency] Unify how failure responses are constructed (json vs error vs raw Response)
-
-**File(s):** `web/src/routes/api/csp-report/+server.ts:109,117,128,135`;
-`web/src/routes/api/generate-image/+server.ts:71,72,91,92,111,143`;
-`web/src/lib/server/generationAuthorization.ts:29,32,54,60` — pinned at SHA f934d43
-
-#### Problem
-
-Three different response-construction idioms appear across the surface with no discernible rule:
-
-* `new Response(null, { status })` (csp-report 415/413/204).
-* `throw error(status, msg)` (generate-image, generationAuthorization).
-* `return json({...}, { status })` / `return throttled(...)` (report, verify-*, throttled).
-
-Worse, `authorizeGenerationRequest` **mixes throw and return within one function**: throttling
-`return throttled(...)` (a `Response`), but an invalid token `throw error(403, ...)`. The caller
-must then handle both: `if (authorization instanceof Response) return authorization;`
-(generate-image:106) alongside SvelteKit catching the throws. This dual control-flow is a
-maintenance trap — a new failure path can be added as either and behave differently.
-
-#### Proposed solution
-
-Pick one convention per category and document it in `.claude/rules/server-api.md`: bodied JSON
-failures go through the `fail()` helper (see the error-shape finding); empty telemetry responses
-(csp-report 204/413/415) stay `new Response(null, …)` but via a tiny `empty(status)` helper for
-grep-ability. Make `authorizeGenerationRequest` consistently **return** `Response` for every
-rejection (throttle and 403) rather than mixing throw/return, so the caller's single
-`instanceof Response` check covers all of them.
-
-#### Verification
-
-`authorizeGenerationRequest` return type stays `GenerationAuthorization | Response` with no
-`throw error` inside it. `generationAuthorization.test.ts` updated to assert a `Response` (not a
-thrown 403). `npm run test:api:smoke`.
-
----
-
 ### [P2][type-safety] Share request/response contract types between routes and client callers
 
 **File(s):** `web/src/lib/aiCredential.ts:11-18` (`VerifyResponse`/`VerifyCredentialResult`);
