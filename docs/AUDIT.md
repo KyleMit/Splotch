@@ -24,31 +24,6 @@ surface; `pencilEraser` floats an uncaught promise. `deviceLock.ts`, `pinchZoom.
 
 ## Source: Code audit — PWA / service worker
 
-### [P4][maintainability] `'/sw.js'` and `'/version.json'` paths are magic strings scattered across module and tests
-
-**File(s):** `web/src/lib/pwa/updates.ts:75,147` — pinned at SHA f934d43
-
-#### Problem
-
-`navigator.serviceWorker.register('/sw.js')` (line 75) and `fetch('/version.json', …)` (line 147)
-hard-code paths that the build pipeline also owns — `version.json` is emitted by the
-`emit-version-json` vite plugin (`vite.config.ts:87-96`) and `sw.js` by VitePWA. These
-cross-boundary contracts (build emits ⇄ runtime fetches) live as bare strings on both sides with
-nothing binding them, and the test re-types `'/sw.js'` / `'/version.json'` again.
-
-#### Proposed solution
-
-Name them (`const SW_URL = '/sw.js'`, `const VERSION_MANIFEST_URL = '/version.json'`) and, for
-`version.json`, reference the constant name in the vite plugin comment so the emit/fetch pair is
-greppable. Lower priority than SKIP_WAITING because these paths are more conventional, but the same
-discoverability argument applies.
-
-#### Verification
-
-`grep -rn "version.json" web` shows the emit site and the single fetch constant.
-
----
-
 ### [P4][maintainability] Manifest icons are a second source of truth, already drifted from the PWA plugin's asset list
 
 **File(s):** `web/static/site.webmanifest:7-32`; `web/vite.config.ts:112-118` (`includeAssets`,
